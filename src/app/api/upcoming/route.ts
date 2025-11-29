@@ -29,12 +29,12 @@ export async function GET(request: Request) {
   try {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 14);
+    futureDate.setDate(today.getDate() + 7);
     
     const dateFrom = today.toISOString().split('T')[0];
     const dateTo = futureDate.toISOString().split('T')[0];
     
-    const url = `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=50`;
+    const url = `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=100`;
     
     const response = await fetch(url, { cache: 'no-store' });
     const data = await response.json();
