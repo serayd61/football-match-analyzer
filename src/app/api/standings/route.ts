@@ -3,18 +3,18 @@ import { NextResponse } from 'next/server';
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
 const LEAGUES: Record<string, { id: number; seasonId: number; name: string; country: string }> = {
-  premier_league: { id: 8, seasonId: 23614, name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  la_liga: { id: 564, seasonId: 23686, name: 'La Liga', country: '🇪🇸' },
-  serie_a: { id: 384, seasonId: 23668, name: 'Serie A', country: '🇮🇹' },
-  bundesliga: { id: 82, seasonId: 23632, name: 'Bundesliga', country: '🇩🇪' },
-  ligue_1: { id: 301, seasonId: 23650, name: 'Ligue 1', country: '🇫🇷' },
-  eredivisie: { id: 72, seasonId: 23596, name: 'Eredivisie', country: '🇳🇱' },
-  championship: { id: 9, seasonId: 23615, name: 'Championship', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  liga_portugal: { id: 462, seasonId: 23670, name: 'Liga Portugal', country: '🇵🇹' },
+  premier_league: { id: 8, seasonId: 25583, name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  la_liga: { id: 564, seasonId: 25659, name: 'La Liga', country: '🇪🇸' },
+  serie_a: { id: 384, seasonId: 25533, name: 'Serie A', country: '🇮🇹' },
+  bundesliga: { id: 82, seasonId: 25646, name: 'Bundesliga', country: '🇩🇪' },
+  ligue_1: { id: 301, seasonId: 25651, name: 'Ligue 1', country: '🇫🇷' },
+  eredivisie: { id: 72, seasonId: 25597, name: 'Eredivisie', country: '🇳🇱' },
+  championship: { id: 9, seasonId: 25648, name: 'Championship', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  liga_portugal: { id: 462, seasonId: 25745, name: 'Liga Portugal', country: '🇵🇹' },
+  super_lig: { id: 600, seasonId: 25682, name: 'Süper Lig', country: '🇹🇷' },
 };
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -56,10 +56,6 @@ export async function GET(request: Request) {
       success: true,
       competition: league,
       standings: standings.sort((a: any, b: any) => a.position - b.position)
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, max-age=0',
-      }
     });
     
   } catch (error: any) {

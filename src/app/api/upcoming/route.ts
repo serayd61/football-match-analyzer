@@ -11,6 +11,7 @@ const LEAGUES: Record<string, number> = {
   eredivisie: 72,
   championship: 9,
   liga_portugal: 462,
+  super_lig: 600,
 };
 
 export async function GET(request: Request) {
