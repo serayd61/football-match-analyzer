@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 15, 23, 42;
+  --background-end-rgb: 30, 41, 59;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--background-start-rgb)),
+    rgb(var(--background-end-rgb))
+  );
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Animation */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+/* Form result colors */
+.form-W { @apply bg-green-500; }
+.form-D { @apply bg-yellow-500; }
+.form-L { @apply bg-red-500; }
+
+/* Markdown styles */
+.markdown-content h2 {
+  @apply text-xl font-bold mt-6 mb-3 text-emerald-400;
+}
+
+.markdown-content h3 {
+  @apply text-lg font-semibold mt-4 mb-2 text-white;
+}
+
+.markdown-content p {
+  @apply mb-3 text-gray-300;
+}
+
+.markdown-content ul {
+  @apply list-disc list-inside mb-3 text-gray-300;
+}
+
+.markdown-content li {
+  @apply mb-1;
+}
+
+.markdown-content table {
+  @apply w-full border-collapse my-4;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-gray-600 px-4 py-2 text-left;
+}
+
+.markdown-content th {
+  @apply bg-gray-700 font-semibold;
+}
+
+.markdown-content strong {
+  @apply text-emerald-300;
+}
