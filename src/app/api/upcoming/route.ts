@@ -26,13 +26,13 @@ export async function GET(request: Request) {
   try {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 14); // 2 hafta ileri
+    futureDate.setDate(today.getDate() + 14);
     
     const dateFrom = today.toISOString().split('T')[0];
     const dateTo = futureDate.toISOString().split('T')[0];
     
     const response = await fetch(
-      `https://api.sportmonks.com/v3/football/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=fixturesBetween:${dateFrom},${dateTo};leagues:${leagueId}&include=participants;league&per_page=25`,
+      `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=25`,
       { next: { revalidate: 300 } }
     );
     
@@ -57,7 +57,6 @@ export async function GET(request: Request) {
         date: match.starting_at,
         matchday: match.round_id || 0,
         competition: match.league?.name || '',
-        venue: match.venue?.name || ''
       };
     });
     
