@@ -14,6 +14,8 @@ const LEAGUES: Record<string, number> = {
   super_lig: 600,
 };
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const competition = searchParams.get('competition') || 'premier_league';
@@ -34,8 +36,6 @@ export async function GET(request: Request) {
     
     const url = `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=50`;
     
-    console.log('Fetching:', url.replace(SPORTMONKS_API_KEY!, 'HIDDEN'));
-    
     const response = await fetch(url, { cache: 'no-store' });
     const data = await response.json();
     
@@ -43,7 +43,6 @@ export async function GET(request: Request) {
       throw new Error(data.message);
     }
     
-    // Filter matches by league_id to be sure
     const filteredData = (data.data || []).filter((match: any) => match.league_id === leagueId);
     
     const matches = filteredData.map((match: any) => {

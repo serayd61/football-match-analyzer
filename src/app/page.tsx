@@ -8,6 +8,7 @@ const LEAGUES = {
   serie_a: { name: 'Serie A', country: '🇮🇹' },
   bundesliga: { name: 'Bundesliga', country: '🇩🇪' },
   ligue_1: { name: 'Ligue 1', country: '🇫🇷' },
+  super_lig: { name: 'Süper Lig', country: '🇹🇷' },
   eredivisie: { name: 'Eredivisie', country: '🇳🇱' },
   championship: { name: 'Championship', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   liga_portugal: { name: 'Liga Portugal', country: '🇵🇹' },
@@ -42,7 +43,6 @@ interface UpcomingMatch {
   date: string;
   matchday: number;
   competition: string;
-  venue: string;
 }
 
 export default function Home() {
@@ -60,16 +60,17 @@ export default function Home() {
       setLoading(true);
       setError('');
       try {
+        const timestamp = Date.now();
         const [standingsRes, matchesRes] = await Promise.all([
-          fetch(`/api/standings?competition=${selectedLeague}`),
-          fetch(`/api/upcoming?competition=${selectedLeague}`),
+          fetch(`/api/standings?competition=${selectedLeague}&t=${timestamp}`),
+          fetch(`/api/upcoming?competition=${selectedLeague}&t=${timestamp}`),
         ]);
 
         const standingsData = await standingsRes.json();
         const matchesData = await matchesRes.json();
 
-        if (standingsData.error) throw new Error(standingsData.error);
-        if (matchesData.error) throw new Error(matchesData.error);
+        if (standingsData.error) setError(standingsData.error);
+        if (matchesData.error && !error) setError(matchesData.error);
 
         setStandings(standingsData.standings || []);
         setUpcomingMatches(matchesData.matches || []);
@@ -86,7 +87,6 @@ export default function Home() {
     if (!selectedMatch) return;
     setAnalyzing(true);
     setAnalysis('');
-    setError('');
 
     try {
       const response = await fetch('/api/analyze', {
@@ -138,7 +138,7 @@ export default function Home() {
         {Object.entries(LEAGUES).map(([key, league]) => (
           <button
             key={key}
-            onClick={() => { setSelectedLeague(key as LeagueKey); setSelectedMatch(null); setAnalysis(''); }}
+            onClick={() => { setSelectedLeague(key as LeagueKey); setSelectedMatch(null); setAnalysis(''); setError(''); }}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               selectedLeague === key
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
@@ -159,11 +159,10 @@ export default function Home() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-          <span className="ml-4 text-gray-400">Sportmonks verisi yükleniyor...</span>
+          <span className="ml-4 text-gray-400">Veriler yükleniyor...</span>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Standings */}
           <div className="lg:col-span-1 bg-gray-800/50 rounded-xl p-4 backdrop-blur">
             <h2 className="text-lg font-bold mb-4">🏆 Puan Durumu</h2>
             <div className="overflow-x-auto">
@@ -178,7 +177,7 @@ export default function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {standings.slice(0, 12).map((team) => (
+                  {standings.slice(0, 15).map((team) => (
                     <tr key={team.teamId} className="border-b border-gray-700/50 hover:bg-gray-700/30">
                       <td className="py-2 font-medium text-gray-400">{team.position}</td>
                       <td className="py-2">
@@ -197,7 +196,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Upcoming Matches */}
           <div className="lg:col-span-1 bg-gray-800/50 rounded-xl p-4 backdrop-blur">
             <h2 className="text-lg font-bold mb-4">📅 Yaklaşan Maçlar</h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -235,7 +233,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Analysis Panel */}
           <div className="lg:col-span-1 bg-gray-800/50 rounded-xl p-4 backdrop-blur">
             <h2 className="text-lg font-bold mb-4">🤖 AI Maç Analizi</h2>
             {selectedMatch ? (
@@ -262,8 +259,8 @@ export default function Home() {
                 <button
                   onClick={analyzeMatch}
                   disabled={analyzing}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 
-                           disabled:from-gray-600 disabled:to-gray-600 text-white font-bold py-3 px-4 rounded-lg 
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700
+                           disabled:from-gray-600 disabled:to-gray-600 text-white font-bold py-3 px-4 rounded-lg
                            transition-all flex items-center justify-center gap-2"
                 >
                   {analyzing ? (
