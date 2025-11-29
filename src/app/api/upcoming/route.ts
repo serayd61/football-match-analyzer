@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     const dateTo = futureDate.toISOString().split('T')[0];
     
     const response = await fetch(
-      `https://api.sportmonks.com/v3/football/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=fixturesBetween:${dateFrom},${dateTo};leagues:${leagueId}&include=participants;league;venue&per_page=25`,
+      `https://api.sportmonks.com/v3/football/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=fixturesBetween:${dateFrom},${dateTo};leagues:${leagueId}&include=participants;league&per_page=25`,
       { next: { revalidate: 300 } }
     );
     
