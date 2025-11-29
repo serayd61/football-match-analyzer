@@ -13,6 +13,9 @@ const LEAGUES: Record<string, { id: number; seasonId: number; name: string; coun
   liga_portugal: { id: 462, seasonId: 23670, name: 'Liga Portugal', country: '🇵🇹' },
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const competition = searchParams.get('competition') || 'premier_league';
@@ -24,12 +27,9 @@ export async function GET(request: Request) {
   }
   
   try {
-    // Fetch standings from Sportmonks
-    const response = await fetch(
-      `https://api.sportmonks.com/v3/football/standings/seasons/${league.seasonId}?api_token=${SPORTMONKS_API_KEY}&include=participant`,
-      { next: { revalidate: 300 } }
-    );
+    const url = `https://api.sportmonks.com/v3/football/standings/seasons/${league.seasonId}?api_token=${SPORTMONKS_API_KEY}&include=participant`;
     
+    const response = await fetch(url, { cache: 'no-store' });
     const data = await response.json();
     
     if (data.message) {
@@ -56,6 +56,10 @@ export async function GET(request: Request) {
       success: true,
       competition: league,
       standings: standings.sort((a: any, b: any) => a.position - b.position)
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      }
     });
     
   } catch (error: any) {
