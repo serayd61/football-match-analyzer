@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   try {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 7);
+    futureDate.setDate(today.getDate() + 21);
     
     const dateFrom = today.toISOString().split('T')[0];
     const dateTo = futureDate.toISOString().split('T')[0];
