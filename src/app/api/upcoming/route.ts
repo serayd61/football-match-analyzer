@@ -31,18 +31,21 @@ export async function GET(request: Request) {
     const dateFrom = today.toISOString().split('T')[0];
     const dateTo = futureDate.toISOString().split('T')[0];
     
-    const response = await fetch(
-      `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=25`,
-      { next: { revalidate: 300 } }
-    );
+    const url = `https://api.sportmonks.com/v3/football/fixtures/between/${dateFrom}/${dateTo}?api_token=${SPORTMONKS_API_KEY}&filters=leagues:${leagueId}&include=participants;league&per_page=50`;
     
+    console.log('Fetching:', url.replace(SPORTMONKS_API_KEY!, 'HIDDEN'));
+    
+    const response = await fetch(url, { cache: 'no-store' });
     const data = await response.json();
     
     if (data.message) {
       throw new Error(data.message);
     }
     
-    const matches = (data.data || []).map((match: any) => {
+    // Filter matches by league_id to be sure
+    const filteredData = (data.data || []).filter((match: any) => match.league_id === leagueId);
+    
+    const matches = filteredData.map((match: any) => {
       const home = match.participants?.find((p: any) => p.meta?.location === 'home');
       const away = match.participants?.find((p: any) => p.meta?.location === 'away');
       
@@ -63,6 +66,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       competition,
+      leagueId,
+      matchCount: matches.length,
       matches: matches.sort((a: any, b: any) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       )
