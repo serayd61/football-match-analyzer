@@ -11,7 +11,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { homeTeamId, homeTeamName, awayTeamId, awayTeamName, competition, matchDate } = body;
     
-    // Get team data from Sportmonks
     const [homeTeamRes, awayTeamRes, h2hRes] = await Promise.all([
       fetch(`https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=statistics`),
       fetch(`https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=statistics`),
@@ -22,7 +21,6 @@ export async function POST(request: Request) {
     const awayTeam = await awayTeamRes.json();
     const h2h = await h2hRes.json();
     
-    // Format H2H data
     const h2hMatches = (h2h.data || []).map((match: any) => {
       const home = match.participants?.find((p: any) => p.meta?.location === 'home');
       const away = match.participants?.find((p: any) => p.meta?.location === 'away');
@@ -62,9 +60,7 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
   "aciklama": "Kısa analiz açıklaması"
 }`;
 
-    // Call all 3 AIs in parallel
     const [claudeRes, openaiRes, geminiRes] = await Promise.all([
-      // Claude API
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -76,10 +72,9 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           messages: [{ role: 'user', content: analysisPrompt }],
-          system: 'Sen profesyonel bir futbol analisti ve bahis uzmanısın. SADECE istenen JSON formatında yanıt ver, başka hiçbir şey yazma.'
+          system: 'Sen profesyonel bir futbol analisti ve bahis uzmanısın. SADECE istenen JSON formatında yanıt ver.'
         })
       }),
-      // OpenAI API
       fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -89,29 +84,19 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'Sen profesyonel bir futbol analisti ve bahis uzmanısın. SADECE istenen JSON formatında yanıt ver, başka hiçbir şey yazma.' },
+            { role: 'system', content: 'Sen profesyonel bir futbol analisti ve bahis uzmanısın. SADECE istenen JSON formatında yanıt ver.' },
             { role: 'user', content: analysisPrompt }
           ],
           temperature: 0.3,
           max_tokens: 1000
         })
       }),
-      // Gemini API
       fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Sen profesyonel bir futbol analisti ve bahis uzmanısın. SADECE istenen JSON formatında yanıt ver, başka hiçbir şey yazma.\n\n${analysisPrompt}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 1000
-          }
+          contents: [{ parts: [{ text: `Sen profesyonel bir futbol analisti. SADECE JSON formatında yanıt ver.\n\n${analysisPrompt}` }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
         })
       })
     ]);
@@ -120,52 +105,37 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
     const openaiData = await openaiRes.json();
     const geminiData = await geminiRes.json();
 
-    // Parse responses
     let claudePrediction, openaiPrediction, geminiPrediction;
     
     try {
       const claudeText = claudeData.content?.[0]?.text || '{}';
       claudePrediction = JSON.parse(claudeText.replace(/```json\n?|\n?```/g, '').trim());
-    } catch {
-      claudePrediction = null;
-    }
+    } catch { claudePrediction = null; }
     
     try {
       const openaiText = openaiData.choices?.[0]?.message?.content || '{}';
       openaiPrediction = JSON.parse(openaiText.replace(/```json\n?|\n?```/g, '').trim());
-    } catch {
-      openaiPrediction = null;
-    }
+    } catch { openaiPrediction = null; }
 
     try {
       const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
       geminiPrediction = JSON.parse(geminiText.replace(/```json\n?|\n?```/g, '').trim());
-    } catch {
-      geminiPrediction = null;
-    }
+    } catch { geminiPrediction = null; }
 
-    // Compare predictions and find consensus (2/3 or 3/3 agreement)
     const predictions = [claudePrediction, openaiPrediction, geminiPrediction].filter(p => p !== null);
     
-    let consensus = {
+    let consensus: any = {
       hasConsensus: false,
-      ms_tahmini: null as string | null,
-      ms_guven: 0,
-      ms_count: 0,
-      gol_tahmini: null as string | null,
-      gol_guven: 0,
-      gol_count: 0,
-      kg_tahmini: null as string | null,
-      kg_guven: 0,
-      kg_count: 0,
+      ms_tahmini: null, ms_guven: 0, ms_count: 0,
+      gol_tahmini: null, gol_guven: 0, gol_count: 0,
+      kg_tahmini: null, kg_guven: 0, kg_count: 0,
       skor_claude: claudePrediction?.skor || '',
       skor_openai: openaiPrediction?.skor || '',
       skor_gemini: geminiPrediction?.skor || '',
-      agreements: [] as string[],
-      disagreements: [] as string[]
+      agreements: [], disagreements: []
     };
 
-    // MS (Maç Sonucu) - need 2/3 agreement
+    // MS voting
     const msVotes: Record<string, number> = {};
     const msGuvens: Record<string, number[]> = {};
     predictions.forEach(p => {
@@ -175,13 +145,12 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
         msGuvens[p.ms_tahmini].push(p.ms_guven || 50);
       }
     });
-    
     for (const [ms, count] of Object.entries(msVotes)) {
       if (count >= 2) {
         consensus.ms_tahmini = ms;
         consensus.ms_guven = Math.round(msGuvens[ms].reduce((a, b) => a + b, 0) / msGuvens[ms].length);
         consensus.ms_count = count;
-        consensus.agreements.push(`MS: ${ms} (${count}/3 AI)`);
+        consensus.agreements.push(`MS: ${ms} (${count}/3)`);
         consensus.hasConsensus = true;
         break;
       }
@@ -190,7 +159,7 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
       consensus.disagreements.push(`MS: Claude=${claudePrediction?.ms_tahmini}, OpenAI=${openaiPrediction?.ms_tahmini}, Gemini=${geminiPrediction?.ms_tahmini}`);
     }
 
-    // Gol (Üst/Alt 2.5) - need 2/3 agreement
+    // Gol voting
     const golVotes: Record<string, number> = {};
     const golGuvens: Record<string, number[]> = {};
     predictions.forEach(p => {
@@ -200,13 +169,12 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
         golGuvens[p.gol_tahmini].push(p.gol_guven || 50);
       }
     });
-    
     for (const [gol, count] of Object.entries(golVotes)) {
       if (count >= 2) {
         consensus.gol_tahmini = gol;
         consensus.gol_guven = Math.round(golGuvens[gol].reduce((a, b) => a + b, 0) / golGuvens[gol].length);
         consensus.gol_count = count;
-        consensus.agreements.push(`2.5 Gol: ${gol} (${count}/3 AI)`);
+        consensus.agreements.push(`Gol: ${gol} (${count}/3)`);
         consensus.hasConsensus = true;
         break;
       }
@@ -215,7 +183,7 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
       consensus.disagreements.push(`Gol: Claude=${claudePrediction?.gol_tahmini}, OpenAI=${openaiPrediction?.gol_tahmini}, Gemini=${geminiPrediction?.gol_tahmini}`);
     }
 
-    // KG (Karşılıklı Gol) - need 2/3 agreement
+    // KG voting
     const kgVotes: Record<string, number> = {};
     const kgGuvens: Record<string, number[]> = {};
     predictions.forEach(p => {
@@ -225,13 +193,12 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
         kgGuvens[p.kg_var_mi].push(p.kg_guven || 50);
       }
     });
-    
     for (const [kg, count] of Object.entries(kgVotes)) {
       if (count >= 2) {
         consensus.kg_tahmini = kg;
         consensus.kg_guven = Math.round(kgGuvens[kg].reduce((a, b) => a + b, 0) / kgGuvens[kg].length);
         consensus.kg_count = count;
-        consensus.agreements.push(`KG: ${kg} (${count}/3 AI)`);
+        consensus.agreements.push(`KG: ${kg} (${count}/3)`);
         consensus.hasConsensus = true;
         break;
       }
@@ -240,68 +207,44 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
       consensus.disagreements.push(`KG: Claude=${claudePrediction?.kg_var_mi}, OpenAI=${openaiPrediction?.kg_var_mi}, Gemini=${geminiPrediction?.kg_var_mi}`);
     }
 
-    // Build final analysis text
-    let analysisText = `🤖 **3'LÜ AI ANALİZİ**\n`;
-    analysisText += `📊 ${homeTeamName} vs ${awayTeamName}\n\n`;
+    let analysisText = `🤖 **3'LÜ AI ANALİZİ**\n📊 ${homeTeamName} vs ${awayTeamName}\n\n`;
 
-    if (consensus.hasConsensus && consensus.agreements.length > 0) {
-      analysisText += `✅ **ORTAK TAHMİNLER (2/3 veya 3/3 Uzlaşı)**\n`;
-      analysisText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-      
+    if (consensus.agreements.length > 0) {
+      analysisText += `✅ **ORTAK TAHMİNLER**\n━━━━━━━━━━━━━━━━━━━━━\n`;
       if (consensus.ms_tahmini) {
         const msText = consensus.ms_tahmini === '1' ? homeTeamName : consensus.ms_tahmini === '2' ? awayTeamName : 'Beraberlik';
         const emoji = consensus.ms_count === 3 ? '🎯🎯🎯' : '🎯🎯';
-        analysisText += `${emoji} **Maç Sonucu:** ${msText} (${consensus.ms_tahmini}) - %${consensus.ms_guven} güven [${consensus.ms_count}/3 AI]\n`;
+        analysisText += `${emoji} **MS:** ${msText} (${consensus.ms_tahmini}) - %${consensus.ms_guven} [${consensus.ms_count}/3]\n`;
       }
-      
       if (consensus.gol_tahmini) {
         const emoji = consensus.gol_count === 3 ? '⚽⚽⚽' : '⚽⚽';
-        analysisText += `${emoji} **2.5 Gol:** ${consensus.gol_tahmini} 2.5 - %${consensus.gol_guven} güven [${consensus.gol_count}/3 AI]\n`;
+        analysisText += `${emoji} **2.5 Gol:** ${consensus.gol_tahmini} - %${consensus.gol_guven} [${consensus.gol_count}/3]\n`;
       }
-      
       if (consensus.kg_tahmini) {
         const emoji = consensus.kg_count === 3 ? '🥅🥅🥅' : '🥅🥅';
-        analysisText += `${emoji} **Karşılıklı Gol:** ${consensus.kg_tahmini} - %${consensus.kg_guven} güven [${consensus.kg_count}/3 AI]\n`;
+        analysisText += `${emoji} **KG:** ${consensus.kg_tahmini} - %${consensus.kg_guven} [${consensus.kg_count}/3]\n`;
       }
-      
       analysisText += `\n`;
     }
 
     if (consensus.disagreements.length > 0) {
-      analysisText += `⚠️ **UZLAŞI YOK (Riskli - Oynama!)**\n`;
-      analysisText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-      consensus.disagreements.forEach(d => {
-        analysisText += `❌ ${d}\n`;
-      });
+      analysisText += `⚠️ **UZLAŞI YOK**\n━━━━━━━━━━━━━━━━━━━━━\n`;
+      consensus.disagreements.forEach((d: string) => { analysisText += `❌ ${d}\n`; });
       analysisText += `\n`;
     }
 
-    analysisText += `📈 **SKOR TAHMİNLERİ**\n`;
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    analysisText += `🟠 Claude: ${consensus.skor_claude || 'Belirsiz'}\n`;
-    analysisText += `🟢 OpenAI: ${consensus.skor_openai || 'Belirsiz'}\n`;
-    analysisText += `🔵 Gemini: ${consensus.skor_gemini || 'Belirsiz'}\n\n`;
+    analysisText += `📈 **SKORLAR**\n━━━━━━━━━━━━━━━━━━━━━\n`;
+    analysisText += `🟠 Claude: ${consensus.skor_claude || '-'}\n`;
+    analysisText += `🟢 OpenAI: ${consensus.skor_openai || '-'}\n`;
+    analysisText += `🔵 Gemini: ${consensus.skor_gemini || '-'}\n\n`;
 
-    analysisText += `📝 **ANALİZ NOTLARI**\n`;
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    analysisText += `🟠 Claude: ${claudePrediction?.aciklama || 'Analiz yok'}\n\n`;
-    analysisText += `🟢 OpenAI: ${openaiPrediction?.aciklama || 'Analiz yok'}\n\n`;
-    analysisText += `🔵 Gemini: ${geminiPrediction?.aciklama || 'Analiz yok'}\n\n`;
+    analysisText += `📝 **NOTLAR**\n━━━━━━━━━━━━━━━━━━━━━\n`;
+    analysisText += `🟠 ${claudePrediction?.aciklama || '-'}\n`;
+    analysisText += `🟢 ${openaiPrediction?.aciklama || '-'}\n`;
+    analysisText += `🔵 ${geminiPrediction?.aciklama || '-'}\n\n`;
+    analysisText += `💡 *3/3 = Çok Güvenilir | 2/3 = Güvenilir*`;
 
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    analysisText += `💡 *3/3 = Çok Güvenilir | 2/3 = Güvenilir | Uzlaşı Yok = Riskli*`;
-
-    return NextResponse.json({
-      success: true,
-      analysis: analysisText,
-      consensus,
-      claudePrediction,
-      openaiPrediction,
-      geminiPrediction,
-      homeTeam: homeTeam.data,
-      awayTeam: awayTeam.data,
-      h2h: h2h.data
-    });
+    return NextResponse.json({ success: true, analysis: analysisText, consensus, claudePrediction, openaiPrediction, geminiPrediction });
     
   } catch (error: any) {
     console.error('Analyze API Error:', error);
