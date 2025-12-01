@@ -89,15 +89,27 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
           max_tokens: 1000
         })
       }),
-      fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Sen profesyonel bir futbol analisti. SADECE JSON formatında yanıt ver.\n\n${analysisPrompt}` }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+          contents: [{ 
+            parts: [{ 
+              text: `Sen bir futbol analisti. Aşağıdaki maç için TAHMİN yap. SADECE JSON formatında yanıt ver, AÇIKLAMA YAZMA:
+
+${analysisPrompt}
+
+ÖNEMLİ: Yanıtın SADECE şu JSON olsun, başka hiçbir şey yazma:
+{"ms_tahmini":"1","ms_guven":70,"gol_tahmini":"UST","gol_guven":65,"skor":"2-1","kg_var_mi":"VAR","kg_guven":70,"aciklama":"kısa not"}` 
+            }] 
+          }],
+          generationConfig: { 
+            temperature: 0.2, 
+            maxOutputTokens: 500,
+            responseMimeType: "application/json"
+          }
         })
       })
-    ]);
 
     const claudeData = await claudeRes.json();
     const openaiData = await openaiRes.json();
@@ -116,10 +128,13 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
     } catch { openaiPrediction = null; }
 
     try {
-      const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      let cleanedGemini = geminiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/^\s*[\r\n]/gm, '').trim();
-      const jsonMatch = cleanedGemini.match(/\{[\s\S]*\}/);
-      geminiPrediction = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (geminiText) {
+        const jsonMatch = geminiText.match(/\{[\s\S]*?\}/);
+        geminiPrediction = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      } else {
+        geminiPrediction = null;
+      }
     } catch { geminiPrediction = null; }
 
     const predictions = [claudePrediction, openaiPrediction, geminiPrediction].filter(p => p !== null);
