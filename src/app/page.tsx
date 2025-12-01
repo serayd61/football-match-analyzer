@@ -210,10 +210,10 @@ export default function Home() {
                 <div key={idx} className="grid grid-cols-12 items-center text-sm py-1">
                   <span className="col-span-1 text-gray-400">{team.position}</span>
                   <div className="col-span-6 flex items-center gap-2">
-                    {team.team.crest && (
+                    {team.team?.crest && (
                       <img src={team.team.crest} alt="" className="w-5 h-5" />
                     )}
-                    <span className="truncate">{team.team.name}</span>
+                    <span className="truncate">{team.team?.name || 'Unknown'}</span>
                   </div>
                   <span className="col-span-1 text-center text-gray-400">0</span>
                   <span className="col-span-1 text-center font-semibold">{team.points}</span>
