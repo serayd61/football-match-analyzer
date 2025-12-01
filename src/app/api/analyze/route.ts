@@ -1,6 +1,4 @@
-
 import { NextResponse } from 'next/server';
-
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
