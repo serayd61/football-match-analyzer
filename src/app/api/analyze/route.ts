@@ -117,7 +117,9 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
 
     try {
       const geminiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      geminiPrediction = JSON.parse(geminiText.replace(/```json\n?|\n?```/g, '').trim());
+      let cleanedGemini = geminiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').replace(/^\s*[\r\n]/gm, '').trim();
+      const jsonMatch = cleanedGemini.match(/\{[\s\S]*\}/);
+      geminiPrediction = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
     } catch { geminiPrediction = null; }
 
     const predictions = [claudePrediction, openaiPrediction, geminiPrediction].filter(p => p !== null);
