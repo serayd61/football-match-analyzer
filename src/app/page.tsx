@@ -206,13 +206,24 @@ export default function Home() {
                 <span className="col-span-1 text-center">P</span>
                 <span className="col-span-3 text-center">Form</span>
               </div>
-              {standings.slice(0, 15).map((team, idx) => (
-                <div key={idx} className="grid grid-cols-12 items-center text-sm py-1">
-                  <span className="col-span-1 text-gray-400">{team.position}</span>
-                  <div className="col-span-6 flex items-center gap-2">
-                    {team.team?.crest && (
-                      <img src={team.team.crest} alt="" className="w-5 h-5" />
-                    )}
+              {standings.slice(0, 15).map((team: any, idx: number) => (
+  <div key={idx} className="grid grid-cols-12 items-center text-sm py-1">
+    <span className="col-span-1 text-gray-400">{team.position}</span>
+    <div className="col-span-6 flex items-center gap-2">
+      {team.teamCrest && (
+        <img src={team.teamCrest} alt="" className="w-5 h-5" />
+      )}
+      <span className="truncate">{team.teamName}</span>
+    </div>
+    <span className="col-span-1 text-center text-gray-400">{team.played || 0}</span>
+    <span className="col-span-1 text-center font-semibold">{team.points}</span>
+    <div className="col-span-3 flex justify-center gap-1">
+      {team.form === 'up' && <span className="text-green-500">▲</span>}
+      {team.form === 'down' && <span className="text-red-500">▼</span>}
+      {team.form === 'equal' && <span className="text-yellow-500">●</span>}
+    </div>
+  </div>
+))}
                     <span className="truncate">{team.team?.name || 'Unknown'}</span>
                   </div>
                   <span className="col-span-1 text-center text-gray-400">0</span>
