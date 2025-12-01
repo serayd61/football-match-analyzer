@@ -110,6 +110,9 @@ ${analysisPrompt}
           }
         })
       })
+    ]);
+
+    const claudeData = await claudeRes.json();
 
     const claudeData = await claudeRes.json();
     const openaiData = await openaiRes.json();
