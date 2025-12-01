@@ -2,60 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-const LEAGUES: Record<string, number> = {
-  premier_league: 8,
-  championship: 9,
-  fa_cup: 24,
-  carabao_cup: 27,
-  la_liga: 564,
-  la_liga_2: 567,
-  copa_del_rey: 570,
-  serie_a: 384,
-  serie_b: 387,
-  coppa_italia: 390,
-  bundesliga: 82,
-  ligue_1: 301,
-  eredivisie: 72,
-  liga_portugal: 462,
-  super_lig: 600,
-  pro_league: 208,
-  austria_bundesliga: 181,
-  super_league_ch: 591,
-  scottish_premiership: 501,
-  superliga_dk: 271,
-  eliteserien: 444,
-  allsvenskan: 573,
-  ekstraklasa: 453,
-  hnl: 244,
-  russia_premier: 486,
-  ukraine_premier: 609,
-};
-
-const SEASONS: Record<string, number> = {
-  premier_league: 25583,
-  championship: 25648,
-  la_liga: 25659,
-  la_liga_2: 25673,
-  serie_a: 25533,
-  serie_b: 26164,
-  bundesliga: 25646,
-  ligue_1: 25651,
-  eredivisie: 25597,
-  liga_portugal: 25745,
-  super_lig: 25682,
-  pro_league: 25608,
-  austria_bundesliga: 25544,
-  super_league_ch: 25667,
-  scottish_premiership: 25600,
-  superliga_dk: 25629,
-  eliteserien: 25598,
-  allsvenskan: 25613,
-  ekstraklasa: 25535,
-  hnl: 25584,
-  russia_premier: 25599,
-  ukraine_premier: 25675,
-};
-
 const LEAGUE_BUTTONS = [
   { key: 'premier_league', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   { key: 'championship', name: 'Championship', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -93,9 +39,11 @@ interface Match {
 
 interface Standing {
   position: number;
-  team: { name: string; crest: string };
+  teamName: string;
+  teamCrest: string;
+  played: number;
   points: number;
-  form: string[];
+  form: string;
 }
 
 export default function Home() {
@@ -201,44 +149,24 @@ export default function Home() {
             <div className="space-y-2">
               <div className="grid grid-cols-12 text-xs text-gray-400 pb-2 border-b border-gray-700">
                 <span className="col-span-1">#</span>
-                <span className="col-span-6">Takım</span>
-                <span className="col-span-1 text-center">O</span>
-                <span className="col-span-1 text-center">P</span>
-                <span className="col-span-3 text-center">Form</span>
+                <span className="col-span-7">Takım</span>
+                <span className="col-span-2 text-center">P</span>
+                <span className="col-span-2 text-center">Form</span>
               </div>
               {standings.slice(0, 15).map((team: any, idx: number) => (
-  <div key={idx} className="grid grid-cols-12 items-center text-sm py-1">
-    <span className="col-span-1 text-gray-400">{team.position}</span>
-    <div className="col-span-6 flex items-center gap-2">
-      {team.teamCrest && (
-        <img src={team.teamCrest} alt="" className="w-5 h-5" />
-      )}
-      <span className="truncate">{team.teamName}</span>
-    </div>
-    <span className="col-span-1 text-center text-gray-400">{team.played || 0}</span>
-    <span className="col-span-1 text-center font-semibold">{team.points}</span>
-    <div className="col-span-3 flex justify-center gap-1">
-      {team.form === 'up' && <span className="text-green-500">▲</span>}
-      {team.form === 'down' && <span className="text-red-500">▼</span>}
-      {team.form === 'equal' && <span className="text-yellow-500">●</span>}
-    </div>
-  </div>
-))}
-                    <span className="truncate">{team.team?.name || 'Unknown'}</span>
+                <div key={idx} className="grid grid-cols-12 items-center text-sm py-1">
+                  <span className="col-span-1 text-gray-400">{team.position}</span>
+                  <div className="col-span-7 flex items-center gap-2">
+                    {team.teamCrest && (
+                      <img src={team.teamCrest} alt="" className="w-5 h-5" />
+                    )}
+                    <span className="truncate">{team.teamName}</span>
                   </div>
-                  <span className="col-span-1 text-center text-gray-400">0</span>
-                  <span className="col-span-1 text-center font-semibold">{team.points}</span>
-                  <div className="col-span-3 flex justify-center gap-1">
-                    {team.form?.slice(0, 5).map((f, i) => (
-                      <span
-                        key={i}
-                        className={`w-4 h-4 rounded text-xs flex items-center justify-center ${
-                          f === 'W' ? 'bg-green-600' : f === 'D' ? 'bg-yellow-600' : 'bg-red-600'
-                        }`}
-                      >
-                        {f}
-                      </span>
-                    ))}
+                  <span className="col-span-2 text-center font-semibold">{team.points}</span>
+                  <div className="col-span-2 flex justify-center">
+                    {team.form === 'up' && <span className="text-green-500">▲</span>}
+                    {team.form === 'down' && <span className="text-red-500">▼</span>}
+                    {team.form === 'equal' && <span className="text-yellow-500">●</span>}
                   </div>
                 </div>
               ))}
