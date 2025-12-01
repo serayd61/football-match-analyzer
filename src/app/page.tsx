@@ -234,6 +234,7 @@ export default function Home() {
         <footer className="text-center mt-8 text-gray-500 text-xs">
           <p>⚽ Football Match Analyzer - AI Destekli Maç Analizi</p>
           <p>Veriler: Sportmonks Pro API | AI: Claude / OpenAI / Gemini</p>
+          <p className="mt-2">Bu site Serkan Aydın tarafından yapılmıştır 🚀</p>
         </footer>
       </div>
     </div>
