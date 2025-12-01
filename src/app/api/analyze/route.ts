@@ -1,4 +1,4 @@
-cat > src/app/api/analyze/route.ts << 'EOF'
+
 import { NextResponse } from 'next/server';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
@@ -251,4 +251,4 @@ SADECE şu formatta JSON yanıt ver, başka hiçbir şey yazma:
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-EOF
+
