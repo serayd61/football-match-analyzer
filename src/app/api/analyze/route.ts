@@ -1,5 +1,5 @@
 // src/app/api/analyze/route.ts
-// ODDS ENTEGRASYONlu VERSİYON - Value Betting Analizi ile AI Güçlendirme
+// DÜZELTILMIŞ VERSİYON - matchId/fixtureId uyumu + Odds Entegrasyonu
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
@@ -14,7 +14,7 @@ const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const SPORTMONKS_BASE = 'https://api.sportmonks.com/v3/football';
 
 // ============================================
-// ODDS TİPLERİ VE MARKET ID'LERİ
+// ODDS TİPLERİ
 // ============================================
 interface OddsData {
   matchWinner: {
@@ -37,60 +37,35 @@ interface OddsData {
     yesProb: number;
     noProb: number;
   } | null;
-  asianHandicap: {
-    line: string;
-    home: number;
-    away: number;
-  } | null;
   doubleChance: {
     homeOrDraw: number;
     awayOrDraw: number;
     homeOrAway: number;
   } | null;
-  correctScore: {
-    [key: string]: number;
-  };
+  correctScore: { [key: string]: number };
   bookmakerConsensus: string;
-  valueOpportunities: ValueOpportunity[];
-}
-
-interface ValueOpportunity {
-  market: string;
-  selection: string;
-  odds: number;
-  impliedProb: number;
-  estimatedTrueProb: number;
-  valuePercent: number;
-  recommendation: string;
 }
 
 // Market ID'leri (Sportmonks)
 const MARKET_IDS = {
-  MATCH_WINNER: 1,        // 1X2
-  OVER_UNDER: 18,         // Over/Under
-  BTTS: 28,               // Both Teams to Score
-  ASIAN_HANDICAP: 12,     // Asian Handicap
-  DOUBLE_CHANCE: 17,      // Double Chance
-  CORRECT_SCORE: 57,      // Correct Score
-  HT_RESULT: 45,          // Half Time Result
-  HT_FT: 59,              // Half Time / Full Time
+  MATCH_WINNER: 1,
+  OVER_UNDER: 18,
+  BTTS: 28,
+  DOUBLE_CHANCE: 17,
+  CORRECT_SCORE: 57,
 };
 
-// Bookmaker öncelik sırası (güvenilirlik)
-const BOOKMAKER_PRIORITY = [2, 1, 5, 6, 9, 15, 23, 29, 35]; // 2=Bet365 genelde
+const BOOKMAKER_PRIORITY = [2, 1, 5, 6, 9, 15, 23, 29, 35];
 
 // ============================================
-// ODDS ÇEKME FONKSİYONU
+// ODDS ÇEKME
 // ============================================
 async function fetchFixtureOdds(fixtureId: number): Promise<OddsData | null> {
   try {
     const url = `${SPORTMONKS_BASE}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds`;
     console.log(`📊 Fetching odds for fixture ${fixtureId}...`);
     
-    const response = await fetch(url, { 
-      next: { revalidate: 300 }, // 5 dk cache
-      headers: { 'Accept': 'application/json' }
-    });
+    const response = await fetch(url, { cache: 'no-store' });
     
     if (!response.ok) {
       console.error(`Odds fetch failed: ${response.status}`);
@@ -101,52 +76,42 @@ async function fetchFixtureOdds(fixtureId: number): Promise<OddsData | null> {
     const odds = data.data?.odds || [];
     
     if (odds.length === 0) {
-      console.log('No odds available for this fixture');
+      console.log('No odds available');
       return null;
     }
     
     console.log(`✅ Found ${odds.length} odds entries`);
     return parseOdds(odds);
-    
   } catch (error) {
     console.error('Error fetching odds:', error);
     return null;
   }
 }
 
-// ============================================
-// ODDS PARSE FONKSİYONU
-// ============================================
 function parseOdds(oddsArray: any[]): OddsData {
   const result: OddsData = {
     matchWinner: null,
     overUnder: null,
     btts: null,
-    asianHandicap: null,
     doubleChance: null,
     correctScore: {},
-    bookmakerConsensus: '',
-    valueOpportunities: []
+    bookmakerConsensus: ''
   };
   
-  // Bookmaker'a göre grupla ve en güvenilir olanı seç
   const groupedByMarket: { [key: number]: any[] } = {};
-  
   for (const odd of oddsArray) {
     const marketId = odd.market_id;
-    if (!groupedByMarket[marketId]) {
-      groupedByMarket[marketId] = [];
-    }
+    if (!groupedByMarket[marketId]) groupedByMarket[marketId] = [];
     groupedByMarket[marketId].push(odd);
   }
   
   // 1X2 Match Winner
-  const matchWinnerOdds = groupedByMarket[MARKET_IDS.MATCH_WINNER] || [];
-  if (matchWinnerOdds.length > 0) {
-    const bestOdds = selectBestBookmaker(matchWinnerOdds);
-    const home = bestOdds.find((o: any) => o.label === '1' || o.label === 'Home');
-    const draw = bestOdds.find((o: any) => o.label === 'X' || o.label === 'Draw');
-    const away = bestOdds.find((o: any) => o.label === '2' || o.label === 'Away');
+  const mwOdds = groupedByMarket[MARKET_IDS.MATCH_WINNER] || [];
+  if (mwOdds.length > 0) {
+    const best = selectBestBookmaker(mwOdds);
+    const home = best.find((o: any) => o.label === '1' || o.label === 'Home');
+    const draw = best.find((o: any) => o.label === 'X' || o.label === 'Draw');
+    const away = best.find((o: any) => o.label === '2' || o.label === 'Away');
     
     if (home && draw && away) {
       result.matchWinner = {
@@ -164,9 +129,9 @@ function parseOdds(oddsArray: any[]): OddsData {
   const ouOdds = groupedByMarket[MARKET_IDS.OVER_UNDER] || [];
   const ou25 = ouOdds.filter((o: any) => o.total === '2.5' || o.name?.includes('2.5'));
   if (ou25.length > 0) {
-    const bestOU = selectBestBookmaker(ou25);
-    const over = bestOU.find((o: any) => o.label === 'Over' || o.label === 'Üst');
-    const under = bestOU.find((o: any) => o.label === 'Under' || o.label === 'Alt');
+    const best = selectBestBookmaker(ou25);
+    const over = best.find((o: any) => o.label === 'Over');
+    const under = best.find((o: any) => o.label === 'Under');
     
     if (over && under) {
       result.overUnder = {
@@ -178,12 +143,12 @@ function parseOdds(oddsArray: any[]): OddsData {
     }
   }
   
-  // Both Teams to Score
+  // BTTS
   const bttsOdds = groupedByMarket[MARKET_IDS.BTTS] || [];
   if (bttsOdds.length > 0) {
-    const bestBTTS = selectBestBookmaker(bttsOdds);
-    const yes = bestBTTS.find((o: any) => o.label === 'Yes' || o.label === 'Evet');
-    const no = bestBTTS.find((o: any) => o.label === 'No' || o.label === 'Hayır');
+    const best = selectBestBookmaker(bttsOdds);
+    const yes = best.find((o: any) => o.label === 'Yes');
+    const no = best.find((o: any) => o.label === 'No');
     
     if (yes && no) {
       result.btts = {
@@ -195,337 +160,175 @@ function parseOdds(oddsArray: any[]): OddsData {
     }
   }
   
-  // Double Chance
-  const dcOdds = groupedByMarket[MARKET_IDS.DOUBLE_CHANCE] || [];
-  if (dcOdds.length > 0) {
-    const bestDC = selectBestBookmaker(dcOdds);
-    const homeOrDraw = bestDC.find((o: any) => o.label?.includes('1X') || o.label?.includes('Home or Draw'));
-    const awayOrDraw = bestDC.find((o: any) => o.label?.includes('X2') || o.label?.includes('Draw or Away'));
-    const homeOrAway = bestDC.find((o: any) => o.label?.includes('12') || o.label?.includes('Home or Away'));
-    
-    if (homeOrDraw || awayOrDraw || homeOrAway) {
-      result.doubleChance = {
-        homeOrDraw: homeOrDraw ? parseFloat(homeOrDraw.value) : 0,
-        awayOrDraw: awayOrDraw ? parseFloat(awayOrDraw.value) : 0,
-        homeOrAway: homeOrAway ? parseFloat(homeOrAway.value) : 0
-      };
-    }
-  }
-  
-  // Correct Score (en popüler 5 skor)
+  // Correct Score
   const csOdds = groupedByMarket[MARKET_IDS.CORRECT_SCORE] || [];
   if (csOdds.length > 0) {
-    const bestCS = selectBestBookmaker(csOdds);
-    const sortedCS = bestCS
+    const best = selectBestBookmaker(csOdds);
+    const sorted = best
       .filter((o: any) => o.name && o.value)
       .sort((a: any, b: any) => parseFloat(a.value) - parseFloat(b.value))
       .slice(0, 10);
     
-    for (const cs of sortedCS) {
+    for (const cs of sorted) {
       result.correctScore[cs.name] = parseFloat(cs.value);
     }
   }
   
-  // Bookmaker Consensus (favori analizi)
   result.bookmakerConsensus = generateConsensus(result);
-  
-  // Value Opportunities
-  result.valueOpportunities = findValueOpportunities(result);
-  
   return result;
 }
 
-// En güvenilir bookmaker'ı seç
 function selectBestBookmaker(odds: any[]): any[] {
-  for (const bookmakerId of BOOKMAKER_PRIORITY) {
-    const filtered = odds.filter((o: any) => o.bookmaker_id === bookmakerId);
+  for (const id of BOOKMAKER_PRIORITY) {
+    const filtered = odds.filter((o: any) => o.bookmaker_id === id);
     if (filtered.length > 0) return filtered;
   }
-  return odds.slice(0, 10); // Fallback
+  return odds.slice(0, 10);
 }
 
-// Bookmaker consensus oluştur
 function generateConsensus(odds: OddsData): string {
   const insights: string[] = [];
   
   if (odds.matchWinner) {
     const mw = odds.matchWinner;
-    if (mw.homeProb > 55) {
-      insights.push(`Ev sahibi güçlü favori (%${mw.homeProb.toFixed(0)} implied prob)`);
-    } else if (mw.awayProb > 45) {
-      insights.push(`Deplasman ciddi şanslar görüyor (%${mw.awayProb.toFixed(0)})`);
-    } else if (mw.drawProb > 30) {
-      insights.push(`Beraberlik olasılığı yüksek (%${mw.drawProb.toFixed(0)})`);
-    }
-    
-    // Oran dengesizliği
-    const spread = Math.abs(mw.home - mw.away);
-    if (spread > 3) {
-      insights.push(`Büyük güç farkı var (oran farkı: ${spread.toFixed(2)})`);
-    }
+    if (mw.homeProb > 55) insights.push(`Ev sahibi favori (%${mw.homeProb.toFixed(0)})`);
+    else if (mw.awayProb > 45) insights.push(`Deplasman şanslı (%${mw.awayProb.toFixed(0)})`);
+    else if (mw.drawProb > 30) insights.push(`Beraberlik olası (%${mw.drawProb.toFixed(0)})`);
   }
   
   if (odds.overUnder) {
-    const ou = odds.overUnder;
-    if (ou.overProb > 55) {
-      insights.push(`Gollü maç beklentisi yüksek (2.5 Üst: %${ou.overProb.toFixed(0)})`);
-    } else if (ou.underProb > 55) {
-      insights.push(`Düşük skorlu maç bekleniyor (2.5 Alt: %${ou.underProb.toFixed(0)})`);
-    }
+    if (odds.overUnder.overProb > 55) insights.push(`Gollü maç bekleniyor`);
+    else if (odds.overUnder.underProb > 55) insights.push(`Az gollü maç bekleniyor`);
   }
   
-  if (odds.btts) {
-    if (odds.btts.yesProb > 55) {
-      insights.push(`Her iki takım da gol atacak beklentisi güçlü (%${odds.btts.yesProb.toFixed(0)})`);
-    }
+  if (odds.btts && odds.btts.yesProb > 55) {
+    insights.push(`KG Var beklentisi güçlü`);
   }
   
-  return insights.join('. ') || 'Dengeli oran dağılımı, net favori yok.';
-}
-
-// Value betting fırsatları bul
-function findValueOpportunities(odds: OddsData): ValueOpportunity[] {
-  const opportunities: ValueOpportunity[] = [];
-  
-  // Basit value detection - düşük margin marketlerde
-  if (odds.matchWinner) {
-    const mw = odds.matchWinner;
-    const totalProb = mw.homeProb + mw.drawProb + mw.awayProb;
-    const margin = totalProb - 100;
-    
-    // Düşük marginli bookmaker = daha doğru oranlar
-    if (margin < 8) {
-      // Büyük favori value check
-      if (mw.home < 1.40 && mw.homeProb > 70) {
-        opportunities.push({
-          market: 'Match Winner',
-          selection: 'Home',
-          odds: mw.home,
-          impliedProb: mw.homeProb,
-          estimatedTrueProb: mw.homeProb + 3, // Favori genelde underrated
-          valuePercent: 3,
-          recommendation: 'Düşük oranlı favori - ihtiyatlı ol'
-        });
-      }
-      
-      // Underdog value check
-      if (mw.away > 4.0) {
-        opportunities.push({
-          market: 'Match Winner',
-          selection: 'Away',
-          odds: mw.away,
-          impliedProb: mw.awayProb,
-          estimatedTrueProb: mw.awayProb * 1.1, // Underdog genelde overpriced
-          valuePercent: -10,
-          recommendation: 'Yüksek oranlı underdog - risk yüksek'
-        });
-      }
-    }
-  }
-  
-  return opportunities;
+  return insights.join('. ') || 'Dengeli oranlar';
 }
 
 // ============================================
-// ANA ANALİZ FONKSİYONU (ODDS DAHİL)
+// MAÇ VERİSİ ÇEKME
 // ============================================
-async function fetchMatchDataWithOdds(fixtureId: number) {
-  const includes = [
-    'participants',
-    'scores',
-    'statistics',
-    'events',
-    'lineups',
-    'venue'
-  ].join(';');
-  
-  const fixtureUrl = `${SPORTMONKS_BASE}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=${includes}`;
+async function fetchMatchData(fixtureId: number) {
+  const includes = 'participants;scores;statistics;events;lineups;venue';
+  const url = `${SPORTMONKS_BASE}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=${includes}`;
   
   try {
     const [fixtureRes, oddsData] = await Promise.all([
-      fetch(fixtureUrl),
+      fetch(url, { cache: 'no-store' }),
       fetchFixtureOdds(fixtureId)
     ]);
     
-    const fixtureData = await fixtureRes.json();
+    if (!fixtureRes.ok) {
+      throw new Error(`Fixture fetch failed: ${fixtureRes.status}`);
+    }
     
-    return {
-      fixture: fixtureData.data,
-      odds: oddsData
-    };
+    const fixtureData = await fixtureRes.json();
+    return { fixture: fixtureData.data, odds: oddsData };
   } catch (error) {
-    console.error('Error fetching match data with odds:', error);
+    console.error('Error fetching match data:', error);
     throw error;
   }
 }
 
 // ============================================
-// AI PROMPT (ODDS BİLGİSİ DAHİL)
+// AI PROMPT
 // ============================================
-function buildAggressivePrompt(
-  homeTeam: string,
-  awayTeam: string,
-  matchData: any,
-  oddsData: OddsData | null
-): string {
+function buildPrompt(homeTeam: string, awayTeam: string, matchData: any, oddsData: OddsData | null): string {
   let oddsSection = '';
   
   if (oddsData) {
     oddsSection = `
-## 📊 BAHİS ORANLARI ANALİZİ (ÇOK ÖNEMLİ!)
-
-Bahis şirketlerinin bu maç için belirlediği oranlar:
+## 📊 BAHİS ORANLARI (ÇOK ÖNEMLİ!)
 
 ### Maç Sonucu (1X2):
 ${oddsData.matchWinner ? `
-- Ev Sahibi (${homeTeam}): ${oddsData.matchWinner.home} → %${oddsData.matchWinner.homeProb.toFixed(1)} implied probability
-- Beraberlik: ${oddsData.matchWinner.draw} → %${oddsData.matchWinner.drawProb.toFixed(1)} implied probability  
-- Deplasman (${awayTeam}): ${oddsData.matchWinner.away} → %${oddsData.matchWinner.awayProb.toFixed(1)} implied probability
-` : 'Veri yok'}
+- ${homeTeam}: ${oddsData.matchWinner.home} (${oddsData.matchWinner.homeProb.toFixed(0)}%)
+- Beraberlik: ${oddsData.matchWinner.draw} (${oddsData.matchWinner.drawProb.toFixed(0)}%)
+- ${awayTeam}: ${oddsData.matchWinner.away} (${oddsData.matchWinner.awayProb.toFixed(0)}%)` : 'Veri yok'}
 
 ### 2.5 Gol Üst/Alt:
 ${oddsData.overUnder ? `
-- 2.5 Üst: ${oddsData.overUnder.over25} → %${oddsData.overUnder.overProb.toFixed(1)} gollü maç olasılığı
-- 2.5 Alt: ${oddsData.overUnder.under25} → %${oddsData.overUnder.underProb.toFixed(1)} az gollü maç olasılığı
-` : 'Veri yok'}
+- Üst 2.5: ${oddsData.overUnder.over25} (${oddsData.overUnder.overProb.toFixed(0)}%)
+- Alt 2.5: ${oddsData.overUnder.under25} (${oddsData.overUnder.underProb.toFixed(0)}%)` : 'Veri yok'}
 
-### Karşılıklı Gol (KG):
+### KG Var/Yok:
 ${oddsData.btts ? `
-- KG Var: ${oddsData.btts.yes} → %${oddsData.btts.yesProb.toFixed(1)}
-- KG Yok: ${oddsData.btts.no} → %${oddsData.btts.noProb.toFixed(1)}
-` : 'Veri yok'}
+- KG Var: ${oddsData.btts.yes} (${oddsData.btts.yesProb.toFixed(0)}%)
+- KG Yok: ${oddsData.btts.no} (${oddsData.btts.noProb.toFixed(0)}%)` : 'Veri yok'}
 
-### Çifte Şans:
-${oddsData.doubleChance ? `
-- 1X (Ev veya Beraberlik): ${oddsData.doubleChance.homeOrDraw}
-- X2 (Beraberlik veya Deplasman): ${oddsData.doubleChance.awayOrDraw}
-- 12 (Ev veya Deplasman): ${oddsData.doubleChance.homeOrAway}
-` : 'Veri yok'}
+### En Olası Skorlar:
+${Object.entries(oddsData.correctScore).slice(0, 5).map(([s, o]) => `- ${s}: ${o}`).join('\n') || 'Veri yok'}
 
-### En Olası Skorlar (Bahis Şirketlerine Göre):
-${Object.keys(oddsData.correctScore).length > 0 ? 
-  Object.entries(oddsData.correctScore)
-    .slice(0, 5)
-    .map(([score, odds]) => `- ${score}: ${odds}`)
-    .join('\n')
-  : 'Veri yok'}
+### 🎯 Bookmaker Görüşü: ${oddsData.bookmakerConsensus}
 
-### 🎯 BOOKMAKER CONSENSUS:
-${oddsData.bookmakerConsensus}
-
----
-⚠️ ÖNEMLİ TALİMAT:
-Bahis oranları profesyonel analistlerin ve algoritmaların sonucudur. 
-Bu oranları KESİNLİKLE dikkate al ve kendi analizinle birleştir.
-
-- Eğer senin analizin bahis oranlarıyla UYUŞUYORSA → %70+ güvenle tahmin yap
-- Eğer senin analizin bahis oranlarından FARKLIYSA → Nedenini açıkla ve ihtiyatlı ol
-- Eğer bahis şirketleri net favori gösteriyorsa → Bu bilgiyi görmezden gelme
-
-VALUE BETTING KURALI:
-- Kendi olasılık tahminin > Bahis şirketinin implied probability → VALUE VAR, agresif ol
-- Kendi olasılık tahminin < Bahis şirketinin implied probability → VALUE YOK, ihtiyatlı ol
+⚠️ KURAL: Bahis oranlarını dikkate al! Oranlarla uyumluysan güveni artır, değilsen açıkla.
 `;
   }
-  
-  return `
-Sen elit bir futbol analiz uzmanısın. Bahis şirketlerinin oranlarını ve istatistikleri birleştirerek EN İYİ tahminleri yapacaksın.
 
-# MAÇ: ${homeTeam} vs ${awayTeam}
+  return `Sen elit futbol analistisin. ${homeTeam} vs ${awayTeam} maçını analiz et.
 
 ${oddsSection}
 
 ## Maç Verileri:
 ${JSON.stringify(matchData, null, 2)}
 
----
-
-# GÖREV:
-Yukarıdaki tüm verileri analiz et ve aşağıdaki formatta JSON döndür.
-
-⚠️ AGRESİF OL: Bahis oranları net bir favori gösteriyorsa, güven yüzdesini yüksek tut.
-⚠️ VALUE ARA: Senin analizin ile bahis oranları arasındaki farkları tespit et.
-⚠️ DETAYLI AÇIKLA: Neden bu tahmini yaptığını bahis oranlarına referans vererek açıkla.
+Aşağıdaki JSON formatında yanıt ver:
 
 {
   "matchResult": {
-    "prediction": "1" | "X" | "2",
-    "confidence": number (0-100),
-    "odds": number, // Bahis oranı
-    "impliedProbability": number, // Bahis şirketinin olasılığı
-    "yourProbability": number, // Senin tahminin
-    "valuePercent": number, // Fark (+ value var, - value yok)
-    "reasoning": "string - BAHIS ORANLARINA REFERANS VER"
+    "prediction": "1" veya "X" veya "2",
+    "confidence": 0-100,
+    "reasoning": "açıklama"
   },
   "goals": {
-    "over25": boolean,
-    "confidence": number,
-    "odds": number,
-    "impliedProbability": number,
-    "yourProbability": number,
-    "valuePercent": number,
-    "expectedGoals": number,
-    "reasoning": "string"
+    "over25": true/false,
+    "confidence": 0-100,
+    "expectedGoals": sayı,
+    "reasoning": "açıklama"
   },
   "btts": {
-    "prediction": boolean,
-    "confidence": number,
-    "odds": number,
-    "impliedProbability": number,
-    "yourProbability": number,
-    "valuePercent": number,
-    "reasoning": "string"
+    "prediction": true/false,
+    "confidence": 0-100,
+    "reasoning": "açıklama"
   },
   "corners": {
-    "over95": boolean,
-    "confidence": number,
-    "expectedCorners": number,
-    "reasoning": "string"
+    "over95": true/false,
+    "confidence": 0-100,
+    "expectedCorners": sayı,
+    "reasoning": "açıklama"
   },
   "cards": {
-    "over35": boolean,
-    "confidence": number,
-    "expectedCards": number,
-    "reasoning": "string"
+    "over35": true/false,
+    "confidence": 0-100,
+    "expectedCards": sayı,
+    "reasoning": "açıklama"
   },
   "firstHalf": {
-    "prediction": "1" | "X" | "2",
-    "over05": boolean,
-    "confidence": number,
-    "reasoning": "string"
+    "prediction": "1" veya "X" veya "2",
+    "over05": true/false,
+    "confidence": 0-100,
+    "reasoning": "açıklama"
   },
   "correctScore": {
-    "prediction": "string", // ör: "2-1"
-    "confidence": number,
-    "bookmakerOdds": number, // Bu skor için bahis oranı
-    "reasoning": "string"
+    "prediction": "2-1",
+    "confidence": 0-100,
+    "reasoning": "açıklama"
   },
-  "htFt": {
-    "prediction": "string", // ör: "1/1", "X/2"
-    "confidence": number,
-    "reasoning": "string"
-  },
-  "riskLevel": "LOW" | "MEDIUM" | "HIGH",
+  "riskLevel": "LOW" veya "MEDIUM" veya "HIGH",
   "bestBets": [
-    {
-      "market": "string",
-      "selection": "string",
-      "odds": number,
-      "confidence": number,
-      "valuePercent": number,
-      "reasoning": "string"
-    }
+    {"market": "...", "selection": "...", "confidence": 0-100, "reasoning": "..."}
   ],
-  "avoidBets": ["string"], // Uzak durulması gereken bahisler
-  "overallAnalysis": "string - Genel değerlendirme, bahis oranları ile senin analizini karşılaştır"
+  "overallAnalysis": "genel değerlendirme"
 }
 
-SADECE JSON DÖNDÜR, BAŞKA HİÇBİR ŞEY YAZMA.
-`;
+SADECE JSON DÖNDÜR.`;
 }
 
 // ============================================
-// AI ANALİZ FONKSİYONLARI
+// AI ANALİZ
 // ============================================
 async function analyzeWithClaude(prompt: string): Promise<any> {
   try {
@@ -537,12 +340,13 @@ async function analyzeWithClaude(prompt: string): Promise<any> {
     
     const content = response.content[0];
     if (content.type === 'text') {
-      return JSON.parse(content.text.replace(/```json\n?|\n?```/g, '').trim());
+      const text = content.text.replace(/```json\n?|\n?```/g, '').trim();
+      return JSON.parse(text);
     }
-    throw new Error('Invalid response format');
+    throw new Error('Invalid response');
   } catch (error) {
     console.error('Claude error:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -556,13 +360,11 @@ async function analyzeWithOpenAI(prompt: string): Promise<any> {
     });
     
     const content = response.choices[0]?.message?.content;
-    if (content) {
-      return JSON.parse(content);
-    }
-    throw new Error('Invalid response format');
+    if (content) return JSON.parse(content);
+    throw new Error('Invalid response');
   } catch (error) {
     console.error('OpenAI error:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -571,123 +373,70 @@ async function analyzeWithGemini(prompt: string): Promise<any> {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-    
-    // JSON'u çıkar
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    throw new Error('No JSON found in response');
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    throw new Error('No JSON found');
   } catch (error) {
     console.error('Gemini error:', error);
-    throw error;
+    return null;
   }
 }
 
 // ============================================
-// CONSENSUS OLUŞTUR
+// CONSENSUS
 // ============================================
-function buildConsensus(
-  claudeResult: any,
-  openaiResult: any,
-  geminiResult: any,
-  oddsData: OddsData | null
-): any {
-  const results = [claudeResult, openaiResult, geminiResult].filter(r => r);
+function buildConsensusResult(claude: any, openai_r: any, gemini: any, odds: OddsData | null): any {
+  const results = [claude, openai_r, gemini].filter(r => r);
   
   if (results.length === 0) {
-    throw new Error('No AI results available');
+    return { error: 'Tüm AI analizleri başarısız oldu' };
   }
   
-  // Maç sonucu consensus
-  const matchPredictions = results.map(r => r.matchResult?.prediction).filter(p => p);
-  const matchConsensus = getMajority(matchPredictions);
+  const matchPreds = results.map(r => r.matchResult?.prediction).filter(Boolean);
+  const goalPreds = results.map(r => r.goals?.over25);
+  const bttsPreds = results.map(r => r.btts?.prediction);
   
-  // Güven ortalaması
-  const matchConfidences = results.map(r => r.matchResult?.confidence || 0);
-  const avgConfidence = matchConfidences.reduce((a, b) => a + b, 0) / matchConfidences.length;
+  const getMajority = (arr: string[]) => {
+    const counts: Record<string, number> = {};
+    arr.forEach(x => counts[x] = (counts[x] || 0) + 1);
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+  };
   
-  // 2.5 gol consensus
-  const goalPredictions = results.map(r => r.goals?.over25);
-  const goalsConsensus = getMajorityBoolean(goalPredictions);
+  const getMajorityBool = (arr: boolean[]) => arr.filter(x => x).length > arr.length / 2;
   
-  // BTTS consensus
-  const bttsPredictions = results.map(r => r.btts?.prediction);
-  const bttsConsensus = getMajorityBoolean(bttsPredictions);
-  
-  // Best bets - tüm AI'lardan topla ve sırala
-  const allBestBets: any[] = [];
-  for (const result of results) {
-    if (result.bestBets) {
-      allBestBets.push(...result.bestBets);
-    }
-  }
-  
-  // Value'ya göre sırala
-  const sortedBets = allBestBets
-    .filter(b => b.valuePercent > 0)
-    .sort((a, b) => (b.valuePercent || 0) - (a.valuePercent || 0))
-    .slice(0, 5);
-  
+  const avgConf = (key: string) => {
+    const vals = results.map(r => r[key]?.confidence || 0);
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  };
+
   return {
     matchResult: {
-      prediction: matchConsensus,
-      confidence: Math.round(avgConfidence),
-      aiAgreement: `${matchPredictions.filter(p => p === matchConsensus).length}/${matchPredictions.length}`,
-      bookmakerOdds: oddsData?.matchWinner ? {
-        home: oddsData.matchWinner.home,
-        draw: oddsData.matchWinner.draw,
-        away: oddsData.matchWinner.away
-      } : null,
-      individual: {
-        claude: claudeResult?.matchResult,
-        openai: openaiResult?.matchResult,
-        gemini: geminiResult?.matchResult
-      }
+      prediction: getMajority(matchPreds),
+      confidence: avgConf('matchResult'),
+      aiAgreement: `${matchPreds.filter(p => p === getMajority(matchPreds)).length}/${matchPreds.length}`,
+      bookmakerOdds: odds?.matchWinner || null,
+      individual: { claude: claude?.matchResult, openai: openai_r?.matchResult, gemini: gemini?.matchResult }
     },
     goals: {
-      over25: goalsConsensus,
-      confidence: Math.round(results.map(r => r.goals?.confidence || 0).reduce((a, b) => a + b, 0) / results.length),
-      aiAgreement: `${goalPredictions.filter(p => p === goalsConsensus).length}/${goalPredictions.length}`,
-      bookmakerOdds: oddsData?.overUnder || null
+      over25: getMajorityBool(goalPreds),
+      confidence: avgConf('goals'),
+      expectedGoals: results[0]?.goals?.expectedGoals || 2.5,
+      bookmakerOdds: odds?.overUnder || null
     },
     btts: {
-      prediction: bttsConsensus,
-      confidence: Math.round(results.map(r => r.btts?.confidence || 0).reduce((a, b) => a + b, 0) / results.length),
-      aiAgreement: `${bttsPredictions.filter(p => p === bttsConsensus).length}/${bttsPredictions.length}`,
-      bookmakerOdds: oddsData?.btts || null
+      prediction: getMajorityBool(bttsPreds),
+      confidence: avgConf('btts'),
+      bookmakerOdds: odds?.btts || null
     },
-    corners: mergeSimple(results.map(r => r.corners)),
-    cards: mergeSimple(results.map(r => r.cards)),
-    firstHalf: mergeSimple(results.map(r => r.firstHalf)),
-    correctScore: results[0]?.correctScore || null, // Claude'un tahmini öncelikli
-    htFt: results[0]?.htFt || null,
-    riskLevel: getMajority(results.map(r => r.riskLevel)),
-    bestBets: sortedBets,
-    avoidBets: Array.from(new Set(results.flatMap(r => r.avoidBets || []))),
-    bookmakerConsensus: oddsData?.bookmakerConsensus || 'Odds verisi yok',
-    valueOpportunities: oddsData?.valueOpportunities || [],
+    corners: results[0]?.corners || null,
+    cards: results[0]?.cards || null,
+    firstHalf: results[0]?.firstHalf || null,
+    correctScore: results[0]?.correctScore || null,
+    riskLevel: getMajority(results.map(r => r.riskLevel).filter(Boolean)) || 'MEDIUM',
+    bestBets: results[0]?.bestBets || [],
+    bookmakerConsensus: odds?.bookmakerConsensus || 'Odds verisi yok',
     overallAnalysis: results[0]?.overallAnalysis || ''
   };
-}
-
-function getMajority(arr: string[]): string {
-  const counts: { [key: string]: number } = {};
-  for (const item of arr) {
-    counts[item] = (counts[item] || 0) + 1;
-  }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
-}
-
-function getMajorityBoolean(arr: boolean[]): boolean {
-  const trueCount = arr.filter(x => x === true).length;
-  return trueCount > arr.length / 2;
-}
-
-function mergeSimple(arr: any[]): any {
-  const valid = arr.filter(x => x);
-  if (valid.length === 0) return null;
-  return valid[0]; // Basitlik için ilk geçerli sonucu al
 }
 
 // ============================================
@@ -696,40 +445,64 @@ function mergeSimple(arr: any[]): any {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam } = body;
+    console.log('📥 Received body:', JSON.stringify(body));
+    
+    // Her iki ismi de kabul et: fixtureId veya matchId
+    const fixtureId = body.fixtureId || body.matchId || body.id;
+    const homeTeam = body.homeTeam || body.home || 'Home Team';
+    const awayTeam = body.awayTeam || body.away || 'Away Team';
     
     if (!fixtureId) {
-      return NextResponse.json({ error: 'Fixture ID required' }, { status: 400 });
+      console.error('❌ No fixture ID provided');
+      return NextResponse.json(
+        { error: 'Fixture ID gerekli', received: body },
+        { status: 400 }
+      );
     }
     
     console.log(`\n${'='.repeat(60)}`);
     console.log(`🔍 Analyzing: ${homeTeam} vs ${awayTeam} (ID: ${fixtureId})`);
     console.log(`${'='.repeat(60)}\n`);
     
-    // Maç verisi ve odds'u paralel çek
-    const { fixture, odds } = await fetchMatchDataWithOdds(fixtureId);
+    // Maç verisi + odds çek
+    const { fixture, odds } = await fetchMatchData(Number(fixtureId));
     
-    // AI prompt oluştur
-    const prompt = buildAggressivePrompt(homeTeam, awayTeam, fixture, odds);
+    if (!fixture) {
+      return NextResponse.json(
+        { error: 'Maç verisi bulunamadı', fixtureId },
+        { status: 404 }
+      );
+    }
     
-    // 3 AI'dan paralel analiz al
+    // AI prompt
+    const prompt = buildPrompt(homeTeam, awayTeam, fixture, odds);
+    
+    // 3 AI paralel çalıştır
     console.log('🤖 Running AI analysis...');
-    const [claudeResult, openaiResult, geminiResult] = await Promise.allSettled([
+    const [claudeRes, openaiRes, geminiRes] = await Promise.allSettled([
       analyzeWithClaude(prompt),
       analyzeWithOpenAI(prompt),
       analyzeWithGemini(prompt)
     ]);
     
-    const claude = claudeResult.status === 'fulfilled' ? claudeResult.value : null;
-    const openai_res = openaiResult.status === 'fulfilled' ? openaiResult.value : null;
-    const gemini = geminiResult.status === 'fulfilled' ? geminiResult.value : null;
+    const claude = claudeRes.status === 'fulfilled' ? claudeRes.value : null;
+    const openai_r = openaiRes.status === 'fulfilled' ? openaiRes.value : null;
+    const gemini = geminiRes.status === 'fulfilled' ? geminiRes.value : null;
     
     console.log(`✅ Claude: ${claude ? 'OK' : 'FAILED'}`);
-    console.log(`✅ OpenAI: ${openai_res ? 'OK' : 'FAILED'}`);
+    console.log(`✅ OpenAI: ${openai_r ? 'OK' : 'FAILED'}`);
     console.log(`✅ Gemini: ${gemini ? 'OK' : 'FAILED'}`);
     
+    // En az 1 AI çalışmalı
+    if (!claude && !openai_r && !gemini) {
+      return NextResponse.json(
+        { error: 'Tüm AI analizleri başarısız oldu' },
+        { status: 500 }
+      );
+    }
+    
     // Consensus oluştur
-    const consensus = buildConsensus(claude, openai_res, gemini, odds);
+    const analysis = buildConsensusResult(claude, openai_r, gemini, odds);
     
     return NextResponse.json({
       success: true,
@@ -743,20 +516,21 @@ export async function POST(request: NextRequest) {
         matchWinner: odds.matchWinner,
         overUnder: odds.overUnder,
         btts: odds.btts,
-        correctScore: odds.correctScore
+        correctScore: odds.correctScore,
+        consensus: odds.bookmakerConsensus
       } : null,
-      analysis: consensus,
-      aiResponses: {
-        claude: claude ? 'available' : 'failed',
-        openai: openai_res ? 'available' : 'failed',
-        gemini: gemini ? 'available' : 'failed'
+      analysis,
+      aiStatus: {
+        claude: claude ? 'success' : 'failed',
+        openai: openai_r ? 'success' : 'failed',
+        gemini: gemini ? 'success' : 'failed'
       }
     });
     
-  } catch (error) {
-    console.error('Analysis error:', error);
+  } catch (error: any) {
+    console.error('❌ Analysis error:', error);
     return NextResponse.json(
-      { error: 'Analysis failed', details: String(error) },
+      { error: 'Analiz hatası', details: error.message },
       { status: 500 }
     );
   }
