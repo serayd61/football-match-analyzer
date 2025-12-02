@@ -664,7 +664,7 @@ function buildConsensus(
     htFt: results[0]?.htFt || null,
     riskLevel: getMajority(results.map(r => r.riskLevel)),
     bestBets: sortedBets,
-    avoidBets: [...new Set(results.flatMap(r => r.avoidBets || []))],
+    avoidBets: Array.from(new Set(results.flatMap(r => r.avoidBets || []))),
     bookmakerConsensus: oddsData?.bookmakerConsensus || 'Odds verisi yok',
     valueOpportunities: oddsData?.valueOpportunities || [],
     overallAnalysis: results[0]?.overallAnalysis || ''
