@@ -46,13 +46,22 @@ interface Standing {
   form: string;
 }
 
+interface AnalysisResult {
+  success: boolean;
+  fixture: any;
+  odds: any;
+  analysis: any;
+  aiStatus: any;
+}
+
 export default function Home() {
   const [competition, setCompetition] = useState('premier_league');
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedMatches, setSelectedMatches] = useState<Match[]>([]);
-  const [analysis, setAnalysis] = useState('');
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysisText, setAnalysisText] = useState('');
   const [kuponResult, setKuponResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [kuponLoading, setKuponLoading] = useState(false);
@@ -89,26 +98,123 @@ export default function Home() {
   const analyzeMatch = async (match: Match) => {
     setSelectedMatch(match);
     setLoading(true);
-    setAnalysis('');
+    setAnalysis(null);
+    setAnalysisText('');
+    
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          fixtureId: match.id,  // ÖNEMLİ: Bu satır eksikti!
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
           homeTeamId: match.homeTeamId,
-          homeTeamName: match.homeTeam,
           awayTeamId: match.awayTeamId,
-          awayTeamName: match.awayTeam,
           competition: match.competition,
           matchDate: match.date,
         }),
       });
+      
       const data = await res.json();
-      setAnalysis(data.analysis || 'Analiz yapılamadı');
+      
+      if (data.success && data.analysis) {
+        setAnalysis(data);
+        setAnalysisText(formatAnalysis(data));
+      } else {
+        setAnalysisText(data.error || 'Analiz yapılamadı');
+      }
     } catch (error) {
-      setAnalysis('Hata oluştu');
+      console.error('Analysis error:', error);
+      setAnalysisText('Hata oluştu: ' + String(error));
     }
     setLoading(false);
+  };
+
+  const formatAnalysis = (data: AnalysisResult): string => {
+    const a = data.analysis;
+    const odds = data.odds;
+    
+    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
+    text += `📅 ${data.fixture?.date}\n\n`;
+    
+    // Bahis Oranları
+    if (odds?.matchWinner) {
+      text += `📊 BAHİS ORANLARI\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `1: ${odds.matchWinner.home} (${odds.matchWinner.homeProb?.toFixed(0)}%)\n`;
+      text += `X: ${odds.matchWinner.draw} (${odds.matchWinner.drawProb?.toFixed(0)}%)\n`;
+      text += `2: ${odds.matchWinner.away} (${odds.matchWinner.awayProb?.toFixed(0)}%)\n\n`;
+    }
+    
+    if (odds?.overUnder) {
+      text += `⚽ 2.5 Gol: Üst ${odds.overUnder.over25} | Alt ${odds.overUnder.under25}\n`;
+    }
+    
+    if (odds?.btts) {
+      text += `🎯 KG: Var ${odds.btts.yes} | Yok ${odds.btts.no}\n\n`;
+    }
+    
+    // AI Consensus
+    text += `🤖 AI TAHMİNLERİ\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    
+    if (a?.matchResult) {
+      const mr = a.matchResult;
+      text += `📌 Maç Sonucu: ${mr.prediction} `;
+      text += `(Güven: %${mr.confidence}) `;
+      text += `[${mr.aiAgreement} AI uzlaştı]\n`;
+    }
+    
+    if (a?.goals) {
+      text += `⚽ 2.5 Gol: ${a.goals.over25 ? 'ÜST' : 'ALT'} `;
+      text += `(Güven: %${a.goals.confidence})\n`;
+    }
+    
+    if (a?.btts) {
+      text += `🎯 KG: ${a.btts.prediction ? 'VAR' : 'YOK'} `;
+      text += `(Güven: %${a.btts.confidence})\n`;
+    }
+    
+    if (a?.corners) {
+      text += `🚩 Korner: ${a.corners.over95 ? '9.5 Üst' : '9.5 Alt'} `;
+      text += `(Beklenen: ${a.corners.expectedCorners})\n`;
+    }
+    
+    if (a?.cards) {
+      text += `🟨 Kart: ${a.cards.over35 ? '3.5 Üst' : '3.5 Alt'} `;
+      text += `(Beklenen: ${a.cards.expectedCards})\n`;
+    }
+    
+    if (a?.correctScore) {
+      text += `📊 Skor Tahmini: ${a.correctScore.prediction} `;
+      text += `(Güven: %${a.correctScore.confidence})\n`;
+    }
+    
+    text += `\n⚠️ Risk: ${a?.riskLevel || 'MEDIUM'}\n`;
+    
+    // Best Bets
+    if (a?.bestBets && a.bestBets.length > 0) {
+      text += `\n💰 EN İYİ BAHİSLER\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━\n`;
+      a.bestBets.forEach((bet: any, i: number) => {
+        text += `${i + 1}. ${bet.market}: ${bet.selection} `;
+        text += `(Güven: %${bet.confidence})\n`;
+      });
+    }
+    
+    // Bookmaker Consensus
+    if (a?.bookmakerConsensus) {
+      text += `\n📈 Bookmaker Görüşü:\n${a.bookmakerConsensus}\n`;
+    }
+    
+    // AI Status
+    text += `\n🤖 AI Durumu: `;
+    text += `Claude ${data.aiStatus?.claude === 'success' ? '✅' : '❌'} | `;
+    text += `OpenAI ${data.aiStatus?.openai === 'success' ? '✅' : '❌'} | `;
+    text += `Gemini ${data.aiStatus?.gemini === 'success' ? '✅' : '❌'}`;
+    
+    return text;
   };
 
   const toggleMatchSelection = (match: Match) => {
@@ -138,6 +244,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           matches: selectedMatches.map(m => ({
+            fixtureId: m.id,  // ÖNEMLİ: Bu da eklendi
             homeTeam: m.homeTeam,
             homeTeamId: m.homeTeamId,
             awayTeam: m.awayTeam,
@@ -148,9 +255,9 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      setKuponResult(data.kupon || 'Kupon oluşturulamadı');
+      setKuponResult(data.kupon || JSON.stringify(data, null, 2));
     } catch (error) {
-      setKuponResult('Hata oluştu');
+      setKuponResult('Hata oluştu: ' + String(error));
     }
     setKuponLoading(false);
   };
@@ -167,9 +274,9 @@ export default function Home() {
           <h1 className="text-3xl font-bold flex items-center justify-center gap-2">
             ⚽ Football Match Analyzer
           </h1>
-          <p className="text-gray-400 text-sm">AI Powered Match Predictions</p>
+          <p className="text-gray-400 text-sm">AI Powered Match Predictions + Live Odds</p>
           <span className="inline-block mt-2 px-3 py-1 bg-green-600 text-xs rounded-full">
-            🟢 Powered by Sportmonks Pro API
+            🟢 Sportmonks Pro API + Odds
           </span>
         </header>
 
@@ -307,10 +414,12 @@ export default function Home() {
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-gray-400">3 AI analiz yapıyor...</p>
+                <p className="text-gray-400">3 AI + Odds analiz yapıyor...</p>
               </div>
-            ) : analysis ? (
-              <div className="text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto">{analysis}</div>
+            ) : analysisText ? (
+              <div className="text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto font-mono bg-gray-900 p-3 rounded-lg">
+                {analysisText}
+              </div>
             ) : (
               <div className="text-center py-8 text-gray-400">
                 <div className="text-4xl mb-2">⚽</div>
@@ -339,11 +448,13 @@ export default function Home() {
               {kuponLoading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-lg text-gray-300">3 AI tartışıyor...</p>
+                  <p className="text-lg text-gray-300">3 AI + Odds analiz yapıyor...</p>
                   <p className="text-sm text-gray-500 mt-2">Claude, OpenAI ve Gemini uzlaşı arıyor</p>
                 </div>
               ) : (
-                <div className="whitespace-pre-wrap text-sm">{kuponResult}</div>
+                <div className="whitespace-pre-wrap text-sm font-mono bg-gray-900 p-4 rounded-lg">
+                  {kuponResult}
+                </div>
               )}
             </div>
           </div>
@@ -351,7 +462,7 @@ export default function Home() {
 
         <footer className="text-center mt-8 text-gray-500 text-xs">
           <p>⚽ Football Match Analyzer - AI Destekli Maç Analizi</p>
-          <p>Veriler: Sportmonks Pro API | AI: Claude / OpenAI / Gemini</p>
+          <p>Veriler: Sportmonks Pro API + Live Odds | AI: Claude / OpenAI / Gemini</p>
           <p className="mt-2">Bu site Serkan Aydın tarafından yapılmıştır 🚀</p>
         </footer>
       </div>
