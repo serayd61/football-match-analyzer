@@ -51,9 +51,13 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedMatches, setSelectedMatches] = useState<Match[]>([]);
   const [analysis, setAnalysis] = useState('');
+  const [kuponResult, setKuponResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const [kuponLoading, setKuponLoading] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [showKuponModal, setShowKuponModal] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -107,6 +111,50 @@ export default function Home() {
     setLoading(false);
   };
 
+  const toggleMatchSelection = (match: Match) => {
+    setSelectedMatches(prev => {
+      const exists = prev.find(m => m.id === match.id);
+      if (exists) {
+        return prev.filter(m => m.id !== match.id);
+      } else {
+        return [...prev, match];
+      }
+    });
+  };
+
+  const generateKupon = async () => {
+    if (selectedMatches.length === 0) {
+      alert('Lütfen en az 1 maç seçin!');
+      return;
+    }
+
+    setKuponLoading(true);
+    setKuponResult('');
+    setShowKuponModal(true);
+
+    try {
+      const res = await fetch('/api/multi-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matches: selectedMatches.map(m => ({
+            homeTeam: m.homeTeam,
+            homeTeamId: m.homeTeamId,
+            awayTeam: m.awayTeam,
+            awayTeamId: m.awayTeamId,
+            competition: m.competition,
+            date: m.date
+          }))
+        }),
+      });
+      const data = await res.json();
+      setKuponResult(data.kupon || 'Kupon oluşturulamadı');
+    } catch (error) {
+      setKuponResult('Hata oluştu');
+    }
+    setKuponLoading(false);
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -141,7 +189,23 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Kupon Oluştur Butonu */}
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={generateKupon}
+            disabled={selectedMatches.length === 0 || kuponLoading}
+            className={`px-6 py-3 rounded-xl font-bold text-lg transition-all flex items-center gap-2 ${
+              selectedMatches.length > 0
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black'
+                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            🎰 Kupon Oluştur ({selectedMatches.length} maç seçili)
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Puan Durumu */}
           <div className="bg-gray-800 rounded-xl p-4">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               📊 Puan Durumu
@@ -173,9 +237,11 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Yaklaşan Maçlar */}
           <div className="bg-gray-800 rounded-xl p-4">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               📅 Yaklaşan Maçlar
+              <span className="text-xs text-gray-400 ml-2">(Tıkla: Analiz | ☑️: Kupona Ekle)</span>
             </h2>
             {loadingMatches ? (
               <div className="text-center py-8 text-gray-400">Yükleniyor...</div>
@@ -183,34 +249,57 @@ export default function Home() {
               <div className="text-center py-8 text-gray-400">Maç bulunamadı</div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {matches.map((match) => (
-                  <div
-                    key={match.id}
-                    onClick={() => analyzeMatch(match)}
-                    className={`p-3 rounded-lg cursor-pointer transition-all ${
-                      selectedMatch?.id === match.id
-                        ? 'bg-green-600'
-                        : 'bg-gray-700 hover:bg-gray-600'
-                    }`}
-                  >
-                    <div className="text-xs text-gray-400 mb-1">{formatDate(match.date)}</div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {match.homeCrest && <img src={match.homeCrest} alt="" className="w-5 h-5" />}
-                        <span className="text-sm font-medium">{match.homeTeam}</span>
+                {matches.map((match) => {
+                  const isSelected = selectedMatches.find(m => m.id === match.id);
+                  return (
+                    <div
+                      key={match.id}
+                      className={`p-3 rounded-lg transition-all ${
+                        selectedMatch?.id === match.id
+                          ? 'bg-green-600'
+                          : isSelected
+                          ? 'bg-yellow-600/30 border border-yellow-500'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-xs text-gray-400">{formatDate(match.date)}</div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMatchSelection(match);
+                          }}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                            isSelected
+                              ? 'bg-yellow-500 text-black'
+                              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                          }`}
+                        >
+                          {isSelected ? '✓ Seçildi' : '+ Ekle'}
+                        </button>
                       </div>
-                      <span className="text-gray-400 text-xs">vs</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{match.awayTeam}</span>
-                        {match.awayCrest && <img src={match.awayCrest} alt="" className="w-5 h-5" />}
+                      <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => analyzeMatch(match)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {match.homeCrest && <img src={match.homeCrest} alt="" className="w-5 h-5" />}
+                          <span className="text-sm font-medium">{match.homeTeam}</span>
+                        </div>
+                        <span className="text-gray-400 text-xs">vs</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{match.awayTeam}</span>
+                          {match.awayCrest && <img src={match.awayCrest} alt="" className="w-5 h-5" />}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
+          {/* AI Maç Analizi */}
           <div className="bg-gray-800 rounded-xl p-4">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               🤖 AI Maç Analizi
@@ -221,7 +310,7 @@ export default function Home() {
                 <p className="text-gray-400">3 AI analiz yapıyor...</p>
               </div>
             ) : analysis ? (
-              <div className="text-sm whitespace-pre-wrap">{analysis}</div>
+              <div className="text-sm whitespace-pre-wrap max-h-[500px] overflow-y-auto">{analysis}</div>
             ) : (
               <div className="text-center py-8 text-gray-400">
                 <div className="text-4xl mb-2">⚽</div>
@@ -230,6 +319,35 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Kupon Modal */}
+        {showKuponModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  🎰 AI Kupon Sistemi
+                </h2>
+                <button
+                  onClick={() => setShowKuponModal(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {kuponLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-300">3 AI tartışıyor...</p>
+                  <p className="text-sm text-gray-500 mt-2">Claude, OpenAI ve Gemini uzlaşı arıyor</p>
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap text-sm">{kuponResult}</div>
+              )}
+            </div>
+          </div>
+        )}
 
         <footer className="text-center mt-8 text-gray-500 text-xs">
           <p>⚽ Football Match Analyzer - AI Destekli Maç Analizi</p>
