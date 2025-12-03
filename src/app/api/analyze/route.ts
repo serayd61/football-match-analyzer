@@ -759,9 +759,8 @@ function calculateConsensus(analyses: any[]) {
   consensus.starPlayers = validAnalyses.map(a => a?.starPlayer).filter(Boolean);
   consensus.riskLevels = validAnalyses.map(a => a?.riskLevel).filter(Boolean);
   consensus.overallAnalyses = validAnalyses.map(a => a?.overallAnalysis).filter(Boolean);
-  consensus.keyFactors = [...new Set(validAnalyses.flatMap(a => a?.keyFactors || []))];
-  consensus.warnings = [...new Set(validAnalyses.flatMap(a => a?.warnings || []))];
-
+ consensus.keyFactors = Array.from(new Set(validAnalyses.flatMap(a => a?.keyFactors || [])));
+consensus.warnings = Array.from(new Set(validAnalyses.flatMap(a => a?.warnings || [])));
   return consensus;
 }
 
