@@ -15,6 +15,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'recent' | 'favorites'>('recent');
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const labels: Record<string, Record<string, string>> = {
     tr: {
@@ -27,6 +29,10 @@ export default function ProfilePage() {
       noFavorites: 'Favori analiz yok',
       backToDashboard: '← Dashboard\'a Dön',
       analysesRemaining: 'Kalan Analiz Hakkı',
+      viewAnalysis: 'Analizi Gör',
+      close: 'Kapat',
+      analysisDetail: 'Analiz Detayı',
+      loading: 'Yükleniyor...',
     },
     en: {
       profile: 'My Profile',
@@ -38,6 +44,10 @@ export default function ProfilePage() {
       noFavorites: 'No favorite analyses',
       backToDashboard: '← Back to Dashboard',
       analysesRemaining: 'Analyses Remaining',
+      viewAnalysis: 'View Analysis',
+      close: 'Close',
+      analysisDetail: 'Analysis Detail',
+      loading: 'Loading...',
     },
     de: {
       profile: 'Mein Profil',
@@ -49,6 +59,10 @@ export default function ProfilePage() {
       noFavorites: 'Keine Favoritenanalysen',
       backToDashboard: '← Zurück zum Dashboard',
       analysesRemaining: 'Verbleibende Analysen',
+      viewAnalysis: 'Analyse ansehen',
+      close: 'Schließen',
+      analysisDetail: 'Analysedetail',
+      loading: 'Laden...',
     },
   };
 
@@ -70,7 +84,6 @@ export default function ProfilePage() {
     try {
       const res = await fetch('/api/user/profile');
       const data = await res.json();
-      console.log('Profile data:', data);
       if (data.success) {
         setProfile(data);
       }
@@ -91,6 +104,75 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Favorite toggle error:', error);
     }
+  };
+
+  const viewAnalysis = async (fixtureId: number, homeTeam: string, awayTeam: string) => {
+    setAnalysisLoading(true);
+    setSelectedAnalysis(null);
+    
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId,
+          homeTeam,
+          awayTeam,
+          language: lang,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedAnalysis(data);
+      }
+    } catch (error) {
+      console.error('Analysis fetch error:', error);
+    }
+    setAnalysisLoading(false);
+  };
+
+  const formatAnalysisText = (data: any): string => {
+    if (!data || !data.analysis) return '';
+    
+    const a = data.analysis;
+    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    if (data.fromCache) {
+      text += `⚡ ${lang === 'tr' ? 'Önbellekten yüklendi' : lang === 'de' ? 'Aus Cache geladen' : 'Loaded from cache'}\n\n`;
+    }
+
+    if (a?.matchResult) {
+      text += `⚽ ${lang === 'tr' ? 'Maç Sonucu' : lang === 'de' ? 'Spielergebnis' : 'Match Result'}: ${a.matchResult.prediction} (${a.matchResult.confidence}%)\n`;
+    }
+    if (a?.overUnder25) {
+      text += `📊 2.5 ${lang === 'tr' ? 'Gol' : lang === 'de' ? 'Tore' : 'Goals'}: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%)\n`;
+    }
+    if (a?.btts) {
+      text += `🔥 BTTS: ${a.btts.prediction} (${a.btts.confidence}%)\n`;
+    }
+    if (a?.doubleChance) {
+      text += `📈 ${lang === 'tr' ? 'Çifte Şans' : lang === 'de' ? 'Doppelte Chance' : 'Double Chance'}: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%)\n`;
+    }
+    if (a?.correctScore) {
+      text += `\n🏆 ${lang === 'tr' ? 'Doğru Skor' : lang === 'de' ? 'Genaues Ergebnis' : 'Correct Score'}:\n`;
+      if (a.correctScore.first) text += `  1. ${a.correctScore.first.score} (${a.correctScore.first.confidence}%)\n`;
+      if (a.correctScore.second) text += `  2. ${a.correctScore.second.score} (${a.correctScore.second.confidence}%)\n`;
+      if (a.correctScore.third) text += `  3. ${a.correctScore.third.score} (${a.correctScore.third.confidence}%)\n`;
+    }
+    if (a?.bestBets && a.bestBets.length > 0) {
+      text += `\n💰 ${lang === 'tr' ? 'En İyi Bahis' : lang === 'de' ? 'Beste Wette' : 'Best Bet'}:\n`;
+      a.bestBets.forEach((bet: any) => {
+        if (bet?.type) {
+          text += `  • ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
+        }
+      });
+    }
+    if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
+      text += `\n📝 ${lang === 'tr' ? 'Genel Değerlendirme' : lang === 'de' ? 'Gesamtbewertung' : 'Overall'}:\n${a.overallAnalyses[0]}\n`;
+    }
+
+    return text;
   };
 
   if (status === 'loading' || loading) {
@@ -178,26 +260,34 @@ export default function ProfilePage() {
           {analyses && analyses.length > 0 ? (
             <div className="space-y-4">
               {analyses.map((item: any, idx: number) => (
-                <div key={idx} className="bg-gray-700 rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <div className="font-bold text-lg">
-                      {item.home_team} vs {item.away_team}
+                <div key={idx} className="bg-gray-700 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-lg">
+                        {item.home_team || 'Unknown'} vs {item.away_team || 'Unknown'}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {new Date(item.viewed_at).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      Fixture ID: {item.fixture_id} • {new Date(item.viewed_at).toLocaleString()}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => viewAnalysis(item.fixture_id, item.home_team, item.away_team)}
+                        className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm"
+                      >
+                        👁️ {l.viewAnalysis}
+                      </button>
+                      <button
+                        onClick={() => toggleFavorite(item.fixture_id, item.is_favorite)}
+                        className={`px-3 py-2 rounded-lg transition-all ${
+                          item.is_favorite 
+                            ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
+                            : 'bg-gray-600 hover:bg-gray-500'
+                        }`}
+                      >
+                        {item.is_favorite ? '⭐' : '☆'}
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleFavorite(item.fixture_id, item.is_favorite)}
-                      className={`px-3 py-2 rounded-lg transition-all ${
-                        item.is_favorite 
-                          ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
-                          : 'bg-gray-600 hover:bg-gray-500'
-                      }`}
-                    >
-                      {item.is_favorite ? '⭐ Favorilerde' : '☆ Favoriye Ekle'}
-                    </button>
                   </div>
                 </div>
               ))}
@@ -212,17 +302,34 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
-
-        {/* Debug Info - Geliştirme aşamasında kaldırılabilir */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 p-4 bg-gray-800 rounded-xl">
-            <h3 className="text-sm font-bold text-gray-400 mb-2">Debug Info:</h3>
-            <pre className="text-xs text-gray-500 overflow-auto">
-              {JSON.stringify(profile, null, 2)}
-            </pre>
-          </div>
-        )}
       </div>
+
+      {/* Analysis Modal */}
+      {(selectedAnalysis || analysisLoading) && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">🤖 {l.analysisDetail}</h2>
+              <button 
+                onClick={() => setSelectedAnalysis(null)} 
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            {analysisLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p>{l.loading}</p>
+              </div>
+            ) : (
+              <pre className="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-lg">
+                {formatAnalysisText(selectedAnalysis)}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
