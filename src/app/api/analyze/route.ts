@@ -119,8 +119,8 @@ async function fetchPreMatchOdds(fixtureId: number) {
 // ========================
 
 // Odds'ları detaylı parse et
-function parseOddsDetailed(odds: any[], fixtureOdds: any) {
-  const result: any = {
+function parseOddsDetailed(preMatchOdds: any[], fixture: any) {
+ const result: any = {
     matchWinner: null,
     overUnder: { '1.5': null, '2.5': null, '3.5': null },
     btts: null,
