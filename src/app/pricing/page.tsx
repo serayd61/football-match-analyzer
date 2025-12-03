@@ -11,8 +11,9 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubscribe = async () => {
+    // Giriş yapmamışsa kayıt sayfasına yönlendir
     if (!session) {
-      router.push('/login?callbackUrl=/pricing');
+      router.push('/login');
       return;
     }
 
@@ -81,12 +82,17 @@ export default function PricingPage() {
             disabled={loading}
             className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all disabled:opacity-50"
           >
-            {loading ? 'İşleniyor...' : '7 Gün Ücretsiz Başla'}
+            {loading ? 'İşleniyor...' : session ? 'Hemen Başla' : '7 Gün Ücretsiz Başla'}
           </button>
 
           <p className="text-center text-gray-500 text-sm mt-4">
-            Kredi kartı gerekli • İstediğiniz zaman iptal
+            Kredi kartı gerekli • 7 gün ücretsiz • İstediğiniz zaman iptal
           </p>
+        </div>
+
+        <div className="mt-8 text-center text-gray-500 text-sm">
+          <p>7 gün içinde iptal ederseniz hiçbir ücret alınmaz.</p>
+          <p>İptal etmezseniz ayda CHF 9.99 otomatik çekilir.</p>
         </div>
       </div>
     </div>
