@@ -1,3 +1,4 @@
+import Link from 'next/link';
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -397,6 +398,9 @@ export default function DashboardPage() {
         <button onClick={openPortal} className="ml-4 underline opacity-70 hover:opacity-100">
           {t('manageSubscription')}
         </button>
+        <Link href="/profile" className="ml-4 underline opacity-70 hover:opacity-100">
+  👤 {lang === 'tr' ? 'Profil' : lang === 'de' ? 'Profil' : 'Profile'}
+</Link>
         <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
           {t('logout')}
         </button>
