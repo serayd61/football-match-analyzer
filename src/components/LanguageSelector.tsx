@@ -13,6 +13,20 @@ export default function LanguageSelector() {
   const { lang, setLang } = useLanguage();
 
   return (
+    <select
+      value={lang}
+      onChange={(e) => setLang(e.target.value as 'tr' | 'en' | 'de')}
+      className="bg-gray-700 text-white px-3 py-1 rounded-lg text-sm"
+    >
+      <option value="en">🇬🇧 English</option>
+      <option value="tr">🇹🇷 Türkçe</option>
+      <option value="de">🇩🇪 Deutsch</option>
+    </select>
+  );
+}
+
+
+  return (
     <div className="relative group">
       <button className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-700 transition-colors">
         <span className="text-lg">{languages.find(l => l.code === lang)?.flag}</span>
