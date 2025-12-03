@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/components/LanguageProvider';
+import LanguageSelector from '@/components/LanguageSelector';
 
 const LEAGUE_BUTTONS = [
   { key: 'premier_league', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -32,6 +34,7 @@ interface Match {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   
   const [competition, setCompetition] = useState('premier_league');
   const [matches, setMatches] = useState<Match[]>([]);
@@ -111,10 +114,10 @@ export default function DashboardPage() {
         setAnalysis(data);
         setAnalysisText(formatAnalysis(data));
       } else {
-        setAnalysisText(data.error || 'Analiz yapılamadı');
+        setAnalysisText(data.error || t('error'));
       }
     } catch (error) {
-      setAnalysisText('Hata: ' + String(error));
+      setAnalysisText(t('error') + ': ' + String(error));
     }
     setLoading(false);
   };
@@ -126,22 +129,22 @@ export default function DashboardPage() {
     let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n\n`;
     
     if (odds?.matchWinner) {
-      text += `📊 ORANLAR\n`;
+      text += `📊 ODDS\n`;
       text += `1: ${odds.matchWinner.home} | X: ${odds.matchWinner.draw} | 2: ${odds.matchWinner.away}\n\n`;
     }
     
-    text += `🤖 AI TAHMİNLERİ\n`;
+    text += `🤖 AI PREDICTIONS\n`;
     if (a?.matchResult) {
-      text += `MS: ${a.matchResult.prediction} (%${a.matchResult.confidence})\n`;
+      text += `FT: ${a.matchResult.prediction} (${a.matchResult.confidence}%)\n`;
     }
     if (a?.goals) {
-      text += `2.5: ${a.goals.over25 ? 'ÜST' : 'ALT'} (%${a.goals.confidence})\n`;
+      text += `O/U 2.5: ${a.goals.over25 ? 'OVER' : 'UNDER'} (${a.goals.confidence}%)\n`;
     }
     if (a?.btts) {
-      text += `KG: ${a.btts.prediction ? 'VAR' : 'YOK'} (%${a.btts.confidence})\n`;
+      text += `BTTS: ${a.btts.prediction ? 'YES' : 'NO'} (${a.btts.confidence}%)\n`;
     }
     if (a?.correctScore) {
-      text += `Skor: ${a.correctScore.prediction}\n`;
+      text += `Score: ${a.correctScore.prediction}\n`;
     }
     
     return text;
@@ -155,7 +158,7 @@ export default function DashboardPage() {
   };
 
   const generateKupon = async () => {
-    if (selectedMatches.length === 0) return alert('En az 1 maç seçin!');
+    if (selectedMatches.length === 0) return alert(t('selectMatch'));
 
     setKuponLoading(true);
     setKuponResult('');
@@ -178,13 +181,20 @@ export default function DashboardPage() {
       const data = await res.json();
       setKuponResult(data.kupon || JSON.stringify(data, null, 2));
     } catch (error) {
-      setKuponResult('Hata: ' + String(error));
+      setKuponResult(t('error') + ': ' + String(error));
     }
     setKuponLoading(false);
   };
 
+  const openPortal = async () => {
+    const res = await fetch('/api/stripe/portal', { method: 'POST' });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else alert(data.error || t('error'));
+  };
+
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('tr-TR', { 
+    return new Date(dateStr).toLocaleDateString('en-GB', { 
       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
     });
   };
@@ -208,33 +218,28 @@ export default function DashboardPage() {
         subscription?.status === 'trialing' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
       }`}>
         {subscription?.status === 'trialing' ? (
-          <>🎁 Deneme süresi: {trialDaysRemaining} gün kaldı • <a href="/pricing" className="underline">Pro'ya Yükselt</a></>
+          <>{t('trialDaysLeft', { days: trialDaysRemaining })} • <a href="/pricing" className="underline">{t('upgradeToPro')}</a></>
         ) : subscription?.status === 'active' ? (
-          <>✓ Pro Üyelik Aktif</>
+          <>✓ {t('proActive')}</>
         ) : (
-          <>⚠️ Abonelik gerekli • <a href="/pricing" className="underline">Abone Ol</a></>
+          <>⚠️ {t('subscriptionRequired')} • <a href="/pricing" className="underline">{t('subscribe')}</a></>
         )}
-        <button 
-  onClick={async () => {
-    const res = await fetch('/api/stripe/portal', { method: 'POST' });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error || 'Portal açılamadı');
-  }} 
-  className="ml-4 underline opacity-70 hover:opacity-100"
->
-  Abonelik Yönet
-</button>
-<button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
-  Çıkış
-</button>
+        <button onClick={openPortal} className="ml-4 underline opacity-70 hover:opacity-100">
+          {t('manageSubscription')}
+        </button>
+        <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
+          {t('logout')}
+        </button>
       </div>
 
       <div className="p-4 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold">⚽ Football Analytics Pro</h1>
-          <p className="text-gray-400 text-sm">Hoş geldin, {session?.user?.name || session?.user?.email}</p>
+        <header className="flex justify-between items-center mb-6">
+          <div className="text-center flex-1">
+            <h1 className="text-3xl font-bold">⚽ {t('appName')}</h1>
+            <p className="text-gray-400 text-sm">{t('welcome')}, {session?.user?.name || session?.user?.email}</p>
+          </div>
+          <LanguageSelector />
         </header>
 
         {/* League Buttons */}
@@ -263,7 +268,7 @@ export default function DashboardPage() {
                 : 'bg-gray-700 text-gray-500 cursor-not-allowed'
             }`}
           >
-            🎰 Kupon Oluştur ({selectedMatches.length} maç)
+            🎰 {t('createCoupon')} ({selectedMatches.length})
           </button>
         </div>
 
@@ -271,7 +276,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Standings */}
           <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">📊 Puan Durumu</h2>
+            <h2 className="text-lg font-semibold mb-4">📊 {t('standings')}</h2>
             <div className="space-y-1 max-h-96 overflow-y-auto">
               {standings.slice(0, 15).map((team, idx) => (
                 <div key={idx} className="flex items-center justify-between text-sm py-1">
@@ -285,9 +290,9 @@ export default function DashboardPage() {
 
           {/* Matches */}
           <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">📅 Maçlar</h2>
+            <h2 className="text-lg font-semibold mb-4">📅 {t('matches')}</h2>
             {loadingMatches ? (
-              <div className="text-center py-8 text-gray-400">Yükleniyor...</div>
+              <div className="text-center py-8 text-gray-400">{t('loading')}</div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {matches.map((match) => (
@@ -318,7 +323,7 @@ export default function DashboardPage() {
                   </div>
                 ))}
                 {matches.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">Bu ligde maç bulunamadı</div>
+                  <div className="text-center py-8 text-gray-400">{t('noMatches')}</div>
                 )}
               </div>
             )}
@@ -326,11 +331,11 @@ export default function DashboardPage() {
 
           {/* Analysis */}
           <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">🤖 AI Analiz</h2>
+            <h2 className="text-lg font-semibold mb-4">🤖 {t('aiAnalysisTitle')}</h2>
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-gray-400">AI analiz yapıyor...</p>
+                <p className="text-gray-400">{t('analyzing')}</p>
               </div>
             ) : analysisText ? (
               <pre className="text-sm whitespace-pre-wrap max-h-96 overflow-y-auto bg-gray-900 p-3 rounded-lg">
@@ -338,7 +343,7 @@ export default function DashboardPage() {
               </pre>
             ) : (
               <div className="text-center py-8 text-gray-400">
-                Analiz için bir maça tıklayın
+                {t('selectMatch')}
               </div>
             )}
           </div>
@@ -349,13 +354,13 @@ export default function DashboardPage() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between mb-4">
-                <h2 className="text-2xl font-bold">🎰 AI Kupon</h2>
+                <h2 className="text-2xl font-bold">🎰 {t('aiCoupon')}</h2>
                 <button onClick={() => setShowKuponModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
               </div>
               {kuponLoading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p>AI'lar kupon oluşturuyor...</p>
+                  <p>{t('creatingCoupon')}</p>
                 </div>
               ) : (
                 <pre className="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-lg">{kuponResult}</pre>
