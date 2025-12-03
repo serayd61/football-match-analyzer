@@ -28,5 +28,7 @@ export async function runStatsAgent(
 JSON: {"homeStrength": 75, "awayStrength": 68, "formComparison": "", "goalExpectancy": {"home": 1.5, "away": 1.1, "total": 2.6}, "keyStats": [], "patterns": [], "summary": ""}` },
   ];
 
-  return await heurist.chatJSON<StatsReport>(messages, { model: 'deepseek-ai/deepseek-v3' });
+  return await heurist.chatJSON<StatsReport>(messages, { 
+    model: 'meta-llama/llama-3.3-70b-instruct' 
+  });
 }
