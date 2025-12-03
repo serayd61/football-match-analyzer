@@ -74,22 +74,37 @@ async function cacheAnalysis(
 }
 
 // Kullanıcı analiz geçmişine ekle
-async function addToUserHistory(userId: string, analysisId: string, fixtureId: number, homeTeam: string, awayTeam: string) {
+async function addToUserHistory(
+  userId: string, 
+  fixtureId: number, 
+  homeTeam: string, 
+  awayTeam: string
+) {
   try {
-    await supabaseAdmin
+    console.log('Adding to user history:', { userId, fixtureId, homeTeam, awayTeam });
+    
+    const { data, error } = await supabaseAdmin
       .from('user_analyses')
       .upsert({
         user_id: userId,
-        analysis_id: analysisId,
         fixture_id: fixtureId,
         home_team: homeTeam,
         away_team: awayTeam,
         viewed_at: new Date().toISOString(),
+        is_favorite: false,
       }, {
         onConflict: 'user_id,fixture_id',
-      });
+        ignoreDuplicates: false,
+      })
+      .select();
+
+    if (error) {
+      console.error('User history error:', error);
+    } else {
+      console.log('User history saved:', data);
+    }
   } catch (error) {
-    console.error('User history error:', error);
+    console.error('User history exception:', error);
   }
 }
 
