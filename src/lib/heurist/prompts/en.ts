@@ -1,5 +1,3 @@
-// src/lib/heurist/prompts/en.ts
-
 export const EN_PROMPTS = {
   scout: {
     system: `🔍 YOU ARE A WORLD-CLASS FOOTBALL SCOUT AGENT!
