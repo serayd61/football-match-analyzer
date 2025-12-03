@@ -587,13 +587,27 @@ async function analyzeWithOpenAI(prompt: string) {
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { 
+          role: 'system', 
+          content: 'You are a football betting analyst. You MUST respond ONLY with valid JSON. No explanations, no apologies, just JSON.' 
+        },
+        { role: 'user', content: prompt }
+      ],
       max_tokens: 4000,
+      response_format: { type: "json_object" },
     });
     const text = response.choices[0]?.message?.content || '';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    return JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
+    
+    // JSON parse dene
+    try {
+      return JSON.parse(text);
+    } catch {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      console.error('OpenAI returned non-JSON:', text.slice(0, 100));
+      return null;
+    }
   } catch (error) {
     console.error('OpenAI error:', error);
     return null;
