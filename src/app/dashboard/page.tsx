@@ -4,4 +4,355 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-// ... mevcut kodun geri kalanı
+const LEAGUE_BUTTONS = [
+  { key: 'premier_league', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { key: 'championship', name: 'Championship', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { key: 'la_liga', name: 'La Liga', flag: '🇪🇸' },
+  { key: 'serie_a', name: 'Serie A', flag: '🇮🇹' },
+  { key: 'bundesliga', name: 'Bundesliga', flag: '🇩🇪' },
+  { key: 'ligue_1', name: 'Ligue 1', flag: '🇫🇷' },
+  { key: 'super_lig', name: 'Süper Lig', flag: '🇹🇷' },
+  { key: 'eredivisie', name: 'Eredivisie', flag: '🇳🇱' },
+  { key: 'liga_portugal', name: 'Portugal', flag: '🇵🇹' },
+  { key: 'pro_league', name: 'Belgium', flag: '🇧🇪' },
+];
+
+interface Match {
+  id: number;
+  homeTeam: string;
+  homeTeamId: number;
+  homeCrest: string;
+  awayTeam: string;
+  awayTeamId: number;
+  awayCrest: string;
+  date: string;
+  competition: string;
+}
+
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
+  const [competition, setCompetition] = useState('premier_league');
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [standings, setStandings] = useState<any[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedMatches, setSelectedMatches] = useState<Match[]>([]);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysisText, setAnalysisText] = useState('');
+  const [kuponResult, setKuponResult] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [kuponLoading, setKuponLoading] = useState(false);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [showKuponModal, setShowKuponModal] = useState(false);
+
+  const subscription = (session?.user as any)?.subscription;
+  const trialDaysRemaining = subscription?.trial_end 
+    ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (session) {
+      fetchMatches();
+      fetchStandings();
+    }
+  }, [competition, session]);
+
+  const fetchMatches = async () => {
+    setLoadingMatches(true);
+    try {
+      const res = await fetch(`/api/upcoming?competition=${competition}&t=${Date.now()}`);
+      const data = await res.json();
+      setMatches(data.matches || []);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+    }
+    setLoadingMatches(false);
+  };
+
+  const fetchStandings = async () => {
+    try {
+      const res = await fetch(`/api/standings?competition=${competition}&t=${Date.now()}`);
+      const data = await res.json();
+      setStandings(data.standings || []);
+    } catch (error) {
+      console.error('Error fetching standings:', error);
+    }
+  };
+
+  const analyzeMatch = async (match: Match) => {
+    setSelectedMatch(match);
+    setLoading(true);
+    setAnalysis(null);
+    setAnalysisText('');
+    
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.analysis) {
+        setAnalysis(data);
+        setAnalysisText(formatAnalysis(data));
+      } else {
+        setAnalysisText(data.error || 'Analiz yapılamadı');
+      }
+    } catch (error) {
+      setAnalysisText('Hata: ' + String(error));
+    }
+    setLoading(false);
+  };
+
+  const formatAnalysis = (data: any): string => {
+    const a = data.analysis;
+    const odds = data.odds;
+    
+    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n\n`;
+    
+    if (odds?.matchWinner) {
+      text += `📊 ORANLAR\n`;
+      text += `1: ${odds.matchWinner.home} | X: ${odds.matchWinner.draw} | 2: ${odds.matchWinner.away}\n\n`;
+    }
+    
+    text += `🤖 AI TAHMİNLERİ\n`;
+    if (a?.matchResult) {
+      text += `MS: ${a.matchResult.prediction} (%${a.matchResult.confidence})\n`;
+    }
+    if (a?.goals) {
+      text += `2.5: ${a.goals.over25 ? 'ÜST' : 'ALT'} (%${a.goals.confidence})\n`;
+    }
+    if (a?.btts) {
+      text += `KG: ${a.btts.prediction ? 'VAR' : 'YOK'} (%${a.btts.confidence})\n`;
+    }
+    if (a?.correctScore) {
+      text += `Skor: ${a.correctScore.prediction}\n`;
+    }
+    
+    return text;
+  };
+
+  const toggleMatchSelection = (match: Match) => {
+    setSelectedMatches(prev => {
+      const exists = prev.find(m => m.id === match.id);
+      return exists ? prev.filter(m => m.id !== match.id) : [...prev, match];
+    });
+  };
+
+  const generateKupon = async () => {
+    if (selectedMatches.length === 0) return alert('En az 1 maç seçin!');
+
+    setKuponLoading(true);
+    setKuponResult('');
+    setShowKuponModal(true);
+
+    try {
+      const res = await fetch('/api/multi-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matches: selectedMatches.map(m => ({
+            fixtureId: m.id,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            homeTeamId: m.homeTeamId,
+            awayTeamId: m.awayTeamId,
+          }))
+        }),
+      });
+      const data = await res.json();
+      setKuponResult(data.kupon || JSON.stringify(data, null, 2));
+    } catch (error) {
+      setKuponResult('Hata: ' + String(error));
+    }
+    setKuponLoading(false);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('tr-TR', { 
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+    });
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      {/* Subscription Bar */}
+      <div className={`py-2 px-4 text-center text-sm ${
+        subscription?.status === 'trialing' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+      }`}>
+        {subscription?.status === 'trialing' ? (
+          <>🎁 Deneme süresi: {trialDaysRemaining} gün kaldı • <a href="/pricing" className="underline">Pro'ya Yükselt</a></>
+        ) : subscription?.status === 'active' ? (
+          <>✓ Pro Üyelik Aktif</>
+        ) : (
+          <>⚠️ Abonelik gerekli • <a href="/pricing" className="underline">Abone Ol</a></>
+        )}
+        <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
+          Çıkış
+        </button>
+      </div>
+
+      <div className="p-4 max-w-7xl mx-auto">
+        {/* Header */}
+        <header className="text-center mb-6">
+          <h1 className="text-3xl font-bold">⚽ Football Analytics Pro</h1>
+          <p className="text-gray-400 text-sm">Hoş geldin, {session?.user?.name || session?.user?.email}</p>
+        </header>
+
+        {/* League Buttons */}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {LEAGUE_BUTTONS.map((league) => (
+            <button
+              key={league.key}
+              onClick={() => setCompetition(league.key)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                competition === league.key ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              {league.flag} {league.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Kupon Button */}
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={generateKupon}
+            disabled={selectedMatches.length === 0}
+            className={`px-6 py-3 rounded-xl font-bold ${
+              selectedMatches.length > 0
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
+                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            🎰 Kupon Oluştur ({selectedMatches.length} maç)
+          </button>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Standings */}
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h2 className="text-lg font-semibold mb-4">📊 Puan Durumu</h2>
+            <div className="space-y-1 max-h-96 overflow-y-auto">
+              {standings.slice(0, 15).map((team, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm py-1">
+                  <span className="text-gray-400 w-6">{team.position}</span>
+                  <span className="flex-1 truncate">{team.teamName}</span>
+                  <span className="font-bold">{team.points}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Matches */}
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h2 className="text-lg font-semibold mb-4">📅 Maçlar</h2>
+            {loadingMatches ? (
+              <div className="text-center py-8 text-gray-400">Yükleniyor...</div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {matches.map((match) => (
+                  <div
+                    key={match.id}
+                    className={`p-3 rounded-lg cursor-pointer ${
+                      selectedMatch?.id === match.id ? 'bg-green-600' : 
+                      selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-600/30 border border-yellow-500' : 
+                      'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-400">{formatDate(match.date)}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleMatchSelection(match); }}
+                        className={`px-2 py-1 rounded text-xs ${
+                          selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-500 text-black' : 'bg-gray-600'
+                        }`}
+                      >
+                        {selectedMatches.find(m => m.id === match.id) ? '✓' : '+'}
+                      </button>
+                    </div>
+                    <div onClick={() => analyzeMatch(match)} className="flex justify-between text-sm">
+                      <span>{match.homeTeam}</span>
+                      <span className="text-gray-400">vs</span>
+                      <span>{match.awayTeam}</span>
+                    </div>
+                  </div>
+                ))}
+                {matches.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">Bu ligde maç bulunamadı</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Analysis */}
+          <div className="bg-gray-800 rounded-xl p-4">
+            <h2 className="text-lg font-semibold mb-4">🤖 AI Analiz</h2>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-gray-400">AI analiz yapıyor...</p>
+              </div>
+            ) : analysisText ? (
+              <pre className="text-sm whitespace-pre-wrap max-h-96 overflow-y-auto bg-gray-900 p-3 rounded-lg">
+                {analysisText}
+              </pre>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                Analiz için bir maça tıklayın
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Kupon Modal */}
+        {showKuponModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between mb-4">
+                <h2 className="text-2xl font-bold">🎰 AI Kupon</h2>
+                <button onClick={() => setShowKuponModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+              </div>
+              {kuponLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>AI'lar kupon oluşturuyor...</p>
+                </div>
+              ) : (
+                <pre className="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-lg">{kuponResult}</pre>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
