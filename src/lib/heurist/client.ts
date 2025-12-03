@@ -71,20 +71,43 @@ export class HeuristClient {
     }
   }
 
-  async chatJSON<T>(messages: HeuristMessage[], options: HeuristOptions = {}): Promise<T | null> {
-    const response = await this.chat(messages, options);
-    if (!response) return null;
+ async chatJSON<T>(messages: HeuristMessage[], options: HeuristOptions = {}): Promise<T | null> {
+  const response = await this.chat(messages, options);
+  if (!response) return null;
 
+  try {
+    // Önce direkt parse dene
     try {
+      return JSON.parse(response) as T;
+    } catch {
+      // JSON bloğunu bul
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as T;
+        // Temizle ve parse et
+        let jsonStr = jsonMatch[0];
+        
+        // Yaygın hataları düzelt
+        jsonStr = jsonStr
+          .replace(/,\s*}/g, '}')  // Trailing comma
+          .replace(/,\s*]/g, ']')  // Trailing comma in array
+          .replace(/'/g, '"')      // Single quotes to double
+          .replace(/(\w+):/g, '"$1":') // Unquoted keys
+          .replace(/""+/g, '"');   // Double quotes
+        
+        try {
+          return JSON.parse(jsonStr) as T;
+        } catch (e2) {
+          console.error('❌ JSON cleanup failed:', e2);
+          console.error('Raw response:', response.slice(0, 500));
+          return null;
+        }
       }
-      return JSON.parse(response.replace(/```json\n?|\n?```/g, '').trim()) as T;
-    } catch (error) {
-      console.error('❌ JSON parse error:', error);
+      console.error('❌ No JSON found in response');
       return null;
     }
+  } catch (error) {
+    console.error('❌ JSON parse error:', error);
+    return null;
   }
 }
 
