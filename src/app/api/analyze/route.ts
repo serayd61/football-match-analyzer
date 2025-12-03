@@ -661,9 +661,18 @@ async function analyzeWithOpenAI(prompt: string) {
 
 async function analyzeWithGemini(prompt: string) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+    });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
+    console.log('Gemini raw response length:', text.length);
+    
+    // JSON parse et
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
     return JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim());
   } catch (error) {
     console.error('Gemini error:', error);
