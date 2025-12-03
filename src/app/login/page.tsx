@@ -17,7 +17,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { lang } = useLanguage();
 
-  const labels: Record<string, Record<string, string>> = {
+  const labels = {
     tr: {
       title: 'Football Analytics Pro',
       subtitle: 'Yapay Zeka Destekli Profesyonel Futbol Analiz Platformu',
