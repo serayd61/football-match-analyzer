@@ -176,91 +176,218 @@ function calculateForm(matches: any[], teamId: number) {
   };
 }
 
-// Agresif AI Prompt oluştur
-function createAggressivePrompt(data: any) {
+// Agresif AI Prompt oluştur - DİL DESTEKLİ
+function createAggressivePrompt(data: any, language: string = 'tr') {
   const { homeTeam, awayTeam, odds, homeForm, awayForm, h2h, fixture } = data;
 
-  return `Sen dünya çapında tanınan, agresif tahminleriyle ünlü bir futbol analiz uzmanısın. Bahisçilere kazandıran, cesur ve net tahminler yapıyorsun.
+  // Dil talimatları
+  const langInstructions: Record<string, string> = {
+    tr: 'TÜM yanıtlarını ve açıklamalarını TÜRKÇE olarak ver. JSON içindeki tüm "reasoning", "reason", "overallAnalysis" alanları TÜRKÇE olmalı.',
+    en: 'Provide ALL your responses and explanations in ENGLISH. All "reasoning", "reason", "overallAnalysis" fields in JSON must be in ENGLISH.',
+    de: 'Gib ALLE deine Antworten und Erklärungen auf DEUTSCH. Alle "reasoning", "reason", "overallAnalysis" Felder im JSON müssen auf DEUTSCH sein.',
+  };
 
-🏟️ MAÇ: ${homeTeam} vs ${awayTeam}
+  // Dile göre etiketler
+  const langLabels: Record<string, any> = {
+    tr: {
+      matchResult: 'Maç Sonucu',
+      overUnder: 'Üst/Alt 2.5 Gol',
+      btts: 'Karşılıklı Gol',
+      doubleChance: 'Çifte Şans',
+      halfTime: 'İlk Yarı Sonucu',
+      correctScore: 'Doğru Skor',
+      totalGoals: 'Toplam Gol Aralığı',
+      firstGoal: 'İlk Gol',
+      handicap: 'Handikap',
+      starPlayer: 'Maçın Yıldızı',
+      home: 'Ev Sahibi',
+      away: 'Deplasman',
+      draw: 'Beraberlik',
+      over: 'Üst',
+      under: 'Alt',
+      yes: 'Var',
+      no: 'Yok',
+      noGoal: 'Gol Yok',
+      low: 'Düşük',
+      medium: 'Orta',
+      high: 'Yüksek',
+      lastMatches: 'Son 5 maç',
+      points: 'Puan',
+      avgGoalsScored: 'Attığı gol ort',
+      avgGoalsConceded: 'Yediği gol ort',
+      h2h: 'KAFA KAFAYA',
+      noData: 'Veri yok',
+      task: 'GÖREV',
+      rules: 'ÖNEMLİ KURALLAR',
+      outputFormat: 'ÇIKTI FORMATI',
+      shortExplanation: 'Kısa açıklama',
+      bestBetType: 'En güvenli bahis tipi',
+      whyBest: 'Neden bu en iyi seçenek',
+      whyDifferent: 'Neden fark yaratacak',
+      overallEval: 'Genel maç değerlendirmesi',
+    },
+    en: {
+      matchResult: 'Match Result',
+      overUnder: 'Over/Under 2.5 Goals',
+      btts: 'Both Teams to Score',
+      doubleChance: 'Double Chance',
+      halfTime: 'Half Time Result',
+      correctScore: 'Correct Score',
+      totalGoals: 'Total Goals Range',
+      firstGoal: 'First Goal',
+      handicap: 'Handicap',
+      starPlayer: 'Star Player',
+      home: 'Home',
+      away: 'Away',
+      draw: 'Draw',
+      over: 'Over',
+      under: 'Under',
+      yes: 'Yes',
+      no: 'No',
+      noGoal: 'No Goal',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+      lastMatches: 'Last 5 matches',
+      points: 'Points',
+      avgGoalsScored: 'Avg goals scored',
+      avgGoalsConceded: 'Avg goals conceded',
+      h2h: 'HEAD TO HEAD',
+      noData: 'No data',
+      task: 'TASK',
+      rules: 'IMPORTANT RULES',
+      outputFormat: 'OUTPUT FORMAT',
+      shortExplanation: 'Short explanation',
+      bestBetType: 'Safest bet type',
+      whyBest: 'Why this is the best option',
+      whyDifferent: 'Why will make a difference',
+      overallEval: 'Overall match evaluation',
+    },
+    de: {
+      matchResult: 'Spielergebnis',
+      overUnder: 'Über/Unter 2.5 Tore',
+      btts: 'Beide Teams treffen',
+      doubleChance: 'Doppelte Chance',
+      halfTime: 'Halbzeitergebnis',
+      correctScore: 'Genaues Ergebnis',
+      totalGoals: 'Tore Gesamt',
+      firstGoal: 'Erstes Tor',
+      handicap: 'Handicap',
+      starPlayer: 'Spieler des Spiels',
+      home: 'Heim',
+      away: 'Auswärts',
+      draw: 'Unentschieden',
+      over: 'Über',
+      under: 'Unter',
+      yes: 'Ja',
+      no: 'Nein',
+      noGoal: 'Kein Tor',
+      low: 'Niedrig',
+      medium: 'Mittel',
+      high: 'Hoch',
+      lastMatches: 'Letzte 5 Spiele',
+      points: 'Punkte',
+      avgGoalsScored: 'Ø Tore geschossen',
+      avgGoalsConceded: 'Ø Tore kassiert',
+      h2h: 'DIREKTER VERGLEICH',
+      noData: 'Keine Daten',
+      task: 'AUFGABE',
+      rules: 'WICHTIGE REGELN',
+      outputFormat: 'AUSGABEFORMAT',
+      shortExplanation: 'Kurze Erklärung',
+      bestBetType: 'Sicherste Wettart',
+      whyBest: 'Warum ist das die beste Option',
+      whyDifferent: 'Warum wird er den Unterschied machen',
+      overallEval: 'Gesamtbewertung des Spiels',
+    },
+  };
 
-📊 BAHİS ORANLARI:
-${odds.matchWinner ? `- Maç Sonucu: 1=${odds.matchWinner.home} | X=${odds.matchWinner.draw} | 2=${odds.matchWinner.away}` : ''}
-${odds.overUnder ? `- 2.5 Gol: Üst=${odds.overUnder.over} | Alt=${odds.overUnder.under}` : ''}
-${odds.btts ? `- KG: Var=${odds.btts.yes} | Yok=${odds.btts.no}` : ''}
-${odds.doubleChance ? `- Çifte Şans: 1X=${odds.doubleChance.homeOrDraw} | X2=${odds.doubleChance.awayOrDraw} | 12=${odds.doubleChance.homeOrAway}` : ''}
-${odds.halfTime ? `- İlk Yarı: 1=${odds.halfTime.home} | X=${odds.halfTime.draw} | 2=${odds.halfTime.away}` : ''}
+  const labels = langLabels[language] || langLabels.en;
+  const langInstruction = langInstructions[language] || langInstructions.en;
 
-📈 ${homeTeam} SON FORM:
-- Son 5 maç: ${homeForm.form || 'N/A'}
-- Puan: ${homeForm.points}/15
-- Attığı gol ort: ${homeForm.avgGoals}
-- Yediği gol ort: ${homeForm.avgConceded}
+  return `${langInstruction}
 
-📉 ${awayTeam} SON FORM:
-- Son 5 maç: ${awayForm.form || 'N/A'}
-- Puan: ${awayForm.points}/15
-- Attığı gol ort: ${awayForm.avgGoals}
-- Yediği gol ort: ${awayForm.avgConceded}
+You are a world-renowned football analysis expert known for aggressive predictions. You make bold, clear predictions that help bettors win.
 
-⚔️ KAFA KAFAYA (Son 5 maç):
+🏟️ MATCH: ${homeTeam} vs ${awayTeam}
+
+📊 BETTING ODDS:
+${odds.matchWinner ? `- ${labels.matchResult}: 1=${odds.matchWinner.home} | X=${odds.matchWinner.draw} | 2=${odds.matchWinner.away}` : ''}
+${odds.overUnder ? `- ${labels.overUnder}: ${labels.over}=${odds.overUnder.over} | ${labels.under}=${odds.overUnder.under}` : ''}
+${odds.btts ? `- ${labels.btts}: ${labels.yes}=${odds.btts.yes} | ${labels.no}=${odds.btts.no}` : ''}
+${odds.doubleChance ? `- ${labels.doubleChance}: 1X=${odds.doubleChance.homeOrDraw} | X2=${odds.doubleChance.awayOrDraw} | 12=${odds.doubleChance.homeOrAway}` : ''}
+${odds.halfTime ? `- ${labels.halfTime}: 1=${odds.halfTime.home} | X=${odds.halfTime.draw} | 2=${odds.halfTime.away}` : ''}
+
+📈 ${homeTeam} FORM:
+- ${labels.lastMatches}: ${homeForm.form || 'N/A'}
+- ${labels.points}: ${homeForm.points}/15
+- ${labels.avgGoalsScored}: ${homeForm.avgGoals}
+- ${labels.avgGoalsConceded}: ${homeForm.avgConceded}
+
+📉 ${awayTeam} FORM:
+- ${labels.lastMatches}: ${awayForm.form || 'N/A'}
+- ${labels.points}: ${awayForm.points}/15
+- ${labels.avgGoalsScored}: ${awayForm.avgGoals}
+- ${labels.avgGoalsConceded}: ${awayForm.avgConceded}
+
+⚔️ ${labels.h2h} (Last 5):
 ${h2h.slice(0, 5).map((m: any) => {
   const home = m.participants?.find((p: any) => p.meta?.location === 'home')?.name;
   const away = m.participants?.find((p: any) => p.meta?.location === 'away')?.name;
   const scores = m.scores?.find((s: any) => s.description === 'CURRENT');
   return `- ${home} ${scores?.score?.home || '?'}-${scores?.score?.away || '?'} ${away}`;
-}).join('\n') || 'Veri yok'}
+}).join('\n') || labels.noData}
 
-🎯 GÖREV:
-Aşağıdaki TÜM bahis tiplerini MUTLAKA analiz et ve her biri için NET bir tahmin ver:
+🎯 ${labels.task}:
+Analyze ALL betting types below and give a CLEAR prediction for each:
 
-1. MAÇ SONUCU (1X2): Tahminin (1, X veya 2) ve güven yüzdesi (%60-95)
-2. ÜST/ALT 2.5 GOL: Tahminin (Üst veya Alt) ve güven yüzdesi
-3. KARŞILIKLI GOL (KG): Tahminin (Var veya Yok) ve güven yüzdesi
-4. ÇİFTE ŞANS: En iyi seçenek (1X, X2 veya 12) ve güven yüzdesi
-5. İLK YARI SONUCU: Tahminin (1, X veya 2) ve güven yüzdesi
-6. DOĞRU SKOR: En olası 3 skor tahmini ve yüzdeleri
-7. TOPLAM GOL ARALIĞI: 0-1, 2-3, 4-5, 6+ arasından seç
-8. İLK GOL: Hangi takım ilk golü atar? (Ev, Deplasman, Gol Yok)
-9. HANDIKAP: -1.5 veya +1.5 önerisi
-10. MAÇIN YILDIZI: Maçta fark yaratacak oyuncu önerisi
+1. ${labels.matchResult} (1X2): Prediction (1, X or 2) and confidence (60-95%)
+2. ${labels.overUnder}: Prediction (${labels.over} or ${labels.under}) and confidence
+3. ${labels.btts}: Prediction (${labels.yes} or ${labels.no}) and confidence
+4. ${labels.doubleChance}: Best option (1X, X2 or 12) and confidence
+5. ${labels.halfTime}: Prediction (1, X or 2) and confidence
+6. ${labels.correctScore}: Top 3 most likely scores with percentages
+7. ${labels.totalGoals}: Choose from 0-1, 2-3, 4-5, 6+
+8. ${labels.firstGoal}: Which team scores first? (${labels.home}, ${labels.away}, ${labels.noGoal})
+9. ${labels.handicap}: -1.5 or +1.5 recommendation
+10. ${labels.starPlayer}: Player who will make the difference
 
-⚠️ ÖNEMLİ KURALLAR:
-- ASLA "belki", "olabilir", "muhtemel" gibi belirsiz kelimeler kullanma
-- Her tahmin için KESİN bir seçim yap
-- Güven yüzdesi %60'ın altında olmasın
-- Bahis oranlarıyla uyumlu değilse NEDENINI açıkla
-- Value bet fırsatı varsa VURGULA (AI tahmin > Bahis olasılığı)
+⚠️ ${labels.rules}:
+- NEVER use uncertain words like "maybe", "possibly", "might"
+- Make a DEFINITE choice for each prediction
+- Confidence must not be below 60%
+- If odds disagree with your prediction, EXPLAIN why
+- HIGHLIGHT value bet opportunities (AI prediction > Betting probability)
 
-📝 ÇIKTI FORMATI (JSON):
+📝 ${labels.outputFormat} (JSON):
 {
   "matchResult": {
-    "prediction": "1 veya X veya 2",
+    "prediction": "1 or X or 2",
     "confidence": 75,
-    "reasoning": "Kısa açıklama",
+    "reasoning": "${labels.shortExplanation}",
     "value": true/false
   },
   "overUnder25": {
-    "prediction": "Üst veya Alt",
+    "prediction": "${labels.over} or ${labels.under}",
     "confidence": 70,
-    "reasoning": "Kısa açıklama",
+    "reasoning": "${labels.shortExplanation}",
     "value": true/false
   },
   "btts": {
-    "prediction": "Var veya Yok",
+    "prediction": "${labels.yes} or ${labels.no}",
     "confidence": 72,
-    "reasoning": "Kısa açıklama",
+    "reasoning": "${labels.shortExplanation}",
     "value": true/false
   },
   "doubleChance": {
-    "prediction": "1X veya X2 veya 12",
+    "prediction": "1X or X2 or 12",
     "confidence": 85,
-    "reasoning": "Kısa açıklama"
+    "reasoning": "${labels.shortExplanation}"
   },
   "halfTimeResult": {
-    "prediction": "1 veya X veya 2",
+    "prediction": "1 or X or 2",
     "confidence": 65,
-    "reasoning": "Kısa açıklama"
+    "reasoning": "${labels.shortExplanation}"
   },
   "correctScore": {
     "first": { "score": "2-1", "confidence": 15 },
@@ -272,30 +399,30 @@ Aşağıdaki TÜM bahis tiplerini MUTLAKA analiz et ve her biri için NET bir ta
     "confidence": 68
   },
   "firstGoal": {
-    "prediction": "Ev veya Deplasman veya Gol Yok",
+    "prediction": "${labels.home} or ${labels.away} or ${labels.noGoal}",
     "confidence": 70
   },
   "handicap": {
-    "team": "${homeTeam} veya ${awayTeam}",
-    "line": "-1.5 veya +1.5",
+    "team": "${homeTeam} or ${awayTeam}",
+    "line": "-1.5 or +1.5",
     "confidence": 65
   },
   "starPlayer": {
-    "name": "Oyuncu adı",
-    "team": "Takım adı",
-    "reason": "Neden fark yaratacak"
+    "name": "Player name",
+    "team": "Team name",
+    "reason": "${labels.whyDifferent}"
   },
-  "overallAnalysis": "2-3 cümlelik genel maç değerlendirmesi",
+  "overallAnalysis": "2-3 sentence ${labels.overallEval}",
   "bestBet": {
-    "type": "En güvenli bahis tipi",
-    "prediction": "Tahmin",
+    "type": "${labels.bestBetType}",
+    "prediction": "Prediction",
     "confidence": 80,
-    "reasoning": "Neden bu en iyi seçenek"
+    "reasoning": "${labels.whyBest}"
   },
-  "riskLevel": "Düşük/Orta/Yüksek"
+  "riskLevel": "${labels.low}/${labels.medium}/${labels.high}"
 }
 
-SADECE JSON formatında yanıt ver, başka bir şey yazma.`;
+ONLY respond with JSON format, nothing else. ALL explanations must be in ${language.toUpperCase()}!`;
 }
 
 // Claude analizi
@@ -420,6 +547,7 @@ function calculateConsensus(analyses: any[]) {
   // En çok oy alan tahminleri bul
   const getFinalPrediction = (category: any) => {
     const preds = category.predictions;
+    if (Object.keys(preds).length === 0) return null;
     const maxVotes = Math.max(...Object.values(preds) as number[]);
     const winner = Object.keys(preds).find(k => preds[k] === maxVotes);
     return {
@@ -451,7 +579,7 @@ function calculateConsensus(analyses: any[]) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, language = 'en' } = body;
 
     if (!fixtureId) {
       return NextResponse.json({ error: 'Fixture ID gerekli' }, { status: 400 });
@@ -472,7 +600,7 @@ export async function POST(request: NextRequest) {
     const homeForm = calculateForm(homeRecentMatches, homeTeamId);
     const awayForm = calculateForm(awayRecentMatches, awayTeamId);
 
-    // Prompt oluştur
+    // Prompt oluştur - DİL PARAMETRESİ EKLENDİ
     const prompt = createAggressivePrompt({
       homeTeam,
       awayTeam,
@@ -481,7 +609,7 @@ export async function POST(request: NextRequest) {
       awayForm,
       h2h,
       fixture,
-    });
+    }, language);
 
     // 3 AI'dan paralel analiz al
     const [claudeAnalysis, openaiAnalysis, geminiAnalysis] = await Promise.all([
@@ -520,6 +648,7 @@ export async function POST(request: NextRequest) {
         gemini: geminiAnalysis,
       },
       aiStatus,
+      language,
     });
 
   } catch (error: any) {
