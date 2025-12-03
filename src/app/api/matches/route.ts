@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Log unique leagues
-    const uniqueLeagues = [...new Set(data.data.map((f: any) => f.league?.name).filter(Boolean))];
+    const uniqueLeagues = Array.from(new Set(data.data.map((f: any) => f.league?.name).filter(Boolean)));
     console.log('Leagues found:', uniqueLeagues.length);
     console.log('Leagues:', uniqueLeagues.slice(0, 10).join(', '));
 
