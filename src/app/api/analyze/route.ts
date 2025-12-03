@@ -24,22 +24,20 @@ async function fetchFixtureData(fixtureId: number) {
       'participants',
       'league',
       'venue',
-      'statistics',
       'scores',
-      'odds',
-      'predictions',
-      'lineups',
-      'events',
-      'weather',
-      'referees'
+      'odds.market',
+      'odds.bookmaker',
     ].join(';');
 
     const response = await fetch(
       `https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=${includes}`
     );
     const data = await response.json();
-    console.log('Fixture data:', JSON.stringify(data.data, null, 2).slice(0, 500));
-    return data.data;
+    
+    console.log('=== FIXTURE RAW DATA ===');
+    console.log('Odds count:', data.data?.odds?.length || 0);
+    
+    return data.data || null;
   } catch (error) {
     console.error('Fixture fetch error:', error);
     return null;
