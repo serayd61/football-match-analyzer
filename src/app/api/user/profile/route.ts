@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Kullanıcı profilini getir
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,65 +13,50 @@ export async function GET(request: NextRequest) {
     const userId = (session.user as any).id;
     const today = new Date().toISOString().split('T')[0];
 
-    // Profil bilgileri
-    const { data: profile } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    console.log('Fetching profile for user:', userId);
 
     // Günlük kullanım
-    const { data: usage } = await supabaseAdmin
+    const { data: usage, error: usageError } = await supabaseAdmin
       .from('user_daily_usage')
       .select('*')
       .eq('user_id', userId)
       .eq('date', today)
-      .single();
+      .maybeSingle();
+
+    if (usageError) console.error('Usage error:', usageError);
 
     // Son analizler
-    const { data: recentAnalyses } = await supabaseAdmin
+    const { data: recentAnalyses, error: recentError } = await supabaseAdmin
       .from('user_analyses')
-      .select(`
-        *,
-        analyses (
-          fixture_id,
-          home_team,
-          away_team,
-          league,
-          match_date,
-          analysis_data
-        )
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('viewed_at', { ascending: false })
       .limit(20);
 
+    if (recentError) console.error('Recent analyses error:', recentError);
+    console.log('Recent analyses:', recentAnalyses);
+
     // Favori analizler
-    const { data: favorites } = await supabaseAdmin
+    const { data: favorites, error: favError } = await supabaseAdmin
       .from('user_analyses')
-      .select(`
-        *,
-        analyses (
-          fixture_id,
-          home_team,
-          away_team,
-          league,
-          analysis_data
-        )
-      `)
+      .select('*')
       .eq('user_id', userId)
       .eq('is_favorite', true)
       .order('viewed_at', { ascending: false });
 
+    if (favError) console.error('Favorites error:', favError);
+    console.log('Favorites:', favorites);
+
     // Toplam analiz sayısı
-    const { count: totalAnalyses } = await supabaseAdmin
+    const { count: totalAnalyses, error: countError } = await supabaseAdmin
       .from('user_analyses')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
 
+    if (countError) console.error('Count error:', countError);
+
     return NextResponse.json({
       success: true,
-      profile: profile || {},
       usage: {
         today: usage?.analysis_count || 0,
         limit: 50,
@@ -92,7 +76,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Profil güncelle
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
