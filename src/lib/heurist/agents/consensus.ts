@@ -42,7 +42,7 @@ JSON FORMAT:
   ];
 
   return await heurist.chatJSON<ConsensusReport>(messages, { 
-    model: 'meta-llama/llama-3.1-70b-instruct',
+    model: 'nvidia/llama-3.1-nemotron-70b-instruct',
     temperature: 0.6 
   });
 }
