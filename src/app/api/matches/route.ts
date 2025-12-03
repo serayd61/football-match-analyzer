@@ -14,75 +14,57 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const specificDate = searchParams.get('date');
     const leagueId = searchParams.get('league');
 
-    console.log('========== MATCHES API DEBUG ==========');
-    console.log('Date:', date);
-    console.log('League filter:', leagueId || 'none');
-    console.log('API Key exists:', !!SPORTMONKS_API_KEY);
-    console.log('API Key prefix:', SPORTMONKS_API_KEY?.slice(0, 10) + '...');
-
-    // Sportmonks API - fixtures by date
-    const url = `https://api.sportmonks.com/v3/football/fixtures/date/${date}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=100`;
+    // Bugünün tarihi
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
     
-    console.log('Fetching URL:', url.replace(SPORTMONKS_API_KEY || '', 'API_KEY_HIDDEN'));
+    // 7 gün sonrası
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+
+    console.log('========== MATCHES API ==========');
+    console.log('Mode:', specificDate ? 'Single Date' : '7-Day Range');
+    console.log('Date range:', todayStr, 'to', nextWeekStr);
+
+    let url: string;
+    
+    if (specificDate) {
+      // Tek gün
+      url = `https://api.sportmonks.com/v3/football/fixtures/date/${specificDate}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=100`;
+    } else {
+      // 7 günlük aralık
+      url = `https://api.sportmonks.com/v3/football/fixtures/between/${todayStr}/${nextWeekStr}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=150`;
+    }
+
+    console.log('Fetching matches...');
 
     const response = await fetch(url);
     const data = await response.json();
 
-    console.log('Response status:', response.status);
-    console.log('Response has data:', !!data.data);
+    console.log('API Response status:', response.status);
     console.log('Total matches from API:', data.data?.length || 0);
-    
-    // Subscription info
-    if (data.subscription) {
-      console.log('Subscription plan:', data.subscription?.plans?.[0]?.plan);
-      console.log('Subscription leagues:', data.subscription?.plans?.[0]?.leagues?.length || 'unknown');
-    }
 
-    // Rate limit info
-    if (data.rate_limit) {
-      console.log('Rate limit:', data.rate_limit);
-    }
-
-    // Error check
     if (data.error || data.message) {
       console.log('API Error:', data.error || data.message);
       return NextResponse.json({ 
         error: data.error || data.message,
         matches: [],
-        total: 0,
-        debug: {
-          date,
-          apiKeyExists: !!SPORTMONKS_API_KEY,
-          responseStatus: response.status,
-        }
+        total: 0
       });
     }
 
     if (!data.data || data.data.length === 0) {
-      console.log('No matches found for date:', date);
+      console.log('No matches found');
       return NextResponse.json({ 
         matches: [], 
         total: 0,
-        date,
-        message: 'No matches found for this date'
+        message: 'No matches found'
       });
     }
-
-    // Log first 3 matches for debug
-    console.log('Sample matches:');
-    data.data.slice(0, 3).forEach((fixture: any, idx: number) => {
-      const home = fixture.participants?.find((p: any) => p.meta?.location === 'home');
-      const away = fixture.participants?.find((p: any) => p.meta?.location === 'away');
-      console.log(`  ${idx + 1}. ${home?.name || 'Unknown'} vs ${away?.name || 'Unknown'} (${fixture.league?.name || 'Unknown League'})`);
-    });
-
-    // Log unique leagues
-    const uniqueLeagues = Array.from(new Set(data.data.map((f: any) => f.league?.name).filter(Boolean)));
-    console.log('Leagues found:', uniqueLeagues.length);
-    console.log('Leagues:', uniqueLeagues.slice(0, 10).join(', '));
 
     // Process matches
     let matches = data.data.map((fixture: any) => {
@@ -101,29 +83,32 @@ export async function GET(request: NextRequest) {
         venue: fixture.venue?.name,
         date: fixture.starting_at,
         status: fixture.state?.state || 'NS',
-        round: fixture.round?.name,
       };
     });
 
     // Filter by league if specified
     if (leagueId) {
       matches = matches.filter((m: any) => m.leagueId === parseInt(leagueId));
-      console.log('After league filter:', matches.length);
     }
 
-    console.log('Final matches count:', matches.length);
-    console.log('========================================');
+    // Sort by date
+    matches.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Get unique leagues
+    const uniqueLeagues = Array.from(new Set(matches.map((m: any) => m.league)));
+
+    console.log('Processed matches:', matches.length);
+    console.log('Leagues:', uniqueLeagues.length);
+    console.log('=================================');
 
     return NextResponse.json({
       matches,
       total: matches.length,
-      date,
-      leaguesAvailable: uniqueLeagues,
-      debug: {
-        apiResponseCount: data.data?.length || 0,
-        processedCount: matches.length,
-        subscription: data.subscription?.plans?.[0]?.plan || 'unknown',
-      }
+      dateRange: {
+        from: todayStr,
+        to: nextWeekStr
+      },
+      leagues: uniqueLeagues,
     });
 
   } catch (error: any) {
