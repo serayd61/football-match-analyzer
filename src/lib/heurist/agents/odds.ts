@@ -25,5 +25,7 @@ export async function runOddsAgent(
 JSON: {"valuesBets": [], "oddsMovement": [], "bookmakerConsensus": [], "sharpMoney": [], "summary": ""}` },
   ];
 
-  return await heurist.chatJSON<OddsReport>(messages, { model: 'deepseek-ai/deepseek-v3' });
+  return await heurist.chatJSON<OddsReport>(messages, { 
+    model: 'meta-llama/llama-3.3-70b-instruct' 
+  });
 }
