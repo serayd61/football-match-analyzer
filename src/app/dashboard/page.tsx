@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [kuponLoading, setKuponLoading] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [showKuponModal, setShowKuponModal] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
 
   const subscription = (session?.user as any)?.subscription;
   const trialDaysRemaining = subscription?.trial_end 
@@ -78,6 +79,9 @@ export default function DashboardPage() {
       riskLevel: 'RİSK SEVİYESİ',
       overallEval: 'GENEL DEĞERLENDİRME',
       unanimous: 'OYBIRLIĞI',
+      addToFavorites: 'Favorilere Ekle',
+      inFavorites: 'Favorilerde',
+      profile: 'Profil',
     },
     en: {
       aiStatus: 'AI STATUS',
@@ -100,6 +104,9 @@ export default function DashboardPage() {
       riskLevel: 'RISK LEVEL',
       overallEval: 'OVERALL EVALUATION',
       unanimous: 'UNANIMOUS',
+      addToFavorites: 'Add to Favorites',
+      inFavorites: 'In Favorites',
+      profile: 'Profile',
     },
     de: {
       aiStatus: 'KI STATUS',
@@ -122,8 +129,13 @@ export default function DashboardPage() {
       riskLevel: 'RISIKONIVEAU',
       overallEval: 'GESAMTBEWERTUNG',
       unanimous: 'EINSTIMMIG',
+      addToFavorites: 'Zu Favoriten',
+      inFavorites: 'In Favoriten',
+      profile: 'Profil',
     },
   };
+
+  const labels = analysisLabels[lang] || analysisLabels.en;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -135,6 +147,7 @@ export default function DashboardPage() {
     if (session) {
       fetchMatches();
       fetchStandings();
+      fetchFavorites();
     }
   }, [competition, session]);
 
@@ -157,6 +170,40 @@ export default function DashboardPage() {
       setStandings(data.standings || []);
     } catch (error) {
       console.error('Error fetching standings:', error);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      const res = await fetch('/api/user/profile');
+      const data = await res.json();
+      if (data.success && data.favorites) {
+        setFavoriteIds(data.favorites.map((f: any) => f.fixture_id));
+      }
+    } catch (error) {
+      console.error('Favorites fetch error:', error);
+    }
+  };
+
+  const toggleFavoriteAnalysis = async (fixtureId: number) => {
+    const isFavorite = favoriteIds.includes(fixtureId);
+    
+    try {
+      const res = await fetch('/api/user/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fixtureId, isFavorite: !isFavorite }),
+      });
+      
+      if (res.ok) {
+        if (isFavorite) {
+          setFavoriteIds(prev => prev.filter(id => id !== fixtureId));
+        } else {
+          setFavoriteIds(prev => [...prev, fixtureId]);
+        }
+      }
+    } catch (error) {
+      console.error('Favorite toggle error:', error);
     }
   };
 
@@ -203,6 +250,11 @@ export default function DashboardPage() {
 
     let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // Cache bilgisi
+    if (data.fromCache) {
+      text += `⚡ ${lang === 'tr' ? 'Önbellekten yüklendi' : lang === 'de' ? 'Aus Cache geladen' : 'Loaded from cache'}\n\n`;
+    }
 
     // AI Status
     text += `🤖 ${l.aiStatus}: Claude ${aiStatus?.claude || '?'} | GPT-4 ${aiStatus?.openai || '?'} | Gemini ${aiStatus?.gemini || '?'}\n\n`;
@@ -317,6 +369,11 @@ export default function DashboardPage() {
       text += `${a.overallAnalyses[0]}\n`;
     }
 
+    // Usage info
+    if (data.usage) {
+      text += `\n📊 ${lang === 'tr' ? 'Günlük Kullanım' : lang === 'de' ? 'Tägliche Nutzung' : 'Daily Usage'}: ${data.usage.count}/${data.usage.limit}\n`;
+    }
+
     return text;
   };
 
@@ -395,12 +452,12 @@ export default function DashboardPage() {
         ) : (
           <>⚠️ {t('subscriptionRequired')} • <a href="/pricing" className="underline">{t('subscribe')}</a></>
         )}
+        <Link href="/profile" className="ml-4 underline opacity-70 hover:opacity-100">
+          👤 {labels.profile}
+        </Link>
         <button onClick={openPortal} className="ml-4 underline opacity-70 hover:opacity-100">
           {t('manageSubscription')}
         </button>
-        <Link href="/profile" className="ml-4 underline opacity-70 hover:opacity-100">
-  👤 {lang === 'tr' ? 'Profil' : lang === 'de' ? 'Profil' : 'Profile'}
-</Link>
         <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
           {t('logout')}
         </button>
@@ -480,14 +537,19 @@ export default function DashboardPage() {
                   >
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-xs text-gray-400">{formatDate(match.date)}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleMatchSelection(match); }}
-                        className={`px-2 py-1 rounded text-xs ${
-                          selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-500 text-black' : 'bg-gray-600'
-                        }`}
-                      >
-                        {selectedMatches.find(m => m.id === match.id) ? '✓' : '+'}
-                      </button>
+                      <div className="flex gap-1">
+                        {favoriteIds.includes(match.id) && (
+                          <span className="text-yellow-400 text-xs">⭐</span>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleMatchSelection(match); }}
+                          className={`px-2 py-1 rounded text-xs ${
+                            selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-500 text-black' : 'bg-gray-600'
+                          }`}
+                        >
+                          {selectedMatches.find(m => m.id === match.id) ? '✓' : '+'}
+                        </button>
+                      </div>
                     </div>
                     <div onClick={() => analyzeMatch(match)} className="flex justify-between text-sm">
                       <span>{match.homeTeam}</span>
@@ -505,7 +567,22 @@ export default function DashboardPage() {
 
           {/* Analysis */}
           <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">🤖 {t('aiAnalysisTitle')}</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">🤖 {t('aiAnalysisTitle')}</h2>
+              {selectedMatch && analysisText && (
+                <button
+                  onClick={() => toggleFavoriteAnalysis(selectedMatch.id)}
+                  className={`px-3 py-1 rounded-lg text-sm flex items-center gap-1 ${
+                    favoriteIds.includes(selectedMatch.id)
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-gray-700 hover:bg-gray-600'
+                  }`}
+                >
+                  {favoriteIds.includes(selectedMatch.id) ? '⭐' : '☆'}
+                  {favoriteIds.includes(selectedMatch.id) ? labels.inFavorites : labels.addToFavorites}
+                </button>
+              )}
+            </div>
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
