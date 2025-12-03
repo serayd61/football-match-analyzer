@@ -275,6 +275,8 @@ export default function DashboardPage() {
             awayTeamId: m.awayTeamId,
           }))
         }),
+        language: lang,
+}),
       });
       const data = await res.json();
       setKuponResult(data.kupon || JSON.stringify(data, null, 2));
