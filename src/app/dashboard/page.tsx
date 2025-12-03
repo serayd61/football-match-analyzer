@@ -34,7 +34,7 @@ interface Match {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   
   const [competition, setCompetition] = useState('premier_league');
   const [matches, setMatches] = useState<Match[]>([]);
