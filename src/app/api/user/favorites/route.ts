@@ -13,17 +13,49 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as any).id;
     const { fixtureId, isFavorite } = await request.json();
 
-    const { error } = await supabaseAdmin
-      .from('user_analyses')
-      .update({ is_favorite: isFavorite })
-      .eq('user_id', userId)
-      .eq('fixture_id', fixtureId);
+    console.log('Toggle favorite:', { userId, fixtureId, isFavorite });
 
-    if (error) throw error;
+    // Önce kayıt var mı kontrol et
+    const { data: existing } = await supabaseAdmin
+      .from('user_analyses')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('fixture_id', fixtureId)
+      .maybeSingle();
+
+    if (existing) {
+      // Güncelle
+      const { error } = await supabaseAdmin
+        .from('user_analyses')
+        .update({ is_favorite: isFavorite })
+        .eq('user_id', userId)
+        .eq('fixture_id', fixtureId);
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+    } else {
+      // Yeni kayıt oluştur
+      const { error } = await supabaseAdmin
+        .from('user_analyses')
+        .insert({
+          user_id: userId,
+          fixture_id: fixtureId,
+          is_favorite: isFavorite,
+          viewed_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
+    }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
+    console.error('Favorite toggle error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
