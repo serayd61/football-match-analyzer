@@ -1,218 +1,246 @@
 'use client';
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
-
-const LEAGUE_BUTTONS = [
-  { key: 'premier_league', name: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { key: 'championship', name: 'Championship', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { key: 'la_liga', name: 'La Liga', flag: '🇪🇸' },
-  { key: 'serie_a', name: 'Serie A', flag: '🇮🇹' },
-  { key: 'bundesliga', name: 'Bundesliga', flag: '🇩🇪' },
-  { key: 'ligue_1', name: 'Ligue 1', flag: '🇫🇷' },
-  { key: 'super_lig', name: 'Süper Lig', flag: '🇹🇷' },
-  { key: 'eredivisie', name: 'Eredivisie', flag: '🇳🇱' },
-  { key: 'liga_portugal', name: 'Portugal', flag: '🇵🇹' },
-  { key: 'pro_league', name: 'Belgium', flag: '🇧🇪' },
-];
 
 interface Match {
   id: number;
   homeTeam: string;
-  homeTeamId: number;
-  homeCrest: string;
   awayTeam: string;
+  homeTeamId: number;
   awayTeamId: number;
-  awayCrest: string;
+  league: string;
   date: string;
-  competition: string;
+  status: string;
 }
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t, lang } = useLanguage();
-  
-  const [competition, setCompetition] = useState('premier_league');
+
   const [matches, setMatches] = useState<Match[]>([]);
-  const [standings, setStandings] = useState<any[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLeague, setSelectedLeague] = useState('all');
+  
+  // Analysis states
+  const [analyzing, setAnalyzing] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [selectedMatches, setSelectedMatches] = useState<Match[]>([]);
   const [analysis, setAnalysis] = useState<any>(null);
-  const [analysisText, setAnalysisText] = useState('');
-  const [kuponResult, setKuponResult] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [kuponLoading, setKuponLoading] = useState(false);
-  const [loadingMatches, setLoadingMatches] = useState(false);
-  const [showKuponModal, setShowKuponModal] = useState(false);
+  
+  // Agent states
+  const [agentMode, setAgentMode] = useState(false);
+  const [agentAnalysis, setAgentAnalysis] = useState<any>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentPhase, setAgentPhase] = useState('');
+  
+  // Favorites
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
 
-  const subscription = (session?.user as any)?.subscription;
-  const trialDaysRemaining = subscription?.trial_end 
-    ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
-  // Dile göre etiketler
-  const analysisLabels: Record<string, Record<string, string>> = {
+  // Labels
+  const labels: Record<string, Record<string, string>> = {
     tr: {
-      aiStatus: 'AI DURUM',
-      odds: 'BAHİS ORANLARI',
-      formStatus: 'FORM DURUMU',
-      points: 'puan',
-      goalAvg: 'Gol ort',
-      conceded: 'Yediği',
-      aiPredictions: 'AI TAHMİNLERİ',
-      matchResult: 'MAÇ SONUCU',
-      overUnder: '2.5 GOL',
-      btts: 'KG VAR/YOK',
-      doubleChance: 'ÇİFTE ŞANS',
-      halfTime: 'İLK YARI',
-      goalRange: 'GOL ARALIĞI',
-      firstGoal: 'İLK GOL',
-      correctScore: 'DOĞRU SKOR TAHMİNLERİ',
-      starPlayers: 'MAÇIN YILDIZLARI',
-      bestBets: 'EN İYİ BAHİS ÖNERİLERİ',
-      riskLevel: 'RİSK SEVİYESİ',
-      overallEval: 'GENEL DEĞERLENDİRME',
-      unanimous: 'OYBIRLIĞI',
-      addToFavorites: 'Favorilere Ekle',
-      inFavorites: 'Favorilerde',
+      dashboard: 'Dashboard',
+      todayMatches: 'Günün Maçları',
+      search: 'Takım ara...',
+      allLeagues: 'Tüm Ligler',
+      analyze: '🤖 Analiz Et',
+      analyzing: '⏳ Analiz ediliyor...',
+      aiAgents: '🧠 AI Ajanları',
+      agentAnalysis: 'Ajan Analizi',
+      runAgents: '🚀 Ajanları Çalıştır',
+      runningAgents: '⏳ Ajanlar çalışıyor...',
+      close: 'Kapat',
+      noMatches: 'Bu tarihte maç bulunamadı',
+      loading: 'Yükleniyor...',
       profile: 'Profil',
+      logout: 'Çıkış',
+      matchResult: 'Maç Sonucu',
+      overUnder: 'Üst/Alt 2.5',
+      btts: 'Karşılıklı Gol',
+      doubleChance: 'Çifte Şans',
+      halfTime: 'İlk Yarı',
+      correctScore: 'Doğru Skor',
+      bestBet: 'En İyi Bahis',
+      riskLevel: 'Risk Seviyesi',
+      aiStatus: 'AI Durumu',
+      scoutReport: 'Scout Raporu',
+      statsReport: 'İstatistik Raporu',
+      oddsReport: 'Oran Raporu',
+      strategyReport: 'Strateji Raporu',
+      consensusReport: 'Konsensüs Raporu',
+      fromCache: 'Önbellekten',
+      dailyUsage: 'Günlük Kullanım',
+      unanimous: 'Oybirliği',
+      votes: 'oy',
+      confidence: 'Güven',
+      phase1: '🔍 Scout, Stats, Odds ajanları çalışıyor...',
+      phase2: '🧠 Strateji ajanı çalışıyor...',
+      phase3: '⚖️ Konsensüs ajanı çalışıyor...',
+      complete: '✅ Tamamlandı!',
     },
     en: {
-      aiStatus: 'AI STATUS',
-      odds: 'BETTING ODDS',
-      formStatus: 'FORM STATUS',
-      points: 'points',
-      goalAvg: 'Goals avg',
-      conceded: 'Conceded',
-      aiPredictions: 'AI PREDICTIONS',
-      matchResult: 'MATCH RESULT',
-      overUnder: '2.5 GOALS',
-      btts: 'BTTS',
-      doubleChance: 'DOUBLE CHANCE',
-      halfTime: 'HALF TIME',
-      goalRange: 'GOAL RANGE',
-      firstGoal: 'FIRST GOAL',
-      correctScore: 'CORRECT SCORE PREDICTIONS',
-      starPlayers: 'STAR PLAYERS',
-      bestBets: 'BEST BET SUGGESTIONS',
-      riskLevel: 'RISK LEVEL',
-      overallEval: 'OVERALL EVALUATION',
-      unanimous: 'UNANIMOUS',
-      addToFavorites: 'Add to Favorites',
-      inFavorites: 'In Favorites',
+      dashboard: 'Dashboard',
+      todayMatches: "Today's Matches",
+      search: 'Search team...',
+      allLeagues: 'All Leagues',
+      analyze: '🤖 Analyze',
+      analyzing: '⏳ Analyzing...',
+      aiAgents: '🧠 AI Agents',
+      agentAnalysis: 'Agent Analysis',
+      runAgents: '🚀 Run Agents',
+      runningAgents: '⏳ Agents running...',
+      close: 'Close',
+      noMatches: 'No matches found for this date',
+      loading: 'Loading...',
       profile: 'Profile',
+      logout: 'Logout',
+      matchResult: 'Match Result',
+      overUnder: 'Over/Under 2.5',
+      btts: 'Both Teams Score',
+      doubleChance: 'Double Chance',
+      halfTime: 'Half Time',
+      correctScore: 'Correct Score',
+      bestBet: 'Best Bet',
+      riskLevel: 'Risk Level',
+      aiStatus: 'AI Status',
+      scoutReport: 'Scout Report',
+      statsReport: 'Stats Report',
+      oddsReport: 'Odds Report',
+      strategyReport: 'Strategy Report',
+      consensusReport: 'Consensus Report',
+      fromCache: 'From Cache',
+      dailyUsage: 'Daily Usage',
+      unanimous: 'Unanimous',
+      votes: 'votes',
+      confidence: 'Confidence',
+      phase1: '🔍 Scout, Stats, Odds agents running...',
+      phase2: '🧠 Strategy agent running...',
+      phase3: '⚖️ Consensus agent running...',
+      complete: '✅ Complete!',
     },
     de: {
-      aiStatus: 'KI STATUS',
-      odds: 'WETTQUOTEN',
-      formStatus: 'FORMSTAND',
-      points: 'Punkte',
-      goalAvg: 'Tore Ø',
-      conceded: 'Kassiert',
-      aiPredictions: 'KI VORHERSAGEN',
-      matchResult: 'SPIELERGEBNIS',
-      overUnder: '2.5 TORE',
-      btts: 'BEIDE TREFFEN',
-      doubleChance: 'DOPPELTE CHANCE',
-      halfTime: 'HALBZEIT',
-      goalRange: 'TORBEREICH',
-      firstGoal: 'ERSTES TOR',
-      correctScore: 'GENAUES ERGEBNIS',
-      starPlayers: 'SPIELER DES SPIELS',
-      bestBets: 'BESTE WETTVORSCHLÄGE',
-      riskLevel: 'RISIKONIVEAU',
-      overallEval: 'GESAMTBEWERTUNG',
-      unanimous: 'EINSTIMMIG',
-      addToFavorites: 'Zu Favoriten',
-      inFavorites: 'In Favoriten',
+      dashboard: 'Dashboard',
+      todayMatches: 'Heutige Spiele',
+      search: 'Team suchen...',
+      allLeagues: 'Alle Ligen',
+      analyze: '🤖 Analysieren',
+      analyzing: '⏳ Analysiere...',
+      aiAgents: '🧠 KI-Agenten',
+      agentAnalysis: 'Agenten-Analyse',
+      runAgents: '🚀 Agenten starten',
+      runningAgents: '⏳ Agenten laufen...',
+      close: 'Schließen',
+      noMatches: 'Keine Spiele für dieses Datum',
+      loading: 'Laden...',
       profile: 'Profil',
+      logout: 'Abmelden',
+      matchResult: 'Spielergebnis',
+      overUnder: 'Über/Unter 2.5',
+      btts: 'Beide treffen',
+      doubleChance: 'Doppelte Chance',
+      halfTime: 'Halbzeit',
+      correctScore: 'Genaues Ergebnis',
+      bestBet: 'Beste Wette',
+      riskLevel: 'Risikoniveau',
+      aiStatus: 'KI-Status',
+      scoutReport: 'Scout-Bericht',
+      statsReport: 'Statistik-Bericht',
+      oddsReport: 'Quoten-Bericht',
+      strategyReport: 'Strategie-Bericht',
+      consensusReport: 'Konsens-Bericht',
+      fromCache: 'Aus Cache',
+      dailyUsage: 'Tägliche Nutzung',
+      unanimous: 'Einstimmig',
+      votes: 'Stimmen',
+      confidence: 'Konfidenz',
+      phase1: '🔍 Scout, Stats, Odds Agenten laufen...',
+      phase2: '🧠 Strategie-Agent läuft...',
+      phase3: '⚖️ Konsens-Agent läuft...',
+      complete: '✅ Fertig!',
     },
   };
 
-  const labels = analysisLabels[lang] || analysisLabels.en;
+  const l = labels[lang] || labels.en;
 
+  // Auth check
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
 
+  // Fetch matches
+  const fetchMatches = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/matches?date=${selectedDate}`);
+      const data = await res.json();
+      setMatches(data.matches || []);
+      setFilteredMatches(data.matches || []);
+    } catch (error) {
+      console.error('Fetch matches error:', error);
+    }
+    setLoading(false);
+  }, [selectedDate]);
+
   useEffect(() => {
     if (session) {
       fetchMatches();
-      fetchStandings();
       fetchFavorites();
     }
-  }, [competition, session]);
+  }, [session, fetchMatches]);
 
-  const fetchMatches = async () => {
-    setLoadingMatches(true);
-    try {
-      const res = await fetch(`/api/upcoming?competition=${competition}&t=${Date.now()}`);
-      const data = await res.json();
-      setMatches(data.matches || []);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-    }
-    setLoadingMatches(false);
-  };
-
-  const fetchStandings = async () => {
-    try {
-      const res = await fetch(`/api/standings?competition=${competition}&t=${Date.now()}`);
-      const data = await res.json();
-      setStandings(data.standings || []);
-    } catch (error) {
-      console.error('Error fetching standings:', error);
-    }
-  };
-
+  // Fetch favorites
   const fetchFavorites = async () => {
     try {
       const res = await fetch('/api/user/profile');
       const data = await res.json();
-      if (data.success && data.favorites) {
+      if (data.favorites) {
         setFavoriteIds(data.favorites.map((f: any) => f.fixture_id));
       }
     } catch (error) {
-      console.error('Favorites fetch error:', error);
+      console.error('Fetch favorites error:', error);
     }
   };
 
-  const toggleFavoriteAnalysis = async (fixtureId: number) => {
-    const isFavorite = favoriteIds.includes(fixtureId);
-    
-    try {
-      const res = await fetch('/api/user/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixtureId, isFavorite: !isFavorite }),
-      });
-      
-      if (res.ok) {
-        if (isFavorite) {
-          setFavoriteIds(prev => prev.filter(id => id !== fixtureId));
-        } else {
-          setFavoriteIds(prev => [...prev, fixtureId]);
-        }
-      }
-    } catch (error) {
-      console.error('Favorite toggle error:', error);
-    }
-  };
+  // Filter matches
+  useEffect(() => {
+    let filtered = matches;
 
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (m) =>
+          m.homeTeam.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          m.awayTeam.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (selectedLeague !== 'all') {
+      filtered = filtered.filter((m) => m.league === selectedLeague);
+    }
+
+    setFilteredMatches(filtered);
+  }, [matches, searchQuery, selectedLeague]);
+
+  // Get unique leagues
+  const leagues = [...new Set(matches.map((m) => m.league))];
+
+  // Standard Analysis (Claude + GPT + Gemini + Heurist Consensus)
   const analyzeMatch = async (match: Match) => {
     setSelectedMatch(match);
-    setLoading(true);
+    setAnalyzing(true);
     setAnalysis(null);
-    setAnalysisText('');
-    
+    setAgentMode(false);
+    setAgentAnalysis(null);
+
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -226,205 +254,380 @@ export default function DashboardPage() {
           language: lang,
         }),
       });
-      
+
       const data = await res.json();
-      
-      if (data.success && data.analysis) {
+      if (data.success) {
         setAnalysis(data);
-        setAnalysisText(formatAnalysis(data));
       } else {
-        setAnalysisText(data.error || t('error'));
+        console.error('Analysis error:', data.error);
       }
     } catch (error) {
-      setAnalysisText(t('error') + ': ' + String(error));
+      console.error('Analysis error:', error);
     }
-    setLoading(false);
+
+    setAnalyzing(false);
   };
 
-  const formatAnalysis = (data: any): string => {
-    const a = data.analysis;
-    const odds = data.odds;
-    const form = data.form;
-    const aiStatus = data.aiStatus;
-    const l = analysisLabels[lang] || analysisLabels.en;
+  // Agent Analysis (Heurist Multi-Agent System)
+  const runAgentAnalysis = async () => {
+    if (!selectedMatch) return;
 
-    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    // Cache bilgisi
-    if (data.fromCache) {
-      text += `⚡ ${lang === 'tr' ? 'Önbellekten yüklendi' : lang === 'de' ? 'Aus Cache geladen' : 'Loaded from cache'}\n\n`;
-    }
-
-    // AI Status
-    text += `🤖 ${l.aiStatus}: Claude ${aiStatus?.claude || '?'} | GPT-4 ${aiStatus?.openai || '?'} | Gemini ${aiStatus?.gemini || '?'}\n\n`;
-
-    // Odds
-    if (odds?.matchWinner) {
-      text += `📊 ${l.odds}\n`;
-      text += `┌─────────────────────────────────┐\n`;
-      text += `│ 1X2: ${odds.matchWinner.home || '-'} | ${odds.matchWinner.draw || '-'} | ${odds.matchWinner.away || '-'}\n`;
-      if (odds.overUnder) text += `│ 2.5: Ü ${odds.overUnder.over || '-'} | A ${odds.overUnder.under || '-'}\n`;
-      if (odds.btts) text += `│ BTTS: Y ${odds.btts.yes || '-'} | N ${odds.btts.no || '-'}\n`;
-      if (odds.doubleChance) text += `│ DC: 1X ${odds.doubleChance.homeOrDraw || '-'} | X2 ${odds.doubleChance.awayOrDraw || '-'} | 12 ${odds.doubleChance.homeOrAway || '-'}\n`;
-      text += `└─────────────────────────────────┘\n\n`;
-    }
-
-    // Form
-    if (form) {
-      text += `📈 ${l.formStatus}\n`;
-      text += `┌─────────────────────────────────┐\n`;
-      text += `│ ${data.fixture?.homeTeam}: ${form.home?.form || 'N/A'} (${form.home?.points || 0}/15 ${l.points})\n`;
-      text += `│ → ${l.goalAvg}: ${form.home?.avgGoals || '0'} | ${l.conceded}: ${form.home?.avgConceded || '0'}\n`;
-      text += `│\n`;
-      text += `│ ${data.fixture?.awayTeam}: ${form.away?.form || 'N/A'} (${form.away?.points || 0}/15 ${l.points})\n`;
-      text += `│ → ${l.goalAvg}: ${form.away?.avgGoals || '0'} | ${l.conceded}: ${form.away?.avgConceded || '0'}\n`;
-      text += `└─────────────────────────────────┘\n\n`;
-    }
-
-    // AI Tahminleri
-    text += `🎯 ${l.aiPredictions} (${a?.aiCount || 0}/3 AI)\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    if (a?.matchResult) {
-      const unanimous = a.matchResult.unanimous ? `🔥 ${l.unanimous}` : `${a.matchResult.votes}/${a.matchResult.totalVotes} AI`;
-      text += `⚽ ${l.matchResult}: ${a.matchResult.prediction} (${a.matchResult.confidence}%) ${unanimous}\n`;
-    }
-
-    if (a?.overUnder25) {
-      const unanimous = a.overUnder25.unanimous ? `🔥 ${l.unanimous}` : `${a.overUnder25.votes}/${a.overUnder25.totalVotes} AI`;
-      text += `📊 ${l.overUnder}: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%) ${unanimous}\n`;
-    }
-
-    if (a?.btts) {
-      const unanimous = a.btts.unanimous ? `🔥 ${l.unanimous}` : `${a.btts.votes}/${a.btts.totalVotes} AI`;
-      text += `🔥 ${l.btts}: ${a.btts.prediction} (${a.btts.confidence}%) ${unanimous}\n`;
-    }
-
-    if (a?.doubleChance) {
-      const unanimous = a.doubleChance.unanimous ? `🔥 ${l.unanimous}` : `${a.doubleChance.votes}/${a.doubleChance.totalVotes} AI`;
-      text += `📈 ${l.doubleChance}: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%) ${unanimous}\n`;
-    }
-
-    if (a?.halfTimeResult) {
-      const unanimous = a.halfTimeResult.unanimous ? `🔥 ${l.unanimous}` : `${a.halfTimeResult.votes}/${a.halfTimeResult.totalVotes} AI`;
-      text += `⏱️ ${l.halfTime}: ${a.halfTimeResult.prediction} (${a.halfTimeResult.confidence}%) ${unanimous}\n`;
-    }
-
-    if (a?.totalGoalsRange) {
-      text += `🎯 ${l.goalRange}: ${a.totalGoalsRange.prediction} (${a.totalGoalsRange.confidence}%)\n`;
-    }
-
-    if (a?.firstGoal) {
-      text += `⚡ ${l.firstGoal}: ${a.firstGoal.prediction} (${a.firstGoal.confidence}%)\n`;
-    }
-
-    // Correct Score
-    if (a?.correctScore) {
-      text += `\n🏆 ${l.correctScore}\n`;
-      text += `┌─────────────────────────────────┐\n`;
-      if (a.correctScore.first) text += `│ 1. ${a.correctScore.first.score} (${a.correctScore.first.confidence}%)\n`;
-      if (a.correctScore.second) text += `│ 2. ${a.correctScore.second.score} (${a.correctScore.second.confidence}%)\n`;
-      if (a.correctScore.third) text += `│ 3. ${a.correctScore.third.score} (${a.correctScore.third.confidence}%)\n`;
-      text += `└─────────────────────────────────┘\n`;
-    }
-
-    // Star Players
-    if (a?.starPlayers && a.starPlayers.length > 0) {
-      text += `\n⭐ ${l.starPlayers}\n`;
-      a.starPlayers.forEach((player: any, idx: number) => {
-        if (player?.name) {
-          text += `${idx + 1}. ${player.name} (${player.team})\n`;
-          text += `   → ${player.reason}\n`;
-        }
-      });
-    }
-
-    // Best Bets
-    if (a?.bestBets && a.bestBets.length > 0) {
-      text += `\n💰 ${l.bestBets}\n`;
-      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      a.bestBets.forEach((bet: any, idx: number) => {
-        if (bet?.type) {
-          text += `${idx + 1}. ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
-          text += `   → ${bet.reasoning}\n`;
-        }
-      });
-    }
-
-    // Risk Level
-    if (a?.riskLevels && a.riskLevels.length > 0) {
-      const riskCounts: any = {};
-      a.riskLevels.forEach((r: string) => {
-        riskCounts[r] = (riskCounts[r] || 0) + 1;
-      });
-      const mostCommonRisk = Object.keys(riskCounts).reduce((x, y) => riskCounts[x] > riskCounts[y] ? x : y);
-      text += `\n⚠️ ${l.riskLevel}: ${mostCommonRisk}\n`;
-    }
-
-    // Overall Analysis
-    if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
-      text += `\n📝 ${l.overallEval}\n`;
-      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      text += `${a.overallAnalyses[0]}\n`;
-    }
-
-    // Usage info
-    if (data.usage) {
-      text += `\n📊 ${lang === 'tr' ? 'Günlük Kullanım' : lang === 'de' ? 'Tägliche Nutzung' : 'Daily Usage'}: ${data.usage.count}/${data.usage.limit}\n`;
-    }
-
-    return text;
-  };
-
-  const toggleMatchSelection = (match: Match) => {
-    setSelectedMatches(prev => {
-      const exists = prev.find(m => m.id === match.id);
-      return exists ? prev.filter(m => m.id !== match.id) : [...prev, match];
-    });
-  };
-
-  const generateKupon = async () => {
-    if (selectedMatches.length === 0) return alert(t('selectMatch'));
-
-    setKuponLoading(true);
-    setKuponResult('');
-    setShowKuponModal(true);
+    setAgentMode(true);
+    setAgentLoading(true);
+    setAgentAnalysis(null);
+    setAgentPhase(l.phase1);
 
     try {
-      const res = await fetch('/api/multi-agent', {
+      const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          matches: selectedMatches.map(m => ({
-            fixtureId: m.id,
-            homeTeam: m.homeTeam,
-            awayTeam: m.awayTeam,
-            homeTeamId: m.homeTeamId,
-            awayTeamId: m.awayTeamId,
-          })),
+          fixtureId: selectedMatch.id,
+          homeTeam: selectedMatch.homeTeam,
+          awayTeam: selectedMatch.awayTeam,
+          homeTeamId: selectedMatch.homeTeamId,
+          awayTeamId: selectedMatch.awayTeamId,
           language: lang,
         }),
       });
+
       const data = await res.json();
-      setKuponResult(data.kupon || JSON.stringify(data, null, 2));
+      
+      if (data.success) {
+        setAgentAnalysis(data);
+        setAgentPhase(l.complete);
+      } else {
+        console.error('Agent error:', data.error);
+        setAgentPhase('❌ Error: ' + data.error);
+      }
     } catch (error) {
-      setKuponResult(t('error') + ': ' + String(error));
+      console.error('Agent error:', error);
+      setAgentPhase('❌ Error');
     }
-    setKuponLoading(false);
+
+    setAgentLoading(false);
   };
 
-  const openPortal = async () => {
-    const res = await fetch('/api/stripe/portal', { method: 'POST' });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error || t('error'));
+  // Toggle favorite
+  const toggleFavorite = async (fixtureId: number) => {
+    try {
+      await fetch('/api/user/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fixtureId }),
+      });
+
+      if (favoriteIds.includes(fixtureId)) {
+        setFavoriteIds(favoriteIds.filter((id) => id !== fixtureId));
+      } else {
+        setFavoriteIds([...favoriteIds, fixtureId]);
+      }
+    } catch (error) {
+      console.error('Toggle favorite error:', error);
+    }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-GB', { 
-      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
-    });
+  // Format analysis for display
+  const formatMainAnalysis = (data: any) => {
+    if (!data?.analysis) return null;
+    const a = data.analysis;
+
+    return (
+      <div className="space-y-4">
+        {/* AI Status */}
+        <div className="bg-gray-700/50 rounded-lg p-3">
+          <div className="text-sm text-gray-400 mb-1">{l.aiStatus}</div>
+          <div className="flex gap-2 flex-wrap">
+            <span className={`px-2 py-1 rounded text-xs ${data.aiStatus?.claude === '✅' ? 'bg-green-600' : 'bg-red-600'}`}>
+              Claude {data.aiStatus?.claude}
+            </span>
+            <span className={`px-2 py-1 rounded text-xs ${data.aiStatus?.openai === '✅' ? 'bg-green-600' : 'bg-red-600'}`}>
+              GPT-4 {data.aiStatus?.openai}
+            </span>
+            <span className={`px-2 py-1 rounded text-xs ${data.aiStatus?.gemini === '✅' ? 'bg-green-600' : 'bg-red-600'}`}>
+              Gemini {data.aiStatus?.gemini}
+            </span>
+            <span className={`px-2 py-1 rounded text-xs ${data.aiStatus?.heurist === '✅' ? 'bg-purple-600' : 'bg-red-600'}`}>
+              Heurist {data.aiStatus?.heurist || '❌'}
+            </span>
+          </div>
+          {data.fromCache && (
+            <div className="text-xs text-yellow-400 mt-2">⚡ {l.fromCache}</div>
+          )}
+          {data.usage && (
+            <div className="text-xs text-gray-400 mt-1">
+              📊 {l.dailyUsage}: {data.usage.count}/{data.usage.limit}
+            </div>
+          )}
+        </div>
+
+        {/* Main Predictions */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Match Result */}
+          {a.matchResult && (
+            <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 rounded-lg p-3 border border-blue-500/30">
+              <div className="text-xs text-gray-400">{l.matchResult}</div>
+              <div className="text-2xl font-bold text-blue-400">{a.matchResult.prediction}</div>
+              <div className="text-sm text-gray-300">{a.matchResult.confidence}% {l.confidence}</div>
+              {a.matchResult.unanimous && <div className="text-xs text-green-400">🔥 {l.unanimous}</div>}
+              {a.matchResult.votes && <div className="text-xs text-gray-500">{a.matchResult.votes}/{a.matchResult.totalVotes} {l.votes}</div>}
+            </div>
+          )}
+
+          {/* Over/Under 2.5 */}
+          {a.overUnder25 && (
+            <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 rounded-lg p-3 border border-green-500/30">
+              <div className="text-xs text-gray-400">{l.overUnder}</div>
+              <div className="text-2xl font-bold text-green-400">{a.overUnder25.prediction}</div>
+              <div className="text-sm text-gray-300">{a.overUnder25.confidence}% {l.confidence}</div>
+              {a.overUnder25.unanimous && <div className="text-xs text-green-400">🔥 {l.unanimous}</div>}
+            </div>
+          )}
+
+          {/* BTTS */}
+          {a.btts && (
+            <div className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 rounded-lg p-3 border border-orange-500/30">
+              <div className="text-xs text-gray-400">{l.btts}</div>
+              <div className="text-2xl font-bold text-orange-400">{a.btts.prediction}</div>
+              <div className="text-sm text-gray-300">{a.btts.confidence}% {l.confidence}</div>
+              {a.btts.unanimous && <div className="text-xs text-green-400">🔥 {l.unanimous}</div>}
+            </div>
+          )}
+
+          {/* Double Chance */}
+          {a.doubleChance && (
+            <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 rounded-lg p-3 border border-purple-500/30">
+              <div className="text-xs text-gray-400">{l.doubleChance}</div>
+              <div className="text-2xl font-bold text-purple-400">{a.doubleChance.prediction}</div>
+              <div className="text-sm text-gray-300">{a.doubleChance.confidence}% {l.confidence}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Correct Score */}
+        {a.correctScore && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-gray-400 mb-2">{l.correctScore}</div>
+            <div className="flex gap-3">
+              {a.correctScore.first && (
+                <div className="bg-yellow-600/20 px-3 py-2 rounded border border-yellow-500/30">
+                  <div className="text-lg font-bold text-yellow-400">{a.correctScore.first.score}</div>
+                  <div className="text-xs text-gray-400">{a.correctScore.first.confidence}%</div>
+                </div>
+              )}
+              {a.correctScore.second && (
+                <div className="bg-gray-600/20 px-3 py-2 rounded border border-gray-500/30">
+                  <div className="text-lg font-bold text-gray-300">{a.correctScore.second.score}</div>
+                  <div className="text-xs text-gray-400">{a.correctScore.second.confidence}%</div>
+                </div>
+              )}
+              {a.correctScore.third && (
+                <div className="bg-gray-600/20 px-3 py-2 rounded border border-gray-500/30">
+                  <div className="text-lg font-bold text-gray-400">{a.correctScore.third.score}</div>
+                  <div className="text-xs text-gray-400">{a.correctScore.third.confidence}%</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Best Bet */}
+        {a.bestBets && a.bestBets.length > 0 && (
+          <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 rounded-lg p-4 border border-yellow-500/30">
+            <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
+            {a.bestBets.slice(0, 2).map((bet: any, idx: number) => (
+              <div key={idx} className="mb-2">
+                <div className="font-bold">{bet.type}: {bet.selection || bet.prediction}</div>
+                <div className="text-sm text-gray-300">{bet.confidence}% - {bet.reasoning}</div>
+                {bet.stake && <div className="text-xs text-yellow-400">Stake: {bet.stake} units</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Overall Analysis */}
+        {a.overallAnalyses && a.overallAnalyses.length > 0 && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-gray-400 mb-2">📝 {lang === 'tr' ? 'Genel Değerlendirme' : lang === 'de' ? 'Gesamtbewertung' : 'Overall Analysis'}</div>
+            <p className="text-gray-300 text-sm">{a.overallAnalyses[0]}</p>
+          </div>
+        )}
+
+        {/* Risk Level */}
+        {a.riskLevels && a.riskLevels.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">{l.riskLevel}:</span>
+            <span className={`px-2 py-1 rounded text-sm ${
+              a.riskLevels[0]?.toLowerCase().includes('low') || a.riskLevels[0]?.toLowerCase().includes('düşük') || a.riskLevels[0]?.toLowerCase().includes('niedrig')
+                ? 'bg-green-600'
+                : a.riskLevels[0]?.toLowerCase().includes('high') || a.riskLevels[0]?.toLowerCase().includes('yüksek') || a.riskLevels[0]?.toLowerCase().includes('hoch')
+                ? 'bg-red-600'
+                : 'bg-yellow-600'
+            }`}>
+              {a.riskLevels[0]}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Format Agent Analysis
+  const formatAgentAnalysis = (data: any) => {
+    if (!data?.reports) return null;
+    const r = data.reports;
+
+    return (
+      <div className="space-y-4">
+        {/* Agent Status */}
+        <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-500/30">
+          <div className="text-sm text-purple-400 mb-2">🤖 Heurist Multi-Agent System</div>
+          <div className="grid grid-cols-5 gap-2 text-xs">
+            <div className={`p-2 rounded text-center ${r.scout ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+              🔍 Scout {r.scout ? '✅' : '❌'}
+            </div>
+            <div className={`p-2 rounded text-center ${r.stats ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+              📊 Stats {r.stats ? '✅' : '❌'}
+            </div>
+            <div className={`p-2 rounded text-center ${r.odds ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+              💰 Odds {r.odds ? '✅' : '❌'}
+            </div>
+            <div className={`p-2 rounded text-center ${r.strategy ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+              🧠 Strategy {r.strategy ? '✅' : '❌'}
+            </div>
+            <div className={`p-2 rounded text-center ${r.consensus ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+              ⚖️ Consensus {r.consensus ? '✅' : '❌'}
+            </div>
+          </div>
+          {data.timing && (
+            <div className="text-xs text-gray-400 mt-2">
+              ⏱️ Total: {data.timing.total}ms
+            </div>
+          )}
+        </div>
+
+        {/* Scout Report */}
+        {r.scout && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-blue-400 mb-2">🔍 {l.scoutReport}</div>
+            {r.scout.summary && <p className="text-sm text-gray-300 mb-2">{r.scout.summary}</p>}
+            {r.scout.injuries?.length > 0 && (
+              <div className="text-xs text-red-400">
+                🏥 {lang === 'tr' ? 'Sakatlıklar' : lang === 'de' ? 'Verletzungen' : 'Injuries'}: {r.scout.injuries.map((i: any) => `${i.player} (${i.team})`).join(', ')}
+              </div>
+            )}
+            {r.scout.news?.length > 0 && (
+              <div className="text-xs text-gray-400 mt-1">
+                📰 {r.scout.news.map((n: any) => n.headline).join(' | ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stats Report */}
+        {r.stats && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-green-400 mb-2">📊 {l.statsReport}</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-gray-400">{lang === 'tr' ? 'Ev Gücü' : lang === 'de' ? 'Heimstärke' : 'Home Strength'}:</span>
+                <span className="text-green-400 ml-2">{r.stats.homeStrength || 'N/A'}%</span>
+              </div>
+              <div>
+                <span className="text-gray-400">{lang === 'tr' ? 'Deplasman Gücü' : lang === 'de' ? 'Auswärtsstärke' : 'Away Strength'}:</span>
+                <span className="text-red-400 ml-2">{r.stats.awayStrength || 'N/A'}%</span>
+              </div>
+            </div>
+            {r.stats.goalExpectancy && (
+              <div className="text-xs text-gray-400 mt-2">
+                ⚽ {lang === 'tr' ? 'Gol Beklentisi' : lang === 'de' ? 'Torerwartung' : 'Goal Expectancy'}: {r.stats.goalExpectancy.home?.toFixed(1)} - {r.stats.goalExpectancy.away?.toFixed(1)} (Total: {r.stats.goalExpectancy.total?.toFixed(1)})
+              </div>
+            )}
+            {r.stats.summary && <p className="text-xs text-gray-300 mt-2">{r.stats.summary}</p>}
+          </div>
+        )}
+
+        {/* Odds Report */}
+        {r.odds && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-yellow-400 mb-2">💰 {l.oddsReport}</div>
+            {r.odds.valuesBets?.length > 0 && (
+              <div className="space-y-1">
+                {r.odds.valuesBets.slice(0, 3).map((vb: any, idx: number) => (
+                  <div key={idx} className="text-xs bg-yellow-600/20 p-2 rounded">
+                    💎 {vb.market}: {vb.selection} @ {vb.odds} (Value: +{vb.value?.toFixed(1)}%)
+                  </div>
+                ))}
+              </div>
+            )}
+            {r.odds.summary && <p className="text-xs text-gray-300 mt-2">{r.odds.summary}</p>}
+          </div>
+        )}
+
+        {/* Strategy Report */}
+        {r.strategy && (
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <div className="text-sm text-purple-400 mb-2">🧠 {l.strategyReport}</div>
+            {r.strategy.recommendedBets?.length > 0 && (
+              <div className="space-y-2">
+                {r.strategy.recommendedBets.slice(0, 2).map((bet: any, idx: number) => (
+                  <div key={idx} className="bg-purple-600/20 p-2 rounded text-sm">
+                    <div className="font-bold">{bet.type}: {bet.selection}</div>
+                    <div className="text-xs text-gray-400">{bet.confidence}% | Stake: {bet.stake} units | EV: +{bet.expectedValue?.toFixed(1)}%</div>
+                    <div className="text-xs text-gray-300 mt-1">{bet.reasoning}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {r.strategy.riskAssessment && (
+              <div className="text-xs text-gray-400 mt-2">
+                ⚠️ {l.riskLevel}: <span className={`px-1 rounded ${
+                  r.strategy.riskAssessment.level === 'low' ? 'bg-green-600' :
+                  r.strategy.riskAssessment.level === 'high' ? 'bg-red-600' : 'bg-yellow-600'
+                }`}>{r.strategy.riskAssessment.level}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Consensus Report */}
+        {r.consensus && (
+          <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-lg p-4 border border-purple-500/30">
+            <div className="text-sm text-pink-400 mb-3">⚖️ {l.consensusReport}</div>
+            
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {r.consensus.matchResult && (
+                <div className="bg-gray-800/50 p-2 rounded">
+                  <div className="text-xs text-gray-400">{l.matchResult}</div>
+                  <div className="text-xl font-bold text-blue-400">{r.consensus.matchResult.prediction}</div>
+                  <div className="text-xs">{r.consensus.matchResult.confidence}%</div>
+                </div>
+              )}
+              {r.consensus.overUnder25 && (
+                <div className="bg-gray-800/50 p-2 rounded">
+                  <div className="text-xs text-gray-400">{l.overUnder}</div>
+                  <div className="text-xl font-bold text-green-400">{r.consensus.overUnder25.prediction}</div>
+                  <div className="text-xs">{r.consensus.overUnder25.confidence}%</div>
+                </div>
+              )}
+            </div>
+
+            {r.consensus.bestBet && (
+              <div className="bg-yellow-600/20 p-3 rounded border border-yellow-500/30">
+                <div className="text-sm text-yellow-400">💰 {l.bestBet}</div>
+                <div className="font-bold">{r.consensus.bestBet.type}: {r.consensus.bestBet.selection}</div>
+                <div className="text-sm text-gray-300">{r.consensus.bestBet.confidence}% | Stake: {r.consensus.bestBet.stake} units</div>
+                <div className="text-xs text-gray-400 mt-1">{r.consensus.bestBet.reasoning}</div>
+              </div>
+            )}
+
+            {r.consensus.overallAnalysis && (
+              <p className="text-sm text-gray-300 mt-3">{r.consensus.overallAnalysis}</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (status === 'loading') {
@@ -435,190 +638,211 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Subscription Bar */}
-      <div className={`py-2 px-4 text-center text-sm ${
-        subscription?.status === 'trialing' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-      }`}>
-        {subscription?.status === 'trialing' ? (
-          <>{t('trialDaysLeft', { days: trialDaysRemaining })} • <a href="/pricing" className="underline">{t('upgradeToPro')}</a></>
-        ) : subscription?.status === 'active' ? (
-          <>✓ {t('proActive')}</>
-        ) : (
-          <>⚠️ {t('subscriptionRequired')} • <a href="/pricing" className="underline">{t('subscribe')}</a></>
-        )}
-        <Link href="/profile" className="ml-4 underline opacity-70 hover:opacity-100">
-          👤 {labels.profile}
-        </Link>
-        <button onClick={openPortal} className="ml-4 underline opacity-70 hover:opacity-100">
-          {t('manageSubscription')}
-        </button>
-        <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
-          {t('logout')}
-        </button>
-      </div>
-
-      <div className="p-4 max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-6">
-          <div className="text-center flex-1">
-            <h1 className="text-3xl font-bold">⚽ {t('appName')}</h1>
-            <p className="text-gray-400 text-sm">{t('welcome')}, {session?.user?.name || session?.user?.email}</p>
+      {/* Header */}
+      <header className="bg-gray-800/50 border-b border-gray-700 sticky top-0 z-40 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+            ⚽ Football Analytics Pro
+          </h1>
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <Link href="/profile" className="text-sm text-gray-400 hover:text-white">
+              👤 {l.profile}
+            </Link>
           </div>
-          <LanguageSelector />
-        </header>
+        </div>
+      </header>
 
-        {/* League Buttons */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {LEAGUE_BUTTONS.map((league) => (
-            <button
-              key={league.key}
-              onClick={() => setCompetition(league.key)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                competition === league.key ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Filters */}
+        <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+          <div className="flex flex-wrap gap-4 items-center">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-gray-700 px-4 py-2 rounded-lg text-white"
+            />
+            <input
+              type="text"
+              placeholder={l.search}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-gray-700 px-4 py-2 rounded-lg text-white flex-1 min-w-[200px]"
+            />
+            <select
+              value={selectedLeague}
+              onChange={(e) => setSelectedLeague(e.target.value)}
+              className="bg-gray-700 px-4 py-2 rounded-lg text-white"
             >
-              {league.flag} {league.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Kupon Button */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={generateKupon}
-            disabled={selectedMatches.length === 0}
-            className={`px-6 py-3 rounded-xl font-bold ${
-              selectedMatches.length > 0
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
-                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            🎰 {t('createCoupon')} ({selectedMatches.length})
-          </button>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Standings */}
-          <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">📊 {t('standings')}</h2>
-            <div className="space-y-1 max-h-96 overflow-y-auto">
-              {standings.slice(0, 15).map((team, idx) => (
-                <div key={idx} className="flex items-center justify-between text-sm py-1">
-                  <span className="text-gray-400 w-6">{team.position}</span>
-                  <span className="flex-1 truncate">{team.teamName}</span>
-                  <span className="font-bold">{team.points}</span>
-                </div>
+              <option value="all">{l.allLeagues}</option>
+              {leagues.map((league) => (
+                <option key={league} value={league}>{league}</option>
               ))}
-            </div>
+            </select>
           </div>
+        </div>
 
-          {/* Matches */}
-          <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-4">📅 {t('matches')}</h2>
-            {loadingMatches ? (
-              <div className="text-center py-8 text-gray-400">{t('loading')}</div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Matches List */}
+          <div className="bg-gray-800/50 rounded-xl p-4">
+            <h2 className="text-lg font-bold mb-4">📅 {l.todayMatches} ({filteredMatches.length})</h2>
+            
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full"></div>
+              </div>
+            ) : filteredMatches.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-2">📭</div>
+                <p>{l.noMatches}</p>
+              </div>
             ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {matches.map((match) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {filteredMatches.map((match) => (
                   <div
                     key={match.id}
-                    className={`p-3 rounded-lg cursor-pointer ${
-                      selectedMatch?.id === match.id ? 'bg-green-600' : 
-                      selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-600/30 border border-yellow-500' : 
-                      'bg-gray-700 hover:bg-gray-600'
+                    className={`bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700 transition-all cursor-pointer ${
+                      selectedMatch?.id === match.id ? 'ring-2 ring-green-500' : ''
                     }`}
+                    onClick={() => setSelectedMatch(match)}
                   >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-400">{formatDate(match.date)}</span>
-                      <div className="flex gap-1">
-                        {favoriteIds.includes(match.id) && (
-                          <span className="text-yellow-400 text-xs">⭐</span>
-                        )}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-bold text-lg">
+                          {favoriteIds.includes(match.id) && <span className="text-yellow-400 mr-1">⭐</span>}
+                          {match.homeTeam} vs {match.awayTeam}
+                        </div>
+                        <div className="text-sm text-gray-400">{match.league}</div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
                         <button
-                          onClick={(e) => { e.stopPropagation(); toggleMatchSelection(match); }}
-                          className={`px-2 py-1 rounded text-xs ${
-                            selectedMatches.find(m => m.id === match.id) ? 'bg-yellow-500 text-black' : 'bg-gray-600'
-                          }`}
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(match.id); }}
+                          className="p-2 hover:bg-gray-600 rounded"
                         >
-                          {selectedMatches.find(m => m.id === match.id) ? '✓' : '+'}
+                          {favoriteIds.includes(match.id) ? '⭐' : '☆'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }}
+                          disabled={analyzing}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-sm disabled:opacity-50"
+                        >
+                          {analyzing && selectedMatch?.id === match.id ? '⏳' : '🤖'}
                         </button>
                       </div>
                     </div>
-                    <div onClick={() => analyzeMatch(match)} className="flex justify-between text-sm">
-                      <span>{match.homeTeam}</span>
-                      <span className="text-gray-400">vs</span>
-                      <span>{match.awayTeam}</span>
-                    </div>
                   </div>
                 ))}
-                {matches.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">{t('noMatches')}</div>
-                )}
               </div>
             )}
           </div>
 
-          {/* Analysis */}
-          <div className="bg-gray-800 rounded-xl p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">🤖 {t('aiAnalysisTitle')}</h2>
-              {selectedMatch && analysisText && (
-                <button
-                  onClick={() => toggleFavoriteAnalysis(selectedMatch.id)}
-                  className={`px-3 py-1 rounded-lg text-sm flex items-center gap-1 ${
-                    favoriteIds.includes(selectedMatch.id)
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  }`}
-                >
-                  {favoriteIds.includes(selectedMatch.id) ? '⭐' : '☆'}
-                  {favoriteIds.includes(selectedMatch.id) ? labels.inFavorites : labels.addToFavorites}
-                </button>
-              )}
-            </div>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-gray-400">{t('analyzing')}</p>
-              </div>
-            ) : analysisText ? (
-              <pre className="text-sm whitespace-pre-wrap max-h-96 overflow-y-auto bg-gray-900 p-3 rounded-lg">
-                {analysisText}
-              </pre>
+          {/* Analysis Panel */}
+          <div className="bg-gray-800/50 rounded-xl p-4">
+            {selectedMatch ? (
+              <>
+                {/* Match Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold">{selectedMatch.homeTeam} vs {selectedMatch.awayTeam}</h2>
+                    <p className="text-sm text-gray-400">{selectedMatch.league}</p>
+                  </div>
+                  <button
+                    onClick={() => toggleFavorite(selectedMatch.id)}
+                    className={`px-3 py-1 rounded-lg ${
+                      favoriteIds.includes(selectedMatch.id)
+                        ? 'bg-yellow-500 text-black'
+                        : 'bg-gray-600'
+                    }`}
+                  >
+                    {favoriteIds.includes(selectedMatch.id) ? '⭐ Favorilerde' : '☆ Favorilere Ekle'}
+                  </button>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mb-4">
+                  <button
+                    onClick={() => analyzeMatch(selectedMatch)}
+                    disabled={analyzing}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-xl font-bold disabled:opacity-50 transition-all"
+                  >
+                    {analyzing ? l.analyzing : l.analyze}
+                  </button>
+                  <button
+                    onClick={runAgentAnalysis}
+                    disabled={agentLoading}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 rounded-xl font-bold disabled:opacity-50 transition-all"
+                  >
+                    {agentLoading ? l.runningAgents : l.aiAgents}
+                  </button>
+                </div>
+
+                {/* Loading State */}
+                {(analyzing || agentLoading) && (
+                  <div className="bg-gray-700/50 rounded-lg p-6 text-center">
+                    <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-gray-300">
+                      {agentLoading ? agentPhase : l.analyzing}
+                    </p>
+                  </div>
+                )}
+
+                {/* Analysis Results */}
+                {!analyzing && !agentLoading && (
+                  <>
+                    {/* Tab Selector */}
+                    {(analysis || agentAnalysis) && (
+                      <div className="flex gap-2 mb-4">
+                        <button
+                          onClick={() => setAgentMode(false)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            !agentMode ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
+                        >
+                          🤖 {lang === 'tr' ? 'Standart Analiz' : lang === 'de' ? 'Standard-Analyse' : 'Standard Analysis'}
+                        </button>
+                        <button
+                          onClick={() => setAgentMode(true)}
+                          disabled={!agentAnalysis}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            agentMode ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+                          } ${!agentAnalysis ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          🧠 {l.agentAnalysis}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Display Analysis */}
+                    {!agentMode && analysis && formatMainAnalysis(analysis)}
+                    {agentMode && agentAnalysis && formatAgentAnalysis(agentAnalysis)}
+
+                    {/* No Analysis Yet */}
+                    {!analysis && !agentAnalysis && (
+                      <div className="text-center py-12 text-gray-400">
+                        <div className="text-5xl mb-4">🤖</div>
+                        <p>{lang === 'tr' ? 'Analiz için butona tıklayın' : lang === 'de' ? 'Klicken Sie auf die Schaltfläche für die Analyse' : 'Click button to analyze'}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             ) : (
-              <div className="text-center py-8 text-gray-400">
-                {t('selectMatch')}
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-5xl mb-4">⚽</div>
+                <p>{lang === 'tr' ? 'Analiz için maç seçin' : lang === 'de' ? 'Wählen Sie ein Spiel zur Analyse' : 'Select a match to analyze'}</p>
               </div>
             )}
           </div>
         </div>
-
-        {/* Kupon Modal */}
-        {showKuponModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between mb-4">
-                <h2 className="text-2xl font-bold">🎰 {t('aiCoupon')}</h2>
-                <button onClick={() => setShowKuponModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
-              </div>
-              {kuponLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p>{t('creatingCoupon')}</p>
-                </div>
-              ) : (
-                <pre className="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-lg">{kuponResult}</pre>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
