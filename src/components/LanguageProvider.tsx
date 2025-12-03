@@ -1,44 +1,54 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, t, TranslationKey } from '@/lib/translations';
+
+type Language = 'tr' | 'en' | 'de';
 
 interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
-  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
+  t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>('en');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // localStorage'dan dil tercihini al
-    const savedLang = localStorage.getItem('lang') as Language;
+    const savedLang = localStorage.getItem('language') as Language;
     if (savedLang && ['tr', 'en', 'de'].includes(savedLang)) {
       setLangState(savedLang);
     } else {
       // Tarayıcı dilini kontrol et
       const browserLang = navigator.language.slice(0, 2);
-      if (browserLang === 'tr') setLangState('tr');
-      else if (browserLang === 'de') setLangState('de');
-      else setLangState('en');
+      if (browserLang === 'tr') {
+        setLangState('tr');
+        localStorage.setItem('language', 'tr');
+      } else if (browserLang === 'de') {
+        setLangState('de');
+        localStorage.setItem('language', 'de');
+      } else {
+        setLangState('en');
+        localStorage.setItem('language', 'en');
+      }
     }
+    setMounted(true);
   }, []);
 
   const setLang = (newLang: Language) => {
+    console.log('Language changing to:', newLang);
     setLangState(newLang);
-    localStorage.setItem('lang', newLang);
+    localStorage.setItem('language', newLang);
   };
 
-  const translate = (key: TranslationKey, params?: Record<string, string | number>) => {
-    return t(lang, key, params);
-  };
+  const t = (key: string) => key;
+
+  if (!mounted) return null;
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t: translate }}>
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
       {children}
     </LanguageContext.Provider>
   );
