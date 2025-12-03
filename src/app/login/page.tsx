@@ -10,6 +10,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const error = searchParams.get('error');
+  const paymentCancelled = searchParams.get('payment') === 'cancelled';
 
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,7 @@ function LoginForm() {
 
     try {
       if (isLogin) {
+        // Giriş yap
         const result = await signIn('credentials', {
           email: formData.email,
           password: formData.password,
@@ -35,6 +37,7 @@ function LoginForm() {
           router.push(callbackUrl);
         }
       } else {
+        // Kayıt ol - Stripe'a yönlendir
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -45,13 +48,9 @@ function LoginForm() {
 
         if (!res.ok) {
           setFormError(data.error);
-        } else {
-          await signIn('credentials', {
-            email: formData.email,
-            password: formData.password,
-            redirect: false,
-          });
-          router.push(callbackUrl);
+        } else if (data.checkoutUrl) {
+          // Stripe checkout'a yönlendir
+          window.location.href = data.checkoutUrl;
         }
       }
     } catch (err) {
@@ -83,6 +82,12 @@ function LoginForm() {
             Kayıt Ol
           </button>
         </div>
+
+        {paymentCancelled && (
+          <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500 rounded-lg text-yellow-400 text-sm">
+            Ödeme iptal edildi. Devam etmek için tekrar kayıt olun.
+          </div>
+        )}
 
         {(error || formError) && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
@@ -134,7 +139,7 @@ function LoginForm() {
             disabled={loading}
             className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all disabled:opacity-50"
           >
-            {loading ? 'İşleniyor...' : isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
+            {loading ? 'İşleniyor...' : isLogin ? 'Giriş Yap' : 'Kayıt Ol ve Devam Et'}
           </button>
         </form>
 
@@ -144,7 +149,8 @@ function LoginForm() {
               🎁 7 Gün Ücretsiz Deneme
             </div>
             <p className="text-gray-400 text-sm">
-              Kayıt olduğunuzda 7 gün boyunca tüm özellikleri ücretsiz kullanabilirsiniz.
+              Kredi kartı bilgilerinizi girin, 7 gün ücretsiz kullanın. 
+              İptal etmezseniz ayda CHF 9.99 çekilir.
             </p>
           </div>
         )}
