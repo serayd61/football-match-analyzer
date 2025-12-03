@@ -228,8 +228,8 @@ function parseOddsDetailed(preMatchOdds: any[], fixture: any) {
   // Pre-match odds'tan ekle
 if (preMatchOdds && Array.isArray(preMatchOdds)) {
   preMatchOdds.forEach((odd: any) => {
-      const marketName = preMatchOdds.market?.name?.toLowerCase() || '';
-      const bookmaker = preMatchOdds.bookmaker?.name || 'Unknown';
+      const marketName = odd.market?.name?.toLowerCase() || '';
+      const bookmaker = odd.bookmaker?.name || 'Unknown';
 
       if (!result.bookmakers.includes(bookmaker)) {
         result.bookmakers.push(bookmaker);
