@@ -30,5 +30,7 @@ Odds: ${JSON.stringify(reports.odds)}
 JSON: {"recommendedBets": [], "riskAssessment": {"level": "medium", "factors": []}, "bankrollAdvice": "", "avoidBets": [], "summary": ""}` },
   ];
 
-  return await heurist.chatJSON<StrategyReport>(messages, { model: 'deepseek-ai/deepseek-v3' });
+  return await heurist.chatJSON<StrategyReport>(messages, { 
+    model: 'meta-llama/llama-3.3-70b-instruct' 
+  });
 }
