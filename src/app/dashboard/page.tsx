@@ -214,9 +214,20 @@ export default function DashboardPage() {
         ) : (
           <>⚠️ Abonelik gerekli • <a href="/pricing" className="underline">Abone Ol</a></>
         )}
-        <button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
-          Çıkış
-        </button>
+        <button 
+  onClick={async () => {
+    const res = await fetch('/api/stripe/portal', { method: 'POST' });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else alert(data.error || 'Portal açılamadı');
+  }} 
+  className="ml-4 underline opacity-70 hover:opacity-100"
+>
+  Abonelik Yönet
+</button>
+<button onClick={() => signOut({ callbackUrl: '/' })} className="ml-4 underline opacity-70 hover:opacity-100">
+  Çıkış
+</button>
       </div>
 
       <div className="p-4 max-w-7xl mx-auto">
