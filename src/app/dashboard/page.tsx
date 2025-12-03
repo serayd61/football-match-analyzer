@@ -255,36 +255,35 @@ export default function DashboardPage() {
     });
   };
 
-  const generateKupon = async () => {
-    if (selectedMatches.length === 0) return alert(t('selectMatch'));
+const generateKupon = async () => {
+  if (selectedMatches.length === 0) return alert(t('selectMatch'));
 
-    setKuponLoading(true);
-    setKuponResult('');
-    setShowKuponModal(true);
+  setKuponLoading(true);
+  setKuponResult('');
+  setShowKuponModal(true);
 
-    try {
-      const res = await fetch('/api/multi-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matches: selectedMatches.map(m => ({
-            fixtureId: m.id,
-            homeTeam: m.homeTeam,
-            awayTeam: m.awayTeam,
-            homeTeamId: m.homeTeamId,
-            awayTeamId: m.awayTeamId,
-          }))
-        }),
+  try {
+    const res = await fetch('/api/multi-agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        matches: selectedMatches.map(m => ({
+          fixtureId: m.id,
+          homeTeam: m.homeTeam,
+          awayTeam: m.awayTeam,
+          homeTeamId: m.homeTeamId,
+          awayTeamId: m.awayTeamId,
+        })),
         language: lang,
-}),
-      });
-      const data = await res.json();
-      setKuponResult(data.kupon || JSON.stringify(data, null, 2));
-    } catch (error) {
-      setKuponResult(t('error') + ': ' + String(error));
-    }
-    setKuponLoading(false);
-  };
+      }),
+    });
+    const data = await res.json();
+    setKuponResult(data.kupon || JSON.stringify(data, null, 2));
+  } catch (error) {
+    setKuponResult(t('error') + ': ' + String(error));
+  }
+  setKuponLoading(false);
+};
 
   const openPortal = async () => {
     const res = await fetch('/api/stripe/portal', { method: 'POST' });
