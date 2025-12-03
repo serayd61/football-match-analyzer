@@ -1,32 +1,32 @@
 // src/lib/heurist/agents/scout.ts
 
 import { heurist, HeuristMessage } from '../client';
-import { TR_PROMPTS } from '../prompts/tr';
-import { EN_PROMPTS } from '../prompts/en';
-import { DE_PROMPTS } from '../prompts/de';
 import { Language, MatchData, ScoutReport } from '../types';
 
-const PROMPTS = {
-  tr: TR_PROMPTS,
-  en: EN_PROMPTS,
-  de: DE_PROMPTS,
+const SYSTEM_PROMPTS: Record<Language, string> = {
+  tr: `🔍 SEN DÜNYA ÇAPINDA TANINMIŞ BİR FUTBOL SCOUT AJANISIN!
+Detaylı scout raporu hazırla. Türkçe yanıt ver. SADECE JSON formatında yanıt ver.`,
+  en: `🔍 YOU ARE A WORLD-CLASS FOOTBALL SCOUT AGENT!
+Prepare detailed scout report. Respond in English. Respond ONLY in JSON format.`,
+  de: `🔍 DU BIST EIN WELTKLASSE FUßBALL-SCOUT-AGENT!
+Erstelle detaillierten Scout-Bericht. Antworte auf Deutsch. Antworte NUR im JSON-Format.`,
 };
 
 export async function runScoutAgent(
   match: MatchData,
   language: Language = 'en'
 ): Promise<ScoutReport | null> {
-  const prompts = PROMPTS[language]?.scout || PROMPTS.en.scout;
-
   const messages: HeuristMessage[] = [
-    { role: 'system', content: prompts.system },
-    { role: 'user', content: prompts.user(match) },
+    { role: 'system', content: SYSTEM_PROMPTS[language] },
+    { role: 'user', content: `
+🏟️ ${match.homeTeam} vs ${match.awayTeam}
+🏆 ${match.league} | 📅 ${match.date}
+
+JSON: {"injuries": [], "suspensions": [], "news": [], "lineupChanges": [], "weather": {}, "summary": ""}` },
   ];
 
-  const result = await heurist.chatJSON<ScoutReport>(messages, {
-    model: 'deepseek-ai/deepseek-v3',
-    temperature: 0.5,
+  return await heurist.chatJSON<ScoutReport>(messages, { 
+    model: 'meta-llama/llama-3.3-70b-instruct',
+    temperature: 0.5 
   });
-
-  return result;
 }
