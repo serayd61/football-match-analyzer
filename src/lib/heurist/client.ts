@@ -1,10 +1,14 @@
+// src/lib/heurist/client.ts
+
 const HEURIST_API_URL = 'https://llm-gateway.heurist.xyz/v1/chat/completions';
 
 export type HeuristModel = 
-  | 'deepseek-ai/deepseek-v3'
-  | 'meta-llama/llama-3.1-70b-instruct'
-  | 'meta-llama/llama-3.1-405b-instruct'
-  | 'mistralai/mixtral-8x22b-instruct';
+  | 'mistralai/mistral-small-24b-instruct-2501'
+  | 'meta-llama/llama-3.3-70b-instruct'
+  | 'nvidia/llama-3.1-nemotron-70b-instruct'
+  | 'deepseek/deepseek-r1-distill-llama-70b'
+  | 'qwen/qwen-2.5-72b-instruct'
+  | 'hermes-3-llama-3.1-70b';
 
 export interface HeuristMessage {
   role: 'system' | 'user' | 'assistant';
@@ -19,7 +23,7 @@ export interface HeuristOptions {
 
 export class HeuristClient {
   private apiKey: string;
-  private defaultModel: HeuristModel = 'deepseek-ai/deepseek-v3';
+  private defaultModel: HeuristModel = 'meta-llama/llama-3.3-70b-instruct';
 
   constructor() {
     this.apiKey = process.env.HEURIST_API_KEY || '';
@@ -35,7 +39,8 @@ export class HeuristClient {
     }
 
     try {
-      console.log(`🤖 Heurist calling ${options.model || this.defaultModel}...`);
+      const model = options.model || this.defaultModel;
+      console.log(`🤖 Heurist calling ${model}...`);
       
       const response = await fetch(HEURIST_API_URL, {
         method: 'POST',
@@ -44,7 +49,7 @@ export class HeuristClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: options.model || this.defaultModel,
+          model: model,
           messages,
           max_tokens: options.maxTokens || 3000,
           temperature: options.temperature || 0.7,
@@ -52,7 +57,8 @@ export class HeuristClient {
       });
 
       if (!response.ok) {
-        console.error('❌ Heurist API error:', response.status, await response.text());
+        const errorText = await response.text();
+        console.error('❌ Heurist API error:', response.status, errorText);
         return null;
       }
 
