@@ -54,6 +54,76 @@ export default function DashboardPage() {
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  // Dile göre etiketler
+  const analysisLabels: Record<string, Record<string, string>> = {
+    tr: {
+      aiStatus: 'AI DURUM',
+      odds: 'BAHİS ORANLARI',
+      formStatus: 'FORM DURUMU',
+      points: 'puan',
+      goalAvg: 'Gol ort',
+      conceded: 'Yediği',
+      aiPredictions: 'AI TAHMİNLERİ',
+      matchResult: 'MAÇ SONUCU',
+      overUnder: '2.5 GOL',
+      btts: 'KG VAR/YOK',
+      doubleChance: 'ÇİFTE ŞANS',
+      halfTime: 'İLK YARI',
+      goalRange: 'GOL ARALIĞI',
+      firstGoal: 'İLK GOL',
+      correctScore: 'DOĞRU SKOR TAHMİNLERİ',
+      starPlayers: 'MAÇIN YILDIZLARI',
+      bestBets: 'EN İYİ BAHİS ÖNERİLERİ',
+      riskLevel: 'RİSK SEVİYESİ',
+      overallEval: 'GENEL DEĞERLENDİRME',
+      unanimous: 'OYBIRLIĞI',
+    },
+    en: {
+      aiStatus: 'AI STATUS',
+      odds: 'BETTING ODDS',
+      formStatus: 'FORM STATUS',
+      points: 'points',
+      goalAvg: 'Goals avg',
+      conceded: 'Conceded',
+      aiPredictions: 'AI PREDICTIONS',
+      matchResult: 'MATCH RESULT',
+      overUnder: '2.5 GOALS',
+      btts: 'BTTS',
+      doubleChance: 'DOUBLE CHANCE',
+      halfTime: 'HALF TIME',
+      goalRange: 'GOAL RANGE',
+      firstGoal: 'FIRST GOAL',
+      correctScore: 'CORRECT SCORE PREDICTIONS',
+      starPlayers: 'STAR PLAYERS',
+      bestBets: 'BEST BET SUGGESTIONS',
+      riskLevel: 'RISK LEVEL',
+      overallEval: 'OVERALL EVALUATION',
+      unanimous: 'UNANIMOUS',
+    },
+    de: {
+      aiStatus: 'KI STATUS',
+      odds: 'WETTQUOTEN',
+      formStatus: 'FORMSTAND',
+      points: 'Punkte',
+      goalAvg: 'Tore Ø',
+      conceded: 'Kassiert',
+      aiPredictions: 'KI VORHERSAGEN',
+      matchResult: 'SPIELERGEBNIS',
+      overUnder: '2.5 TORE',
+      btts: 'BEIDE TREFFEN',
+      doubleChance: 'DOPPELTE CHANCE',
+      halfTime: 'HALBZEIT',
+      goalRange: 'TORBEREICH',
+      firstGoal: 'ERSTES TOR',
+      correctScore: 'GENAUES ERGEBNIS',
+      starPlayers: 'SPIELER DES SPIELS',
+      bestBets: 'BESTE WETTVORSCHLÄGE',
+      riskLevel: 'RISIKONIVEAU',
+      overallEval: 'GESAMTBEWERTUNG',
+      unanimous: 'EINSTIMMIG',
+    },
+  };
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -89,164 +159,165 @@ export default function DashboardPage() {
     }
   };
 
- const analyzeMatch = async (match: Match) => {
-  setSelectedMatch(match);
-  setLoading(true);
-  setAnalysis(null);
-  setAnalysisText('');
-  
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fixtureId: match.id,
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-        language: lang, // Dil bilgisini gönder
-      }),
-    });
+  const analyzeMatch = async (match: Match) => {
+    setSelectedMatch(match);
+    setLoading(true);
+    setAnalysis(null);
+    setAnalysisText('');
     
-    const data = await res.json();
-    
-    if (data.success && data.analysis) {
-      setAnalysis(data);
-      setAnalysisText(formatAnalysis(data));
-    } else {
-      setAnalysisText(data.error || t('error'));
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          language: lang,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.analysis) {
+        setAnalysis(data);
+        setAnalysisText(formatAnalysis(data));
+      } else {
+        setAnalysisText(data.error || t('error'));
+      }
+    } catch (error) {
+      setAnalysisText(t('error') + ': ' + String(error));
     }
-  } catch (error) {
-    setAnalysisText(t('error') + ': ' + String(error));
-  }
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   const formatAnalysis = (data: any): string => {
-  const a = data.analysis;
-  const odds = data.odds;
-  const form = data.form;
-  const aiStatus = data.aiStatus;
+    const a = data.analysis;
+    const odds = data.odds;
+    const form = data.form;
+    const aiStatus = data.aiStatus;
+    const l = analysisLabels[lang] || analysisLabels.en;
 
-  let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
-  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  // AI Status
-  text += `🤖 AI DURUM: Claude ${aiStatus?.claude || '?'} | GPT-4 ${aiStatus?.openai || '?'} | Gemini ${aiStatus?.gemini || '?'}\n\n`;
+    // AI Status
+    text += `🤖 ${l.aiStatus}: Claude ${aiStatus?.claude || '?'} | GPT-4 ${aiStatus?.openai || '?'} | Gemini ${aiStatus?.gemini || '?'}\n\n`;
 
-  // Odds
-  if (odds?.matchWinner) {
-    text += `📊 BAHİS ORANLARI\n`;
-    text += `┌─────────────────────────────────┐\n`;
-    text += `│ 1X2: ${odds.matchWinner.home || '-'} | ${odds.matchWinner.draw || '-'} | ${odds.matchWinner.away || '-'}\n`;
-    if (odds.overUnder) text += `│ 2.5: Ü ${odds.overUnder.over || '-'} | A ${odds.overUnder.under || '-'}\n`;
-    if (odds.btts) text += `│ KG:  V ${odds.btts.yes || '-'} | Y ${odds.btts.no || '-'}\n`;
-    if (odds.doubleChance) text += `│ ÇŞ:  1X ${odds.doubleChance.homeOrDraw || '-'} | X2 ${odds.doubleChance.awayOrDraw || '-'} | 12 ${odds.doubleChance.homeOrAway || '-'}\n`;
-    text += `└─────────────────────────────────┘\n\n`;
-  }
+    // Odds
+    if (odds?.matchWinner) {
+      text += `📊 ${l.odds}\n`;
+      text += `┌─────────────────────────────────┐\n`;
+      text += `│ 1X2: ${odds.matchWinner.home || '-'} | ${odds.matchWinner.draw || '-'} | ${odds.matchWinner.away || '-'}\n`;
+      if (odds.overUnder) text += `│ 2.5: Ü ${odds.overUnder.over || '-'} | A ${odds.overUnder.under || '-'}\n`;
+      if (odds.btts) text += `│ BTTS: Y ${odds.btts.yes || '-'} | N ${odds.btts.no || '-'}\n`;
+      if (odds.doubleChance) text += `│ DC: 1X ${odds.doubleChance.homeOrDraw || '-'} | X2 ${odds.doubleChance.awayOrDraw || '-'} | 12 ${odds.doubleChance.homeOrAway || '-'}\n`;
+      text += `└─────────────────────────────────┘\n\n`;
+    }
 
-  // Form
-  if (form) {
-    text += `📈 FORM DURUMU\n`;
-    text += `┌─────────────────────────────────┐\n`;
-    text += `│ ${data.fixture?.homeTeam}: ${form.home?.form || 'N/A'} (${form.home?.points || 0}/15 puan)\n`;
-    text += `│ → Gol ort: ${form.home?.avgGoals || '0'} | Yediği: ${form.home?.avgConceded || '0'}\n`;
-    text += `│\n`;
-    text += `│ ${data.fixture?.awayTeam}: ${form.away?.form || 'N/A'} (${form.away?.points || 0}/15 puan)\n`;
-    text += `│ → Gol ort: ${form.away?.avgGoals || '0'} | Yediği: ${form.away?.avgConceded || '0'}\n`;
-    text += `└─────────────────────────────────┘\n\n`;
-  }
+    // Form
+    if (form) {
+      text += `📈 ${l.formStatus}\n`;
+      text += `┌─────────────────────────────────┐\n`;
+      text += `│ ${data.fixture?.homeTeam}: ${form.home?.form || 'N/A'} (${form.home?.points || 0}/15 ${l.points})\n`;
+      text += `│ → ${l.goalAvg}: ${form.home?.avgGoals || '0'} | ${l.conceded}: ${form.home?.avgConceded || '0'}\n`;
+      text += `│\n`;
+      text += `│ ${data.fixture?.awayTeam}: ${form.away?.form || 'N/A'} (${form.away?.points || 0}/15 ${l.points})\n`;
+      text += `│ → ${l.goalAvg}: ${form.away?.avgGoals || '0'} | ${l.conceded}: ${form.away?.avgConceded || '0'}\n`;
+      text += `└─────────────────────────────────┘\n\n`;
+    }
 
-  // AI Tahminleri
-  text += `🎯 AI TAHMİNLERİ (${a?.aiCount || 0}/3 AI)\n`;
-  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    // AI Tahminleri
+    text += `🎯 ${l.aiPredictions} (${a?.aiCount || 0}/3 AI)\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  if (a?.matchResult) {
-    const unanimous = a.matchResult.unanimous ? '🔥 OYBIRLIĞI' : `${a.matchResult.votes}/${a.matchResult.totalVotes} AI`;
-    text += `⚽ MAÇ SONUCU: ${a.matchResult.prediction} (${a.matchResult.confidence}%) ${unanimous}\n`;
-  }
+    if (a?.matchResult) {
+      const unanimous = a.matchResult.unanimous ? `🔥 ${l.unanimous}` : `${a.matchResult.votes}/${a.matchResult.totalVotes} AI`;
+      text += `⚽ ${l.matchResult}: ${a.matchResult.prediction} (${a.matchResult.confidence}%) ${unanimous}\n`;
+    }
 
-  if (a?.overUnder25) {
-    const unanimous = a.overUnder25.unanimous ? '🔥 OYBIRLIĞI' : `${a.overUnder25.votes}/${a.overUnder25.totalVotes} AI`;
-    text += `📊 2.5 GOL: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%) ${unanimous}\n`;
-  }
+    if (a?.overUnder25) {
+      const unanimous = a.overUnder25.unanimous ? `🔥 ${l.unanimous}` : `${a.overUnder25.votes}/${a.overUnder25.totalVotes} AI`;
+      text += `📊 ${l.overUnder}: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%) ${unanimous}\n`;
+    }
 
-  if (a?.btts) {
-    const unanimous = a.btts.unanimous ? '🔥 OYBIRLIĞI' : `${a.btts.votes}/${a.btts.totalVotes} AI`;
-    text += `🔥 KG VAR/YOK: ${a.btts.prediction} (${a.btts.confidence}%) ${unanimous}\n`;
-  }
+    if (a?.btts) {
+      const unanimous = a.btts.unanimous ? `🔥 ${l.unanimous}` : `${a.btts.votes}/${a.btts.totalVotes} AI`;
+      text += `🔥 ${l.btts}: ${a.btts.prediction} (${a.btts.confidence}%) ${unanimous}\n`;
+    }
 
-  if (a?.doubleChance) {
-    const unanimous = a.doubleChance.unanimous ? '🔥 OYBIRLIĞI' : `${a.doubleChance.votes}/${a.doubleChance.totalVotes} AI`;
-    text += `📈 ÇİFTE ŞANS: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%) ${unanimous}\n`;
-  }
+    if (a?.doubleChance) {
+      const unanimous = a.doubleChance.unanimous ? `🔥 ${l.unanimous}` : `${a.doubleChance.votes}/${a.doubleChance.totalVotes} AI`;
+      text += `📈 ${l.doubleChance}: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%) ${unanimous}\n`;
+    }
 
-  if (a?.halfTimeResult) {
-    const unanimous = a.halfTimeResult.unanimous ? '🔥 OYBIRLIĞI' : `${a.halfTimeResult.votes}/${a.halfTimeResult.totalVotes} AI`;
-    text += `⏱️ İLK YARI: ${a.halfTimeResult.prediction} (${a.halfTimeResult.confidence}%) ${unanimous}\n`;
-  }
+    if (a?.halfTimeResult) {
+      const unanimous = a.halfTimeResult.unanimous ? `🔥 ${l.unanimous}` : `${a.halfTimeResult.votes}/${a.halfTimeResult.totalVotes} AI`;
+      text += `⏱️ ${l.halfTime}: ${a.halfTimeResult.prediction} (${a.halfTimeResult.confidence}%) ${unanimous}\n`;
+    }
 
-  if (a?.totalGoalsRange) {
-    text += `🎯 GOL ARALIĞI: ${a.totalGoalsRange.prediction} gol (${a.totalGoalsRange.confidence}%)\n`;
-  }
+    if (a?.totalGoalsRange) {
+      text += `🎯 ${l.goalRange}: ${a.totalGoalsRange.prediction} (${a.totalGoalsRange.confidence}%)\n`;
+    }
 
-  if (a?.firstGoal) {
-    text += `⚡ İLK GOL: ${a.firstGoal.prediction} (${a.firstGoal.confidence}%)\n`;
-  }
+    if (a?.firstGoal) {
+      text += `⚡ ${l.firstGoal}: ${a.firstGoal.prediction} (${a.firstGoal.confidence}%)\n`;
+    }
 
-  // Correct Score
-  if (a?.correctScore) {
-    text += `\n🏆 DOĞRU SKOR TAHMİNLERİ\n`;
-    text += `┌─────────────────────────────────┐\n`;
-    if (a.correctScore.first) text += `│ 1. ${a.correctScore.first.score} (%${a.correctScore.first.confidence})\n`;
-    if (a.correctScore.second) text += `│ 2. ${a.correctScore.second.score} (%${a.correctScore.second.confidence})\n`;
-    if (a.correctScore.third) text += `│ 3. ${a.correctScore.third.score} (%${a.correctScore.third.confidence})\n`;
-    text += `└─────────────────────────────────┘\n`;
-  }
+    // Correct Score
+    if (a?.correctScore) {
+      text += `\n🏆 ${l.correctScore}\n`;
+      text += `┌─────────────────────────────────┐\n`;
+      if (a.correctScore.first) text += `│ 1. ${a.correctScore.first.score} (${a.correctScore.first.confidence}%)\n`;
+      if (a.correctScore.second) text += `│ 2. ${a.correctScore.second.score} (${a.correctScore.second.confidence}%)\n`;
+      if (a.correctScore.third) text += `│ 3. ${a.correctScore.third.score} (${a.correctScore.third.confidence}%)\n`;
+      text += `└─────────────────────────────────┘\n`;
+    }
 
-  // Star Players
-  if (a?.starPlayers && a.starPlayers.length > 0) {
-    text += `\n⭐ MAÇIN YILDIZLARI\n`;
-    a.starPlayers.forEach((player: any, idx: number) => {
-      if (player?.name) {
-        text += `${idx + 1}. ${player.name} (${player.team})\n`;
-        text += `   → ${player.reason}\n`;
-      }
-    });
-  }
+    // Star Players
+    if (a?.starPlayers && a.starPlayers.length > 0) {
+      text += `\n⭐ ${l.starPlayers}\n`;
+      a.starPlayers.forEach((player: any, idx: number) => {
+        if (player?.name) {
+          text += `${idx + 1}. ${player.name} (${player.team})\n`;
+          text += `   → ${player.reason}\n`;
+        }
+      });
+    }
 
-  // Best Bets
-  if (a?.bestBets && a.bestBets.length > 0) {
-    text += `\n💰 EN İYİ BAHİS ÖNERİLERİ\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    a.bestBets.forEach((bet: any, idx: number) => {
-      if (bet?.type) {
-        text += `${idx + 1}. ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
-        text += `   → ${bet.reasoning}\n`;
-      }
-    });
-  }
+    // Best Bets
+    if (a?.bestBets && a.bestBets.length > 0) {
+      text += `\n💰 ${l.bestBets}\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      a.bestBets.forEach((bet: any, idx: number) => {
+        if (bet?.type) {
+          text += `${idx + 1}. ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
+          text += `   → ${bet.reasoning}\n`;
+        }
+      });
+    }
 
-  // Risk Level
-  if (a?.riskLevels && a.riskLevels.length > 0) {
-    const riskCounts: any = {};
-    a.riskLevels.forEach((r: string) => {
-      riskCounts[r] = (riskCounts[r] || 0) + 1;
-    });
-    const mostCommonRisk = Object.keys(riskCounts).reduce((a, b) => riskCounts[a] > riskCounts[b] ? a : b);
-    text += `\n⚠️ RİSK SEVİYESİ: ${mostCommonRisk}\n`;
-  }
+    // Risk Level
+    if (a?.riskLevels && a.riskLevels.length > 0) {
+      const riskCounts: any = {};
+      a.riskLevels.forEach((r: string) => {
+        riskCounts[r] = (riskCounts[r] || 0) + 1;
+      });
+      const mostCommonRisk = Object.keys(riskCounts).reduce((x, y) => riskCounts[x] > riskCounts[y] ? x : y);
+      text += `\n⚠️ ${l.riskLevel}: ${mostCommonRisk}\n`;
+    }
 
-  // Overall Analysis
-  if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
-    text += `\n📝 GENEL DEĞERLENDİRME\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `${a.overallAnalyses[0]}\n`;
-  }
+    // Overall Analysis
+    if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
+      text += `\n📝 ${l.overallEval}\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `${a.overallAnalyses[0]}\n`;
+    }
 
-  return text;
-};
+    return text;
+  };
 
   const toggleMatchSelection = (match: Match) => {
     setSelectedMatches(prev => {
@@ -255,35 +326,35 @@ export default function DashboardPage() {
     });
   };
 
-const generateKupon = async () => {
-  if (selectedMatches.length === 0) return alert(t('selectMatch'));
+  const generateKupon = async () => {
+    if (selectedMatches.length === 0) return alert(t('selectMatch'));
 
-  setKuponLoading(true);
-  setKuponResult('');
-  setShowKuponModal(true);
+    setKuponLoading(true);
+    setKuponResult('');
+    setShowKuponModal(true);
 
-  try {
-    const res = await fetch('/api/multi-agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        matches: selectedMatches.map(m => ({
-          fixtureId: m.id,
-          homeTeam: m.homeTeam,
-          awayTeam: m.awayTeam,
-          homeTeamId: m.homeTeamId,
-          awayTeamId: m.awayTeamId,
-        })),
-        language: lang,
-      }),
-    });
-    const data = await res.json();
-    setKuponResult(data.kupon || JSON.stringify(data, null, 2));
-  } catch (error) {
-    setKuponResult(t('error') + ': ' + String(error));
-  }
-  setKuponLoading(false);
-};
+    try {
+      const res = await fetch('/api/multi-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matches: selectedMatches.map(m => ({
+            fixtureId: m.id,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            homeTeamId: m.homeTeamId,
+            awayTeamId: m.awayTeamId,
+          })),
+          language: lang,
+        }),
+      });
+      const data = await res.json();
+      setKuponResult(data.kupon || JSON.stringify(data, null, 2));
+    } catch (error) {
+      setKuponResult(t('error') + ': ' + String(error));
+    }
+    setKuponLoading(false);
+  };
 
   const openPortal = async () => {
     const res = await fetch('/api/stripe/portal', { method: 'POST' });
