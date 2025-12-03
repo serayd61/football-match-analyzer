@@ -1,5 +1,3 @@
-// src/lib/heurist/prompts/de.ts
-
 export const DE_PROMPTS = {
   scout: {
     system: `🔍 DU BIST EIN WELTKLASSE SCOUT-AGENT!
@@ -24,25 +22,3 @@ JSON: {"injuries": [], "suspensions": [], "news": [], "lineupChanges": [], "weat
     user: (match: any, allReports: any) => `Spiel: ${match.homeTeam} vs ${match.awayTeam}`
   }
 };
-```
-
----
-
-## Dosya Yapısı
-
-GitHub'da şu dosyaların olduğundan emin ol:
-```
-src/lib/heurist/
-├── client.ts           ✅
-├── types.ts            ✅
-├── orchestrator.ts     ✅
-├── agents/
-│   ├── scout.ts        ✅ (oluşturmuştun)
-│   ├── stats.ts        ⬆️ (yukarıdaki kodu ekle)
-│   ├── odds.ts         ⬆️ (yukarıdaki kodu ekle)
-│   ├── strategy.ts     ⬆️ (yukarıdaki kodu ekle)
-│   └── consensus.ts    ⬆️ (yukarıdaki kodu ekle)
-├── prompts/
-│   ├── tr.ts           ✅
-│   ├── en.ts           ⬆️ (yukarıdaki kodu ekle)
-│   └── de.ts           ⬆️ (yukarıdaki kodu ekle)
