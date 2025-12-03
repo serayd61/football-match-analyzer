@@ -28,12 +28,14 @@ export async function createCheckoutSession({
   priceId,
   successUrl,
   cancelUrl,
+  isUpgrade = false,
 }: {
   userId: string;
   userEmail: string;
   priceId: string;
   successUrl: string;
   cancelUrl: string;
+  isUpgrade?: boolean;
 }) {
   const customers = await stripe.customers.list({
     email: userEmail,
@@ -50,21 +52,30 @@ export async function createCheckoutSession({
     customerId = customer.id;
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     customer: customerId,
     payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
     mode: 'subscription',
-    subscription_data: {
-      trial_period_days: 7,
-      metadata: { userId },
-    },
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: { userId },
     billing_address_collection: 'required',
-  });
+  };
 
+  // Sadece yeni kullanıcılar için trial ver
+  if (!isUpgrade) {
+    sessionConfig.subscription_data = {
+      trial_period_days: 7,
+      metadata: { userId },
+    };
+  } else {
+    sessionConfig.subscription_data = {
+      metadata: { userId },
+    };
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
   return session;
 }
 
