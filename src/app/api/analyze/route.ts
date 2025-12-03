@@ -137,8 +137,8 @@ function parseOddsDetailed(preMatchOdds: any[], fixture: any) {
   };
 
   // Fixture'dan gelen odds
-  if (fixtureOdds?.odds && Array.isArray(fixtureOdds.odds)) {
-    fixtureOdds.odds.forEach((odd: any) => {
+  if (fixture?.odds && Array.isArray(fixtureOdds.odds)) {
+    fixture.odds.forEach((odd: any) => {
       const marketId = odd.market_id;
       const values = odd.values || [];
       const bookmaker = odd.bookmaker?.name || 'Unknown';
