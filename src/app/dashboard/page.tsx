@@ -123,32 +123,129 @@ export default function DashboardPage() {
   };
 
   const formatAnalysis = (data: any): string => {
-    const a = data.analysis;
-    const odds = data.odds;
-    
-    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n\n`;
-    
-    if (odds?.matchWinner) {
-      text += `📊 ODDS\n`;
-      text += `1: ${odds.matchWinner.home} | X: ${odds.matchWinner.draw} | 2: ${odds.matchWinner.away}\n\n`;
-    }
-    
-    text += `🤖 AI PREDICTIONS\n`;
-    if (a?.matchResult) {
-      text += `FT: ${a.matchResult.prediction} (${a.matchResult.confidence}%)\n`;
-    }
-    if (a?.goals) {
-      text += `O/U 2.5: ${a.goals.over25 ? 'OVER' : 'UNDER'} (${a.goals.confidence}%)\n`;
-    }
-    if (a?.btts) {
-      text += `BTTS: ${a.btts.prediction ? 'YES' : 'NO'} (${a.btts.confidence}%)\n`;
-    }
-    if (a?.correctScore) {
-      text += `Score: ${a.correctScore.prediction}\n`;
-    }
-    
-    return text;
-  };
+  const a = data.analysis;
+  const odds = data.odds;
+  const form = data.form;
+  const aiStatus = data.aiStatus;
+
+  let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  // AI Status
+  text += `🤖 AI DURUM: Claude ${aiStatus?.claude || '?'} | GPT-4 ${aiStatus?.openai || '?'} | Gemini ${aiStatus?.gemini || '?'}\n\n`;
+
+  // Odds
+  if (odds?.matchWinner) {
+    text += `📊 BAHİS ORANLARI\n`;
+    text += `┌─────────────────────────────────┐\n`;
+    text += `│ 1X2: ${odds.matchWinner.home || '-'} | ${odds.matchWinner.draw || '-'} | ${odds.matchWinner.away || '-'}\n`;
+    if (odds.overUnder) text += `│ 2.5: Ü ${odds.overUnder.over || '-'} | A ${odds.overUnder.under || '-'}\n`;
+    if (odds.btts) text += `│ KG:  V ${odds.btts.yes || '-'} | Y ${odds.btts.no || '-'}\n`;
+    if (odds.doubleChance) text += `│ ÇŞ:  1X ${odds.doubleChance.homeOrDraw || '-'} | X2 ${odds.doubleChance.awayOrDraw || '-'} | 12 ${odds.doubleChance.homeOrAway || '-'}\n`;
+    text += `└─────────────────────────────────┘\n\n`;
+  }
+
+  // Form
+  if (form) {
+    text += `📈 FORM DURUMU\n`;
+    text += `┌─────────────────────────────────┐\n`;
+    text += `│ ${data.fixture?.homeTeam}: ${form.home?.form || 'N/A'} (${form.home?.points || 0}/15 puan)\n`;
+    text += `│ → Gol ort: ${form.home?.avgGoals || '0'} | Yediği: ${form.home?.avgConceded || '0'}\n`;
+    text += `│\n`;
+    text += `│ ${data.fixture?.awayTeam}: ${form.away?.form || 'N/A'} (${form.away?.points || 0}/15 puan)\n`;
+    text += `│ → Gol ort: ${form.away?.avgGoals || '0'} | Yediği: ${form.away?.avgConceded || '0'}\n`;
+    text += `└─────────────────────────────────┘\n\n`;
+  }
+
+  // AI Tahminleri
+  text += `🎯 AI TAHMİNLERİ (${a?.aiCount || 0}/3 AI)\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  if (a?.matchResult) {
+    const unanimous = a.matchResult.unanimous ? '🔥 OYBIRLIĞI' : `${a.matchResult.votes}/${a.matchResult.totalVotes} AI`;
+    text += `⚽ MAÇ SONUCU: ${a.matchResult.prediction} (${a.matchResult.confidence}%) ${unanimous}\n`;
+  }
+
+  if (a?.overUnder25) {
+    const unanimous = a.overUnder25.unanimous ? '🔥 OYBIRLIĞI' : `${a.overUnder25.votes}/${a.overUnder25.totalVotes} AI`;
+    text += `📊 2.5 GOL: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%) ${unanimous}\n`;
+  }
+
+  if (a?.btts) {
+    const unanimous = a.btts.unanimous ? '🔥 OYBIRLIĞI' : `${a.btts.votes}/${a.btts.totalVotes} AI`;
+    text += `🔥 KG VAR/YOK: ${a.btts.prediction} (${a.btts.confidence}%) ${unanimous}\n`;
+  }
+
+  if (a?.doubleChance) {
+    const unanimous = a.doubleChance.unanimous ? '🔥 OYBIRLIĞI' : `${a.doubleChance.votes}/${a.doubleChance.totalVotes} AI`;
+    text += `📈 ÇİFTE ŞANS: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%) ${unanimous}\n`;
+  }
+
+  if (a?.halfTimeResult) {
+    const unanimous = a.halfTimeResult.unanimous ? '🔥 OYBIRLIĞI' : `${a.halfTimeResult.votes}/${a.halfTimeResult.totalVotes} AI`;
+    text += `⏱️ İLK YARI: ${a.halfTimeResult.prediction} (${a.halfTimeResult.confidence}%) ${unanimous}\n`;
+  }
+
+  if (a?.totalGoalsRange) {
+    text += `🎯 GOL ARALIĞI: ${a.totalGoalsRange.prediction} gol (${a.totalGoalsRange.confidence}%)\n`;
+  }
+
+  if (a?.firstGoal) {
+    text += `⚡ İLK GOL: ${a.firstGoal.prediction} (${a.firstGoal.confidence}%)\n`;
+  }
+
+  // Correct Score
+  if (a?.correctScore) {
+    text += `\n🏆 DOĞRU SKOR TAHMİNLERİ\n`;
+    text += `┌─────────────────────────────────┐\n`;
+    if (a.correctScore.first) text += `│ 1. ${a.correctScore.first.score} (%${a.correctScore.first.confidence})\n`;
+    if (a.correctScore.second) text += `│ 2. ${a.correctScore.second.score} (%${a.correctScore.second.confidence})\n`;
+    if (a.correctScore.third) text += `│ 3. ${a.correctScore.third.score} (%${a.correctScore.third.confidence})\n`;
+    text += `└─────────────────────────────────┘\n`;
+  }
+
+  // Star Players
+  if (a?.starPlayers && a.starPlayers.length > 0) {
+    text += `\n⭐ MAÇIN YILDIZLARI\n`;
+    a.starPlayers.forEach((player: any, idx: number) => {
+      if (player?.name) {
+        text += `${idx + 1}. ${player.name} (${player.team})\n`;
+        text += `   → ${player.reason}\n`;
+      }
+    });
+  }
+
+  // Best Bets
+  if (a?.bestBets && a.bestBets.length > 0) {
+    text += `\n💰 EN İYİ BAHİS ÖNERİLERİ\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    a.bestBets.forEach((bet: any, idx: number) => {
+      if (bet?.type) {
+        text += `${idx + 1}. ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
+        text += `   → ${bet.reasoning}\n`;
+      }
+    });
+  }
+
+  // Risk Level
+  if (a?.riskLevels && a.riskLevels.length > 0) {
+    const riskCounts: any = {};
+    a.riskLevels.forEach((r: string) => {
+      riskCounts[r] = (riskCounts[r] || 0) + 1;
+    });
+    const mostCommonRisk = Object.keys(riskCounts).reduce((a, b) => riskCounts[a] > riskCounts[b] ? a : b);
+    text += `\n⚠️ RİSK SEVİYESİ: ${mostCommonRisk}\n`;
+  }
+
+  // Overall Analysis
+  if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
+    text += `\n📝 GENEL DEĞERLENDİRME\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `${a.overallAnalyses[0]}\n`;
+  }
+
+  return text;
+};
 
   const toggleMatchSelection = (match: Match) => {
     setSelectedMatches(prev => {
