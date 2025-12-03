@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
     const cached = await getCachedAnalysis(fixtureId, language);
     if (cached) {
       // Kullanıcı geçmişine ekle
-      await addToUserHistory(userId, cached.id, fixtureId, homeTeam, awayTeam);
+     await addToUserHistory(userId, fixtureId, cached.home_team, cached.away_team);
 
       return NextResponse.json({
         success: true,
@@ -514,7 +514,7 @@ export async function POST(request: NextRequest) {
 
     // 6. Kullanıcı geçmişine ekle
     if (cachedAnalysis) {
-      await addToUserHistory(userId, cachedAnalysis.id, fixtureId, homeTeam, awayTeam);
+      await addToUserHistory(userId, fixtureId, homeTeam, awayTeam);
     }
 
     return NextResponse.json({
