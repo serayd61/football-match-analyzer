@@ -26,9 +26,7 @@ export default function ProfilePage() {
       noAnalyses: 'Henüz analiz yapmadınız',
       noFavorites: 'Favori analiz yok',
       backToDashboard: '← Dashboard\'a Dön',
-      viewAnalysis: 'Analizi Gör',
-      removeFromFavorites: 'Favorilerden Çıkar',
-      addToFavorites: 'Favorilere Ekle',
+      analysesRemaining: 'Kalan Analiz Hakkı',
     },
     en: {
       profile: 'My Profile',
@@ -39,9 +37,7 @@ export default function ProfilePage() {
       noAnalyses: 'No analyses yet',
       noFavorites: 'No favorite analyses',
       backToDashboard: '← Back to Dashboard',
-      viewAnalysis: 'View Analysis',
-      removeFromFavorites: 'Remove from Favorites',
-      addToFavorites: 'Add to Favorites',
+      analysesRemaining: 'Analyses Remaining',
     },
     de: {
       profile: 'Mein Profil',
@@ -52,9 +48,7 @@ export default function ProfilePage() {
       noAnalyses: 'Noch keine Analysen',
       noFavorites: 'Keine Favoritenanalysen',
       backToDashboard: '← Zurück zum Dashboard',
-      viewAnalysis: 'Analyse ansehen',
-      removeFromFavorites: 'Aus Favoriten entfernen',
-      addToFavorites: 'Zu Favoriten hinzufügen',
+      analysesRemaining: 'Verbleibende Analysen',
     },
   };
 
@@ -76,6 +70,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch('/api/user/profile');
       const data = await res.json();
+      console.log('Profile data:', data);
       if (data.success) {
         setProfile(data);
       }
@@ -92,7 +87,7 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fixtureId, isFavorite: !currentStatus }),
       });
-      fetchProfile(); // Refresh
+      fetchProfile();
     } catch (error) {
       console.error('Favorite toggle error:', error);
     }
@@ -134,9 +129,12 @@ export default function ProfilePage() {
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
               <div
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: `${((profile?.usage?.today || 0) / (profile?.usage?.limit || 50)) * 100}%` }}
+                className="bg-green-500 h-2 rounded-full transition-all"
+                style={{ width: `${Math.min(((profile?.usage?.today || 0) / (profile?.usage?.limit || 50)) * 100, 100)}%` }}
               ></div>
+            </div>
+            <div className="text-gray-500 text-xs mt-1">
+              {l.analysesRemaining}: {(profile?.usage?.limit || 50) - (profile?.usage?.today || 0)}
             </div>
           </div>
 
@@ -159,19 +157,19 @@ export default function ProfilePage() {
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => setActiveTab('recent')}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === 'recent' ? 'bg-green-600' : 'bg-gray-700'
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              activeTab === 'recent' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
             }`}
           >
-            📋 {l.recentAnalyses}
+            📋 {l.recentAnalyses} ({profile?.recentAnalyses?.length || 0})
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === 'favorites' ? 'bg-green-600' : 'bg-gray-700'
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              activeTab === 'favorites' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
             }`}
           >
-            ⭐ {l.favorites}
+            ⭐ {l.favorites} ({profile?.favorites?.length || 0})
           </button>
         </div>
 
@@ -182,30 +180,48 @@ export default function ProfilePage() {
               {analyses.map((item: any, idx: number) => (
                 <div key={idx} className="bg-gray-700 rounded-lg p-4 flex justify-between items-center">
                   <div>
-                    <div className="font-bold">
-                      {item.analyses?.home_team || item.home_team} vs {item.analyses?.away_team || item.away_team}
+                    <div className="font-bold text-lg">
+                      {item.home_team} vs {item.away_team}
                     </div>
                     <div className="text-sm text-gray-400">
-                      {item.analyses?.league || 'Unknown League'} • {new Date(item.viewed_at).toLocaleDateString()}
+                      Fixture ID: {item.fixture_id} • {new Date(item.viewed_at).toLocaleString()}
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => toggleFavorite(item.fixture_id, item.is_favorite)}
-                      className={`p-2 rounded-lg ${item.is_favorite ? 'bg-yellow-500 text-black' : 'bg-gray-600'}`}
+                      className={`px-3 py-2 rounded-lg transition-all ${
+                        item.is_favorite 
+                          ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
+                          : 'bg-gray-600 hover:bg-gray-500'
+                      }`}
                     >
-                      {item.is_favorite ? '⭐' : '☆'}
+                      {item.is_favorite ? '⭐ Favorilerde' : '☆ Favoriye Ekle'}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400">
-              {activeTab === 'recent' ? l.noAnalyses : l.noFavorites}
+            <div className="text-center py-12 text-gray-400">
+              <div className="text-5xl mb-4">{activeTab === 'recent' ? '📋' : '⭐'}</div>
+              <p className="text-lg">{activeTab === 'recent' ? l.noAnalyses : l.noFavorites}</p>
+              <Link href="/dashboard" className="mt-4 inline-block px-4 py-2 bg-green-600 rounded-lg hover:bg-green-500">
+                {l.backToDashboard}
+              </Link>
             </div>
           )}
         </div>
+
+        {/* Debug Info - Geliştirme aşamasında kaldırılabilir */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 p-4 bg-gray-800 rounded-xl">
+            <h3 className="text-sm font-bold text-gray-400 mb-2">Debug Info:</h3>
+            <pre className="text-xs text-gray-500 overflow-auto">
+              {JSON.stringify(profile, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
