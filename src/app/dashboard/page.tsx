@@ -231,7 +231,7 @@ export default function DashboardPage() {
   }, [matches, searchQuery, selectedLeague]);
 
   // Get unique leagues
-  const leagues = [...new Set(matches.map((m) => m.league))];
+  const leagues = Array.from(new Set(matches.map((m) => m.league)));
 
   // Standard Analysis (Claude + GPT + Gemini + Heurist Consensus)
   const analyzeMatch = async (match: Match) => {
