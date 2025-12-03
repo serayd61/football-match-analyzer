@@ -89,38 +89,39 @@ export default function DashboardPage() {
     }
   };
 
-  const analyzeMatch = async (match: Match) => {
-    setSelectedMatch(match);
-    setLoading(true);
-    setAnalysis(null);
-    setAnalysisText('');
+ const analyzeMatch = async (match: Match) => {
+  setSelectedMatch(match);
+  setLoading(true);
+  setAnalysis(null);
+  setAnalysisText('');
+  
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fixtureId: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        language: lang, // Dil bilgisini gönder
+      }),
+    });
     
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fixtureId: match.id,
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success && data.analysis) {
-        setAnalysis(data);
-        setAnalysisText(formatAnalysis(data));
-      } else {
-        setAnalysisText(data.error || t('error'));
-      }
-    } catch (error) {
-      setAnalysisText(t('error') + ': ' + String(error));
+    const data = await res.json();
+    
+    if (data.success && data.analysis) {
+      setAnalysis(data);
+      setAnalysisText(formatAnalysis(data));
+    } else {
+      setAnalysisText(data.error || t('error'));
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    setAnalysisText(t('error') + ': ' + String(error));
+  }
+  setLoading(false);
+};
 
   const formatAnalysis = (data: any): string => {
   const a = data.analysis;
