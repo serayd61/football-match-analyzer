@@ -538,11 +538,11 @@ export default function DashboardPage() {
                 <span className="text-red-400 ml-2">{r.stats.awayStrength || 'N/A'}%</span>
               </div>
             </div>
-            {r.stats.goalExpectancy && (
-              <div className="text-xs text-gray-400 mt-2">
-                ⚽ {lang === 'tr' ? 'Gol Beklentisi' : lang === 'de' ? 'Torerwartung' : 'Goal Expectancy'}: {r.stats.goalExpectancy.home?.toFixed(1)} - {r.stats.goalExpectancy.away?.toFixed(1)} (Total: {r.stats.goalExpectancy.total?.toFixed(1)})
-              </div>
-            )}
+           {r.stats.goalExpectancy && (
+  <div className="text-xs text-gray-400 mt-2">
+    ⚽ {lang === 'tr' ? 'Gol Beklentisi' : lang === 'de' ? 'Torerwartung' : 'Goal Expectancy'}: {Number(r.stats.goalExpectancy.home || 0).toFixed(1)} - {Number(r.stats.goalExpectancy.away || 0).toFixed(1)} (Total: {Number(r.stats.goalExpectancy.total || 0).toFixed(1)})
+  </div>
+)}
             {r.stats.summary && <p className="text-xs text-gray-300 mt-2">{r.stats.summary}</p>}
           </div>
         )}
@@ -553,11 +553,11 @@ export default function DashboardPage() {
             <div className="text-sm text-yellow-400 mb-2">💰 {l.oddsReport}</div>
             {r.odds.valuesBets?.length > 0 && (
               <div className="space-y-1">
-                {r.odds.valuesBets.slice(0, 3).map((vb: any, idx: number) => (
-                  <div key={idx} className="text-xs bg-yellow-600/20 p-2 rounded">
-                    💎 {vb.market}: {vb.selection} @ {vb.odds} (Value: +{vb.value?.toFixed(1)}%)
-                  </div>
-                ))}
+              {r.odds.valuesBets?.slice(0, 3).map((vb: any, idx: number) => (
+  <div key={idx} className="text-xs bg-yellow-600/20 p-2 rounded">
+    💎 {vb.market}: {vb.selection} @ {vb.odds} (Value: +{Number(vb.value || 0).toFixed(1)}%)
+  </div>
+))}
               </div>
             )}
             {r.odds.summary && <p className="text-xs text-gray-300 mt-2">{r.odds.summary}</p>}
@@ -573,7 +573,7 @@ export default function DashboardPage() {
                 {r.strategy.recommendedBets.slice(0, 2).map((bet: any, idx: number) => (
                   <div key={idx} className="bg-purple-600/20 p-2 rounded text-sm">
                     <div className="font-bold">{bet.type}: {bet.selection}</div>
-                    <div className="text-xs text-gray-400">{bet.confidence}% | Stake: {bet.stake} units | EV: +{bet.expectedValue?.toFixed(1)}%</div>
+                    <div className="text-xs text-gray-400">{bet.confidence}% | Stake: {bet.stake} units | EV: +{Number(bet.expectedValue || 0).toFixed(1)}%</div>
                     <div className="text-xs text-gray-300 mt-1">{bet.reasoning}</div>
                   </div>
                 ))}
