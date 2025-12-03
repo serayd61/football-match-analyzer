@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
+import { createCheckoutSession, PLANS } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,23 +41,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı oluşturulamadı' }, { status: 500 });
     }
 
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
-
+    // Subscription kaydı oluştur (pending olarak)
     await supabaseAdmin.from('subscriptions').insert({
       user_id: newUser.id,
-      status: 'trialing',
+      status: 'incomplete',
       plan: 'pro',
-      trial_start: new Date().toISOString(),
-      trial_end: trialEnd.toISOString(),
+    });
+
+    // Stripe checkout session oluştur
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    
+    const checkoutSession = await createCheckoutSession({
+      userId: newUser.id,
+      userEmail: email.toLowerCase(),
+      priceId: PLANS.PRO.stripePriceId,
+      successUrl: `${baseUrl}/dashboard?payment=success&newuser=true`,
+      cancelUrl: `${baseUrl}/login?payment=cancelled`,
+      isUpgrade: false, // Yeni kullanıcı, 7 gün trial ver
     });
 
     return NextResponse.json({
       success: true,
       message: 'Hesap oluşturuldu!',
+      checkoutUrl: checkoutSession.url,
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Registration error:', error);
     return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
   }
 }
