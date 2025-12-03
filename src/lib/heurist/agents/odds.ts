@@ -26,6 +26,6 @@ JSON: {"valuesBets": [], "oddsMovement": [], "bookmakerConsensus": [], "sharpMon
   ];
 
   return await heurist.chatJSON<OddsReport>(messages, { 
-    model: 'meta-llama/llama-3.3-70b-instruct' 
+    model: 'nvidia/llama-3.1-nemotron-70b-instruct',
   });
 }
