@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { soccerDataClient } from '@/lib/soccerdata/client';
 
@@ -14,10 +14,21 @@ import { soccerDataClient } from '@/lib/soccerdata/client';
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+let supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    
+    if (!url || !key) {
+      throw new Error('Supabase credentials not configured');
+    }
+    
+    supabase = createClient(url, key);
+  }
+  return supabase;
+}
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
