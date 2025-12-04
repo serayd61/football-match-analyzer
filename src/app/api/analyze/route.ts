@@ -878,14 +878,13 @@ export async function POST(request: NextRequest) {
   created_at: new Date().toISOString(),
 });
     // Update usage
-    await getSupabase()
+   await getSupabase()
   .from('profiles')
-  .update
-   });
-        analyses_today: analysesToday + 1,
-        last_analysis_date: today,
-      })
-      .eq('email', session.user.email);
+  .update({
+    analyses_today: analysesToday + 1,
+    last_analysis_date: today,
+  })
+  .eq('email', session.user.email);
 
     console.log('✅ Analysis complete! Returning results...\n');
 
