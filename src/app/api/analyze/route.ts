@@ -908,7 +908,8 @@ export async function POST(request: NextRequest) {
   .eq('email', session.user.email);
 
     console.log('✅ Analysis complete! Returning results...\n');
-
+// Analiz sayısını artır
+await incrementAnalysisCount(session.user.email);
     return NextResponse.json({
       ...response,
       fromCache: false,
