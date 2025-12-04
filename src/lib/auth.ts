@@ -112,3 +112,92 @@ export async function isSubscriptionActive(userId: string): Promise<boolean> {
 
   return false;
 }
+import { NextAuthOptions } from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        // Kullanıcıyı kontrol et
+        const { data: user } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', credentials.email)
+          .single();
+
+        if (user && user.password === credentials.password) {
+          return { id: user.id, email: user.email, name: user.name };
+        }
+
+        return null;
+      },
+    }),
+  ],
+  callbacks: {
+    async signIn({ user, account }) {
+      if (user?.email) {
+        // Profil var mı kontrol et
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        // Yoksa oluştur (7 gün trial ile)
+        if (!existingProfile) {
+          const trialEnds = new Date();
+          trialEnds.setDate(trialEnds.getDate() + 7);
+
+          await supabase.from('profiles').insert({
+            email: user.email,
+            name: user.name || '',
+            subscription_status: 'trial',
+            trial_start_date: new Date().toISOString(),
+            trial_ends_at: trialEnds.toISOString(),
+            analyses_today: 0,
+          });
+
+          console.log(`✅ New profile created for: ${user.email}`);
+        }
+      }
+      return true;
+    },
+    async session({ session, token }) {
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
+  session: {
+    strategy: 'jwt',
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};
