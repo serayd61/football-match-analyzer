@@ -39,7 +39,8 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     .eq('email', email)
     .single();
 
-  console.log('📊 Profile query result:', { profile, error });
+  console.log('📊 Profile query result:', JSON.stringify({ profile, error }));
+  console.log('📊 subscription_status:', profile?.subscription_status);
 
   // Profil yoksa oluştur (7 gün trial)
   if (!profile) {
