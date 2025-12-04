@@ -734,7 +734,7 @@ export async function POST(request: NextRequest) {
 
     // Check usage limit
     const today = new Date().toISOString().split('T')[0];
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabase()
       .from('profiles')
       .select('subscription_status, analyses_today, last_analysis_date')
       .eq('email', session.user.email)
@@ -757,7 +757,7 @@ export async function POST(request: NextRequest) {
 
     // Check cache
     const cacheKey = `analysis_${fixtureId}_${language}`;
-    const { data: cached } = await supabase
+    const { data: cached } = await getSupabase()
       .from('analysis_cache')
       .select('*')
       .eq('cache_key', cacheKey)
@@ -871,7 +871,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    await supabase.from('analysis_cache').upsert({
+    await getSupabase().from('analysis_cache').upsert
       cache_key: cacheKey,
       data: response,
       expires_at: expiresAt.toISOString(),
@@ -879,9 +879,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Update usage
-    await supabase
-      .from('profiles')
-      .update({
+    await getSupabase()
+  .from('profiles')
+  .update
+   });
         analyses_today: analysesToday + 1,
         last_analysis_date: today,
       })
