@@ -54,8 +54,8 @@ export async function runScoutAgent(
 🏆 LİG: ${match.league || 'Bilinmiyor'}
 
 📊 VERİLEN VERİLER:
-${hasRealInjuryData ? `Sakatlıklar: ${JSON.stringify(match.injuries)}` : '⚠️ Sakatlık verisi MEVCUT DEĞİL - UYDURMA!'}
-${hasRealNews ? `Haberler: ${JSON.stringify(match.news)}` : '⚠️ Haber verisi MEVCUT DEĞİL - UYDURMA!'}
+${hasRealInjuryData ? `Sakatlıklar: ${JSON.stringify((match as any).injuries)}` : '⚠️ Sakatlık verisi MEVCUT DEĞİL - UYDURMA!'}
+${hasRealNews ? `Haberler: ${JSON.stringify((match as any).news)}` : '⚠️ Haber verisi MEVCUT DEĞİL - UYDURMA!'}
 
 📈 FORM VERİLERİ (BUNLARI KULLAN):
 - ${match.homeTeam}: Form=${match.homeForm?.form || 'N/A'}, Gol Ort=${match.homeForm?.avgGoals || 'N/A'}
