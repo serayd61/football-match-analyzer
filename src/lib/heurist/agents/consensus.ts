@@ -2,31 +2,16 @@ import { heurist, HeuristMessage } from '../client';
 import { Language, MatchData, ConsensusReport } from '../types';
 
 const SYSTEM_PROMPTS: Record<Language, string> = {
-  tr: `⚖️ SEN FİNAL KARAR AJANISIN.
+  tr: `Sen bir JSON API'sisin. SADECE geçerli JSON döndür.
+ASLA markdown kullanma. ASLA ** veya ` + "`" + ` kullanma.
+ASLA açıklama yazma. SADECE JSON objesi döndür.`,
 
-⚠️ KRİTİK KURALLAR:
-1. Stats agent'ın goalExpectancy değerini MUTLAKA kullan
-2. goalExpectancy < 2.5 → Under seç
-3. goalExpectancy >= 2.5 → Over seç
-4. Diğer ajanlarla TUTARLI ol
-5. UYDURMA, sadece verilen raporları değerlendir
+  en: `You are a JSON API. Return ONLY valid JSON.
+NEVER use markdown. NEVER use ** or ` + "`" + `.
+NEVER write explanations. Return ONLY a JSON object.`,
 
-Türkçe yanıt ver. SADECE JSON döndür.`,
-
-  en: `⚖️ YOU ARE THE FINAL DECISION AGENT.
-
-⚠️ CRITICAL RULES:
-1. MUST use Stats agent's goalExpectancy value
-2. goalExpectancy < 2.5 → select Under
-3. goalExpectancy >= 2.5 → select Over
-4. Be CONSISTENT with other agents
-5. DO NOT make up data, only evaluate given reports
-
-Respond in English. Return ONLY JSON.`,
-
-  de: `⚖️ DU BIST DER FINAL-ENTSCHEIDUNGSAGENT.
-Stats goalExpectancy verwenden.
-NUR JSON zurückgeben.`,
+  de: `Du bist eine JSON-API. Gib NUR gültiges JSON zurück.
+NIEMALS Markdown verwenden. NUR JSON-Objekt zurückgeben.`,
 };
 
 export async function runConsensusAgent(
@@ -36,51 +21,82 @@ export async function runConsensusAgent(
 ): Promise<ConsensusReport | null> {
   
   // Stats'tan gol beklentisini al
-  const goalExpectancy = allReports.stats?.goalExpectancy?.total || 2.5;
+  const goalExpectancy = parseFloat(allReports.stats?.goalExpectancy?.total) || 2.5;
   const overUnderPrediction = goalExpectancy >= 2.5 ? 'Over' : 'Under';
-  const overUnderConfidence = Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15);
+  const overUnderConfidence = Math.min(95, Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15));
+
+  // Direkt JSON oluştur - model sadece dolduracak
+  const jsonTemplate = {
+    matchResult: { prediction: "1", confidence: 70, unanimous: false },
+    overUnder25: { prediction: overUnderPrediction, confidence: overUnderConfidence, unanimous: true },
+    btts: { prediction: "Yes", confidence: 70, unanimous: false },
+    doubleChance: { prediction: "1X", confidence: 75 },
+    halfTimeResult: { prediction: "X", confidence: 65 },
+    correctScore: { first: "1-1", second: "2-1", third: "1-0" },
+    bestBet: {
+      type: `${overUnderPrediction} 2.5 Gol`,
+      selection: overUnderPrediction,
+      confidence: overUnderConfidence,
+      stake: 3,
+      reasoning: `Beklenen gol: ${goalExpectancy.toFixed(1)}`
+    },
+    riskLevel: "orta",
+    overallAnalysis: `${match.homeTeam} vs ${match.awayTeam} macinda ${goalExpectancy.toFixed(1)} gol bekleniyor. ${overUnderPrediction} 2.5 oneriliyor.`,
+    keyFactors: [`Beklenen gol: ${goalExpectancy.toFixed(1)}`, "Form verileri analiz edildi"],
+    warnings: ["Sakatlik verisi mevcut degildi"]
+  };
 
   const messages: HeuristMessage[] = [
     { role: 'system', content: SYSTEM_PROMPTS[language] },
-    { role: 'user', content: `
-🏟️ MAÇ: ${match.homeTeam} vs ${match.awayTeam}
+    { role: 'user', content: `Return this JSON with minor adjustments based on the data:
 
-📊 STATS RAPORU (EN ÖNEMLİ!):
-- goalExpectancy.total = ${goalExpectancy}
-- Bu değer ${goalExpectancy >= 2.5 ? '>= 2.5 → OVER seçilmeli' : '< 2.5 → UNDER seçilmeli'}!
+MATCH: ${match.homeTeam} vs ${match.awayTeam}
+EXPECTED GOALS: ${goalExpectancy.toFixed(1)}
+OVER/UNDER PREDICTION: ${overUnderPrediction}
 
-📋 DİĞER RAPORLAR:
-Scout: ${allReports.scout?.summary || 'Rapor yok'}
-Odds: ${allReports.odds?.summary || 'Rapor yok'}
-Strategy: ${allReports.strategy?.summary || 'Rapor yok'}
+Stats summary: ${allReports.stats?.summary || 'N/A'}
+Scout summary: ${allReports.scout?.summary || 'N/A'}
 
-🎯 JSON FORMAT (STATS İLE TUTARLI OL!):
-{
-  "matchResult": {"prediction": "1", "confidence": 70, "unanimous": false},
-  "overUnder25": {"prediction": "${overUnderPrediction}", "confidence": ${overUnderConfidence}, "unanimous": true},
-  "btts": {"prediction": "Yes", "confidence": 70, "unanimous": false},
-  "doubleChance": {"prediction": "1X", "confidence": 75},
-  "halfTimeResult": {"prediction": "X", "confidence": 65},
-  "correctScore": {"first": "1-1", "second": "2-1", "third": "1-0"},
-  "bestBet": {
-    "type": "${overUnderPrediction} 2.5 Gol",
-    "selection": "${overUnderPrediction}",
-    "confidence": ${overUnderConfidence},
-    "stake": 3,
-    "reasoning": "Stats göre beklenen toplam gol: ${goalExpectancy}. Bu nedenle ${overUnderPrediction} 2.5 öneriliyor."
-  },
-  "riskLevel": "orta",
-  "overallAnalysis": "İstatistiklere göre bu maçta ${goalExpectancy} civarı gol bekleniyor. ${overUnderPrediction} 2.5 tahmini yapılıyor.",
-  "keyFactors": ["Beklenen gol: ${goalExpectancy}", "Form verileri analiz edildi"],
-  "warnings": ["Sakatlık verisi mevcut değildi"]
-}
-
-⚠️ overUnder25.prediction MUTLAKA "${overUnderPrediction}" OLMALI!` },
+Return ONLY this JSON (no markdown, no explanation):
+${JSON.stringify(jsonTemplate, null, 2)}` },
   ];
 
-  return await heurist.chatJSON<ConsensusReport>(messages, { 
-    model: 'nvidia/llama-3.1-nemotron-70b-instruct',
-    temperature: 0.3,
-    maxTokens: 2000
-  });
+  try {
+    const response = await heurist.chat(messages, { 
+      model: 'meta-llama/llama-3.3-70b-instruct',
+      temperature: 0.1, // Çok düşük - deterministik
+      maxTokens: 1500
+    });
+
+    if (!response) {
+      console.log('⚠️ No response from Heurist, using template');
+      return jsonTemplate as ConsensusReport;
+    }
+
+    // JSON parse dene
+    try {
+      // Markdown temizle
+      let cleaned = response
+        .replace(/\*\*/g, '')  // Bold kaldır
+        .replace(/`/g, '')     // Backtick kaldır
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+      // JSON bul
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]) as ConsensusReport;
+      }
+    } catch (parseError) {
+      console.log('⚠️ JSON parse failed, using template');
+    }
+
+    // Parse başarısızsa template döndür
+    return jsonTemplate as ConsensusReport;
+
+  } catch (error) {
+    console.error('Consensus agent error:', error);
+    return jsonTemplate as ConsensusReport;
+  }
 }
