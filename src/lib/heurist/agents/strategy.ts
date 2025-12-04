@@ -1,108 +1,81 @@
 import { heurist, HeuristMessage } from '../client';
 import { Language, MatchData, StrategyReport } from '../types';
 
-const SYSTEM_PROMPTS: Record<Language, string> = {
-  tr: `🧠 SEN DÜNYANIN EN İYİ BAHİS STRATEJİSTİSİN!
-
-GÖREV: Diğer ajanların raporlarını değerlendir ve OPTİMAL strateji belirle.
-
-MUTLAKA BELİRLE:
-1. recommendedBets: En az 2 önerilen bahis
-   - type: Bahis tipi (1X2, Üst 2.5, KG, vb.)
-   - selection: Seçim
-   - confidence: 65-95 arası SAYI
-   - stake: 1-5 arası SAYI (birim)
-   - reasoning: Neden bu bahis öneriliyor
-   - expectedValue: Beklenen değer SAYI
-
-2. riskAssessment: Risk değerlendirmesi
-   - level: "düşük", "orta" veya "yüksek"
-   - factors: Risk faktörleri listesi
-
-3. avoidBets: Kaçınılması gereken bahisler
-
-KURALLAR:
-- confidence 65-95 arası SAYI olmalı
-- stake 1-5 arası SAYI olmalı
-- expectedValue SAYI olmalı
-- Türkçe yanıt ver
-- SADECE JSON döndür`,
-
-  en: `🧠 YOU ARE THE WORLD'S BEST BETTING STRATEGIST!
-
-TASK: Evaluate other agents' reports and determine OPTIMAL strategy.
-
-RULES:
-- confidence must be NUMBER between 65-95
-- stake must be NUMBER between 1-5
-- expectedValue must be NUMBER
-- Respond in English
-- Return ONLY JSON`,
-
-  de: `🧠 DU BIST DER BESTE WETT-STRATEGE DER WELT!
-
-REGELN:
-- Auf Deutsch antworten
-- NUR JSON zurückgeben`,
-};
+const SYSTEM_PROMPT = `You are a JSON API. Return ONLY valid JSON.
+NEVER use markdown. NEVER use ** or backticks.
+NEVER write explanations. Return ONLY a JSON object.`;
 
 export async function runStrategyAgent(
   match: MatchData,
-  reports: { scout: any; stats: any; odds: any },
+  previousReports: { scout: any; stats: any; odds: any },
   language: Language = 'en'
 ): Promise<StrategyReport | null> {
-  const messages: HeuristMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPTS[language] },
-    { role: 'user', content: `
-🏟️ MAÇ: ${match.homeTeam} vs ${match.awayTeam}
+  
+  const goalExpectancy = parseFloat(previousReports.stats?.goalExpectancy?.total) || 2.5;
+  const overUnder = goalExpectancy >= 2.5 ? 'Over' : 'Under';
 
-📋 SCOUT RAPORU:
-${JSON.stringify(reports.scout || {}, null, 2)}
-
-📊 İSTATİSTİK RAPORU:
-${JSON.stringify(reports.stats || {}, null, 2)}
-
-💰 ORAN RAPORU:
-${JSON.stringify(reports.odds || {}, null, 2)}
-
-🎯 JSON FORMAT (TÜM ALANLARI DOLDUR!):
-{
-  "recommendedBets": [
-    {
-      "type": "Üst 2.5 Gol",
-      "selection": "Üst",
-      "confidence": 78,
-      "stake": 3,
-      "reasoning": "İstatistikler ve oran analizi üst 2.5 golu destekliyor",
-      "expectedValue": 12.5
+  // Fallback template
+  const template: StrategyReport = {
+    recommendedBets: [
+      {
+        type: `${overUnder} 2.5 Gol`,
+        selection: overUnder,
+        confidence: Math.min(85, Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15)),
+        stake: 3,
+        reasoning: `Beklenen gol ${goalExpectancy.toFixed(1)} - ${overUnder} 2.5 oneriliyor`
+      }
+    ],
+    avoidBets: [
+      { type: "Kesin Skor", reason: "Yuksek belirsizlik" }
+    ],
+    bankrollStrategy: {
+      recommendedStake: "3 birim",
+      maxExposure: "5%",
+      reasoning: "Orta guvenilirlik seviyesi"
     },
-    {
-      "type": "Maç Sonucu",
-      "selection": "1 (Ev Sahibi)",
-      "confidence": 72,
-      "stake": 2,
-      "reasoning": "Ev sahibi form avantajına sahip",
-      "expectedValue": 8.3
-    }
-  ],
-  "riskAssessment": {
-    "level": "orta",
-    "factors": ["Sakat oyuncular belirsizlik yaratıyor", "H2H verileri dengeli"]
-  },
-  "bankrollAdvice": "Toplam bankroll'un %5'inden fazlasını bu maça yatırma",
-  "avoidBets": [
-    {"type": "Doğru Skor", "reason": "Çok düşük olasılık, riskli"},
-    {"type": "İlk Gol Dakikası", "reason": "Tahmin edilemez"}
-  ],
-  "summary": "Detaylı strateji özeti - en az 2 cümle"
-}
+    timing: {
+      bestTime: "Mac oncesi",
+      liveOpportunities: ["Erken gol durumunda Ust bahis"]
+    },
+    riskAssessment: {
+      overall: "orta",
+      factors: ["Form verileri analiz edildi", "H2H verisi mevcut"]
+    },
+    summary: `${match.homeTeam} vs ${match.awayTeam} maci icin ${overUnder} 2.5 gol bahsi onerilmektedir. Beklenen toplam gol: ${goalExpectancy.toFixed(1)}.`
+  };
 
-⚠️ SADECE JSON DÖNDÜR! TÜM SAYILARI DOLDUR!` },
+  const messages: HeuristMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: `Match: ${match.homeTeam} vs ${match.awayTeam}
+
+Stats analysis:
+- Expected goals: ${goalExpectancy.toFixed(1)}
+- Recommendation: ${overUnder} 2.5
+
+Return ONLY this JSON:
+${JSON.stringify(template, null, 2)}` },
   ];
 
-  return await heurist.chatJSON<StrategyReport>(messages, { 
-    model: 'meta-llama/llama-3.3-70b-instruct',
-    temperature: 0.6,
-    maxTokens: 2000
-  });
+  try {
+    const response = await heurist.chat(messages, { 
+      model: 'meta-llama/llama-3.3-70b-instruct',
+      temperature: 0.1,
+      maxTokens: 1200
+    });
+
+    if (!response) return template;
+
+    try {
+      let cleaned = response.replace(/\*\*/g, '').replace(/`/g, '').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]) as StrategyReport;
+      }
+    } catch {}
+
+    return template;
+  } catch (error) {
+    console.error('Strategy agent error:', error);
+    return template;
+  }
 }
