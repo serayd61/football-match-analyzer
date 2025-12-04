@@ -2,131 +2,110 @@ import { heurist, HeuristMessage } from '../client';
 import { Language, MatchData, StatsReport } from '../types';
 
 const SYSTEM_PROMPTS: Record<Language, string> = {
-  tr: `📊 SEN DÜNYANIN EN İYİ FUTBOL İSTATİSTİK UZMANISISN!
+  tr: `📊 SEN İSTATİSTİK ANALİZ AJANISIN.
 
-GÖREV: Detaylı istatistik analizi yap ve KESİN rakamlar ver.
+⚠️ KRİTİK KURALLAR:
+1. SADECE verilen istatistikleri analiz et
+2. Verilen sayıları kullanarak hesaplama yap
+3. goalExpectancy hesabı: (homeAvgGoals + awayAvgGoals) / 2 civarı olmalı
+4. UYDURMA, SADECE VERİLEN VERİYİ KULLAN
 
-MUTLAKA HESAPLA:
-1. homeStrength: Ev sahibi takım gücü (0-100 arası SAYI)
-2. awayStrength: Deplasman takımı gücü (0-100 arası SAYI)
-3. goalExpectancy: Gol beklentisi (home, away, total - ONDALIKLI SAYILAR)
-4. keyStats: En az 5 önemli istatistik
-5. patterns: En az 3 pattern/trend
+Türkçe yanıt ver. SADECE JSON döndür.`,
 
-KURALLAR:
-- TÜM SAYILARI DOLDUR, "N/A" YASAK!
-- homeStrength ve awayStrength 0-100 arası SAYI olmalı
-- goalExpectancy.home, goalExpectancy.away, goalExpectancy.total SAYI olmalı
-- Türkçe yanıt ver
-- SADECE JSON döndür`,
+  en: `📊 YOU ARE A STATISTICS ANALYSIS AGENT.
 
-  en: `📊 YOU ARE THE WORLD'S BEST FOOTBALL STATISTICS EXPERT!
+⚠️ CRITICAL RULES:
+1. ONLY analyze the statistics PROVIDED
+2. Calculate using the given numbers
+3. goalExpectancy calculation: should be around (homeAvgGoals + awayAvgGoals)
+4. DO NOT MAKE UP DATA, USE ONLY PROVIDED DATA
 
-TASK: Perform detailed statistical analysis and give DEFINITE numbers.
+Respond in English. Return ONLY JSON.`,
 
-MUST CALCULATE:
-1. homeStrength: Home team strength (NUMBER between 0-100)
-2. awayStrength: Away team strength (NUMBER between 0-100)
-3. goalExpectancy: Goal expectancy (home, away, total - DECIMAL NUMBERS)
-4. keyStats: At least 5 key statistics
-5. patterns: At least 3 patterns/trends
-
-RULES:
-- FILL ALL NUMBERS, "N/A" is FORBIDDEN!
-- homeStrength and awayStrength must be NUMBERS between 0-100
-- goalExpectancy.home, goalExpectancy.away, goalExpectancy.total must be NUMBERS
-- Respond in English
-- Return ONLY JSON`,
-
-  de: `📊 DU BIST DER BESTE FUßBALL-STATISTIK-EXPERTE DER WELT!
-
-AUFGABE: Führe detaillierte statistische Analyse durch und gib DEFINITIVE Zahlen.
-
-MUSS BERECHNEN:
-1. homeStrength: Heimstärke (ZAHL zwischen 0-100)
-2. awayStrength: Auswärtsstärke (ZAHL zwischen 0-100)
-3. goalExpectancy: Torerwartung (home, away, total - DEZIMALZAHLEN)
-4. keyStats: Mindestens 5 wichtige Statistiken
-5. patterns: Mindestens 3 Muster/Trends
-
-REGELN:
-- ALLE ZAHLEN AUSFÜLLEN, "N/A" ist VERBOTEN!
-- homeStrength und awayStrength müssen ZAHLEN zwischen 0-100 sein
-- Auf Deutsch antworten
-- NUR JSON zurückgeben`,
+  de: `📊 DU BIST EIN STATISTIK-ANALYSE-AGENT.
+NUR die gegebenen Daten verwenden.
+Auf Deutsch antworten. NUR JSON zurückgeben.`,
 };
 
 export async function runStatsAgent(
   match: MatchData,
   language: Language = 'en'
 ): Promise<StatsReport | null> {
-  const labels = {
-    tr: { home: 'Ev Sahibi', away: 'Deplasman', form: 'Form', pts: 'Puan', goals: 'Gol Ort', conceded: 'Yenilen', h2h: 'Kafa Kafaya' },
-    en: { home: 'Home', away: 'Away', form: 'Form', pts: 'Points', goals: 'Goals Avg', conceded: 'Conceded', h2h: 'Head to Head' },
-    de: { home: 'Heim', away: 'Auswärts', form: 'Form', pts: 'Punkte', goals: 'Tore Ø', conceded: 'Gegentore', h2h: 'Direktvergleich' },
-  };
-  const l = labels[language];
+  
+  // Gerçek verileri çıkar
+  const homeGoals = parseFloat(match.homeForm?.avgGoals || '0') || 0;
+  const awayGoals = parseFloat(match.awayForm?.avgGoals || '0') || 0;
+  const homeOver25 = parseInt(match.homeForm?.over25Percentage || '0') || 0;
+  const awayOver25 = parseInt(match.awayForm?.over25Percentage || '0') || 0;
+  const h2hAvgGoals = parseFloat(match.h2h?.avgGoals || '0') || 0;
+  const h2hOver25 = parseInt(match.h2h?.over25Percentage || '0') || 0;
+  
+  // Hesaplamalar
+  const expectedTotalGoals = homeGoals + awayGoals;
+  const avgOver25Pct = (homeOver25 + awayOver25 + h2hOver25) / 3;
+  const predictedOverUnder = avgOver25Pct > 50 || expectedTotalGoals > 2.5 ? 'Over' : 'Under';
 
   const messages: HeuristMessage[] = [
     { role: 'system', content: SYSTEM_PROMPTS[language] },
     { role: 'user', content: `
 🏟️ MAÇ: ${match.homeTeam} vs ${match.awayTeam}
-🏆 LİG: ${match.league || 'Premier League'}
 
-📊 ${match.homeTeam} (${l.home}):
-- ${l.form}: ${match.homeForm?.form || 'WDLWW'}
-- ${l.pts}: ${match.homeForm?.points || 15}/30
-- ${l.goals}: ${match.homeForm?.avgGoals || '1.5'}
-- ${l.conceded}: ${match.homeForm?.avgConceded || '1.2'}
-- Üst 2.5: %${match.homeForm?.over25Percentage || '60'}
-- KG: %${match.homeForm?.bttsPercentage || '55'}
+📊 VERİLEN İSTATİSTİKLER (SADECE BUNLARI KULLAN!):
 
-📊 ${match.awayTeam} (${l.away}):
-- ${l.form}: ${match.awayForm?.form || 'LWDLW'}
-- ${l.pts}: ${match.awayForm?.points || 12}/30
-- ${l.goals}: ${match.awayForm?.avgGoals || '1.3'}
-- ${l.conceded}: ${match.awayForm?.avgConceded || '1.4'}
-- Üst 2.5: %${match.awayForm?.over25Percentage || '55'}
-- KG: %${match.awayForm?.bttsPercentage || '50'}
+${match.homeTeam}:
+- Form: ${match.homeForm?.form || 'N/A'}
+- Puan: ${match.homeForm?.points || 0}/15
+- Gol Ortalaması: ${homeGoals}
+- Yenilen Gol: ${match.homeForm?.avgConceded || 'N/A'}
+- Üst 2.5 Oranı: %${homeOver25}
+- KG Oranı: %${match.homeForm?.bttsPercentage || 0}
 
-⚔️ ${l.h2h}:
-- Toplam: ${match.h2h?.totalMatches || 10} maç
-- ${match.homeTeam}: ${match.h2h?.homeWins || 4} galibiyet
-- ${match.awayTeam}: ${match.h2h?.awayWins || 3} galibiyet
-- Beraberlik: ${match.h2h?.draws || 3}
-- Gol Ort: ${match.h2h?.avgGoals || '2.5'}
+${match.awayTeam}:
+- Form: ${match.awayForm?.form || 'N/A'}
+- Puan: ${match.awayForm?.points || 0}/15
+- Gol Ortalaması: ${awayGoals}
+- Yenilen Gol: ${match.awayForm?.avgConceded || 'N/A'}
+- Üst 2.5 Oranı: %${awayOver25}
+- KG Oranı: %${match.awayForm?.bttsPercentage || 0}
 
-🎯 JSON FORMAT (TÜM ALANLARI DOLDUR!):
+H2H:
+- Toplam Maç: ${match.h2h?.totalMatches || 0}
+- Gol Ortalaması: ${h2hAvgGoals}
+- Üst 2.5: %${h2hOver25}
+
+📐 HESAPLAMALAR (BU DEĞERLERİ KULLAN!):
+- Beklenen Toplam Gol: ${expectedTotalGoals.toFixed(1)} (${homeGoals} + ${awayGoals})
+- Ortalama Üst 2.5 Yüzdesi: %${avgOver25Pct.toFixed(0)}
+- Önerilen Tahmin: ${predictedOverUnder} 2.5
+
+🎯 JSON FORMAT (HESAPLANAN DEĞERLERİ KULLAN!):
 {
-  "homeStrength": 72,
-  "awayStrength": 65,
-  "formComparison": "Ev sahibi son 5 maçta daha iyi performans gösterdi",
+  "homeStrength": ${Math.min(Math.round(homeGoals * 30 + (match.homeForm?.points || 0) * 3), 100)},
+  "awayStrength": ${Math.min(Math.round(awayGoals * 30 + (match.awayForm?.points || 0) * 3), 100)},
+  "formComparison": "Form karşılaştırması",
   "goalExpectancy": {
-    "home": 1.6,
-    "away": 1.1,
-    "total": 2.7
+    "home": ${homeGoals.toFixed(1)},
+    "away": ${awayGoals.toFixed(1)},
+    "total": ${expectedTotalGoals.toFixed(1)}
   },
   "keyStats": [
-    {"stat": "Ev sahibi gol ortalaması", "home": "1.8", "away": "1.2", "advantage": "home"},
-    {"stat": "Deplasman defansı", "home": "1.0", "away": "1.5", "advantage": "home"},
-    {"stat": "Son 5 maç puanı", "home": "12", "away": "9", "advantage": "home"},
-    {"stat": "Üst 2.5 oranı", "home": "65%", "away": "55%", "advantage": "home"},
-    {"stat": "KG oranı", "home": "60%", "away": "50%", "advantage": "home"}
+    {"stat": "Ev sahibi gol ort.", "home": "${homeGoals}", "away": "${awayGoals}", "advantage": "${homeGoals > awayGoals ? 'home' : awayGoals > homeGoals ? 'away' : 'equal'}"},
+    {"stat": "Üst 2.5 oranı", "home": "${homeOver25}%", "away": "${awayOver25}%", "advantage": "${homeOver25 > awayOver25 ? 'home' : 'away'}"}
   ],
   "patterns": [
-    "Ev sahibi son 4 ev maçında gol attı",
-    "Deplasman takımı son 3 deplasmanda gol yedi",
-    "Kafa kafaya maçlarda ortalama 2.5+ gol"
+    "Beklenen toplam gol: ${expectedTotalGoals.toFixed(1)}",
+    "H2H maçlarda ortalama ${h2hAvgGoals} gol",
+    "Üst 2.5 olasılığı: %${avgOver25Pct.toFixed(0)}"
   ],
-  "summary": "Detaylı Türkçe özet - en az 2 cümle"
+  "summary": "İstatistiklere göre bu maçta ${expectedTotalGoals.toFixed(1)} civarı gol bekleniyor. ${predictedOverUnder} 2.5 daha olası görünüyor."
 }
 
-⚠️ SADECE JSON DÖNDÜR! TÜM SAYISAL DEĞERLERİ DOLDUR!` },
+⚠️ goalExpectancy.total MUTLAKA ${expectedTotalGoals.toFixed(1)} OLMALI!` },
   ];
 
   return await heurist.chatJSON<StatsReport>(messages, { 
     model: 'meta-llama/llama-3.3-70b-instruct',
-    temperature: 0.6,
-    maxTokens: 2000
+    temperature: 0.3,
+    maxTokens: 1500
   });
 }
