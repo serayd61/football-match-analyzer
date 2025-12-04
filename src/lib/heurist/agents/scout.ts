@@ -43,8 +43,9 @@ export async function runScoutAgent(
 ): Promise<ScoutReport | null> {
   
   // Gerçek sakatlık verisi var mı kontrol et
-  const hasRealInjuryData = match.injuries && Array.isArray(match.injuries) && match.injuries.length > 0;
-  const hasRealNews = match.news && Array.isArray(match.news) && match.news.length > 0;
+  // Gerçek sakatlık verisi var mı kontrol et
+  const hasRealInjuryData = (match as any).injuries && Array.isArray((match as any).injuries) && (match as any).injuries.length > 0;
+  const hasRealNews = (match as any).news && Array.isArray((match as any).news) && (match as any).news.length > 0;
 
   const messages: HeuristMessage[] = [
     { role: 'system', content: SYSTEM_PROMPTS[language] },
