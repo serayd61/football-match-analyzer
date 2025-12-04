@@ -2,89 +2,82 @@ import { heurist, HeuristMessage } from '../client';
 import { Language, MatchData, ScoutReport } from '../types';
 
 const SYSTEM_PROMPTS: Record<Language, string> = {
-  tr: `🔍 SEN DÜNYANIN EN İYİ FUTBOL SCOUT AJANISIN!
+  tr: `🔍 SEN VERİ ANALİZ AJANISIN.
 
-GÖREV: Maç öncesi TÜM kritik bilgileri topla.
+⚠️ KRİTİK KURALLAR:
+1. SADECE sana verilen verileri analiz et
+2. Sakatlık/haber verisi YOKSA, "Veri mevcut değil" de
+3. ASLA oyuncu ismi veya haber UYDURMA
+4. Bilmediğin şeyi YAZMA
 
-MUTLAKA BUL:
-1. injuries: Sakat oyuncular (her biri için: team, player, status, impact)
-2. suspensions: Cezalı oyuncular
-3. news: Son haberler ve gelişmeler
-4. lineupChanges: Kadro değişiklikleri
-5. weather: Hava durumu etkisi
+Eğer sakatlık verisi verilmediyse:
+- injuries: [] (BOŞ ARRAY)
+- suspensions: [] (BOŞ ARRAY)
+- news: [] (BOŞ ARRAY)
 
-KURALLAR:
-- Gerçekçi oyuncu isimleri kullan
-- Her sakat oyuncu için team ve player DOLU olmalı
-- impact: "kritik", "orta" veya "düşük"
-- Türkçe yanıt ver
-- SADECE JSON döndür`,
+Türkçe yanıt ver. SADECE JSON döndür.`,
 
-  en: `🔍 YOU ARE THE WORLD'S BEST FOOTBALL SCOUT AGENT!
+  en: `🔍 YOU ARE A DATA ANALYSIS AGENT.
 
-TASK: Gather ALL critical pre-match information.
+⚠️ CRITICAL RULES:
+1. ONLY analyze data that is PROVIDED to you
+2. If injury/news data is NOT provided, say "Data not available"
+3. NEVER make up player names or news
+4. DO NOT write things you don't know
 
-MUST FIND:
-1. injuries: Injured players (each: team, player, status, impact)
-2. suspensions: Suspended players
-3. news: Latest news and developments
-4. lineupChanges: Lineup changes
-5. weather: Weather impact
+If injury data is not provided:
+- injuries: [] (EMPTY ARRAY)
+- suspensions: [] (EMPTY ARRAY)
+- news: [] (EMPTY ARRAY)
 
-RULES:
-- Use realistic player names
-- Each injured player must have team and player FILLED
-- impact: "critical", "medium" or "low"
-- Respond in English
-- Return ONLY JSON`,
+Respond in English. Return ONLY JSON.`,
 
-  de: `🔍 DU BIST DER BESTE FUßBALL-SCOUT-AGENT DER WELT!
-
-AUFGABE: Sammle ALLE kritischen Vor-Spiel-Informationen.
-
-REGELN:
-- Realistische Spielernamen verwenden
-- Auf Deutsch antworten
-- NUR JSON zurückgeben`,
+  de: `🔍 DU BIST EIN DATENANALYSE-AGENT.
+ERFINDE KEINE Spielernamen oder Nachrichten.
+Auf Deutsch antworten. NUR JSON zurückgeben.`,
 };
 
 export async function runScoutAgent(
   match: MatchData,
   language: Language = 'en'
 ): Promise<ScoutReport | null> {
+  
+  // Gerçek sakatlık verisi var mı kontrol et
+  const hasRealInjuryData = match.injuries && Array.isArray(match.injuries) && match.injuries.length > 0;
+  const hasRealNews = match.news && Array.isArray(match.news) && match.news.length > 0;
+
   const messages: HeuristMessage[] = [
     { role: 'system', content: SYSTEM_PROMPTS[language] },
     { role: 'user', content: `
 🏟️ MAÇ: ${match.homeTeam} vs ${match.awayTeam}
-🏆 LİG: ${match.league || 'Premier League'}
-📅 TARİH: ${match.date || 'Bugün'}
+🏆 LİG: ${match.league || 'Bilinmiyor'}
 
-🎯 JSON FORMAT (TÜM ALANLARI DOLDUR!):
+📊 VERİLEN VERİLER:
+${hasRealInjuryData ? `Sakatlıklar: ${JSON.stringify(match.injuries)}` : '⚠️ Sakatlık verisi MEVCUT DEĞİL - UYDURMA!'}
+${hasRealNews ? `Haberler: ${JSON.stringify(match.news)}` : '⚠️ Haber verisi MEVCUT DEĞİL - UYDURMA!'}
+
+📈 FORM VERİLERİ (BUNLARI KULLAN):
+- ${match.homeTeam}: Form=${match.homeForm?.form || 'N/A'}, Gol Ort=${match.homeForm?.avgGoals || 'N/A'}
+- ${match.awayTeam}: Form=${match.awayForm?.form || 'N/A'}, Gol Ort=${match.awayForm?.avgGoals || 'N/A'}
+
+⚔️ H2H: ${match.h2h?.totalMatches || 0} maç
+
+🎯 JSON FORMAT:
 {
-  "injuries": [
-    {"team": "${match.homeTeam}", "player": "Oyuncu Adı", "status": "sakat", "impact": "kritik"},
-    {"team": "${match.awayTeam}", "player": "Oyuncu Adı", "status": "şüpheli", "impact": "orta"}
-  ],
-  "suspensions": [
-    {"team": "${match.homeTeam}", "player": "Oyuncu Adı", "reason": "5 sarı kart"}
-  ],
-  "news": [
-    {"headline": "Önemli haber başlığı", "impact": "positive", "team": "${match.homeTeam}"},
-    {"headline": "Diğer haber", "impact": "negative", "team": "${match.awayTeam}"}
-  ],
-  "lineupChanges": [
-    {"team": "${match.homeTeam}", "change": "Beklenen değişiklik", "impact": "orta"}
-  ],
-  "weather": {"condition": "Açık/Yağmurlu/Bulutlu", "impact": "Maça etkisi"},
-  "summary": "Detaylı Türkçe özet - maç öncesi durum hakkında en az 2 cümle"
+  "injuries": ${hasRealInjuryData ? 'VERİLEN VERİYİ KULLAN' : '[]'},
+  "suspensions": [],
+  "news": ${hasRealNews ? 'VERİLEN VERİYİ KULLAN' : '[]'},
+  "lineupChanges": [],
+  "weather": {"condition": "Bilinmiyor", "impact": "Veri yok"},
+  "summary": "Form verilerine dayalı kısa özet. ${match.homeTeam} form: ${match.homeForm?.form || 'N/A'}. ${match.awayTeam} form: ${match.awayForm?.form || 'N/A'}. Sakatlık/haber verisi mevcut değil."
 }
 
-⚠️ SADECE JSON DÖNDÜR! TÜM ALANLARI DOLDUR!` },
+⚠️ VERİ YOKSA BOŞ ARRAY KULLAN! UYDURMA!` },
   ];
 
   return await heurist.chatJSON<ScoutReport>(messages, { 
     model: 'meta-llama/llama-3.3-70b-instruct',
-    temperature: 0.5,
-    maxTokens: 2000
+    temperature: 0.3, // Daha deterministik
+    maxTokens: 1500
   });
 }
