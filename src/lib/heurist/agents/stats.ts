@@ -24,8 +24,8 @@ export async function runStatsAgent(
     awayStrength: Math.min(80, Math.round(awayGoals * 25 + 35)),
     formComparison: `${match.homeTeam} (${match.homeForm?.form || 'N/A'}) vs ${match.awayTeam} (${match.awayForm?.form || 'N/A'})`,
     goalExpectancy: {
-      home: homeGoals.toFixed(1),
-      away: awayGoals.toFixed(1),
+      home: homeGoals
+      away: awayGoals
       total: expectedTotal
     },
     keyStats: [
