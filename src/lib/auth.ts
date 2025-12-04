@@ -3,11 +3,20 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
-// Supabase Admin Client
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// Supabase client - her seferinde yeni oluştur
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  
+  if (!url || !key) {
+    console.error('❌ Supabase credentials missing!');
+    console.error('URL:', url ? 'exists' : 'MISSING');
+    console.error('KEY:', key ? 'exists' : 'MISSING');
+    throw new Error('Supabase credentials not configured');
+  }
+  
+  return createClient(url, key);
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,131 +27,140 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email ve şifre gerekli');
+        console.log('🔐 === AUTH START ===');
+        
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log('❌ Missing email or password');
+            return null;
+          }
+
+          console.log('📧 Email:', credentials.email);
+
+          const supabase = getSupabase();
+
+          // Kullanıcıyı bul
+          const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', credentials.email)
+            .single();
+
+          if (error) {
+            console.log('❌ Supabase error:', error.message);
+            return null;
+          }
+
+          if (!user) {
+            console.log('❌ User not found');
+            return null;
+          }
+
+          console.log('✅ User found:', user.email);
+          console.log('🔑 Hash exists:', !!user.password_hash);
+          console.log('🔑 Hash prefix:', user.password_hash?.substring(0, 10));
+
+          // Şifre kontrolü - bcrypt ile
+          let isValid = false;
+          
+          try {
+            isValid = await bcrypt.compare(credentials.password, user.password_hash || '');
+            console.log('🔐 Bcrypt compare result:', isValid);
+          } catch (bcryptError) {
+            console.error('❌ Bcrypt error:', bcryptError);
+            
+            // pgcrypto hash için alternatif kontrol
+            // pgcrypto $2a$ kullanır, bcryptjs $2b$ bekler
+            // Manuel kontrol deneyelim
+            if (user.password_hash?.startsWith('$2a$')) {
+              const hashWithB = user.password_hash.replace('$2a$', '$2b$');
+              try {
+                isValid = await bcrypt.compare(credentials.password, hashWithB);
+                console.log('🔐 Bcrypt compare with $2b$:', isValid);
+              } catch (e) {
+                console.error('❌ Second bcrypt attempt failed:', e);
+              }
+            }
+          }
+
+          if (!isValid) {
+            console.log('❌ Invalid password');
+            return null;
+          }
+
+          console.log('✅ === AUTH SUCCESS ===');
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          };
+          
+        } catch (err) {
+          console.error('❌ Auth error:', err);
+          return null;
         }
-
-        // Kullanıcıyı bul
-        const { data: user, error } = await supabaseAdmin
-          .from('users')
-          .select('*')
-          .eq('email', credentials.email)
-          .single();
-
-        if (error || !user) {
-          throw new Error('Kullanıcı bulunamadı');
-        }
-
-        // Şifre kontrolü
-        const isValid = await bcrypt.compare(credentials.password, user.password_hash || '');
-        if (!isValid) {
-          throw new Error('Geçersiz şifre');
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
       }
     }),
   ],
-callbacks: {
-  async signIn({ user }) {
-    if (!user.email) return false;
+  callbacks: {
+    async signIn({ user }) {
+      console.log('📝 SignIn callback for:', user.email);
+      
+      if (!user.email) return false;
 
-    // Profil var mı kontrol et, yoksa oluştur
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', user.email)
-      .single();
-
-    if (!existingProfile) {
-      // Yeni profil oluştur (7 gün trial)
-      const trialEnds = new Date();
-      trialEnds.setDate(trialEnds.getDate() + 7);
-
-      await supabaseAdmin.from('profiles').insert({
-        email: user.email,
-        name: user.name || '',
-        subscription_status: 'trial',
-        trial_start_date: new Date().toISOString(),
-        trial_ends_at: trialEnds.toISOString(),
-        analyses_today: 0,
-      });
-
-      console.log(`✅ New profile created: ${user.email}`);
-    }
-
-    return true;
-  },
-    async session({ session, token }) {
-      if (session.user?.email) {
-        // Profil bilgilerini çek
-        const { data: profile } = await supabaseAdmin
+      try {
+        const supabase = getSupabase();
+        
+        // Profil var mı kontrol et
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('*')
-          .eq('email', session.user.email)
+          .select('id')
+          .eq('email', user.email)
           .single();
 
-        if (profile) {
-          const now = new Date();
-          const trialEnds = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-          const isPro = profile.subscription_status === 'active';
-          const isTrial = !isPro && trialEnds && trialEnds > now;
+        if (!existingProfile) {
+          // Yeni profil oluştur (7 gün trial)
+          const trialEnds = new Date();
+          trialEnds.setDate(trialEnds.getDate() + 7);
 
-          (session.user as any).profile = {
-            isPro,
-            isTrial,
-            trialDaysLeft: isTrial ? Math.ceil((trialEnds!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0,
-            subscriptionStatus: profile.subscription_status,
-          };
+          await supabase.from('profiles').insert({
+            email: user.email,
+            name: user.name || '',
+            subscription_status: 'trial',
+            trial_start_date: new Date().toISOString(),
+            trial_ends_at: trialEnds.toISOString(),
+            analyses_today: 0,
+          });
+
+          console.log('✅ New profile created for:', user.email);
+        } else {
+          console.log('✅ Profile exists for:', user.email);
         }
+      } catch (err) {
+        console.error('❌ Profile creation error:', err);
+        // Profil oluşturma hatası login'i engellemesin
       }
+
+      return true;
+    },
+    async session({ session }) {
       return session;
     },
-
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
       }
       return token;
     },
   },
   pages: {
     signIn: '/login',
-    error: '/login',
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 gün
+    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true, // Debug modunu aç
 };
-
-// Helper: Subscription aktif mi?
-export async function isSubscriptionActive(email: string): Promise<boolean> {
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('subscription_status, trial_ends_at')
-    .eq('email', email)
-    .single();
-
-  if (!profile) return false;
-
-  const now = new Date();
-
-  // Pro aktif mi?
-  if (profile.subscription_status === 'active') {
-    return true;
-  }
-
-  // Trial aktif mi?
-  if (profile.trial_ends_at) {
-    return new Date(profile.trial_ends_at) > now;
-  }
-
-  return false;
-}
