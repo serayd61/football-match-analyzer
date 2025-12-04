@@ -373,8 +373,8 @@ function calculateMegaConsensus(analyses: any[]): any {
     if (a.keyFactors) factors.push(...a.keyFactors);
     if (a.warnings) warnings.push(...a.warnings);
   });
-  consensus.keyFactors = [...new Set(factors)].slice(0, 5);
-  consensus.warnings = [...new Set(warnings)].slice(0, 3);
+  consensus.keyFactors = Array.from(new Set(factors)).slice(0, 5);
+  consensus.warnings = Array.from(new Set(warnings)).slice(0, 3);
   consensus.overallAnalyses = valid.filter(a => a.overallAnalysis).map(a => a.overallAnalysis);
 
   return consensus;
