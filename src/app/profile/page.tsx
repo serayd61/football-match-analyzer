@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const { lang } = useLanguage();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -31,6 +32,23 @@ export default function ProfilePage() {
     }
   }, [session]);
 
+  const handleManageSubscription = async () => {
+    setOpeningPortal(true);
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Error opening portal');
+        setOpeningPortal(false);
+      }
+    } catch (error) {
+      alert('Error opening portal');
+      setOpeningPortal(false);
+    }
+  };
+
   const labels = {
     tr: {
       title: 'Profil',
@@ -49,6 +67,8 @@ export default function ProfilePage() {
       logout: 'Çıkış Yap',
       backToDashboard: 'Dashboard\'a Dön',
       unlimited: 'Sınırsız',
+      manageSubscription: 'Aboneliği Yönet',
+      openingPortal: 'Açılıyor...',
     },
     en: {
       title: 'Profile',
@@ -67,6 +87,8 @@ export default function ProfilePage() {
       logout: 'Sign Out',
       backToDashboard: 'Back to Dashboard',
       unlimited: 'Unlimited',
+      manageSubscription: 'Manage Subscription',
+      openingPortal: 'Opening...',
     },
     de: {
       title: 'Profil',
@@ -85,6 +107,8 @@ export default function ProfilePage() {
       logout: 'Abmelden',
       backToDashboard: 'Zurück zum Dashboard',
       unlimited: 'Unbegrenzt',
+      manageSubscription: 'Abonnement verwalten',
+      openingPortal: 'Wird geöffnet...',
     },
   };
 
@@ -158,11 +182,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-              {profile?.isPro && profile?.subscription_end && (
+              {profile?.isPro && profile?.subscriptionEnd && (
                 <div className="text-right">
                   <div className="text-xs text-gray-400">{l.validUntil}</div>
                   <div className="text-sm text-green-400">
-                    {new Date(profile.subscription_end).toLocaleDateString()}
+                    {new Date(profile.subscriptionEnd).toLocaleDateString()}
                   </div>
                 </div>
               )}
@@ -224,6 +248,18 @@ export default function ProfilePage() {
                 ⭐ {l.upgrade}
               </Link>
             )}
+            
+            {/* Stripe Portal Butonu - Sadece Pro üyeler için */}
+            {profile?.isPro && profile?.subscriptionId && (
+              <button
+                onClick={handleManageSubscription}
+                disabled={openingPortal}
+                className="block w-full py-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-xl text-center transition-colors disabled:opacity-50"
+              >
+                {openingPortal ? l.openingPortal : `⚙️ ${l.manageSubscription}`}
+              </button>
+            )}
+            
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
               className="block w-full py-4 bg-gray-700 hover:bg-gray-600 text-red-400 font-medium rounded-xl text-center transition-colors"
@@ -232,16 +268,6 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-
-        {/* Debug Info (geliştirme için) */}
-        {process.env.NODE_ENV === 'development' && profile && (
-          <div className="mt-8 p-4 bg-gray-800 rounded-xl">
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Debug Info:</h3>
-            <pre className="text-xs text-gray-500 overflow-auto">
-              {JSON.stringify(profile, null, 2)}
-            </pre>
-          </div>
-        )}
       </div>
     </div>
   );
