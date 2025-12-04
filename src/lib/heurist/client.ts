@@ -38,55 +38,124 @@ export class HeuristClient {
 
     try {
       const model = options.model || this.defaultModel;
-      console.log('Heurist calling ' + model);
+      console.log(`🤖 Heurist calling ${model}`);
       
       const response = await fetch(HEURIST_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + this.apiKey,
+          'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: model,
           messages,
-          max_tokens: options.maxTokens || 3000,
-          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 2000,
+          temperature: options.temperature || 0.5,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Heurist API error:', response.status, errorText);
+        console.error(`❌ Heurist API error: ${response.status}`, errorText);
         return null;
       }
 
       const data = await response.json();
-      console.log('Heurist response received');
-      return data.choices?.[0]?.message?.content || null;
+      const content = data.choices?.[0]?.message?.content || null;
+      
+      if (content) {
+        console.log(`✅ Heurist response: ${content.length} chars`);
+      }
+      
+      return content;
     } catch (error) {
-      console.error('Heurist request error:', error);
+      console.error('❌ Heurist request error:', error);
       return null;
     }
   }
 
   async chatJSON<T>(messages: HeuristMessage[], options: HeuristOptions = {}): Promise<T | null> {
     const response = await this.chat(messages, options);
-    if (!response) return null;
-
-    try {
-      return JSON.parse(response) as T;
-    } catch {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          return JSON.parse(jsonMatch[0]) as T;
-        } catch {
-          console.error('JSON parse failed');
-          return null;
-        }
-      }
+    
+    if (!response) {
+      console.error('❌ No response from Heurist');
       return null;
     }
+
+    // Try multiple parsing strategies
+    const parsed = this.parseJSON<T>(response);
+    
+    if (!parsed) {
+      console.error('❌ JSON parse failed. Raw response:', response.substring(0, 500));
+    }
+    
+    return parsed;
+  }
+
+  private parseJSON<T>(text: string): T | null {
+    // Strategy 1: Direct parse
+    try {
+      return JSON.parse(text) as T;
+    } catch {}
+
+    // Strategy 2: Remove markdown code blocks
+    const cleanedMarkdown = text
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+    
+    try {
+      return JSON.parse(cleanedMarkdown) as T;
+    } catch {}
+
+    // Strategy 3: Find JSON object in text
+    const jsonObjectMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      try {
+        return JSON.parse(jsonObjectMatch[0]) as T;
+      } catch {}
+    }
+
+    // Strategy 4: Find JSON array in text
+    const jsonArrayMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonArrayMatch) {
+      try {
+        return JSON.parse(jsonArrayMatch[0]) as T;
+      } catch {}
+    }
+
+    // Strategy 5: Fix common JSON issues
+    const fixedJson = this.fixCommonJsonIssues(text);
+    if (fixedJson) {
+      try {
+        return JSON.parse(fixedJson) as T;
+      } catch {}
+    }
+
+    return null;
+  }
+
+  private fixCommonJsonIssues(text: string): string | null {
+    // Extract JSON-like content
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    let json = match[0];
+
+    // Fix trailing commas
+    json = json.replace(/,\s*}/g, '}');
+    json = json.replace(/,\s*]/g, ']');
+
+    // Fix unquoted keys
+    json = json.replace(/(\{|\,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+
+    // Fix single quotes to double quotes
+    json = json.replace(/'/g, '"');
+
+    // Fix newlines in strings
+    json = json.replace(/\n/g, '\\n');
+
+    return json;
   }
 }
 
