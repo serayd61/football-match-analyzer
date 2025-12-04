@@ -767,7 +767,7 @@ export async function POST(request: NextRequest) {
       console.log('✅ Returning cached analysis');
 
       // Update usage
-      await supabase
+      await getSupabase()
         .from('profiles')
         .update({
           analyses_today: analysesToday + 1,
