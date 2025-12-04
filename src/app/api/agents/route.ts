@@ -4,11 +4,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
-import { soccerDataClient } from '@/lib/soccerdata/client';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
-// ==================== DATA FETCHING ====================
+// ==================== DATA FETCHING (ONLY SPORTMONKS) ====================
 
 async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, awayTeamId: number) {
   let odds: any = {};
@@ -58,32 +57,13 @@ async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, aw
     console.error('Sportmonks fetch error:', error);
   }
 
-  // Secondary source
-  try {
-    const secondaryH2H = await soccerDataClient.getHeadToHead(homeTeamId, awayTeamId);
-    if (secondaryH2H?.stats?.overall) {
-      const stats = secondaryH2H.stats.overall;
-      h2h = {
-        totalMatches: stats.overall_games_played || h2h.totalMatches || 0,
-        homeWins: stats.overall_team1_wins || h2h.homeWins || 0,
-        awayWins: stats.overall_team2_wins || h2h.awayWins || 0,
-        draws: stats.overall_draws || h2h.draws || 0,
-        avgGoals: stats.overall_games_played 
-          ? ((stats.overall_team1_scored + stats.overall_team2_scored) / stats.overall_games_played).toFixed(1)
-          : h2h.avgGoals || '2.5',
-      };
-    }
-  } catch (error) {
-    console.error('SoccerData fetch error:', error);
-  }
-
   return { odds, homeForm, awayForm, h2h };
 }
 
 function parseOdds(oddsData: any[]): any {
   const result: any = {
     matchWinner: {},
-    overUnder: {},
+    overUnder: { '2.5': {} },
     btts: {},
     doubleChance: {},
     halfTime: {},
@@ -105,8 +85,8 @@ function parseOdds(oddsData: any[]): any {
     if (marketName.includes('over/under') || marketName.includes('goals')) {
       market.odds?.forEach((odd: any) => {
         if (odd.total === 2.5 || marketName.includes('2.5')) {
-          if (odd.label === 'Over') result.overUnder.over25 = odd.value;
-          if (odd.label === 'Under') result.overUnder.under25 = odd.value;
+          if (odd.label === 'Over') result.overUnder['2.5'].over = odd.value;
+          if (odd.label === 'Under') result.overUnder['2.5'].under = odd.value;
         }
       });
     }
@@ -115,6 +95,14 @@ function parseOdds(oddsData: any[]): any {
       market.odds?.forEach((odd: any) => {
         if (odd.label === 'Yes') result.btts.yes = odd.value;
         if (odd.label === 'No') result.btts.no = odd.value;
+      });
+    }
+
+    if (marketName.includes('double chance')) {
+      market.odds?.forEach((odd: any) => {
+        if (odd.label === '1X') result.doubleChance.homeOrDraw = odd.value;
+        if (odd.label === 'X2') result.doubleChance.awayOrDraw = odd.value;
+        if (odd.label === '12') result.doubleChance.homeOrAway = odd.value;
       });
     }
   });
@@ -165,15 +153,18 @@ function calculateForm(matches: any[], location: string): any {
 
 function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number): any {
   if (!matches || matches.length === 0) {
-    return { totalMatches: 0, homeWins: 0, awayWins: 0, draws: 0, avgGoals: '0' };
+    return { totalMatches: 0, homeWins: 0, awayWins: 0, draws: 0, avgGoals: '0', over25Percentage: '0', bttsPercentage: '0' };
   }
 
-  let homeWins = 0, awayWins = 0, draws = 0, totalGoals = 0;
+  let homeWins = 0, awayWins = 0, draws = 0, totalGoals = 0, over25Count = 0, bttsCount = 0;
 
   matches.forEach((match: any) => {
     const homeScore = match.scores?.home || 0;
     const awayScore = match.scores?.away || 0;
     totalGoals += homeScore + awayScore;
+
+    if (homeScore + awayScore > 2.5) over25Count++;
+    if (homeScore > 0 && awayScore > 0) bttsCount++;
 
     const matchHomeTeamId = match.participants?.find((p: any) => p.meta?.location === 'home')?.id;
 
@@ -194,6 +185,8 @@ function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number): a
     awayWins,
     draws,
     avgGoals: (totalGoals / matches.length).toFixed(1),
+    over25Percentage: Math.round((over25Count / matches.length) * 100).toString(),
+    bttsPercentage: Math.round((bttsCount / matches.length) * 100).toString(),
   };
 }
 
@@ -228,13 +221,17 @@ export async function POST(request: NextRequest) {
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🌍 Language: ${language}`);
 
-    // 🔥 VERİLERİ ÇEK - AYNI STANDART ANALİZ GİBİ
-    console.log('📊 Fetching match data for agents...');
+    // VERİLERİ ÇEK (SADECE SPORTMONKS)
+    console.log('📊 Fetching match data from Sportmonks...');
     const { odds, homeForm, awayForm, h2h } = await fetchMatchDataForAgents(fixtureId, homeTeamId, awayTeamId);
     
-    console.log(`✅ Data ready: Form=${homeForm?.form || 'N/A'}/${awayForm?.form || 'N/A'}, H2H=${h2h?.totalMatches || 0} matches`);
+    console.log(`✅ Data ready:`);
+    console.log(`   Odds: ${odds?.matchWinner?.home ? 'YES' : 'NO'}`);
+    console.log(`   Home Form: ${homeForm?.form || 'N/A'}`);
+    console.log(`   Away Form: ${awayForm?.form || 'N/A'}`);
+    console.log(`   H2H: ${h2h?.totalMatches || 0} matches`);
 
-    // 🔥 VERİLERİ AJANLARA AKTAR
+    // VERİLERİ AJANLARA AKTAR
     const result = await runFullAnalysis({
       fixtureId,
       homeTeam,
@@ -243,10 +240,10 @@ export async function POST(request: NextRequest) {
       awayTeamId,
       league,
       date: new Date().toISOString(),
-      odds,      // ✅ EKLENDI
-      homeForm,  // ✅ EKLENDI
-      awayForm,  // ✅ EKLENDI
-      h2h,       // ✅ EKLENDI
+      odds,
+      homeForm,
+      awayForm,
+      h2h,
     }, language as 'tr' | 'en' | 'de');
 
     console.log('✅ Agent Analysis Complete');
@@ -263,9 +260,9 @@ export async function POST(request: NextRequest) {
       errors: result.errors,
       dataUsed: {
         hasOdds: !!odds?.matchWinner?.home,
-        hasHomeForm: !!homeForm?.form,
-        hasAwayForm: !!awayForm?.form,
-        hasH2H: !!h2h?.totalMatches,
+        hasHomeForm: !!homeForm?.form && homeForm.form !== 'N/A',
+        hasAwayForm: !!awayForm?.form && awayForm.form !== 'N/A',
+        hasH2H: !!h2h?.totalMatches && h2h.totalMatches > 0,
       }
     });
   } catch (error: any) {
@@ -273,3 +270,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+```
+
+Bu değişikliği yap, `git push` et, sonra test edelim. Vercel logs'da şunları görmemiz lazım:
+```
+📊 Fetching match data from Sportmonks...
+✅ Data ready:
+   Odds: YES
+   Home Form: WWDLW
+   Away Form: LDWWL
+   H2H: 8 matches
