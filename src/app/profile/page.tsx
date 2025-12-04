@@ -1,72 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import LanguageSelector from '@/components/LanguageSelector';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { t, lang } = useLanguage();
-
+  const { lang } = useLanguage();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'recent' | 'favorites'>('recent');
-  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-
-  const labels: Record<string, Record<string, string>> = {
-    tr: {
-      profile: 'Profilim',
-      todayUsage: 'Bugünkü Kullanım',
-      totalAnalyses: 'Toplam Analiz',
-      favorites: 'Favoriler',
-      recentAnalyses: 'Son Analizler',
-      noAnalyses: 'Henüz analiz yapmadınız',
-      noFavorites: 'Favori analiz yok',
-      backToDashboard: '← Dashboard\'a Dön',
-      analysesRemaining: 'Kalan Analiz Hakkı',
-      viewAnalysis: 'Analizi Gör',
-      close: 'Kapat',
-      analysisDetail: 'Analiz Detayı',
-      loading: 'Yükleniyor...',
-    },
-    en: {
-      profile: 'My Profile',
-      todayUsage: 'Today\'s Usage',
-      totalAnalyses: 'Total Analyses',
-      favorites: 'Favorites',
-      recentAnalyses: 'Recent Analyses',
-      noAnalyses: 'No analyses yet',
-      noFavorites: 'No favorite analyses',
-      backToDashboard: '← Back to Dashboard',
-      analysesRemaining: 'Analyses Remaining',
-      viewAnalysis: 'View Analysis',
-      close: 'Close',
-      analysisDetail: 'Analysis Detail',
-      loading: 'Loading...',
-    },
-    de: {
-      profile: 'Mein Profil',
-      todayUsage: 'Heutige Nutzung',
-      totalAnalyses: 'Gesamtanalysen',
-      favorites: 'Favoriten',
-      recentAnalyses: 'Letzte Analysen',
-      noAnalyses: 'Noch keine Analysen',
-      noFavorites: 'Keine Favoritenanalysen',
-      backToDashboard: '← Zurück zum Dashboard',
-      analysesRemaining: 'Verbleibende Analysen',
-      viewAnalysis: 'Analyse ansehen',
-      close: 'Schließen',
-      analysisDetail: 'Analysedetail',
-      loading: 'Laden...',
-    },
-  };
-
-  const l = labels[lang] || labels.en;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -76,260 +21,228 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (session) {
-      fetchProfile();
+      fetch('/api/user/profile')
+        .then(res => res.json())
+        .then(data => {
+          setProfile(data);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }
   }, [session]);
 
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch('/api/user/profile');
-      const data = await res.json();
-      if (data.success) {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-    }
-    setLoading(false);
+  const labels = {
+    tr: {
+      title: 'Profil',
+      membership: 'Üyelik Durumu',
+      pro: 'Pro Üye',
+      trial: 'Deneme Süresi',
+      expired: 'Süresi Dolmuş',
+      daysLeft: 'gün kaldı',
+      validUntil: 'Geçerlilik',
+      email: 'E-posta',
+      analysesToday: 'Bugünkü Analizler',
+      aiAgents: 'AI Ajanları',
+      available: 'Kullanılabilir',
+      notAvailable: 'Pro Gerekli',
+      upgrade: "Pro'ya Geç",
+      logout: 'Çıkış Yap',
+      backToDashboard: 'Dashboard\'a Dön',
+      unlimited: 'Sınırsız',
+    },
+    en: {
+      title: 'Profile',
+      membership: 'Membership Status',
+      pro: 'Pro Member',
+      trial: 'Trial Period',
+      expired: 'Expired',
+      daysLeft: 'days left',
+      validUntil: 'Valid Until',
+      email: 'Email',
+      analysesToday: 'Analyses Today',
+      aiAgents: 'AI Agents',
+      available: 'Available',
+      notAvailable: 'Pro Required',
+      upgrade: 'Upgrade to Pro',
+      logout: 'Sign Out',
+      backToDashboard: 'Back to Dashboard',
+      unlimited: 'Unlimited',
+    },
+    de: {
+      title: 'Profil',
+      membership: 'Mitgliedschaftsstatus',
+      pro: 'Pro-Mitglied',
+      trial: 'Testversion',
+      expired: 'Abgelaufen',
+      daysLeft: 'Tage übrig',
+      validUntil: 'Gültig bis',
+      email: 'E-Mail',
+      analysesToday: 'Analysen heute',
+      aiAgents: 'KI-Agenten',
+      available: 'Verfügbar',
+      notAvailable: 'Pro erforderlich',
+      upgrade: 'Pro werden',
+      logout: 'Abmelden',
+      backToDashboard: 'Zurück zum Dashboard',
+      unlimited: 'Unbegrenzt',
+    },
   };
 
-  const toggleFavorite = async (fixtureId: number, currentStatus: boolean) => {
-    try {
-      await fetch('/api/user/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixtureId, isFavorite: !currentStatus }),
-      });
-      fetchProfile();
-    } catch (error) {
-      console.error('Favorite toggle error:', error);
-    }
-  };
-
-  const viewAnalysis = async (fixtureId: number, homeTeam: string, awayTeam: string) => {
-    setAnalysisLoading(true);
-    setSelectedAnalysis(null);
-    
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fixtureId,
-          homeTeam,
-          awayTeam,
-          language: lang,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedAnalysis(data);
-      }
-    } catch (error) {
-      console.error('Analysis fetch error:', error);
-    }
-    setAnalysisLoading(false);
-  };
-
-  const formatAnalysisText = (data: any): string => {
-    if (!data || !data.analysis) return '';
-    
-    const a = data.analysis;
-    let text = `🏟️ ${data.fixture?.homeTeam} vs ${data.fixture?.awayTeam}\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    if (data.fromCache) {
-      text += `⚡ ${lang === 'tr' ? 'Önbellekten yüklendi' : lang === 'de' ? 'Aus Cache geladen' : 'Loaded from cache'}\n\n`;
-    }
-
-    if (a?.matchResult) {
-      text += `⚽ ${lang === 'tr' ? 'Maç Sonucu' : lang === 'de' ? 'Spielergebnis' : 'Match Result'}: ${a.matchResult.prediction} (${a.matchResult.confidence}%)\n`;
-    }
-    if (a?.overUnder25) {
-      text += `📊 2.5 ${lang === 'tr' ? 'Gol' : lang === 'de' ? 'Tore' : 'Goals'}: ${a.overUnder25.prediction} (${a.overUnder25.confidence}%)\n`;
-    }
-    if (a?.btts) {
-      text += `🔥 BTTS: ${a.btts.prediction} (${a.btts.confidence}%)\n`;
-    }
-    if (a?.doubleChance) {
-      text += `📈 ${lang === 'tr' ? 'Çifte Şans' : lang === 'de' ? 'Doppelte Chance' : 'Double Chance'}: ${a.doubleChance.prediction} (${a.doubleChance.confidence}%)\n`;
-    }
-    if (a?.correctScore) {
-      text += `\n🏆 ${lang === 'tr' ? 'Doğru Skor' : lang === 'de' ? 'Genaues Ergebnis' : 'Correct Score'}:\n`;
-      if (a.correctScore.first) text += `  1. ${a.correctScore.first.score} (${a.correctScore.first.confidence}%)\n`;
-      if (a.correctScore.second) text += `  2. ${a.correctScore.second.score} (${a.correctScore.second.confidence}%)\n`;
-      if (a.correctScore.third) text += `  3. ${a.correctScore.third.score} (${a.correctScore.third.confidence}%)\n`;
-    }
-    if (a?.bestBets && a.bestBets.length > 0) {
-      text += `\n💰 ${lang === 'tr' ? 'En İyi Bahis' : lang === 'de' ? 'Beste Wette' : 'Best Bet'}:\n`;
-      a.bestBets.forEach((bet: any) => {
-        if (bet?.type) {
-          text += `  • ${bet.type}: ${bet.prediction} (${bet.confidence}%)\n`;
-        }
-      });
-    }
-    if (a?.overallAnalyses && a.overallAnalyses.length > 0) {
-      text += `\n📝 ${lang === 'tr' ? 'Genel Değerlendirme' : lang === 'de' ? 'Gesamtbewertung' : 'Overall'}:\n${a.overallAnalyses[0]}\n`;
-    }
-
-    return text;
-  };
+  const l = labels[lang as keyof typeof labels] || labels.en;
 
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full"></div>
+        <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!session) return null;
 
-  const analyses = activeTab === 'recent' ? profile?.recentAnalyses : profile?.favorites;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-4">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white text-sm mb-2 inline-block">
-              {l.backToDashboard}
-            </Link>
-            <h1 className="text-3xl font-bold">👤 {l.profile}</h1>
-            <p className="text-gray-400">{session.user?.email}</p>
-          </div>
-          <LanguageSelector />
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            {l.backToDashboard}
+          </Link>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-1">{l.todayUsage}</div>
-            <div className="text-3xl font-bold text-green-400">
-              {profile?.usage?.today || 0} / {profile?.usage?.limit || 50}
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-              <div
-                className="bg-green-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(((profile?.usage?.today || 0) / (profile?.usage?.limit || 50)) * 100, 100)}%` }}
-              ></div>
-            </div>
-            <div className="text-gray-500 text-xs mt-1">
-              {l.analysesRemaining}: {(profile?.usage?.limit || 50) - (profile?.usage?.today || 0)}
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-1">{l.totalAnalyses}</div>
-            <div className="text-3xl font-bold text-blue-400">
-              {profile?.stats?.totalAnalyses || 0}
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-1">{l.favorites}</div>
-            <div className="text-3xl font-bold text-yellow-400">
-              {profile?.stats?.favoritesCount || 0}
+        {/* Profile Card */}
+        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-3xl overflow-hidden">
+          {/* Header */}
+          <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-b border-gray-700">
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">
+                {session.user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">{session.user?.name}</h1>
+                <p className="text-gray-400">{session.user?.email}</p>
+                <div className="mt-2">
+                  {profile?.isPro ? (
+                    <span className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-sm font-bold rounded-full">
+                      ⭐ {l.pro}
+                    </span>
+                  ) : profile?.isTrial ? (
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm font-medium rounded-full">
+                      ⏳ {l.trial} - {profile.trialDaysLeft} {l.daysLeft}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full">
+                      ❌ {l.expired}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab('recent')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'recent' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            📋 {l.recentAnalyses} ({profile?.recentAnalyses?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'favorites' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            ⭐ {l.favorites} ({profile?.favorites?.length || 0})
-          </button>
-        </div>
-
-        {/* Analyses List */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          {analyses && analyses.length > 0 ? (
-            <div className="space-y-4">
-              {analyses.map((item: any, idx: number) => (
-                <div key={idx} className="bg-gray-700 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-bold text-lg">
-                        {item.home_team || 'Unknown'} vs {item.away_team || 'Unknown'}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {new Date(item.viewed_at).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => viewAnalysis(item.fixture_id, item.home_team, item.away_team)}
-                        className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm"
-                      >
-                        👁️ {l.viewAnalysis}
-                      </button>
-                      <button
-                        onClick={() => toggleFavorite(item.fixture_id, item.is_favorite)}
-                        className={`px-3 py-2 rounded-lg transition-all ${
-                          item.is_favorite 
-                            ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
-                            : 'bg-gray-600 hover:bg-gray-500'
-                        }`}
-                      >
-                        {item.is_favorite ? '⭐' : '☆'}
-                      </button>
-                    </div>
+          {/* Stats */}
+          <div className="p-6 space-y-4">
+            {/* Membership */}
+            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">👑</span>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">{l.membership}</div>
+                  <div className="font-medium text-white">
+                    {profile?.isPro ? l.pro : profile?.isTrial ? l.trial : l.expired}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-400">
-              <div className="text-5xl mb-4">{activeTab === 'recent' ? '📋' : '⭐'}</div>
-              <p className="text-lg">{activeTab === 'recent' ? l.noAnalyses : l.noFavorites}</p>
-              <Link href="/dashboard" className="mt-4 inline-block px-4 py-2 bg-green-600 rounded-lg hover:bg-green-500">
-                {l.backToDashboard}
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Analysis Modal */}
-      {(selectedAnalysis || analysisLoading) && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">🤖 {l.analysisDetail}</h2>
-              <button 
-                onClick={() => setSelectedAnalysis(null)} 
-                className="text-gray-400 hover:text-white text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-            {analysisLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p>{l.loading}</p>
               </div>
-            ) : (
-              <pre className="whitespace-pre-wrap text-sm bg-gray-900 p-4 rounded-lg">
-                {formatAnalysisText(selectedAnalysis)}
-              </pre>
+              {profile?.isPro && profile?.subscription_end && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-400">{l.validUntil}</div>
+                  <div className="text-sm text-green-400">
+                    {new Date(profile.subscription_end).toLocaleDateString()}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Analyses Today */}
+            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">📊</span>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">{l.analysesToday}</div>
+                  <div className="font-medium text-white">
+                    {profile?.isPro ? l.unlimited : `${profile?.analysesUsed || 0}/${profile?.analysesLimit || 3}`}
+                  </div>
+                </div>
+              </div>
+              {!profile?.isPro && (
+                <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full"
+                    style={{ width: `${((profile?.analysesUsed || 0) / (profile?.analysesLimit || 3)) * 100}%` }}
+                  ></div>
+                </div>
+              )}
+            </div>
+
+            {/* AI Agents */}
+            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">🧠</span>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-400">{l.aiAgents}</div>
+                  <div className="font-medium text-white">
+                    {profile?.canUseAgents ? (
+                      <span className="text-green-400">✓ {l.available}</span>
+                    ) : (
+                      <span className="text-gray-500">🔒 {l.notAvailable}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {!profile?.canUseAgents && (
+                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded">PRO</span>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="p-6 border-t border-gray-700 space-y-3">
+            {!profile?.isPro && (
+              <Link
+                href="/pricing"
+                className="block w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-xl text-center shadow-lg shadow-green-500/30 transition-all"
+              >
+                ⭐ {l.upgrade}
+              </Link>
             )}
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="block w-full py-4 bg-gray-700 hover:bg-gray-600 text-red-400 font-medium rounded-xl text-center transition-colors"
+            >
+              {l.logout}
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Debug Info (geliştirme için) */}
+        {process.env.NODE_ENV === 'development' && profile && (
+          <div className="mt-8 p-4 bg-gray-800 rounded-xl">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Debug Info:</h3>
+            <pre className="text-xs text-gray-500 overflow-auto">
+              {JSON.stringify(profile, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
