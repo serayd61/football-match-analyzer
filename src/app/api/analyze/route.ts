@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-
+import { checkUserAccess, incrementAnalysisCount } from '@/lib/accessControl';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
