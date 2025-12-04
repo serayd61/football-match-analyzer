@@ -48,7 +48,7 @@ export async function runOddsAgent(
 💰 ORAN VERİLERİ:
 ${hasOdds ? `
 1X2: EV=${match.odds?.matchWinner?.home} | X=${match.odds?.matchWinner?.draw} | DEP=${match.odds?.matchWinner?.away}
-Ü/A 2.5: Üst=${match.odds?.overUnder?.['2.5']?.over || match.odds?.overUnder?.over25 || 'N/A'} | Alt=${match.odds?.overUnder?.['2.5']?.under || match.odds?.overUnder?.under25 || 'N/A'}
+Ü/A 2.5: Üst=${match.odds?.overUnder?.['2.5']?.over || 'N/A'} | Alt=${match.odds?.overUnder?.['2.5']?.under || 'N/A'}
 KG: Var=${match.odds?.btts?.yes || 'N/A'} | Yok=${match.odds?.btts?.no || 'N/A'}
 ` : '⚠️ ORAN VERİSİ MEVCUT DEĞİL - Value bet hesaplama!'}
 
