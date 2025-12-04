@@ -33,9 +33,7 @@ export async function runStrategyAgent(
       level: "medium",
       factors: ["Form verileri analiz edildi", "H2H verisi mevcut"]
     },
-    bankrollAdvice: {bankrollAdvice: "3 birim stake, %5 max exposure - orta guvenilirlik",
-                     
-    },
+    bankrollAdvice: "3 birim stake, %5 max exposure - orta guvenilirlik",
     summary: `${match.homeTeam} vs ${match.awayTeam} maci icin ${overUnder} 2.5 gol bahsi onerilmektedir. Beklenen toplam gol: ${goalExpectancy.toFixed(1)}.`
   };
 
