@@ -25,18 +25,21 @@ export interface AccessStatus {
   message?: string;
   redirectTo?: string;
 }
-
 export async function checkUserAccess(email: string, ip?: string): Promise<AccessStatus> {
   const db = getSupabase();
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
+  console.log('🔍 checkUserAccess called for:', email);
+
   // Kullanıcı profilini çek
-  let { data: profile } = await db
+  let { data: profile, error } = await db
     .from('profiles')
     .select('*')
     .eq('email', email)
     .single();
+
+  console.log('📊 Profile query result:', { profile, error });
 
   // Profil yoksa oluştur (7 gün trial)
   if (!profile) {
