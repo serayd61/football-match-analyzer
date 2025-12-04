@@ -4,15 +4,6 @@ import { SupabaseClient } from '@supabase/supabase-js';
 function getSupabase(): SupabaseClient {
   return supabaseAdmin;
 }
-  if (!supabase) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_KEY;
-    if (!url || !key) throw new Error('Supabase credentials not configured');
-    supabase = createClient(url, key);
-  }
-  return supabase;
-}
-
 export interface AccessStatus {
   hasAccess: boolean;
   isPro: boolean;
