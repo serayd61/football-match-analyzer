@@ -26,7 +26,7 @@ export async function runStatsAgent(
     goalExpectancy: {
       home: homeGoals.toFixed(1),
       away: awayGoals.toFixed(1),
-      total: expectedTotal.toFixed(1)
+      total: expectedTotal
     },
     keyStats: [
       { stat: "Gol ortalamasi", home: homeGoals.toFixed(1), away: awayGoals.toFixed(1), advantage: homeGoals > awayGoals ? "home" : "away" },
