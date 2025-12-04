@@ -10,6 +10,27 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { soccerDataClient } from '@/lib/soccerdata/client';
 
+// IP al
+const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+
+// Erişim kontrolü
+const access = await checkUserAccess(session.user.email, ip);
+
+if (!access.hasAccess) {
+  return NextResponse.json({
+    error: access.message || 'Access denied',
+    trialExpired: access.trialExpired,
+    redirectTo: access.redirectTo,
+  }, { status: 403 });
+}
+
+if (!access.canAnalyze) {
+  return NextResponse.json({
+    error: `Daily limit reached (${access.analysesUsed}/${access.analysesLimit})`,
+    limitReached: true,
+    usage: { used: access.analysesUsed, limit: access.analysesLimit },
+  }, { status: 429 });
+}
 // API Clients
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
