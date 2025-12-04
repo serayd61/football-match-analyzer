@@ -39,7 +39,7 @@ export async function runStrategyAgent(
       liveOpportunities: ["Erken gol durumunda Ust bahis"]
     },
     riskAssessment: {
-      overall: "orta",
+      level: "medium",
       factors: ["Form verileri analiz edildi", "H2H verisi mevcut"]
     },
     summary: `${match.homeTeam} vs ${match.awayTeam} maci icin ${overUnder} 2.5 gol bahsi onerilmektedir. Beklenen toplam gol: ${goalExpectancy.toFixed(1)}.`
