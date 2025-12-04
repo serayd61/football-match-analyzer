@@ -17,12 +17,13 @@ export async function runStrategyAgent(
   // Fallback template
   const template: StrategyReport = {
     recommendedBets: [
-      {
+     {
         type: `${overUnder} 2.5 Gol`,
         selection: overUnder,
         confidence: Math.min(85, Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15)),
         stake: 3,
-        reasoning: `Beklenen gol ${goalExpectancy.toFixed(1)} - ${overUnder} 2.5 oneriliyor`
+        reasoning: `Beklenen gol ${goalExpectancy.toFixed(1)} - ${overUnder} 2.5 oneriliyor`,
+        expectedValue: 1.05
       }
     ],
     avoidBets: [
