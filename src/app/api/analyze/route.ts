@@ -871,13 +871,12 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    await getSupabase().from('analysis_cache').upsert
-      cache_key: cacheKey,
-      data: response,
-      expires_at: expiresAt.toISOString(),
-      created_at: new Date().toISOString(),
-    });
-
+    await getSupabase().from('analysis_cache').upsert({
+  cache_key: cacheKey,
+  data: response,
+  expires_at: expiresAt.toISOString(),
+  created_at: new Date().toISOString(),
+});
     // Update usage
     await getSupabase()
   .from('profiles')
