@@ -1,84 +1,59 @@
 import { heurist, HeuristMessage } from '../client';
 import { Language, MatchData, ScoutReport } from '../types';
 
-const SYSTEM_PROMPTS: Record<Language, string> = {
-  tr: `🔍 SEN VERİ ANALİZ AJANISIN.
-
-⚠️ KRİTİK KURALLAR:
-1. SADECE sana verilen verileri analiz et
-2. Sakatlık/haber verisi YOKSA, "Veri mevcut değil" de
-3. ASLA oyuncu ismi veya haber UYDURMA
-4. Bilmediğin şeyi YAZMA
-
-Eğer sakatlık verisi verilmediyse:
-- injuries: [] (BOŞ ARRAY)
-- suspensions: [] (BOŞ ARRAY)
-- news: [] (BOŞ ARRAY)
-
-Türkçe yanıt ver. SADECE JSON döndür.`,
-
-  en: `🔍 YOU ARE A DATA ANALYSIS AGENT.
-
-⚠️ CRITICAL RULES:
-1. ONLY analyze data that is PROVIDED to you
-2. If injury/news data is NOT provided, say "Data not available"
-3. NEVER make up player names or news
-4. DO NOT write things you don't know
-
-If injury data is not provided:
-- injuries: [] (EMPTY ARRAY)
-- suspensions: [] (EMPTY ARRAY)
-- news: [] (EMPTY ARRAY)
-
-Respond in English. Return ONLY JSON.`,
-
-  de: `🔍 DU BIST EIN DATENANALYSE-AGENT.
-ERFINDE KEINE Spielernamen oder Nachrichten.
-Auf Deutsch antworten. NUR JSON zurückgeben.`,
-};
+const SYSTEM_PROMPT = `You are a JSON API. Return ONLY valid JSON.
+NEVER use markdown. NEVER use ** or backticks.
+NEVER write explanations. Return ONLY a JSON object.`;
 
 export async function runScoutAgent(
   match: MatchData,
   language: Language = 'en'
 ): Promise<ScoutReport | null> {
   
-  // Gerçek sakatlık verisi var mı kontrol et
-  // Gerçek sakatlık verisi var mı kontrol et
-  const hasRealInjuryData = (match as any).injuries && Array.isArray((match as any).injuries) && (match as any).injuries.length > 0;
-  const hasRealNews = (match as any).news && Array.isArray((match as any).news) && (match as any).news.length > 0;
+  // Fallback template
+  const template: ScoutReport = {
+    injuries: [],
+    suspensions: [],
+    news: [],
+    lineupChanges: [],
+    weather: { condition: "Bilinmiyor", impact: "Veri yok" },
+    summary: `${match.homeTeam} vs ${match.awayTeam} maci icin guncel sakatlik/haber verisi mevcut degil. Form verileri: ${match.homeTeam} ${match.homeForm?.form || 'N/A'}, ${match.awayTeam} ${match.awayForm?.form || 'N/A'}.`
+  };
 
   const messages: HeuristMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPTS[language] },
-    { role: 'user', content: `
-🏟️ MAÇ: ${match.homeTeam} vs ${match.awayTeam}
-🏆 LİG: ${match.league || 'Bilinmiyor'}
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: `Match: ${match.homeTeam} vs ${match.awayTeam}
+League: ${match.league || 'Unknown'}
 
-📊 VERİLEN VERİLER:
-${hasRealInjuryData ? `Sakatlıklar: ${JSON.stringify((match as any).injuries)}` : '⚠️ Sakatlık verisi MEVCUT DEĞİL - UYDURMA!'}
-${hasRealNews ? `Haberler: ${JSON.stringify((match as any).news)}` : '⚠️ Haber verisi MEVCUT DEĞİL - UYDURMA!'}
+Home form: ${match.homeForm?.form || 'N/A'}
+Away form: ${match.awayForm?.form || 'N/A'}
 
-📈 FORM VERİLERİ (BUNLARI KULLAN):
-- ${match.homeTeam}: Form=${match.homeForm?.form || 'N/A'}, Gol Ort=${match.homeForm?.avgGoals || 'N/A'}
-- ${match.awayTeam}: Form=${match.awayForm?.form || 'N/A'}, Gol Ort=${match.awayForm?.avgGoals || 'N/A'}
+IMPORTANT: No injury/news data available. Return empty arrays.
 
-⚔️ H2H: ${match.h2h?.totalMatches || 0} maç
-
-🎯 JSON FORMAT:
-{
-  "injuries": ${hasRealInjuryData ? 'VERİLEN VERİYİ KULLAN' : '[]'},
-  "suspensions": [],
-  "news": ${hasRealNews ? 'VERİLEN VERİYİ KULLAN' : '[]'},
-  "lineupChanges": [],
-  "weather": {"condition": "Bilinmiyor", "impact": "Veri yok"},
-  "summary": "Form verilerine dayalı kısa özet. ${match.homeTeam} form: ${match.homeForm?.form || 'N/A'}. ${match.awayTeam} form: ${match.awayForm?.form || 'N/A'}. Sakatlık/haber verisi mevcut değil."
-}
-
-⚠️ VERİ YOKSA BOŞ ARRAY KULLAN! UYDURMA!` },
+Return ONLY this JSON:
+${JSON.stringify(template, null, 2)}` },
   ];
 
-  return await heurist.chatJSON<ScoutReport>(messages, { 
-    model: 'meta-llama/llama-3.3-70b-instruct',
-    temperature: 0.3, // Daha deterministik
-    maxTokens: 1500
-  });
+  try {
+    const response = await heurist.chat(messages, { 
+      model: 'meta-llama/llama-3.3-70b-instruct',
+      temperature: 0.1,
+      maxTokens: 1000
+    });
+
+    if (!response) return template;
+
+    try {
+      let cleaned = response.replace(/\*\*/g, '').replace(/`/g, '').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]) as ScoutReport;
+      }
+    } catch {}
+
+    return template;
+  } catch (error) {
+    console.error('Scout agent error:', error);
+    return template;
+  }
 }
