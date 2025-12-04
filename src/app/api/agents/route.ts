@@ -270,13 +270,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-```
 
-Bu değişikliği yap, `git push` et, sonra test edelim. Vercel logs'da şunları görmemiz lazım:
-```
-📊 Fetching match data from Sportmonks...
-✅ Data ready:
-   Odds: YES
-   Home Form: WWDLW
-   Away Form: LDWWL
-   H2H: 8 matches
