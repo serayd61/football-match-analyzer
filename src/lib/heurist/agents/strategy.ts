@@ -17,7 +17,7 @@ export async function runStrategyAgent(
   // Fallback template
   const template: StrategyReport = {
     recommendedBets: [
-     {
+      {
         type: `${overUnder} 2.5 Gol`,
         selection: overUnder,
         confidence: Math.min(85, Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15)),
@@ -29,15 +29,6 @@ export async function runStrategyAgent(
     avoidBets: [
       { type: "Kesin Skor", reason: "Yuksek belirsizlik" }
     ],
-    bankrollStrategy: {
-      recommendedStake: "3 birim",
-      maxExposure: "5%",
-      reasoning: "Orta guvenilirlik seviyesi"
-    },
-    timing: {
-      bestTime: "Mac oncesi",
-      liveOpportunities: ["Erken gol durumunda Ust bahis"]
-    },
     riskAssessment: {
       level: "medium",
       factors: ["Form verileri analiz edildi", "H2H verisi mevcut"]
