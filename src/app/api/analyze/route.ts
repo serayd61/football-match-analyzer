@@ -680,14 +680,14 @@ function calculateMegaConsensus(analyses: any[]): any {
   validAnalyses.forEach((a) => {
     if (a.keyFactors) allFactors.push(...a.keyFactors);
   });
-  consensus.keyFactors = [...new Set(allFactors)].slice(0, 5);
+  consensus.keyFactors = Array.from(new Set(allFactors)).slice(0, 5);
 
   // Warnings
   const allWarnings: string[] = [];
   validAnalyses.forEach((a) => {
     if (a.warnings) allWarnings.push(...a.warnings);
   });
-  consensus.warnings = [...new Set(allWarnings)].slice(0, 3);
+  consensus.warnings = Array.from(new Set(allWarnings)).slice(0, 3);
 
   return consensus;
 }
