@@ -1,22 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from './supabase';
 import bcrypt from 'bcryptjs';
-
-// Supabase client - her seferinde yeni oluştur
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  
-  if (!url || !key) {
-    console.error('❌ Supabase credentials missing!');
-    console.error('URL:', url ? 'exists' : 'MISSING');
-    console.error('KEY:', key ? 'exists' : 'MISSING');
-    throw new Error('Supabase credentials not configured');
-  }
-  
-  return createClient(url, key);
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -27,77 +12,59 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        console.log('🔐 === AUTH START ===');
-        
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log('❌ Missing email or password');
             return null;
           }
-
-          console.log('📧 Email:', credentials.email);
-
-          const supabase = getSupabase();
 
           // Kullanıcıyı bul
-          const { data: user, error } = await supabase
+          const { data: user, error } = await supabaseAdmin
             .from('users')
             .select('*')
-            .eq('email', credentials.email)
+            .eq('email', credentials.email.toLowerCase().trim())
             .single();
 
-          if (error) {
-            console.log('❌ Supabase error:', error.message);
+          if (error || !user) {
+            console.log('User not found:', credentials.email);
             return null;
           }
 
-          if (!user) {
-            console.log('❌ User not found');
-            return null;
-          }
-
-          console.log('✅ User found:', user.email);
-          console.log('🔑 Hash exists:', !!user.password_hash);
-          console.log('🔑 Hash prefix:', user.password_hash?.substring(0, 10));
-
-          // Şifre kontrolü - bcrypt ile
+          // Şifre kontrolü - $2a$ ve $2b$ uyumluluğu
+          const passwordHash = user.password_hash || '';
           let isValid = false;
-          
+
+          // Önce direkt dene
           try {
-            isValid = await bcrypt.compare(credentials.password, user.password_hash || '');
-            console.log('🔐 Bcrypt compare result:', isValid);
-          } catch (bcryptError) {
-            console.error('❌ Bcrypt error:', bcryptError);
-            
-            // pgcrypto hash için alternatif kontrol
-            // pgcrypto $2a$ kullanır, bcryptjs $2b$ bekler
-            // Manuel kontrol deneyelim
-            if (user.password_hash?.startsWith('$2a$')) {
-              const hashWithB = user.password_hash.replace('$2a$', '$2b$');
-              try {
-                isValid = await bcrypt.compare(credentials.password, hashWithB);
-                console.log('🔐 Bcrypt compare with $2b$:', isValid);
-              } catch (e) {
-                console.error('❌ Second bcrypt attempt failed:', e);
-              }
+            isValid = await bcrypt.compare(credentials.password, passwordHash);
+          } catch (e) {
+            console.log('Direct compare failed, trying $2b$ conversion');
+          }
+
+          // $2a$ → $2b$ dönüşümü dene (pgcrypto uyumluluğu)
+          if (!isValid && passwordHash.startsWith('$2a$')) {
+            try {
+              const convertedHash = '$2b$' + passwordHash.slice(4);
+              isValid = await bcrypt.compare(credentials.password, convertedHash);
+            } catch (e) {
+              console.log('Converted compare also failed');
             }
           }
 
           if (!isValid) {
-            console.log('❌ Invalid password');
+            console.log('Invalid password for:', credentials.email);
             return null;
           }
 
-          console.log('✅ === AUTH SUCCESS ===');
-          
+          console.log('Login successful:', credentials.email);
+
           return {
             id: user.id,
             email: user.email,
             name: user.name,
           };
-          
+
         } catch (err) {
-          console.error('❌ Auth error:', err);
+          console.error('Auth error:', err);
           return null;
         }
       }
@@ -105,26 +72,21 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      console.log('📝 SignIn callback for:', user.email);
-      
       if (!user.email) return false;
 
+      // Profil oluştur (yoksa)
       try {
-        const supabase = getSupabase();
-        
-        // Profil var mı kontrol et
-        const { data: existingProfile } = await supabase
+        const { data: existing } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('email', user.email)
           .single();
 
-        if (!existingProfile) {
-          // Yeni profil oluştur (7 gün trial)
+        if (!existing) {
           const trialEnds = new Date();
           trialEnds.setDate(trialEnds.getDate() + 7);
 
-          await supabase.from('profiles').insert({
+          await supabaseAdmin.from('profiles').insert({
             email: user.email,
             name: user.name || '',
             subscription_status: 'trial',
@@ -132,14 +94,9 @@ export const authOptions: NextAuthOptions = {
             trial_ends_at: trialEnds.toISOString(),
             analyses_today: 0,
           });
-
-          console.log('✅ New profile created for:', user.email);
-        } else {
-          console.log('✅ Profile exists for:', user.email);
         }
-      } catch (err) {
-        console.error('❌ Profile creation error:', err);
-        // Profil oluşturma hatası login'i engellemesin
+      } catch (e) {
+        // Hata olsa bile login devam etsin
       }
 
       return true;
@@ -162,5 +119,4 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Debug modunu aç
 };
