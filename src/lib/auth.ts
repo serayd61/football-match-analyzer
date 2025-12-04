@@ -47,37 +47,36 @@ export const authOptions: NextAuthOptions = {
       }
     }),
   ],
-  callbacks: {
-    async signIn({ user }) {
-      if (!user.email) return false;
+callbacks: {
+  async signIn({ user }) {
+    if (!user.email) return false;
 
-      // Profil var mı kontrol et, yoksa oluştur
-      const { data: existingProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .eq('email', user.email)
-        .single();
+    // Profil var mı kontrol et, yoksa oluştur
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', user.email)
+      .single();
 
-      if (!existingProfile) {
-        // Yeni profil oluştur (7 gün trial)
-        const trialEnds = new Date();
-        trialEnds.setDate(trialEnds.getDate() + 7);
+    if (!existingProfile) {
+      // Yeni profil oluştur (7 gün trial)
+      const trialEnds = new Date();
+      trialEnds.setDate(trialEnds.getDate() + 7);
 
-        await supabaseAdmin.from('profiles').insert({
-          email: user.email,
-          name: user.name || '',
-          subscription_status: 'trial',
-          trial_start_date: new Date().toISOString(),
-          trial_ends_at: trialEnds.toISOString(),
-          analyses_today: 0,
-        });
+      await supabaseAdmin.from('profiles').insert({
+        email: user.email,
+        name: user.name || '',
+        subscription_status: 'trial',
+        trial_start_date: new Date().toISOString(),
+        trial_ends_at: trialEnds.toISOString(),
+        analyses_today: 0,
+      });
 
-        console.log(`✅ New profile created: ${user.email}`);
-      }
+      console.log(`✅ New profile created: ${user.email}`);
+    }
 
-      return true;
-    },
-
+    return true;
+  },
     async session({ session, token }) {
       if (session.user?.email) {
         // Profil bilgilerini çek
