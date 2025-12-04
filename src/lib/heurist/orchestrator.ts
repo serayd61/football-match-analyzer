@@ -1,5 +1,4 @@
 // src/lib/heurist/orchestrator.ts
-
 import { runScoutAgent } from './agents/scout';
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
@@ -64,6 +63,7 @@ export async function runFullAnalysis(
   ).catch(e => { errors.push(`Strategy: ${e.message}`); return null; });
 
   timing.strategy = Date.now() - phase2Start;
+
   console.log(`✅ Phase 2 complete: Strategy=${strategyResult ? 'OK' : 'FAIL'}`);
 
   // Phase 3: Consensus Agent (Tüm sonuçları değerlendirir)
