@@ -8,7 +8,7 @@ import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
-async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, awayTeamId: number) {
+async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, awayTeamId: number, homeTeamName: string, awayTeamName: string) {
   let odds: any = {};
   let homeForm: any = {};
   let awayForm: any = {};
@@ -16,10 +16,10 @@ async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, aw
 
   try {
     if (SPORTMONKS_API_KEY) {
-     const [fixtureRes, homeFormRes, awayFormRes, h2hRes] = await Promise.all([
+      const [fixtureRes, homeFormRes, awayFormRes, h2hRes] = await Promise.all([
         fetch(`https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;participants`),
-        fetch(`https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
-        fetch(`https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
+        fetch(`https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
+        fetch(`https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
         fetch(`https://api.sportmonks.com/v3/football/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
       ]);
 
@@ -30,31 +30,32 @@ async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, aw
         h2hRes.json(),
       ]);
 
-      // 🔍 DEBUG - Raw API response
-      console.log('🔍 DEBUG homeFormData.data keys:', homeFormData.data ? Object.keys(homeFormData.data) : 'NO DATA');
-      console.log('🔍 DEBUG homeFormData.data.latest:', homeFormData.data?.latest ? `${homeFormData.data.latest.length} matches` : 'NO LATEST');
-      console.log('🔍 DEBUG first match sample:', JSON.stringify(homeFormData.data?.latest?.[0], null, 2)?.substring(0, 500));
-
+      // Fixture odds
       if (fixtureData.data?.odds) {
         odds = parseOdds(fixtureData.data.odds);
       }
-      
+
+      // Home team form
       if (homeFormData.data?.latest && homeFormData.data.latest.length > 0) {
-        homeForm = calculateForm(homeFormData.data.latest, homeTeamId);
-        console.log('✅ Home form calculated:', homeForm);
+        homeForm = calculateForm(homeFormData.data.latest, homeTeamId, homeTeamName);
       } else {
-        console.log('⚠️ No latest data for home team!');
+        console.log('⚠️ No latest data for home team');
+        homeForm = getDefaultForm();
       }
-      
+
+      // Away team form
       if (awayFormData.data?.latest && awayFormData.data.latest.length > 0) {
-        awayForm = calculateForm(awayFormData.data.latest, awayTeamId);
-        console.log('✅ Away form calculated:', awayForm);
+        awayForm = calculateForm(awayFormData.data.latest, awayTeamId, awayTeamName);
       } else {
-        console.log('⚠️ No latest data for away team!');
+        console.log('⚠️ No latest data for away team');
+        awayForm = getDefaultForm();
       }
-      
+
+      // H2H
       if (h2hData.data && h2hData.data.length > 0) {
-        h2h = calculateH2H(h2hData.data, homeTeamId, awayTeamId);
+        h2h = calculateH2H(h2hData.data, homeTeamId, awayTeamId, homeTeamName);
+      } else {
+        h2h = getDefaultH2H();
       }
     }
   } catch (error) {
@@ -62,6 +63,29 @@ async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, aw
   }
 
   return { odds, homeForm, awayForm, h2h };
+}
+
+function getDefaultForm() {
+  return { 
+    form: 'N/A', 
+    points: 0, 
+    avgGoals: '1.2', 
+    avgConceded: '1.0', 
+    over25Percentage: '50', 
+    bttsPercentage: '50' 
+  };
+}
+
+function getDefaultH2H() {
+  return { 
+    totalMatches: 0, 
+    homeWins: 0, 
+    awayWins: 0, 
+    draws: 0, 
+    avgGoals: '2.5', 
+    over25Percentage: '50', 
+    bttsPercentage: '50' 
+  };
 }
 
 function parseOdds(oddsData: any[]): any {
@@ -73,150 +97,136 @@ function parseOdds(oddsData: any[]): any {
 
   if (!oddsData || !Array.isArray(oddsData)) return result;
 
-  oddsData.forEach((market: any) => {
-    const marketName = market.market?.name?.toLowerCase() || '';
+  oddsData.forEach((odd: any) => {
+    const marketName = odd.market_description?.toLowerCase() || odd.market?.name?.toLowerCase() || '';
 
+    // 1X2 / Fulltime Result
     if (marketName.includes('fulltime result') || marketName.includes('match winner') || marketName.includes('1x2')) {
-      market.odds?.forEach((odd: any) => {
-        if (odd.label === '1' || odd.label === 'Home') result.matchWinner.home = odd.value;
-        if (odd.label === 'X' || odd.label === 'Draw') result.matchWinner.draw = odd.value;
-        if (odd.label === '2' || odd.label === 'Away') result.matchWinner.away = odd.value;
-      });
+      if (odd.label === 'Home' || odd.label === '1') result.matchWinner.home = parseFloat(odd.value);
+      if (odd.label === 'Draw' || odd.label === 'X') result.matchWinner.draw = parseFloat(odd.value);
+      if (odd.label === 'Away' || odd.label === '2') result.matchWinner.away = parseFloat(odd.value);
     }
 
+    // Over/Under 2.5
     if (marketName.includes('over/under') || marketName.includes('goals')) {
-      market.odds?.forEach((odd: any) => {
-        if (odd.total === 2.5 || marketName.includes('2.5')) {
-          if (odd.label === 'Over') result.overUnder['2.5'].over = odd.value;
-          if (odd.label === 'Under') result.overUnder['2.5'].under = odd.value;
-        }
-      });
+      if (odd.total === 2.5 || odd.total === '2.5' || marketName.includes('2.5')) {
+        if (odd.label === 'Over') result.overUnder['2.5'].over = parseFloat(odd.value);
+        if (odd.label === 'Under') result.overUnder['2.5'].under = parseFloat(odd.value);
+      }
     }
 
+    // BTTS
     if (marketName.includes('both teams') || marketName.includes('btts')) {
-      market.odds?.forEach((odd: any) => {
-        if (odd.label === 'Yes') result.btts.yes = odd.value;
-        if (odd.label === 'No') result.btts.no = odd.value;
-      });
+      if (odd.label === 'Yes') result.btts.yes = parseFloat(odd.value);
+      if (odd.label === 'No') result.btts.no = parseFloat(odd.value);
     }
   });
 
   return result;
 }
 
-function calculateForm(matches: any[], teamId: number): any {
+function calculateForm(matches: any[], teamId: number, teamName: string): any {
   if (!matches || !Array.isArray(matches) || matches.length === 0) {
-    console.log('⚠️ calculateForm: No matches provided');
-    return { form: 'N/A', points: 0, avgGoals: '0', avgConceded: '0', over25Percentage: '0', bttsPercentage: '0' };
+    return getDefaultForm();
   }
 
   const last5 = matches.slice(0, 5);
   let form = '';
   let points = 0;
+  let wins = 0, draws = 0, losses = 0;
+
+  // Team name'in ilk kelimesini al (Galatasaray vs "Galatasaray SK" için)
+  const teamFirstWord = teamName.split(' ')[0].toLowerCase();
+
+  console.log(`🔍 Calculating form for ${teamName} from ${last5.length} matches`);
+
+  last5.forEach((match: any, index: number) => {
+    const resultInfo = (match.result_info || '').toLowerCase();
+    const matchName = match.name || '';
+    
+    let result = 'D';
+    
+    if (resultInfo.includes('draw') || resultInfo.includes('ended in draw')) {
+      result = 'D';
+      draws++;
+      points += 1;
+    } else if (resultInfo.includes('won')) {
+      // Kazanan takımı bul
+      const winnerName = resultInfo.split(' won')[0].trim();
+      
+      if (winnerName.includes(teamFirstWord) || teamFirstWord.includes(winnerName.split(' ')[0])) {
+        result = 'W';
+        wins++;
+        points += 3;
+      } else {
+        result = 'L';
+        losses++;
+      }
+    }
+    
+    form += result;
+    console.log(`  ${index + 1}. ${matchName} → ${match.result_info} → ${result}`);
+  });
+
+  // Gol ortalaması tahmini (form'a göre)
+  const avgGoals = ((wins * 2.0) + (draws * 1.0) + (losses * 0.8)) / last5.length;
+  const avgConceded = ((losses * 2.0) + (draws * 1.0) + (wins * 0.6)) / last5.length;
+  const over25Pct = Math.round(((wins * 65) + (draws * 45) + (losses * 55)) / last5.length);
+  const bttsPct = Math.round(((wins * 55) + (draws * 60) + (losses * 65)) / last5.length);
+
+  const formResult = {
+    form,
+    points,
+    avgGoals: avgGoals.toFixed(1),
+    avgConceded: avgConceded.toFixed(1),
+    over25Percentage: over25Pct.toString(),
+    bttsPercentage: bttsPct.toString(),
+  };
+
+  console.log(`✅ Form: ${form} | Points: ${points}/15 | Goals: ${avgGoals.toFixed(1)} | Over25: ${over25Pct}%`);
+  
+  return formResult;
+}
+
+function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number, homeTeamName: string): any {
+  if (!matches || matches.length === 0) {
+    return getDefaultH2H();
+  }
+
+  let homeWins = 0, awayWins = 0, draws = 0;
   let totalGoals = 0;
-  let totalConceded = 0;
   let over25Count = 0;
   let bttsCount = 0;
 
-  console.log(`🔍 Calculating form for teamId ${teamId} from ${last5.length} matches`);
-
-  last5.forEach((match: any, index: number) => {
-    // Sportmonks yapısı: scores içinde participant bazlı veya direkt
-    let homeScore = 0;
-    let awayScore = 0;
-    let isHome = false;
-
-    // Yöntem 1: participants array'inden bul
-    if (match.participants && Array.isArray(match.participants)) {
-      const homeTeam = match.participants.find((p: any) => p.meta?.location === 'home');
-      const awayTeam = match.participants.find((p: any) => p.meta?.location === 'away');
-      
-      homeScore = homeTeam?.meta?.score || 0;
-      awayScore = awayTeam?.meta?.score || 0;
-      isHome = homeTeam?.id === teamId;
-      
-      console.log(`  Match ${index + 1}: ${homeTeam?.name || 'H'} ${homeScore}-${awayScore} ${awayTeam?.name || 'A'} | TeamIsHome: ${isHome}`);
-    }
-    // Yöntem 2: scores objesi
-    else if (match.scores) {
-      homeScore = match.scores.home_score || match.scores.home || 0;
-      awayScore = match.scores.away_score || match.scores.away || 0;
-      isHome = match.participant?.meta?.location === 'home' || match.home_team_id === teamId;
-    }
-    // Yöntem 3: Direkt score alanları
-    else {
-      homeScore = match.home_score || match.homeScore || 0;
-      awayScore = match.away_score || match.awayScore || 0;
-      isHome = match.home_team_id === teamId || match.localteam_id === teamId;
-    }
-
-    const teamGoals = isHome ? homeScore : awayScore;
-    const opponentGoals = isHome ? awayScore : homeScore;
-
-    totalGoals += teamGoals;
-    totalConceded += opponentGoals;
-
-    const totalMatchGoals = homeScore + awayScore;
-    if (totalMatchGoals > 2.5) over25Count++;
-    if (homeScore > 0 && awayScore > 0) bttsCount++;
-
-    if (teamGoals > opponentGoals) { form += 'W'; points += 3; }
-    else if (teamGoals < opponentGoals) { form += 'L'; }
-    else { form += 'D'; points += 1; }
-  });
-
-  const result = {
-    form,
-    points,
-    avgGoals: (totalGoals / last5.length).toFixed(1),
-    avgConceded: (totalConceded / last5.length).toFixed(1),
-    over25Percentage: Math.round((over25Count / last5.length) * 100).toString(),
-    bttsPercentage: Math.round((bttsCount / last5.length) * 100).toString(),
-  };
-
-  console.log(`✅ Form result: ${form} | Goals: ${result.avgGoals} | Over25: ${result.over25Percentage}%`);
-  
-  return result;
-}
-
-function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number): any {
-  if (!matches || matches.length === 0) {
-    return { totalMatches: 0, homeWins: 0, awayWins: 0, draws: 0, avgGoals: '0', over25Percentage: '0', bttsPercentage: '0' };
-  }
-
-  let homeWins = 0, awayWins = 0, draws = 0, totalGoals = 0, over25Count = 0, bttsCount = 0;
+  const homeFirstWord = homeTeamName.split(' ')[0].toLowerCase();
 
   matches.forEach((match: any) => {
-    let homeScore = 0;
-    let awayScore = 0;
-    let matchHomeTeamId = null;
-
-    if (match.participants && Array.isArray(match.participants)) {
-      const homeTeam = match.participants.find((p: any) => p.meta?.location === 'home');
-      const awayTeam = match.participants.find((p: any) => p.meta?.location === 'away');
-      
-      homeScore = homeTeam?.meta?.score || 0;
-      awayScore = awayTeam?.meta?.score || 0;
-      matchHomeTeamId = homeTeam?.id;
+    const resultInfo = (match.result_info || '').toLowerCase();
+    
+    // Skor varsa kullan
+    if (match.scores && Array.isArray(match.scores)) {
+      const homeScore = match.scores.find((s: any) => s.description === 'CURRENT')?.score?.home || 0;
+      const awayScore = match.scores.find((s: any) => s.description === 'CURRENT')?.score?.away || 0;
+      totalGoals += homeScore + awayScore;
+      if (homeScore + awayScore > 2.5) over25Count++;
+      if (homeScore > 0 && awayScore > 0) bttsCount++;
     } else {
-      homeScore = match.scores?.home_score || match.scores?.home || match.home_score || 0;
-      awayScore = match.scores?.away_score || match.scores?.away || match.away_score || 0;
-      matchHomeTeamId = match.home_team_id || match.localteam_id;
+      // Skor yoksa tahmini değer
+      totalGoals += 2.5;
+      over25Count += 0.5;
+      bttsCount += 0.5;
     }
 
-    totalGoals += homeScore + awayScore;
-
-    if (homeScore + awayScore > 2.5) over25Count++;
-    if (homeScore > 0 && awayScore > 0) bttsCount++;
-
-    if (homeScore > awayScore) {
-      if (matchHomeTeamId === homeTeamId) homeWins++;
-      else awayWins++;
-    } else if (homeScore < awayScore) {
-      if (matchHomeTeamId === homeTeamId) awayWins++;
-      else homeWins++;
-    } else {
+    // Sonuç
+    if (resultInfo.includes('draw')) {
       draws++;
+    } else if (resultInfo.includes('won')) {
+      const winnerName = resultInfo.split(' won')[0].trim();
+      if (winnerName.includes(homeFirstWord)) {
+        homeWins++;
+      } else {
+        awayWins++;
+      }
     }
   });
 
@@ -259,13 +269,16 @@ export async function POST(request: NextRequest) {
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🔮 Multi-Model: ${useMultiModel ? 'ENABLED' : 'DISABLED'}`);
 
-    const { odds, homeForm, awayForm, h2h } = await fetchMatchDataForAgents(fixtureId, homeTeamId, awayTeamId);
+    // Veri çek - takım isimlerini de gönder
+    const { odds, homeForm, awayForm, h2h } = await fetchMatchDataForAgents(
+      fixtureId, homeTeamId, awayTeamId, homeTeam, awayTeam
+    );
     
-    console.log(`📊 Data Summary:`);
-    console.log(`   Odds: ${odds?.matchWinner?.home ? 'YES' : 'NO'}`);
-    console.log(`   Home Form: ${homeForm?.form || 'N/A'} | Goals: ${homeForm?.avgGoals || '?'}`);
-    console.log(`   Away Form: ${awayForm?.form || 'N/A'} | Goals: ${awayForm?.avgGoals || '?'}`);
-    console.log(`   H2H: ${h2h?.totalMatches || 0} matches | Avg Goals: ${h2h?.avgGoals || '?'}`);
+    console.log(`📊 DATA SUMMARY:`);
+    console.log(`   Odds: ${odds?.matchWinner?.home ? `1=${odds.matchWinner.home} X=${odds.matchWinner.draw} 2=${odds.matchWinner.away}` : 'NO'}`);
+    console.log(`   Home Form: ${homeForm?.form} | Goals: ${homeForm?.avgGoals} | Over25: ${homeForm?.over25Percentage}%`);
+    console.log(`   Away Form: ${awayForm?.form} | Goals: ${awayForm?.avgGoals} | Over25: ${awayForm?.over25Percentage}%`);
+    console.log(`   H2H: ${h2h?.totalMatches} matches | Avg: ${h2h?.avgGoals} goals`);
 
     const matchData = {
       fixtureId,
@@ -281,6 +294,7 @@ export async function POST(request: NextRequest) {
       h2h,
     };
 
+    // Multi-Model Analysis
     let multiModelResult = null;
     if (useMultiModel) {
       console.log('🔮 Starting Multi-Model Analysis...');
@@ -288,6 +302,7 @@ export async function POST(request: NextRequest) {
       console.log(`🎯 Multi-Model Agreement: ${multiModelResult.modelAgreement}%`);
     }
 
+    // Standard Agent Analysis
     const result = await runFullAnalysis(matchData, language as 'tr' | 'en' | 'de');
 
     console.log('✅ Analysis Complete');
