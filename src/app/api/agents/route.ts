@@ -4,10 +4,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
+import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
-
-// ==================== DATA FETCHING (ONLY SPORTMONKS) ====================
 
 async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, awayTeamId: number) {
   let odds: any = {};
@@ -17,38 +16,29 @@ async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, aw
 
   try {
     if (SPORTMONKS_API_KEY) {
-      // Fixture with odds
-      const fixtureRes = await fetch(
-        `https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds`
-      );
-      const fixtureData = await fixtureRes.json();
+      const [fixtureRes, homeFormRes, awayFormRes, h2hRes] = await Promise.all([
+        fetch(`https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds`),
+        fetch(`https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
+        fetch(`https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
+        fetch(`https://api.sportmonks.com/v3/football/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}`),
+      ]);
+
+      const [fixtureData, homeFormData, awayFormData, h2hData] = await Promise.all([
+        fixtureRes.json(),
+        homeFormRes.json(),
+        awayFormRes.json(),
+        h2hRes.json(),
+      ]);
+
       if (fixtureData.data?.odds) {
         odds = parseOdds(fixtureData.data.odds);
       }
-
-      // Home team form
-      const homeFormRes = await fetch(
-        `https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`
-      );
-      const homeFormData = await homeFormRes.json();
       if (homeFormData.data?.latest) {
         homeForm = calculateForm(homeFormData.data.latest, 'home');
       }
-
-      // Away team form
-      const awayFormRes = await fetch(
-        `https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`
-      );
-      const awayFormData = await awayFormRes.json();
       if (awayFormData.data?.latest) {
         awayForm = calculateForm(awayFormData.data.latest, 'away');
       }
-
-      // H2H
-      const h2hRes = await fetch(
-        `https://api.sportmonks.com/v3/football/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}`
-      );
-      const h2hData = await h2hRes.json();
       if (h2hData.data) {
         h2h = calculateH2H(h2hData.data, homeTeamId, awayTeamId);
       }
@@ -65,8 +55,6 @@ function parseOdds(oddsData: any[]): any {
     matchWinner: {},
     overUnder: { '2.5': {} },
     btts: {},
-    doubleChance: {},
-    halfTime: {},
   };
 
   if (!oddsData || !Array.isArray(oddsData)) return result;
@@ -95,14 +83,6 @@ function parseOdds(oddsData: any[]): any {
       market.odds?.forEach((odd: any) => {
         if (odd.label === 'Yes') result.btts.yes = odd.value;
         if (odd.label === 'No') result.btts.no = odd.value;
-      });
-    }
-
-    if (marketName.includes('double chance')) {
-      market.odds?.forEach((odd: any) => {
-        if (odd.label === '1X') result.doubleChance.homeOrDraw = odd.value;
-        if (odd.label === 'X2') result.doubleChance.awayOrDraw = odd.value;
-        if (odd.label === '12') result.doubleChance.homeOrAway = odd.value;
       });
     }
   });
@@ -190,8 +170,6 @@ function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number): a
   };
 }
 
-// ==================== MAIN HANDLER ====================
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -199,7 +177,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Pro kontrolü
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
     const access = await checkUserAccess(session.user.email, ip);
 
@@ -211,7 +188,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league = '', language = 'en' } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league = '', language = 'en', useMultiModel = true } = body;
 
     if (!fixtureId) {
       return NextResponse.json({ error: 'Fixture ID required' }, { status: 400 });
@@ -219,20 +196,13 @@ export async function POST(request: NextRequest) {
 
     console.log('🤖 AGENT ANALYSIS REQUEST');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
-    console.log(`🌍 Language: ${language}`);
+    console.log(`🔮 Multi-Model: ${useMultiModel ? 'ENABLED' : 'DISABLED'}`);
 
-    // VERİLERİ ÇEK (SADECE SPORTMONKS)
-    console.log('📊 Fetching match data from Sportmonks...');
     const { odds, homeForm, awayForm, h2h } = await fetchMatchDataForAgents(fixtureId, homeTeamId, awayTeamId);
     
-    console.log(`✅ Data ready:`);
-    console.log(`   Odds: ${odds?.matchWinner?.home ? 'YES' : 'NO'}`);
-    console.log(`   Home Form: ${homeForm?.form || 'N/A'}`);
-    console.log(`   Away Form: ${awayForm?.form || 'N/A'}`);
-    console.log(`   H2H: ${h2h?.totalMatches || 0} matches`);
+    console.log(`✅ Data: Odds=${odds?.matchWinner?.home ? 'YES' : 'NO'}, Home=${homeForm?.form || 'N/A'}, Away=${awayForm?.form || 'N/A'}, H2H=${h2h?.totalMatches || 0}`);
 
-    // VERİLERİ AJANLARA AKTAR
-    const result = await runFullAnalysis({
+    const matchData = {
       fixtureId,
       homeTeam,
       awayTeam,
@@ -244,20 +214,33 @@ export async function POST(request: NextRequest) {
       homeForm,
       awayForm,
       h2h,
-    }, language as 'tr' | 'en' | 'de');
+    };
 
-    console.log('✅ Agent Analysis Complete');
-    console.log(`   Scout: ${result.reports.scout ? 'OK' : 'FAIL'}`);
-    console.log(`   Stats: ${result.reports.stats ? 'OK' : 'FAIL'}`);
-    console.log(`   Odds: ${result.reports.odds ? 'OK' : 'FAIL'}`);
-    console.log(`   Strategy: ${result.reports.strategy ? 'OK' : 'FAIL'}`);
-    console.log(`   Consensus: ${result.reports.consensus ? 'OK' : 'FAIL'}`);
+    let multiModelResult = null;
+    if (useMultiModel) {
+      console.log('🔮 Starting Multi-Model Analysis...');
+      multiModelResult = await runMultiModelAnalysis(matchData);
+      console.log(`🎯 Multi-Model Agreement: ${multiModelResult.modelAgreement}%`);
+    }
+
+    const result = await runFullAnalysis(matchData, language as 'tr' | 'en' | 'de');
+
+    console.log('✅ Analysis Complete');
 
     return NextResponse.json({
       success: result.success,
       reports: result.reports,
       timing: result.timing,
       errors: result.errors,
+      multiModel: multiModelResult ? {
+        enabled: true,
+        predictions: multiModelResult.predictions,
+        consensus: multiModelResult.consensus,
+        unanimousDecisions: multiModelResult.unanimousDecisions,
+        conflictingDecisions: multiModelResult.conflictingDecisions,
+        bestBet: multiModelResult.bestBet,
+        modelAgreement: multiModelResult.modelAgreement,
+      } : { enabled: false },
       dataUsed: {
         hasOdds: !!odds?.matchWinner?.home,
         hasHomeForm: !!homeForm?.form && homeForm.form !== 'N/A',
@@ -270,4 +253,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
