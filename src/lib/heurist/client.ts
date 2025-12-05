@@ -5,7 +5,6 @@ export type HeuristModel =
   | 'meta-llama/llama-3.3-70b-instruct'
   | 'nvidia/llama-3.1-nemotron-70b-instruct'
   | 'deepseek/deepseek-r1-distill-llama-70b'
-  | 'qwen/qwen-2.5-72b-instruct'
   | 'hermes-3-llama-3.1-70b';
 
 export interface HeuristMessage {
