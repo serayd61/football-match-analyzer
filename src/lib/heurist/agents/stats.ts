@@ -6,34 +6,126 @@ const PROMPTS = {
 
 GÖREV: Form ve istatistik verilerini analiz et, matematiksel sonuç çıkar.
 
-VERİLERİ ANALİZ ET VE JSON DÖNDÜR:
+SADECE JSON DÖNDÜR, BAŞKA BİR ŞEY YAZMA:
 {
-  "formAnalysis": "Form karşılaştırması",
+  "formAnalysis": "kısa form karşılaştırması",
   "goalExpectancy": 2.5,
-  "overUnder": "Over veya Under",
+  "overUnder": "Over",
   "confidence": 70,
-  "matchResult": "1 veya X veya 2",
-  "btts": "Yes veya No",
-  "keyStats": ["İstatistik 1", "İstatistik 2"]
+  "matchResult": "1",
+  "btts": "Yes",
+  "keyStats": ["istatistik 1", "istatistik 2"]
 }`,
 
   en: `You are a statistics analyst agent. Use ONLY the provided data.
 
 TASK: Analyze form and statistics, provide mathematical conclusions.
 
-ANALYZE AND RETURN JSON:
+RETURN ONLY JSON, NOTHING ELSE:
 {
-  "formAnalysis": "Form comparison",
+  "formAnalysis": "brief form comparison",
   "goalExpectancy": 2.5,
-  "overUnder": "Over or Under",
+  "overUnder": "Over",
   "confidence": 70,
-  "matchResult": "1 or X or 2",
-  "btts": "Yes or No",
-  "keyStats": ["Stat 1", "Stat 2"]
+  "matchResult": "1",
+  "btts": "Yes",
+  "keyStats": ["stat 1", "stat 2"]
 }`,
 
-  de: `Du bist ein Statistik-Analyst. Analysiere und gib JSON zurück.`,
+  de: `Du bist ein Statistik-Analyst. Analysiere und gib NUR JSON zurück, nichts anderes.
+
+{
+  "formAnalysis": "Formvergleich",
+  "goalExpectancy": 2.5,
+  "overUnder": "Over",
+  "confidence": 70,
+  "matchResult": "1",
+  "btts": "Yes",
+  "keyStats": ["Statistik 1", "Statistik 2"]
+}`,
 };
+
+// Robust JSON extraction
+function extractJSON(text: string): any | null {
+  if (!text) return null;
+  
+  // Step 1: Clean common issues
+  let cleaned = text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/\*\*/g, '')
+    .trim();
+  
+  // Step 2: Find JSON object
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  
+  let jsonStr = jsonMatch[0];
+  
+  // Step 3: Fix common JSON errors
+  // Fix trailing commas
+  jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+  
+  // Fix unquoted keys
+  jsonStr = jsonStr.replace(/(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+  
+  // Fix single quotes to double quotes
+  jsonStr = jsonStr.replace(/'/g, '"');
+  
+  // Fix newlines in strings
+  jsonStr = jsonStr.replace(/\n/g, ' ');
+  
+  // Fix control characters
+  jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' ');
+  
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e1) {
+    // Step 4: Try to extract individual fields manually
+    try {
+      const result: any = {};
+      
+      // Extract formAnalysis
+      const formMatch = jsonStr.match(/"formAnalysis"\s*:\s*"([^"]+)"/);
+      result.formAnalysis = formMatch ? formMatch[1] : 'Analysis unavailable';
+      
+      // Extract goalExpectancy
+      const goalMatch = jsonStr.match(/"goalExpectancy"\s*:\s*([\d.]+)/);
+      result.goalExpectancy = goalMatch ? parseFloat(goalMatch[1]) : 2.5;
+      
+      // Extract overUnder
+      const ouMatch = jsonStr.match(/"overUnder"\s*:\s*"?(Over|Under)"?/i);
+      result.overUnder = ouMatch ? ouMatch[1] : 'Over';
+      
+      // Extract confidence
+      const confMatch = jsonStr.match(/"confidence"\s*:\s*([\d.]+)/);
+      result.confidence = confMatch ? parseInt(confMatch[1]) : 60;
+      
+      // Extract matchResult
+      const mrMatch = jsonStr.match(/"matchResult"\s*:\s*"?([12X])"?/i);
+      result.matchResult = mrMatch ? mrMatch[1].toUpperCase() : 'X';
+      
+      // Extract btts
+      const bttsMatch = jsonStr.match(/"btts"\s*:\s*"?(Yes|No)"?/i);
+      result.btts = bttsMatch ? bttsMatch[1] : 'No';
+      
+      // Extract keyStats
+      const statsMatch = jsonStr.match(/"keyStats"\s*:\s*\[(.*?)\]/s);
+      if (statsMatch) {
+        const statsStr = statsMatch[1];
+        const stats = statsStr.match(/"([^"]+)"/g);
+        result.keyStats = stats ? stats.map(s => s.replace(/"/g, '')) : [];
+      } else {
+        result.keyStats = [];
+      }
+      
+      return result;
+    } catch (e2) {
+      console.error('Manual JSON extraction failed:', e2);
+      return null;
+    }
+  }
+}
 
 export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
   const homeGoals = parseFloat(matchData.homeForm?.avgGoals || '1.2');
@@ -62,51 +154,7 @@ AWAY TEAM (${matchData.awayTeam}):
 - Over 2.5 rate: ${matchData.awayForm?.over25Percentage || 'N/A'}%
 - BTTS rate: ${matchData.awayForm?.bttsPercentage || 'N/A'}%
 
-H2H: ${matchData.h2h?.totalMatches || 0} matches, Avg goals: ${matchData.h2h?.avgGoals || 'N/A'}
+H2H: ${matchData.h2h?.totalMatches || 0} matches
 
-Expected total goals: ${expectedTotal.toFixed(2)}
-Average Over 2.5 rate: ${avgOver25}%
-
-Analyze and return JSON:`;
-
-  const messages: HeuristMessage[] = [
-    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
-    { role: 'user', content: userPrompt },
-  ];
-
-  try {
-    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 800 });
-    
-    if (response) {
-      const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        // goalExpectancy'yi number olarak zorla
-        if (typeof parsed.goalExpectancy === 'string') {
-          parsed.goalExpectancy = parseFloat(parsed.goalExpectancy);
-        }
-        if (!parsed.goalExpectancy || isNaN(parsed.goalExpectancy)) {
-          parsed.goalExpectancy = expectedTotal;
-        }
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.error('Stats agent error:', error);
-  }
-
-  // Fallback - hesaplanmış değerler
-  return {
-    formAnalysis: `${matchData.homeTeam}: ${matchData.homeForm?.form || 'N/A'} vs ${matchData.awayTeam}: ${matchData.awayForm?.form || 'N/A'}`,
-    goalExpectancy: expectedTotal,
-    overUnder: expectedTotal >= 2.5 ? 'Over' : 'Under',
-    confidence: Math.round(50 + Math.abs(expectedTotal - 2.5) * 10),
-    matchResult: homeGoals > awayGoals ? '1' : (awayGoals > homeGoals ? '2' : 'X'),
-    btts: (homeGoals > 0.8 && awayGoals > 0.8) ? 'Yes' : 'No',
-    keyStats: [
-      `Expected goals: ${expectedTotal.toFixed(1)}`,
-      `Over 2.5 avg: ${avgOver25}%`
-    ],
-  };
-}
+Expected total: ${expectedTotal.toFixed(2)}
+Over 2.5 avg: $
