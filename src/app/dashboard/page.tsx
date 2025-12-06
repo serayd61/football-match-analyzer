@@ -70,7 +70,7 @@ export default function DashboardPage() {
       analyze: 'Analiz Et',
       analyzing: 'Analiz ediliyor...',
       aiAgents: 'AI Ajanları',
-      standardAnalysis: 'Standart',
+      standardAnalysis: 'AI Konsensüs',
       agentAnalysis: 'Ajan Analizi',
       noMatches: 'Maç bulunamadı',
       loading: 'Yükleniyor...',
@@ -98,6 +98,13 @@ export default function DashboardPage() {
       unlimitedAnalysis: 'Sınırsız analiz + AI Ajanları',
       weightedConsensus: 'Ağırlıklı Konsensüs',
       agentContributions: 'Agent Katkıları',
+      aiConsensus: 'AI Konsensüs',
+      modelVotes: 'Model Oyları',
+      unanimous: 'Oybirliği',
+      majority: 'Çoğunluk',
+      split: 'Bölünmüş',
+      riskLevel: 'Risk Seviyesi',
+      overallAnalysis: 'Genel Analiz',
     },
     en: {
       todayMatches: 'Matches',
@@ -106,7 +113,7 @@ export default function DashboardPage() {
       analyze: 'Analyze',
       analyzing: 'Analyzing...',
       aiAgents: 'AI Agents',
-      standardAnalysis: 'Standard',
+      standardAnalysis: 'AI Consensus',
       agentAnalysis: 'Agent Analysis',
       noMatches: 'No matches found',
       loading: 'Loading...',
@@ -134,6 +141,13 @@ export default function DashboardPage() {
       unlimitedAnalysis: 'Unlimited analyses + AI Agents',
       weightedConsensus: 'Weighted Consensus',
       agentContributions: 'Agent Contributions',
+      aiConsensus: 'AI Consensus',
+      modelVotes: 'Model Votes',
+      unanimous: 'Unanimous',
+      majority: 'Majority',
+      split: 'Split',
+      riskLevel: 'Risk Level',
+      overallAnalysis: 'Overall Analysis',
     },
     de: {
       todayMatches: 'Spiele',
@@ -142,7 +156,7 @@ export default function DashboardPage() {
       analyze: 'Analysieren',
       analyzing: 'Analysiere...',
       aiAgents: 'KI-Agenten',
-      standardAnalysis: 'Standard',
+      standardAnalysis: 'KI-Konsens',
       agentAnalysis: 'Agent-Analyse',
       noMatches: 'Keine Spiele gefunden',
       loading: 'Laden...',
@@ -170,6 +184,13 @@ export default function DashboardPage() {
       unlimitedAnalysis: 'Unbegrenzte Analysen + KI-Agenten',
       weightedConsensus: 'Gewichteter Konsens',
       agentContributions: 'Agent-Beiträge',
+      aiConsensus: 'KI-Konsens',
+      modelVotes: 'Modell-Stimmen',
+      unanimous: 'Einstimmig',
+      majority: 'Mehrheit',
+      split: 'Geteilt',
+      riskLevel: 'Risikostufe',
+      overallAnalysis: 'Gesamtanalyse',
     },
   };
 
@@ -276,7 +297,7 @@ export default function DashboardPage() {
         }
       } else if (data.success) {
         setAnalysis(data);
-        fetchUserProfile(); // Refresh usage
+        fetchUserProfile();
       }
     } catch (error) {
       console.error('Analysis error:', error);
@@ -318,24 +339,6 @@ export default function DashboardPage() {
     setAgentLoading(false);
   };
 
-  // Toggle favorite
-  const toggleFavorite = async (fixtureId: number) => {
-    try {
-      await fetch('/api/user/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fixtureId }),
-      });
-      if (favoriteIds.includes(fixtureId)) {
-        setFavoriteIds(favoriteIds.filter((id) => id !== fixtureId));
-      } else {
-        setFavoriteIds([...favoriteIds, fixtureId]);
-      }
-    } catch (error) {
-      console.error('Favorite error:', error);
-    }
-  };
-
   // Loading state
   if (status === 'loading') {
     return (
@@ -350,7 +353,7 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  // ========== TRIAL EXPIRED - BLOCK ACCESS ==========
+  // Trial Expired Block
   if (userProfile?.trialExpired && !userProfile?.isPro) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -360,34 +363,15 @@ export default function DashboardPage() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">{l.trialExpired}</h1>
           <p className="text-gray-400 mb-8">{l.trialExpiredMsg}</p>
-          
-          <div className="bg-gray-700/50 rounded-2xl p-4 mb-6">
-            <div className="text-3xl font-bold text-white mb-1">
-              {lang === 'tr' ? '₺299' : lang === 'de' ? '€9,99' : '$9.99'}
-              <span className="text-lg text-gray-400 font-normal">/{lang === 'tr' ? 'ay' : lang === 'de' ? 'Mo' : 'mo'}</span>
-            </div>
-            <p className="text-sm text-gray-400">{l.unlimitedAnalysis}</p>
-          </div>
-          
-          <Link
-            href="/pricing"
-            className="block w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 transition-all mb-4"
-          >
+          <Link href="/pricing" className="block w-full py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl">
             {l.goToPricing}
           </Link>
-          
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
-          >
-            {l.logout}
-          </button>
         </div>
       </div>
     );
   }
 
-  // Get weighted consensus data (support both new and old format)
+  // Get consensus data for agent analysis
   const getConsensusData = () => {
     if (!agentAnalysis?.reports) return null;
     return agentAnalysis.reports.weightedConsensus || agentAnalysis.reports.consensus || null;
@@ -395,108 +379,70 @@ export default function DashboardPage() {
 
   const consensusData = getConsensusData();
 
+  // Helper: Get vote status text
+  const getVoteStatus = (votes: number, total: number) => {
+    if (votes === total) return { text: l.unanimous, color: 'text-green-400', bg: 'bg-green-500/20' };
+    if (votes >= total * 0.75) return { text: l.majority, color: 'text-blue-400', bg: 'bg-blue-500/20' };
+    return { text: l.split, color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
+  };
+
+  // Helper: Get risk level color
+  const getRiskColor = (risk: string) => {
+    const r = risk?.toLowerCase();
+    if (r === 'low') return 'text-green-400 bg-green-500/20';
+    if (r === 'medium') return 'text-yellow-400 bg-yellow-500/20';
+    return 'text-red-400 bg-red-500/20';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
       {/* Header */}
       <header className="bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
                 <span className="text-xl">⚽</span>
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">Football Analytics</h1>
-                <div className="flex items-center gap-1">
-                  {userProfile?.isPro ? (
-                    <span className="px-1.5 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-bold rounded text-black">PRO</span>
-                  ) : userProfile?.isTrial ? (
-                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-[10px] font-medium rounded text-purple-400">TRIAL</span>
-                  ) : null}
-                </div>
+                {userProfile?.isPro && (
+                  <span className="px-1.5 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-bold rounded text-black">PRO</span>
+                )}
               </div>
             </div>
 
-            {/* Right Side */}
             <div className="flex items-center gap-4">
-              {/* Usage Stats (Trial) */}
-              {userProfile?.isTrial && (
-                <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl">
-                  <div className="text-right">
-                    <div className="text-xs text-purple-400">{userProfile.trialDaysLeft} {l.daysLeft}</div>
-                    <div className="text-sm font-bold text-white">{userProfile.analysesUsed}/{userProfile.analysesLimit}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Upgrade Button */}
               {!userProfile?.isPro && (
-                <Link
-                  href="/pricing"
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-semibold rounded-xl shadow-lg shadow-yellow-500/20 transition-all"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  {l.upgradeToPro}
+                <Link href="/pricing" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold rounded-xl">
+                  ⭐ {l.upgradeToPro}
                 </Link>
               )}
-
               <LanguageSelector />
-
-              {/* Profile Menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50 transition-all"
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                     {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-medium text-white">{session.user?.name || 'User'}</div>
-                    <div className="text-xs text-gray-400">
-                      {userProfile?.isPro ? l.proMember : userProfile?.isTrial ? l.trialMember : ''}
-                    </div>
-                  </div>
-                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <span className="hidden sm:block text-sm text-white">{session.user?.name}</span>
                 </button>
-
-                {/* Dropdown */}
                 {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50">
                     <div className="p-4 border-b border-gray-700">
                       <div className="font-medium text-white">{session.user?.name}</div>
                       <div className="text-sm text-gray-400">{session.user?.email}</div>
                     </div>
                     <div className="py-2">
-                      <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-gray-700/50 transition-colors">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        {l.profile}
-                      </Link>
-                      
+                      <Link href="/profile" className="block px-4 py-2 text-gray-300 hover:bg-gray-700/50">{l.profile}</Link>
                       {!userProfile?.isPro && (
-                        <Link href="/pricing" className="flex items-center gap-3 px-4 py-2 text-yellow-400 hover:bg-gray-700/50 transition-colors">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          {l.upgradeToPro}
-                        </Link>
+                        <Link href="/pricing" className="block px-4 py-2 text-yellow-400 hover:bg-gray-700/50">{l.upgradeToPro}</Link>
                       )}
                     </div>
                     <div className="border-t border-gray-700 py-2">
-                      <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-gray-700/50 transition-colors w-full"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
+                      <button onClick={() => signOut({ callbackUrl: '/login' })} className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-700/50">
                         {l.logout}
                       </button>
                     </div>
@@ -512,55 +458,40 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Trial Banner */}
         {userProfile?.isTrial && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-orange-500/10 border border-purple-500/20 rounded-2xl">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-orange-500 rounded-xl flex items-center justify-center">
-                  <span className="text-xl">⏳</span>
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">
-                    {l.trialBanner}: {userProfile.trialDaysLeft} {l.daysLeft}
-                  </h2>
-                  <p className="text-sm text-gray-400">
-                    {userProfile.analysesUsed}/{userProfile.analysesLimit} {l.analysesUsed}
-                  </p>
-                </div>
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-orange-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏳</span>
+              <div>
+                <div className="text-white font-bold">{l.trialBanner}: {userProfile.trialDaysLeft} {l.daysLeft}</div>
+                <div className="text-sm text-gray-400">{userProfile.analysesUsed}/{userProfile.analysesLimit} {l.analysesUsed}</div>
               </div>
-              <Link
-                href="/pricing"
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-xl shadow-lg shadow-green-500/30"
-              >
-                🚀 {l.goToPricing}
-              </Link>
             </div>
+            <Link href="/pricing" className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl">
+              🚀 {l.goToPricing}
+            </Link>
           </div>
         )}
 
         {/* Filters */}
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl p-4 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2 bg-gray-700/50 rounded-xl px-3 py-2">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-white outline-none"
-              />
-            </div>
-            <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                placeholder={l.search}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-700/50 text-white placeholder-gray-500 px-4 py-2 rounded-xl outline-none"
-              />
-            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-gray-700/50 text-white px-3 py-2 rounded-xl outline-none"
+            />
+            <input
+              type="text"
+              placeholder={l.search}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 min-w-[200px] bg-gray-700/50 text-white placeholder-gray-500 px-4 py-2 rounded-xl outline-none"
+            />
             <select
               value={selectedLeague}
               onChange={(e) => setSelectedLeague(e.target.value)}
-              className="bg-gray-700/50 text-white px-4 py-2 rounded-xl outline-none border border-gray-600/50"
+              className="bg-gray-700/50 text-white px-4 py-2 rounded-xl outline-none"
             >
               <option value="all">{l.allLeagues}</option>
               {leagues.map((league) => (
@@ -581,7 +512,7 @@ export default function DashboardPage() {
               </h2>
             </div>
             
-            <div className="max-h-[600px] overflow-y-auto">
+            <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-700/50">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
@@ -592,40 +523,32 @@ export default function DashboardPage() {
                   <p>{l.noMatches}</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-700/50">
-                  {filteredMatches.map((match) => (
-                    <div
-                      key={match.id}
-                      onClick={() => setSelectedMatch(match)}
-                      className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${
-                        selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-2 border-green-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-white">
-                            {match.homeTeam} vs {match.awayTeam}
-                          </div>
-                          <div className="text-sm text-gray-400 mt-1">{match.league}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
-                          </div>
+                filteredMatches.map((match) => (
+                  <div
+                    key={match.id}
+                    onClick={() => setSelectedMatch(match)}
+                    className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${
+                      selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-2 border-green-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium text-white">{match.homeTeam} vs {match.awayTeam}</div>
+                        <div className="text-sm text-gray-400 mt-1">{match.league}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }}
-                          disabled={analyzing || !userProfile?.canAnalyze}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            userProfile?.canAnalyze 
-                              ? 'bg-green-600 hover:bg-green-500' 
-                              : 'bg-gray-700 cursor-not-allowed opacity-50'
-                          }`}
-                        >
-                          {analyzing && selectedMatch?.id === match.id ? '⏳' : '🤖'}
-                        </button>
                       </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }}
+                        disabled={analyzing || !userProfile?.canAnalyze}
+                        className={`px-3 py-2 rounded-lg ${userProfile?.canAnalyze ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-700 opacity-50'}`}
+                      >
+                        {analyzing && selectedMatch?.id === match.id ? '⏳' : '🤖'}
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -646,45 +569,31 @@ export default function DashboardPage() {
                     <button
                       onClick={() => analyzeMatch(selectedMatch)}
                       disabled={analyzing || !userProfile?.canAnalyze}
-                      className={`flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                        userProfile?.canAnalyze 
-                          ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400' 
-                          : 'bg-gray-700 cursor-not-allowed opacity-50'
+                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
+                        userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500' : 'bg-gray-700 opacity-50'
                       }`}
                     >
-                      <span>🤖</span>
-                      {analyzing ? l.analyzing : l.analyze}
+                      🤖 {analyzing ? l.analyzing : l.analyze}
                     </button>
                     <button
                       onClick={runAgentAnalysis}
                       disabled={agentLoading || !userProfile?.canUseAgents}
-                      className={`flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                        userProfile?.canUseAgents 
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400' 
-                          : 'bg-gray-700 cursor-not-allowed opacity-50'
+                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
+                        userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500' : 'bg-gray-700 opacity-50'
                       }`}
-                      title={!userProfile?.canUseAgents ? l.onlyPro : ''}
                     >
-                      <span>🧠</span>
-                      {agentLoading ? '...' : l.aiAgents}
-                      {!userProfile?.canUseAgents && (
-                        <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>
-                      )}
+                      🧠 {agentLoading ? '...' : l.aiAgents}
+                      {!userProfile?.canUseAgents && <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>}
                     </button>
                   </div>
                 </div>
 
                 {/* Analysis Content */}
                 <div className="p-4 max-h-[500px] overflow-y-auto">
-                  {/* Error Message */}
                   {analysisError && (
                     <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
                       <p className="text-red-400">{analysisError}</p>
-                      {(analysisError === l.limitReached || analysisError === l.trialExpired) && (
-                        <Link href="/pricing" className="inline-block mt-2 text-yellow-400 hover:underline">
-                          {l.goToPricing} →
-                        </Link>
-                      )}
+                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm">{l.goToPricing} →</Link>
                     </div>
                   )}
 
@@ -700,64 +609,160 @@ export default function DashboardPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => setAgentMode(false)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              !agentMode ? 'bg-green-600 text-white' : 'bg-gray-700/50 text-gray-400'
-                            }`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${!agentMode ? 'bg-green-600 text-white' : 'bg-gray-700/50 text-gray-400'}`}
                           >
                             {l.standardAnalysis}
                           </button>
                           <button
                             onClick={() => setAgentMode(true)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              agentMode ? 'bg-purple-600 text-white' : 'bg-gray-700/50 text-gray-400'
-                            }`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${agentMode ? 'bg-purple-600 text-white' : 'bg-gray-700/50 text-gray-400'}`}
                           >
                             {l.agentAnalysis}
                           </button>
                         </div>
                       )}
 
-                      {/* Standard Analysis Results */}
+                      {/* ============ STANDARD ANALYSIS - DETAILED ============ */}
                       {!agentMode && analysis && (
                         <div className="space-y-4">
+                          {/* AI Model Status */}
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { key: 'claude', label: 'Claude', icon: '🟣' },
+                              { key: 'openai', label: 'GPT-4', icon: '🟢' },
+                              { key: 'gemini', label: 'Gemini', icon: '🔵' },
+                              { key: 'heurist', label: 'Heurist', icon: '🟠' },
+                            ].map((model) => (
+                              <div key={model.key} className={`p-2 rounded-lg text-center ${
+                                analysis.aiStatus?.[model.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
+                              }`}>
+                                <div className="text-lg">{model.icon}</div>
+                                <div className={`text-xs font-medium ${analysis.aiStatus?.[model.key] ? 'text-green-400' : 'text-red-400'}`}>
+                                  {model.label} {analysis.aiStatus?.[model.key] ? '✓' : '✗'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* AI Consensus Header */}
+                          <div className="text-center py-2 bg-green-500/10 border border-green-500/30 rounded-xl">
+                            <div className="text-xs text-green-400">
+                              🤖 {l.aiConsensus}: 4 AI Models Voting
+                            </div>
+                          </div>
+
+                          {/* Predictions Grid */}
                           <div className="grid grid-cols-2 gap-3">
+                            {/* Match Result */}
                             {analysis.analysis?.matchResult && (
                               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
                                 <div className="text-xs text-gray-400">{l.matchResult}</div>
-                                <div className="text-2xl font-bold text-blue-400">{analysis.analysis.matchResult.prediction}</div>
+                                <div className="text-3xl font-bold text-blue-400">{analysis.analysis.matchResult.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.matchResult.confidence}%</div>
+                                {analysis.analysis.matchResult.votes && (
+                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                    getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).bg
+                                  } ${getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).color}`}>
+                                    {analysis.analysis.matchResult.votes}/{analysis.analysis.matchResult.totalVotes || 4} {l.modelVotes}
+                                  </div>
+                                )}
                               </div>
                             )}
+
+                            {/* Over/Under */}
                             {analysis.analysis?.overUnder25 && (
                               <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
                                 <div className="text-xs text-gray-400">{l.overUnder}</div>
-                                <div className="text-2xl font-bold text-green-400">{analysis.analysis.overUnder25.prediction}</div>
+                                <div className="text-3xl font-bold text-green-400">{analysis.analysis.overUnder25.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.overUnder25.confidence}%</div>
+                                {analysis.analysis.overUnder25.votes && (
+                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                    getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).bg
+                                  } ${getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).color}`}>
+                                    {analysis.analysis.overUnder25.votes}/{analysis.analysis.overUnder25.totalVotes || 4} {l.modelVotes}
+                                  </div>
+                                )}
                               </div>
                             )}
+
+                            {/* BTTS */}
                             {analysis.analysis?.btts && (
                               <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
                                 <div className="text-xs text-gray-400">{l.btts}</div>
-                                <div className="text-2xl font-bold text-orange-400">{analysis.analysis.btts.prediction}</div>
+                                <div className="text-3xl font-bold text-orange-400">{analysis.analysis.btts.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.btts.confidence}%</div>
+                                {analysis.analysis.btts.votes && (
+                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                    getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).bg
+                                  } ${getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).color}`}>
+                                    {analysis.analysis.btts.votes}/{analysis.analysis.btts.totalVotes || 4} {l.modelVotes}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Risk Level */}
+                            {analysis.analysis?.riskLevel && (
+                              <div className="bg-gray-500/10 border border-gray-500/30 rounded-xl p-3">
+                                <div className="text-xs text-gray-400">{l.riskLevel}</div>
+                                <div className={`text-2xl font-bold ${getRiskColor(analysis.analysis.riskLevel).split(' ')[0]}`}>
+                                  {analysis.analysis.riskLevel}
+                                </div>
                               </div>
                             )}
                           </div>
 
+                          {/* Best Bet */}
                           {analysis.analysis?.bestBets?.[0] && (
                             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
                               <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
-                              <div className="font-bold text-white">{analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}</div>
+                              <div className="font-bold text-white text-lg">
+                                {analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}
+                              </div>
                               <div className="text-sm text-gray-300">{analysis.analysis.bestBets[0].confidence}% {l.confidence}</div>
+                              {analysis.analysis.bestBets[0].reasoning && (
+                                <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-800/50 rounded-lg">
+                                  {analysis.analysis.bestBets[0].reasoning}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Individual Model Predictions */}
+                          {analysis.individualAnalyses && (
+                            <div className="space-y-2">
+                              <div className="text-sm text-gray-400 font-medium">🔍 Individual AI Predictions:</div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(analysis.individualAnalyses).map(([model, pred]: [string, any]) => (
+                                  <div key={model} className="bg-gray-700/30 rounded-lg p-2 text-xs">
+                                    <div className="font-medium text-white capitalize mb-1">
+                                      {model === 'openai' ? 'GPT-4' : model}
+                                    </div>
+                                    <div className="space-y-0.5 text-gray-400">
+                                      <div>Result: <span className="text-blue-400">{pred.matchResult?.prediction}</span></div>
+                                      <div>O/U: <span className="text-green-400">{pred.overUnder25?.prediction}</span></div>
+                                      <div>BTTS: <span className="text-orange-400">{pred.btts?.prediction}</span></div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Overall Analysis */}
+                          {analysis.analysis?.overallAnalyses?.[0] && (
+                            <div className="bg-gray-700/30 rounded-xl p-4">
+                              <div className="text-sm text-gray-400 mb-2">📝 {l.overallAnalysis}</div>
+                              <p className="text-sm text-gray-300">{analysis.analysis.overallAnalyses[0]}</p>
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* Agent Analysis Results - NEW WEIGHTED SYSTEM */}
+                      {/* ============ AGENT ANALYSIS ============ */}
                       {agentMode && agentAnalysis && (
                         <div className="space-y-4">
-                          {/* Agent Status with Weights */}
+                          {/* Agent Status */}
                           <div className="grid grid-cols-4 gap-2">
                             {[
                               { key: 'scout', label: 'Scout', weight: '', icon: '🔍' },
@@ -795,34 +800,30 @@ export default function DashboardPage() {
                                 {(consensusData.matchResult || consensusData.matchWinner) && (
                                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
                                     <div className="text-xs text-gray-400">{l.matchResult}</div>
-                                    <div className="text-2xl font-bold text-blue-400">
-                                      {consensusData.matchResult?.prediction || consensusData.matchWinner?.prediction || '-'}
+                                    <div className="text-3xl font-bold text-blue-400">
+                                      {consensusData.matchResult?.prediction || consensusData.matchWinner?.prediction}
                                     </div>
                                     <div className="text-sm text-gray-300">
-                                      {consensusData.matchResult?.confidence || consensusData.matchWinner?.confidence || 0}%
+                                      {consensusData.matchResult?.confidence || consensusData.matchWinner?.confidence}%
                                     </div>
                                   </div>
                                 )}
                                 {(consensusData.overUnder || consensusData.overUnder25) && (
                                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
                                     <div className="text-xs text-gray-400">{l.overUnder}</div>
-                                    <div className="text-2xl font-bold text-green-400">
-                                      {consensusData.overUnder?.prediction || consensusData.overUnder25?.prediction || '-'}
+                                    <div className="text-3xl font-bold text-green-400">
+                                      {consensusData.overUnder?.prediction || consensusData.overUnder25?.prediction}
                                     </div>
                                     <div className="text-sm text-gray-300">
-                                      {consensusData.overUnder?.confidence || consensusData.overUnder25?.confidence || 0}%
+                                      {consensusData.overUnder?.confidence || consensusData.overUnder25?.confidence}%
                                     </div>
                                   </div>
                                 )}
                                 {consensusData.btts && (
                                   <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
                                     <div className="text-xs text-gray-400">{l.btts}</div>
-                                    <div className="text-2xl font-bold text-orange-400">
-                                      {consensusData.btts.prediction || '-'}
-                                    </div>
-                                    <div className="text-sm text-gray-300">
-                                      {consensusData.btts.confidence || 0}%
-                                    </div>
+                                    <div className="text-3xl font-bold text-orange-400">{consensusData.btts.prediction}</div>
+                                    <div className="text-sm text-gray-300">{consensusData.btts.confidence}%</div>
                                   </div>
                                 )}
                               </div>
@@ -831,61 +832,27 @@ export default function DashboardPage() {
                               {consensusData.bestBet && (
                                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
                                   <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
-                                  <div className="font-bold text-white">
+                                  <div className="font-bold text-white text-lg">
                                     {consensusData.bestBet.type}: {consensusData.bestBet.selection}
                                   </div>
-                                  <div className="text-sm text-gray-300">
-                                    {consensusData.bestBet.confidence}% {l.confidence}
-                                  </div>
+                                  <div className="text-sm text-gray-300">{consensusData.bestBet.confidence}% {l.confidence}</div>
                                   {consensusData.bestBet.reasoning && (
-                                    <div className="text-xs text-gray-400 mt-2">
-                                      {consensusData.bestBet.reasoning}
-                                    </div>
+                                    <div className="text-xs text-gray-400 mt-2">{consensusData.bestBet.reasoning}</div>
                                   )}
                                 </div>
                               )}
 
                               {/* Agent Contributions */}
-                              {(consensusData.agentContributions || agentAnalysis.weights) && (
+                              {consensusData.agentContributions && (
                                 <div className="bg-gray-700/30 rounded-xl p-3">
                                   <div className="text-xs text-gray-400 mb-2">{l.agentContributions}:</div>
-                                  <div className="grid grid-cols-3 gap-2 text-sm">
-                                    <div className="text-center">
-                                      <span className="text-green-400">📊 Stats</span>
-                                      <div className="text-white font-bold">
-                                        {agentAnalysis.weights?.stats || '40%'}
-                                      </div>
-                                    </div>
-                                    <div className="text-center">
-                                      <span className="text-yellow-400">💰 Odds</span>
-                                      <div className="text-white font-bold">
-                                        {agentAnalysis.weights?.odds || '35%'}
-                                      </div>
-                                    </div>
-                                    <div className="text-center">
-                                      <span className="text-purple-400">🧠 Strategy</span>
-                                      <div className="text-white font-bold">
-                                        {agentAnalysis.weights?.strategy || '25%'}
-                                      </div>
-                                    </div>
+                                  <div className="grid grid-cols-3 gap-2 text-sm text-center">
+                                    <div><span className="text-green-400">📊 Stats</span><div className="text-white font-bold">40%</div></div>
+                                    <div><span className="text-yellow-400">💰 Odds</span><div className="text-white font-bold">35%</div></div>
+                                    <div><span className="text-purple-400">🧠 Strategy</span><div className="text-white font-bold">25%</div></div>
                                   </div>
                                 </div>
                               )}
-
-                              {/* Overall Analysis */}
-                              {consensusData.overallAnalysis && (
-                                <div className="bg-gray-700/50 rounded-xl p-4">
-                                  <p className="text-sm text-gray-300">{consensusData.overallAnalysis}</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* No Consensus Available */}
-                          {!consensusData && (
-                            <div className="text-center py-8 text-gray-400">
-                              <div className="text-4xl mb-2">⚠️</div>
-                              <p>Consensus data not available</p>
                             </div>
                           )}
                         </div>
@@ -911,10 +878,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Click outside to close profile menu */}
-      {showProfileMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-      )}
+      {showProfileMenu && <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>}
     </div>
   );
 }
