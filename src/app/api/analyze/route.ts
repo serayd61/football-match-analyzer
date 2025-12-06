@@ -527,7 +527,7 @@ export async function POST(request: NextRequest) {
     console.log(`   Claude: ${claude ? '✅' : '❌'} | GPT: ${gpt ? '✅' : '❌'} | Gemini: ${gemini ? '✅' : '❌'} | Heurist: ${heurist?.success ? '✅' : '❌'}`);
 
     // Calculate consensus
-    const allAnalyses = [claude, gpt, gemini, heurist?.reports?.consensus].filter(a => a !== null);
+    const allAnalyses = [claude, gpt, gemini, heurist?.reports?.weightedConsensus].filter(a => a !== null);
     console.log(`⚖️ Consensus from ${allAnalyses.length} sources`);
     
     const consensus = calculateConsensus(allAnalyses);
