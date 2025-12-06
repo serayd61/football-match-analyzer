@@ -1,68 +1,89 @@
 import { heurist, HeuristMessage } from '../client';
-import { Language, MatchData, OddsReport } from '../types';
+import { MatchData } from '../types';
 
-const SYSTEM_PROMPT = `You are a JSON API. Return ONLY valid JSON.
-NEVER use markdown. NEVER use ** or backticks.
-NEVER write explanations. Return ONLY a JSON object.`;
+const PROMPTS = {
+  tr: `Sen bir bahis oranları analisti ajanısın. Oranları değer açısından analiz et.
 
-export async function runOddsAgent(
-  match: MatchData,
-  language: Language = 'en'
-): Promise<OddsReport | null> {
-  
-  const hasOdds = match.odds?.matchWinner?.home !== undefined;
-  const homeGoals = parseFloat(match.homeForm?.avgGoals || '0') || 1.2;
-  const awayGoals = parseFloat(match.awayForm?.avgGoals || '0') || 1.0;
-  const totalExpected = homeGoals + awayGoals;
+JSON DÖNDÜR:
+{
+  "oddsAnalysis": "Oran değerlendirmesi",
+  "recommendation": "Over veya Under",
+  "confidence": 70,
+  "matchWinnerValue": "home veya draw veya away",
+  "bttsValue": "yes veya no",
+  "valueRating": "Düşük/Orta/Yüksek"
+}`,
 
-  // Fallback template
-  const template: OddsReport = {
-    valuesBets: hasOdds ? [
-      { market: "Ust/Alt 2.5", selection: totalExpected >= 2.5 ? "Ust" : "Alt", odds: 1.85, fairOdds: 1.80, value: 2.8, confidence: 70 }
-    ] : [],
-    oddsMovement: [],
-    bookmakerConsensus: [
-      { market: "Toplam Gol", consensus: totalExpected >= 2.5 ? "Ust 2.5 bekleniyor" : "Alt 2.5 bekleniyor", confidence: Math.round(50 + Math.abs(totalExpected - 2.5) * 10) }
-    ],
-    sharpMoney: [],
-    summary: hasOdds 
-      ? `Oran verisi mevcut. Beklenen toplam gol: ${totalExpected.toFixed(1)}.`
-      : `Oran verisi mevcut degil. Form verilerine gore beklenen toplam gol: ${totalExpected.toFixed(1)}.`
-  };
+  en: `You are a betting odds analyst agent. Analyze odds for value.
+
+RETURN JSON:
+{
+  "oddsAnalysis": "Odds assessment",
+  "recommendation": "Over or Under",
+  "confidence": 70,
+  "matchWinnerValue": "home or draw or away",
+  "bttsValue": "yes or no",
+  "valueRating": "Low/Medium/High"
+}`,
+
+  de: `Du bist ein Quoten-Analyst. Analysiere und gib JSON zurück.`,
+};
+
+export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
+  const homeOdds = matchData.odds?.matchWinner?.home || 2.0;
+  const drawOdds = matchData.odds?.matchWinner?.draw || 3.5;
+  const awayOdds = matchData.odds?.matchWinner?.away || 3.5;
+  const overOdds = matchData.odds?.overUnder?.['2.5']?.over || 1.9;
+  const underOdds = matchData.odds?.overUnder?.['2.5']?.under || 1.9;
+
+  const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
+
+ODDS:
+- Home win (1): ${homeOdds}
+- Draw (X): ${drawOdds}
+- Away win (2): ${awayOdds}
+- Over 2.5: ${overOdds}
+- Under 2.5: ${underOdds}
+- BTTS Yes: ${matchData.odds?.btts?.yes || 'N/A'}
+- BTTS No: ${matchData.odds?.btts?.no || 'N/A'}
+
+FORM CONTEXT:
+- Home form: ${matchData.homeForm?.form || 'N/A'}, Goals: ${matchData.homeForm?.avgGoals || 'N/A'}
+- Away form: ${matchData.awayForm?.form || 'N/A'}, Goals: ${matchData.awayForm?.avgGoals || 'N/A'}
+
+Analyze odds value and return JSON:`;
 
   const messages: HeuristMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: `Match: ${match.homeTeam} vs ${match.awayTeam}
-
-Odds available: ${hasOdds ? 'YES' : 'NO'}
-${hasOdds ? `1X2: ${match.odds?.matchWinner?.home} / ${match.odds?.matchWinner?.draw} / ${match.odds?.matchWinner?.away}` : ''}
-
-Expected total goals: ${totalExpected.toFixed(1)}
-
-Return ONLY this JSON:
-${JSON.stringify(template, null, 2)}` },
+    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'user', content: userPrompt },
   ];
 
   try {
-    const response = await heurist.chat(messages, { 
-      model: 'meta-llama/llama-3.3-70b-instruct',
-      temperature: 0.1,
-      maxTokens: 1000
-    });
-
-    if (!response) return template;
-
-    try {
-      let cleaned = response.replace(/\*\*/g, '').replace(/`/g, '').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 800 });
+    
+    if (response) {
+      const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as OddsReport;
+        return JSON.parse(jsonMatch[0]);
       }
-    } catch {}
-
-    return template;
+    }
   } catch (error) {
     console.error('Odds agent error:', error);
-    return template;
   }
+
+  // Fallback
+  const lowestOdds = Math.min(homeOdds, drawOdds, awayOdds);
+  let matchWinnerValue = 'home';
+  if (lowestOdds === drawOdds) matchWinnerValue = 'draw';
+  if (lowestOdds === awayOdds) matchWinnerValue = 'away';
+
+  return {
+    oddsAnalysis: `Home: ${homeOdds}, Draw: ${drawOdds}, Away: ${awayOdds}`,
+    recommendation: overOdds < underOdds ? 'Over' : 'Under',
+    confidence: 65,
+    matchWinnerValue,
+    bttsValue: 'yes',
+    valueRating: 'Medium',
+  };
 }
