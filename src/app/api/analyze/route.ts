@@ -63,7 +63,7 @@ const getAnalysisPrompt = (
 🎯 ANALİZ TALİMATLARI:
 - VERİLERE DAYALI analiz yap
 - Form verilerini DİKKATLİCE değerlendir
-- Güven oranları %50-90 arasında GERÇEKÇI olsun
+- Güven oranları %50-85 arasında GERÇEKÇI olsun
 - Her tahmin için SOMUT gerekçe ver
 
 SADECE JSON DÖNDÜR:
@@ -110,7 +110,7 @@ SADECE JSON DÖNDÜR:
 🎯 ANALYSIS INSTRUCTIONS:
 - Analyze based on PROVIDED DATA
 - Evaluate form data CAREFULLY
-- Confidence should be REALISTIC between 50-90%
+- Confidence should be REALISTIC between 50-85%
 - Give CONCRETE reasoning for each prediction
 
 RETURN ONLY JSON:
@@ -342,7 +342,6 @@ function calculateFormFromResultInfo(matches: any[], teamName: string): any {
     }
   });
 
-  // Gol tahminleri form'a göre
   const avgGoals = ((wins * 2.1) + (draws * 1.1) + (losses * 0.7)) / last5.length;
   const avgConceded = ((losses * 2.0) + (draws * 1.1) + (wins * 0.6)) / last5.length;
   const over25Pct = Math.round(((wins * 65) + (draws * 40) + (losses * 50)) / last5.length);
@@ -386,7 +385,6 @@ function calculateH2HFromResultInfo(matches: any[], homeTeamName: string, awayTe
     }
   });
 
-  // H2H gol tahmini
   const totalMatches = matches.length;
   const avgGoals = 2.3 + (homeWins + awayWins) * 0.1;
   const over25Pct = Math.round(45 + (homeWins + awayWins) * 3);
@@ -403,7 +401,7 @@ function calculateH2HFromResultInfo(matches: any[], homeTeamName: string, awayTe
   };
 }
 
-// ==================== CONSENSUS ====================
+// ==================== WEIGHTED CONSENSUS ====================
 
 function calculateConsensus(analyses: any[]): any {
   const valid = analyses.filter(a => a !== null);
@@ -413,42 +411,117 @@ function calculateConsensus(analyses: any[]): any {
   const fields = ['matchResult', 'overUnder25', 'btts'];
 
   fields.forEach(field => {
-    const votes: Record<string, { count: number; conf: number; reasons: string[] }> = {};
+    // Ağırlıklı skor hesaplama
+    const scores: Record<string, { 
+      weightedScore: number; 
+      count: number; 
+      reasons: string[]; 
+      totalConf: number 
+    }> = {};
     
     valid.forEach(a => {
       if (a[field]?.prediction) {
         const pred = a[field].prediction;
-        if (!votes[pred]) votes[pred] = { count: 0, conf: 0, reasons: [] };
-        votes[pred].count++;
-        votes[pred].conf += a[field].confidence || 60;
-        if (a[field].reasoning) votes[pred].reasons.push(a[field].reasoning);
+        // Güveni 50-85 arasında sınırla
+        const conf = Math.min(Math.max(a[field].confidence || 60, 50), 85);
+        
+        if (!scores[pred]) {
+          scores[pred] = { weightedScore: 0, count: 0, reasons: [], totalConf: 0 };
+        }
+        
+        scores[pred].weightedScore += conf; // Güven skorunu topla
+        scores[pred].count++;
+        scores[pred].totalConf += conf;
+        if (a[field].reasoning) scores[pred].reasons.push(a[field].reasoning);
       }
     });
 
-    const sorted = Object.entries(votes).sort((a, b) => b[1].count - a[1].count || b[1].conf - a[1].conf);
+    // En yüksek AĞIRLIKLI SKORA göre sırala
+    const sorted = Object.entries(scores).sort((a, b) => {
+      // Önce ağırlıklı skora bak (güven toplamı)
+      if (b[1].weightedScore !== a[1].weightedScore) {
+        return b[1].weightedScore - a[1].weightedScore;
+      }
+      // Eşitse oy sayısına bak
+      return b[1].count - a[1].count;
+    });
+
     if (sorted.length > 0) {
       const [pred, data] = sorted[0];
+      const totalVotes = valid.length;
+      const avgConf = Math.round(data.totalConf / data.count);
+      
+      // Final güven hesaplama
+      let finalConfidence = avgConf;
+      const voteRatio = data.count / totalVotes;
+      
+      // Oy oranına göre güven ayarla
+      if (voteRatio < 0.5) {
+        // Çoğunluk yok - güveni %20 düşür
+        finalConfidence = Math.round(finalConfidence * 0.8);
+      } else if (voteRatio >= 0.75) {
+        // Güçlü çoğunluk - güveni biraz artır
+        finalConfidence = Math.min(finalConfidence + 3, 85);
+      }
+      
+      if (data.count === totalVotes) {
+        // Oybirliği - güveni artır ama max 85
+        finalConfidence = Math.min(finalConfidence + 5, 85);
+      }
+
+      // 45-85 arasında normalize et
+      finalConfidence = Math.min(Math.max(finalConfidence, 45), 85);
+
       consensus[field] = {
         prediction: pred,
-        confidence: Math.round(data.conf / data.count),
+        confidence: finalConfidence,
         votes: data.count,
-        totalVotes: valid.length,
-        unanimous: data.count === valid.length,
+        totalVotes,
+        unanimous: data.count === totalVotes,
         reasoning: data.reasons[0] || '',
       };
+
+      console.log(`   ${field}: ${pred} (${data.count}/${totalVotes} votes, weighted: ${data.weightedScore}, conf: ${finalConfidence}%)`);
     }
   });
 
-  // Best Bets
-  consensus.bestBets = valid
+  // Best Bets - Unique ve en yüksek güvenli
+  const allBets = valid
     .filter(a => a.bestBet)
-    .map(a => a.bestBet)
-    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-    .slice(0, 3);
+    .map(a => ({
+      ...a.bestBet,
+      confidence: Math.min(Math.max(a.bestBet.confidence || 60, 50), 85)
+    }))
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+  // Aynı tip+seçim kombinasyonunu tekrarlama
+  const uniqueBets: any[] = [];
+  const seenBets = new Set<string>();
+  
+  allBets.forEach(bet => {
+    const key = `${bet.type}-${bet.selection}`.toLowerCase();
+    if (!seenBets.has(key) && uniqueBets.length < 3) {
+      seenBets.add(key);
+      uniqueBets.push(bet);
+    }
+  });
+
+  consensus.bestBets = uniqueBets;
 
   // Overall analyses
   consensus.overallAnalyses = valid.filter(a => a.overallAnalysis).map(a => a.overallAnalysis);
-  consensus.riskLevel = valid.find(a => a.riskLevel)?.riskLevel || 'Medium';
+  
+  // Risk level - çoğunluğa göre
+  const riskVotes: Record<string, number> = {};
+  valid.forEach(a => {
+    if (a.riskLevel) {
+      const risk = a.riskLevel.toLowerCase().replace('düşük', 'low').replace('orta', 'medium').replace('yüksek', 'high');
+      riskVotes[risk] = (riskVotes[risk] || 0) + 1;
+    }
+  });
+  
+  const sortedRisk = Object.entries(riskVotes).sort((a, b) => b[1] - a[1]);
+  consensus.riskLevel = sortedRisk[0]?.[0] || 'Medium';
 
   return consensus;
 }
@@ -483,7 +556,7 @@ export async function POST(request: NextRequest) {
     console.log(`\n🚀 ANALYSIS: ${homeTeam} vs ${awayTeam} [${language}]`);
 
     // Cache check (skip if forceRefresh)
-    const cacheKey = `analysis_v2_${fixtureId}_${language}`;
+    const cacheKey = `analysis_v3_${fixtureId}_${language}`;
     
     if (!forceRefresh) {
       const { data: cached } = await supabaseAdmin
@@ -526,9 +599,25 @@ export async function POST(request: NextRequest) {
 
     console.log(`   Claude: ${claude ? '✅' : '❌'} | GPT: ${gpt ? '✅' : '❌'} | Gemini: ${gemini ? '✅' : '❌'} | Heurist: ${heurist?.success ? '✅' : '❌'}`);
 
-    // Calculate consensus
-    const allAnalyses = [claude, gpt, gemini, heurist?.reports?.weightedConsensus].filter(a => a !== null);
-    console.log(`⚖️ Consensus from ${allAnalyses.length} sources`);
+    // Heurist'ten gelen weighted consensus'u al
+    const heuristConsensus = heurist?.reports?.weightedConsensus;
+    
+    // Heurist consensus'u standart formata çevir
+    let heuristStandard = null;
+    if (heuristConsensus) {
+      heuristStandard = {
+        matchResult: heuristConsensus.matchResult || heuristConsensus.matchWinner,
+        overUnder25: heuristConsensus.overUnder || heuristConsensus.overUnder25,
+        btts: heuristConsensus.btts,
+        bestBet: heuristConsensus.bestBet,
+        riskLevel: heurist?.reports?.strategy?.riskAssessment || 'Medium',
+        overallAnalysis: heurist?.reports?.strategy?.overallStrategy || '',
+      };
+    }
+
+    // Calculate consensus with all 4 sources
+    const allAnalyses = [claude, gpt, gemini, heuristStandard].filter(a => a !== null);
+    console.log(`⚖️ Weighted consensus from ${allAnalyses.length} sources`);
     
     const consensus = calculateConsensus(allAnalyses);
     if (!consensus) {
@@ -547,9 +636,9 @@ export async function POST(request: NextRequest) {
       language,
     };
 
-    // Cache for 4 hours (shorter than before)
+    // Cache for 3 hours
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 4);
+    expiresAt.setHours(expiresAt.getHours() + 3);
     
     await supabaseAdmin.from('analysis_cache').upsert({
       cache_key: cacheKey,
