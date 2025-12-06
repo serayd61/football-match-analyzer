@@ -12,6 +12,31 @@ const AGENT_WEIGHTS = {
   strategy: 0.25, // %25 - Risk ve strateji
 };
 
+// Çok dilli metinler
+const CONSENSUS_LABELS = {
+  tr: {
+    weightedAnalysis: 'Stats (%40) + Odds (%35) + Strategy (%25) ağırlıklı analiz',
+    agentConsensus: '3 agent konsensüsü',
+    goalStatsBased: 'Gol istatistiklerine dayalı',
+    bestBetReason: 'En yüksek ağırlıklı güven skoruna sahip bahis',
+    weight: 'ağırlık',
+  },
+  en: {
+    weightedAnalysis: 'Stats (40%) + Odds (35%) + Strategy (25%) weighted analysis',
+    agentConsensus: '3 agent consensus',
+    goalStatsBased: 'Based on goal statistics',
+    bestBetReason: 'Highest weighted confidence score',
+    weight: 'weight',
+  },
+  de: {
+    weightedAnalysis: 'Stats (40%) + Odds (35%) + Strategy (25%) gewichtete Analyse',
+    agentConsensus: '3-Agenten-Konsens',
+    goalStatsBased: 'Basierend auf Torstatistiken',
+    bestBetReason: 'Höchster gewichteter Konfidenzwert',
+    weight: 'Gewichtung',
+  },
+};
+
 export interface AgentReport {
   scout?: any;
   stats?: any;
@@ -29,8 +54,14 @@ export interface AnalysisResult {
 }
 
 // Ağırlıklı konsensüs hesaplama (AI değil, matematik)
-function calculateWeightedConsensus(stats: any, odds: any, strategy: any): any {
+function calculateWeightedConsensus(
+  stats: any, 
+  odds: any, 
+  strategy: any, 
+  language: 'tr' | 'en' | 'de' = 'en'
+): any {
   const weights = AGENT_WEIGHTS;
+  const labels = CONSENSUS_LABELS[language] || CONSENSUS_LABELS.en;
   
   // Over/Under hesaplama
   const overUnderVotes = {
@@ -140,28 +171,28 @@ function calculateWeightedConsensus(stats: any, odds: any, strategy: any): any {
     overUnder: {
       prediction: overUnderPrediction,
       confidence: overUnderConfidence,
-      reasoning: `Stats (%40) + Odds (%35) + Strategy (%25) ağırlıklı analiz`,
+      reasoning: labels.weightedAnalysis,
     },
     matchResult: {
       prediction: matchResultPrediction,
       confidence: matchResultConfidence,
-      reasoning: `3 agent konsensüsü`,
+      reasoning: labels.agentConsensus,
     },
     btts: {
       prediction: bttsPrediction,
       confidence: bttsConfidence,
-      reasoning: `Gol istatistiklerine dayalı`,
+      reasoning: labels.goalStatsBased,
     },
     bestBet: {
       type: bestBet.type,
       selection: bestBet.selection,
       confidence: bestBet.confidence,
-      reasoning: `En yüksek ağırlıklı güven skoruna sahip bahis`,
+      reasoning: labels.bestBetReason,
     },
     agentContributions: {
-      stats: `%${Math.round(weights.stats * 100)} ağırlık`,
-      odds: `%${Math.round(weights.odds * 100)} ağırlık`,
-      strategy: `%${Math.round(weights.strategy * 100)} ağırlık`,
+      stats: `${Math.round(weights.stats * 100)}% ${labels.weight}`,
+      odds: `${Math.round(weights.odds * 100)}% ${labels.weight}`,
+      strategy: `${Math.round(weights.strategy * 100)}% ${labels.weight}`,
     },
   };
 }
@@ -204,7 +235,7 @@ export async function runFullAnalysis(
 
     // Phase 3: Weighted Consensus (Kod ile hesaplama - AI değil)
     console.log('⚖️ Phase 3: Calculating weighted consensus...');
-    const weightedConsensus = calculateWeightedConsensus(statsResult, oddsResult, strategyResult);
+    const weightedConsensus = calculateWeightedConsensus(statsResult, oddsResult, strategyResult, language);
     reports.weightedConsensus = weightedConsensus;
     console.log(`✅ Phase 3 complete: Consensus calculated`);
 
