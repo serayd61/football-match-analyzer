@@ -1,83 +1,112 @@
 import { heurist, HeuristMessage } from '../client';
-import { Language, MatchData, StatsReport } from '../types';
+import { MatchData } from '../types';
 
-const SYSTEM_PROMPT = `You are a JSON API. Return ONLY valid JSON.
-NEVER use markdown. NEVER use ** or backticks.
-NEVER write explanations. Return ONLY a JSON object.`;
+const PROMPTS = {
+  tr: `Sen bir istatistik analisti ajanısın. SADECE verilen verileri kullan.
 
-export async function runStatsAgent(
-  match: MatchData,
-  language: Language = 'en'
-): Promise<StatsReport | null> {
-  
-  // Gerçek verileri çıkar
-  const homeGoals = parseFloat(match.homeForm?.avgGoals || '0') || 1.2;
-  const awayGoals = parseFloat(match.awayForm?.avgGoals || '0') || 1.0;
+GÖREV: Form ve istatistik verilerini analiz et, matematiksel sonuç çıkar.
+
+VERİLERİ ANALİZ ET VE JSON DÖNDÜR:
+{
+  "formAnalysis": "Form karşılaştırması",
+  "goalExpectancy": 2.5,
+  "overUnder": "Over veya Under",
+  "confidence": 70,
+  "matchResult": "1 veya X veya 2",
+  "btts": "Yes veya No",
+  "keyStats": ["İstatistik 1", "İstatistik 2"]
+}`,
+
+  en: `You are a statistics analyst agent. Use ONLY the provided data.
+
+TASK: Analyze form and statistics, provide mathematical conclusions.
+
+ANALYZE AND RETURN JSON:
+{
+  "formAnalysis": "Form comparison",
+  "goalExpectancy": 2.5,
+  "overUnder": "Over or Under",
+  "confidence": 70,
+  "matchResult": "1 or X or 2",
+  "btts": "Yes or No",
+  "keyStats": ["Stat 1", "Stat 2"]
+}`,
+
+  de: `Du bist ein Statistik-Analyst. Analysiere und gib JSON zurück.`,
+};
+
+export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
+  const homeGoals = parseFloat(matchData.homeForm?.avgGoals || '1.2');
+  const awayGoals = parseFloat(matchData.awayForm?.avgGoals || '1.0');
   const expectedTotal = homeGoals + awayGoals;
-  const homeOver25 = parseInt(match.homeForm?.over25Percentage || '50') || 50;
-  const awayOver25 = parseInt(match.awayForm?.over25Percentage || '50') || 50;
+  
+  const homeOver25 = parseInt(matchData.homeForm?.over25Percentage || '50');
+  const awayOver25 = parseInt(matchData.awayForm?.over25Percentage || '50');
   const avgOver25 = (homeOver25 + awayOver25) / 2;
 
-  // Fallback template with real calculations
-  const template: StatsReport = {
-    homeStrength: Math.min(85, Math.round(homeGoals * 25 + 40)),
-    awayStrength: Math.min(80, Math.round(awayGoals * 25 + 35)),
-    formComparison: `${match.homeTeam} (${match.homeForm?.form || 'N/A'}) vs ${match.awayTeam} (${match.awayForm?.form || 'N/A'})`,
-    goalExpectancy: {
-      home: homeGoals,
-      away: awayGoals,
-      total: expectedTotal
-    },
-    keyStats: [
-      { stat: "Gol ortalamasi", home: homeGoals.toFixed(1), away: awayGoals.toFixed(1), advantage: homeGoals > awayGoals ? "home" : "away" },
-      { stat: "Ust 2.5 orani", home: `${homeOver25}%`, away: `${awayOver25}%`, advantage: homeOver25 > awayOver25 ? "home" : "away" }
-    ],
-    patterns: [
-      `Beklenen toplam gol: ${expectedTotal.toFixed(1)}`,
-      `Ust 2.5 olasiligi: %${avgOver25.toFixed(0)}`
-    ],
-    summary: `Istatistiklere gore bu macta ${expectedTotal.toFixed(1)} civari gol bekleniyor. ${expectedTotal >= 2.5 ? 'Ust' : 'Alt'} 2.5 daha olasi.`
-  };
+  const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
+
+HOME TEAM (${matchData.homeTeam}):
+- Form: ${matchData.homeForm?.form || 'N/A'}
+- Points: ${matchData.homeForm?.points || 0}/15
+- Goals per game: ${matchData.homeForm?.avgGoals || 'N/A'}
+- Conceded per game: ${matchData.homeForm?.avgConceded || 'N/A'}
+- Over 2.5 rate: ${matchData.homeForm?.over25Percentage || 'N/A'}%
+- BTTS rate: ${matchData.homeForm?.bttsPercentage || 'N/A'}%
+
+AWAY TEAM (${matchData.awayTeam}):
+- Form: ${matchData.awayForm?.form || 'N/A'}
+- Points: ${matchData.awayForm?.points || 0}/15
+- Goals per game: ${matchData.awayForm?.avgGoals || 'N/A'}
+- Conceded per game: ${matchData.awayForm?.avgConceded || 'N/A'}
+- Over 2.5 rate: ${matchData.awayForm?.over25Percentage || 'N/A'}%
+- BTTS rate: ${matchData.awayForm?.bttsPercentage || 'N/A'}%
+
+H2H: ${matchData.h2h?.totalMatches || 0} matches, Avg goals: ${matchData.h2h?.avgGoals || 'N/A'}
+
+Expected total goals: ${expectedTotal.toFixed(2)}
+Average Over 2.5 rate: ${avgOver25}%
+
+Analyze and return JSON:`;
 
   const messages: HeuristMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: `Match: ${match.homeTeam} vs ${match.awayTeam}
-
-STATISTICS (use these exact numbers):
-- ${match.homeTeam} avg goals: ${homeGoals}
-- ${match.awayTeam} avg goals: ${awayGoals}
-- Expected total: ${expectedTotal.toFixed(1)}
-- Over 2.5 probability: ${avgOver25}%
-
-Return ONLY this JSON:
-${JSON.stringify(template, null, 2)}` },
+    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'user', content: userPrompt },
   ];
 
   try {
-    const response = await heurist.chat(messages, { 
-      model: 'meta-llama/llama-3.3-70b-instruct',
-      temperature: 0.1,
-      maxTokens: 1200
-    });
-
-    if (!response) return template;
-
-    try {
-      let cleaned = response.replace(/\*\*/g, '').replace(/`/g, '').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 800 });
+    
+    if (response) {
+      const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]) as StatsReport;
-        // goalExpectancy kontrolü
-        if (!parsed.goalExpectancy?.total) {
-          parsed.goalExpectancy = template.goalExpectancy;
+        const parsed = JSON.parse(jsonMatch[0]);
+        // goalExpectancy'yi number olarak zorla
+        if (typeof parsed.goalExpectancy === 'string') {
+          parsed.goalExpectancy = parseFloat(parsed.goalExpectancy);
+        }
+        if (!parsed.goalExpectancy || isNaN(parsed.goalExpectancy)) {
+          parsed.goalExpectancy = expectedTotal;
         }
         return parsed;
       }
-    } catch {}
-
-    return template;
+    }
   } catch (error) {
     console.error('Stats agent error:', error);
-    return template;
   }
+
+  // Fallback - hesaplanmış değerler
+  return {
+    formAnalysis: `${matchData.homeTeam}: ${matchData.homeForm?.form || 'N/A'} vs ${matchData.awayTeam}: ${matchData.awayForm?.form || 'N/A'}`,
+    goalExpectancy: expectedTotal,
+    overUnder: expectedTotal >= 2.5 ? 'Over' : 'Under',
+    confidence: Math.round(50 + Math.abs(expectedTotal - 2.5) * 10),
+    matchResult: homeGoals > awayGoals ? '1' : (awayGoals > homeGoals ? '2' : 'X'),
+    btts: (homeGoals > 0.8 && awayGoals > 0.8) ? 'Yes' : 'No',
+    keyStats: [
+      `Expected goals: ${expectedTotal.toFixed(1)}`,
+      `Over 2.5 avg: ${avgOver25}%`
+    ],
+  };
 }
