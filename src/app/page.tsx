@@ -295,7 +295,7 @@ export default function HomePage() {
         },
         pro: {
           name: 'Pro',
-          price: '$9.99',
+          price: '$19.99',
           period: '/mo',
           popular: 'Most Popular',
           features: ['Unlimited analyses', '7 AI models (incl. Agents)', 'Value bet detection', 'Weighted consensus', 'Priority support', 'Telegram notifications'],
@@ -403,7 +403,7 @@ export default function HomePage() {
         title: 'Einfache Preisgestaltung',
         subtitle: 'Keine versteckten Gebühren',
         free: { name: 'Testversion', price: '€0', period: '/7 Tage', features: ['3 Analysen pro Tag', '4 KI-Modelle', 'Grundlegende Statistiken', 'E-Mail-Support'], cta: 'Kostenlos testen' },
-        pro: { name: 'Pro', price: '€9,99', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '7 KI-Modelle (inkl. Agenten)', 'Value-Bet-Erkennung', 'Gewichteter Konsens', 'Prioritäts-Support', 'Telegram-Benachrichtigungen'], cta: 'Pro werden' },
+        pro: { name: 'Pro', price: '$19.90', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '7 KI-Modelle (inkl. Agenten)', 'Value-Bet-Erkennung', 'Gewichteter Konsens', 'Prioritäts-Support', 'Telegram-Benachrichtigungen'], cta: 'Pro werden' },
       },
       testimonials: {
         title: 'Was unsere Nutzer sagen',
