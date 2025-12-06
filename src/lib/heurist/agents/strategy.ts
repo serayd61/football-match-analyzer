@@ -1,74 +1,92 @@
 import { heurist, HeuristMessage } from '../client';
-import { Language, MatchData, StrategyReport } from '../types';
+import { MatchData } from '../types';
 
-const SYSTEM_PROMPT = `You are a JSON API. Return ONLY valid JSON.
-NEVER use markdown. NEVER use ** or backticks.
-NEVER write explanations. Return ONLY a JSON object.`;
+const PROMPTS = {
+  tr: `Sen bir bahis strateji uzmanı ajanısın. Diğer analizleri değerlendir ve strateji öner.
+
+JSON DÖNDÜR:
+{
+  "riskAssessment": "Düşük/Orta/Yüksek",
+  "recommendedBets": [
+    {"type": "Bahis türü", "selection": "Seçim", "confidence": 75, "reasoning": "Gerekçe"}
+  ],
+  "avoidBets": ["Kaçınılacak bahis"],
+  "stakeSuggestion": "Düşük/Orta/Yüksek",
+  "overallStrategy": "Strateji özeti"
+}`,
+
+  en: `You are a betting strategy expert agent. Evaluate analyses and suggest strategy.
+
+RETURN JSON:
+{
+  "riskAssessment": "Low/Medium/High",
+  "recommendedBets": [
+    {"type": "Bet type", "selection": "Selection", "confidence": 75, "reasoning": "Reason"}
+  ],
+  "avoidBets": ["Bets to avoid"],
+  "stakeSuggestion": "Low/Medium/High",
+  "overallStrategy": "Strategy summary"
+}`,
+
+  de: `Du bist ein Strategie-Experte. Analysiere und gib JSON zurück.`,
+};
 
 export async function runStrategyAgent(
-  match: MatchData,
-  previousReports: { scout: any; stats: any; odds: any },
-  language: Language = 'en'
-): Promise<StrategyReport | null> {
-  
-  const goalExpectancy = parseFloat(previousReports.stats?.goalExpectancy?.total) || 2.5;
-  const overUnder = goalExpectancy >= 2.5 ? 'Over' : 'Under';
+  matchData: MatchData,
+  previousReports: { scout?: any; stats?: any; odds?: any },
+  language: 'tr' | 'en' | 'de' = 'en'
+): Promise<any> {
+  const { stats, odds } = previousReports;
 
-  // Fallback template
-  const template: StrategyReport = {
-    recommendedBets: [
-      {
-        type: `${overUnder} 2.5 Gol`,
-        selection: overUnder,
-        confidence: Math.min(85, Math.round(50 + Math.abs(goalExpectancy - 2.5) * 15)),
-        stake: 3,
-        reasoning: `Beklenen gol ${goalExpectancy.toFixed(1)} - ${overUnder} 2.5 oneriliyor`,
-        expectedValue: 1.05
-      }
-    ],
-    avoidBets: [
-      { type: "Kesin Skor", reason: "Yuksek belirsizlik" }
-    ],
-    riskAssessment: {
-      level: "medium",
-      factors: ["Form verileri analiz edildi", "H2H verisi mevcut"]
-    },
-    bankrollAdvice: "3 birim stake, %5 max exposure - orta guvenilirlik",
-    summary: `${match.homeTeam} vs ${match.awayTeam} maci icin ${overUnder} 2.5 gol bahsi onerilmektedir. Beklenen toplam gol: ${goalExpectancy.toFixed(1)}.`
-  };
+  const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
+
+STATS AGENT ANALYSIS:
+- Goal expectancy: ${stats?.goalExpectancy || 'N/A'}
+- Over/Under recommendation: ${stats?.overUnder || 'N/A'}
+- Match result: ${stats?.matchResult || 'N/A'}
+- BTTS: ${stats?.btts || 'N/A'}
+- Confidence: ${stats?.confidence || 'N/A'}%
+
+ODDS AGENT ANALYSIS:
+- Recommendation: ${odds?.recommendation || 'N/A'}
+- Match winner value: ${odds?.matchWinnerValue || 'N/A'}
+- BTTS value: ${odds?.bttsValue || 'N/A'}
+- Value rating: ${odds?.valueRating || 'N/A'}
+
+Based on these analyses, provide betting strategy:`;
 
   const messages: HeuristMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: `Match: ${match.homeTeam} vs ${match.awayTeam}
-
-Stats analysis:
-- Expected goals: ${goalExpectancy.toFixed(1)}
-- Recommendation: ${overUnder} 2.5
-
-Return ONLY this JSON:
-${JSON.stringify(template, null, 2)}` },
+    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'user', content: userPrompt },
   ];
 
   try {
-    const response = await heurist.chat(messages, { 
-      model: 'meta-llama/llama-3.3-70b-instruct',
-      temperature: 0.1,
-      maxTokens: 1200
-    });
-
-    if (!response) return template;
-
-    try {
-      let cleaned = response.replace(/\*\*/g, '').replace(/`/g, '').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 800 });
+    
+    if (response) {
+      const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as StrategyReport;
+        return JSON.parse(jsonMatch[0]);
       }
-    } catch {}
-
-    return template;
+    }
   } catch (error) {
     console.error('Strategy agent error:', error);
-    return template;
   }
+
+  // Fallback
+  return {
+    riskAssessment: 'Medium',
+    recommendedBets: [
+      {
+        type: 'Over/Under 2.5',
+        selection: stats?.overUnder || 'Over',
+        confidence: stats?.confidence || 65,
+        reasoning: 'Based on statistical analysis',
+      }
+    ],
+    avoidBets: ['Exact score bets'],
+    stakeSuggestion: 'Medium',
+    overallStrategy: 'Follow the statistical consensus',
+  };
 }
