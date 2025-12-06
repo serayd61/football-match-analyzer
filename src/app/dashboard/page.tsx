@@ -96,6 +96,8 @@ export default function DashboardPage() {
       goToPricing: "Pro'ya Geç",
       onlyPro: 'Sadece Pro',
       unlimitedAnalysis: 'Sınırsız analiz + AI Ajanları',
+      weightedConsensus: 'Ağırlıklı Konsensüs',
+      agentContributions: 'Agent Katkıları',
     },
     en: {
       todayMatches: 'Matches',
@@ -130,6 +132,8 @@ export default function DashboardPage() {
       goToPricing: 'Go Pro',
       onlyPro: 'Pro Only',
       unlimitedAnalysis: 'Unlimited analyses + AI Agents',
+      weightedConsensus: 'Weighted Consensus',
+      agentContributions: 'Agent Contributions',
     },
     de: {
       todayMatches: 'Spiele',
@@ -164,6 +168,8 @@ export default function DashboardPage() {
       goToPricing: 'Pro werden',
       onlyPro: 'Nur Pro',
       unlimitedAnalysis: 'Unbegrenzte Analysen + KI-Agenten',
+      weightedConsensus: 'Gewichteter Konsens',
+      agentContributions: 'Agent-Beiträge',
     },
   };
 
@@ -381,6 +387,14 @@ export default function DashboardPage() {
     );
   }
 
+  // Get weighted consensus data (support both new and old format)
+  const getConsensusData = () => {
+    if (!agentAnalysis?.reports) return null;
+    return agentAnalysis.reports.weightedConsensus || agentAnalysis.reports.consensus || null;
+  };
+
+  const consensusData = getConsensusData();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
       {/* Header */}
@@ -452,45 +466,42 @@ export default function DashboardPage() {
                 </button>
 
                 {/* Dropdown */}
-               {/* Dropdown */}
-{showProfileMenu && (
-  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
-    <div className="p-4 border-b border-gray-700">
-      <div className="font-medium text-white">{session.user?.name}</div>
-      <div className="text-sm text-gray-400">{session.user?.email}</div>
-    </div>
-    <div className="py-2">
-      {/* Profil Linki */}
-      <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-gray-700/50 transition-colors">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-        {l.profile}
-      </Link>
-      
-      {/* Pro'ya Geç - Sadece Pro olmayanlar için */}
-      {!userProfile?.isPro && (
-        <Link href="/pricing" className="flex items-center gap-3 px-4 py-2 text-yellow-400 hover:bg-gray-700/50 transition-colors">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-          {l.upgradeToPro}
-        </Link>
-      )}
-    </div>
-    <div className="border-t border-gray-700 py-2">
-      <button
-        onClick={() => signOut({ callbackUrl: '/login' })}
-        className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-gray-700/50 transition-colors w-full"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-        {l.logout}
-      </button>
-    </div>
-  </div>
-)}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-700">
+                      <div className="font-medium text-white">{session.user?.name}</div>
+                      <div className="text-sm text-gray-400">{session.user?.email}</div>
+                    </div>
+                    <div className="py-2">
+                      <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-gray-700/50 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        {l.profile}
+                      </Link>
+                      
+                      {!userProfile?.isPro && (
+                        <Link href="/pricing" className="flex items-center gap-3 px-4 py-2 text-yellow-400 hover:bg-gray-700/50 transition-colors">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {l.upgradeToPro}
+                        </Link>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-700 py-2">
+                      <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-gray-700/50 transition-colors w-full"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        {l.logout}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -743,51 +754,138 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Agent Analysis Results */}
+                      {/* Agent Analysis Results - NEW WEIGHTED SYSTEM */}
                       {agentMode && agentAnalysis && (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-5 gap-2">
-                            {['scout', 'stats', 'odds', 'strategy', 'consensus'].map((agent) => (
-                              <div key={agent} className={`p-2 rounded-lg text-center text-xs ${
-                                agentAnalysis.reports?.[agent] ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          {/* Agent Status with Weights */}
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { key: 'scout', label: 'Scout', weight: '', icon: '🔍' },
+                              { key: 'stats', label: 'Stats', weight: '40%', icon: '📊' },
+                              { key: 'odds', label: 'Odds', weight: '35%', icon: '💰' },
+                              { key: 'strategy', label: 'Strategy', weight: '25%', icon: '🧠' },
+                            ].map((agent) => (
+                              <div key={agent.key} className={`p-2 rounded-lg text-center ${
+                                agentAnalysis.reports?.[agent.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
                               }`}>
-                                {agent} {agentAnalysis.reports?.[agent] ? '✅' : '❌'}
+                                <div className="text-lg">{agent.icon}</div>
+                                <div className={`text-xs font-medium ${agentAnalysis.reports?.[agent.key] ? 'text-green-400' : 'text-red-400'}`}>
+                                  {agent.label} {agentAnalysis.reports?.[agent.key] ? '✓' : '✗'}
+                                </div>
+                                {agent.weight && (
+                                  <div className="text-[10px] text-purple-400 font-bold">{agent.weight}</div>
+                                )}
                               </div>
                             ))}
                           </div>
 
-                          {agentAnalysis.reports?.consensus && (
+                          {/* Weighted Consensus Header */}
+                          {consensusData && (
+                            <div className="text-center py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                              <div className="text-xs text-purple-400">
+                                ⚖️ {l.weightedConsensus}: Stats 40% + Odds 35% + Strategy 25%
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Consensus Results */}
+                          {consensusData && (
                             <div className="space-y-3">
                               <div className="grid grid-cols-2 gap-3">
-                                {agentAnalysis.reports.consensus.matchResult && (
+                                {(consensusData.matchResult || consensusData.matchWinner) && (
                                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
                                     <div className="text-xs text-gray-400">{l.matchResult}</div>
-                                    <div className="text-2xl font-bold text-blue-400">{agentAnalysis.reports.consensus.matchResult.prediction}</div>
-                                    <div className="text-sm text-gray-300">{agentAnalysis.reports.consensus.matchResult.confidence}%</div>
+                                    <div className="text-2xl font-bold text-blue-400">
+                                      {consensusData.matchResult?.prediction || consensusData.matchWinner?.prediction || '-'}
+                                    </div>
+                                    <div className="text-sm text-gray-300">
+                                      {consensusData.matchResult?.confidence || consensusData.matchWinner?.confidence || 0}%
+                                    </div>
                                   </div>
                                 )}
-                                {agentAnalysis.reports.consensus.overUnder25 && (
+                                {(consensusData.overUnder || consensusData.overUnder25) && (
                                   <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
                                     <div className="text-xs text-gray-400">{l.overUnder}</div>
-                                    <div className="text-2xl font-bold text-green-400">{agentAnalysis.reports.consensus.overUnder25.prediction}</div>
-                                    <div className="text-sm text-gray-300">{agentAnalysis.reports.consensus.overUnder25.confidence}%</div>
+                                    <div className="text-2xl font-bold text-green-400">
+                                      {consensusData.overUnder?.prediction || consensusData.overUnder25?.prediction || '-'}
+                                    </div>
+                                    <div className="text-sm text-gray-300">
+                                      {consensusData.overUnder?.confidence || consensusData.overUnder25?.confidence || 0}%
+                                    </div>
+                                  </div>
+                                )}
+                                {consensusData.btts && (
+                                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
+                                    <div className="text-xs text-gray-400">{l.btts}</div>
+                                    <div className="text-2xl font-bold text-orange-400">
+                                      {consensusData.btts.prediction || '-'}
+                                    </div>
+                                    <div className="text-sm text-gray-300">
+                                      {consensusData.btts.confidence || 0}%
+                                    </div>
                                   </div>
                                 )}
                               </div>
 
-                              {agentAnalysis.reports.consensus.bestBet && (
+                              {/* Best Bet */}
+                              {consensusData.bestBet && (
                                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
                                   <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
-                                  <div className="font-bold text-white">{agentAnalysis.reports.consensus.bestBet.type}: {agentAnalysis.reports.consensus.bestBet.selection}</div>
-                                  <div className="text-sm text-gray-300">{agentAnalysis.reports.consensus.bestBet.confidence}%</div>
+                                  <div className="font-bold text-white">
+                                    {consensusData.bestBet.type}: {consensusData.bestBet.selection}
+                                  </div>
+                                  <div className="text-sm text-gray-300">
+                                    {consensusData.bestBet.confidence}% {l.confidence}
+                                  </div>
+                                  {consensusData.bestBet.reasoning && (
+                                    <div className="text-xs text-gray-400 mt-2">
+                                      {consensusData.bestBet.reasoning}
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
-                              {agentAnalysis.reports.consensus.overallAnalysis && (
-                                <div className="bg-gray-700/50 rounded-xl p-4">
-                                  <p className="text-sm text-gray-300">{agentAnalysis.reports.consensus.overallAnalysis}</p>
+                              {/* Agent Contributions */}
+                              {(consensusData.agentContributions || agentAnalysis.weights) && (
+                                <div className="bg-gray-700/30 rounded-xl p-3">
+                                  <div className="text-xs text-gray-400 mb-2">{l.agentContributions}:</div>
+                                  <div className="grid grid-cols-3 gap-2 text-sm">
+                                    <div className="text-center">
+                                      <span className="text-green-400">📊 Stats</span>
+                                      <div className="text-white font-bold">
+                                        {agentAnalysis.weights?.stats || '40%'}
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <span className="text-yellow-400">💰 Odds</span>
+                                      <div className="text-white font-bold">
+                                        {agentAnalysis.weights?.odds || '35%'}
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <span className="text-purple-400">🧠 Strategy</span>
+                                      <div className="text-white font-bold">
+                                        {agentAnalysis.weights?.strategy || '25%'}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
+
+                              {/* Overall Analysis */}
+                              {consensusData.overallAnalysis && (
+                                <div className="bg-gray-700/50 rounded-xl p-4">
+                                  <p className="text-sm text-gray-300">{consensusData.overallAnalysis}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* No Consensus Available */}
+                          {!consensusData && (
+                            <div className="text-center py-8 text-gray-400">
+                              <div className="text-4xl mb-2">⚠️</div>
+                              <p>Consensus data not available</p>
                             </div>
                           )}
                         </div>
