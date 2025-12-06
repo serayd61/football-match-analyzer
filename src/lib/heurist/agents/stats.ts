@@ -110,7 +110,7 @@ function extractJSON(text: string): any | null {
       result.btts = bttsMatch ? bttsMatch[1] : 'No';
       
       // Extract keyStats
-      const statsMatch = jsonStr.match(/"keyStats"\s*:\s*\[(.*?)\]/s);
+      const statsMatch = jsonStr.match(/"keyStats"\s*:\s*\[([^\]]*)\]/);
       if (statsMatch) {
         const statsStr = statsMatch[1];
         const stats = statsStr.match(/"([^"]+)"/g);
