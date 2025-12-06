@@ -135,25 +135,25 @@ export default function HomePage() {
         users: 'Aktif Kullanıcı',
         leagues: 'Desteklenen Lig',
       },
-      pricing: {
-        title: 'Basit Fiyatlandırma',
-        subtitle: 'Gizli ücret yok, istediğiniz zaman iptal edin',
-        free: {
-          name: 'Deneme',
-          price: '₺0',
-          period: '/7 gün',
-          features: ['Günde 3 analiz', '4 AI modeli', 'Temel istatistikler', 'E-posta desteği'],
-          cta: 'Ücretsiz Dene',
-        },
-        pro: {
-          name: 'Pro',
-          price: '₺299',
-          period: '/ay',
-          popular: 'En Popüler',
-          features: ['Sınırsız analiz', '7 AI modeli (Agent dahil)', 'Value bet tespiti', 'Ağırlıklı konsensüs', 'Öncelikli destek', 'Telegram bildirimleri'],
-          cta: 'Pro\'ya Geç',
-        },
-      },
+    pricing: {
+  title: 'Basit Fiyatlandırma',
+  subtitle: 'Gizli ücret yok, istediğiniz zaman iptal edin',
+  free: {
+    name: 'Deneme',
+    price: '$0',
+    period: '/7 gün',
+    features: ['Günde 3 analiz', '4 AI modeli', 'Temel istatistikler', 'E-posta desteği'],
+    cta: 'Ücretsiz Dene',
+  },
+  pro: {
+    name: 'Pro',
+    price: '$19.90',
+    period: '/ay',
+    popular: 'En Popüler',
+    features: ['Sınırsız analiz', '7 AI modeli (Agent dahil)', 'Value bet tespiti', 'Ağırlıklı konsensüs', 'Öncelikli destek', 'Telegram bildirimleri'],
+    cta: 'Pro\'ya Geç',
+  },
+},
       testimonials: {
         title: 'Kullanıcılarımız Ne Diyor?',
         items: [
