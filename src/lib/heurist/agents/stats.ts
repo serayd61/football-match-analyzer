@@ -157,4 +157,70 @@ AWAY TEAM (${matchData.awayTeam}):
 H2H: ${matchData.h2h?.totalMatches || 0} matches
 
 Expected total: ${expectedTotal.toFixed(2)}
-Over 2.5 avg: $
+Over 2.5 avg: ${avgOver25}%
+
+RETURN ONLY VALID JSON:`;
+
+  const messages: HeuristMessage[] = [
+    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'user', content: userPrompt },
+  ];
+
+  try {
+    const response = await heurist.chat(messages, { temperature: 0.2, maxTokens: 600 });
+    
+    if (response) {
+      const parsed = extractJSON(response);
+      if (parsed) {
+        // Validate and fix goalExpectancy
+        if (typeof parsed.goalExpectancy === 'string') {
+          parsed.goalExpectancy = parseFloat(parsed.goalExpectancy);
+        }
+        if (!parsed.goalExpectancy || isNaN(parsed.goalExpectancy)) {
+          parsed.goalExpectancy = expectedTotal;
+        }
+        
+        // Validate confidence
+        if (!parsed.confidence || isNaN(parsed.confidence)) {
+          parsed.confidence = 60;
+        }
+        parsed.confidence = Math.min(95, Math.max(40, parsed.confidence));
+        
+        // Validate matchResult
+        if (!['1', '2', 'X'].includes(parsed.matchResult?.toUpperCase())) {
+          parsed.matchResult = homeGoals > awayGoals ? '1' : (awayGoals > homeGoals ? '2' : 'X');
+        } else {
+          parsed.matchResult = parsed.matchResult.toUpperCase();
+        }
+        
+        // Validate overUnder
+        if (!['Over', 'Under'].includes(parsed.overUnder)) {
+          parsed.overUnder = expectedTotal >= 2.5 ? 'Over' : 'Under';
+        }
+        
+        // Validate btts
+        if (!['Yes', 'No'].includes(parsed.btts)) {
+          parsed.btts = (homeGoals > 0.8 && awayGoals > 0.8) ? 'Yes' : 'No';
+        }
+        
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error('Stats agent error:', error);
+  }
+
+  // Fallback - calculated values
+  return {
+    formAnalysis: `${matchData.homeTeam}: ${matchData.homeForm?.form || 'N/A'} vs ${matchData.awayTeam}: ${matchData.awayForm?.form || 'N/A'}`,
+    goalExpectancy: expectedTotal,
+    overUnder: expectedTotal >= 2.5 ? 'Over' : 'Under',
+    confidence: Math.round(55 + Math.abs(expectedTotal - 2.5) * 8),
+    matchResult: homeGoals > awayGoals ? '1' : (awayGoals > homeGoals ? '2' : 'X'),
+    btts: (homeGoals > 0.8 && awayGoals > 0.8) ? 'Yes' : 'No',
+    keyStats: [
+      `Expected goals: ${expectedTotal.toFixed(1)}`,
+      `Over 2.5 avg: ${avgOver25}%`
+    ],
+  };
+}
