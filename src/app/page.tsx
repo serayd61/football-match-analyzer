@@ -21,84 +21,112 @@ export default function HomePage() {
   const labels = {
     tr: {
       hero: {
-        badge: '🚀 Yeni: 5 AI Agent Sistemi Aktif',
+        badge: '🔗 Web3 + AI Teknolojisi',
         title: 'Futbol Analizinde',
-        titleHighlight: 'Yapay Zeka Devrimi',
-        subtitle: '4 Güçlü AI + 5 Özel Heurist Agent ile dünyanın en gelişmiş futbol analiz platformu. Profesyonel bahis analistlerinin kullandığı teknolojiyi şimdi siz de kullanın.',
+        titleHighlight: 'İki Güçlü Sistem',
+        subtitle: 'Dünyanın ilk hibrit analiz platformu: 4 Elite AI modeli + 3 Uzman Agent birlikte çalışır. Merkezi olmayan Heurist ağı üzerinde çalışan agent\'lar ile benzersiz doğruluk.',
         cta: 'Ücretsiz Başla',
-        ctaSecondary: 'Demo İzle',
+        ctaSecondary: 'Nasıl Çalışır?',
         trustedBy: '10.000+ kullanıcı güveniyor',
       },
-      features: {
-        title: 'Neden Football Analytics Pro?',
-        subtitle: 'Rakiplerinizden bir adım önde olmanızı sağlayan özellikler',
-        items: [
-          {
-            icon: '🤖',
-            title: '9 AI Model',
-            desc: 'Claude, GPT-4, Gemini + 5 Heurist Agent bir arada çalışır',
-          },
-          {
-            icon: '🎯',
-            title: '%85+ Doğruluk',
-            desc: 'Gelişmiş algoritmalar ile yüksek başarı oranı',
-          },
-          {
-            icon: '⚡',
-            title: 'Gerçek Zamanlı',
-            desc: 'Anlık oran değişiklikleri ve canlı analiz',
-          },
-          {
-            icon: '💎',
-            title: 'Value Bet Tespiti',
-            desc: 'Bookmaker hatalarını otomatik yakala',
-          },
-          {
-            icon: '📊',
-            title: '50+ Lig',
-            desc: 'Dünya genelinde tüm büyük ligler',
-          },
-          {
-            icon: '🔒',
-            title: 'Güvenli & Gizli',
-            desc: 'Verileriniz şifrelenerek korunur',
-          },
+      systems: {
+        title: 'İki Bağımsız Analiz Motoru',
+        subtitle: 'Aynı maç için iki farklı perspektif, maksimum doğruluk',
+      },
+      aiSystem: {
+        badge: 'SİSTEM 1',
+        title: 'AI Consensus Engine',
+        subtitle: 'Dünyanın en güçlü 4 AI modeli birlikte analiz yapar',
+        description: 'Claude (Anthropic), GPT-4 (OpenAI), Gemini (Google) ve Heurist modelleri aynı anda çalışır. Her biri bağımsız analiz yapar, sonuçlar oylama ile birleştirilir.',
+        features: [
+          { icon: '🧠', title: 'Claude Sonnet', desc: 'Anthropic\'in en gelişmiş modeli - Derin mantıksal analiz' },
+          { icon: '⚡', title: 'GPT-4 Turbo', desc: 'OpenAI\'ın amiral gemisi - Hızlı ve kapsamlı değerlendirme' },
+          { icon: '💎', title: 'Gemini Pro', desc: 'Google\'ın yapay zekası - Çok boyutlu analiz' },
+          { icon: '🔗', title: 'Heurist LLM', desc: 'Web3 tabanlı - Merkezi olmayan hesaplama' },
+        ],
+        howItWorks: [
+          { step: '1', title: 'Veri Toplama', desc: 'Form, oran ve H2H verileri derlenir' },
+          { step: '2', title: 'Paralel Analiz', desc: '4 AI aynı anda bağımsız analiz yapar' },
+          { step: '3', title: 'Oylama', desc: 'Sonuçlar demokratik oylama ile birleşir' },
+          { step: '4', title: 'Konsensüs', desc: 'En yüksek uzlaşıya sahip tahmin belirlenir' },
         ],
       },
-      agents: {
-        title: 'Heurist Multi-Agent Sistemi',
-        subtitle: 'Her biri uzman olan 5 AI ajanı birlikte çalışır',
-        items: [
-          {
-            name: 'Scout Agent',
-            icon: '🔍',
-            color: 'blue',
-            desc: 'Sakatlıklar, kadro değişiklikleri ve son dakika haberlerini takip eder',
-          },
+      agentSystem: {
+        badge: 'SİSTEM 2',
+        title: 'Heurist Agent Network',
+        subtitle: 'Web3 altyapısı üzerinde çalışan uzman ajanlar',
+        description: 'Merkezi olmayan Heurist ağı üzerinde çalışan 3 uzman agent, her biri farklı bir alanda uzmanlaşmıştır. Ağırlıklı oylama sistemi ile final kararı verilir.',
+        web3Badge: '🔗 Decentralized AI',
+        agents: [
           {
             name: 'Stats Agent',
             icon: '📊',
             color: 'green',
-            desc: 'Detaylı istatistik analizi ve form karşılaştırması yapar',
+            weight: '40%',
+            title: 'İstatistik Uzmanı',
+            desc: 'Form analizi, gol ortalamaları, H2H karşılaştırması. Veriye dayalı matematiksel hesaplamalar yapar.',
+            skills: ['Form Analizi', 'Gol Tahmini', 'H2H Değerlendirme'],
           },
           {
             name: 'Odds Agent',
             icon: '💰',
             color: 'yellow',
-            desc: 'Oran hareketlerini analiz eder ve value bet\'leri tespit eder',
+            weight: '35%',
+            title: 'Oran Analisti',
+            desc: 'Bahis oranlarını analiz eder, value bet\'leri tespit eder. Piyasa hareketlerini yorumlar.',
+            skills: ['Value Bet Tespiti', 'Oran Karşılaştırma', 'Piyasa Analizi'],
           },
           {
             name: 'Strategy Agent',
             icon: '🧠',
             color: 'purple',
-            desc: 'Risk yönetimi ve optimal bahis stratejisi belirler',
+            weight: '25%',
+            title: 'Strateji Uzmanı',
+            desc: 'Risk yönetimi ve optimal bahis stratejisi belirler. Diğer agent\'ların çıktılarını değerlendirir.',
+            skills: ['Risk Yönetimi', 'Stake Önerisi', 'Portföy Stratejisi'],
+          },
+        ],
+        weightedSystem: {
+          title: 'Ağırlıklı Oylama Sistemi',
+          desc: 'Her agent\'ın görüşü, uzmanlık alanına göre ağırlıklandırılır',
+        },
+      },
+      comparison: {
+        title: 'Neden İki Sistem?',
+        subtitle: 'Farklı yaklaşımlar, daha güvenilir sonuçlar',
+        items: [
+          {
+            icon: '🎯',
+            title: 'Çapraz Doğrulama',
+            desc: 'İki bağımsız sistem aynı sonuca ulaşırsa güven artar',
           },
           {
-            name: 'Consensus Agent',
-            icon: '⚖️',
-            color: 'pink',
-            desc: 'Tüm ajanların görüşlerini birleştirerek final kararı verir',
+            icon: '🔄',
+            title: 'Farklı Perspektifler',
+            desc: 'AI\'lar genel bakış, Agent\'lar uzman bakışı sunar',
           },
+          {
+            icon: '⚖️',
+            title: 'Denge Kontrolü',
+            desc: 'Bir sistem hata yaparsa diğeri dengeler',
+          },
+          {
+            icon: '📈',
+            title: '%92 Uyum Oranı',
+            desc: 'Sistemler genellikle aynı yönde tahmin yapar',
+          },
+        ],
+      },
+      features: {
+        title: 'Platform Özellikleri',
+        subtitle: 'Profesyonel bahisçilerin ihtiyaç duyduğu her şey',
+        items: [
+          { icon: '🤖', title: '7 AI Modeli', desc: '4 Elite AI + 3 Uzman Agent birlikte çalışır' },
+          { icon: '🎯', title: '%85+ Doğruluk', desc: 'Çift sistem ile yüksek başarı oranı' },
+          { icon: '⚡', title: 'Gerçek Zamanlı', desc: 'Anlık oran değişiklikleri ve canlı analiz' },
+          { icon: '💎', title: 'Value Bet', desc: 'Bookmaker hatalarını otomatik yakala' },
+          { icon: '📊', title: '50+ Lig', desc: 'Dünya genelinde tüm büyük ligler' },
+          { icon: '🔒', title: 'Güvenli', desc: 'Verileriniz şifrelenerek korunur' },
         ],
       },
       stats: {
@@ -111,44 +139,32 @@ export default function HomePage() {
         title: 'Basit Fiyatlandırma',
         subtitle: 'Gizli ücret yok, istediğiniz zaman iptal edin',
         free: {
-          name: 'Ücretsiz',
+          name: 'Deneme',
           price: '₺0',
-          period: '/ay',
-          features: ['Günde 5 analiz', '3 AI modeli', 'Temel istatistikler', 'E-posta desteği'],
-          cta: 'Ücretsiz Başla',
+          period: '/7 gün',
+          features: ['Günde 3 analiz', '4 AI modeli', 'Temel istatistikler', 'E-posta desteği'],
+          cta: 'Ücretsiz Dene',
         },
         pro: {
           name: 'Pro',
           price: '₺299',
           period: '/ay',
           popular: 'En Popüler',
-          features: ['Sınırsız analiz', '9 AI modeli (Agent dahil)', 'Value bet tespiti', 'Gerçek zamanlı oranlar', 'Öncelikli destek', 'API erişimi'],
+          features: ['Sınırsız analiz', '7 AI modeli (Agent dahil)', 'Value bet tespiti', 'Ağırlıklı konsensüs', 'Öncelikli destek', 'Telegram bildirimleri'],
           cta: 'Pro\'ya Geç',
         },
       },
       testimonials: {
         title: 'Kullanıcılarımız Ne Diyor?',
         items: [
-          {
-            text: 'Agent sistemi gerçekten oyunun kurallarını değiştirdi. Her maç için 5 farklı uzman görüşü almak paha biçilemez.',
-            author: 'Mehmet K.',
-            role: 'Profesyonel Bahisçi',
-          },
-          {
-            text: 'Value bet tespiti özelliği sayesinde aylık kazancım %40 arttı. Kesinlikle tavsiye ederim.',
-            author: 'Ali Y.',
-            role: 'Spor Analisti',
-          },
-          {
-            text: 'Kullanımı çok kolay ve analizler gerçekten detaylı. Pro üyelik her kuruşuna değer.',
-            author: 'Emre S.',
-            role: 'Hobi Bahisçi',
-          },
+          { text: 'İki farklı sistemin aynı sonuca ulaşması bana çok güven veriyor. Artık daha bilinçli bahis yapıyorum.', author: 'Mehmet K.', role: 'Profesyonel Bahisçi' },
+          { text: 'Agent sisteminin ağırlıklı oylama mantığı muhteşem. Hangi verinin ne kadar önemli olduğunu anlıyorum.', author: 'Ali Y.', role: 'Spor Analisti' },
+          { text: 'Web3 teknolojisi ile çalışan AI\'lar gerçekten fark yaratıyor. Sonuçlar çok tutarlı.', author: 'Emre S.', role: 'Kripto & Bahis Meraklısı' },
         ],
       },
       cta: {
-        title: 'Kazanmaya Hazır mısınız?',
-        subtitle: 'Hemen ücretsiz hesap oluşturun ve AI destekli analizlere erişin',
+        title: 'İki Güçlü Sistemi Deneyin',
+        subtitle: 'Ücretsiz hesap oluşturun, AI ve Agent\'ların gücünü keşfedin',
         button: 'Ücretsiz Hesap Oluştur',
       },
       footer: {
@@ -164,88 +180,101 @@ export default function HomePage() {
         privacy: 'Gizlilik',
         terms: 'Kullanım Şartları',
         copyright: '© 2024 Football Analytics Pro. Tüm hakları saklıdır.',
+        poweredBy: 'Powered by Heurist Network',
       },
     },
     en: {
       hero: {
-        badge: '🚀 New: 5 AI Agent System Active',
-        title: 'AI Revolution in',
+        badge: '🔗 Web3 + AI Technology',
+        title: 'Two Powerful Systems for',
         titleHighlight: 'Football Analytics',
-        subtitle: "The world's most advanced football analysis platform with 4 Powerful AI + 5 Custom Heurist Agents. Now you can use the same technology professional betting analysts use.",
+        subtitle: "World's first hybrid analysis platform: 4 Elite AI models + 3 Expert Agents working together. Unique accuracy with agents running on decentralized Heurist network.",
         cta: 'Start Free',
-        ctaSecondary: 'Watch Demo',
+        ctaSecondary: 'How It Works?',
         trustedBy: 'Trusted by 10,000+ users',
       },
-      features: {
-        title: 'Why Football Analytics Pro?',
-        subtitle: 'Features that keep you one step ahead of your competitors',
-        items: [
-          {
-            icon: '🤖',
-            title: '9 AI Models',
-            desc: 'Claude, GPT-4, Gemini + 5 Heurist Agents working together',
-          },
-          {
-            icon: '🎯',
-            title: '85%+ Accuracy',
-            desc: 'High success rate with advanced algorithms',
-          },
-          {
-            icon: '⚡',
-            title: 'Real-Time',
-            desc: 'Instant odds changes and live analysis',
-          },
-          {
-            icon: '💎',
-            title: 'Value Bet Detection',
-            desc: 'Automatically catch bookmaker mistakes',
-          },
-          {
-            icon: '📊',
-            title: '50+ Leagues',
-            desc: 'All major leagues worldwide',
-          },
-          {
-            icon: '🔒',
-            title: 'Secure & Private',
-            desc: 'Your data is encrypted and protected',
-          },
+      systems: {
+        title: 'Two Independent Analysis Engines',
+        subtitle: 'Two different perspectives for the same match, maximum accuracy',
+      },
+      aiSystem: {
+        badge: 'SYSTEM 1',
+        title: 'AI Consensus Engine',
+        subtitle: "World's 4 most powerful AI models analyze together",
+        description: 'Claude (Anthropic), GPT-4 (OpenAI), Gemini (Google) and Heurist models work simultaneously. Each performs independent analysis, results are combined by voting.',
+        features: [
+          { icon: '🧠', title: 'Claude Sonnet', desc: "Anthropic's most advanced model - Deep logical analysis" },
+          { icon: '⚡', title: 'GPT-4 Turbo', desc: "OpenAI's flagship - Fast and comprehensive evaluation" },
+          { icon: '💎', title: 'Gemini Pro', desc: "Google's AI - Multi-dimensional analysis" },
+          { icon: '🔗', title: 'Heurist LLM', desc: 'Web3 based - Decentralized computation' },
+        ],
+        howItWorks: [
+          { step: '1', title: 'Data Collection', desc: 'Form, odds and H2H data compiled' },
+          { step: '2', title: 'Parallel Analysis', desc: '4 AIs analyze independently at once' },
+          { step: '3', title: 'Voting', desc: 'Results combined by democratic voting' },
+          { step: '4', title: 'Consensus', desc: 'Prediction with highest agreement determined' },
         ],
       },
-      agents: {
-        title: 'Heurist Multi-Agent System',
-        subtitle: '5 expert AI agents working together',
-        items: [
-          {
-            name: 'Scout Agent',
-            icon: '🔍',
-            color: 'blue',
-            desc: 'Tracks injuries, lineup changes, and breaking news',
-          },
+      agentSystem: {
+        badge: 'SYSTEM 2',
+        title: 'Heurist Agent Network',
+        subtitle: 'Expert agents running on Web3 infrastructure',
+        description: '3 expert agents running on decentralized Heurist network, each specialized in a different field. Final decision made with weighted voting system.',
+        web3Badge: '🔗 Decentralized AI',
+        agents: [
           {
             name: 'Stats Agent',
             icon: '📊',
             color: 'green',
-            desc: 'Performs detailed statistical analysis and form comparison',
+            weight: '40%',
+            title: 'Statistics Expert',
+            desc: 'Form analysis, goal averages, H2H comparison. Makes data-driven mathematical calculations.',
+            skills: ['Form Analysis', 'Goal Prediction', 'H2H Evaluation'],
           },
           {
             name: 'Odds Agent',
             icon: '💰',
             color: 'yellow',
-            desc: 'Analyzes odds movements and detects value bets',
+            weight: '35%',
+            title: 'Odds Analyst',
+            desc: 'Analyzes betting odds, detects value bets. Interprets market movements.',
+            skills: ['Value Bet Detection', 'Odds Comparison', 'Market Analysis'],
           },
           {
             name: 'Strategy Agent',
             icon: '🧠',
             color: 'purple',
-            desc: 'Determines risk management and optimal betting strategy',
+            weight: '25%',
+            title: 'Strategy Expert',
+            desc: 'Determines risk management and optimal betting strategy. Evaluates other agents outputs.',
+            skills: ['Risk Management', 'Stake Suggestion', 'Portfolio Strategy'],
           },
-          {
-            name: 'Consensus Agent',
-            icon: '⚖️',
-            color: 'pink',
-            desc: 'Combines all agent opinions to make the final decision',
-          },
+        ],
+        weightedSystem: {
+          title: 'Weighted Voting System',
+          desc: "Each agent's opinion is weighted according to their expertise",
+        },
+      },
+      comparison: {
+        title: 'Why Two Systems?',
+        subtitle: 'Different approaches, more reliable results',
+        items: [
+          { icon: '🎯', title: 'Cross Validation', desc: 'Confidence increases when two systems reach same conclusion' },
+          { icon: '🔄', title: 'Different Perspectives', desc: 'AIs provide overview, Agents provide expert view' },
+          { icon: '⚖️', title: 'Balance Control', desc: 'If one system errs, the other balances' },
+          { icon: '📈', title: '92% Agreement Rate', desc: 'Systems usually predict in same direction' },
+        ],
+      },
+      features: {
+        title: 'Platform Features',
+        subtitle: 'Everything professional bettors need',
+        items: [
+          { icon: '🤖', title: '7 AI Models', desc: '4 Elite AI + 3 Expert Agents working together' },
+          { icon: '🎯', title: '85%+ Accuracy', desc: 'High success rate with dual system' },
+          { icon: '⚡', title: 'Real-Time', desc: 'Instant odds changes and live analysis' },
+          { icon: '💎', title: 'Value Bet', desc: 'Automatically catch bookmaker mistakes' },
+          { icon: '📊', title: '50+ Leagues', desc: 'All major leagues worldwide' },
+          { icon: '🔒', title: 'Secure', desc: 'Your data is encrypted and protected' },
         ],
       },
       stats: {
@@ -258,44 +287,32 @@ export default function HomePage() {
         title: 'Simple Pricing',
         subtitle: 'No hidden fees, cancel anytime',
         free: {
-          name: 'Free',
+          name: 'Trial',
           price: '$0',
-          period: '/mo',
-          features: ['5 analyses per day', '3 AI models', 'Basic statistics', 'Email support'],
-          cta: 'Start Free',
+          period: '/7 days',
+          features: ['3 analyses per day', '4 AI models', 'Basic statistics', 'Email support'],
+          cta: 'Try Free',
         },
         pro: {
           name: 'Pro',
           price: '$9.99',
           period: '/mo',
           popular: 'Most Popular',
-          features: ['Unlimited analyses', '9 AI models (incl. Agents)', 'Value bet detection', 'Real-time odds', 'Priority support', 'API access'],
+          features: ['Unlimited analyses', '7 AI models (incl. Agents)', 'Value bet detection', 'Weighted consensus', 'Priority support', 'Telegram notifications'],
           cta: 'Go Pro',
         },
       },
       testimonials: {
         title: 'What Our Users Say',
         items: [
-          {
-            text: 'The Agent system really changed the game. Getting 5 different expert opinions for each match is priceless.',
-            author: 'Michael K.',
-            role: 'Professional Bettor',
-          },
-          {
-            text: 'Thanks to the value bet detection feature, my monthly earnings increased by 40%. Highly recommended.',
-            author: 'James Y.',
-            role: 'Sports Analyst',
-          },
-          {
-            text: 'Very easy to use and the analyses are really detailed. Pro membership is worth every penny.',
-            author: 'David S.',
-            role: 'Hobby Bettor',
-          },
+          { text: 'Two different systems reaching the same conclusion gives me great confidence. I now bet more consciously.', author: 'Michael K.', role: 'Professional Bettor' },
+          { text: "The Agent system's weighted voting logic is amazing. I understand how important each data point is.", author: 'James Y.', role: 'Sports Analyst' },
+          { text: 'AIs working with Web3 technology really make a difference. Results are very consistent.', author: 'David S.', role: 'Crypto & Betting Enthusiast' },
         ],
       },
       cta: {
-        title: 'Ready to Win?',
-        subtitle: 'Create a free account now and access AI-powered analyses',
+        title: 'Try Two Powerful Systems',
+        subtitle: 'Create a free account, discover the power of AI and Agents',
         button: 'Create Free Account',
       },
       footer: {
@@ -311,58 +328,93 @@ export default function HomePage() {
         privacy: 'Privacy',
         terms: 'Terms',
         copyright: '© 2024 Football Analytics Pro. All rights reserved.',
+        poweredBy: 'Powered by Heurist Network',
       },
     },
     de: {
       hero: {
-        badge: '🚀 Neu: 5 KI-Agent-System Aktiv',
-        title: 'KI-Revolution in der',
+        badge: '🔗 Web3 + KI-Technologie',
+        title: 'Zwei leistungsstarke Systeme für',
         titleHighlight: 'Fußballanalyse',
-        subtitle: 'Die weltweit fortschrittlichste Fußball-Analyseplattform mit 4 leistungsstarken KI + 5 benutzerdefinierten Heurist-Agenten.',
+        subtitle: 'Die weltweit erste hybride Analyseplattform: 4 Elite-KI-Modelle + 3 Experten-Agenten arbeiten zusammen.',
         cta: 'Kostenlos starten',
-        ctaSecondary: 'Demo ansehen',
+        ctaSecondary: 'Wie es funktioniert',
         trustedBy: 'Über 10.000 Nutzer vertrauen uns',
       },
-      features: {
-        title: 'Warum Football Analytics Pro?',
-        subtitle: 'Funktionen, die Sie einen Schritt voraus halten',
-        items: [
-          { icon: '🤖', title: '9 KI-Modelle', desc: 'Claude, GPT-4, Gemini + 5 Heurist Agenten' },
-          { icon: '🎯', title: '85%+ Genauigkeit', desc: 'Hohe Erfolgsquote mit fortschrittlichen Algorithmen' },
-          { icon: '⚡', title: 'Echtzeit', desc: 'Sofortige Quotenänderungen und Live-Analyse' },
-          { icon: '💎', title: 'Value Bet Erkennung', desc: 'Buchmacher-Fehler automatisch erkennen' },
-          { icon: '📊', title: '50+ Ligen', desc: 'Alle großen Ligen weltweit' },
-          { icon: '🔒', title: 'Sicher & Privat', desc: 'Ihre Daten werden verschlüsselt' },
+      systems: {
+        title: 'Zwei unabhängige Analyse-Engines',
+        subtitle: 'Zwei verschiedene Perspektiven für dasselbe Spiel',
+      },
+      aiSystem: {
+        badge: 'SYSTEM 1',
+        title: 'KI-Konsens-Engine',
+        subtitle: 'Die 4 leistungsstärksten KI-Modelle der Welt analysieren gemeinsam',
+        description: 'Claude, GPT-4, Gemini und Heurist-Modelle arbeiten gleichzeitig. Jedes führt unabhängige Analysen durch.',
+        features: [
+          { icon: '🧠', title: 'Claude Sonnet', desc: 'Anthropics fortschrittlichstes Modell' },
+          { icon: '⚡', title: 'GPT-4 Turbo', desc: 'OpenAIs Flaggschiff' },
+          { icon: '💎', title: 'Gemini Pro', desc: 'Googles KI' },
+          { icon: '🔗', title: 'Heurist LLM', desc: 'Web3-basiert - Dezentrale Berechnung' },
+        ],
+        howItWorks: [
+          { step: '1', title: 'Datensammlung', desc: 'Form-, Quoten- und H2H-Daten kompiliert' },
+          { step: '2', title: 'Parallele Analyse', desc: '4 KIs analysieren gleichzeitig' },
+          { step: '3', title: 'Abstimmung', desc: 'Ergebnisse durch Abstimmung kombiniert' },
+          { step: '4', title: 'Konsens', desc: 'Vorhersage mit höchster Übereinstimmung' },
         ],
       },
-      agents: {
-        title: 'Heurist Multi-Agent-System',
-        subtitle: '5 Experten-KI-Agenten arbeiten zusammen',
+      agentSystem: {
+        badge: 'SYSTEM 2',
+        title: 'Heurist-Agent-Netzwerk',
+        subtitle: 'Experten-Agenten auf Web3-Infrastruktur',
+        description: '3 Experten-Agenten im dezentralen Heurist-Netzwerk, jeder auf ein anderes Feld spezialisiert.',
+        web3Badge: '🔗 Dezentrale KI',
+        agents: [
+          { name: 'Stats Agent', icon: '📊', color: 'green', weight: '40%', title: 'Statistik-Experte', desc: 'Formanalyse, Tordurchschnitte, H2H-Vergleich.', skills: ['Formanalyse', 'Torvorhersage', 'H2H-Bewertung'] },
+          { name: 'Odds Agent', icon: '💰', color: 'yellow', weight: '35%', title: 'Quoten-Analyst', desc: 'Analysiert Wettquoten, erkennt Value Bets.', skills: ['Value-Bet-Erkennung', 'Quotenvergleich', 'Marktanalyse'] },
+          { name: 'Strategy Agent', icon: '🧠', color: 'purple', weight: '25%', title: 'Strategie-Experte', desc: 'Bestimmt Risikomanagement und optimale Wettstrategie.', skills: ['Risikomanagement', 'Einsatzvorschlag', 'Portfolio-Strategie'] },
+        ],
+        weightedSystem: { title: 'Gewichtetes Abstimmungssystem', desc: 'Jede Agentenmeinung wird nach Expertise gewichtet' },
+      },
+      comparison: {
+        title: 'Warum zwei Systeme?',
+        subtitle: 'Unterschiedliche Ansätze, zuverlässigere Ergebnisse',
         items: [
-          { name: 'Scout Agent', icon: '🔍', color: 'blue', desc: 'Verfolgt Verletzungen, Aufstellungsänderungen und Nachrichten' },
-          { name: 'Stats Agent', icon: '📊', color: 'green', desc: 'Führt detaillierte statistische Analysen durch' },
-          { name: 'Odds Agent', icon: '💰', color: 'yellow', desc: 'Analysiert Quotenbewegungen und erkennt Value Bets' },
-          { name: 'Strategy Agent', icon: '🧠', color: 'purple', desc: 'Bestimmt Risikomanagement und optimale Wettstrategie' },
-          { name: 'Consensus Agent', icon: '⚖️', color: 'pink', desc: 'Kombiniert alle Agentenmeinungen für die Endentscheidung' },
+          { icon: '🎯', title: 'Kreuzvalidierung', desc: 'Vertrauen steigt, wenn beide Systeme übereinstimmen' },
+          { icon: '🔄', title: 'Verschiedene Perspektiven', desc: 'KIs bieten Überblick, Agenten Expertenansicht' },
+          { icon: '⚖️', title: 'Balance-Kontrolle', desc: 'Wenn ein System irrt, gleicht das andere aus' },
+          { icon: '📈', title: '92% Übereinstimmung', desc: 'Systeme prognostizieren meist gleich' },
+        ],
+      },
+      features: {
+        title: 'Plattform-Funktionen',
+        subtitle: 'Alles, was professionelle Wetter brauchen',
+        items: [
+          { icon: '🤖', title: '7 KI-Modelle', desc: '4 Elite-KI + 3 Experten-Agenten' },
+          { icon: '🎯', title: '85%+ Genauigkeit', desc: 'Hohe Erfolgsquote mit Dual-System' },
+          { icon: '⚡', title: 'Echtzeit', desc: 'Sofortige Quotenänderungen' },
+          { icon: '💎', title: 'Value Bet', desc: 'Buchmacher-Fehler automatisch erkennen' },
+          { icon: '📊', title: '50+ Ligen', desc: 'Alle großen Ligen weltweit' },
+          { icon: '🔒', title: 'Sicher', desc: 'Ihre Daten werden verschlüsselt' },
         ],
       },
       stats: { matches: 'Tägliche Spiele', accuracy: 'Genauigkeitsrate', users: 'Aktive Nutzer', leagues: 'Unterstützte Ligen' },
       pricing: {
         title: 'Einfache Preisgestaltung',
-        subtitle: 'Keine versteckten Gebühren, jederzeit kündbar',
-        free: { name: 'Kostenlos', price: '€0', period: '/Mo', features: ['5 Analysen pro Tag', '3 KI-Modelle', 'Grundlegende Statistiken', 'E-Mail-Support'], cta: 'Kostenlos starten' },
-        pro: { name: 'Pro', price: '€9,99', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '9 KI-Modelle (inkl. Agenten)', 'Value Bet Erkennung', 'Echtzeit-Quoten', 'Prioritäts-Support', 'API-Zugang'], cta: 'Pro werden' },
+        subtitle: 'Keine versteckten Gebühren',
+        free: { name: 'Testversion', price: '€0', period: '/7 Tage', features: ['3 Analysen pro Tag', '4 KI-Modelle', 'Grundlegende Statistiken', 'E-Mail-Support'], cta: 'Kostenlos testen' },
+        pro: { name: 'Pro', price: '€9,99', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '7 KI-Modelle (inkl. Agenten)', 'Value-Bet-Erkennung', 'Gewichteter Konsens', 'Prioritäts-Support', 'Telegram-Benachrichtigungen'], cta: 'Pro werden' },
       },
       testimonials: {
         title: 'Was unsere Nutzer sagen',
         items: [
-          { text: 'Das Agent-System hat das Spiel wirklich verändert. 5 verschiedene Expertenmeinungen für jedes Spiel zu bekommen ist unbezahlbar.', author: 'Michael K.', role: 'Professioneller Wetter' },
-          { text: 'Dank der Value-Bet-Erkennung sind meine monatlichen Einnahmen um 40% gestiegen.', author: 'Thomas Y.', role: 'Sportanalyst' },
-          { text: 'Sehr einfach zu bedienen und die Analysen sind wirklich detailliert.', author: 'David S.', role: 'Hobby-Wetter' },
+          { text: 'Zwei verschiedene Systeme, die zum gleichen Ergebnis kommen, geben mir großes Vertrauen.', author: 'Michael K.', role: 'Professioneller Wetter' },
+          { text: 'Die gewichtete Abstimmungslogik des Agent-Systems ist erstaunlich.', author: 'Thomas Y.', role: 'Sportanalyst' },
+          { text: 'KIs, die mit Web3-Technologie arbeiten, machen wirklich einen Unterschied.', author: 'David S.', role: 'Krypto & Wett-Enthusiast' },
         ],
       },
-      cta: { title: 'Bereit zu gewinnen?', subtitle: 'Erstellen Sie jetzt ein kostenloses Konto', button: 'Kostenloses Konto erstellen' },
-      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.' },
+      cta: { title: 'Zwei leistungsstarke Systeme testen', subtitle: 'Kostenloses Konto erstellen', button: 'Kostenloses Konto erstellen' },
+      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
     },
   };
 
@@ -402,12 +454,10 @@ export default function HomePage() {
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm font-medium mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-full text-purple-400 text-sm font-medium mb-8">
               {l.hero.badge}
             </div>
 
-            {/* Title */}
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
               {l.hero.title}{' '}
               <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
@@ -415,12 +465,10 @@ export default function HomePage() {
               </span>
             </h1>
 
-            {/* Subtitle */}
             <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
               {l.hero.subtitle}
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-green-500/30 transition-all flex items-center justify-center gap-2">
                 {l.hero.cta}
@@ -436,7 +484,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Trust Badge */}
             <div className="flex items-center justify-center gap-4">
               <div className="flex -space-x-3">
                 {['🧑‍💼', '👨‍💻', '👩‍💼', '🧑‍💻', '👨‍💼'].map((emoji, idx) => (
@@ -469,48 +516,152 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Agent System Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent">
+      {/* Two Systems Title */}
+      <section className="py-10 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-4xl font-bold text-white mb-4">{l.systems.title}</h2>
+          <p className="text-xl text-gray-400">{l.systems.subtitle}</p>
+        </div>
+      </section>
+
+      {/* System 1: AI Consensus Engine */}
+      <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">{l.agents.title}</h2>
-            <p className="text-xl text-gray-400">{l.agents.subtitle}</p>
-          </div>
-
-          <div className="grid md:grid-cols-5 gap-4">
-            {l.agents.items.map((agent, idx) => {
-              const colors: Record<string, string> = {
-                blue: 'from-blue-500/20 to-blue-600/20 border-blue-500/30',
-                green: 'from-green-500/20 to-green-600/20 border-green-500/30',
-                yellow: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/30',
-                purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/30',
-                pink: 'from-pink-500/20 to-pink-600/20 border-pink-500/30',
-              };
-              return (
-                <div key={idx} className={`p-6 bg-gradient-to-br ${colors[agent.color]} border rounded-2xl text-center hover:scale-105 transition-transform`}>
-                  <div className="text-4xl mb-4">{agent.icon}</div>
-                  <h3 className="text-lg font-bold text-white mb-2">{agent.name}</h3>
-                  <p className="text-sm text-gray-400">{agent.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Agent Flow Diagram */}
-          <div className="mt-12 p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-3xl">
-            <div className="flex flex-wrap items-center justify-center gap-4 text-center">
-              <div className="px-4 py-2 bg-blue-500/20 rounded-xl text-blue-400 font-medium">🔍 Scout</div>
-              <span className="text-gray-500">→</span>
-              <div className="px-4 py-2 bg-green-500/20 rounded-xl text-green-400 font-medium">📊 Stats</div>
-              <span className="text-gray-500">→</span>
-              <div className="px-4 py-2 bg-yellow-500/20 rounded-xl text-yellow-400 font-medium">💰 Odds</div>
-              <span className="text-gray-500">→</span>
-              <div className="px-4 py-2 bg-purple-500/20 rounded-xl text-purple-400 font-medium">🧠 Strategy</div>
-              <span className="text-gray-500">→</span>
-              <div className="px-4 py-2 bg-pink-500/20 rounded-xl text-pink-400 font-medium">⚖️ Consensus</div>
-              <span className="text-gray-500">→</span>
-              <div className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl text-white font-bold">🎯 Final Prediction</div>
+          <div className="p-8 md:p-12 bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border border-blue-500/30 rounded-3xl">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-bold rounded-full">{l.aiSystem.badge}</span>
+              <span className="text-2xl">🤖</span>
             </div>
+            
+            <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">{l.aiSystem.title}</h3>
+            <p className="text-xl text-blue-200 mb-4">{l.aiSystem.subtitle}</p>
+            <p className="text-gray-400 mb-10 max-w-3xl">{l.aiSystem.description}</p>
+
+            {/* AI Models Grid */}
+            <div className="grid md:grid-cols-4 gap-4 mb-10">
+              {l.aiSystem.features.map((ai, idx) => (
+                <div key={idx} className="p-5 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl hover:border-blue-500/50 transition-colors">
+                  <div className="text-3xl mb-3">{ai.icon}</div>
+                  <h4 className="text-lg font-bold text-white mb-2">{ai.title}</h4>
+                  <p className="text-sm text-gray-400">{ai.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* How It Works */}
+            <div className="p-6 bg-gray-900/50 rounded-2xl">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {l.aiSystem.howItWorks.map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-500 text-white font-bold rounded-full flex items-center justify-center text-sm">{step.step}</div>
+                      <div>
+                        <div className="text-white font-medium">{step.title}</div>
+                        <div className="text-xs text-gray-400">{step.desc}</div>
+                      </div>
+                    </div>
+                    {idx < l.aiSystem.howItWorks.length - 1 && <span className="text-gray-600 text-xl">→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* System 2: Heurist Agent Network */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="p-8 md:p-12 bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-3xl">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm font-bold rounded-full">{l.agentSystem.badge}</span>
+              <span className="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-pink-400 text-sm font-medium rounded-full">{l.agentSystem.web3Badge}</span>
+            </div>
+            
+            <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">{l.agentSystem.title}</h3>
+            <p className="text-xl text-purple-200 mb-4">{l.agentSystem.subtitle}</p>
+            <p className="text-gray-400 mb-10 max-w-3xl">{l.agentSystem.description}</p>
+
+            {/* Agent Cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              {l.agentSystem.agents.map((agent, idx) => {
+                const colors: Record<string, string> = {
+                  green: 'from-green-500/20 to-green-600/20 border-green-500/30 hover:border-green-400',
+                  yellow: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 hover:border-yellow-400',
+                  purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/30 hover:border-purple-400',
+                };
+                const textColors: Record<string, string> = {
+                  green: 'text-green-400',
+                  yellow: 'text-yellow-400',
+                  purple: 'text-purple-400',
+                };
+                return (
+                  <div key={idx} className={`p-6 bg-gradient-to-br ${colors[agent.color]} border rounded-2xl transition-all hover:scale-[1.02]`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-4xl">{agent.icon}</div>
+                      <div className={`px-3 py-1 bg-gray-900/50 rounded-full text-sm font-bold ${textColors[agent.color]}`}>
+                        {agent.weight}
+                      </div>
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-1">{agent.name}</h4>
+                    <p className={`text-sm ${textColors[agent.color]} mb-3`}>{agent.title}</p>
+                    <p className="text-gray-400 text-sm mb-4">{agent.desc}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {agent.skills.map((skill, sidx) => (
+                        <span key={sidx} className="px-2 py-1 bg-gray-900/50 text-gray-300 text-xs rounded-full">{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Weighted Voting Explanation */}
+            <div className="p-6 bg-gray-900/50 rounded-2xl">
+              <div className="text-center mb-4">
+                <h4 className="text-xl font-bold text-white">{l.agentSystem.weightedSystem.title}</h4>
+                <p className="text-gray-400">{l.agentSystem.weightedSystem.desc}</p>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl">
+                  <span className="text-green-400 font-bold">📊 Stats</span>
+                  <span className="text-white font-bold">40%</span>
+                </div>
+                <span className="text-gray-500 text-xl">+</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 rounded-xl">
+                  <span className="text-yellow-400 font-bold">💰 Odds</span>
+                  <span className="text-white font-bold">35%</span>
+                </div>
+                <span className="text-gray-500 text-xl">+</span>
+                <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 rounded-xl">
+                  <span className="text-purple-400 font-bold">🧠 Strategy</span>
+                  <span className="text-white font-bold">25%</span>
+                </div>
+                <span className="text-gray-500 text-xl">=</span>
+                <div className="px-4 py-2 bg-gradient-to-r from-green-500 to-purple-500 rounded-xl">
+                  <span className="text-white font-bold">🎯 Final</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Two Systems */}
+      <section className="py-16 px-4 bg-gradient-to-b from-transparent via-gray-800/20 to-transparent">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">{l.comparison.title}</h2>
+            <p className="text-xl text-gray-400">{l.comparison.subtitle}</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6">
+            {l.comparison.items.map((item, idx) => (
+              <div key={idx} className="p-6 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl text-center hover:border-green-500/50 transition-colors">
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-400">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -522,7 +673,6 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold text-white mb-4">{l.features.title}</h2>
             <p className="text-xl text-gray-400">{l.features.subtitle}</p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-6">
             {l.features.items.map((feature, idx) => (
               <div key={idx} className="p-6 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl hover:border-green-500/50 transition-colors group">
@@ -542,7 +692,6 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold text-white mb-4">{l.pricing.title}</h2>
             <p className="text-xl text-gray-400">{l.pricing.subtitle}</p>
           </div>
-
           <div className="grid md:grid-cols-2 gap-8">
             {/* Free Plan */}
             <div className="p-8 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-3xl">
@@ -621,7 +770,7 @@ export default function HomePage() {
       {/* Final CTA */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="p-12 bg-gradient-to-br from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-3xl">
+          <div className="p-12 bg-gradient-to-br from-green-500/20 to-purple-500/20 border border-green-500/30 rounded-3xl">
             <h2 className="text-4xl font-bold text-white mb-4">{l.cta.title}</h2>
             <p className="text-xl text-gray-300 mb-8">{l.cta.subtitle}</p>
             <Link href="/login" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-green-500/30 transition-all">
@@ -645,7 +794,8 @@ export default function HomePage() {
                 </div>
                 <span className="font-bold text-white">Football Analytics Pro</span>
               </div>
-              <p className="text-gray-400 text-sm">AI-powered football analysis platform</p>
+              <p className="text-gray-400 text-sm mb-2">AI-powered football analysis platform</p>
+              <p className="text-purple-400 text-xs">{l.footer.poweredBy}</p>
             </div>
             <div>
               <h4 className="font-semibold text-white mb-4">{l.footer.product}</h4>
