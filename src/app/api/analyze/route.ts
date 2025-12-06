@@ -429,7 +429,7 @@ function calculateConsensus(analyses: any[]): any {
           scores[pred] = { weightedScore: 0, count: 0, reasons: [], totalConf: 0 };
         }
         
-        scores[pred].weightedScore += conf; // Güven skorunu topla
+        scores[pred].weightedScore += conf;
         scores[pred].count++;
         scores[pred].totalConf += conf;
         if (a[field].reasoning) scores[pred].reasons.push(a[field].reasoning);
@@ -438,11 +438,9 @@ function calculateConsensus(analyses: any[]): any {
 
     // En yüksek AĞIRLIKLI SKORA göre sırala
     const sorted = Object.entries(scores).sort((a, b) => {
-      // Önce ağırlıklı skora bak (güven toplamı)
       if (b[1].weightedScore !== a[1].weightedScore) {
         return b[1].weightedScore - a[1].weightedScore;
       }
-      // Eşitse oy sayısına bak
       return b[1].count - a[1].count;
     });
 
@@ -451,25 +449,19 @@ function calculateConsensus(analyses: any[]): any {
       const totalVotes = valid.length;
       const avgConf = Math.round(data.totalConf / data.count);
       
-      // Final güven hesaplama
       let finalConfidence = avgConf;
       const voteRatio = data.count / totalVotes;
       
-      // Oy oranına göre güven ayarla
       if (voteRatio < 0.5) {
-        // Çoğunluk yok - güveni %20 düşür
         finalConfidence = Math.round(finalConfidence * 0.8);
       } else if (voteRatio >= 0.75) {
-        // Güçlü çoğunluk - güveni biraz artır
         finalConfidence = Math.min(finalConfidence + 3, 85);
       }
       
       if (data.count === totalVotes) {
-        // Oybirliği - güveni artır ama max 85
         finalConfidence = Math.min(finalConfidence + 5, 85);
       }
 
-      // 45-85 arasında normalize et
       finalConfidence = Math.min(Math.max(finalConfidence, 45), 85);
 
       consensus[field] = {
@@ -485,37 +477,66 @@ function calculateConsensus(analyses: any[]): any {
     }
   });
 
-  // Best Bets - Unique ve en yüksek güvenli
-  const allBets = valid
-    .filter(a => a.bestBet)
-    .map(a => ({
-      ...a.bestBet,
-      confidence: Math.min(Math.max(a.bestBet.confidence || 60, 50), 85)
-    }))
-    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-
-  // Aynı tip+seçim kombinasyonunu tekrarlama
-  const uniqueBets: any[] = [];
-  const seenBets = new Set<string>();
+  // ==================== BEST BET - CONSENSUS İLE UYUMLU ====================
+  // Best Bet artık consensus tahminlerinden en yüksek güvenlisini seçiyor
   
-  allBets.forEach(bet => {
-    const key = `${bet.type}-${bet.selection}`.toLowerCase();
-    if (!seenBets.has(key) && uniqueBets.length < 3) {
-      seenBets.add(key);
-      uniqueBets.push(bet);
-    }
-  });
+  const bestBetOptions = [];
 
-  consensus.bestBets = uniqueBets;
+  // Match Result
+  if (consensus.matchResult?.prediction) {
+    const pred = consensus.matchResult.prediction;
+    let label = pred;
+    if (pred === '1') label = 'Home Win';
+    else if (pred === 'X') label = 'Draw';
+    else if (pred === '2') label = 'Away Win';
+    
+    bestBetOptions.push({
+      type: 'Match Result',
+      selection: label,
+      confidence: consensus.matchResult.confidence,
+      reasoning: consensus.matchResult.reasoning || `${consensus.matchResult.votes}/${consensus.matchResult.totalVotes} AI models agree on ${label}`,
+    });
+  }
+
+  // Over/Under 2.5
+  if (consensus.overUnder25?.prediction) {
+    bestBetOptions.push({
+      type: 'Over/Under 2.5',
+      selection: consensus.overUnder25.prediction,
+      confidence: consensus.overUnder25.confidence,
+      reasoning: consensus.overUnder25.reasoning || `${consensus.overUnder25.votes}/${consensus.overUnder25.totalVotes} AI models agree on ${consensus.overUnder25.prediction}`,
+    });
+  }
+
+  // BTTS
+  if (consensus.btts?.prediction) {
+    const bttsLabel = consensus.btts.prediction === 'Yes' ? 'Yes' : 'No';
+    bestBetOptions.push({
+      type: 'BTTS',
+      selection: bttsLabel,
+      confidence: consensus.btts.confidence,
+      reasoning: consensus.btts.reasoning || `${consensus.btts.votes}/${consensus.btts.totalVotes} AI models agree on BTTS ${bttsLabel}`,
+    });
+  }
+
+  // En yüksek güvenli consensus tahminini Best Bet olarak seç
+  consensus.bestBets = bestBetOptions
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+    .slice(0, 3);
+
+  console.log(`   Best Bet: ${consensus.bestBets[0]?.type} - ${consensus.bestBets[0]?.selection} (${consensus.bestBets[0]?.confidence}%)`);
 
   // Overall analyses
   consensus.overallAnalyses = valid.filter(a => a.overallAnalysis).map(a => a.overallAnalysis);
   
-  // Risk level - çoğunluğa göre
+  // Risk level
   const riskVotes: Record<string, number> = {};
   valid.forEach(a => {
     if (a.riskLevel) {
-      const risk = a.riskLevel.toLowerCase().replace('düşük', 'low').replace('orta', 'medium').replace('yüksek', 'high');
+      const risk = a.riskLevel.toLowerCase()
+        .replace('düşük', 'low')
+        .replace('orta', 'medium')
+        .replace('yüksek', 'high');
       riskVotes[risk] = (riskVotes[risk] || 0) + 1;
     }
   });
@@ -525,6 +546,7 @@ function calculateConsensus(analyses: any[]): any {
 
   return consensus;
 }
+
 
 // ==================== MAIN HANDLER ====================
 
