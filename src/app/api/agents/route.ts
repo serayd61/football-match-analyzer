@@ -19,6 +19,9 @@ async function fetchDetailedMatchData(
   awayTeamName: string
 ) {
   console.log('📊 Fetching detailed match data from Sportmonks...');
+  console.log(`   🔍 Fixture ID: ${fixtureId}`);
+  console.log(`   🏠 Home: ${homeTeamName} (ID: ${homeTeamId})`);
+  console.log(`   🚌 Away: ${awayTeamName} (ID: ${awayTeamId})`);
   
   let odds: any = {};
   let homeStats: any = {};
@@ -33,7 +36,6 @@ async function fetchDetailedMatchData(
     }
 
     // Paralel API çağrıları - Detaylı veriler
-    // Sportmonks API v3 - schedules endpoint kullan (SKORLAR + ODDS DAHİL!)
     const [
       fixtureRes,
       homeScheduleRes,
@@ -42,16 +44,16 @@ async function fetchDetailedMatchData(
       homeInjuriesRes,
       awayInjuriesRes
     ] = await Promise.all([
-      // 1. Fixture + Odds (yedek kaynak)
-      fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather`),
+      // 1. Fixture + Odds (ANA ODDS KAYNAĞI)
+      fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather;participants`),
       
-      // 2. Ev sahibi takım maç programı (SKORLAR + ODDS)
-      fetch(`${BASE_URL}/schedules/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=fixtures.odds`),
+      // 2. Ev sahibi takım maç programı (SKORLAR DAHİL)
+      fetch(`${BASE_URL}/schedules/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}`),
       
-      // 3. Deplasman takım maç programı (SKORLAR + ODDS)
-      fetch(`${BASE_URL}/schedules/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=fixtures.odds`),
+      // 3. Deplasman takım maç programı (SKORLAR DAHİL)
+      fetch(`${BASE_URL}/schedules/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}`),
       
-      // 4. H2H karşılaşmalar (SKORLARLA)
+      // 4. H2H karşılaşmalar
       fetch(`${BASE_URL}/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
       
       // 5. Ev sahibi sakatlıklar
@@ -72,13 +74,19 @@ async function fetchDetailedMatchData(
         awayInjuriesRes.json(),
       ]);
 
-    // Schedules verisinden bitmiş maçları ve gelecek maçları çıkar
-    const extractMatchesFromSchedule = (scheduleData: any, teamId: number): { finished: any[], upcoming: any[] } => {
-      const finished: any[] = [];
-      const upcoming: any[] = [];
-      const now = new Date();
+    // Debug: API yanıtlarını kontrol et
+    console.log(`   📡 Fixture API status: ${fixtureRes.status}`);
+    console.log(`   📡 Home Schedule API status: ${homeScheduleRes.status}`);
+    console.log(`   📡 Away Schedule API status: ${awayScheduleRes.status}`);
+
+    // Schedules verisinden bitmiş maçları çıkar
+    const extractFinishedMatches = (scheduleData: any, teamId: number): any[] => {
+      const matches: any[] = [];
       
-      if (!scheduleData.data) return { finished, upcoming };
+      if (!scheduleData.data) {
+        console.log(`      ⚠️ No schedule data for team ${teamId}`);
+        return matches;
+      }
       
       // Her stage (sezon/lig) için
       for (const stage of scheduleData.data) {
@@ -87,13 +95,9 @@ async function fetchDetailedMatchData(
           for (const round of stage.rounds) {
             if (round.fixtures) {
               for (const fixture of round.fixtures) {
-                // Bitmiş maçlar (state_id: 5 = Finished)
+                // Sadece bitmiş maçları al (state_id: 5 = Finished)
                 if (fixture.state_id === 5 && fixture.scores && fixture.scores.length > 0) {
-                  finished.push(fixture);
-                }
-                // Gelecek maçlar (state_id: 1 = Not Started) - odds için
-                else if (fixture.state_id === 1) {
-                  upcoming.push(fixture);
+                  matches.push(fixture);
                 }
               }
             }
@@ -103,68 +107,35 @@ async function fetchDetailedMatchData(
         if (stage.fixtures) {
           for (const fixture of stage.fixtures) {
             if (fixture.state_id === 5 && fixture.scores && fixture.scores.length > 0) {
-              finished.push(fixture);
-            } else if (fixture.state_id === 1) {
-              upcoming.push(fixture);
+              matches.push(fixture);
             }
           }
         }
       }
       
-      // Tarihe göre sırala
-      finished.sort((a, b) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime());
-      upcoming.sort((a, b) => new Date(a.starting_at).getTime() - new Date(b.starting_at).getTime());
+      // Tarihe göre sırala (en yeni önce)
+      matches.sort((a, b) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime());
       
-      return { 
-        finished: finished.slice(0, 15), // Son 15 maç
-        upcoming: upcoming.slice(0, 5)   // Gelecek 5 maç
-      };
+      return matches.slice(0, 15); // Son 15 maç
     };
 
-    const homeMatchData = extractMatchesFromSchedule(homeScheduleData, homeTeamId);
-    const awayMatchData = extractMatchesFromSchedule(awayScheduleData, awayTeamId);
-    
-    const homeMatches = homeMatchData.finished;
-    const awayMatches = awayMatchData.finished;
+    const homeMatches = extractFinishedMatches(homeScheduleData, homeTeamId);
+    const awayMatches = extractFinishedMatches(awayScheduleData, awayTeamId);
 
     console.log(`   📡 API Responses received`);
     console.log(`   Home finished matches: ${homeMatches.length}`);
     console.log(`   Away finished matches: ${awayMatches.length}`);
-    console.log(`   Home upcoming matches: ${homeMatchData.upcoming.length}`);
-    console.log(`   Away upcoming matches: ${awayMatchData.upcoming.length}`);
     console.log(`   H2H matches: ${h2hData.data?.length || 0}`);
+    console.log(`   Fixture odds count: ${fixtureData.data?.odds?.length || 0}`);
 
-    // ========== ODDS - ÖNCELİK SIRASI ==========
-    // 1. Fixture endpoint'ten odds
+    // ========== ODDS (FIXTURE ENDPOINT'TEN) ==========
     if (fixtureData.data?.odds && fixtureData.data.odds.length > 0) {
       odds = parseOdds(fixtureData.data.odds);
-      console.log(`   ✅ Odds (from fixture): 1=${odds.matchWinner?.home} X=${odds.matchWinner?.draw} 2=${odds.matchWinner?.away}`);
-    }
-    
-    // 2. Fixture endpoint'te yoksa, schedules'tan gelecek maçlardan bul
-    if (!odds.matchWinner?.home) {
-      // Aranan maçı bul (fixtureId ile eşleşen)
-      const findOddsFromUpcoming = (upcomingMatches: any[]): any => {
-        for (const match of upcomingMatches) {
-          if (match.id === fixtureId && match.odds && match.odds.length > 0) {
-            return parseOdds(match.odds);
-          }
-        }
-        return null;
-      };
-      
-      const homeUpcomingOdds = findOddsFromUpcoming(homeMatchData.upcoming);
-      const awayUpcomingOdds = findOddsFromUpcoming(awayMatchData.upcoming);
-      
-      if (homeUpcomingOdds?.matchWinner?.home) {
-        odds = homeUpcomingOdds;
-        console.log(`   ✅ Odds (from home schedule): 1=${odds.matchWinner?.home} X=${odds.matchWinner?.draw} 2=${odds.matchWinner?.away}`);
-      } else if (awayUpcomingOdds?.matchWinner?.home) {
-        odds = awayUpcomingOdds;
-        console.log(`   ✅ Odds (from away schedule): 1=${odds.matchWinner?.home} X=${odds.matchWinner?.draw} 2=${odds.matchWinner?.away}`);
-      } else {
-        console.log(`   ⚠️ No odds found in fixture or schedules`);
-      }
+      console.log(`   ✅ Odds parsed: 1=${odds.matchWinner?.home || 'N/A'} X=${odds.matchWinner?.draw || 'N/A'} 2=${odds.matchWinner?.away || 'N/A'}`);
+      console.log(`   ✅ Over/Under 2.5: O=${odds.overUnder?.['2.5']?.over || 'N/A'} U=${odds.overUnder?.['2.5']?.under || 'N/A'}`);
+      console.log(`   ✅ BTTS: Yes=${odds.btts?.yes || 'N/A'} No=${odds.btts?.no || 'N/A'}`);
+    } else {
+      console.log(`   ⚠️ No odds in fixture response`);
     }
 
     // ========== HOME TEAM STATS ==========
@@ -251,8 +222,6 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     let opponentScore = 0;
     let scoreFound = false;
     
-    // Sportmonks'ta skorlar her takım için ayrı ayrı geliyor
-    // Her score objesi: { participant_id, score: { goals, participant }, description }
     if (match.scores && Array.isArray(match.scores) && match.scores.length > 0) {
       // CURRENT veya type_id: 1525 olan skorları bul (final skor)
       const currentScores = match.scores.filter((s: any) => 
@@ -260,7 +229,6 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
       );
       
       if (currentScores.length >= 2) {
-        // Her takımın skorunu bul
         currentScores.forEach((s: any) => {
           const goals = s.score?.goals ?? 0;
           if (s.participant_id === teamId) {
@@ -271,7 +239,6 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
         });
         scoreFound = true;
       } else if (currentScores.length === 1) {
-        // Sadece bir skor varsa (nadir durum)
         const s = currentScores[0];
         if (s.participant_id === teamId) {
           teamScore = s.score?.goals ?? 0;
@@ -281,14 +248,13 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
         scoreFound = true;
       }
       
-      // Eğer CURRENT bulunamadıysa, 2ND_HALF veya 1ST_HALF'tan hesapla
+      // Eğer CURRENT bulunamadıysa, 2ND_HALF'tan hesapla
       if (!scoreFound) {
         const halfScores: Record<number, number> = {};
         match.scores.forEach((s: any) => {
-          if (s.description === '2ND_HALF' || s.description === '1ST_HALF' || s.type_id === 1 || s.type_id === 2) {
+          if (s.description === '2ND_HALF' || s.type_id === 2) {
             const pid = s.participant_id;
             const goals = s.score?.goals ?? 0;
-            // En yüksek değeri al (2ND_HALF genelde kümülatif olabilir)
             if (!halfScores[pid] || goals > halfScores[pid]) {
               halfScores[pid] = goals;
             }
@@ -311,15 +277,12 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     // Method 2: result_info'dan parse et (yedek yöntem)
     if (!scoreFound && match.result_info) {
       const resultInfo = match.result_info.toLowerCase();
-      // "Team won after full-time" formatında kazananı belirle
       if (resultInfo.includes('won')) {
-        // Kazanan takımın adını bul
         const parts = resultInfo.split(' won');
         if (parts.length > 0) {
           const winnerName = parts[0].trim().toLowerCase();
           const teamFirstWord = teamName.toLowerCase().split(' ')[0];
           
-          // Basit skor tahmini: kazanan 2-1, berabere 1-1, kaybeden 1-2
           if (winnerName.includes(teamFirstWord) || teamFirstWord.includes(winnerName.split(' ')[0])) {
             teamScore = 2;
             opponentScore = 1;
@@ -403,7 +366,6 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
   const matchCount = last10.length || 1;
   
   return {
-    // Temel form
     form,
     points: (wins * 3) + draws,
     maxPoints: last5.length * 3,
@@ -411,28 +373,20 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     wins,
     draws,
     losses,
-    
-    // Gol istatistikleri (GERÇEK VERİ)
     avgGoalsScored: (totalGoalsScored / matchCount).toFixed(2),
     avgGoalsConceded: (totalGoalsConceded / matchCount).toFixed(2),
-    avgGoals: (totalGoalsScored / matchCount).toFixed(2), // Eski uyumluluk için
-    avgConceded: (totalGoalsConceded / matchCount).toFixed(2), // Eski uyumluluk için
+    avgGoals: (totalGoalsScored / matchCount).toFixed(2),
+    avgConceded: (totalGoalsConceded / matchCount).toFixed(2),
     totalGoalsScored,
     totalGoalsConceded,
-    
-    // Over/Under & BTTS (GERÇEK VERİ)
     over25Percentage: Math.round((over25Count / matchCount) * 100).toString(),
     over25Count,
     bttsPercentage: Math.round((bttsCount / matchCount) * 100).toString(),
     bttsCount,
-    
-    // Clean sheet & Failed to score
     cleanSheets,
     cleanSheetPercentage: Math.round((cleanSheets / matchCount) * 100),
     failedToScore,
     failedToScorePercentage: Math.round((failedToScore / matchCount) * 100),
-    
-    // Ev/Deplasman ayrımı
     homeRecord: homeMatches > 0 ? {
       matches: homeMatches,
       avgScored: (homeGoalsScored / homeMatches).toFixed(2),
@@ -443,8 +397,6 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
       avgScored: (awayGoalsScored / awayMatches).toFixed(2),
       avgConceded: (awayGoalsConceded / awayMatches).toFixed(2),
     } : null,
-    
-    // Maç detayları
     matches: matchDetails.slice(0, 5),
     matchDetails: matchDetails.slice(0, 5),
     matchCount,
@@ -469,19 +421,15 @@ function calculateDetailedH2H(
   console.log(`   📊 Parsing ${matches.length} H2H matches`);
 
   matches.forEach((match: any, index: number) => {
-    // Skorları bul - SPORTMONKS FORMATI
     let homeScore = 0, awayScore = 0;
     let scoreFound = false;
     
-    // Hangi takım ev sahibi?
     const participants = match.participants || [];
     const homeParticipant = participants.find((p: any) => p.meta?.location === 'home');
     const awayParticipant = participants.find((p: any) => p.meta?.location === 'away');
     const isHomeTeamHome = homeParticipant?.id === homeTeamId;
     
-    // Sportmonks'ta skorlar her takım için ayrı ayrı geliyor
     if (match.scores && Array.isArray(match.scores) && match.scores.length > 0) {
-      // CURRENT veya type_id: 1525 olan skorları bul
       const currentScores = match.scores.filter((s: any) => 
         s.description === 'CURRENT' || s.type_id === 1525
       );
@@ -496,7 +444,6 @@ function calculateDetailedH2H(
           } else if (participantType === 'away') {
             awayScore = goals;
           } else {
-            // participant_id ile eşleştir
             if (s.participant_id === homeParticipant?.id) {
               homeScore = goals;
             } else {
@@ -508,7 +455,6 @@ function calculateDetailedH2H(
       }
     }
     
-    // result_info'dan parse et (yedek)
     if (!scoreFound && match.result_info) {
       const resultInfo = match.result_info.toLowerCase();
       if (resultInfo.includes('won')) {
@@ -531,14 +477,12 @@ function calculateDetailedH2H(
       }
     }
 
-    // Debug log for first H2H match
     if (index === 0) {
       console.log(`      H2H Match 1: ${match.name}`);
       console.log(`      Scores: ${JSON.stringify(match.scores?.filter((s: any) => s.description === 'CURRENT'))}`);
       console.log(`      Parsed: ${homeScore}-${awayScore}`);
     }
     
-    // Eğer isHomeTeamHome false ise, skorları ters çevir
     if (!isHomeTeamHome) {
       [homeScore, awayScore] = [awayScore, homeScore];
     }
@@ -570,22 +514,16 @@ function calculateDetailedH2H(
     homeWins,
     awayWins,
     draws,
-    
-    // Gol istatistikleri
     totalHomeGoals,
     totalAwayGoals,
     avgHomeGoals: (totalHomeGoals / matchCount).toFixed(2),
     avgAwayGoals: (totalAwayGoals / matchCount).toFixed(2),
     avgTotalGoals: ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2),
-    avgGoals: ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2), // Eski uyumluluk
-    
-    // Over/Under & BTTS
+    avgGoals: ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2),
     over25Percentage: Math.round((over25Count / matchCount) * 100).toString(),
     over25Count,
     bttsPercentage: Math.round((bttsCount / matchCount) * 100).toString(),
     bttsCount,
-    
-    // Maç detayları
     matchDetails: matchDetails.slice(0, 5),
   };
 }
@@ -597,9 +535,8 @@ function parseInjuries(injuryData: any[]): any[] {
   
   return injuryData
     .filter((injury: any) => {
-      // Sadece aktif sakatlıkları al
       const endDate = injury.end_date;
-      if (!endDate) return true; // Bitiş tarihi yoksa hala sakat
+      if (!endDate) return true;
       return new Date(endDate) > new Date();
     })
     .map((injury: any) => ({
@@ -608,10 +545,10 @@ function parseInjuries(injuryData: any[]): any[] {
       startDate: injury.start_date,
       expectedReturn: injury.end_date || 'Unknown',
     }))
-    .slice(0, 5); // En fazla 5 sakatlık
+    .slice(0, 5);
 }
 
-// ==================== ODDS PARSE ====================
+// ==================== ODDS PARSE (GÜNCELLENMIŞ) ====================
 
 function parseOdds(oddsData: any[]): any {
   const result: any = {
@@ -623,41 +560,83 @@ function parseOdds(oddsData: any[]): any {
 
   if (!oddsData || !Array.isArray(oddsData)) return result;
 
+  // En iyi odds'ları bulmak için bookmaker önceliği (bet365 > diğerleri)
+  const getBestOdd = (odds: any[], marketFilter: (m: string) => boolean, labelFilter: string): number | null => {
+    const filtered = odds.filter(o => {
+      const market = (o.market_description || '').toLowerCase();
+      return marketFilter(market) && (o.label === labelFilter || o.name === labelFilter);
+    });
+    
+    if (filtered.length === 0) return null;
+    
+    // bet365'i tercih et (bookmaker_id: 2)
+    const bet365 = filtered.find(o => o.bookmaker_id === 2);
+    if (bet365) return parseFloat(bet365.value);
+    
+    // Yoksa ilkini al
+    return parseFloat(filtered[0].value);
+  };
+
+  // 1X2 / Full Time Result
+  const is1X2Market = (m: string) => 
+    m === 'full time result' || 
+    m === 'fulltime result' || 
+    m === 'match winner' || 
+    m === '1x2' ||
+    m === 'home/away';
+  
+  result.matchWinner.home = getBestOdd(oddsData, is1X2Market, '1') || getBestOdd(oddsData, is1X2Market, 'Home');
+  result.matchWinner.draw = getBestOdd(oddsData, is1X2Market, 'X') || getBestOdd(oddsData, is1X2Market, 'Draw');
+  result.matchWinner.away = getBestOdd(oddsData, is1X2Market, '2') || getBestOdd(oddsData, is1X2Market, 'Away');
+
+  // Over/Under
   oddsData.forEach((odd: any) => {
-    const marketName = odd.market_description?.toLowerCase() || odd.market?.name?.toLowerCase() || '';
-
-    // 1X2 / Fulltime Result
-    if (marketName.includes('fulltime result') || marketName.includes('match winner') || marketName.includes('1x2') || marketName.includes('full time result')) {
-      if (odd.label === 'Home' || odd.label === '1') result.matchWinner.home = parseFloat(odd.value);
-      if (odd.label === 'Draw' || odd.label === 'X') result.matchWinner.draw = parseFloat(odd.value);
-      if (odd.label === 'Away' || odd.label === '2') result.matchWinner.away = parseFloat(odd.value);
-    }
-
-    // Over/Under
-    if (marketName.includes('over/under') || marketName.includes('goals')) {
-      if (odd.total === 2.5 || odd.total === '2.5' || marketName.includes('2.5')) {
-        if (odd.label === 'Over') result.overUnder['2.5'].over = parseFloat(odd.value);
-        if (odd.label === 'Under') result.overUnder['2.5'].under = parseFloat(odd.value);
+    const marketName = (odd.market_description || '').toLowerCase();
+    
+    // Goals Over/Under veya Alternative Total Goals
+    if (marketName.includes('goals over/under') || marketName === 'alternative total goals') {
+      const total = odd.total || odd.handicap;
+      
+      if (total == 2.5 || total === '2.5') {
+        if (odd.label === 'Over' && !result.overUnder['2.5'].over) {
+          result.overUnder['2.5'].over = parseFloat(odd.value);
+        }
+        if (odd.label === 'Under' && !result.overUnder['2.5'].under) {
+          result.overUnder['2.5'].under = parseFloat(odd.value);
+        }
       }
-      if (odd.total === 3.5 || odd.total === '3.5' || marketName.includes('3.5')) {
-        if (odd.label === 'Over') result.overUnder['3.5'].over = parseFloat(odd.value);
-        if (odd.label === 'Under') result.overUnder['3.5'].under = parseFloat(odd.value);
+      if (total == 3.5 || total === '3.5') {
+        if (odd.label === 'Over' && !result.overUnder['3.5'].over) {
+          result.overUnder['3.5'].over = parseFloat(odd.value);
+        }
+        if (odd.label === 'Under' && !result.overUnder['3.5'].under) {
+          result.overUnder['3.5'].under = parseFloat(odd.value);
+        }
       }
-    }
-
-    // BTTS
-    if (marketName.includes('both teams') || marketName.includes('btts')) {
-      if (odd.label === 'Yes') result.btts.yes = parseFloat(odd.value);
-      if (odd.label === 'No') result.btts.no = parseFloat(odd.value);
-    }
-
-    // Double Chance
-    if (marketName.includes('double chance')) {
-      if (odd.label === '1X') result.doubleChance.homeOrDraw = parseFloat(odd.value);
-      if (odd.label === '12') result.doubleChance.homeOrAway = parseFloat(odd.value);
-      if (odd.label === 'X2') result.doubleChance.drawOrAway = parseFloat(odd.value);
     }
   });
+
+  // BTTS (Both Teams To Score / Both Teams to Score)
+  const isBttsMarket = (m: string) => 
+    m === 'both teams to score' || 
+    m === 'both teams to score' ||
+    m.includes('both teams');
+  
+  result.btts.yes = getBestOdd(oddsData, isBttsMarket, 'Yes');
+  result.btts.no = getBestOdd(oddsData, isBttsMarket, 'No');
+
+  // Double Chance
+  const isDCMarket = (m: string) => m === 'double chance';
+  
+  result.doubleChance.homeOrDraw = getBestOdd(oddsData, isDCMarket, '1X');
+  result.doubleChance.homeOrAway = getBestOdd(oddsData, isDCMarket, '12');
+  result.doubleChance.drawOrAway = getBestOdd(oddsData, isDCMarket, 'X2');
+
+  // Debug log
+  console.log(`      📊 Parsed odds summary:`);
+  console.log(`         1X2: ${result.matchWinner.home || 'N/A'} / ${result.matchWinner.draw || 'N/A'} / ${result.matchWinner.away || 'N/A'}`);
+  console.log(`         O/U 2.5: ${result.overUnder['2.5'].over || 'N/A'} / ${result.overUnder['2.5'].under || 'N/A'}`);
+  console.log(`         BTTS: ${result.btts.yes || 'N/A'} / ${result.btts.no || 'N/A'}`);
 
   return result;
 }
@@ -741,9 +720,10 @@ export async function POST(request: NextRequest) {
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════');
-    console.log('🤖 AGENT ANALYSIS REQUEST (ENHANCED + ODDS)');
+    console.log('🤖 AGENT ANALYSIS REQUEST (V2 - ODDS FIX)');
     console.log('🤖 ═══════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
+    console.log(`🆔 IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
     console.log(`🏆 League: ${league}`);
     console.log(`🔮 Multi-Model: ${useMultiModel ? 'ENABLED' : 'DISABLED'}`);
     console.log('');
@@ -764,7 +744,7 @@ export async function POST(request: NextRequest) {
     console.log(`   🏥 Injuries: ${homeTeam}: ${injuries?.home?.length || 0} | ${awayTeam}: ${injuries?.away?.length || 0}`);
     console.log('');
 
-    // Match data objesi - MatchData tipine uyumlu
+    // Match data objesi
     const matchData: any = {
       fixtureId,
       homeTeam,
@@ -774,7 +754,6 @@ export async function POST(request: NextRequest) {
       league,
       date: new Date().toISOString(),
       odds,
-      // MatchData tipine uygun homeForm
       homeForm: {
         form: homeStats.form,
         points: homeStats.points,
@@ -788,7 +767,6 @@ export async function POST(request: NextRequest) {
         cleanSheetPercentage: homeStats.cleanSheetPercentage,
         matches: homeStats.matches || [],
       },
-      // MatchData tipine uygun awayForm
       awayForm: {
         form: awayStats.form,
         points: awayStats.points,
@@ -802,7 +780,6 @@ export async function POST(request: NextRequest) {
         cleanSheetPercentage: awayStats.cleanSheetPercentage,
         matches: awayStats.matches || [],
       },
-      // H2H
       h2h: {
         totalMatches: h2h.totalMatches,
         homeWins: h2h.homeWins,
@@ -812,7 +789,6 @@ export async function POST(request: NextRequest) {
         over25Percentage: h2h.over25Percentage,
         bttsPercentage: h2h.bttsPercentage,
       },
-      // Detaylı veriler (ek olarak)
       detailedStats: {
         home: homeStats,
         away: awayStats,
@@ -857,21 +833,22 @@ export async function POST(request: NextRequest) {
         modelAgreement: multiModelResult.modelAgreement,
       } : { enabled: false },
       dataUsed: {
-        hasOdds: !!odds?.matchWinner?.home,
-        hasHomeForm: !!homeStats?.form && homeStats.form !== 'N/A',
-        hasAwayForm: !!awayStats?.form && awayStats.form !== 'N/A',
-        hasH2H: !!h2h?.totalMatches && h2h.totalMatches > 0,
+        hasOdds: !!(odds?.matchWinner?.home),
+        hasHomeForm: !!(homeStats?.form && homeStats.form !== 'N/A'),
+        hasAwayForm: !!(awayStats?.form && awayStats.form !== 'N/A'),
+        hasH2H: !!(h2h?.totalMatches && h2h.totalMatches > 0),
         hasInjuries: (injuries?.home?.length > 0) || (injuries?.away?.length > 0),
-        // Detaylı veri özeti
         homeMatchCount: homeStats?.matchCount || 0,
         awayMatchCount: awayStats?.matchCount || 0,
         h2hMatchCount: h2h?.totalMatches || 0,
         homeInjuryCount: injuries?.home?.length || 0,
         awayInjuryCount: injuries?.away?.length || 0,
-        // Odds detayı (debug için)
-        oddsSource: odds?.matchWinner?.home ? 'available' : 'not_found',
+        oddsDetails: {
+          matchWinner: odds?.matchWinner?.home ? true : false,
+          overUnder: odds?.overUnder?.['2.5']?.over ? true : false,
+          btts: odds?.btts?.yes ? true : false,
+        },
       },
-      // Ham veriyi de gönder (debug için)
       rawStats: {
         home: homeStats,
         away: awayStats,
