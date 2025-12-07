@@ -3,10 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// POST - Aylık ödül dağıtımı (Her ayın 1'inde çalışır)
 export async function POST(request: NextRequest) {
   try {
-    // API key kontrolü
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
     
@@ -16,152 +14,125 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json().catch(() => ({}));
     
-    // Hangi ayın ödülünü dağıtacağız
     const now = new Date();
     const targetYear = body.year || (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
     const targetMonth = body.month || (now.getMonth() === 0 ? 12 : now.getMonth());
     
-    console.log(`🏆 Processing monthly prize for ${targetYear}-${targetMonth}`);
+    const { data: topUsers, error } = await supabaseAdmin
+      .from('monthly_leaderboard')
+      .select('*')
+      .eq('year', targetYear)
+      .eq('month', targetMonth)
+      .gt('total_points', 0)
+      .eq('prize_given', false)
+      .order('total_points', { ascending: false })
+      .limit(3);
     
-    // O ayın liderlik tablosunu al
-    const topUsers = await prisma.monthlyLeaderboard.findMany({
-      where: {
-        year: targetYear,
-        month: targetMonth,
-        totalPoints: { gt: 0 },
-        prizeGiven: false,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { totalPoints: 'desc' },
-      take: 3, // İlk 3
-    });
+    if (error) throw error;
     
-    if (topUsers.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No eligible winners for this month',
-      });
+    if (!topUsers || topUsers.length === 0) {
+      return NextResponse.json({ success: true, message: 'No eligible winners' });
     }
     
     const winner = topUsers[0];
     
-    // Kazananı işaretle
-    await prisma.monthlyLeaderboard.update({
-      where: { id: winner.id },
-      data: {
-        isWinner: true,
-        prizeGiven: true,
-        rank: 1,
-      },
-    });
+    // Get winner user info
+    const { data: winnerUser } = await supabaseAdmin
+      .from('users')
+      .select('id, name, email, image')
+      .eq('id', winner.user_id)
+      .single();
     
-    // Diğer sıralamaları güncelle
-    for (let i = 1; i < topUsers.length; i++) {
-      await prisma.monthlyLeaderboard.update({
-        where: { id: topUsers[i].id },
-        data: { rank: i + 1 },
-      });
-    }
+    // Mark winner
+    await supabaseAdmin
+      .from('monthly_leaderboard')
+      .update({ is_winner: true, prize_given: true, rank: 1 })
+      .eq('id', winner.id);
     
-    // Kazanana 1 aylık Pro üyelik ver
+    // Give 1 month Pro subscription
     const prizeEndDate = new Date();
     prizeEndDate.setMonth(prizeEndDate.getMonth() + 1);
     
-    await prisma.user.update({
-      where: { id: winner.userId },
-      data: {
-        subscriptionStatus: 'active',
-        subscriptionEnd: prizeEndDate,
-        // Ödül kaydı için özel alan eklenebilir
-      },
-    });
+    const { data: existingSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', winner.user_id)
+      .single();
     
-    // Bildirim/email gönder (opsiyonel)
-    // await sendPrizeNotification(winner.user);
+    if (existingSub) {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          plan: 'pro',
+          current_period_end: prizeEndDate.toISOString(),
+        })
+        .eq('user_id', winner.user_id);
+    } else {
+      await supabaseAdmin
+        .from('subscriptions')
+        .insert({
+          user_id: winner.user_id,
+          status: 'active',
+          plan: 'pro',
+          current_period_start: new Date().toISOString(),
+          current_period_end: prizeEndDate.toISOString(),
+        });
+    }
     
-    console.log(`🎉 Winner: ${winner.user.name} with ${winner.totalPoints} points`);
-    console.log(`   Prize: 1 month Pro subscription until ${prizeEndDate.toISOString()}`);
-    
-    // Sonuçları döndür
     return NextResponse.json({
       success: true,
-      year: targetYear,
-      month: targetMonth,
       winner: {
-        userId: winner.userId,
-        userName: winner.user.name,
-        email: winner.user.email,
-        totalPoints: winner.totalPoints,
-        totalCoupons: winner.totalCoupons,
-        wonCoupons: winner.wonCoupons,
-        winRate: winner.winRate,
+        userId: winner.user_id,
+        userName: winnerUser?.name,
+        totalPoints: winner.total_points,
       },
-      runnerUps: topUsers.slice(1).map((u, i) => ({
-        rank: i + 2,
-        userName: u.user.name,
-        totalPoints: u.totalPoints,
-      })),
-      prizeEndDate,
+      prizeEndDate: prizeEndDate.toISOString(),
     });
   } catch (error: any) {
-    console.error('Monthly prize error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// GET - Geçmiş kazananları listele
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const { data: winners, error } = await supabaseAdmin
+      .from('monthly_leaderboard')
+      .select('*')
+      .eq('is_winner', true)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(12);
     
-    const winners = await prisma.monthlyLeaderboard.findMany({
-      where: {
-        isWinner: true,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
-      orderBy: [
-        { year: 'desc' },
-        { month: 'desc' },
-      ],
-      take: limit,
+    if (error) throw error;
+    
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    
+    // Get user info for winners
+    const userIds = (winners || []).map(w => w.user_id);
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, name, image')
+      .in('id', userIds);
+    
+    const usersMap = new Map((users || []).map(u => [u.id, u]));
+    
+    const formattedWinners = (winners || []).map(w => {
+      const user = usersMap.get(w.user_id);
+      return {
+        year: w.year,
+        month: w.month,
+        monthName: months[w.month - 1],
+        userId: w.user_id,
+        userName: user?.name || 'Anonim',
+        userImage: user?.image,
+        totalPoints: w.total_points,
+      };
     });
     
-    const formattedWinners = winners.map(w => ({
-      year: w.year,
-      month: w.month,
-      monthName: new Date(w.year, w.month - 1).toLocaleString('tr-TR', { month: 'long' }),
-      userId: w.userId,
-      userName: w.user.name,
-      userImage: w.user.image,
-      totalPoints: w.totalPoints,
-      totalCoupons: w.totalCoupons,
-      wonCoupons: w.wonCoupons,
-      winRate: w.winRate,
-    }));
-    
-    return NextResponse.json({
-      winners: formattedWinners,
-    });
+    return NextResponse.json({ winners: formattedWinners });
   } catch (error: any) {
-    console.error('Get winners error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
