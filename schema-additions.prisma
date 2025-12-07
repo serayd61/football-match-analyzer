@@ -1,0 +1,120 @@
+// prisma/schema.prisma
+// Mevcut tablolarına EKLENECEKLER - sadece yeni kısımları ekle
+
+// ==================== COUPON SYSTEM ====================
+
+model Coupon {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  picks         CouponPick[]
+  
+  totalOdds     Float        @default(1.0)
+  status        CouponStatus @default(PENDING)
+  pointsEarned  Float        @default(0)
+  isPublic      Boolean      @default(true)
+  
+  title         String?      // Opsiyonel başlık
+  description   String?      // Opsiyonel açıklama
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  settledAt     DateTime?    // Kupon sonuçlandığında
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([isPublic, status])
+}
+
+model CouponPick {
+  id          String     @id @default(cuid())
+  couponId    String
+  coupon      Coupon     @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  
+  fixtureId   Int
+  homeTeam    String
+  awayTeam    String
+  league      String
+  matchDate   DateTime
+  
+  betType     BetType
+  selection   String     // "1", "X", "2", "Over", "Under", "Yes", "No"
+  odds        Float
+  
+  result      PickResult @default(PENDING)
+  
+  // Maç sonucu (sonradan doldurulur)
+  homeScore   Int?
+  awayScore   Int?
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([couponId])
+  @@index([fixtureId])
+  @@index([result])
+}
+
+// Aylık liderlik tablosu
+model MonthlyLeaderboard {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  year        Int
+  month       Int      // 1-12
+  
+  totalPoints Float    @default(0)
+  totalCoupons Int     @default(0)
+  wonCoupons  Int      @default(0)
+  lostCoupons Int      @default(0)
+  winRate     Float    @default(0)
+  
+  rank        Int?     // Ay sonunda hesaplanır
+  isWinner    Boolean  @default(false) // Ay birincisi mi?
+  prizeGiven  Boolean  @default(false) // Ödül verildi mi?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, year, month])
+  @@index([year, month, totalPoints])
+}
+
+enum CouponStatus {
+  PENDING   // Bekliyor
+  WON       // Kazandı
+  LOST      // Kaybetti
+  PARTIAL   // Kısmi (bazı maçlar iptal vs)
+  CANCELLED // İptal edildi
+}
+
+enum BetType {
+  MATCH_RESULT    // 1X2
+  OVER_UNDER_25   // Over/Under 2.5
+  OVER_UNDER_35   // Over/Under 3.5
+  BTTS            // Both Teams to Score
+  DOUBLE_CHANCE   // Double Chance
+}
+
+enum PickResult {
+  PENDING
+  WON
+  LOST
+  VOID      // İptal/erteleme
+}
+
+// ==================== USER MODEL UPDATE ====================
+// Mevcut User modeline eklenecek alanlar:
+
+// model User {
+//   ... mevcut alanlar ...
+//   
+//   // Coupon system
+//   coupons           Coupon[]
+//   monthlyStats      MonthlyLeaderboard[]
+//   totalPoints       Float    @default(0)
+//   allTimeRank       Int?
+// }
