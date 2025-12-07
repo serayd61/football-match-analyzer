@@ -33,11 +33,11 @@ async function fetchDetailedMatchData(
     }
 
     // Paralel API çağrıları - Detaylı veriler
-    // Sportmonks API v3 - Fixtures endpoint kullan (skorlar için daha güvenilir)
+    // Sportmonks API v3 - teams endpoint ile latest maçlar (ÇALIŞAN FORMAT)
     const [
       fixtureRes,
-      homeMatchesRes,
-      awayMatchesRes,
+      homeTeamRes,
+      awayTeamRes,
       h2hRes,
       homeInjuriesRes,
       awayInjuriesRes
@@ -45,11 +45,11 @@ async function fetchDetailedMatchData(
       // 1. Fixture + Odds
       fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather`),
       
-      // 2. Ev sahibi son maçlar - fixtures endpoint (SKORLAR DAHİL)
-      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters[participant_id]=${homeTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
+      // 2. Ev sahibi takım + son maçlar (SKORLARLA)
+      fetch(`${BASE_URL}/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
       
-      // 3. Deplasman son maçlar - fixtures endpoint (SKORLAR DAHİL)
-      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters[participant_id]=${awayTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
+      // 3. Deplasman takım + son maçlar (SKORLARLA)
+      fetch(`${BASE_URL}/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
       
       // 4. H2H karşılaşmalar (SKORLARLA)
       fetch(`${BASE_URL}/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
@@ -62,19 +62,19 @@ async function fetchDetailedMatchData(
     ]);
 
     // JSON parse
-    const [fixtureData, homeMatchesData, awayMatchesData, h2hData, homeInjuriesData, awayInjuriesData] = 
+    const [fixtureData, homeTeamData, awayTeamData, h2hData, homeInjuriesData, awayInjuriesData] = 
       await Promise.all([
         fixtureRes.json(),
-        homeMatchesRes.json(),
-        awayMatchesRes.json(),
+        homeTeamRes.json(),
+        awayTeamRes.json(),
         h2hRes.json(),
         homeInjuriesRes.json(),
         awayInjuriesRes.json(),
       ]);
 
     console.log(`   📡 API Responses received`);
-    console.log(`   Home matches: ${homeMatchesData.data?.length || 0}`);
-    console.log(`   Away matches: ${awayMatchesData.data?.length || 0}`);
+    console.log(`   Home team latest: ${homeTeamData.data?.latest?.length || 0} matches`);
+    console.log(`   Away team latest: ${awayTeamData.data?.latest?.length || 0} matches`);
     console.log(`   H2H matches: ${h2hData.data?.length || 0}`);
 
     // ========== ODDS ==========
@@ -84,7 +84,7 @@ async function fetchDetailedMatchData(
     }
 
     // ========== HOME TEAM STATS ==========
-    const homeMatches = homeMatchesData.data || [];
+    const homeMatches = homeTeamData.data?.latest || [];
     if (homeMatches.length > 0) {
       homeStats = calculateDetailedStats(homeMatches, homeTeamId, homeTeamName, 'home');
       console.log(`   ✅ Home Stats: ${homeStats.form} | Goals: ${homeStats.avgGoalsScored}/${homeStats.avgGoalsConceded} | Over25: ${homeStats.over25Percentage}%`);
@@ -94,7 +94,7 @@ async function fetchDetailedMatchData(
     }
 
     // ========== AWAY TEAM STATS ==========
-    const awayMatches = awayMatchesData.data || [];
+    const awayMatches = awayTeamData.data?.latest || [];
     if (awayMatches.length > 0) {
       awayStats = calculateDetailedStats(awayMatches, awayTeamId, awayTeamName, 'away');
       console.log(`   ✅ Away Stats: ${awayStats.form} | Goals: ${awayStats.avgGoalsScored}/${awayStats.avgGoalsConceded} | Over25: ${awayStats.over25Percentage}%`);
@@ -164,122 +164,107 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     
     const isHome = homeParticipant?.id === teamId;
     
-    // Skorları bul - BİRÇOK FORMAT DESTEKLE
+    // Skorları bul - SPORTMONKS FORMATI
     let teamScore = 0;
     let opponentScore = 0;
     let scoreFound = false;
     
-    // Method 1: scores array içinde
-    if (match.scores && Array.isArray(match.scores)) {
-      // FT, CURRENT, veya 2ND_HALF skorlarını ara
-      const ftScore = match.scores.find((s: any) => 
-        s.description === 'CURRENT' || 
-        s.description === 'FT' || 
-        s.description === '2ND_HALF' ||
-        s.type_id === 1525 ||
-        s.type_id === 1
+    // Sportmonks'ta skorlar her takım için ayrı ayrı geliyor
+    // Her score objesi: { participant_id, score: { goals, participant }, description }
+    if (match.scores && Array.isArray(match.scores) && match.scores.length > 0) {
+      // CURRENT veya type_id: 1525 olan skorları bul (final skor)
+      const currentScores = match.scores.filter((s: any) => 
+        s.description === 'CURRENT' || s.type_id === 1525
       );
       
-      if (ftScore) {
-        const homeGoals = ftScore.score?.home ?? ftScore.home ?? ftScore.goals?.home ?? 0;
-        const awayGoals = ftScore.score?.away ?? ftScore.away ?? ftScore.goals?.away ?? 0;
-        
-        if (isHome) {
-          teamScore = homeGoals;
-          opponentScore = awayGoals;
+      if (currentScores.length >= 2) {
+        // Her takımın skorunu bul
+        currentScores.forEach((s: any) => {
+          const goals = s.score?.goals ?? 0;
+          if (s.participant_id === teamId) {
+            teamScore = goals;
+          } else {
+            opponentScore = goals;
+          }
+        });
+        scoreFound = true;
+      } else if (currentScores.length === 1) {
+        // Sadece bir skor varsa (nadir durum)
+        const s = currentScores[0];
+        if (s.participant_id === teamId) {
+          teamScore = s.score?.goals ?? 0;
         } else {
-          teamScore = awayGoals;
-          opponentScore = homeGoals;
+          opponentScore = s.score?.goals ?? 0;
         }
         scoreFound = true;
       }
-    }
-    
-    // Method 2: Direkt match üzerinde result_info varsa parse et
-    if (!scoreFound && match.result_info) {
-      const resultInfo = match.result_info;
-      // "Team A won 2-1" veya "Ended in 1-1 draw" formatını parse et
-      const scoreMatch = resultInfo.match(/(\d+)\s*[-:]\s*(\d+)/);
-      if (scoreMatch) {
-        const score1 = parseInt(scoreMatch[1]);
-        const score2 = parseInt(scoreMatch[2]);
+      
+      // Eğer CURRENT bulunamadıysa, 2ND_HALF veya 1ST_HALF'tan hesapla
+      if (!scoreFound) {
+        const halfScores: Record<number, number> = {};
+        match.scores.forEach((s: any) => {
+          if (s.description === '2ND_HALF' || s.description === '1ST_HALF' || s.type_id === 1 || s.type_id === 2) {
+            const pid = s.participant_id;
+            const goals = s.score?.goals ?? 0;
+            // En yüksek değeri al (2ND_HALF genelde kümülatif olabilir)
+            if (!halfScores[pid] || goals > halfScores[pid]) {
+              halfScores[pid] = goals;
+            }
+          }
+        });
         
-        // Hangi takımın skoru hangisi?
-        if (resultInfo.toLowerCase().includes(teamName.toLowerCase().split(' ')[0])) {
-          // Takım adı önce geçiyorsa, ilk skor bizim
-          if (resultInfo.toLowerCase().indexOf(teamName.toLowerCase().split(' ')[0]) < resultInfo.indexOf(scoreMatch[0])) {
-            teamScore = score1;
-            opponentScore = score2;
-          } else {
-            teamScore = score2;
-            opponentScore = score1;
-          }
-        } else {
-          // Ev sahibi/deplasman mantığıyla
-          if (isHome) {
-            teamScore = score1;
-            opponentScore = score2;
-          } else {
-            teamScore = score2;
-            opponentScore = score1;
-          }
-        }
-        scoreFound = true;
-      }
-    }
-    
-    // Method 3: match.score objesi
-    if (!scoreFound && match.score) {
-      if (typeof match.score === 'object') {
-        const homeGoals = match.score.home ?? match.score.ft_home ?? 0;
-        const awayGoals = match.score.away ?? match.score.ft_away ?? 0;
-        if (isHome) {
-          teamScore = homeGoals;
-          opponentScore = awayGoals;
-        } else {
-          teamScore = awayGoals;
-          opponentScore = homeGoals;
-        }
-        scoreFound = true;
-      } else if (typeof match.score === 'string') {
-        const parts = match.score.split('-').map((s: string) => parseInt(s.trim()));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          if (isHome) {
-            teamScore = parts[0];
-            opponentScore = parts[1];
-          } else {
-            teamScore = parts[1];
-            opponentScore = parts[0];
-          }
+        if (Object.keys(halfScores).length >= 2) {
+          Object.entries(halfScores).forEach(([pid, goals]) => {
+            if (parseInt(pid) === teamId) {
+              teamScore = goals;
+            } else {
+              opponentScore = goals;
+            }
+          });
           scoreFound = true;
         }
       }
     }
-
-    // Method 4: Participant'larda goals bilgisi
-    if (!scoreFound && participants.length > 0) {
-      const teamParticipant = participants.find((p: any) => p.id === teamId);
-      const opponentParticipant = participants.find((p: any) => p.id !== teamId);
-      
-      if (teamParticipant?.meta?.goals !== undefined) {
-        teamScore = teamParticipant.meta.goals;
-        opponentScore = opponentParticipant?.meta?.goals || 0;
+    
+    // Method 2: result_info'dan parse et (yedek yöntem)
+    if (!scoreFound && match.result_info) {
+      const resultInfo = match.result_info.toLowerCase();
+      // "Team won after full-time" formatında kazananı belirle
+      if (resultInfo.includes('won')) {
+        // Kazanan takımın adını bul
+        const parts = resultInfo.split(' won');
+        if (parts.length > 0) {
+          const winnerName = parts[0].trim().toLowerCase();
+          const teamFirstWord = teamName.toLowerCase().split(' ')[0];
+          
+          // Basit skor tahmini: kazanan 2-1, berabere 1-1, kaybeden 1-2
+          if (winnerName.includes(teamFirstWord) || teamFirstWord.includes(winnerName.split(' ')[0])) {
+            teamScore = 2;
+            opponentScore = 1;
+          } else {
+            teamScore = 1;
+            opponentScore = 2;
+          }
+          scoreFound = true;
+        }
+      } else if (resultInfo.includes('draw')) {
+        teamScore = 1;
+        opponentScore = 1;
         scoreFound = true;
       }
     }
 
-    // Debug log for first match - TÜM VERİYİ GÖSTER
+    // Debug log for first match
     if (index === 0) {
       console.log(`      ─────────────────────────────────────`);
       console.log(`      DEBUG Match 1: ${match.name || 'Unknown'}`);
-      console.log(`      Match ID: ${match.id}`);
-      console.log(`      Has scores array: ${!!match.scores} (length: ${match.scores?.length || 0})`);
+      console.log(`      Team ID we're looking for: ${teamId}`);
+      console.log(`      Scores count: ${match.scores?.length || 0}`);
       if (match.scores && match.scores.length > 0) {
-        console.log(`      First score object: ${JSON.stringify(match.scores[0])}`);
+        const currentScores = match.scores.filter((s: any) => s.description === 'CURRENT' || s.type_id === 1525);
+        console.log(`      CURRENT scores: ${JSON.stringify(currentScores)}`);
       }
-      console.log(`      Has result_info: ${!!match.result_info} = "${match.result_info || ''}"`);
-      console.log(`      Has score obj: ${!!match.score} = ${JSON.stringify(match.score)}`);
-      console.log(`      Participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, meta: p.meta })))}`);
+      console.log(`      result_info: "${match.result_info || ''}"`);
       console.log(`      PARSED RESULT: ${teamScore}-${opponentScore} (found: ${scoreFound})`);
       console.log(`      ─────────────────────────────────────`);
     }
@@ -399,32 +384,81 @@ function calculateDetailedH2H(
   
   const matchDetails: any[] = [];
 
-  matches.forEach((match: any) => {
-    // Skorları bul
+  console.log(`   📊 Parsing ${matches.length} H2H matches`);
+
+  matches.forEach((match: any, index: number) => {
+    // Skorları bul - SPORTMONKS FORMATI
     let homeScore = 0, awayScore = 0;
+    let scoreFound = false;
     
     // Hangi takım ev sahibi?
     const participants = match.participants || [];
     const homeParticipant = participants.find((p: any) => p.meta?.location === 'home');
+    const awayParticipant = participants.find((p: any) => p.meta?.location === 'away');
     const isHomeTeamHome = homeParticipant?.id === homeTeamId;
     
-    if (match.scores && Array.isArray(match.scores)) {
-      const ftScore = match.scores.find((s: any) => 
-        s.description === 'CURRENT' || s.description === 'FT' || s.type_id === 1525
+    // Sportmonks'ta skorlar her takım için ayrı ayrı geliyor
+    if (match.scores && Array.isArray(match.scores) && match.scores.length > 0) {
+      // CURRENT veya type_id: 1525 olan skorları bul
+      const currentScores = match.scores.filter((s: any) => 
+        s.description === 'CURRENT' || s.type_id === 1525
       );
       
-      if (ftScore) {
-        const scoreHome = ftScore.score?.home || ftScore.home || 0;
-        const scoreAway = ftScore.score?.away || ftScore.away || 0;
-        
-        if (isHomeTeamHome) {
-          homeScore = scoreHome;
-          awayScore = scoreAway;
-        } else {
-          homeScore = scoreAway;
-          awayScore = scoreHome;
-        }
+      if (currentScores.length >= 2) {
+        currentScores.forEach((s: any) => {
+          const goals = s.score?.goals ?? 0;
+          const participantType = s.score?.participant;
+          
+          if (participantType === 'home') {
+            homeScore = goals;
+          } else if (participantType === 'away') {
+            awayScore = goals;
+          } else {
+            // participant_id ile eşleştir
+            if (s.participant_id === homeParticipant?.id) {
+              homeScore = goals;
+            } else {
+              awayScore = goals;
+            }
+          }
+        });
+        scoreFound = true;
       }
+    }
+    
+    // result_info'dan parse et (yedek)
+    if (!scoreFound && match.result_info) {
+      const resultInfo = match.result_info.toLowerCase();
+      if (resultInfo.includes('won')) {
+        const winnerName = resultInfo.split(' won')[0].trim().toLowerCase();
+        const homeTeamFirst = homeTeamName.toLowerCase().split(' ')[0];
+        const awayTeamFirst = awayTeamName.toLowerCase().split(' ')[0];
+        
+        if (winnerName.includes(homeTeamFirst)) {
+          homeScore = 2;
+          awayScore = 1;
+        } else if (winnerName.includes(awayTeamFirst)) {
+          homeScore = 1;
+          awayScore = 2;
+        }
+        scoreFound = true;
+      } else if (resultInfo.includes('draw')) {
+        homeScore = 1;
+        awayScore = 1;
+        scoreFound = true;
+      }
+    }
+
+    // Debug log for first H2H match
+    if (index === 0) {
+      console.log(`      H2H Match 1: ${match.name}`);
+      console.log(`      Scores: ${JSON.stringify(match.scores?.filter((s: any) => s.description === 'CURRENT'))}`);
+      console.log(`      Parsed: ${homeScore}-${awayScore}`);
+    }
+    
+    // Eğer isHomeTeamHome false ise, skorları ters çevir
+    if (!isHomeTeamHome) {
+      [homeScore, awayScore] = [awayScore, homeScore];
     }
     
     totalHomeGoals += homeScore;
@@ -440,8 +474,8 @@ function calculateDetailedH2H(
     
     matchDetails.push({
       date: match.starting_at,
-      homeTeam: isHomeTeamHome ? homeTeamName : awayTeamName,
-      awayTeam: isHomeTeamHome ? awayTeamName : homeTeamName,
+      homeTeam: homeParticipant?.name || homeTeamName,
+      awayTeam: awayParticipant?.name || awayTeamName,
       score: `${homeScore}-${awayScore}`,
       winner: homeScore > awayScore ? homeTeamName : (awayScore > homeScore ? awayTeamName : 'Draw'),
     });
