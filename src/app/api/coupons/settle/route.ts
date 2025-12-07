@@ -1,7 +1,7 @@
 // src/app/api/coupons/settle/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 import { checkPickResult, calculatePoints } from '@/types/coupon';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
