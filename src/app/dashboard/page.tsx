@@ -394,6 +394,17 @@ export default function DashboardPage() {
     return 'text-red-400 bg-red-500/20';
   };
 
+  // Helper: Get model display name
+  const getModelName = (model: string) => {
+    switch (model) {
+      case 'openai': return 'GPT-4';
+      case 'claude': return 'Claude';
+      case 'gemini': return 'Gemini';
+      case 'perplexity': return 'Perplexity';
+      default: return model;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
       {/* Header */}
@@ -625,13 +636,13 @@ export default function DashboardPage() {
                       {/* ============ STANDARD ANALYSIS - DETAILED ============ */}
                       {!agentMode && analysis && (
                         <div className="space-y-4">
-                          {/* AI Model Status */}
+                          {/* AI Model Status - Updated with Perplexity */}
                           <div className="grid grid-cols-4 gap-2">
                             {[
                               { key: 'claude', label: 'Claude', icon: '🟣' },
                               { key: 'openai', label: 'GPT-4', icon: '🟢' },
                               { key: 'gemini', label: 'Gemini', icon: '🔵' },
-                              { key: 'heurist', label: 'Heurist', icon: '🟠' },
+                              { key: 'perplexity', label: 'Perplexity', icon: '🟠' },
                             ].map((model) => (
                               <div key={model.key} className={`p-2 rounded-lg text-center ${
                                 analysis.aiStatus?.[model.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
@@ -728,23 +739,25 @@ export default function DashboardPage() {
                             </div>
                           )}
 
-                          {/* Individual Model Predictions */}
+                          {/* Individual Model Predictions - With null checks */}
                           {analysis.individualAnalyses && (
                             <div className="space-y-2">
                               <div className="text-sm text-gray-400 font-medium">🔍 Individual AI Predictions:</div>
                               <div className="grid grid-cols-2 gap-2">
-                                {Object.entries(analysis.individualAnalyses).map(([model, pred]: [string, any]) => (
-                                  <div key={model} className="bg-gray-700/30 rounded-lg p-2 text-xs">
-                                    <div className="font-medium text-white capitalize mb-1">
-                                      {model === 'openai' ? 'GPT-4' : model}
+                                {Object.entries(analysis.individualAnalyses)
+                                  .filter(([_, pred]) => pred !== null && pred !== undefined)
+                                  .map(([model, pred]: [string, any]) => (
+                                    <div key={model} className="bg-gray-700/30 rounded-lg p-2 text-xs">
+                                      <div className="font-medium text-white capitalize mb-1">
+                                        {getModelName(model)}
+                                      </div>
+                                      <div className="space-y-0.5 text-gray-400">
+                                        <div>Result: <span className="text-blue-400">{pred?.matchResult?.prediction || '-'}</span></div>
+                                        <div>O/U: <span className="text-green-400">{pred?.overUnder25?.prediction || '-'}</span></div>
+                                        <div>BTTS: <span className="text-orange-400">{pred?.btts?.prediction || '-'}</span></div>
+                                      </div>
                                     </div>
-                                    <div className="space-y-0.5 text-gray-400">
-                                      <div>Result: <span className="text-blue-400">{pred.matchResult?.prediction}</span></div>
-                                      <div>O/U: <span className="text-green-400">{pred.overUnder25?.prediction}</span></div>
-                                      <div>BTTS: <span className="text-orange-400">{pred.btts?.prediction}</span></div>
-                                    </div>
-                                  </div>
-                                ))}
+                                  ))}
                               </div>
                             </div>
                           )}
