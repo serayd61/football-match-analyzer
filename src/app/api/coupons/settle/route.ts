@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
             }
           });
           
-          const result = checkPickResult(pick.bet_type, pick.selection, homeScore, awayScore);
+          const result = checkPickResult(
+  { betType: pick.bet_type, selection: pick.selection } as any,
+  homeScore,
+  awayScore
+);
           
           await supabaseAdmin
             .from('coupon_picks')
