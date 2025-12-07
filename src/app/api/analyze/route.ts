@@ -7,7 +7,6 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabaseAdmin } from '@/lib/supabase';
-import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 
 // API Clients
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -15,6 +14,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 // ==================== PROMPTS ====================
 
@@ -63,7 +63,7 @@ const getAnalysisPrompt = (
 🎯 ANALİZ TALİMATLARI:
 - VERİLERE DAYALI analiz yap
 - Form verilerini DİKKATLİCE değerlendir
-- Güven oranları %50-85 arasında GERÇEKÇI olsun
+- Güven oranları %50-80 arasında GERÇEKÇI olsun
 - Her tahmin için SOMUT gerekçe ver
 
 SADECE JSON DÖNDÜR:
@@ -110,7 +110,7 @@ SADECE JSON DÖNDÜR:
 🎯 ANALYSIS INSTRUCTIONS:
 - Analyze based on PROVIDED DATA
 - Evaluate form data CAREFULLY
-- Confidence should be REALISTIC between 50-85%
+- Confidence should be REALISTIC between 50-80%
 - Give CONCRETE reasoning for each prediction
 
 RETURN ONLY JSON:
@@ -126,7 +126,7 @@ RETURN ONLY JSON:
     de: `PROFESSIONELLER WETT-ANALYST.
 📊 ${homeTeam} vs ${awayTeam} | ${league}
 Form: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}
-Gib NUR JSON zurück mit matchResult, overUnder25, btts, bestBet, riskLevel, overallAnalysis.`,
+Gib NUR JSON zurück mit matchResult, overUnder25, btts, bestBet, riskLevel, overallAnalysis. Confidence zwischen 50-80%.`,
   };
 
   return prompts[lang] || prompts.en;
@@ -181,13 +181,60 @@ async function analyzeWithGemini(prompt: string): Promise<any> {
   }
 }
 
+async function analyzeWithPerplexity(prompt: string): Promise<any> {
+  if (!PERPLEXITY_API_KEY) {
+    console.error('Perplexity API key not configured');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert betting analyst. Analyze the match data and return ONLY valid JSON. No markdown, no explanation, just JSON.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Perplexity API error:', response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    return parseJSON(text);
+  } catch (error) {
+    console.error('Perplexity error:', error);
+    return null;
+  }
+}
+
 function parseJSON(text: string): any {
   try {
     return JSON.parse(text);
   } catch {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    // Try to extract JSON from markdown code blocks
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
-      try { return JSON.parse(jsonMatch[0]); } catch { return null; }
+      try { return JSON.parse(jsonMatch[1].trim()); } catch { }
+    }
+    // Try to find raw JSON object
+    const rawMatch = text.match(/\{[\s\S]*\}/);
+    if (rawMatch) {
+      try { return JSON.parse(rawMatch[0]); } catch { return null; }
     }
     return null;
   }
@@ -221,22 +268,18 @@ async function fetchMatchData(fixtureId: number, homeTeamId: number, awayTeamId:
       h2hRes.json(),
     ]);
 
-    // Parse odds
     if (fixtureData.data?.odds) {
       odds = parseOdds(fixtureData.data.odds);
     }
 
-    // Parse home form using result_info
     if (homeFormData.data?.latest && homeFormData.data.latest.length > 0) {
       homeForm = calculateFormFromResultInfo(homeFormData.data.latest, homeTeamName);
     }
 
-    // Parse away form using result_info
     if (awayFormData.data?.latest && awayFormData.data.latest.length > 0) {
       awayForm = calculateFormFromResultInfo(awayFormData.data.latest, awayTeamName);
     }
 
-    // Parse H2H
     if (h2hData.data && h2hData.data.length > 0) {
       h2h = calculateH2HFromResultInfo(h2hData.data, homeTeamName, awayTeamName);
     }
@@ -411,7 +454,6 @@ function calculateConsensus(analyses: any[]): any {
   const fields = ['matchResult', 'overUnder25', 'btts'];
 
   fields.forEach(field => {
-    // Ağırlıklı skor hesaplama
     const scores: Record<string, { 
       weightedScore: number; 
       count: number; 
@@ -422,8 +464,7 @@ function calculateConsensus(analyses: any[]): any {
     valid.forEach(a => {
       if (a[field]?.prediction) {
         const pred = a[field].prediction;
-        // Güveni 50-85 arasında sınırla
-        const conf = Math.min(Math.max(a[field].confidence || 60, 50), 85);
+        const conf = Math.min(Math.max(a[field].confidence || 60, 50), 80);
         
         if (!scores[pred]) {
           scores[pred] = { weightedScore: 0, count: 0, reasons: [], totalConf: 0 };
@@ -436,7 +477,6 @@ function calculateConsensus(analyses: any[]): any {
       }
     });
 
-    // En yüksek AĞIRLIKLI SKORA göre sırala
     const sorted = Object.entries(scores).sort((a, b) => {
       if (b[1].weightedScore !== a[1].weightedScore) {
         return b[1].weightedScore - a[1].weightedScore;
@@ -453,16 +493,16 @@ function calculateConsensus(analyses: any[]): any {
       const voteRatio = data.count / totalVotes;
       
       if (voteRatio < 0.5) {
-        finalConfidence = Math.round(finalConfidence * 0.8);
+        finalConfidence = Math.round(finalConfidence * 0.85);
       } else if (voteRatio >= 0.75) {
-        finalConfidence = Math.min(finalConfidence + 3, 85);
+        finalConfidence = Math.min(finalConfidence + 3, 80);
       }
       
       if (data.count === totalVotes) {
-        finalConfidence = Math.min(finalConfidence + 5, 85);
+        finalConfidence = Math.min(finalConfidence + 5, 80);
       }
 
-      finalConfidence = Math.min(Math.max(finalConfidence, 45), 85);
+      finalConfidence = Math.min(Math.max(finalConfidence, 45), 80);
 
       consensus[field] = {
         prediction: pred,
@@ -477,66 +517,32 @@ function calculateConsensus(analyses: any[]): any {
     }
   });
 
-  // ==================== BEST BET - CONSENSUS İLE UYUMLU ====================
-  // Best Bet artık consensus tahminlerinden en yüksek güvenlisini seçiyor
+  const allBets = valid
+    .filter(a => a.bestBet)
+    .map(a => ({
+      ...a.bestBet,
+      confidence: Math.min(Math.max(a.bestBet.confidence || 60, 50), 80)
+    }))
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+  const uniqueBets: any[] = [];
+  const seenBets = new Set<string>();
   
-  const bestBetOptions = [];
+  allBets.forEach(bet => {
+    const key = `${bet.type}-${bet.selection}`.toLowerCase();
+    if (!seenBets.has(key) && uniqueBets.length < 3) {
+      seenBets.add(key);
+      uniqueBets.push(bet);
+    }
+  });
 
-  // Match Result
-  if (consensus.matchResult?.prediction) {
-    const pred = consensus.matchResult.prediction;
-    let label = pred;
-    if (pred === '1') label = 'Home Win';
-    else if (pred === 'X') label = 'Draw';
-    else if (pred === '2') label = 'Away Win';
-    
-    bestBetOptions.push({
-      type: 'Match Result',
-      selection: label,
-      confidence: consensus.matchResult.confidence,
-      reasoning: consensus.matchResult.reasoning || `${consensus.matchResult.votes}/${consensus.matchResult.totalVotes} AI models agree on ${label}`,
-    });
-  }
-
-  // Over/Under 2.5
-  if (consensus.overUnder25?.prediction) {
-    bestBetOptions.push({
-      type: 'Over/Under 2.5',
-      selection: consensus.overUnder25.prediction,
-      confidence: consensus.overUnder25.confidence,
-      reasoning: consensus.overUnder25.reasoning || `${consensus.overUnder25.votes}/${consensus.overUnder25.totalVotes} AI models agree on ${consensus.overUnder25.prediction}`,
-    });
-  }
-
-  // BTTS
-  if (consensus.btts?.prediction) {
-    const bttsLabel = consensus.btts.prediction === 'Yes' ? 'Yes' : 'No';
-    bestBetOptions.push({
-      type: 'BTTS',
-      selection: bttsLabel,
-      confidence: consensus.btts.confidence,
-      reasoning: consensus.btts.reasoning || `${consensus.btts.votes}/${consensus.btts.totalVotes} AI models agree on BTTS ${bttsLabel}`,
-    });
-  }
-
-  // En yüksek güvenli consensus tahminini Best Bet olarak seç
-  consensus.bestBets = bestBetOptions
-    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-    .slice(0, 3);
-
-  console.log(`   Best Bet: ${consensus.bestBets[0]?.type} - ${consensus.bestBets[0]?.selection} (${consensus.bestBets[0]?.confidence}%)`);
-
-  // Overall analyses
+  consensus.bestBets = uniqueBets;
   consensus.overallAnalyses = valid.filter(a => a.overallAnalysis).map(a => a.overallAnalysis);
   
-  // Risk level
   const riskVotes: Record<string, number> = {};
   valid.forEach(a => {
     if (a.riskLevel) {
-      const risk = a.riskLevel.toLowerCase()
-        .replace('düşük', 'low')
-        .replace('orta', 'medium')
-        .replace('yüksek', 'high');
+      const risk = a.riskLevel.toLowerCase().replace('düşük', 'low').replace('orta', 'medium').replace('yüksek', 'high');
       riskVotes[risk] = (riskVotes[risk] || 0) + 1;
     }
   });
@@ -546,7 +552,6 @@ function calculateConsensus(analyses: any[]): any {
 
   return consensus;
 }
-
 
 // ==================== MAIN HANDLER ====================
 
@@ -577,8 +582,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`\n🚀 ANALYSIS: ${homeTeam} vs ${awayTeam} [${language}]`);
 
-    // Cache check (skip if forceRefresh)
-    const cacheKey = `analysis_v3_${fixtureId}_${language}`;
+    // Cache check
+    const cacheKey = `analysis_v4_${fixtureId}_${language}`;
     
     if (!forceRefresh) {
       const { data: cached } = await supabaseAdmin
@@ -594,7 +599,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch data with team names
     console.log('📊 Fetching Sportmonks data...');
     const { odds, homeForm, awayForm, h2h } = await fetchMatchData(
       fixtureId, homeTeamId, awayTeamId, homeTeam, awayTeam
@@ -604,42 +608,21 @@ export async function POST(request: NextRequest) {
     console.log(`   Home: ${homeForm?.form} | Away: ${awayForm?.form}`);
     console.log(`   H2H: ${h2h?.totalMatches} matches`);
 
-    // Generate prompt with real data
     const prompt = getAnalysisPrompt(language, homeTeam, awayTeam, league, odds, homeForm, awayForm, h2h);
 
-    // Run AI analyses in parallel
-    console.log('🤖 Running AI analyses...');
-    const [claude, gpt, gemini, heurist] = await Promise.all([
+    // Run all 4 AI analyses in parallel
+    console.log('🤖 Running AI analyses (Claude, GPT-4, Gemini, Perplexity)...');
+    const [claude, gpt, gemini, perplexity] = await Promise.all([
       analyzeWithClaude(prompt),
       analyzeWithOpenAI(prompt),
       analyzeWithGemini(prompt),
-      runFullAnalysis(
-        { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, date: '', odds, homeForm, awayForm, h2h },
-        language as 'tr' | 'en' | 'de'
-      ),
+      analyzeWithPerplexity(prompt),
     ]);
 
-    console.log(`   Claude: ${claude ? '✅' : '❌'} | GPT: ${gpt ? '✅' : '❌'} | Gemini: ${gemini ? '✅' : '❌'} | Heurist: ${heurist?.success ? '✅' : '❌'}`);
+    console.log(`   Claude: ${claude ? '✅' : '❌'} | GPT-4: ${gpt ? '✅' : '❌'} | Gemini: ${gemini ? '✅' : '❌'} | Perplexity: ${perplexity ? '✅' : '❌'}`);
 
-    // Heurist'ten gelen weighted consensus'u al
-    const heuristConsensus = heurist?.reports?.weightedConsensus;
-    
-    // Heurist consensus'u standart formata çevir
-    let heuristStandard = null;
-    if (heuristConsensus) {
-      heuristStandard = {
-        matchResult: heuristConsensus.matchResult || heuristConsensus.matchWinner,
-        overUnder25: heuristConsensus.overUnder || heuristConsensus.overUnder25,
-        btts: heuristConsensus.btts,
-        bestBet: heuristConsensus.bestBet,
-        riskLevel: heurist?.reports?.strategy?.riskAssessment || 'Medium',
-        overallAnalysis: heurist?.reports?.strategy?.overallStrategy || '',
-      };
-    }
-
-    // Calculate consensus with all 4 sources
-    const allAnalyses = [claude, gpt, gemini, heuristStandard].filter(a => a !== null);
-    console.log(`⚖️ Weighted consensus from ${allAnalyses.length} sources`);
+    const allAnalyses = [claude, gpt, gemini, perplexity].filter(a => a !== null);
+    console.log(`⚖️ Weighted consensus from ${allAnalyses.length} AI models`);
     
     const consensus = calculateConsensus(allAnalyses);
     if (!consensus) {
@@ -653,8 +636,8 @@ export async function POST(request: NextRequest) {
       form: { home: homeForm, away: awayForm },
       h2h,
       analysis: consensus,
-      individualAnalyses: { claude, openai: gpt, gemini, heurist: heurist?.reports },
-      aiStatus: { claude: !!claude, openai: !!gpt, gemini: !!gemini, heurist: !!heurist?.success },
+      individualAnalyses: { claude, openai: gpt, gemini, perplexity },
+      aiStatus: { claude: !!claude, openai: !!gpt, gemini: !!gemini, perplexity: !!perplexity },
       language,
     };
 
