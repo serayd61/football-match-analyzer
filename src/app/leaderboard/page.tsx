@@ -85,10 +85,11 @@ export default function LeaderboardPage() {
       setLeaderboard(data.leaderboard || []);
       
       // Find current user's rank
-      if (session?.user?.id) {
-        const userEntry = data.leaderboard?.find(
-          (e: LeaderboardEntry) => e.userId === session.user.id || e.user?.id === session.user.id
-        );
+      const userId = (session?.user as any)?.id;
+if (userId) {
+  const userEntry = data.leaderboard?.find(
+    (e: LeaderboardEntry) => e.userId === userId || e.user?.id === userId
+  );
         setMyRank(userEntry?.rank || null);
       }
     } catch (error) {
