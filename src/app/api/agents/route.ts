@@ -29,7 +29,7 @@ async function fetchDetailedMatchData(
   try {
     if (!SPORTMONKS_API_KEY) {
       console.warn('⚠️ No Sportmonks API key');
-      return { odds, homeStats, awayStats, h2h, injuries };
+      return { odds, homeStats: getDefaultStats(), awayStats: getDefaultStats(), h2h: getDefaultH2H(), injuries };
     }
 
     // Paralel API çağrıları - Detaylı veriler
@@ -116,6 +116,9 @@ async function fetchDetailedMatchData(
 
   } catch (error) {
     console.error('❌ Sportmonks fetch error:', error);
+    homeStats = getDefaultStats();
+    awayStats = getDefaultStats();
+    h2h = getDefaultH2H();
   }
 
   return { odds, homeStats, awayStats, h2h, injuries };
@@ -220,7 +223,7 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     });
   });
 
-  const matchCount = last10.length;
+  const matchCount = last10.length || 1;
   
   return {
     // Temel form
@@ -228,17 +231,22 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     points: (wins * 3) + draws,
     maxPoints: last5.length * 3,
     record: `${wins}W-${draws}D-${losses}L`,
+    wins,
+    draws,
+    losses,
     
     // Gol istatistikleri (GERÇEK VERİ)
     avgGoalsScored: (totalGoalsScored / matchCount).toFixed(2),
     avgGoalsConceded: (totalGoalsConceded / matchCount).toFixed(2),
+    avgGoals: (totalGoalsScored / matchCount).toFixed(2), // Eski uyumluluk için
+    avgConceded: (totalGoalsConceded / matchCount).toFixed(2), // Eski uyumluluk için
     totalGoalsScored,
     totalGoalsConceded,
     
     // Over/Under & BTTS (GERÇEK VERİ)
-    over25Percentage: Math.round((over25Count / matchCount) * 100),
+    over25Percentage: Math.round((over25Count / matchCount) * 100).toString(),
     over25Count,
-    bttsPercentage: Math.round((bttsCount / matchCount) * 100),
+    bttsPercentage: Math.round((bttsCount / matchCount) * 100).toString(),
     bttsCount,
     
     // Clean sheet & Failed to score
@@ -260,6 +268,7 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
     } : null,
     
     // Maç detayları
+    matches: matchDetails.slice(0, 5),
     matchDetails: matchDetails.slice(0, 5),
     matchCount,
   };
@@ -328,10 +337,10 @@ function calculateDetailedH2H(
     });
   });
 
-  const matchCount = matches.length;
+  const matchCount = matches.length || 1;
   
   return {
-    totalMatches: matchCount,
+    totalMatches: matches.length,
     homeWins,
     awayWins,
     draws,
@@ -339,14 +348,15 @@ function calculateDetailedH2H(
     // Gol istatistikleri
     totalHomeGoals,
     totalAwayGoals,
-    avgHomeGoals: matchCount > 0 ? (totalHomeGoals / matchCount).toFixed(2) : '0',
-    avgAwayGoals: matchCount > 0 ? (totalAwayGoals / matchCount).toFixed(2) : '0',
-    avgTotalGoals: matchCount > 0 ? ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2) : '0',
+    avgHomeGoals: (totalHomeGoals / matchCount).toFixed(2),
+    avgAwayGoals: (totalAwayGoals / matchCount).toFixed(2),
+    avgTotalGoals: ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2),
+    avgGoals: ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2), // Eski uyumluluk
     
     // Over/Under & BTTS
-    over25Percentage: matchCount > 0 ? Math.round((over25Count / matchCount) * 100) : 50,
+    over25Percentage: Math.round((over25Count / matchCount) * 100).toString(),
     over25Count,
-    bttsPercentage: matchCount > 0 ? Math.round((bttsCount / matchCount) * 100) : 50,
+    bttsPercentage: Math.round((bttsCount / matchCount) * 100).toString(),
     bttsCount,
     
     // Maç detayları
@@ -428,31 +438,51 @@ function parseOdds(oddsData: any[]): any {
 
 // ==================== DEFAULT VALUES ====================
 
-function getDefaultStats() {
+function getDefaultStats(): any {
   return { 
     form: 'N/A', 
     points: 0,
+    maxPoints: 15,
     record: '0W-0D-0L',
-    avgGoalsScored: '1.20', 
-    avgGoalsConceded: '1.00', 
-    over25Percentage: 50, 
-    bttsPercentage: 50,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    avgGoalsScored: '1.20',
+    avgGoalsConceded: '1.00',
+    avgGoals: '1.20',
+    avgConceded: '1.00',
+    totalGoalsScored: 0,
+    totalGoalsConceded: 0,
+    over25Percentage: '50', 
+    over25Count: 0,
+    bttsPercentage: '50',
+    bttsCount: 0,
     cleanSheets: 0,
+    cleanSheetPercentage: 0,
     failedToScore: 0,
-    matchCount: 0,
+    failedToScorePercentage: 0,
+    matches: [],
     matchDetails: [],
+    matchCount: 0,
   };
 }
 
-function getDefaultH2H() {
+function getDefaultH2H(): any {
   return { 
     totalMatches: 0, 
     homeWins: 0, 
     awayWins: 0, 
     draws: 0, 
-    avgTotalGoals: '2.50', 
-    over25Percentage: 50, 
-    bttsPercentage: 50,
+    totalHomeGoals: 0,
+    totalAwayGoals: 0,
+    avgHomeGoals: '0',
+    avgAwayGoals: '0',
+    avgTotalGoals: '2.50',
+    avgGoals: '2.50',
+    over25Percentage: '50', 
+    over25Count: 0,
+    bttsPercentage: '50',
+    bttsCount: 0,
     matchDetails: [],
   };
 }
@@ -508,8 +538,8 @@ export async function POST(request: NextRequest) {
     console.log(`   🏥 Injuries: ${homeTeam}: ${injuries?.home?.length || 0} | ${awayTeam}: ${injuries?.away?.length || 0}`);
     console.log('');
 
-    // Match data objesi (yeni format)
-    const matchData = {
+    // Match data objesi - MatchData tipine uyumlu
+    const matchData: any = {
       fixtureId,
       homeTeam,
       awayTeam,
@@ -518,33 +548,45 @@ export async function POST(request: NextRequest) {
       league,
       date: new Date().toISOString(),
       odds,
-      // Eski format uyumluluğu için
+      // MatchData tipine uygun homeForm
       homeForm: {
         form: homeStats.form,
         points: homeStats.points,
-        avgGoals: homeStats.avgGoalsScored,
-        avgConceded: homeStats.avgGoalsConceded,
-        over25Percentage: homeStats.over25Percentage?.toString(),
-        bttsPercentage: homeStats.bttsPercentage?.toString(),
+        wins: homeStats.wins,
+        draws: homeStats.draws,
+        losses: homeStats.losses,
+        avgGoals: homeStats.avgGoals,
+        avgConceded: homeStats.avgConceded,
+        over25Percentage: homeStats.over25Percentage,
+        bttsPercentage: homeStats.bttsPercentage,
+        cleanSheetPercentage: homeStats.cleanSheetPercentage,
+        matches: homeStats.matches || [],
       },
+      // MatchData tipine uygun awayForm
       awayForm: {
         form: awayStats.form,
         points: awayStats.points,
-        avgGoals: awayStats.avgGoalsScored,
-        avgConceded: awayStats.avgGoalsConceded,
-        over25Percentage: awayStats.over25Percentage?.toString(),
-        bttsPercentage: awayStats.bttsPercentage?.toString(),
+        wins: awayStats.wins,
+        draws: awayStats.draws,
+        losses: awayStats.losses,
+        avgGoals: awayStats.avgGoals,
+        avgConceded: awayStats.avgConceded,
+        over25Percentage: awayStats.over25Percentage,
+        bttsPercentage: awayStats.bttsPercentage,
+        cleanSheetPercentage: awayStats.cleanSheetPercentage,
+        matches: awayStats.matches || [],
       },
+      // H2H
       h2h: {
         totalMatches: h2h.totalMatches,
         homeWins: h2h.homeWins,
         awayWins: h2h.awayWins,
         draws: h2h.draws,
-        avgGoals: h2h.avgTotalGoals,
-        over25Percentage: h2h.over25Percentage?.toString(),
-        bttsPercentage: h2h.bttsPercentage?.toString(),
+        avgGoals: h2h.avgGoals,
+        over25Percentage: h2h.over25Percentage,
+        bttsPercentage: h2h.bttsPercentage,
       },
-      // YENİ: Detaylı veriler
+      // Detaylı veriler (ek olarak)
       detailedStats: {
         home: homeStats,
         away: awayStats,
@@ -557,8 +599,12 @@ export async function POST(request: NextRequest) {
     let multiModelResult = null;
     if (useMultiModel) {
       console.log('🔮 Starting Multi-Model Analysis...');
-      multiModelResult = await runMultiModelAnalysis(matchData);
-      console.log(`🎯 Multi-Model Agreement: ${multiModelResult.modelAgreement}%`);
+      try {
+        multiModelResult = await runMultiModelAnalysis(matchData);
+        console.log(`🎯 Multi-Model Agreement: ${multiModelResult?.modelAgreement || 0}%`);
+      } catch (mmError) {
+        console.error('⚠️ Multi-Model Analysis failed:', mmError);
+      }
     }
 
     // Standard Agent Analysis
@@ -597,7 +643,7 @@ export async function POST(request: NextRequest) {
         homeInjuryCount: injuries?.home?.length || 0,
         awayInjuryCount: injuries?.away?.length || 0,
       },
-      // YENİ: Ham veriyi de gönder (debug için)
+      // Ham veriyi de gönder (debug için)
       rawStats: {
         home: homeStats,
         away: awayStats,
