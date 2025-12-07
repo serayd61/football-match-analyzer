@@ -31,6 +31,8 @@ interface UserProfile {
   canAnalyze: boolean;
   canUseAgents: boolean;
   favorites: { fixture_id: number }[];
+  totalPoints?: number;
+  rank?: number;
 }
 
 export default function DashboardPage() {
@@ -59,12 +61,20 @@ export default function DashboardPage() {
   
   // UI states
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [activeNav, setActiveNav] = useState('matches');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Labels
   const labels = {
     tr: {
-      todayMatches: 'Maçlar',
+      // Navigation
+      matches: 'Maçlar',
+      coupons: 'Kuponlar',
+      leaderboard: 'Liderlik',
+      createCoupon: 'Kupon Oluştur',
+      
+      // Dashboard
+      todayMatches: 'Günün Maçları',
       search: 'Takım ara...',
       allLeagues: 'Tüm Ligler',
       analyze: 'Analiz Et',
@@ -105,9 +115,28 @@ export default function DashboardPage() {
       split: 'Bölünmüş',
       riskLevel: 'Risk Seviyesi',
       overallAnalysis: 'Genel Analiz',
+      addToCoupon: 'Kupona Ekle',
+      added: 'Eklendi',
+      
+      // Quick Stats
+      yourPoints: 'Puanınız',
+      yourRank: 'Sıralamanız',
+      activeCoupons: 'Aktif Kupon',
+      monthlyPrize: 'Aylık Ödül',
+      prizeDesc: 'En çok puan toplayın, 1 ay Pro kazanın!',
+      viewAll: 'Tümünü Gör',
+      noCoupons: 'Henüz kupon yok',
+      startPredicting: 'Tahmin yapmaya başla!',
     },
     en: {
-      todayMatches: 'Matches',
+      // Navigation
+      matches: 'Matches',
+      coupons: 'Coupons',
+      leaderboard: 'Leaderboard',
+      createCoupon: 'Create Coupon',
+      
+      // Dashboard
+      todayMatches: 'Today\'s Matches',
       search: 'Search team...',
       allLeagues: 'All Leagues',
       analyze: 'Analyze',
@@ -148,9 +177,28 @@ export default function DashboardPage() {
       split: 'Split',
       riskLevel: 'Risk Level',
       overallAnalysis: 'Overall Analysis',
+      addToCoupon: 'Add to Coupon',
+      added: 'Added',
+      
+      // Quick Stats
+      yourPoints: 'Your Points',
+      yourRank: 'Your Rank',
+      activeCoupons: 'Active Coupons',
+      monthlyPrize: 'Monthly Prize',
+      prizeDesc: 'Top scorer wins 1 month Pro!',
+      viewAll: 'View All',
+      noCoupons: 'No coupons yet',
+      startPredicting: 'Start predicting!',
     },
     de: {
-      todayMatches: 'Spiele',
+      // Navigation
+      matches: 'Spiele',
+      coupons: 'Wettscheine',
+      leaderboard: 'Rangliste',
+      createCoupon: 'Erstellen',
+      
+      // Dashboard
+      todayMatches: 'Heutige Spiele',
       search: 'Team suchen...',
       allLeagues: 'Alle Ligen',
       analyze: 'Analysieren',
@@ -191,6 +239,18 @@ export default function DashboardPage() {
       split: 'Geteilt',
       riskLevel: 'Risikostufe',
       overallAnalysis: 'Gesamtanalyse',
+      addToCoupon: 'Zum Wettschein',
+      added: 'Hinzugefügt',
+      
+      // Quick Stats
+      yourPoints: 'Ihre Punkte',
+      yourRank: 'Ihr Rang',
+      activeCoupons: 'Aktive Scheine',
+      monthlyPrize: 'Monatspreis',
+      prizeDesc: 'Topscorer gewinnt 1 Monat Pro!',
+      viewAll: 'Alle anzeigen',
+      noCoupons: 'Keine Wettscheine',
+      startPredicting: 'Starten Sie!',
     },
   };
 
@@ -209,9 +269,6 @@ export default function DashboardPage() {
       const res = await fetch('/api/user/profile');
       const data = await res.json();
       setUserProfile(data);
-      if (data.favorites) {
-        setFavoriteIds(data.favorites.map((f: any) => f.fixture_id));
-      }
     } catch (error) {
       console.error('Profile fetch error:', error);
     }
@@ -339,6 +396,36 @@ export default function DashboardPage() {
     setAgentLoading(false);
   };
 
+  // Add to coupon
+  const addToCoupon = (betType: string, selection: string, odds: number) => {
+    if (!selectedMatch) return;
+    
+    const pick = {
+      fixtureId: selectedMatch.id,
+      homeTeam: selectedMatch.homeTeam,
+      awayTeam: selectedMatch.awayTeam,
+      league: selectedMatch.league,
+      matchDate: selectedMatch.date,
+      betType,
+      selection,
+      odds,
+    };
+    
+    const existingPicks = JSON.parse(sessionStorage.getItem('pendingCouponPicks') || '[]');
+    
+    // Check if already added
+    const exists = existingPicks.some(
+      (p: any) => p.fixtureId === pick.fixtureId && p.betType === pick.betType
+    );
+    
+    if (!exists) {
+      existingPicks.push(pick);
+      sessionStorage.setItem('pendingCouponPicks', JSON.stringify(existingPicks));
+    }
+    
+    router.push('/coupons/create');
+  };
+
   // Loading state
   if (status === 'loading') {
     return (
@@ -379,14 +466,13 @@ export default function DashboardPage() {
 
   const consensusData = getConsensusData();
 
-  // Helper: Get vote status text
+  // Helper functions
   const getVoteStatus = (votes: number, total: number) => {
     if (votes === total) return { text: l.unanimous, color: 'text-green-400', bg: 'bg-green-500/20' };
     if (votes >= total * 0.75) return { text: l.majority, color: 'text-blue-400', bg: 'bg-blue-500/20' };
     return { text: l.split, color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
   };
 
-  // Helper: Get risk level color
   const getRiskColor = (risk: string) => {
     const r = risk?.toLowerCase();
     if (r === 'low') return 'text-green-400 bg-green-500/20';
@@ -394,7 +480,6 @@ export default function DashboardPage() {
     return 'text-red-400 bg-red-500/20';
   };
 
-  // Helper: Get model display name
   const getModelName = (model: string) => {
     switch (model) {
       case 'openai': return 'GPT-4';
@@ -407,65 +492,183 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* Header */}
-      <header className="bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+      {/* ============ HEADER ============ */}
+      <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
                 <span className="text-xl">⚽</span>
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-lg font-bold text-white">Football Analytics</h1>
-                {userProfile?.isPro && (
-                  <span className="px-1.5 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-bold rounded text-black">PRO</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {userProfile?.isPro ? (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-bold rounded text-black">PRO</span>
+                  ) : userProfile?.isTrial ? (
+                    <span className="text-xs text-gray-400">{userProfile.trialDaysLeft} {l.daysLeft}</span>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-1">
+              <Link
+                href="/dashboard"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                  activeNav === 'matches'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                onClick={() => setActiveNav('matches')}
+              >
+                <span>📅</span>
+                {l.matches}
+              </Link>
+              <Link
+                href="/coupons"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+              >
+                <span>🎫</span>
+                {l.coupons}
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+              >
+                <span>🏆</span>
+                {l.leaderboard}
+              </Link>
+              <Link
+                href="/coupons/create"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all ml-2"
+              >
+                <span>➕</span>
+                {l.createCoupon}
+              </Link>
+            </nav>
+
+            {/* Right Side */}
+            <div className="flex items-center gap-3">
               {!userProfile?.isPro && (
-                <Link href="/pricing" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold rounded-xl">
+                <Link
+                  href="/pricing"
+                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold rounded-xl hover:from-yellow-400 hover:to-orange-400"
+                >
                   ⭐ {l.upgradeToPro}
                 </Link>
               )}
+              
               <LanguageSelector />
+              
+              {/* Profile */}
               <div className="relative">
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50"
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50 transition-all"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                     {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <span className="hidden sm:block text-sm text-white">{session.user?.name}</span>
+                  <span className="hidden sm:block text-sm text-white">{session.user?.name?.split(' ')[0]}</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
+                
                 {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50">
-                    <div className="p-4 border-b border-gray-700">
-                      <div className="font-medium text-white">{session.user?.name}</div>
+                  <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10">
+                      <div className="font-semibold text-white">{session.user?.name}</div>
                       <div className="text-sm text-gray-400">{session.user?.email}</div>
+                      {userProfile?.totalPoints !== undefined && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-yellow-400">🏆</span>
+                          <span className="text-white font-bold">{userProfile.totalPoints?.toFixed(1)} pts</span>
+                        </div>
+                      )}
                     </div>
                     <div className="py-2">
-                      <Link href="/profile" className="block px-4 py-2 text-gray-300 hover:bg-gray-700/50">{l.profile}</Link>
+                      <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 transition-colors">
+                        <span>👤</span> {l.profile}
+                      </Link>
+                      <Link href="/coupons" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 transition-colors">
+                        <span>🎫</span> {l.coupons}
+                      </Link>
+                      <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700/50 transition-colors">
+                        <span>🏆</span> {l.leaderboard}
+                      </Link>
                       {!userProfile?.isPro && (
-                        <Link href="/pricing" className="block px-4 py-2 text-yellow-400 hover:bg-gray-700/50">{l.upgradeToPro}</Link>
+                        <Link href="/pricing" className="flex items-center gap-3 px-4 py-3 text-yellow-400 hover:bg-gray-700/50 transition-colors">
+                          <span>⭐</span> {l.upgradeToPro}
+                        </Link>
                       )}
                     </div>
                     <div className="border-t border-gray-700 py-2">
-                      <button onClick={() => signOut({ callbackUrl: '/login' })} className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-700/50">
-                        {l.logout}
+                      <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-gray-700/50 transition-colors"
+                      >
+                        <span>🚪</span> {l.logout}
                       </button>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="md:hidden p-2 text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {showMobileMenu && (
+          <div className="md:hidden border-t border-gray-800 bg-gray-900/95 backdrop-blur-xl">
+            <nav className="flex flex-col p-4 gap-2">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/20 text-green-400 font-medium"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span>📅</span> {l.matches}
+              </Link>
+              <Link
+                href="/coupons"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span>🎫</span> {l.coupons}
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span>🏆</span> {l.leaderboard}
+              </Link>
+              <Link
+                href="/coupons/create"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <span>➕</span> {l.createCoupon}
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
-      {/* Main Content */}
+      {/* ============ MAIN CONTENT ============ */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Trial Banner */}
         {userProfile?.isTrial && (
@@ -477,11 +680,56 @@ export default function DashboardPage() {
                 <div className="text-sm text-gray-400">{userProfile.analysesUsed}/{userProfile.analysesLimit} {l.analysesUsed}</div>
               </div>
             </div>
-            <Link href="/pricing" className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl">
+            <Link href="/pricing" className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:from-green-500 hover:to-green-400 transition-all">
               🚀 {l.goToPricing}
             </Link>
           </div>
         )}
+
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Points */}
+          <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                <span className="text-2xl">🏆</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">{l.yourPoints}</p>
+                <p className="text-2xl font-bold text-yellow-400">{userProfile?.totalPoints?.toFixed(1) || '0'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Rank */}
+          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <span className="text-2xl">📊</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">{l.yourRank}</p>
+                <p className="text-2xl font-bold text-blue-400">#{userProfile?.rank || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Monthly Prize */}
+          <Link href="/leaderboard" className="col-span-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-2xl p-4 hover:from-purple-600/30 hover:to-pink-600/30 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">{l.monthlyPrize}</p>
+                  <p className="text-white font-semibold">{l.prizeDesc}</p>
+                </div>
+              </div>
+              <span className="text-gray-400">→</span>
+            </div>
+          </Link>
+        </div>
 
         {/* Filters */}
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl p-4 mb-6">
@@ -490,19 +738,22 @@ export default function DashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-gray-700/50 text-white px-3 py-2 rounded-xl outline-none"
+              className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
             />
-            <input
-              type="text"
-              placeholder={l.search}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 min-w-[200px] bg-gray-700/50 text-white placeholder-gray-500 px-4 py-2 rounded-xl outline-none"
-            />
+            <div className="relative flex-1 min-w-[200px]">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
+              <input
+                type="text"
+                placeholder={l.search}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-700/50 text-white placeholder-gray-500 pl-12 pr-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
+              />
+            </div>
             <select
               value={selectedLeague}
               onChange={(e) => setSelectedLeague(e.target.value)}
-              className="bg-gray-700/50 text-white px-4 py-2 rounded-xl outline-none"
+              className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
             >
               <option value="all">{l.allLeagues}</option>
               {leagues.map((league) => (
@@ -514,9 +765,9 @@ export default function DashboardPage() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Matches List */}
+          {/* ============ MATCHES LIST ============ */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-gray-700/50">
+            <div className="p-4 border-b border-gray-700/50 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 📅 {l.todayMatches}
                 <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-sm rounded-full">{filteredMatches.length}</span>
@@ -525,13 +776,13 @@ export default function DashboardPage() {
             
             <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-700/50">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : filteredMatches.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  <div className="text-4xl mb-2">📭</div>
-                  <p>{l.noMatches}</p>
+                <div className="text-center py-16 text-gray-400">
+                  <div className="text-5xl mb-3">📭</div>
+                  <p className="text-lg">{l.noMatches}</p>
                 </div>
               ) : (
                 filteredMatches.map((match) => (
@@ -539,23 +790,35 @@ export default function DashboardPage() {
                     key={match.id}
                     onClick={() => setSelectedMatch(match)}
                     className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${
-                      selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-2 border-green-500' : ''
+                      selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="font-medium text-white">{match.homeTeam} vs {match.awayTeam}</div>
-                        <div className="text-sm text-gray-400 mt-1">{match.league}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                        <div className="font-semibold text-white text-lg">{match.homeTeam} vs {match.awayTeam}</div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-sm text-gray-400">{match.league}</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }}
                         disabled={analyzing || !userProfile?.canAnalyze}
-                        className={`px-3 py-2 rounded-lg ${userProfile?.canAnalyze ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-700 opacity-50'}`}
+                        className={`px-4 py-2.5 rounded-xl font-medium transition-all ${
+                          userProfile?.canAnalyze
+                            ? 'bg-green-600 hover:bg-green-500 text-white'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        {analyzing && selectedMatch?.id === match.id ? '⏳' : '🤖'}
+                        {analyzing && selectedMatch?.id === match.id ? (
+                          <span className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          </span>
+                        ) : (
+                          '🤖'
+                        )}
                       </button>
                     </div>
                   </div>
@@ -564,14 +827,25 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Analysis Panel */}
+          {/* ============ ANALYSIS PANEL ============ */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
             {selectedMatch ? (
               <>
                 {/* Match Header */}
-                <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-green-500/10 to-blue-500/10">
+                <div className="p-5 border-b border-gray-700/50 bg-gradient-to-r from-green-500/10 to-blue-500/10">
                   <h2 className="text-xl font-bold text-white">{selectedMatch.homeTeam} vs {selectedMatch.awayTeam}</h2>
-                  <p className="text-sm text-gray-400">{selectedMatch.league}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-sm text-gray-400">{selectedMatch.league}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(selectedMatch.date).toLocaleString(lang, { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -580,8 +854,10 @@ export default function DashboardPage() {
                     <button
                       onClick={() => analyzeMatch(selectedMatch)}
                       disabled={analyzing || !userProfile?.canAnalyze}
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
-                        userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500' : 'bg-gray-700 opacity-50'
+                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                        userProfile?.canAnalyze 
+                          ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' 
+                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       }`}
                     >
                       🤖 {analyzing ? l.analyzing : l.analyze}
@@ -589,12 +865,16 @@ export default function DashboardPage() {
                     <button
                       onClick={runAgentAnalysis}
                       disabled={agentLoading || !userProfile?.canUseAgents}
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
-                        userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500' : 'bg-gray-700 opacity-50'
+                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                        userProfile?.canUseAgents 
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' 
+                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       }`}
                     >
                       🧠 {agentLoading ? '...' : l.aiAgents}
-                      {!userProfile?.canUseAgents && <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>}
+                      {!userProfile?.canUseAgents && (
+                        <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -603,40 +883,47 @@ export default function DashboardPage() {
                 <div className="p-4 max-h-[500px] overflow-y-auto">
                   {analysisError && (
                     <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-                      <p className="text-red-400">{analysisError}</p>
-                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm">{l.goToPricing} →</Link>
+                      <p className="text-red-400 font-medium">{analysisError}</p>
+                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm mt-2 inline-block">
+                        {l.goToPricing} →
+                      </Link>
                     </div>
                   )}
 
                   {(analyzing || agentLoading) ? (
-                    <div className="text-center py-12">
-                      <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-gray-400">{l.analyzing}</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-gray-400 text-lg">{l.analyzing}</p>
+                      <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
                     </div>
                   ) : analysis || agentAnalysis ? (
                     <div className="space-y-4">
-                      {/* Tabs */}
+                      {/* Mode Tabs */}
                       {agentAnalysis && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 p-1 bg-gray-700/30 rounded-xl">
                           <button
                             onClick={() => setAgentMode(false)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${!agentMode ? 'bg-green-600 text-white' : 'bg-gray-700/50 text-gray-400'}`}
+                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              !agentMode ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                            }`}
                           >
                             {l.standardAnalysis}
                           </button>
                           <button
                             onClick={() => setAgentMode(true)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${agentMode ? 'bg-purple-600 text-white' : 'bg-gray-700/50 text-gray-400'}`}
+                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              agentMode ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                            }`}
                           >
                             {l.agentAnalysis}
                           </button>
                         </div>
                       )}
 
-                      {/* ============ STANDARD ANALYSIS - DETAILED ============ */}
+                      {/* Standard Analysis */}
                       {!agentMode && analysis && (
                         <div className="space-y-4">
-                          {/* AI Model Status - Updated with Perplexity */}
+                          {/* AI Model Status */}
                           <div className="grid grid-cols-4 gap-2">
                             {[
                               { key: 'claude', label: 'Claude', icon: '🟣' },
@@ -644,78 +931,96 @@ export default function DashboardPage() {
                               { key: 'gemini', label: 'Gemini', icon: '🔵' },
                               { key: 'perplexity', label: 'Perplexity', icon: '🟠' },
                             ].map((model) => (
-                              <div key={model.key} className={`p-2 rounded-lg text-center ${
-                                analysis.aiStatus?.[model.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
+                              <div key={model.key} className={`p-2 rounded-xl text-center transition-all ${
+                                analysis.aiStatus?.[model.key] 
+                                  ? 'bg-green-500/20 border border-green-500/30' 
+                                  : 'bg-red-500/20 border border-red-500/30'
                               }`}>
                                 <div className="text-lg">{model.icon}</div>
-                                <div className={`text-xs font-medium ${analysis.aiStatus?.[model.key] ? 'text-green-400' : 'text-red-400'}`}>
+                                <div className={`text-xs font-medium ${
+                                  analysis.aiStatus?.[model.key] ? 'text-green-400' : 'text-red-400'
+                                }`}>
                                   {model.label} {analysis.aiStatus?.[model.key] ? '✓' : '✗'}
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          {/* AI Consensus Header */}
+                          {/* Consensus Header */}
                           <div className="text-center py-2 bg-green-500/10 border border-green-500/30 rounded-xl">
-                            <div className="text-xs text-green-400">
+                            <div className="text-sm text-green-400 font-medium">
                               🤖 {l.aiConsensus}: 4 AI Models Voting
                             </div>
                           </div>
 
                           {/* Predictions Grid */}
                           <div className="grid grid-cols-2 gap-3">
-                            {/* Match Result */}
                             {analysis.analysis?.matchResult && (
-                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
-                                <div className="text-xs text-gray-400">{l.matchResult}</div>
+                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 hover:bg-blue-500/15 transition-all">
+                                <div className="text-xs text-gray-400 mb-1">{l.matchResult}</div>
                                 <div className="text-3xl font-bold text-blue-400">{analysis.analysis.matchResult.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.matchResult.confidence}%</div>
                                 {analysis.analysis.matchResult.votes && (
-                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
                                     getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).bg
                                   } ${getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).color}`}>
                                     {analysis.analysis.matchResult.votes}/{analysis.analysis.matchResult.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
+                                <button
+                                  onClick={() => addToCoupon('MATCH_RESULT', analysis.analysis.matchResult.prediction, 1.85)}
+                                  className="mt-3 w-full py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  ➕ {l.addToCoupon}
+                                </button>
                               </div>
                             )}
 
-                            {/* Over/Under */}
                             {analysis.analysis?.overUnder25 && (
-                              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-                                <div className="text-xs text-gray-400">{l.overUnder}</div>
+                              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 hover:bg-green-500/15 transition-all">
+                                <div className="text-xs text-gray-400 mb-1">{l.overUnder}</div>
                                 <div className="text-3xl font-bold text-green-400">{analysis.analysis.overUnder25.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.overUnder25.confidence}%</div>
                                 {analysis.analysis.overUnder25.votes && (
-                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
                                     getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).bg
                                   } ${getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).color}`}>
                                     {analysis.analysis.overUnder25.votes}/{analysis.analysis.overUnder25.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
+                                <button
+                                  onClick={() => addToCoupon('OVER_UNDER_25', analysis.analysis.overUnder25.prediction, 1.90)}
+                                  className="mt-3 w-full py-2 bg-green-600/30 hover:bg-green-600/50 text-green-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  ➕ {l.addToCoupon}
+                                </button>
                               </div>
                             )}
 
-                            {/* BTTS */}
                             {analysis.analysis?.btts && (
-                              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
-                                <div className="text-xs text-gray-400">{l.btts}</div>
+                              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 hover:bg-orange-500/15 transition-all">
+                                <div className="text-xs text-gray-400 mb-1">{l.btts}</div>
                                 <div className="text-3xl font-bold text-orange-400">{analysis.analysis.btts.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.btts.confidence}%</div>
                                 {analysis.analysis.btts.votes && (
-                                  <div className={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
                                     getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).bg
                                   } ${getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).color}`}>
                                     {analysis.analysis.btts.votes}/{analysis.analysis.btts.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
+                                <button
+                                  onClick={() => addToCoupon('BTTS', analysis.analysis.btts.prediction, 1.80)}
+                                  className="mt-3 w-full py-2 bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  ➕ {l.addToCoupon}
+                                </button>
                               </div>
                             )}
 
-                            {/* Risk Level */}
                             {analysis.analysis?.riskLevel && (
-                              <div className="bg-gray-500/10 border border-gray-500/30 rounded-xl p-3">
-                                <div className="text-xs text-gray-400">{l.riskLevel}</div>
+                              <div className="bg-gray-500/10 border border-gray-500/30 rounded-xl p-4">
+                                <div className="text-xs text-gray-400 mb-1">{l.riskLevel}</div>
                                 <div className={`text-2xl font-bold ${getRiskColor(analysis.analysis.riskLevel).split(' ')[0]}`}>
                                   {analysis.analysis.riskLevel}
                                 </div>
@@ -725,21 +1030,35 @@ export default function DashboardPage() {
 
                           {/* Best Bet */}
                           {analysis.analysis?.bestBets?.[0] && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                              <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
-                              <div className="font-bold text-white text-lg">
-                                {analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}
+                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm text-yellow-400 mb-1 font-medium">💰 {l.bestBet}</div>
+                                  <div className="font-bold text-white text-xl">
+                                    {analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}
+                                  </div>
+                                  <div className="text-sm text-gray-300 mt-1">{analysis.analysis.bestBets[0].confidence}% {l.confidence}</div>
+                                </div>
+                                <button
+                                  onClick={() => addToCoupon(
+                                    analysis.analysis.bestBets[0].type,
+                                    analysis.analysis.bestBets[0].selection,
+                                    1.85
+                                  )}
+                                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all"
+                                >
+                                  ➕ {l.addToCoupon}
+                                </button>
                               </div>
-                              <div className="text-sm text-gray-300">{analysis.analysis.bestBets[0].confidence}% {l.confidence}</div>
                               {analysis.analysis.bestBets[0].reasoning && (
-                                <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-800/50 rounded-lg">
+                                <div className="text-sm text-gray-400 mt-3 p-3 bg-gray-800/50 rounded-lg">
                                   {analysis.analysis.bestBets[0].reasoning}
                                 </div>
                               )}
                             </div>
                           )}
 
-                          {/* Individual Model Predictions - With null checks */}
+                          {/* Individual Predictions */}
                           {analysis.individualAnalyses && (
                             <div className="space-y-2">
                               <div className="text-sm text-gray-400 font-medium">🔍 Individual AI Predictions:</div>
@@ -747,14 +1066,23 @@ export default function DashboardPage() {
                                 {Object.entries(analysis.individualAnalyses)
                                   .filter(([_, pred]) => pred !== null && pred !== undefined)
                                   .map(([model, pred]: [string, any]) => (
-                                    <div key={model} className="bg-gray-700/30 rounded-lg p-2 text-xs">
-                                      <div className="font-medium text-white capitalize mb-1">
+                                    <div key={model} className="bg-gray-700/30 rounded-xl p-3 text-xs">
+                                      <div className="font-semibold text-white capitalize mb-2">
                                         {getModelName(model)}
                                       </div>
-                                      <div className="space-y-0.5 text-gray-400">
-                                        <div>Result: <span className="text-blue-400">{pred?.matchResult?.prediction || '-'}</span></div>
-                                        <div>O/U: <span className="text-green-400">{pred?.overUnder25?.prediction || '-'}</span></div>
-                                        <div>BTTS: <span className="text-orange-400">{pred?.btts?.prediction || '-'}</span></div>
+                                      <div className="space-y-1 text-gray-400">
+                                        <div className="flex justify-between">
+                                          <span>Result:</span>
+                                          <span className="text-blue-400 font-medium">{pred?.matchResult?.prediction || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>O/U:</span>
+                                          <span className="text-green-400 font-medium">{pred?.overUnder25?.prediction || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>BTTS:</span>
+                                          <span className="text-orange-400 font-medium">{pred?.btts?.prediction || '-'}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
@@ -765,14 +1093,14 @@ export default function DashboardPage() {
                           {/* Overall Analysis */}
                           {analysis.analysis?.overallAnalyses?.[0] && (
                             <div className="bg-gray-700/30 rounded-xl p-4">
-                              <div className="text-sm text-gray-400 mb-2">📝 {l.overallAnalysis}</div>
-                              <p className="text-sm text-gray-300">{analysis.analysis.overallAnalyses[0]}</p>
+                              <div className="text-sm text-gray-400 mb-2 font-medium">📝 {l.overallAnalysis}</div>
+                              <p className="text-sm text-gray-300 leading-relaxed">{analysis.analysis.overallAnalyses[0]}</p>
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* ============ AGENT ANALYSIS ============ */}
+                      {/* Agent Analysis */}
                       {agentMode && agentAnalysis && (
                         <div className="space-y-4">
                           {/* Agent Status */}
@@ -783,11 +1111,15 @@ export default function DashboardPage() {
                               { key: 'odds', label: 'Odds', weight: '35%', icon: '💰' },
                               { key: 'strategy', label: 'Strategy', weight: '25%', icon: '🧠' },
                             ].map((agent) => (
-                              <div key={agent.key} className={`p-2 rounded-lg text-center ${
-                                agentAnalysis.reports?.[agent.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'
+                              <div key={agent.key} className={`p-2 rounded-xl text-center ${
+                                agentAnalysis.reports?.[agent.key] 
+                                  ? 'bg-green-500/20 border border-green-500/30' 
+                                  : 'bg-red-500/20 border border-red-500/30'
                               }`}>
                                 <div className="text-lg">{agent.icon}</div>
-                                <div className={`text-xs font-medium ${agentAnalysis.reports?.[agent.key] ? 'text-green-400' : 'text-red-400'}`}>
+                                <div className={`text-xs font-medium ${
+                                  agentAnalysis.reports?.[agent.key] ? 'text-green-400' : 'text-red-400'
+                                }`}>
                                   {agent.label} {agentAnalysis.reports?.[agent.key] ? '✓' : '✗'}
                                 </div>
                                 {agent.weight && (
@@ -800,7 +1132,7 @@ export default function DashboardPage() {
                           {/* Weighted Consensus Header */}
                           {consensusData && (
                             <div className="text-center py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl">
-                              <div className="text-xs text-purple-400">
+                              <div className="text-sm text-purple-400 font-medium">
                                 ⚖️ {l.weightedConsensus}: Stats 40% + Odds 35% + Strategy 25%
                               </div>
                             </div>
@@ -811,8 +1143,8 @@ export default function DashboardPage() {
                             <div className="space-y-3">
                               <div className="grid grid-cols-2 gap-3">
                                 {(consensusData.matchResult || consensusData.matchWinner) && (
-                                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
-                                    <div className="text-xs text-gray-400">{l.matchResult}</div>
+                                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                                    <div className="text-xs text-gray-400 mb-1">{l.matchResult}</div>
                                     <div className="text-3xl font-bold text-blue-400">
                                       {consensusData.matchResult?.prediction || consensusData.matchWinner?.prediction}
                                     </div>
@@ -822,8 +1154,8 @@ export default function DashboardPage() {
                                   </div>
                                 )}
                                 {(consensusData.overUnder || consensusData.overUnder25) && (
-                                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3">
-                                    <div className="text-xs text-gray-400">{l.overUnder}</div>
+                                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                                    <div className="text-xs text-gray-400 mb-1">{l.overUnder}</div>
                                     <div className="text-3xl font-bold text-green-400">
                                       {consensusData.overUnder?.prediction || consensusData.overUnder25?.prediction}
                                     </div>
@@ -833,8 +1165,8 @@ export default function DashboardPage() {
                                   </div>
                                 )}
                                 {consensusData.btts && (
-                                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3">
-                                    <div className="text-xs text-gray-400">{l.btts}</div>
+                                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                                    <div className="text-xs text-gray-400 mb-1">{l.btts}</div>
                                     <div className="text-3xl font-bold text-orange-400">{consensusData.btts.prediction}</div>
                                     <div className="text-sm text-gray-300">{consensusData.btts.confidence}%</div>
                                   </div>
@@ -843,38 +1175,51 @@ export default function DashboardPage() {
 
                               {/* Best Bet */}
                               {consensusData.bestBet && (
-                                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                                  <div className="text-sm text-yellow-400 mb-2">💰 {l.bestBet}</div>
-                                  <div className="font-bold text-white text-lg">
+                                <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
+                                  <div className="text-sm text-yellow-400 mb-2 font-medium">💰 {l.bestBet}</div>
+                                  <div className="font-bold text-white text-xl">
                                     {consensusData.bestBet.type}: {consensusData.bestBet.selection}
                                   </div>
-                                  <div className="text-sm text-gray-300">{consensusData.bestBet.confidence}% {l.confidence}</div>
+                                  <div className="text-sm text-gray-300 mt-1">{consensusData.bestBet.confidence}% {l.confidence}</div>
                                   {consensusData.bestBet.reasoning && (
-                                    <div className="text-xs text-gray-400 mt-2">{consensusData.bestBet.reasoning}</div>
+                                    <div className="text-sm text-gray-400 mt-3 p-3 bg-gray-800/50 rounded-lg">
+                                      {consensusData.bestBet.reasoning}
+                                    </div>
                                   )}
                                 </div>
                               )}
 
                               {/* Agent Contributions */}
-                              {consensusData.agentContributions && (
-                                <div className="bg-gray-700/30 rounded-xl p-3">
-                                  <div className="text-xs text-gray-400 mb-2">{l.agentContributions}:</div>
-                                  <div className="grid grid-cols-3 gap-2 text-sm text-center">
-                                    <div><span className="text-green-400">📊 Stats</span><div className="text-white font-bold">40%</div></div>
-                                    <div><span className="text-yellow-400">💰 Odds</span><div className="text-white font-bold">35%</div></div>
-                                    <div><span className="text-purple-400">🧠 Strategy</span><div className="text-white font-bold">25%</div></div>
+                              <div className="bg-gray-700/30 rounded-xl p-4">
+                                <div className="text-sm text-gray-400 mb-3 font-medium">{l.agentContributions}:</div>
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                  <div className="p-3 bg-green-500/10 rounded-lg">
+                                    <span className="text-green-400 text-lg">📊</span>
+                                    <div className="text-white font-bold text-lg">40%</div>
+                                    <div className="text-xs text-gray-400">Stats</div>
+                                  </div>
+                                  <div className="p-3 bg-yellow-500/10 rounded-lg">
+                                    <span className="text-yellow-400 text-lg">💰</span>
+                                    <div className="text-white font-bold text-lg">35%</div>
+                                    <div className="text-xs text-gray-400">Odds</div>
+                                  </div>
+                                  <div className="p-3 bg-purple-500/10 rounded-lg">
+                                    <span className="text-purple-400 text-lg">🧠</span>
+                                    <div className="text-white font-bold text-lg">25%</div>
+                                    <div className="text-xs text-gray-400">Strategy</div>
                                   </div>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           )}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-gray-400">
-                      <div className="text-5xl mb-4">🤖</div>
-                      <p>{l.selectMatch}</p>
+                    <div className="text-center py-16 text-gray-400">
+                      <div className="text-6xl mb-4">🤖</div>
+                      <p className="text-lg">{l.selectMatch}</p>
+                      <p className="text-sm text-gray-500 mt-2">Click "Analyze" to get AI predictions</p>
                     </div>
                   )}
                 </div>
@@ -882,8 +1227,9 @@ export default function DashboardPage() {
             ) : (
               <div className="flex items-center justify-center h-[600px] text-gray-400">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">⚽</div>
-                  <p className="text-lg">{l.selectMatch}</p>
+                  <div className="text-7xl mb-4">⚽</div>
+                  <p className="text-xl font-medium">{l.selectMatch}</p>
+                  <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
                 </div>
               </div>
             )}
@@ -891,7 +1237,16 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {showProfileMenu && <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>}
+      {/* Click outside to close menus */}
+      {(showProfileMenu || showMobileMenu) && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => {
+            setShowProfileMenu(false);
+            setShowMobileMenu(false);
+          }}
+        />
+      )}
     </div>
   );
 }
