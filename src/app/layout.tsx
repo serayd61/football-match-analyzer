@@ -5,28 +5,12 @@ import AuthProvider from '@/components/AuthProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import FloatingBackButton from '@/components/FloatingBackButton';
 
-
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Football Analytics Pro - AI-Powered Match Predictions',
   description: 'AI-powered football match prediction and analysis system',
 };
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        <Providers>
-          <LanguageProvider>
-            {children}
-            <FloatingBackButton />
-          </LanguageProvider>
-        </Providers>
-      </body>
-    </html>
-  );
-}
 
 export default function RootLayout({
   children,
@@ -39,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           <LanguageProvider>
             {children}
+            <FloatingBackButton />
           </LanguageProvider>
         </AuthProvider>
       </body>
