@@ -33,11 +33,11 @@ async function fetchDetailedMatchData(
     }
 
     // Paralel API çağrıları - Detaylı veriler
-    // Sportmonks API v3 - teams endpoint ile latest maçlar (ÇALIŞAN FORMAT)
+    // Sportmonks API v3 - schedules endpoint kullan (SKORLAR DAHİL!)
     const [
       fixtureRes,
-      homeTeamRes,
-      awayTeamRes,
+      homeScheduleRes,
+      awayScheduleRes,
       h2hRes,
       homeInjuriesRes,
       awayInjuriesRes
@@ -45,11 +45,11 @@ async function fetchDetailedMatchData(
       // 1. Fixture + Odds
       fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather`),
       
-      // 2. Ev sahibi takım + son maçlar (SKORLARLA)
-      fetch(`${BASE_URL}/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
+      // 2. Ev sahibi takım maç programı (SKORLARLA)
+      fetch(`${BASE_URL}/schedules/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}`),
       
-      // 3. Deplasman takım + son maçlar (SKORLARLA)
-      fetch(`${BASE_URL}/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
+      // 3. Deplasman takım maç programı (SKORLARLA)
+      fetch(`${BASE_URL}/schedules/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}`),
       
       // 4. H2H karşılaşmalar (SKORLARLA)
       fetch(`${BASE_URL}/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
@@ -62,19 +62,60 @@ async function fetchDetailedMatchData(
     ]);
 
     // JSON parse
-    const [fixtureData, homeTeamData, awayTeamData, h2hData, homeInjuriesData, awayInjuriesData] = 
+    const [fixtureData, homeScheduleData, awayScheduleData, h2hData, homeInjuriesData, awayInjuriesData] = 
       await Promise.all([
         fixtureRes.json(),
-        homeTeamRes.json(),
-        awayTeamRes.json(),
+        homeScheduleRes.json(),
+        awayScheduleRes.json(),
         h2hRes.json(),
         homeInjuriesRes.json(),
         awayInjuriesRes.json(),
       ]);
 
+    // Schedules verisinden bitmiş maçları çıkar
+    const extractFinishedMatches = (scheduleData: any, teamId: number): any[] => {
+      const matches: any[] = [];
+      const now = new Date();
+      
+      if (!scheduleData.data) return matches;
+      
+      // Her stage (sezon/lig) için
+      for (const stage of scheduleData.data) {
+        // Rounds varsa (lig maçları)
+        if (stage.rounds) {
+          for (const round of stage.rounds) {
+            if (round.fixtures) {
+              for (const fixture of round.fixtures) {
+                // Sadece bitmiş maçları al (state_id: 5 = Finished)
+                if (fixture.state_id === 5 && fixture.scores && fixture.scores.length > 0) {
+                  matches.push(fixture);
+                }
+              }
+            }
+          }
+        }
+        // Direkt fixtures varsa (kupa maçları)
+        if (stage.fixtures) {
+          for (const fixture of stage.fixtures) {
+            if (fixture.state_id === 5 && fixture.scores && fixture.scores.length > 0) {
+              matches.push(fixture);
+            }
+          }
+        }
+      }
+      
+      // Tarihe göre sırala (en yeni önce)
+      matches.sort((a, b) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime());
+      
+      return matches.slice(0, 15); // Son 15 maç
+    };
+
+    const homeMatches = extractFinishedMatches(homeScheduleData, homeTeamId);
+    const awayMatches = extractFinishedMatches(awayScheduleData, awayTeamId);
+
     console.log(`   📡 API Responses received`);
-    console.log(`   Home team latest: ${homeTeamData.data?.latest?.length || 0} matches`);
-    console.log(`   Away team latest: ${awayTeamData.data?.latest?.length || 0} matches`);
+    console.log(`   Home finished matches: ${homeMatches.length}`);
+    console.log(`   Away finished matches: ${awayMatches.length}`);
     console.log(`   H2H matches: ${h2hData.data?.length || 0}`);
 
     // ========== ODDS ==========
@@ -84,7 +125,6 @@ async function fetchDetailedMatchData(
     }
 
     // ========== HOME TEAM STATS ==========
-    const homeMatches = homeTeamData.data?.latest || [];
     if (homeMatches.length > 0) {
       homeStats = calculateDetailedStats(homeMatches, homeTeamId, homeTeamName, 'home');
       console.log(`   ✅ Home Stats: ${homeStats.form} | Goals: ${homeStats.avgGoalsScored}/${homeStats.avgGoalsConceded} | Over25: ${homeStats.over25Percentage}%`);
@@ -94,7 +134,6 @@ async function fetchDetailedMatchData(
     }
 
     // ========== AWAY TEAM STATS ==========
-    const awayMatches = awayTeamData.data?.latest || [];
     if (awayMatches.length > 0) {
       awayStats = calculateDetailedStats(awayMatches, awayTeamId, awayTeamName, 'away');
       console.log(`   ✅ Away Stats: ${awayStats.form} | Goals: ${awayStats.avgGoalsScored}/${awayStats.avgGoalsConceded} | Over25: ${awayStats.over25Percentage}%`);
