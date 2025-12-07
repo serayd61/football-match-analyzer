@@ -11,6 +11,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
     const couponId = params.id;
     
     const { data: coupon, error } = await supabaseAdmin
@@ -23,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: 'Kupon bulunamadı' }, { status: 404 });
     }
     
-    if (!coupon.is_public && coupon.user_id !== session?.user?.id) {
+    if (!coupon.is_public && coupon.user_id !== userId) {
       return NextResponse.json({ error: 'Erişim yok' }, { status: 403 });
     }
     
@@ -52,7 +53,9 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -68,7 +71,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Kupon bulunamadı' }, { status: 404 });
     }
     
-    if (coupon.user_id !== session.user.id) {
+    if (coupon.user_id !== userId) {
       return NextResponse.json({ error: 'Yetki yok' }, { status: 403 });
     }
     
@@ -91,7 +94,9 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
@@ -104,7 +109,7 @@ export async function PATCH(
       .eq('id', couponId)
       .single();
     
-    if (!coupon || coupon.user_id !== session.user.id) {
+    if (!coupon || coupon.user_id !== userId) {
       return NextResponse.json({ error: 'Yetki yok' }, { status: 403 });
     }
     
