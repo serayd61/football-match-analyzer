@@ -114,7 +114,7 @@ export default function CouponDetailPage() {
 
   const statusBadge = STATUS_BADGES[coupon.status] || STATUS_BADGES.PENDING;
   const StatusIcon = statusBadge.icon;
-  const isOwner = session?.user?.id === coupon.user_id;
+  const isOwner = (session?.user as any)?.id === coupon.user_id;
   const wonPicks = coupon.picks?.filter((p: any) => p.result === 'WON').length || 0;
   const totalPicks = coupon.picks?.length || 0;
 
