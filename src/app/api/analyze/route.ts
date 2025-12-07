@@ -444,7 +444,7 @@ function calculateH2HFromResultInfo(matches: any[], homeTeamName: string, awayTe
   };
 }
 
-// ==================== WEIGHTED CONSENSUS ====================
+// ==================== WEIGHTED CONSENSUS (Equal 25% each) ====================
 
 function calculateConsensus(analyses: any[]): any {
   const valid = analyses.filter(a => a !== null);
@@ -453,12 +453,15 @@ function calculateConsensus(analyses: any[]): any {
   const consensus: any = {};
   const fields = ['matchResult', 'overUnder25', 'btts'];
 
+  // Her AI'ya eşit ağırlık ver
+  const weightPerModel = 100 / valid.length; // 4 model = 25% each
+
   fields.forEach(field => {
     const scores: Record<string, { 
       weightedScore: number; 
       count: number; 
       reasons: string[]; 
-      totalConf: number 
+      avgConf: number;
     }> = {};
     
     valid.forEach(a => {
@@ -467,41 +470,54 @@ function calculateConsensus(analyses: any[]): any {
         const conf = Math.min(Math.max(a[field].confidence || 60, 50), 80);
         
         if (!scores[pred]) {
-          scores[pred] = { weightedScore: 0, count: 0, reasons: [], totalConf: 0 };
+          scores[pred] = { weightedScore: 0, count: 0, reasons: [], avgConf: 0 };
         }
         
-        scores[pred].weightedScore += conf;
+        // Her model eşit ağırlıkta (25%)
+        scores[pred].weightedScore += weightPerModel;
         scores[pred].count++;
-        scores[pred].totalConf += conf;
+        scores[pred].avgConf += conf;
         if (a[field].reasoning) scores[pred].reasons.push(a[field].reasoning);
       }
     });
 
+    // Ortalama güveni hesapla
+    Object.keys(scores).forEach(pred => {
+      scores[pred].avgConf = Math.round(scores[pred].avgConf / scores[pred].count);
+    });
+
+    // En yüksek ağırlıklı skora göre sırala
     const sorted = Object.entries(scores).sort((a, b) => {
-      if (b[1].weightedScore !== a[1].weightedScore) {
-        return b[1].weightedScore - a[1].weightedScore;
+      // Önce oy sayısına bak (eşit ağırlık olduğu için bu belirleyici)
+      if (b[1].count !== a[1].count) {
+        return b[1].count - a[1].count;
       }
-      return b[1].count - a[1].count;
+      // Eşitse ortalama güvene bak
+      return b[1].avgConf - a[1].avgConf;
     });
 
     if (sorted.length > 0) {
       const [pred, data] = sorted[0];
       const totalVotes = valid.length;
-      const avgConf = Math.round(data.totalConf / data.count);
       
-      let finalConfidence = avgConf;
+      // Final güven = ortalama güven, oy oranına göre ayarla
+      let finalConfidence = data.avgConf;
       const voteRatio = data.count / totalVotes;
       
       if (voteRatio < 0.5) {
-        finalConfidence = Math.round(finalConfidence * 0.85);
+        // Çoğunluk yok - güveni düşür
+        finalConfidence = Math.round(finalConfidence * 0.8);
       } else if (voteRatio >= 0.75) {
+        // Güçlü çoğunluk (+3)
         finalConfidence = Math.min(finalConfidence + 3, 80);
       }
       
       if (data.count === totalVotes) {
+        // Oybirliği (+5)
         finalConfidence = Math.min(finalConfidence + 5, 80);
       }
 
+      // 45-80 arasında sınırla
       finalConfidence = Math.min(Math.max(finalConfidence, 45), 80);
 
       consensus[field] = {
@@ -513,10 +529,11 @@ function calculateConsensus(analyses: any[]): any {
         reasoning: data.reasons[0] || '',
       };
 
-      console.log(`   ${field}: ${pred} (${data.count}/${totalVotes} votes, weighted: ${data.weightedScore}, conf: ${finalConfidence}%)`);
+      console.log(`   ${field}: ${pred} (${data.count}/${totalVotes} = ${Math.round(voteRatio * 100)}%, conf: ${finalConfidence}%)`);
     }
   });
 
+  // Best Bets - Her AI'dan en iyi bahisi al, eşit değerlendir
   const allBets = valid
     .filter(a => a.bestBet)
     .map(a => ({
@@ -525,6 +542,7 @@ function calculateConsensus(analyses: any[]): any {
     }))
     .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
 
+  // Unique best bets
   const uniqueBets: any[] = [];
   const seenBets = new Set<string>();
   
@@ -539,10 +557,14 @@ function calculateConsensus(analyses: any[]): any {
   consensus.bestBets = uniqueBets;
   consensus.overallAnalyses = valid.filter(a => a.overallAnalysis).map(a => a.overallAnalysis);
   
+  // Risk level - çoğunluğa göre
   const riskVotes: Record<string, number> = {};
   valid.forEach(a => {
     if (a.riskLevel) {
-      const risk = a.riskLevel.toLowerCase().replace('düşük', 'low').replace('orta', 'medium').replace('yüksek', 'high');
+      const risk = a.riskLevel.toLowerCase()
+        .replace('düşük', 'low')
+        .replace('orta', 'medium')
+        .replace('yüksek', 'high');
       riskVotes[risk] = (riskVotes[risk] || 0) + 1;
     }
   });
