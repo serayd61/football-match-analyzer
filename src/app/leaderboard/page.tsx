@@ -5,12 +5,12 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/LanguageProvider';
 import { 
   Trophy, 
   Medal,
   Crown,
   Star,
-  TrendingUp,
   Calendar,
   User,
   ChevronLeft,
@@ -21,13 +21,13 @@ import {
 
 interface LeaderboardEntry {
   rank: number;
-  userId: string;
-  userName: string;
-  userImage?: string;
-  totalPoints: number;
-  totalCoupons: number;
-  wonCoupons: number;
-  winRate: number;
+  user_id: string;
+  user_name: string;
+  user_image?: string;
+  total_points: number;
+  total_coupons: number;
+  won_coupons: number;
+  win_rate: number;
   user?: {
     id: string;
     name: string;
@@ -43,18 +43,11 @@ interface Winner {
   userName: string;
   userImage?: string;
   totalPoints: number;
-  totalCoupons: number;
-  wonCoupons: number;
-  winRate: number;
 }
-
-const MONTHS = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-];
 
 export default function LeaderboardPage() {
   const { data: session } = useSession();
+  const { lang } = useLanguage();
   
   const [period, setPeriod] = useState<'monthly' | 'alltime'>('monthly');
   const [year, setYear] = useState(new Date().getFullYear());
@@ -63,6 +56,109 @@ export default function LeaderboardPage() {
   const [winners, setWinners] = useState<Winner[]>([]);
   const [loading, setLoading] = useState(true);
   const [myRank, setMyRank] = useState<number | null>(null);
+
+  const labels = {
+    tr: {
+      leaderboard: 'Liderlik Tablosu',
+      leaderboardDesc: 'En çok puan toplayanlar arasında yerinizi alın!',
+      monthlyPrize: 'Aylık Ödül',
+      prizeDescription: 'Her ay en çok puan toplayan kullanıcı 1 aylık Pro üyelik kazanır!',
+      monthly: 'Aylık',
+      allTime: 'Tüm Zamanlar',
+      yourRank: 'Sıralamanız',
+      youAreRanked: '{rank}. sıradasınız',
+      earnPoints: 'Puan Kazan',
+      noRankingYet: 'Henüz sıralama yok',
+      noPointsYet: 'Bu dönemde henüz puan kazanan yok',
+      pastWinners: 'Geçmiş Kazananlar',
+      points: 'puan',
+      coupons: 'kupon',
+      winRate: 'başarı',
+      you: 'Siz',
+      anonymous: 'Anonim',
+      january: 'Ocak',
+      february: 'Şubat',
+      march: 'Mart',
+      april: 'Nisan',
+      may: 'Mayıs',
+      june: 'Haziran',
+      july: 'Temmuz',
+      august: 'Ağustos',
+      september: 'Eylül',
+      october: 'Ekim',
+      november: 'Kasım',
+      december: 'Aralık',
+    },
+    en: {
+      leaderboard: 'Leaderboard',
+      leaderboardDesc: 'Compete with others and climb the rankings!',
+      monthlyPrize: 'Monthly Prize',
+      prizeDescription: 'Top scorer each month wins 1 month Pro subscription!',
+      monthly: 'Monthly',
+      allTime: 'All Time',
+      yourRank: 'Your Rank',
+      youAreRanked: 'You are ranked #{rank}',
+      earnPoints: 'Earn Points',
+      noRankingYet: 'No ranking yet',
+      noPointsYet: 'No points earned in this period yet',
+      pastWinners: 'Past Winners',
+      points: 'points',
+      coupons: 'coupons',
+      winRate: 'win rate',
+      you: 'You',
+      anonymous: 'Anonymous',
+      january: 'January',
+      february: 'February',
+      march: 'March',
+      april: 'April',
+      may: 'May',
+      june: 'June',
+      july: 'July',
+      august: 'August',
+      september: 'September',
+      october: 'October',
+      november: 'November',
+      december: 'December',
+    },
+    de: {
+      leaderboard: 'Rangliste',
+      leaderboardDesc: 'Messen Sie sich mit anderen und steigen Sie in der Rangliste auf!',
+      monthlyPrize: 'Monatspreis',
+      prizeDescription: 'Der Monatssieger gewinnt 1 Monat Pro-Abo!',
+      monthly: 'Monatlich',
+      allTime: 'Alle Zeiten',
+      yourRank: 'Ihr Rang',
+      youAreRanked: 'Sie sind auf Platz {rank}',
+      earnPoints: 'Punkte sammeln',
+      noRankingYet: 'Noch keine Rangliste',
+      noPointsYet: 'In diesem Zeitraum wurden noch keine Punkte erzielt',
+      pastWinners: 'Frühere Gewinner',
+      points: 'Punkte',
+      coupons: 'Wettscheine',
+      winRate: 'Gewinnrate',
+      you: 'Sie',
+      anonymous: 'Anonym',
+      january: 'Januar',
+      february: 'Februar',
+      march: 'März',
+      april: 'April',
+      may: 'Mai',
+      june: 'Juni',
+      july: 'Juli',
+      august: 'August',
+      september: 'September',
+      october: 'Oktober',
+      november: 'November',
+      december: 'Dezember',
+    },
+  };
+
+  const l = labels[lang as keyof typeof labels] || labels.en;
+
+  const MONTHS = [
+    l.january, l.february, l.march, l.april, l.may, l.june,
+    l.july, l.august, l.september, l.october, l.november, l.december
+  ];
   
   useEffect(() => {
     fetchLeaderboard();
@@ -84,12 +180,11 @@ export default function LeaderboardPage() {
       
       setLeaderboard(data.leaderboard || []);
       
-      // Find current user's rank
       const userId = (session?.user as any)?.id;
-if (userId) {
-  const userEntry = data.leaderboard?.find(
-    (e: LeaderboardEntry) => e.userId === userId || e.user?.id === userId
-  );
+      if (userId) {
+        const userEntry = data.leaderboard?.find(
+          (e: LeaderboardEntry) => e.user_id === userId || e.user?.id === userId
+        );
         setMyRank(userEntry?.rank || null);
       }
     } catch (error) {
@@ -123,7 +218,6 @@ if (userId) {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
     
-    // Don't go beyond current month
     if (year === currentYear && month >= currentMonth) return;
     
     if (month === 12) {
@@ -159,6 +253,8 @@ if (userId) {
         return 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700';
     }
   };
+
+  const userId = (session?.user as any)?.id;
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -168,11 +264,11 @@ if (userId) {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Trophy className="w-10 h-10 text-yellow-500" />
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              Liderlik Tablosu
+              {l.leaderboard}
             </h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-lg">
-            En çok puan toplayanlar arasında yerinizi alın!
+            {l.leaderboardDesc}
           </p>
         </div>
         
@@ -183,10 +279,8 @@ if (userId) {
               <Gift className="w-8 h-8" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Aylık Ödül</h3>
-              <p className="text-purple-100">
-                Her ay en çok puan toplayan kullanıcı <strong>1 aylık Pro üyelik</strong> kazanır!
-              </p>
+              <h3 className="text-xl font-bold">{l.monthlyPrize}</h3>
+              <p className="text-purple-100">{l.prizeDescription}</p>
             </div>
           </div>
         </div>
@@ -202,7 +296,7 @@ if (userId) {
             }`}
           >
             <Calendar className="w-5 h-5" />
-            Aylık
+            {l.monthly}
           </button>
           <button
             onClick={() => setPeriod('alltime')}
@@ -213,18 +307,18 @@ if (userId) {
             }`}
           >
             <Star className="w-5 h-5" />
-            Tüm Zamanlar
+            {l.allTime}
           </button>
         </div>
         
-        {/* Month Selector (for monthly) */}
+        {/* Month Selector */}
         {period === 'monthly' && (
           <div className="flex items-center justify-center gap-4 mb-8">
             <button
               onClick={goToPrevMonth}
               className="p-2 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="text-center min-w-[200px]">
               <p className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -235,7 +329,7 @@ if (userId) {
               onClick={goToNextMonth}
               className="p-2 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
         )}
@@ -249,9 +343,9 @@ if (userId) {
                   {myRank}
                 </div>
                 <div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400">Sıralamanız</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">{l.yourRank}</p>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    {myRank}. sıradasınız
+                    {l.youAreRanked.replace('{rank}', myRank.toString())}
                   </p>
                 </div>
               </div>
@@ -259,7 +353,7 @@ if (userId) {
                 href="/coupons/create"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
               >
-                Puan Kazan
+                {l.earnPoints}
               </Link>
             </div>
           </div>
@@ -275,22 +369,22 @@ if (userId) {
             <div className="text-center py-20">
               <Trophy className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Henüz sıralama yok
+                {l.noRankingYet}
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                Bu dönemde henüz puan kazanan yok
+                {l.noPointsYet}
               </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {leaderboard.map((entry) => {
-                const userName = entry.userName || entry.user?.name || 'Anonim';
-                const userImage = entry.userImage || entry.user?.image;
-                const isCurrentUser = (session?.user as any)?.id === (entry.userId || entry.user?.id);
+                const userName = entry.user_name || entry.user?.name || l.anonymous;
+                const userImage = entry.user_image || entry.user?.image;
+                const isCurrentUser = userId === (entry.user_id || entry.user?.id);
                 
                 return (
                   <div
-                    key={entry.userId || entry.user?.id}
+                    key={entry.user_id || entry.user?.id}
                     className={`flex items-center gap-4 p-4 border-l-4 ${getRankBg(entry.rank)} ${
                       isCurrentUser ? 'ring-2 ring-blue-500 ring-inset' : ''
                     }`}
@@ -317,11 +411,11 @@ if (userId) {
                         <p className="font-semibold text-gray-900 dark:text-white">
                           {userName}
                           {isCurrentUser && (
-                            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">(Siz)</span>
+                            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">({l.you})</span>
                           )}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {entry.wonCoupons}/{entry.totalCoupons} kupon • %{entry.winRate} başarı
+                          {entry.won_coupons}/{entry.total_coupons} {l.coupons} • {entry.win_rate}% {l.winRate}
                         </p>
                       </div>
                     </div>
@@ -329,9 +423,9 @@ if (userId) {
                     {/* Points */}
                     <div className="text-right">
                       <p className="text-2xl font-bold text-yellow-600">
-                        {entry.totalPoints.toFixed(1)}
+                        {entry.total_points?.toFixed(1)}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">puan</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{l.points}</p>
                     </div>
                   </div>
                 );
@@ -345,7 +439,7 @@ if (userId) {
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Crown className="w-6 h-6 text-yellow-500" />
-              Geçmiş Kazananlar
+              {l.pastWinners}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {winners.map((winner) => (
@@ -356,7 +450,7 @@ if (userId) {
                   <div className="flex items-center gap-3 mb-3">
                     <Crown className="w-5 h-5 text-yellow-500" />
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {winner.monthName} {winner.year}
+                      {MONTHS[winner.month - 1]} {winner.year}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -376,7 +470,7 @@ if (userId) {
                         {winner.userName}
                       </p>
                       <p className="text-sm text-yellow-600 font-medium">
-                        {winner.totalPoints.toFixed(1)} puan
+                        {winner.totalPoints?.toFixed(1)} {l.points}
                       </p>
                     </div>
                   </div>
