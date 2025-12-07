@@ -85,6 +85,124 @@ export const translations = {
     
     // Footer
     madeBy: 'Bu site Serkan Aydın tarafından yapılmıştır',
+
+    // Coupon System
+    coupons: 'Kuponlar',
+    leaderboard: 'Liderlik Tablosu',
+    createCouponPage: 'Kupon Oluştur',
+    myCoupons: 'Kuponlarım',
+    publicCoupons: 'Herkesin Kuponları',
+    couponDetail: 'Kupon Detayı',
+    backToCoupons: 'Kuponlara Dön',
+    
+    // Coupon Status
+    statusPending: 'Bekliyor',
+    statusWon: 'Kazandı',
+    statusLost: 'Kaybetti',
+    statusPartial: 'Kısmi',
+    statusCancelled: 'İptal',
+    
+    // Coupon Actions
+    addToCoupon: 'Kupona Ekle',
+    addedToCoupon: 'Kupona Eklendi',
+    goToCoupon: 'Kupona Git',
+    selectBet: 'Bahis Seçin',
+    shareCoupon: 'Paylaş',
+    deleteCoupon: 'Sil',
+    makePublic: 'Yayınla',
+    makePrivate: 'Gizle',
+    
+    // Bet Types
+    betMatchResult: 'Maç Sonucu',
+    betOverUnder25: 'Alt/Üst 2.5',
+    betOverUnder35: 'Alt/Üst 3.5',
+    betBtts: 'Karşılıklı Gol',
+    betDoubleChance: 'Çifte Şans',
+    
+    // Selections
+    selHome: 'Ev Sahibi',
+    selDraw: 'Beraberlik',
+    selAway: 'Deplasman',
+    selOver: 'Üst',
+    selUnder: 'Alt',
+    selYes: 'Var',
+    selNo: 'Yok',
+    
+    // Coupon Stats
+    totalOdds: 'Toplam Oran',
+    potentialPoints: 'Potansiyel Puan',
+    pointsEarned: 'Kazanılan Puan',
+    picks: 'Bahisler',
+    correct: 'Doğru',
+    match: 'Maç',
+    score: 'Skor',
+    anonymous: 'Anonim',
+    
+    // Leaderboard
+    monthlyLeaderboard: 'Aylık Sıralama',
+    allTimeLeaderboard: 'Tüm Zamanlar',
+    yourRank: 'Sıralamanız',
+    monthlyPrize: 'Aylık Ödül',
+    prizeDescription: 'Her ay en çok puan toplayan 1 aylık Pro üyelik kazanır!',
+    pastWinners: 'Geçmiş Kazananlar',
+    points: 'puan',
+    winRate: 'Başarı Oranı',
+    earnPoints: 'Puan Kazan',
+    noRankingYet: 'Henüz sıralama yok',
+    noPointsYet: 'Bu dönemde henüz puan kazanan yok',
+    youLabel: 'Siz',
+    
+    // Messages
+    noCouponsYet: 'Henüz kupon yok',
+    noCouponsYetDesc: 'Henüz kupon oluşturmadınız',
+    noPublicCoupons: 'Henüz paylaşılan kupon yok',
+    createFirstCoupon: 'İlk Kuponu Oluştur',
+    couponCreated: 'Kupon başarıyla oluşturuldu!',
+    couponDeleted: 'Kupon silindi',
+    linkCopied: 'Link kopyalandı!',
+    minOnePick: 'En az 1 bahis eklemelisiniz',
+    maxTenPicks: 'Maksimum 10 bahis ekleyebilirsiniz',
+    matchStarted: 'Bu maç başlamış veya bitmiş',
+    onlyPendingDelete: 'Sadece bekleyen kuponlar silinebilir',
+    recommended: 'Önerilen',
+    couponNotFound: 'Kupon bulunamadı',
+    noAccessCoupon: 'Bu kupona erişim yetkiniz yok',
+    confirmDelete: 'Bu kuponu silmek istediğinize emin misiniz?',
+    
+    // Coupon Create Page
+    couponTitle: 'Kupon Başlığı',
+    couponTitlePlaceholder: 'Örn: Hafta sonu kombine',
+    couponDescription: 'Açıklama',
+    couponDescriptionPlaceholder: 'Bu kupon hakkında not...',
+    makePublicOption: 'Herkese Açık',
+    makePublicDesc: 'Diğer kullanıcılar kuponunuzu görebilir',
+    removePick: 'Kaldır',
+    clearAll: 'Tümünü Temizle',
+    publishCoupon: 'Kuponu Yayınla',
+    noPicks: 'Henüz bahis eklenmedi',
+    addPicksDesc: 'Maç analizinden bahis ekleyin',
+    goToMatches: 'Maçlara Git',
+    picksCount: '{count} Maçlık Kupon',
+    
+    // Filters
+    all: 'Tümü',
+    pending: 'Bekleyen',
+    won: 'Kazanan',
+    lost: 'Kaybeden',
+    
+    // Months
+    january: 'Ocak',
+    february: 'Şubat',
+    march: 'Mart',
+    april: 'Nisan',
+    may: 'Mayıs',
+    june: 'Haziran',
+    july: 'Temmuz',
+    august: 'Ağustos',
+    september: 'Eylül',
+    october: 'Ekim',
+    november: 'Kasım',
+    december: 'Aralık',
   },
   
   en: {
@@ -173,6 +291,124 @@ export const translations = {
     
     // Footer
     madeBy: 'Made by Serkan Aydın',
+
+    // Coupon System
+    coupons: 'Coupons',
+    leaderboard: 'Leaderboard',
+    createCouponPage: 'Create Coupon',
+    myCoupons: 'My Coupons',
+    publicCoupons: 'Public Coupons',
+    couponDetail: 'Coupon Detail',
+    backToCoupons: 'Back to Coupons',
+    
+    // Coupon Status
+    statusPending: 'Pending',
+    statusWon: 'Won',
+    statusLost: 'Lost',
+    statusPartial: 'Partial',
+    statusCancelled: 'Cancelled',
+    
+    // Coupon Actions
+    addToCoupon: 'Add to Coupon',
+    addedToCoupon: 'Added to Coupon',
+    goToCoupon: 'Go to Coupon',
+    selectBet: 'Select Bet',
+    shareCoupon: 'Share',
+    deleteCoupon: 'Delete',
+    makePublic: 'Make Public',
+    makePrivate: 'Make Private',
+    
+    // Bet Types
+    betMatchResult: 'Match Result',
+    betOverUnder25: 'Over/Under 2.5',
+    betOverUnder35: 'Over/Under 3.5',
+    betBtts: 'Both Teams to Score',
+    betDoubleChance: 'Double Chance',
+    
+    // Selections
+    selHome: 'Home',
+    selDraw: 'Draw',
+    selAway: 'Away',
+    selOver: 'Over',
+    selUnder: 'Under',
+    selYes: 'Yes',
+    selNo: 'No',
+    
+    // Coupon Stats
+    totalOdds: 'Total Odds',
+    potentialPoints: 'Potential Points',
+    pointsEarned: 'Points Earned',
+    picks: 'Picks',
+    correct: 'Correct',
+    match: 'Match',
+    score: 'Score',
+    anonymous: 'Anonymous',
+    
+    // Leaderboard
+    monthlyLeaderboard: 'Monthly Ranking',
+    allTimeLeaderboard: 'All Time',
+    yourRank: 'Your Rank',
+    monthlyPrize: 'Monthly Prize',
+    prizeDescription: 'Top scorer each month wins 1 month Pro subscription!',
+    pastWinners: 'Past Winners',
+    points: 'points',
+    winRate: 'Win Rate',
+    earnPoints: 'Earn Points',
+    noRankingYet: 'No ranking yet',
+    noPointsYet: 'No points earned in this period yet',
+    youLabel: 'You',
+    
+    // Messages
+    noCouponsYet: 'No coupons yet',
+    noCouponsYetDesc: 'You haven\'t created any coupons yet',
+    noPublicCoupons: 'No public coupons yet',
+    createFirstCoupon: 'Create First Coupon',
+    couponCreated: 'Coupon created successfully!',
+    couponDeleted: 'Coupon deleted',
+    linkCopied: 'Link copied!',
+    minOnePick: 'Add at least 1 pick',
+    maxTenPicks: 'Maximum 10 picks allowed',
+    matchStarted: 'This match has started or ended',
+    onlyPendingDelete: 'Only pending coupons can be deleted',
+    recommended: 'Recommended',
+    couponNotFound: 'Coupon not found',
+    noAccessCoupon: 'You don\'t have access to this coupon',
+    confirmDelete: 'Are you sure you want to delete this coupon?',
+    
+    // Coupon Create Page
+    couponTitle: 'Coupon Title',
+    couponTitlePlaceholder: 'E.g: Weekend combo',
+    couponDescription: 'Description',
+    couponDescriptionPlaceholder: 'Notes about this coupon...',
+    makePublicOption: 'Public',
+    makePublicDesc: 'Other users can see your coupon',
+    removePick: 'Remove',
+    clearAll: 'Clear All',
+    publishCoupon: 'Publish Coupon',
+    noPicks: 'No picks added yet',
+    addPicksDesc: 'Add picks from match analysis',
+    goToMatches: 'Go to Matches',
+    picksCount: '{count} Pick Coupon',
+    
+    // Filters
+    all: 'All',
+    pending: 'Pending',
+    won: 'Won',
+    lost: 'Lost',
+    
+    // Months
+    january: 'January',
+    february: 'February',
+    march: 'March',
+    april: 'April',
+    may: 'May',
+    june: 'June',
+    july: 'July',
+    august: 'August',
+    september: 'September',
+    october: 'October',
+    november: 'November',
+    december: 'December',
   },
   
   de: {
@@ -261,6 +497,124 @@ export const translations = {
     
     // Footer
     madeBy: 'Erstellt von Serkan Aydın',
+
+    // Coupon System
+    coupons: 'Wettscheine',
+    leaderboard: 'Rangliste',
+    createCouponPage: 'Wettschein erstellen',
+    myCoupons: 'Meine Wettscheine',
+    publicCoupons: 'Öffentliche Wettscheine',
+    couponDetail: 'Wettschein Details',
+    backToCoupons: 'Zurück zu Wettscheinen',
+    
+    // Coupon Status
+    statusPending: 'Ausstehend',
+    statusWon: 'Gewonnen',
+    statusLost: 'Verloren',
+    statusPartial: 'Teilweise',
+    statusCancelled: 'Storniert',
+    
+    // Coupon Actions
+    addToCoupon: 'Zum Wettschein',
+    addedToCoupon: 'Hinzugefügt',
+    goToCoupon: 'Zum Wettschein',
+    selectBet: 'Wette auswählen',
+    shareCoupon: 'Teilen',
+    deleteCoupon: 'Löschen',
+    makePublic: 'Veröffentlichen',
+    makePrivate: 'Verbergen',
+    
+    // Bet Types
+    betMatchResult: 'Spielergebnis',
+    betOverUnder25: 'Über/Unter 2.5',
+    betOverUnder35: 'Über/Unter 3.5',
+    betBtts: 'Beide Teams treffen',
+    betDoubleChance: 'Doppelte Chance',
+    
+    // Selections
+    selHome: 'Heim',
+    selDraw: 'Unentschieden',
+    selAway: 'Auswärts',
+    selOver: 'Über',
+    selUnder: 'Unter',
+    selYes: 'Ja',
+    selNo: 'Nein',
+    
+    // Coupon Stats
+    totalOdds: 'Gesamtquote',
+    potentialPoints: 'Mögliche Punkte',
+    pointsEarned: 'Verdiente Punkte',
+    picks: 'Tipps',
+    correct: 'Richtig',
+    match: 'Spiel',
+    score: 'Ergebnis',
+    anonymous: 'Anonym',
+    
+    // Leaderboard
+    monthlyLeaderboard: 'Monatsrangliste',
+    allTimeLeaderboard: 'Alle Zeiten',
+    yourRank: 'Ihr Rang',
+    monthlyPrize: 'Monatspreis',
+    prizeDescription: 'Der Monatssieger gewinnt 1 Monat Pro-Abo!',
+    pastWinners: 'Frühere Gewinner',
+    points: 'Punkte',
+    winRate: 'Gewinnrate',
+    earnPoints: 'Punkte sammeln',
+    noRankingYet: 'Noch keine Rangliste',
+    noPointsYet: 'In diesem Zeitraum wurden noch keine Punkte erzielt',
+    youLabel: 'Sie',
+    
+    // Messages
+    noCouponsYet: 'Noch keine Wettscheine',
+    noCouponsYetDesc: 'Sie haben noch keine Wettscheine erstellt',
+    noPublicCoupons: 'Noch keine öffentlichen Wettscheine',
+    createFirstCoupon: 'Ersten Wettschein erstellen',
+    couponCreated: 'Wettschein erfolgreich erstellt!',
+    couponDeleted: 'Wettschein gelöscht',
+    linkCopied: 'Link kopiert!',
+    minOnePick: 'Mindestens 1 Tipp hinzufügen',
+    maxTenPicks: 'Maximal 10 Tipps erlaubt',
+    matchStarted: 'Dieses Spiel hat begonnen oder ist beendet',
+    onlyPendingDelete: 'Nur ausstehende Wettscheine können gelöscht werden',
+    recommended: 'Empfohlen',
+    couponNotFound: 'Wettschein nicht gefunden',
+    noAccessCoupon: 'Sie haben keinen Zugriff auf diesen Wettschein',
+    confirmDelete: 'Möchten Sie diesen Wettschein wirklich löschen?',
+    
+    // Coupon Create Page
+    couponTitle: 'Wettschein-Titel',
+    couponTitlePlaceholder: 'Z.B: Wochenend-Kombi',
+    couponDescription: 'Beschreibung',
+    couponDescriptionPlaceholder: 'Notizen zu diesem Wettschein...',
+    makePublicOption: 'Öffentlich',
+    makePublicDesc: 'Andere Benutzer können Ihren Wettschein sehen',
+    removePick: 'Entfernen',
+    clearAll: 'Alle löschen',
+    publishCoupon: 'Wettschein veröffentlichen',
+    noPicks: 'Noch keine Tipps hinzugefügt',
+    addPicksDesc: 'Tipps aus der Spielanalyse hinzufügen',
+    goToMatches: 'Zu den Spielen',
+    picksCount: '{count}-Tipp Wettschein',
+    
+    // Filters
+    all: 'Alle',
+    pending: 'Ausstehend',
+    won: 'Gewonnen',
+    lost: 'Verloren',
+    
+    // Months
+    january: 'Januar',
+    february: 'Februar',
+    march: 'März',
+    april: 'April',
+    may: 'Mai',
+    june: 'Juni',
+    july: 'Juli',
+    august: 'August',
+    september: 'September',
+    october: 'Oktober',
+    november: 'November',
+    december: 'Dezember',
   },
 };
 
