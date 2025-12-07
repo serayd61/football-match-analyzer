@@ -229,7 +229,7 @@ export default function CreateCouponPage() {
       setMatches(matchesWithOdds);
       
       // Expand all leagues by default
-      const leagues = new Set(matchesWithOdds.map((m: Match) => m.league));
+      const leagues = new Set<string>(matchesWithOdds.map((m: Match) => m.league));
       setExpandedLeagues(leagues);
     } catch (error) {
       console.error('Fetch error:', error);
