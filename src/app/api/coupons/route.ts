@@ -9,7 +9,7 @@ import { calculatePoints } from '@/types/coupon';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as any)?.id || (session?.user as any)?.sub;
     const { searchParams } = new URL(request.url);
     
     const filter = searchParams.get('filter') || 'public';
@@ -76,10 +76,35 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    
+    // Debug log
+    console.log('Session data:', JSON.stringify(session, null, 2));
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized - No session' }, { status: 401 });
+    }
+    
+    // Try multiple ID sources
+    let userId = (session.user as any)?.id || 
+                 (session.user as any)?.sub;
+    
+    // If still no ID, try to find user by email
+    if (!userId && session.user.email) {
+      const { data: userByEmail } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', session.user.email)
+        .single();
+      
+      if (userByEmail) {
+        userId = userByEmail.id;
+      }
+    }
+    
+    console.log('User ID resolved:', userId);
     
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - No user ID found' }, { status: 401 });
     }
     
     const body = await request.json();
@@ -110,7 +135,10 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
     
-    if (couponError) throw couponError;
+    if (couponError) {
+      console.error('Coupon insert error:', couponError);
+      throw couponError;
+    }
     
     const picksToInsert = picks.map((pick: any) => ({
       coupon_id: coupon.id,
@@ -130,7 +158,10 @@ export async function POST(request: NextRequest) {
       .insert(picksToInsert)
       .select();
     
-    if (picksError) throw picksError;
+    if (picksError) {
+      console.error('Picks insert error:', picksError);
+      throw picksError;
+    }
     
     return NextResponse.json({
       success: true,
@@ -138,6 +169,7 @@ export async function POST(request: NextRequest) {
       potentialPoints,
     });
   } catch (error: any) {
+    console.error('POST /api/coupons error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
