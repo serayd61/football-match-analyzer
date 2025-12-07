@@ -286,7 +286,7 @@ if (userId) {
               {leaderboard.map((entry) => {
                 const userName = entry.userName || entry.user?.name || 'Anonim';
                 const userImage = entry.userImage || entry.user?.image;
-                const isCurrentUser = userId === (entry.userId || entry.user?.id);
+                const isCurrentUser = (session?.user as any)?.id === (entry.userId || entry.user?.id);
                 
                 return (
                   <div
