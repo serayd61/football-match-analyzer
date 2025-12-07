@@ -82,7 +82,7 @@ export const SELECTION_LABELS: Record<string, string> = {
 
 // Puan hesaplama fonksiyonu
 export function calculatePoints(totalOdds: number, pickCount: number): number {
-  let multiplier = POINTS_MULTIPLIER.SINGLE;
+  let multiplier: number = POINTS_MULTIPLIER.SINGLE;
   
   if (pickCount === 2) {
     multiplier = POINTS_MULTIPLIER.DOUBLE;
