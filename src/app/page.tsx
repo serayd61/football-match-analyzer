@@ -117,6 +117,51 @@ export default function HomePage() {
           },
         ],
       },
+      tipsterLeague: {
+        badge: '🏆 YENİ',
+        title: 'Tipster League',
+        subtitle: 'Kupon Oluştur, Yarış, Ücretsiz Pro Kazan!',
+        description: 'AI analizlerini kullanarak sanal kuponlar oluştur, herkese açık paylaş ve aylık liderlik tablosunda yarış. Her ay en iyi tipster 1 aylık ücretsiz Pro üyelik kazanır!',
+        features: [
+          {
+            icon: '🎫',
+            title: 'Kupon Oluştur',
+            desc: 'AI tahminlerini kullanarak profesyonel bahis sitesi gibi kupon oluştur',
+          },
+          {
+            icon: '📊',
+            title: 'Puan Kazan',
+            desc: 'Kuponların tuttuğunda oran × çarpan formülüyle puan kazan',
+          },
+          {
+            icon: '🏅',
+            title: 'Liderlik Tablosu',
+            desc: 'Aylık ve tüm zamanların en iyi tipsterları arasında yerinizi alın',
+          },
+          {
+            icon: '🎁',
+            title: 'Ödül Kazan',
+            desc: 'Her ay 1. olan tipster 1 aylık ücretsiz Pro üyelik kazanır',
+          },
+        ],
+        howItWorks: [
+          { step: '1', icon: '📝', title: 'Üye Ol', desc: 'Ücretsiz hesap oluştur' },
+          { step: '2', icon: '🤖', title: 'Analiz Al', desc: 'AI tahminlerini incele' },
+          { step: '3', icon: '🎫', title: 'Kupon Yap', desc: 'Maçları seç, kupon oluştur' },
+          { step: '4', icon: '🏆', title: 'Yarış', desc: 'Puan kazan, liderliğe çık' },
+        ],
+        multipliers: {
+          title: 'Puan Çarpanları',
+          items: [
+            { type: 'Tekli', multiplier: '×10', color: 'green' },
+            { type: '2\'li', multiplier: '×15', color: 'blue' },
+            { type: '3\'lü', multiplier: '×25', color: 'purple' },
+            { type: '4+ Kombine', multiplier: '×50', color: 'yellow' },
+          ],
+        },
+        cta: 'Hemen Katıl',
+        ctaSecondary: 'Liderlik Tablosu',
+      },
       features: {
         title: 'Platform Özellikleri',
         subtitle: 'Profesyonel bahisçilerin ihtiyaç duyduğu her şey',
@@ -135,36 +180,36 @@ export default function HomePage() {
         users: 'Aktif Kullanıcı',
         leagues: 'Desteklenen Lig',
       },
-    pricing: {
-  title: 'Basit Fiyatlandırma',
-  subtitle: 'Gizli ücret yok, istediğiniz zaman iptal edin',
-  free: {
-    name: 'Deneme',
-    price: '$0',
-    period: '/7 gün',
-    features: ['Günde 3 analiz', '4 AI modeli', 'Temel istatistikler', 'E-posta desteği'],
-    cta: 'Ücretsiz Dene',
-  },
-  pro: {
-    name: 'Pro',
-    price: '$19.90',
-    period: '/ay',
-    popular: 'En Popüler',
-    features: ['Sınırsız analiz', '7 AI modeli (Agent dahil)', 'Value bet tespiti', 'Ağırlıklı konsensüs', 'Öncelikli destek', 'Telegram bildirimleri'],
-    cta: 'Pro\'ya Geç',
-  },
-},
+      pricing: {
+        title: 'Basit Fiyatlandırma',
+        subtitle: 'Gizli ücret yok, istediğiniz zaman iptal edin',
+        free: {
+          name: 'Deneme',
+          price: '$0',
+          period: '/7 gün',
+          features: ['Günde 3 analiz', '4 AI modeli', 'Temel istatistikler', 'Kupon oluşturma', 'Tipster League katılım', 'E-posta desteği'],
+          cta: 'Ücretsiz Dene',
+        },
+        pro: {
+          name: 'Pro',
+          price: '$19.90',
+          period: '/ay',
+          popular: 'En Popüler',
+          features: ['Sınırsız analiz', '7 AI modeli (Agent dahil)', 'Value bet tespiti', 'Ağırlıklı konsensüs', 'Sınırsız kupon', 'Öncelikli destek', 'Telegram bildirimleri'],
+          cta: 'Pro\'ya Geç',
+        },
+      },
       testimonials: {
         title: 'Kullanıcılarımız Ne Diyor?',
         items: [
           { text: 'İki farklı sistemin aynı sonuca ulaşması bana çok güven veriyor. Artık daha bilinçli bahis yapıyorum.', author: 'Mehmet K.', role: 'Profesyonel Bahisçi' },
-          { text: 'Agent sisteminin ağırlıklı oylama mantığı muhteşem. Hangi verinin ne kadar önemli olduğunu anlıyorum.', author: 'Ali Y.', role: 'Spor Analisti' },
+          { text: 'Tipster League sayesinde her ay ödül kazanma şansım var. Kupon sistemi gerçekten profesyonel.', author: 'Ali Y.', role: 'Tipster League Şampiyonu' },
           { text: 'Web3 teknolojisi ile çalışan AI\'lar gerçekten fark yaratıyor. Sonuçlar çok tutarlı.', author: 'Emre S.', role: 'Kripto & Bahis Meraklısı' },
         ],
       },
       cta: {
         title: 'İki Güçlü Sistemi Deneyin',
-        subtitle: 'Ücretsiz hesap oluşturun, AI ve Agent\'ların gücünü keşfedin',
+        subtitle: 'Ücretsiz hesap oluşturun, AI ve Agent\'ların gücünü keşfedin, Tipster League\'de yarışın!',
         button: 'Ücretsiz Hesap Oluştur',
       },
       footer: {
@@ -172,6 +217,7 @@ export default function HomePage() {
         features: 'Özellikler',
         pricing: 'Fiyatlandırma',
         demo: 'Demo',
+        tipsterLeague: 'Tipster League',
         company: 'Şirket',
         about: 'Hakkımızda',
         blog: 'Blog',
@@ -265,6 +311,51 @@ export default function HomePage() {
           { icon: '📈', title: '92% Agreement Rate', desc: 'Systems usually predict in same direction' },
         ],
       },
+      tipsterLeague: {
+        badge: '🏆 NEW',
+        title: 'Tipster League',
+        subtitle: 'Create Coupons, Compete, Win Free Pro!',
+        description: 'Create virtual coupons using AI analyses, share publicly and compete in the monthly leaderboard. The best tipster each month wins 1 month free Pro membership!',
+        features: [
+          {
+            icon: '🎫',
+            title: 'Create Coupons',
+            desc: 'Build professional betting slips using AI predictions',
+          },
+          {
+            icon: '📊',
+            title: 'Earn Points',
+            desc: 'When your coupons win, earn points with odds × multiplier formula',
+          },
+          {
+            icon: '🏅',
+            title: 'Leaderboard',
+            desc: 'Compete among the best tipsters monthly and all-time',
+          },
+          {
+            icon: '🎁',
+            title: 'Win Prizes',
+            desc: 'Top tipster each month wins 1 month free Pro membership',
+          },
+        ],
+        howItWorks: [
+          { step: '1', icon: '📝', title: 'Sign Up', desc: 'Create free account' },
+          { step: '2', icon: '🤖', title: 'Get Analysis', desc: 'Review AI predictions' },
+          { step: '3', icon: '🎫', title: 'Make Coupon', desc: 'Select matches, create coupon' },
+          { step: '4', icon: '🏆', title: 'Compete', desc: 'Earn points, climb leaderboard' },
+        ],
+        multipliers: {
+          title: 'Point Multipliers',
+          items: [
+            { type: 'Single', multiplier: '×10', color: 'green' },
+            { type: 'Double', multiplier: '×15', color: 'blue' },
+            { type: 'Treble', multiplier: '×25', color: 'purple' },
+            { type: '4+ Acca', multiplier: '×50', color: 'yellow' },
+          ],
+        },
+        cta: 'Join Now',
+        ctaSecondary: 'View Leaderboard',
+      },
       features: {
         title: 'Platform Features',
         subtitle: 'Everything professional bettors need',
@@ -290,15 +381,15 @@ export default function HomePage() {
           name: 'Trial',
           price: '$0',
           period: '/7 days',
-          features: ['3 analyses per day', '4 AI models', 'Basic statistics', 'Email support'],
+          features: ['3 analyses per day', '4 AI models', 'Basic statistics', 'Coupon creation', 'Tipster League access', 'Email support'],
           cta: 'Try Free',
         },
         pro: {
           name: 'Pro',
-          price: '$19.99',
+          price: '$19.90',
           period: '/mo',
           popular: 'Most Popular',
-          features: ['Unlimited analyses', '7 AI models (incl. Agents)', 'Value bet detection', 'Weighted consensus', 'Priority support', 'Telegram notifications'],
+          features: ['Unlimited analyses', '7 AI models (incl. Agents)', 'Value bet detection', 'Weighted consensus', 'Unlimited coupons', 'Priority support', 'Telegram notifications'],
           cta: 'Go Pro',
         },
       },
@@ -306,13 +397,13 @@ export default function HomePage() {
         title: 'What Our Users Say',
         items: [
           { text: 'Two different systems reaching the same conclusion gives me great confidence. I now bet more consciously.', author: 'Michael K.', role: 'Professional Bettor' },
-          { text: "The Agent system's weighted voting logic is amazing. I understand how important each data point is.", author: 'James Y.', role: 'Sports Analyst' },
+          { text: 'Thanks to Tipster League, I have a chance to win prizes every month. The coupon system is truly professional.', author: 'James Y.', role: 'Tipster League Champion' },
           { text: 'AIs working with Web3 technology really make a difference. Results are very consistent.', author: 'David S.', role: 'Crypto & Betting Enthusiast' },
         ],
       },
       cta: {
         title: 'Try Two Powerful Systems',
-        subtitle: 'Create a free account, discover the power of AI and Agents',
+        subtitle: 'Create a free account, discover the power of AI and Agents, compete in Tipster League!',
         button: 'Create Free Account',
       },
       footer: {
@@ -320,6 +411,7 @@ export default function HomePage() {
         features: 'Features',
         pricing: 'Pricing',
         demo: 'Demo',
+        tipsterLeague: 'Tipster League',
         company: 'Company',
         about: 'About',
         blog: 'Blog',
@@ -386,6 +478,51 @@ export default function HomePage() {
           { icon: '📈', title: '92% Übereinstimmung', desc: 'Systeme prognostizieren meist gleich' },
         ],
       },
+      tipsterLeague: {
+        badge: '🏆 NEU',
+        title: 'Tipster League',
+        subtitle: 'Wettscheine erstellen, Wettkampf, Gratis Pro gewinnen!',
+        description: 'Erstellen Sie virtuelle Wettscheine mit KI-Analysen, teilen Sie öffentlich und konkurrieren Sie in der monatlichen Rangliste. Der beste Tipster jeden Monat gewinnt 1 Monat kostenloses Pro-Abo!',
+        features: [
+          {
+            icon: '🎫',
+            title: 'Wettscheine erstellen',
+            desc: 'Professionelle Wettscheine mit KI-Vorhersagen erstellen',
+          },
+          {
+            icon: '📊',
+            title: 'Punkte sammeln',
+            desc: 'Bei Gewinn Punkte mit Quote × Multiplikator-Formel verdienen',
+          },
+          {
+            icon: '🏅',
+            title: 'Rangliste',
+            desc: 'Konkurrieren Sie unter den besten Tipstern monatlich und aller Zeiten',
+          },
+          {
+            icon: '🎁',
+            title: 'Preise gewinnen',
+            desc: 'Top-Tipster jeden Monat gewinnt 1 Monat kostenloses Pro-Abo',
+          },
+        ],
+        howItWorks: [
+          { step: '1', icon: '📝', title: 'Registrieren', desc: 'Kostenloses Konto erstellen' },
+          { step: '2', icon: '🤖', title: 'Analyse abrufen', desc: 'KI-Vorhersagen prüfen' },
+          { step: '3', icon: '🎫', title: 'Wettschein erstellen', desc: 'Spiele auswählen' },
+          { step: '4', icon: '🏆', title: 'Wettkampf', desc: 'Punkte sammeln, aufsteigen' },
+        ],
+        multipliers: {
+          title: 'Punkte-Multiplikatoren',
+          items: [
+            { type: 'Einzel', multiplier: '×10', color: 'green' },
+            { type: 'Zweier', multiplier: '×15', color: 'blue' },
+            { type: 'Dreier', multiplier: '×25', color: 'purple' },
+            { type: '4+ Kombi', multiplier: '×50', color: 'yellow' },
+          ],
+        },
+        cta: 'Jetzt beitreten',
+        ctaSecondary: 'Rangliste anzeigen',
+      },
       features: {
         title: 'Plattform-Funktionen',
         subtitle: 'Alles, was professionelle Wetter brauchen',
@@ -402,19 +539,19 @@ export default function HomePage() {
       pricing: {
         title: 'Einfache Preisgestaltung',
         subtitle: 'Keine versteckten Gebühren',
-        free: { name: 'Testversion', price: '€0', period: '/7 Tage', features: ['3 Analysen pro Tag', '4 KI-Modelle', 'Grundlegende Statistiken', 'E-Mail-Support'], cta: 'Kostenlos testen' },
-        pro: { name: 'Pro', price: '$19.90', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '7 KI-Modelle (inkl. Agenten)', 'Value-Bet-Erkennung', 'Gewichteter Konsens', 'Prioritäts-Support', 'Telegram-Benachrichtigungen'], cta: 'Pro werden' },
+        free: { name: 'Testversion', price: '€0', period: '/7 Tage', features: ['3 Analysen pro Tag', '4 KI-Modelle', 'Grundlegende Statistiken', 'Wettschein-Erstellung', 'Tipster League Zugang', 'E-Mail-Support'], cta: 'Kostenlos testen' },
+        pro: { name: 'Pro', price: '$19.90', period: '/Mo', popular: 'Am beliebtesten', features: ['Unbegrenzte Analysen', '7 KI-Modelle (inkl. Agenten)', 'Value-Bet-Erkennung', 'Gewichteter Konsens', 'Unbegrenzte Wettscheine', 'Prioritäts-Support', 'Telegram-Benachrichtigungen'], cta: 'Pro werden' },
       },
       testimonials: {
         title: 'Was unsere Nutzer sagen',
         items: [
           { text: 'Zwei verschiedene Systeme, die zum gleichen Ergebnis kommen, geben mir großes Vertrauen.', author: 'Michael K.', role: 'Professioneller Wetter' },
-          { text: 'Die gewichtete Abstimmungslogik des Agent-Systems ist erstaunlich.', author: 'Thomas Y.', role: 'Sportanalyst' },
+          { text: 'Dank Tipster League habe ich jeden Monat die Chance, Preise zu gewinnen.', author: 'Thomas Y.', role: 'Tipster League Champion' },
           { text: 'KIs, die mit Web3-Technologie arbeiten, machen wirklich einen Unterschied.', author: 'David S.', role: 'Krypto & Wett-Enthusiast' },
         ],
       },
-      cta: { title: 'Zwei leistungsstarke Systeme testen', subtitle: 'Kostenloses Konto erstellen', button: 'Kostenloses Konto erstellen' },
-      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
+      cta: { title: 'Zwei leistungsstarke Systeme testen', subtitle: 'Kostenloses Konto erstellen, in der Tipster League konkurrieren!', button: 'Kostenloses Konto erstellen' },
+      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', tipsterLeague: 'Tipster League', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
     },
   };
 
@@ -622,7 +759,7 @@ export default function HomePage() {
                 <h4 className="text-xl font-bold text-white">{l.agentSystem.weightedSystem.title}</h4>
                 <p className="text-gray-400">{l.agentSystem.weightedSystem.desc}</p>
               </div>
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl">
                   <span className="text-green-400 font-bold">📊 Stats</span>
                   <span className="text-white font-bold">40%</span>
@@ -662,6 +799,107 @@ export default function HomePage() {
                 <p className="text-sm text-gray-400">{item.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ TIPSTER LEAGUE SECTION ============ */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="p-8 md:p-12 bg-gradient-to-br from-yellow-900/20 via-orange-900/20 to-red-900/20 border-2 border-yellow-500/30 rounded-3xl relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+            
+            <div className="relative">
+              {/* Badge */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="px-4 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-bold rounded-full animate-pulse">
+                  {l.tipsterLeague.badge}
+                </span>
+                <span className="text-3xl">🏆</span>
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                {l.tipsterLeague.title}
+              </h2>
+              <p className="text-2xl text-yellow-200 mb-4">{l.tipsterLeague.subtitle}</p>
+              <p className="text-gray-300 mb-10 max-w-3xl text-lg">{l.tipsterLeague.description}</p>
+
+              {/* Features Grid */}
+              <div className="grid md:grid-cols-4 gap-6 mb-12">
+                {l.tipsterLeague.features.map((feature, idx) => (
+                  <div key={idx} className="p-6 bg-gray-900/50 backdrop-blur border border-gray-700/50 rounded-2xl text-center hover:border-yellow-500/50 transition-all hover:scale-105">
+                    <div className="text-5xl mb-4">{feature.icon}</div>
+                    <h4 className="text-xl font-bold text-white mb-2">{feature.title}</h4>
+                    <p className="text-gray-400 text-sm">{feature.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* How It Works */}
+              <div className="bg-gray-900/50 rounded-2xl p-8 mb-10">
+                <div className="flex flex-wrap items-center justify-center gap-6">
+                  {l.tipsterLeague.howItWorks.map((step, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-yellow-500/30 mb-2">
+                          {step.icon}
+                        </div>
+                        <div className="text-center">
+                          <div className="text-white font-bold">{step.title}</div>
+                          <div className="text-xs text-gray-400">{step.desc}</div>
+                        </div>
+                      </div>
+                      {idx < l.tipsterLeague.howItWorks.length - 1 && (
+                        <span className="text-yellow-500 text-3xl hidden md:block">→</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Point Multipliers */}
+              <div className="bg-gray-900/50 rounded-2xl p-6 mb-10">
+                <h4 className="text-xl font-bold text-white text-center mb-6">{l.tipsterLeague.multipliers.title}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {l.tipsterLeague.multipliers.items.map((item, idx) => {
+                    const bgColors: Record<string, string> = {
+                      green: 'from-green-500/20 to-green-600/20 border-green-500/50',
+                      blue: 'from-blue-500/20 to-blue-600/20 border-blue-500/50',
+                      purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/50',
+                      yellow: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/50',
+                    };
+                    const textColors: Record<string, string> = {
+                      green: 'text-green-400',
+                      blue: 'text-blue-400',
+                      purple: 'text-purple-400',
+                      yellow: 'text-yellow-400',
+                    };
+                    return (
+                      <div key={idx} className={`p-4 bg-gradient-to-br ${bgColors[item.color]} border rounded-xl text-center`}>
+                        <div className="text-gray-300 text-sm mb-1">{item.type}</div>
+                        <div className={`text-3xl font-bold ${textColors[item.color]}`}>{item.multiplier}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-yellow-500/30 transition-all flex items-center justify-center gap-2">
+                  🎫 {l.tipsterLeague.cta}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+                <Link href="/login" className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-lg rounded-2xl border border-gray-600 transition-all flex items-center justify-center gap-2">
+                  🏅 {l.tipsterLeague.ctaSecondary}
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -803,6 +1041,7 @@ export default function HomePage() {
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.features}</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">{l.footer.pricing}</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.demo}</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">{l.footer.tipsterLeague}</Link></li>
               </ul>
             </div>
             <div>
