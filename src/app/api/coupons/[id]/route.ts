@@ -5,7 +5,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// GET - Tek kupon detayı
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -14,134 +13,110 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const couponId = params.id;
     
-    const coupon = await prisma.coupon.findUnique({
-      where: { id: couponId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        picks: {
-          orderBy: { matchDate: 'asc' },
-        },
-      },
-    });
+    const { data: coupon, error } = await supabaseAdmin
+      .from('coupons')
+      .select('*')
+      .eq('id', couponId)
+      .single();
     
-    if (!coupon) {
+    if (error || !coupon) {
       return NextResponse.json({ error: 'Kupon bulunamadı' }, { status: 404 });
     }
     
-    // Private kupon kontrolü
-    if (!coupon.isPublic && coupon.userId !== session?.user?.id) {
-      return NextResponse.json({ error: 'Bu kupona erişim yetkiniz yok' }, { status: 403 });
+    if (!coupon.is_public && coupon.user_id !== session?.user?.id) {
+      return NextResponse.json({ error: 'Erişim yok' }, { status: 403 });
     }
     
-    return NextResponse.json({ coupon });
+    const { data: picks } = await supabaseAdmin
+      .from('coupon_picks')
+      .select('*')
+      .eq('coupon_id', couponId);
+    
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, name, image')
+      .eq('id', coupon.user_id)
+      .single();
+    
+    return NextResponse.json({ 
+      coupon: { ...coupon, picks: picks || [], user }
+    });
   } catch (error: any) {
-    console.error('Get coupon error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// DELETE - Kupon sil (sadece sahibi ve pending ise)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const couponId = params.id;
     
-    const coupon = await prisma.coupon.findUnique({
-      where: { id: couponId },
-    });
+    const { data: coupon } = await supabaseAdmin
+      .from('coupons')
+      .select('user_id, status')
+      .eq('id', couponId)
+      .single();
     
     if (!coupon) {
       return NextResponse.json({ error: 'Kupon bulunamadı' }, { status: 404 });
     }
     
-    if (coupon.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Bu kuponu silme yetkiniz yok' }, { status: 403 });
+    if (coupon.user_id !== session.user.id) {
+      return NextResponse.json({ error: 'Yetki yok' }, { status: 403 });
     }
     
     if (coupon.status !== 'PENDING') {
-      return NextResponse.json({ 
-        error: 'Sadece bekleyen kuponlar silinebilir' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Sadece bekleyen kuponlar silinebilir' }, { status: 400 });
     }
     
-    await prisma.coupon.delete({
-      where: { id: couponId },
-    });
+    await supabaseAdmin.from('coupon_picks').delete().eq('coupon_id', couponId);
+    await supabaseAdmin.from('coupons').delete().eq('id', couponId);
     
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Kupon silindi' 
-    });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Delete coupon error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// PATCH - Kupon güncelle (visibility toggle)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const couponId = params.id;
-    const body = await request.json();
-    const { isPublic } = body;
+    const { isPublic } = await request.json();
     
-    const coupon = await prisma.coupon.findUnique({
-      where: { id: couponId },
-    });
+    const { data: coupon } = await supabaseAdmin
+      .from('coupons')
+      .select('user_id')
+      .eq('id', couponId)
+      .single();
     
-    if (!coupon) {
-      return NextResponse.json({ error: 'Kupon bulunamadı' }, { status: 404 });
+    if (!coupon || coupon.user_id !== session.user.id) {
+      return NextResponse.json({ error: 'Yetki yok' }, { status: 403 });
     }
     
-    if (coupon.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Bu kuponu düzenleme yetkiniz yok' }, { status: 403 });
-    }
+    const { data: updated } = await supabaseAdmin
+      .from('coupons')
+      .update({ is_public: isPublic })
+      .eq('id', couponId)
+      .select()
+      .single();
     
-    const updatedCoupon = await prisma.coupon.update({
-      where: { id: couponId },
-      data: { isPublic },
-      include: {
-        picks: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-      },
-    });
-    
-    return NextResponse.json({ 
-      success: true, 
-      coupon: updatedCoupon 
-    });
+    return NextResponse.json({ success: true, coupon: updated });
   } catch (error: any) {
-    console.error('Update coupon error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
