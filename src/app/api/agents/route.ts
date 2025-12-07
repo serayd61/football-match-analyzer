@@ -7,92 +7,382 @@ import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
+const BASE_URL = 'https://api.sportmonks.com/v3/football';
 
-async function fetchMatchDataForAgents(fixtureId: number, homeTeamId: number, awayTeamId: number, homeTeamName: string, awayTeamName: string) {
+// ==================== DETAYLI VERİ ÇEKİMİ ====================
+
+async function fetchDetailedMatchData(
+  fixtureId: number, 
+  homeTeamId: number, 
+  awayTeamId: number, 
+  homeTeamName: string, 
+  awayTeamName: string
+) {
+  console.log('📊 Fetching detailed match data from Sportmonks...');
+  
   let odds: any = {};
-  let homeForm: any = {};
-  let awayForm: any = {};
+  let homeStats: any = {};
+  let awayStats: any = {};
   let h2h: any = {};
+  let injuries: any = { home: [], away: [] };
 
   try {
-    if (SPORTMONKS_API_KEY) {
-      const [fixtureRes, homeFormRes, awayFormRes, h2hRes] = await Promise.all([
-        fetch(`https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;participants`),
-        fetch(`https://api.sportmonks.com/v3/football/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
-        fetch(`https://api.sportmonks.com/v3/football/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest`),
-        fetch(`https://api.sportmonks.com/v3/football/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
-      ]);
-
-      const [fixtureData, homeFormData, awayFormData, h2hData] = await Promise.all([
-        fixtureRes.json(),
-        homeFormRes.json(),
-        awayFormRes.json(),
-        h2hRes.json(),
-      ]);
-
-      // Fixture odds
-      if (fixtureData.data?.odds) {
-        odds = parseOdds(fixtureData.data.odds);
-      }
-
-      // Home team form
-      if (homeFormData.data?.latest && homeFormData.data.latest.length > 0) {
-        homeForm = calculateForm(homeFormData.data.latest, homeTeamId, homeTeamName);
-      } else {
-        console.log('⚠️ No latest data for home team');
-        homeForm = getDefaultForm();
-      }
-
-      // Away team form
-      if (awayFormData.data?.latest && awayFormData.data.latest.length > 0) {
-        awayForm = calculateForm(awayFormData.data.latest, awayTeamId, awayTeamName);
-      } else {
-        console.log('⚠️ No latest data for away team');
-        awayForm = getDefaultForm();
-      }
-
-      // H2H
-      if (h2hData.data && h2hData.data.length > 0) {
-        h2h = calculateH2H(h2hData.data, homeTeamId, awayTeamId, homeTeamName);
-      } else {
-        h2h = getDefaultH2H();
-      }
+    if (!SPORTMONKS_API_KEY) {
+      console.warn('⚠️ No Sportmonks API key');
+      return { odds, homeStats, awayStats, h2h, injuries };
     }
+
+    // Paralel API çağrıları - Detaylı veriler
+    const [
+      fixtureRes,
+      homeMatchesRes,
+      awayMatchesRes,
+      h2hRes,
+      homeInjuriesRes,
+      awayInjuriesRes
+    ] = await Promise.all([
+      // 1. Fixture + Odds
+      fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather`),
+      
+      // 2. Ev sahibi son 10 maç (SKORLARLA)
+      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filter[participant_id]=${homeTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
+      
+      // 3. Deplasman son 10 maç (SKORLARLA)
+      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filter[participant_id]=${awayTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
+      
+      // 4. H2H karşılaşmalar (SKORLARLA)
+      fetch(`${BASE_URL}/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
+      
+      // 5. Ev sahibi sakatlıklar
+      fetch(`${BASE_URL}/sidelined/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=player;type`),
+      
+      // 6. Deplasman sakatlıklar
+      fetch(`${BASE_URL}/sidelined/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=player;type`),
+    ]);
+
+    // JSON parse
+    const [fixtureData, homeMatchesData, awayMatchesData, h2hData, homeInjuriesData, awayInjuriesData] = 
+      await Promise.all([
+        fixtureRes.json(),
+        homeMatchesRes.json(),
+        awayMatchesRes.json(),
+        h2hRes.json(),
+        homeInjuriesRes.json(),
+        awayInjuriesRes.json(),
+      ]);
+
+    // ========== ODDS ==========
+    if (fixtureData.data?.odds) {
+      odds = parseOdds(fixtureData.data.odds);
+      console.log(`   ✅ Odds: 1=${odds.matchWinner?.home} X=${odds.matchWinner?.draw} 2=${odds.matchWinner?.away}`);
+    }
+
+    // ========== HOME TEAM STATS ==========
+    if (homeMatchesData.data && homeMatchesData.data.length > 0) {
+      homeStats = calculateDetailedStats(homeMatchesData.data, homeTeamId, homeTeamName, 'home');
+      console.log(`   ✅ Home Stats: ${homeStats.form} | Goals: ${homeStats.avgGoalsScored}/${homeStats.avgGoalsConceded} | Over25: ${homeStats.over25Percentage}%`);
+    } else {
+      homeStats = getDefaultStats();
+      console.log('   ⚠️ No home team match data');
+    }
+
+    // ========== AWAY TEAM STATS ==========
+    if (awayMatchesData.data && awayMatchesData.data.length > 0) {
+      awayStats = calculateDetailedStats(awayMatchesData.data, awayTeamId, awayTeamName, 'away');
+      console.log(`   ✅ Away Stats: ${awayStats.form} | Goals: ${awayStats.avgGoalsScored}/${awayStats.avgGoalsConceded} | Over25: ${awayStats.over25Percentage}%`);
+    } else {
+      awayStats = getDefaultStats();
+      console.log('   ⚠️ No away team match data');
+    }
+
+    // ========== H2H ==========
+    if (h2hData.data && h2hData.data.length > 0) {
+      h2h = calculateDetailedH2H(h2hData.data, homeTeamId, awayTeamId, homeTeamName, awayTeamName);
+      console.log(`   ✅ H2H: ${h2h.totalMatches} matches | ${h2h.homeWins}-${h2h.draws}-${h2h.awayWins} | Avg: ${h2h.avgTotalGoals} goals`);
+    } else {
+      h2h = getDefaultH2H();
+      console.log('   ⚠️ No H2H data');
+    }
+
+    // ========== INJURIES ==========
+    if (homeInjuriesData.data) {
+      injuries.home = parseInjuries(homeInjuriesData.data);
+      console.log(`   ✅ Home Injuries: ${injuries.home.length} players`);
+    }
+    if (awayInjuriesData.data) {
+      injuries.away = parseInjuries(awayInjuriesData.data);
+      console.log(`   ✅ Away Injuries: ${injuries.away.length} players`);
+    }
+
   } catch (error) {
-    console.error('Sportmonks fetch error:', error);
+    console.error('❌ Sportmonks fetch error:', error);
   }
 
-  return { odds, homeForm, awayForm, h2h };
+  return { odds, homeStats, awayStats, h2h, injuries };
 }
 
-function getDefaultForm() {
-  return { 
-    form: 'N/A', 
-    points: 0, 
-    avgGoals: '1.2', 
-    avgConceded: '1.0', 
-    over25Percentage: '50', 
-    bttsPercentage: '50' 
+// ==================== DETAYLI İSTATİSTİK HESAPLAMA ====================
+
+function calculateDetailedStats(matches: any[], teamId: number, teamName: string, venue: 'home' | 'away'): any {
+  const last10 = matches.slice(0, 10);
+  const last5 = matches.slice(0, 5);
+  
+  let form = '';
+  let totalGoalsScored = 0;
+  let totalGoalsConceded = 0;
+  let over25Count = 0;
+  let bttsCount = 0;
+  let cleanSheets = 0;
+  let failedToScore = 0;
+  let wins = 0, draws = 0, losses = 0;
+  
+  // Ev/Deplasman ayrımı için
+  let homeMatches = 0, awayMatches = 0;
+  let homeGoalsScored = 0, homeGoalsConceded = 0;
+  let awayGoalsScored = 0, awayGoalsConceded = 0;
+
+  const matchDetails: any[] = [];
+
+  last10.forEach((match: any, index: number) => {
+    // Takımın ev sahibi mi deplasman mı olduğunu bul
+    const participants = match.participants || [];
+    const homeParticipant = participants.find((p: any) => p.meta?.location === 'home');
+    const awayParticipant = participants.find((p: any) => p.meta?.location === 'away');
+    
+    const isHome = homeParticipant?.id === teamId;
+    
+    // Skorları bul
+    let teamScore = 0;
+    let opponentScore = 0;
+    
+    if (match.scores && Array.isArray(match.scores)) {
+      const ftScore = match.scores.find((s: any) => 
+        s.description === 'CURRENT' || s.description === 'FT' || s.type_id === 1525
+      );
+      
+      if (ftScore) {
+        if (isHome) {
+          teamScore = ftScore.score?.home || ftScore.home || 0;
+          opponentScore = ftScore.score?.away || ftScore.away || 0;
+        } else {
+          teamScore = ftScore.score?.away || ftScore.away || 0;
+          opponentScore = ftScore.score?.home || ftScore.home || 0;
+        }
+      }
+    }
+    
+    // İstatistikleri güncelle
+    totalGoalsScored += teamScore;
+    totalGoalsConceded += opponentScore;
+    
+    const totalGoals = teamScore + opponentScore;
+    if (totalGoals > 2.5) over25Count++;
+    if (teamScore > 0 && opponentScore > 0) bttsCount++;
+    if (opponentScore === 0) cleanSheets++;
+    if (teamScore === 0) failedToScore++;
+    
+    // Ev/Deplasman ayrımı
+    if (isHome) {
+      homeMatches++;
+      homeGoalsScored += teamScore;
+      homeGoalsConceded += opponentScore;
+    } else {
+      awayMatches++;
+      awayGoalsScored += teamScore;
+      awayGoalsConceded += opponentScore;
+    }
+    
+    // Sonuç
+    let result = 'D';
+    if (teamScore > opponentScore) {
+      result = 'W';
+      wins++;
+    } else if (teamScore < opponentScore) {
+      result = 'L';
+      losses++;
+    } else {
+      draws++;
+    }
+    
+    // Son 5 maç için form string
+    if (index < 5) {
+      form += result;
+    }
+    
+    // Maç detayı
+    const opponent = isHome ? awayParticipant?.name : homeParticipant?.name;
+    matchDetails.push({
+      opponent: opponent || 'Unknown',
+      score: `${teamScore}-${opponentScore}`,
+      result,
+      isHome,
+      date: match.starting_at,
+    });
+  });
+
+  const matchCount = last10.length;
+  
+  return {
+    // Temel form
+    form,
+    points: (wins * 3) + draws,
+    maxPoints: last5.length * 3,
+    record: `${wins}W-${draws}D-${losses}L`,
+    
+    // Gol istatistikleri (GERÇEK VERİ)
+    avgGoalsScored: (totalGoalsScored / matchCount).toFixed(2),
+    avgGoalsConceded: (totalGoalsConceded / matchCount).toFixed(2),
+    totalGoalsScored,
+    totalGoalsConceded,
+    
+    // Over/Under & BTTS (GERÇEK VERİ)
+    over25Percentage: Math.round((over25Count / matchCount) * 100),
+    over25Count,
+    bttsPercentage: Math.round((bttsCount / matchCount) * 100),
+    bttsCount,
+    
+    // Clean sheet & Failed to score
+    cleanSheets,
+    cleanSheetPercentage: Math.round((cleanSheets / matchCount) * 100),
+    failedToScore,
+    failedToScorePercentage: Math.round((failedToScore / matchCount) * 100),
+    
+    // Ev/Deplasman ayrımı
+    homeRecord: homeMatches > 0 ? {
+      matches: homeMatches,
+      avgScored: (homeGoalsScored / homeMatches).toFixed(2),
+      avgConceded: (homeGoalsConceded / homeMatches).toFixed(2),
+    } : null,
+    awayRecord: awayMatches > 0 ? {
+      matches: awayMatches,
+      avgScored: (awayGoalsScored / awayMatches).toFixed(2),
+      avgConceded: (awayGoalsConceded / awayMatches).toFixed(2),
+    } : null,
+    
+    // Maç detayları
+    matchDetails: matchDetails.slice(0, 5),
+    matchCount,
   };
 }
 
-function getDefaultH2H() {
-  return { 
-    totalMatches: 0, 
-    homeWins: 0, 
-    awayWins: 0, 
-    draws: 0, 
-    avgGoals: '2.5', 
-    over25Percentage: '50', 
-    bttsPercentage: '50' 
+// ==================== DETAYLI H2H HESAPLAMA ====================
+
+function calculateDetailedH2H(
+  matches: any[], 
+  homeTeamId: number, 
+  awayTeamId: number,
+  homeTeamName: string,
+  awayTeamName: string
+): any {
+  let homeWins = 0, awayWins = 0, draws = 0;
+  let totalHomeGoals = 0, totalAwayGoals = 0;
+  let over25Count = 0, bttsCount = 0;
+  
+  const matchDetails: any[] = [];
+
+  matches.forEach((match: any) => {
+    // Skorları bul
+    let homeScore = 0, awayScore = 0;
+    
+    // Hangi takım ev sahibi?
+    const participants = match.participants || [];
+    const homeParticipant = participants.find((p: any) => p.meta?.location === 'home');
+    const isHomeTeamHome = homeParticipant?.id === homeTeamId;
+    
+    if (match.scores && Array.isArray(match.scores)) {
+      const ftScore = match.scores.find((s: any) => 
+        s.description === 'CURRENT' || s.description === 'FT' || s.type_id === 1525
+      );
+      
+      if (ftScore) {
+        const scoreHome = ftScore.score?.home || ftScore.home || 0;
+        const scoreAway = ftScore.score?.away || ftScore.away || 0;
+        
+        if (isHomeTeamHome) {
+          homeScore = scoreHome;
+          awayScore = scoreAway;
+        } else {
+          homeScore = scoreAway;
+          awayScore = scoreHome;
+        }
+      }
+    }
+    
+    totalHomeGoals += homeScore;
+    totalAwayGoals += awayScore;
+    
+    const totalGoals = homeScore + awayScore;
+    if (totalGoals > 2.5) over25Count++;
+    if (homeScore > 0 && awayScore > 0) bttsCount++;
+    
+    if (homeScore > awayScore) homeWins++;
+    else if (awayScore > homeScore) awayWins++;
+    else draws++;
+    
+    matchDetails.push({
+      date: match.starting_at,
+      homeTeam: isHomeTeamHome ? homeTeamName : awayTeamName,
+      awayTeam: isHomeTeamHome ? awayTeamName : homeTeamName,
+      score: `${homeScore}-${awayScore}`,
+      winner: homeScore > awayScore ? homeTeamName : (awayScore > homeScore ? awayTeamName : 'Draw'),
+    });
+  });
+
+  const matchCount = matches.length;
+  
+  return {
+    totalMatches: matchCount,
+    homeWins,
+    awayWins,
+    draws,
+    
+    // Gol istatistikleri
+    totalHomeGoals,
+    totalAwayGoals,
+    avgHomeGoals: matchCount > 0 ? (totalHomeGoals / matchCount).toFixed(2) : '0',
+    avgAwayGoals: matchCount > 0 ? (totalAwayGoals / matchCount).toFixed(2) : '0',
+    avgTotalGoals: matchCount > 0 ? ((totalHomeGoals + totalAwayGoals) / matchCount).toFixed(2) : '0',
+    
+    // Over/Under & BTTS
+    over25Percentage: matchCount > 0 ? Math.round((over25Count / matchCount) * 100) : 50,
+    over25Count,
+    bttsPercentage: matchCount > 0 ? Math.round((bttsCount / matchCount) * 100) : 50,
+    bttsCount,
+    
+    // Maç detayları
+    matchDetails: matchDetails.slice(0, 5),
   };
 }
+
+// ==================== SAKATLIK VERİSİ ====================
+
+function parseInjuries(injuryData: any[]): any[] {
+  if (!Array.isArray(injuryData)) return [];
+  
+  return injuryData
+    .filter((injury: any) => {
+      // Sadece aktif sakatlıkları al
+      const endDate = injury.end_date;
+      if (!endDate) return true; // Bitiş tarihi yoksa hala sakat
+      return new Date(endDate) > new Date();
+    })
+    .map((injury: any) => ({
+      player: injury.player?.display_name || injury.player?.name || 'Unknown',
+      type: injury.type?.name || injury.category || 'Injury',
+      startDate: injury.start_date,
+      expectedReturn: injury.end_date || 'Unknown',
+    }))
+    .slice(0, 5); // En fazla 5 sakatlık
+}
+
+// ==================== ODDS PARSE ====================
 
 function parseOdds(oddsData: any[]): any {
   const result: any = {
     matchWinner: {},
-    overUnder: { '2.5': {} },
+    overUnder: { '2.5': {}, '3.5': {} },
     btts: {},
+    doubleChance: {},
   };
 
   if (!oddsData || !Array.isArray(oddsData)) return result;
@@ -107,11 +397,15 @@ function parseOdds(oddsData: any[]): any {
       if (odd.label === 'Away' || odd.label === '2') result.matchWinner.away = parseFloat(odd.value);
     }
 
-    // Over/Under 2.5
+    // Over/Under
     if (marketName.includes('over/under') || marketName.includes('goals')) {
       if (odd.total === 2.5 || odd.total === '2.5' || marketName.includes('2.5')) {
         if (odd.label === 'Over') result.overUnder['2.5'].over = parseFloat(odd.value);
         if (odd.label === 'Under') result.overUnder['2.5'].under = parseFloat(odd.value);
+      }
+      if (odd.total === 3.5 || odd.total === '3.5' || marketName.includes('3.5')) {
+        if (odd.label === 'Over') result.overUnder['3.5'].over = parseFloat(odd.value);
+        if (odd.label === 'Under') result.overUnder['3.5'].under = parseFloat(odd.value);
       }
     }
 
@@ -120,126 +414,50 @@ function parseOdds(oddsData: any[]): any {
       if (odd.label === 'Yes') result.btts.yes = parseFloat(odd.value);
       if (odd.label === 'No') result.btts.no = parseFloat(odd.value);
     }
+
+    // Double Chance
+    if (marketName.includes('double chance')) {
+      if (odd.label === '1X') result.doubleChance.homeOrDraw = parseFloat(odd.value);
+      if (odd.label === '12') result.doubleChance.homeOrAway = parseFloat(odd.value);
+      if (odd.label === 'X2') result.doubleChance.drawOrAway = parseFloat(odd.value);
+    }
   });
 
   return result;
 }
 
-function calculateForm(matches: any[], teamId: number, teamName: string): any {
-  if (!matches || !Array.isArray(matches) || matches.length === 0) {
-    return getDefaultForm();
-  }
+// ==================== DEFAULT VALUES ====================
 
-  const last5 = matches.slice(0, 5);
-  let form = '';
-  let points = 0;
-  let wins = 0, draws = 0, losses = 0;
-
-  // Team name'in ilk kelimesini al (Galatasaray vs "Galatasaray SK" için)
-  const teamFirstWord = teamName.split(' ')[0].toLowerCase();
-
-  console.log(`🔍 Calculating form for ${teamName} from ${last5.length} matches`);
-
-  last5.forEach((match: any, index: number) => {
-    const resultInfo = (match.result_info || '').toLowerCase();
-    const matchName = match.name || '';
-    
-    let result = 'D';
-    
-    if (resultInfo.includes('draw') || resultInfo.includes('ended in draw')) {
-      result = 'D';
-      draws++;
-      points += 1;
-    } else if (resultInfo.includes('won')) {
-      // Kazanan takımı bul
-      const winnerName = resultInfo.split(' won')[0].trim();
-      
-      if (winnerName.includes(teamFirstWord) || teamFirstWord.includes(winnerName.split(' ')[0])) {
-        result = 'W';
-        wins++;
-        points += 3;
-      } else {
-        result = 'L';
-        losses++;
-      }
-    }
-    
-    form += result;
-    console.log(`  ${index + 1}. ${matchName} → ${match.result_info} → ${result}`);
-  });
-
-  // Gol ortalaması tahmini (form'a göre)
-  const avgGoals = ((wins * 2.0) + (draws * 1.0) + (losses * 0.8)) / last5.length;
-  const avgConceded = ((losses * 2.0) + (draws * 1.0) + (wins * 0.6)) / last5.length;
-  const over25Pct = Math.round(((wins * 65) + (draws * 45) + (losses * 55)) / last5.length);
-  const bttsPct = Math.round(((wins * 55) + (draws * 60) + (losses * 65)) / last5.length);
-
-  const formResult = {
-    form,
-    points,
-    avgGoals: avgGoals.toFixed(1),
-    avgConceded: avgConceded.toFixed(1),
-    over25Percentage: over25Pct.toString(),
-    bttsPercentage: bttsPct.toString(),
-  };
-
-  console.log(`✅ Form: ${form} | Points: ${points}/15 | Goals: ${avgGoals.toFixed(1)} | Over25: ${over25Pct}%`);
-  
-  return formResult;
-}
-
-function calculateH2H(matches: any[], homeTeamId: number, awayTeamId: number, homeTeamName: string): any {
-  if (!matches || matches.length === 0) {
-    return getDefaultH2H();
-  }
-
-  let homeWins = 0, awayWins = 0, draws = 0;
-  let totalGoals = 0;
-  let over25Count = 0;
-  let bttsCount = 0;
-
-  const homeFirstWord = homeTeamName.split(' ')[0].toLowerCase();
-
-  matches.forEach((match: any) => {
-    const resultInfo = (match.result_info || '').toLowerCase();
-    
-    // Skor varsa kullan
-    if (match.scores && Array.isArray(match.scores)) {
-      const homeScore = match.scores.find((s: any) => s.description === 'CURRENT')?.score?.home || 0;
-      const awayScore = match.scores.find((s: any) => s.description === 'CURRENT')?.score?.away || 0;
-      totalGoals += homeScore + awayScore;
-      if (homeScore + awayScore > 2.5) over25Count++;
-      if (homeScore > 0 && awayScore > 0) bttsCount++;
-    } else {
-      // Skor yoksa tahmini değer
-      totalGoals += 2.5;
-      over25Count += 0.5;
-      bttsCount += 0.5;
-    }
-
-    // Sonuç
-    if (resultInfo.includes('draw')) {
-      draws++;
-    } else if (resultInfo.includes('won')) {
-      const winnerName = resultInfo.split(' won')[0].trim();
-      if (winnerName.includes(homeFirstWord)) {
-        homeWins++;
-      } else {
-        awayWins++;
-      }
-    }
-  });
-
-  return {
-    totalMatches: matches.length,
-    homeWins,
-    awayWins,
-    draws,
-    avgGoals: (totalGoals / matches.length).toFixed(1),
-    over25Percentage: Math.round((over25Count / matches.length) * 100).toString(),
-    bttsPercentage: Math.round((bttsCount / matches.length) * 100).toString(),
+function getDefaultStats() {
+  return { 
+    form: 'N/A', 
+    points: 0,
+    record: '0W-0D-0L',
+    avgGoalsScored: '1.20', 
+    avgGoalsConceded: '1.00', 
+    over25Percentage: 50, 
+    bttsPercentage: 50,
+    cleanSheets: 0,
+    failedToScore: 0,
+    matchCount: 0,
+    matchDetails: [],
   };
 }
+
+function getDefaultH2H() {
+  return { 
+    totalMatches: 0, 
+    homeWins: 0, 
+    awayWins: 0, 
+    draws: 0, 
+    avgTotalGoals: '2.50', 
+    over25Percentage: 50, 
+    bttsPercentage: 50,
+    matchDetails: [],
+  };
+}
+
+// ==================== API ENDPOINT ====================
 
 export async function POST(request: NextRequest) {
   try {
@@ -265,21 +483,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Fixture ID required' }, { status: 400 });
     }
 
-    console.log('🤖 AGENT ANALYSIS REQUEST');
+    console.log('');
+    console.log('🤖 ═══════════════════════════════════════════════════');
+    console.log('🤖 AGENT ANALYSIS REQUEST (ENHANCED)');
+    console.log('🤖 ═══════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
+    console.log(`🏆 League: ${league}`);
     console.log(`🔮 Multi-Model: ${useMultiModel ? 'ENABLED' : 'DISABLED'}`);
+    console.log('');
 
-    // Veri çek - takım isimlerini de gönder
-    const { odds, homeForm, awayForm, h2h } = await fetchMatchDataForAgents(
+    // DETAYLI VERİ ÇEK
+    const { odds, homeStats, awayStats, h2h, injuries } = await fetchDetailedMatchData(
       fixtureId, homeTeamId, awayTeamId, homeTeam, awayTeam
     );
     
-    console.log(`📊 DATA SUMMARY:`);
-    console.log(`   Odds: ${odds?.matchWinner?.home ? `1=${odds.matchWinner.home} X=${odds.matchWinner.draw} 2=${odds.matchWinner.away}` : 'NO'}`);
-    console.log(`   Home Form: ${homeForm?.form} | Goals: ${homeForm?.avgGoals} | Over25: ${homeForm?.over25Percentage}%`);
-    console.log(`   Away Form: ${awayForm?.form} | Goals: ${awayForm?.avgGoals} | Over25: ${awayForm?.over25Percentage}%`);
-    console.log(`   H2H: ${h2h?.totalMatches} matches | Avg: ${h2h?.avgGoals} goals`);
+    console.log('');
+    console.log('📊 ═══════════════════════════════════════════════════');
+    console.log('📊 DATA SUMMARY');
+    console.log('📊 ═══════════════════════════════════════════════════');
+    console.log(`   🎯 Odds: ${odds?.matchWinner?.home ? `1=${odds.matchWinner.home} X=${odds.matchWinner.draw} 2=${odds.matchWinner.away}` : '❌ NO DATA'}`);
+    console.log(`   🏠 ${homeTeam}: ${homeStats?.form || 'N/A'} | ${homeStats?.avgGoalsScored || '?'}⚽ scored | ${homeStats?.avgGoalsConceded || '?'}⚽ conceded | Over25: ${homeStats?.over25Percentage || '?'}%`);
+    console.log(`   🚌 ${awayTeam}: ${awayStats?.form || 'N/A'} | ${awayStats?.avgGoalsScored || '?'}⚽ scored | ${awayStats?.avgGoalsConceded || '?'}⚽ conceded | Over25: ${awayStats?.over25Percentage || '?'}%`);
+    console.log(`   🔄 H2H: ${h2h?.totalMatches || 0} matches | ${h2h?.homeWins || 0}-${h2h?.draws || 0}-${h2h?.awayWins || 0} | Avg: ${h2h?.avgTotalGoals || '?'} goals | Over25: ${h2h?.over25Percentage || '?'}%`);
+    console.log(`   🏥 Injuries: ${homeTeam}: ${injuries?.home?.length || 0} | ${awayTeam}: ${injuries?.away?.length || 0}`);
+    console.log('');
 
+    // Match data objesi (yeni format)
     const matchData = {
       fixtureId,
       homeTeam,
@@ -289,9 +518,39 @@ export async function POST(request: NextRequest) {
       league,
       date: new Date().toISOString(),
       odds,
-      homeForm,
-      awayForm,
-      h2h,
+      // Eski format uyumluluğu için
+      homeForm: {
+        form: homeStats.form,
+        points: homeStats.points,
+        avgGoals: homeStats.avgGoalsScored,
+        avgConceded: homeStats.avgGoalsConceded,
+        over25Percentage: homeStats.over25Percentage?.toString(),
+        bttsPercentage: homeStats.bttsPercentage?.toString(),
+      },
+      awayForm: {
+        form: awayStats.form,
+        points: awayStats.points,
+        avgGoals: awayStats.avgGoalsScored,
+        avgConceded: awayStats.avgGoalsConceded,
+        over25Percentage: awayStats.over25Percentage?.toString(),
+        bttsPercentage: awayStats.bttsPercentage?.toString(),
+      },
+      h2h: {
+        totalMatches: h2h.totalMatches,
+        homeWins: h2h.homeWins,
+        awayWins: h2h.awayWins,
+        draws: h2h.draws,
+        avgGoals: h2h.avgTotalGoals,
+        over25Percentage: h2h.over25Percentage?.toString(),
+        bttsPercentage: h2h.bttsPercentage?.toString(),
+      },
+      // YENİ: Detaylı veriler
+      detailedStats: {
+        home: homeStats,
+        away: awayStats,
+        h2h: h2h,
+        injuries: injuries,
+      },
     };
 
     // Multi-Model Analysis
@@ -305,7 +564,11 @@ export async function POST(request: NextRequest) {
     // Standard Agent Analysis
     const result = await runFullAnalysis(matchData, language as 'tr' | 'en' | 'de');
 
-    console.log('✅ Analysis Complete');
+    console.log('');
+    console.log('✅ ═══════════════════════════════════════════════════');
+    console.log('✅ ANALYSIS COMPLETE');
+    console.log('✅ ═══════════════════════════════════════════════════');
+    console.log('');
 
     return NextResponse.json({
       success: result.success,
@@ -323,10 +586,24 @@ export async function POST(request: NextRequest) {
       } : { enabled: false },
       dataUsed: {
         hasOdds: !!odds?.matchWinner?.home,
-        hasHomeForm: !!homeForm?.form && homeForm.form !== 'N/A',
-        hasAwayForm: !!awayForm?.form && awayForm.form !== 'N/A',
+        hasHomeForm: !!homeStats?.form && homeStats.form !== 'N/A',
+        hasAwayForm: !!awayStats?.form && awayStats.form !== 'N/A',
         hasH2H: !!h2h?.totalMatches && h2h.totalMatches > 0,
-      }
+        hasInjuries: (injuries?.home?.length > 0) || (injuries?.away?.length > 0),
+        // Detaylı veri özeti
+        homeMatchCount: homeStats?.matchCount || 0,
+        awayMatchCount: awayStats?.matchCount || 0,
+        h2hMatchCount: h2h?.totalMatches || 0,
+        homeInjuryCount: injuries?.home?.length || 0,
+        awayInjuryCount: injuries?.away?.length || 0,
+      },
+      // YENİ: Ham veriyi de gönder (debug için)
+      rawStats: {
+        home: homeStats,
+        away: awayStats,
+        h2h: h2h,
+        injuries: injuries,
+      },
     });
   } catch (error: any) {
     console.error('❌ Agent error:', error);
