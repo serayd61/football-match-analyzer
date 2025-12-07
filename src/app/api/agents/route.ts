@@ -33,11 +33,11 @@ async function fetchDetailedMatchData(
     }
 
     // Paralel API çağrıları - Detaylı veriler
-    // Sportmonks API v3 doğru endpoint formatları
+    // Sportmonks API v3 - Fixtures endpoint kullan (skorlar için daha güvenilir)
     const [
       fixtureRes,
-      homeTeamRes,
-      awayTeamRes,
+      homeMatchesRes,
+      awayMatchesRes,
       h2hRes,
       homeInjuriesRes,
       awayInjuriesRes
@@ -45,11 +45,11 @@ async function fetchDetailedMatchData(
       // 1. Fixture + Odds
       fetch(`${BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=odds;scores;venue;weather`),
       
-      // 2. Ev sahibi takım bilgisi + son maçlar (DOĞRU FORMAT)
-      fetch(`${BASE_URL}/teams/${homeTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
+      // 2. Ev sahibi son maçlar - fixtures endpoint (SKORLAR DAHİL)
+      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters[participant_id]=${homeTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
       
-      // 3. Deplasman takım bilgisi + son maçlar (DOĞRU FORMAT)
-      fetch(`${BASE_URL}/teams/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`),
+      // 3. Deplasman son maçlar - fixtures endpoint (SKORLAR DAHİL)
+      fetch(`${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters[participant_id]=${awayTeamId}&include=scores;participants&per_page=10&order=starting_at&sort=desc`),
       
       // 4. H2H karşılaşmalar (SKORLARLA)
       fetch(`${BASE_URL}/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`),
@@ -62,15 +62,20 @@ async function fetchDetailedMatchData(
     ]);
 
     // JSON parse
-    const [fixtureData, homeTeamData, awayTeamData, h2hData, homeInjuriesData, awayInjuriesData] = 
+    const [fixtureData, homeMatchesData, awayMatchesData, h2hData, homeInjuriesData, awayInjuriesData] = 
       await Promise.all([
         fixtureRes.json(),
-        homeTeamRes.json(),
-        awayTeamRes.json(),
+        homeMatchesRes.json(),
+        awayMatchesRes.json(),
         h2hRes.json(),
         homeInjuriesRes.json(),
         awayInjuriesRes.json(),
       ]);
+
+    console.log(`   📡 API Responses received`);
+    console.log(`   Home matches: ${homeMatchesData.data?.length || 0}`);
+    console.log(`   Away matches: ${awayMatchesData.data?.length || 0}`);
+    console.log(`   H2H matches: ${h2hData.data?.length || 0}`);
 
     // ========== ODDS ==========
     if (fixtureData.data?.odds) {
@@ -79,8 +84,7 @@ async function fetchDetailedMatchData(
     }
 
     // ========== HOME TEAM STATS ==========
-    // latest içinde son maçlar var
-    const homeMatches = homeTeamData.data?.latest || [];
+    const homeMatches = homeMatchesData.data || [];
     if (homeMatches.length > 0) {
       homeStats = calculateDetailedStats(homeMatches, homeTeamId, homeTeamName, 'home');
       console.log(`   ✅ Home Stats: ${homeStats.form} | Goals: ${homeStats.avgGoalsScored}/${homeStats.avgGoalsConceded} | Over25: ${homeStats.over25Percentage}%`);
@@ -90,7 +94,7 @@ async function fetchDetailedMatchData(
     }
 
     // ========== AWAY TEAM STATS ==========
-    const awayMatches = awayTeamData.data?.latest || [];
+    const awayMatches = awayMatchesData.data || [];
     if (awayMatches.length > 0) {
       awayStats = calculateDetailedStats(awayMatches, awayTeamId, awayTeamName, 'away');
       console.log(`   ✅ Away Stats: ${awayStats.form} | Goals: ${awayStats.avgGoalsScored}/${awayStats.avgGoalsConceded} | Over25: ${awayStats.over25Percentage}%`);
@@ -264,11 +268,20 @@ function calculateDetailedStats(matches: any[], teamId: number, teamName: string
       }
     }
 
-    // Debug log for first match
+    // Debug log for first match - TÜM VERİYİ GÖSTER
     if (index === 0) {
-      console.log(`      Match 1: ${match.name || 'Unknown'}`);
-      console.log(`      Scores array: ${JSON.stringify(match.scores?.slice(0, 2))}`);
-      console.log(`      Parsed: ${teamScore}-${opponentScore} (scoreFound: ${scoreFound})`);
+      console.log(`      ─────────────────────────────────────`);
+      console.log(`      DEBUG Match 1: ${match.name || 'Unknown'}`);
+      console.log(`      Match ID: ${match.id}`);
+      console.log(`      Has scores array: ${!!match.scores} (length: ${match.scores?.length || 0})`);
+      if (match.scores && match.scores.length > 0) {
+        console.log(`      First score object: ${JSON.stringify(match.scores[0])}`);
+      }
+      console.log(`      Has result_info: ${!!match.result_info} = "${match.result_info || ''}"`);
+      console.log(`      Has score obj: ${!!match.score} = ${JSON.stringify(match.score)}`);
+      console.log(`      Participants: ${JSON.stringify(participants.map((p: any) => ({ id: p.id, name: p.name, meta: p.meta })))}`);
+      console.log(`      PARSED RESULT: ${teamScore}-${opponentScore} (found: ${scoreFound})`);
+      console.log(`      ─────────────────────────────────────`);
     }
     
     // İstatistikleri güncelle
