@@ -1,7 +1,7 @@
 // src/app/api/coupons/monthly-prize/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // POST - Aylık ödül dağıtımı (Her ayın 1'inde çalışır)
 export async function POST(request: NextRequest) {
