@@ -1063,9 +1063,12 @@ export default function DashboardPage() {
                             <div className="space-y-2">
                               <div className="text-sm text-gray-400 font-medium">🔍 Individual AI Predictions:</div>
                               <div className="grid grid-cols-2 gap-2">
-                                {Object.entries(analysis.individualAnalyses)
-                                  .filter(([_, pred]) => pred !== null && pred !== undefined)
-                                  .map(([model, pred]: [string, any]) => (
+                              {Object.entries(analysis.individualAnalyses)
+                                .filter(([_, pred]) => pred !== null && pred !== undefined)
+                                .map(([model, rawPred]: [string, any]) => {
+                                  // Gemini array olarak geliyor, düzelt
+                                  const pred = Array.isArray(rawPred) ? rawPred[0] : rawPred;
+                                  return (
                                     <div key={model} className="bg-gray-700/30 rounded-xl p-3 text-xs">
                                       <div className="font-semibold text-white capitalize mb-2">
                                         {getModelName(model)}
@@ -1085,7 +1088,8 @@ export default function DashboardPage() {
                                         </div>
                                       </div>
                                     </div>
-                                  ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
