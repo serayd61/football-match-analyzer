@@ -1022,26 +1022,44 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
+      {/* Footer */}
       <footer className="py-12 px-4 border-t border-gray-800">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
+          <div className="grid md:grid-cols-5 gap-8 mb-8">
+            <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                   <span>⚽</span>
                 </div>
                 <span className="font-bold text-white">Football Analytics Pro</span>
               </div>
-              <p className="text-gray-400 text-sm mb-2">AI-powered football analysis platform</p>
-              <p className="text-purple-400 text-xs">{l.footer.poweredBy}</p>
+              <p className="text-gray-400 text-sm mb-4">AI-powered football analysis platform</p>
+              <p className="text-purple-400 text-xs mb-4">{l.footer.poweredBy}</p>
+              
+              {/* Contact Info */}
+              <div className="space-y-2">
+                <a 
+                  href="mailto:info@swissdigital.life" 
+                  className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors text-sm"
+                >
+                  📧 info@swissdigital.life
+                </a>
+                <a 
+                  href="https://www.linkedin.com/in/serkan-aydin-1273a38a/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors text-sm"
+                >
+                  💼 LinkedIn
+                </a>
+              </div>
             </div>
             <div>
               <h4 className="font-semibold text-white mb-4">{l.footer.product}</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.features}</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">{l.footer.pricing}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.demo}</Link></li>
-                <li><Link href="/login" className="hover:text-white transition-colors">{l.footer.tipsterLeague}</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Tipster League</Link></li>
               </ul>
             </div>
             <div>
@@ -1049,7 +1067,6 @@ export default function HomePage() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.about}</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.blog}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.careers}</Link></li>
               </ul>
             </div>
             <div>
@@ -1060,8 +1077,17 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-            {l.footer.copyright}
+          
+          <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-gray-500 text-sm">
+              {l.footer.copyright}
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <a href="mailto:info@swissdigital.life" className="text-gray-500 hover:text-green-400">📧 Email</a>
+              <a href="https://www.linkedin.com/in/serkan-aydin-1273a38a/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-400">💼 LinkedIn</a>
+              <span className="text-gray-600">|</span>
+              <a href="https://swissdigital.life" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white">SwissDigital Consulting</a>
+            </div>
           </div>
         </div>
       </footer>
