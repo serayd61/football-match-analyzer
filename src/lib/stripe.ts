@@ -52,16 +52,17 @@ export async function createCheckoutSession({
     customerId = customer.id;
   }
 
-  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
-    customer: customerId,
-    payment_method_types: ['card'],
-    line_items: [{ price: priceId, quantity: 1 }],
-    mode: 'subscription',
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata: { userId },
-    billing_address_collection: 'required',
-  };
+ const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+  customer: customerId,
+  payment_method_types: ['card'],
+  line_items: [{ price: priceId, quantity: 1 }],
+  mode: 'subscription',
+  success_url: successUrl,
+  cancel_url: cancelUrl,
+  metadata: { userId },
+  billing_address_collection: 'required',
+  allow_promotion_codes: true,  // Promosyon kodu desteği
+};
 
   // Sadece yeni kullanıcılar için trial ver
   if (!isUpgrade) {
