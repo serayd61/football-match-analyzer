@@ -555,7 +555,7 @@ export default function HomePage() {
     },
   };
 
-  const l = labels[lang as keyof typeof labels] || labels.en;
+ const l = labels[lang as keyof typeof labels] || labels.en;
 
   if (status === 'loading') {
     return (
