@@ -551,12 +551,11 @@ export default function HomePage() {
         ],
       },
       cta: { title: 'Zwei leistungsstarke Systeme testen', subtitle: 'Kostenloses Konto erstellen, in der Tipster League konkurrieren!', button: 'Kostenloses Konto erstellen' },
-      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', tipsterLeague: 'Tipster League', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
+     footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', tipsterLeague: 'Tipster League', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
     },
   };
 
- const l = labels[lang as keyof typeof labels] || labels.en;
-
+  const l = labels[lang as keyof typeof labels] || labels.en;
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
