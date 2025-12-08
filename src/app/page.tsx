@@ -551,11 +551,12 @@ export default function HomePage() {
         ],
       },
       cta: { title: 'Zwei leistungsstarke Systeme testen', subtitle: 'Kostenloses Konto erstellen, in der Tipster League konkurrieren!', button: 'Kostenloses Konto erstellen' },
-     footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', tipsterLeague: 'Tipster League', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
+      footer: { product: 'Produkt', features: 'Funktionen', pricing: 'Preise', demo: 'Demo', tipsterLeague: 'Tipster League', company: 'Unternehmen', about: 'Über uns', blog: 'Blog', careers: 'Karriere', legal: 'Rechtliches', privacy: 'Datenschutz', terms: 'AGB', copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.', poweredBy: 'Powered by Heurist Network' },
     },
   };
 
   const l = labels[lang as keyof typeof labels] || labels.en;
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -1021,111 +1022,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      {/* Footer */}
       <footer className="py-12 px-4 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-5 gap-8 mb-8">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <span>⚽</span>
-                </div>
-                <span className="font-bold text-white">Football Analytics Pro</span>
-              </div>
-              <p className="text-gray-400 text-sm mb-4">AI-powered football analysis platform with 4 Elite AI models + 3 Expert Agents.</p>
-              <p className="text-purple-400 text-xs mb-4">{l.footer.poweredBy}</p>
-              
-              {/* Contact Info */}
-              <div className="space-y-2">
-                <a 
-                  href="mailto:info@swissdigital.life" 
-                  className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors text-sm"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                  </svg>
-                  info@swissdigital.life
-                </a>
-                <a 
-                  href="https://www.linkedin.com/in/serkan-aydin-1273a38a/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors text-sm"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                  LinkedIn
-                </a>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">{l.footer.product}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.features}</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition-colors">{l.footer.pricing}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.demo}</Link></li>
-                <li><Link href="/login" className="hover:text-white transition-colors">{l.footer.tipsterLeague}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">{l.footer.company}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.about}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.blog}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.careers}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">{l.footer.legal}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.privacy}</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.terms}</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Bottom Bar */}
-          <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-gray-500 text-sm">
-              {l.footer.copyright}
-            </div>
-            <div className="flex items-center gap-4">
-              <a 
-                href="mailto:info@swissdigital.life" 
-                className="text-gray-500 hover:text-green-400 transition-colors"
-                title="Email"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-              </a>
-              <a 
-                href="https://www.linkedin.com/in/serkan-aydin-1273a38a/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-blue-400 transition-colors"
-                title="LinkedIn"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </a>
-              <span className="text-gray-600">|</span>
-              <a 
-                href="https://swissdigital.life" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-white transition-colors text-sm"
-              >
-                SwissDigital Consulting
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
