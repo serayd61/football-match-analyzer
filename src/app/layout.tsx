@@ -4,6 +4,7 @@ import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import FloatingBackButton from '@/components/FloatingBackButton';
+import { Analytics } from '@vercel/analytics/react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
             <FloatingBackButton />
           </LanguageProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
