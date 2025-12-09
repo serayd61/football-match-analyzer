@@ -11,9 +11,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
-const MIN_CONFIDENCE = 60; // Minimum güven oranı
+const MIN_CONFIDENCE = 60;
 
-// Günün maçlarını çek
 async function getTodayMatches() {
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -22,9 +21,7 @@ async function getTodayMatches() {
     const response = await fetch(
       `https://api.sportmonks.com/v3/football/fixtures/between/${today}/${tomorrow}?api_token=${SPORTMONKS_API_KEY}&include=odds;league;participants&per_page=50`
     );
-    
     if (!response.ok) return [];
-    
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -33,10 +30,8 @@ async function getTodayMatches() {
   }
 }
 
-// Oranları parse et
 function parseOdds(fixture: any) {
   const odds: any = { home: null, draw: null, away: null, over25: null, under25: null, bttsYes: null, bttsNo: null };
-  
   if (!fixture.odds) return odds;
   
   for (const odd of fixture.odds) {
@@ -55,11 +50,9 @@ function parseOdds(fixture: any) {
       if (odd.label === 'No') odds.bttsNo = parseFloat(odd.value);
     }
   }
-  
   return odds;
 }
 
-// Tek maç için AI analizi
 async function analyzeMatchWithAI(match: any, model: string): Promise<any> {
   const prompt = `Maç: ${match.home_team} vs ${match.away_team} (${match.league})
 Oranlar: 1=${match.odds.home} X=${match.odds.draw} 2=${match.odds.away} | Ü2.5=${match.odds.over25} A2.5=${match.odds.under25} | KGVar=${match.odds.bttsYes}
@@ -120,18 +113,15 @@ SADECE JSON döndür:
   return null;
 }
 
-// Agent analizi (Stats, Odds, Strategy)
 function analyzeWithAgents(match: any): any {
   const odds = match.odds;
   
-  // Stats Agent (%40) - Form ve istatistiklere dayalı
   const statsAgent = {
     bet_type: 'MATCH_RESULT',
     selection: odds.home < odds.away ? '1' : odds.away < odds.home ? '2' : 'X',
     confidence: 62
   };
   
-  // Odds Agent (%35) - Oran analizine dayalı
   let oddsSelection = '1';
   let oddsType = 'MATCH_RESULT';
   let oddsConfidence = 63;
@@ -152,13 +142,8 @@ function analyzeWithAgents(match: any): any {
     oddsConfidence = 70;
   }
   
-  const oddsAgent = {
-    bet_type: oddsType,
-    selection: oddsSelection,
-    confidence: oddsConfidence
-  };
+  const oddsAgent = { bet_type: oddsType, selection: oddsSelection, confidence: oddsConfidence };
   
-  // Strategy Agent (%25) - Value betting
   let strategySelection = 'X';
   let strategyType = 'MATCH_RESULT';
   let strategyConfidence = 60;
@@ -175,25 +160,12 @@ function analyzeWithAgents(match: any): any {
     strategyConfidence = 61;
   }
   
-  const strategyAgent = {
-    bet_type: strategyType,
-    selection: strategySelection,
-    confidence: strategyConfidence
-  };
+  const strategyAgent = { bet_type: strategyType, selection: strategySelection, confidence: strategyConfidence };
   
   return { statsAgent, oddsAgent, strategyAgent };
 }
 
-// Konsensüs hesapla
-function calculateConsensus(aiResults: any[], agentResults: any): { 
-  hasConsensus: boolean; 
-  bet_type: string; 
-  selection: string; 
-  confidence: number;
-  aiVotes: number;
-  agentVotes: number;
-} {
-  // AI oylarını say
+function calculateConsensus(aiResults: any[], agentResults: any) {
   const aiVotes: Record<string, number> = {};
   const aiConfidences: Record<string, number[]> = {};
   
@@ -206,15 +178,11 @@ function calculateConsensus(aiResults: any[], agentResults: any): {
     }
   }
   
-  // En çok oy alan AI tahmini
   let topAiVote = { key: '', count: 0 };
   for (const [key, count] of Object.entries(aiVotes)) {
-    if (count > topAiVote.count) {
-      topAiVote = { key, count };
-    }
+    if (count > topAiVote.count) topAiVote = { key, count };
   }
   
-  // Agent oylarını say
   const agents = [agentResults.statsAgent, agentResults.oddsAgent, agentResults.strategyAgent];
   const agentVotesMap: Record<string, number> = {};
   const agentConfidences: Record<string, number[]> = {};
@@ -228,43 +196,24 @@ function calculateConsensus(aiResults: any[], agentResults: any): {
     }
   }
   
-  // En çok oy alan Agent tahmini
   let topAgentVote = { key: '', count: 0 };
   for (const [key, count] of Object.entries(agentVotesMap)) {
-    if (count > topAgentVote.count) {
-      topAgentVote = { key, count };
-    }
+    if (count > topAgentVote.count) topAgentVote = { key, count };
   }
   
-  // Konsensüs kontrolü - AI ve Agent aynı fikirde mi?
   const hasConsensus = topAiVote.key === topAgentVote.key && topAiVote.count >= 2 && topAgentVote.count >= 2;
   
   if (hasConsensus) {
     const [bet_type, selection] = topAiVote.key.split('-');
+    const allConfidences = [...(aiConfidences[topAiVote.key] || []), ...(agentConfidences[topAgentVote.key] || [])];
+    const avgConfidence = Math.round(allConfidences.reduce((sum, c) => sum + c, 0) / allConfidences.length);
     
-    // Ortalama güveni hesapla
-    const allConfidences = [
-      ...(aiConfidences[topAiVote.key] || []),
-      ...(agentConfidences[topAgentVote.key] || [])
-    ];
-    const avgConfidence = Math.round(
-      allConfidences.reduce((sum, c) => sum + c, 0) / allConfidences.length
-    );
-    
-    return {
-      hasConsensus: true,
-      bet_type,
-      selection,
-      confidence: avgConfidence,
-      aiVotes: topAiVote.count,
-      agentVotes: topAgentVote.count
-    };
+    return { hasConsensus: true, bet_type, selection, confidence: avgConfidence, aiVotes: topAiVote.count, agentVotes: topAgentVote.count };
   }
   
   return { hasConsensus: false, bet_type: '', selection: '', confidence: 0, aiVotes: 0, agentVotes: 0 };
 }
 
-// Oran değerini al
 function getOddsValue(odds: any, betType: string, selection: string): number {
   if (betType === 'MATCH_RESULT') {
     if (selection === '1') return odds.home || 1.5;
@@ -282,40 +231,25 @@ function getOddsValue(odds: any, betType: string, selection: string): number {
   return 1.5;
 }
 
-// Kupon oluştur
 function createCoupon(matches: any[], type: string, count: number, stake: number) {
-  // %60 altı güveni olanları filtrele
   const filtered = matches.filter(m => m.confidence >= MIN_CONFIDENCE);
-  
-  if (filtered.length < count) {
-    console.log(`⚠️ ${type} kupon için yeterli maç yok (${filtered.length}/${count})`);
-    return null;
-  }
+  if (filtered.length < count) return null;
 
   let selected;
   if (type === 'safe') {
-    // En yüksek güvenli maçlar
     selected = filtered.slice(0, count);
   } else if (type === 'balanced') {
-    // Orta güvenli maçlar
     selected = filtered.slice(Math.min(2, filtered.length - count), Math.min(2, filtered.length - count) + count);
   } else {
-    // Riskli - daha düşük güvenli ama yine de %60+
     selected = filtered.slice(-count);
   }
 
-  if (selected.length < count) {
-    return null;
-  }
+  if (selected.length < count) return null;
 
   const totalOdds = selected.reduce((acc, m) => acc * m.odds_value, 1);
   const avgConfidence = Math.round(selected.reduce((acc, m) => acc + m.confidence, 0) / selected.length);
 
-  // Kupon güveni de %60 altındaysa oluşturma
-  if (avgConfidence < MIN_CONFIDENCE) {
-    console.log(`⚠️ ${type} kupon ortalama güveni çok düşük: %${avgConfidence}`);
-    return null;
-  }
+  if (avgConfidence < MIN_CONFIDENCE) return null;
 
   return {
     matches: selected.map(m => ({
@@ -335,16 +269,14 @@ function createCoupon(matches: any[], type: string, count: number, stake: number
     confidence: avgConfidence,
     suggested_stake: stake,
     potential_win: Math.round(stake * totalOdds * 100) / 100,
-    ai_reasoning: `${selected.length} maç seçildi. Tüm maçlarda AI-Agent konsensüsü var. ${selected.filter(m => m.aiVotes >= 3).length} maçta güçlü AI desteği (3+/4). Ortalama güven: %${avgConfidence}`
+    ai_reasoning: `${selected.length} maç seçildi. Tüm maçlarda AI-Agent konsensüsü var. Ortalama güven: %${avgConfidence}`
   };
 }
 
-// GET - Günün kuponlarını getir
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get('date');
-    const date = dateParam || new Date().toISOString().split('T')[0];
+    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
     const { data: coupons, error } = await supabaseAdmin
       .from('daily_coupons')
@@ -372,12 +304,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Get daily coupons error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST - Günün kuponlarını oluştur
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -389,7 +319,6 @@ export async function POST(request: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Bugün için zaten kupon var mı?
     const { data: existing } = await supabaseAdmin
       .from('daily_coupons')
       .select('id')
@@ -401,9 +330,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🎯 Generating daily coupons for', today);
-    console.log(`📊 Minimum confidence threshold: ${MIN_CONFIDENCE}%`);
 
-    // Maçları çek
     const fixtures = await getTodayMatches();
     console.log(`📊 Found ${fixtures.length} fixtures`);
 
@@ -411,10 +338,90 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not enough matches today', count: fixtures.length }, { status: 400 });
     }
 
-    // Her maç için format
     const matches = fixtures.slice(0, 15).map((f: any) => {
       const odds = parseOdds(f);
       return {
         fixture_id: f.id,
         home_team: f.participants?.find((p: any) => p.meta?.location === 'home')?.name || 'Home',
-        away_team: f.participants?.find((p: any) => p.meta?
+        away_team: f.participants?.find((p: any) => p.meta?.location === 'away')?.name || 'Away',
+        league: f.league?.name || 'Unknown',
+        kick_off: f.starting_at,
+        odds
+      };
+    }).filter((m: any) => m.odds.home && m.odds.away);
+
+    console.log(`🔍 Analyzing ${matches.length} matches...`);
+
+    const approvedMatches: any[] = [];
+
+    for (const match of matches) {
+      console.log(`  📍 ${match.home_team} vs ${match.away_team}`);
+      
+      const [claude, gpt, gemini, perplexity] = await Promise.all([
+        analyzeMatchWithAI(match, 'claude'),
+        analyzeMatchWithAI(match, 'gpt'),
+        analyzeMatchWithAI(match, 'gemini'),
+        analyzeMatchWithAI(match, 'perplexity'),
+      ]);
+      
+      const agents = analyzeWithAgents(match);
+      const consensus = calculateConsensus([claude, gpt, gemini, perplexity], agents);
+      
+      if (consensus.hasConsensus && consensus.confidence >= MIN_CONFIDENCE) {
+        console.log(`    ✅ Approved: ${consensus.bet_type} → ${consensus.selection} (${consensus.confidence}%)`);
+        approvedMatches.push({
+          ...match,
+          bet_type: consensus.bet_type,
+          selection: consensus.selection,
+          confidence: consensus.confidence,
+          odds_value: getOddsValue(match.odds, consensus.bet_type, consensus.selection),
+          aiVotes: consensus.aiVotes,
+          agentVotes: consensus.agentVotes
+        });
+      } else {
+        console.log(`    ❌ Skipped`);
+      }
+    }
+
+    console.log(`\n🎯 Approved: ${approvedMatches.length}`);
+
+    if (approvedMatches.length < 3) {
+      return NextResponse.json({ error: 'Not enough high-confidence matches', approved: approvedMatches.length }, { status: 400 });
+    }
+
+    approvedMatches.sort((a, b) => b.confidence - a.confidence);
+
+    const coupons: any = {};
+    const safeCoupon = createCoupon(approvedMatches, 'safe', 3, 50);
+    if (safeCoupon) coupons.safe = safeCoupon;
+    const balancedCoupon = createCoupon(approvedMatches, 'balanced', 4, 20);
+    if (balancedCoupon) coupons.balanced = balancedCoupon;
+    const riskyCoupon = createCoupon(approvedMatches, 'risky', 5, 10);
+    if (riskyCoupon) coupons.risky = riskyCoupon;
+
+    if (Object.keys(coupons).length === 0) {
+      return NextResponse.json({ error: 'Could not create coupons', approved: approvedMatches.length }, { status: 400 });
+    }
+
+    for (const [type, coupon] of Object.entries(coupons)) {
+      await supabaseAdmin.from('daily_coupons').insert({
+        date: today,
+        coupon_type: type,
+        matches: (coupon as any).matches,
+        total_odds: (coupon as any).total_odds,
+        confidence: (coupon as any).confidence,
+        suggested_stake: (coupon as any).suggested_stake,
+        potential_win: (coupon as any).potential_win,
+        ai_reasoning: (coupon as any).ai_reasoning,
+        status: 'pending'
+      });
+    }
+
+    console.log(`✅ Created ${Object.keys(coupons).length} coupons!`);
+
+    return NextResponse.json({ success: true, date: today, approved: approvedMatches.length, couponsCreated: Object.keys(coupons), coupons });
+  } catch (error: any) {
+    console.error('Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
