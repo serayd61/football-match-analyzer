@@ -161,7 +161,11 @@ export default function DailyCoupons() {
     return (
       <div className="bg-gray-800/50 rounded-2xl p-6 text-center">
         <p className="text-gray-400">{l.noData}</p>
-        <p className="text-sm text-gray-500 mt-2">Kuponlar her gün 08:00'de oluşturulur</p>
+        <p className="text-sm text-gray-500 mt-2">
+  {lang === 'tr' ? "Kuponlar her gün 08:00'de oluşturulur" : 
+   lang === 'de' ? "Tipps werden täglich um 08:00 Uhr erstellt" :
+   "Coupons are generated daily at 08:00"}
+</p>
       </div>
     );
   }
