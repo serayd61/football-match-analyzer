@@ -730,6 +730,11 @@ export default function DashboardPage() {
               <span className="text-gray-400">→</span>
             </div>
           </Link>
+       </div>
+
+        {/* Daily Coupons */}
+        <div className="mb-6">
+          <DailyCoupons />
         </div>
 
         {/* Filters */}
