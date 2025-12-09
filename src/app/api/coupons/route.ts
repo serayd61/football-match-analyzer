@@ -117,6 +117,17 @@ export async function POST(request: NextRequest) {
     if (picks.length > 10) {
       return NextResponse.json({ error: 'Maksimum 10 bahis' }, { status: 400 });
     }
+    // Geçmiş maçlara bahis kontrolü
+const now = new Date();
+for (const pick of picks) {
+  const matchDate = new Date(pick.matchDate);
+  if (matchDate < now) {
+    return NextResponse.json({ 
+      error: `Geçmiş maça bahis yapılamaz: ${pick.homeTeam} vs ${pick.awayTeam}`,
+      errorCode: 'PAST_MATCH'
+    }, { status: 400 });
+  }
+}
     
     const totalOdds = picks.reduce((acc: number, pick: any) => acc * pick.odds, 1);
     const potentialPoints = calculatePoints(totalOdds, picks.length);
