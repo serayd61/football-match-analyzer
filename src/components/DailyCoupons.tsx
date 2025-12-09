@@ -39,7 +39,7 @@ export default function DailyCoupons() {
   const [data, setData] = useState<DailyCouponsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { language } = useLanguage();
+  const { lang} = useLanguage();
 
   const labels = {
     tr: {
@@ -89,7 +89,7 @@ export default function DailyCoupons() {
     }
   };
 
-  const l = labels[language as keyof typeof labels] || labels.en;
+  const l = labels[lang as keyof typeof labels] || labels.en;
 
   useEffect(() => {
     fetchDailyCoupons();
