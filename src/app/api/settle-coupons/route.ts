@@ -257,38 +257,66 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', couponId);
 
-          // Kullanıcı puanını güncelle
+          // Kullanıcı puanını güncelle - users tablosundan email bul
           if (couponStatus === 'WON' && coupon.user_id) {
-            const { data: profile } = await supabaseAdmin
-              .from('profiles')
-              .select('total_points, winning_coupons, total_coupons, current_streak, best_streak')
+            const { data: user } = await supabaseAdmin
+              .from('users')
+              .select('email')
               .eq('id', coupon.user_id)
               .single();
 
-            if (profile) {
-              const newStreak = (profile.current_streak || 0) + 1;
-              await supabaseAdmin
+            if (user?.email) {
+              const { data: profile } = await supabaseAdmin
                 .from('profiles')
-                .update({
-                  total_points: (profile.total_points || 0) + pointsEarned,
-                  winning_coupons: (profile.winning_coupons || 0) + 1,
-                  total_coupons: (profile.total_coupons || 0) + 1,
-                  current_streak: newStreak,
-                  best_streak: Math.max(profile.best_streak || 0, newStreak),
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', coupon.user_id);
+                .select('total_points, winning_coupons, total_coupons, current_streak, best_streak')
+                .eq('email', user.email)
+                .single();
+
+              if (profile) {
+                const newStreak = (profile.current_streak || 0) + 1;
+                await supabaseAdmin
+                  .from('profiles')
+                  .update({
+                    total_points: (profile.total_points || 0) + pointsEarned,
+                    winning_coupons: (profile.winning_coupons || 0) + 1,
+                    total_coupons: (profile.total_coupons || 0) + 1,
+                    current_streak: newStreak,
+                    best_streak: Math.max(profile.best_streak || 0, newStreak),
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('email', user.email);
+                
+                console.log(`🏆 Updated points for ${user.email}: +${pointsEarned}`);
+              }
             }
           } else if (couponStatus === 'LOST' && coupon.user_id) {
             // Kaybedince streak sıfırla
-            await supabaseAdmin
-              .from('profiles')
-              .update({
-                total_coupons: supabaseAdmin.rpc('increment', { x: 1 }),
-                current_streak: 0,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', coupon.user_id);
+            const { data: user } = await supabaseAdmin
+              .from('users')
+              .select('email')
+              .eq('id', coupon.user_id)
+              .single();
+
+            if (user?.email) {
+              const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('total_coupons')
+                .eq('email', user.email)
+                .single();
+
+              if (profile) {
+                await supabaseAdmin
+                  .from('profiles')
+                  .update({
+                    total_coupons: (profile.total_coupons || 0) + 1,
+                    current_streak: 0,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('email', user.email);
+                
+                console.log(`❌ Reset streak for ${user.email}`);
+              }
+            }
           }
         }
       }
