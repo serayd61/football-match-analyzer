@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     console.log(`📋 Found ${pendingMatches.length} pending matches`);
 
     // 2. Unique fixture ID'leri al
-    const fixtureIds = [...new Set(pendingMatches.map(m => m.fixture_id))];
+    const fixtureIds = Array.from(new Set(pendingMatches.map(m => m.fixture_id)));
     
     // 3. Sportmonks'tan sonuçları çek
     const settledMatches: any[] = [];
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Settled ${settledMatches.length} matches`);
 
     // 4. Kuponları güncelle
-    const couponIds = [...new Set(pendingMatches.map(m => m.coupon_id))];
+    const couponIds = Array.from(new Set(pendingMatches.map(m => m.coupon_id)));
     let couponsWon = 0;
     let couponsLost = 0;
 
