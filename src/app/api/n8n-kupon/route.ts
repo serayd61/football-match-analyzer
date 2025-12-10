@@ -29,6 +29,7 @@ interface CouponPrediction {
   confidence: number;
   odds?: number;
   reasoning: string;
+  isConsensus?: boolean;
 }
 
 interface Coupon {
