@@ -454,10 +454,19 @@ export async function POST(request: Request) {
       leagueId
     } = body;
 
-    if (!homeTeamId || !awayTeamId || !homeTeamName || !awayTeamName) {
+    // Validate required parameters - allow 0 for IDs but require names
+    if (!homeTeamName || !awayTeamName) {
       return NextResponse.json({
-        error: 'Eksik parametreler: homeTeamId, awayTeamId, homeTeamName, awayTeamName gerekli'
+        error: 'Eksik parametreler: homeTeamName ve awayTeamName gerekli'
       }, { status: 400 });
+    }
+
+    // If team IDs are missing or 0, try to work with names only
+    const effectiveHomeTeamId = homeTeamId || 0;
+    const effectiveAwayTeamId = awayTeamId || 0;
+
+    if (!effectiveHomeTeamId || !effectiveAwayTeamId) {
+      console.warn(`⚠️ Team IDs missing: home=${effectiveHomeTeamId}, away=${effectiveAwayTeamId}. Analysis may be limited.`);
     }
 
     console.log(`🔍 Analyzing: ${homeTeamName} vs ${awayTeamName}`);
@@ -465,8 +474,8 @@ export async function POST(request: Request) {
     // Get comprehensive match data
     const effectiveLeagueId = leagueId || Object.values(LEAGUES)[0].id;
     const matchData = await getComprehensiveMatchData(
-      homeTeamId,
-      awayTeamId,
+      effectiveHomeTeamId,
+      effectiveAwayTeamId,
       effectiveLeagueId,
       fixtureId
     );
