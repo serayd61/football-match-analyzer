@@ -171,10 +171,10 @@ function mergeCouponPredictions(claudeCoupon: any, openaiCoupon: any): {
 
   if (claudeSafe?.maclar && openaiSafe?.maclar) {
     // Find common predictions
-    const claudeSafeMatches = new Set(claudeSafe.maclar.map((m: any) => `${m.mac}:${m.tahmin}`));
+    const claudeSafeMatches = claudeSafe.maclar.map((m: any) => `${m.mac}:${m.tahmin}`) as string[];
     const openaiSafeMatches = new Set(openaiSafe.maclar.map((m: any) => `${m.mac}:${m.tahmin}`));
 
-    const commonSafe = [...claudeSafeMatches].filter(x => openaiSafeMatches.has(x));
+    const commonSafe = claudeSafeMatches.filter((x: string) => openaiSafeMatches.has(x));
     result.consensus.commonSafePicks = commonSafe;
     result.consensus.safeCouponAgreement = commonSafe.length;
 
@@ -230,10 +230,10 @@ function mergeCouponPredictions(claudeCoupon: any, openaiCoupon: any): {
   const openaiRisky = openaiCoupon?.riskli_kupon;
 
   if (claudeRisky?.maclar && openaiRisky?.maclar) {
-    const claudeRiskyMatches = new Set(claudeRisky.maclar.map((m: any) => `${m.mac}:${m.tahmin}`));
+    const claudeRiskyMatches = claudeRisky.maclar.map((m: any) => `${m.mac}:${m.tahmin}`) as string[];
     const openaiRiskyMatches = new Set(openaiRisky.maclar.map((m: any) => `${m.mac}:${m.tahmin}`));
 
-    const commonRisky = [...claudeRiskyMatches].filter(x => openaiRiskyMatches.has(x));
+    const commonRisky = claudeRiskyMatches.filter((x: string) => openaiRiskyMatches.has(x));
     result.consensus.commonRiskyPicks = commonRisky;
     result.consensus.riskyCouponAgreement = commonRisky.length;
 
