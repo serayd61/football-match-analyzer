@@ -88,24 +88,14 @@ export default function Home() {
     setAnalyzing(true);
     setAnalysis('');
 
-    // Debug log
-    console.log('📊 Analyzing match:', {
-      homeTeamId: selectedMatch.homeTeamId,
-      homeTeamName: selectedMatch.homeTeam,
-      awayTeamId: selectedMatch.awayTeamId,
-      awayTeamName: selectedMatch.awayTeam,
-      competition: selectedMatch.competition,
-      matchDate: selectedMatch.date,
-    });
-
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          homeTeamId: selectedMatch.homeTeamId || 0,
+          homeTeamId: selectedMatch.homeTeamId,
           homeTeamName: selectedMatch.homeTeam,
-          awayTeamId: selectedMatch.awayTeamId || 0,
+          awayTeamId: selectedMatch.awayTeamId,
           awayTeamName: selectedMatch.awayTeam,
           competition: selectedMatch.competition,
           matchDate: selectedMatch.date,
