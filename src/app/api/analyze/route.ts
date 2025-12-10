@@ -1,565 +1,660 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+// API Keys
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
-// AI Prediction Interface
-interface AIPrediction {
-  agent: string;
-  ms_tahmini: string;
-  ms_guven: number;
-  gol_tahmini: string;
-  gol_guven: number;
-  kg_var_mi: string;
-  kg_guven: number;
-  skor: string;
-  iy_ms?: string;
-  iy_ms_guven?: number;
-  aciklama: string;
+interface MatchData {
+  homeTeamId: number;
+  homeTeamName: string;
+  awayTeamId: number;
+  awayTeamName: string;
+  competition: string;
+  matchDate: string;
 }
 
-// Parse AI response to JSON
-function parseAIResponse(text: string): any {
+interface TeamStats {
+  form: string;
+  goalsScored: number;
+  goalsConceded: number;
+  cleanSheets: number;
+  bttsMatches: number;
+  over25Matches: number;
+  homeWins?: number;
+  awayWins?: number;
+  position?: number;
+  points?: number;
+}
+
+interface H2HData {
+  totalMatches: number;
+  homeWins: number;
+  awayWins: number;
+  draws: number;
+  avgGoals: number;
+  bttsPercentage: number;
+  recentMatches: string[];
+}
+
+interface AIPrediction {
+  model: string;
+  matchResult: { prediction: string; confidence: number };
+  overUnder: { prediction: string; confidence: number };
+  btts: { prediction: string; confidence: number };
+  reasoning: string;
+}
+
+// Fetch team statistics from Sportmonks
+async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamStats> {
   try {
-    const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
-    return JSON.parse(cleanText);
-  } catch {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        return null;
-      }
+    const response = await fetch(
+      `https://api.sportmonks.com/v3/football/teams/${teamId}?api_token=${SPORTMONKS_API_KEY}&include=latest;statistics`,
+      { next: { revalidate: 3600 } }
+    );
+    
+    if (!response.ok) {
+      console.log(`Team stats API failed for ${teamName}, using defaults`);
+      return getDefaultStats();
     }
-    return null;
+
+    const data = await response.json();
+    const team = data.data;
+    const stats = team?.statistics || [];
+    
+    // Extract form from latest matches
+    const latest = team?.latest || [];
+    const form = latest.slice(0, 5).map((match: any) => {
+      const isHome = match.participants?.[0]?.id === teamId;
+      const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT')?.score?.participant === 'home' 
+        ? match.scores.find((s: any) => s.description === 'CURRENT')?.score?.goals : 0;
+      const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT')?.score?.participant === 'away'
+        ? match.scores.find((s: any) => s.description === 'CURRENT')?.score?.goals : 0;
+      
+      if (isHome) {
+        return homeScore > awayScore ? 'W' : homeScore < awayScore ? 'L' : 'D';
+      } else {
+        return awayScore > homeScore ? 'W' : awayScore < homeScore ? 'L' : 'D';
+      }
+    }).join('');
+
+    return {
+      form: form || 'DDDDD',
+      goalsScored: stats.find((s: any) => s.type_id === 52)?.value?.total || 0,
+      goalsConceded: stats.find((s: any) => s.type_id === 88)?.value?.total || 0,
+      cleanSheets: stats.find((s: any) => s.type_id === 194)?.value?.total || 0,
+      bttsMatches: 0,
+      over25Matches: 0,
+    };
+  } catch (error) {
+    console.error(`Error fetching team stats for ${teamName}:`, error);
+    return getDefaultStats();
   }
 }
 
-// Claude Agent
-async function claudeAgent(prompt: string, systemPrompt: string): Promise<string | null> {
-  if (!ANTHROPIC_API_KEY) return null;
+function getDefaultStats(): TeamStats {
+  return {
+    form: 'DDDDD',
+    goalsScored: 15,
+    goalsConceded: 12,
+    cleanSheets: 3,
+    bttsMatches: 5,
+    over25Matches: 6,
+  };
+}
+
+// Fetch H2H data
+async function fetchH2HData(homeTeamId: number, awayTeamId: number): Promise<H2HData> {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(
+      `https://api.sportmonks.com/v3/football/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?api_token=${SPORTMONKS_API_KEY}&include=scores`,
+      { next: { revalidate: 3600 } }
+    );
+
+    if (!response.ok) {
+      return getDefaultH2H();
+    }
+
+    const data = await response.json();
+    const matches = data.data || [];
+
+    let homeWins = 0, awayWins = 0, draws = 0, totalGoals = 0, bttsCount = 0;
+    const recentMatches: string[] = [];
+
+    matches.slice(0, 10).forEach((match: any) => {
+      const scores = match.scores || [];
+      const ftScore = scores.find((s: any) => s.description === 'CURRENT');
+      const homeGoals = ftScore?.score?.home || 0;
+      const awayGoals = ftScore?.score?.away || 0;
+
+      const isHomeTeamHome = match.participants?.[0]?.id === homeTeamId;
+      
+      if (isHomeTeamHome) {
+        if (homeGoals > awayGoals) homeWins++;
+        else if (awayGoals > homeGoals) awayWins++;
+        else draws++;
+      } else {
+        if (awayGoals > homeGoals) homeWins++;
+        else if (homeGoals > awayGoals) awayWins++;
+        else draws++;
+      }
+
+      totalGoals += homeGoals + awayGoals;
+      if (homeGoals > 0 && awayGoals > 0) bttsCount++;
+      
+      recentMatches.push(`${homeGoals}-${awayGoals}`);
+    });
+
+    const totalMatches = matches.length || 1;
+
+    return {
+      totalMatches,
+      homeWins,
+      awayWins,
+      draws,
+      avgGoals: totalGoals / totalMatches,
+      bttsPercentage: (bttsCount / totalMatches) * 100,
+      recentMatches: recentMatches.slice(0, 5),
+    };
+  } catch (error) {
+    console.error('Error fetching H2H data:', error);
+    return getDefaultH2H();
+  }
+}
+
+function getDefaultH2H(): H2HData {
+  return {
+    totalMatches: 5,
+    homeWins: 2,
+    awayWins: 1,
+    draws: 2,
+    avgGoals: 2.4,
+    bttsPercentage: 60,
+    recentMatches: ['2-1', '1-1', '0-2', '1-0', '2-2'],
+  };
+}
+
+// Build analysis prompt
+function buildAnalysisPrompt(
+  matchData: MatchData,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HData
+): string {
+  return `
+🏟️ MAÇ ANALİZİ İSTEĞİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 MAÇ BİLGİSİ:
+• Ev Sahibi: ${matchData.homeTeamName}
+• Deplasman: ${matchData.awayTeamName}
+• Lig: ${matchData.competition}
+• Tarih: ${matchData.matchDate}
+
+📊 EV SAHİBİ İSTATİSTİKLERİ (${matchData.homeTeamName}):
+• Son 5 Maç Formu: ${homeStats.form}
+• Atılan Gol: ${homeStats.goalsScored}
+• Yenilen Gol: ${homeStats.goalsConceded}
+• Gol Yemeden: ${homeStats.cleanSheets} maç
+
+📊 DEPLASMAN İSTATİSTİKLERİ (${matchData.awayTeamName}):
+• Son 5 Maç Formu: ${awayStats.form}
+• Atılan Gol: ${awayStats.goalsScored}
+• Yenilen Gol: ${awayStats.goalsConceded}
+• Gol Yemeden: ${awayStats.cleanSheets} maç
+
+🔄 KARŞILAŞMA GEÇMİŞİ (H2H):
+• Toplam Maç: ${h2h.totalMatches}
+• ${matchData.homeTeamName} Galibiyeti: ${h2h.homeWins}
+• ${matchData.awayTeamName} Galibiyeti: ${h2h.awayWins}
+• Beraberlik: ${h2h.draws}
+• Ortalama Gol: ${h2h.avgGoals.toFixed(2)}
+• KG VAR Oranı: %${h2h.bttsPercentage.toFixed(0)}
+• Son Skorlar: ${h2h.recentMatches.join(', ')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LÜTFEN AŞAĞIDAKİ TAHMİNLERİ YAP:
+
+1. MAÇ SONUCU (1X2):
+   - Tahmin: [Ev Sahibi / Beraberlik / Deplasman]
+   - Güven: [%0-100]
+   - Gerekçe: [Kısa açıklama]
+
+2. TOPLAM GOL (Ü/A 2.5):
+   - Tahmin: [Üst 2.5 / Alt 2.5]
+   - Güven: [%0-100]
+   - Gerekçe: [Kısa açıklama]
+
+3. KG VAR (BTTS):
+   - Tahmin: [Evet / Hayır]
+   - Güven: [%0-100]
+   - Gerekçe: [Kısa açıklama]
+
+4. ÖNERİLEN BAHİS:
+   - En güvenli bahis önerisi ve gerekçesi
+
+5. RİSK DEĞERLENDİRMESİ:
+   - Düşük / Orta / Yüksek risk ve nedeni
+
+Yanıtını Türkçe ver ve profesyonel bir analist gibi detaylı analiz yap.
+`;
+}
+
+// AI Model Calls
+async function callClaude(prompt: string): Promise<AIPrediction | null> {
+  if (!ANTHROPIC_API_KEY) return null;
+  
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
-        system: systemPrompt,
-        temperature: 0.3
-      })
+      }),
     });
-    const data = await res.json();
-    return data.content?.[0]?.text || null;
+
+    if (!response.ok) {
+      console.error('Claude API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    
+    return parseAIResponse('Claude', text);
   } catch (error) {
     console.error('Claude error:', error);
     return null;
   }
 }
 
-// OpenAI Agent (upgraded to gpt-4o)
-async function openaiAgent(prompt: string, systemPrompt: string): Promise<string | null> {
+async function callOpenAI(prompt: string): Promise<AIPrediction | null> {
   if (!OPENAI_API_KEY) return null;
+  
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500
-      })
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1500,
+        temperature: 0.7,
+      }),
     });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    
+    return parseAIResponse('GPT-4', text);
   } catch (error) {
     console.error('OpenAI error:', error);
     return null;
   }
 }
 
-// Gemini Agent
-async function geminiAgent(prompt: string, systemPrompt: string): Promise<string | null> {
+async function callGemini(prompt: string): Promise<AIPrediction | null> {
   if (!GEMINI_API_KEY) return null;
+  
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1500 }
-      })
-    });
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 1500, temperature: 0.7 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Gemini API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    return parseAIResponse('Gemini', text);
   } catch (error) {
     console.error('Gemini error:', error);
     return null;
   }
 }
 
-// Perplexity News Agent (for injuries/news)
-async function perplexityNewsAgent(homeTeam: string, awayTeam: string, competition: string): Promise<string | null> {
+async function callPerplexity(prompt: string): Promise<AIPrediction | null> {
   if (!PERPLEXITY_API_KEY) return null;
+  
   try {
-    const res = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
-        messages: [
-          {
-            role: 'system',
-            content: 'Sen futbol haberleri uzmanisın. Mac oncesi guncel sakatlık, ceza ve onemli haberleri KISA ve OZ sekilde raporla. Turkce yanit ver.'
-          },
-          {
-            role: 'user',
-            content: `${homeTeam} vs ${awayTeam} (${competition}) maci icin guncel haberler:
-1. Her iki takimin sakat/cezali oyunculari
-2. Son dakika transfer haberleri
-3. Teknik direktor aciklamalari
-4. Onemli form bilgileri
-
-Kisa ve oz yanit ver, maksimum 150 kelime.`
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 400
-      })
+        model: 'sonar',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1500,
+        temperature: 0.7,
+      }),
     });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
+
+    if (!response.ok) {
+      console.error('Perplexity API error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    
+    return parseAIResponse('Perplexity', text);
   } catch (error) {
     console.error('Perplexity error:', error);
     return null;
   }
 }
 
-// Perplexity Prediction Agent
-async function perplexityPredictionAgent(prompt: string, systemPrompt: string): Promise<string | null> {
-  if (!PERPLEXITY_API_KEY) return null;
-  try {
-    const res = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500
-      })
-    });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch (error) {
-    console.error('Perplexity prediction error:', error);
-    return null;
+// Parse AI response to extract predictions
+function parseAIResponse(model: string, text: string): AIPrediction {
+  const prediction: AIPrediction = {
+    model,
+    matchResult: { prediction: 'Belirsiz', confidence: 50 },
+    overUnder: { prediction: 'Belirsiz', confidence: 50 },
+    btts: { prediction: 'Belirsiz', confidence: 50 },
+    reasoning: text,
+  };
+
+  if (text.includes('Ev Sahibi') || text.includes('ev sahibi') || text.includes('1')) {
+    prediction.matchResult.prediction = 'Ev Sahibi';
+    prediction.matchResult.confidence = extractConfidence(text, 'maç sonucu') || 65;
+  } else if (text.includes('Deplasman') || text.includes('deplasman') || text.includes('2')) {
+    prediction.matchResult.prediction = 'Deplasman';
+    prediction.matchResult.confidence = extractConfidence(text, 'maç sonucu') || 60;
+  } else if (text.includes('Beraberlik') || text.includes('beraberlik') || text.includes('X')) {
+    prediction.matchResult.prediction = 'Beraberlik';
+    prediction.matchResult.confidence = extractConfidence(text, 'maç sonucu') || 55;
   }
+
+  if (text.includes('Üst 2.5') || text.includes('üst 2.5') || text.includes('Ü 2.5')) {
+    prediction.overUnder.prediction = 'Üst 2.5';
+    prediction.overUnder.confidence = extractConfidence(text, 'gol') || 60;
+  } else if (text.includes('Alt 2.5') || text.includes('alt 2.5') || text.includes('A 2.5')) {
+    prediction.overUnder.prediction = 'Alt 2.5';
+    prediction.overUnder.confidence = extractConfidence(text, 'gol') || 60;
+  }
+
+  if (text.includes('KG VAR') || text.includes('Evet') || text.includes('BTTS: Evet')) {
+    prediction.btts.prediction = 'Evet';
+    prediction.btts.confidence = extractConfidence(text, 'kg') || 58;
+  } else if (text.includes('KG YOK') || text.includes('Hayır') || text.includes('BTTS: Hayır')) {
+    prediction.btts.prediction = 'Hayır';
+    prediction.btts.confidence = extractConfidence(text, 'kg') || 55;
+  }
+
+  return prediction;
 }
 
-// Calculate multi-AI consensus
-function calculateMultiAIConsensus(predictions: AIPrediction[]) {
-  const validPredictions = predictions.filter(p => p !== null);
-  const totalAgents = validPredictions.length;
+function extractConfidence(text: string, context: string): number | null {
+  const patterns = [
+    /%(\d+)/g,
+    /(\d+)%/g,
+    /güven[:\s]*(\d+)/gi,
+    /confidence[:\s]*(\d+)/gi,
+  ];
 
-  if (totalAgents === 0) {
-    return { hasConsensus: false, agreements: [], disagreements: [], totalAgents: 0 };
+  for (const pattern of patterns) {
+    const matches = text.matchAll(pattern);
+    for (const match of matches) {
+      const value = parseInt(match[1]);
+      if (value >= 0 && value <= 100) {
+        return value;
+      }
+    }
   }
+  return null;
+}
 
-  const msVotes: Record<string, number> = {};
-  const golVotes: Record<string, number> = {};
-  const kgVotes: Record<string, number> = {};
-  const iyMsVotes: Record<string, number> = {};
+// Calculate consensus from multiple AI predictions
+function calculateConsensus(predictions: AIPrediction[]): {
+  matchResult: { prediction: string; confidence: number; votes: number };
+  overUnder: { prediction: string; confidence: number; votes: number };
+  btts: { prediction: string; confidence: number; votes: number };
+} {
+  const matchVotes: Record<string, number[]> = {};
+  const ouVotes: Record<string, number[]> = {};
+  const bttsVotes: Record<string, number[]> = {};
 
-  let totalMsConf = 0, totalGolConf = 0, totalKgConf = 0, totalIyMsConf = 0;
-  const scores: string[] = [];
+  predictions.forEach(p => {
+    if (!matchVotes[p.matchResult.prediction]) matchVotes[p.matchResult.prediction] = [];
+    matchVotes[p.matchResult.prediction].push(p.matchResult.confidence);
 
-  validPredictions.forEach(p => {
-    if (p.ms_tahmini) {
-      msVotes[p.ms_tahmini] = (msVotes[p.ms_tahmini] || 0) + 1;
-      totalMsConf += p.ms_guven || 60;
-    }
-    if (p.gol_tahmini) {
-      golVotes[p.gol_tahmini] = (golVotes[p.gol_tahmini] || 0) + 1;
-      totalGolConf += p.gol_guven || 60;
-    }
-    if (p.kg_var_mi) {
-      kgVotes[p.kg_var_mi] = (kgVotes[p.kg_var_mi] || 0) + 1;
-      totalKgConf += p.kg_guven || 60;
-    }
-    if (p.iy_ms) {
-      iyMsVotes[p.iy_ms] = (iyMsVotes[p.iy_ms] || 0) + 1;
-      totalIyMsConf += p.iy_ms_guven || 50;
-    }
-    if (p.skor) scores.push(p.skor);
+    if (!ouVotes[p.overUnder.prediction]) ouVotes[p.overUnder.prediction] = [];
+    ouVotes[p.overUnder.prediction].push(p.overUnder.confidence);
+
+    if (!bttsVotes[p.btts.prediction]) bttsVotes[p.btts.prediction] = [];
+    bttsVotes[p.btts.prediction].push(p.btts.confidence);
   });
 
-  const getWinner = (votes: Record<string, number>) => {
-    const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
-    return sorted[0] ? { value: sorted[0][0], count: sorted[0][1] } : null;
+  const getWinner = (votes: Record<string, number[]>) => {
+    let winner = { prediction: 'Belirsiz', confidence: 50, votes: 0 };
+    Object.entries(votes).forEach(([pred, confidences]) => {
+      if (confidences.length > winner.votes || 
+          (confidences.length === winner.votes && 
+           confidences.reduce((a, b) => a + b, 0) / confidences.length > winner.confidence)) {
+        winner = {
+          prediction: pred,
+          confidence: Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length),
+          votes: confidences.length,
+        };
+      }
+    });
+    return winner;
   };
 
-  const msWinner = getWinner(msVotes);
-  const golWinner = getWinner(golVotes);
-  const kgWinner = getWinner(kgVotes);
-  const iyMsWinner = getWinner(iyMsVotes);
-
-  const agreements: string[] = [];
-  const disagreements: string[] = [];
-
-  const consensus: any = {
-    hasConsensus: false,
-    totalAgents,
-    ms_tahmini: null,
-    ms_guven: 0,
-    ms_votes: 0,
-    gol_tahmini: null,
-    gol_guven: 0,
-    gol_votes: 0,
-    kg_tahmini: null,
-    kg_guven: 0,
-    kg_votes: 0,
-    iy_ms_tahmini: null,
-    iy_ms_guven: 0,
-    iy_ms_votes: 0,
-    scores,
-    agreements,
-    disagreements
+  return {
+    matchResult: getWinner(matchVotes),
+    overUnder: getWinner(ouVotes),
+    btts: getWinner(bttsVotes),
   };
-
-  // MS consensus (need at least 50% agreement)
-  if (msWinner && msWinner.count >= Math.ceil(totalAgents / 2)) {
-    consensus.ms_tahmini = msWinner.value;
-    consensus.ms_votes = msWinner.count;
-    consensus.ms_guven = Math.round(totalMsConf / totalAgents);
-    agreements.push(`MS: ${msWinner.value} (${msWinner.count}/${totalAgents})`);
-    consensus.hasConsensus = true;
-  } else if (msWinner) {
-    disagreements.push(`MS: ${Object.entries(msVotes).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-  }
-
-  // Gol consensus
-  if (golWinner && golWinner.count >= Math.ceil(totalAgents / 2)) {
-    consensus.gol_tahmini = golWinner.value;
-    consensus.gol_votes = golWinner.count;
-    consensus.gol_guven = Math.round(totalGolConf / totalAgents);
-    agreements.push(`2.5 Gol: ${golWinner.value} (${golWinner.count}/${totalAgents})`);
-    consensus.hasConsensus = true;
-  } else if (golWinner) {
-    disagreements.push(`Gol: ${Object.entries(golVotes).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-  }
-
-  // KG consensus
-  if (kgWinner && kgWinner.count >= Math.ceil(totalAgents / 2)) {
-    consensus.kg_tahmini = kgWinner.value;
-    consensus.kg_votes = kgWinner.count;
-    consensus.kg_guven = Math.round(totalKgConf / totalAgents);
-    agreements.push(`KG: ${kgWinner.value} (${kgWinner.count}/${totalAgents})`);
-    consensus.hasConsensus = true;
-  } else if (kgWinner) {
-    disagreements.push(`KG: ${Object.entries(kgVotes).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-  }
-
-  // IY/MS consensus (stricter - need 3/4)
-  if (iyMsWinner && iyMsWinner.count >= 3) {
-    consensus.iy_ms_tahmini = iyMsWinner.value;
-    consensus.iy_ms_votes = iyMsWinner.count;
-    consensus.iy_ms_guven = Math.round(totalIyMsConf / totalAgents);
-    agreements.push(`IY/MS: ${iyMsWinner.value} (${iyMsWinner.count}/${totalAgents})`);
-  } else if (iyMsWinner) {
-    disagreements.push(`IY/MS: ${Object.entries(iyMsVotes).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-  }
-
-  return consensus;
 }
 
-export async function POST(request: Request) {
+// Format final analysis
+function formatFinalAnalysis(
+  matchData: MatchData,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HData,
+  predictions: AIPrediction[],
+  consensus: ReturnType<typeof calculateConsensus>
+): string {
+  const totalModels = predictions.length;
+  
+  let output = `
+╔══════════════════════════════════════════════════════════════╗
+║  ⚽ AI CONSENSUS MAÇ ANALİZİ                                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+📌 ${matchData.homeTeamName} vs ${matchData.awayTeamName}
+📅 ${new Date(matchData.matchDate).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+🏆 ${matchData.competition}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 TAKIM FORMLARI
+┌─────────────────────────────────────────────────────────────┐
+│ ${matchData.homeTeamName.padEnd(25)} Form: ${homeStats.form.padEnd(8)} │
+│ ${matchData.awayTeamName.padEnd(25)} Form: ${awayStats.form.padEnd(8)} │
+└─────────────────────────────────────────────────────────────┘
+
+🔄 KARŞILAŞMA GEÇMİŞİ (Son ${h2h.totalMatches} maç)
+• ${matchData.homeTeamName}: ${h2h.homeWins} galibiyet
+• ${matchData.awayTeamName}: ${h2h.awayWins} galibiyet  
+• Beraberlik: ${h2h.draws}
+• Maç başı gol: ${h2h.avgGoals.toFixed(2)}
+• KG VAR oranı: %${h2h.bttsPercentage.toFixed(0)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤖 AI TAHMİNLERİ (${totalModels} Model Analizi)
+
+`;
+
+  predictions.forEach(p => {
+    output += `
+┌─ ${p.model} ─────────────────────────────────────────────────
+│ Maç Sonucu: ${p.matchResult.prediction} (%${p.matchResult.confidence})
+│ Ü/A 2.5: ${p.overUnder.prediction} (%${p.overUnder.confidence})
+│ KG VAR: ${p.btts.prediction} (%${p.btts.confidence})
+└──────────────────────────────────────────────────────────────
+`;
+  });
+
+  const matchIcon = consensus.matchResult.votes >= 3 ? '✅' : consensus.matchResult.votes >= 2 ? '⚠️' : '❌';
+  const ouIcon = consensus.overUnder.votes >= 3 ? '✅' : consensus.overUnder.votes >= 2 ? '⚠️' : '❌';
+  const bttsIcon = consensus.btts.votes >= 3 ? '✅' : consensus.btts.votes >= 2 ? '⚠️' : '❌';
+
+  output += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 CONSENSUS TAHMİNLERİ (Minimum 2/${totalModels} Uzlaşı)
+
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║  ${matchIcon} MAÇ SONUCU: ${consensus.matchResult.prediction.padEnd(15)} (%${consensus.matchResult.confidence})  [${consensus.matchResult.votes}/${totalModels} oy]
+║                                                               ║
+║  ${ouIcon} Ü/A 2.5 GOL: ${consensus.overUnder.prediction.padEnd(15)} (%${consensus.overUnder.confidence})  [${consensus.overUnder.votes}/${totalModels} oy]
+║                                                               ║
+║  ${bttsIcon} KG VAR/YOK: ${consensus.btts.prediction.padEnd(15)} (%${consensus.btts.confidence})  [${consensus.btts.votes}/${totalModels} oy]
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+`;
+
+  const bestBet = [
+    { market: 'Maç Sonucu', prediction: consensus.matchResult.prediction, confidence: consensus.matchResult.confidence, votes: consensus.matchResult.votes },
+    { market: 'Ü/A 2.5', prediction: consensus.overUnder.prediction, confidence: consensus.overUnder.confidence, votes: consensus.overUnder.votes },
+    { market: 'KG VAR/YOK', prediction: consensus.btts.prediction, confidence: consensus.btts.confidence, votes: consensus.btts.votes },
+  ].sort((a, b) => (b.votes * 100 + b.confidence) - (a.votes * 100 + a.confidence))[0];
+
+  output += `
+💎 EN İYİ BAHİS ÖNERİSİ
+┌─────────────────────────────────────────────────────────────┐
+│  ${bestBet.market}: ${bestBet.prediction}                   
+│  Güven: %${bestBet.confidence} | Uzlaşı: ${bestBet.votes}/${totalModels} model
+└─────────────────────────────────────────────────────────────┘
+
+⚠️ RİSK UYARISI: Bu analiz yalnızca bilgi amaçlıdır. 
+   Bahis kararlarınız tamamen size aittir.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 Powered by: Claude + GPT-4 + Gemini + Perplexity (4 AI Consensus)
+`;
+
+  return output;
+}
+
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { homeTeamId, homeTeamName, awayTeamId, awayTeamName, competition, matchDate } = body;
 
-    // Validate
     if (!homeTeamName || !awayTeamName) {
-      return NextResponse.json({
-        error: 'Eksik parametreler: homeTeamName ve awayTeamName gerekli'
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Ev sahibi ve deplasman takım adları gereklidir.' },
+        { status: 400 }
+      );
     }
 
-    const effectiveHomeId = homeTeamId || 0;
-    const effectiveAwayId = awayTeamId || 0;
-
-    console.log(`🔍 Analyzing: ${homeTeamName} vs ${awayTeamName}`);
-
-    // Step 1: Fetch data from Sportmonks (parallel)
-    const [homeTeamRes, awayTeamRes, h2hRes, homeRecentRes, awayRecentRes] = await Promise.all([
-      effectiveHomeId ? fetch(`https://api.sportmonks.com/v3/football/teams/${effectiveHomeId}?api_token=${SPORTMONKS_API_KEY}&include=statistics`) : Promise.resolve(null),
-      effectiveAwayId ? fetch(`https://api.sportmonks.com/v3/football/teams/${effectiveAwayId}?api_token=${SPORTMONKS_API_KEY}&include=statistics`) : Promise.resolve(null),
-      (effectiveHomeId && effectiveAwayId) ? fetch(`https://api.sportmonks.com/v3/football/fixtures/head-to-head/${effectiveHomeId}/${effectiveAwayId}?api_token=${SPORTMONKS_API_KEY}&include=participants;scores&per_page=10`) : Promise.resolve(null),
-      effectiveHomeId ? fetch(`https://api.sportmonks.com/v3/football/fixtures/between/${getDateRange(-60)}/${getDateRange(0)}/${effectiveHomeId}?api_token=${SPORTMONKS_API_KEY}&include=participants;scores&per_page=10`) : Promise.resolve(null),
-      effectiveAwayId ? fetch(`https://api.sportmonks.com/v3/football/fixtures/between/${getDateRange(-60)}/${getDateRange(0)}/${effectiveAwayId}?api_token=${SPORTMONKS_API_KEY}&include=participants;scores&per_page=10`) : Promise.resolve(null)
-    ]);
-
-    const homeTeam = homeTeamRes ? await homeTeamRes.json() : { data: null };
-    const awayTeam = awayTeamRes ? await awayTeamRes.json() : { data: null };
-    const h2h = h2hRes ? await h2hRes.json() : { data: [] };
-    const homeRecent = homeRecentRes ? await homeRecentRes.json() : { data: [] };
-    const awayRecent = awayRecentRes ? await awayRecentRes.json() : { data: [] };
-
-    // Calculate form
-    const calculateForm = (matches: any[], teamId: number) => {
-      if (!matches || !Array.isArray(matches)) return [];
-      return matches.slice(0, 5).map((m: any) => {
-        const home = m.participants?.find((p: any) => p.meta?.location === 'home');
-        const away = m.participants?.find((p: any) => p.meta?.location === 'away');
-        const homeScore = m.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
-        const awayScore = m.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
-        const isHome = home?.id === teamId;
-        const teamScore = isHome ? homeScore : awayScore;
-        const oppScore = isHome ? awayScore : homeScore;
-        if (teamScore > oppScore) return 'G';
-        if (teamScore < oppScore) return 'M';
-        return 'B';
-      });
+    const matchData: MatchData = {
+      homeTeamId: homeTeamId || 0,
+      homeTeamName,
+      awayTeamId: awayTeamId || 0,
+      awayTeamName,
+      competition: competition || 'Bilinmiyor',
+      matchDate: matchDate || new Date().toISOString(),
     };
 
-    const homeForm = calculateForm(homeRecent.data || [], effectiveHomeId);
-    const awayForm = calculateForm(awayRecent.data || [], effectiveAwayId);
+    console.log('🔍 Fetching match data...', matchData);
 
-    // Format H2H
-    const h2hMatches = (h2h.data || []).map((match: any) => {
-      const home = match.participants?.find((p: any) => p.meta?.location === 'home');
-      const away = match.participants?.find((p: any) => p.meta?.location === 'away');
-      const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
-      const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
-      return `${home?.name} ${homeScore}-${awayScore} ${away?.name}`;
-    }).join('\n');
-
-    // Step 2: Get news from Perplexity
-    const newsContext = await perplexityNewsAgent(homeTeamName, awayTeamName, competition || 'Football');
-    console.log(`📰 News: ${newsContext ? 'Yes' : 'No'}`);
-
-    // Build enhanced prompt
-    const analysisPrompt = `DETAYLI FUTBOL MAC ANALIZI
-
-═══════════════════════════════════════════
-MAC BILGISI
-═══════════════════════════════════════════
-Mac: ${homeTeamName} vs ${awayTeamName}
-Lig: ${competition || 'Bilinmiyor'}
-Tarih: ${matchDate || 'Bilinmiyor'}
-
-═══════════════════════════════════════════
-EV SAHIBI: ${homeTeamName}
-═══════════════════════════════════════════
-Sehir: ${homeTeam.data?.city || 'Bilinmiyor'}
-Kurulus: ${homeTeam.data?.founded || 'Bilinmiyor'}
-Son 5 Mac Formu: ${homeForm.join('-') || 'Veri yok'}
-
-═══════════════════════════════════════════
-DEPLASMAN: ${awayTeamName}
-═══════════════════════════════════════════
-Sehir: ${awayTeam.data?.city || 'Bilinmiyor'}
-Kurulus: ${awayTeam.data?.founded || 'Bilinmiyor'}
-Son 5 Mac Formu: ${awayForm.join('-') || 'Veri yok'}
-
-═══════════════════════════════════════════
-KARSILASMA GECMISI (H2H) - Son ${(h2h.data || []).length} Mac
-═══════════════════════════════════════════
-${h2hMatches || 'Veri yok'}
-
-${newsContext ? `═══════════════════════════════════════════
-GUNCEL HABERLER VE SAKATLIKLAR
-═══════════════════════════════════════════
-${newsContext}` : ''}
-
-═══════════════════════════════════════════
-ANALIZ TALIMATLARI
-═══════════════════════════════════════════
-Yukaridaki verileri kullanarak detayli analiz yap.
-
-SADECE su formatta JSON yanit ver, baska hicbir sey yazma:
-{
-  "ms_tahmini": "1" veya "X" veya "2",
-  "ms_guven": 50-100 arasi sayi,
-  "gol_tahmini": "ALT" veya "UST",
-  "gol_guven": 50-100 arasi sayi,
-  "skor": "X-X" formatinda en olasi skor,
-  "kg_var_mi": "VAR" veya "YOK",
-  "kg_guven": 50-100 arasi sayi,
-  "iy_ms": "1/1", "1/X", "1/2", "X/1", "X/X", "X/2", "2/1", "2/X" veya "2/2",
-  "iy_ms_guven": 50-100 arasi sayi,
-  "aciklama": "3-4 cumlelik detayli analiz aciklamasi"
-}`;
-
-    const systemPrompt = `Sen dunya capinda taninan profesyonel bir futbol analisti ve istatistikcisisin.
-Verilen detayli istatistikleri analiz ederek mac tahminleri yapiyorsun.
-Tahminlerini SADECE verilen verilere dayandir, spekulasyon yapma.
-Guven oranlarini gercekci tut - %90+ sadece cok net durumlarda kullan.
-SADECE istenen JSON formatinda yanit ver, baska hicbir sey yazma.`;
-
-    // Step 3: Call all 4 AI agents in parallel
-    console.log(`🤖 Calling 4 AI agents in parallel...`);
-    const startTime = Date.now();
-
-    const [claudeText, openaiText, geminiText, perplexityText] = await Promise.all([
-      claudeAgent(analysisPrompt, systemPrompt),
-      openaiAgent(analysisPrompt, systemPrompt),
-      geminiAgent(analysisPrompt, systemPrompt),
-      perplexityPredictionAgent(analysisPrompt, systemPrompt)
+    const [homeStats, awayStats, h2h] = await Promise.all([
+      fetchTeamStats(matchData.homeTeamId, matchData.homeTeamName),
+      fetchTeamStats(matchData.awayTeamId, matchData.awayTeamName),
+      fetchH2HData(matchData.homeTeamId, matchData.awayTeamId),
     ]);
 
-    const elapsed = Date.now() - startTime;
-    console.log(`✅ All agents responded in ${elapsed}ms`);
+    console.log('📊 Data fetched, calling AI models...');
 
-    // Parse responses
+    const prompt = buildAnalysisPrompt(matchData, homeStats, awayStats, h2h);
+
+    const [claudeResult, openaiResult, geminiResult, perplexityResult] = await Promise.all([
+      callClaude(prompt),
+      callOpenAI(prompt),
+      callGemini(prompt),
+      callPerplexity(prompt),
+    ]);
+
     const predictions: AIPrediction[] = [];
+    if (claudeResult) predictions.push(claudeResult);
+    if (openaiResult) predictions.push(openaiResult);
+    if (geminiResult) predictions.push(geminiResult);
+    if (perplexityResult) predictions.push(perplexityResult);
 
-    if (claudeText) {
-      const parsed = parseAIResponse(claudeText);
-      if (parsed) predictions.push({ agent: 'Claude', ...parsed });
-    }
-    if (openaiText) {
-      const parsed = parseAIResponse(openaiText);
-      if (parsed) predictions.push({ agent: 'OpenAI', ...parsed });
-    }
-    if (geminiText) {
-      const parsed = parseAIResponse(geminiText);
-      if (parsed) predictions.push({ agent: 'Gemini', ...parsed });
-    }
-    if (perplexityText) {
-      const parsed = parseAIResponse(perplexityText);
-      if (parsed) predictions.push({ agent: 'Perplexity', ...parsed });
+    console.log(`🤖 ${predictions.length} AI models responded`);
+
+    if (predictions.length === 0) {
+      return NextResponse.json(
+        { error: 'Hiçbir AI modeli yanıt vermedi. Lütfen API anahtarlarını kontrol edin.' },
+        { status: 500 }
+      );
     }
 
-    console.log(`📊 Valid predictions: ${predictions.length}/4`);
+    const consensus = calculateConsensus(predictions);
 
-    // Calculate consensus
-    const consensus = calculateMultiAIConsensus(predictions);
-
-    // Build analysis text
-    let analysisText = `🤖 **QUAD AI MAC ANALIZI (4 AI)**\n`;
-    analysisText += `📊 ${homeTeamName} vs ${awayTeamName}\n`;
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    // AI participation
-    analysisText += `**AI KATILIM:** ${predictions.length}/4 (${predictions.map(p => p.agent).join(', ')})\n`;
-    analysisText += `**Form:** ${homeTeamName}: ${homeForm.join('-') || 'N/A'} | ${awayTeamName}: ${awayForm.join('-') || 'N/A'}\n\n`;
-
-    // News section
-    if (newsContext) {
-      analysisText += `📰 **GUNCEL HABERLER (Perplexity):**\n`;
-      analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      analysisText += `${newsContext.substring(0, 400)}${newsContext.length > 400 ? '...' : ''}\n\n`;
-    }
-
-    // Consensus results
-    if (consensus.hasConsensus && consensus.agreements.length > 0) {
-      analysisText += `✅ **ORTAK TAHMINLER (Konsensus)**\n`;
-      analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-
-      if (consensus.ms_tahmini) {
-        const msText = consensus.ms_tahmini === '1' ? homeTeamName :
-          consensus.ms_tahmini === '2' ? awayTeamName : 'Beraberlik';
-        analysisText += `🎯 **Mac Sonucu:** ${msText} (${consensus.ms_tahmini}) - %${Math.min(100, consensus.ms_guven)} guven [${consensus.ms_votes}/${consensus.totalAgents} AI]\n`;
-      }
-
-      if (consensus.gol_tahmini) {
-        analysisText += `⚽ **2.5 Gol:** ${consensus.gol_tahmini} 2.5 - %${Math.min(100, consensus.gol_guven)} guven [${consensus.gol_votes}/${consensus.totalAgents} AI]\n`;
-      }
-
-      if (consensus.kg_tahmini) {
-        analysisText += `🥅 **Karsilikli Gol:** ${consensus.kg_tahmini} - %${Math.min(100, consensus.kg_guven)} guven [${consensus.kg_votes}/${consensus.totalAgents} AI]\n`;
-      }
-
-      if (consensus.iy_ms_tahmini) {
-        analysisText += `⏱️ **IY/MS:** ${consensus.iy_ms_tahmini} - %${Math.min(100, consensus.iy_ms_guven)} guven [${consensus.iy_ms_votes}/${consensus.totalAgents} AI]\n`;
-      }
-
-      analysisText += `\n`;
-    }
-
-    // Disagreements
-    if (consensus.disagreements.length > 0) {
-      analysisText += `⚠️ **FARKLI TAHMINLER (Riskli)**\n`;
-      analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-      consensus.disagreements.forEach((d: string) => {
-        analysisText += `❌ ${d}\n`;
-      });
-      analysisText += `\n`;
-    }
-
-    // Individual predictions
-    analysisText += `📈 **AI TAHMINLERI**\n`;
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    predictions.forEach(p => {
-      analysisText += `${p.agent}: MS=${p.ms_tahmini} | Gol=${p.gol_tahmini} | Skor=${p.skor}\n`;
-    });
-    analysisText += `\n`;
-
-    // Analysis notes
-    analysisText += `📝 **ANALIZ NOTLARI**\n`;
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    predictions.slice(0, 2).forEach(p => {
-      analysisText += `**${p.agent}:** ${p.aciklama}\n\n`;
-    });
-
-    analysisText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    analysisText += `💡 *${consensus.totalAgents} AI'dan en az ${Math.ceil(consensus.totalAgents / 2)} tanesi hemfikir olmali.*\n`;
-    analysisText += `⏱️ Yanit suresi: ${elapsed}ms`;
+    const analysis = formatFinalAnalysis(
+      matchData,
+      homeStats,
+      awayStats,
+      h2h,
+      predictions,
+      consensus
+    );
 
     return NextResponse.json({
       success: true,
-      analysis: analysisText,
-      consensus,
+      analysis,
       predictions,
-      newsContext,
-      homeTeam: homeTeam.data,
-      awayTeam: awayTeam.data,
-      h2h: h2h.data,
-      meta: {
-        totalAgents: predictions.length,
-        responseTime: elapsed,
-        agentsUsed: predictions.map(p => p.agent)
-      }
+      consensus,
+      modelsUsed: predictions.map(p => p.model),
     });
 
   } catch (error: any) {
-    console.error('Analyze API Error:', error);
-    return NextResponse.json({
-      error: error.message || 'Bir hata olustu',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+    console.error('Analysis error:', error);
+    return NextResponse.json(
+      { error: `Analiz hatası: ${error.message}` },
+      { status: 500 }
+    );
   }
-}
-
-// Helper: Get date string
-function getDateRange(daysOffset: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split('T')[0];
 }
