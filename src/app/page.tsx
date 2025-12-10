@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 const LEAGUES = {
   premier_league: { name: 'Premier League', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -46,6 +48,7 @@ interface UpcomingMatch {
 }
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [selectedLeague, setSelectedLeague] = useState<LeagueKey>('premier_league');
   const [standings, setStandings] = useState<TeamStanding[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<UpcomingMatch[]>([]);
@@ -137,12 +140,58 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-center gap-2 mb-6">
-        <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs px-3 py-1 rounded-full font-medium">
-          ⚡ Powered by Sportmonks Pro API
-        </span>
-      </div>
+    <div className="min-h-screen bg-gray-900">
+      {/* Header with Auth */}
+      <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚽</span>
+            <h1 className="text-xl font-bold text-white">Football Analytics Pro</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {status === 'loading' ? (
+              <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            ) : session ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all"
+                >
+                  Profil
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Giris Yap
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Pro Uyelik
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs px-3 py-1 rounded-full font-medium">
+            ⚡ Powered by Sportmonks Pro API + 4 AI Consensus
+          </span>
+        </div>
 
       <div className="flex flex-wrap gap-2 mb-8 justify-center">
         {Object.entries(LEAGUES).map(([key, league]) => (
@@ -298,8 +347,9 @@ export default function Home() {
         </div>
       )}
 
-      <div className="mt-8 text-center text-gray-500 text-xs">
-        <p>Veriler Sportmonks Euro Plan API | AI: OpenAI GPT-4o-mini</p>
+        <div className="mt-8 text-center text-gray-500 text-xs">
+          <p>Veriler Sportmonks Euro Plan API | AI: Claude + OpenAI + Gemini + Perplexity (4 AI Consensus)</p>
+        </div>
       </div>
     </div>
   );

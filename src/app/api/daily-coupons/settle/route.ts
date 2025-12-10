@@ -1,15 +1,13 @@
 // src/app/api/daily-coupons/settle/route.ts
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET || 'tipster-league-secret-2024';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy loaded supabase client
+const getSupabase = () => getSupabaseAdmin();
 
 interface MatchResult {
   fixture_id: number;
@@ -189,7 +187,7 @@ export async function POST(request: NextRequest) {
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-    const { data: pendingCoupons, error: fetchError } = await supabase
+    const { data: pendingCoupons, error: fetchError } = await getSupabase()
       .from('daily_coupons')
       .select('*')
       .eq('status', 'pending')
@@ -273,7 +271,7 @@ export async function POST(request: NextRequest) {
 
       console.log(`\n   📊 Result: ${wonCount}/${matches.length} won → Status: ${newStatus.toUpperCase()}`);
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await getSupabase()
         .from('daily_coupons')
         .update({ 
           status: newStatus,
@@ -320,7 +318,7 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const { data: coupons, error } = await supabase
+    const { data: coupons, error } = await getSupabase()
       .from('daily_coupons')
       .select('*')
       .gte('date', sevenDaysAgo.toISOString().split('T')[0])

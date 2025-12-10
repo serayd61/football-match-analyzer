@@ -1,13 +1,30 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Lazy load AI clients to avoid build-time initialization
+let _anthropic: Anthropic | null = null;
+let _openai: OpenAI | null = null;
+let _genAI: GoogleGenerativeAI | null = null;
+
+function getAnthropic() {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _anthropic;
+}
+
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
+
+function getGenAI() {
+  if (!_genAI) _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  return _genAI;
+}
+
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
@@ -63,7 +80,7 @@ SADECE JSON döndür:
 
   try {
     if (model === 'claude') {
-      const response = await anthropic.messages.create({
+      const response = await getAnthropic().messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
         messages: [{ role: 'user', content: prompt }],
@@ -72,9 +89,9 @@ SADECE JSON döndür:
       const json = text.match(/\{[\s\S]*?\}/);
       return json ? JSON.parse(json[0]) : null;
     }
-    
+
     if (model === 'gpt') {
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAI().chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 500,
@@ -82,9 +99,9 @@ SADECE JSON döndür:
       });
       return JSON.parse(response.choices[0]?.message?.content || '{}');
     }
-    
+
     if (model === 'gemini') {
-      const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      const geminiModel = getGenAI().getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
       const result = await geminiModel.generateContent(prompt);
       const text = result.response.text();
       const json = text.match(/\{[\s\S]*?\}/);
@@ -278,7 +295,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
-    const { data: coupons, error } = await supabaseAdmin
+    const { data: coupons, error } = await getSupabaseAdmin()
       .from('daily_coupons')
       .select('*')
       .eq('date', date)
@@ -319,7 +336,7 @@ export async function POST(request: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await getSupabaseAdmin()
       .from('daily_coupons')
       .select('id')
       .eq('date', today)
@@ -404,7 +421,7 @@ export async function POST(request: NextRequest) {
     }
 
     for (const [type, coupon] of Object.entries(coupons)) {
-      await supabaseAdmin.from('daily_coupons').insert({
+      await getSupabaseAdmin().from('daily_coupons').insert({
         date: today,
         coupon_type: type,
         matches: (coupon as any).matches,
