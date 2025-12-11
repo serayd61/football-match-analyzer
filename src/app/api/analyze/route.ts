@@ -292,31 +292,31 @@ function createAnalysisPrompt(
 
 📊 ${homeTeam.toUpperCase()} (EV SAHİBİ)
 ────────────────────────────────────
-- Son Form: ${homeStats.form} (${homeStats.wins}G-${homeStats.draws}B-${homeStats.losses}M)
-- Maç Başı Attığı Gol: ${homeStats.avgGoalsFor}
-- Maç Başı Yediği Gol: ${homeStats.avgGoalsAgainst}
-- Gol Yemeden Bitirdiği: ${homeStats.cleanSheets}/${homeStats.played} maç
-- Gol Atamadığı: ${homeStats.failedToScore}/${homeStats.played} maç
-- Son Maçlar: ${homeStats.last5Results?.join(' | ') || 'Veri yok'}
+• Son Form: ${homeStats.form} (${homeStats.wins}G-${homeStats.draws}B-${homeStats.losses}M)
+• Maç Başı Attığı Gol: ${homeStats.avgGoalsFor}
+• Maç Başı Yediği Gol: ${homeStats.avgGoalsAgainst}
+• Gol Yemeden Bitirdiği: ${homeStats.cleanSheets}/${homeStats.played} maç
+• Gol Atamadığı: ${homeStats.failedToScore}/${homeStats.played} maç
+• Son Maçlar: ${homeStats.last5Results?.join(' | ') || 'Veri yok'}
 
 📊 ${awayTeam.toUpperCase()} (DEPLASMAN)
 ────────────────────────────────────
-- Son Form: ${awayStats.form} (${awayStats.wins}G-${awayStats.draws}B-${awayStats.losses}M)
-- Maç Başı Attığı Gol: ${awayStats.avgGoalsFor}
-- Maç Başı Yediği Gol: ${awayStats.avgGoalsAgainst}
-- Gol Yemeden Bitirdiği: ${awayStats.cleanSheets}/${awayStats.played} maç
-- Gol Atamadığı: ${awayStats.failedToScore}/${awayStats.played} maç
-- Son Maçlar: ${awayStats.last5Results?.join(' | ') || 'Veri yok'}
+• Son Form: ${awayStats.form} (${awayStats.wins}G-${awayStats.draws}B-${awayStats.losses}M)
+• Maç Başı Attığı Gol: ${awayStats.avgGoalsFor}
+• Maç Başı Yediği Gol: ${awayStats.avgGoalsAgainst}
+• Gol Yemeden Bitirdiği: ${awayStats.cleanSheets}/${awayStats.played} maç
+• Gol Atamadığı: ${awayStats.failedToScore}/${awayStats.played} maç
+• Son Maçlar: ${awayStats.last5Results?.join(' | ') || 'Veri yok'}
 
 🔄 KARŞILAŞMA GEÇMİŞİ (H2H) - Son ${h2h.played} maç
 ────────────────────────────────────
-- ${homeTeam}: ${h2h.homeTeamWins} galibiyet
-- ${awayTeam}: ${h2h.awayTeamWins} galibiyet
-- Beraberlik: ${h2h.draws}
-- Maç Başı Ortalama Gol: ${h2h.avgGoals}
-- KG VAR Oranı: %${h2h.bttsPercent}
-- 2.5 Üst Oranı: %${h2h.over25Percent}
-- Son Maçlar: ${h2h.recentMatches?.join(' | ') || 'Veri yok'}
+• ${homeTeam}: ${h2h.homeTeamWins} galibiyet
+• ${awayTeam}: ${h2h.awayTeamWins} galibiyet
+• Beraberlik: ${h2h.draws}
+• Maç Başı Ortalama Gol: ${h2h.avgGoals}
+• KG VAR Oranı: %${h2h.bttsPercent}
+• 2.5 Üst Oranı: %${h2h.over25Percent}
+• Son Maçlar: ${h2h.recentMatches?.join(' | ') || 'Veri yok'}
 
 ═══════════════════════════════════════════════════════════
 TAHMİNLERİNİ AŞAĞIDAKİ FORMATTA VER:
@@ -344,28 +344,28 @@ ACIKLAMA: [2-3 cümlelik kisa analiz ve gerekce]`;
 
 📊 ${homeTeam.toUpperCase()} (HEIM)
 ────────────────────────────────────
-- Form: ${homeStats.form} (${homeStats.wins}S-${homeStats.draws}U-${homeStats.losses}N)
-- Tore pro Spiel: ${homeStats.avgGoalsFor}
-- Gegentore pro Spiel: ${homeStats.avgGoalsAgainst}
-- Zu Null: ${homeStats.cleanSheets}/${homeStats.played} Spiele
-- Ohne Tor: ${homeStats.failedToScore}/${homeStats.played} Spiele
+• Form: ${homeStats.form} (${homeStats.wins}S-${homeStats.draws}U-${homeStats.losses}N)
+• Tore pro Spiel: ${homeStats.avgGoalsFor}
+• Gegentore pro Spiel: ${homeStats.avgGoalsAgainst}
+• Zu Null: ${homeStats.cleanSheets}/${homeStats.played} Spiele
+• Ohne Tor: ${homeStats.failedToScore}/${homeStats.played} Spiele
 
 📊 ${awayTeam.toUpperCase()} (AUSWÄRTS)
 ────────────────────────────────────
-- Form: ${awayStats.form} (${awayStats.wins}S-${awayStats.draws}U-${awayStats.losses}N)
-- Tore pro Spiel: ${awayStats.avgGoalsFor}
-- Gegentore pro Spiel: ${awayStats.avgGoalsAgainst}
-- Zu Null: ${awayStats.cleanSheets}/${awayStats.played} Spiele
-- Ohne Tor: ${awayStats.failedToScore}/${awayStats.played} Spiele
+• Form: ${awayStats.form} (${awayStats.wins}S-${awayStats.draws}U-${awayStats.losses}N)
+• Tore pro Spiel: ${awayStats.avgGoalsFor}
+• Gegentore pro Spiel: ${awayStats.avgGoalsAgainst}
+• Zu Null: ${awayStats.cleanSheets}/${awayStats.played} Spiele
+• Ohne Tor: ${awayStats.failedToScore}/${awayStats.played} Spiele
 
 🔄 DIREKTER VERGLEICH (H2H) - Letzte ${h2h.played} Spiele
 ────────────────────────────────────
-- ${homeTeam}: ${h2h.homeTeamWins} Siege
-- ${awayTeam}: ${h2h.awayTeamWins} Siege
-- Unentschieden: ${h2h.draws}
-- Durchschn. Tore: ${h2h.avgGoals}
-- Beide treffen: ${h2h.bttsPercent}%
-- Über 2.5: ${h2h.over25Percent}%
+• ${homeTeam}: ${h2h.homeTeamWins} Siege
+• ${awayTeam}: ${h2h.awayTeamWins} Siege
+• Unentschieden: ${h2h.draws}
+• Durchschn. Tore: ${h2h.avgGoals}
+• Beide treffen: ${h2h.bttsPercent}%
+• Über 2.5: ${h2h.over25Percent}%
 
 ═══════════════════════════════════════════════════════════
 VORHERSAGEN IM FOLGENDEN FORMAT:
@@ -392,31 +392,31 @@ ANALYSE: [2-3 Sätze kurze Analyse]`;
 
 📊 ${homeTeam.toUpperCase()} (HOME)
 ────────────────────────────────────
-- Recent Form: ${homeStats.form} (${homeStats.wins}W-${homeStats.draws}D-${homeStats.losses}L)
-- Goals Per Game: ${homeStats.avgGoalsFor}
-- Conceded Per Game: ${homeStats.avgGoalsAgainst}
-- Clean Sheets: ${homeStats.cleanSheets}/${homeStats.played} games
-- Failed to Score: ${homeStats.failedToScore}/${homeStats.played} games
-- Recent Results: ${homeStats.last5Results?.join(' | ') || 'No data'}
+• Recent Form: ${homeStats.form} (${homeStats.wins}W-${homeStats.draws}D-${homeStats.losses}L)
+• Goals Per Game: ${homeStats.avgGoalsFor}
+• Conceded Per Game: ${homeStats.avgGoalsAgainst}
+• Clean Sheets: ${homeStats.cleanSheets}/${homeStats.played} games
+• Failed to Score: ${homeStats.failedToScore}/${homeStats.played} games
+• Recent Results: ${homeStats.last5Results?.join(' | ') || 'No data'}
 
 📊 ${awayTeam.toUpperCase()} (AWAY)
 ────────────────────────────────────
-- Recent Form: ${awayStats.form} (${awayStats.wins}W-${awayStats.draws}D-${awayStats.losses}L)
-- Goals Per Game: ${awayStats.avgGoalsFor}
-- Conceded Per Game: ${awayStats.avgGoalsAgainst}
-- Clean Sheets: ${awayStats.cleanSheets}/${awayStats.played} games
-- Failed to Score: ${awayStats.failedToScore}/${awayStats.played} games
-- Recent Results: ${awayStats.last5Results?.join(' | ') || 'No data'}
+• Recent Form: ${awayStats.form} (${awayStats.wins}W-${awayStats.draws}D-${awayStats.losses}L)
+• Goals Per Game: ${awayStats.avgGoalsFor}
+• Conceded Per Game: ${awayStats.avgGoalsAgainst}
+• Clean Sheets: ${awayStats.cleanSheets}/${awayStats.played} games
+• Failed to Score: ${awayStats.failedToScore}/${awayStats.played} games
+• Recent Results: ${awayStats.last5Results?.join(' | ') || 'No data'}
 
 🔄 HEAD TO HEAD - Last ${h2h.played} matches
 ────────────────────────────────────
-- ${homeTeam}: ${h2h.homeTeamWins} wins
-- ${awayTeam}: ${h2h.awayTeamWins} wins
-- Draws: ${h2h.draws}
-- Average Goals: ${h2h.avgGoals}
-- BTTS Rate: ${h2h.bttsPercent}%
-- Over 2.5 Rate: ${h2h.over25Percent}%
-- Recent: ${h2h.recentMatches?.join(' | ') || 'No data'}
+• ${homeTeam}: ${h2h.homeTeamWins} wins
+• ${awayTeam}: ${h2h.awayTeamWins} wins
+• Draws: ${h2h.draws}
+• Average Goals: ${h2h.avgGoals}
+• BTTS Rate: ${h2h.bttsPercent}%
+• Over 2.5 Rate: ${h2h.over25Percent}%
+• Recent: ${h2h.recentMatches?.join(' | ') || 'No data'}
 
 ═══════════════════════════════════════════════════════════
 PROVIDE YOUR PREDICTIONS IN THIS EXACT FORMAT:
