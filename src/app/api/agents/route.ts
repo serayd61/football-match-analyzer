@@ -810,16 +810,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Agent error:', error);
-     // ═══════════════════════════════════════════════════
-    // 📊 TAHMİNİ VERİTABANINA KAYDET
-    // ═══════════════════════════════════════════════════
+   // 📊 TAHMİNİ VERİTABANINA KAYDET
     try {
       await savePrediction({
-        fixtureId,
+        fixtureId: matchData.fixtureId,
         matchDate: matchData.date,
-        homeTeam,
-        awayTeam,
-        league,
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        league: matchData.league,
         reports: {
           deepAnalysis: result.reports?.deepAnalysis,
           stats: result.reports?.stats,
@@ -833,8 +831,9 @@ export async function POST(request: NextRequest) {
           modelAgreement: multiModelResult.modelAgreement,
         } : undefined,
       });
+      console.log('📊 Prediction saved to database');
     } catch (saveError) {
-      console.error('⚠️ Prediction save failed (non-blocking):', saveError);
+      console.error('⚠️ Prediction save failed:', saveError);
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
