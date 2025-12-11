@@ -1,5 +1,6 @@
 // src/lib/predictions.ts
 // Tahmin kaydetme ve güncelleme fonksiyonları
+// ⚠️ Bu dosya sadece veritabanı işlemleri yapar, prompt'lara dokunmaz!
 
 import { getSupabaseAdmin } from './supabase';
 
@@ -336,6 +337,70 @@ export async function getPendingPredictions(): Promise<any[]> {
     
   } catch (error) {
     console.error('❌ Pending fetch error:', error);
+    return [];
+  }
+}
+
+/**
+ * Belirli bir tarihteki tahminleri getir
+ */
+export async function getPredictionsByDate(date: string): Promise<any[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    
+    const { data, error } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('match_date', date)
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+    
+  } catch (error) {
+    console.error('❌ Date fetch error:', error);
+    return [];
+  }
+}
+
+/**
+ * Lig bazında performans getir
+ */
+export async function getLeaguePerformance(): Promise<any[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    
+    const { data, error } = await supabase
+      .from('predictions')
+      .select('league, final_over_under_correct, final_match_result_correct, final_btts_correct')
+      .eq('match_finished', true);
+    
+    if (error) throw error;
+    
+    // Lig bazında grupla
+    const leagueStats: Record<string, { total: number; overUnder: number; matchResult: number; btts: number }> = {};
+    
+    (data || []).forEach((p: any) => {
+      const league = p.league || 'Unknown';
+      if (!leagueStats[league]) {
+        leagueStats[league] = { total: 0, overUnder: 0, matchResult: 0, btts: 0 };
+      }
+      leagueStats[league].total++;
+      if (p.final_over_under_correct) leagueStats[league].overUnder++;
+      if (p.final_match_result_correct) leagueStats[league].matchResult++;
+      if (p.final_btts_correct) leagueStats[league].btts++;
+    });
+    
+    return Object.entries(leagueStats).map(([league, stats]) => ({
+      league,
+      total: stats.total,
+      overUnderAccuracy: Math.round((stats.overUnder / stats.total) * 100),
+      matchResultAccuracy: Math.round((stats.matchResult / stats.total) * 100),
+      bttsAccuracy: Math.round((stats.btts / stats.total) * 100),
+    })).sort((a, b) => b.total - a.total);
+    
+  } catch (error) {
+    console.error('❌ League stats error:', error);
     return [];
   }
 }
