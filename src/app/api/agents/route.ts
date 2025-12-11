@@ -4,8 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
-import { savePrediction } from '@/lib/predictions';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
+import { savePrediction } from '@/lib/predictions';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
@@ -773,6 +773,34 @@ export async function POST(request: NextRequest) {
     console.log('✅ ═══════════════════════════════════════════════════');
     console.log('');
 
+    // ═══════════════════════════════════════════════════
+    // 📊 TAHMİNİ VERİTABANINA KAYDET (Backtesting için)
+    // ═══════════════════════════════════════════════════
+    try {
+      await savePrediction({
+        fixtureId: matchData.fixtureId,
+        matchDate: matchData.date,
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        league: matchData.league,
+        reports: {
+          deepAnalysis: result.reports?.deepAnalysis,
+          stats: result.reports?.stats,
+          odds: result.reports?.odds,
+          strategy: result.reports?.strategy,
+          weightedConsensus: result.reports?.weightedConsensus,
+        },
+        multiModel: multiModelResult ? {
+          predictions: multiModelResult.predictions,
+          consensus: multiModelResult.consensus,
+          modelAgreement: multiModelResult.modelAgreement,
+        } : undefined,
+      });
+      console.log('📊 Prediction saved to database for backtesting');
+    } catch (saveError) {
+      console.error('⚠️ Prediction save failed (non-blocking):', saveError);
+    }
+
     return NextResponse.json({
       success: result.success,
       reports: result.reports,
@@ -810,32 +838,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Agent error:', error);
-    
-    // 📊 TAHMİNİ VERİTABANINA KAYDET
-    try {
-      await savePrediction({
-        fixtureId,
-        matchDate: new Date().toISOString(),
-        homeTeam,
-        awayTeam,
-        league,
-        reports: {
-          deepAnalysis: result.reports?.deepAnalysis,
-          stats: result.reports?.stats,
-          odds: result.reports?.odds,
-          strategy: result.reports?.strategy,
-          weightedConsensus: result.reports?.weightedConsensus,
-        },
-        multiModel: multiModelResult ? {
-          predictions: multiModelResult.predictions,
-          consensus: multiModelResult.consensus,
-          modelAgreement: multiModelResult.modelAgreement,
-        } : undefined,
-      });
-      console.log('📊 Prediction saved to database');
-    } catch (saveError) {
-      console.error('⚠️ Prediction save failed:', saveError);
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
