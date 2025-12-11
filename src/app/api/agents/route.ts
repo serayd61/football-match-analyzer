@@ -810,14 +810,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Agent error:', error);
-   // 📊 TAHMİNİ VERİTABANINA KAYDET
+    
+    // 📊 TAHMİNİ VERİTABANINA KAYDET
     try {
       await savePrediction({
-        fixtureId: matchData.fixtureId,
-        matchDate: matchData.date,
-        homeTeam: matchData.homeTeam,
-        awayTeam: matchData.awayTeam,
-        league: matchData.league,
+        fixtureId,
+        matchDate: new Date().toISOString(),
+        homeTeam,
+        awayTeam,
+        league,
         reports: {
           deepAnalysis: result.reports?.deepAnalysis,
           stats: result.reports?.stats,
