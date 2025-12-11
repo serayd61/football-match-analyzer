@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
+import { savePrediction } from '@/lib/predictions';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
@@ -809,6 +810,32 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Agent error:', error);
+     // ═══════════════════════════════════════════════════
+    // 📊 TAHMİNİ VERİTABANINA KAYDET
+    // ═══════════════════════════════════════════════════
+    try {
+      await savePrediction({
+        fixtureId,
+        matchDate: matchData.date,
+        homeTeam,
+        awayTeam,
+        league,
+        reports: {
+          deepAnalysis: result.reports?.deepAnalysis,
+          stats: result.reports?.stats,
+          odds: result.reports?.odds,
+          strategy: result.reports?.strategy,
+          weightedConsensus: result.reports?.weightedConsensus,
+        },
+        multiModel: multiModelResult ? {
+          predictions: multiModelResult.predictions,
+          consensus: multiModelResult.consensus,
+          modelAgreement: multiModelResult.modelAgreement,
+        } : undefined,
+      });
+    } catch (saveError) {
+      console.error('⚠️ Prediction save failed (non-blocking):', saveError);
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
