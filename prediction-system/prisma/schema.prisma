@@ -1,0 +1,218 @@
+// ============================================================================
+// FOOTBALL ANALYTICS PRO - VERİTABANI ŞEMASI
+// ============================================================================
+// Bu şema tahminleri, sonuçları ve AI performansını takip eder
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Vercel Postgres, Supabase, veya Railway
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ANA TAHMİN TABLOSU
+// ============================================================================
+
+model Prediction {
+  id                String   @id @default(cuid())
+  
+  // Maç Bilgileri
+  fixtureId         Int?     // Sportmonks fixture ID
+  homeTeam          String
+  awayTeam          String
+  homeTeamId        Int?
+  awayTeamId        Int?
+  league            String?
+  leagueId          Int?
+  matchDate         DateTime
+  
+  // Tahminler
+  matchResultPrediction    String   // "Home Win" | "Draw" | "Away Win"
+  matchResultConfidence    Int      // 50-95
+  matchResultVotes         Int      // Kaç AI aynı fikirde
+  matchResultReasonings    String?  @db.Text // JSON array of reasonings
+  
+  overUnderPrediction      String   // "Over 2.5" | "Under 2.5"
+  overUnderConfidence      Int
+  overUnderVotes           Int
+  overUnderReasonings      String?  @db.Text
+  
+  bttsPrediction           String   // "Yes" | "No"
+  bttsConfidence           Int
+  bttsVotes                Int
+  bttsReasonings           String?  @db.Text
+  
+  // En iyi bahis
+  bestBetType              String   // "MATCH_RESULT" | "OVER_UNDER_25" | "BTTS"
+  bestBetSelection         String
+  bestBetConfidence        Int
+  riskLevel                String   // "Low" | "Medium" | "High"
+  
+  // AI Durumları
+  claudeUsed               Boolean  @default(false)
+  openaiUsed               Boolean  @default(false)
+  geminiUsed               Boolean  @default(false)
+  perplexityUsed           Boolean  @default(false)
+  totalModels              Int      @default(0)
+  
+  // Bireysel AI tahminleri (JSON)
+  claudePrediction         String?  @db.Text
+  openaiPrediction         String?  @db.Text
+  geminiPrediction         String?  @db.Text
+  perplexityPrediction     String?  @db.Text
+  
+  // İstatistikler (JSON) - Analiz sırasında kullanılan veriler
+  homeTeamStats            String?  @db.Text
+  awayTeamStats            String?  @db.Text
+  h2hStats                 String?  @db.Text
+  
+  // Gerçek Sonuçlar (Maç bittikten sonra güncellenir)
+  actualHomeGoals          Int?
+  actualAwayGoals          Int?
+  actualResult             String?  // "Home Win" | "Draw" | "Away Win"
+  actualTotalGoals         Float?
+  actualBtts               Boolean?
+  
+  // Doğruluk Kontrolleri
+  matchResultCorrect       Boolean?
+  overUnderCorrect         Boolean?
+  bttsCorrect              Boolean?
+  bestBetCorrect           Boolean?
+  
+  // Her AI'ın doğruluğu
+  claudeMatchCorrect       Boolean?
+  claudeGoalsCorrect       Boolean?
+  claudeBttsCorrect        Boolean?
+  openaiMatchCorrect       Boolean?
+  openaiGoalsCorrect       Boolean?
+  openaiBttsCorrect        Boolean?
+  geminiMatchCorrect       Boolean?
+  geminiGoalsCorrect       Boolean?
+  geminiBttsCorrect        Boolean?
+  perplexityMatchCorrect   Boolean?
+  perplexityGoalsCorrect   Boolean?
+  perplexityBttsCorrect    Boolean?
+  
+  // Durum
+  status                   String   @default("pending") // "pending" | "completed" | "cancelled" | "postponed"
+  resultUpdatedAt          DateTime?
+  
+  // Meta
+  language                 String   @default("tr")
+  analysisTimeMs           Int?     // Analiz süresi (ms)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  
+  // İndeksler
+  @@unique([homeTeamId, awayTeamId, matchDate])
+  @@index([matchDate])
+  @@index([status])
+  @@index([league])
+  @@index([fixtureId])
+}
+
+// ============================================================================
+// GÜNLÜK İSTATİSTİKLER
+// ============================================================================
+
+model DailyStats {
+  id                String   @id @default(cuid())
+  date              DateTime @unique
+  
+  // Genel
+  totalPredictions  Int      @default(0)
+  completedMatches  Int      @default(0)
+  
+  // Consensus Doğruluğu
+  matchResultCorrect      Int @default(0)
+  matchResultTotal        Int @default(0)
+  overUnderCorrect        Int @default(0)
+  overUnderTotal          Int @default(0)
+  bttsCorrect             Int @default(0)
+  bttsTotal               Int @default(0)
+  
+  // Bireysel AI Doğruluğu
+  claudeMatchCorrect      Int @default(0)
+  claudeMatchTotal        Int @default(0)
+  claudeGoalsCorrect      Int @default(0)
+  claudeGoalsTotal        Int @default(0)
+  claudeBttsCorrect       Int @default(0)
+  claudeBttsTotal         Int @default(0)
+  
+  openaiMatchCorrect      Int @default(0)
+  openaiMatchTotal        Int @default(0)
+  openaiGoalsCorrect      Int @default(0)
+  openaiGoalsTotal        Int @default(0)
+  openaiBttsCorrect       Int @default(0)
+  openaiBttsTotal         Int @default(0)
+  
+  geminiMatchCorrect      Int @default(0)
+  geminiMatchTotal        Int @default(0)
+  geminiGoalsCorrect      Int @default(0)
+  geminiGoalsTotal        Int @default(0)
+  geminiBttsCorrect       Int @default(0)
+  geminiBttsTotal         Int @default(0)
+  
+  perplexityMatchCorrect  Int @default(0)
+  perplexityMatchTotal    Int @default(0)
+  perplexityGoalsCorrect  Int @default(0)
+  perplexityGoalsTotal    Int @default(0)
+  perplexityBttsCorrect   Int @default(0)
+  perplexityBttsTotal     Int @default(0)
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// ============================================================================
+// LİG İSTATİSTİKLERİ
+// ============================================================================
+
+model LeagueStats {
+  id                String   @id @default(cuid())
+  leagueId          Int?
+  leagueName        String   @unique
+  
+  totalPredictions  Int      @default(0)
+  completedMatches  Int      @default(0)
+  
+  matchResultCorrect      Int @default(0)
+  matchResultAccuracy     Float @default(0)
+  overUnderCorrect        Int @default(0)
+  overUnderAccuracy       Float @default(0)
+  bttsCorrect             Int @default(0)
+  bttsAccuracy            Float @default(0)
+  
+  avgConfidence           Float @default(0)
+  avgActualGoals          Float @default(0)
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// ============================================================================
+// API KULLANIM LOGU
+// ============================================================================
+
+model ApiUsageLog {
+  id                String   @id @default(cuid())
+  
+  endpoint          String   // "analyze" | "update-results" | "stats"
+  provider          String?  // "claude" | "openai" | "gemini" | "perplexity" | "sportmonks"
+  
+  requestTime       DateTime @default(now())
+  responseTimeMs    Int?
+  success           Boolean  @default(true)
+  errorMessage      String?
+  
+  // Maliyet takibi (opsiyonel)
+  tokensUsed        Int?
+  estimatedCost     Float?
+  
+  @@index([requestTime])
+  @@index([provider])
+}
