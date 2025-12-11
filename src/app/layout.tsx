@@ -7,17 +7,6 @@ import FloatingBackButton from '@/components/FloatingBackButton';
 import { Analytics } from '@vercel/analytics/react';
 import Navigation from '@/components/Navigation';
 
-export default function RootLayout({ children }) {
-  return (
-    <html>
-      <body>
-        <Navigation />
-        {children}
-      </body>
-    </html>
-  );
-}
-
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -35,6 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <LanguageProvider>
+            <Navigation />
             {children}
             <FloatingBackButton />
           </LanguageProvider>
