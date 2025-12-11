@@ -26,12 +26,12 @@ const SUPPORTED_LEAGUES = [
 
 // ==================== SPORTMONKS API ====================
 
-async function getTodayMatches() {
-  const today = new Date().toISOString().split('T')[0];
+async function getMatchesByDate(dateStr?: string) {
+  const targetDate = dateStr || new Date().toISOString().split('T')[0];
   
   try {
     const response = await fetch(
-      `https://api.sportmonks.com/v3/football/fixtures/date/${today}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;odds&per_page=100`
+      `https://api.sportmonks.com/v3/football/fixtures/date/${targetDate}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;odds&per_page=100`
     );
     
     if (!response.ok) {
@@ -47,7 +47,7 @@ async function getTodayMatches() {
       SUPPORTED_LEAGUES.includes(m.league_id)
     );
     
-    console.log(`📅 Today: ${today} | Total: ${matches.length} | Filtered: ${filteredMatches.length}`);
+    console.log(`📅 Date: ${targetDate} | Total: ${matches.length} | Filtered: ${filteredMatches.length}`);
     
     return filteredMatches;
   } catch (error) {
@@ -359,15 +359,24 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
+    // Body'den tarih al (opsiyonel)
+    let targetDate: string | undefined;
+    try {
+      const body = await request.json();
+      targetDate = body.date; // YYYY-MM-DD formatında
+    } catch {
+      // Body yoksa bugünü kullan
+    }
+    
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════');
-    console.log('🤖 AUTO-PREDICT: Starting daily analysis');
+    console.log(`🤖 AUTO-PREDICT: Starting analysis for ${targetDate || 'today'}`);
     console.log('🤖 ═══════════════════════════════════════════════════');
     
     const supabase = getSupabaseAdmin();
     
-    // 1. Günün maçlarını çek
-    const matches = await getTodayMatches();
+    // 1. Maçları çek
+    const matches = await getMatchesByDate(targetDate);
     
     if (matches.length === 0) {
       return NextResponse.json({
@@ -510,6 +519,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
+      date: targetDate || new Date().toISOString().split('T')[0],
       analyzed,
       errors,
       totalMatches: matches.length,
