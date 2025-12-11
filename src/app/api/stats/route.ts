@@ -107,15 +107,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-```
-
----
-
-## Klasör Yapısı
-```
-src/app/api/
-├── update-results/
-│   └── route.ts      ← Yukarıdaki 1. dosya
-├── stats/
-│   └── route.ts      ← Yukarıdaki 2. dosya
-└── ... (diğer api klasörleri)
