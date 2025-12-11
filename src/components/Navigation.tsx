@@ -47,16 +47,4 @@ export default function Navigation() {
     </nav>
   );
 }
-```
 
----
-
-## 📁 Sonuç
-```
-src/
-├── app/
-│   ├── api/livescores/route.ts  ✅
-│   ├── live/page.tsx            ✅
-│   └── layout.tsx               ✅
-└── components/
-    └── Navigation.tsx           ← BUNU OLUŞTUR
