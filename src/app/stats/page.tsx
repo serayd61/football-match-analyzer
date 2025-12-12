@@ -918,14 +918,14 @@ export default function StatsPage() {
                                 </div>
                                 <div className="text-center p-4 bg-gray-800/50 rounded-lg">
                                   <div className="text-3xl font-bold text-white">
-                                    {(parseFloat(homeStats.avgScored) + parseFloat(awayStats.avgScored)).toFixed(1)}
+                                  {(Number(homeStats.avgScored) + Number(awayStats.avgScored)).toFixed(1)}
                                   </div>
                                   <div className="text-xs text-gray-400 mt-1">Beklenen Gol</div>
                                   <div className="text-[10px] text-gray-500">Toplam</div>
                                 </div>
                                 <div className="text-center p-4 bg-gray-800/50 rounded-lg">
                                   <div className={`text-3xl font-bold ${
-                                    (parseFloat(homeStats.avgScored) + parseFloat(awayStats.avgScored)) > 2.5 
+                                   {(Number(homeStats.avgScored) + Number(awayStats.avgScored)) > 2.5
                                       ? 'text-green-400' : 'text-red-400'
                                   }`}>
                                     {(parseFloat(homeStats.avgScored) + parseFloat(awayStats.avgScored)) > 2.5 ? 'ÜST' : 'ALT'}
