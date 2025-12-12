@@ -41,21 +41,27 @@ async function getTodayMatches(date: string) {
 }
 
 // Takım son maçları - DÜZELTİLDİ
+// Takım son maçları - DÜZELTİLDİ (Doğru Endpoint)
 async function getTeamRecentMatches(teamId: number) {
   try {
-    // Sportmonks v3 API - Takımın son maçları
-    const url = `${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=participantIds:${teamId}&include=participants;scores;league&per_page=10&order=desc&sort=starting_at`;
+    // Tarih aralığı: Son 3 ay
+    const endDate = new Date().toISOString().split('T')[0]; // Bugün
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 90 gün önce
     
-    console.log(`Fetching recent matches for team ${teamId}`);
-    const data = await fetchWithCache(url, `team_recent_${teamId}`);
+    // Sportmonks v3 API - DOĞRU ENDPOINT
+    const url = `${BASE_URL}/fixtures/between/${startDate}/${endDate}/${teamId}?api_token=${SPORTMONKS_API_KEY}&include=participants;scores;league&per_page=10`;
     
-    // Sadece bitmiş maçları filtrele (state_id = 5 veya status benzeri)
-    const finishedMatches = (data.data || []).filter((match: any) => {
-      // Maç bitmiş mi kontrol et
-      const hasScores = match.scores && match.scores.length > 0;
-      const isPast = new Date(match.starting_at) < new Date();
-      return hasScores && isPast;
-    });
+    console.log(`Fetching recent matches for team ${teamId}: ${startDate} to ${endDate}`);
+    const data = await fetchWithCache(url, `team_recent_${teamId}_${endDate}`);
+    
+    // Sadece bitmiş maçları filtrele ve tarihe göre sırala (en yeni önce)
+    const finishedMatches = (data.data || [])
+      .filter((match: any) => {
+        const hasScores = match.scores && match.scores.length > 0;
+        const isPast = new Date(match.starting_at) < new Date();
+        return hasScores && isPast;
+      })
+      .sort((a: any, b: any) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime());
     
     console.log(`Found ${finishedMatches.length} finished matches for team ${teamId}`);
     return finishedMatches.slice(0, 5);
@@ -64,7 +70,6 @@ async function getTeamRecentMatches(teamId: number) {
     return [];
   }
 }
-
 // Head-to-head karşılaşmalar
 async function getHeadToHead(team1Id: number, team2Id: number) {
   try {
