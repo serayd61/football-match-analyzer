@@ -904,7 +904,7 @@ async function callClaude(prompt: string): Promise<string | null> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',  // ← MODEL DEĞİŞTİ
+        model: 'claude-3-5-haiku-20241022',  // ← MODEL DEĞİŞTİ
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }],
       }),
