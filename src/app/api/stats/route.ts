@@ -1,6 +1,4 @@
 // src/app/api/stats/route.ts
-// Hem performans istatistikleri hem canlı maç istatistikleri
-
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
@@ -18,19 +16,22 @@ async function fetchWithCache(url: string, cacheKey: string) {
     return cache[cacheKey].data;
   }
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`API error: ${response.status} for ${url}`);
+      return { data: [] };
+    }
+    const data = await response.json();
+    cache[cacheKey] = { data, timestamp: now };
+    return data;
+  } catch (error) {
+    console.error(`Fetch error for ${url}:`, error);
+    return { data: [] };
   }
-  const data = await response.json();
-  cache[cacheKey] = { data, timestamp: now };
-  return data;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// SPORTMONKS FONKSİYONLARI - Canlı maç istatistikleri
-// ═══════════════════════════════════════════════════════════════════
-
+// Bugünkü maçları getir
 async function getTodayMatches(date: string) {
   const leagueIds = '181,208,244,271,8,24,9,27,1371,301,82,387,384,390,72,444,453,462,486,501,570,567,564,573,591,600';
   const url = `${BASE_URL}/fixtures/date/${date}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;venue;scores&filters=fixtureLeagues:${leagueIds}&per_page=50`;
@@ -39,20 +40,32 @@ async function getTodayMatches(date: string) {
   return data.data || [];
 }
 
-async function getTeamStats(teamId: number) {
+// Takım son maçları - DÜZELTİLDİ
+async function getTeamRecentMatches(teamId: number) {
   try {
-    const fixturesUrl = `${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=teamId:${teamId};fixtureStatusName:FT&include=participants;scores;league&per_page=10&order=starting_at&sortOrder=desc`;
-    const fixturesData = await fetchWithCache(fixturesUrl, `team_fixtures_${teamId}`);
+    // Sportmonks v3 API - Takımın son maçları
+    const url = `${BASE_URL}/fixtures?api_token=${SPORTMONKS_API_KEY}&filters=participantIds:${teamId}&include=participants;scores;league&per_page=10&order=desc&sort=starting_at`;
     
-    return {
-      recentMatches: fixturesData.data || []
-    };
+    console.log(`Fetching recent matches for team ${teamId}`);
+    const data = await fetchWithCache(url, `team_recent_${teamId}`);
+    
+    // Sadece bitmiş maçları filtrele (state_id = 5 veya status benzeri)
+    const finishedMatches = (data.data || []).filter((match: any) => {
+      // Maç bitmiş mi kontrol et
+      const hasScores = match.scores && match.scores.length > 0;
+      const isPast = new Date(match.starting_at) < new Date();
+      return hasScores && isPast;
+    });
+    
+    console.log(`Found ${finishedMatches.length} finished matches for team ${teamId}`);
+    return finishedMatches.slice(0, 5);
   } catch (error) {
-    console.error(`Team stats error for ${teamId}:`, error);
-    return null;
+    console.error(`Team recent matches error for ${teamId}:`, error);
+    return [];
   }
 }
 
+// Head-to-head karşılaşmalar
 async function getHeadToHead(team1Id: number, team2Id: number) {
   try {
     const url = `${BASE_URL}/fixtures/head-to-head/${team1Id}/${team2Id}?api_token=${SPORTMONKS_API_KEY}&include=participants;scores;league&per_page=10`;
@@ -64,8 +77,36 @@ async function getHeadToHead(team1Id: number, team2Id: number) {
   }
 }
 
+// Skor çıkarma yardımcı fonksiyonu
+function extractScores(match: any): { homeScore: number; awayScore: number } {
+  let homeScore = 0;
+  let awayScore = 0;
+
+  if (match.scores && Array.isArray(match.scores)) {
+    match.scores.forEach((s: any) => {
+      // Farklı score tiplerini kontrol et
+      if (s.description === 'CURRENT' || s.description === '2ND_HALF' || s.type_id === 1525) {
+        if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
+        if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
+      }
+    });
+  }
+
+  // Eğer hala 0-0 ise, scores içinde direkt değer ara
+  if (homeScore === 0 && awayScore === 0 && match.scores) {
+    const ftScore = match.scores.find((s: any) => s.description === 'CURRENT');
+    if (ftScore) {
+      homeScore = ftScore.score?.home || 0;
+      awayScore = ftScore.score?.away || 0;
+    }
+  }
+
+  return { homeScore, awayScore };
+}
+
+// Form hesaplama - DÜZELTİLDİ
 function calculateForm(matches: any[], teamId?: number) {
-  if (!matches || !teamId) {
+  if (!matches || !teamId || matches.length === 0) {
     return { form: [], points: 0, goalsScored: 0, goalsConceded: 0 };
   }
 
@@ -75,18 +116,13 @@ function calculateForm(matches: any[], teamId?: number) {
   let goalsConceded = 0;
 
   matches.slice(0, 5).forEach((match: any) => {
-    const isHome = match.participants?.find((p: any) => p.meta?.location === 'home')?.id === teamId;
-    const scores = match.scores || [];
+    const homeParticipant = match.participants?.find((p: any) => p.meta?.location === 'home');
+    const awayParticipant = match.participants?.find((p: any) => p.meta?.location === 'away');
     
-    let homeScore = 0;
-    let awayScore = 0;
+    // Team ID karşılaştırması - string veya number olabilir
+    const isHome = String(homeParticipant?.id) === String(teamId);
     
-    scores.forEach((s: any) => {
-      if (s.description === 'CURRENT' || s.type_id === 1525) {
-        if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
-        if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
-      }
-    });
+    const { homeScore, awayScore } = extractScores(match);
 
     const teamScore = isHome ? homeScore : awayScore;
     const opponentScore = isHome ? awayScore : homeScore;
@@ -108,6 +144,7 @@ function calculateForm(matches: any[], teamId?: number) {
   return { form, points, goalsScored, goalsConceded };
 }
 
+// H2H işleme
 function processH2H(matches: any[], team1Id?: number, team2Id?: number) {
   if (!matches || matches.length === 0) {
     return { matches: [], stats: { team1Wins: 0, team2Wins: 0, draws: 0, totalGoals: 0, avgGoals: '0', totalMatches: 0 } };
@@ -122,23 +159,14 @@ function processH2H(matches: any[], team1Id?: number, team2Id?: number) {
     const home = match.participants?.find((p: any) => p.meta?.location === 'home');
     const away = match.participants?.find((p: any) => p.meta?.location === 'away');
     
-    let homeScore = 0;
-    let awayScore = 0;
-    
-    (match.scores || []).forEach((s: any) => {
-      if (s.description === 'CURRENT' || s.type_id === 1525) {
-        if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
-        if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
-      }
-    });
-
+    const { homeScore, awayScore } = extractScores(match);
     totalGoals += homeScore + awayScore;
 
     if (homeScore > awayScore) {
-      if (home?.id === team1Id) team1Wins++;
+      if (String(home?.id) === String(team1Id)) team1Wins++;
       else team2Wins++;
     } else if (awayScore > homeScore) {
-      if (away?.id === team1Id) team1Wins++;
+      if (String(away?.id) === String(team1Id)) team1Wins++;
       else team2Wins++;
     } else {
       draws++;
@@ -161,7 +189,7 @@ function processH2H(matches: any[], team1Id?: number, team2Id?: number) {
       team2Wins,
       draws,
       totalGoals,
-      avgGoals: (totalGoals / matches.length).toFixed(1),
+      avgGoals: matches.length > 0 ? (totalGoals / matches.length).toFixed(1) : '0',
       totalMatches: matches.length
     }
   };
@@ -172,84 +200,91 @@ function processH2H(matches: any[], team1Id?: number, team2Id?: number) {
 // ═══════════════════════════════════════════════════════════════════
 
 async function getPerformanceStats() {
-  const supabase = getSupabaseAdmin();
+  try {
+    const supabase = getSupabaseAdmin();
 
-  const { data: predictions, error } = await supabase
-    .from('predictions')
-    .select('*')
-    .eq('match_finished', true);
+    const { data: predictions, error } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('match_finished', true);
 
-  if (error || !predictions || predictions.length === 0) {
+    if (error || !predictions || predictions.length === 0) {
+      return {
+        overall: {
+          total: 0,
+          matchResult: { correct: 0, total: 0, accuracy: 0 },
+          overUnder: { correct: 0, total: 0, accuracy: 0 },
+          btts: { correct: 0, total: 0, accuracy: 0 },
+        },
+        leaguePerformance: [],
+        message: 'No finished predictions yet',
+      };
+    }
+
+    const total = predictions.length;
+
+    const matchResultPredictions = predictions.filter(p => p.final_match_result_correct !== null);
+    const matchResultCorrect = matchResultPredictions.filter(p => p.final_match_result_correct === true).length;
+
+    const overUnderPredictions = predictions.filter(p => p.final_over_under_correct !== null);
+    const overUnderCorrect = overUnderPredictions.filter(p => p.final_over_under_correct === true).length;
+
+    const bttsPredictions = predictions.filter(p => p.final_btts_correct !== null);
+    const bttsCorrect = bttsPredictions.filter(p => p.final_btts_correct === true).length;
+
+    const leagueStats: Record<string, { total: number; overUnder: number; matchResult: number; btts: number }> = {};
+    predictions.forEach(p => {
+      const league = p.league || 'Unknown';
+      if (!leagueStats[league]) {
+        leagueStats[league] = { total: 0, overUnder: 0, matchResult: 0, btts: 0 };
+      }
+      leagueStats[league].total++;
+      if (p.final_over_under_correct === true) leagueStats[league].overUnder++;
+      if (p.final_match_result_correct === true) leagueStats[league].matchResult++;
+      if (p.final_btts_correct === true) leagueStats[league].btts++;
+    });
+
+    const leaguePerformance = Object.entries(leagueStats)
+      .map(([league, stats]) => ({
+        league,
+        total: stats.total,
+        overUnderAccuracy: stats.total > 0 ? Math.round((stats.overUnder / stats.total) * 100) : 0,
+        matchResultAccuracy: stats.total > 0 ? Math.round((stats.matchResult / stats.total) * 100) : 0,
+        bttsAccuracy: stats.total > 0 ? Math.round((stats.btts / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    const calcAccuracy = (correct: number, total: number) => 
+      total > 0 ? Math.round((correct / total) * 100) : 0;
+
     return {
       overall: {
-        total: 0,
-        matchResult: { correct: 0, total: 0, accuracy: 0 },
-        overUnder: { correct: 0, total: 0, accuracy: 0 },
-        btts: { correct: 0, total: 0, accuracy: 0 },
+        total,
+        matchResult: {
+          correct: matchResultCorrect,
+          total: matchResultPredictions.length,
+          accuracy: calcAccuracy(matchResultCorrect, matchResultPredictions.length),
+        },
+        overUnder: {
+          correct: overUnderCorrect,
+          total: overUnderPredictions.length,
+          accuracy: calcAccuracy(overUnderCorrect, overUnderPredictions.length),
+        },
+        btts: {
+          correct: bttsCorrect,
+          total: bttsPredictions.length,
+          accuracy: calcAccuracy(bttsCorrect, bttsPredictions.length),
+        },
       },
+      leaguePerformance,
+    };
+  } catch (error) {
+    console.error('Performance stats error:', error);
+    return {
+      overall: { total: 0, matchResult: { correct: 0, total: 0, accuracy: 0 }, overUnder: { correct: 0, total: 0, accuracy: 0 }, btts: { correct: 0, total: 0, accuracy: 0 } },
       leaguePerformance: [],
-      message: 'No finished predictions yet',
     };
   }
-
-  const total = predictions.length;
-
-  const matchResultPredictions = predictions.filter(p => p.final_match_result_correct !== null);
-  const matchResultCorrect = matchResultPredictions.filter(p => p.final_match_result_correct === true).length;
-
-  const overUnderPredictions = predictions.filter(p => p.final_over_under_correct !== null);
-  const overUnderCorrect = overUnderPredictions.filter(p => p.final_over_under_correct === true).length;
-
-  const bttsPredictions = predictions.filter(p => p.final_btts_correct !== null);
-  const bttsCorrect = bttsPredictions.filter(p => p.final_btts_correct === true).length;
-
-  // Lig bazlı performans
-  const leagueStats: Record<string, { total: number; overUnder: number; matchResult: number; btts: number }> = {};
-  predictions.forEach(p => {
-    const league = p.league || 'Unknown';
-    if (!leagueStats[league]) {
-      leagueStats[league] = { total: 0, overUnder: 0, matchResult: 0, btts: 0 };
-    }
-    leagueStats[league].total++;
-    if (p.final_over_under_correct === true) leagueStats[league].overUnder++;
-    if (p.final_match_result_correct === true) leagueStats[league].matchResult++;
-    if (p.final_btts_correct === true) leagueStats[league].btts++;
-  });
-
-  const leaguePerformance = Object.entries(leagueStats)
-    .map(([league, stats]) => ({
-      league,
-      total: stats.total,
-      overUnderAccuracy: stats.total > 0 ? Math.round((stats.overUnder / stats.total) * 100) : 0,
-      matchResultAccuracy: stats.total > 0 ? Math.round((stats.matchResult / stats.total) * 100) : 0,
-      bttsAccuracy: stats.total > 0 ? Math.round((stats.btts / stats.total) * 100) : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
-
-  const calcAccuracy = (correct: number, total: number) => 
-    total > 0 ? Math.round((correct / total) * 100) : 0;
-
-  return {
-    overall: {
-      total,
-      matchResult: {
-        correct: matchResultCorrect,
-        total: matchResultPredictions.length,
-        accuracy: calcAccuracy(matchResultCorrect, matchResultPredictions.length),
-      },
-      overUnder: {
-        correct: overUnderCorrect,
-        total: overUnderPredictions.length,
-        accuracy: calcAccuracy(overUnderCorrect, overUnderPredictions.length),
-      },
-      btts: {
-        correct: bttsCorrect,
-        total: bttsPredictions.length,
-        accuracy: calcAccuracy(bttsCorrect, bttsPredictions.length),
-      },
-    },
-    leaguePerformance,
-  };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -266,20 +301,19 @@ export async function GET(request: NextRequest) {
     const team2Id = searchParams.get('team2Id');
 
     switch (type) {
-      // ═══════════════════════════════════════════════════
-      // CANLI MAÇ İSTATİSTİKLERİ
-      // ═══════════════════════════════════════════════════
       case 'overview': {
         const matches = await getTodayMatches(date);
         
+        // Her maç için paralel olarak veri çek
         const matchesWithStats = await Promise.all(
           matches.slice(0, 15).map(async (match: any) => {
             const homeTeam = match.participants?.find((p: any) => p.meta?.location === 'home');
             const awayTeam = match.participants?.find((p: any) => p.meta?.location === 'away');
             
-            const [homeStats, awayStats, h2h] = await Promise.all([
-              homeTeam?.id ? getTeamStats(homeTeam.id) : null,
-              awayTeam?.id ? getTeamStats(awayTeam.id) : null,
+            // Paralel API çağrıları
+            const [homeRecentMatches, awayRecentMatches, h2h] = await Promise.all([
+              homeTeam?.id ? getTeamRecentMatches(homeTeam.id) : [],
+              awayTeam?.id ? getTeamRecentMatches(awayTeam.id) : [],
               homeTeam?.id && awayTeam?.id ? getHeadToHead(homeTeam.id, awayTeam.id) : []
             ]);
 
@@ -296,15 +330,15 @@ export async function GET(request: NextRequest) {
                 id: homeTeam?.id,
                 name: homeTeam?.name,
                 logo: homeTeam?.image_path,
-                recentForm: calculateForm(homeStats?.recentMatches, homeTeam?.id),
-                recentMatches: homeStats?.recentMatches?.slice(0, 5)
+                recentForm: calculateForm(homeRecentMatches, homeTeam?.id),
+                recentMatches: homeRecentMatches
               },
               awayTeam: {
                 id: awayTeam?.id,
                 name: awayTeam?.name,
                 logo: awayTeam?.image_path,
-                recentForm: calculateForm(awayStats?.recentMatches, awayTeam?.id),
-                recentMatches: awayStats?.recentMatches?.slice(0, 5)
+                recentForm: calculateForm(awayRecentMatches, awayTeam?.id),
+                recentMatches: awayRecentMatches
               },
               h2h: processH2H(h2h, homeTeam?.id, awayTeam?.id)
             };
@@ -323,8 +357,12 @@ export async function GET(request: NextRequest) {
         if (!teamId) {
           return NextResponse.json({ error: 'teamId required' }, { status: 400 });
         }
-        const stats = await getTeamStats(parseInt(teamId));
-        return NextResponse.json({ success: true, ...stats });
+        const recentMatches = await getTeamRecentMatches(parseInt(teamId));
+        return NextResponse.json({ 
+          success: true, 
+          recentMatches,
+          form: calculateForm(recentMatches, parseInt(teamId))
+        });
       }
 
       case 'h2h': {
@@ -338,9 +376,6 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // ═══════════════════════════════════════════════════
-      // TAHMİN PERFORMANSI (ESKİ FONKSİYON)
-      // ═══════════════════════════════════════════════════
       case 'performance':
       case 'overall': {
         const performanceData = await getPerformanceStats();
