@@ -202,7 +202,6 @@ export default function StatsPage() {
       
       if (data.success) {
         setMatches(data.matches || []);
-        // İlk maçı otomatik seç
         if (data.matches?.length > 0 && !selectedMatch) {
           setSelectedMatch(data.matches[0]);
         }
@@ -217,7 +216,6 @@ export default function StatsPage() {
     fetchStats();
   }, [fetchStats]);
 
-  // Form badge rengi
   const getFormColor = (result: string) => {
     switch (result) {
       case 'W': return 'bg-green-500 text-white';
@@ -227,14 +225,12 @@ export default function StatsPage() {
     }
   };
 
-  // Form puanına göre güç seviyesi
   const getStrengthLevel = (points: number) => {
     if (points >= 12) return { text: l.strong, color: 'text-green-400', bg: 'bg-green-500/20' };
     if (points >= 7) return { text: l.neutral, color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
     return { text: l.weak, color: 'text-red-400', bg: 'bg-red-500/20' };
   };
 
-  // Gol istatistiklerini hesapla
   const calculateGoalStats = (recentMatches: any[], teamId: number) => {
     if (!recentMatches || recentMatches.length === 0) {
       return { over25: 0, btts: 0, cleanSheets: 0, failedToScore: 0, avgScored: 0, avgConceded: 0 };
@@ -278,12 +274,11 @@ export default function StatsPage() {
       btts: Math.round((bttsCount / total) * 100),
       cleanSheets: Math.round((cleanSheets / total) * 100),
       failedToScore: Math.round((failedToScore / total) * 100),
-      avgScored: (totalScored / total).toFixed(1),
-      avgConceded: (totalConceded / total).toFixed(1)
+      avgScored: Number((totalScored / total).toFixed(1)),
+      avgConceded: Number((totalConceded / total).toFixed(1))
     };
   };
 
-  // Liglere göre grupla
   const matchesByLeague = matches.reduce((acc: Record<string, MatchData[]>, match) => {
     const league = match.fixture.league || 'Other';
     if (!acc[league]) acc[league] = [];
@@ -494,10 +489,9 @@ export default function StatsPage() {
                     ))}
                   </div>
 
-                  {/* Sekme İçerikleri */}
+                  {/* Overview Tab */}
                   {activeTab === 'overview' && (
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Ev Sahibi Özeti */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
                         <h3 className="text-lg font-bold text-white mb-4">{l.homeForm}</h3>
                         <div className="space-y-3">
@@ -522,7 +516,6 @@ export default function StatsPage() {
                         </div>
                       </div>
 
-                      {/* Deplasman Özeti */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
                         <h3 className="text-lg font-bold text-white mb-4">{l.awayForm}</h3>
                         <div className="space-y-3">
@@ -547,7 +540,6 @@ export default function StatsPage() {
                         </div>
                       </div>
 
-                      {/* H2H Özet */}
                       {selectedMatch.h2h.stats.totalMatches > 0 && (
                         <div className="col-span-2 bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/30 rounded-xl p-5">
                           <h3 className="text-lg font-bold text-white mb-4">⚔️ {l.h2hRecord}</h3>
@@ -571,7 +563,6 @@ export default function StatsPage() {
                         </div>
                       )}
 
-                      {/* Tahmin İpucu */}
                       <div className="col-span-2 bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-500/30 rounded-xl p-5">
                         <h3 className="text-lg font-bold text-yellow-400 mb-3">💡 {l.prediction}</h3>
                         <div className="space-y-2 text-sm">
@@ -604,7 +595,7 @@ export default function StatsPage() {
                               tips.push({ text: `Dengeli maç, beraberlik ihtimali yüksek`, type: 'warning' });
                             }
                             
-                            return tips.map((tip, i) => (
+                            return tips.length > 0 ? tips.map((tip, i) => (
                               <div key={i} className={`flex items-center gap-2 p-2 rounded-lg ${
                                 tip.type === 'success' ? 'bg-green-500/10 text-green-400' :
                                 tip.type === 'warning' ? 'bg-yellow-500/10 text-yellow-400' :
@@ -613,16 +604,18 @@ export default function StatsPage() {
                                 <span>{tip.type === 'success' ? '✅' : tip.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
                                 <span>{tip.text}</span>
                               </div>
-                            ));
+                            )) : (
+                              <div className="text-gray-400">Yeterli veri yok</div>
+                            );
                           })()}
                         </div>
                       </div>
                     </div>
                   )}
 
+                  {/* Form Tab */}
                   {activeTab === 'form' && (
                     <div className="space-y-6">
-                      {/* Ev Sahibi Son Maçlar */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-gray-700/50 bg-green-500/10">
                           <h3 className="font-bold text-white">{selectedMatch.homeTeam.name} - {l.last5}</h3>
@@ -659,7 +652,6 @@ export default function StatsPage() {
                         </div>
                       </div>
 
-                      {/* Deplasman Son Maçlar */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-gray-700/50 bg-blue-500/10">
                           <h3 className="font-bold text-white">{selectedMatch.awayTeam.name} - {l.last5}</h3>
@@ -698,11 +690,11 @@ export default function StatsPage() {
                     </div>
                   )}
 
+                  {/* H2H Tab */}
                   {activeTab === 'h2h' && (
                     <div className="space-y-6">
                       {selectedMatch.h2h.stats.totalMatches > 0 ? (
                         <>
-                          {/* H2H Özet */}
                           <div className="grid grid-cols-3 gap-4">
                             <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 text-center">
                               <div className="text-4xl font-bold text-green-400">{selectedMatch.h2h.stats.team1Wins}</div>
@@ -720,7 +712,6 @@ export default function StatsPage() {
                             </div>
                           </div>
 
-                          {/* H2H İstatistikleri */}
                           <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="text-center p-4 bg-gray-700/30 rounded-lg">
@@ -734,7 +725,6 @@ export default function StatsPage() {
                             </div>
                           </div>
 
-                          {/* H2H Maç Listesi */}
                           <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
                             <div className="p-4 border-b border-gray-700/50">
                               <h3 className="font-bold text-white">⚔️ {l.vsHistory}</h3>
@@ -777,6 +767,7 @@ export default function StatsPage() {
                     </div>
                   )}
 
+                  {/* Goals Tab */}
                   {activeTab === 'goals' && (
                     <div className="space-y-6">
                       {(() => {
@@ -785,9 +776,7 @@ export default function StatsPage() {
                         
                         return (
                           <>
-                            {/* Gol Karşılaştırma */}
                             <div className="grid grid-cols-2 gap-6">
-                              {/* Ev Sahibi */}
                               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
                                 <h3 className="font-bold text-white mb-4">{selectedMatch.homeTeam.name}</h3>
                                 <div className="space-y-4">
@@ -842,7 +831,6 @@ export default function StatsPage() {
                                 </div>
                               </div>
 
-                              {/* Deplasman */}
                               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
                                 <h3 className="font-bold text-white mb-4">{selectedMatch.awayTeam.name}</h3>
                                 <div className="space-y-4">
@@ -898,7 +886,6 @@ export default function StatsPage() {
                               </div>
                             </div>
 
-                            {/* Birleşik Gol Tahmini */}
                             <div className="bg-gradient-to-r from-green-600/10 to-yellow-600/10 border border-green-500/30 rounded-xl p-5">
                               <h3 className="font-bold text-white mb-4">🎯 {l.goalTrends}</h3>
                               <div className="grid grid-cols-4 gap-4">
@@ -918,17 +905,17 @@ export default function StatsPage() {
                                 </div>
                                 <div className="text-center p-4 bg-gray-800/50 rounded-lg">
                                   <div className="text-3xl font-bold text-white">
-                                  {(Number(homeStats.avgScored) + Number(awayStats.avgScored)).toFixed(1)}
+                                    {(homeStats.avgScored + awayStats.avgScored).toFixed(1)}
                                   </div>
                                   <div className="text-xs text-gray-400 mt-1">Beklenen Gol</div>
                                   <div className="text-[10px] text-gray-500">Toplam</div>
                                 </div>
                                 <div className="text-center p-4 bg-gray-800/50 rounded-lg">
                                   <div className={`text-3xl font-bold ${
-                                   {(Number(homeStats.avgScored) + Number(awayStats.avgScored)) > 2.5
+                                    (homeStats.avgScored + awayStats.avgScored) > 2.5 
                                       ? 'text-green-400' : 'text-red-400'
                                   }`}>
-                                    {(parseFloat(homeStats.avgScored) + parseFloat(awayStats.avgScored)) > 2.5 ? 'ÜST' : 'ALT'}
+                                    {(homeStats.avgScored + awayStats.avgScored) > 2.5 ? 'ÜST' : 'ALT'}
                                   </div>
                                   <div className="text-xs text-gray-400 mt-1">2.5 Gol</div>
                                   <div className="text-[10px] text-gray-500">Tahmin</div>
