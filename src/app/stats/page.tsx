@@ -231,34 +231,53 @@ export default function StatsPage() {
     return { text: l.weak, color: 'text-red-400', bg: 'bg-red-500/20' };
   };
 
-  const calculateGoalStats = (recentMatches: any[], teamId: number) => {
-    if (!recentMatches || recentMatches.length === 0) {
-      return { over25: 0, btts: 0, cleanSheets: 0, failedToScore: 0, avgScored: 0, avgConceded: 0 };
-    }
+ const calculateGoalStats = (recentMatches: any[], teamId: number | undefined) => {
+  if (!recentMatches || recentMatches.length === 0 || !teamId) {
+    return { over25: 0, btts: 0, cleanSheets: 0, failedToScore: 0, avgScored: 0, avgConceded: 0 };
+  }
 
-    let over25Count = 0;
-    let bttsCount = 0;
-    let cleanSheets = 0;
-    let failedToScore = 0;
-    let totalScored = 0;
-    let totalConceded = 0;
+  let over25Count = 0;
+  let bttsCount = 0;
+  let cleanSheets = 0;
+  let failedToScore = 0;
+  let totalScored = 0;
+  let totalConceded = 0;
+  let validMatches = 0;
 
-    recentMatches.forEach((match: any) => {
-      const isHome = match.participants?.find((p: any) => p.meta?.location === 'home')?.id === teamId;
-      let homeScore = 0;
-      let awayScore = 0;
+  recentMatches.forEach((match: any) => {
+    // TeamId kontrolü - string veya number olabilir
+    const homeParticipant = match.participants?.find((p: any) => p.meta?.location === 'home');
+    const awayParticipant = match.participants?.find((p: any) => p.meta?.location === 'away');
+    
+    const isHome = homeParticipant?.id === teamId || String(homeParticipant?.id) === String(teamId);
+    
+    let homeScore = 0;
+    let awayScore = 0;
 
-      (match.scores || []).forEach((s: any) => {
-        if (s.description === 'CURRENT' || s.type_id === 1525) {
+    // Scores array'ini kontrol et
+    if (match.scores && Array.isArray(match.scores)) {
+      match.scores.forEach((s: any) => {
+        if (s.description === 'CURRENT' || s.type_id === 1525 || s.description === '2ND_HALF') {
           if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
           if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
         }
       });
+    }
+    
+    // Eğer scores yoksa, farklı bir yapı dene
+    if (homeScore === 0 && awayScore === 0) {
+      // Alternatif score yapısı
+      homeScore = match.scores?.home || match.home_score || 0;
+      awayScore = match.scores?.away || match.away_score || 0;
+    }
 
-      const teamScore = isHome ? homeScore : awayScore;
-      const opponentScore = isHome ? awayScore : homeScore;
-      const totalGoals = homeScore + awayScore;
+    const teamScore = isHome ? homeScore : awayScore;
+    const opponentScore = isHome ? awayScore : homeScore;
+    const totalGoals = homeScore + awayScore;
 
+    // Sadece geçerli skorları say
+    if (totalGoals > 0 || (homeScore === 0 && awayScore === 0)) {
+      validMatches++;
       totalScored += teamScore;
       totalConceded += opponentScore;
 
@@ -266,18 +285,19 @@ export default function StatsPage() {
       if (homeScore > 0 && awayScore > 0) bttsCount++;
       if (opponentScore === 0) cleanSheets++;
       if (teamScore === 0) failedToScore++;
-    });
+    }
+  });
 
-    const total = recentMatches.length;
-    return {
-      over25: Math.round((over25Count / total) * 100),
-      btts: Math.round((bttsCount / total) * 100),
-      cleanSheets: Math.round((cleanSheets / total) * 100),
-      failedToScore: Math.round((failedToScore / total) * 100),
-      avgScored: Number((totalScored / total).toFixed(1)),
-      avgConceded: Number((totalConceded / total).toFixed(1))
-    };
+  const total = validMatches > 0 ? validMatches : 1;
+  return {
+    over25: Math.round((over25Count / total) * 100),
+    btts: Math.round((bttsCount / total) * 100),
+    cleanSheets: Math.round((cleanSheets / total) * 100),
+    failedToScore: Math.round((failedToScore / total) * 100),
+    avgScored: Number((totalScored / total).toFixed(1)),
+    avgConceded: Number((totalConceded / total).toFixed(1))
   };
+};
 
   const matchesByLeague = matches.reduce((acc: Record<string, MatchData[]>, match) => {
     const league = match.fixture.league || 'Other';
