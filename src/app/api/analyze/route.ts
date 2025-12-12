@@ -904,14 +904,15 @@ async function callClaude(prompt: string): Promise<string | null> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-20241022',  // ← MODEL DEĞİŞTİ
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!response.ok) {
-      console.log(`❌ Claude error: ${response.status}`);
+      const errorBody = await response.text();  // ← HATA DETAYI
+      console.log(`❌ Claude error: ${response.status} - ${errorBody}`);  // ← DETAY LOG
       return null;
     }
 
