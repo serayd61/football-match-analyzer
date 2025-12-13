@@ -1,5 +1,5 @@
 // src/lib/heurist/sportmonks-data.ts
-// Sportmonks Complete Data Layer - FIXED v2
+// Sportmonks Complete Data Layer - FIXED v3
 
 const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
@@ -83,7 +83,7 @@ async function fetchSportmonks(endpoint: string): Promise<any> {
     });
     
     if (!response.ok) {
-      console.error(`❌ Sportmonks API error: ${response.status} for ${endpoint.substring(0, 50)}`);
+      console.error(`❌ Sportmonks API error: ${response.status}`);
       return null;
     }
     
@@ -94,7 +94,7 @@ async function fetchSportmonks(endpoint: string): Promise<any> {
   }
 }
 
-// Skorları parse et
+// Skorları parse et - type_id 1525 = CURRENT/FULLTIME
 function parseScores(scores: any[]): { home: number; away: number } {
   let homeScore = 0;
   let awayScore = 0;
@@ -104,12 +104,7 @@ function parseScores(scores: any[]): { home: number; away: number } {
   }
   
   for (const score of scores) {
-    // type_id 1525 = CURRENT/FULLTIME
-    const isFulltime = score.type_id === 1525 || 
-                       score.description === 'CURRENT' || 
-                       score.description === 'FULLTIME';
-    
-    if (isFulltime) {
+    if (score.type_id === 1525 || score.description === 'CURRENT') {
       if (score.score?.participant === 'home') {
         homeScore = score.score.goals || 0;
       } else if (score.score?.participant === 'away') {
@@ -133,15 +128,18 @@ function calculateForm(matches: any[], teamId: number): { form: string; points: 
   let points = 0;
   const details: MatchDetail[] = [];
   
-  // Bitmiş maçları filtrele ve tarihe göre sırala
+  // Bitmiş maçları filtrele (state_id = 5) ve tarihe göre sırala
   const finishedMatches = matches
-    .filter((m: any) => m.state_id === 5 || m.state_id === 9 || m.result_info)
+    .filter((m: any) => m.state_id === 5)
     .sort((a: any, b: any) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime())
     .slice(0, 5);
   
-  const matchesToUse = finishedMatches.length > 0 ? finishedMatches : matches.slice(0, 5);
+  if (finishedMatches.length === 0) {
+    console.log(`⚠️ No finished matches found`);
+    return { form: 'NNNNN', points: 0, details: [] };
+  }
   
-  for (const match of matchesToUse) {
+  for (const match of finishedMatches) {
     const scores = match.scores || [];
     const participants = match.participants || [];
     
@@ -227,25 +225,47 @@ function calculateGoalStats(details: MatchDetail[]): {
 
 // ==================== MAIN DATA FETCHERS ====================
 
-// Takımın son maçlarını çek - DOĞRU ENDPOINT
+// Takımın son maçlarını çek - /schedules/teams endpoint'i
 export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, count: number = 10): Promise<any[]> {
-  // DOĞRU ENDPOINT: /teams/{teamId}/fixtures
-  const endpoint = `/teams/${teamId}/fixtures?include=scores;participants;state&per_page=${count}`;
+  const endpoint = `/schedules/teams/${teamId}`;
   
-  console.log(`📡 Fetching recent matches for team ${teamId}...`);
+  console.log(`📡 Fetching schedule for team ${teamId}...`);
   const data = await fetchSportmonks(endpoint);
   
-  const matches = data?.data || [];
-  console.log(`   📊 Received ${matches.length} matches for team ${teamId}`);
-  
-  if (matches.length > 0) {
-    const firstMatch = matches[0];
-    const homeP = firstMatch.participants?.find((p: any) => p.meta?.location === 'home');
-    const awayP = firstMatch.participants?.find((p: any) => p.meta?.location === 'away');
-    console.log(`   📊 Sample: ${homeP?.name || '?'} vs ${awayP?.name || '?'} (${firstMatch.starting_at})`);
+  if (!data?.data || data.data.length === 0) {
+    console.log(`⚠️ No schedule data for team ${teamId}`);
+    return [];
   }
   
-  return matches;
+  // Schedule yapısı: data[0].rounds[].fixtures[]
+  // Tüm fixture'ları topla
+  const allFixtures: any[] = [];
+  
+  for (const stage of data.data) {
+    if (stage.rounds && Array.isArray(stage.rounds)) {
+      for (const round of stage.rounds) {
+        if (round.fixtures && Array.isArray(round.fixtures)) {
+          allFixtures.push(...round.fixtures);
+        }
+      }
+    }
+  }
+  
+  console.log(`   📊 Found ${allFixtures.length} total fixtures for team ${teamId}`);
+  
+  // Bitmiş maçları filtrele ve tarihe göre sırala
+  const finishedFixtures = allFixtures
+    .filter((f: any) => f.state_id === 5)
+    .sort((a: any, b: any) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime());
+  
+  console.log(`   📊 Found ${finishedFixtures.length} finished fixtures`);
+  
+  if (finishedFixtures.length > 0) {
+    const first = finishedFixtures[0];
+    console.log(`   📊 Most recent: ${first.name} (${first.starting_at})`);
+  }
+  
+  return finishedFixtures.slice(0, count);
 }
 
 // H2H verilerini çek
