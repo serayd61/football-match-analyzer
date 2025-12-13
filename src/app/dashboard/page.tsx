@@ -1,6 +1,5 @@
 'use client';
-import AgentReports from '@/components/AgentReports';
-import AgentLoadingProgress from '@/components/AgentLoadingProgress';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +7,9 @@ import DailyCoupons from '@/components/DailyCoupons';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import AgentReports from '@/components/AgentReports';
+import AgentLoadingProgress from '@/components/AgentLoadingProgress';
+
 interface Match {
   id: number;
   homeTeam: string;
@@ -68,13 +70,10 @@ export default function DashboardPage() {
   // Labels
   const labels = {
     tr: {
-      // Navigation
       matches: 'Maçlar',
       coupons: 'Kuponlar',
       leaderboard: 'Liderlik',
       createCoupon: 'Kupon Oluştur',
-      
-      // Dashboard
       todayMatches: 'Günün Maçları',
       search: 'Takım ara...',
       allLeagues: 'Tüm Ligler',
@@ -118,8 +117,6 @@ export default function DashboardPage() {
       overallAnalysis: 'Genel Analiz',
       addToCoupon: 'Kupona Ekle',
       added: 'Eklendi',
-      
-      // Quick Stats
       yourPoints: 'Puanınız',
       yourRank: 'Sıralamanız',
       activeCoupons: 'Aktif Kupon',
@@ -130,13 +127,10 @@ export default function DashboardPage() {
       startPredicting: 'Tahmin yapmaya başla!',
     },
     en: {
-      // Navigation
       matches: 'Matches',
       coupons: 'Coupons',
       leaderboard: 'Leaderboard',
       createCoupon: 'Create Coupon',
-      
-      // Dashboard
       todayMatches: 'Today\'s Matches',
       search: 'Search team...',
       allLeagues: 'All Leagues',
@@ -180,8 +174,6 @@ export default function DashboardPage() {
       overallAnalysis: 'Overall Analysis',
       addToCoupon: 'Add to Coupon',
       added: 'Added',
-      
-      // Quick Stats
       yourPoints: 'Your Points',
       yourRank: 'Your Rank',
       activeCoupons: 'Active Coupons',
@@ -192,13 +184,10 @@ export default function DashboardPage() {
       startPredicting: 'Start predicting!',
     },
     de: {
-      // Navigation
       matches: 'Spiele',
       coupons: 'Wettscheine',
       leaderboard: 'Rangliste',
       createCoupon: 'Erstellen',
-      
-      // Dashboard
       todayMatches: 'Heutige Spiele',
       search: 'Team suchen...',
       allLeagues: 'Alle Ligen',
@@ -242,8 +231,6 @@ export default function DashboardPage() {
       overallAnalysis: 'Gesamtanalyse',
       addToCoupon: 'Zum Wettschein',
       added: 'Hinzugefügt',
-      
-      // Quick Stats
       yourPoints: 'Ihre Punkte',
       yourRank: 'Ihr Rang',
       activeCoupons: 'Aktive Scheine',
@@ -257,14 +244,12 @@ export default function DashboardPage() {
 
   const l = labels[lang as keyof typeof labels] || labels.en;
 
-  // Auth check
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
 
-  // Fetch user profile
   const fetchUserProfile = async () => {
     try {
       const res = await fetch('/api/user/profile');
@@ -275,7 +260,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch matches
   const fetchMatches = useCallback(async () => {
     setLoading(true);
     try {
@@ -296,7 +280,6 @@ export default function DashboardPage() {
     }
   }, [session, fetchMatches]);
 
-  // Filter matches
   useEffect(() => {
     let filtered = matches;
     if (searchQuery) {
@@ -312,10 +295,8 @@ export default function DashboardPage() {
     setFilteredMatches(filtered);
   }, [matches, searchQuery, selectedLeague]);
 
-  // Get unique leagues
   const leagues = Array.from(new Set(matches.map((m) => m.league)));
 
-  // Standard Analysis
   const analyzeMatch = async (match: Match) => {
     if (!userProfile?.canAnalyze) {
       setAnalysisError(l.limitReached);
@@ -364,7 +345,6 @@ export default function DashboardPage() {
     setAnalyzing(false);
   };
 
-  // Agent Analysis (Pro only)
   const runAgentAnalysis = async () => {
     if (!selectedMatch || !userProfile?.canUseAgents) return;
     
@@ -397,7 +377,6 @@ export default function DashboardPage() {
     setAgentLoading(false);
   };
 
-  // Add to coupon
   const addToCoupon = (betType: string, selection: string, odds: number) => {
     if (!selectedMatch) return;
     
@@ -413,8 +392,6 @@ export default function DashboardPage() {
     };
     
     const existingPicks = JSON.parse(sessionStorage.getItem('pendingCouponPicks') || '[]');
-    
-    // Check if already added
     const exists = existingPicks.some(
       (p: any) => p.fixtureId === pick.fixtureId && p.betType === pick.betType
     );
@@ -427,7 +404,6 @@ export default function DashboardPage() {
     router.push('/coupons/create');
   };
 
-  // Loading state
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -441,7 +417,6 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  // Trial Expired Block
   if (userProfile?.trialExpired && !userProfile?.isPro) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
@@ -459,15 +434,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Get consensus data for agent analysis
-  const getConsensusData = () => {
-    if (!agentAnalysis?.reports) return null;
-    return agentAnalysis.reports.weightedConsensus || agentAnalysis.reports.consensus || null;
-  };
-
-  const consensusData = getConsensusData();
-
-  // Helper functions
   const getVoteStatus = (votes: number, total: number) => {
     if (votes === total) return { text: l.unanimous, color: 'text-green-400', bg: 'bg-green-500/20' };
     if (votes >= total * 0.75) return { text: l.majority, color: 'text-blue-400', bg: 'bg-blue-500/20' };
@@ -493,11 +459,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* ============ HEADER ============ */}
+      {/* HEADER */}
       <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
                 <span className="text-xl">⚽</span>
@@ -514,62 +479,32 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1">
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                  activeNav === 'matches'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`}
-                onClick={() => setActiveNav('matches')}
-              >
-                <span>📅</span>
-                {l.matches}
+              <Link href="/dashboard" className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeNav === 'matches' ? 'bg-green-500/20 text-green-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} onClick={() => setActiveNav('matches')}>
+                <span>📅</span> {l.matches}
               </Link>
-              <Link
-                href="/coupons"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-              >
-                <span>🎫</span>
-                {l.coupons}
+              <Link href="/coupons" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                <span>🎫</span> {l.coupons}
               </Link>
-              <Link
-                href="/leaderboard"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-              >
-                <span>🏆</span>
-                {l.leaderboard}
+              <Link href="/leaderboard" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                <span>🏆</span> {l.leaderboard}
               </Link>
-              <Link
-                href="/coupons/create"
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all ml-2"
-              >
-                <span>➕</span>
-                {l.createCoupon}
+              <Link href="/coupons/create" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all ml-2">
+                <span>➕</span> {l.createCoupon}
               </Link>
             </nav>
 
-            {/* Right Side */}
             <div className="flex items-center gap-3">
               {!userProfile?.isPro && (
-                <Link
-                  href="/pricing"
-                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold rounded-xl hover:from-yellow-400 hover:to-orange-400"
-                >
+                <Link href="/pricing" className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold rounded-xl hover:from-yellow-400 hover:to-orange-400">
                   ⭐ {l.upgradeToPro}
                 </Link>
               )}
               
               <LanguageSelector />
               
-              {/* Profile */}
               <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50 transition-all"
-                >
+                <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl border border-gray-700/50 transition-all">
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                     {session.user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
@@ -608,10 +543,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="border-t border-gray-700 py-2">
-                      <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-gray-700/50 transition-colors"
-                      >
+                      <button onClick={() => signOut({ callbackUrl: '/login' })} className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-gray-700/50 transition-colors">
                         <span>🚪</span> {l.logout}
                       </button>
                     </div>
@@ -619,11 +551,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden p-2 text-gray-400 hover:text-white"
-              >
+              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 text-gray-400 hover:text-white">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -632,36 +560,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {showMobileMenu && (
           <div className="md:hidden border-t border-gray-800 bg-gray-900/95 backdrop-blur-xl">
             <nav className="flex flex-col p-4 gap-2">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/20 text-green-400 font-medium"
-                onClick={() => setShowMobileMenu(false)}
-              >
+              <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/20 text-green-400 font-medium" onClick={() => setShowMobileMenu(false)}>
                 <span>📅</span> {l.matches}
               </Link>
-              <Link
-                href="/coupons"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800"
-                onClick={() => setShowMobileMenu(false)}
-              >
+              <Link href="/coupons" className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800" onClick={() => setShowMobileMenu(false)}>
                 <span>🎫</span> {l.coupons}
               </Link>
-              <Link
-                href="/leaderboard"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800"
-                onClick={() => setShowMobileMenu(false)}
-              >
+              <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-800" onClick={() => setShowMobileMenu(false)}>
                 <span>🏆</span> {l.leaderboard}
               </Link>
-              <Link
-                href="/coupons/create"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium"
-                onClick={() => setShowMobileMenu(false)}
-              >
+              <Link href="/coupons/create" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium" onClick={() => setShowMobileMenu(false)}>
                 <span>➕</span> {l.createCoupon}
               </Link>
             </nav>
@@ -669,9 +580,8 @@ export default function DashboardPage() {
         )}
       </header>
 
-      {/* ============ MAIN CONTENT ============ */}
+      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Trial Banner */}
         {userProfile?.isTrial && (
           <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-orange-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -687,9 +597,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Quick Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Points */}
           <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
@@ -702,7 +610,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Rank */}
           <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
@@ -715,7 +622,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Monthly Prize */}
           <Link href="/leaderboard" className="col-span-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-2xl p-4 hover:from-purple-600/30 hover:to-pink-600/30 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -730,37 +636,20 @@ export default function DashboardPage() {
               <span className="text-gray-400">→</span>
             </div>
           </Link>
-       </div>
+        </div>
 
-        {/* Daily Coupons */}
         <div className="mb-6">
           <DailyCoupons />
         </div>
 
-        {/* Filters */}
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl p-4 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
-            />
+            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors" />
             <div className="relative flex-1 min-w-[200px]">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
-              <input
-                type="text"
-                placeholder={l.search}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-700/50 text-white placeholder-gray-500 pl-12 pr-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
-              />
+              <input type="text" placeholder={l.search} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-gray-700/50 text-white placeholder-gray-500 pl-12 pr-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors" />
             </div>
-            <select
-              value={selectedLeague}
-              onChange={(e) => setSelectedLeague(e.target.value)}
-              className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors"
-            >
+            <select value={selectedLeague} onChange={(e) => setSelectedLeague(e.target.value)} className="bg-gray-700/50 text-white px-4 py-2.5 rounded-xl outline-none border border-gray-600/50 focus:border-green-500/50 transition-colors">
               <option value="all">{l.allLeagues}</option>
               {leagues.map((league) => (
                 <option key={league} value={league}>{league}</option>
@@ -769,9 +658,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ============ MATCHES LIST ============ */}
+          {/* MATCHES LIST */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-gray-700/50 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -792,13 +680,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 filteredMatches.map((match) => (
-                  <div
-                    key={match.id}
-                    onClick={() => setSelectedMatch(match)}
-                    className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${
-                      selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''
-                    }`}
-                  >
+                  <div key={match.id} onClick={() => setSelectedMatch(match)} className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-semibold text-white text-lg">{match.homeTeam} vs {match.awayTeam}</div>
@@ -809,22 +691,10 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }}
-                        disabled={analyzing || !userProfile?.canAnalyze}
-                        className={`px-4 py-2.5 rounded-xl font-medium transition-all ${
-                          userProfile?.canAnalyze
-                            ? 'bg-green-600 hover:bg-green-500 text-white'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
+                      <button onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }} disabled={analyzing || !userProfile?.canAnalyze} className={`px-4 py-2.5 rounded-xl font-medium transition-all ${userProfile?.canAnalyze ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                         {analyzing && selectedMatch?.id === match.id ? (
-                          <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          </span>
-                        ) : (
-                          '🤖'
-                        )}
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : '🤖'}
                       </button>
                     </div>
                   </div>
@@ -833,106 +703,65 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ============ ANALYSIS PANEL ============ */}
+          {/* ANALYSIS PANEL */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
             {selectedMatch ? (
               <>
-                {/* Match Header */}
                 <div className="p-5 border-b border-gray-700/50 bg-gradient-to-r from-green-500/10 to-blue-500/10">
                   <h2 className="text-xl font-bold text-white">{selectedMatch.homeTeam} vs {selectedMatch.awayTeam}</h2>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-sm text-gray-400">{selectedMatch.league}</span>
                     <span className="text-xs text-gray-500">
-                      {new Date(selectedMatch.date).toLocaleString(lang, { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                      {new Date(selectedMatch.date).toLocaleString(lang, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="p-4 border-b border-gray-700/50">
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => analyzeMatch(selectedMatch)}
-                      disabled={analyzing || !userProfile?.canAnalyze}
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                        userProfile?.canAnalyze 
-                          ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' 
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
+                    <button onClick={() => analyzeMatch(selectedMatch)} disabled={analyzing || !userProfile?.canAnalyze} className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                       🤖 {analyzing ? l.analyzing : l.analyze}
                     </button>
-                    <button
-                      onClick={runAgentAnalysis}
-                      disabled={agentLoading || !userProfile?.canUseAgents}
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                        userProfile?.canUseAgents 
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' 
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
+                    <button onClick={runAgentAnalysis} disabled={agentLoading || !userProfile?.canUseAgents} className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                       🧠 {agentLoading ? '...' : l.aiAgents}
-                      {!userProfile?.canUseAgents && (
-                        <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>
-                      )}
+                      {!userProfile?.canUseAgents && <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>}
                     </button>
                   </div>
                 </div>
 
-                {/* Analysis Content */}
                 <div className="p-4 max-h-[500px] overflow-y-auto">
                   {analysisError && (
                     <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
                       <p className="text-red-400 font-medium">{analysisError}</p>
-                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm mt-2 inline-block">
-                        {l.goToPricing} →
-                      </Link>
+                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm mt-2 inline-block">{l.goToPricing} →</Link>
                     </div>
                   )}
 
-           {(analyzing || agentLoading) ? (
-  agentLoading ? (
-    <AgentLoadingProgress isLoading={true} />
-  ) : (
-    <div className="text-center py-16">
-      <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-gray-400 text-lg">{l.analyzing}</p>
-      <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
-    </div>
-  ) : analysis || agentAnalysis ? (
+                  {(analyzing || agentLoading) ? (
+                    agentLoading ? (
+                      <AgentLoadingProgress isLoading={true} />
+                    ) : (
+                      <div className="text-center py-16">
+                        <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-400 text-lg">{l.analyzing}</p>
+                        <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
+                      </div>
+                    )
+                  ) : (analysis || agentAnalysis) ? (
                     <div className="space-y-4">
-                      {/* Mode Tabs */}
                       {agentAnalysis && (
                         <div className="flex gap-2 p-1 bg-gray-700/30 rounded-xl">
-                          <button
-                            onClick={() => setAgentMode(false)}
-                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              !agentMode ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
-                            }`}
-                          >
+                          <button onClick={() => setAgentMode(false)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${!agentMode ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
                             {l.standardAnalysis}
                           </button>
-                          <button
-                            onClick={() => setAgentMode(true)}
-                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              agentMode ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
-                            }`}
-                          >
+                          <button onClick={() => setAgentMode(true)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${agentMode ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
                             {l.agentAnalysis}
                           </button>
                         </div>
                       )}
 
-                      {/* Standard Analysis */}
                       {!agentMode && analysis && (
                         <div className="space-y-4">
-                          {/* AI Model Status */}
                           <div className="grid grid-cols-4 gap-2">
                             {[
                               { key: 'claude', label: 'Claude', icon: '🟣' },
@@ -940,29 +769,19 @@ export default function DashboardPage() {
                               { key: 'gemini', label: 'Gemini', icon: '🔵' },
                               { key: 'perplexity', label: 'Perplexity', icon: '🟠' },
                             ].map((model) => (
-                              <div key={model.key} className={`p-2 rounded-xl text-center transition-all ${
-                                analysis.aiStatus?.[model.key] 
-                                  ? 'bg-green-500/20 border border-green-500/30' 
-                                  : 'bg-red-500/20 border border-red-500/30'
-                              }`}>
+                              <div key={model.key} className={`p-2 rounded-xl text-center transition-all ${analysis.aiStatus?.[model.key] ? 'bg-green-500/20 border border-green-500/30' : 'bg-red-500/20 border border-red-500/30'}`}>
                                 <div className="text-lg">{model.icon}</div>
-                                <div className={`text-xs font-medium ${
-                                  analysis.aiStatus?.[model.key] ? 'text-green-400' : 'text-red-400'
-                                }`}>
+                                <div className={`text-xs font-medium ${analysis.aiStatus?.[model.key] ? 'text-green-400' : 'text-red-400'}`}>
                                   {model.label} {analysis.aiStatus?.[model.key] ? '✓' : '✗'}
                                 </div>
                               </div>
                             ))}
                           </div>
 
-                          {/* Consensus Header */}
                           <div className="text-center py-2 bg-green-500/10 border border-green-500/30 rounded-xl">
-                            <div className="text-sm text-green-400 font-medium">
-                              🤖 {l.aiConsensus}: 4 AI Models Voting
-                            </div>
+                            <div className="text-sm text-green-400 font-medium">🤖 {l.aiConsensus}: 4 AI Models Voting</div>
                           </div>
 
-                          {/* Predictions Grid */}
                           <div className="grid grid-cols-2 gap-3">
                             {analysis.analysis?.matchResult && (
                               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 hover:bg-blue-500/15 transition-all">
@@ -970,16 +789,11 @@ export default function DashboardPage() {
                                 <div className="text-3xl font-bold text-blue-400">{analysis.analysis.matchResult.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.matchResult.confidence}%</div>
                                 {analysis.analysis.matchResult.votes && (
-                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
-                                    getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).bg
-                                  } ${getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).color}`}>
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).bg} ${getVoteStatus(analysis.analysis.matchResult.votes, analysis.analysis.matchResult.totalVotes || 4).color}`}>
                                     {analysis.analysis.matchResult.votes}/{analysis.analysis.matchResult.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
-                                <button
-                                  onClick={() => addToCoupon('MATCH_RESULT', analysis.analysis.matchResult.prediction, 1.85)}
-                                  className="mt-3 w-full py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 rounded-lg text-xs font-medium transition-all"
-                                >
+                                <button onClick={() => addToCoupon('MATCH_RESULT', analysis.analysis.matchResult.prediction, 1.85)} className="mt-3 w-full py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 rounded-lg text-xs font-medium transition-all">
                                   ➕ {l.addToCoupon}
                                 </button>
                               </div>
@@ -991,16 +805,11 @@ export default function DashboardPage() {
                                 <div className="text-3xl font-bold text-green-400">{analysis.analysis.overUnder25.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.overUnder25.confidence}%</div>
                                 {analysis.analysis.overUnder25.votes && (
-                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
-                                    getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).bg
-                                  } ${getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).color}`}>
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).bg} ${getVoteStatus(analysis.analysis.overUnder25.votes, analysis.analysis.overUnder25.totalVotes || 4).color}`}>
                                     {analysis.analysis.overUnder25.votes}/{analysis.analysis.overUnder25.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
-                                <button
-                                  onClick={() => addToCoupon('OVER_UNDER_25', analysis.analysis.overUnder25.prediction, 1.90)}
-                                  className="mt-3 w-full py-2 bg-green-600/30 hover:bg-green-600/50 text-green-400 rounded-lg text-xs font-medium transition-all"
-                                >
+                                <button onClick={() => addToCoupon('OVER_UNDER_25', analysis.analysis.overUnder25.prediction, 1.90)} className="mt-3 w-full py-2 bg-green-600/30 hover:bg-green-600/50 text-green-400 rounded-lg text-xs font-medium transition-all">
                                   ➕ {l.addToCoupon}
                                 </button>
                               </div>
@@ -1012,16 +821,11 @@ export default function DashboardPage() {
                                 <div className="text-3xl font-bold text-orange-400">{analysis.analysis.btts.prediction}</div>
                                 <div className="text-sm text-gray-300">{analysis.analysis.btts.confidence}%</div>
                                 {analysis.analysis.btts.votes && (
-                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${
-                                    getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).bg
-                                  } ${getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).color}`}>
+                                  <div className={`text-xs mt-2 px-2 py-1 rounded-lg inline-block ${getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).bg} ${getVoteStatus(analysis.analysis.btts.votes, analysis.analysis.btts.totalVotes || 4).color}`}>
                                     {analysis.analysis.btts.votes}/{analysis.analysis.btts.totalVotes || 4} {l.modelVotes}
                                   </div>
                                 )}
-                                <button
-                                  onClick={() => addToCoupon('BTTS', analysis.analysis.btts.prediction, 1.80)}
-                                  className="mt-3 w-full py-2 bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 rounded-lg text-xs font-medium transition-all"
-                                >
+                                <button onClick={() => addToCoupon('BTTS', analysis.analysis.btts.prediction, 1.80)} className="mt-3 w-full py-2 bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 rounded-lg text-xs font-medium transition-all">
                                   ➕ {l.addToCoupon}
                                 </button>
                               </div>
@@ -1037,73 +841,56 @@ export default function DashboardPage() {
                             )}
                           </div>
 
-                          {/* Best Bet */}
                           {analysis.analysis?.bestBets?.[0] && (
                             <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="text-sm text-yellow-400 mb-1 font-medium">💰 {l.bestBet}</div>
-                                  <div className="font-bold text-white text-xl">
-                                    {analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}
-                                  </div>
+                                  <div className="font-bold text-white text-xl">{analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}</div>
                                   <div className="text-sm text-gray-300 mt-1">{analysis.analysis.bestBets[0].confidence}% {l.confidence}</div>
                                 </div>
-                                <button
-                                  onClick={() => addToCoupon(
-                                    analysis.analysis.bestBets[0].type,
-                                    analysis.analysis.bestBets[0].selection,
-                                    1.85
-                                  )}
-                                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all"
-                                >
+                                <button onClick={() => addToCoupon(analysis.analysis.bestBets[0].type, analysis.analysis.bestBets[0].selection, 1.85)} className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all">
                                   ➕ {l.addToCoupon}
                                 </button>
                               </div>
                               {analysis.analysis.bestBets[0].reasoning && (
-                                <div className="text-sm text-gray-400 mt-3 p-3 bg-gray-800/50 rounded-lg">
-                                  {analysis.analysis.bestBets[0].reasoning}
-                                </div>
+                                <div className="text-sm text-gray-400 mt-3 p-3 bg-gray-800/50 rounded-lg">{analysis.analysis.bestBets[0].reasoning}</div>
                               )}
                             </div>
                           )}
 
-                          {/* Individual Predictions */}
                           {analysis.individualAnalyses && (
                             <div className="space-y-2">
                               <div className="text-sm text-gray-400 font-medium">🔍 Individual AI Predictions:</div>
                               <div className="grid grid-cols-2 gap-2">
-                              {Object.entries(analysis.individualAnalyses)
-                                .filter(([_, pred]) => pred !== null && pred !== undefined)
-                                .map(([model, rawPred]: [string, any]) => {
-                                  // Gemini array olarak geliyor, düzelt
-                                  const pred = Array.isArray(rawPred) ? rawPred[0] : rawPred;
-                                  return (
-                                    <div key={model} className="bg-gray-700/30 rounded-xl p-3 text-xs">
-                                      <div className="font-semibold text-white capitalize mb-2">
-                                        {getModelName(model)}
-                                      </div>
-                                      <div className="space-y-1 text-gray-400">
-                                        <div className="flex justify-between">
-                                          <span>Result:</span>
-                                          <span className="text-blue-400 font-medium">{pred?.matchResult?.prediction || '-'}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span>O/U:</span>
-                                          <span className="text-green-400 font-medium">{pred?.overUnder25?.prediction || '-'}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span>BTTS:</span>
-                                          <span className="text-orange-400 font-medium">{pred?.btts?.prediction || '-'}</span>
+                                {Object.entries(analysis.individualAnalyses)
+                                  .filter(([_, pred]) => pred !== null && pred !== undefined)
+                                  .map(([model, rawPred]: [string, any]) => {
+                                    const pred = Array.isArray(rawPred) ? rawPred[0] : rawPred;
+                                    return (
+                                      <div key={model} className="bg-gray-700/30 rounded-xl p-3 text-xs">
+                                        <div className="font-semibold text-white capitalize mb-2">{getModelName(model)}</div>
+                                        <div className="space-y-1 text-gray-400">
+                                          <div className="flex justify-between">
+                                            <span>Result:</span>
+                                            <span className="text-blue-400 font-medium">{pred?.matchResult?.prediction || '-'}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span>O/U:</span>
+                                            <span className="text-green-400 font-medium">{pred?.overUnder25?.prediction || '-'}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span>BTTS:</span>
+                                            <span className="text-orange-400 font-medium">{pred?.btts?.prediction || '-'}</span>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
                               </div>
                             </div>
                           )}
 
-                          {/* Overall Analysis */}
                           {analysis.analysis?.overallAnalyses?.[0] && (
                             <div className="bg-gray-700/30 rounded-xl p-4">
                               <div className="text-sm text-gray-400 mb-2 font-medium">📝 {l.overallAnalysis}</div>
@@ -1113,12 +900,40 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* ========== AGENT ANALYSIS - YENİ DETAYLI GÖRÜNÜM ========== */}
-                     {agentMode && agentAnalysis && (
-  <AgentReports 
-    reports={agentAnalysis.reports}
-    homeTeam={selectedMatch.homeTeam}
-    awayTeam={selectedMatch.awayTeam}
-    language={lang as 'tr' | 'en' | 'de'}
-  />
-)}
+                      {agentMode && agentAnalysis && (
+                        <AgentReports 
+                          reports={agentAnalysis.reports}
+                          homeTeam={selectedMatch.homeTeam}
+                          awayTeam={selectedMatch.awayTeam}
+                          language={lang as 'tr' | 'en' | 'de'}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 text-gray-400">
+                      <div className="text-6xl mb-4">🤖</div>
+                      <p className="text-lg">{l.selectMatch}</p>
+                      <p className="text-sm text-gray-500 mt-2">Click &quot;Analyze&quot; to get AI predictions</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-[600px] text-gray-400">
+                <div className="text-center">
+                  <div className="text-7xl mb-4">⚽</div>
+                  <p className="text-xl font-medium">{l.selectMatch}</p>
+                  <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {(showProfileMenu || showMobileMenu) && (
+        <div className="fixed inset-0 z-40" onClick={() => { setShowProfileMenu(false); setShowMobileMenu(false); }} />
+      )}
+    </div>
+  );
+}
