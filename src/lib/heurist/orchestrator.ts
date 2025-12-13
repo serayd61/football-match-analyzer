@@ -430,7 +430,7 @@ function buildReports(
   finalPrediction: OrchestratorResult['finalPrediction'],
   valueBets: string[],
   warnings: string[],
-  dataQuality: { score: number },
+  dataQuality: { score: number; hasOdds: boolean; hasOddsHistory: boolean; homeFormMatches: number; awayFormMatches: number; h2hMatches: number },
   sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert']
 ): OrchestratorResult['reports'] {
   return {
