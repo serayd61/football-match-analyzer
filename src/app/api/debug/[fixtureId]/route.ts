@@ -1,7 +1,5 @@
 // src/app/api/debug/[fixtureId]/route.ts
-import { fetchSportmonks } from '@/lib/heurist/sportmonks-data';
 
-// fetchSportmonks'u export etmemiz lazım, geçici olarak burada tanımlayalım
 const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
 
