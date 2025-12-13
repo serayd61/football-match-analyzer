@@ -1,5 +1,6 @@
 import { heurist, HeuristMessage } from '../client';
 import { MatchData } from '../types';
+import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, SharpMoneyResult, RealValueResult } from '../sportmonks-odds';
 
 // ==================== PROMPTS ====================
 
@@ -12,6 +13,8 @@ VALUE BET KURALLARI:
 - Implied probability vs gerçek olasılık farkı = VALUE
 - %5+ fark varsa VALUE VAR
 - %10+ fark varsa GÜÇLÜ VALUE
+- Oran DÜŞÜYORSA + Form value gösteriyorsa = GERÇEK VALUE (Sharp money onaylıyor)
+- Oran YÜKSELIYORSA + Form value gösteriyorsa = DİKKAT (Bahisçi bir şey biliyor)
 
 AGRESİF OL! Detaylı açıklama yap.
 
@@ -38,6 +41,8 @@ VALUE BET RULES:
 - Implied probability vs actual probability difference = VALUE
 - 5%+ difference = VALUE EXISTS
 - 10%+ difference = STRONG VALUE
+- Odds DROPPING + Form shows value = REAL VALUE (Sharp money confirms)
+- Odds RISING + Form shows value = CAUTION (Bookies know something)
 
 BE AGGRESSIVE! Give detailed explanations.
 
@@ -58,7 +63,18 @@ RETURN JSON:
 
   de: `Du bist ein AGGRESSIVER Quoten-Analyst. Analysiere Quoten für VALUE.
 
-NUR JSON ZURÜCKGEBEN mit detaillierten Begründungen.`,
+AUFGABE: Vergleiche Quoten mit Formdaten und erkenne VALUE BETS.
+
+VALUE BET REGELN:
+- Implied Probability vs tatsächliche Wahrscheinlichkeit = VALUE
+- 5%+ Differenz = VALUE VORHANDEN
+- 10%+ Differenz = STARKE VALUE
+- Quote FÄLLT + Form zeigt Value = ECHTE VALUE (Sharp Money bestätigt)
+- Quote STEIGT + Form zeigt Value = VORSICHT (Buchmacher wissen etwas)
+
+SEI AGGRESSIV! Gib detaillierte Erklärungen.
+
+NUR JSON ZURÜCKGEBEN.`,
 };
 
 // ==================== VALUE CALCULATION ====================
@@ -72,10 +88,14 @@ function calculateValue(impliedProb: number, actualProb: number): number {
   return Math.round(actualProb - impliedProb);
 }
 
-function getValueRating(maxValue: number): string {
-  if (maxValue >= 15) return 'High';
-  if (maxValue >= 8) return 'Medium';
-  if (maxValue >= 3) return 'Low';
+function getValueRating(maxValue: number, hasSharpConfirmation: boolean = false): string {
+  // Sharp money onayı varsa rating'i yükselt
+  const boost = hasSharpConfirmation ? 5 : 0;
+  const adjustedValue = maxValue + boost;
+  
+  if (adjustedValue >= 15) return 'High';
+  if (adjustedValue >= 8) return 'Medium';
+  if (adjustedValue >= 3) return 'Low';
   return 'None';
 }
 
@@ -94,7 +114,9 @@ function generateOddsReasoning(
   awayFormProb: number,
   overProb: number,
   bttsProb: number,
-  language: 'tr' | 'en' | 'de'
+  language: 'tr' | 'en' | 'de',
+  oddsHistory: MatchOddsHistory | null,
+  sharpMoney: SharpMoneyResult | null
 ): {
   matchWinnerReasoning: string;
   overUnderReasoning: string;
@@ -118,77 +140,134 @@ function generateOddsReasoning(
   const underValue = calculateValue(underImplied, 100 - overProb);
   const bttsValue = calculateValue(bttsYesImplied, bttsProb);
   
+  // Oran hareketlerini al
+  const homeMovement = oddsHistory?.homeWin.movement || 'stable';
+  const awayMovement = oddsHistory?.awayWin.movement || 'stable';
+  const overMovement = oddsHistory?.over25.movement || 'stable';
+  const bttsMovement = oddsHistory?.bttsYes.movement || 'stable';
+  
   const valueBets: string[] = [];
   let bestValue = 'none';
   let bestValueAmount = 0;
   
-  // Find best values
+  // Find best values with movement consideration
   const allValues = [
-    { name: 'home', value: homeValue, label: 'MS 1' },
-    { name: 'away', value: awayValue, label: 'MS 2' },
-    { name: 'draw', value: drawValue, label: 'MS X' },
-    { name: 'over', value: overValue, label: 'Over 2.5' },
-    { name: 'under', value: underValue, label: 'Under 2.5' },
-    { name: 'bttsYes', value: bttsValue, label: 'KG Var' },
-    { name: 'bttsNo', value: -bttsValue, label: 'KG Yok' },
+    { name: 'home', value: homeValue, label: 'MS 1', movement: homeMovement },
+    { name: 'away', value: awayValue, label: 'MS 2', movement: awayMovement },
+    { name: 'draw', value: drawValue, label: 'MS X', movement: oddsHistory?.draw.movement || 'stable' },
+    { name: 'over', value: overValue, label: 'Over 2.5', movement: overMovement },
+    { name: 'under', value: underValue, label: 'Under 2.5', movement: oddsHistory?.under25.movement || 'stable' },
+    { name: 'bttsYes', value: bttsValue, label: 'KG Var', movement: bttsMovement },
+    { name: 'bttsNo', value: -bttsValue, label: 'KG Yok', movement: oddsHistory?.bttsNo.movement || 'stable' },
   ];
   
-  allValues.sort((a, b) => b.value - a.value);
+  // Sort by value, but boost dropping odds
+  allValues.sort((a, b) => {
+    const aBoost = a.movement === 'dropping' ? 3 : a.movement === 'rising' ? -5 : 0;
+    const bBoost = b.movement === 'dropping' ? 3 : b.movement === 'rising' ? -5 : 0;
+    return (b.value + bBoost) - (a.value + aBoost);
+  });
   
   if (allValues[0].value > 0) {
     bestValue = allValues[0].name;
     bestValueAmount = allValues[0].value;
   }
   
+  // Value bets with movement indicators
   allValues.forEach(v => {
     if (v.value >= 5) {
-      valueBets.push(`${v.label} (+${v.value}% value)`);
+      const movementEmoji = v.movement === 'dropping' ? '🔥' : v.movement === 'rising' ? '⚠️' : '';
+      const realValue = isRealValue(v.value, v.movement);
+      if (realValue.isValue) {
+        valueBets.push(`${movementEmoji} ${v.label} (+${v.value}% value) ${realValue.emoji}`);
+      } else if (v.movement !== 'rising') {
+        valueBets.push(`${v.label} (+${v.value}% value)`);
+      }
     }
   });
   
+  // Sharp money uyarısı
+  const sharpWarning = sharpMoney?.confidence === 'high' ? sharpMoney.reasoning[language] : '';
+  
   if (language === 'tr') {
+    const homeMovementText = homeMovement === 'dropping' ? ' 🔥 Oran düşüyor!' : homeMovement === 'rising' ? ' ⚠️ Oran yükseliyor!' : '';
+    const overMovementText = overMovement === 'dropping' ? ' 🔥 Oran düşüyor!' : overMovement === 'rising' ? ' ⚠️ Oran yükseliyor!' : '';
+    const bttsMovementText = bttsMovement === 'dropping' ? ' 🔥 Oran düşüyor!' : bttsMovement === 'rising' ? ' ⚠️ Oran yükseliyor!' : '';
+    
     const matchWinnerReasoning = homeValue > awayValue
-      ? `💰 Ev oranı ${homeOdds} = %${homeImplied} implied. Form analizi %${homeFormProb} gösteriyor. VALUE: +${homeValue}% → MS 1 değerli!`
+      ? `💰 Ev oranı ${homeOdds} = %${homeImplied} implied. Form analizi %${homeFormProb} gösteriyor. VALUE: +${homeValue}%${homeMovementText} → MS 1 ${homeMovement === 'dropping' ? 'GERÇEK VALUE!' : homeMovement === 'rising' ? 'DİKKAT!' : 'değerli!'}`
       : awayValue > homeValue
-      ? `💰 Dep oranı ${awayOdds} = %${awayImplied} implied. Form %${awayFormProb}. VALUE: +${awayValue}% → MS 2 değerli!`
+      ? `💰 Dep oranı ${awayOdds} = %${awayImplied} implied. Form %${awayFormProb}. VALUE: +${awayValue}%${awayMovement === 'dropping' ? ' 🔥 Oran düşüyor!' : ''} → MS 2 değerli!`
       : `💰 Ev: ${homeOdds} (%${homeImplied}), Dep: ${awayOdds} (%${awayImplied}). Form dengeli. Value farkı düşük.`;
     
     const overUnderReasoning = overValue > 0
-      ? `💰 Over 2.5 oranı ${overOdds} = %${overImplied} implied. İstatistikler %${overProb} Over gösteriyor. VALUE: +${overValue}% → Over değerli!`
+      ? `💰 Over 2.5 oranı ${overOdds} = %${overImplied} implied. İstatistikler %${overProb} Over gösteriyor. VALUE: +${overValue}%${overMovementText} → Over ${overMovement === 'dropping' ? 'GERÇEK VALUE!' : 'değerli!'}`
       : underValue > 0
       ? `💰 Under 2.5 oranı ${underOdds} = %${underImplied} implied. İstatistikler %${100 - overProb} Under gösteriyor. VALUE: +${underValue}% → Under değerli!`
       : `💰 Over: ${overOdds} (%${overImplied}), Under: ${underOdds} (%${underImplied}). Piyasa doğru fiyatlamış, value yok.`;
     
     const bttsReasoning = bttsValue > 0
-      ? `💰 KG Var oranı ${bttsYesOdds} = %${bttsYesImplied} implied. İstatistik %${bttsProb}. VALUE: +${bttsValue}% → KG Var değerli!`
+      ? `💰 KG Var oranı ${bttsYesOdds} = %${bttsYesImplied} implied. İstatistik %${bttsProb}. VALUE: +${bttsValue}%${bttsMovementText} → KG Var ${bttsMovement === 'dropping' ? 'GERÇEK VALUE!' : 'değerli!'}`
       : `💰 KG Var: ${bttsYesOdds} (%${bttsYesImplied}). İstatistik %${bttsProb}. ${bttsValue < -5 ? 'KG Yok daha değerli!' : 'Dengeli piyasa.'}`;
     
-    const agentSummary = valueBets.length > 0
-      ? `💰 ODDS: ${valueBets.length} value bet tespit edildi! En iyi: ${allValues[0].label} (+${allValues[0].value}%). Piyasa ${allValues[0].value > 10 ? 'YANLIŞ fiyatlamış' : 'hafif fırsat sunuyor'}.`
+    const hasRealValue = valueBets.some(v => v.includes('🔥'));
+    const agentSummary = hasRealValue
+      ? `💰 ODDS: ${sharpWarning ? sharpWarning + ' ' : ''}${valueBets.length} GERÇEK value bet! Sharp money onaylıyor. En iyi: ${allValues[0].label} (+${allValues[0].value}%).`
+      : valueBets.length > 0
+      ? `💰 ODDS: ${valueBets.length} value bet tespit edildi. En iyi: ${allValues[0].label} (+${allValues[0].value}%). ${allValues[0].movement === 'rising' ? '⚠️ Oran yükseliyor, dikkat!' : ''}`
       : `💰 ODDS: Piyasa doğru fiyatlamış. Belirgin value yok ama ${allValues[0].label} en iyi seçenek.`;
     
     return { matchWinnerReasoning, overUnderReasoning, bttsReasoning, agentSummary, valueBets, bestValue, bestValueAmount };
   }
   
+  if (language === 'de') {
+    const homeMovementText = homeMovement === 'dropping' ? ' 🔥 Quote fällt!' : homeMovement === 'rising' ? ' ⚠️ Quote steigt!' : '';
+    
+    const matchWinnerReasoning = homeValue > awayValue
+      ? `💰 Heimquote ${homeOdds} = ${homeImplied}% implied. Formanalyse zeigt ${homeFormProb}%. VALUE: +${homeValue}%${homeMovementText}`
+      : `💰 Auswärtsquote ${awayOdds} = ${awayImplied}% implied. Form zeigt ${awayFormProb}%. VALUE: +${awayValue}%`;
+    
+    const overUnderReasoning = overValue > 0
+      ? `💰 Über 2.5 Quote ${overOdds} = ${overImplied}% implied. Stats zeigen ${overProb}% Über. VALUE: +${overValue}%`
+      : `💰 Unter 2.5 Quote ${underOdds} = ${underImplied}% implied. Markt korrekt bepreist.`;
+    
+    const bttsReasoning = bttsValue > 0
+      ? `💰 Beide Teams treffen Ja ${bttsYesOdds} = ${bttsYesImplied}% implied. Stats: ${bttsProb}%. VALUE: +${bttsValue}%`
+      : `💰 BTTS: ${bttsYesOdds} (${bttsYesImplied}%). Ausgewogener Markt.`;
+    
+    const agentSummary = valueBets.length > 0
+      ? `💰 ODDS: ${valueBets.length} Value Bets erkannt! Beste: ${allValues[0].label} (+${allValues[0].value}%).`
+      : `💰 ODDS: Markt korrekt bepreist. Keine klare Value.`;
+    
+    return { matchWinnerReasoning, overUnderReasoning, bttsReasoning, agentSummary, valueBets, bestValue, bestValueAmount };
+  }
+  
   // English (default)
+  const homeMovementText = homeMovement === 'dropping' ? ' 🔥 Odds dropping!' : homeMovement === 'rising' ? ' ⚠️ Odds rising!' : '';
+  const overMovementText = overMovement === 'dropping' ? ' 🔥 Odds dropping!' : overMovement === 'rising' ? ' ⚠️ Odds rising!' : '';
+  const bttsMovementText = bttsMovement === 'dropping' ? ' 🔥 Odds dropping!' : bttsMovement === 'rising' ? ' ⚠️ Odds rising!' : '';
+  
   const matchWinnerReasoning = homeValue > awayValue
-    ? `💰 Home odds ${homeOdds} = ${homeImplied}% implied. Form analysis shows ${homeFormProb}%. VALUE: +${homeValue}% → Home win is value!`
+    ? `💰 Home odds ${homeOdds} = ${homeImplied}% implied. Form analysis shows ${homeFormProb}%. VALUE: +${homeValue}%${homeMovementText} → Home win ${homeMovement === 'dropping' ? 'REAL VALUE!' : homeMovement === 'rising' ? 'CAUTION!' : 'is value!'}`
     : awayValue > homeValue
-    ? `💰 Away odds ${awayOdds} = ${awayImplied}% implied. Form shows ${awayFormProb}%. VALUE: +${awayValue}% → Away win is value!`
+    ? `💰 Away odds ${awayOdds} = ${awayImplied}% implied. Form shows ${awayFormProb}%. VALUE: +${awayValue}%${awayMovement === 'dropping' ? ' 🔥 Odds dropping!' : ''} → Away win is value!`
     : `💰 Home: ${homeOdds} (${homeImplied}%), Away: ${awayOdds} (${awayImplied}%). Forms balanced. Low value difference.`;
   
   const overUnderReasoning = overValue > 0
-    ? `💰 Over 2.5 odds ${overOdds} = ${overImplied}% implied. Stats show ${overProb}% Over. VALUE: +${overValue}% → Over is value!`
+    ? `💰 Over 2.5 odds ${overOdds} = ${overImplied}% implied. Stats show ${overProb}% Over. VALUE: +${overValue}%${overMovementText} → Over ${overMovement === 'dropping' ? 'REAL VALUE!' : 'is value!'}`
     : underValue > 0
     ? `💰 Under 2.5 odds ${underOdds} = ${underImplied}% implied. Stats show ${100 - overProb}% Under. VALUE: +${underValue}% → Under is value!`
     : `💰 Over: ${overOdds} (${overImplied}%), Under: ${underOdds} (${underImplied}%). Market priced correctly, no value.`;
   
   const bttsReasoning = bttsValue > 0
-    ? `💰 BTTS Yes odds ${bttsYesOdds} = ${bttsYesImplied}% implied. Stats show ${bttsProb}%. VALUE: +${bttsValue}% → BTTS Yes is value!`
+    ? `💰 BTTS Yes odds ${bttsYesOdds} = ${bttsYesImplied}% implied. Stats show ${bttsProb}%. VALUE: +${bttsValue}%${bttsMovementText} → BTTS Yes ${bttsMovement === 'dropping' ? 'REAL VALUE!' : 'is value!'}`
     : `💰 BTTS Yes: ${bttsYesOdds} (${bttsYesImplied}%). Stats: ${bttsProb}%. ${bttsValue < -5 ? 'BTTS No is better value!' : 'Balanced market.'}`;
   
-  const agentSummary = valueBets.length > 0
-    ? `💰 ODDS: ${valueBets.length} value bets detected! Best: ${allValues[0].label} (+${allValues[0].value}%). Market ${allValues[0].value > 10 ? 'MISPRICED' : 'offers slight edge'}.`
+  const hasRealValue = valueBets.some(v => v.includes('🔥'));
+  const agentSummary = hasRealValue
+    ? `💰 ODDS: ${sharpWarning ? sharpWarning + ' ' : ''}${valueBets.length} REAL value bets! Sharp money confirms. Best: ${allValues[0].label} (+${allValues[0].value}%).`
+    : valueBets.length > 0
+    ? `💰 ODDS: ${valueBets.length} value bets detected. Best: ${allValues[0].label} (+${allValues[0].value}%). ${allValues[0].movement === 'rising' ? '⚠️ Odds rising, be careful!' : ''}`
     : `💰 ODDS: Market priced correctly. No clear value but ${allValues[0].label} is best option.`;
   
   return { matchWinnerReasoning, overUnderReasoning, bttsReasoning, agentSummary, valueBets, bestValue, bestValueAmount };
@@ -198,6 +277,20 @@ function generateOddsReasoning(
 
 export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
   console.log('💰 Odds Agent starting AGGRESSIVE value analysis...');
+  
+  // 🆕 Historical odds çek
+  let oddsHistory: MatchOddsHistory | null = null;
+  let sharpMoney: SharpMoneyResult | null = null;
+  
+  if (matchData.fixtureId) {
+    oddsHistory = await fetchHistoricalOdds(matchData.fixtureId);
+    
+    if (oddsHistory) {
+      sharpMoney = analyzeSharpMoney(oddsHistory);
+      console.log(`📊 Sharp Money: ${sharpMoney.direction} (${sharpMoney.confidence})`);
+      console.log(`   ${sharpMoney.reasoning[language]}`);
+    }
+  }
   
   // Odds değerleri
   const homeOdds = matchData.odds?.matchWinner?.home || 2.0;
@@ -221,8 +314,8 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   const awayLosses = (awayForm.match(/L/g) || []).length;
   
   // Form-based probability calculation
-  let homeFormProb = 33 + (homePoints - awayPoints) * 2 + (homeWins - awayWins) * 5 + 10; // +10 for home advantage
-  let awayFormProb = 33 + (awayPoints - homePoints) * 2 + (awayWins - homeWins) * 5 - 5; // -5 for away disadvantage
+  let homeFormProb = 33 + (homePoints - awayPoints) * 2 + (homeWins - awayWins) * 5 + 10;
+  let awayFormProb = 33 + (awayPoints - homePoints) * 2 + (awayWins - homeWins) * 5 - 5;
   
   // Normalize
   homeFormProb = Math.min(75, Math.max(20, homeFormProb));
@@ -240,7 +333,7 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   const h2hBtts = parseFloat(matchData.h2h?.bttsPercentage || '50');
   const bttsProb = Math.round((homeBtts + awayBtts + h2hBtts) / 3);
   
-  // Generate reasoning
+  // Generate reasoning with odds history
   const reasoning = generateOddsReasoning(
     matchData,
     homeOdds, drawOdds, awayOdds,
@@ -248,7 +341,9 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
     bttsYesOdds, bttsNoOdds,
     homeFormProb, awayFormProb,
     overProb, bttsProb,
-    language
+    language,
+    oddsHistory,
+    sharpMoney
   );
   
   // Calculate implied probabilities
@@ -256,14 +351,60 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   const overImplied = calculateImpliedProbability(overOdds);
   const bttsYesImplied = calculateImpliedProbability(bttsYesOdds);
   
-  // Calculate confidence based on value
+  // Calculate values
   const homeValue = calculateValue(homeImplied, homeFormProb);
   const overValue = calculateValue(overImplied, overProb);
   const bttsValue = calculateValue(bttsYesImplied, bttsProb);
   
+  // 🆕 Real value checks
+  const realValueChecks = {
+    home: isRealValue(homeValue, oddsHistory?.homeWin.movement || 'stable'),
+    away: isRealValue(calculateValue(calculateImpliedProbability(awayOdds), awayFormProb), oddsHistory?.awayWin.movement || 'stable'),
+    over25: isRealValue(overValue, oddsHistory?.over25.movement || 'stable'),
+    under25: isRealValue(calculateValue(calculateImpliedProbability(underOdds), 100 - overProb), oddsHistory?.under25.movement || 'stable'),
+    btts: isRealValue(bttsValue, oddsHistory?.bttsYes.movement || 'stable'),
+  };
+  
+  // Sharp money onayı varsa confidence'ı artır
+  const hasSharpConfirmation = sharpMoney?.confidence === 'high' && 
+    ((sharpMoney.direction === 'home' && homeValue > 5) ||
+     (sharpMoney.direction === 'away' && calculateValue(calculateImpliedProbability(awayOdds), awayFormProb) > 5) ||
+     (sharpMoney.direction === 'over' && overValue > 5));
+  
   const maxValue = Math.max(Math.abs(homeValue), Math.abs(overValue), Math.abs(bttsValue));
   let confidence = 55 + Math.min(25, maxValue);
-  confidence = Math.min(82, Math.max(52, confidence));
+  
+  // 🆕 Sharp money bonus
+  if (hasSharpConfirmation) {
+    confidence += 8;
+    console.log('🔥 Sharp money confirms form analysis! Confidence boosted.');
+  }
+  
+  // Oran yükseliyorsa ve form value gösteriyorsa, confidence düşür
+  const hasRisingWarning = Object.values(realValueChecks).some(
+    check => check.confidence === 'low' && check.reason.en.includes('rising')
+  );
+  if (hasRisingWarning) {
+    confidence -= 10;
+    console.log('⚠️ Odds rising against form! Confidence reduced.');
+  }
+  
+  confidence = Math.min(88, Math.max(48, confidence));
+
+  // 🆕 Odds movement bilgisini prompt'a ekle
+  const oddsMovementInfo = oddsHistory ? `
+═══════════════════════════════════════════════════════════════
+📈 ODDS MOVEMENT (Sharp Money Detection)
+═══════════════════════════════════════════════════════════════
+Home: ${oddsHistory.homeWin.opening} → ${oddsHistory.homeWin.current} (${oddsHistory.homeWin.movement.toUpperCase()} ${oddsHistory.homeWin.changePercent}%)
+Draw: ${oddsHistory.draw.opening} → ${oddsHistory.draw.current} (${oddsHistory.draw.movement.toUpperCase()} ${oddsHistory.draw.changePercent}%)
+Away: ${oddsHistory.awayWin.opening} → ${oddsHistory.awayWin.current} (${oddsHistory.awayWin.movement.toUpperCase()} ${oddsHistory.awayWin.changePercent}%)
+Over 2.5: ${oddsHistory.over25.opening} → ${oddsHistory.over25.current} (${oddsHistory.over25.movement.toUpperCase()} ${oddsHistory.over25.changePercent}%)
+BTTS Yes: ${oddsHistory.bttsYes.opening} → ${oddsHistory.bttsYes.current} (${oddsHistory.bttsYes.movement.toUpperCase()} ${oddsHistory.bttsYes.changePercent}%)
+
+SHARP MONEY: ${sharpMoney?.direction.toUpperCase() || 'NONE'} (${sharpMoney?.confidence || 'low'})
+${sharpMoney?.reasoning[language] || ''}
+` : '';
 
   const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
 
@@ -282,23 +423,25 @@ OVER/UNDER 2.5:
 BTTS:
 - Yes: ${bttsYesOdds} → Implied: ${bttsYesImplied}%
 - No: ${bttsNoOdds} → Implied: ${calculateImpliedProbability(bttsNoOdds)}%
-
+${oddsMovementInfo}
 ═══════════════════════════════════════════════════════════════
 📊 FORM-BASED PROBABILITIES (Your edge)
 ═══════════════════════════════════════════════════════════════
-Home Win Probability: ${homeFormProb}% (vs ${homeImplied}% implied) → VALUE: ${homeValue > 0 ? '+' : ''}${homeValue}%
-Away Win Probability: ${awayFormProb}% (vs ${calculateImpliedProbability(awayOdds)}% implied) → VALUE: ${calculateValue(calculateImpliedProbability(awayOdds), awayFormProb) > 0 ? '+' : ''}${calculateValue(calculateImpliedProbability(awayOdds), awayFormProb)}%
-Over 2.5 Probability: ${overProb}% (vs ${overImplied}% implied) → VALUE: ${overValue > 0 ? '+' : ''}${overValue}%
-BTTS Yes Probability: ${bttsProb}% (vs ${bttsYesImplied}% implied) → VALUE: ${bttsValue > 0 ? '+' : ''}${bttsValue}%
+Home Win Probability: ${homeFormProb}% (vs ${homeImplied}% implied) → VALUE: ${homeValue > 0 ? '+' : ''}${homeValue}% ${realValueChecks.home.emoji}
+Away Win Probability: ${awayFormProb}% (vs ${calculateImpliedProbability(awayOdds)}% implied) → VALUE: ${calculateValue(calculateImpliedProbability(awayOdds), awayFormProb) > 0 ? '+' : ''}${calculateValue(calculateImpliedProbability(awayOdds), awayFormProb)}% ${realValueChecks.away.emoji}
+Over 2.5 Probability: ${overProb}% (vs ${overImplied}% implied) → VALUE: ${overValue > 0 ? '+' : ''}${overValue}% ${realValueChecks.over25.emoji}
+BTTS Yes Probability: ${bttsProb}% (vs ${bttsYesImplied}% implied) → VALUE: ${bttsValue > 0 ? '+' : ''}${bttsValue}% ${realValueChecks.btts.emoji}
 
 ═══════════════════════════════════════════════════════════════
 🎯 VALUE SUMMARY
 ═══════════════════════════════════════════════════════════════
 Best Value: ${reasoning.bestValue.toUpperCase()} (+${reasoning.bestValueAmount}%)
-Value Rating: ${getValueRating(reasoning.bestValueAmount)}
+Value Rating: ${getValueRating(reasoning.bestValueAmount, hasSharpConfirmation)}
+Sharp Money Confirmation: ${hasSharpConfirmation ? '✅ YES' : '❌ NO'}
 Detected Value Bets: ${reasoning.valueBets.length > 0 ? reasoning.valueBets.join(', ') : 'None significant'}
 
-BE AGGRESSIVE! Find value and explain why. Return JSON:`;
+REAL VALUE = Form Value + Sharp Money Confirmation
+BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
 
   const messages: HeuristMessage[] = [
     { role: 'system', content: PROMPTS[language] || PROMPTS.en },
@@ -306,7 +449,7 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
   ];
 
   try {
-    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 900 });
+    const response = await heurist.chat(messages, { temperature: 0.3, maxTokens: 1000 });
     
     if (response) {
       const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
@@ -318,7 +461,7 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
         if (!parsed.confidence || parsed.confidence < confidence - 10) {
           parsed.confidence = confidence;
         }
-        parsed.confidence = Math.min(82, Math.max(52, parsed.confidence));
+        parsed.confidence = Math.min(88, Math.max(48, parsed.confidence));
         
         // Add reasoning if missing
         if (!parsed.recommendationReasoning || parsed.recommendationReasoning.length < 20) {
@@ -337,7 +480,7 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
           parsed.valueBets = reasoning.valueBets;
         }
         
-        // Add calculated data
+        // 🆕 Add odds movement and real value data
         parsed._valueAnalysis = {
           homeImplied,
           awayImplied: calculateImpliedProbability(awayOdds),
@@ -354,8 +497,17 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
           bestValueAmount: reasoning.bestValueAmount,
         };
         
+        // 🆕 Add new fields
+        parsed.oddsMovement = oddsHistory;
+        parsed.sharpMoneyAnalysis = sharpMoney;
+        parsed.realValueChecks = realValueChecks;
+        parsed.hasSharpConfirmation = hasSharpConfirmation;
+        
         console.log(`✅ Odds Agent: ${parsed.matchWinnerValue} | ${parsed.recommendation} | BTTS: ${parsed.bttsValue} | Conf: ${parsed.confidence}%`);
         console.log(`   📝 Summary: ${parsed.agentSummary}`);
+        if (hasSharpConfirmation) {
+          console.log(`   🔥 SHARP MONEY CONFIRMED!`);
+        }
         return parsed;
       }
     }
@@ -377,7 +529,7 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
     matchWinnerReasoning: reasoning.matchWinnerReasoning,
     bttsValue: bestBtts,
     bttsReasoning: reasoning.bttsReasoning,
-    valueRating: getValueRating(reasoning.bestValueAmount),
+    valueRating: getValueRating(reasoning.bestValueAmount, hasSharpConfirmation),
     valueBets: reasoning.valueBets,
     agentSummary: reasoning.agentSummary,
     _valueAnalysis: {
@@ -395,6 +547,11 @@ BE AGGRESSIVE! Find value and explain why. Return JSON:`;
       bestValue: reasoning.bestValue,
       bestValueAmount: reasoning.bestValueAmount,
     },
+    // 🆕 New fields
+    oddsMovement: oddsHistory,
+    sharpMoneyAnalysis: sharpMoney,
+    realValueChecks,
+    hasSharpConfirmation,
   };
   
   console.log(`⚠️ Odds Agent Fallback: ${fallbackResult.matchWinnerValue} | ${fallbackResult.recommendation} | BTTS: ${fallbackResult.bttsValue}`);
