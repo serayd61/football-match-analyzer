@@ -7,6 +7,7 @@ import DailyCoupons from '@/components/DailyCoupons';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import AgentReports from '@/components/AgentReports';  // ← YENİ IMPORT
 
 interface Match {
   id: number;
@@ -900,7 +901,9 @@ export default function DashboardPage() {
                     <div className="text-center py-16">
                       <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                       <p className="text-gray-400 text-lg">{l.analyzing}</p>
-                      <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
+                      <p className="text-gray-500 text-sm mt-2">
+                        {agentLoading ? '5 AI agents working...' : '4 AI models working...'}
+                      </p>
                     </div>
                   ) : analysis || agentAnalysis ? (
                     <div className="space-y-4">
@@ -1110,119 +1113,14 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Agent Analysis */}
+                      {/* ========== AGENT ANALYSIS - YENİ DETAYLI GÖRÜNÜM ========== */}
                       {agentMode && agentAnalysis && (
-                        <div className="space-y-4">
-                          {/* Agent Status */}
-                          <div className="grid grid-cols-4 gap-2">
-                            {[
-                              { key: 'scout', label: 'Scout', weight: '', icon: '🔍' },
-                              { key: 'stats', label: 'Stats', weight: '40%', icon: '📊' },
-                              { key: 'odds', label: 'Odds', weight: '35%', icon: '💰' },
-                              { key: 'strategy', label: 'Strategy', weight: '25%', icon: '🧠' },
-                            ].map((agent) => (
-                              <div key={agent.key} className={`p-2 rounded-xl text-center ${
-                                agentAnalysis.reports?.[agent.key] 
-                                  ? 'bg-green-500/20 border border-green-500/30' 
-                                  : 'bg-red-500/20 border border-red-500/30'
-                              }`}>
-                                <div className="text-lg">{agent.icon}</div>
-                                <div className={`text-xs font-medium ${
-                                  agentAnalysis.reports?.[agent.key] ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                  {agent.label} {agentAnalysis.reports?.[agent.key] ? '✓' : '✗'}
-                                </div>
-                                {agent.weight && (
-                                  <div className="text-[10px] text-purple-400 font-bold">{agent.weight}</div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Weighted Consensus Header */}
-                          {consensusData && (
-                            <div className="text-center py-2 bg-purple-500/10 border border-purple-500/30 rounded-xl">
-                              <div className="text-sm text-purple-400 font-medium">
-                                ⚖️ {l.weightedConsensus}: Stats 40% + Odds 35% + Strategy 25%
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Consensus Results */}
-                          {consensusData && (
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                {(consensusData.matchResult || consensusData.matchWinner) && (
-                                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                                    <div className="text-xs text-gray-400 mb-1">{l.matchResult}</div>
-                                    <div className="text-3xl font-bold text-blue-400">
-                                      {consensusData.matchResult?.prediction || consensusData.matchWinner?.prediction}
-                                    </div>
-                                    <div className="text-sm text-gray-300">
-                                      {consensusData.matchResult?.confidence || consensusData.matchWinner?.confidence}%
-                                    </div>
-                                  </div>
-                                )}
-                                {(consensusData.overUnder || consensusData.overUnder25) && (
-                                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                                    <div className="text-xs text-gray-400 mb-1">{l.overUnder}</div>
-                                    <div className="text-3xl font-bold text-green-400">
-                                      {consensusData.overUnder?.prediction || consensusData.overUnder25?.prediction}
-                                    </div>
-                                    <div className="text-sm text-gray-300">
-                                      {consensusData.overUnder?.confidence || consensusData.overUnder25?.confidence}%
-                                    </div>
-                                  </div>
-                                )}
-                                {consensusData.btts && (
-                                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-                                    <div className="text-xs text-gray-400 mb-1">{l.btts}</div>
-                                    <div className="text-3xl font-bold text-orange-400">{consensusData.btts.prediction}</div>
-                                    <div className="text-sm text-gray-300">{consensusData.btts.confidence}%</div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Best Bet */}
-                              {consensusData.bestBet && (
-                                <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
-                                  <div className="text-sm text-yellow-400 mb-2 font-medium">💰 {l.bestBet}</div>
-                                  <div className="font-bold text-white text-xl">
-                                    {consensusData.bestBet.type}: {consensusData.bestBet.selection}
-                                  </div>
-                                  <div className="text-sm text-gray-300 mt-1">{consensusData.bestBet.confidence}% {l.confidence}</div>
-                                  {consensusData.bestBet.reasoning && (
-                                    <div className="text-sm text-gray-400 mt-3 p-3 bg-gray-800/50 rounded-lg">
-                                      {consensusData.bestBet.reasoning}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Agent Contributions */}
-                              <div className="bg-gray-700/30 rounded-xl p-4">
-                                <div className="text-sm text-gray-400 mb-3 font-medium">{l.agentContributions}:</div>
-                                <div className="grid grid-cols-3 gap-3 text-center">
-                                  <div className="p-3 bg-green-500/10 rounded-lg">
-                                    <span className="text-green-400 text-lg">📊</span>
-                                    <div className="text-white font-bold text-lg">40%</div>
-                                    <div className="text-xs text-gray-400">Stats</div>
-                                  </div>
-                                  <div className="p-3 bg-yellow-500/10 rounded-lg">
-                                    <span className="text-yellow-400 text-lg">💰</span>
-                                    <div className="text-white font-bold text-lg">35%</div>
-                                    <div className="text-xs text-gray-400">Odds</div>
-                                  </div>
-                                  <div className="p-3 bg-purple-500/10 rounded-lg">
-                                    <span className="text-purple-400 text-lg">🧠</span>
-                                    <div className="text-white font-bold text-lg">25%</div>
-                                    <div className="text-xs text-gray-400">Strategy</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <AgentReports 
+                          reports={agentAnalysis.reports}
+                          homeTeam={selectedMatch.homeTeam}
+                          awayTeam={selectedMatch.awayTeam}
+                          language={lang as 'tr' | 'en' | 'de'}
+                        />
                       )}
                     </div>
                   ) : (
