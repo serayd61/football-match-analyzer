@@ -8,8 +8,6 @@ import DailyCoupons from '@/components/DailyCoupons';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
-import AgentReports from '@/components/AgentReports';  // ← YENİ IMPORT
-
 interface Match {
   id: number;
   homeTeam: string;
