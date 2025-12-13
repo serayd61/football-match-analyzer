@@ -1,5 +1,16 @@
 // src/app/api/debug/[fixtureId]/route.ts
-import { fetchCompleteMatchData, fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
+import { fetchSportmonks } from '@/lib/heurist/sportmonks-data';
+
+// fetchSportmonks'u export etmemiz lazım, geçici olarak burada tanımlayalım
+const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
+const BASE_URL = 'https://api.sportmonks.com/v3/football';
+
+async function fetchAPI(endpoint: string): Promise<any> {
+  const separator = endpoint.includes('?') ? '&' : '?';
+  const url = `${BASE_URL}${endpoint}${separator}api_token=${SPORTMONKS_TOKEN}`;
+  const response = await fetch(url);
+  return response.json();
+}
 
 export async function GET(
   request: Request,
@@ -7,47 +18,63 @@ export async function GET(
 ) {
   const fixtureId = parseInt(params.fixtureId);
   
-  try {
-    const data = await fetchMatchDataByFixtureId(fixtureId);
-    
-    if (!data) {
-      return Response.json({ error: 'Fixture not found' }, { status: 404 });
-    }
-    
-    return Response.json({
-      fixture: fixtureId,
-      homeTeam: {
-        name: data.homeTeam,
-        id: data.homeTeamId,
-        form: data.homeForm.form,
-        record: data.homeForm.record,
-        avgGoals: data.homeForm.avgGoalsScored,
-        matches: data.homeForm.matchDetails.map(m => ({
-          vs: m.opponent,
-          score: m.score,
-          result: m.result
-        }))
-      },
-      awayTeam: {
-        name: data.awayTeam,
-        id: data.awayTeamId,
-        form: data.awayForm.form,
-        record: data.awayForm.record,
-        avgGoals: data.awayForm.avgGoalsScored,
-        matches: data.awayForm.matchDetails.map(m => ({
-          vs: m.opponent,
-          score: m.score,
-          result: m.result
-        }))
-      },
-      h2h: {
-        total: data.h2h.totalMatches,
-        homeWins: data.h2h.homeWins,
-        awayWins: data.h2h.awayWins,
-        draws: data.h2h.draws
-      }
-    });
-  } catch (error) {
-    return Response.json({ error: String(error) }, { status: 500 });
+  // Önce fixture'dan team ID'leri al
+  const fixtureData = await fetchAPI(`/fixtures/${fixtureId}?include=participants`);
+  const fixture = fixtureData?.data;
+  
+  if (!fixture) {
+    return Response.json({ error: 'Fixture not found' });
   }
+  
+  const participants = fixture.participants || [];
+  const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
+  const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
+  
+  const homeTeamId = homeTeam?.id;
+  const awayTeamId = awayTeam?.id;
+  
+  // Her takım için son maçları al
+  const homeMatchesData = await fetchAPI(`/fixtures?filters=teamIds:${homeTeamId}&include=scores;participants&per_page=5&order=starting_at&sort=desc`);
+  const awayMatchesData = await fetchAPI(`/fixtures?filters=teamIds:${awayTeamId}&include=scores;participants&per_page=5&order=starting_at&sort=desc`);
+  
+  // Raw data döndür
+  return Response.json({
+    fixture: {
+      id: fixtureId,
+      homeTeam: homeTeam?.name,
+      homeTeamId,
+      awayTeam: awayTeam?.name,
+      awayTeamId,
+    },
+    homeMatches: {
+      count: homeMatchesData?.data?.length || 0,
+      raw: homeMatchesData?.data?.slice(0, 2).map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        starting_at: m.starting_at,
+        state_id: m.state_id,
+        participants: m.participants?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          location: p.meta?.location
+        })),
+        scores: m.scores
+      }))
+    },
+    awayMatches: {
+      count: awayMatchesData?.data?.length || 0,
+      raw: awayMatchesData?.data?.slice(0, 2).map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        starting_at: m.starting_at,
+        state_id: m.state_id,
+        participants: m.participants?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          location: p.meta?.location
+        })),
+        scores: m.scores
+      }))
+    }
+  });
 }
