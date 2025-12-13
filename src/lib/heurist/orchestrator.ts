@@ -450,7 +450,8 @@ export async function runOrchestrator(
     let matchData: CompleteMatchData;
     
     if (input.matchData) {
-      matchData = input.matchData as CompleteMatchData;
+      matchData = input.matchData as unknown as CompleteMatchData;
+
       console.log('📊 Using provided match data');
     } else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
       console.log('📊 Fetching complete match data...');
