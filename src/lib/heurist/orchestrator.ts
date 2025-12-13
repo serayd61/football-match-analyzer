@@ -95,6 +95,12 @@ export interface OrchestratorResult {
     strategy: any;
     weightedConsensus: any;
   };
+  timing?: {
+    total: number;
+    dataFetch: number;
+    agents: number;
+  };
+  errors?: string[];
 }
 
 // ==================== VOTING SYSTEM ====================
@@ -435,9 +441,12 @@ export async function runOrchestrator(
   console.log('═'.repeat(60));
   
   const startTime = Date.now();
+  let dataFetchTime = 0;
+  let agentsTime = 0;
   
   try {
     // 1. Veri toplama
+    const dataFetchStart = Date.now();
     let matchData: CompleteMatchData;
     
     if (input.matchData) {
@@ -464,6 +473,7 @@ export async function runOrchestrator(
     } else {
       throw new Error('Insufficient input: need fixtureId or matchData');
     }
+    dataFetchTime = Date.now() - dataFetchStart;
     
     // 2. Data quality assessment
     const dataQuality = assessDataQuality(matchData);
@@ -471,6 +481,7 @@ export async function runOrchestrator(
     
     // 3. Agent'ları paralel çalıştır
     console.log('\n🤖 Running agents in parallel...');
+    const agentsStart = Date.now();
     
     const [statsResult, oddsResult] = await Promise.all([
       runStatsAgent(matchData as MatchData, language).catch(err => {
@@ -482,6 +493,7 @@ export async function runOrchestrator(
         return null;
       }),
     ]);
+    agentsTime = Date.now() - agentsStart;
     
     const agentResults = {
       stats: statsResult,
@@ -571,10 +583,17 @@ export async function runOrchestrator(
           isConsensus: consensus.matchResult.isConsensus && consensus.overUnder.isConsensus,
         },
       },
+      timing: {
+        total: elapsed,
+        dataFetch: dataFetchTime,
+        agents: agentsTime,
+      },
+      errors: [],
     };
     
   } catch (error) {
     console.error('❌ Orchestrator error:', error);
+    const elapsed = Date.now() - startTime;
     
     return {
       success: false,
@@ -619,6 +638,12 @@ export async function runOrchestrator(
         strategy: null,
         weightedConsensus: null,
       },
+      timing: {
+        total: elapsed,
+        dataFetch: dataFetchTime,
+        agents: agentsTime,
+      },
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
 }
