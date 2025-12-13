@@ -87,7 +87,6 @@ export interface OrchestratorResult {
   valueBets: string[];
   warnings: string[];
   timestamp: string;
-  // Backward compatibility
   reports?: {
     deepAnalysis: any;
     stats: any;
@@ -421,6 +420,145 @@ function collectWarnings(
   return warnings;
 }
 
+// ==================== BUILD REPORTS FOR UI ====================
+
+function buildReports(
+  matchData: CompleteMatchData,
+  statsResult: AgentResult | null,
+  oddsResult: AgentResult | null,
+  consensus: ConsensusResult,
+  finalPrediction: OrchestratorResult['finalPrediction'],
+  valueBets: string[],
+  warnings: string[],
+  dataQuality: { score: number },
+  sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert']
+): OrchestratorResult['reports'] {
+  return {
+    deepAnalysis: {
+      matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçının detaylı analizi. Ev sahibi form: ${matchData.homeForm?.form || 'N/A'}, Deplasman form: ${matchData.awayForm?.form || 'N/A'}`,
+      criticalFactors: [
+        `Ev sahibi son 5 maç: ${matchData.homeForm?.record || 'N/A'}`,
+        `Deplasman son 5 maç: ${matchData.awayForm?.record || 'N/A'}`,
+        `H2H: ${matchData.h2h?.totalMatches || 0} maç oynandı`,
+        dataQuality.hasOdds ? `Oranlar mevcut` : `Oran verisi eksik`,
+      ],
+      probabilities: {
+        homeWin: Math.round(consensus.matchResult.prediction === '1' ? consensus.matchResult.confidence : 
+                 consensus.matchResult.prediction === '2' ? 100 - consensus.matchResult.confidence - 25 : 33),
+        draw: Math.round(consensus.matchResult.prediction === 'X' ? consensus.matchResult.confidence : 25),
+        awayWin: Math.round(consensus.matchResult.prediction === '2' ? consensus.matchResult.confidence : 
+                 consensus.matchResult.prediction === '1' ? 100 - consensus.matchResult.confidence - 25 : 33),
+      },
+      scorePrediction: {
+        score: consensus.matchResult.prediction === '1' ? '2-1' : 
+               consensus.matchResult.prediction === '2' ? '1-2' : '1-1',
+        reasoning: finalPrediction.recommendation,
+      },
+      overUnder: {
+        prediction: consensus.overUnder.prediction,
+        confidence: consensus.overUnder.confidence,
+        reasoning: statsResult?.overUnderReasoning || 'İstatistiksel analiz bazlı tahmin',
+      },
+      btts: {
+        prediction: consensus.btts.prediction,
+        confidence: consensus.btts.confidence,
+        reasoning: statsResult?.bttsReasoning || 'Form analizi bazlı tahmin',
+      },
+      matchResult: {
+        prediction: consensus.matchResult.prediction,
+        confidence: consensus.matchResult.confidence,
+        reasoning: statsResult?.matchResultReasoning || 'Konsensüs bazlı tahmin',
+      },
+      bestBet: {
+        type: valueBets.length > 0 ? 'Value Bet' : 'Over/Under',
+        selection: valueBets.length > 0 ? valueBets[0] : consensus.overUnder.prediction,
+        confidence: finalPrediction.overallConfidence,
+        reasoning: finalPrediction.recommendation,
+      },
+      riskLevel: finalPrediction.overallConfidence >= 70 ? 'Low' : 
+                 finalPrediction.overallConfidence >= 55 ? 'Medium' : 'High',
+      expectedScores: ['1-1', '2-1', '1-0', '2-0'],
+    },
+    stats: statsResult,
+    odds: oddsResult,
+    strategy: {
+      riskAssessment: finalPrediction.overallConfidence >= 70 ? 'Düşük' : 
+                      finalPrediction.overallConfidence >= 55 ? 'Orta' : 'Yüksek',
+      riskReasoning: warnings.length > 0 ? warnings.join('. ') : 'Veriler tutarlı görünüyor.',
+      _consensus: {
+        overUnderConsensus: {
+          prediction: consensus.overUnder.prediction,
+          confidence: consensus.overUnder.confidence,
+          agree: consensus.overUnder.isConsensus ? 2 : 1,
+        },
+        matchResultConsensus: {
+          prediction: consensus.matchResult.prediction,
+          confidence: consensus.matchResult.confidence,
+          agree: consensus.matchResult.isConsensus ? 2 : 1,
+        },
+        bttsConsensus: {
+          prediction: consensus.btts.prediction,
+          confidence: consensus.btts.confidence,
+          agree: consensus.btts.isConsensus ? 2 : 1,
+        },
+      },
+      recommendedBets: [
+        {
+          type: 'Over/Under',
+          selection: consensus.overUnder.prediction,
+          confidence: finalPrediction.overUnderConfidence,
+          reasoning: statsResult?.overUnderReasoning || 'Konsensüs önerisi',
+          agentAgreement: consensus.overUnder.isConsensus ? '2/2 agent' : '1/2 agent',
+        },
+        {
+          type: 'Maç Sonucu',
+          selection: consensus.matchResult.prediction,
+          confidence: finalPrediction.matchResultConfidence,
+          reasoning: statsResult?.matchResultReasoning || 'Konsensüs önerisi',
+          agentAgreement: consensus.matchResult.isConsensus ? '2/2 agent' : '1/2 agent',
+        },
+      ],
+      avoidBets: warnings.length > 2 ? ['Riskli maç - dikkatli olun'] : [],
+      stakeSuggestion: finalPrediction.overallConfidence >= 70 ? 'Yüksek' : 
+                       finalPrediction.overallConfidence >= 55 ? 'Orta' : 'Düşük',
+      valueBets,
+      recommendation: finalPrediction.recommendation,
+      confidence: finalPrediction.overallConfidence,
+      sharpMoney: sharpMoneyAlert,
+    },
+    weightedConsensus: {
+      matchResult: {
+        prediction: consensus.matchResult.prediction,
+        confidence: consensus.matchResult.confidence,
+        agreement: consensus.matchResult.isConsensus ? 2 : 1,
+      },
+      overUnder: {
+        prediction: consensus.overUnder.prediction,
+        confidence: consensus.overUnder.confidence,
+        agreement: consensus.overUnder.isConsensus ? 2 : 1,
+      },
+      btts: {
+        prediction: consensus.btts.prediction,
+        confidence: consensus.btts.confidence,
+        agreement: consensus.btts.isConsensus ? 2 : 1,
+      },
+      scorePrediction: {
+        score: consensus.matchResult.prediction === '1' ? '2-1' : 
+               consensus.matchResult.prediction === '2' ? '1-2' : '1-1',
+        reasoning: 'Konsensüs bazlı skor tahmini',
+      },
+      bestBet: {
+        type: 'Over/Under',
+        selection: consensus.overUnder.prediction,
+        confidence: finalPrediction.overUnderConfidence,
+        agreement: `${consensus.overUnder.isConsensus ? 2 : 1}/2`,
+      },
+      finalPrediction,
+      isConsensus: consensus.matchResult.isConsensus && consensus.overUnder.isConsensus,
+    },
+  };
+}
+
 // ==================== MAIN ORCHESTRATOR ====================
 
 export async function runOrchestrator(
@@ -451,7 +589,6 @@ export async function runOrchestrator(
     
     if (input.matchData) {
       matchData = input.matchData as unknown as CompleteMatchData;
-
       console.log('📊 Using provided match data');
     } else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
       console.log('📊 Fetching complete match data...');
@@ -486,12 +623,10 @@ export async function runOrchestrator(
     
     const [statsResult, oddsResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
-
         console.error('Stats agent failed:', err);
         return null;
       }),
       runOddsAgent(matchData as unknown as MatchData, language).catch(err => {
-
         console.error('Odds agent failed:', err);
         return null;
       }),
@@ -535,6 +670,19 @@ export async function runOrchestrator(
       };
     }
     
+    // 9. Build reports for UI
+    const reports = buildReports(
+      matchData,
+      statsResult,
+      oddsResult,
+      consensus,
+      finalPrediction,
+      valueBets,
+      warnings,
+      dataQuality,
+      sharpMoneyAlert
+    );
+    
     const elapsed = Date.now() - startTime;
     console.log('\n' + '═'.repeat(60));
     console.log(`✅ ORCHESTRATOR COMPLETE (${elapsed}ms)`);
@@ -559,33 +707,7 @@ export async function runOrchestrator(
       valueBets,
       warnings,
       timestamp: new Date().toISOString(),
-      // Backward compatibility
-      reports: {
-        deepAnalysis: {
-          matchResult: finalPrediction.matchResult,
-          matchResultConfidence: finalPrediction.matchResultConfidence,
-          overUnder: finalPrediction.overUnder,
-          overUnderConfidence: finalPrediction.overUnderConfidence,
-          btts: finalPrediction.btts,
-          bttsConfidence: finalPrediction.bttsConfidence,
-          summary: finalPrediction.recommendation,
-        },
-        stats: statsResult,
-        odds: oddsResult,
-        strategy: {
-          valueBets,
-          recommendation: finalPrediction.recommendation,
-          confidence: finalPrediction.overallConfidence,
-          sharpMoney: sharpMoneyAlert,
-        },
-        weightedConsensus: {
-          matchResult: consensus.matchResult,
-          overUnder: consensus.overUnder,
-          btts: consensus.btts,
-          finalPrediction,
-          isConsensus: consensus.matchResult.isConsensus && consensus.overUnder.isConsensus,
-        },
-      },
+      reports,
       timing: {
         total: elapsed,
         dataFetch: dataFetchTime,
@@ -633,7 +755,6 @@ export async function runOrchestrator(
       valueBets: [],
       warnings: [`Error: ${error instanceof Error ? error.message : 'Unknown error'}`],
       timestamp: new Date().toISOString(),
-      // Backward compatibility
       reports: {
         deepAnalysis: null,
         stats: null,
