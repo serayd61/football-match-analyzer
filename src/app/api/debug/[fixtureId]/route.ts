@@ -16,56 +16,47 @@ export async function GET(
 ) {
   const fixtureId = parseInt(params.fixtureId);
   
+  // Fixture bilgisi
   const fixtureData = await fetchAPI(`/fixtures/${fixtureId}?include=participants`);
   const fixture = fixtureData?.data;
   
-  if (!fixture) {
-    return Response.json({ error: 'Fixture not found' });
-  }
-  
-  const participants = fixture.participants || [];
+  const participants = fixture?.participants || [];
   const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
   const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
-  
   const homeTeamId = homeTeam?.id;
-  const awayTeamId = awayTeam?.id;
   
-  // /schedules/teams endpoint'ini test et
-  const homeSchedule = await fetchAPI(`/schedules/teams/${homeTeamId}?include=scores;participants`);
-  const awaySchedule = await fetchAPI(`/schedules/teams/${awayTeamId}?include=scores;participants`);
+  // Farklı endpoint'leri test et
+  const test1 = await fetchAPI(`/schedules/teams/${homeTeamId}`);
+  const test2 = await fetchAPI(`/teams/${homeTeamId}/fixtures`);
+  const test3 = await fetchAPI(`/fixtures?filters=participantIds:${homeTeamId}&per_page=5`);
+  const test4 = await fetchAPI(`/teams/${homeTeamId}?include=latest`);
   
   return Response.json({
-    fixture: {
-      id: fixtureId,
-      homeTeam: homeTeam?.name,
-      homeTeamId,
-      awayTeam: awayTeam?.name,
-      awayTeamId,
+    homeTeamId,
+    homeTeamName: homeTeam?.name,
+    test1_schedules: {
+      hasData: !!test1?.data,
+      count: test1?.data?.length || 0,
+      error: test1?.message || test1?.error,
+      firstItem: test1?.data?.[0]?.name
     },
-    homeSchedule: {
-      count: homeSchedule?.data?.length || 0,
-      sample: homeSchedule?.data?.slice(0, 3).map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        date: m.starting_at,
-        state_id: m.state_id,
-        hasScores: m.scores?.length > 0,
-        hasParticipants: m.participants?.length > 0,
-        participants: m.participants?.map((p: any) => ({ id: p.id, name: p.name }))
-      }))
+    test2_teamFixtures: {
+      hasData: !!test2?.data,
+      count: test2?.data?.length || 0,
+      error: test2?.message || test2?.error,
+      firstItem: test2?.data?.[0]?.name
     },
-    awaySchedule: {
-      count: awaySchedule?.data?.length || 0,
-      sample: awaySchedule?.data?.slice(0, 3).map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        date: m.starting_at,
-        state_id: m.state_id,
-        hasScores: m.scores?.length > 0,
-        hasParticipants: m.participants?.length > 0,
-        participants: m.participants?.map((p: any) => ({ id: p.id, name: p.name }))
-      }))
+    test3_fixturesFilter: {
+      hasData: !!test3?.data,
+      count: test3?.data?.length || 0,
+      error: test3?.message || test3?.error,
+      firstItem: test3?.data?.[0]?.name
     },
-    rawHomeFirst: homeSchedule?.data?.[0],
+    test4_teamLatest: {
+      hasData: !!test4?.data,
+      latestResults: test4?.data?.latest?.length || 0,
+      error: test4?.message || test4?.error,
+    },
+    rawTest1: test1,
   });
 }
