@@ -1,5 +1,4 @@
 export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -15,10 +14,9 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const specificDate = searchParams.get('date');
-
+    
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
     const nextWeekStr = nextWeek.toISOString().split('T')[0];
@@ -28,41 +26,58 @@ export async function GET(request: NextRequest) {
 
     let allMatches: any[] = [];
 
-    // ========== SPORTMONKS ONLY ==========
     if (SPORTMONKS_API_KEY) {
       try {
-        let url: string;
-        if (specificDate) {
-          url = `https://api.sportmonks.com/v3/football/fixtures/date/${specificDate}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=100`;
-        } else {
-          url = `https://api.sportmonks.com/v3/football/fixtures/between/${todayStr}/${nextWeekStr}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=150`;
+        let page = 1;
+        let hasMore = true;
+        
+        while (hasMore && page <= 5) { // Max 5 sayfa (500 maç)
+          let url: string;
+          
+          if (specificDate) {
+            url = `https://api.sportmonks.com/v3/football/fixtures/date/${specificDate}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=100&page=${page}`;
+          } else {
+            url = `https://api.sportmonks.com/v3/football/fixtures/between/${todayStr}/${nextWeekStr}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=150&page=${page}`;
+          }
+
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.data && data.data.length > 0) {
+            const sportmonksMatches = data.data.map((fixture: any) => {
+              const homeTeam = fixture.participants?.find((p: any) => p.meta?.location === 'home');
+              const awayTeam = fixture.participants?.find((p: any) => p.meta?.location === 'away');
+              
+              return {
+                id: fixture.id,
+                source: 'sportmonks',
+                homeTeam: homeTeam?.name || 'Unknown',
+                awayTeam: awayTeam?.name || 'Unknown',
+                homeTeamId: homeTeam?.id,
+                awayTeamId: awayTeam?.id,
+                league: fixture.league?.name || 'Unknown League',
+                leagueId: fixture.league?.id,
+                date: fixture.starting_at,
+                status: fixture.state?.state || 'NS',
+              };
+            });
+            
+            allMatches = [...allMatches, ...sportmonksMatches];
+            console.log(`✅ Sportmonks Page ${page}: ${sportmonksMatches.length} matches`);
+            
+            // Check if there are more pages
+            if (data.pagination && data.pagination.has_more) {
+              page++;
+            } else {
+              hasMore = false;
+            }
+          } else {
+            hasMore = false;
+          }
         }
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.data && data.data.length > 0) {
-          const sportmonksMatches = data.data.map((fixture: any) => {
-            const homeTeam = fixture.participants?.find((p: any) => p.meta?.location === 'home');
-            const awayTeam = fixture.participants?.find((p: any) => p.meta?.location === 'away');
-
-            return {
-              id: fixture.id,
-              source: 'sportmonks',
-              homeTeam: homeTeam?.name || 'Unknown',
-              awayTeam: awayTeam?.name || 'Unknown',
-              homeTeamId: homeTeam?.id,
-              awayTeamId: awayTeam?.id,
-              league: fixture.league?.name || 'Unknown League',
-              leagueId: fixture.league?.id,
-              date: fixture.starting_at,
-              status: fixture.state?.state || 'NS',
-            };
-          });
-
-          allMatches = sportmonksMatches;
-          console.log(`✅ Sportmonks: ${sportmonksMatches.length} matches`);
-        }
+        
+        console.log(`✅ Sportmonks Total: ${allMatches.length} matches`);
+        
       } catch (error) {
         console.error('Sportmonks error:', error);
       }
@@ -79,6 +94,7 @@ export async function GET(request: NextRequest) {
     const leagues = Array.from(new Set(allMatches.map((m: any) => m.league)));
 
     console.log(`📊 Total matches: ${allMatches.length}`);
+    console.log(`📊 Total leagues: ${leagues.length}`);
     console.log('=================================');
 
     return NextResponse.json({
