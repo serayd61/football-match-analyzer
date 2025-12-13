@@ -51,8 +51,3 @@ export async function GET(
     return Response.json({ error: String(error) }, { status: 500 });
   }
 }
-```
-
-Sonra şu URL'ye git (bir fixture ID ile):
-```
-https://footballanalytics.pro/api/debug/19441759
