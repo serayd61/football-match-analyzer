@@ -93,6 +93,7 @@ export interface OrchestratorResult {
     stats: any;
     odds: any;
     strategy: any;
+    weightedConsensus: any;
   };
 }
 
@@ -562,6 +563,13 @@ export async function runOrchestrator(
           confidence: finalPrediction.overallConfidence,
           sharpMoney: sharpMoneyAlert,
         },
+        weightedConsensus: {
+          matchResult: consensus.matchResult,
+          overUnder: consensus.overUnder,
+          btts: consensus.btts,
+          finalPrediction,
+          isConsensus: consensus.matchResult.isConsensus && consensus.overUnder.isConsensus,
+        },
       },
     };
     
@@ -609,6 +617,7 @@ export async function runOrchestrator(
         stats: null,
         odds: null,
         strategy: null,
+        weightedConsensus: null,
       },
     };
   }
