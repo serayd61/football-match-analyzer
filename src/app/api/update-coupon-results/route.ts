@@ -10,70 +10,69 @@ const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
 // Maç sonucunu kontrol et
 function checkPickResult(
-  pickType: string,
-  pickValue: string,
+  betType: string,
+  selection: string,
   homeScore: number,
   awayScore: number
-): 'won' | 'lost' | 'pending' {
+): 'WON' | 'LOST' | 'PENDING' {
   const totalGoals = homeScore + awayScore;
   
-  const type = (pickType || '').toLowerCase();
-  const value = (pickValue || '').toLowerCase();
+  const type = (betType || '').toUpperCase();
+  const value = (selection || '').toUpperCase();
 
-  // 1X2 / Match Result
-  if (type.includes('1x2') || type.includes('match') || type.includes('result') || type.includes('winner')) {
-    if (value.includes('home') || value === '1' || value.includes('ev sahibi')) {
-      return homeScore > awayScore ? 'won' : 'lost';
+  // MATCH_RESULT - 1X2
+  if (type.includes('MATCH') || type.includes('1X2') || type.includes('RESULT') || type.includes('WINNER')) {
+    if (value === '1' || value === 'HOME') {
+      return homeScore > awayScore ? 'WON' : 'LOST';
     }
-    if (value.includes('away') || value === '2' || value.includes('deplasman')) {
-      return awayScore > homeScore ? 'won' : 'lost';
+    if (value === '2' || value === 'AWAY') {
+      return awayScore > homeScore ? 'WON' : 'LOST';
     }
-    if (value.includes('draw') || value === 'x' || value.includes('berabere')) {
-      return homeScore === awayScore ? 'won' : 'lost';
+    if (value === 'X' || value === 'DRAW') {
+      return homeScore === awayScore ? 'WON' : 'LOST';
     }
   }
 
-  // Over/Under
-  if (type.includes('over') || type.includes('under') || type.includes('gol') || type.includes('total')) {
-    if (value.includes('over') || value.includes('üst') || value.includes('ust')) {
+  // OVER_UNDER_25 - Gol sayısı
+  if (type.includes('OVER') || type.includes('UNDER') || type.includes('GOAL') || type.includes('TOTAL')) {
+    if (value.includes('OVER') || value === 'O') {
       const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
-      return totalGoals > line ? 'won' : 'lost';
+      return totalGoals > line ? 'WON' : 'LOST';
     }
-    if (value.includes('under') || value.includes('alt')) {
+    if (value.includes('UNDER') || value === 'U') {
       const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
-      return totalGoals < line ? 'won' : 'lost';
+      return totalGoals < line ? 'WON' : 'LOST';
+    }
+    // Sadece "Over" veya "Under" yazıyorsa 2.5 varsay
+    if (value === 'OVER') {
+      return totalGoals > 2.5 ? 'WON' : 'LOST';
+    }
+    if (value === 'UNDER') {
+      return totalGoals < 2.5 ? 'WON' : 'LOST';
     }
   }
 
-  // BTTS / KG Var
-  if (type.includes('btts') || type.includes('kg') || type.includes('both')) {
+  // BTTS - Karşılıklı Gol
+  if (type.includes('BTTS') || type.includes('BOTH') || type.includes('KG')) {
     const btts = homeScore > 0 && awayScore > 0;
-    if (value.includes('yes') || value.includes('var') || value.includes('evet')) {
-      return btts ? 'won' : 'lost';
+    if (value === 'YES' || value === 'VAR' || value === 'EVET') {
+      return btts ? 'WON' : 'LOST';
     }
-    if (value.includes('no') || value.includes('yok') || value.includes('hayır')) {
-      return !btts ? 'won' : 'lost';
+    if (value === 'NO' || value === 'YOK' || value === 'HAYIR') {
+      return !btts ? 'WON' : 'LOST';
     }
   }
 
-  // Bilinmeyen tip - varsayılan olarak value içindeki ipuçlarına bak
-  if (value.includes('home') || value === '1') {
-    return homeScore > awayScore ? 'won' : 'lost';
-  }
-  if (value.includes('away') || value === '2') {
-    return awayScore > homeScore ? 'won' : 'lost';
-  }
-  if (value.includes('draw') || value === 'x') {
-    return homeScore === awayScore ? 'won' : 'lost';
-  }
-  if (value.includes('over')) {
-    return totalGoals > 2.5 ? 'won' : 'lost';
-  }
-  if (value.includes('under')) {
-    return totalGoals < 2.5 ? 'won' : 'lost';
-  }
+  // Tip belirtilmemişse selection'a göre tahmin et
+  if (value === '1') return homeScore > awayScore ? 'WON' : 'LOST';
+  if (value === '2') return awayScore > homeScore ? 'WON' : 'LOST';
+  if (value === 'X') return homeScore === awayScore ? 'WON' : 'LOST';
+  if (value === 'YES') return (homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
+  if (value === 'NO') return !(homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
+  if (value === 'OVER') return totalGoals > 2.5 ? 'WON' : 'LOST';
+  if (value === 'UNDER') return totalGoals < 2.5 ? 'WON' : 'LOST';
 
-  return 'pending';
+  return 'PENDING';
 }
 
 // Sportmonks'tan maç sonucu çek
@@ -179,11 +178,14 @@ export async function PUT(request: NextRequest) {
       // 3. Her pick için sonuç kontrol et
       for (const pick of picks) {
         // Eğer pick zaten sonuçlanmışsa atla
-        if (pick.status === 'won' || pick.status === 'lost') {
-          if (pick.status === 'lost') anyLost = true;
+        if (pick.result === 'WON' || pick.result === 'LOST') {
+          if (pick.result === 'LOST') {
+            anyLost = true;
+            allWon = false;
+          }
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
-            status: pick.status,
+            status: pick.result,
             cached: true,
           });
           continue;
@@ -197,7 +199,7 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
-            status: 'pending',
+            status: 'PENDING',
             reason: 'Maç henüz bitmedi',
           });
           continue;
@@ -211,7 +213,7 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
-            status: 'pending',
+            status: 'PENDING',
             reason: 'API hatası',
           });
           continue;
@@ -222,7 +224,7 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
-            status: 'pending',
+            status: 'PENDING',
             reason: 'Maç devam ediyor',
           });
           continue;
@@ -230,8 +232,8 @@ export async function PUT(request: NextRequest) {
 
         // Pick sonucunu hesapla
         const pickStatus = checkPickResult(
-          pick.pick_type || pick.bet_type || '',
-          pick.pick_value || pick.prediction || '',
+          pick.bet_type || '',
+          pick.selection || '',
           result.homeScore,
           result.awayScore
         );
@@ -240,10 +242,9 @@ export async function PUT(request: NextRequest) {
         const { error: updatePickError } = await supabase
           .from('coupon_picks')
           .update({
-            status: pickStatus,
-            actual_home_score: result.homeScore,
-            actual_away_score: result.awayScore,
-            updated_at: new Date().toISOString(),
+            result: pickStatus,
+            home_score: result.homeScore,
+            away_score: result.awayScore,
           })
           .eq('id', pick.id);
 
@@ -251,10 +252,10 @@ export async function PUT(request: NextRequest) {
           totalPicksUpdated++;
         }
 
-        if (pickStatus === 'lost') {
+        if (pickStatus === 'LOST') {
           anyLost = true;
           allWon = false;
-        } else if (pickStatus === 'pending') {
+        } else if (pickStatus === 'PENDING') {
           anyPending = true;
           allWon = false;
         }
@@ -262,11 +263,11 @@ export async function PUT(request: NextRequest) {
         pickResults.push({
           match: `${pick.home_team} vs ${pick.away_team}`,
           score: `${result.homeScore}-${result.awayScore}`,
-          pick: `${pick.pick_type}: ${pick.pick_value}`,
+          pick: `${pick.bet_type}: ${pick.selection}`,
           status: pickStatus,
         });
 
-        console.log(`   ${pickStatus === 'won' ? '✅' : pickStatus === 'lost' ? '❌' : '⏳'} ${pick.home_team} vs ${pick.away_team}: ${result.homeScore}-${result.awayScore} → ${pickStatus}`);
+        console.log(`   ${pickStatus === 'WON' ? '✅' : pickStatus === 'LOST' ? '❌' : '⏳'} ${pick.home_team} vs ${pick.away_team}: ${result.homeScore}-${result.awayScore} → ${pickStatus}`);
       }
 
       // 4. Kupon durumunu güncelle
@@ -286,7 +287,6 @@ export async function PUT(request: NextRequest) {
           .from('coupons')
           .update({
             status: couponStatus,
-            updated_at: new Date().toISOString(),
           })
           .eq('id', coupon.id);
 
