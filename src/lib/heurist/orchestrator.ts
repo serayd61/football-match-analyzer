@@ -550,7 +550,7 @@ export async function runFullAnalysis(
     console.log(`   💰 Odds: ${oddsResult?.matchWinnerValue || 'N/A'} | ${oddsResult?.recommendation || 'N/A'} | BTTS: ${oddsResult?.bttsValue || 'N/A'}`);
     console.log(`   🎭 Sentiment: Edge=${sentimentResult?.psychologicalEdge?.team || 'N/A'} | Home Morale: ${sentimentResult?.homeTeam?.morale || 'N/A'}/10 | Away Morale: ${sentimentResult?.awayTeam?.morale || 'N/A'}/10`);
     
-    if ((sentimentResult?.warnings?.length ?? 0) > 0) {
+    if (sentimentResult?.warnings && sentimentResult.warnings.length > 0) {
       console.log(`   ⚠️ Sentiment Warnings: ${sentimentResult.warnings.join(', ')}`);
     }
 
@@ -603,7 +603,7 @@ export async function runFullAnalysis(
       });
     }
     
-    if (weightedConsensus.sentiment?.warnings?.length > 0) {
+    if (weightedConsensus.sentiment?.warnings && weightedConsensus.sentiment.warnings.length > 0) {
       console.log(`\n   ⚠️ SENTIMENT WARNINGS:`);
       weightedConsensus.sentiment.warnings.forEach((w: string) => {
         console.log(`      • ${w}`);
