@@ -3,6 +3,8 @@ import { runDeepAnalysisAgent } from './agents/deepAnalysis';
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
 import { runStrategyAgent } from './agents/strategy';
+import { runSentimentAgent, applySentimentToPrediction } from './sentimentAgent';
+
 import { MatchData } from './types';
 
 // Agent ağırlıkları - Deep Analysis eklendi
@@ -386,6 +388,17 @@ function calculateWeightedConsensus(
   const expectedScores = deepAnalysis?.expectedScores || [];
   const probabilities = deepAnalysis?.probabilities || { homeWin: 33, draw: 34, awayWin: 33 };
   const criticalFactors = deepAnalysis?.criticalFactors || [];
+
+  const [deepAnalysis, stats, odds, strategy, sentiment] = await Promise.all([
+  runDeepAnalysisAgent(matchData),
+  runStatsAgent(matchData),
+  runOddsAgent(matchData),
+  runStrategyAgent(matchData),
+  runSentimentAgent(matchData)  // YENİ!
+]);
+
+// Final tahmine sentiment'i uygula
+const adjustedPrediction = applySentimentToPrediction(finalPrediction, sentiment);
   
   // Generate final summary
   const totalAgreement = overUnderConsensus.agreementCount + matchConsensus.agreementCount + bttsConsensus.agreementCount;
