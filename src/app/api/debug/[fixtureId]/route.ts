@@ -30,9 +30,9 @@ export async function GET(
   const homeTeamId = homeTeam?.id;
   const awayTeamId = awayTeam?.id;
   
-  // DOĞRU ENDPOINT: /teams/{teamId}/fixtures
-  const homeMatchesData = await fetchAPI(`/teams/${homeTeamId}/fixtures?include=scores;participants&per_page=5`);
-  const awayMatchesData = await fetchAPI(`/teams/${awayTeamId}/fixtures?include=scores;participants&per_page=5`);
+  // /schedules/teams endpoint'ini test et
+  const homeSchedule = await fetchAPI(`/schedules/teams/${homeTeamId}?include=scores;participants`);
+  const awaySchedule = await fetchAPI(`/schedules/teams/${awayTeamId}?include=scores;participants`);
   
   return Response.json({
     fixture: {
@@ -42,33 +42,30 @@ export async function GET(
       awayTeam: awayTeam?.name,
       awayTeamId,
     },
-    homeMatches: {
-      count: homeMatchesData?.data?.length || 0,
-      raw: homeMatchesData?.data?.slice(0, 3).map((m: any) => ({
+    homeSchedule: {
+      count: homeSchedule?.data?.length || 0,
+      sample: homeSchedule?.data?.slice(0, 3).map((m: any) => ({
         id: m.id,
         name: m.name,
-        starting_at: m.starting_at,
+        date: m.starting_at,
         state_id: m.state_id,
-        participants: m.participants?.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          location: p.meta?.location
-        }))
+        hasScores: m.scores?.length > 0,
+        hasParticipants: m.participants?.length > 0,
+        participants: m.participants?.map((p: any) => ({ id: p.id, name: p.name }))
       }))
     },
-    awayMatches: {
-      count: awayMatchesData?.data?.length || 0,
-      raw: awayMatchesData?.data?.slice(0, 3).map((m: any) => ({
+    awaySchedule: {
+      count: awaySchedule?.data?.length || 0,
+      sample: awaySchedule?.data?.slice(0, 3).map((m: any) => ({
         id: m.id,
         name: m.name,
-        starting_at: m.starting_at,
+        date: m.starting_at,
         state_id: m.state_id,
-        participants: m.participants?.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          location: p.meta?.location
-        }))
+        hasScores: m.scores?.length > 0,
+        hasParticipants: m.participants?.length > 0,
+        participants: m.participants?.map((p: any) => ({ id: p.id, name: p.name }))
       }))
-    }
+    },
+    rawHomeFirst: homeSchedule?.data?.[0],
   });
 }
