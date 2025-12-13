@@ -1,5 +1,5 @@
 // src/lib/heurist/sportmonks-data.ts
-// Sportmonks Complete Data Layer - FIXED
+// Sportmonks Complete Data Layer - FIXED v2
 
 const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
@@ -72,7 +72,6 @@ async function fetchSportmonks(endpoint: string): Promise<any> {
       return null;
     }
     
-    // URL oluştur - ? veya & kontrolü
     const separator = endpoint.includes('?') ? '&' : '?';
     const url = `${BASE_URL}${endpoint}${separator}api_token=${SPORTMONKS_TOKEN}`;
     
@@ -105,9 +104,9 @@ function parseScores(scores: any[]): { home: number; away: number } {
   }
   
   for (const score of scores) {
+    // type_id 1525 = CURRENT/FULLTIME
     const isFulltime = score.type_id === 1525 || 
                        score.description === 'CURRENT' || 
-                       score.description === '2ND_HALF' ||
                        score.description === 'FULLTIME';
     
     if (isFulltime) {
@@ -115,12 +114,6 @@ function parseScores(scores: any[]): { home: number; away: number } {
         homeScore = score.score.goals || 0;
       } else if (score.score?.participant === 'away') {
         awayScore = score.score.goals || 0;
-      }
-      
-      if (score.participant === 'home' && score.goals !== undefined) {
-        homeScore = score.goals;
-      } else if (score.participant === 'away' && score.goals !== undefined) {
-        awayScore = score.goals;
       }
     }
   }
@@ -140,11 +133,11 @@ function calculateForm(matches: any[], teamId: number): { form: string; points: 
   let points = 0;
   const details: MatchDetail[] = [];
   
-  // Bitmiş maçları filtrele
-  const finishedMatches = matches.filter((m: any) => {
-    const stateId = m.state_id;
-    return stateId === 5 || stateId === 9 || m.result_info;
-  }).slice(0, 5);
+  // Bitmiş maçları filtrele ve tarihe göre sırala
+  const finishedMatches = matches
+    .filter((m: any) => m.state_id === 5 || m.state_id === 9 || m.result_info)
+    .sort((a: any, b: any) => new Date(b.starting_at).getTime() - new Date(a.starting_at).getTime())
+    .slice(0, 5);
   
   const matchesToUse = finishedMatches.length > 0 ? finishedMatches : matches.slice(0, 5);
   
@@ -236,8 +229,8 @@ function calculateGoalStats(details: MatchDetail[]): {
 
 // Takımın son maçlarını çek - DOĞRU ENDPOINT
 export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, count: number = 10): Promise<any[]> {
-  // DOĞRU: /fixtures endpoint'i ile geçmiş maçları al
-  const endpoint = `/fixtures?filters=teamIds:${teamId}&include=scores;participants;state&per_page=${count}&order=starting_at&sort=desc`;
+  // DOĞRU ENDPOINT: /teams/{teamId}/fixtures
+  const endpoint = `/teams/${teamId}/fixtures?include=scores;participants;state&per_page=${count}`;
   
   console.log(`📡 Fetching recent matches for team ${teamId}...`);
   const data = await fetchSportmonks(endpoint);
@@ -246,7 +239,10 @@ export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, 
   console.log(`   📊 Received ${matches.length} matches for team ${teamId}`);
   
   if (matches.length > 0) {
-    console.log(`   📊 First match: ${matches[0].name || 'N/A'}, state_id: ${matches[0].state_id}`);
+    const firstMatch = matches[0];
+    const homeP = firstMatch.participants?.find((p: any) => p.meta?.location === 'home');
+    const awayP = firstMatch.participants?.find((p: any) => p.meta?.location === 'away');
+    console.log(`   📊 Sample: ${homeP?.name || '?'} vs ${awayP?.name || '?'} (${firstMatch.starting_at})`);
   }
   
   return matches;
