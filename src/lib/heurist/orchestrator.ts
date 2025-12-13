@@ -595,6 +595,52 @@ export async function runOrchestrator(
       valueBets: [],
       warnings: [`Error: ${error instanceof Error ? error.message : 'Unknown error'}`],
       timestamp: new Date().toISOString(),
+      return {
+      success: true,
+      matchInfo: {
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        league: matchData.league,
+        fixtureId: matchData.fixtureId,
+      },
+      dataQuality,
+      agentResults,
+      consensus,
+      finalPrediction,
+      sharpMoneyAlert,
+      valueBets,
+      warnings,
+      timestamp: new Date().toISOString(),
+      
+      // ==================== BACKWARD COMPATIBILITY ====================
+      // Eski API route'lar için reports alias
+           reports: {
+        deepAnalysis: null,
+        stats: null,
+        odds: null,
+        strategy: null,
+      },
+    };
+      reports: {
+        deepAnalysis: {
+          matchResult: finalPrediction.matchResult,
+          matchResultConfidence: finalPrediction.matchResultConfidence,
+          overUnder: finalPrediction.overUnder,
+          overUnderConfidence: finalPrediction.overUnderConfidence,
+          btts: finalPrediction.btts,
+          bttsConfidence: finalPrediction.bttsConfidence,
+          summary: finalPrediction.recommendation,
+        },
+        stats: statsResult,
+        odds: oddsResult,
+        strategy: {
+          valueBets,
+          recommendation: finalPrediction.recommendation,
+          confidence: finalPrediction.overallConfidence,
+          sharpMoney: sharpMoneyAlert,
+        },
+      },
+    };
     };
   }
 }
