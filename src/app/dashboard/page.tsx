@@ -1,5 +1,6 @@
 'use client';
-
+import AgentReports from '@/components/AgentReports';
+import AgentLoadingProgress from '@/components/AgentLoadingProgress';
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -897,15 +898,16 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {(analyzing || agentLoading) ? (
-                    <div className="text-center py-16">
-                      <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-gray-400 text-lg">{l.analyzing}</p>
-                      <p className="text-gray-500 text-sm mt-2">
-                        {agentLoading ? '5 AI agents working...' : '4 AI models working...'}
-                      </p>
-                    </div>
-                  ) : analysis || agentAnalysis ? (
+           {(analyzing || agentLoading) ? (
+  agentLoading ? (
+    <AgentLoadingProgress isLoading={true} />
+  ) : (
+    <div className="text-center py-16">
+      <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-gray-400 text-lg">{l.analyzing}</p>
+      <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
+    </div>
+  ) : analysis || agentAnalysis ? (
                     <div className="space-y-4">
                       {/* Mode Tabs */}
                       {agentAnalysis && (
@@ -1114,47 +1116,11 @@ export default function DashboardPage() {
                       )}
 
                       {/* ========== AGENT ANALYSIS - YENİ DETAYLI GÖRÜNÜM ========== */}
-                      {agentMode && agentAnalysis && (
-                        <AgentReports 
-                          reports={agentAnalysis.reports}
-                          homeTeam={selectedMatch.homeTeam}
-                          awayTeam={selectedMatch.awayTeam}
-                          language={lang as 'tr' | 'en' | 'de'}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 text-gray-400">
-                      <div className="text-6xl mb-4">🤖</div>
-                      <p className="text-lg">{l.selectMatch}</p>
-                      <p className="text-sm text-gray-500 mt-2">Click "Analyze" to get AI predictions</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-[600px] text-gray-400">
-                <div className="text-center">
-                  <div className="text-7xl mb-4">⚽</div>
-                  <p className="text-xl font-medium">{l.selectMatch}</p>
-                  <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Click outside to close menus */}
-      {(showProfileMenu || showMobileMenu) && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => {
-            setShowProfileMenu(false);
-            setShowMobileMenu(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
+                     {agentMode && agentAnalysis && (
+  <AgentReports 
+    reports={agentAnalysis.reports}
+    homeTeam={selectedMatch.homeTeam}
+    awayTeam={selectedMatch.awayTeam}
+    language={lang as 'tr' | 'en' | 'de'}
+  />
+)}
