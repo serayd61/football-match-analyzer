@@ -3,16 +3,17 @@ import { runDeepAnalysisAgent } from './agents/deepAnalysis';
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
 import { runStrategyAgent } from './agents/strategy';
-import { runSentimentAgent, applySentimentToPrediction } from './sentimentAgent';
+import { runSentimentAgent } from './agents/sentimentAgent';
 
 import { MatchData } from './types';
 
-// Agent ağırlıkları - Deep Analysis eklendi
+// Agent ağırlıkları - Sentiment eklendi
 const AGENT_WEIGHTS = {
-  deepAnalysis: 0.30,  // Yeni! En kapsamlı analiz
-  stats: 0.30,
-  odds: 0.25,
+  deepAnalysis: 0.25,
+  stats: 0.25,
+  odds: 0.20,
   strategy: 0.15,
+  sentiment: 0.15,  // YENİ!
 };
 
 // Çok dilli metinler
@@ -39,6 +40,7 @@ export interface AgentReport {
   stats?: any;
   odds?: any;
   strategy?: any;
+  sentiment?: any;  // YENİ!
   weightedConsensus?: any;
 }
 
@@ -54,7 +56,8 @@ export interface AnalysisResult {
 function normalizeConfidence(rawConfidence: number, agreementCount: number): number {
   let normalized = rawConfidence;
   
-  if (agreementCount >= 4) normalized += 12;
+  if (agreementCount >= 5) normalized += 15;
+  else if (agreementCount >= 4) normalized += 12;
   else if (agreementCount >= 3) normalized += 8;
   else if (agreementCount >= 2) normalized += 4;
   else normalized -= 5;
@@ -68,6 +71,7 @@ function generateConsensusReasoning(
   stats: any,
   odds: any,
   strategy: any,
+  sentiment: any,
   betType: 'overUnder' | 'matchResult' | 'btts',
   finalPrediction: string,
   language: 'tr' | 'en' | 'de'
@@ -78,6 +82,7 @@ function generateConsensusReasoning(
   let statsPred = '', statsConf = 0, statsReason = '';
   let oddsPred = '', oddsConf = 0, oddsReason = '';
   let stratPred = '', stratConf = 0;
+  let sentPred = '', sentConf = 0;
   
   if (betType === 'overUnder') {
     deepPred = deepAnalysis?.overUnder?.prediction || '';
@@ -103,6 +108,12 @@ function generateConsensusReasoning(
     oddsReason = odds?.matchWinnerReasoning || '';
     stratPred = strategy?._consensus?.matchResultConsensus?.prediction || '';
     stratConf = strategy?._consensus?.matchResultConsensus?.confidence || 60;
+    // Sentiment for match result
+    if (sentiment?.psychologicalEdge) {
+      sentPred = sentiment.psychologicalEdge.team === 'home' ? '1' : 
+                 sentiment.psychologicalEdge.team === 'away' ? '2' : 'X';
+      sentConf = sentiment.psychologicalEdge.confidence || 60;
+    }
   } else if (betType === 'btts') {
     deepPred = deepAnalysis?.btts?.prediction || '';
     deepConf = deepAnalysis?.btts?.confidence || 60;
@@ -135,47 +146,57 @@ function generateConsensusReasoning(
   const statsAgree = checkMatch(statsPred);
   const oddsAgree = checkMatch(oddsPred);
   const stratAgree = checkMatch(stratPred);
-  const agreementCount = (deepAgree ? 1 : 0) + (statsAgree ? 1 : 0) + (oddsAgree ? 1 : 0) + (stratAgree ? 1 : 0);
+  const sentAgree = sentPred ? checkMatch(sentPred) : false;
+  
+  let agreementCount = (deepAgree ? 1 : 0) + (statsAgree ? 1 : 0) + (oddsAgree ? 1 : 0) + (stratAgree ? 1 : 0);
+  
+  // Sentiment only counts for matchResult
+  const hasSentiment = betType === 'matchResult' && sentPred;
+  if (hasSentiment) {
+    agreementCount += sentAgree ? 1 : 0;
+  }
+  
+  const totalAgents = hasSentiment ? 5 : 4;
   
   // Build detailed breakdown
   const isTr = language === 'tr';
   
-  const deepLine = `🔬 Deep (%30): ${deepPred || 'N/A'} (${deepConf}%) ${deepAgree ? '✅' : '❌'}`;
-  const statsLine = `📊 Stats (%30): ${statsPred || 'N/A'} (${statsConf}%) ${statsAgree ? '✅' : '❌'}`;
-  const oddsLine = `💰 Odds (%25): ${oddsPred || 'N/A'} (${oddsConf}%) ${oddsAgree ? '✅' : '❌'}`;
+  const deepLine = `🔬 Deep (%25): ${deepPred || 'N/A'} (${deepConf}%) ${deepAgree ? '✅' : '❌'}`;
+  const statsLine = `📊 Stats (%25): ${statsPred || 'N/A'} (${statsConf}%) ${statsAgree ? '✅' : '❌'}`;
+  const oddsLine = `💰 Odds (%20): ${oddsPred || 'N/A'} (${oddsConf}%) ${oddsAgree ? '✅' : '❌'}`;
   const stratLine = `🧠 Strategy (%15): ${stratPred || 'N/A'} (${stratConf}%) ${stratAgree ? '✅' : '❌'}`;
+  const sentLine = hasSentiment 
+    ? `🎭 Sentiment (%15): ${sentPred} (${sentConf}%) ${sentAgree ? '✅' : '❌'}`
+    : '';
   
-  const detailedBreakdown = `${deepLine}\n${statsLine}\n${oddsLine}\n${stratLine}`;
+  const detailedBreakdown = sentLine 
+    ? `${deepLine}\n${statsLine}\n${oddsLine}\n${stratLine}\n${sentLine}`
+    : `${deepLine}\n${statsLine}\n${oddsLine}\n${stratLine}`;
   
-  // Build reasoning - Deep Analysis'in reasoning'ini öncelikli kullan
+  // Build reasoning
   let reasoning = '';
-  if (agreementCount >= 4) {
-    reasoning = isTr 
-      ? `${labels.strongConsensus}! 4/4 ${labels.agentsAgree}. ${deepReason || statsReason}`
-      : `${labels.strongConsensus}! 4/4 ${labels.agentsAgree}. ${deepReason || statsReason}`;
+  if (agreementCount >= totalAgents) {
+    reasoning = `${labels.strongConsensus}! ${agreementCount}/${totalAgents} ${labels.agentsAgree}. ${deepReason || statsReason}`;
   } else if (agreementCount >= 3) {
-    reasoning = isTr
-      ? `${labels.strongConsensus}! ${agreementCount}/4 ${labels.agentsAgree}. ${deepAgree ? deepReason : statsReason}`
-      : `${labels.strongConsensus}! ${agreementCount}/4 ${labels.agentsAgree}. ${deepAgree ? deepReason : statsReason}`;
+    reasoning = `${labels.strongConsensus}! ${agreementCount}/${totalAgents} ${labels.agentsAgree}. ${deepAgree ? deepReason : statsReason}`;
   } else if (agreementCount >= 2) {
     reasoning = isTr
-      ? `${agreementCount}/4 agent hemfikir. ${deepAgree ? deepReason : (statsAgree ? statsReason : oddsReason)}`
-      : `${agreementCount}/4 agents agree. ${deepAgree ? deepReason : (statsAgree ? statsReason : oddsReason)}`;
+      ? `${agreementCount}/${totalAgents} agent hemfikir. ${deepAgree ? deepReason : (statsAgree ? statsReason : oddsReason)}`
+      : `${agreementCount}/${totalAgents} agents agree. ${deepAgree ? deepReason : (statsAgree ? statsReason : oddsReason)}`;
   } else {
-    reasoning = isTr
-      ? `${labels.weakConsensus}. Ağırlıklı hesaplama: ${deepReason || statsReason}`
-      : `${labels.weakConsensus}. Weighted calculation: ${deepReason || statsReason}`;
+    reasoning = `${labels.weakConsensus}. ${isTr ? 'Ağırlıklı hesaplama' : 'Weighted calculation'}: ${deepReason || statsReason}`;
   }
   
   return { reasoning, detailedBreakdown, agreementCount };
 }
 
-// Ağırlıklı konsensüs hesaplama - 4 agent ile
+// Ağırlıklı konsensüs hesaplama - 5 agent ile
 function calculateWeightedConsensus(
   deepAnalysis: any,
   stats: any, 
   odds: any, 
-  strategy: any, 
+  strategy: any,
+  sentiment: any,  // YENİ parametre
   language: 'tr' | 'en' | 'de' = 'en'
 ): any {
   const weights = AGENT_WEIGHTS;
@@ -227,7 +248,7 @@ function calculateWeightedConsensus(
     ? (Math.max(overUnderVotes.over, overUnderVotes.under) / overUnderTotal) * 100
     : 50;
   
-  const overUnderConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, 'overUnder', overUnderPrediction, language);
+  const overUnderConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, sentiment, 'overUnder', overUnderPrediction, language);
   const overUnderConfidence = normalizeConfidence(overUnderRawConf, overUnderConsensus.agreementCount);
 
   // ==================== MATCH RESULT ====================
@@ -286,6 +307,20 @@ function calculateWeightedConsensus(
     matchVoteCount++;
   }
   
+  // 🎭 Sentiment agent - YENİ!
+  if (sentiment?.psychologicalEdge?.team) {
+    const edge = sentiment.psychologicalEdge.team;
+    const conf = sentiment.psychologicalEdge.confidence || 60;
+    if (edge === 'home') {
+      matchVotes['1'] += weights.sentiment * conf;
+    } else if (edge === 'away') {
+      matchVotes['2'] += weights.sentiment * conf;
+    } else {
+      matchVotes['X'] += weights.sentiment * conf;
+    }
+    matchVoteCount++;
+  }
+  
   const matchTotal = matchVotes['1'] + matchVotes['X'] + matchVotes['2'];
   const sortedMatches = Object.entries(matchVotes).sort((a, b) => b[1] - a[1]);
   const matchResultPrediction = sortedMatches[0][0];
@@ -293,7 +328,7 @@ function calculateWeightedConsensus(
     ? (sortedMatches[0][1] / matchTotal) * 100
     : 33;
   
-  const matchConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, 'matchResult', matchResultPrediction, language);
+  const matchConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, sentiment, 'matchResult', matchResultPrediction, language);
   const matchResultConfidence = normalizeConfidence(matchRawConf, matchConsensus.agreementCount);
 
   // ==================== BTTS ====================
@@ -344,7 +379,7 @@ function calculateWeightedConsensus(
     ? (Math.max(bttsVotes.yes, bttsVotes.no) / bttsTotal) * 100
     : 50;
   
-  const bttsConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, 'btts', bttsPrediction, language);
+  const bttsConsensus = generateConsensusReasoning(deepAnalysis, stats, odds, strategy, sentiment, 'btts', bttsPrediction, language);
   const bttsConfidence = normalizeConfidence(bttsRawConf, bttsConsensus.agreementCount);
 
   // ==================== BEST BET ====================
@@ -388,17 +423,10 @@ function calculateWeightedConsensus(
   const expectedScores = deepAnalysis?.expectedScores || [];
   const probabilities = deepAnalysis?.probabilities || { homeWin: 33, draw: 34, awayWin: 33 };
   const criticalFactors = deepAnalysis?.criticalFactors || [];
-
-  const [deepAnalysis, stats, odds, strategy, sentiment] = await Promise.all([
-  runDeepAnalysisAgent(matchData),
-  runStatsAgent(matchData),
-  runOddsAgent(matchData),
-  runStrategyAgent(matchData),
-  runSentimentAgent(matchData)  // YENİ!
-]);
-
-// Final tahmine sentiment'i uygula
-const adjustedPrediction = applySentimentToPrediction(finalPrediction, sentiment);
+  
+  // Sentiment warnings
+  const sentimentWarnings = sentiment?.warnings || [];
+  const psychEdge = sentiment?.psychologicalEdge;
   
   // Generate final summary
   const totalAgreement = overUnderConsensus.agreementCount + matchConsensus.agreementCount + bttsConsensus.agreementCount;
@@ -406,15 +434,19 @@ const adjustedPrediction = applySentimentToPrediction(finalPrediction, sentiment
   
   const finalSummary = isTr
     ? `🎯 FİNAL: ${bestBet.type} → ${bestBet.selection} (%${bestBet.confidence})\n` +
-      `📊 Toplam Uyum: ${totalAgreement}/12 agent oyu\n` +
-      `⚽ Tahmini Skor: ${scorePrediction.score}\n\n` +
-      `${bestBet.detailedBreakdown}\n\n` +
-      `${bestBet.agreement >= 3 ? '✅ GÜÇLÜ SİNYAL - ' + bestBet.agreement + '/4 agent hemfikir!' : (bestBet.agreement >= 2 ? '🟡 ORTA SİNYAL - ' + bestBet.agreement + '/4 agent hemfikir' : '⚠️ ZAYIF SİNYAL - Dikkatli olun')}`
+      `📊 Toplam Uyum: ${totalAgreement}/13 agent oyu\n` +
+      `⚽ Tahmini Skor: ${scorePrediction.score}\n` +
+      (psychEdge ? `🎭 Psikolojik Üstünlük: ${psychEdge.team === 'home' ? 'Ev Sahibi' : psychEdge.team === 'away' ? 'Deplasman' : 'Dengeli'} (%${psychEdge.confidence})\n` : '') +
+      `\n${bestBet.detailedBreakdown}\n\n` +
+      `${bestBet.agreement >= 4 ? '✅ GÜÇLÜ SİNYAL - ' + bestBet.agreement + ' agent hemfikir!' : (bestBet.agreement >= 3 ? '🟡 ORTA SİNYAL - ' + bestBet.agreement + ' agent hemfikir' : '⚠️ ZAYIF SİNYAL - Dikkatli olun')}` +
+      (sentimentWarnings.length > 0 ? `\n\n⚠️ UYARILAR:\n${sentimentWarnings.map((w: string) => `• ${w}`).join('\n')}` : '')
     : `🎯 FINAL: ${bestBet.type} → ${bestBet.selection} (${bestBet.confidence}%)\n` +
-      `📊 Total Agreement: ${totalAgreement}/12 agent votes\n` +
-      `⚽ Predicted Score: ${scorePrediction.score}\n\n` +
-      `${bestBet.detailedBreakdown}\n\n` +
-      `${bestBet.agreement >= 3 ? '✅ STRONG SIGNAL - ' + bestBet.agreement + '/4 agents agree!' : (bestBet.agreement >= 2 ? '🟡 MEDIUM SIGNAL - ' + bestBet.agreement + '/4 agents agree' : '⚠️ WEAK SIGNAL - Use caution')}`;
+      `📊 Total Agreement: ${totalAgreement}/13 agent votes\n` +
+      `⚽ Predicted Score: ${scorePrediction.score}\n` +
+      (psychEdge ? `🎭 Psychological Edge: ${psychEdge.team} (${psychEdge.confidence}%)\n` : '') +
+      `\n${bestBet.detailedBreakdown}\n\n` +
+      `${bestBet.agreement >= 4 ? '✅ STRONG SIGNAL - ' + bestBet.agreement + ' agents agree!' : (bestBet.agreement >= 3 ? '🟡 MEDIUM SIGNAL - ' + bestBet.agreement + ' agents agree' : '⚠️ WEAK SIGNAL - Use caution')}` +
+      (sentimentWarnings.length > 0 ? `\n\n⚠️ WARNINGS:\n${sentimentWarnings.map((w: string) => `• ${w}`).join('\n')}` : '');
 
   return {
     overUnder: {
@@ -458,6 +490,14 @@ const adjustedPrediction = applySentimentToPrediction(finalPrediction, sentiment
     matchAnalysis: deepAnalysis?.matchAnalysis || '',
     riskLevel: deepAnalysis?.riskLevel || 'Medium',
     
+    // Sentiment verileri
+    sentiment: {
+      homeTeam: sentiment?.homeTeam || null,
+      awayTeam: sentiment?.awayTeam || null,
+      psychologicalEdge: sentiment?.psychologicalEdge || null,
+      warnings: sentimentWarnings,
+    },
+    
     finalSummary,
     totalAgreement,
     agentContributions: {
@@ -465,12 +505,14 @@ const adjustedPrediction = applySentimentToPrediction(finalPrediction, sentiment
       stats: `${Math.round(weights.stats * 100)}%`,
       odds: `${Math.round(weights.odds * 100)}%`,
       strategy: `${Math.round(weights.strategy * 100)}%`,
+      sentiment: `${Math.round(weights.sentiment * 100)}%`,
     },
     agentSummaries: {
       deepAnalysis: deepAnalysis?.agentSummary || '',
       stats: stats?.agentSummary || '',
       odds: odds?.agentSummary || '',
       strategy: strategy?.agentSummary || '',
+      sentiment: sentiment?.agentSummary || '',
     },
   };
 }
@@ -484,26 +526,33 @@ export async function runFullAnalysis(
   const reports: AgentReport = {};
 
   console.log(`\n🚀 ═══════════════════════════════════════════════════`);
-  console.log(`🚀 4-AGENT DEEP ANALYSIS - ${matchData.homeTeam} vs ${matchData.awayTeam}`);
+  console.log(`🚀 5-AGENT ANALYSIS - ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`🚀 ═══════════════════════════════════════════════════\n`);
 
   try {
-    // Phase 1: Deep Analysis, Stats, Odds parallel
-    console.log('📊 Phase 1: Running Deep Analysis, Stats, Odds agents in parallel...');
-    const [deepAnalysisResult, statsResult, oddsResult] = await Promise.all([
+    // Phase 1: Deep Analysis, Stats, Odds, Sentiment parallel
+    console.log('📊 Phase 1: Running Deep Analysis, Stats, Odds, Sentiment agents in parallel...');
+    const [deepAnalysisResult, statsResult, oddsResult, sentimentResult] = await Promise.all([
       runDeepAnalysisAgent(matchData, language).catch(e => { errors.push(`DeepAnalysis: ${e.message}`); return null; }),
       runStatsAgent(matchData, language).catch(e => { errors.push(`Stats: ${e.message}`); return null; }),
       runOddsAgent(matchData, language).catch(e => { errors.push(`Odds: ${e.message}`); return null; }),
+      runSentimentAgent(matchData).catch(e => { errors.push(`Sentiment: ${e.message}`); return null; }),
     ]);
 
     reports.deepAnalysis = deepAnalysisResult;
     reports.stats = statsResult;
     reports.odds = oddsResult;
+    reports.sentiment = sentimentResult;
 
     console.log(`\n✅ Phase 1 complete:`);
     console.log(`   🔬 Deep: ${deepAnalysisResult?.matchResult?.prediction || 'N/A'} | ${deepAnalysisResult?.overUnder?.prediction || 'N/A'} | Score: ${deepAnalysisResult?.scorePrediction?.score || 'N/A'}`);
     console.log(`   📊 Stats: ${statsResult?.matchResult || 'N/A'} | ${statsResult?.overUnder || 'N/A'} | BTTS: ${statsResult?.btts || 'N/A'}`);
     console.log(`   💰 Odds: ${oddsResult?.matchWinnerValue || 'N/A'} | ${oddsResult?.recommendation || 'N/A'} | BTTS: ${oddsResult?.bttsValue || 'N/A'}`);
+    console.log(`   🎭 Sentiment: Edge=${sentimentResult?.psychologicalEdge?.team || 'N/A'} | Home Morale: ${sentimentResult?.homeTeam?.morale || 'N/A'}/10 | Away Morale: ${sentimentResult?.awayTeam?.morale || 'N/A'}/10`);
+    
+    if (sentimentResult?.warnings?.length > 0) {
+      console.log(`   ⚠️ Sentiment Warnings: ${sentimentResult.warnings.join(', ')}`);
+    }
 
     // Phase 2: Strategy (diğer agent sonuçlarını kullanır)
     console.log('\n🧠 Phase 2: Running Strategy agent...');
@@ -516,27 +565,48 @@ export async function runFullAnalysis(
     reports.strategy = strategyResult;
     console.log(`   🧠 Strategy: Best=${strategyResult?._bestBet?.type || 'N/A'} | Risk=${strategyResult?.riskAssessment || 'N/A'}`);
 
-    // Phase 3: Weighted Consensus (4 agent)
-    console.log('\n⚖️ Phase 3: Calculating 4-agent weighted consensus...');
-    const weightedConsensus = calculateWeightedConsensus(deepAnalysisResult, statsResult, oddsResult, strategyResult, language);
+    // Phase 3: Weighted Consensus (5 agent)
+    console.log('\n⚖️ Phase 3: Calculating 5-agent weighted consensus...');
+    const weightedConsensus = calculateWeightedConsensus(
+      deepAnalysisResult, 
+      statsResult, 
+      oddsResult, 
+      strategyResult, 
+      sentimentResult,  // YENİ parametre
+      language
+    );
     reports.weightedConsensus = weightedConsensus;
     
     console.log(`\n🎯 ═══════════════════════════════════════════════════`);
-    console.log(`🎯 FINAL CONSENSUS RESULTS (4 AGENTS)`);
+    console.log(`🎯 FINAL CONSENSUS RESULTS (5 AGENTS)`);
     console.log(`🎯 ═══════════════════════════════════════════════════`);
     console.log(`   Over/Under: ${weightedConsensus.overUnder.prediction} (${weightedConsensus.overUnder.confidence}%) [${weightedConsensus.overUnder.agreement}/4 agree]`);
-    console.log(`   Match Result: ${weightedConsensus.matchResult.prediction} (${weightedConsensus.matchResult.confidence}%) [${weightedConsensus.matchResult.agreement}/4 agree]`);
+    console.log(`   Match Result: ${weightedConsensus.matchResult.prediction} (${weightedConsensus.matchResult.confidence}%) [${weightedConsensus.matchResult.agreement}/5 agree]`);
     console.log(`   BTTS: ${weightedConsensus.btts.prediction} (${weightedConsensus.btts.confidence}%) [${weightedConsensus.btts.agreement}/4 agree]`);
     console.log(`\n   ⚽ PREDICTED SCORE: ${weightedConsensus.scorePrediction?.score || 'N/A'}`);
     console.log(`   📊 Probabilities: 1=${weightedConsensus.probabilities?.homeWin}% X=${weightedConsensus.probabilities?.draw}% 2=${weightedConsensus.probabilities?.awayWin}%`);
+    
+    if (weightedConsensus.sentiment?.psychologicalEdge) {
+      const edge = weightedConsensus.sentiment.psychologicalEdge;
+      console.log(`\n   🎭 PSYCHOLOGICAL EDGE: ${edge.team} (${edge.confidence}%)`);
+      console.log(`      Reasoning: ${edge.reasoning}`);
+    }
+    
     console.log(`\n   🏆 BEST BET: ${weightedConsensus.bestBet.type} - ${weightedConsensus.bestBet.selection} (${weightedConsensus.bestBet.confidence}%)`);
-    console.log(`   📊 Total Agreement: ${weightedConsensus.totalAgreement}/12`);
+    console.log(`   📊 Total Agreement: ${weightedConsensus.totalAgreement}/13`);
     console.log(`   ⚠️ Risk Level: ${weightedConsensus.riskLevel}`);
 
     if (weightedConsensus.criticalFactors && weightedConsensus.criticalFactors.length > 0) {
       console.log(`\n   📋 Critical Factors:`);
       weightedConsensus.criticalFactors.slice(0, 5).forEach((f: string, i: number) => {
         console.log(`      ${i + 1}. ${f}`);
+      });
+    }
+    
+    if (weightedConsensus.sentiment?.warnings?.length > 0) {
+      console.log(`\n   ⚠️ SENTIMENT WARNINGS:`);
+      weightedConsensus.sentiment.warnings.forEach((w: string) => {
+        console.log(`      • ${w}`);
       });
     }
 
