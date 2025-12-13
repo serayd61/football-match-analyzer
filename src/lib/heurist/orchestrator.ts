@@ -61,7 +61,7 @@ export interface OrchestratorResult {
     h2hMatches: number;
     hasOdds: boolean;
     hasOddsHistory: boolean;
-    score: number; // 0-100
+    score: number;
   };
   agentResults: {
     stats: AgentResult | null;
@@ -87,6 +87,13 @@ export interface OrchestratorResult {
   valueBets: string[];
   warnings: string[];
   timestamp: string;
+  // Backward compatibility
+  reports?: {
+    deepAnalysis: any;
+    stats: any;
+    odds: any;
+    strategy: any;
+  };
 }
 
 // ==================== VOTING SYSTEM ====================
@@ -107,7 +114,6 @@ function calculateVotes(
     
     if (field === 'matchResult') {
       value = result.matchResult || result.matchWinnerValue || 'X';
-      // Normalize: home -> 1, away -> 2, draw -> X
       if (value.toLowerCase() === 'home') value = '1';
       else if (value.toLowerCase() === 'away') value = '2';
       else if (value.toLowerCase() === 'draw') value = 'X';
@@ -130,7 +136,6 @@ function calculateVotes(
     confidences[value].push(conf);
   }
   
-  // En çok oy alan seçeneği bul
   let winner = '';
   let maxVotes = 0;
   
@@ -141,7 +146,6 @@ function calculateVotes(
     }
   }
   
-  // Ortalama confidence
   const avgConfidence = confidences[winner]
     ? Math.round(confidences[winner].reduce((a, b) => a + b, 0) / confidences[winner].length)
     : 50;
@@ -224,11 +228,10 @@ function assessDataQuality(matchData: CompleteMatchData): {
   const hasOdds = !!(matchData.odds?.matchWinner?.home && matchData.odds.matchWinner.home > 1);
   const hasOddsHistory = !!(matchData.oddsHistory?.homeWin?.opening);
   
-  // Score calculation (0-100)
   let score = 0;
-  score += Math.min(25, homeFormMatches * 5); // Max 25 for 5 matches
-  score += Math.min(25, awayFormMatches * 5); // Max 25 for 5 matches
-  score += Math.min(20, h2hMatches * 4);      // Max 20 for 5 H2H matches
+  score += Math.min(25, homeFormMatches * 5);
+  score += Math.min(25, awayFormMatches * 5);
+  score += Math.min(20, h2hMatches * 4);
   score += hasOdds ? 15 : 0;
   score += hasOddsHistory ? 15 : 0;
   
@@ -251,7 +254,6 @@ function buildFinalPrediction(
   language: 'tr' | 'en' | 'de'
 ): OrchestratorResult['finalPrediction'] {
   
-  // Consensus varsa confidence'ı artır
   let matchResultConf = consensus.matchResult.confidence;
   let overUnderConf = consensus.overUnder.confidence;
   let bttsConf = consensus.btts.confidence;
@@ -260,7 +262,6 @@ function buildFinalPrediction(
   if (consensus.overUnder.isConsensus) overUnderConf += 5;
   if (consensus.btts.isConsensus) bttsConf += 5;
   
-  // Sharp money onayı varsa confidence'ı artır
   if (agentResults.odds?.hasSharpConfirmation) {
     const sharpDir = agentResults.odds.sharpMoneyAnalysis?.direction;
     if (sharpDir === 'home' && consensus.matchResult.prediction === '1') matchResultConf += 8;
@@ -269,20 +270,17 @@ function buildFinalPrediction(
     if (sharpDir === 'under' && consensus.overUnder.prediction === 'Under') overUnderConf += 8;
   }
   
-  // Data quality'ye göre ayarla
   const qualityMultiplier = 0.85 + (dataQuality.score / 100) * 0.15;
   matchResultConf = Math.round(matchResultConf * qualityMultiplier);
   overUnderConf = Math.round(overUnderConf * qualityMultiplier);
   bttsConf = Math.round(bttsConf * qualityMultiplier);
   
-  // Clamp values
   matchResultConf = Math.min(90, Math.max(45, matchResultConf));
   overUnderConf = Math.min(90, Math.max(45, overUnderConf));
   bttsConf = Math.min(90, Math.max(45, bttsConf));
   
   const overallConfidence = Math.round((matchResultConf + overUnderConf + bttsConf) / 3);
   
-  // Recommendation
   const recommendations = {
     tr: {
       high: '🔥 GÜÇLÜ TAHMİN - Yüksek güvenle oyna',
@@ -333,7 +331,6 @@ function collectValueBets(agentResults: { stats: AgentResult | null; odds: Agent
     valueBets.push(...agentResults.odds.valueBets);
   }
   
-  // Real value checks'ten de ekle
   if (agentResults.odds?.realValueChecks) {
     const checks = agentResults.odds.realValueChecks;
     
@@ -375,7 +372,6 @@ function collectWarnings(
       noConsensusBtts: '⚠️ Agent\'lar BTTS\'de hemfikir değil',
       oddsRising: '⚠️ Oranlar yükseliyor - bahisçi bir şey biliyor olabilir',
       noH2H: '📊 H2H verisi yok veya yetersiz',
-      noOdds: '📊 Oran verisi eksik',
     },
     en: {
       lowData: '📊 Low data quality - predictions less reliable',
@@ -384,7 +380,6 @@ function collectWarnings(
       noConsensusBtts: '⚠️ Agents disagree on BTTS',
       oddsRising: '⚠️ Odds rising - bookies may know something',
       noH2H: '📊 No or insufficient H2H data',
-      noOdds: '📊 Odds data missing',
     },
     de: {
       lowData: '📊 Geringe Datenqualität - Vorhersagen weniger zuverlässig',
@@ -393,22 +388,18 @@ function collectWarnings(
       noConsensusBtts: '⚠️ Agenten uneinig bei BTTS',
       oddsRising: '⚠️ Quoten steigen - Buchmacher wissen vielleicht etwas',
       noH2H: '📊 Keine oder unzureichende H2H-Daten',
-      noOdds: '📊 Quotendaten fehlen',
     },
   };
   
   const msg = messages[language] || messages.en;
   
-  // Data quality warnings
   if (dataQuality.score < 50) warnings.push(msg.lowData);
   if (dataQuality.h2hMatches === 0) warnings.push(msg.noH2H);
   
-  // Consensus warnings
   if (!consensus.matchResult.isConsensus) warnings.push(msg.noConsensusMatch);
   if (!consensus.overUnder.isConsensus) warnings.push(msg.noConsensusOU);
   if (!consensus.btts.isConsensus) warnings.push(msg.noConsensusBtts);
   
-  // Odds rising warning
   if (agentResults.odds?.realValueChecks) {
     const checks = agentResults.odds.realValueChecks;
     if (
@@ -434,7 +425,7 @@ export async function runOrchestrator(
     awayTeamName?: string;
     league?: string;
     leagueId?: number;
-    matchData?: MatchData; // Eğer veri zaten varsa
+    matchData?: MatchData;
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<OrchestratorResult> {
@@ -449,11 +440,9 @@ export async function runOrchestrator(
     let matchData: CompleteMatchData;
     
     if (input.matchData) {
-      // Veri zaten sağlanmış
       matchData = input.matchData as CompleteMatchData;
       console.log('📊 Using provided match data');
     } else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
-      // Fixture ID ve team ID'ler var
       console.log('📊 Fetching complete match data...');
       matchData = await fetchCompleteMatchData(
         input.fixtureId,
@@ -465,7 +454,6 @@ export async function runOrchestrator(
         input.leagueId
       );
     } else if (input.fixtureId) {
-      // Sadece fixture ID var
       console.log('📊 Fetching match data by fixture ID...');
       const data = await fetchMatchDataByFixtureId(input.fixtureId);
       if (!data) {
@@ -555,6 +543,26 @@ export async function runOrchestrator(
       valueBets,
       warnings,
       timestamp: new Date().toISOString(),
+      // Backward compatibility
+      reports: {
+        deepAnalysis: {
+          matchResult: finalPrediction.matchResult,
+          matchResultConfidence: finalPrediction.matchResultConfidence,
+          overUnder: finalPrediction.overUnder,
+          overUnderConfidence: finalPrediction.overUnderConfidence,
+          btts: finalPrediction.btts,
+          bttsConfidence: finalPrediction.bttsConfidence,
+          summary: finalPrediction.recommendation,
+        },
+        stats: statsResult,
+        odds: oddsResult,
+        strategy: {
+          valueBets,
+          recommendation: finalPrediction.recommendation,
+          confidence: finalPrediction.overallConfidence,
+          sharpMoney: sharpMoneyAlert,
+        },
+      },
     };
     
   } catch (error) {
@@ -595,52 +603,13 @@ export async function runOrchestrator(
       valueBets: [],
       warnings: [`Error: ${error instanceof Error ? error.message : 'Unknown error'}`],
       timestamp: new Date().toISOString(),
-      return {
-      success: true,
-      matchInfo: {
-        homeTeam: matchData.homeTeam,
-        awayTeam: matchData.awayTeam,
-        league: matchData.league,
-        fixtureId: matchData.fixtureId,
-      },
-      dataQuality,
-      agentResults,
-      consensus,
-      finalPrediction,
-      sharpMoneyAlert,
-      valueBets,
-      warnings,
-      timestamp: new Date().toISOString(),
-      
-      // ==================== BACKWARD COMPATIBILITY ====================
-      // Eski API route'lar için reports alias
-           reports: {
+      // Backward compatibility
+      reports: {
         deepAnalysis: null,
         stats: null,
         odds: null,
         strategy: null,
       },
-    };
-      reports: {
-        deepAnalysis: {
-          matchResult: finalPrediction.matchResult,
-          matchResultConfidence: finalPrediction.matchResultConfidence,
-          overUnder: finalPrediction.overUnder,
-          overUnderConfidence: finalPrediction.overUnderConfidence,
-          btts: finalPrediction.btts,
-          bttsConfidence: finalPrediction.bttsConfidence,
-          summary: finalPrediction.recommendation,
-        },
-        stats: statsResult,
-        odds: oddsResult,
-        strategy: {
-          valueBets,
-          recommendation: finalPrediction.recommendation,
-          confidence: finalPrediction.overallConfidence,
-          sharpMoney: sharpMoneyAlert,
-        },
-      },
-    };
     };
   }
 }
@@ -669,7 +638,6 @@ export async function runBatchOrchestrator(
   const maxConcurrent = options?.maxConcurrent || 3;
   const delayBetween = options?.delayBetween || 1000;
   
-  // Process in batches
   for (let i = 0; i < fixtures.length; i += maxConcurrent) {
     const batch = fixtures.slice(i, i + maxConcurrent);
     
@@ -681,13 +649,11 @@ export async function runBatchOrchestrator(
     
     results.push(...batchResults);
     
-    // Delay between batches (rate limiting)
     if (i + maxConcurrent < fixtures.length) {
       await new Promise(resolve => setTimeout(resolve, delayBetween));
     }
   }
   
-  // Summary
   const successful = results.filter(r => r.success).length;
   const highConfidence = results.filter(r => r.finalPrediction.overallConfidence >= 70).length;
   
@@ -696,8 +662,10 @@ export async function runBatchOrchestrator(
   return results;
 }
 
-// ==================== EXPORT FOR API ====================
+// ==================== BACKWARD COMPATIBILITY ====================
+
 export const runFullAnalysis = runOrchestrator;
 
+// ==================== EXPORT ====================
 
 export type { CompleteMatchData };
