@@ -651,5 +651,7 @@ export async function runBatchOrchestrator(
 }
 
 // ==================== EXPORT FOR API ====================
+export const runFullAnalysis = runOrchestrator;
+
 
 export type { CompleteMatchData };
