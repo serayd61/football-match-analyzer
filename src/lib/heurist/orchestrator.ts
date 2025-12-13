@@ -485,11 +485,13 @@ export async function runOrchestrator(
     const agentsStart = Date.now();
     
     const [statsResult, oddsResult] = await Promise.all([
-      runStatsAgent(matchData as MatchData, language).catch(err => {
+      runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
+
         console.error('Stats agent failed:', err);
         return null;
       }),
-      runOddsAgent(matchData as MatchData, language).catch(err => {
+      runOddsAgent(matchData as unknown as MatchData, language).catch(err => {
+
         console.error('Odds agent failed:', err);
         return null;
       }),
