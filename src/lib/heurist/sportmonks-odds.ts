@@ -1,466 +1,292 @@
-// src/lib/heurist/sportmonks-data.ts
-// Sportmonks Complete Data Layer
+// src/lib/heurist/sportmonks-odds.ts
+// Historical Odds & Sharp Money Detection
 
 const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_TOKEN;
-const BASE_URL = 'https://api.sportmonks.com/v3/football';
 
 // ==================== TYPES ====================
 
-export interface TeamStats {
-  form: string;
-  points: number;
-  avgGoalsScored: string;
-  avgGoalsConceded: string;
-  over25Percentage: string;
-  bttsPercentage: string;
-  cleanSheetPercentage: string;
-  failedToScorePercentage: string;
-  record: string;
-  matchCount: number;
-  matchDetails: MatchDetail[];
+export interface OddsHistory {
+  opening: number;
+  current: number;
+  movement: 'dropping' | 'rising' | 'stable';
+  changePercent: number;
 }
 
-export interface MatchDetail {
-  opponent: string;
-  score: string;
-  result: 'W' | 'D' | 'L';
-  goalsScored: number;
-  goalsConceded: number;
-  date: string;
+export interface MatchOddsHistory {
+  homeWin: OddsHistory;
+  draw: OddsHistory;
+  awayWin: OddsHistory;
+  over25: OddsHistory;
+  under25: OddsHistory;
+  bttsYes: OddsHistory;
+  bttsNo: OddsHistory;
 }
 
-export interface H2HStats {
-  totalMatches: number;
-  homeWins: number;
-  awayWins: number;
-  draws: number;
-  avgTotalGoals: string;
-  over25Percentage: string;
-  bttsPercentage: string;
-  matchDetails: MatchDetail[];
-}
-
-export interface CompleteMatchData {
-  fixtureId: number;
-  homeTeam: string;
-  awayTeam: string;
-  homeTeamId: number;
-  awayTeamId: number;
-  league: string;
-  leagueId: number;
-  kickOff: string;
-  
-  homeForm: TeamStats;
-  awayForm: TeamStats;
-  h2h: H2HStats;
-  
-  odds: {
-    matchWinner: { home: number; draw: number; away: number };
-    overUnder: { '2.5': { over: number; under: number } };
-    btts: { yes: number; no: number };
+export interface SharpMoneyResult {
+  direction: 'home' | 'away' | 'draw' | 'over' | 'under' | 'none';
+  confidence: 'high' | 'medium' | 'low';
+  reasoning: {
+    tr: string;
+    en: string;
+    de: string;
   };
-  
-  oddsHistory?: any; // Historical odds için
 }
 
-// ==================== HELPER FUNCTIONS ====================
+// ==================== HELPERS ====================
 
-async function fetchSportmonks(endpoint: string): Promise<any> {
+function calculateMovement(opening: number, current: number): 'dropping' | 'rising' | 'stable' {
+  if (!opening || !current) return 'stable';
+  const changePercent = ((current - opening) / opening) * 100;
+  if (changePercent <= -5) return 'dropping';  // %5+ düştü - SHARP MONEY
+  if (changePercent >= 5) return 'rising';      // %5+ yükseldi
+  return 'stable';
+}
+
+function createOddsHistory(opening: number, current: number): OddsHistory {
+  const actualOpening = opening || current || 2.0;
+  const actualCurrent = current || opening || 2.0;
+  return {
+    opening: actualOpening,
+    current: actualCurrent,
+    movement: calculateMovement(actualOpening, actualCurrent),
+    changePercent: actualOpening ? Math.round(((actualCurrent - actualOpening) / actualOpening) * 100) : 0,
+  };
+}
+
+// ==================== FETCH HISTORICAL ODDS ====================
+
+export async function fetchHistoricalOdds(fixtureId: number): Promise<MatchOddsHistory | null> {
+  if (!SPORTMONKS_TOKEN || !fixtureId) {
+    console.log('⚠️ No token or fixtureId for historical odds');
+    return null;
+  }
+
   try {
-    const url = `${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_token=${SPORTMONKS_TOKEN}`;
-    console.log(`📡 Fetching: ${endpoint}`);
-    
-    const response = await fetch(url, { next: { revalidate: 300 } });
-    
+    const response = await fetch(
+      `https://api.sportmonks.com/v3/football/odds/pre-match/fixtures/${fixtureId}?api_token=${SPORTMONKS_TOKEN}&include=market;bookmaker`,
+      { next: { revalidate: 300 } }
+    );
+
     if (!response.ok) {
-      console.error(`Sportmonks API error: ${response.status}`);
+      console.error('Sportmonks odds API error:', response.status);
       return null;
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    const odds = data.data || [];
+
+    // Değişkenler
+    let homeWinOpening = 0, homeWinCurrent = 0;
+    let drawOpening = 0, drawCurrent = 0;
+    let awayWinOpening = 0, awayWinCurrent = 0;
+    let over25Opening = 0, over25Current = 0;
+    let under25Opening = 0, under25Current = 0;
+    let bttsYesOpening = 0, bttsYesCurrent = 0;
+    let bttsNoOpening = 0, bttsNoCurrent = 0;
+
+    for (const odd of odds) {
+      const marketId = odd.market_id;
+      const label = odd.label?.toString() || '';
+      const value = parseFloat(odd.value) || 0;
+      const isOriginal = odd.original === true;
+
+      // Match Winner (1X2) - Market ID: 1
+      if (marketId === 1) {
+        if (label === '1' || label.toLowerCase() === 'home') {
+          if (isOriginal) homeWinOpening = value;
+          else homeWinCurrent = Math.max(homeWinCurrent, value);
+        } else if (label === 'X' || label.toLowerCase() === 'draw') {
+          if (isOriginal) drawOpening = value;
+          else drawCurrent = Math.max(drawCurrent, value);
+        } else if (label === '2' || label.toLowerCase() === 'away') {
+          if (isOriginal) awayWinOpening = value;
+          else awayWinCurrent = Math.max(awayWinCurrent, value);
+        }
+      }
+
+      // Over/Under 2.5 - Market ID: 12
+      if (marketId === 12 || marketId === 18) {
+        const total = odd.total || odd.name || '';
+        if (total.toString().includes('2.5')) {
+          if (label.toLowerCase() === 'over') {
+            if (isOriginal) over25Opening = value;
+            else over25Current = Math.max(over25Current, value);
+          } else if (label.toLowerCase() === 'under') {
+            if (isOriginal) under25Opening = value;
+            else under25Current = Math.max(under25Current, value);
+          }
+        }
+      }
+
+      // BTTS - Market ID: 28
+      if (marketId === 28 || marketId === 29) {
+        if (label.toLowerCase() === 'yes') {
+          if (isOriginal) bttsYesOpening = value;
+          else bttsYesCurrent = Math.max(bttsYesCurrent, value);
+        } else if (label.toLowerCase() === 'no') {
+          if (isOriginal) bttsNoOpening = value;
+          else bttsNoCurrent = Math.max(bttsNoCurrent, value);
+        }
+      }
+    }
+
+    console.log(`📊 Historical Odds: Home ${homeWinOpening}→${homeWinCurrent}, Over ${over25Opening}→${over25Current}`);
+
+    return {
+      homeWin: createOddsHistory(homeWinOpening, homeWinCurrent),
+      draw: createOddsHistory(drawOpening, drawCurrent),
+      awayWin: createOddsHistory(awayWinOpening, awayWinCurrent),
+      over25: createOddsHistory(over25Opening, over25Current),
+      under25: createOddsHistory(under25Opening, under25Current),
+      bttsYes: createOddsHistory(bttsYesOpening, bttsYesCurrent),
+      bttsNo: createOddsHistory(bttsNoOpening, bttsNoCurrent),
+    };
   } catch (error) {
-    console.error(`Sportmonks fetch error:`, error);
+    console.error('Failed to fetch historical odds:', error);
     return null;
   }
 }
 
-function calculateForm(matches: any[], teamId: number): { form: string; points: number; details: MatchDetail[] } {
-  if (!matches || matches.length === 0) {
-    return { form: 'DDDDD', points: 5, details: [] };
-  }
-  
-  let form = '';
-  let points = 0;
-  const details: MatchDetail[] = [];
-  
-  // Son 5 maç
-  const lastFive = matches.slice(0, 5);
-  
-  for (const match of lastFive) {
-    const scores = match.scores || [];
-    const participants = match.participants || [];
-    
-    // Ev sahibi ve deplasman skorlarını bul
-    let homeScore = 0, awayScore = 0;
-    for (const score of scores) {
-      if (score.description === 'CURRENT' || score.description === '2ND_HALF') {
-        if (score.score?.participant === 'home') homeScore = score.score.goals || 0;
-        if (score.score?.participant === 'away') awayScore = score.score.goals || 0;
-      }
+// ==================== SHARP MONEY ANALYSIS ====================
+
+export function analyzeSharpMoney(oddsHistory: MatchOddsHistory): SharpMoneyResult {
+  const allMovements = [
+    { key: 'home', data: oddsHistory.homeWin, label: { tr: 'Ev Galibiyeti', en: 'Home Win', de: 'Heimsieg' } },
+    { key: 'draw', data: oddsHistory.draw, label: { tr: 'Beraberlik', en: 'Draw', de: 'Unentschieden' } },
+    { key: 'away', data: oddsHistory.awayWin, label: { tr: 'Deplasman', en: 'Away Win', de: 'Auswärtssieg' } },
+    { key: 'over', data: oddsHistory.over25, label: { tr: 'Üst 2.5', en: 'Over 2.5', de: 'Über 2.5' } },
+    { key: 'under', data: oddsHistory.under25, label: { tr: 'Alt 2.5', en: 'Under 2.5', de: 'Unter 2.5' } },
+  ];
+
+  // En çok düşen oranı bul
+  let maxDrop = 0;
+  let sharpDirection: any = 'none';
+  let sharpLabel = { tr: '', en: '', de: '' };
+
+  for (const item of allMovements) {
+    if (item.data.movement === 'dropping' && Math.abs(item.data.changePercent) > maxDrop) {
+      maxDrop = Math.abs(item.data.changePercent);
+      sharpDirection = item.key;
+      sharpLabel = item.label;
     }
-    
-    // Takım ev sahibi mi deplasman mı?
-    const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
-    const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
-    
-    const isHome = homeTeam?.id === teamId;
-    const teamScore = isHome ? homeScore : awayScore;
-    const oppScore = isHome ? awayScore : homeScore;
-    const opponent = isHome ? awayTeam?.name : homeTeam?.name;
-    
-    // Sonuç
-    let result: 'W' | 'D' | 'L';
-    if (teamScore > oppScore) {
-      result = 'W';
-      points += 3;
-    } else if (teamScore < oppScore) {
-      result = 'L';
-    } else {
-      result = 'D';
-      points += 1;
-    }
-    
-    form += result;
-    details.push({
-      opponent: opponent || 'Unknown',
-      score: `${teamScore}-${oppScore}`,
-      result,
-      goalsScored: teamScore,
-      goalsConceded: oppScore,
-      date: match.starting_at || '',
-    });
   }
-  
-  return { form: form || 'DDDDD', points, details };
-}
 
-function calculateGoalStats(details: MatchDetail[]): {
-  avgScored: number;
-  avgConceded: number;
-  over25: number;
-  btts: number;
-  cleanSheet: number;
-  failedToScore: number;
-} {
-  if (details.length === 0) {
-    return { avgScored: 1.2, avgConceded: 1.0, over25: 50, btts: 50, cleanSheet: 30, failedToScore: 20 };
-  }
-  
-  let totalScored = 0;
-  let totalConceded = 0;
-  let over25Count = 0;
-  let bttsCount = 0;
-  let cleanSheetCount = 0;
-  let failedToScoreCount = 0;
-  
-  for (const match of details) {
-    totalScored += match.goalsScored;
-    totalConceded += match.goalsConceded;
-    
-    const totalGoals = match.goalsScored + match.goalsConceded;
-    if (totalGoals > 2.5) over25Count++;
-    if (match.goalsScored > 0 && match.goalsConceded > 0) bttsCount++;
-    if (match.goalsConceded === 0) cleanSheetCount++;
-    if (match.goalsScored === 0) failedToScoreCount++;
-  }
-  
-  const count = details.length;
-  return {
-    avgScored: totalScored / count,
-    avgConceded: totalConceded / count,
-    over25: Math.round((over25Count / count) * 100),
-    btts: Math.round((bttsCount / count) * 100),
-    cleanSheet: Math.round((cleanSheetCount / count) * 100),
-    failedToScore: Math.round((failedToScoreCount / count) * 100),
-  };
-}
-
-// ==================== MAIN DATA FETCHERS ====================
-
-// Takımın son maçlarını çek
-export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, count: number = 5): Promise<any[]> {
-  let endpoint = `/fixtures?filters=teamIds:${teamId}`;
-  if (leagueId) endpoint += `;fixtureLeagues:${leagueId}`;
-  endpoint += `&include=scores;participants&per_page=${count}&order=desc`;
-  
-  const data = await fetchSportmonks(endpoint);
-  return data?.data || [];
-}
-
-// H2H verilerini çek
-export async function fetchH2H(team1Id: number, team2Id: number): Promise<H2HStats> {
-  const endpoint = `/fixtures/head-to-head/${team1Id}/${team2Id}?include=scores;participants&per_page=10`;
-  const data = await fetchSportmonks(endpoint);
-  
-  const matches = data?.data || [];
-  
-  if (matches.length === 0) {
+  if (maxDrop >= 10) {
     return {
-      totalMatches: 0,
-      homeWins: 0,
-      awayWins: 0,
-      draws: 0,
-      avgTotalGoals: '2.5',
-      over25Percentage: '50',
-      bttsPercentage: '50',
-      matchDetails: [],
+      direction: sharpDirection,
+      confidence: 'high',
+      reasoning: {
+        tr: `🔥 SHARP MONEY ALERT! ${sharpLabel.tr} oranı %${maxDrop} DÜŞTÜ! Profesyoneller bu tarafa oynuyor!`,
+        en: `🔥 SHARP MONEY ALERT! ${sharpLabel.en} odds DROPPED ${maxDrop}%! Pros are betting this way!`,
+        de: `🔥 SHARP MONEY ALARM! ${sharpLabel.de} Quote um ${maxDrop}% GEFALLEN! Profis setzen hierauf!`,
+      },
+    };
+  } else if (maxDrop >= 5) {
+    return {
+      direction: sharpDirection,
+      confidence: 'medium',
+      reasoning: {
+        tr: `📊 ${sharpLabel.tr} oranı %${maxDrop} düştü. Dikkat edilmeli.`,
+        en: `📊 ${sharpLabel.en} odds dropped ${maxDrop}%. Worth noting.`,
+        de: `📊 ${sharpLabel.de} Quote um ${maxDrop}% gefallen. Beachtenswert.`,
+      },
     };
   }
-  
-  let homeWins = 0, awayWins = 0, draws = 0;
-  let totalGoals = 0;
-  let over25Count = 0;
-  let bttsCount = 0;
-  const matchDetails: MatchDetail[] = [];
-  
-  for (const match of matches) {
-    const scores = match.scores || [];
-    let homeScore = 0, awayScore = 0;
-    
-    for (const score of scores) {
-      if (score.description === 'CURRENT' || score.description === '2ND_HALF') {
-        if (score.score?.participant === 'home') homeScore = score.score.goals || 0;
-        if (score.score?.participant === 'away') awayScore = score.score.goals || 0;
-      }
-    }
-    
-    const total = homeScore + awayScore;
-    totalGoals += total;
-    
-    if (total > 2.5) over25Count++;
-    if (homeScore > 0 && awayScore > 0) bttsCount++;
-    
-    if (homeScore > awayScore) homeWins++;
-    else if (awayScore > homeScore) awayWins++;
-    else draws++;
-    
-    const participants = match.participants || [];
-    const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
-    const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
-    
-    matchDetails.push({
-      opponent: `${homeTeam?.name || '?'} vs ${awayTeam?.name || '?'}`,
-      score: `${homeScore}-${awayScore}`,
-      result: homeScore > awayScore ? 'W' : awayScore > homeScore ? 'L' : 'D',
-      goalsScored: homeScore,
-      goalsConceded: awayScore,
-      date: match.starting_at || '',
-    });
-  }
-  
-  const count = matches.length;
-  return {
-    totalMatches: count,
-    homeWins,
-    awayWins,
-    draws,
-    avgTotalGoals: (totalGoals / count).toFixed(2),
-    over25Percentage: Math.round((over25Count / count) * 100).toString(),
-    bttsPercentage: Math.round((bttsCount / count) * 100).toString(),
-    matchDetails,
-  };
-}
 
-// Pre-match oranları çek
-export async function fetchPreMatchOdds(fixtureId: number): Promise<any> {
-  const endpoint = `/odds/pre-match/fixtures/${fixtureId}?include=market;bookmaker`;
-  const data = await fetchSportmonks(endpoint);
-  
-  const odds = data?.data || [];
-  
-  let home = 2.0, draw = 3.5, away = 3.5;
-  let over25 = 1.9, under25 = 1.9;
-  let bttsYes = 1.85, bttsNo = 1.95;
-  
-  // Opening odds için
-  let homeOpening = 0, homeCurrentList: number[] = [];
-  let over25Opening = 0, over25CurrentList: number[] = [];
-  let bttsYesOpening = 0, bttsYesCurrentList: number[] = [];
-  
-  for (const odd of odds) {
-    const marketId = odd.market_id;
-    const label = odd.label?.toString() || '';
-    const value = parseFloat(odd.value) || 0;
-    const isOriginal = odd.original === true;
-    
-    // Match Winner (1X2)
-    if (marketId === 1) {
-      if (label === '1' || label.toLowerCase() === 'home') {
-        if (isOriginal) homeOpening = value;
-        else homeCurrentList.push(value);
-        if (value > 1) home = value;
-      } else if (label === 'X' || label.toLowerCase() === 'draw') {
-        if (value > 1) draw = value;
-      } else if (label === '2' || label.toLowerCase() === 'away') {
-        if (value > 1) away = value;
-      }
-    }
-    
-    // Over/Under
-    if ((marketId === 12 || marketId === 18) && (odd.total?.toString().includes('2.5') || odd.name?.includes('2.5'))) {
-      if (label.toLowerCase() === 'over') {
-        if (isOriginal) over25Opening = value;
-        else over25CurrentList.push(value);
-        if (value > 1) over25 = value;
-      } else if (label.toLowerCase() === 'under') {
-        if (value > 1) under25 = value;
-      }
-    }
-    
-    // BTTS
-    if (marketId === 28 || marketId === 29) {
-      if (label.toLowerCase() === 'yes') {
-        if (isOriginal) bttsYesOpening = value;
-        else bttsYesCurrentList.push(value);
-        if (value > 1) bttsYes = value;
-      } else if (label.toLowerCase() === 'no') {
-        if (value > 1) bttsNo = value;
-      }
-    }
-  }
-  
-  // En iyi güncel oranı bul
-  const homeCurrent = homeCurrentList.length > 0 ? Math.max(...homeCurrentList) : home;
-  const over25Current = over25CurrentList.length > 0 ? Math.max(...over25CurrentList) : over25;
-  const bttsYesCurrent = bttsYesCurrentList.length > 0 ? Math.max(...bttsYesCurrentList) : bttsYes;
-  
   return {
-    current: {
-      matchWinner: { home, draw, away },
-      overUnder: { '2.5': { over: over25, under: under25 } },
-      btts: { yes: bttsYes, no: bttsNo },
-    },
-    history: {
-      homeWin: { opening: homeOpening || home, current: homeCurrent },
-      over25: { opening: over25Opening || over25, current: over25Current },
-      bttsYes: { opening: bttsYesOpening || bttsYes, current: bttsYesCurrent },
+    direction: 'none',
+    confidence: 'low',
+    reasoning: {
+      tr: '📊 Oran hareketi normal. Belirgin sharp money yok.',
+      en: '📊 Normal odds movement. No significant sharp money.',
+      de: '📊 Normale Quotenbewegung. Kein signifikantes Sharp Money.',
     },
   };
 }
 
-// ==================== COMPLETE MATCH DATA ====================
+// ==================== REAL VALUE DETECTION ====================
 
-export async function fetchCompleteMatchData(
-  fixtureId: number,
-  homeTeamId: number,
-  awayTeamId: number,
-  homeTeamName: string,
-  awayTeamName: string,
-  league: string,
-  leagueId?: number
-): Promise<CompleteMatchData> {
-  console.log(`\n🔄 Fetching complete data for ${homeTeamName} vs ${awayTeamName}...`);
-  
-  // Paralel olarak tüm verileri çek
-  const [
-    homeMatches,
-    awayMatches,
-    h2hData,
-    oddsData,
-  ] = await Promise.all([
-    fetchTeamRecentMatches(homeTeamId, leagueId, 5),
-    fetchTeamRecentMatches(awayTeamId, leagueId, 5),
-    fetchH2H(homeTeamId, awayTeamId),
-    fetchPreMatchOdds(fixtureId),
-  ]);
-  
-  // Home team stats
-  const homeFormData = calculateForm(homeMatches, homeTeamId);
-  const homeGoalStats = calculateGoalStats(homeFormData.details);
-  
-  const homeForm: TeamStats = {
-    form: homeFormData.form,
-    points: homeFormData.points,
-    avgGoalsScored: homeGoalStats.avgScored.toFixed(2),
-    avgGoalsConceded: homeGoalStats.avgConceded.toFixed(2),
-    over25Percentage: homeGoalStats.over25.toString(),
-    bttsPercentage: homeGoalStats.btts.toString(),
-    cleanSheetPercentage: homeGoalStats.cleanSheet.toString(),
-    failedToScorePercentage: homeGoalStats.failedToScore.toString(),
-    record: `${homeFormData.form.match(/W/g)?.length || 0}W-${homeFormData.form.match(/D/g)?.length || 0}D-${homeFormData.form.match(/L/g)?.length || 0}L`,
-    matchCount: homeFormData.details.length,
-    matchDetails: homeFormData.details,
+export interface RealValueResult {
+  isValue: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  reason: {
+    tr: string;
+    en: string;
+    de: string;
   };
-  
-  // Away team stats
-  const awayFormData = calculateForm(awayMatches, awayTeamId);
-  const awayGoalStats = calculateGoalStats(awayFormData.details);
-  
-  const awayForm: TeamStats = {
-    form: awayFormData.form,
-    points: awayFormData.points,
-    avgGoalsScored: awayGoalStats.avgScored.toFixed(2),
-    avgGoalsConceded: awayGoalStats.avgConceded.toFixed(2),
-    over25Percentage: awayGoalStats.over25.toString(),
-    bttsPercentage: awayGoalStats.btts.toString(),
-    cleanSheetPercentage: awayGoalStats.cleanSheet.toString(),
-    failedToScorePercentage: awayGoalStats.failedToScore.toString(),
-    record: `${awayFormData.form.match(/W/g)?.length || 0}W-${awayFormData.form.match(/D/g)?.length || 0}D-${awayFormData.form.match(/L/g)?.length || 0}L`,
-    matchCount: awayFormData.details.length,
-    matchDetails: awayFormData.details,
-  };
-  
-  console.log(`✅ Home (${homeTeamName}): ${homeForm.form} | ${homeForm.avgGoalsScored} gol/maç | Over: ${homeForm.over25Percentage}%`);
-  console.log(`✅ Away (${awayTeamName}): ${awayForm.form} | ${awayForm.avgGoalsScored} gol/maç | Over: ${awayForm.over25Percentage}%`);
-  console.log(`✅ H2H: ${h2hData.totalMatches} maç | Over: ${h2hData.over25Percentage}% | BTTS: ${h2hData.bttsPercentage}%`);
-  console.log(`✅ Odds: Home ${oddsData.current.matchWinner.home} | Over ${oddsData.current.overUnder['2.5'].over}`);
-  
-  return {
-    fixtureId,
-    homeTeam: homeTeamName,
-    awayTeam: awayTeamName,
-    homeTeamId,
-    awayTeamId,
-    league,
-    leagueId: leagueId || 0,
-    kickOff: '',
-    homeForm,
-    awayForm,
-    h2h: h2hData,
-    odds: oddsData.current,
-    oddsHistory: oddsData.history,
-  };
+  emoji: string;
 }
 
-// ==================== QUICK MATCH DATA (Fixture ID only) ====================
+export function isRealValue(
+  formValue: number,
+  oddsMovement: 'dropping' | 'rising' | 'stable'
+): RealValueResult {
+  
+  // ✅ Form +5% value gösteriyor VE oran düşüyorsa = GERÇEK VALUE
+  if (formValue >= 5 && oddsMovement === 'dropping') {
+    return {
+      isValue: true,
+      confidence: 'high',
+      reason: {
+        tr: `✅ GERÇEK VALUE! Form +${formValue}% gösteriyor VE sharp money aynı yöne!`,
+        en: `✅ REAL VALUE! Form shows +${formValue}% AND sharp money confirms!`,
+        de: `✅ ECHTE VALUE! Form zeigt +${formValue}% UND Sharp Money bestätigt!`,
+      },
+      emoji: '🔥',
+    };
+  }
 
-export async function fetchMatchDataByFixtureId(fixtureId: number): Promise<CompleteMatchData | null> {
-  // Önce fixture detaylarını al
-  const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}?include=participants;league`);
-  
-  if (!fixtureData?.data) {
-    console.error('Fixture not found:', fixtureId);
-    return null;
+  // ⚠️ Form value gösteriyor AMA oran yükseliyorsa = DİKKAT
+  if (formValue >= 5 && oddsMovement === 'rising') {
+    return {
+      isValue: false,
+      confidence: 'low',
+      reason: {
+        tr: `⚠️ DİKKAT! Form +${formValue}% gösteriyor AMA oran yükseliyor. Bahisçi bir şey biliyor!`,
+        en: `⚠️ CAUTION! Form shows +${formValue}% BUT odds rising. Bookies know something!`,
+        de: `⚠️ VORSICHT! Form zeigt +${formValue}% ABER Quote steigt. Buchmacher wissen etwas!`,
+      },
+      emoji: '⚠️',
+    };
   }
-  
-  const fixture = fixtureData.data;
-  const participants = fixture.participants || [];
-  
-  const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
-  const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
-  
-  if (!homeTeam || !awayTeam) {
-    console.error('Teams not found in fixture');
-    return null;
+
+  // 🟡 Form value gösteriyor, oran stabil = ORTA VALUE
+  if (formValue >= 5 && oddsMovement === 'stable') {
+    return {
+      isValue: true,
+      confidence: 'medium',
+      reason: {
+        tr: `🟡 ORTA VALUE. Form +${formValue}% gösteriyor, oran stabil.`,
+        en: `🟡 MEDIUM VALUE. Form shows +${formValue}%, odds stable.`,
+        de: `🟡 MITTLERE VALUE. Form zeigt +${formValue}%, Quote stabil.`,
+      },
+      emoji: '🟡',
+    };
   }
-  
-  return fetchCompleteMatchData(
-    fixtureId,
-    homeTeam.id,
-    awayTeam.id,
-    homeTeam.name,
-    awayTeam.name,
-    fixture.league?.name || 'Unknown',
-    fixture.league?.id
-  );
+
+  // 📊 Düşük value
+  if (formValue > 0 && formValue < 5) {
+    return {
+      isValue: false,
+      confidence: 'low',
+      reason: {
+        tr: `📊 Düşük value (+${formValue}%). Risk/ödül oranı düşük.`,
+        en: `📊 Low value (+${formValue}%). Risk/reward not great.`,
+        de: `📊 Geringe Value (+${formValue}%). Risiko/Ertrag nicht optimal.`,
+      },
+      emoji: '📊',
+    };
+  }
+
+  // ❌ Value yok
+  return {
+    isValue: false,
+    confidence: 'low',
+    reason: {
+      tr: '❌ Value yok. Piyasa doğru fiyatlamış.',
+      en: '❌ No value. Market priced correctly.',
+      de: '❌ Keine Value. Markt korrekt bepreist.',
+    },
+    emoji: '❌',
+  };
 }
