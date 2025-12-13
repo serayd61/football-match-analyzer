@@ -255,7 +255,7 @@ function calculateGoalStats(details: MatchDetail[]): {
 export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, count: number = 10): Promise<any[]> {
   // FİX: Sadece bitmiş maçları al (state_id 5 = FT)
   // include=scores;participants zorunlu
-  let endpoint = `/fixtures?filters=teamIds:${teamId}`;
+let endpoint = `/fixtures?filters=teamIds:${teamId}`;
   
   // League filter opsiyonel - bazen veri kısıtlayabilir
   // if (leagueId) endpoint += `;leagueIds:${leagueId}`;
