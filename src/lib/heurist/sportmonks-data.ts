@@ -1,5 +1,5 @@
 // src/lib/heurist/sportmonks-data.ts
-// Sportmonks Complete Data Layer - FIXED VERSION
+// Sportmonks Complete Data Layer - FIXED
 
 const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
@@ -67,8 +67,16 @@ export interface CompleteMatchData {
 
 async function fetchSportmonks(endpoint: string): Promise<any> {
   try {
-    const url = `${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_token=${SPORTMONKS_TOKEN}`;
-    console.log(`📡 Fetching: ${endpoint.substring(0, 80)}...`);
+    if (!SPORTMONKS_TOKEN) {
+      console.error('❌ SPORTMONKS_TOKEN is not set!');
+      return null;
+    }
+    
+    // URL oluştur - ? veya & kontrolü
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${BASE_URL}${endpoint}${separator}api_token=${SPORTMONKS_TOKEN}`;
+    
+    console.log(`📡 Fetching: ${endpoint.substring(0, 100)}...`);
     
     const response = await fetch(url, { 
       next: { revalidate: 300 },
@@ -80,15 +88,14 @@ async function fetchSportmonks(endpoint: string): Promise<any> {
       return null;
     }
     
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error(`❌ Sportmonks fetch error:`, error);
     return null;
   }
 }
 
-// Skorları parse et - Sportmonks v3 formatı
+// Skorları parse et
 function parseScores(scores: any[]): { home: number; away: number } {
   let homeScore = 0;
   let awayScore = 0;
@@ -98,22 +105,18 @@ function parseScores(scores: any[]): { home: number; away: number } {
   }
   
   for (const score of scores) {
-    // Yeni format: type_id ile kontrol
-    // 1525 = FULLTIME, 1 = CURRENT, 1526 = 2ND_HALF
     const isFulltime = score.type_id === 1525 || 
                        score.description === 'CURRENT' || 
                        score.description === '2ND_HALF' ||
                        score.description === 'FULLTIME';
     
     if (isFulltime) {
-      // Format 1: score.score.participant
       if (score.score?.participant === 'home') {
         homeScore = score.score.goals || 0;
       } else if (score.score?.participant === 'away') {
         awayScore = score.score.goals || 0;
       }
       
-      // Format 2: Direkt goals alanı
       if (score.participant === 'home' && score.goals !== undefined) {
         homeScore = score.goals;
       } else if (score.participant === 'away' && score.goals !== undefined) {
@@ -137,46 +140,30 @@ function calculateForm(matches: any[], teamId: number): { form: string; points: 
   let points = 0;
   const details: MatchDetail[] = [];
   
-  // Son 5 bitmiş maç
+  // Bitmiş maçları filtrele
   const finishedMatches = matches.filter((m: any) => {
     const stateId = m.state_id;
-    // 5 = FT (Finished), 9 = FT_PEN, etc.
-    return stateId === 5 || stateId === 9 || m.state?.short_name === 'FT';
+    return stateId === 5 || stateId === 9 || m.result_info;
   }).slice(0, 5);
   
-  if (finishedMatches.length === 0) {
-    console.log(`⚠️ No finished matches found, using all matches`);
-    // Tüm maçları kullan
-    finishedMatches.push(...matches.slice(0, 5));
-  }
+  const matchesToUse = finishedMatches.length > 0 ? finishedMatches : matches.slice(0, 5);
   
-  for (const match of finishedMatches) {
+  for (const match of matchesToUse) {
     const scores = match.scores || [];
     const participants = match.participants || [];
     
-    // Skorları parse et
     const { home: homeScore, away: awayScore } = parseScores(scores);
     
-    // Debug log
-    if (details.length === 0) {
-      console.log(`   Sample match scores:`, JSON.stringify(scores).substring(0, 200));
-    }
-    
-    // Takım ev sahibi mi deplasman mı?
     const homeTeam = participants.find((p: any) => p.meta?.location === 'home');
     const awayTeam = participants.find((p: any) => p.meta?.location === 'away');
     
-    if (!homeTeam || !awayTeam) {
-      console.log(`   ⚠️ Missing team info in match`);
-      continue;
-    }
+    if (!homeTeam || !awayTeam) continue;
     
     const isHome = homeTeam.id === teamId;
     const teamScore = isHome ? homeScore : awayScore;
     const oppScore = isHome ? awayScore : homeScore;
     const opponent = isHome ? awayTeam.name : homeTeam.name;
     
-    // Sonuç
     let result: 'W' | 'D' | 'L';
     if (teamScore > oppScore) {
       result = 'W';
@@ -199,13 +186,9 @@ function calculateForm(matches: any[], teamId: number): { form: string; points: 
     });
   }
   
-  console.log(`   ✅ Form calculated: ${form} (${points} pts)`);
+  console.log(`   ✅ Form: ${form} (${points} pts) from ${details.length} matches`);
   
-  return { 
-    form: form || 'NNNNN', 
-    points, 
-    details 
-  };
+  return { form: form || 'NNNNN', points, details };
 }
 
 function calculateGoalStats(details: MatchDetail[]): {
@@ -251,26 +234,19 @@ function calculateGoalStats(details: MatchDetail[]): {
 
 // ==================== MAIN DATA FETCHERS ====================
 
-// Takımın son BİTMİŞ maçlarını çek
+// Takımın son maçlarını çek - DOĞRU ENDPOINT
 export async function fetchTeamRecentMatches(teamId: number, leagueId?: number, count: number = 10): Promise<any[]> {
-  // FİX: Sadece bitmiş maçları al (state_id 5 = FT)
-  // include=scores;participants zorunlu
-let endpoint = `/fixtures?filters=teamIds:${teamId}`;
+  // DOĞRU: /fixtures endpoint'i ile geçmiş maçları al
+  const endpoint = `/fixtures?filters=teamIds:${teamId}&include=scores;participants;state&per_page=${count}&order=starting_at&sort=desc`;
   
-  // League filter opsiyonel - bazen veri kısıtlayabilir
-  // if (leagueId) endpoint += `;leagueIds:${leagueId}`;
-  
-  endpoint += `&include=scores;participants;state&per_page=${count}&order=starting_at&sort=desc`;
-  
+  console.log(`📡 Fetching recent matches for team ${teamId}...`);
   const data = await fetchSportmonks(endpoint);
   
   const matches = data?.data || [];
   console.log(`   📊 Received ${matches.length} matches for team ${teamId}`);
   
-  // Debug: İlk maçın yapısını logla
   if (matches.length > 0) {
-    const firstMatch = matches[0];
-    console.log(`   📊 First match: ${firstMatch.name || 'N/A'}, state_id: ${firstMatch.state_id}, scores: ${firstMatch.scores?.length || 0}`);
+    console.log(`   📊 First match: ${matches[0].name || 'N/A'}, state_id: ${matches[0].state_id}`);
   }
   
   return matches;
@@ -364,7 +340,6 @@ export async function fetchPreMatchOdds(fixtureId: number): Promise<any> {
     const value = parseFloat(odd.value) || 0;
     const isOriginal = odd.original === true;
     
-    // Match Winner (1X2) - market_id 1
     if (marketId === 1) {
       if (label === '1' || label.toLowerCase() === 'home') {
         if (isOriginal) homeOpening = value;
@@ -377,7 +352,6 @@ export async function fetchPreMatchOdds(fixtureId: number): Promise<any> {
       }
     }
     
-    // Over/Under 2.5 - market_id 12 veya 18
     if ((marketId === 12 || marketId === 18) && 
         (odd.total?.toString().includes('2.5') || odd.name?.includes('2.5') || odd.handicap === 2.5)) {
       if (label.toLowerCase() === 'over') {
@@ -389,7 +363,6 @@ export async function fetchPreMatchOdds(fixtureId: number): Promise<any> {
       }
     }
     
-    // BTTS - market_id 28 veya 29
     if (marketId === 28 || marketId === 29) {
       if (label.toLowerCase() === 'yes') {
         if (isOriginal) bttsYesOpening = value;
@@ -431,24 +404,17 @@ export async function fetchCompleteMatchData(
   leagueId?: number
 ): Promise<CompleteMatchData> {
   console.log(`\n${'═'.repeat(50)}`);
-  console.log(`🔄 Fetching data: ${homeTeamName} vs ${awayTeamName}`);
-  console.log(`   IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
+  console.log(`🔄 Fetching: ${homeTeamName} vs ${awayTeamName}`);
+  console.log(`   IDs: Home=${homeTeamId}, Away=${awayTeamId}`);
   console.log(`${'═'.repeat(50)}`);
   
-  // Paralel olarak tüm verileri çek
-  const [
-    homeMatches,
-    awayMatches,
-    h2hData,
-    oddsData,
-  ] = await Promise.all([
+  const [homeMatches, awayMatches, h2hData, oddsData] = await Promise.all([
     fetchTeamRecentMatches(homeTeamId, undefined, 10),
     fetchTeamRecentMatches(awayTeamId, undefined, 10),
     fetchH2H(homeTeamId, awayTeamId),
     fetchPreMatchOdds(fixtureId),
   ]);
   
-  // Home team stats
   const homeFormData = calculateForm(homeMatches, homeTeamId);
   const homeGoalStats = calculateGoalStats(homeFormData.details);
   
@@ -466,7 +432,6 @@ export async function fetchCompleteMatchData(
     matchDetails: homeFormData.details,
   };
   
-  // Away team stats
   const awayFormData = calculateForm(awayMatches, awayTeamId);
   const awayGoalStats = calculateGoalStats(awayFormData.details);
   
@@ -485,10 +450,8 @@ export async function fetchCompleteMatchData(
   };
   
   console.log(`\n📊 SUMMARY:`);
-  console.log(`   🏠 ${homeTeamName}: ${homeForm.form} | ${homeForm.avgGoalsScored} gol/maç | Over: ${homeForm.over25Percentage}%`);
-  console.log(`   🚌 ${awayTeamName}: ${awayForm.form} | ${awayForm.avgGoalsScored} gol/maç | Over: ${awayForm.over25Percentage}%`);
-  console.log(`   🤝 H2H: ${h2hData.totalMatches} maç | Over: ${h2hData.over25Percentage}% | BTTS: ${h2hData.bttsPercentage}%`);
-  console.log(`   💰 Odds: 1=${oddsData.current.matchWinner.home} X=${oddsData.current.matchWinner.draw} 2=${oddsData.current.matchWinner.away}`);
+  console.log(`   🏠 ${homeTeamName}: ${homeForm.form} | ${homeForm.avgGoalsScored} gol/maç`);
+  console.log(`   🚌 ${awayTeamName}: ${awayForm.form} | ${awayForm.avgGoalsScored} gol/maç`);
   console.log(`${'═'.repeat(50)}\n`);
   
   return {
@@ -508,7 +471,7 @@ export async function fetchCompleteMatchData(
   };
 }
 
-// ==================== QUICK MATCH DATA (Fixture ID only) ====================
+// ==================== QUICK MATCH DATA ====================
 
 export async function fetchMatchDataByFixtureId(fixtureId: number): Promise<CompleteMatchData | null> {
   console.log(`\n🔍 Fetching fixture ${fixtureId}...`);
@@ -530,8 +493,6 @@ export async function fetchMatchDataByFixtureId(fixtureId: number): Promise<Comp
     console.error('❌ Teams not found in fixture');
     return null;
   }
-  
-  console.log(`   Found: ${homeTeam.name} vs ${awayTeam.name}`);
   
   return fetchCompleteMatchData(
     fixtureId,
