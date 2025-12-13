@@ -1,6 +1,5 @@
 // src/app/api/update-coupon-results/route.ts
 // Kupon sonuçlarını otomatik günceller
-// n8n workflow'u tarafından her gece çağrılır
 
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,69 +7,43 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 
-// Maç sonucunu kontrol et
+// Maç sonucunu kontrol et - SADECE SELECTION'A GÖRE
 function checkPickResult(
-  betType: string,
   selection: string,
   homeScore: number,
   awayScore: number
 ): 'WON' | 'LOST' | 'PENDING' {
   const totalGoals = homeScore + awayScore;
-  
-  const type = (betType || '').toUpperCase();
-  const value = (selection || '').toUpperCase();
+  const value = (selection || '').toUpperCase().trim();
 
   // MATCH_RESULT - 1X2
-  if (type.includes('MATCH') || type.includes('1X2') || type.includes('RESULT') || type.includes('WINNER')) {
-    if (value === '1' || value === 'HOME') {
-      return homeScore > awayScore ? 'WON' : 'LOST';
-    }
-    if (value === '2' || value === 'AWAY') {
-      return awayScore > homeScore ? 'WON' : 'LOST';
-    }
-    if (value === 'X' || value === 'DRAW') {
-      return homeScore === awayScore ? 'WON' : 'LOST';
-    }
+  if (value === '1' || value === 'HOME') {
+    return homeScore > awayScore ? 'WON' : 'LOST';
   }
-
-  // OVER_UNDER_25 - Gol sayısı
-  if (type.includes('OVER') || type.includes('UNDER') || type.includes('GOAL') || type.includes('TOTAL')) {
-    if (value.includes('OVER') || value === 'O') {
-      const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
-      return totalGoals > line ? 'WON' : 'LOST';
-    }
-    if (value.includes('UNDER') || value === 'U') {
-      const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
-      return totalGoals < line ? 'WON' : 'LOST';
-    }
-    // Sadece "Over" veya "Under" yazıyorsa 2.5 varsay
-    if (value === 'OVER') {
-      return totalGoals > 2.5 ? 'WON' : 'LOST';
-    }
-    if (value === 'UNDER') {
-      return totalGoals < 2.5 ? 'WON' : 'LOST';
-    }
+  if (value === '2' || value === 'AWAY') {
+    return awayScore > homeScore ? 'WON' : 'LOST';
+  }
+  if (value === 'X' || value === 'DRAW') {
+    return homeScore === awayScore ? 'WON' : 'LOST';
   }
 
   // BTTS - Karşılıklı Gol
-  if (type.includes('BTTS') || type.includes('BOTH') || type.includes('KG')) {
-    const btts = homeScore > 0 && awayScore > 0;
-    if (value === 'YES' || value === 'VAR' || value === 'EVET') {
-      return btts ? 'WON' : 'LOST';
-    }
-    if (value === 'NO' || value === 'YOK' || value === 'HAYIR') {
-      return !btts ? 'WON' : 'LOST';
-    }
+  if (value === 'YES' || value === 'VAR' || value === 'EVET') {
+    return (homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
+  }
+  if (value === 'NO' || value === 'YOK' || value === 'HAYIR') {
+    return !(homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
   }
 
-  // Tip belirtilmemişse selection'a göre tahmin et
-  if (value === '1') return homeScore > awayScore ? 'WON' : 'LOST';
-  if (value === '2') return awayScore > homeScore ? 'WON' : 'LOST';
-  if (value === 'X') return homeScore === awayScore ? 'WON' : 'LOST';
-  if (value === 'YES') return (homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
-  if (value === 'NO') return !(homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
-  if (value === 'OVER') return totalGoals > 2.5 ? 'WON' : 'LOST';
-  if (value === 'UNDER') return totalGoals < 2.5 ? 'WON' : 'LOST';
+  // OVER/UNDER
+  if (value === 'OVER' || value.includes('OVER') || value.includes('ÜST') || value.includes('UST')) {
+    const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
+    return totalGoals > line ? 'WON' : 'LOST';
+  }
+  if (value === 'UNDER' || value.includes('UNDER') || value.includes('ALT')) {
+    const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
+    return totalGoals < line ? 'WON' : 'LOST';
+  }
 
   return 'PENDING';
 }
@@ -93,7 +66,6 @@ async function getMatchResult(fixtureId: number): Promise<{
 
     if (!fixture) return null;
 
-    // state_id = 5 = Finished (FT)
     const finished = fixture.state_id === 5;
 
     let homeScore = 0;
@@ -121,10 +93,7 @@ export async function PUT(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    console.log('');
-    console.log('🎫 ═══════════════════════════════════════════════════');
-    console.log('🎫 KUPON SONUÇ GÜNCELLEMESİ');
-    console.log('🎫 ═══════════════════════════════════════════════════');
+    console.log('🎫 KUPON SONUÇ GÜNCELLEMESİ BAŞLADI');
 
     // 1. PENDING kuponları al
     const { data: pendingCoupons, error: couponError } = await supabase
@@ -133,7 +102,6 @@ export async function PUT(request: NextRequest) {
       .eq('status', 'PENDING');
 
     if (couponError) {
-      console.error('❌ Kupon fetch error:', couponError);
       return NextResponse.json({ error: couponError.message }, { status: 500 });
     }
 
@@ -141,7 +109,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Bekleyen kupon yok',
-        updated: 0,
+        totalPicksUpdated: 0,
         couponsWon: 0,
         couponsLost: 0,
       });
@@ -157,9 +125,8 @@ export async function PUT(request: NextRequest) {
 
     // 2. Her kupon için pick'leri kontrol et
     for (const coupon of pendingCoupons) {
-      console.log(`\n🎫 Kupon: ${coupon.title} (ID: ${coupon.id})`);
+      console.log(`\n🎫 Kupon: ${coupon.title}`);
 
-      // Kuponun pick'lerini al
       const { data: picks, error: picksError } = await supabase
         .from('coupon_picks')
         .select('*')
@@ -177,7 +144,7 @@ export async function PUT(request: NextRequest) {
 
       // 3. Her pick için sonuç kontrol et
       for (const pick of picks) {
-        // Eğer pick zaten sonuçlanmışsa atla
+        // Zaten sonuçlanmış pick'leri atla
         if (pick.result === 'WON' || pick.result === 'LOST') {
           if (pick.result === 'LOST') {
             anyLost = true;
@@ -185,13 +152,14 @@ export async function PUT(request: NextRequest) {
           }
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
+            selection: pick.selection,
             status: pick.result,
             cached: true,
           });
           continue;
         }
 
-        // Maç tarihi geçmiş mi kontrol et (en az 2 saat)
+        // Maç tarihi kontrolü (en az 2 saat geçmiş olmalı)
         const matchDate = new Date(pick.match_date);
         const now = new Date();
         if ((now.getTime() - matchDate.getTime()) < (2 * 60 * 60 * 1000)) {
@@ -199,6 +167,7 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
+            selection: pick.selection,
             status: 'PENDING',
             reason: 'Maç henüz bitmedi',
           });
@@ -213,6 +182,7 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
+            selection: pick.selection,
             status: 'PENDING',
             reason: 'API hatası',
           });
@@ -224,15 +194,15 @@ export async function PUT(request: NextRequest) {
           allWon = false;
           pickResults.push({
             match: `${pick.home_team} vs ${pick.away_team}`,
+            selection: pick.selection,
             status: 'PENDING',
             reason: 'Maç devam ediyor',
           });
           continue;
         }
 
-        // Pick sonucunu hesapla
+        // Pick sonucunu hesapla - SADECE SELECTION KULLAN
         const pickStatus = checkPickResult(
-          pick.bet_type || '',
           pick.selection || '',
           result.homeScore,
           result.awayScore
@@ -263,11 +233,11 @@ export async function PUT(request: NextRequest) {
         pickResults.push({
           match: `${pick.home_team} vs ${pick.away_team}`,
           score: `${result.homeScore}-${result.awayScore}`,
-          pick: `${pick.bet_type}: ${pick.selection}`,
+          selection: pick.selection,
           status: pickStatus,
         });
 
-        console.log(`   ${pickStatus === 'WON' ? '✅' : pickStatus === 'LOST' ? '❌' : '⏳'} ${pick.home_team} vs ${pick.away_team}: ${result.homeScore}-${result.awayScore} → ${pickStatus}`);
+        console.log(`   ${pickStatus === 'WON' ? '✅' : pickStatus === 'LOST' ? '❌' : '⏳'} ${pick.home_team} vs ${pick.away_team}: ${result.homeScore}-${result.awayScore} | ${pick.selection} → ${pickStatus}`);
       }
 
       // 4. Kupon durumunu güncelle
@@ -283,16 +253,12 @@ export async function PUT(request: NextRequest) {
       }
 
       if (couponStatus !== 'PENDING') {
-        const { error: updateCouponError } = await supabase
+        await supabase
           .from('coupons')
-          .update({
-            status: couponStatus,
-          })
+          .update({ status: couponStatus })
           .eq('id', coupon.id);
 
-        if (!updateCouponError) {
-          console.log(`   🎫 Kupon durumu: ${couponStatus}`);
-        }
+        console.log(`   🎫 Kupon: ${couponStatus}`);
       }
 
       details.push({
@@ -304,11 +270,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const duration = Date.now() - startTime;
-
-    console.log(`\n✅ Güncellenen pick: ${totalPicksUpdated}`);
-    console.log(`🏆 Kazanan kupon: ${couponsWon}`);
-    console.log(`❌ Kaybeden kupon: ${couponsLost}`);
-    console.log(`⏳ Bekleyen kupon: ${couponsStillPending}`);
 
     return NextResponse.json({
       success: true,
@@ -326,7 +287,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// GET endpoint - durum kontrolü
+// GET endpoint
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
