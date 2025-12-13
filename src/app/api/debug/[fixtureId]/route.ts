@@ -16,7 +16,6 @@ export async function GET(
 ) {
   const fixtureId = parseInt(params.fixtureId);
   
-  // Önce fixture'dan team ID'leri al
   const fixtureData = await fetchAPI(`/fixtures/${fixtureId}?include=participants`);
   const fixture = fixtureData?.data;
   
@@ -31,11 +30,10 @@ export async function GET(
   const homeTeamId = homeTeam?.id;
   const awayTeamId = awayTeam?.id;
   
-  // Her takım için son maçları al
-  const homeMatchesData = await fetchAPI(`/fixtures?filters=teamIds:${homeTeamId}&include=scores;participants&per_page=5&order=starting_at&sort=desc`);
-  const awayMatchesData = await fetchAPI(`/fixtures?filters=teamIds:${awayTeamId}&include=scores;participants&per_page=5&order=starting_at&sort=desc`);
+  // DOĞRU ENDPOINT: /teams/{teamId}/fixtures
+  const homeMatchesData = await fetchAPI(`/teams/${homeTeamId}/fixtures?include=scores;participants&per_page=5`);
+  const awayMatchesData = await fetchAPI(`/teams/${awayTeamId}/fixtures?include=scores;participants&per_page=5`);
   
-  // Raw data döndür
   return Response.json({
     fixture: {
       id: fixtureId,
@@ -46,7 +44,7 @@ export async function GET(
     },
     homeMatches: {
       count: homeMatchesData?.data?.length || 0,
-      raw: homeMatchesData?.data?.slice(0, 2).map((m: any) => ({
+      raw: homeMatchesData?.data?.slice(0, 3).map((m: any) => ({
         id: m.id,
         name: m.name,
         starting_at: m.starting_at,
@@ -55,13 +53,12 @@ export async function GET(
           id: p.id,
           name: p.name,
           location: p.meta?.location
-        })),
-        scores: m.scores
+        }))
       }))
     },
     awayMatches: {
       count: awayMatchesData?.data?.length || 0,
-      raw: awayMatchesData?.data?.slice(0, 2).map((m: any) => ({
+      raw: awayMatchesData?.data?.slice(0, 3).map((m: any) => ({
         id: m.id,
         name: m.name,
         starting_at: m.starting_at,
@@ -70,8 +67,7 @@ export async function GET(
           id: p.id,
           name: p.name,
           location: p.meta?.location
-        })),
-        scores: m.scores
+        }))
       }))
     }
   });
