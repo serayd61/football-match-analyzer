@@ -16,35 +16,39 @@ function checkPickResult(
   const totalGoals = homeScore + awayScore;
   const value = (selection || '').toUpperCase().trim();
 
-  // MATCH_RESULT - 1X2
-  if (value === '1' || value === 'HOME') {
+  // MATCH_RESULT - 1X2 (tüm varyasyonlar)
+  if (value === '1' || value === 'HOME' || value === 'HOME WIN' || value.includes('HOME')) {
     return homeScore > awayScore ? 'WON' : 'LOST';
   }
-  if (value === '2' || value === 'AWAY') {
+  if (value === '2' || value === 'AWAY' || value === 'AWAY WIN' || value.includes('AWAY')) {
     return awayScore > homeScore ? 'WON' : 'LOST';
   }
-  if (value === 'X' || value === 'DRAW') {
+  if (value === 'X' || value === 'DRAW' || value.includes('DRAW') || value.includes('BERABERE')) {
     return homeScore === awayScore ? 'WON' : 'LOST';
   }
 
-  // BTTS - Karşılıklı Gol
-  if (value === 'YES' || value === 'VAR' || value === 'EVET') {
+  // BTTS - Karşılıklı Gol (tüm varyasyonlar)
+  if (value === 'YES' || value === 'VAR' || value === 'EVET' || value === 'BTTS YES' || value.includes('BTTS') && value.includes('YES')) {
     return (homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
   }
-  if (value === 'NO' || value === 'YOK' || value === 'HAYIR') {
+  if (value === 'NO' || value === 'YOK' || value === 'HAYIR' || value === 'BTTS NO' || value.includes('BTTS') && value.includes('NO')) {
     return !(homeScore > 0 && awayScore > 0) ? 'WON' : 'LOST';
   }
 
-  // OVER/UNDER
-  if (value === 'OVER' || value.includes('OVER') || value.includes('ÜST') || value.includes('UST')) {
-    const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
+  // OVER/UNDER (tüm varyasyonlar)
+  if (value.includes('OVER') || value.includes('ÜST') || value.includes('UST')) {
+    const match = value.match(/[\d.]+/);
+    const line = match ? parseFloat(match[0]) : 2.5;
     return totalGoals > line ? 'WON' : 'LOST';
   }
-  if (value === 'UNDER' || value.includes('UNDER') || value.includes('ALT')) {
-    const line = parseFloat(value.match(/[\d.]+/)?.[0] || '2.5');
+  if (value.includes('UNDER') || value.includes('ALT')) {
+    const match = value.match(/[\d.]+/);
+    const line = match ? parseFloat(match[0]) : 2.5;
     return totalGoals < line ? 'WON' : 'LOST';
   }
 
+  // Hiçbiri eşleşmezse log yaz ve PENDING dön
+  console.log(`⚠️ Tanınmayan selection: "${selection}"`);
   return 'PENDING';
 }
 
@@ -201,7 +205,7 @@ export async function PUT(request: NextRequest) {
           continue;
         }
 
-        // Pick sonucunu hesapla - SADECE SELECTION KULLAN
+        // Pick sonucunu hesapla
         const pickStatus = checkPickResult(
           pick.selection || '',
           result.homeScore,
