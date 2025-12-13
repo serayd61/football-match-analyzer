@@ -1,7 +1,7 @@
 // src/lib/heurist/sportmonks-data.ts
 // Sportmonks Complete Data Layer
 
-const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_TOKEN;
+const SPORTMONKS_TOKEN = process.env.SPORTMONKS_API_KEY || process.env.SPORTMONKS_API_TOKEN;
 const BASE_URL = 'https://api.sportmonks.com/v3/football';
 
 // ==================== TYPES ====================
