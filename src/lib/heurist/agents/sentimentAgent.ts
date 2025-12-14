@@ -5,9 +5,9 @@ import { MatchData } from '../types';
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
-// ==================== ENHANCED TYPES ====================
+// ==================== ENHANCED TYPES (EXPORTED) ====================
 
-interface TeamSentiment {
+export interface TeamSentiment {
   // Temel skorlar
   morale: number;           // 1-10
   motivation: number;       // 1-10
@@ -57,14 +57,14 @@ interface TeamSentiment {
   };
 }
 
-interface MatchContext {
+export interface MatchContext {
   type: 'derby' | 'title_race' | 'relegation_battle' | 'european_qualification' | 'cup_final' | 'regular';
   importance: number;  // 1-10
   stakes: string;
   historicalRivalry: string;
 }
 
-interface SentimentResult {
+export interface SentimentResult {
   homeTeam: TeamSentiment;
   awayTeam: TeamSentiment;
   
@@ -637,6 +637,3 @@ function generateSummary(
   
   return parts.join('. ') + '.';
 }
-
-// Export for orchestrator integration
-export type { SentimentResult, TeamSentiment, MatchContext };
