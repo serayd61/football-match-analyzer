@@ -3,6 +3,7 @@
 
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
+import { runSentimentAgent } from './agents/sentimentAgent';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -21,6 +22,39 @@ export interface AgentResult {
   confidence: number;
   agentSummary?: string;
   [key: string]: any;
+}
+
+export interface SentimentAgentResult {
+  homeTeam: {
+    morale: number;
+    motivation: number;
+    preparation: number;
+    injuries_impact: number;
+    news_sentiment: 'positive' | 'neutral' | 'negative';
+    key_factors: string[];
+    recent_news: string[];
+  };
+  awayTeam: {
+    morale: number;
+    motivation: number;
+    preparation: number;
+    injuries_impact: number;
+    news_sentiment: 'positive' | 'neutral' | 'negative';
+    key_factors: string[];
+    recent_news: string[];
+  };
+  matchImportance: {
+    homeTeam: number;
+    awayTeam: number;
+    reasoning: string;
+  };
+  psychologicalEdge: {
+    team: string;
+    confidence: number;
+    reasoning: string;
+  };
+  warnings: string[];
+  agentSummary: string;
 }
 
 export interface ConsensusResult {
@@ -66,6 +100,7 @@ export interface OrchestratorResult {
   agentResults: {
     stats: AgentResult | null;
     odds: AgentResult | null;
+    sentiment: SentimentAgentResult | null;
   };
   consensus: ConsensusResult;
   finalPrediction: {
@@ -91,6 +126,7 @@ export interface OrchestratorResult {
     deepAnalysis: any;
     stats: any;
     odds: any;
+    sentiment: any;
     strategy: any;
     weightedConsensus: any;
   };
@@ -255,7 +291,7 @@ function assessDataQuality(matchData: CompleteMatchData): {
 
 function buildFinalPrediction(
   consensus: ConsensusResult,
-  agentResults: { stats: AgentResult | null; odds: AgentResult | null },
+  agentResults: { stats: AgentResult | null; odds: AgentResult | null; sentiment: SentimentAgentResult | null },
   dataQuality: { score: number },
   language: 'tr' | 'en' | 'de'
 ): OrchestratorResult['finalPrediction'] {
@@ -274,6 +310,15 @@ function buildFinalPrediction(
     if (sharpDir === 'away' && consensus.matchResult.prediction === '2') matchResultConf += 8;
     if (sharpDir === 'over' && consensus.overUnder.prediction === 'Over') overUnderConf += 8;
     if (sharpDir === 'under' && consensus.overUnder.prediction === 'Under') overUnderConf += 8;
+  }
+  
+  // Sentiment bonus
+  if (agentResults.sentiment?.psychologicalEdge) {
+    const edge = agentResults.sentiment.psychologicalEdge;
+    if (edge.confidence >= 70) {
+      if (edge.team === 'home' && consensus.matchResult.prediction === '1') matchResultConf += 5;
+      if (edge.team === 'away' && consensus.matchResult.prediction === '2') matchResultConf += 5;
+    }
   }
   
   const qualityMultiplier = 0.85 + (dataQuality.score / 100) * 0.15;
@@ -363,7 +408,7 @@ function collectValueBets(agentResults: { stats: AgentResult | null; odds: Agent
 // ==================== COLLECT WARNINGS ====================
 
 function collectWarnings(
-  agentResults: { stats: AgentResult | null; odds: AgentResult | null },
+  agentResults: { stats: AgentResult | null; odds: AgentResult | null; sentiment: SentimentAgentResult | null },
   dataQuality: { score: number; homeFormMatches: number; awayFormMatches: number; h2hMatches: number },
   consensus: ConsensusResult,
   language: 'tr' | 'en' | 'de'
@@ -417,6 +462,11 @@ function collectWarnings(
     }
   }
   
+  // Sentiment warnings
+  if (agentResults.sentiment?.warnings) {
+    warnings.push(...agentResults.sentiment.warnings);
+  }
+  
   return warnings;
 }
 
@@ -426,6 +476,7 @@ function buildReports(
   matchData: CompleteMatchData,
   statsResult: AgentResult | null,
   oddsResult: AgentResult | null,
+  sentimentResult: SentimentAgentResult | null,
   consensus: ConsensusResult,
   finalPrediction: OrchestratorResult['finalPrediction'],
   valueBets: string[],
@@ -441,7 +492,8 @@ function buildReports(
         `Deplasman son 5 maç: ${matchData.awayForm?.record || 'N/A'}`,
         `H2H: ${matchData.h2h?.totalMatches || 0} maç oynandı`,
         dataQuality.hasOdds ? `Oranlar mevcut` : `Oran verisi eksik`,
-      ],
+        sentimentResult?.psychologicalEdge ? `Psikolojik avantaj: ${sentimentResult.psychologicalEdge.team === 'home' ? matchData.homeTeam : sentimentResult.psychologicalEdge.team === 'away' ? matchData.awayTeam : 'Nötr'}` : '',
+      ].filter(Boolean),
       probabilities: {
         homeWin: Math.round(consensus.matchResult.prediction === '1' ? consensus.matchResult.confidence : 
                  consensus.matchResult.prediction === '2' ? 100 - consensus.matchResult.confidence - 25 : 33),
@@ -481,6 +533,31 @@ function buildReports(
     },
     stats: statsResult,
     odds: oddsResult,
+    sentiment: sentimentResult ? {
+      homeTeam: {
+        name: matchData.homeTeam,
+        morale: sentimentResult.homeTeam.morale,
+        motivation: sentimentResult.homeTeam.motivation,
+        preparation: sentimentResult.homeTeam.preparation,
+        injuriesImpact: sentimentResult.homeTeam.injuries_impact,
+        newsSentiment: sentimentResult.homeTeam.news_sentiment,
+        keyFactors: sentimentResult.homeTeam.key_factors,
+        recentNews: sentimentResult.homeTeam.recent_news,
+      },
+      awayTeam: {
+        name: matchData.awayTeam,
+        morale: sentimentResult.awayTeam.morale,
+        motivation: sentimentResult.awayTeam.motivation,
+        preparation: sentimentResult.awayTeam.preparation,
+        injuriesImpact: sentimentResult.awayTeam.injuries_impact,
+        newsSentiment: sentimentResult.awayTeam.news_sentiment,
+        keyFactors: sentimentResult.awayTeam.key_factors,
+        recentNews: sentimentResult.awayTeam.recent_news,
+      },
+      matchImportance: sentimentResult.matchImportance,
+      psychologicalEdge: sentimentResult.psychologicalEdge,
+      summary: sentimentResult.agentSummary,
+    } : null,
     strategy: {
       riskAssessment: finalPrediction.overallConfidence >= 70 ? 'Düşük' : 
                       finalPrediction.overallConfidence >= 55 ? 'Orta' : 'Yüksek',
@@ -621,7 +698,7 @@ export async function runOrchestrator(
     console.log('\n🤖 Running agents in parallel...');
     const agentsStart = Date.now();
     
-    const [statsResult, oddsResult] = await Promise.all([
+    const [statsResult, oddsResult, sentimentResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
         console.error('Stats agent failed:', err);
         return null;
@@ -630,21 +707,27 @@ export async function runOrchestrator(
         console.error('Odds agent failed:', err);
         return null;
       }),
+      runSentimentAgent(matchData as unknown as MatchData).catch(err => {
+        console.error('Sentiment agent failed:', err);
+        return null;
+      }),
     ]);
     agentsTime = Date.now() - agentsStart;
     
     const agentResults = {
       stats: statsResult,
       odds: oddsResult,
+      sentiment: sentimentResult,
     };
     
     console.log('\n📊 Agent Results:');
     if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
     if (oddsResult) console.log(`   Odds:  ${oddsResult.matchWinnerValue || oddsResult.matchResult} | ${oddsResult.recommendation || oddsResult.overUnder} | BTTS: ${oddsResult.bttsValue || oddsResult.btts}`);
+    if (sentimentResult) console.log(`   Sentiment: Edge=${sentimentResult.psychologicalEdge?.team} | Conf=${sentimentResult.psychologicalEdge?.confidence}%`);
     
-    // 4. Consensus oluştur
+    // 4. Consensus oluştur (sadece stats ve odds için)
     console.log('\n🗳️ Building consensus...');
-    const consensus = buildConsensus(agentResults, language);
+    const consensus = buildConsensus({ stats: statsResult, odds: oddsResult }, language);
     
     console.log(`   Match Result: ${consensus.matchResult.prediction} (${consensus.matchResult.isConsensus ? '✅ Consensus' : '⚠️ No consensus'})`);
     console.log(`   Over/Under: ${consensus.overUnder.prediction} (${consensus.overUnder.isConsensus ? '✅ Consensus' : '⚠️ No consensus'})`);
@@ -675,6 +758,7 @@ export async function runOrchestrator(
       matchData,
       statsResult,
       oddsResult,
+      sentimentResult,
       consensus,
       finalPrediction,
       valueBets,
@@ -736,7 +820,7 @@ export async function runOrchestrator(
         hasOddsHistory: false,
         score: 0,
       },
-      agentResults: { stats: null, odds: null },
+      agentResults: { stats: null, odds: null, sentiment: null },
       consensus: {
         matchResult: { prediction: 'X', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
         overUnder: { prediction: 'Over', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
@@ -759,6 +843,7 @@ export async function runOrchestrator(
         deepAnalysis: null,
         stats: null,
         odds: null,
+        sentiment: null,
         strategy: null,
         weightedConsensus: null,
       },
