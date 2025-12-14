@@ -765,7 +765,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Standard Agent Analysis
-    const result = await runFullAnalysis(matchData, language as 'tr' | 'en' | 'de');
+    const result = await runFullAnalysis({ matchData }, language as 'tr' | 'en' | 'de');
 
     console.log('');
     console.log('✅ ═══════════════════════════════════════════════════');
