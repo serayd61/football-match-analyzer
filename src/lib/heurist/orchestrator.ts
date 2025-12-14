@@ -3,7 +3,7 @@
 
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
-import { runSentimentAgent } from './agents/sentimentAgent';
+import { runSentimentAgent, SentimentResult } from './agents/sentimentAgent';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -24,38 +24,8 @@ export interface AgentResult {
   [key: string]: any;
 }
 
-export interface SentimentAgentResult {
-  homeTeam: {
-    morale: number;
-    motivation: number;
-    preparation: number;
-    injuries_impact: number;
-    news_sentiment: 'positive' | 'neutral' | 'negative';
-    key_factors: string[];
-    recent_news: string[];
-  };
-  awayTeam: {
-    morale: number;
-    motivation: number;
-    preparation: number;
-    injuries_impact: number;
-    news_sentiment: 'positive' | 'neutral' | 'negative';
-    key_factors: string[];
-    recent_news: string[];
-  };
-  matchImportance: {
-    homeTeam: number;
-    awayTeam: number;
-    reasoning: string;
-  };
-  psychologicalEdge: {
-    team: string;
-    confidence: number;
-    reasoning: string;
-  };
-  warnings: string[];
-  agentSummary: string;
-}
+// SentimentAgentResult artık sentimentAgent.ts'deki SentimentResult ile aynı
+export type SentimentAgentResult = SentimentResult;
 
 export interface ConsensusResult {
   matchResult: {
@@ -312,7 +282,7 @@ function buildFinalPrediction(
     if (sharpDir === 'under' && consensus.overUnder.prediction === 'Under') overUnderConf += 8;
   }
   
-  // Sentiment bonus
+  // Sentiment bonus - psychologicalEdge kullan
   if (agentResults.sentiment?.psychologicalEdge) {
     const edge = agentResults.sentiment.psychologicalEdge;
     if (edge.confidence >= 70) {
@@ -462,9 +432,9 @@ function collectWarnings(
     }
   }
   
-  // Sentiment warnings
-  if (agentResults.sentiment?.warnings) {
-    warnings.push(...agentResults.sentiment.warnings);
+  // Sentiment warnings - criticalWarnings kullan (SentimentResult'taki field adı)
+  if (agentResults.sentiment?.criticalWarnings && agentResults.sentiment.criticalWarnings.length > 0) {
+    warnings.push(...agentResults.sentiment.criticalWarnings);
   }
   
   return warnings;
@@ -539,24 +509,43 @@ function buildReports(
         morale: sentimentResult.homeTeam.morale,
         motivation: sentimentResult.homeTeam.motivation,
         preparation: sentimentResult.homeTeam.preparation,
-        injuriesImpact: sentimentResult.homeTeam.injuries_impact,
-        newsSentiment: sentimentResult.homeTeam.news_sentiment,
-        keyFactors: sentimentResult.homeTeam.key_factors,
-        recentNews: sentimentResult.homeTeam.recent_news,
+        confidence: sentimentResult.homeTeam.confidence,
+        teamChemistry: sentimentResult.homeTeam.teamChemistry,
+        positives: sentimentResult.homeTeam.positives,
+        negatives: sentimentResult.homeTeam.negatives,
+        injuries: sentimentResult.homeTeam.injuries,
+        outlook: sentimentResult.homeTeam.outlook,
+        outlookReasoning: sentimentResult.homeTeam.outlookReasoning,
+        matchMotivation: sentimentResult.homeTeam.matchMotivation,
+        mediaSentiment: sentimentResult.homeTeam.mediaSentiment,
+        managerSituation: sentimentResult.homeTeam.managerSituation,
+        fanFactor: sentimentResult.homeTeam.fanFactor,
       },
       awayTeam: {
         name: matchData.awayTeam,
         morale: sentimentResult.awayTeam.morale,
         motivation: sentimentResult.awayTeam.motivation,
         preparation: sentimentResult.awayTeam.preparation,
-        injuriesImpact: sentimentResult.awayTeam.injuries_impact,
-        newsSentiment: sentimentResult.awayTeam.news_sentiment,
-        keyFactors: sentimentResult.awayTeam.key_factors,
-        recentNews: sentimentResult.awayTeam.recent_news,
+        confidence: sentimentResult.awayTeam.confidence,
+        teamChemistry: sentimentResult.awayTeam.teamChemistry,
+        positives: sentimentResult.awayTeam.positives,
+        negatives: sentimentResult.awayTeam.negatives,
+        injuries: sentimentResult.awayTeam.injuries,
+        outlook: sentimentResult.awayTeam.outlook,
+        outlookReasoning: sentimentResult.awayTeam.outlookReasoning,
+        matchMotivation: sentimentResult.awayTeam.matchMotivation,
+        mediaSentiment: sentimentResult.awayTeam.mediaSentiment,
+        managerSituation: sentimentResult.awayTeam.managerSituation,
+        fanFactor: sentimentResult.awayTeam.fanFactor,
       },
-      matchImportance: sentimentResult.matchImportance,
+      matchContext: sentimentResult.matchContext,
+      headToHeadPsychology: sentimentResult.headToHeadPsychology,
       psychologicalEdge: sentimentResult.psychologicalEdge,
+      predictions: sentimentResult.predictions,
+      criticalWarnings: sentimentResult.criticalWarnings,
+      keyInsights: sentimentResult.keyInsights,
       summary: sentimentResult.agentSummary,
+      dataQuality: sentimentResult.dataQuality,
     } : null,
     strategy: {
       riskAssessment: finalPrediction.overallConfidence >= 70 ? 'Düşük' : 
