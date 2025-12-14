@@ -654,9 +654,17 @@ export async function runOrchestrator(
     let matchData: CompleteMatchData;
     
     if (input.matchData) {
-      matchData = input.matchData as unknown as CompleteMatchData;
-      console.log('📊 Using provided match data');
-    } else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
+  matchData = input.matchData as CompleteMatchData;
+  console.log('📊 Using PROVIDED match data (no fetch needed)');
+  
+  const homeMatches = matchData.homeForm?.matchCount || 0;
+  const awayMatches = matchData.awayForm?.matchCount || 0;
+  console.log(`   📊 Home matches: ${homeMatches}`);
+  console.log(`   📊 Away matches: ${awayMatches}`);
+  
+  if (homeMatches === 0 && awayMatches === 0) {
+    console.warn('   ⚠️ WARNING: No match data in provided matchData!');
+} else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
       console.log('📊 Fetching complete match data...');
       matchData = await fetchCompleteMatchData(
         input.fixtureId,
