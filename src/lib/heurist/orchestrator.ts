@@ -1,5 +1,6 @@
 // src/lib/heurist/orchestrator.ts
-// Multi-Agent Football Analysis Orchestrator
+// Multi-Agent Football Analysis Orchestrator - FIXED v4
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
@@ -24,7 +25,6 @@ export interface AgentResult {
   [key: string]: any;
 }
 
-// SentimentAgentResult artık sentimentAgent.ts'deki SentimentResult ile aynı
 export type SentimentAgentResult = SentimentResult;
 
 export interface ConsensusResult {
@@ -282,7 +282,6 @@ function buildFinalPrediction(
     if (sharpDir === 'under' && consensus.overUnder.prediction === 'Under') overUnderConf += 8;
   }
   
-  // Sentiment bonus - psychologicalEdge kullan
   if (agentResults.sentiment?.psychologicalEdge) {
     const edge = agentResults.sentiment.psychologicalEdge;
     if (edge.confidence >= 70) {
@@ -432,7 +431,6 @@ function collectWarnings(
     }
   }
   
-  // Sentiment warnings - criticalWarnings kullan (SentimentResult'taki field adı)
   if (agentResults.sentiment?.criticalWarnings && agentResults.sentiment.criticalWarnings.length > 0) {
     warnings.push(...agentResults.sentiment.criticalWarnings);
   }
@@ -636,7 +634,7 @@ export async function runOrchestrator(
     awayTeamName?: string;
     league?: string;
     leagueId?: number;
-    matchData?: MatchData;
+    matchData?: any;
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<OrchestratorResult> {
@@ -649,22 +647,30 @@ export async function runOrchestrator(
   let agentsTime = 0;
   
   try {
-    // 1. Veri toplama
+    // 1. Veri toplama - matchData varsa TEKRAR FETCH YAPMA!
     const dataFetchStart = Date.now();
     let matchData: CompleteMatchData;
     
     if (input.matchData) {
-  matchData = input.matchData as CompleteMatchData;
-  console.log('📊 Using PROVIDED match data (no fetch needed)');
-  
-  const homeMatches = matchData.homeForm?.matchCount || 0;
-  const awayMatches = matchData.awayForm?.matchCount || 0;
-  console.log(`   📊 Home matches: ${homeMatches}`);
-  console.log(`   📊 Away matches: ${awayMatches}`);
-  
-  if (homeMatches === 0 && awayMatches === 0) {
-    console.warn('   ⚠️ WARNING: No match data in provided matchData!');
-} else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
+      // ✅ FIX: matchData zaten sağlanmış - direkt kullan, FETCH YAPMA!
+      matchData = input.matchData as CompleteMatchData;
+      console.log('📊 Using PROVIDED match data (no fetch needed)');
+      
+      // Data quality log
+      const homeMatches = matchData.homeForm?.matchCount || 0;
+      const awayMatches = matchData.awayForm?.matchCount || 0;
+      const h2hMatches = matchData.h2h?.totalMatches || 0;
+      console.log(`   📊 Home form matches: ${homeMatches}`);
+      console.log(`   📊 Away form matches: ${awayMatches}`);
+      console.log(`   📊 H2H matches: ${h2hMatches}`);
+      console.log(`   📊 Home venue form: ${matchData.homeForm?.venueForm || 'N/A'}`);
+      console.log(`   📊 Away venue form: ${matchData.awayForm?.venueForm || 'N/A'}`);
+      
+      if (homeMatches === 0 && awayMatches === 0) {
+        console.warn('   ⚠️ WARNING: No match data in provided matchData!');
+      }
+      
+    } else if (input.fixtureId && input.homeTeamId && input.awayTeamId) {
       console.log('📊 Fetching complete match data...');
       matchData = await fetchCompleteMatchData(
         input.fixtureId,
