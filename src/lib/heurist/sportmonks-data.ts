@@ -788,9 +788,11 @@ export async function fetchCompleteMatchData(
   console.log(`      General: ${awayForm.form} | ${awayForm.avgGoalsScored} gol/maç | Over25: ${awayForm.over25Percentage}%`);
   console.log(`      Away:    ${awayForm.venueForm} | ${awayForm.venueAvgScored} gol/maç | Over25: ${awayForm.venueOver25Pct}%`);
   console.log(`   🔄 H2H: ${h2hData.totalMatches} maç | Over25: ${h2hData.over25Percentage}% | BTTS: ${h2hData.bttsPercentage}%`);
-  console.log(`   📊 Data Quality: ${dataQuality.score}/100`);
-  if (dataQuality.warnings.length > 0) {
-    console.log(`   ⚠️ Warnings: ${dataQuality.warnings.join(', ')}`);
+  if (dataQuality) {
+    console.log(`   📊 Data Quality: ${dataQuality.score}/100`);
+    if (dataQuality.warnings.length > 0) {
+      console.log(`   ⚠️ Warnings: ${dataQuality.warnings.join(', ')}`);
+    }
   }
   console.log(`${'═'.repeat(60)}\n`);
   
