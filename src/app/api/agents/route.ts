@@ -1,11 +1,10 @@
 // src/app/api/agents/route.ts
-// Professional Agent Analysis API - v7
+// Professional Agent Analysis API - v8
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHANGELOG:
-// v7 - Fixed riskAssessment object rendering issue (converts to string for frontend)
+// v8 - Fixed ALL object rendering issues (stakeSuggestion, masterAnalysis, consensus, etc.)
+// v7 - Fixed riskAssessment object→string conversion
 // v6 - Strategy Agent integration with multi-model and sentiment data
-// v5 - Added record and matchCount fields (fixes N/A issue)
-// v5 - Better data mapping for UI display
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const dynamic = 'force-dynamic';
@@ -22,37 +21,108 @@ import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 // ==================== DATA QUALITY THRESHOLD ====================
 const MIN_DATA_QUALITY = 30;
 
-// ==================== HELPER: Normalize riskAssessment ====================
+// ==================== HELPER: Normalize ALL objects for React ====================
+
 function normalizeRiskAssessment(riskAssessment: any): string {
   if (!riskAssessment) return 'Medium';
-  
-  // Eğer string ise direkt döndür
-  if (typeof riskAssessment === 'string') {
-    return riskAssessment;
-  }
-  
-  // Eğer obje ise level'ı al
-  if (typeof riskAssessment === 'object' && riskAssessment.level) {
-    return riskAssessment.level;
-  }
-  
+  if (typeof riskAssessment === 'string') return riskAssessment;
+  if (typeof riskAssessment === 'object' && riskAssessment.level) return riskAssessment.level;
   return 'Medium';
 }
 
 function getRiskScore(riskAssessment: any): number | null {
   if (!riskAssessment) return null;
-  if (typeof riskAssessment === 'object' && riskAssessment.score !== undefined) {
-    return riskAssessment.score;
-  }
+  if (typeof riskAssessment === 'object' && riskAssessment.score !== undefined) return riskAssessment.score;
   return null;
 }
 
 function getRiskFactors(riskAssessment: any): string[] {
   if (!riskAssessment) return [];
-  if (typeof riskAssessment === 'object' && Array.isArray(riskAssessment.factors)) {
-    return riskAssessment.factors;
-  }
+  if (typeof riskAssessment === 'object' && Array.isArray(riskAssessment.factors)) return riskAssessment.factors;
   return [];
+}
+
+// ✅ NEW: Normalize stakeSuggestion
+function normalizeStakeSuggestion(stake: any): string {
+  if (!stake) return 'Medium';
+  if (typeof stake === 'string') return stake;
+  if (typeof stake === 'object' && stake.level) return stake.level;
+  return 'Medium';
+}
+
+function getStakePercentage(stake: any): string | null {
+  if (!stake) return null;
+  if (typeof stake === 'object' && stake.percentage) return stake.percentage;
+  return null;
+}
+
+function getStakeReasoning(stake: any): string | null {
+  if (!stake) return null;
+  if (typeof stake === 'object' && stake.reasoning) return stake.reasoning;
+  return null;
+}
+
+// ✅ NEW: Normalize masterAnalysis
+function normalizeMasterAnalysis(analysis: any): string {
+  if (!analysis) return '';
+  if (typeof analysis === 'string') return analysis;
+  if (typeof analysis === 'object' && analysis.summary) return analysis.summary;
+  return '';
+}
+
+function getMasterKeyFactors(analysis: any): string[] {
+  if (!analysis) return [];
+  if (typeof analysis === 'object' && Array.isArray(analysis.keyFactors)) return analysis.keyFactors;
+  return [];
+}
+
+// ✅ NEW: Normalize consensus predictions (convert "6/8" to number)
+function normalizeConsensusItem(item: any): { prediction: string; confidence: number; agree: number; total: number; reasoning?: string } | null {
+  if (!item) return null;
+  
+  let agree = 0;
+  let total = 4;
+  
+  if (typeof item.agree === 'string' && item.agree.includes('/')) {
+    const parts = item.agree.split('/');
+    agree = parseInt(parts[0]) || 0;
+    total = parseInt(parts[1]) || 4;
+  } else if (typeof item.agree === 'number') {
+    agree = item.agree;
+  }
+  
+  return {
+    prediction: item.prediction || '',
+    confidence: item.confidence || 0,
+    agree,
+    total,
+    reasoning: item.reasoning || undefined
+  };
+}
+
+// ✅ NEW: Normalize bestBet
+function normalizeBestBet(bet: any): { type: string; selection: string; confidence: number; agree: number; total: number; reasoning?: string } | null {
+  if (!bet) return null;
+  
+  let agree = 0;
+  let total = 4;
+  
+  if (typeof bet.agree === 'string' && bet.agree.includes('/')) {
+    const parts = bet.agree.split('/');
+    agree = parseInt(parts[0]) || 0;
+    total = parseInt(parts[1]) || 4;
+  } else if (typeof bet.agree === 'number') {
+    agree = bet.agree;
+  }
+  
+  return {
+    type: bet.type || '',
+    selection: bet.selection || '',
+    confidence: bet.confidence || 0,
+    agree,
+    total,
+    reasoning: bet.reasoning || undefined
+  };
 }
 
 // ==================== PROFESSIONAL OVER/UNDER CALCULATION ====================
@@ -151,7 +221,7 @@ export async function POST(request: NextRequest) {
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
-    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v7 (with riskAssessment fix)');
+    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v8 (ALL objects normalized)');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🆔 IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
@@ -309,7 +379,7 @@ export async function POST(request: NextRequest) {
     console.log(`   ✅ Agent Analysis completed in ${Date.now() - agentStart}ms`);
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 7: Run Strategy Agent (NEW!) - Tüm verileri sentezle
+    // 📊 STEP 7: Run Strategy Agent - Tüm verileri sentezle
     // ═══════════════════════════════════════════════════════════════════════════
     
     console.log('🧠 Running Strategy Agent v2.0...');
@@ -326,69 +396,93 @@ export async function POST(request: NextRequest) {
           sentiment: result.reports?.sentiment,
         },
         multiModelResult,
-        { overUnder: overUnderCalc }, // professionalCalc
+        { overUnder: overUnderCalc },
         language as 'tr' | 'en' | 'de'
       );
       console.log(`   ✅ Strategy Agent completed in ${Date.now() - strategyStart}ms`);
       console.log(`   🎯 Best Bet: ${strategyResult?.recommendedBets?.[0]?.type} - ${strategyResult?.recommendedBets?.[0]?.selection}`);
-      console.log(`   ⚠️ Risk: ${normalizeRiskAssessment(strategyResult?.riskAssessment)} (${getRiskScore(strategyResult?.riskAssessment) || 'N/A'}/100)`);
+      console.log(`   ⚠️ Risk: ${normalizeRiskAssessment(strategyResult?.riskAssessment)}`);
     } catch (strategyError) {
       console.error('⚠️ Strategy Agent failed:', strategyError);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 8: Merge Strategy Results into Reports
+    // 📊 STEP 8: Merge Strategy Results into Reports - ALL NORMALIZED!
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Strategy Agent sonuçlarını reports'a ekle
     if (strategyResult && result.reports) {
+      // Normalize consensus items
+      const normalizedConsensus = strategyResult.consensus ? {
+        overUnder: normalizeConsensusItem(strategyResult.consensus.overUnder),
+        matchResult: normalizeConsensusItem(strategyResult.consensus.matchResult),
+        btts: normalizeConsensusItem(strategyResult.consensus.btts),
+      } : null;
+
+      const normalized_consensus = strategyResult._consensus ? {
+        overUnderConsensus: normalizeConsensusItem(strategyResult._consensus.overUnderConsensus),
+        matchResultConsensus: normalizeConsensusItem(strategyResult._consensus.matchResultConsensus),
+        bttsConsensus: normalizeConsensusItem(strategyResult._consensus.bttsConsensus),
+      } : null;
+
       result.reports.strategy = {
         ...result.reports.strategy,
-        // Strategy Agent v2 verileri
-        masterAnalysis: strategyResult.masterAnalysis,
-        consensus: strategyResult.consensus,
-        // ✅ FIX: riskAssessment'ı string olarak gönder (React render hatası için)
+        // ✅ ALL NORMALIZED - No objects that can break React!
+        masterAnalysis: normalizeMasterAnalysis(strategyResult.masterAnalysis),
+        masterKeyFactors: getMasterKeyFactors(strategyResult.masterAnalysis),
+        
+        consensus: normalizedConsensus,
+        _consensus: normalized_consensus,
+        
         riskAssessment: normalizeRiskAssessment(strategyResult.riskAssessment),
         riskScore: getRiskScore(strategyResult.riskAssessment),
         riskFactors: getRiskFactors(strategyResult.riskAssessment),
-        recommendedBets: strategyResult.recommendedBets,
-        avoidBets: strategyResult.avoidBets,
-        stakeSuggestion: strategyResult.stakeSuggestion,
-        specialAlerts: strategyResult.specialAlerts,
-        agentSummary: strategyResult.agentSummary,
-        _consensus: strategyResult._consensus,
-        _bestBet: strategyResult._bestBet,
-        _totalAgreement: strategyResult._totalAgreement,
-        _avgConfidence: strategyResult._avgConfidence,
+        
+        stakeSuggestion: normalizeStakeSuggestion(strategyResult.stakeSuggestion),
+        stakePercentage: getStakePercentage(strategyResult.stakeSuggestion),
+        stakeReasoning: getStakeReasoning(strategyResult.stakeSuggestion),
+        
+        _bestBet: normalizeBestBet(strategyResult._bestBet),
+        
+        // Arrays are OK
+        recommendedBets: strategyResult.recommendedBets || [],
+        avoidBets: strategyResult.avoidBets || [],
+        specialAlerts: strategyResult.specialAlerts || [],
+        
+        // Strings are OK
+        agentSummary: strategyResult.agentSummary || '',
+        
+        // Numbers are OK
+        _totalAgreement: strategyResult._totalAgreement || 0,
+        _avgConfidence: strategyResult._avgConfidence || 0,
       };
       
-      // weightedConsensus'u da güncelle
-      if (strategyResult.consensus) {
+      // Update weightedConsensus with normalized values
+      if (normalizedConsensus) {
         result.reports.weightedConsensus = {
           ...result.reports.weightedConsensus,
-          matchResult: {
-            prediction: strategyResult.consensus.matchResult?.prediction || result.reports.weightedConsensus?.matchResult?.prediction,
-            confidence: strategyResult.consensus.matchResult?.confidence || result.reports.weightedConsensus?.matchResult?.confidence,
-            agreement: strategyResult.consensus.matchResult?.agree || result.reports.weightedConsensus?.matchResult?.agreement,
-            votes: strategyResult.consensus.matchResult?.votes,
-          },
-          overUnder: {
-            prediction: strategyResult.consensus.overUnder?.prediction || result.reports.weightedConsensus?.overUnder?.prediction,
-            confidence: strategyResult.consensus.overUnder?.confidence || result.reports.weightedConsensus?.overUnder?.confidence,
-            agreement: strategyResult.consensus.overUnder?.agree || result.reports.weightedConsensus?.overUnder?.agreement,
-            votes: strategyResult.consensus.overUnder?.votes,
-          },
-          btts: {
-            prediction: strategyResult.consensus.btts?.prediction || result.reports.weightedConsensus?.btts?.prediction,
-            confidence: strategyResult.consensus.btts?.confidence || result.reports.weightedConsensus?.btts?.confidence,
-            agreement: strategyResult.consensus.btts?.agree || result.reports.weightedConsensus?.btts?.agreement,
-            votes: strategyResult.consensus.btts?.votes,
-          },
+          matchResult: normalizedConsensus.matchResult ? {
+            prediction: normalizedConsensus.matchResult.prediction,
+            confidence: normalizedConsensus.matchResult.confidence,
+            agreement: normalizedConsensus.matchResult.agree,
+            total: normalizedConsensus.matchResult.total,
+          } : result.reports.weightedConsensus?.matchResult,
+          overUnder: normalizedConsensus.overUnder ? {
+            prediction: normalizedConsensus.overUnder.prediction,
+            confidence: normalizedConsensus.overUnder.confidence,
+            agreement: normalizedConsensus.overUnder.agree,
+            total: normalizedConsensus.overUnder.total,
+          } : result.reports.weightedConsensus?.overUnder,
+          btts: normalizedConsensus.btts ? {
+            prediction: normalizedConsensus.btts.prediction,
+            confidence: normalizedConsensus.btts.confidence,
+            agreement: normalizedConsensus.btts.agree,
+            total: normalizedConsensus.btts.total,
+          } : result.reports.weightedConsensus?.btts,
           bestBet: strategyResult._bestBet ? {
-            type: strategyResult._bestBet.type,
-            selection: strategyResult._bestBet.selection,
-            confidence: strategyResult._bestBet.confidence,
-            agreement: `${strategyResult._bestBet.agree}/${strategyResult._bestBet.total}`,
+            type: strategyResult._bestBet.type || '',
+            selection: strategyResult._bestBet.selection || '',
+            confidence: strategyResult._bestBet.confidence || 0,
+            agreement: `${strategyResult._bestBet.agree || 0}/${strategyResult._bestBet.total || 4}`,
           } : result.reports.weightedConsensus?.bestBet,
           finalPrediction: {
             ...result.reports.weightedConsensus?.finalPrediction,
@@ -429,7 +523,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 10: Build Response
+    // 📊 STEP 10: Build Response - ALL NORMALIZED
     // ═══════════════════════════════════════════════════════════════════════════
     
     const totalTime = Date.now() - startTime;
@@ -465,17 +559,19 @@ export async function POST(request: NextRequest) {
         modelAgreement: multiModelResult.modelAgreement,
       } : { enabled: false },
       
-      // Strategy Agent Summary - ✅ FIX: riskAssessment normalized
+      // Strategy Agent Summary - ALL NORMALIZED
       strategyAgent: strategyResult ? {
         enabled: true,
-        masterAnalysis: strategyResult.masterAnalysis,
+        masterAnalysis: normalizeMasterAnalysis(strategyResult.masterAnalysis),
+        masterKeyFactors: getMasterKeyFactors(strategyResult.masterAnalysis),
         riskAssessment: normalizeRiskAssessment(strategyResult.riskAssessment),
         riskScore: getRiskScore(strategyResult.riskAssessment),
         riskFactors: getRiskFactors(strategyResult.riskAssessment),
-        recommendedBets: strategyResult.recommendedBets,
-        stakeSuggestion: strategyResult.stakeSuggestion,
-        specialAlerts: strategyResult.specialAlerts,
-        agentSummary: strategyResult.agentSummary,
+        stakeSuggestion: normalizeStakeSuggestion(strategyResult.stakeSuggestion),
+        stakePercentage: getStakePercentage(strategyResult.stakeSuggestion),
+        recommendedBets: strategyResult.recommendedBets || [],
+        specialAlerts: strategyResult.specialAlerts || [],
+        agentSummary: strategyResult.agentSummary || '',
       } : { enabled: false },
       
       // Data quality info
@@ -580,7 +676,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    version: 'v7',
+    version: 'v8',
     features: [
       'Professional data fetching with includes',
       'Venue-specific statistics',
@@ -589,7 +685,7 @@ export async function GET() {
       'Professional Over/Under calculation',
       'Record & matchCount fields for UI',
       'Strategy Agent v2.0 integration',
-      'Fixed riskAssessment object→string conversion',  // ← YENİ
+      'ALL objects normalized for React rendering',
     ],
     timestamp: new Date().toISOString(),
   });
