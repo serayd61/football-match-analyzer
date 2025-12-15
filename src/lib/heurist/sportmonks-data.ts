@@ -393,19 +393,34 @@ export async function fetchTeamRecentMatches(
   leagueId?: number, 
   count: number = 15
 ): Promise<any[]> {
-  // ✅ DOĞRU ENDPOINT - Sportmonks v3 syntax
-  const endpoint = `/fixtures?filter[participant_id]=${teamId}&include=scores;participants&per_page=30&order=starting_at&sort=desc`;
+  // ✅ Takımın son maçları - teams endpoint ile
+  const endpoint = `/teams/${teamId}?include=latest.scores;latest.participants`;
   
-  console.log(`📡 Fetching fixtures for team ${teamId}...`);
+  console.log(`📡 Fetching team ${teamId} with latest matches...`);
   const data = await fetchSportmonks(endpoint);
   
-  if (!data?.data || data.data.length === 0) {
-    console.log(`⚠️ No fixtures found for team ${teamId}`);
+  if (!data?.data) {
+    console.log(`⚠️ No data for team ${teamId}`);
     return [];
   }
   
-  const allFixtures = data.data;
+  // latest içinde son maçlar var
+  const allFixtures = data.data.latest || [];
   console.log(`   📊 Total fixtures found: ${allFixtures.length}`);
+  
+  if (allFixtures.length === 0) {
+    // Alternatif: fixtures by team endpoint
+    console.log(`   🔄 Trying alternative endpoint...`);
+    const altEndpoint = `/fixtures/latest/by-team/${teamId}?include=scores;participants`;
+    const altData = await fetchSportmonks(altEndpoint);
+    
+    if (altData?.data) {
+      const fixtures = Array.isArray(altData.data) ? altData.data : [altData.data];
+      console.log(`   📊 Alt endpoint fixtures: ${fixtures.length}`);
+      return fixtures.filter((f: any) => f.state_id === 5).slice(0, count);
+    }
+    return [];
+  }
   
   // Bitmiş maçları filtrele
   const finishedWithScores = allFixtures
