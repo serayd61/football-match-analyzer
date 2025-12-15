@@ -543,31 +543,27 @@ function calculateStakeSuggestion(
   const avgConfidence = (consensus.overUnder.avgConfidence + consensus.matchResult.avgConfidence + consensus.btts.avgConfidence) / 3;
   const avgAgree = (consensus.overUnder.totalAgree + consensus.matchResult.totalAgree + consensus.btts.totalAgree) / 3;
   
-  let level: string;
-  let percentage: string;
-  let reasoning: string;
-  
   const templates = {
     tr: {
-      veryHigh: { level: 'Çok Yüksek', pct: '4-5%', reason: 'Mükemmel konsensüs ve düşük risk. Agresif stake önerilir.' },
-      high: { level: 'Yüksek', pct: '3-4%', reason: 'Güçlü konsensüs. Normal üstü stake uygun.' },
-      medium: { level: 'Orta', pct: '2-3%', reason: 'Kabul edilebilir risk. Standart stake önerilir.' },
-      low: { level: 'Düşük', pct: '1-2%', reason: 'Yüksek risk veya düşük konsensüs. Küçük stake önerilir.' },
-      veryLow: { level: 'Çok Düşük', pct: '0.5-1%', reason: 'Çok riskli. Minimum stake veya pas geç.' }
+      veryHigh: { level: 'Çok Yüksek', percentage: '4-5%', reasoning: 'Mükemmel konsensüs ve düşük risk. Agresif stake önerilir.' },
+      high: { level: 'Yüksek', percentage: '3-4%', reasoning: 'Güçlü konsensüs. Normal üstü stake uygun.' },
+      medium: { level: 'Orta', percentage: '2-3%', reasoning: 'Kabul edilebilir risk. Standart stake önerilir.' },
+      low: { level: 'Düşük', percentage: '1-2%', reasoning: 'Yüksek risk veya düşük konsensüs. Küçük stake önerilir.' },
+      veryLow: { level: 'Çok Düşük', percentage: '0.5-1%', reasoning: 'Çok riskli. Minimum stake veya pas geç.' }
     },
     en: {
-      veryHigh: { level: 'Very High', pct: '4-5%', reason: 'Excellent consensus and low risk. Aggressive stake recommended.' },
-      high: { level: 'High', pct: '3-4%', reason: 'Strong consensus. Above normal stake appropriate.' },
-      medium: { level: 'Medium', pct: '2-3%', reason: 'Acceptable risk. Standard stake recommended.' },
-      low: { level: 'Low', pct: '1-2%', reason: 'High risk or low consensus. Small stake recommended.' },
-      veryLow: { level: 'Very Low', pct: '0.5-1%', reason: 'Very risky. Minimum stake or skip.' }
+      veryHigh: { level: 'Very High', percentage: '4-5%', reasoning: 'Excellent consensus and low risk. Aggressive stake recommended.' },
+      high: { level: 'High', percentage: '3-4%', reasoning: 'Strong consensus. Above normal stake appropriate.' },
+      medium: { level: 'Medium', percentage: '2-3%', reasoning: 'Acceptable risk. Standard stake recommended.' },
+      low: { level: 'Low', percentage: '1-2%', reasoning: 'High risk or low consensus. Small stake recommended.' },
+      veryLow: { level: 'Very Low', percentage: '0.5-1%', reasoning: 'Very risky. Minimum stake or skip.' }
     },
     de: {
-      veryHigh: { level: 'Sehr Hoch', pct: '4-5%', reason: 'Ausgezeichneter Konsens. Aggressiver Einsatz empfohlen.' },
-      high: { level: 'Hoch', pct: '3-4%', reason: 'Starker Konsens. Überdurchschnittlicher Einsatz.' },
-      medium: { level: 'Mittel', pct: '2-3%', reason: 'Akzeptables Risiko. Standardeinsatz empfohlen.' },
-      low: { level: 'Niedrig', pct: '1-2%', reason: 'Hohes Risiko. Kleiner Einsatz empfohlen.' },
-      veryLow: { level: 'Sehr Niedrig', pct: '0.5-1%', reason: 'Sehr riskant. Minimaler Einsatz oder überspringen.' }
+      veryHigh: { level: 'Sehr Hoch', percentage: '4-5%', reasoning: 'Ausgezeichneter Konsens. Aggressiver Einsatz empfohlen.' },
+      high: { level: 'Hoch', percentage: '3-4%', reasoning: 'Starker Konsens. Überdurchschnittlicher Einsatz.' },
+      medium: { level: 'Mittel', percentage: '2-3%', reasoning: 'Akzeptables Risiko. Standardeinsatz empfohlen.' },
+      low: { level: 'Niedrig', percentage: '1-2%', reasoning: 'Hohes Risiko. Kleiner Einsatz empfohlen.' },
+      veryLow: { level: 'Sehr Niedrig', percentage: '0.5-1%', reasoning: 'Sehr riskant. Minimaler Einsatz oder überspringen.' }
     }
   };
   
