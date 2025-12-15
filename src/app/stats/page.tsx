@@ -45,6 +45,36 @@ interface MatchData {
   h2h: H2HStats;
 }
 
+// Team Logo Component
+const TeamLogo = ({ src, name, size = 'md' }: { src?: string; name: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) => {
+  const sizeClasses = {
+    sm: 'w-6 h-6 text-xs',
+    md: 'w-8 h-8 text-sm',
+    lg: 'w-12 h-12 text-lg',
+    xl: 'w-16 h-16 text-2xl'
+  };
+
+  if (src) {
+    return (
+      <img 
+        src={src} 
+        alt={name}
+        className={`${sizeClasses[size].split(' ').slice(0, 2).join(' ')} object-contain`}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className={`${sizeClasses[size]} bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center font-bold text-white`}>
+      {name.charAt(0)}
+    </div>
+  );
+};
+
 export default function StatsPage() {
   const [matches, setMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,73 +261,66 @@ export default function StatsPage() {
     return { text: l.weak, color: 'text-red-400', bg: 'bg-red-500/20' };
   };
 
- const calculateGoalStats = (recentMatches: any[], teamId: number | undefined) => {
-  if (!recentMatches || recentMatches.length === 0 || !teamId) {
-    return { over25: 0, btts: 0, cleanSheets: 0, failedToScore: 0, avgScored: 0, avgConceded: 0 };
-  }
-
-  let over25Count = 0;
-  let bttsCount = 0;
-  let cleanSheets = 0;
-  let failedToScore = 0;
-  let totalScored = 0;
-  let totalConceded = 0;
-  let validMatches = 0;
-
-  recentMatches.forEach((match: any) => {
-    // TeamId kontrolü - string veya number olabilir
-    const homeParticipant = match.participants?.find((p: any) => p.meta?.location === 'home');
-    const awayParticipant = match.participants?.find((p: any) => p.meta?.location === 'away');
-    
-    const isHome = homeParticipant?.id === teamId || String(homeParticipant?.id) === String(teamId);
-    
-    let homeScore = 0;
-    let awayScore = 0;
-
-    // Scores array'ini kontrol et
-    if (match.scores && Array.isArray(match.scores)) {
-      match.scores.forEach((s: any) => {
-        if (s.description === 'CURRENT' || s.type_id === 1525 || s.description === '2ND_HALF') {
-          if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
-          if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
-        }
-      });
-    }
-    
-    // Eğer scores yoksa, farklı bir yapı dene
-    if (homeScore === 0 && awayScore === 0) {
-      // Alternatif score yapısı
-      homeScore = match.scores?.home || match.home_score || 0;
-      awayScore = match.scores?.away || match.away_score || 0;
+  const calculateGoalStats = (recentMatches: any[], teamId: number | undefined) => {
+    if (!recentMatches || recentMatches.length === 0 || !teamId) {
+      return { over25: 0, btts: 0, cleanSheets: 0, failedToScore: 0, avgScored: 0, avgConceded: 0 };
     }
 
-    const teamScore = isHome ? homeScore : awayScore;
-    const opponentScore = isHome ? awayScore : homeScore;
-    const totalGoals = homeScore + awayScore;
+    let over25Count = 0;
+    let bttsCount = 0;
+    let cleanSheets = 0;
+    let failedToScore = 0;
+    let totalScored = 0;
+    let totalConceded = 0;
+    let validMatches = 0;
 
-    // Sadece geçerli skorları say
-    if (totalGoals > 0 || (homeScore === 0 && awayScore === 0)) {
-      validMatches++;
-      totalScored += teamScore;
-      totalConceded += opponentScore;
+    recentMatches.forEach((match: any) => {
+      const homeParticipant = match.participants?.find((p: any) => p.meta?.location === 'home');
+      const isHome = homeParticipant?.id === teamId || String(homeParticipant?.id) === String(teamId);
+      
+      let homeScore = 0;
+      let awayScore = 0;
 
-      if (totalGoals > 2.5) over25Count++;
-      if (homeScore > 0 && awayScore > 0) bttsCount++;
-      if (opponentScore === 0) cleanSheets++;
-      if (teamScore === 0) failedToScore++;
-    }
-  });
+      if (match.scores && Array.isArray(match.scores)) {
+        match.scores.forEach((s: any) => {
+          if (s.description === 'CURRENT' || s.type_id === 1525 || s.description === '2ND_HALF') {
+            if (s.score?.participant === 'home') homeScore = s.score?.goals || 0;
+            if (s.score?.participant === 'away') awayScore = s.score?.goals || 0;
+          }
+        });
+      }
+      
+      if (homeScore === 0 && awayScore === 0) {
+        homeScore = match.scores?.home || match.home_score || 0;
+        awayScore = match.scores?.away || match.away_score || 0;
+      }
 
-  const total = validMatches > 0 ? validMatches : 1;
-  return {
-    over25: Math.round((over25Count / total) * 100),
-    btts: Math.round((bttsCount / total) * 100),
-    cleanSheets: Math.round((cleanSheets / total) * 100),
-    failedToScore: Math.round((failedToScore / total) * 100),
-    avgScored: Number((totalScored / total).toFixed(1)),
-    avgConceded: Number((totalConceded / total).toFixed(1))
+      const teamScore = isHome ? homeScore : awayScore;
+      const opponentScore = isHome ? awayScore : homeScore;
+      const totalGoals = homeScore + awayScore;
+
+      if (totalGoals > 0 || (homeScore === 0 && awayScore === 0)) {
+        validMatches++;
+        totalScored += teamScore;
+        totalConceded += opponentScore;
+
+        if (totalGoals > 2.5) over25Count++;
+        if (homeScore > 0 && awayScore > 0) bttsCount++;
+        if (opponentScore === 0) cleanSheets++;
+        if (teamScore === 0) failedToScore++;
+      }
+    });
+
+    const total = validMatches > 0 ? validMatches : 1;
+    return {
+      over25: Math.round((over25Count / total) * 100),
+      btts: Math.round((bttsCount / total) * 100),
+      cleanSheets: Math.round((cleanSheets / total) * 100),
+      failedToScore: Math.round((failedToScore / total) * 100),
+      avgScored: Number((totalScored / total).toFixed(1)),
+      avgConceded: Number((totalConceded / total).toFixed(1))
+    };
   };
-};
 
   const matchesByLeague = matches.reduce((acc: Record<string, MatchData[]>, match) => {
     const league = match.fixture.league || 'Other';
@@ -378,7 +401,17 @@ export default function StatsPage() {
                         onClick={() => toggleLeague(league)}
                         className="w-full px-4 py-3 bg-gray-700/30 flex items-center justify-between hover:bg-gray-700/50 transition-all"
                       >
-                        <span className="text-sm font-medium text-gray-300">{league}</span>
+                        <div className="flex items-center gap-2">
+                          {leagueMatches[0]?.fixture.leagueLogo && (
+                            <img 
+                              src={leagueMatches[0].fixture.leagueLogo} 
+                              alt="" 
+                              className="w-5 h-5 object-contain"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <span className="text-sm font-medium text-gray-300">{league}</span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-500">{leagueMatches.length} maç</span>
                           <span className="text-gray-400">{expandedLeagues.has(league) ? '▼' : '▶'}</span>
@@ -396,16 +429,43 @@ export default function StatsPage() {
                                   : ''
                               }`}
                             >
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {/* Home Team with Logo */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-white truncate">
-                                    {match.homeTeam.name}
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {match.homeTeam.logo ? (
+                                      <img 
+                                        src={match.homeTeam.logo} 
+                                        alt="" 
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                      />
+                                    ) : (
+                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                        {match.homeTeam.name.charAt(0)}
+                                      </div>
+                                    )}
+                                    <span className="font-medium text-white truncate text-sm">{match.homeTeam.name}</span>
                                   </div>
-                                  <div className="font-medium text-white truncate">
-                                    {match.awayTeam.name}
+                                  <div className="flex items-center gap-2">
+                                    {match.awayTeam.logo ? (
+                                      <img 
+                                        src={match.awayTeam.logo} 
+                                        alt="" 
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                      />
+                                    ) : (
+                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                        {match.awayTeam.name.charAt(0)}
+                                      </div>
+                                    )}
+                                    <span className="font-medium text-white truncate text-sm">{match.awayTeam.name}</span>
                                   </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-1 ml-3">
+                                
+                                {/* Form indicators */}
+                                <div className="flex flex-col items-end gap-1 ml-2">
                                   <div className="flex gap-0.5">
                                     {match.homeTeam.recentForm.form.slice(0, 5).map((r, i) => (
                                       <span key={i} className={`w-4 h-4 rounded text-[10px] flex items-center justify-center ${getFormColor(r)}`}>
@@ -446,22 +506,49 @@ export default function StatsPage() {
             <div className="lg:col-span-2">
               {selectedMatch ? (
                 <div className="space-y-6">
-                  {/* Maç Başlığı */}
+                  {/* Maç Başlığı - LOGOLU */}
                   <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="text-sm text-gray-400">{selectedMatch.fixture.league}</div>
+                      <div className="flex items-center gap-2">
+                        {selectedMatch.fixture.leagueLogo && (
+                          <img 
+                            src={selectedMatch.fixture.leagueLogo} 
+                            alt="" 
+                            className="w-5 h-5 object-contain"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="text-sm text-gray-400">{selectedMatch.fixture.league}</span>
+                      </div>
                       <div className="text-sm text-gray-400">
                         {new Date(selectedMatch.fixture.startTime).toLocaleString(lang, {
                           weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-8">
+                    
+                    {/* Teams with Logos */}
+                    <div className="flex items-center justify-center gap-6">
+                      {/* Home Team */}
                       <div className="text-center flex-1">
-                        <div className="text-3xl font-bold text-white mb-2">{selectedMatch.homeTeam.name}</div>
+                        <div className="flex justify-center mb-3">
+                          {selectedMatch.homeTeam.logo ? (
+                            <img 
+                              src={selectedMatch.homeTeam.logo} 
+                              alt={selectedMatch.homeTeam.name}
+                              className="w-16 h-16 object-contain"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                              {selectedMatch.homeTeam.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xl font-bold text-white mb-2">{selectedMatch.homeTeam.name}</div>
                         <div className="flex justify-center gap-1">
                           {selectedMatch.homeTeam.recentForm.form.map((r, i) => (
-                            <span key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${getFormColor(r)}`}>
+                            <span key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm ${getFormColor(r)}`}>
                               {r === 'W' ? l.win : r === 'D' ? l.draw : l.loss}
                             </span>
                           ))}
@@ -470,12 +557,34 @@ export default function StatsPage() {
                           {getStrengthLevel(selectedMatch.homeTeam.recentForm.points).text} ({selectedMatch.homeTeam.recentForm.points} pts)
                         </div>
                       </div>
-                      <div className="text-4xl font-bold text-gray-500">VS</div>
+                      
+                      {/* VS */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center border-2 border-gray-600">
+                          <span className="text-xl font-bold text-gray-400">VS</span>
+                        </div>
+                      </div>
+                      
+                      {/* Away Team */}
                       <div className="text-center flex-1">
-                        <div className="text-3xl font-bold text-white mb-2">{selectedMatch.awayTeam.name}</div>
+                        <div className="flex justify-center mb-3">
+                          {selectedMatch.awayTeam.logo ? (
+                            <img 
+                              src={selectedMatch.awayTeam.logo} 
+                              alt={selectedMatch.awayTeam.name}
+                              className="w-16 h-16 object-contain"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                              {selectedMatch.awayTeam.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xl font-bold text-white mb-2">{selectedMatch.awayTeam.name}</div>
                         <div className="flex justify-center gap-1">
                           {selectedMatch.awayTeam.recentForm.form.map((r, i) => (
-                            <span key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${getFormColor(r)}`}>
+                            <span key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm ${getFormColor(r)}`}>
                               {r === 'W' ? l.win : r === 'D' ? l.draw : l.loss}
                             </span>
                           ))}
@@ -485,6 +594,7 @@ export default function StatsPage() {
                         </div>
                       </div>
                     </div>
+                    
                     {selectedMatch.fixture.venue && (
                       <div className="text-center mt-4 text-sm text-gray-400">
                         🏟️ {selectedMatch.fixture.venue}
@@ -512,8 +622,18 @@ export default function StatsPage() {
                   {/* Overview Tab */}
                   {activeTab === 'overview' && (
                     <div className="grid grid-cols-2 gap-4">
+                      {/* Home Form Card with Logo */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
-                        <h3 className="text-lg font-bold text-white mb-4">{l.homeForm}</h3>
+                        <div className="flex items-center gap-3 mb-4">
+                          {selectedMatch.homeTeam.logo ? (
+                            <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                              {selectedMatch.homeTeam.name.charAt(0)}
+                            </div>
+                          )}
+                          <h3 className="text-lg font-bold text-white">{l.homeForm}</h3>
+                        </div>
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-gray-400">{l.points} (Son 5)</span>
@@ -536,8 +656,18 @@ export default function StatsPage() {
                         </div>
                       </div>
 
+                      {/* Away Form Card with Logo */}
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
-                        <h3 className="text-lg font-bold text-white mb-4">{l.awayForm}</h3>
+                        <div className="flex items-center gap-3 mb-4">
+                          {selectedMatch.awayTeam.logo ? (
+                            <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                              {selectedMatch.awayTeam.name.charAt(0)}
+                            </div>
+                          )}
+                          <h3 className="text-lg font-bold text-white">{l.awayForm}</h3>
+                        </div>
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-gray-400">{l.points} (Son 5)</span>
@@ -560,11 +690,15 @@ export default function StatsPage() {
                         </div>
                       </div>
 
+                      {/* H2H Record */}
                       {selectedMatch.h2h.stats.totalMatches > 0 && (
                         <div className="col-span-2 bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/30 rounded-xl p-5">
                           <h3 className="text-lg font-bold text-white mb-4">⚔️ {l.h2hRecord}</h3>
                           <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
+                            <div className="flex flex-col items-center">
+                              {selectedMatch.homeTeam.logo && (
+                                <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain mb-2" />
+                              )}
                               <div className="text-3xl font-bold text-green-400">{selectedMatch.h2h.stats.team1Wins}</div>
                               <div className="text-sm text-gray-400">{selectedMatch.homeTeam.name}</div>
                             </div>
@@ -572,7 +706,10 @@ export default function StatsPage() {
                               <div className="text-3xl font-bold text-yellow-400">{selectedMatch.h2h.stats.draws}</div>
                               <div className="text-sm text-gray-400">{l.draws}</div>
                             </div>
-                            <div>
+                            <div className="flex flex-col items-center">
+                              {selectedMatch.awayTeam.logo && (
+                                <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain mb-2" />
+                              )}
                               <div className="text-3xl font-bold text-blue-400">{selectedMatch.h2h.stats.team2Wins}</div>
                               <div className="text-sm text-gray-400">{selectedMatch.awayTeam.name}</div>
                             </div>
@@ -583,6 +720,7 @@ export default function StatsPage() {
                         </div>
                       )}
 
+                      {/* Prediction Tips */}
                       <div className="col-span-2 bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-500/30 rounded-xl p-5">
                         <h3 className="text-lg font-bold text-yellow-400 mb-3">💡 {l.prediction}</h3>
                         <div className="space-y-2 text-sm">
@@ -633,11 +771,14 @@ export default function StatsPage() {
                     </div>
                   )}
 
-                  {/* Form Tab */}
+                  {/* Form Tab - with Logos */}
                   {activeTab === 'form' && (
                     <div className="space-y-6">
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-gray-700/50 bg-green-500/10">
+                        <div className="p-4 border-b border-gray-700/50 bg-green-500/10 flex items-center gap-3">
+                          {selectedMatch.homeTeam.logo && (
+                            <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                          )}
                           <h3 className="font-bold text-white">{selectedMatch.homeTeam.name} - {l.last5}</h3>
                         </div>
                         <div className="divide-y divide-gray-700/30">
@@ -673,7 +814,10 @@ export default function StatsPage() {
                       </div>
 
                       <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-gray-700/50 bg-blue-500/10">
+                        <div className="p-4 border-b border-gray-700/50 bg-blue-500/10 flex items-center gap-3">
+                          {selectedMatch.awayTeam.logo && (
+                            <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                          )}
                           <h3 className="font-bold text-white">{selectedMatch.awayTeam.name} - {l.last5}</h3>
                         </div>
                         <div className="divide-y divide-gray-700/30">
@@ -717,6 +861,9 @@ export default function StatsPage() {
                         <>
                           <div className="grid grid-cols-3 gap-4">
                             <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 text-center">
+                              {selectedMatch.homeTeam.logo && (
+                                <img src={selectedMatch.homeTeam.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" />
+                              )}
                               <div className="text-4xl font-bold text-green-400">{selectedMatch.h2h.stats.team1Wins}</div>
                               <div className="text-sm text-gray-400 mt-1">{selectedMatch.homeTeam.name}</div>
                               <div className="text-xs text-gray-500">{l.wins}</div>
@@ -726,6 +873,9 @@ export default function StatsPage() {
                               <div className="text-sm text-gray-400 mt-1">{l.draws}</div>
                             </div>
                             <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5 text-center">
+                              {selectedMatch.awayTeam.logo && (
+                                <img src={selectedMatch.awayTeam.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" />
+                              )}
                               <div className="text-4xl font-bold text-blue-400">{selectedMatch.h2h.stats.team2Wins}</div>
                               <div className="text-sm text-gray-400 mt-1">{selectedMatch.awayTeam.name}</div>
                               <div className="text-xs text-gray-500">{l.wins}</div>
@@ -787,7 +937,7 @@ export default function StatsPage() {
                     </div>
                   )}
 
-                  {/* Goals Tab */}
+                  {/* Goals Tab - with Logos */}
                   {activeTab === 'goals' && (
                     <div className="space-y-6">
                       {(() => {
@@ -798,7 +948,12 @@ export default function StatsPage() {
                           <>
                             <div className="grid grid-cols-2 gap-6">
                               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
-                                <h3 className="font-bold text-white mb-4">{selectedMatch.homeTeam.name}</h3>
+                                <div className="flex items-center gap-3 mb-4">
+                                  {selectedMatch.homeTeam.logo && (
+                                    <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                                  )}
+                                  <h3 className="font-bold text-white">{selectedMatch.homeTeam.name}</h3>
+                                </div>
                                 <div className="space-y-4">
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
@@ -852,7 +1007,12 @@ export default function StatsPage() {
                               </div>
 
                               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
-                                <h3 className="font-bold text-white mb-4">{selectedMatch.awayTeam.name}</h3>
+                                <div className="flex items-center gap-3 mb-4">
+                                  {selectedMatch.awayTeam.logo && (
+                                    <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
+                                  )}
+                                  <h3 className="font-bold text-white">{selectedMatch.awayTeam.name}</h3>
+                                </div>
                                 <div className="space-y-4">
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
