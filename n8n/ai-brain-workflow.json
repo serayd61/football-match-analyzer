@@ -1,0 +1,289 @@
+{
+  "name": "FootballAnalytics AI Brain Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://footballanalytics.pro/api/matches",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-todays-matches",
+      "name": "Get Today's Matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter matches starting in next 12 hours\nconst now = new Date();\nconst in12Hours = new Date(now.getTime() + 12 * 60 * 60 * 1000);\n\nconst matches = $input.all()[0].json.matches || [];\n\nconst upcomingMatches = matches.filter(match => {\n  const matchDate = new Date(match.datetime);\n  return matchDate >= now && matchDate <= in12Hours;\n});\n\n// Return each match as separate item\nreturn upcomingMatches.map(match => ({\n  json: match\n}));"
+      },
+      "id": "filter-upcoming",
+      "name": "Filter Upcoming Matches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://footballanalytics.pro/api/analyze",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ fixtureId: $json.fixtureId, mode: 'consensus' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "id": "analyze-match",
+      "name": "AI Brain Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-confidence",
+              "leftValue": "={{ $json.analysis.overallConfidence }}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-high-confidence",
+      "name": "High Confidence?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format prediction for social media\nconst analysis = $input.first().json.analysis;\nconst match = $input.first().json;\n\nconst consensus = analysis.consensus;\nconst confidence = analysis.overallConfidence;\n\n// Emoji mapping\nconst resultEmoji = {\n  '1': '🏠',\n  'X': '🤝',\n  '2': '✈️'\n};\n\nconst matchResult = consensus.matchResult.prediction;\nconst goalsOver = consensus.goals.over25;\nconst btts = consensus.btts.prediction;\n\n// Create tweet\nconst tweet = `🧠 AI PREDICTION 🧠\n\n⚽ ${match.homeTeam?.name || 'Home'} vs ${match.awayTeam?.name || 'Away'}\n\n${resultEmoji[matchResult]} Result: ${matchResult === '1' ? 'Home Win' : matchResult === 'X' ? 'Draw' : 'Away Win'} (${consensus.matchResult.confidence}%)\n\n⚽ Goals: ${goalsOver ? 'Over 2.5' : 'Under 2.5'} (${consensus.goals.confidence}%)\n\n🎯 BTTS: ${btts ? 'Yes' : 'No'} (${consensus.btts.confidence}%)\n\n📊 Overall Confidence: ${confidence}%\n\n#FootballPredictions #AIBetting #SportsBetting`;\n\nreturn [{\n  json: {\n    tweet,\n    fixtureId: match.fixtureId,\n    confidence,\n    analysis\n  }\n}];"
+      },
+      "id": "format-social",
+      "name": "Format for Social Media",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "text": "={{ $json.tweet }}",
+        "options": {}
+      },
+      "id": "post-twitter",
+      "name": "Post to Twitter",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [1540, 200],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "YOUR_TWITTER_CREDENTIALS_ID",
+          "name": "Twitter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/YOUR_PAGE_ID/feed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.tweet }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "post-facebook",
+      "name": "Post to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot{{ $credentials.telegramApi.token }}/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "YOUR_TELEGRAM_CHANNEL_ID"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.tweet }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "HTML"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "post-telegram",
+      "name": "Post to Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log low confidence predictions\nconst analysis = $input.first().json.analysis;\nconst match = $input.first().json;\n\nconsole.log(`Low confidence (${analysis.overallConfidence}%) for match:`, match.fixtureId);\n\nreturn [{\n  json: {\n    skipped: true,\n    fixtureId: match.fixtureId,\n    confidence: analysis.overallConfidence,\n    reason: 'Below threshold'\n  }\n}];"
+      },
+      "id": "log-skipped",
+      "name": "Log Skipped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 420]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Matches": {
+      "main": [
+        [
+          {
+            "node": "Filter Upcoming Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Upcoming Matches": {
+      "main": [
+        [
+          {
+            "node": "AI Brain Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Brain Analysis": {
+      "main": [
+        [
+          {
+            "node": "High Confidence?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Confidence?": {
+      "main": [
+        [
+          {
+            "node": "Format for Social Media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Social Media": {
+      "main": [
+        [
+          {
+            "node": "Post to Twitter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Football Analytics"
+    }
+  ],
+  "triggerCount": 1
+}
