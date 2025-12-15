@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Server-side safe singleton instances
@@ -39,12 +40,10 @@ export function getSupabase(): SupabaseClient {
   return _supabase;
 }
 
-// ✅ Admin client (server-safe fallback)
+// ✅ Admin client (server-safe, always initialized)
 export function getSupabaseAdmin(): SupabaseClient {
   if (!_supabaseAdmin) {
-    // Use standard createClient for admin (no browser APIs needed)
-    const { createClient } = require('@supabase/supabase-js');
-    _supabaseAdmin = createClient(
+    _supabaseAdmin = createSupabaseClient(
       getSupabaseUrl(), 
       getSupabaseServiceKey(),
       {
@@ -75,11 +74,15 @@ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
 });
 
 // ✅ React hook for safe usage
-export function useSupabase() {
+export function useSupabase(): SupabaseClient | null {
   if (typeof window === 'undefined') {
     return null;
   }
-  return getSupabase();
+  try {
+    return getSupabase();
+  } catch {
+    return null;
+  }
 }
 
 // Type definitions (unchanged)
