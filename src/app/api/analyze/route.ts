@@ -9,7 +9,52 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 // ============================================================================
-// TİPLER
+// 🧠 AI BRAIN ARCHITECTURE - ROL TANIMLARI
+// ============================================================================
+
+type AIRole = 'tactical' | 'statistical' | 'pattern' | 'contextual';
+
+interface AIConfig {
+  name: string;
+  role: AIRole;
+  weight: number;        // Consensus'taki ağırlık
+  temperature: number;   // Yaratıcılık seviyesi
+  specialization: string;
+}
+
+const AI_BRAIN_CONFIG: Record<string, AIConfig> = {
+  claude: {
+    name: 'Claude',
+    role: 'tactical',
+    weight: 0.30,
+    temperature: 0.3,
+    specialization: 'Tactical Analysis - Momentum, playing styles, psychological factors'
+  },
+  openai: {
+    name: 'GPT-4',
+    role: 'statistical',
+    weight: 0.30,
+    temperature: 0.2,
+    specialization: 'Statistical Engine - xG analysis, Poisson distribution, odds value'
+  },
+  gemini: {
+    name: 'Gemini',
+    role: 'pattern',
+    weight: 0.25,
+    temperature: 0.4,
+    specialization: 'Pattern Recognition - H2H trends, seasonality, streak analysis'
+  },
+  perplexity: {
+    name: 'Perplexity',
+    role: 'contextual',
+    weight: 0.15,
+    temperature: 0.5,
+    specialization: 'Contextual Analysis - News, injuries, external factors'
+  }
+};
+
+// ============================================================================
+// TİPLER (mevcut koddan)
 // ============================================================================
 
 interface MatchData {
@@ -30,7 +75,6 @@ interface TeamStats {
   name: string;
   teamId: number;
   totalMatches: number;
-  // Genel
   form: string;
   wins: number;
   draws: number;
@@ -39,7 +83,6 @@ interface TeamStats {
   goalsAgainst: number;
   avgGoalsFor: number;
   avgGoalsAgainst: number;
-  // Ev performansı
   homeMatches: number;
   homeWins: number;
   homeDraws: number;
@@ -48,7 +91,6 @@ interface TeamStats {
   homeGoalsAgainst: number;
   avgHomeGoalsFor: number;
   avgHomeGoalsAgainst: number;
-  // Deplasman performansı
   awayMatches: number;
   awayWins: number;
   awayDraws: number;
@@ -57,7 +99,6 @@ interface TeamStats {
   awayGoalsAgainst: number;
   avgAwayGoalsFor: number;
   avgAwayGoalsAgainst: number;
-  // Özel metrikler
   cleanSheets: number;
   cleanSheetPercent: number;
   failedToScore: number;
@@ -68,18 +109,15 @@ interface TeamStats {
   over25Percent: number;
   over15Matches: number;
   over15Percent: number;
-  // İlk/İkinci yarı
   firstHalfGoalsFor: number;
   firstHalfGoalsAgainst: number;
   secondHalfGoalsFor: number;
   secondHalfGoalsAgainst: number;
   avgFirstHalfGoals: number;
   avgSecondHalfGoals: number;
-  // Win streaks
   currentStreak: string;
   longestWinStreak: number;
   longestLossStreak: number;
-  // Detaylı maçlar
   recentMatches: MatchData[];
   last5Form: string;
   last5GoalsFor: number;
@@ -113,7 +151,719 @@ interface H2HStats {
 }
 
 // ============================================================================
-// SPORTMONKS - TAKIM İSTATİSTİKLERİ (DÜZELTILMIŞ ENDPOINT)
+// 🧠 ROL BAZLI VERİ PAKETLERİ - FARKLI AI'LARA FARKLI VERİ
+// ============================================================================
+
+function generateTacticalDataPackage(
+  homeTeam: string,
+  awayTeam: string,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HStats
+): string {
+  // CLAUDE için: Momentum, form, taktik analiz odaklı
+  const homeMomentum = calculateMomentum(homeStats);
+  const awayMomentum = calculateMomentum(awayStats);
+  
+  return `
+═══════════════════════════════════════════════════════════════
+🧠 TACTICAL ANALYSIS DATA PACKAGE
+Role: Tactical Analyst - Focus on HOW teams play, not just stats
+═══════════════════════════════════════════════════════════════
+
+📊 ${homeTeam.toUpperCase()} - TACTICAL PROFILE (HOME)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MOMENTUM SCORE: ${homeMomentum.score}/10 (${homeMomentum.trend})
+Current Streak: ${homeStats.currentStreak}
+Form Trajectory: ${homeStats.form.slice(0, 5)} → ${analyzeFormTrajectory(homeStats.form)}
+
+PLAYING STYLE INDICATORS:
+• Goals per match: ${homeStats.avgGoalsFor} (${homeStats.avgGoalsFor > 1.5 ? 'ATTACKING' : homeStats.avgGoalsFor > 1.0 ? 'BALANCED' : 'DEFENSIVE'})
+• Goals conceded: ${homeStats.avgGoalsAgainst} (${homeStats.avgGoalsAgainst < 1.0 ? 'SOLID DEFENSE' : homeStats.avgGoalsAgainst < 1.5 ? 'AVERAGE DEFENSE' : 'VULNERABLE'})
+• Clean sheet rate: ${homeStats.cleanSheetPercent}%
+• First half goals avg: ${homeStats.avgFirstHalfGoals} (${homeStats.avgFirstHalfGoals > homeStats.avgSecondHalfGoals ? 'FAST STARTERS' : 'SLOW STARTERS'})
+
+HOME FORTRESS ANALYSIS:
+• Home win rate: ${homeStats.homeMatches > 0 ? Math.round((homeStats.homeWins / homeStats.homeMatches) * 100) : 0}%
+• Home goals/match: ${homeStats.avgHomeGoalsFor}
+• Home advantage factor: ${calculateHomeAdvantage(homeStats)}
+
+RECENT FORM BREAKDOWN (Last 5):
+${homeStats.recentMatches.slice(0, 5).map(m => 
+  `  ${m.result} ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponent} (${m.isHome ? 'H' : 'A'}) - ${analyzeMatchPerformance(m)}`
+).join('\n')}
+
+CONFIDENCE INDICATORS:
+• Longest win streak: ${homeStats.longestWinStreak}
+• Longest loss streak: ${homeStats.longestLossStreak}
+• Failed to score rate: ${homeStats.failedToScorePercent}%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 ${awayTeam.toUpperCase()} - TACTICAL PROFILE (AWAY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MOMENTUM SCORE: ${awayMomentum.score}/10 (${awayMomentum.trend})
+Current Streak: ${awayStats.currentStreak}
+Form Trajectory: ${awayStats.form.slice(0, 5)} → ${analyzeFormTrajectory(awayStats.form)}
+
+PLAYING STYLE INDICATORS:
+• Goals per match: ${awayStats.avgGoalsFor} (${awayStats.avgGoalsFor > 1.5 ? 'ATTACKING' : awayStats.avgGoalsFor > 1.0 ? 'BALANCED' : 'DEFENSIVE'})
+• Goals conceded: ${awayStats.avgGoalsAgainst} (${awayStats.avgGoalsAgainst < 1.0 ? 'SOLID DEFENSE' : awayStats.avgGoalsAgainst < 1.5 ? 'AVERAGE DEFENSE' : 'VULNERABLE'})
+• Away resilience: ${awayStats.awayMatches > 0 ? Math.round((awayStats.awayWins / awayStats.awayMatches) * 100) : 0}% win rate away
+
+AWAY PERFORMANCE:
+• Away goals/match: ${awayStats.avgAwayGoalsFor}
+• Away goals conceded: ${awayStats.avgAwayGoalsAgainst}
+• Away mentality: ${awayStats.awayWins > awayStats.awayLosses ? 'CONFIDENT TRAVELERS' : 'STRUGGLES AWAY'}
+
+RECENT FORM BREAKDOWN (Last 5):
+${awayStats.recentMatches.slice(0, 5).map(m => 
+  `  ${m.result} ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponent} (${m.isHome ? 'H' : 'A'}) - ${analyzeMatchPerformance(m)}`
+).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔄 TACTICAL MATCHUP ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MOMENTUM BATTLE: ${homeTeam} (${homeMomentum.score}) vs ${awayTeam} (${awayMomentum.score})
+→ ${homeMomentum.score > awayMomentum.score ? homeTeam + ' has psychological edge' : awayMomentum.score > homeMomentum.score ? awayTeam + ' has psychological edge' : 'Even psychological battle'}
+
+STYLE CLASH:
+• ${homeTeam}: ${homeStats.avgGoalsFor > 1.5 ? 'Attacking' : 'Defensive'} approach
+• ${awayTeam}: ${awayStats.avgGoalsFor > 1.5 ? 'Attacking' : 'Defensive'} approach
+→ ${predictStyleClash(homeStats, awayStats)}
+
+KEY TACTICAL FACTORS:
+1. ${homeTeam} home record: ${homeStats.homeWins}W-${homeStats.homeDraws}D-${homeStats.homeLosses}L
+2. ${awayTeam} away record: ${awayStats.awayWins}W-${awayStats.awayDraws}D-${awayStats.awayLosses}L
+3. Form comparison: ${compareForm(homeStats.last5Form, awayStats.last5Form)}
+`;
+}
+
+function generateStatisticalDataPackage(
+  homeTeam: string,
+  awayTeam: string,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HStats
+): string {
+  // GPT-4 için: Pure numbers, xG simulation, Poisson, odds value
+  const homeExpectedGoals = calculateExpectedGoals(homeStats, awayStats, true);
+  const awayExpectedGoals = calculateExpectedGoals(awayStats, homeStats, false);
+  const poissonMatrix = calculatePoissonMatrix(homeExpectedGoals, awayExpectedGoals);
+  
+  return `
+═══════════════════════════════════════════════════════════════
+📊 STATISTICAL ENGINE DATA PACKAGE
+Role: Statistical Analyst - Pure numbers, probabilities, value finding
+═══════════════════════════════════════════════════════════════
+
+🔢 EXPECTED GOALS (xG) SIMULATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${homeTeam} xG: ${homeExpectedGoals.toFixed(2)}
+${awayTeam} xG: ${awayExpectedGoals.toFixed(2)}
+Total xG: ${(homeExpectedGoals + awayExpectedGoals).toFixed(2)}
+
+Calculation basis:
+• ${homeTeam} avg goals scored: ${homeStats.avgGoalsFor}
+• ${homeTeam} avg home goals: ${homeStats.avgHomeGoalsFor}
+• ${awayTeam} avg goals conceded: ${awayStats.avgGoalsAgainst}
+• ${awayTeam} avg away conceded: ${awayStats.avgAwayGoalsAgainst}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 POISSON DISTRIBUTION ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Most Likely Scorelines:
+${poissonMatrix.topScores.map((s, i) => `${i + 1}. ${s.score}: ${s.probability.toFixed(1)}%`).join('\n')}
+
+Outcome Probabilities:
+• Home Win: ${poissonMatrix.homeWin.toFixed(1)}%
+• Draw: ${poissonMatrix.draw.toFixed(1)}%
+• Away Win: ${poissonMatrix.awayWin.toFixed(1)}%
+
+Goals Probabilities:
+• Over 0.5: ${poissonMatrix.over05.toFixed(1)}%
+• Over 1.5: ${poissonMatrix.over15.toFixed(1)}%
+• Over 2.5: ${poissonMatrix.over25.toFixed(1)}%
+• Over 3.5: ${poissonMatrix.over35.toFixed(1)}%
+
+BTTS Probability: ${poissonMatrix.btts.toFixed(1)}%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 RAW STATISTICS COMPARISON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                      ${homeTeam.padEnd(15)} ${awayTeam.padEnd(15)}
+Total Matches:        ${String(homeStats.totalMatches).padEnd(15)} ${String(awayStats.totalMatches).padEnd(15)}
+Win Rate:             ${String(Math.round((homeStats.wins / homeStats.totalMatches) * 100) + '%').padEnd(15)} ${String(Math.round((awayStats.wins / awayStats.totalMatches) * 100) + '%').padEnd(15)}
+Goals/Match:          ${String(homeStats.avgGoalsFor).padEnd(15)} ${String(awayStats.avgGoalsFor).padEnd(15)}
+Conceded/Match:       ${String(homeStats.avgGoalsAgainst).padEnd(15)} ${String(awayStats.avgGoalsAgainst).padEnd(15)}
+Clean Sheet %:        ${String(homeStats.cleanSheetPercent + '%').padEnd(15)} ${String(awayStats.cleanSheetPercent + '%').padEnd(15)}
+Failed to Score %:    ${String(homeStats.failedToScorePercent + '%').padEnd(15)} ${String(awayStats.failedToScorePercent + '%').padEnd(15)}
+BTTS %:               ${String(homeStats.bttsPercent + '%').padEnd(15)} ${String(awayStats.bttsPercent + '%').padEnd(15)}
+Over 2.5 %:           ${String(homeStats.over25Percent + '%').padEnd(15)} ${String(awayStats.over25Percent + '%').padEnd(15)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 VALUE BET INDICATORS (Calculate your own odds comparison)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Statistical Fair Odds (no margin):
+• Home Win: ${(100 / poissonMatrix.homeWin).toFixed(2)}
+• Draw: ${(100 / poissonMatrix.draw).toFixed(2)}
+• Away Win: ${(100 / poissonMatrix.awayWin).toFixed(2)}
+• Over 2.5: ${(100 / poissonMatrix.over25).toFixed(2)}
+• Under 2.5: ${(100 / (100 - poissonMatrix.over25)).toFixed(2)}
+• BTTS Yes: ${(100 / poissonMatrix.btts).toFixed(2)}
+• BTTS No: ${(100 / (100 - poissonMatrix.btts)).toFixed(2)}
+
+If bookmaker odds > these values = VALUE BET
+`;
+}
+
+function generatePatternDataPackage(
+  homeTeam: string,
+  awayTeam: string,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HStats
+): string {
+  // GEMINI için: H2H patterns, streaks, seasonality
+  return `
+═══════════════════════════════════════════════════════════════
+🔍 PATTERN RECOGNITION DATA PACKAGE
+Role: Pattern Hunter - Find trends, cycles, historical patterns
+═══════════════════════════════════════════════════════════════
+
+🔄 HEAD-TO-HEAD HISTORICAL PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total H2H Meetings: ${h2h.totalMatches}
+
+DOMINANCE PATTERN:
+• ${homeTeam}: ${h2h.team1Wins} wins (${h2h.totalMatches > 0 ? Math.round((h2h.team1Wins / h2h.totalMatches) * 100) : 0}%)
+• ${awayTeam}: ${h2h.team2Wins} wins (${h2h.totalMatches > 0 ? Math.round((h2h.team2Wins / h2h.totalMatches) * 100) : 0}%)
+• Draws: ${h2h.draws} (${h2h.totalMatches > 0 ? Math.round((h2h.draws / h2h.totalMatches) * 100) : 0}%)
+
+→ H2H DOMINANCE: ${h2h.team1Wins > h2h.team2Wins ? homeTeam + ' DOMINANT' : h2h.team2Wins > h2h.team1Wins ? awayTeam + ' DOMINANT' : 'BALANCED'}
+
+SCORING PATTERNS IN H2H:
+• Average total goals: ${h2h.avgGoals}
+• ${homeTeam} avg in H2H: ${h2h.totalMatches > 0 ? (h2h.team1Goals / h2h.totalMatches).toFixed(2) : 0}
+• ${awayTeam} avg in H2H: ${h2h.totalMatches > 0 ? (h2h.team2Goals / h2h.totalMatches).toFixed(2) : 0}
+• BTTS in H2H: ${h2h.bttsPercent}%
+• Over 2.5 in H2H: ${h2h.over25Percent}%
+
+WHEN ${homeTeam} HOSTS ${awayTeam}:
+• Record: ${h2h.team1HomeRecord.wins}W-${h2h.team1HomeRecord.draws}D-${h2h.team1HomeRecord.losses}L
+• ${homeTeam} home win rate vs ${awayTeam}: ${(h2h.team1HomeRecord.wins + h2h.team1HomeRecord.draws + h2h.team1HomeRecord.losses) > 0 ? Math.round((h2h.team1HomeRecord.wins / (h2h.team1HomeRecord.wins + h2h.team1HomeRecord.draws + h2h.team1HomeRecord.losses)) * 100) : 0}%
+
+RECENT H2H MEETINGS:
+${h2h.recentMatches.slice(0, 5).map(m => 
+  `  ${m.date}: ${m.homeTeam} ${m.homeGoals}-${m.awayGoals} ${m.awayTeam} → ${m.winner}`
+).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 STREAK ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${homeTeam} STREAKS:
+• Current: ${homeStats.currentStreak}
+• Best win streak: ${homeStats.longestWinStreak} games
+• Worst loss streak: ${homeStats.longestLossStreak} games
+• ${analyzeStreakPattern(homeStats)}
+
+${awayTeam} STREAKS:
+• Current: ${awayStats.currentStreak}
+• Best win streak: ${awayStats.longestWinStreak} games
+• Worst loss streak: ${awayStats.longestLossStreak} games
+• ${analyzeStreakPattern(awayStats)}
+
+REGRESSION TO MEAN INDICATORS:
+• ${homeTeam}: ${identifyRegressionRisk(homeStats)}
+• ${awayTeam}: ${identifyRegressionRisk(awayStats)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔁 RECURRING PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${homeTeam} PATTERNS:
+${identifyPatterns(homeStats)}
+
+${awayTeam} PATTERNS:
+${identifyPatterns(awayStats)}
+
+H2H PATTERNS:
+${identifyH2HPatterns(h2h)}
+`;
+}
+
+function generateContextualDataPackage(
+  homeTeam: string,
+  awayTeam: string,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  h2h: H2HStats
+): string {
+  // PERPLEXITY için: Context, external factors, news hints
+  return `
+═══════════════════════════════════════════════════════════════
+📰 CONTEXTUAL ANALYSIS DATA PACKAGE
+Role: Context Analyst - Look beyond numbers, find hidden factors
+═══════════════════════════════════════════════════════════════
+
+⚠️ FORM CONTEXT & CONFIDENCE INDICATORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${homeTeam} MORALE ASSESSMENT:
+• Recent form: ${homeStats.last5Form}
+• Goals in last 5: ${homeStats.last5GoalsFor} scored, ${homeStats.last5GoalsAgainst} conceded
+• Momentum trend: ${analyzeFormTrajectory(homeStats.form)}
+• Confidence level: ${assessConfidenceLevel(homeStats)}
+
+${awayTeam} MORALE ASSESSMENT:
+• Recent form: ${awayStats.last5Form}
+• Goals in last 5: ${awayStats.last5GoalsFor} scored, ${awayStats.last5GoalsAgainst} conceded
+• Momentum trend: ${analyzeFormTrajectory(awayStats.form)}
+• Confidence level: ${assessConfidenceLevel(awayStats)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏟️ VENUE & HOME ADVANTAGE FACTORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${homeTeam} HOME FORTRESS:
+• Home record: ${homeStats.homeWins}W-${homeStats.homeDraws}D-${homeStats.homeLosses}L
+• Home win rate: ${homeStats.homeMatches > 0 ? Math.round((homeStats.homeWins / homeStats.homeMatches) * 100) : 0}%
+• Home scoring: ${homeStats.avgHomeGoalsFor} goals/match
+• Home advantage strength: ${calculateHomeAdvantage(homeStats)}
+
+${awayTeam} AWAY PERFORMANCE:
+• Away record: ${awayStats.awayWins}W-${awayStats.awayDraws}D-${awayStats.awayLosses}L
+• Away win rate: ${awayStats.awayMatches > 0 ? Math.round((awayStats.awayWins / awayStats.awayMatches) * 100) : 0}%
+• Away scoring: ${awayStats.avgAwayGoalsFor} goals/match
+• Travel factor: ${assessTravelFactor(awayStats)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ POTENTIAL GAME CHANGERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Based on available data, watch for:
+
+1. SCORING PATTERNS:
+   • ${homeTeam}: ${homeStats.avgFirstHalfGoals > homeStats.avgSecondHalfGoals ? 'Scores early (1st half dominant)' : 'Scores late (2nd half dominant)'}
+   • ${awayTeam}: ${awayStats.avgFirstHalfGoals > awayStats.avgSecondHalfGoals ? 'Scores early (1st half dominant)' : 'Scores late (2nd half dominant)'}
+
+2. DEFENSIVE VULNERABILITIES:
+   • ${homeTeam}: ${homeStats.cleanSheetPercent < 30 ? 'Concedes often - BTTS likely' : 'Solid defense - BTTS less likely'}
+   • ${awayTeam}: ${awayStats.cleanSheetPercent < 30 ? 'Concedes often - BTTS likely' : 'Solid defense - BTTS less likely'}
+
+3. PSYCHOLOGICAL EDGE:
+   • H2H history favors: ${h2h.team1Wins > h2h.team2Wins ? homeTeam : h2h.team2Wins > h2h.team1Wins ? awayTeam : 'Neither (balanced)'}
+   • Current form favors: ${compareFormAdvantage(homeStats, awayStats)}
+
+4. RISK FACTORS:
+${identifyRiskFactors(homeStats, awayStats, h2h)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 CONTEXTUAL QUESTIONS TO CONSIDER:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Is ${homeTeam} on a confidence high or struggling?
+• Can ${awayTeam} handle away pressure?
+• What does H2H psychology suggest?
+• Are there any obvious trap indicators?
+`;
+}
+
+// ============================================================================
+// YARDIMCI FONKSIYONLAR - DATA PACKAGE İÇİN
+// ============================================================================
+
+function calculateMomentum(stats: TeamStats): { score: number; trend: string } {
+  const formPoints = stats.form.slice(0, 5).split('').reduce((acc, r) => {
+    if (r === 'W') return acc + 3;
+    if (r === 'D') return acc + 1;
+    return acc;
+  }, 0);
+  
+  const maxPoints = 15;
+  const score = Math.round((formPoints / maxPoints) * 10);
+  
+  const recentForm = stats.form.slice(0, 3);
+  const olderForm = stats.form.slice(3, 6);
+  const recentPoints = recentForm.split('').filter(r => r === 'W').length * 3 + recentForm.split('').filter(r => r === 'D').length;
+  const olderPoints = olderForm.split('').filter(r => r === 'W').length * 3 + olderForm.split('').filter(r => r === 'D').length;
+  
+  let trend = 'STABLE';
+  if (recentPoints > olderPoints + 2) trend = 'RISING ↑';
+  else if (recentPoints < olderPoints - 2) trend = 'FALLING ↓';
+  
+  return { score, trend };
+}
+
+function analyzeFormTrajectory(form: string): string {
+  const recent = form.slice(0, 3);
+  const older = form.slice(3, 6);
+  
+  const recentWins = (recent.match(/W/g) || []).length;
+  const olderWins = (older.match(/W/g) || []).length;
+  
+  if (recentWins > olderWins) return 'IMPROVING';
+  if (recentWins < olderWins) return 'DECLINING';
+  return 'STABLE';
+}
+
+function calculateHomeAdvantage(stats: TeamStats): string {
+  if (stats.homeMatches === 0) return 'UNKNOWN';
+  const homeWinRate = (stats.homeWins / stats.homeMatches) * 100;
+  if (homeWinRate >= 70) return 'FORTRESS (Very Strong)';
+  if (homeWinRate >= 50) return 'STRONG';
+  if (homeWinRate >= 35) return 'MODERATE';
+  return 'WEAK';
+}
+
+function analyzeMatchPerformance(match: MatchData): string {
+  const goalDiff = match.goalsFor - match.goalsAgainst;
+  if (match.result === 'W' && goalDiff >= 2) return 'Dominant win';
+  if (match.result === 'W') return 'Solid win';
+  if (match.result === 'D' && match.goalsFor > 0) return 'Fighting draw';
+  if (match.result === 'D') return 'Goalless stalemate';
+  if (match.result === 'L' && goalDiff >= -1) return 'Narrow loss';
+  return 'Heavy defeat';
+}
+
+function predictStyleClash(home: TeamStats, away: TeamStats): string {
+  const homeAttacking = home.avgGoalsFor > 1.3;
+  const awayAttacking = away.avgGoalsFor > 1.3;
+  
+  if (homeAttacking && awayAttacking) return 'OPEN GAME EXPECTED - High scoring potential';
+  if (!homeAttacking && !awayAttacking) return 'TIGHT GAME EXPECTED - Low scoring likely';
+  if (homeAttacking) return 'HOME PRESSURE - Expect home team dominance';
+  return 'AWAY THREAT - Visitors could cause problems';
+}
+
+function compareForm(home: string, away: string): string {
+  const homePoints = home.split('').reduce((acc, r) => r === 'W' ? acc + 3 : r === 'D' ? acc + 1 : acc, 0);
+  const awayPoints = away.split('').reduce((acc, r) => r === 'W' ? acc + 3 : r === 'D' ? acc + 1 : acc, 0);
+  
+  if (homePoints > awayPoints + 3) return 'Home team significantly better form';
+  if (awayPoints > homePoints + 3) return 'Away team significantly better form';
+  return 'Similar form levels';
+}
+
+function calculateExpectedGoals(team: TeamStats, opponent: TeamStats, isHome: boolean): number {
+  const teamAvg = isHome ? team.avgHomeGoalsFor : team.avgAwayGoalsFor;
+  const oppAvg = isHome ? opponent.avgAwayGoalsAgainst : opponent.avgHomeGoalsAgainst;
+  
+  // Simple xG approximation
+  const leagueAvg = 1.3; // Assumed average
+  const xG = (teamAvg + oppAvg) / 2;
+  
+  // Home advantage adjustment
+  return isHome ? xG * 1.1 : xG * 0.9;
+}
+
+function calculatePoissonMatrix(homeXG: number, awayXG: number) {
+  // Poisson probability calculation
+  const poisson = (lambda: number, k: number): number => {
+    return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+  };
+  
+  const factorial = (n: number): number => {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+  };
+  
+  let homeWin = 0, draw = 0, awayWin = 0;
+  let over05 = 0, over15 = 0, over25 = 0, over35 = 0;
+  let btts = 0;
+  const scores: { score: string; probability: number }[] = [];
+  
+  for (let h = 0; h <= 5; h++) {
+    for (let a = 0; a <= 5; a++) {
+      const prob = poisson(homeXG, h) * poisson(awayXG, a) * 100;
+      
+      if (h > a) homeWin += prob;
+      else if (h < a) awayWin += prob;
+      else draw += prob;
+      
+      if (h + a > 0.5) over05 += prob;
+      if (h + a > 1.5) over15 += prob;
+      if (h + a > 2.5) over25 += prob;
+      if (h + a > 3.5) over35 += prob;
+      
+      if (h > 0 && a > 0) btts += prob;
+      
+      scores.push({ score: `${h}-${a}`, probability: prob });
+    }
+  }
+  
+  scores.sort((a, b) => b.probability - a.probability);
+  
+  return {
+    homeWin, draw, awayWin,
+    over05, over15, over25, over35,
+    btts,
+    topScores: scores.slice(0, 5)
+  };
+}
+
+function analyzeStreakPattern(stats: TeamStats): string {
+  const streak = stats.currentStreak;
+  if (streak.includes('W') && parseInt(streak) >= 3) {
+    return 'HOT STREAK - But regression possible';
+  }
+  if (streak.includes('L') && parseInt(streak) >= 3) {
+    return 'COLD STREAK - Due for turnaround?';
+  }
+  return 'No significant streak';
+}
+
+function identifyRegressionRisk(stats: TeamStats): string {
+  if (stats.currentStreak.includes('W') && parseInt(stats.currentStreak.replace(/\D/g, '')) >= 4) {
+    return 'HIGH - Long win streak may end';
+  }
+  if (stats.currentStreak.includes('L') && parseInt(stats.currentStreak.replace(/\D/g, '')) >= 4) {
+    return 'HIGH - Long loss streak may end (bounce back)';
+  }
+  return 'LOW - Normal variance expected';
+}
+
+function identifyPatterns(stats: TeamStats): string {
+  const patterns: string[] = [];
+  
+  if (stats.bttsPercent > 60) patterns.push('• BTTS happens frequently (60%+)');
+  if (stats.bttsPercent < 40) patterns.push('• BTTS rare (<40%)');
+  if (stats.over25Percent > 60) patterns.push('• High-scoring matches common');
+  if (stats.over25Percent < 40) patterns.push('• Low-scoring matches typical');
+  if (stats.cleanSheetPercent > 40) patterns.push('• Strong defensive record');
+  if (stats.failedToScorePercent > 30) patterns.push('• Struggles to score frequently');
+  
+  return patterns.length > 0 ? patterns.join('\n') : '• No strong patterns identified';
+}
+
+function identifyH2HPatterns(h2h: H2HStats): string {
+  const patterns: string[] = [];
+  
+  if (h2h.bttsPercent > 65) patterns.push('• Both teams usually score in H2H');
+  if (h2h.over25Percent > 65) patterns.push('• H2H matches tend to be high-scoring');
+  if (h2h.avgGoals > 3) patterns.push('• Goal-fests common in this fixture');
+  if (h2h.avgGoals < 2) patterns.push('• Tight, low-scoring affairs historically');
+  
+  return patterns.length > 0 ? patterns.join('\n') : '• Limited H2H pattern data';
+}
+
+function assessConfidenceLevel(stats: TeamStats): string {
+  const wins = stats.form.slice(0, 5).split('').filter(r => r === 'W').length;
+  if (wins >= 4) return 'VERY HIGH - On fire';
+  if (wins >= 3) return 'HIGH - Playing well';
+  if (wins >= 2) return 'MODERATE - Inconsistent';
+  if (wins >= 1) return 'LOW - Struggling';
+  return 'VERY LOW - Crisis mode';
+}
+
+function assessTravelFactor(stats: TeamStats): string {
+  if (stats.awayWins > stats.awayLosses) return 'STRONG TRAVELERS';
+  if (stats.awayWins === stats.awayLosses) return 'MIXED AWAY FORM';
+  return 'STRUGGLES ON THE ROAD';
+}
+
+function compareFormAdvantage(home: TeamStats, away: TeamStats): string {
+  const homeRecent = home.last5Form.split('').filter(r => r === 'W').length;
+  const awayRecent = away.last5Form.split('').filter(r => r === 'W').length;
+  
+  if (homeRecent > awayRecent + 1) return home.name;
+  if (awayRecent > homeRecent + 1) return away.name;
+  return 'Even';
+}
+
+function identifyRiskFactors(home: TeamStats, away: TeamStats, h2h: H2HStats): string {
+  const risks: string[] = [];
+  
+  if (home.currentStreak.includes('W') && parseInt(home.currentStreak.replace(/\D/g, '')) >= 4) {
+    risks.push(`   • ${home.name} on long win streak - regression risk`);
+  }
+  if (away.currentStreak.includes('W') && parseInt(away.currentStreak.replace(/\D/g, '')) >= 4) {
+    risks.push(`   • ${away.name} confident away team - dangerous`);
+  }
+  if (h2h.draws > h2h.team1Wins && h2h.draws > h2h.team2Wins) {
+    risks.push('   • H2H shows draw tendency');
+  }
+  
+  return risks.length > 0 ? risks.join('\n') : '   • No major risk factors identified';
+}
+
+// ============================================================================
+// 🧠 ROL BAZLI PROMPTLAR - HER AI İÇİN FARKLI TALİMAT
+// ============================================================================
+
+function createTacticalPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
+  const instructions = lang === 'tr' ? `
+Sen CLAUDE - TAKTİK ANALİSTİ olarak görev yapıyorsun.
+
+🎯 SENİN ÖZEL ROLÜN:
+- Takım momentumunu ve form eğrilerini analiz et
+- Taktik uyumları ve oynayış stillerini değerlendir
+- Psikolojik faktörleri (baskı, güven, motivasyon) göz önünde bulundur
+- Rakamların arkasındaki "NASIL" sorusuna odaklan
+
+⚠️ KRİTİK: Sadece istatistiklere bakma, takımların NASIL oynadığına odaklan!
+Momentum avantajı, stil çatışması ve psikolojik üstünlük önemli.` 
+  : `
+You are CLAUDE - THE TACTICAL ANALYST.
+
+🎯 YOUR UNIQUE ROLE:
+- Analyze team momentum and form curves
+- Evaluate tactical matchups and playing styles
+- Consider psychological factors (pressure, confidence, motivation)
+- Focus on HOW teams play, not just numbers
+
+⚠️ CRITICAL: Don't just analyze statistics, focus on HOW teams play!
+Momentum advantage, style clash, and psychological edge matter.`;
+
+  return `${instructions}
+
+${dataPackage}
+
+${getOutputFormat(lang, 'Claude Tactical Analyst')}`;
+}
+
+function createStatisticalPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
+  const instructions = lang === 'tr' ? `
+Sen GPT-4 - İSTATİSTİK MOTORU olarak görev yapıyorsun.
+
+🎯 SENİN ÖZEL ROLÜN:
+- xG (Beklenen Gol) analizini kullan
+- Poisson dağılımı ile olasılıkları hesapla
+- Oran değeri hesapla ve edge bul
+- Her iddiayı bir SAYIYLA destekle
+
+⚠️ KRİTİK: Her tahminin arkasında MATEMATİK olmalı!
+Olasılıklar, değer bahisleri, istatistiksel kenarlar önemli.`
+  : `
+You are GPT-4 - THE STATISTICAL ENGINE.
+
+🎯 YOUR UNIQUE ROLE:
+- Use xG (Expected Goals) analysis
+- Calculate probabilities with Poisson distribution
+- Find value bets and edges
+- Back EVERY claim with a NUMBER
+
+⚠️ CRITICAL: Every prediction must have MATHEMATICS behind it!
+Probabilities, value bets, statistical edges matter.`;
+
+  return `${instructions}
+
+${dataPackage}
+
+${getOutputFormat(lang, 'GPT-4 Statistical Engine')}`;
+}
+
+function createPatternPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
+  const instructions = lang === 'tr' ? `
+Sen GEMINI - PATTERN AVCISI olarak görev yapıyorsun.
+
+🎯 SENİN ÖZEL ROLÜN:
+- H2H geçmişindeki kalıpları bul
+- Sezonsal ve dönemsel trendleri tespit et
+- Seri analizleri ve ortalamaya dönüş olasılıklarını değerlendir
+- Tekrarlayan temalar ve tarihi emsal ara
+
+⚠️ KRİTİK: Tek veri noktalarına değil, KALIPLARA odaklan!
+Başkaların kaçırdığı trendleri bul.`
+  : `
+You are GEMINI - THE PATTERN HUNTER.
+
+🎯 YOUR UNIQUE ROLE:
+- Find patterns in H2H history
+- Identify seasonal and time-based trends
+- Analyze streaks and regression to mean
+- Look for recurring themes and historical precedents
+
+⚠️ CRITICAL: Focus on PATTERNS, not single data points!
+Find the trends others miss.`;
+
+  return `${instructions}
+
+${dataPackage}
+
+${getOutputFormat(lang, 'Gemini Pattern Hunter')}`;
+}
+
+function createContextualPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
+  const instructions = lang === 'tr' ? `
+Sen PERPLEXITY - BAĞLAM ANALİSTİ olarak görev yapıyorsun.
+
+🎯 SENİN ÖZEL ROLÜN:
+- Sakatlıklar ve cezaların etkisini değerlendir
+- Takım morali ve haberleri analiz et
+- Saha ve dış faktörleri göz önünde bulundur
+- Sayıların gösteremediği BAĞLAMI bul
+
+⚠️ KRİTİK: Rakamların arkasındaki hikayeyi bul!
+Gizli faktörler ve bağlam önemli.`
+  : `
+You are PERPLEXITY - THE CONTEXT ANALYST.
+
+🎯 YOUR UNIQUE ROLE:
+- Evaluate injury and suspension impact
+- Analyze team morale and news
+- Consider venue and external factors
+- Find the CONTEXT that numbers can't show
+
+⚠️ CRITICAL: Find the story behind the numbers!
+Hidden factors and context matter.`;
+
+  return `${instructions}
+
+${dataPackage}
+
+${getOutputFormat(lang, 'Perplexity Context Analyst')}`;
+}
+
+function getOutputFormat(lang: string, aiRole: string): string {
+  if (lang === 'tr') {
+    return `
+═══════════════════════════════════════════════════════════
+📌 TAHMİNLERİNİ TAM OLARAK BU FORMATTA VER:
+═══════════════════════════════════════════════════════════
+
+MAC_SONUCU: [Ev Sahibi Kazanir / Beraberlik / Deplasman Kazanir]
+MAC_GUVEN: [50-95 arasi sayi]
+MAC_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+
+TOPLAM_GOL: [Ust 2.5 / Alt 2.5]
+GOL_GUVEN: [50-95 arasi sayi]
+GOL_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+
+KG_VAR: [Evet / Hayir]
+KG_GUVEN: [50-95 arasi sayi]
+KG_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+
+GENEL_ANALIZ: [${aiRole} olarak 3-4 cümlelik değerlendirme]`;
+  }
+  
+  return `
+═══════════════════════════════════════════════════════════
+📌 PROVIDE YOUR PREDICTIONS IN THIS EXACT FORMAT:
+═══════════════════════════════════════════════════════════
+
+MATCH_RESULT: [Home Win / Draw / Away Win]
+RESULT_CONFIDENCE: [50-95]
+RESULT_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+
+TOTAL_GOALS: [Over 2.5 / Under 2.5]
+GOALS_CONFIDENCE: [50-95]
+GOALS_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+
+BTTS: [Yes / No]
+BTTS_CONFIDENCE: [50-95]
+BTTS_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+
+OVERALL_ANALYSIS: [3-4 sentence assessment as ${aiRole}]`;
+}
+
+// ============================================================================
+// SPORTMONKS VERİ ÇEKME (mevcut koddan)
 // ============================================================================
 
 async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamStats> {
@@ -147,15 +897,11 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
   };
 
   if (!teamId || !SPORTMONKS_API_KEY) {
-    console.log(`⚠️ No teamId or API key for ${teamName}, using defaults`);
     return defaults;
   }
 
   try {
-    // ✅ ÇALIŞAN ENDPOINT - Teams API with latest matches
     const url = `https://api.sportmonks.com/v3/football/teams/${teamId}?api_token=${SPORTMONKS_API_KEY}&include=latest.scores;latest.participants`;
-    
-    console.log(`📊 Fetching stats for ${teamName} (ID: ${teamId})`);
     
     const response = await fetch(url, { 
       cache: 'no-store',
@@ -163,7 +909,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
     });
 
     if (!response.ok) {
-      console.log(`❌ API error for ${teamName}: ${response.status}`);
       return defaults;
     }
 
@@ -172,13 +917,10 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
     const matches = teamData?.latest || [];
 
     if (matches.length === 0) {
-      console.log(`⚠️ No matches found for ${teamName}`);
       return defaults;
     }
 
-    console.log(`✅ Found ${matches.length} matches for ${teamName}`);
-
-    // İstatistik değişkenleri
+    // İstatistik hesaplama (mevcut koddan)
     let wins = 0, draws = 0, losses = 0;
     let goalsFor = 0, goalsAgainst = 0;
     let homeMatches = 0, homeWins = 0, homeDraws = 0, homeLosses = 0;
@@ -197,24 +939,19 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
     let longestWinStreak = 0, longestLossStreak = 0;
     let lastResult = '';
 
-    // Son 20 maçı işle (en yeniden eskiye sıralı)
     const processMatches = matches.slice(0, 20);
     
-    for (let i = 0; i < processMatches.length; i++) {
-      const match = processMatches[i];
+    for (const match of processMatches) {
       const participants = match.participants || [];
       const scores = match.scores || [];
       
-      // Bu takım ev sahibi mi deplasman mı?
       const teamParticipant = participants.find((p: any) => p.id === teamId);
       const isHome = teamParticipant?.meta?.location === 'home';
       
-      // Rakibi bul
       const opponent = participants.find((p: any) => p.id !== teamId);
       const opponentName = opponent?.name || 'Unknown';
       const opponentId = opponent?.id || 0;
       
-      // Final skorunu bul (CURRENT type)
       let teamGoals = 0, opponentGoals = 0;
       let fhTeamGoals = 0, fhOpponentGoals = 0;
       let shTeamGoals = 0, shOpponentGoals = 0;
@@ -226,14 +963,12 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
         if (score.description === 'CURRENT' && score.participant_id === opponentId) {
           opponentGoals = score.score?.goals ?? 0;
         }
-        // İlk yarı
         if (score.description === '1ST_HALF' && score.participant_id === teamId) {
           fhTeamGoals = score.score?.goals ?? 0;
         }
         if (score.description === '1ST_HALF' && score.participant_id === opponentId) {
           fhOpponentGoals = score.score?.goals ?? 0;
         }
-        // İkinci yarı (2ND_HALF_ONLY)
         if (score.description === '2ND_HALF_ONLY' && score.participant_id === teamId) {
           shTeamGoals = score.score?.goals ?? 0;
         }
@@ -242,13 +977,11 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
         }
       }
 
-      // Sonuç belirleme
       let result: 'W' | 'D' | 'L';
       if (teamGoals > opponentGoals) {
         result = 'W';
         wins++;
         if (isHome) homeWins++; else awayWins++;
-        
         if (lastResult === 'W' || lastResult === '') currentWinStreak++;
         else currentWinStreak = 1;
         currentLossStreak = 0;
@@ -257,7 +990,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
         result = 'L';
         losses++;
         if (isHome) homeLosses++; else awayLosses++;
-        
         if (lastResult === 'L' || lastResult === '') currentLossStreak++;
         else currentLossStreak = 1;
         currentWinStreak = 0;
@@ -271,7 +1003,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
       }
       lastResult = result;
 
-      // Gol istatistikleri
       goalsFor += teamGoals;
       goalsAgainst += opponentGoals;
       firstHalfGF += fhTeamGoals;
@@ -289,7 +1020,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
         awayGoalsAgainst += opponentGoals;
       }
 
-      // Özel metrikler
       if (opponentGoals === 0) cleanSheets++;
       if (teamGoals === 0) failedToScore++;
       if (teamGoals > 0 && opponentGoals > 0) bttsMatches++;
@@ -298,7 +1028,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
 
       formArray.push(result);
       
-      // Detaylı maç verisi
       recentMatches.push({
         date: match.starting_at?.split('T')[0] || 'Unknown',
         opponent: opponentName,
@@ -317,7 +1046,6 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
     const totalMatches = processMatches.length;
     const last5 = recentMatches.slice(0, 5);
     
-    // Current streak hesaplama
     let streakType = formArray[0];
     let streakCount = 0;
     for (const r of formArray) {
@@ -326,7 +1054,7 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
     }
     const currentStreak = streakCount > 0 ? `${streakCount}${streakType}` : 'N/A';
 
-    const stats: TeamStats = {
+    return {
       name: teamName,
       teamId,
       totalMatches,
@@ -367,19 +1095,10 @@ async function fetchTeamStats(teamId: number, teamName: string): Promise<TeamSta
       last5GoalsFor: last5.reduce((sum, m) => sum + m.goalsFor, 0),
       last5GoalsAgainst: last5.reduce((sum, m) => sum + m.goalsAgainst, 0),
     };
-
-    console.log(`📈 ${teamName} stats: Form=${stats.form}, AvgGF=${stats.avgGoalsFor}, AvgGA=${stats.avgGoalsAgainst}`);
-
-    return stats;
   } catch (error) {
-    console.error(`❌ Error fetching ${teamName}:`, error);
     return defaults;
   }
 }
-
-// ============================================================================
-// SPORTMONKS - H2H (Karşılıklı Maçlar)
-// ============================================================================
 
 async function fetchH2H(
   team1Id: number, 
@@ -401,22 +1120,18 @@ async function fetchH2H(
   };
 
   if (!team1Id || !team2Id || !SPORTMONKS_API_KEY) {
-    console.log('⚠️ No H2H data available');
     return defaults;
   }
 
   try {
     const url = `https://api.sportmonks.com/v3/football/fixtures/head-to-head/${team1Id}/${team2Id}?api_token=${SPORTMONKS_API_KEY}&include=scores;participants`;
     
-    console.log(`🔄 Fetching H2H: ${team1Name} vs ${team2Name}`);
-
     const response = await fetch(url, { 
       cache: 'no-store',
       headers: { 'Accept': 'application/json' }
     });
 
     if (!response.ok) {
-      console.log(`❌ H2H API error: ${response.status}`);
       return defaults;
     }
 
@@ -424,11 +1139,8 @@ async function fetchH2H(
     const matches = json.data || [];
 
     if (matches.length === 0) {
-      console.log('⚠️ No H2H matches found');
       return defaults;
     }
-
-    console.log(`✅ Found ${matches.length} H2H matches`);
 
     let team1Wins = 0, team2Wins = 0, draws = 0;
     let team1Goals = 0, team2Goals = 0;
@@ -441,7 +1153,6 @@ async function fetchH2H(
       const participants = match.participants || [];
       const scores = match.scores || [];
       
-      // Ev sahibi ve deplasman takımlarını bul
       const homeParticipant = participants.find((p: any) => p.meta?.location === 'home');
       const awayParticipant = participants.find((p: any) => p.meta?.location === 'away');
       
@@ -449,7 +1160,6 @@ async function fetchH2H(
       const homeTeamName = homeParticipant?.name || 'Unknown';
       const awayTeamName = awayParticipant?.name || 'Unknown';
       
-      // Skorları bul
       let homeGoals = 0, awayGoals = 0;
       for (const score of scores) {
         if (score.description === 'CURRENT') {
@@ -461,7 +1171,6 @@ async function fetchH2H(
         }
       }
 
-      // Team1 açısından hesapla
       const team1IsHome = homeTeamId === team1Id;
       const t1Goals = team1IsHome ? homeGoals : awayGoals;
       const t2Goals = team1IsHome ? awayGoals : homeGoals;
@@ -469,7 +1178,6 @@ async function fetchH2H(
       team1Goals += t1Goals;
       team2Goals += t2Goals;
 
-      // Kazanan
       let winner = 'Draw';
       if (t1Goals > t2Goals) {
         team1Wins++;
@@ -487,7 +1195,6 @@ async function fetchH2H(
         else team1AwayRecord.draws++;
       }
 
-      // Metrikler
       if (homeGoals > 0 && awayGoals > 0) bttsCount++;
       if (homeGoals + awayGoals > 2.5) over25Count++;
       if (homeGoals + awayGoals > 1.5) over15Count++;
@@ -506,7 +1213,7 @@ async function fetchH2H(
 
     const totalMatches = Math.min(matches.length, 15);
 
-    const h2h: H2HStats = {
+    return {
       totalMatches,
       team1Wins, team2Wins, draws,
       team1Goals, team2Goals,
@@ -521,367 +1228,9 @@ async function fetchH2H(
       team1HomeRecord,
       team1AwayRecord,
     };
-
-    console.log(`📊 H2H: ${team1Name} ${team1Wins}W-${draws}D-${team2Wins}L ${team2Name}, AvgGoals=${h2h.avgGoals}`);
-
-    return h2h;
   } catch (error) {
-    console.error('❌ H2H fetch error:', error);
     return defaults;
   }
-}
-
-// ============================================================================
-// PROFESYONEL AI PROMPT - ÇOK DETAYLI ANALİZ
-// ============================================================================
-
-function createProfessionalPrompt(
-  homeTeam: string,
-  awayTeam: string,
-  homeStats: TeamStats,
-  awayStats: TeamStats,
-  h2h: H2HStats,
-  lang: string,
-  aiModel: string
-): string {
-  
-  // Son 5 maç detayları
-  const homeRecent = homeStats.recentMatches.slice(0, 5).map(m => 
-    `${m.result} ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponent} (${m.isHome ? 'H' : 'A'})`
-  ).join('\n    ');
-  
-  const awayRecent = awayStats.recentMatches.slice(0, 5).map(m => 
-    `${m.result} ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponent} (${m.isHome ? 'H' : 'A'})`
-  ).join('\n    ');
-
-  // H2H detayları
-  const h2hRecent = h2h.recentMatches.slice(0, 5).map(m =>
-    `${m.homeTeam} ${m.homeGoals}-${m.awayGoals} ${m.awayTeam} (${m.date})`
-  ).join('\n    ');
-
-  // Win rate hesaplamaları
-  const homeWinRate = homeStats.totalMatches > 0 ? Math.round((homeStats.wins / homeStats.totalMatches) * 100) : 0;
-  const awayWinRate = awayStats.totalMatches > 0 ? Math.round((awayStats.wins / awayStats.totalMatches) * 100) : 0;
-  const homeHomeWinRate = homeStats.homeMatches > 0 ? Math.round((homeStats.homeWins / homeStats.homeMatches) * 100) : 0;
-  const awayAwayWinRate = awayStats.awayMatches > 0 ? Math.round((awayStats.awayWins / awayStats.awayMatches) * 100) : 0;
-
-  // TÜRKÇE PROMPT
-  if (lang === 'tr') {
-    return `Sen ${aiModel} adlı profesyonel futbol analisti yapay zekasısın. Aşağıdaki kapsamlı istatistikleri kullanarak bu maç için detaylı tahmin yap.
-
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                    ⚽ MAÇ ANALİZİ: ${homeTeam} vs ${awayTeam}                    
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 📊 ${homeTeam.toUpperCase()} - DETAYLI İSTATİSTİKLER (EV SAHİBİ)                       
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ GENEL PERFORMANS (Son ${homeStats.totalMatches} maç):
-│   • Form: ${homeStats.form}
-│   • Galibiyet: ${homeStats.wins} (${homeWinRate}%) | Beraberlik: ${homeStats.draws} | Mağlubiyet: ${homeStats.losses}
-│   • Attığı Gol: ${homeStats.goalsFor} (Maç başı: ${homeStats.avgGoalsFor})
-│   • Yediği Gol: ${homeStats.goalsAgainst} (Maç başı: ${homeStats.avgGoalsAgainst})
-│   • Mevcut Seri: ${homeStats.currentStreak}
-│   
-│ EV SAHİBİ PERFORMANSI (${homeStats.homeMatches} maç):
-│   • Galibiyet: ${homeStats.homeWins} (${homeHomeWinRate}%) | Beraberlik: ${homeStats.homeDraws} | Mağlubiyet: ${homeStats.homeLosses}
-│   • Evde Attığı: ${homeStats.homeGoalsFor} (Maç başı: ${homeStats.avgHomeGoalsFor})
-│   • Evde Yediği: ${homeStats.homeGoalsAgainst} (Maç başı: ${homeStats.avgHomeGoalsAgainst})
-│   
-│ ÖZEL METRİKLER:
-│   • Clean Sheet (Gol yemeden): ${homeStats.cleanSheets}/${homeStats.totalMatches} (${homeStats.cleanSheetPercent}%)
-│   • Gol Atamadığı Maçlar: ${homeStats.failedToScore}/${homeStats.totalMatches} (${homeStats.failedToScorePercent}%)
-│   • KG VAR Maçları: ${homeStats.bttsMatches}/${homeStats.totalMatches} (${homeStats.bttsPercent}%)
-│   • 2.5 Üst Maçlar: ${homeStats.over25Matches}/${homeStats.totalMatches} (${homeStats.over25Percent}%)
-│   • 1.5 Üst Maçlar: ${homeStats.over15Matches}/${homeStats.totalMatches} (${homeStats.over15Percent}%)
-│   
-│ YARI BAZLI ANALİZ:
-│   • İlk Yarı Gol Ort.: ${homeStats.avgFirstHalfGoals}
-│   • İkinci Yarı Gol Ort.: ${homeStats.avgSecondHalfGoals}
-│   
-│ SON 5 MAÇ (En yeniden eskiye):
-│   ${homeRecent || 'Veri yok'}
-│   • Son 5 Maçta: ${homeStats.last5GoalsFor} gol attı, ${homeStats.last5GoalsAgainst} gol yedi
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 📊 ${awayTeam.toUpperCase()} - DETAYLI İSTATİSTİKLER (DEPLASMAN)                       
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ GENEL PERFORMANS (Son ${awayStats.totalMatches} maç):
-│   • Form: ${awayStats.form}
-│   • Galibiyet: ${awayStats.wins} (${awayWinRate}%) | Beraberlik: ${awayStats.draws} | Mağlubiyet: ${awayStats.losses}
-│   • Attığı Gol: ${awayStats.goalsFor} (Maç başı: ${awayStats.avgGoalsFor})
-│   • Yediği Gol: ${awayStats.goalsAgainst} (Maç başı: ${awayStats.avgGoalsAgainst})
-│   • Mevcut Seri: ${awayStats.currentStreak}
-│   
-│ DEPLASMAN PERFORMANSI (${awayStats.awayMatches} maç):
-│   • Galibiyet: ${awayStats.awayWins} (${awayAwayWinRate}%) | Beraberlik: ${awayStats.awayDraws} | Mağlubiyet: ${awayStats.awayLosses}
-│   • Deplasmanda Attığı: ${awayStats.awayGoalsFor} (Maç başı: ${awayStats.avgAwayGoalsFor})
-│   • Deplasmanda Yediği: ${awayStats.awayGoalsAgainst} (Maç başı: ${awayStats.avgAwayGoalsAgainst})
-│   
-│ ÖZEL METRİKLER:
-│   • Clean Sheet (Gol yemeden): ${awayStats.cleanSheets}/${awayStats.totalMatches} (${awayStats.cleanSheetPercent}%)
-│   • Gol Atamadığı Maçlar: ${awayStats.failedToScore}/${awayStats.totalMatches} (${awayStats.failedToScorePercent}%)
-│   • KG VAR Maçları: ${awayStats.bttsMatches}/${awayStats.totalMatches} (${awayStats.bttsPercent}%)
-│   • 2.5 Üst Maçlar: ${awayStats.over25Matches}/${awayStats.totalMatches} (${awayStats.over25Percent}%)
-│   • 1.5 Üst Maçlar: ${awayStats.over15Matches}/${awayStats.totalMatches} (${awayStats.over15Percent}%)
-│   
-│ YARI BAZLI ANALİZ:
-│   • İlk Yarı Gol Ort.: ${awayStats.avgFirstHalfGoals}
-│   • İkinci Yarı Gol Ort.: ${awayStats.avgSecondHalfGoals}
-│   
-│ SON 5 MAÇ (En yeniden eskiye):
-│   ${awayRecent || 'Veri yok'}
-│   • Son 5 Maçta: ${awayStats.last5GoalsFor} gol attı, ${awayStats.last5GoalsAgainst} gol yedi
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 🔄 KARŞILAŞMA GEÇMİŞİ (H2H) - Son ${h2h.totalMatches} maç                              
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ GENEL KARŞILAŞMA:
-│   • ${homeTeam}: ${h2h.team1Wins} galibiyet
-│   • ${awayTeam}: ${h2h.team2Wins} galibiyet  
-│   • Beraberlik: ${h2h.draws}
-│   
-│ GOL İSTATİSTİKLERİ:
-│   • ${homeTeam} toplam: ${h2h.team1Goals} gol (Maç başı: ${(h2h.team1Goals / Math.max(h2h.totalMatches, 1)).toFixed(2)})
-│   • ${awayTeam} toplam: ${h2h.team2Goals} gol (Maç başı: ${(h2h.team2Goals / Math.max(h2h.totalMatches, 1)).toFixed(2)})
-│   • Ortalama Toplam Gol: ${h2h.avgGoals}
-│   
-│ H2H ÖZEL METRİKLER:
-│   • KG VAR: ${h2h.bttsCount}/${h2h.totalMatches} (${h2h.bttsPercent}%)
-│   • 2.5 Üst: ${h2h.over25Count}/${h2h.totalMatches} (${h2h.over25Percent}%)
-│   • 1.5 Üst: ${h2h.over15Count}/${h2h.totalMatches} (${h2h.over15Percent}%)
-│   
-│ ${homeTeam} EV SAHİBİYKEN vs ${awayTeam}:
-│   • ${h2h.team1HomeRecord.wins}G - ${h2h.team1HomeRecord.draws}B - ${h2h.team1HomeRecord.losses}M
-│   
-│ SON KARŞILAŞMALAR:
-│   ${h2hRecent || 'Veri yok'}
-└──────────────────────────────────────────────────────────────────────────────┘
-
-╔══════════════════════════════════════════════════════════════════════════════╗
-║ 🎯 ANALİZ TALİMATLARI                                                        
-╠══════════════════════════════════════════════════════════════════════════════╣
-║ 
-║ Sen ${aiModel} olarak, yukarıdaki verileri dikkatli analiz et ve her tahmin
-║ için NEDEN o sonuca vardığını açıkla. Analiz şunları içermeli:
-║ 
-║ 1. MAÇ SONUCU için değerlendir:
-║    - Her iki takımın form durumu
-║    - Ev sahibinin evdeki performansı vs Deplasmanın dışarıdaki performansı
-║    - H2H geçmişi ve psikolojik üstünlük
-║    - Gol atma/yeme oranları karşılaştırması
-║    
-║ 2. TOPLAM GOL (2.5 Üst/Alt) için değerlendir:
-║    - Her iki takımın maç başı gol ortalaması
-║    - H2H maçlarındaki gol ortalaması
-║    - Her iki takımın 2.5 üst/alt yüzdeleri
-║    - Defansif/ofansif güçleri
-║    
-║ 3. KG VAR (BTTS) için değerlendir:
-║    - Her iki takımın KG VAR yüzdeleri
-║    - Clean sheet oranları
-║    - Gol atamama oranları
-║    - H2H'daki KG VAR oranı
-║    
-║ GÜVEN HESAPLAMA KRİTERLERİ:
-║ • %85-95: Çok güçlü veri desteği, açık trend, H2H uyumlu
-║ • %70-84: İyi veri desteği, belirgin trend
-║ • %55-69: Orta düzey veri, karışık sinyaller
-║ • %50-54: Zayıf veri, belirsiz durum
-║ 
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-TAHMİNLERİNİ TAM OLARAK AŞAĞIDAKİ FORMATTA VER:
-
-═══════════════════════════════════════════════════════════
-📌 MAÇ SONUCU TAHMİNİ
-═══════════════════════════════════════════════════════════
-MAC_SONUCU: [Ev Sahibi Kazanir / Beraberlik / Deplasman Kazanir]
-MAC_GUVEN: [50-95 arasi sayi]
-MAC_GEREKCE: [Bu sonuca neden vardığını 2-3 cümle ile açıkla. Hangi istatistikler seni bu karara yönlendirdi?]
-
-═══════════════════════════════════════════════════════════
-📌 TOPLAM GOL TAHMİNİ
-═══════════════════════════════════════════════════════════
-TOPLAM_GOL: [Ust 2.5 / Alt 2.5]
-GOL_GUVEN: [50-95 arasi sayi]
-GOL_GEREKCE: [Bu sonuca neden vardığını 2-3 cümle ile açıkla. Gol ortalamalarını ve özel metrikleri referans göster.]
-
-═══════════════════════════════════════════════════════════
-📌 KG VAR TAHMİNİ  
-═══════════════════════════════════════════════════════════
-KG_VAR: [Evet / Hayir]
-KG_GUVEN: [50-95 arasi sayi]
-KG_GEREKCE: [Bu sonuca neden vardığını 2-3 cümle ile açıkla. Clean sheet ve KG VAR yüzdelerini referans göster.]
-
-═══════════════════════════════════════════════════════════
-📌 ${aiModel} GENEL DEĞERLENDİRME
-═══════════════════════════════════════════════════════════
-GENEL_ANALIZ: [Bu maç hakkında 3-4 cümlelik genel değerlendirme. En güvenilir bahis hangisi ve neden?]`;
-  }
-
-  // İNGİLİZCE PROMPT (default)
-  return `You are ${aiModel}, a professional football analyst AI. Using the comprehensive statistics below, provide a detailed prediction for this match.
-
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                    ⚽ MATCH ANALYSIS: ${homeTeam} vs ${awayTeam}                    
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 📊 ${homeTeam.toUpperCase()} - DETAILED STATISTICS (HOME TEAM)                       
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ OVERALL PERFORMANCE (Last ${homeStats.totalMatches} matches):
-│   • Form: ${homeStats.form}
-│   • Wins: ${homeStats.wins} (${homeWinRate}%) | Draws: ${homeStats.draws} | Losses: ${homeStats.losses}
-│   • Goals Scored: ${homeStats.goalsFor} (Per match: ${homeStats.avgGoalsFor})
-│   • Goals Conceded: ${homeStats.goalsAgainst} (Per match: ${homeStats.avgGoalsAgainst})
-│   • Current Streak: ${homeStats.currentStreak}
-│   
-│ HOME PERFORMANCE (${homeStats.homeMatches} matches):
-│   • Wins: ${homeStats.homeWins} (${homeHomeWinRate}%) | Draws: ${homeStats.homeDraws} | Losses: ${homeStats.homeLosses}
-│   • Home Goals Scored: ${homeStats.homeGoalsFor} (Per match: ${homeStats.avgHomeGoalsFor})
-│   • Home Goals Conceded: ${homeStats.homeGoalsAgainst} (Per match: ${homeStats.avgHomeGoalsAgainst})
-│   
-│ KEY METRICS:
-│   • Clean Sheets: ${homeStats.cleanSheets}/${homeStats.totalMatches} (${homeStats.cleanSheetPercent}%)
-│   • Failed to Score: ${homeStats.failedToScore}/${homeStats.totalMatches} (${homeStats.failedToScorePercent}%)
-│   • BTTS Matches: ${homeStats.bttsMatches}/${homeStats.totalMatches} (${homeStats.bttsPercent}%)
-│   • Over 2.5 Matches: ${homeStats.over25Matches}/${homeStats.totalMatches} (${homeStats.over25Percent}%)
-│   • Over 1.5 Matches: ${homeStats.over15Matches}/${homeStats.totalMatches} (${homeStats.over15Percent}%)
-│   
-│ HALF-TIME ANALYSIS:
-│   • Avg First Half Goals: ${homeStats.avgFirstHalfGoals}
-│   • Avg Second Half Goals: ${homeStats.avgSecondHalfGoals}
-│   
-│ LAST 5 MATCHES (Most recent first):
-│   ${homeRecent || 'No data'}
-│   • Last 5: ${homeStats.last5GoalsFor} scored, ${homeStats.last5GoalsAgainst} conceded
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 📊 ${awayTeam.toUpperCase()} - DETAILED STATISTICS (AWAY TEAM)                       
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ OVERALL PERFORMANCE (Last ${awayStats.totalMatches} matches):
-│   • Form: ${awayStats.form}
-│   • Wins: ${awayStats.wins} (${awayWinRate}%) | Draws: ${awayStats.draws} | Losses: ${awayStats.losses}
-│   • Goals Scored: ${awayStats.goalsFor} (Per match: ${awayStats.avgGoalsFor})
-│   • Goals Conceded: ${awayStats.goalsAgainst} (Per match: ${awayStats.avgGoalsAgainst})
-│   • Current Streak: ${awayStats.currentStreak}
-│   
-│ AWAY PERFORMANCE (${awayStats.awayMatches} matches):
-│   • Wins: ${awayStats.awayWins} (${awayAwayWinRate}%) | Draws: ${awayStats.awayDraws} | Losses: ${awayStats.awayLosses}
-│   • Away Goals Scored: ${awayStats.awayGoalsFor} (Per match: ${awayStats.avgAwayGoalsFor})
-│   • Away Goals Conceded: ${awayStats.awayGoalsAgainst} (Per match: ${awayStats.avgAwayGoalsAgainst})
-│   
-│ KEY METRICS:
-│   • Clean Sheets: ${awayStats.cleanSheets}/${awayStats.totalMatches} (${awayStats.cleanSheetPercent}%)
-│   • Failed to Score: ${awayStats.failedToScore}/${awayStats.totalMatches} (${awayStats.failedToScorePercent}%)
-│   • BTTS Matches: ${awayStats.bttsMatches}/${awayStats.totalMatches} (${awayStats.bttsPercent}%)
-│   • Over 2.5 Matches: ${awayStats.over25Matches}/${awayStats.totalMatches} (${awayStats.over25Percent}%)
-│   • Over 1.5 Matches: ${awayStats.over15Matches}/${awayStats.totalMatches} (${awayStats.over15Percent}%)
-│   
-│ HALF-TIME ANALYSIS:
-│   • Avg First Half Goals: ${awayStats.avgFirstHalfGoals}
-│   • Avg Second Half Goals: ${awayStats.avgSecondHalfGoals}
-│   
-│ LAST 5 MATCHES (Most recent first):
-│   ${awayRecent || 'No data'}
-│   • Last 5: ${awayStats.last5GoalsFor} scored, ${awayStats.last5GoalsAgainst} conceded
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 🔄 HEAD TO HEAD - Last ${h2h.totalMatches} matches                              
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 
-│ OVERALL RECORD:
-│   • ${homeTeam}: ${h2h.team1Wins} wins
-│   • ${awayTeam}: ${h2h.team2Wins} wins  
-│   • Draws: ${h2h.draws}
-│   
-│ GOALS STATISTICS:
-│   • ${homeTeam} total: ${h2h.team1Goals} goals (Per match: ${(h2h.team1Goals / Math.max(h2h.totalMatches, 1)).toFixed(2)})
-│   • ${awayTeam} total: ${h2h.team2Goals} goals (Per match: ${(h2h.team2Goals / Math.max(h2h.totalMatches, 1)).toFixed(2)})
-│   • Average Total Goals: ${h2h.avgGoals}
-│   
-│ H2H KEY METRICS:
-│   • BTTS: ${h2h.bttsCount}/${h2h.totalMatches} (${h2h.bttsPercent}%)
-│   • Over 2.5: ${h2h.over25Count}/${h2h.totalMatches} (${h2h.over25Percent}%)
-│   • Over 1.5: ${h2h.over15Count}/${h2h.totalMatches} (${h2h.over15Percent}%)
-│   
-│ ${homeTeam} AT HOME vs ${awayTeam}:
-│   • ${h2h.team1HomeRecord.wins}W - ${h2h.team1HomeRecord.draws}D - ${h2h.team1HomeRecord.losses}L
-│   
-│ RECENT MEETINGS:
-│   ${h2hRecent || 'No data'}
-└──────────────────────────────────────────────────────────────────────────────┘
-
-╔══════════════════════════════════════════════════════════════════════════════╗
-║ 🎯 ANALYSIS INSTRUCTIONS                                                     
-╠══════════════════════════════════════════════════════════════════════════════╣
-║ 
-║ As ${aiModel}, carefully analyze the data above and explain WHY you reached
-║ each prediction. Your analysis should include:
-║ 
-║ 1. For MATCH RESULT, evaluate:
-║    - Both teams' current form
-║    - Home team's home performance vs Away team's away performance
-║    - H2H history and psychological advantage
-║    - Goal scoring/conceding rate comparison
-║    
-║ 2. For TOTAL GOALS (Over/Under 2.5), evaluate:
-║    - Both teams' goals per match average
-║    - H2H match goal average
-║    - Both teams' over 2.5 percentages
-║    - Defensive/offensive strengths
-║    
-║ 3. For BTTS, evaluate:
-║    - Both teams' BTTS percentages
-║    - Clean sheet rates
-║    - Failed to score rates
-║    - H2H BTTS rate
-║    
-║ CONFIDENCE CALCULATION CRITERIA:
-║ • 85-95%: Very strong data support, clear trend, H2H aligned
-║ • 70-84%: Good data support, noticeable trend
-║ • 55-69%: Medium data, mixed signals
-║ • 50-54%: Weak data, uncertain situation
-║ 
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-PROVIDE YOUR PREDICTIONS IN THIS EXACT FORMAT:
-
-═══════════════════════════════════════════════════════════
-📌 MATCH RESULT PREDICTION
-═══════════════════════════════════════════════════════════
-MATCH_RESULT: [Home Win / Draw / Away Win]
-RESULT_CONFIDENCE: [50-95]
-RESULT_REASONING: [Explain in 2-3 sentences why you reached this conclusion. Which statistics led you to this decision?]
-
-═══════════════════════════════════════════════════════════
-📌 TOTAL GOALS PREDICTION
-═══════════════════════════════════════════════════════════
-TOTAL_GOALS: [Over 2.5 / Under 2.5]
-GOALS_CONFIDENCE: [50-95]
-GOALS_REASONING: [Explain in 2-3 sentences why you reached this conclusion. Reference goal averages and key metrics.]
-
-═══════════════════════════════════════════════════════════
-📌 BTTS PREDICTION  
-═══════════════════════════════════════════════════════════
-BTTS: [Yes / No]
-BTTS_CONFIDENCE: [50-95]
-BTTS_REASONING: [Explain in 2-3 sentences why you reached this conclusion. Reference clean sheet and BTTS percentages.]
-
-═══════════════════════════════════════════════════════════
-📌 ${aiModel} OVERALL ASSESSMENT
-═══════════════════════════════════════════════════════════
-OVERALL_ANALYSIS: [Provide a 3-4 sentence overall assessment. Which bet is most reliable and why?]`;
 }
 
 // ============================================================================
@@ -889,13 +1238,9 @@ OVERALL_ANALYSIS: [Provide a 3-4 sentence overall assessment. Which bet is most 
 // ============================================================================
 
 async function callClaude(prompt: string): Promise<string | null> {
-  if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ Claude API key missing');
-    return null;
-  }
+  if (!ANTHROPIC_API_KEY) return null;
 
   try {
-    console.log('🤖 Calling Claude...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -904,36 +1249,26 @@ async function callClaude(prompt: string): Promise<string | null> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',  // ← MODEL DEĞİŞTİ
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 2000,
+        temperature: AI_BRAIN_CONFIG.claude.temperature,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();  // ← HATA DETAYI
-      console.log(`❌ Claude error: ${response.status} - ${errorBody}`);  // ← DETAY LOG
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
-    const text = data.content?.[0]?.text;
-    console.log('✅ Claude responded');
-    return text || null;
+    return data.content?.[0]?.text || null;
   } catch (error) {
-    console.error('❌ Claude exception:', error);
     return null;
   }
 }
 
 async function callOpenAI(prompt: string): Promise<string | null> {
-  if (!OPENAI_API_KEY) {
-    console.log('⚠️ OpenAI API key missing');
-    return null;
-  }
+  if (!OPENAI_API_KEY) return null;
 
   try {
-    console.log('🤖 Calling OpenAI...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -944,33 +1279,23 @@ async function callOpenAI(prompt: string): Promise<string | null> {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 2000,
-        temperature: 0.7,
+        temperature: AI_BRAIN_CONFIG.openai.temperature,
       }),
     });
 
-    if (!response.ok) {
-      console.log(`❌ OpenAI error: ${response.status}`);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
-    console.log('✅ OpenAI responded');
-    return text || null;
+    return data.choices?.[0]?.message?.content || null;
   } catch (error) {
-    console.error('❌ OpenAI exception:', error);
     return null;
   }
 }
 
 async function callGemini(prompt: string): Promise<string | null> {
-  if (!GEMINI_API_KEY) {
-    console.log('⚠️ Gemini API key missing');
-    return null;
-  }
+  if (!GEMINI_API_KEY) return null;
 
   try {
-    console.log('🤖 Calling Gemini...');
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -978,34 +1303,27 @@ async function callGemini(prompt: string): Promise<string | null> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
+          generationConfig: { 
+            maxOutputTokens: 2000, 
+            temperature: AI_BRAIN_CONFIG.gemini.temperature 
+          },
         }),
       }
     );
 
-    if (!response.ok) {
-      console.log(`❌ Gemini error: ${response.status}`);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    console.log('✅ Gemini responded');
-    return text || null;
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (error) {
-    console.error('❌ Gemini exception:', error);
     return null;
   }
 }
 
 async function callPerplexity(prompt: string): Promise<string | null> {
-  if (!PERPLEXITY_API_KEY) {
-    console.log('⚠️ Perplexity API key missing');
-    return null;
-  }
+  if (!PERPLEXITY_API_KEY) return null;
 
   try {
-    console.log('🤖 Calling Perplexity...');
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -1016,27 +1334,21 @@ async function callPerplexity(prompt: string): Promise<string | null> {
         model: 'sonar',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 2000,
-        temperature: 0.7,
+        temperature: AI_BRAIN_CONFIG.perplexity.temperature,
       }),
     });
 
-    if (!response.ok) {
-      console.log(`❌ Perplexity error: ${response.status}`);
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
-    console.log('✅ Perplexity responded');
-    return text || null;
+    return data.choices?.[0]?.message?.content || null;
   } catch (error) {
-    console.error('❌ Perplexity exception:', error);
     return null;
   }
 }
 
 // ============================================================================
-// AI YANITINI PARSE ETME - GELİŞMİŞ
+// AI RESPONSE PARSING
 // ============================================================================
 
 interface ParsedPrediction {
@@ -1058,206 +1370,141 @@ function parseAIResponse(text: string, lang: string): ParsedPrediction {
 
   const upper = text.toUpperCase();
 
-  // ===== MAÇ SONUCU =====
-  // Türkçe
-  if (upper.includes('MAC_SONUCU:') || upper.includes('MAÇ_SONUCU:')) {
-    if (upper.includes('EV SAHIBI') || upper.includes('EV_SAHIBI') || upper.includes('EV SAHIBI KAZANIR')) {
+  // Match Result
+  if (upper.includes('MAC_SONUCU:') || upper.includes('MATCH_RESULT:')) {
+    if (upper.includes('EV SAHIBI') || upper.includes('HOME WIN')) {
       result.matchResult.prediction = 'Home Win';
-    } else if (upper.includes('DEPLASMAN') || upper.includes('DEPLASMAN KAZANIR')) {
+    } else if (upper.includes('DEPLASMAN') || upper.includes('AWAY WIN')) {
       result.matchResult.prediction = 'Away Win';
-    } else if (upper.includes('BERABERLIK')) {
-      result.matchResult.prediction = 'Draw';
-    }
-  }
-  // İngilizce
-  else if (upper.includes('MATCH_RESULT:') || upper.includes('RESULT:')) {
-    if (upper.includes('HOME WIN') || upper.includes('HOME_WIN')) {
-      result.matchResult.prediction = 'Home Win';
-    } else if (upper.includes('AWAY WIN') || upper.includes('AWAY_WIN')) {
-      result.matchResult.prediction = 'Away Win';
-    } else if (upper.includes('DRAW')) {
+    } else if (upper.includes('BERABERLIK') || upper.includes('DRAW')) {
       result.matchResult.prediction = 'Draw';
     }
   }
 
-  // Maç sonucu güven
-  const matchConfPatterns = [
-    /MAC_GUVEN[:\s]*(\d+)/i,
-    /MAÇ_GÜVEN[:\s]*(\d+)/i,
-    /RESULT_CONFIDENCE[:\s]*(\d+)/i,
-  ];
-  for (const pattern of matchConfPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.matchResult.confidence = Math.min(95, Math.max(50, parseInt(match[1])));
-      break;
-    }
+  // Confidence patterns
+  const matchConfMatch = text.match(/(?:MAC_GUVEN|RESULT_CONFIDENCE)[:\s]*(\d+)/i);
+  if (matchConfMatch) {
+    result.matchResult.confidence = Math.min(95, Math.max(50, parseInt(matchConfMatch[1])));
   }
 
-  // Maç sonucu gerekçe
-  const matchReasonPatterns = [
-    /MAC_GEREKCE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /MAÇ_GEREKÇE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /RESULT_REASONING[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-  ];
-  for (const pattern of matchReasonPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.matchResult.reasoning = match[1].trim().substring(0, 500);
-      break;
-    }
+  const matchReasonMatch = text.match(/(?:MAC_GEREKCE|RESULT_REASONING)[:\s]*([\s\S]*?)(?=\n\n|═|TOPLAM|TOTAL|$)/i);
+  if (matchReasonMatch) {
+    result.matchResult.reasoning = matchReasonMatch[1].trim().substring(0, 500);
   }
 
-  // ===== TOPLAM GOL =====
-  if (upper.includes('TOPLAM_GOL:') || upper.includes('TOPLAM GOL:')) {
-    if (upper.includes('UST 2.5') || upper.includes('ÜST 2.5') || upper.includes('UST_2.5')) {
+  // Goals
+  if (upper.includes('TOPLAM_GOL:') || upper.includes('TOTAL_GOALS:')) {
+    if (upper.includes('UST 2.5') || upper.includes('ÜST 2.5') || upper.includes('OVER 2.5')) {
       result.overUnder25.prediction = 'Over 2.5';
-    } else if (upper.includes('ALT 2.5') || upper.includes('ALT_2.5')) {
-      result.overUnder25.prediction = 'Under 2.5';
-    }
-  } else if (upper.includes('TOTAL_GOALS:') || upper.includes('GOALS:')) {
-    if (upper.includes('OVER 2.5') || upper.includes('OVER_2.5')) {
-      result.overUnder25.prediction = 'Over 2.5';
-    } else if (upper.includes('UNDER 2.5') || upper.includes('UNDER_2.5')) {
+    } else if (upper.includes('ALT 2.5') || upper.includes('UNDER 2.5')) {
       result.overUnder25.prediction = 'Under 2.5';
     }
   }
 
-  // Gol güven
-  const goalConfPatterns = [
-    /GOL_GUVEN[:\s]*(\d+)/i,
-    /GOL_GÜVEN[:\s]*(\d+)/i,
-    /GOALS_CONFIDENCE[:\s]*(\d+)/i,
-  ];
-  for (const pattern of goalConfPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.overUnder25.confidence = Math.min(95, Math.max(50, parseInt(match[1])));
-      break;
-    }
+  const goalConfMatch = text.match(/(?:GOL_GUVEN|GOALS_CONFIDENCE)[:\s]*(\d+)/i);
+  if (goalConfMatch) {
+    result.overUnder25.confidence = Math.min(95, Math.max(50, parseInt(goalConfMatch[1])));
   }
 
-  // Gol gerekçe
-  const goalReasonPatterns = [
-    /GOL_GEREKCE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /GOL_GEREKÇE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /GOALS_REASONING[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-  ];
-  for (const pattern of goalReasonPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.overUnder25.reasoning = match[1].trim().substring(0, 500);
-      break;
-    }
+  const goalReasonMatch = text.match(/(?:GOL_GEREKCE|GOALS_REASONING)[:\s]*([\s\S]*?)(?=\n\n|═|KG_VAR|BTTS|$)/i);
+  if (goalReasonMatch) {
+    result.overUnder25.reasoning = goalReasonMatch[1].trim().substring(0, 500);
   }
 
-  // ===== KG VAR / BTTS =====
-  if (upper.includes('KG_VAR:') || upper.includes('KG VAR:')) {
-    if (upper.includes('EVET')) {
+  // BTTS
+  if (upper.includes('KG_VAR:') || upper.includes('BTTS:')) {
+    if (upper.includes('EVET') || upper.includes('YES')) {
       result.btts.prediction = 'Yes';
-    } else if (upper.includes('HAYIR')) {
-      result.btts.prediction = 'No';
-    }
-  } else if (upper.includes('BTTS:')) {
-    if (upper.includes('YES') || upper.includes('EVET')) {
-      result.btts.prediction = 'Yes';
-    } else if (upper.includes('NO') || upper.includes('HAYIR')) {
+    } else if (upper.includes('HAYIR') || upper.includes('NO')) {
       result.btts.prediction = 'No';
     }
   }
 
-  // BTTS güven
-  const bttsConfPatterns = [
-    /KG_GUVEN[:\s]*(\d+)/i,
-    /KG_GÜVEN[:\s]*(\d+)/i,
-    /BTTS_CONFIDENCE[:\s]*(\d+)/i,
-  ];
-  for (const pattern of bttsConfPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.btts.confidence = Math.min(95, Math.max(50, parseInt(match[1])));
-      break;
-    }
+  const bttsConfMatch = text.match(/(?:KG_GUVEN|BTTS_CONFIDENCE)[:\s]*(\d+)/i);
+  if (bttsConfMatch) {
+    result.btts.confidence = Math.min(95, Math.max(50, parseInt(bttsConfMatch[1])));
   }
 
-  // BTTS gerekçe
-  const bttsReasonPatterns = [
-    /KG_GEREKCE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /KG_GEREKÇE[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-    /BTTS_REASONING[:\s]*([\s\S]*?)(?=\n\n|═|$)/i,
-  ];
-  for (const pattern of bttsReasonPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.btts.reasoning = match[1].trim().substring(0, 500);
-      break;
-    }
+  const bttsReasonMatch = text.match(/(?:KG_GEREKCE|BTTS_REASONING)[:\s]*([\s\S]*?)(?=\n\n|═|GENEL|OVERALL|$)/i);
+  if (bttsReasonMatch) {
+    result.btts.reasoning = bttsReasonMatch[1].trim().substring(0, 500);
   }
 
-  // ===== GENEL ANALİZ =====
-  const overallPatterns = [
-    /GENEL_ANALIZ[:\s]*([\s\S]*?)$/i,
-    /GENEL_ANALİZ[:\s]*([\s\S]*?)$/i,
-    /OVERALL_ANALYSIS[:\s]*([\s\S]*?)$/i,
-  ];
-  for (const pattern of overallPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      result.overallAnalysis = match[1].trim().substring(0, 600);
-      break;
-    }
+  // Overall
+  const overallMatch = text.match(/(?:GENEL_ANALIZ|OVERALL_ANALYSIS)[:\s]*([\s\S]*?)$/i);
+  if (overallMatch) {
+    result.overallAnalysis = overallMatch[1].trim().substring(0, 600);
   }
 
   return result;
 }
 
 // ============================================================================
-// CONSENSUS HESAPLAMA - GELİŞMİŞ
+// 🧠 WEIGHTED CONSENSUS - AĞIRLIKLI CONSENSUS
 // ============================================================================
 
-function calculateConsensus(results: ParsedPrediction[]) {
-  const matchVotes: Record<string, { count: number; totalConf: number; reasonings: string[] }> = {};
-  const goalVotes: Record<string, { count: number; totalConf: number; reasonings: string[] }> = {};
-  const bttsVotes: Record<string, { count: number; totalConf: number; reasonings: string[] }> = {};
+function calculateWeightedConsensus(
+  results: { model: string; prediction: ParsedPrediction }[]
+) {
+  const matchVotes: Record<string, { weight: number; totalConf: number; reasonings: string[]; count: number }> = {};
+  const goalVotes: Record<string, { weight: number; totalConf: number; reasonings: string[]; count: number }> = {};
+  const bttsVotes: Record<string, { weight: number; totalConf: number; reasonings: string[]; count: number }> = {};
 
-  for (const r of results) {
+  for (const { model, prediction } of results) {
+    const weight = AI_BRAIN_CONFIG[model]?.weight || 0.25;
+    
     // Match Result
-    const mr = r.matchResult.prediction;
-    if (!matchVotes[mr]) matchVotes[mr] = { count: 0, totalConf: 0, reasonings: [] };
+    const mr = prediction.matchResult.prediction;
+    if (!matchVotes[mr]) matchVotes[mr] = { weight: 0, totalConf: 0, reasonings: [], count: 0 };
+    matchVotes[mr].weight += weight;
+    matchVotes[mr].totalConf += prediction.matchResult.confidence * weight;
     matchVotes[mr].count++;
-    matchVotes[mr].totalConf += r.matchResult.confidence;
-    if (r.matchResult.reasoning) matchVotes[mr].reasonings.push(r.matchResult.reasoning);
+    if (prediction.matchResult.reasoning) {
+      matchVotes[mr].reasonings.push(`[${AI_BRAIN_CONFIG[model]?.name}] ${prediction.matchResult.reasoning}`);
+    }
 
     // Goals
-    const g = r.overUnder25.prediction;
-    if (!goalVotes[g]) goalVotes[g] = { count: 0, totalConf: 0, reasonings: [] };
+    const g = prediction.overUnder25.prediction;
+    if (!goalVotes[g]) goalVotes[g] = { weight: 0, totalConf: 0, reasonings: [], count: 0 };
+    goalVotes[g].weight += weight;
+    goalVotes[g].totalConf += prediction.overUnder25.confidence * weight;
     goalVotes[g].count++;
-    goalVotes[g].totalConf += r.overUnder25.confidence;
-    if (r.overUnder25.reasoning) goalVotes[g].reasonings.push(r.overUnder25.reasoning);
+    if (prediction.overUnder25.reasoning) {
+      goalVotes[g].reasonings.push(`[${AI_BRAIN_CONFIG[model]?.name}] ${prediction.overUnder25.reasoning}`);
+    }
 
     // BTTS
-    const b = r.btts.prediction;
-    if (!bttsVotes[b]) bttsVotes[b] = { count: 0, totalConf: 0, reasonings: [] };
+    const b = prediction.btts.prediction;
+    if (!bttsVotes[b]) bttsVotes[b] = { weight: 0, totalConf: 0, reasonings: [], count: 0 };
+    bttsVotes[b].weight += weight;
+    bttsVotes[b].totalConf += prediction.btts.confidence * weight;
     bttsVotes[b].count++;
-    bttsVotes[b].totalConf += r.btts.confidence;
-    if (r.btts.reasoning) bttsVotes[b].reasonings.push(r.btts.reasoning);
+    if (prediction.btts.reasoning) {
+      bttsVotes[b].reasonings.push(`[${AI_BRAIN_CONFIG[model]?.name}] ${prediction.btts.reasoning}`);
+    }
   }
 
-  const getWinner = (votes: Record<string, { count: number; totalConf: number; reasonings: string[] }>) => {
-    let best = { prediction: 'Unknown', confidence: 50, votes: 0, reasonings: [] as string[] };
+  const getWeightedWinner = (votes: Record<string, { weight: number; totalConf: number; reasonings: string[]; count: number }>) => {
+    let best = { prediction: 'Unknown', confidence: 50, weight: 0, reasonings: [] as string[], votes: 0 };
     for (const [pred, data] of Object.entries(votes)) {
-      const avgConf = Math.round(data.totalConf / data.count);
-      if (data.count > best.votes || (data.count === best.votes && avgConf > best.confidence)) {
-        best = { prediction: pred, confidence: avgConf, votes: data.count, reasonings: data.reasonings };
+      const avgConf = Math.round(data.totalConf / data.weight);
+      if (data.weight > best.weight) {
+        best = { 
+          prediction: pred, 
+          confidence: avgConf, 
+          weight: data.weight, 
+          reasonings: data.reasonings,
+          votes: data.count
+        };
       }
     }
     return best;
   };
 
   return {
-    matchResult: getWinner(matchVotes),
-    overUnder25: getWinner(goalVotes),
-    btts: getWinner(bttsVotes),
+    matchResult: getWeightedWinner(matchVotes),
+    overUnder25: getWeightedWinner(goalVotes),
+    btts: getWeightedWinner(bttsVotes),
   };
 }
 
@@ -1273,8 +1520,7 @@ export async function POST(request: NextRequest) {
     const { homeTeam, awayTeam, homeTeamId, awayTeamId, league, language = 'tr' } = body;
 
     console.log('═══════════════════════════════════════════════════════════');
-    console.log(`⚽ NEW ANALYSIS REQUEST: ${homeTeam} vs ${awayTeam}`);
-    console.log(`📍 League: ${league || 'Unknown'}, Language: ${language}`);
+    console.log(`🧠 AI BRAIN ANALYSIS: ${homeTeam} vs ${awayTeam}`);
     console.log('═══════════════════════════════════════════════════════════');
 
     if (!homeTeam || !awayTeam) {
@@ -1285,7 +1531,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. VERİ ÇEKME
-    console.log('\n📊 FETCHING DATA...');
+    console.log('\n📊 Fetching data...');
     const [homeStats, awayStats, h2h] = await Promise.all([
       fetchTeamStats(homeTeamId, homeTeam),
       fetchTeamStats(awayTeamId, awayTeam),
@@ -1294,18 +1540,27 @@ export async function POST(request: NextRequest) {
 
     const dataTime = Date.now();
     console.log(`✅ Data fetched in ${dataTime - startTime}ms`);
-    console.log(`   ${homeTeam}: ${homeStats.totalMatches} matches, Form: ${homeStats.form}`);
-    console.log(`   ${awayTeam}: ${awayStats.totalMatches} matches, Form: ${awayStats.form}`);
-    console.log(`   H2H: ${h2h.totalMatches} matches`);
 
-    // 2. AI PROMPT'LARI OLUŞTUR - HER AI İÇİN AYRI
-    const claudePrompt = createProfessionalPrompt(homeTeam, awayTeam, homeStats, awayStats, h2h, language, 'Claude AI');
-    const openaiPrompt = createProfessionalPrompt(homeTeam, awayTeam, homeStats, awayStats, h2h, language, 'GPT-4 AI');
-    const geminiPrompt = createProfessionalPrompt(homeTeam, awayTeam, homeStats, awayStats, h2h, language, 'Gemini AI');
-    const perplexityPrompt = createProfessionalPrompt(homeTeam, awayTeam, homeStats, awayStats, h2h, language, 'Perplexity AI');
+    // 2. ROL BAZLI VERİ PAKETLERİ OLUŞTUR
+    console.log('\n📦 Generating role-specific data packages...');
+    const tacticalData = generateTacticalDataPackage(homeTeam, awayTeam, homeStats, awayStats, h2h);
+    const statisticalData = generateStatisticalDataPackage(homeTeam, awayTeam, homeStats, awayStats, h2h);
+    const patternData = generatePatternDataPackage(homeTeam, awayTeam, homeStats, awayStats, h2h);
+    const contextualData = generateContextualDataPackage(homeTeam, awayTeam, homeStats, awayStats, h2h);
 
-    // 3. AI'LARI PARALEL ÇAĞIR
-    console.log('\n🤖 CALLING AI MODELS...');
+    // 3. ROL BAZLI PROMPTLAR
+    const claudePrompt = createTacticalPrompt(homeTeam, awayTeam, tacticalData, language);
+    const openaiPrompt = createStatisticalPrompt(homeTeam, awayTeam, statisticalData, language);
+    const geminiPrompt = createPatternPrompt(homeTeam, awayTeam, patternData, language);
+    const perplexityPrompt = createContextualPrompt(homeTeam, awayTeam, contextualData, language);
+
+    // 4. PARALEL AI ÇAĞRILARI
+    console.log('\n🤖 Calling AI models with specialized roles...');
+    console.log('  • Claude: Tactical Analysis');
+    console.log('  • GPT-4: Statistical Analysis');
+    console.log('  • Gemini: Pattern Recognition');
+    console.log('  • Perplexity: Contextual Analysis');
+
     const [claudeText, openaiText, geminiText, perplexityText] = await Promise.all([
       callClaude(claudePrompt),
       callOpenAI(openaiPrompt),
@@ -1316,79 +1571,95 @@ export async function POST(request: NextRequest) {
     const aiTime = Date.now();
     console.log(`✅ AI calls completed in ${aiTime - dataTime}ms`);
 
-    // 4. SONUÇLARI TOPLA
+    // 5. SONUÇLARI TOPLA
     const aiStatus = {
-      claude: !!claudeText,
-      openai: !!openaiText,
-      gemini: !!geminiText,
-      perplexity: !!perplexityText,
+      claude: { active: !!claudeText, role: 'Tactical Analyst', weight: AI_BRAIN_CONFIG.claude.weight },
+      openai: { active: !!openaiText, role: 'Statistical Engine', weight: AI_BRAIN_CONFIG.openai.weight },
+      gemini: { active: !!geminiText, role: 'Pattern Hunter', weight: AI_BRAIN_CONFIG.gemini.weight },
+      perplexity: { active: !!perplexityText, role: 'Context Analyst', weight: AI_BRAIN_CONFIG.perplexity.weight },
     };
 
-    const parsed: ParsedPrediction[] = [];
-    const individualAnalyses: Record<string, ParsedPrediction & { rawResponse?: string }> = {};
+    const results: { model: string; prediction: ParsedPrediction }[] = [];
+    const individualAnalyses: Record<string, any> = {};
 
     if (claudeText) {
       const p = parseAIResponse(claudeText, language);
-      parsed.push(p);
-      individualAnalyses.claude = { ...p, rawResponse: claudeText.substring(0, 1000) };
+      results.push({ model: 'claude', prediction: p });
+      individualAnalyses.claude = { 
+        ...p, 
+        role: AI_BRAIN_CONFIG.claude.role,
+        specialization: AI_BRAIN_CONFIG.claude.specialization
+      };
     }
     if (openaiText) {
       const p = parseAIResponse(openaiText, language);
-      parsed.push(p);
-      individualAnalyses.openai = { ...p, rawResponse: openaiText.substring(0, 1000) };
+      results.push({ model: 'openai', prediction: p });
+      individualAnalyses.openai = { 
+        ...p, 
+        role: AI_BRAIN_CONFIG.openai.role,
+        specialization: AI_BRAIN_CONFIG.openai.specialization
+      };
     }
     if (geminiText) {
       const p = parseAIResponse(geminiText, language);
-      parsed.push(p);
-      individualAnalyses.gemini = { ...p, rawResponse: geminiText.substring(0, 1000) };
+      results.push({ model: 'gemini', prediction: p });
+      individualAnalyses.gemini = { 
+        ...p, 
+        role: AI_BRAIN_CONFIG.gemini.role,
+        specialization: AI_BRAIN_CONFIG.gemini.specialization
+      };
     }
     if (perplexityText) {
       const p = parseAIResponse(perplexityText, language);
-      parsed.push(p);
-      individualAnalyses.perplexity = { ...p, rawResponse: perplexityText.substring(0, 1000) };
+      results.push({ model: 'perplexity', prediction: p });
+      individualAnalyses.perplexity = { 
+        ...p, 
+        role: AI_BRAIN_CONFIG.perplexity.role,
+        specialization: AI_BRAIN_CONFIG.perplexity.specialization
+      };
     }
 
-    console.log(`\n📈 RESULTS: ${parsed.length}/4 AI models responded`);
+    console.log(`\n📈 ${results.length}/4 AI models responded`);
 
-    if (parsed.length === 0) {
+    if (results.length === 0) {
       return NextResponse.json({
         success: false,
         error: language === 'tr'
-          ? 'Hiçbir AI modeli yanıt vermedi. API anahtarlarını kontrol edin.'
-          : 'No AI models responded. Check API keys.',
+          ? 'Hiçbir AI modeli yanıt vermedi.'
+          : 'No AI models responded.',
       }, { status: 500 });
     }
 
-    // 5. CONSENSUS HESAPLA
-    const consensus = calculateConsensus(parsed);
-    const totalModels = parsed.length;
+    // 6. AĞIRLIKLI CONSENSUS HESAPLA
+    const consensus = calculateWeightedConsensus(results);
+    const totalModels = results.length;
+    const totalWeight = results.reduce((sum, r) => sum + (AI_BRAIN_CONFIG[r.model]?.weight || 0.25), 0);
 
-    // 6. EN İYİ BAHİSLER
+    // 7. EN İYİ BAHİSLER
     const bets = [
       { type: 'MATCH_RESULT', ...consensus.matchResult },
       { type: 'OVER_UNDER_25', ...consensus.overUnder25 },
       { type: 'BTTS', ...consensus.btts },
-    ].sort((a, b) => (b.votes * 100 + b.confidence) - (a.votes * 100 + a.confidence));
+    ].sort((a, b) => (b.weight * 100 + b.confidence) - (a.weight * 100 + a.confidence));
 
     const bestBet = bets[0];
-    const riskLevel = bestBet.votes >= 3 ? 'Low' : bestBet.votes >= 2 ? 'Medium' : 'High';
-
-    // 7. GENEL ANALİZLERİ TOPLA
-    const overallAnalyses = parsed.map(p => p.overallAnalysis).filter(Boolean);
+    const riskLevel = bestBet.weight >= 0.7 ? 'Low' : bestBet.weight >= 0.5 ? 'Medium' : 'High';
 
     // 8. RESPONSE
     const totalTime = Date.now() - startTime;
-    console.log(`\n✅ ANALYSIS COMPLETE in ${totalTime}ms`);
+    console.log(`\n✅ AI BRAIN ANALYSIS COMPLETE in ${totalTime}ms`);
     console.log('═══════════════════════════════════════════════════════════\n');
 
     return NextResponse.json({
       success: true,
+      brainVersion: '2.0',
       analysis: {
         matchResult: {
           prediction: consensus.matchResult.prediction,
           confidence: consensus.matchResult.confidence,
           votes: consensus.matchResult.votes,
           totalVotes: totalModels,
+          weightedAgreement: Math.round(consensus.matchResult.weight * 100),
           reasonings: consensus.matchResult.reasonings,
         },
         overUnder25: {
@@ -1396,6 +1667,7 @@ export async function POST(request: NextRequest) {
           confidence: consensus.overUnder25.confidence,
           votes: consensus.overUnder25.votes,
           totalVotes: totalModels,
+          weightedAgreement: Math.round(consensus.overUnder25.weight * 100),
           reasonings: consensus.overUnder25.reasonings,
         },
         btts: {
@@ -1403,6 +1675,7 @@ export async function POST(request: NextRequest) {
           confidence: consensus.btts.confidence,
           votes: consensus.btts.votes,
           totalVotes: totalModels,
+          weightedAgreement: Math.round(consensus.btts.weight * 100),
           reasonings: consensus.btts.reasonings,
         },
         riskLevel,
@@ -1412,17 +1685,21 @@ export async function POST(request: NextRequest) {
           confidence: bet.confidence,
           votes: bet.votes,
           totalVotes: totalModels,
-          consensusStrength: bet.votes >= 3 ? 'Strong' : bet.votes >= 2 ? 'Moderate' : 'Weak',
-          reasoning: language === 'tr'
-            ? `${bet.votes}/${totalModels} AI model bu tahmin üzerinde uzlaştı (Ortalama güven: %${bet.confidence}).`
-            : `${bet.votes}/${totalModels} AI models agreed on this prediction (Average confidence: ${bet.confidence}%).`,
+          weightedAgreement: Math.round(bet.weight * 100),
+          consensusStrength: bet.weight >= 0.7 ? 'Strong' : bet.weight >= 0.5 ? 'Moderate' : 'Weak',
         })),
-        overallAnalyses,
       },
       aiStatus,
       individualAnalyses,
-      modelsUsed: Object.keys(individualAnalyses),
+      aiRoles: {
+        claude: AI_BRAIN_CONFIG.claude,
+        openai: AI_BRAIN_CONFIG.openai,
+        gemini: AI_BRAIN_CONFIG.gemini,
+        perplexity: AI_BRAIN_CONFIG.perplexity,
+      },
+      modelsUsed: results.map(r => r.model),
       totalModels,
+      totalWeight: Math.round(totalWeight * 100),
       stats: {
         home: homeStats,
         away: awayStats,
@@ -1436,7 +1713,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ ANALYSIS ERROR:', error);
+    console.error('❌ AI BRAIN ERROR:', error);
     return NextResponse.json({
       success: false,
       error: `Error: ${error.message}`,
