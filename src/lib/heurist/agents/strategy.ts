@@ -11,26 +11,31 @@ const PROMPTS = {
   tr: `Sen PROFESYONEL bir bahis strateji uzmanısın. TÜM agent verilerini ve AI konsensüsünü sentezle.
 
 KULLANACAĞIN VERİLER:
-1. DeepAnalysis Agent - Derin maç analizi
-2. Stats Agent - İstatistiksel analiz  
-3. Odds Agent - Oran ve value analizi
-4. Sentiment Agent - Psikolojik faktörler, sakatlıklar, moral
-5. Multi-Model AI - 3 farklı AI'ın konsensüsü
+1. DeepAnalysis Agent - Derin maç analizi + Hakem + Hava durumu + Diziliş
+2. Stats Agent - İstatistiksel analiz + xG + Timing patterns + Clean sheet
+3. Odds Agent - Oran analizi + Asian Handicap + Correct Score + HT/FT + Corners
+4. Sentiment Agent - Moral + Sakatlık + Rotasyon riski + Transfer etkisi
+5. Multi-Model AI - 4 farklı AI'ın konsensüsü
 6. Professional Calc - Venue-specific hesaplamalar
 
 ANALİZ KURALLARI:
 - Tüm agentları ve AI modellerini değerlendir
-- Psikolojik faktörleri (moral, sakatlık, baskı) dikkate al
-- Venue-specific (ev/deplasman) istatistiklerini kullan
+- xG regresyon riskini dikkate al
+- Kadro rotasyonu ve yorgunluk faktörlerini değerlendir
+- Hakem eğilimlerini kart tahminlerine yansıt
 - Sharp money sinyallerini kontrol et
-- Risk/ödül dengesini hesapla
+- KELLY CRITERION ile optimal stake hesapla
 
-PUANLAMA SİSTEMİ:
-- 4+ agent/AI hemfikir → GÜÇLÜ SİNYAL (+15 puan)
-- 3 agent/AI hemfikir → ORTA SİNYAL (+10 puan)
-- Sharp money onayı → +10 puan
+GELİŞMİŞ PUANLAMA SİSTEMİ:
+- 5+ kaynak hemfikir → GÜÇLÜ SİNYAL (+20 puan)
+- 4 kaynak hemfikir → İYİ SİNYAL (+15 puan)
+- 3 kaynak hemfikir → ORTA SİNYAL (+10 puan)
+- Sharp money onayı → +12 puan
+- xG destekli tahmin → +8 puan
 - Yüksek moral avantajı → +5 puan
-- Kritik sakatlık → -10 puan
+- Kritik sakatlık → -12 puan
+- Yüksek rotasyon riski → -8 puan
+- Transfer dağınıklığı → -5 puan
 - Yönetici baskısı → -5 puan
 
 JSON DÖNDÜR:
@@ -38,17 +43,29 @@ JSON DÖNDÜR:
   "masterAnalysis": {
     "summary": "Tüm verilerin özeti",
     "keyFactors": ["En önemli 5 faktör"],
-    "concerns": ["Endişe verici faktörler"]
+    "concerns": ["Endişe verici faktörler"],
+    "dataQuality": "Excellent/Good/Fair/Poor"
   },
   "consensus": {
     "overUnder": { "prediction": "Over/Under", "agree": "X/6", "confidence": 75, "reasoning": "Detaylı açıklama" },
     "matchResult": { "prediction": "1/X/2", "agree": "X/6", "confidence": 70, "reasoning": "Detaylı açıklama" },
-    "btts": { "prediction": "Yes/No", "agree": "X/6", "confidence": 72, "reasoning": "Detaylı açıklama" }
+    "btts": { "prediction": "Yes/No", "agree": "X/6", "confidence": 72, "reasoning": "Detaylı açıklama" },
+    "asianHandicap": { "prediction": "AH -0.5 Home", "confidence": 68, "reasoning": "Açıklama" },
+    "corners": { "prediction": "Over 9.5", "confidence": 65, "reasoning": "Açıklama" },
+    "cards": { "prediction": "Over 3.5", "confidence": 62, "reasoning": "Açıklama" }
   },
   "riskAssessment": {
     "level": "Düşük/Orta/Yüksek",
     "score": 75,
-    "factors": ["Risk faktörleri"]
+    "factors": ["Risk faktörleri"],
+    "xgRisk": "Regresyon riski varsa belirt",
+    "rotationRisk": "Kadro rotasyonu riski",
+    "fatigueRisk": "Yorgunluk riski"
+  },
+  "kellyStake": {
+    "optimalPercentage": 3.5,
+    "edgePercentage": 8.2,
+    "reasoning": "Kelly = (bp - q) / b formülü ile hesaplandı"
   },
   "recommendedBets": [
     {
@@ -59,16 +76,18 @@ JSON DÖNDÜR:
       "reasoning": "🎯 Detaylı analiz...",
       "agentSupport": ["DeepAnalysis", "Stats", "AI-GPT", "AI-Claude"],
       "valueScore": 8,
-      "riskScore": 3
+      "riskScore": 3,
+      "kellyStake": 3.2
     }
   ],
   "avoidBets": ["Kaçınılacak bahisler ve nedenleri"],
   "stakeSuggestion": {
     "level": "Düşük/Orta/Yüksek/Çok Yüksek",
     "percentage": "2-5%",
-    "reasoning": "Stake açıklaması"
+    "reasoning": "Stake açıklaması",
+    "kellyAdjusted": true
   },
-  "specialAlerts": ["Özel uyarılar (sakatlık, sharp money, vs)"],
+  "specialAlerts": ["Özel uyarılar (sakatlık, rotasyon, xG regresyon, sharp money)"],
   "agentSummary": "🎯 MASTER STRATEGY: [Final özet]"
 }`,
 
@@ -532,54 +551,215 @@ function calculateAdvancedRisk(
   return { level, score: riskScore, factors };
 }
 
+// ==================== KELLY CRITERION CALCULATOR ====================
+
+interface KellyResult {
+  optimalPercentage: number;
+  edgePercentage: number;
+  reasoning: string;
+  fractionalKelly: number; // 1/4 Kelly for safety
+}
+
+function calculateKellyCriterion(
+  probability: number, // Our estimated win probability (0-100)
+  odds: number, // Decimal odds (e.g., 1.85)
+  language: 'tr' | 'en' | 'de'
+): KellyResult {
+  // Kelly Formula: f* = (bp - q) / b
+  // where:
+  // f* = fraction of bankroll to bet
+  // b = decimal odds - 1 (net odds)
+  // p = probability of winning
+  // q = probability of losing (1 - p)
+  
+  const p = probability / 100;
+  const q = 1 - p;
+  const b = odds - 1;
+  
+  // Kelly optimal
+  const kellyFull = (b * p - q) / b;
+  
+  // Edge percentage
+  const impliedProb = 1 / odds;
+  const edge = p - impliedProb;
+  const edgePercentage = edge * 100;
+  
+  // Fractional Kelly (1/4) for safety
+  const fractionalKelly = Math.max(0, kellyFull / 4);
+  const optimalPercentage = Math.min(5, Math.max(0.5, fractionalKelly * 100));
+  
+  const reasoningTexts = {
+    tr: {
+      positive: `Kelly: Tahmini olasılık %${probability.toFixed(0)}, Oran ${odds}, Edge %${edgePercentage.toFixed(1)}. Optimal: %${optimalPercentage.toFixed(1)} (1/4 Kelly)`,
+      negative: `Kelly: Negatif edge. Oran değerli değil. Minimum stake veya pas geç.`,
+      neutral: `Kelly: Düşük edge. Minimum stake önerilir.`
+    },
+    en: {
+      positive: `Kelly: Estimated prob ${probability.toFixed(0)}%, Odds ${odds}, Edge ${edgePercentage.toFixed(1)}%. Optimal: ${optimalPercentage.toFixed(1)}% (1/4 Kelly)`,
+      negative: `Kelly: Negative edge. Odds not valuable. Minimum stake or skip.`,
+      neutral: `Kelly: Low edge. Minimum stake recommended.`
+    },
+    de: {
+      positive: `Kelly: Geschätzte Wahrsch. ${probability.toFixed(0)}%, Quote ${odds}, Edge ${edgePercentage.toFixed(1)}%. Optimal: ${optimalPercentage.toFixed(1)}% (1/4 Kelly)`,
+      negative: `Kelly: Negativer Edge. Quote nicht wertvoll. Minimum Einsatz oder überspringen.`,
+      neutral: `Kelly: Niedriger Edge. Minimum Einsatz empfohlen.`
+    }
+  };
+  
+  const texts = reasoningTexts[language];
+  let reasoning = texts.neutral;
+  
+  if (edgePercentage > 5) reasoning = texts.positive;
+  else if (edgePercentage < 0) reasoning = texts.negative;
+  
+  return {
+    optimalPercentage: parseFloat(optimalPercentage.toFixed(1)),
+    edgePercentage: parseFloat(edgePercentage.toFixed(1)),
+    reasoning,
+    fractionalKelly: parseFloat(fractionalKelly.toFixed(4))
+  };
+}
+
+// ==================== ADVANCED RISK ASSESSMENT ====================
+
+interface AdvancedRiskFactors {
+  xgRisk: string;
+  rotationRisk: string;
+  fatigueRisk: string;
+  transferRisk: string;
+}
+
+function calculateAdvancedRiskFactors(
+  stats: any,
+  sentiment: any,
+  language: 'tr' | 'en' | 'de'
+): AdvancedRiskFactors {
+  const texts = {
+    tr: {
+      xgHigh: 'xG regresyon riski yüksek - overperforming takım var',
+      xgLow: 'xG riski düşük - performanslar normal',
+      rotationHigh: 'Yüksek rotasyon riski - kadro değişikliği bekleniyor',
+      rotationMedium: 'Orta rotasyon riski - bazı değişiklikler olabilir',
+      rotationLow: 'Rotasyon riski düşük - en güçlü kadro bekleniyor',
+      fatigueHigh: 'Yorgunluk riski yüksek - yoğun maç trafiği',
+      fatigueLow: 'Yorgunluk riski düşük - yeterli dinlenme',
+      transferHigh: 'Transfer dağınıklığı - dikkat dağıtıcı söylentiler',
+      transferLow: 'Transfer etkisi düşük - takım odaklı'
+    },
+    en: {
+      xgHigh: 'High xG regression risk - overperforming team present',
+      xgLow: 'Low xG risk - performances normal',
+      rotationHigh: 'High rotation risk - lineup changes expected',
+      rotationMedium: 'Medium rotation risk - some changes possible',
+      rotationLow: 'Low rotation risk - strongest lineup expected',
+      fatigueHigh: 'High fatigue risk - fixture congestion',
+      fatigueLow: 'Low fatigue risk - adequate rest',
+      transferHigh: 'Transfer distraction - distracting rumors',
+      transferLow: 'Low transfer impact - team focused'
+    },
+    de: {
+      xgHigh: 'Hohes xG-Regressionsrisiko - überperformende Mannschaft',
+      xgLow: 'Niedriges xG-Risiko - Leistungen normal',
+      rotationHigh: 'Hohes Rotationsrisiko - Aufstellungsänderungen erwartet',
+      rotationMedium: 'Mittleres Rotationsrisiko - einige Änderungen möglich',
+      rotationLow: 'Niedriges Rotationsrisiko - stärkste Aufstellung erwartet',
+      fatigueHigh: 'Hohes Ermüdungsrisiko - Spielbelastung',
+      fatigueLow: 'Niedriges Ermüdungsrisiko - ausreichend Ruhe',
+      transferHigh: 'Transfer-Ablenkung - störende Gerüchte',
+      transferLow: 'Geringe Transferauswirkung - Team fokussiert'
+    }
+  };
+  
+  const t = texts[language];
+  
+  // xG risk
+  let xgRisk = t.xgLow;
+  if (stats?.xgAnalysis) {
+    const xg = stats.xgAnalysis;
+    if (xg.homePerformance === 'overperforming' || xg.awayPerformance === 'overperforming') {
+      xgRisk = t.xgHigh;
+    }
+  }
+  
+  // Rotation risk
+  let rotationRisk = t.rotationLow;
+  if (sentiment?.homeTeam?.squadRotation?.risk === 'high' || sentiment?.awayTeam?.squadRotation?.risk === 'high') {
+    rotationRisk = t.rotationHigh;
+  } else if (sentiment?.homeTeam?.squadRotation?.risk === 'medium' || sentiment?.awayTeam?.squadRotation?.risk === 'medium') {
+    rotationRisk = t.rotationMedium;
+  }
+  
+  // Fatigue risk
+  let fatigueRisk = t.fatigueLow;
+  if (sentiment?.homeTeam?.fatigueLevel?.level === 'high' || sentiment?.awayTeam?.fatigueLevel?.level === 'high') {
+    fatigueRisk = t.fatigueHigh;
+  }
+  
+  // Transfer risk
+  let transferRisk = t.transferLow;
+  if (sentiment?.homeTeam?.transferWindow?.impact === 'disruptive' || sentiment?.awayTeam?.transferWindow?.impact === 'disruptive') {
+    transferRisk = t.transferHigh;
+  }
+  
+  return { xgRisk, rotationRisk, fatigueRisk, transferRisk };
+}
+
 // ==================== STAKE CALCULATOR ====================
 
 function calculateStakeSuggestion(
   riskScore: number,
   consensus: ComprehensiveConsensus,
-  language: 'tr' | 'en' | 'de'
-): { level: string; percentage: string; reasoning: string } {
+  language: 'tr' | 'en' | 'de',
+  kellyResult?: KellyResult
+): { level: string; percentage: string; reasoning: string; kellyAdjusted: boolean } {
   
   const avgConfidence = (consensus.overUnder.avgConfidence + consensus.matchResult.avgConfidence + consensus.btts.avgConfidence) / 3;
   const avgAgree = (consensus.overUnder.totalAgree + consensus.matchResult.totalAgree + consensus.btts.totalAgree) / 3;
   
+  // Kelly-adjusted percentage if available
+  let kellyPercentage = kellyResult?.optimalPercentage || 2;
+  let kellyAdjusted = !!kellyResult && kellyResult.edgePercentage > 0;
+  
   const templates = {
     tr: {
-      veryHigh: { level: 'Çok Yüksek', percentage: '4-5%', reasoning: 'Mükemmel konsensüs ve düşük risk. Agresif stake önerilir.' },
-      high: { level: 'Yüksek', percentage: '3-4%', reasoning: 'Güçlü konsensüs. Normal üstü stake uygun.' },
-      medium: { level: 'Orta', percentage: '2-3%', reasoning: 'Kabul edilebilir risk. Standart stake önerilir.' },
-      low: { level: 'Düşük', percentage: '1-2%', reasoning: 'Yüksek risk veya düşük konsensüs. Küçük stake önerilir.' },
+      veryHigh: { level: 'Çok Yüksek', percentage: kellyAdjusted ? `${Math.min(5, kellyPercentage * 1.2).toFixed(1)}%` : '4-5%', reasoning: 'Mükemmel konsensüs ve düşük risk. Agresif stake önerilir.' },
+      high: { level: 'Yüksek', percentage: kellyAdjusted ? `${Math.min(4, kellyPercentage).toFixed(1)}%` : '3-4%', reasoning: 'Güçlü konsensüs. Normal üstü stake uygun.' },
+      medium: { level: 'Orta', percentage: kellyAdjusted ? `${Math.min(3, kellyPercentage * 0.8).toFixed(1)}%` : '2-3%', reasoning: 'Kabul edilebilir risk. Standart stake önerilir.' },
+      low: { level: 'Düşük', percentage: kellyAdjusted ? `${Math.min(2, kellyPercentage * 0.5).toFixed(1)}%` : '1-2%', reasoning: 'Yüksek risk veya düşük konsensüs. Küçük stake önerilir.' },
       veryLow: { level: 'Çok Düşük', percentage: '0.5-1%', reasoning: 'Çok riskli. Minimum stake veya pas geç.' }
     },
     en: {
-      veryHigh: { level: 'Very High', percentage: '4-5%', reasoning: 'Excellent consensus and low risk. Aggressive stake recommended.' },
-      high: { level: 'High', percentage: '3-4%', reasoning: 'Strong consensus. Above normal stake appropriate.' },
-      medium: { level: 'Medium', percentage: '2-3%', reasoning: 'Acceptable risk. Standard stake recommended.' },
-      low: { level: 'Low', percentage: '1-2%', reasoning: 'High risk or low consensus. Small stake recommended.' },
+      veryHigh: { level: 'Very High', percentage: kellyAdjusted ? `${Math.min(5, kellyPercentage * 1.2).toFixed(1)}%` : '4-5%', reasoning: 'Excellent consensus and low risk. Aggressive stake recommended.' },
+      high: { level: 'High', percentage: kellyAdjusted ? `${Math.min(4, kellyPercentage).toFixed(1)}%` : '3-4%', reasoning: 'Strong consensus. Above normal stake appropriate.' },
+      medium: { level: 'Medium', percentage: kellyAdjusted ? `${Math.min(3, kellyPercentage * 0.8).toFixed(1)}%` : '2-3%', reasoning: 'Acceptable risk. Standard stake recommended.' },
+      low: { level: 'Low', percentage: kellyAdjusted ? `${Math.min(2, kellyPercentage * 0.5).toFixed(1)}%` : '1-2%', reasoning: 'High risk or low consensus. Small stake recommended.' },
       veryLow: { level: 'Very Low', percentage: '0.5-1%', reasoning: 'Very risky. Minimum stake or skip.' }
     },
     de: {
-      veryHigh: { level: 'Sehr Hoch', percentage: '4-5%', reasoning: 'Ausgezeichneter Konsens. Aggressiver Einsatz empfohlen.' },
-      high: { level: 'Hoch', percentage: '3-4%', reasoning: 'Starker Konsens. Überdurchschnittlicher Einsatz.' },
-      medium: { level: 'Mittel', percentage: '2-3%', reasoning: 'Akzeptables Risiko. Standardeinsatz empfohlen.' },
-      low: { level: 'Niedrig', percentage: '1-2%', reasoning: 'Hohes Risiko. Kleiner Einsatz empfohlen.' },
+      veryHigh: { level: 'Sehr Hoch', percentage: kellyAdjusted ? `${Math.min(5, kellyPercentage * 1.2).toFixed(1)}%` : '4-5%', reasoning: 'Ausgezeichneter Konsens. Aggressiver Einsatz empfohlen.' },
+      high: { level: 'Hoch', percentage: kellyAdjusted ? `${Math.min(4, kellyPercentage).toFixed(1)}%` : '3-4%', reasoning: 'Starker Konsens. Überdurchschnittlicher Einsatz.' },
+      medium: { level: 'Mittel', percentage: kellyAdjusted ? `${Math.min(3, kellyPercentage * 0.8).toFixed(1)}%` : '2-3%', reasoning: 'Akzeptables Risiko. Standardeinsatz empfohlen.' },
+      low: { level: 'Niedrig', percentage: kellyAdjusted ? `${Math.min(2, kellyPercentage * 0.5).toFixed(1)}%` : '1-2%', reasoning: 'Hohes Risiko. Kleiner Einsatz empfohlen.' },
       veryLow: { level: 'Sehr Niedrig', percentage: '0.5-1%', reasoning: 'Sehr riskant. Minimaler Einsatz oder überspringen.' }
     }
   };
   
   const t = templates[language];
   
+  let result;
   if (riskScore <= 30 && avgConfidence >= 70 && avgAgree >= 3) {
-    return t.veryHigh;
+    result = t.veryHigh;
   } else if (riskScore <= 40 && avgConfidence >= 65) {
-    return t.high;
+    result = t.high;
   } else if (riskScore <= 55 && avgConfidence >= 55) {
-    return t.medium;
+    result = t.medium;
   } else if (riskScore <= 70) {
-    return t.low;
+    result = t.low;
   } else {
-    return t.veryLow;
+    result = t.veryLow;
   }
+  
+  return { ...result, kellyAdjusted };
 }
 
 // ==================== MAIN STRATEGY AGENT ====================
@@ -614,9 +794,20 @@ export async function runStrategyAgent(
   const risk = calculateAdvancedRisk(consensus, sentiment, odds, language);
   console.log(`   ⚠️ Risk: ${risk.level} (${risk.score}/100)`);
   
-  // Calculate stake
-  const stake = calculateStakeSuggestion(risk.score, consensus, language);
-  console.log(`   💰 Stake: ${stake.level} (${stake.percentage})`);
+  // 🆕 Calculate advanced risk factors
+  const advancedRiskFactors = calculateAdvancedRiskFactors(stats, sentiment, language);
+  console.log(`   📊 xG Risk: ${advancedRiskFactors.xgRisk.substring(0, 50)}...`);
+  console.log(`   🔄 Rotation Risk: ${advancedRiskFactors.rotationRisk.substring(0, 50)}...`);
+  
+  // 🆕 Calculate Kelly Criterion
+  const bestOdds = odds?.odds?.overUnder?.['2.5']?.over || 1.85;
+  const bestConfidence = consensus.overUnder.avgConfidence;
+  const kellyResult = calculateKellyCriterion(bestConfidence, bestOdds, language);
+  console.log(`   📈 Kelly: ${kellyResult.optimalPercentage}% (Edge: ${kellyResult.edgePercentage}%)`);
+  
+  // Calculate stake with Kelly
+  const stake = calculateStakeSuggestion(risk.score, consensus, language, kellyResult);
+  console.log(`   💰 Stake: ${stake.level} (${stake.percentage}) ${stake.kellyAdjusted ? '(Kelly adjusted)' : ''}`);
   
   // Build recommended bets
   const allBets = [
@@ -694,6 +885,12 @@ export async function runStrategyAgent(
     de: `🎯 MASTER STRATEGY: ${allBets[0].type} - ${allBets[0].selection} (${allBets[0].agree}/${allBets[0].total} Quellen, ${allBets[0].confidence}% Vertrauen). Risiko: ${risk.level}. Einsatz: ${stake.level}.`
   };
   
+  // 🆕 Data quality assessment
+  const dataQuality = 
+    (consensus.overUnder.totalSources >= 5 && consensus.matchResult.totalSources >= 4) ? 'Excellent' :
+    (consensus.overUnder.totalSources >= 4 && consensus.matchResult.totalSources >= 3) ? 'Good' :
+    (consensus.overUnder.totalSources >= 3) ? 'Fair' : 'Poor';
+
   const result = {
     masterAnalysis: {
       summary: language === 'tr' 
@@ -701,9 +898,11 @@ export async function runStrategyAgent(
         : `${allBets.filter(b => b.agree >= 3).length} strong signals found for ${matchData.homeTeam} vs ${matchData.awayTeam}.`,
       keyFactors: [
         ...allBets.filter(b => b.agree >= 3).map(b => `${b.type}: ${b.selection} (${b.agree}/${b.total})`),
-        ...(sentiment?.keyInsights?.slice(0, 2) || [])
+        ...(sentiment?.keyInsights?.slice(0, 2) || []),
+        ...(stats?.xgAnalysis ? [`xG: ${stats.xgAnalysis.totalXG}`] : [])
       ],
-      concerns: risk.factors.filter(f => f.includes('+'))
+      concerns: risk.factors.filter(f => f.includes('+')),
+      dataQuality
     },
     consensus: {
       overUnder: {
@@ -726,9 +925,47 @@ export async function runStrategyAgent(
         confidence: consensus.btts.avgConfidence,
         reasoning: consensus.btts.reasoning,
         votes: consensus.btts.votes
-      }
+      },
+      // 🆕 New markets from Odds Agent
+      asianHandicap: odds?.asianHandicap ? {
+        prediction: odds.asianHandicap.recommendation,
+        confidence: odds.asianHandicap.confidence,
+        reasoning: odds.asianHandicap.reasoning
+      } : null,
+      correctScore: odds?.correctScore ? {
+        mostLikely: odds.correctScore.mostLikely,
+        second: odds.correctScore.second,
+        third: odds.correctScore.third,
+        confidence: odds.correctScore.confidence
+      } : null,
+      htft: odds?.htftPrediction ? {
+        prediction: odds.htftPrediction.prediction,
+        confidence: odds.htftPrediction.confidence,
+        reasoning: odds.htftPrediction.reasoning
+      } : null,
+      corners: odds?.cornersAnalysis ? {
+        prediction: odds.cornersAnalysis.totalCorners,
+        confidence: odds.cornersAnalysis.confidence,
+        reasoning: odds.cornersAnalysis.reasoning
+      } : null,
+      cards: odds?.cardsAnalysis ? {
+        prediction: odds.cardsAnalysis.totalCards,
+        confidence: odds.cardsAnalysis.confidence,
+        reasoning: odds.cardsAnalysis.reasoning
+      } : null
     },
-    riskAssessment: risk,
+    riskAssessment: {
+      ...risk,
+      xgRisk: advancedRiskFactors.xgRisk,
+      rotationRisk: advancedRiskFactors.rotationRisk,
+      fatigueRisk: advancedRiskFactors.fatigueRisk,
+      transferRisk: advancedRiskFactors.transferRisk
+    },
+    kellyStake: {
+      optimalPercentage: kellyResult.optimalPercentage,
+      edgePercentage: kellyResult.edgePercentage,
+      reasoning: kellyResult.reasoning
+    },
     recommendedBets: allBets.map(b => ({
       rank: b.rank,
       type: b.type,

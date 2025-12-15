@@ -5,6 +5,7 @@
 import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
 import { runSentimentAgent, SentimentResult } from './agents/sentimentAgent';
+import { runDeepAnalysisAgent } from './agents/deepAnalysis';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -71,6 +72,7 @@ export interface OrchestratorResult {
     stats: AgentResult | null;
     odds: AgentResult | null;
     sentiment: SentimentAgentResult | null;
+    deepAnalysis: any | null;
   };
   consensus: ConsensusResult;
   finalPrediction: {
@@ -445,6 +447,7 @@ function buildReports(
   statsResult: AgentResult | null,
   oddsResult: AgentResult | null,
   sentimentResult: SentimentAgentResult | null,
+  deepAnalysisResult: any | null,
   consensus: ConsensusResult,
   finalPrediction: OrchestratorResult['finalPrediction'],
   valueBets: string[],
@@ -452,53 +455,106 @@ function buildReports(
   dataQuality: { score: number; hasOdds: boolean; hasOddsHistory: boolean; homeFormMatches: number; awayFormMatches: number; h2hMatches: number },
   sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert']
 ): OrchestratorResult['reports'] {
-  return {
-    deepAnalysis: {
-      matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçının detaylı analizi. Ev sahibi form: ${matchData.homeForm?.form || 'N/A'}, Deplasman form: ${matchData.awayForm?.form || 'N/A'}`,
-      criticalFactors: [
-        `Ev sahibi son 5 maç: ${matchData.homeForm?.record || 'N/A'}`,
-        `Deplasman son 5 maç: ${matchData.awayForm?.record || 'N/A'}`,
-        `H2H: ${matchData.h2h?.totalMatches || 0} maç oynandı`,
-        dataQuality.hasOdds ? `Oranlar mevcut` : `Oran verisi eksik`,
-        sentimentResult?.psychologicalEdge ? `Psikolojik avantaj: ${sentimentResult.psychologicalEdge.team === 'home' ? matchData.homeTeam : sentimentResult.psychologicalEdge.team === 'away' ? matchData.awayTeam : 'Nötr'}` : '',
-      ].filter(Boolean),
-      probabilities: {
-        homeWin: Math.round(consensus.matchResult.prediction === '1' ? consensus.matchResult.confidence : 
-                 consensus.matchResult.prediction === '2' ? 100 - consensus.matchResult.confidence - 25 : 33),
-        draw: Math.round(consensus.matchResult.prediction === 'X' ? consensus.matchResult.confidence : 25),
-        awayWin: Math.round(consensus.matchResult.prediction === '2' ? consensus.matchResult.confidence : 
-                 consensus.matchResult.prediction === '1' ? 100 - consensus.matchResult.confidence - 25 : 33),
-      },
-      scorePrediction: {
-        score: consensus.matchResult.prediction === '1' ? '2-1' : 
-               consensus.matchResult.prediction === '2' ? '1-2' : '1-1',
-        reasoning: finalPrediction.recommendation,
-      },
-      overUnder: {
-        prediction: consensus.overUnder.prediction,
-        confidence: consensus.overUnder.confidence,
-        reasoning: statsResult?.overUnderReasoning || 'İstatistiksel analiz bazlı tahmin',
-      },
-      btts: {
-        prediction: consensus.btts.prediction,
-        confidence: consensus.btts.confidence,
-        reasoning: statsResult?.bttsReasoning || 'Form analizi bazlı tahmin',
-      },
-      matchResult: {
-        prediction: consensus.matchResult.prediction,
-        confidence: consensus.matchResult.confidence,
-        reasoning: statsResult?.matchResultReasoning || 'Konsensüs bazlı tahmin',
-      },
-      bestBet: {
-        type: valueBets.length > 0 ? 'Value Bet' : 'Over/Under',
-        selection: valueBets.length > 0 ? valueBets[0] : consensus.overUnder.prediction,
-        confidence: finalPrediction.overallConfidence,
-        reasoning: finalPrediction.recommendation,
-      },
-      riskLevel: finalPrediction.overallConfidence >= 70 ? 'Low' : 
-                 finalPrediction.overallConfidence >= 55 ? 'Medium' : 'High',
-      expectedScores: ['1-1', '2-1', '1-0', '2-0'],
+  // Deep Analysis Agent'tan gelen veriyi kullan, yoksa fallback
+  const deepAnalysis = deepAnalysisResult ? {
+    matchAnalysis: deepAnalysisResult.matchAnalysis || `${matchData.homeTeam} vs ${matchData.awayTeam} maçının detaylı analizi.`,
+    criticalFactors: deepAnalysisResult.criticalFactors || [
+      `Ev sahibi son 5 maç: ${matchData.homeForm?.record || 'N/A'}`,
+      `Deplasman son 5 maç: ${matchData.awayForm?.record || 'N/A'}`,
+      `H2H: ${matchData.h2h?.totalMatches || 0} maç oynandı`,
+    ],
+    probabilities: deepAnalysisResult.probabilities || {
+      homeWin: Math.round(consensus.matchResult.prediction === '1' ? consensus.matchResult.confidence : 33),
+      draw: Math.round(consensus.matchResult.prediction === 'X' ? consensus.matchResult.confidence : 25),
+      awayWin: Math.round(consensus.matchResult.prediction === '2' ? consensus.matchResult.confidence : 33),
     },
+    scorePrediction: deepAnalysisResult.scorePrediction || {
+      score: consensus.matchResult.prediction === '1' ? '2-1' : 
+             consensus.matchResult.prediction === '2' ? '1-2' : '1-1',
+      reasoning: finalPrediction.recommendation,
+    },
+    overUnder: deepAnalysisResult.overUnder || {
+      prediction: consensus.overUnder.prediction,
+      confidence: consensus.overUnder.confidence,
+      reasoning: statsResult?.overUnderReasoning || 'İstatistiksel analiz bazlı tahmin',
+    },
+    btts: deepAnalysisResult.btts || {
+      prediction: consensus.btts.prediction,
+      confidence: consensus.btts.confidence,
+      reasoning: statsResult?.bttsReasoning || 'Form analizi bazlı tahmin',
+    },
+    matchResult: deepAnalysisResult.matchResult || {
+      prediction: consensus.matchResult.prediction,
+      confidence: consensus.matchResult.confidence,
+      reasoning: statsResult?.matchResultReasoning || 'Konsensüs bazlı tahmin',
+    },
+    bestBet: deepAnalysisResult.bestBet || {
+      type: valueBets.length > 0 ? 'Value Bet' : 'Over/Under',
+      selection: valueBets.length > 0 ? valueBets[0] : consensus.overUnder.prediction,
+      confidence: finalPrediction.overallConfidence,
+      reasoning: finalPrediction.recommendation,
+    },
+    riskLevel: deepAnalysisResult.riskLevel || (finalPrediction.overallConfidence >= 70 ? 'Low' : 
+               finalPrediction.overallConfidence >= 55 ? 'Medium' : 'High'),
+    expectedScores: deepAnalysisResult.expectedScores || ['1-1', '2-1', '1-0', '2-0'],
+    // Yeni alanlar - Deep Analysis Agent'tan
+    refereeAnalysis: deepAnalysisResult.refereeAnalysis || null,
+    weatherImpact: deepAnalysisResult.weatherImpact || null,
+    pitchConditions: deepAnalysisResult.pitchConditions || null,
+    lineupImpact: deepAnalysisResult.lineupImpact || null,
+  } : {
+    matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçının detaylı analizi. Ev sahibi form: ${matchData.homeForm?.form || 'N/A'}, Deplasman form: ${matchData.awayForm?.form || 'N/A'}`,
+    criticalFactors: [
+      `Ev sahibi son 5 maç: ${matchData.homeForm?.record || 'N/A'}`,
+      `Deplasman son 5 maç: ${matchData.awayForm?.record || 'N/A'}`,
+      `H2H: ${matchData.h2h?.totalMatches || 0} maç oynandı`,
+      dataQuality.hasOdds ? `Oranlar mevcut` : `Oran verisi eksik`,
+      sentimentResult?.psychologicalEdge ? `Psikolojik avantaj: ${sentimentResult.psychologicalEdge.team === 'home' ? matchData.homeTeam : sentimentResult.psychologicalEdge.team === 'away' ? matchData.awayTeam : 'Nötr'}` : '',
+    ].filter(Boolean),
+    probabilities: {
+      homeWin: Math.round(consensus.matchResult.prediction === '1' ? consensus.matchResult.confidence : 
+               consensus.matchResult.prediction === '2' ? 100 - consensus.matchResult.confidence - 25 : 33),
+      draw: Math.round(consensus.matchResult.prediction === 'X' ? consensus.matchResult.confidence : 25),
+      awayWin: Math.round(consensus.matchResult.prediction === '2' ? consensus.matchResult.confidence : 
+               consensus.matchResult.prediction === '1' ? 100 - consensus.matchResult.confidence - 25 : 33),
+    },
+    scorePrediction: {
+      score: consensus.matchResult.prediction === '1' ? '2-1' : 
+             consensus.matchResult.prediction === '2' ? '1-2' : '1-1',
+      reasoning: finalPrediction.recommendation,
+    },
+    overUnder: {
+      prediction: consensus.overUnder.prediction,
+      confidence: consensus.overUnder.confidence,
+      reasoning: statsResult?.overUnderReasoning || 'İstatistiksel analiz bazlı tahmin',
+    },
+    btts: {
+      prediction: consensus.btts.prediction,
+      confidence: consensus.btts.confidence,
+      reasoning: statsResult?.bttsReasoning || 'Form analizi bazlı tahmin',
+    },
+    matchResult: {
+      prediction: consensus.matchResult.prediction,
+      confidence: consensus.matchResult.confidence,
+      reasoning: statsResult?.matchResultReasoning || 'Konsensüs bazlı tahmin',
+    },
+    bestBet: {
+      type: valueBets.length > 0 ? 'Value Bet' : 'Over/Under',
+      selection: valueBets.length > 0 ? valueBets[0] : consensus.overUnder.prediction,
+      confidence: finalPrediction.overallConfidence,
+      reasoning: finalPrediction.recommendation,
+    },
+    riskLevel: finalPrediction.overallConfidence >= 70 ? 'Low' : 
+               finalPrediction.overallConfidence >= 55 ? 'Medium' : 'High',
+    expectedScores: ['1-1', '2-1', '1-0', '2-0'],
+    refereeAnalysis: null,
+    weatherImpact: null,
+    pitchConditions: null,
+    lineupImpact: null,
+  };
+
+  return {
+    deepAnalysis,
     stats: statsResult,
     odds: oddsResult,
     sentiment: sentimentResult ? {
@@ -701,7 +757,7 @@ export async function runOrchestrator(
     console.log('\n🤖 Running agents in parallel...');
     const agentsStart = Date.now();
     
-    const [statsResult, oddsResult, sentimentResult] = await Promise.all([
+    const [statsResult, oddsResult, sentimentResult, deepAnalysisResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
         console.error('Stats agent failed:', err);
         return null;
@@ -711,8 +767,11 @@ export async function runOrchestrator(
         return null;
       }),
       runSentimentAgent(matchData as unknown as MatchData, language).catch(err => {
-
         console.error('Sentiment agent failed:', err);
+        return null;
+      }),
+      runDeepAnalysisAgent(matchData as unknown as MatchData, language).catch(err => {
+        console.error('Deep Analysis agent failed:', err);
         return null;
       }),
     ]);
@@ -722,12 +781,14 @@ export async function runOrchestrator(
       stats: statsResult,
       odds: oddsResult,
       sentiment: sentimentResult,
+      deepAnalysis: deepAnalysisResult,
     };
     
     console.log('\n📊 Agent Results:');
     if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
     if (oddsResult) console.log(`   Odds:  ${oddsResult.matchWinnerValue || oddsResult.matchResult} | ${oddsResult.recommendation || oddsResult.overUnder} | BTTS: ${oddsResult.bttsValue || oddsResult.btts}`);
     if (sentimentResult) console.log(`   Sentiment: Edge=${sentimentResult.psychologicalEdge?.team} | Conf=${sentimentResult.psychologicalEdge?.confidence}%`);
+    if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult || 'N/A'} | Risk: ${deepAnalysisResult.riskLevel || 'N/A'}`);
     
     // 4. Consensus oluştur (sadece stats ve odds için)
     console.log('\n🗳️ Building consensus...');
@@ -763,6 +824,7 @@ export async function runOrchestrator(
       statsResult,
       oddsResult,
       sentimentResult,
+      deepAnalysisResult,
       consensus,
       finalPrediction,
       valueBets,
@@ -824,7 +886,7 @@ export async function runOrchestrator(
         hasOddsHistory: false,
         score: 0,
       },
-      agentResults: { stats: null, odds: null, sentiment: null },
+      agentResults: { stats: null, odds: null, sentiment: null, deepAnalysis: null },
       consensus: {
         matchResult: { prediction: 'X', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
         overUnder: { prediction: 'Over', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },

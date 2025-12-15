@@ -82,6 +82,25 @@ export interface TeamSentiment {
     support: 'strong' | 'normal' | 'weak' | 'hostile';
     recentEvents: string[];
   };
+  // 🆕 New fields
+  squadRotation: {
+    risk: 'high' | 'medium' | 'low';
+    reasoning: string;
+    expectedChanges: number;
+    keyPlayersRested: string[];
+  };
+  transferWindow: {
+    impact: 'positive' | 'neutral' | 'negative' | 'disruptive';
+    recentArrivals: string[];
+    recentDepartures: string[];
+    rumorsImpact: string;
+  };
+  fatigueLevel: {
+    level: 'high' | 'medium' | 'low';
+    daysSinceLastMatch: number;
+    upcomingFixtures: string[];
+    congestionRisk: boolean;
+  };
 }
 
 export interface MatchContext {
@@ -126,16 +145,18 @@ export interface SentimentResult {
 
 const PROMPTS = {
   tr: {
-    teamNews: (team: string) => `${team} son haberler sakatlık kadro maç önizleme`,
+    teamNews: (team: string) => `${team} son haberler sakatlık kadro transfer rotasyon maç önizleme`,
     systemNews: (team: string) => `Sen bir futbol habercisisin. ${team} hakkında son 48 saatteki haberleri bul:
 - Takım morali ve güveni
 - Son maç sonuçları ve tepkiler  
 - Sakatlık haberleri (kesin oynamayacaklar, şüpheliler, dönenler)
-- Transfer söylentileri veya dikkat dağıtıcı faktörler
+- KADRO ROTASYONU: Dinlendirilecek oyuncular, yıldız oyuncular oynayacak mı?
+- TRANSFER HABERLERİ: Son transferler, ayrılıklar, söylentiler ve takıma etkisi
+- YORGUNLUK: Son maçtan kaç gün geçti, maç sıklığı
 - Teknik direktör açıklamaları
 - Taraftar desteği
 
-Her bulguyu ayrı madde olarak yaz. Bulamadıysan "Güncel haber bulunamadı" yaz.
+Her bulguyu ayrı madde olarak yaz. ROTASYON ve TRANSFER bilgilerine özellikle dikkat et!
 TÜRKÇE yanıt ver.`,
     
     matchContext: (home: string, away: string) => `${home} vs ${away} maç önizleme derbi rakip analiz`,
@@ -144,46 +165,52 @@ TÜRKÇE yanıt ver.`,
 - Şampiyonluk, küme düşme veya Avrupa yarışı etkisi
 - Takımlar arası tarihsel ilişki
 - Özel durumlar (intikam maçı, eski hoca, eski oyuncu)
+- MAÇIN ÖNEMİ: Hangi takım için daha kritik?
 TÜRKÇE yanıt ver.`,
 
-    analysis: (team: string) => `${team} takımının psikolojik durumunu analiz et.
+    analysis: (team: string) => `${team} takımının psikolojik durumunu, rotasyon riskini ve transfer etkisini analiz et.
 Yanıtı SADECE şu JSON formatında ver (Türkçe içerikle):`,
   },
   
   en: {
-    teamNews: (team: string) => `${team} latest news injury squad match preview last 48 hours`,
+    teamNews: (team: string) => `${team} latest news injury squad rotation transfer fatigue match preview last 48 hours`,
     systemNews: (team: string) => `You are a football journalist. Find news about ${team} from the last 48 hours:
 - Team morale and confidence
 - Recent match results and reactions
 - Injury updates (OUT, DOUBTFUL, RETURNING players)
-- Transfer rumors or distractions
+- SQUAD ROTATION: Which players might be rested? Will star players play?
+- TRANSFER NEWS: Recent arrivals, departures, rumors and team impact
+- FATIGUE: Days since last match, fixture congestion
 - Manager quotes and press conference
 - Fan sentiment and support
 
-List each finding as a separate point. If nothing found, say "No recent news available".`,
+List each finding as a separate point. PAY SPECIAL ATTENTION to ROTATION and TRANSFER info!`,
     
     matchContext: (home: string, away: string) => `${home} vs ${away} match preview derby rivalry analysis`,
     systemContext: (home: string, away: string) => `Analyze the ${home} vs ${away} match:
 - Is this a derby or rivalry match?
 - Title race, relegation or European implications?
 - Historical relationship between teams
-- Special circumstances (revenge match, former manager, etc.)`,
+- Special circumstances (revenge match, former manager, etc.)
+- MATCH IMPORTANCE: Which team needs this more?`,
 
-    analysis: (team: string) => `Analyze ${team}'s psychological state.
+    analysis: (team: string) => `Analyze ${team}'s psychological state, rotation risk and transfer impact.
 Respond ONLY in this JSON format:`,
   },
   
   de: {
-    teamNews: (team: string) => `${team} aktuelle Nachrichten Verletzung Kader Spielvorschau`,
+    teamNews: (team: string) => `${team} aktuelle Nachrichten Verletzung Kader Rotation Transfer Spielvorschau`,
     systemNews: (team: string) => `Du bist ein Fußballjournalist. Finde Nachrichten über ${team} der letzten 48 Stunden:
 - Team-Moral und Vertrauen
 - Aktuelle Spielergebnisse
 - Verletzungs-Updates
-- Transfer-Gerüchte
+- KADER-ROTATION: Welche Spieler könnten ruhen? Spielen die Stars?
+- TRANSFER-NEWS: Neuzugänge, Abgänge, Gerüchte und Teamauswirkungen
+- MÜDIGKEIT: Tage seit letztem Spiel, Spielbelastung
 - Trainer-Aussagen
 - Fan-Stimmung
 
-Liste jeden Punkt separat. Wenn nichts gefunden, schreibe "Keine aktuellen Nachrichten".
+Liste jeden Punkt separat. ACHTE BESONDERS auf ROTATION und TRANSFER Infos!
 Antworte auf DEUTSCH.`,
     
     matchContext: (home: string, away: string) => `${home} vs ${away} Spielvorschau Derby Rivalität`,
@@ -192,9 +219,10 @@ Antworte auf DEUTSCH.`,
 - Titelkampf, Abstiegskampf oder Europacup-Auswirkungen?
 - Historische Beziehung
 - Besondere Umstände
+- SPIELWICHTIGKEIT: Welches Team braucht es mehr?
 Antworte auf DEUTSCH.`,
 
-    analysis: (team: string) => `Analysiere die psychologische Situation von ${team}.
+    analysis: (team: string) => `Analysiere die psychologische Situation, Rotationsrisiko und Transferauswirkungen von ${team}.
 Antworte NUR in diesem JSON-Format:`,
   }
 };
@@ -266,6 +294,10 @@ interface TeamNewsData {
   negatives: string[];
   managerQuotes: string[];
   fanNews: string[];
+  // 🆕 New fields
+  rotationNews: string[];
+  transferNews: string[];
+  fatigueIndicators: string[];
 }
 
 async function fetchComprehensiveTeamNews(
@@ -295,7 +327,10 @@ async function fetchComprehensiveTeamNews(
       positives: [],
       negatives: [],
       managerQuotes: [],
-      fanNews: []
+      fanNews: [],
+      rotationNews: [],
+      transferNews: [],
+      fatigueIndicators: []
     };
   }
   
@@ -314,6 +349,10 @@ function parseNewsContent(content: string, teamName: string, lang: 'tr' | 'en' |
   const negatives: string[] = [];
   const managerQuotes: string[] = [];
   const fanNews: string[] = [];
+  // 🆕 New arrays
+  const rotationNews: string[] = [];
+  const transferNews: string[] = [];
+  const fatigueIndicators: string[] = [];
   
   // Keywords for detection
   const injuryKeywords = {
@@ -326,6 +365,11 @@ function parseNewsContent(content: string, teamName: string, lang: 'tr' | 'en' |
   const negativeKeywords = ['loss', 'defeat', 'concern', 'worry', 'problem', 'crisis', 'kaybetti', 'mağlubiyet', 'sorun', 'kriz', 'niederlage', 'problem'];
   const managerKeywords = ['manager', 'coach', 'said', 'told', 'hoca', 'teknik direktör', 'açıkladı', 'trainer', 'sagte'];
   const fanKeywords = ['fan', 'supporter', 'crowd', 'taraftar', 'tribün', 'fans', 'anhänger'];
+  
+  // 🆕 New keywords
+  const rotationKeywords = ['rotation', 'rest', 'rested', 'bench', 'squad', 'lineup', 'rotasyon', 'dinlen', 'yedek', 'kadro', 'rotation', 'ruhen', 'bank', 'aufstellung'];
+  const transferKeywords = ['transfer', 'sign', 'signing', 'loan', 'buy', 'sell', 'arrival', 'departure', 'rumor', 'imza', 'kiralık', 'satın', 'transfer', 'verpflichtung', 'ausleihe', 'gerücht'];
+  const fatigueKeywords = ['tired', 'fatigue', 'exhausted', 'rest', 'recovery', 'fixture', 'congestion', 'yorgun', 'dinlenme', 'maç sıklığı', 'müde', 'erschöpft', 'spielplan'];
   
   for (const line of lines) {
     const lower = line.toLowerCase();
@@ -372,6 +416,21 @@ function parseNewsContent(content: string, teamName: string, lang: 'tr' | 'en' |
       fanNews.push(line.substring(0, 150));
     }
     
+    // 🆕 Rotation news
+    if (rotationKeywords.some(k => lower.includes(k))) {
+      rotationNews.push(line.substring(0, 200));
+    }
+    
+    // 🆕 Transfer news
+    if (transferKeywords.some(k => lower.includes(k))) {
+      transferNews.push(line.substring(0, 200));
+    }
+    
+    // 🆕 Fatigue indicators
+    if (fatigueKeywords.some(k => lower.includes(k))) {
+      fatigueIndicators.push(line.substring(0, 150));
+    }
+    
     // Add to headlines if it's informative
     if (line.length > 30 && line.length < 200 && headlines.length < 5) {
       headlines.push(line);
@@ -389,7 +448,11 @@ function parseNewsContent(content: string, teamName: string, lang: 'tr' | 'en' |
     positives: [...new Set(positives)].slice(0, 4),
     negatives: [...new Set(negatives)].slice(0, 4),
     managerQuotes: [...new Set(managerQuotes)].slice(0, 3),
-    fanNews: [...new Set(fanNews)].slice(0, 2)
+    fanNews: [...new Set(fanNews)].slice(0, 2),
+    // 🆕 New fields
+    rotationNews: [...new Set(rotationNews)].slice(0, 3),
+    transferNews: [...new Set(transferNews)].slice(0, 3),
+    fatigueIndicators: [...new Set(fatigueIndicators)].slice(0, 2)
   };
 }
 
@@ -501,6 +564,96 @@ function createSentimentFromNews(
     fanSupport = 'strong';
   }
   
+  // 🆕 Squad Rotation Analysis
+  const hasRotationNews = newsData.rotationNews.length > 0;
+  const rotationKeywordsInNews = newsData.raw.toLowerCase();
+  let rotationRisk: 'high' | 'medium' | 'low' = 'low';
+  let expectedChanges = 0;
+  const keyPlayersRested: string[] = [];
+  
+  if (hasRotationNews || rotationKeywordsInNews.includes('rest') || rotationKeywordsInNews.includes('dinlen')) {
+    rotationRisk = 'medium';
+    expectedChanges = 2;
+    if (rotationKeywordsInNews.includes('major') || rotationKeywordsInNews.includes('büyük') || 
+        rotationKeywordsInNews.includes('several') || rotationKeywordsInNews.includes('birkaç')) {
+      rotationRisk = 'high';
+      expectedChanges = 4;
+    }
+  }
+  
+  const rotationReasonings = {
+    tr: {
+      high: 'Yüksek rotasyon riski - birçok oyuncu dinlendirilecek',
+      medium: 'Orta rotasyon riski - bazı değişiklikler bekleniyor',
+      low: 'Düşük rotasyon riski - en güçlü kadro bekleniyor'
+    },
+    en: {
+      high: 'High rotation risk - several players likely rested',
+      medium: 'Medium rotation risk - some changes expected',
+      low: 'Low rotation risk - strongest lineup expected'
+    },
+    de: {
+      high: 'Hohes Rotationsrisiko - mehrere Spieler ruhen',
+      medium: 'Mittleres Rotationsrisiko - einige Änderungen erwartet',
+      low: 'Niedriges Rotationsrisiko - stärkste Aufstellung erwartet'
+    }
+  };
+  
+  // 🆕 Transfer Window Analysis
+  const hasTransferNews = newsData.transferNews.length > 0;
+  let transferImpact: 'positive' | 'neutral' | 'negative' | 'disruptive' = 'neutral';
+  const recentArrivals: string[] = [];
+  const recentDepartures: string[] = [];
+  
+  if (hasTransferNews) {
+    const transferText = newsData.transferNews.join(' ').toLowerCase();
+    if (transferText.includes('sign') || transferText.includes('arrival') || transferText.includes('imza') || transferText.includes('geldi')) {
+      transferImpact = 'positive';
+    }
+    if (transferText.includes('leave') || transferText.includes('departure') || transferText.includes('ayrıl') || transferText.includes('gitti')) {
+      if (transferImpact === 'positive') transferImpact = 'neutral';
+      else transferImpact = 'negative';
+    }
+    if (transferText.includes('distract') || transferText.includes('saga') || transferText.includes('dikkat dağıt')) {
+      transferImpact = 'disruptive';
+    }
+  }
+  
+  const transferReasonings = {
+    tr: {
+      positive: 'Yeni transferler takıma enerji katıyor',
+      neutral: 'Transfer aktivitesi takımı etkilemiyor',
+      negative: 'Önemli ayrılıklar takımı zayıflattı',
+      disruptive: 'Transfer söylentileri dikkat dağıtıyor'
+    },
+    en: {
+      positive: 'New signings bringing energy to the team',
+      neutral: 'Transfer activity not affecting the team',
+      negative: 'Key departures have weakened the squad',
+      disruptive: 'Transfer rumors causing distractions'
+    },
+    de: {
+      positive: 'Neuverpflichtungen bringen Energie',
+      neutral: 'Transferaktivität beeinflusst Team nicht',
+      negative: 'Wichtige Abgänge schwächen Kader',
+      disruptive: 'Transfergerüchte lenken ab'
+    }
+  };
+  
+  // 🆕 Fatigue Analysis
+  const hasFatigueNews = newsData.fatigueIndicators.length > 0;
+  let fatigueLevel: 'high' | 'medium' | 'low' = 'low';
+  const daysSinceLastMatch = 4; // Default, would need real data
+  const congestionRisk = hasFatigueNews;
+  
+  if (hasFatigueNews) {
+    fatigueLevel = 'medium';
+    const fatigueText = newsData.fatigueIndicators.join(' ').toLowerCase();
+    if (fatigueText.includes('exhausted') || fatigueText.includes('tired') || fatigueText.includes('yorgun')) {
+      fatigueLevel = 'high';
+    }
+  }
+
   return {
     morale: Math.round(morale),
     motivation: Math.round(motivation),
@@ -534,6 +687,25 @@ function createSentimentFromNews(
     fanFactor: {
       support: fanSupport,
       recentEvents: newsData.fanNews
+    },
+    // 🆕 New fields
+    squadRotation: {
+      risk: rotationRisk,
+      reasoning: rotationReasonings[language][rotationRisk],
+      expectedChanges,
+      keyPlayersRested
+    },
+    transferWindow: {
+      impact: transferImpact,
+      recentArrivals,
+      recentDepartures,
+      rumorsImpact: transferReasonings[language][transferImpact]
+    },
+    fatigueLevel: {
+      level: fatigueLevel,
+      daysSinceLastMatch,
+      upcomingFixtures: [],
+      congestionRisk
     }
   };
 }
@@ -915,8 +1087,8 @@ export async function runSentimentAgent(
     fetchAndAnalyzeMatchContext(matchData.homeTeam, matchData.awayTeam, matchData.league || '', language)
   ]);
   
-  console.log(`   ✅ Home news: ${homeNews.headlines.length} headlines, ${homeNews.injuries.out.length} injuries`);
-  console.log(`   ✅ Away news: ${awayNews.headlines.length} headlines, ${awayNews.injuries.out.length} injuries`);
+  console.log(`   ✅ Home news: ${homeNews.headlines.length} headlines, ${homeNews.injuries.out.length} injuries, ${homeNews.rotationNews.length} rotation, ${homeNews.transferNews.length} transfer`);
+  console.log(`   ✅ Away news: ${awayNews.headlines.length} headlines, ${awayNews.injuries.out.length} injuries, ${awayNews.rotationNews.length} rotation, ${awayNews.transferNews.length} transfer`);
   
   // 2. Analyze sentiment
   console.log('   🔍 Analyzing team sentiments...');
@@ -996,10 +1168,12 @@ export async function runSentimentAgent(
   console.log('\n📊 SENTIMENT ANALYSIS RESULTS:');
   console.log(`   🏠 ${matchData.homeTeam}:`);
   console.log(`      Morale: ${homeSentiment.morale}/10 | Confidence: ${homeSentiment.confidence}/10`);
-  console.log(`      Outlook: ${homeSentiment.outlook} | Headlines: ${homeSentiment.mediaSentiment.headlines.length}`);
+  console.log(`      Outlook: ${homeSentiment.outlook} | Rotation Risk: ${homeSentiment.squadRotation.risk}`);
+  console.log(`      Transfer: ${homeSentiment.transferWindow.impact} | Fatigue: ${homeSentiment.fatigueLevel.level}`);
   console.log(`   🚌 ${matchData.awayTeam}:`);
   console.log(`      Morale: ${awaySentiment.morale}/10 | Confidence: ${awaySentiment.confidence}/10`);
-  console.log(`      Outlook: ${awaySentiment.outlook} | Headlines: ${awaySentiment.mediaSentiment.headlines.length}`);
+  console.log(`      Outlook: ${awaySentiment.outlook} | Rotation Risk: ${awaySentiment.squadRotation.risk}`);
+  console.log(`      Transfer: ${awaySentiment.transferWindow.impact} | Fatigue: ${awaySentiment.fatigueLevel.level}`);
   console.log(`   🎯 Psychological Edge: ${psychologicalEdge.team.toUpperCase()} (${psychologicalEdge.confidence}%)`);
   console.log(`   ⏱️ Completed in ${elapsed}ms`);
   console.log('═'.repeat(50));

@@ -125,6 +125,105 @@ function normalizeBestBet(bet: any): { type: string; selection: string; confiden
   };
 }
 
+// ✅ NEW: Normalize Kelly Criterion stake suggestion
+function normalizeKellyStake(stake: any): { level: string; percentage: string; kellyFraction: number; reasoning: string } | null {
+  if (!stake) return null;
+  if (typeof stake === 'string') {
+    return { level: stake, percentage: '1-2%', kellyFraction: 0.25, reasoning: 'Default stake' };
+  }
+  if (typeof stake === 'object') {
+    return {
+      level: stake.level || 'Medium',
+      percentage: stake.percentage || '1-2%',
+      kellyFraction: stake.kellyFraction || 0.25,
+      reasoning: stake.reasoning || ''
+    };
+  }
+  return null;
+}
+
+// ✅ NEW: Normalize new market predictions (Asian Handicap, Correct Score, etc.)
+function normalizeNewMarkets(markets: any): any {
+  if (!markets) return null;
+  
+  return {
+    asianHandicap: markets.asianHandicap ? {
+      prediction: markets.asianHandicap.prediction || '',
+      confidence: markets.asianHandicap.confidence || 0,
+      value: markets.asianHandicap.value || false,
+      reasoning: markets.asianHandicap.reasoning || ''
+    } : null,
+    correctScore: markets.correctScore ? {
+      prediction: markets.correctScore.prediction || '',
+      confidence: markets.correctScore.confidence || 0,
+      alternatives: markets.correctScore.alternatives || [],
+      reasoning: markets.correctScore.reasoning || ''
+    } : null,
+    htFt: markets.htFt ? {
+      prediction: markets.htFt.prediction || '',
+      confidence: markets.htFt.confidence || 0,
+      value: markets.htFt.value || false,
+      reasoning: markets.htFt.reasoning || ''
+    } : null,
+    corners: markets.corners ? {
+      prediction: markets.corners.prediction || '',
+      confidence: markets.corners.confidence || 0,
+      expectedTotal: markets.corners.expectedTotal || 0,
+      reasoning: markets.corners.reasoning || ''
+    } : null,
+    cards: markets.cards ? {
+      prediction: markets.cards.prediction || '',
+      confidence: markets.cards.confidence || 0,
+      expectedTotal: markets.cards.expectedTotal || 0,
+      reasoning: markets.cards.reasoning || ''
+    } : null
+  };
+}
+
+// ✅ NEW: Normalize advanced risk assessment
+function normalizeAdvancedRisk(risk: any): { level: string; score: number; factors: string[]; criticalAlerts: string[] } {
+  if (!risk) return { level: 'Medium', score: 50, factors: [], criticalAlerts: [] };
+  if (typeof risk === 'string') {
+    return { level: risk, score: risk === 'Low' ? 30 : risk === 'High' ? 70 : 50, factors: [], criticalAlerts: [] };
+  }
+  return {
+    level: risk.level || 'Medium',
+    score: risk.score || 50,
+    factors: risk.factors || [],
+    criticalAlerts: risk.criticalAlerts || []
+  };
+}
+
+// ✅ NEW: Normalize xG data
+function normalizeXgData(xg: any): { homeXg: number; awayXg: number; expectedTotal: number; trend: string } | null {
+  if (!xg) return null;
+  return {
+    homeXg: xg.homeXg || 0,
+    awayXg: xg.awayXg || 0,
+    expectedTotal: xg.expectedTotal || 0,
+    trend: xg.trend || 'stable'
+  };
+}
+
+// ✅ NEW: Normalize timing patterns
+function normalizeTimingPatterns(timing: any): any {
+  if (!timing) return null;
+  return {
+    home: {
+      firstHalfGoals: timing.home?.firstHalfGoals || 0,
+      secondHalfGoals: timing.home?.secondHalfGoals || 0,
+      last15MinGoals: timing.home?.last15MinGoals || 0,
+      scoringFirst: timing.home?.scoringFirst || 0
+    },
+    away: {
+      firstHalfGoals: timing.away?.firstHalfGoals || 0,
+      secondHalfGoals: timing.away?.secondHalfGoals || 0,
+      last15MinGoals: timing.away?.last15MinGoals || 0,
+      scoringFirst: timing.away?.scoringFirst || 0
+    }
+  };
+}
+
 // ==================== PROFESSIONAL OVER/UNDER CALCULATION ====================
 
 function calculateProfessionalOverUnder(
@@ -345,6 +444,25 @@ export async function POST(request: NextRequest) {
         overUnder: overUnderCalc,
       },
       oddsHistory: completeMatchData.oddsHistory,
+      // Yeni: Stats Agent için ek veriler
+      advancedStats: {
+        // xG verileri (eğer mevcutsa)
+        xgData: (completeMatchData as any).xgData || null,
+        // Timing patterns (ilk yarı/son 15dk golleri)
+        timingPatterns: (completeMatchData as any).timingPatterns || null,
+        // Clean sheet serileri
+        cleanSheetStreaks: {
+          home: parseInt(completeMatchData.homeForm.cleanSheetPercentage || '0'),
+          away: parseInt(completeMatchData.awayForm.cleanSheetPercentage || '0'),
+        },
+        // Gol atma/yeme oranları
+        scoringTrends: {
+          homeAvgScored: parseFloat(completeMatchData.homeForm.avgGoalsScored || '1.0'),
+          homeAvgConceded: parseFloat(completeMatchData.homeForm.avgGoalsConceded || '1.0'),
+          awayAvgScored: parseFloat(completeMatchData.awayForm.avgGoalsScored || '1.0'),
+          awayAvgConceded: parseFloat(completeMatchData.awayForm.avgGoalsConceded || '1.0'),
+        },
+      },
     };
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -424,6 +542,15 @@ export async function POST(request: NextRequest) {
         bttsConsensus: normalizeConsensusItem(strategyResult._consensus.bttsConsensus),
       } : null;
 
+      // Normalize Kelly Criterion stake
+      const kellyStake = normalizeKellyStake(strategyResult.stakeSuggestion);
+      
+      // Normalize new markets
+      const newMarkets = normalizeNewMarkets(strategyResult.newMarkets);
+      
+      // Normalize advanced risk
+      const advancedRisk = normalizeAdvancedRisk(strategyResult.riskAssessment);
+      
       result.reports.strategy = {
         ...result.reports.strategy,
         // ✅ ALL NORMALIZED - No objects that can break React!
@@ -437,11 +564,20 @@ export async function POST(request: NextRequest) {
         riskScore: getRiskScore(strategyResult.riskAssessment),
         riskFactors: getRiskFactors(strategyResult.riskAssessment),
         
+        // ✅ NEW: Advanced Risk with Kelly Criterion
+        advancedRisk: advancedRisk,
+        
         stakeSuggestion: normalizeStakeSuggestion(strategyResult.stakeSuggestion),
         stakePercentage: getStakePercentage(strategyResult.stakeSuggestion),
         stakeReasoning: getStakeReasoning(strategyResult.stakeSuggestion),
         
+        // ✅ NEW: Kelly Criterion details
+        kellyStake: kellyStake,
+        
         _bestBet: normalizeBestBet(strategyResult._bestBet),
+        
+        // ✅ NEW: Additional market predictions
+        newMarkets: newMarkets,
         
         // Arrays are OK
         recommendedBets: strategyResult.recommendedBets || [],
@@ -567,9 +703,15 @@ export async function POST(request: NextRequest) {
         riskAssessment: normalizeRiskAssessment(strategyResult.riskAssessment),
         riskScore: getRiskScore(strategyResult.riskAssessment),
         riskFactors: getRiskFactors(strategyResult.riskAssessment),
+        // ✅ NEW: Advanced Risk with Kelly
+        advancedRisk: normalizeAdvancedRisk(strategyResult.riskAssessment),
         stakeSuggestion: normalizeStakeSuggestion(strategyResult.stakeSuggestion),
         stakePercentage: getStakePercentage(strategyResult.stakeSuggestion),
+        // ✅ NEW: Kelly Criterion
+        kellyStake: normalizeKellyStake(strategyResult.stakeSuggestion),
         recommendedBets: strategyResult.recommendedBets || [],
+        // ✅ NEW: Additional markets
+        newMarkets: normalizeNewMarkets(strategyResult.newMarkets),
         specialAlerts: strategyResult.specialAlerts || [],
         agentSummary: strategyResult.agentSummary || '',
       } : { enabled: false },
@@ -607,6 +749,22 @@ export async function POST(request: NextRequest) {
       professionalCalc: {
         overUnder: overUnderCalc,
       },
+      
+      // ✅ NEW: Stats Agent advanced data
+      advancedStats: {
+        xgData: normalizeXgData(result.reports?.stats?.xgData),
+        timingPatterns: normalizeTimingPatterns(result.reports?.stats?.timingPatterns),
+        cleanSheetStreaks: result.reports?.stats?.cleanSheetStreaks || null,
+        scoringFirstStats: result.reports?.stats?.scoringFirstStats || null,
+      },
+      
+      // ✅ NEW: Deep Analysis Agent data
+      deepAnalysisAdvanced: result.reports?.deepAnalysis ? {
+        refereeAnalysis: result.reports.deepAnalysis.refereeAnalysis || null,
+        weatherImpact: result.reports.deepAnalysis.weatherImpact || null,
+        pitchConditions: result.reports.deepAnalysis.pitchConditions || null,
+        lineupImpact: result.reports.deepAnalysis.lineupImpact || null,
+      } : null,
       
       // Raw stats for debugging/transparency
       rawStats: {

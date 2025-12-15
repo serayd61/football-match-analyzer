@@ -20,6 +20,7 @@ ANALİZ KATMANLARI:
    - Güçlü ve zayıf yönler
    - Rakibin bu zaafları nasıl kullanabileceği
    - Ev sahibi avantajı değerlendirmesi
+   - DİZİLİŞ ANALİZİ: Beklenen formasyon ve anahtar oyuncular
 
 3. TARİHSEL VERİLER
    - H2H karşılaşma geçmişi
@@ -36,13 +37,26 @@ ANALİZ KATMANLARI:
    - Sakatlıklar ve cezalılar
    - Maçın lig sıralamasındaki önemi
    - Motivasyon farkları
-   - Hava durumu ve saha koşulları
+   - HAVA DURUMU: Yağmur, rüzgar, sıcaklık etkisi
+   - SAHA KOŞULLARI: Çim kalitesi, stadyum atmosferi
+
+6. HAKEM ANALİZİ (YENİ!)
+   - Hakemın kart eğilimi (ortalama sarı/kırmızı)
+   - Penaltı verme oranı
+   - Ev sahibi eğilimi var mı?
+   - Bu hakemle takımların geçmiş maçları
+
+7. KORNER VE KART TAHMİNLERİ
+   - Beklenen korner sayısı
+   - Beklenen kart sayısı
+   - Her iki takımın agresiflik seviyesi
 
 ÖNEMLİ KURALLAR:
 - Ev sahibi EVDEKİ maç istatistiklerini kullan
 - Deplasman DEPLASMANDAKİ maç istatistiklerini kullan
 - Düşük gollü takımlar için Under'a eğilimli ol
 - H2H verisi yoksa form verilerine ağırlık ver
+- Hakem sert ise Over cards tahmin et
 - Confidence %50-85 arasında olmalı
 
 MUTLAKA BU JSON FORMATINDA DÖNDÜR:
@@ -86,6 +100,35 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "confidence": 72,
     "reasoning": "Neden bu en iyi bahis seçeneği"
   },
+  "refereeAnalysis": {
+    "name": "Hakem adı",
+    "avgYellowCards": 4.2,
+    "avgRedCards": 0.2,
+    "avgPenalties": 0.3,
+    "homeTeamBias": "neutral/slight_home/slight_away",
+    "cardPrediction": "Over 3.5 veya Under 3.5",
+    "reasoning": "Hakem analizi özeti"
+  },
+  "weatherImpact": {
+    "condition": "Clear/Rain/Wind/Cold/Hot",
+    "temperature": 15,
+    "impact": "Düşük/Orta/Yüksek",
+    "reasoning": "Hava durumu maçı nasıl etkiler"
+  },
+  "lineupAnalysis": {
+    "homeFormation": "4-3-3",
+    "awayFormation": "4-4-2",
+    "keyBattles": ["Kanat oyunu kritik", "Orta saha mücadelesi belirleyici"],
+    "missingKeyPlayers": ["Oyuncu 1 (ev)", "Oyuncu 2 (dep)"]
+  },
+  "cornersAndCards": {
+    "expectedCorners": 10.5,
+    "cornersLine": "Over 9.5",
+    "cornersConfidence": 65,
+    "expectedCards": 4.2,
+    "cardsLine": "Over 3.5",
+    "cardsConfidence": 62
+  },
   "riskLevel": "Low veya Medium veya High",
   "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
 }`,
@@ -106,6 +149,7 @@ ANALYSIS LAYERS:
    - Strengths and weaknesses
    - How opponent can exploit weaknesses
    - Home advantage evaluation
+   - LINEUP ANALYSIS: Expected formation and key players
 
 3. HISTORICAL DATA
    - H2H history
@@ -122,16 +166,29 @@ ANALYSIS LAYERS:
    - Injuries and suspensions
    - Match importance in league standings
    - Motivation differences
-   - Weather and pitch conditions
+   - WEATHER: Rain, wind, temperature impact
+   - PITCH CONDITIONS: Grass quality, stadium atmosphere
+
+6. REFEREE ANALYSIS (NEW!)
+   - Referee's card tendency (avg yellow/red)
+   - Penalty award rate
+   - Home team bias?
+   - Teams' history with this referee
+
+7. CORNERS AND CARDS PREDICTIONS
+   - Expected corner count
+   - Expected card count
+   - Both teams' aggression level
 
 IMPORTANT RULES:
 - Use home team's HOME match statistics
 - Use away team's AWAY match statistics
 - Lean towards Under for low-scoring teams
 - If no H2H data, weight form data more heavily
+- If referee is strict, predict Over cards
 - Confidence should be between 50-85%
 
-MUST RETURN IN THIS JSON FORMAT:
+MUST RETURN IN THIS JSON FORMAT with refereeAnalysis, weatherImpact, lineupAnalysis, cornersAndCards:
 {
   "matchAnalysis": "Overall match analysis (2-3 sentences, tactical and statistical summary)",
   "criticalFactors": [
@@ -348,6 +405,61 @@ function buildDeepAnalysisContext(matchData: MatchData): string {
 `;
   }
 
+  // 🆕 Hakem bilgisi ekle (varsa)
+  const referee = (matchData as any).referee;
+  if (referee) {
+    context += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🧑‍⚖️ HAKEM BİLGİSİ
+├─────────────────────────────────────────────────────────────────────────────┤
+│   • Hakem: ${referee.name || 'Bilinmiyor'}
+│   • Ortalama Sarı Kart: ${referee.avgYellowCards || 'N/A'} / maç
+│   • Ortalama Kırmızı Kart: ${referee.avgRedCards || 'N/A'} / maç
+│   • Penaltı Oranı: ${referee.penaltyRate || 'N/A'}%
+│   • Ev Sahibi Eğilimi: ${referee.homeBias || 'Nötr'}
+└─────────────────────────────────────────────────────────────────────────────┘
+`;
+  } else {
+    context += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🧑‍⚖️ HAKEM BİLGİSİ
+├─────────────────────────────────────────────────────────────────────────────┤
+│   • Hakem: Henüz açıklanmadı
+│   • NOT: Hakem verisi yoksa ortalama değerleri kullan (4.2 sarı/maç)
+└─────────────────────────────────────────────────────────────────────────────┘
+`;
+  }
+
+  // 🆕 Hava durumu bilgisi ekle (varsa)
+  const weather = (matchData as any).weather;
+  if (weather) {
+    context += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🌤️ HAVA DURUMU
+├─────────────────────────────────────────────────────────────────────────────┤
+│   • Durum: ${weather.condition || 'Açık'}
+│   • Sıcaklık: ${weather.temperature || '15'}°C
+│   • Rüzgar: ${weather.wind || 'Hafif'} km/s
+│   • Yağış: ${weather.precipitation || 'Yok'}
+│   • Etki: ${weather.impact || 'Düşük'}
+└─────────────────────────────────────────────────────────────────────────────┘
+`;
+  }
+
+  // 🆕 Formasyon bilgisi ekle (varsa)
+  const formations = (matchData as any).formations;
+  if (formations) {
+    context += `
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📋 FORMASYON TAHMİNİ
+├─────────────────────────────────────────────────────────────────────────────┤
+│   • ${homeTeam}: ${formations.home || '4-3-3'} (Tipik diziliş)
+│   • ${awayTeam}: ${formations.away || '4-4-2'} (Tipik diziliş)
+│   • Not: Son 5 maçtaki en sık kullanılan dizilişler
+└─────────────────────────────────────────────────────────────────────────────┘
+`;
+  }
+
   context += `
 ═══════════════════════════════════════════════════════════════════════════════
                          ANALİZ TALİMATLARI
@@ -362,11 +474,20 @@ function buildDeepAnalysisContext(matchData: MatchData): string {
    - Deplasman dışarıda kaç gol atıyor/yiyor?
    - H2H'da kaç gol atılıyor?
 
-3. RİSK DEĞERLENDİRMESİ:
+3. HAKEM ANALİZİ:
+   - Hakemın kart eğilimini değerlendir
+   - Sert hakem ise Over cards tahmini yap
+   - Ev sahibi eğilimi varsa sonuç tahmininde dikkate al
+
+4. HAVA DURUMU ETKİSİ:
+   - Yağmurlu/rüzgarlı = düşük skor potansiyeli
+   - Çok sıcak/soğuk = yorgunluk faktörü
+
+5. RİSK DEĞERLENDİRMESİ:
    - Veriler tutarlı mı?
    - Güçlü sinyal var mı?
 
-Yukarıdaki tüm verileri analiz ederek JSON formatında tahmin üret.
+Yukarıdaki TÜM verileri (hakem, hava, formasyon dahil) analiz ederek JSON formatında tahmin üret.
 `;
 
   return context;
@@ -456,14 +577,23 @@ function getDefaultDeepAnalysis(matchData: MatchData): any {
   const overUnderPred = avgOver >= 50 ? 'Over' : 'Under';
   const overUnderConf = Math.min(70, Math.max(50, Math.abs(avgOver - 50) + 50));
   
+  // 🆕 Hakem varsayılan değerleri
+  const referee = (matchData as any).referee;
+  const avgYellowCards = referee?.avgYellowCards || 4.2;
+  const avgRedCards = referee?.avgRedCards || 0.15;
+  
+  // 🆕 Korner ve kart tahminleri
+  const expectedCorners = avgOver >= 55 ? 11 : avgOver >= 45 ? 9.5 : 8.5;
+  const expectedCards = avgYellowCards + (avgRedCards * 2);
+  
   return {
-    matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçı için analiz yapıldı.`,
+    matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçı için derin analiz yapıldı.`,
     criticalFactors: [
       `${matchData.homeTeam} ev sahibi avantajı`,
       `Son form durumları: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}`,
       `H2H geçmiş: ${h2h?.totalMatches || 0} maç`,
       `Gol ortalamaları değerlendirildi`,
-      `Savunma performansları incelendi`
+      `Hakem eğilimleri analiz edildi`
     ],
     probabilities: { 
       homeWin: 40, 
@@ -496,7 +626,37 @@ function getDefaultDeepAnalysis(matchData: MatchData): any {
       confidence: Math.round(overUnderConf), 
       reasoning: `İstatistiksel hesaplama ${overUnderPred} yönünde.` 
     },
+    // 🆕 New fields
+    refereeAnalysis: {
+      name: referee?.name || 'Bilinmiyor',
+      avgYellowCards,
+      avgRedCards,
+      avgPenalties: referee?.penaltyRate || 0.3,
+      homeTeamBias: 'neutral',
+      cardPrediction: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
+      reasoning: 'Ortalama hakem verileri kullanıldı'
+    },
+    weatherImpact: {
+      condition: 'Clear',
+      temperature: 15,
+      impact: 'Low',
+      reasoning: 'Hava durumu verisi mevcut değil, standart koşullar varsayıldı'
+    },
+    lineupAnalysis: {
+      homeFormation: '4-3-3',
+      awayFormation: '4-4-2',
+      keyBattles: ['Kanat mücadelesi', 'Orta saha kontrolü'],
+      missingKeyPlayers: []
+    },
+    cornersAndCards: {
+      expectedCorners,
+      cornersLine: expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5',
+      cornersConfidence: 60,
+      expectedCards,
+      cardsLine: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
+      cardsConfidence: 58
+    },
     riskLevel: 'Medium',
-    agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5 tavsiye edilir.`
+    agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5, Korner ${expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5'} tavsiye edilir.`
   };
 }

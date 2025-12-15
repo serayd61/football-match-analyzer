@@ -5,76 +5,101 @@ import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, 
 // ==================== PROMPTS ====================
 
 const PROMPTS = {
-  tr: `Sen AGRESİF bir bahis oranları analisti ajanısın. Oranları VALUE açısından analiz et.
+  tr: `Sen PROFESYONEL bir bahis oranları analisti ajanısın. TÜM marketleri VALUE açısından analiz et.
 
 GÖREV: Oranları form verisiyle karşılaştır ve VALUE BET tespit et.
+
+ANALİZ MARKETLERİ:
+1. 1X2 (Maç Sonucu) - Value analizi
+2. Over/Under 2.5 - Gol beklentisi vs oranlar
+3. BTTS (KG Var/Yok) - Her iki takım gol atar mı?
+4. ASIAN HANDICAP - Handikaplı bahis değerlendirmesi
+5. CORRECT SCORE - En olası skor tahminleri
+6. HT/FT - İlk yarı/Maç sonu kombinasyonları
+7. CORNERS/CARDS - Korner ve kart marketleri
 
 VALUE BET KURALLARI:
 - Implied probability vs gerçek olasılık farkı = VALUE
 - %5+ fark varsa VALUE VAR
 - %10+ fark varsa GÜÇLÜ VALUE
-- Oran DÜŞÜYORSA + Form value gösteriyorsa = GERÇEK VALUE (Sharp money onaylıyor)
-- Oran YÜKSELIYORSA + Form value gösteriyorsa = DİKKAT (Bahisçi bir şey biliyor)
-
-AGRESİF OL! Detaylı açıklama yap.
+- Oran DÜŞÜYORSA + Form value gösteriyorsa = GERÇEK VALUE
+- Oran YÜKSELIYORSA + Form value gösteriyorsa = DİKKAT
 
 JSON DÖNDÜR:
 {
   "oddsAnalysis": "Detaylı oran analizi",
   "recommendation": "Over veya Under",
-  "recommendationReasoning": "💰 Over 2.5 oranı X.XX = %XX implied. Form analizi %XX veriyor. VALUE: +X% → Over değerli",
+  "recommendationReasoning": "💰 Over 2.5 oranı X.XX = %XX implied. Form analizi %XX veriyor. VALUE: +X%",
   "confidence": 72,
   "matchWinnerValue": "home veya draw veya away",
   "matchWinnerReasoning": "💰 Ev oranı X.XX = %XX implied. Form %XX gösteriyor. VALUE: +X%",
   "bttsValue": "yes veya no",
-  "bttsReasoning": "💰 KG Var oranı X.XX = %XX implied. İstatistik %XX. VALUE durumu",
+  "bttsReasoning": "💰 KG Var oranı X.XX = %XX implied. İstatistik %XX.",
+  "asianHandicap": {
+    "recommendation": "-0.5 Home veya +0.5 Away",
+    "confidence": 68,
+    "reasoning": "Handikap analizi..."
+  },
+  "correctScore": {
+    "mostLikely": "1-1",
+    "second": "2-1",
+    "third": "1-0",
+    "confidence": 55
+  },
+  "htftPrediction": {
+    "prediction": "X/1",
+    "confidence": 60,
+    "reasoning": "İlk yarı berabere, ikinci yarı ev sahibi kazanır"
+  },
+  "cornersAnalysis": {
+    "totalCorners": "Over 9.5",
+    "confidence": 65,
+    "reasoning": "Her iki takım da ofansif, korner potansiyeli yüksek"
+  },
+  "cardsAnalysis": {
+    "totalCards": "Over 3.5",
+    "confidence": 62,
+    "reasoning": "Derbi maçı, hakem sert"
+  },
   "valueRating": "Düşük/Orta/Yüksek",
   "valueBets": ["value bet 1", "value bet 2"],
-  "agentSummary": "💰 ODDS AGENT: [kısa özet - hangi bahislerde value var]"
+  "agentSummary": "💰 ODDS: [özet - en değerli marketler]"
 }`,
 
-  en: `You are an AGGRESSIVE betting odds analyst agent. Analyze odds for VALUE.
+  en: `You are a PROFESSIONAL betting odds analyst agent. Analyze ALL markets for VALUE.
 
-TASK: Compare odds with form data and detect VALUE BETS.
+TASK: Compare odds with form data and detect VALUE BETS across all markets.
+
+ANALYSIS MARKETS:
+1. 1X2 (Match Result) - Value analysis
+2. Over/Under 2.5 - Goal expectancy vs odds
+3. BTTS - Both teams to score?
+4. ASIAN HANDICAP - Handicap bet evaluation
+5. CORRECT SCORE - Most likely score predictions
+6. HT/FT - First half/Full time combinations
+7. CORNERS/CARDS - Corner and card markets
 
 VALUE BET RULES:
 - Implied probability vs actual probability difference = VALUE
 - 5%+ difference = VALUE EXISTS
 - 10%+ difference = STRONG VALUE
-- Odds DROPPING + Form shows value = REAL VALUE (Sharp money confirms)
-- Odds RISING + Form shows value = CAUTION (Bookies know something)
+- Odds DROPPING + Form shows value = REAL VALUE
+- Odds RISING + Form shows value = CAUTION
 
-BE AGGRESSIVE! Give detailed explanations.
+RETURN JSON with all market analyses including asianHandicap, correctScore, htftPrediction, cornersAnalysis, cardsAnalysis.`,
 
-RETURN JSON:
-{
-  "oddsAnalysis": "Detailed odds analysis",
-  "recommendation": "Over or Under",
-  "recommendationReasoning": "💰 Over 2.5 odds X.XX = XX% implied. Form analysis shows XX%. VALUE: +X% → Over is value",
-  "confidence": 72,
-  "matchWinnerValue": "home or draw or away",
-  "matchWinnerReasoning": "💰 Home odds X.XX = XX% implied. Form shows XX%. VALUE: +X%",
-  "bttsValue": "yes or no",
-  "bttsReasoning": "💰 BTTS Yes odds X.XX = XX% implied. Stats show XX%. VALUE status",
-  "valueRating": "Low/Medium/High",
-  "valueBets": ["value bet 1", "value bet 2"],
-  "agentSummary": "💰 ODDS AGENT: [brief summary - which bets have value]"
-}`,
+  de: `Du bist ein PROFESSIONELLER Quoten-Analyst. Analysiere ALLE Märkte für VALUE.
 
-  de: `Du bist ein AGGRESSIVER Quoten-Analyst. Analysiere Quoten für VALUE.
+ANALYSE-MÄRKTE:
+1. 1X2 (Spielergebnis)
+2. Over/Under 2.5
+3. BTTS
+4. ASIAN HANDICAP
+5. CORRECT SCORE
+6. HT/FT
+7. CORNERS/CARDS
 
-AUFGABE: Vergleiche Quoten mit Formdaten und erkenne VALUE BETS.
-
-VALUE BET REGELN:
-- Implied Probability vs tatsächliche Wahrscheinlichkeit = VALUE
-- 5%+ Differenz = VALUE VORHANDEN
-- 10%+ Differenz = STARKE VALUE
-- Quote FÄLLT + Form zeigt Value = ECHTE VALUE (Sharp Money bestätigt)
-- Quote STEIGT + Form zeigt Value = VORSICHT (Buchmacher wissen etwas)
-
-SEI AGGRESSIV! Gib detaillierte Erklärungen.
-
-NUR JSON ZURÜCKGEBEN.`,
+NUR JSON ZURÜCKGEBEN mit allen Marktanalysen.`,
 };
 
 // ==================== VALUE CALCULATION ====================
@@ -97,6 +122,285 @@ function getValueRating(maxValue: number, hasSharpConfirmation: boolean = false)
   if (adjustedValue >= 8) return 'Medium';
   if (adjustedValue >= 3) return 'Low';
   return 'None';
+}
+
+// ==================== ASIAN HANDICAP ANALYSIS ====================
+
+interface AsianHandicapAnalysis {
+  recommendation: string;
+  confidence: number;
+  reasoning: string;
+  homeHandicap: number;
+  awayHandicap: number;
+}
+
+function analyzeAsianHandicap(
+  homeFormProb: number,
+  awayFormProb: number,
+  expectedTotal: number,
+  homeOdds: number,
+  awayOdds: number,
+  language: 'tr' | 'en' | 'de'
+): AsianHandicapAnalysis {
+  // Form farkına göre handikap hesapla
+  const probDiff = homeFormProb - awayFormProb;
+  
+  let homeHandicap = 0;
+  let awayHandicap = 0;
+  let recommendation = '';
+  let confidence = 55;
+  
+  // Handikap belirleme
+  if (probDiff > 25) {
+    homeHandicap = -1.5;
+    awayHandicap = 1.5;
+    recommendation = language === 'tr' ? `${homeHandicap} Ev Sahibi` : `${homeHandicap} Home`;
+    confidence = 65;
+  } else if (probDiff > 15) {
+    homeHandicap = -1;
+    awayHandicap = 1;
+    recommendation = language === 'tr' ? `${homeHandicap} Ev Sahibi` : `${homeHandicap} Home`;
+    confidence = 68;
+  } else if (probDiff > 8) {
+    homeHandicap = -0.5;
+    awayHandicap = 0.5;
+    recommendation = language === 'tr' ? `${homeHandicap} Ev Sahibi` : `${homeHandicap} Home`;
+    confidence = 70;
+  } else if (probDiff > -8) {
+    homeHandicap = 0;
+    awayHandicap = 0;
+    recommendation = language === 'tr' ? '0 Ev Sahibi (DNB)' : '0 Home (DNB)';
+    confidence = 60;
+  } else if (probDiff > -15) {
+    homeHandicap = 0.5;
+    awayHandicap = -0.5;
+    recommendation = language === 'tr' ? `+${homeHandicap} Ev Sahibi` : `+${homeHandicap} Home`;
+    confidence = 65;
+  } else {
+    homeHandicap = 1;
+    awayHandicap = -1;
+    recommendation = language === 'tr' ? `+${homeHandicap} Ev Sahibi` : `+${homeHandicap} Home`;
+    confidence = 60;
+  }
+  
+  const reasoningTexts = {
+    tr: `Form farkı %${probDiff.toFixed(0)}. ${homeHandicap < 0 ? 'Ev sahibi favori' : homeHandicap > 0 ? 'Deplasman favori' : 'Dengeli maç'}. AH ${recommendation} önerisi.`,
+    en: `Form difference ${probDiff.toFixed(0)}%. ${homeHandicap < 0 ? 'Home favored' : homeHandicap > 0 ? 'Away favored' : 'Balanced match'}. AH ${recommendation} recommended.`,
+    de: `Formunterschied ${probDiff.toFixed(0)}%. AH ${recommendation} empfohlen.`
+  };
+  
+  return {
+    recommendation,
+    confidence,
+    reasoning: reasoningTexts[language],
+    homeHandicap,
+    awayHandicap
+  };
+}
+
+// ==================== CORRECT SCORE PREDICTION ====================
+
+interface CorrectScorePrediction {
+  mostLikely: string;
+  second: string;
+  third: string;
+  confidence: number;
+  scores: { score: string; probability: number }[];
+}
+
+function predictCorrectScore(
+  homeExpected: number,
+  awayExpected: number,
+  matchResultPrediction: string,
+  language: 'tr' | 'en' | 'de'
+): CorrectScorePrediction {
+  // Poisson dağılımı basit yaklaşımı
+  const scores: { score: string; probability: number }[] = [];
+  
+  // En olası skorları hesapla
+  for (let home = 0; home <= 4; home++) {
+    for (let away = 0; away <= 4; away++) {
+      // Basit olasılık hesabı
+      let prob = 10;
+      
+      // Beklenen goller yakınsa olasılık artır
+      if (Math.abs(home - homeExpected) < 0.5) prob += 15;
+      if (Math.abs(away - awayExpected) < 0.5) prob += 15;
+      if (Math.abs(home - homeExpected) < 1) prob += 8;
+      if (Math.abs(away - awayExpected) < 1) prob += 8;
+      
+      // Maç sonucu tahminiyle uyumlu skorlara bonus
+      if (matchResultPrediction === '1' && home > away) prob += 10;
+      if (matchResultPrediction === '2' && away > home) prob += 10;
+      if (matchResultPrediction === 'X' && home === away) prob += 15;
+      
+      // Aşırı skorları cezalandır
+      if (home > 3) prob -= 15;
+      if (away > 3) prob -= 15;
+      if (home + away > 5) prob -= 10;
+      
+      scores.push({ score: `${home}-${away}`, probability: Math.max(1, prob) });
+    }
+  }
+  
+  // Olasılığa göre sırala
+  scores.sort((a, b) => b.probability - a.probability);
+  
+  // Normalize et
+  const total = scores.slice(0, 10).reduce((sum, s) => sum + s.probability, 0);
+  scores.forEach(s => s.probability = Math.round((s.probability / total) * 100));
+  
+  return {
+    mostLikely: scores[0].score,
+    second: scores[1].score,
+    third: scores[2].score,
+    confidence: Math.min(60, scores[0].probability + 10),
+    scores: scores.slice(0, 6)
+  };
+}
+
+// ==================== HT/FT PREDICTION ====================
+
+interface HTFTPrediction {
+  prediction: string;
+  confidence: number;
+  reasoning: string;
+}
+
+function predictHTFT(
+  homeFormProb: number,
+  awayFormProb: number,
+  homeFirstHalfPct: number,
+  awayFirstHalfPct: number,
+  matchResultPrediction: string,
+  language: 'tr' | 'en' | 'de'
+): HTFTPrediction {
+  // İlk yarı tahmini
+  let htResult = 'X';
+  let ftResult = matchResultPrediction;
+  let confidence = 50;
+  
+  // İlk yarı analizi
+  if (homeFirstHalfPct > 55 && homeFormProb > awayFormProb + 10) {
+    htResult = '1';
+    confidence += 5;
+  } else if (awayFirstHalfPct > 55 && awayFormProb > homeFormProb + 10) {
+    htResult = '2';
+    confidence += 5;
+  } else {
+    htResult = 'X'; // İlk yarı genellikle berabere
+    confidence += 8; // X/X veya X/1 veya X/2 daha olası
+  }
+  
+  const prediction = `${htResult}/${ftResult}`;
+  
+  // Confidence ayarlama
+  if (htResult === 'X' && ftResult !== 'X') {
+    confidence = 55; // Yavaş başlayıp sonra kazanmak yaygın
+  } else if (htResult === ftResult) {
+    confidence = 45; // Aynı sonuç devam etmek daha zor
+  }
+  
+  const reasoningTexts = {
+    tr: {
+      'X/1': 'İlk yarı yavaş başlangıç, ikinci yarı ev sahibi baskısı bekleniyor',
+      'X/2': 'İlk yarı dengeli, ikinci yarı deplasman kontra atakları etkili',
+      'X/X': 'Düşük gollü, dengeli bir maç bekleniyor',
+      '1/1': 'Ev sahibi erken gol bulup kontrol edecek',
+      '2/2': 'Deplasman erken gol avantajını koruyacak',
+      default: 'Form analizine göre HT/FT tahmini'
+    },
+    en: {
+      'X/1': 'Slow start expected, home team pressure in 2nd half',
+      'X/2': 'Balanced 1st half, away counter-attacks effective later',
+      'X/X': 'Low-scoring, balanced match expected',
+      '1/1': 'Home to score early and control',
+      '2/2': 'Away to hold early goal advantage',
+      default: 'HT/FT prediction based on form analysis'
+    },
+    de: {
+      'X/1': 'Langsamer Start, Heimdruck in 2. Hälfte erwartet',
+      'X/2': 'Ausgewogene 1. Hälfte, Auswärts-Konter später effektiv',
+      'X/X': 'Torarmes, ausgeglichenes Spiel erwartet',
+      '1/1': 'Heim trifft früh und kontrolliert',
+      '2/2': 'Auswärts hält frühen Torvorsprung',
+      default: 'HT/FT Vorhersage basierend auf Formanalyse'
+    }
+  };
+  
+  const texts = reasoningTexts[language];
+  const reasoning = (texts as any)[prediction] || texts.default;
+  
+  return { prediction, confidence, reasoning };
+}
+
+// ==================== CORNERS/CARDS ANALYSIS ====================
+
+interface CornersCardsAnalysis {
+  totalCorners: string;
+  cornersConfidence: number;
+  cornersReasoning: string;
+  totalCards: string;
+  cardsConfidence: number;
+  cardsReasoning: string;
+}
+
+function analyzeCornersAndCards(
+  homeFormProb: number,
+  awayFormProb: number,
+  expectedTotal: number,
+  isHighStakes: boolean,
+  language: 'tr' | 'en' | 'de'
+): CornersCardsAnalysis {
+  // Korner analizi - ofansif takımlar daha fazla korner üretir
+  const avgCorners = 9.5; // Ortalama maç korner sayısı
+  let expectedCorners = avgCorners;
+  
+  // Gol beklentisi yüksekse korner de yüksek
+  if (expectedTotal > 2.8) expectedCorners += 1.5;
+  else if (expectedTotal < 2.2) expectedCorners -= 1;
+  
+  // Favori varsa daha fazla korner
+  if (Math.abs(homeFormProb - awayFormProb) > 20) expectedCorners += 1;
+  
+  const cornersLine = expectedCorners > 10.5 ? 'Over 10.5' : expectedCorners > 9 ? 'Over 9.5' : 'Under 9.5';
+  const cornersConfidence = Math.abs(expectedCorners - 9.5) > 1.5 ? 68 : 58;
+  
+  // Kart analizi
+  let expectedCards = 3.5; // Ortalama
+  
+  // Yüksek riskli maçlarda (derbi, şampiyonluk, küme düşme) daha fazla kart
+  if (isHighStakes) expectedCards += 1;
+  
+  // Dengeli maçlarda daha fazla mücadele = daha fazla kart
+  if (Math.abs(homeFormProb - awayFormProb) < 10) expectedCards += 0.5;
+  
+  const cardsLine = expectedCards > 4 ? 'Over 4.5' : expectedCards > 3.5 ? 'Over 3.5' : 'Under 3.5';
+  const cardsConfidence = isHighStakes ? 65 : 55;
+  
+  const reasoningTexts = {
+    tr: {
+      corners: expectedCorners > 10 ? 'Ofansif takımlar, yüksek korner potansiyeli' : 'Dengeli maç, ortalama korner beklentisi',
+      cards: isHighStakes ? 'Yüksek riskli maç, sert müdahaleler bekleniyor' : 'Normal lig maçı, standart kart beklentisi'
+    },
+    en: {
+      corners: expectedCorners > 10 ? 'Offensive teams, high corner potential' : 'Balanced match, average corner expectation',
+      cards: isHighStakes ? 'High stakes match, hard tackles expected' : 'Regular league match, standard card expectation'
+    },
+    de: {
+      corners: expectedCorners > 10 ? 'Offensive Teams, hohes Eckenpotenzial' : 'Ausgeglichenes Spiel, durchschnittliche Eckenerwartung',
+      cards: isHighStakes ? 'Hochrisikospiel, harte Tacklings erwartet' : 'Reguläres Ligaspiel, Standard-Kartenerwartung'
+    }
+  };
+  
+  return {
+    totalCorners: cornersLine,
+    cornersConfidence,
+    cornersReasoning: reasoningTexts[language].corners,
+    totalCards: cardsLine,
+    cardsConfidence,
+    cardsReasoning: reasoningTexts[language].cards
+  };
 }
 
 // ==================== GENERATE REASONING ====================
@@ -276,7 +580,8 @@ function generateOddsReasoning(
 // ==================== ODDS AGENT ====================
 
 export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
-  console.log('💰 Odds Agent starting AGGRESSIVE value analysis...');
+  console.log('💰 Odds Agent starting COMPREHENSIVE market analysis...');
+  console.log('   📊 Markets: 1X2, Over/Under, BTTS, Asian Handicap, Correct Score, HT/FT, Corners, Cards');
   
   // 🆕 Historical odds çek
   let oddsHistory: MatchOddsHistory | null = null;
@@ -332,6 +637,50 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   const awayBtts = parseFloat(matchData.awayForm?.bttsPercentage || '50');
   const h2hBtts = parseFloat(matchData.h2h?.bttsPercentage || '50');
   const bttsProb = Math.round((homeBtts + awayBtts + h2hBtts) / 3);
+  
+  // Expected goals
+  const homeGoals = parseFloat(matchData.homeForm?.avgGoals || '1.2');
+  const awayGoals = parseFloat(matchData.awayForm?.avgGoals || '1.0');
+  const expectedTotal = homeGoals + awayGoals;
+  
+  // 🆕 Timing patterns (from detailed stats if available)
+  const detailedHome = (matchData as any).detailedStats?.home;
+  const detailedAway = (matchData as any).detailedStats?.away;
+  const homeFirstHalfPct = parseFloat(detailedHome?.firstHalfGoalsPct || '45');
+  const awayFirstHalfPct = parseFloat(detailedAway?.firstHalfGoalsPct || '40');
+  
+  // 🆕 Match context (high stakes?)
+  const matchContext = (matchData as any).matchContext;
+  const isHighStakes = matchContext?.type === 'derby' || 
+                       matchContext?.type === 'title_race' || 
+                       matchContext?.type === 'relegation_battle' ||
+                       matchContext?.importance >= 8;
+  
+  // 🆕 New market analyses
+  const matchResultPrediction = homeFormProb > awayFormProb + 10 ? '1' : 
+                                awayFormProb > homeFormProb + 10 ? '2' : 'X';
+  
+  // Asian Handicap Analysis
+  const asianHandicap = analyzeAsianHandicap(
+    homeFormProb, awayFormProb, expectedTotal, homeOdds, awayOdds, language
+  );
+  console.log(`   🎯 Asian Handicap: ${asianHandicap.recommendation} (${asianHandicap.confidence}%)`);
+  
+  // Correct Score Prediction
+  const correctScore = predictCorrectScore(homeGoals, awayGoals, matchResultPrediction, language);
+  console.log(`   🎯 Correct Score: ${correctScore.mostLikely}, ${correctScore.second}, ${correctScore.third}`);
+  
+  // HT/FT Prediction
+  const htftPrediction = predictHTFT(
+    homeFormProb, awayFormProb, homeFirstHalfPct, awayFirstHalfPct, matchResultPrediction, language
+  );
+  console.log(`   🎯 HT/FT: ${htftPrediction.prediction} (${htftPrediction.confidence}%)`);
+  
+  // Corners and Cards Analysis
+  const cornersCards = analyzeCornersAndCards(
+    homeFormProb, awayFormProb, expectedTotal, isHighStakes, language
+  );
+  console.log(`   🎯 Corners: ${cornersCards.totalCorners} | Cards: ${cornersCards.totalCards}`);
   
   // Generate reasoning with odds history
   const reasoning = generateOddsReasoning(
@@ -503,7 +852,23 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
         parsed.realValueChecks = realValueChecks;
         parsed.hasSharpConfirmation = hasSharpConfirmation;
         
+        // 🆕 Add new market analyses
+        parsed.asianHandicap = asianHandicap;
+        parsed.correctScore = correctScore;
+        parsed.htftPrediction = htftPrediction;
+        parsed.cornersAnalysis = {
+          totalCorners: cornersCards.totalCorners,
+          confidence: cornersCards.cornersConfidence,
+          reasoning: cornersCards.cornersReasoning
+        };
+        parsed.cardsAnalysis = {
+          totalCards: cornersCards.totalCards,
+          confidence: cornersCards.cardsConfidence,
+          reasoning: cornersCards.cardsReasoning
+        };
+        
         console.log(`✅ Odds Agent: ${parsed.matchWinnerValue} | ${parsed.recommendation} | BTTS: ${parsed.bttsValue} | Conf: ${parsed.confidence}%`);
+        console.log(`   🎯 AH: ${asianHandicap.recommendation} | CS: ${correctScore.mostLikely} | HT/FT: ${htftPrediction.prediction}`);
         console.log(`   📝 Summary: ${parsed.agentSummary}`);
         if (hasSharpConfirmation) {
           console.log(`   🔥 SHARP MONEY CONFIRMED!`);
@@ -552,9 +917,24 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
     sharpMoneyAnalysis: sharpMoney,
     realValueChecks,
     hasSharpConfirmation,
+    // 🆕 New market analyses
+    asianHandicap,
+    correctScore,
+    htftPrediction,
+    cornersAnalysis: {
+      totalCorners: cornersCards.totalCorners,
+      confidence: cornersCards.cornersConfidence,
+      reasoning: cornersCards.cornersReasoning
+    },
+    cardsAnalysis: {
+      totalCards: cornersCards.totalCards,
+      confidence: cornersCards.cardsConfidence,
+      reasoning: cornersCards.cardsReasoning
+    },
   };
   
   console.log(`⚠️ Odds Agent Fallback: ${fallbackResult.matchWinnerValue} | ${fallbackResult.recommendation} | BTTS: ${fallbackResult.bttsValue}`);
+  console.log(`   🎯 AH: ${asianHandicap.recommendation} | CS: ${correctScore.mostLikely} | HT/FT: ${htftPrediction.prediction}`);
   console.log(`   📝 Summary: ${fallbackResult.agentSummary}`);
   return fallbackResult;
 }
