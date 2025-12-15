@@ -322,11 +322,12 @@ export default function DashboardPage() {
 
   const l = labels[lang as keyof typeof labels] || labels.en;
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
+  // ⚠️ TEMPORARY: Bypass for local testing - REMOVE BEFORE DEPLOY!
+  // useEffect(() => {
+  //   if (status === 'unauthenticated') {
+  //     router.push('/login');
+  //   }
+  // }, [status, router]);
 
   const fetchUserProfile = async () => {
     try {
@@ -351,12 +352,13 @@ export default function DashboardPage() {
     setLoading(false);
   }, [selectedDate]);
 
+  // ⚠️ TEMPORARY: Bypass session check for local testing
   useEffect(() => {
-    if (session) {
+    // if (session) {
       fetchMatches();
       fetchUserProfile();
-    }
-  }, [session, fetchMatches]);
+    // }
+  }, [fetchMatches]);
 
   useEffect(() => {
     let filtered = matches;
@@ -539,18 +541,19 @@ export default function DashboardPage() {
     return { agreed, disagreed };
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">{l.loading}</p>
-        </div>
-      </div>
-    );
-  }
+  // ⚠️ TEMPORARY: Bypass for local testing - REMOVE BEFORE DEPLOY!
+  // if (status === 'loading') {
+  //   return (
+  //     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+  //         <p className="text-gray-400">{l.loading}</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
-  if (!session) return null;
+  // if (!session) return null;
 
   if (userProfile?.trialExpired && !userProfile?.isPro) {
     return (
@@ -730,9 +733,9 @@ export default function DashboardPage() {
                   className="flex items-center gap-2 px-3 py-2 bg-gray-800/80 hover:bg-gray-700/80 rounded-xl transition-all"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {session.user?.name?.charAt(0) || 'U'}
+                    {session?.user?.name?.charAt(0) || userProfile?.name?.charAt(0) || 'T'}
                   </div>
-                  <span className="hidden sm:block text-white font-medium">{session.user?.name?.split(' ')[0]}</span>
+                  <span className="hidden sm:block text-white font-medium">{session?.user?.name?.split(' ')[0] || userProfile?.name || 'Test'}</span>
                   <span className="text-gray-400">▼</span>
                 </button>
                 

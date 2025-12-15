@@ -53,7 +53,7 @@ export default function PricingPage() {
       startTrial: '7 Gün Ücretsiz Başla',
       startNow: 'Hemen Başla',
       loading: 'Yükleniyor...',
-      note: '7 gün sonra aylık $19.90 USD otomatik çekilir',
+      note: '7 gün sonra aylık $19.99 USD otomatik çekilir',
       cancel: 'İstediğin zaman iptal edebilirsin',
     },
     en: {
@@ -74,7 +74,7 @@ export default function PricingPage() {
       startTrial: 'Start 7-Day Free Trial',
       startNow: 'Start Now',
       loading: 'Loading...',
-      note: '$19.90 USD/month billed automatically after trial',
+      note: '$19.99 USD/month billed automatically after trial',
       cancel: 'Cancel anytime',
     },
     de: {
@@ -95,7 +95,7 @@ export default function PricingPage() {
       startTrial: '7 Tage kostenlos starten',
       startNow: 'Jetzt starten',
       loading: 'Laden...',
-      note: '$19.90 USD/Monat nach der Testphase',
+      note: '$19.99 USD/Monat nach der Testphase',
       cancel: 'Jederzeit kündbar',
     },
   };
@@ -125,7 +125,7 @@ export default function PricingPage() {
             <div className="text-center mb-8">
               <span className="inline-block px-4 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-bold rounded-full mb-4">PRO</span>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-5xl font-bold text-white">$19.90</span>
+                <span className="text-5xl font-bold text-white">$19.99</span>
                 <span className="text-xl text-gray-400">{l.perMonth}</span>
               </div>
               <p className="text-gray-500 text-sm mt-2">USD</p>

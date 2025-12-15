@@ -97,7 +97,7 @@ export default function HomePage() {
         subtitle: 'Sizin için en uygun planı seçin',
         free: {
           name: 'Ücretsiz',
-          price: '₺0',
+          price: '$0',
           period: '/ay',
           features: ['Günlük 3 maç analizi', 'Temel istatistikler', 'Tipster League katılım', 'Email destek'],
           cta: 'Başla',
@@ -105,7 +105,7 @@ export default function HomePage() {
         pro: {
           badge: 'EN POPÜLER',
           name: 'Pro',
-          price: '₺299',
+          price: '$19.99',
           period: '/ay',
           features: ['Sınırsız maç analizi', 'Tüm AI + Agent sistemleri', 'Value Bet tespiti', 'Kupon oluşturma', 'Öncelikli destek', 'API erişimi'],
           cta: 'Pro\'ya Geç',
@@ -227,7 +227,7 @@ export default function HomePage() {
         pro: {
           badge: 'MOST POPULAR',
           name: 'Pro',
-          price: '$29',
+          price: '$19.99',
           period: '/month',
           features: ['Unlimited match analyses', 'All AI + Agent systems', 'Value Bet detection', 'Coupon creation', 'Priority support', 'API access'],
           cta: 'Go Pro',
