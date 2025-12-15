@@ -565,58 +565,69 @@ function calculateKellyCriterion(
   odds: number, // Decimal odds (e.g., 1.85)
   language: 'tr' | 'en' | 'de'
 ): KellyResult {
-  // Kelly Formula: f* = (bp - q) / b
-  // where:
-  // f* = fraction of bankroll to bet
+  // ═══════════════════════════════════════════════════════════════
+  // KELLY CRITERION FORMULA: f* = (bp - q) / b
   // b = decimal odds - 1 (net odds)
   // p = probability of winning
   // q = probability of losing (1 - p)
+  // ═══════════════════════════════════════════════════════════════
   
-  const p = probability / 100;
+  // Olasılığı makul sınırlara çek (%50-75 arası)
+  const clampedProb = Math.min(75, Math.max(50, probability));
+  const p = clampedProb / 100;
   const q = 1 - p;
-  const b = odds - 1;
   
-  // Kelly optimal
+  // Odds'u makul sınırlara çek (1.30 - 3.50 arası)
+  const clampedOdds = Math.min(3.5, Math.max(1.30, odds || 1.85));
+  const b = clampedOdds - 1;
+  
+  // Kelly optimal hesapla
   const kellyFull = (b * p - q) / b;
   
-  // Edge percentage
-  const impliedProb = 1 / odds;
+  // Edge hesapla
+  const impliedProb = 1 / clampedOdds;
   const edge = p - impliedProb;
   const edgePercentage = edge * 100;
   
-  // Fractional Kelly (1/4) for safety
-  const fractionalKelly = Math.max(0, kellyFull / 4);
-  const optimalPercentage = Math.min(5, Math.max(0.5, fractionalKelly * 100));
+  // 1/4 Kelly kullan (konservatif yaklaşım)
+  // Kelly negatif ise 0, maksimum %4
+  let fractionalKelly = 0;
+  if (kellyFull > 0) {
+    fractionalKelly = kellyFull / 4;
+  }
+  
+  // Optimal stake: %1-4 arası
+  const optimalPercentage = Math.min(4, Math.max(1, fractionalKelly * 100));
   
   const reasoningTexts = {
     tr: {
-      positive: `Kelly: Tahmini olasılık %${probability.toFixed(0)}, Oran ${odds}, Edge %${edgePercentage.toFixed(1)}. Optimal: %${optimalPercentage.toFixed(1)} (1/4 Kelly)`,
-      negative: `Kelly: Negatif edge. Oran değerli değil. Minimum stake veya pas geç.`,
-      neutral: `Kelly: Düşük edge. Minimum stake önerilir.`
+      positive: `Tahmini olasılık %${clampedProb.toFixed(0)}, Oran ${clampedOdds.toFixed(2)}. Edge: %${edgePercentage.toFixed(1)}. Önerilen: %${optimalPercentage.toFixed(1)} stake`,
+      negative: `Negatif edge (%${edgePercentage.toFixed(1)}). Bu bahiste value yok. Minimum stake veya pas.`,
+      neutral: `Edge düşük (%${edgePercentage.toFixed(1)}). Dikkatli ol, %1-2 stake önerilir.`
     },
     en: {
-      positive: `Kelly: Estimated prob ${probability.toFixed(0)}%, Odds ${odds}, Edge ${edgePercentage.toFixed(1)}%. Optimal: ${optimalPercentage.toFixed(1)}% (1/4 Kelly)`,
-      negative: `Kelly: Negative edge. Odds not valuable. Minimum stake or skip.`,
-      neutral: `Kelly: Low edge. Minimum stake recommended.`
+      positive: `Probability ${clampedProb.toFixed(0)}%, Odds ${clampedOdds.toFixed(2)}. Edge: ${edgePercentage.toFixed(1)}%. Suggested: ${optimalPercentage.toFixed(1)}% stake`,
+      negative: `Negative edge (${edgePercentage.toFixed(1)}%). No value in this bet. Minimum or skip.`,
+      neutral: `Low edge (${edgePercentage.toFixed(1)}%). Be careful, 1-2% stake suggested.`
     },
     de: {
-      positive: `Kelly: Geschätzte Wahrsch. ${probability.toFixed(0)}%, Quote ${odds}, Edge ${edgePercentage.toFixed(1)}%. Optimal: ${optimalPercentage.toFixed(1)}% (1/4 Kelly)`,
-      negative: `Kelly: Negativer Edge. Quote nicht wertvoll. Minimum Einsatz oder überspringen.`,
-      neutral: `Kelly: Niedriger Edge. Minimum Einsatz empfohlen.`
+      positive: `Wahrscheinlichkeit ${clampedProb.toFixed(0)}%, Quote ${clampedOdds.toFixed(2)}. Edge: ${edgePercentage.toFixed(1)}%. Empfohlen: ${optimalPercentage.toFixed(1)}%`,
+      negative: `Negativer Edge (${edgePercentage.toFixed(1)}%). Kein Value. Minimum oder überspringen.`,
+      neutral: `Niedriger Edge (${edgePercentage.toFixed(1)}%). Vorsicht, 1-2% Einsatz empfohlen.`
     }
   };
   
   const texts = reasoningTexts[language];
   let reasoning = texts.neutral;
   
-  if (edgePercentage > 5) reasoning = texts.positive;
-  else if (edgePercentage < 0) reasoning = texts.negative;
+  if (edgePercentage >= 5) reasoning = texts.positive;
+  else if (edgePercentage < -2) reasoning = texts.negative;
   
   return {
     optimalPercentage: parseFloat(optimalPercentage.toFixed(1)),
     edgePercentage: parseFloat(edgePercentage.toFixed(1)),
     reasoning,
-    fractionalKelly: parseFloat(fractionalKelly.toFixed(4))
+    fractionalKelly: parseFloat(Math.max(0, fractionalKelly).toFixed(4))
   };
 }
 
@@ -800,10 +811,23 @@ export async function runStrategyAgent(
   console.log(`   🔄 Rotation Risk: ${advancedRiskFactors.rotationRisk.substring(0, 50)}...`);
   
   // 🆕 Calculate Kelly Criterion
-  const bestOdds = odds?.odds?.overUnder?.['2.5']?.over || 1.85;
-  const bestConfidence = consensus.overUnder.avgConfidence;
+  // Odds verisini güvenli şekilde al
+  let bestOdds = 1.85; // Default
+  if (odds?.odds?.overUnder) {
+    const ou25 = odds.odds.overUnder['2.5'] || odds.odds.overUnder;
+    bestOdds = ou25?.over || ou25?.Over || 1.85;
+  } else if (odds?.over25Odds) {
+    bestOdds = odds.over25Odds;
+  }
+  
+  // Oran mantıklı mı kontrol et
+  if (typeof bestOdds !== 'number' || isNaN(bestOdds) || bestOdds < 1.1 || bestOdds > 5.0) {
+    bestOdds = 1.85; // Default değer kullan
+  }
+  
+  const bestConfidence = Math.min(75, Math.max(50, consensus.overUnder.avgConfidence || 55));
   const kellyResult = calculateKellyCriterion(bestConfidence, bestOdds, language);
-  console.log(`   📈 Kelly: ${kellyResult.optimalPercentage}% (Edge: ${kellyResult.edgePercentage}%)`);
+  console.log(`   📈 Kelly: ${kellyResult.optimalPercentage}% (Edge: ${kellyResult.edgePercentage}%, Odds: ${bestOdds})`);
   
   // Calculate stake with Kelly
   const stake = calculateStakeSuggestion(risk.score, consensus, language, kellyResult);

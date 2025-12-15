@@ -5,25 +5,23 @@ import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, 
 // ==================== PROMPTS ====================
 
 const PROMPTS = {
-  tr: `Sen PROFESYONEL bir bahis oranları analisti ajanısın. TÜM marketleri VALUE açısından analiz et.
+  tr: `Sen bir bahis oranları analistisin. Oranları form verisiyle karşılaştır.
 
-GÖREV: Oranları form verisiyle karşılaştır ve VALUE BET tespit et.
+GÖREV: Value bet tespit et.
 
-ANALİZ MARKETLERİ:
-1. 1X2 (Maç Sonucu) - Value analizi
-2. Over/Under 2.5 - Gol beklentisi vs oranlar
-3. BTTS (KG Var/Yok) - Her iki takım gol atar mı?
-4. ASIAN HANDICAP - Handikaplı bahis değerlendirmesi
-5. CORRECT SCORE - En olası skor tahminleri
-6. HT/FT - İlk yarı/Maç sonu kombinasyonları
-7. CORNERS/CARDS - Korner ve kart marketleri
+TEMEL KAVRAMLAR:
+- Implied probability = 1/oran * 100
+- Value = Form olasılığı - Implied olasılığı
+- %5+ fark = Value var, %10+ = Güçlü value
 
-VALUE BET KURALLARI:
-- Implied probability vs gerçek olasılık farkı = VALUE
-- %5+ fark varsa VALUE VAR
-- %10+ fark varsa GÜÇLÜ VALUE
-- Oran DÜŞÜYORSA + Form value gösteriyorsa = GERÇEK VALUE
-- Oran YÜKSELIYORSA + Form value gösteriyorsa = DİKKAT
+ÖRNEKLER:
+- Ev oranı 2.00 = %50 implied. Form %60 gösteriyorsa → +10% VALUE
+- Over 2.5 oranı 1.80 = %56 implied. İstatistik %55 → Value yok
+
+GÜVEN SEVİYESİ:
+- Net value varsa: %65-75
+- Belirsiz: %55-65
+- Value yoksa: %50-55
 
 JSON DÖNDÜR:
 {

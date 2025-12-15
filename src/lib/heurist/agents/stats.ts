@@ -4,22 +4,27 @@ import { MatchData } from '../types';
 // ==================== PROMPTS ====================
 
 const PROMPTS = {
-  tr: `Sen PROFESYONEL bir futbol istatistik analistisin. Verilen GERÇEK verileri DERIN analiz et.
+  tr: `Sen PROFESYONEL bir futbol istatistik analistisin. Verilen verileri analiz et.
 
-GÖREV: Form, gol istatistikleri, H2H, xG, timing patterns ve clean sheet verilerini matematiksel değerlendir.
+GÖREV: Form, gol istatistikleri ve H2H verilerini değerlendir.
 
-ANALİZ KATMANLARI:
-1. TEMEL İSTATİSTİKLER - Form, gol ortalamaları, H2H
-2. xG ANALİZİ - Beklenen gol vs gerçek gol farkı (overperform/underperform)
-3. TIMING PATTERNS - İlk yarı/ikinci yarı gol dağılımı, son 15 dakika golleri
-4. CLEAN SHEET - Gol yememe serileri, defansif güç
-5. SCORING PATTERNS - Önde başlayınca sonuç, ilk golü atan kazanma oranı
+DEĞERLENDİRME KRİTERLERİ:
+1. Form: Son 5 maç sonuçlarına bak (W=Galibiyet, D=Beraberlik, L=Mağlubiyet)
+2. Gol Ortalamaları: Maç başına atılan ve yenilen goller
+3. Over 2.5 / Under 2.5: Toplam gol beklentisi 2.5'tan fazla mı az mı?
+4. BTTS (Karşılıklı Gol): Her iki takım da gol atar mı?
+5. H2H: Geçmiş karşılaşmalar ne söylüyor?
 
-AGRESİF KURALLAR:
-- Veriler güçlüyse YÜKSEK güven ver (70-85%)
-- Veriler zayıfsa bile en olası sonucu seç (55-65%)
-- xG farkı önemliyse vurgula (underperform = regression geliyor)
-- Türkçe açıklama yap
+GÜVEN SEVİYESİ KURALLARI:
+- Veriler uyumluysa: %65-75 güven
+- Veriler karışıksa: %55-65 güven
+- Net sinyal yoksa: %50-55 güven
+- ASLA %85 üstü verme, %50 altı verme
+
+ÖNEMLİ:
+- Sadece VERİLEN verilere dayanarak karar ver
+- Tahmin değil, istatistik bazlı analiz yap
+- Türkçe açıklama yaz
 
 SADECE JSON DÖNDÜR:
 {
@@ -224,21 +229,30 @@ interface XGAnalysis {
 function calculateXGAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de'): XGAnalysis {
   const detailedHome = (matchData as any).detailedStats?.home;
   const detailedAway = (matchData as any).detailedStats?.away;
+  const homeForm = matchData.homeForm;
+  const awayForm = matchData.awayForm;
   
-  // xG değerleri (varsa kullan, yoksa gol ortalamalarından tahmin et)
-  const homeXG = parseFloat(detailedHome?.xG || detailedHome?.avgGoalsScored || matchData.homeForm?.avgGoals || '1.2');
-  const awayXG = parseFloat(detailedAway?.xG || detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0');
-  const homeActual = parseFloat(detailedHome?.avgGoalsScored || matchData.homeForm?.avgGoals || '1.2');
-  const awayActual = parseFloat(detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0');
+  // Gerçek gol ortalamaları (son 5-10 maç)
+  const homeActual = parseFloat(detailedHome?.avgGoalsScored || homeForm?.avgGoals || '1.2');
+  const awayActual = parseFloat(detailedAway?.avgGoalsScored || awayForm?.avgGoals || '1.0');
+  const homeConceded = parseFloat(detailedHome?.avgGoalsConceded || homeForm?.avgConceded || '1.0');
+  const awayConceded = parseFloat(detailedAway?.avgGoalsConceded || awayForm?.avgConceded || '1.2');
   
-  // Performance analizi
+  // xG TAHMİNİ: Gerçek gol ortalamalarına 0.9 çarpanı uygula (regresyon beklentisi)
+  // xG genelde gerçek gollerden %5-15 düşük olur
+  const xgMultiplier = 0.92; // Slight regression towards mean
+  const homeXG = Math.max(0.5, Math.min(3.0, homeActual * xgMultiplier));
+  const awayXG = Math.max(0.4, Math.min(2.5, awayActual * xgMultiplier));
+  
+  // Performance analizi - gerçek vs xG karşılaştırması
   const homeDiff = homeActual - homeXG;
   const awayDiff = awayActual - awayXG;
   
+  // Eğer actual > xG ise overperforming (şanslı goller), actual < xG ise underperforming
   const homePerformance: XGAnalysis['homePerformance'] = 
-    homeDiff > 0.3 ? 'overperforming' : homeDiff < -0.3 ? 'underperforming' : 'normal';
+    homeDiff > 0.15 ? 'overperforming' : homeDiff < -0.15 ? 'underperforming' : 'normal';
   const awayPerformance: XGAnalysis['awayPerformance'] = 
-    awayDiff > 0.3 ? 'overperforming' : awayDiff < -0.3 ? 'underperforming' : 'normal';
+    awayDiff > 0.15 ? 'overperforming' : awayDiff < -0.15 ? 'underperforming' : 'normal';
   
   // Regression risk mesajı
   const regressionTexts = {
@@ -300,11 +314,30 @@ interface TimingPatterns {
 function analyzeTimingPatterns(matchData: MatchData, language: 'tr' | 'en' | 'de'): TimingPatterns {
   const detailedHome = (matchData as any).detailedStats?.home;
   const detailedAway = (matchData as any).detailedStats?.away;
+  const homeForm = matchData.homeForm;
+  const awayForm = matchData.awayForm;
   
-  // İlk yarı / ikinci yarı gol yüzdeleri (varsayılan değerler)
-  const homeFirstHalfGoals = parseFloat(detailedHome?.firstHalfGoalsPct || '45');
+  // Son maçlardan timing pattern hesapla
+  const homeMatches = homeForm?.matches || [];
+  const awayMatches = awayForm?.matches || [];
+  
+  // Varsayılan olarak %45 ilk yarı - futbol istatistiklerine göre ortalama
+  let homeFirstHalfGoals = 45;
+  let awayFirstHalfGoals = 43;
+  
+  // Eğer veri varsa kullan
+  if (detailedHome?.firstHalfGoalsPct) {
+    homeFirstHalfGoals = parseFloat(detailedHome.firstHalfGoalsPct);
+  }
+  if (detailedAway?.firstHalfGoalsPct) {
+    awayFirstHalfGoals = parseFloat(detailedAway.firstHalfGoalsPct);
+  }
+  
+  // %30-70 arasında sınırla (mantıklı değerler)
+  homeFirstHalfGoals = Math.max(30, Math.min(70, homeFirstHalfGoals));
+  awayFirstHalfGoals = Math.max(30, Math.min(70, awayFirstHalfGoals));
+  
   const homeSecondHalfGoals = 100 - homeFirstHalfGoals;
-  const awayFirstHalfGoals = parseFloat(detailedAway?.firstHalfGoalsPct || '40');
   const awaySecondHalfGoals = 100 - awayFirstHalfGoals;
   
   // Son 15 dakika golleri
@@ -480,63 +513,83 @@ function calculateAggressiveConfidence(
   timingPatterns?: TimingPatterns
 ): { overUnderConf: number; matchResultConf: number; bttsConf: number; firstHalfConf: number } {
   
-  // Over/Under confidence
-  let overUnderConf = 55;
+  // ═══════════════════════════════════════════════════════════════
+  // OVER/UNDER CONFIDENCE
+  // ═══════════════════════════════════════════════════════════════
+  let overUnderConf = 55; // Base confidence
   const overUnderStrength = Math.abs(expectedTotal - 2.5);
-  if (overUnderStrength > 0.8) overUnderConf = 75 + Math.min(10, overUnderStrength * 5);
-  else if (overUnderStrength > 0.5) overUnderConf = 68 + overUnderStrength * 10;
-  else if (overUnderStrength > 0.3) overUnderConf = 62 + overUnderStrength * 15;
-  else overUnderConf = 55 + overUnderStrength * 20;
   
-  // xG destekli boost
-  if (xgAnalysis) {
-    const xgDiff = Math.abs(xgAnalysis.totalXG - 2.5);
-    if ((xgAnalysis.totalXG > 2.5 && expectedTotal > 2.5) || (xgAnalysis.totalXG < 2.5 && expectedTotal < 2.5)) {
-      overUnderConf += 5; // xG agrees with basic stats
-    }
-    // Regression riski varsa confidence düşür
-    if (xgAnalysis.homePerformance === 'overperforming' || xgAnalysis.awayPerformance === 'overperforming') {
-      overUnderConf -= 3;
-    }
+  // Beklenen gol farkına göre güven hesapla
+  if (overUnderStrength > 1.0) {
+    overUnderConf = 68 + Math.min(7, overUnderStrength * 3); // Max 75
+  } else if (overUnderStrength > 0.5) {
+    overUnderConf = 60 + overUnderStrength * 8; // 64-68
+  } else if (overUnderStrength > 0.2) {
+    overUnderConf = 55 + overUnderStrength * 10; // 57-60
+  } else {
+    overUnderConf = 52; // Çok yakın, düşük güven
   }
   
-  // Adjust based on Over 2.5 percentage agreement
-  if ((expectedTotal > 2.5 && avgOver25 > 60) || (expectedTotal < 2.5 && avgOver25 < 40)) {
-    overUnderConf += 5; // Data agrees
+  // Over 2.5 yüzdesi ile uyum kontrolü
+  if ((expectedTotal > 2.5 && avgOver25 >= 65) || (expectedTotal < 2.5 && avgOver25 <= 35)) {
+    overUnderConf += 4; // Veriler uyumlu
+  } else if ((expectedTotal > 2.5 && avgOver25 < 45) || (expectedTotal < 2.5 && avgOver25 > 55)) {
+    overUnderConf -= 5; // Veriler çelişkili
   }
   
-  // Match Result confidence
-  let matchResultConf = 55;
-  if (Math.abs(formDiff) > 8) matchResultConf = 72 + Math.min(13, Math.abs(formDiff) - 8);
-  else if (Math.abs(formDiff) > 5) matchResultConf = 65 + (Math.abs(formDiff) - 5) * 2;
-  else if (Math.abs(formDiff) > 3) matchResultConf = 58 + (Math.abs(formDiff) - 3) * 3;
-  else matchResultConf = 50 + Math.abs(formDiff) * 2;
+  // ═══════════════════════════════════════════════════════════════
+  // MATCH RESULT CONFIDENCE
+  // ═══════════════════════════════════════════════════════════════
+  let matchResultConf = 52; // Base - maç sonucu tahmin etmek zor
   
-  // BTTS confidence
+  // Form farkına göre güven
+  const absFormDiff = Math.abs(formDiff);
+  if (absFormDiff >= 9) {
+    matchResultConf = 68 + Math.min(5, absFormDiff - 9); // Max 73
+  } else if (absFormDiff >= 6) {
+    matchResultConf = 62 + (absFormDiff - 6); // 62-65
+  } else if (absFormDiff >= 3) {
+    matchResultConf = 55 + (absFormDiff - 3) * 2; // 55-61
+  } else {
+    matchResultConf = 50 + absFormDiff; // 50-53, dengeli maç
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // BTTS CONFIDENCE
+  // ═══════════════════════════════════════════════════════════════
   let bttsConf = 55;
-  const bttsStrength = Math.abs(avgBtts - 50);
-  if (bttsStrength > 25) bttsConf = 72 + Math.min(13, (bttsStrength - 25) / 2);
-  else if (bttsStrength > 15) bttsConf = 65 + (bttsStrength - 15) / 2;
-  else if (bttsStrength > 8) bttsConf = 58 + (bttsStrength - 8);
-  else bttsConf = 52 + bttsStrength;
+  const bttsDeviation = Math.abs(avgBtts - 50);
   
-  // First Half confidence (timing patterns based)
+  if (bttsDeviation >= 25) {
+    bttsConf = 68 + Math.min(5, (bttsDeviation - 25) / 3); // Max 73
+  } else if (bttsDeviation >= 15) {
+    bttsConf = 62 + (bttsDeviation - 15) / 2; // 62-67
+  } else if (bttsDeviation >= 8) {
+    bttsConf = 56 + (bttsDeviation - 8); // 56-62
+  } else {
+    bttsConf = 52; // Belirsiz
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // FIRST HALF CONFIDENCE
+  // ═══════════════════════════════════════════════════════════════
   let firstHalfConf = 55;
   if (timingPatterns) {
     const avgFirstHalf = (timingPatterns.homeFirstHalfGoals + timingPatterns.awayFirstHalfGoals) / 2;
-    if (avgFirstHalf < 40) firstHalfConf = 70; // Clear Under 1.5 signal
-    else if (avgFirstHalf > 55) firstHalfConf = 68; // Clear Over 0.5 signal
-    else firstHalfConf = 55;
+    if (avgFirstHalf < 38) firstHalfConf = 62; // İlk yarı düşük skorlu
+    else if (avgFirstHalf > 52) firstHalfConf = 60; // İlk yarı yüksek skorlu
+    else firstHalfConf = 52; // Normal
   }
   
-  // Data quality multiplier (more data = more confidence)
-  const qualityMultiplier = 0.85 + (dataQuality / 100) * 0.15;
+  // Data quality multiplier (veri kalitesi düşükse güveni azalt)
+  const qualityMultiplier = 0.90 + (dataQuality / 100) * 0.10;
   
+  // MAX CAPS: Gerçekçi üst sınırlar
   return {
-    overUnderConf: Math.round(Math.min(85, Math.max(50, overUnderConf * qualityMultiplier))),
-    matchResultConf: Math.round(Math.min(82, Math.max(48, matchResultConf * qualityMultiplier))),
-    bttsConf: Math.round(Math.min(83, Math.max(50, bttsConf * qualityMultiplier))),
-    firstHalfConf: Math.round(Math.min(78, Math.max(50, firstHalfConf * qualityMultiplier))),
+    overUnderConf: Math.round(Math.min(75, Math.max(50, overUnderConf * qualityMultiplier))),
+    matchResultConf: Math.round(Math.min(73, Math.max(50, matchResultConf * qualityMultiplier))),
+    bttsConf: Math.round(Math.min(73, Math.max(50, bttsConf * qualityMultiplier))),
+    firstHalfConf: Math.round(Math.min(65, Math.max(50, firstHalfConf * qualityMultiplier))),
   };
 }
 

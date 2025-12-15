@@ -145,85 +145,69 @@ export interface SentimentResult {
 
 const PROMPTS = {
   tr: {
-    teamNews: (team: string) => `${team} son haberler sakatlık kadro transfer rotasyon maç önizleme`,
-    systemNews: (team: string) => `Sen bir futbol habercisisin. ${team} hakkında son 48 saatteki haberleri bul:
-- Takım morali ve güveni
-- Son maç sonuçları ve tepkiler  
-- Sakatlık haberleri (kesin oynamayacaklar, şüpheliler, dönenler)
-- KADRO ROTASYONU: Dinlendirilecek oyuncular, yıldız oyuncular oynayacak mı?
-- TRANSFER HABERLERİ: Son transferler, ayrılıklar, söylentiler ve takıma etkisi
-- YORGUNLUK: Son maçtan kaç gün geçti, maç sıklığı
-- Teknik direktör açıklamaları
-- Taraftar desteği
+    teamNews: (team: string) => `${team} futbol takımı güncel haberler sakatlıklar kadro son maç`,
+    systemNews: (team: string) => `${team} futbol takımı hakkında güncel bilgi bul:
 
-Her bulguyu ayrı madde olarak yaz. ROTASYON ve TRANSFER bilgilerine özellikle dikkat et!
-TÜRKÇE yanıt ver.`,
+1. SAKATLLIKLAR: Hangi oyuncular sakat veya şüpheli?
+2. FORM: Son maç sonucu nasıldı? Takım formda mı?
+3. MORAL: Takım atmosferi nasıl? Olumlu mu olumsuz mu?
+4. TEKNİK DİREKTÖR: Son açıklamalar, maç öncesi yorumlar
+
+Kısa ve net bilgiler ver. Türkçe yanıt ver.`,
     
-    matchContext: (home: string, away: string) => `${home} vs ${away} maç önizleme derbi rakip analiz`,
-    systemContext: (home: string, away: string) => `${home} - ${away} maçını analiz et:
-- Derbi mi? Rekabet var mı?
-- Şampiyonluk, küme düşme veya Avrupa yarışı etkisi
-- Takımlar arası tarihsel ilişki
-- Özel durumlar (intikam maçı, eski hoca, eski oyuncu)
-- MAÇIN ÖNEMİ: Hangi takım için daha kritik?
-TÜRKÇE yanıt ver.`,
+    matchContext: (home: string, away: string) => `${home} vs ${away} futbol maçı önizleme`,
+    systemContext: (home: string, away: string) => `${home} - ${away} maçı hakkında:
+- Bu bir derbi mi?
+- Hangi takım puan için daha fazla motive?
+- Maçın önemi nedir?
 
-    analysis: (team: string) => `${team} takımının psikolojik durumunu, rotasyon riskini ve transfer etkisini analiz et.
-Yanıtı SADECE şu JSON formatında ver (Türkçe içerikle):`,
+Kısa ve net bilgi ver. Türkçe yanıt ver.`,
+
+    analysis: (team: string) => `${team} takımının moral durumunu değerlendir. JSON formatında:`,
   },
   
   en: {
-    teamNews: (team: string) => `${team} latest news injury squad rotation transfer fatigue match preview last 48 hours`,
-    systemNews: (team: string) => `You are a football journalist. Find news about ${team} from the last 48 hours:
-- Team morale and confidence
-- Recent match results and reactions
-- Injury updates (OUT, DOUBTFUL, RETURNING players)
-- SQUAD ROTATION: Which players might be rested? Will star players play?
-- TRANSFER NEWS: Recent arrivals, departures, rumors and team impact
-- FATIGUE: Days since last match, fixture congestion
-- Manager quotes and press conference
-- Fan sentiment and support
+    teamNews: (team: string) => `${team} football team latest news injuries squad recent form`,
+    systemNews: (team: string) => `Find current information about ${team} football team:
 
-List each finding as a separate point. PAY SPECIAL ATTENTION to ROTATION and TRANSFER info!`,
+1. INJURIES: Which players are injured or doubtful?
+2. FORM: How was their last match? Are they in good form?
+3. MORALE: What is the team atmosphere? Positive or negative?
+4. MANAGER: Recent statements, pre-match comments
+
+Provide brief and clear information.`,
     
-    matchContext: (home: string, away: string) => `${home} vs ${away} match preview derby rivalry analysis`,
-    systemContext: (home: string, away: string) => `Analyze the ${home} vs ${away} match:
-- Is this a derby or rivalry match?
-- Title race, relegation or European implications?
-- Historical relationship between teams
-- Special circumstances (revenge match, former manager, etc.)
-- MATCH IMPORTANCE: Which team needs this more?`,
+    matchContext: (home: string, away: string) => `${home} vs ${away} football match preview`,
+    systemContext: (home: string, away: string) => `About the ${home} vs ${away} match:
+- Is this a derby?
+- Which team is more motivated for points?
+- What is the importance of this match?
 
-    analysis: (team: string) => `Analyze ${team}'s psychological state, rotation risk and transfer impact.
-Respond ONLY in this JSON format:`,
+Provide brief and clear information.`,
+
+    analysis: (team: string) => `Evaluate ${team}'s morale. In JSON format:`,
   },
   
   de: {
-    teamNews: (team: string) => `${team} aktuelle Nachrichten Verletzung Kader Rotation Transfer Spielvorschau`,
-    systemNews: (team: string) => `Du bist ein Fußballjournalist. Finde Nachrichten über ${team} der letzten 48 Stunden:
-- Team-Moral und Vertrauen
-- Aktuelle Spielergebnisse
-- Verletzungs-Updates
-- KADER-ROTATION: Welche Spieler könnten ruhen? Spielen die Stars?
-- TRANSFER-NEWS: Neuzugänge, Abgänge, Gerüchte und Teamauswirkungen
-- MÜDIGKEIT: Tage seit letztem Spiel, Spielbelastung
-- Trainer-Aussagen
-- Fan-Stimmung
+    teamNews: (team: string) => `${team} Fußball aktuelle Nachrichten Verletzungen Kader Form`,
+    systemNews: (team: string) => `Finde aktuelle Informationen über ${team}:
 
-Liste jeden Punkt separat. ACHTE BESONDERS auf ROTATION und TRANSFER Infos!
-Antworte auf DEUTSCH.`,
+1. VERLETZUNGEN: Welche Spieler sind verletzt oder fraglich?
+2. FORM: Wie war das letzte Spiel? Sind sie in guter Form?
+3. MORAL: Wie ist die Teamatmosphäre?
+4. TRAINER: Aktuelle Aussagen
+
+Kurze und klare Informationen. Antworte auf Deutsch.`,
     
-    matchContext: (home: string, away: string) => `${home} vs ${away} Spielvorschau Derby Rivalität`,
-    systemContext: (home: string, away: string) => `Analysiere das Spiel ${home} gegen ${away}:
-- Derby oder Rivalität?
-- Titelkampf, Abstiegskampf oder Europacup-Auswirkungen?
-- Historische Beziehung
-- Besondere Umstände
-- SPIELWICHTIGKEIT: Welches Team braucht es mehr?
-Antworte auf DEUTSCH.`,
+    matchContext: (home: string, away: string) => `${home} vs ${away} Spielvorschau`,
+    systemContext: (home: string, away: string) => `Über das Spiel ${home} gegen ${away}:
+- Ist das ein Derby?
+- Welches Team ist motivierter?
+- Was ist die Bedeutung des Spiels?
 
-    analysis: (team: string) => `Analysiere die psychologische Situation, Rotationsrisiko und Transferauswirkungen von ${team}.
-Antworte NUR in diesem JSON-Format:`,
+Kurze und klare Information. Auf Deutsch.`,
+
+    analysis: (team: string) => `Bewerte die Moral von ${team}. Im JSON-Format:`,
   }
 };
 
@@ -234,48 +218,73 @@ async function searchWithPerplexity(
   systemPrompt: string,
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<{ content: string; citations: string[] }> {
-  if (!PERPLEXITY_API_KEY) {
-    console.log('⚠️ PERPLEXITY_API_KEY not set');
+  
+  // API Key kontrolü
+  const apiKey = PERPLEXITY_API_KEY || process.env.PERPLEXITY_API_KEY;
+  
+  if (!apiKey) {
+    console.log('⚠️ PERPLEXITY_API_KEY not configured - using fallback analysis');
+    console.log('   ℹ️ Set PERPLEXITY_API_KEY in Vercel environment variables');
     return { content: '', citations: [] };
   }
 
   try {
+    console.log(`   🔍 Calling Perplexity API for: ${query.substring(0, 50)}...`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 saniye timeout
+    
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
+        model: 'sonar', // sonar-pro yerine sonar (daha hızlı ve ucuz)
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
+        max_tokens: 1500,
+        temperature: 0.2,
         return_citations: true,
         search_recency_filter: 'week',
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errText = await response.text();
-      console.log(`❌ Perplexity error: ${response.status} - ${errText}`);
+      console.log(`❌ Perplexity API error: ${response.status}`);
+      console.log(`   Error details: ${errText.substring(0, 200)}`);
+      
+      // Rate limit veya auth hatası için özel mesaj
+      if (response.status === 401) {
+        console.log('   ⚠️ Invalid API key - check PERPLEXITY_API_KEY');
+      } else if (response.status === 429) {
+        console.log('   ⚠️ Rate limit exceeded - using fallback');
+      }
+      
       return { content: '', citations: [] };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
+    const citations = data.citations || [];
     
-    console.log(`   📰 Perplexity returned ${content.length} chars`);
+    console.log(`   ✅ Perplexity returned ${content.length} chars, ${citations.length} citations`);
     
-    return {
-      content,
-      citations: data.citations || []
-    };
-  } catch (error) {
-    console.error('❌ Perplexity exception:', error);
+    return { content, citations };
+    
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('⚠️ Perplexity API timeout (15s) - using fallback');
+    } else {
+      console.error('❌ Perplexity exception:', error.message || error);
+    }
     return { content: '', citations: [] };
   }
 }
