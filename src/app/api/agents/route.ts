@@ -1,7 +1,8 @@
 // src/app/api/agents/route.ts
-// Professional Agent Analysis API - v6
+// Professional Agent Analysis API - v7
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHANGELOG:
+// v7 - Fixed riskAssessment object rendering issue (converts to string for frontend)
 // v6 - Strategy Agent integration with multi-model and sentiment data
 // v5 - Added record and matchCount fields (fixes N/A issue)
 // v5 - Better data mapping for UI display
@@ -14,12 +15,45 @@ import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
-import { runStrategyAgent } from '@/lib/heurist/agents/strategy';  // ← YENİ!
+import { runStrategyAgent } from '@/lib/heurist/agents/strategy';
 import { savePrediction } from '@/lib/predictions';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 
 // ==================== DATA QUALITY THRESHOLD ====================
 const MIN_DATA_QUALITY = 30;
+
+// ==================== HELPER: Normalize riskAssessment ====================
+function normalizeRiskAssessment(riskAssessment: any): string {
+  if (!riskAssessment) return 'Medium';
+  
+  // Eğer string ise direkt döndür
+  if (typeof riskAssessment === 'string') {
+    return riskAssessment;
+  }
+  
+  // Eğer obje ise level'ı al
+  if (typeof riskAssessment === 'object' && riskAssessment.level) {
+    return riskAssessment.level;
+  }
+  
+  return 'Medium';
+}
+
+function getRiskScore(riskAssessment: any): number | null {
+  if (!riskAssessment) return null;
+  if (typeof riskAssessment === 'object' && riskAssessment.score !== undefined) {
+    return riskAssessment.score;
+  }
+  return null;
+}
+
+function getRiskFactors(riskAssessment: any): string[] {
+  if (!riskAssessment) return [];
+  if (typeof riskAssessment === 'object' && Array.isArray(riskAssessment.factors)) {
+    return riskAssessment.factors;
+  }
+  return [];
+}
 
 // ==================== PROFESSIONAL OVER/UNDER CALCULATION ====================
 
@@ -117,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
-    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v6 (with Strategy Agent)');
+    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v7 (with riskAssessment fix)');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🆔 IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
@@ -297,7 +331,7 @@ export async function POST(request: NextRequest) {
       );
       console.log(`   ✅ Strategy Agent completed in ${Date.now() - strategyStart}ms`);
       console.log(`   🎯 Best Bet: ${strategyResult?.recommendedBets?.[0]?.type} - ${strategyResult?.recommendedBets?.[0]?.selection}`);
-      console.log(`   ⚠️ Risk: ${strategyResult?.riskAssessment?.level} (${strategyResult?.riskAssessment?.score}/100)`);
+      console.log(`   ⚠️ Risk: ${normalizeRiskAssessment(strategyResult?.riskAssessment)} (${getRiskScore(strategyResult?.riskAssessment) || 'N/A'}/100)`);
     } catch (strategyError) {
       console.error('⚠️ Strategy Agent failed:', strategyError);
     }
@@ -313,7 +347,10 @@ export async function POST(request: NextRequest) {
         // Strategy Agent v2 verileri
         masterAnalysis: strategyResult.masterAnalysis,
         consensus: strategyResult.consensus,
-        riskAssessment: strategyResult.riskAssessment,
+        // ✅ FIX: riskAssessment'ı string olarak gönder (React render hatası için)
+        riskAssessment: normalizeRiskAssessment(strategyResult.riskAssessment),
+        riskScore: getRiskScore(strategyResult.riskAssessment),
+        riskFactors: getRiskFactors(strategyResult.riskAssessment),
         recommendedBets: strategyResult.recommendedBets,
         avoidBets: strategyResult.avoidBets,
         stakeSuggestion: strategyResult.stakeSuggestion,
@@ -428,11 +465,13 @@ export async function POST(request: NextRequest) {
         modelAgreement: multiModelResult.modelAgreement,
       } : { enabled: false },
       
-      // Strategy Agent Summary (NEW!)
+      // Strategy Agent Summary - ✅ FIX: riskAssessment normalized
       strategyAgent: strategyResult ? {
         enabled: true,
         masterAnalysis: strategyResult.masterAnalysis,
-        riskAssessment: strategyResult.riskAssessment,
+        riskAssessment: normalizeRiskAssessment(strategyResult.riskAssessment),
+        riskScore: getRiskScore(strategyResult.riskAssessment),
+        riskFactors: getRiskFactors(strategyResult.riskAssessment),
         recommendedBets: strategyResult.recommendedBets,
         stakeSuggestion: strategyResult.stakeSuggestion,
         specialAlerts: strategyResult.specialAlerts,
@@ -541,7 +580,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    version: 'v6',
+    version: 'v7',
     features: [
       'Professional data fetching with includes',
       'Venue-specific statistics',
@@ -549,7 +588,8 @@ export async function GET() {
       'Multi-model analysis',
       'Professional Over/Under calculation',
       'Record & matchCount fields for UI',
-      'Strategy Agent v2.0 integration',  // ← YENİ
+      'Strategy Agent v2.0 integration',
+      'Fixed riskAssessment object→string conversion',  // ← YENİ
     ],
     timestamp: new Date().toISOString(),
   });
