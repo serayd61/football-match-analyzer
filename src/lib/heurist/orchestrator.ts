@@ -710,7 +710,8 @@ export async function runOrchestrator(
         console.error('Odds agent failed:', err);
         return null;
       }),
-      runSentimentAgent(matchData as unknown as MatchData).catch(err => {
+      runSentimentAgent(matchData as unknown as MatchData, language).catch(err => {
+
         console.error('Sentiment agent failed:', err);
         return null;
       }),
