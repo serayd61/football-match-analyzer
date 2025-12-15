@@ -393,47 +393,33 @@ export async function fetchTeamRecentMatches(
   leagueId?: number, 
   count: number = 15
 ): Promise<any[]> {
-  // ✅ FIX: Include parametresi eklendi!
-  const endpoint = `/schedules/teams/${teamId}?include=scores;participants`;
+  // ✅ DOĞRU ENDPOINT - fixtures by team
+  const today = new Date();
+  const pastDate = new Date();
+  pastDate.setMonth(pastDate.getMonth() - 4); // Son 4 ay
   
-  console.log(`📡 Fetching schedule for team ${teamId} WITH scores & participants...`);
+  const startDate = pastDate.toISOString().split('T')[0];
+  const endDate = today.toISOString().split('T')[0];
+  
+  const endpoint = `/fixtures/between/${startDate}/${endDate}?filters[participant_id]=${teamId}&include=scores;participants&per_page=50`;
+  
+  console.log(`📡 Fetching fixtures for team ${teamId} (${startDate} to ${endDate})...`);
   const data = await fetchSportmonks(endpoint);
   
   if (!data?.data || data.data.length === 0) {
-    console.log(`⚠️ No schedule data for team ${teamId}`);
+    console.log(`⚠️ No fixtures found for team ${teamId}`);
     return [];
   }
   
-  // Schedule yapısı: data[].rounds[].fixtures[] veya data[].fixtures[]
-  const allFixtures: any[] = [];
-  
-  for (const stage of data.data) {
-    // Rounds içindeki fixtures
-    if (stage.rounds && Array.isArray(stage.rounds)) {
-      for (const round of stage.rounds) {
-        if (round.fixtures && Array.isArray(round.fixtures)) {
-          allFixtures.push(...round.fixtures);
-        }
-      }
-    }
-    // Direkt fixtures
-    if (stage.fixtures && Array.isArray(stage.fixtures)) {
-      allFixtures.push(...stage.fixtures);
-    }
-  }
-  
+  const allFixtures = data.data;
   console.log(`   📊 Total fixtures found: ${allFixtures.length}`);
   
-  // Bitmiş maçları filtrele ve scores kontrolü yap
+  // Bitmiş maçları filtrele
   const finishedWithScores = allFixtures
     .filter((f: any) => {
       const hasScores = f.scores && Array.isArray(f.scores) && f.scores.length > 0;
       const hasParticipants = f.participants && Array.isArray(f.participants) && f.participants.length >= 2;
       const isFinished = f.state_id === 5;
-      
-      if (isFinished && !hasScores) {
-        console.log(`   ⚠️ Fixture ${f.id} finished but NO SCORES!`);
-      }
       
       return isFinished && hasScores && hasParticipants;
     })
