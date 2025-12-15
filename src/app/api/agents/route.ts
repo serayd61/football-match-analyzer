@@ -1,11 +1,12 @@
 // src/app/api/agents/route.ts
-// Professional Agent Analysis API - FIXED v4
+// Professional Agent Analysis API - FIXED v5
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHANGELOG:
+// v5 - Added record and matchCount fields (fixes N/A issue)
+// v5 - Better data mapping for UI display
 // v4 - Uses fixed sportmonks-data.ts with proper includes
 // v4 - Removed duplicate data fetching
 // v4 - Added data quality validation before agent execution
-// v4 - Better error handling and logging
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const dynamic = 'force-dynamic';
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
-    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v4');
+    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v5');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🆔 IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
@@ -158,8 +159,6 @@ export async function POST(request: NextRequest) {
     if (dataQuality && dataQuality.score < MIN_DATA_QUALITY) {
       console.log(`⚠️ Data quality too low: ${dataQuality.score}/100`);
       console.log(`   Warnings: ${dataQuality.warnings.join(', ')}`);
-      
-      // Still proceed but with warning
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
       // Odds
       odds: completeMatchData.odds,
       
-      // Home Form (with venue-specific data)
+      // Home Form (with venue-specific data) - ✅ FIXED: Added record & matchCount
       homeForm: {
         form: completeMatchData.homeForm.form,
         points: completeMatchData.homeForm.points,
@@ -211,19 +210,23 @@ export async function POST(request: NextRequest) {
         over25Percentage: completeMatchData.homeForm.over25Percentage,
         bttsPercentage: completeMatchData.homeForm.bttsPercentage,
         cleanSheetPercentage: completeMatchData.homeForm.cleanSheetPercentage,
+        failedToScorePercentage: completeMatchData.homeForm.failedToScorePercentage,
         matches: completeMatchData.homeForm.matchDetails,
+        record: completeMatchData.homeForm.record,           // ✅ N/A FIX
+        matchCount: completeMatchData.homeForm.matchCount,   // ✅ N/A FIX
         
         // Venue-specific (KRITIK!)
         venueForm: completeMatchData.homeForm.venueForm,
+        venuePoints: completeMatchData.homeForm.venuePoints,
         venueAvgScored: completeMatchData.homeForm.venueAvgScored,
         venueAvgConceded: completeMatchData.homeForm.venueAvgConceded,
         venueOver25Pct: completeMatchData.homeForm.venueOver25Pct,
         venueBttsPct: completeMatchData.homeForm.venueBttsPct,
         venueMatchCount: completeMatchData.homeForm.venueMatchCount,
-        venueRecord: completeMatchData.homeForm.venueRecord,
+        venueRecord: completeMatchData.homeForm.venueRecord, // ✅ N/A FIX
       },
       
-      // Away Form (with venue-specific data)
+      // Away Form (with venue-specific data) - ✅ FIXED: Added record & matchCount
       awayForm: {
         form: completeMatchData.awayForm.form,
         points: completeMatchData.awayForm.points,
@@ -232,16 +235,20 @@ export async function POST(request: NextRequest) {
         over25Percentage: completeMatchData.awayForm.over25Percentage,
         bttsPercentage: completeMatchData.awayForm.bttsPercentage,
         cleanSheetPercentage: completeMatchData.awayForm.cleanSheetPercentage,
+        failedToScorePercentage: completeMatchData.awayForm.failedToScorePercentage,
         matches: completeMatchData.awayForm.matchDetails,
+        record: completeMatchData.awayForm.record,           // ✅ N/A FIX
+        matchCount: completeMatchData.awayForm.matchCount,   // ✅ N/A FIX
         
         // Venue-specific (KRITIK!)
         venueForm: completeMatchData.awayForm.venueForm,
+        venuePoints: completeMatchData.awayForm.venuePoints,
         venueAvgScored: completeMatchData.awayForm.venueAvgScored,
         venueAvgConceded: completeMatchData.awayForm.venueAvgConceded,
         venueOver25Pct: completeMatchData.awayForm.venueOver25Pct,
         venueBttsPct: completeMatchData.awayForm.venueBttsPct,
         venueMatchCount: completeMatchData.awayForm.venueMatchCount,
-        venueRecord: completeMatchData.awayForm.venueRecord,
+        venueRecord: completeMatchData.awayForm.venueRecord, // ✅ N/A FIX
       },
       
       // H2H
@@ -286,7 +293,6 @@ export async function POST(request: NextRequest) {
         console.log(`   ✅ Multi-Model completed in ${Date.now() - mmStart}ms`);
       } catch (mmError) {
         console.error('⚠️ Multi-Model Analysis failed:', mmError);
-        // Continue without multi-model
       }
     }
 
@@ -297,7 +303,6 @@ export async function POST(request: NextRequest) {
     console.log('🤖 Running Agent Analysis...');
     const agentStart = Date.now();
     
-    // Pass matchData directly - NO duplicate fetching!
     const result = await runFullAnalysis(
       { matchData }, 
       language as 'tr' | 'en' | 'de'
@@ -380,7 +385,7 @@ export async function POST(request: NextRequest) {
         warnings: dataQuality?.warnings || [],
       },
       
-      // What data was used
+      // What data was used - ✅ ENHANCED with record info
       dataUsed: {
         hasOdds: !!(completeMatchData.odds?.matchWinner?.home > 1),
         hasHomeForm: !!(completeMatchData.homeForm?.form && completeMatchData.homeForm.form !== 'NNNNN'),
@@ -394,6 +399,12 @@ export async function POST(request: NextRequest) {
         homeVenueMatches: completeMatchData.homeForm?.venueMatchCount || 0,
         awayVenueMatches: completeMatchData.awayForm?.venueMatchCount || 0,
         h2hMatchCount: completeMatchData.h2h?.totalMatches || 0,
+        
+        // ✅ NEW: Record info for UI
+        homeRecord: completeMatchData.homeForm?.record || 'N/A',
+        awayRecord: completeMatchData.awayForm?.record || 'N/A',
+        homeVenueRecord: completeMatchData.homeForm?.venueRecord || 'N/A',
+        awayVenueRecord: completeMatchData.awayForm?.venueRecord || 'N/A',
       },
       
       // Professional calculation results
@@ -401,30 +412,49 @@ export async function POST(request: NextRequest) {
         overUnder: overUnderCalc,
       },
       
-      // Raw stats for debugging/transparency
+      // Raw stats for debugging/transparency - ✅ ENHANCED
       rawStats: {
         home: {
           form: completeMatchData.homeForm.form,
           venueForm: completeMatchData.homeForm.venueForm,
           avgScored: completeMatchData.homeForm.avgGoalsScored,
           venueAvgScored: completeMatchData.homeForm.venueAvgScored,
+          avgConceded: completeMatchData.homeForm.avgGoalsConceded,
+          venueAvgConceded: completeMatchData.homeForm.venueAvgConceded,
           over25: completeMatchData.homeForm.over25Percentage,
           venueOver25: completeMatchData.homeForm.venueOver25Pct,
+          btts: completeMatchData.homeForm.bttsPercentage,
+          venueBtts: completeMatchData.homeForm.venueBttsPct,
           matchCount: completeMatchData.homeForm.matchCount,
           venueMatchCount: completeMatchData.homeForm.venueMatchCount,
+          record: completeMatchData.homeForm.record,           // ✅ NEW
+          venueRecord: completeMatchData.homeForm.venueRecord, // ✅ NEW
+          points: completeMatchData.homeForm.points,
+          venuePoints: completeMatchData.homeForm.venuePoints,
         },
         away: {
           form: completeMatchData.awayForm.form,
           venueForm: completeMatchData.awayForm.venueForm,
           avgScored: completeMatchData.awayForm.avgGoalsScored,
           venueAvgScored: completeMatchData.awayForm.venueAvgScored,
+          avgConceded: completeMatchData.awayForm.avgGoalsConceded,
+          venueAvgConceded: completeMatchData.awayForm.venueAvgConceded,
           over25: completeMatchData.awayForm.over25Percentage,
           venueOver25: completeMatchData.awayForm.venueOver25Pct,
+          btts: completeMatchData.awayForm.bttsPercentage,
+          venueBtts: completeMatchData.awayForm.venueBttsPct,
           matchCount: completeMatchData.awayForm.matchCount,
           venueMatchCount: completeMatchData.awayForm.venueMatchCount,
+          record: completeMatchData.awayForm.record,           // ✅ NEW
+          venueRecord: completeMatchData.awayForm.venueRecord, // ✅ NEW
+          points: completeMatchData.awayForm.points,
+          venuePoints: completeMatchData.awayForm.venuePoints,
         },
         h2h: {
           totalMatches: completeMatchData.h2h.totalMatches,
+          homeWins: completeMatchData.h2h.homeWins,
+          awayWins: completeMatchData.h2h.awayWins,
+          draws: completeMatchData.h2h.draws,
           over25: completeMatchData.h2h.over25Percentage,
           btts: completeMatchData.h2h.bttsPercentage,
           avgGoals: completeMatchData.h2h.avgTotalGoals,
@@ -450,13 +480,14 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    version: 'v4',
+    version: 'v5',
     features: [
       'Professional data fetching with includes',
       'Venue-specific statistics',
       'Data quality scoring',
       'Multi-model analysis',
       'Professional Over/Under calculation',
+      'Record & matchCount fields for UI', // ✅ NEW
     ],
     timestamp: new Date().toISOString(),
   });
