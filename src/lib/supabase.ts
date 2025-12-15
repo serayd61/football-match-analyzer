@@ -1,5 +1,7 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
+// Server-side safe singleton instances
 let _supabase: SupabaseClient | null = null;
 let _supabaseAdmin: SupabaseClient | null = null;
 
@@ -21,23 +23,47 @@ function getSupabaseServiceKey(): string {
   return key;
 }
 
+// ✅ Browser-only client with SSR check
 export function getSupabase(): SupabaseClient {
+  // Prevent server-side execution
+  if (typeof window === 'undefined') {
+    throw new Error('getSupabase() can only be called in the browser');
+  }
+
   if (!_supabase) {
-    _supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
+    _supabase = createBrowserClient(
+      getSupabaseUrl(), 
+      getSupabaseAnonKey()
+    );
   }
   return _supabase;
 }
 
+// ✅ Admin client (server-safe fallback)
 export function getSupabaseAdmin(): SupabaseClient {
   if (!_supabaseAdmin) {
-    _supabaseAdmin = createClient(getSupabaseUrl(), getSupabaseServiceKey());
+    // Use standard createClient for admin (no browser APIs needed)
+    const { createClient } = require('@supabase/supabase-js');
+    _supabaseAdmin = createClient(
+      getSupabaseUrl(), 
+      getSupabaseServiceKey(),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
   }
   return _supabaseAdmin;
 }
 
-// Legacy exports for backward compatibility (lazy initialized)
+// ✅ Safe lazy initialization for backward compatibility
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_, prop) {
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot access supabase on server. Use getSupabase() in useEffect or client components.');
+    }
     return (getSupabase() as any)[prop];
   }
 });
@@ -48,6 +74,15 @@ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
   }
 });
 
+// ✅ React hook for safe usage
+export function useSupabase() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return getSupabase();
+}
+
+// Type definitions (unchanged)
 export interface User {
   id: string;
   email: string;
