@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import AgentReports from '@/components/AgentReports';
 import AgentLoadingProgress from '@/components/AgentLoadingProgress';
+import AIConsensusLoading from '@/components/AIConsensusLoading';  // ← YENİ IMPORT
 
 interface Match {
   id: number;
@@ -70,7 +71,7 @@ export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState('matches');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Labels
+  // Labels - aynı kalıyor...
   const labels = {
     tr: {
       matches: 'Maçlar',
@@ -462,7 +463,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* HEADER */}
+      {/* HEADER - Aynı kalıyor */}
       <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -662,7 +663,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* MATCHES LIST */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* MATCHES LIST - LOGOLU YENİ TASARIM */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-gray-700/50 flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -683,21 +686,97 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 filteredMatches.map((match) => (
-                  <div key={match.id} onClick={() => setSelectedMatch(match)} className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
-                    <div className="flex items-center justify-between">
+                  <div 
+                    key={match.id} 
+                    onClick={() => setSelectedMatch(match)} 
+                    className={`p-4 hover:bg-gray-700/30 cursor-pointer transition-all ${
+                      selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Team Logos & Names */}
                       <div className="flex-1">
-                        <div className="font-semibold text-white text-lg">{match.homeTeam} vs {match.awayTeam}</div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-sm text-gray-400">{match.league}</span>
-                          <span className="text-xs text-gray-500">
+                        <div className="flex items-center gap-3 mb-2">
+                          {/* Home Team */}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {match.homeTeamLogo ? (
+                              <img 
+                                src={match.homeTeamLogo} 
+                                alt="" 
+                                className="w-8 h-8 object-contain flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                                {match.homeTeam.charAt(0)}
+                              </div>
+                            )}
+                            <span className="font-semibold text-white truncate">{match.homeTeam}</span>
+                          </div>
+                          
+                          <span className="text-gray-500 text-sm flex-shrink-0">vs</span>
+                          
+                          {/* Away Team */}
+                          <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+                            <span className="font-semibold text-white truncate text-right">{match.awayTeam}</span>
+                            {match.awayTeamLogo ? (
+                              <img 
+                                src={match.awayTeamLogo} 
+                                alt="" 
+                                className="w-8 h-8 object-contain flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                                {match.awayTeam.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* League & Time */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {match.leagueLogo && (
+                              <img 
+                                src={match.leagueLogo} 
+                                alt="" 
+                                className="w-4 h-4 object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <span className="text-sm text-gray-400 truncate max-w-[150px]">{match.league}</span>
+                          </div>
+                          <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-1 rounded flex-shrink-0">
                             {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }} disabled={analyzing || !userProfile?.canAnalyze} className={`px-4 py-2.5 rounded-xl font-medium transition-all ${userProfile?.canAnalyze ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                      
+                      {/* Analyze Button */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); analyzeMatch(match); }} 
+                        disabled={analyzing || !userProfile?.canAnalyze} 
+                        className={`px-4 py-3 rounded-xl font-medium transition-all flex flex-col items-center gap-1 flex-shrink-0 ${
+                          userProfile?.canAnalyze 
+                            ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20' 
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
                         {analyzing && selectedMatch?.id === match.id ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : '🤖'}
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <span className="text-lg">🤖</span>
+                            <span className="text-xs">{l.analyze}</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -706,13 +785,66 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* ANALYSIS PANEL */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl overflow-hidden">
             {selectedMatch ? (
               <>
+                {/* Header with Team Logos */}
                 <div className="p-5 border-b border-gray-700/50 bg-gradient-to-r from-green-500/10 to-blue-500/10">
-                  <h2 className="text-xl font-bold text-white">{selectedMatch.homeTeam} vs {selectedMatch.awayTeam}</h2>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center justify-center gap-4">
+                    {/* Home Team */}
+                    <div className="flex items-center gap-2">
+                      {selectedMatch.homeTeamLogo ? (
+                        <img 
+                          src={selectedMatch.homeTeamLogo} 
+                          alt="" 
+                          className="w-10 h-10 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-lg font-bold text-white">
+                          {selectedMatch.homeTeam.charAt(0)}
+                        </div>
+                      )}
+                      <span className="font-bold text-white text-lg">{selectedMatch.homeTeam}</span>
+                    </div>
+                    
+                    <span className="text-gray-400 font-bold">vs</span>
+                    
+                    {/* Away Team */}
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-lg">{selectedMatch.awayTeam}</span>
+                      {selectedMatch.awayTeamLogo ? (
+                        <img 
+                          src={selectedMatch.awayTeamLogo} 
+                          alt="" 
+                          className="w-10 h-10 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-lg font-bold text-white">
+                          {selectedMatch.awayTeam.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-3 mt-2">
+                    {selectedMatch.leagueLogo && (
+                      <img 
+                        src={selectedMatch.leagueLogo} 
+                        alt="" 
+                        className="w-4 h-4 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
                     <span className="text-sm text-gray-400">{selectedMatch.league}</span>
                     <span className="text-xs text-gray-500">
                       {new Date(selectedMatch.date).toLocaleString(lang, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -740,15 +872,21 @@ export default function DashboardPage() {
                     </div>
                   )}
 
+                  {/* ═══════════════════════════════════════════════════════════════ */}
+                  {/* YENİ LOADING STATE - AIConsensusLoading */}
+                  {/* ═══════════════════════════════════════════════════════════════ */}
                   {(analyzing || agentLoading) ? (
                     agentLoading ? (
                       <AgentLoadingProgress isLoading={true} />
                     ) : (
-                      <div className="text-center py-16">
-                        <div className="w-14 h-14 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-gray-400 text-lg">{l.analyzing}</p>
-                        <p className="text-gray-500 text-sm mt-2">4 AI models working...</p>
-                      </div>
+                      <AIConsensusLoading 
+                        isLoading={true}
+                        homeTeam={selectedMatch.homeTeam}
+                        awayTeam={selectedMatch.awayTeam}
+                        homeTeamLogo={selectedMatch.homeTeamLogo}
+                        awayTeamLogo={selectedMatch.awayTeamLogo}
+                        language={lang as 'tr' | 'en' | 'de'}
+                      />
                     )
                   ) : (analysis || agentAnalysis) ? (
                     <div className="space-y-4">
