@@ -1,3 +1,4 @@
+// src/app/api/matches/route.ts
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -31,10 +32,11 @@ export async function GET(request: NextRequest) {
         let page = 1;
         let hasMore = true;
         
-        while (hasMore && page <= 5) { // Max 5 sayfa (500 maç)
+        while (hasMore && page <= 5) {
           let url: string;
           
           if (specificDate) {
+            // ✅ participants.country ekledik (logo için)
             url = `https://api.sportmonks.com/v3/football/fixtures/date/${specificDate}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=100&page=${page}`;
           } else {
             url = `https://api.sportmonks.com/v3/football/fixtures/between/${todayStr}/${nextWeekStr}?api_token=${SPORTMONKS_API_KEY}&include=participants;league;scores&per_page=150&page=${page}`;
@@ -55,8 +57,13 @@ export async function GET(request: NextRequest) {
                 awayTeam: awayTeam?.name || 'Unknown',
                 homeTeamId: homeTeam?.id,
                 awayTeamId: awayTeam?.id,
+                // ✅ YENİ: Logo URL'leri
+                homeTeamLogo: homeTeam?.image_path || null,
+                awayTeamLogo: awayTeam?.image_path || null,
                 league: fixture.league?.name || 'Unknown League',
                 leagueId: fixture.league?.id,
+                // ✅ YENİ: Lig logosu
+                leagueLogo: fixture.league?.image_path || null,
                 date: fixture.starting_at,
                 status: fixture.state?.state || 'NS',
               };
@@ -65,7 +72,6 @@ export async function GET(request: NextRequest) {
             allMatches = [...allMatches, ...sportmonksMatches];
             console.log(`✅ Sportmonks Page ${page}: ${sportmonksMatches.length} matches`);
             
-            // Check if there are more pages
             if (data.pagination && data.pagination.has_more) {
               page++;
             } else {
