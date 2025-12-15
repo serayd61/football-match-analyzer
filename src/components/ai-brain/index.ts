@@ -1,11 +1,11 @@
 // AI Brain Components
 // Export all components from a single entry point
 
-export { default as AIBrainVisualization } from './AIBrainVisualization';
-export { default as AIBrainLoading } from './AIBrainLoading';
-export { default as AIBrainError } from './AIBrainError';
-export { default as AIBrainContainer } from './AIBrainContainer';
-export { default as AIBrainMini } from './AIBrainMini';
+export { default as AIBrainVisualization } from '../AIBrainVisualization';
+export { default as AIBrainLoading } from '../AIBrainLoading';
+export { default as AIBrainError } from '../AIBrainError';
+export { default as AIBrainContainer } from '../AIBrainContainer';
+export { default as AIBrainMini } from '../AIBrainMini';
 
 // Types
 export interface AIBrainPrediction {
