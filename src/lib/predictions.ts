@@ -1,6 +1,7 @@
 // src/lib/predictions.ts
 // Tahmin kaydetme ve güncelleme fonksiyonları
 // ⚠️ Bu dosya sadece veritabanı işlemleri yapar, prompt'lara dokunmaz!
+// v2 - Fixed votes string parsing issue ("3/6" → 3)
 
 import { getSupabaseAdmin } from './supabase';
 
@@ -26,6 +27,60 @@ interface PredictionData {
     consensus?: any;
     modelAgreement?: number;
   };
+}
+
+/**
+ * Parse votes string to integer
+ * "3/6" → 3
+ * "5/7" → 5
+ * 3 → 3
+ */
+function parseVotes(votes: any): number | null {
+  if (votes === null || votes === undefined) return null;
+  
+  // Eğer zaten number ise direkt döndür
+  if (typeof votes === 'number') return votes;
+  
+  // String ise parse et
+  if (typeof votes === 'string') {
+    // "3/6" formatı
+    if (votes.includes('/')) {
+      const parts = votes.split('/');
+      const num = parseInt(parts[0], 10);
+      return isNaN(num) ? null : num;
+    }
+    // Sadece sayı
+    const num = parseInt(votes, 10);
+    return isNaN(num) ? null : num;
+  }
+  
+  return null;
+}
+
+/**
+ * Parse agreement - handle both number and string formats
+ */
+function parseAgreement(agreement: any): number | null {
+  if (agreement === null || agreement === undefined) return null;
+  
+  if (typeof agreement === 'number') return agreement;
+  
+  if (typeof agreement === 'string') {
+    // "3/6" formatı → yüzdeye çevir
+    if (agreement.includes('/')) {
+      const parts = agreement.split('/');
+      const numerator = parseInt(parts[0], 10);
+      const denominator = parseInt(parts[1], 10);
+      if (!isNaN(numerator) && !isNaN(denominator) && denominator > 0) {
+        return Math.round((numerator / denominator) * 100);
+      }
+    }
+    // Direkt sayı
+    const num = parseInt(agreement, 10);
+    return isNaN(num) ? null : num;
+  }
+  
+  return null;
 }
 
 /**
@@ -88,7 +143,7 @@ export async function savePrediction(data: PredictionData): Promise<{ success: b
       strategy_best_bet_type: strategy?._bestBet?.type || strategy?.recommendedBets?.[0]?.type || null,
       strategy_best_bet_selection: strategy?._bestBet?.selection || strategy?.recommendedBets?.[0]?.selection || null,
       strategy_best_bet_conf: strategy?._bestBet?.confidence || strategy?.recommendedBets?.[0]?.confidence || null,
-      strategy_risk_level: strategy?.riskAssessment || null,
+      strategy_risk_level: strategy?.riskAssessment?.level || strategy?.riskAssessment || null,
       
       // ═══════════════════════════════════════════════════
       // MULTI-MODEL TAHMİNLERİ
@@ -118,15 +173,18 @@ export async function savePrediction(data: PredictionData): Promise<{ success: b
       
       final_over_under: consensus?.overUnder?.prediction || null,
       final_over_under_conf: consensus?.overUnder?.confidence || null,
-      final_over_under_agreement: consensus?.overUnder?.agreement || null,
+      // ✅ FIX: Parse agreement properly (handles "3/6" string format)
+      final_over_under_agreement: parseAgreement(consensus?.overUnder?.agreement) || parseVotes(consensus?.overUnder?.votes) || null,
       
       final_match_result: consensus?.matchResult?.prediction || null,
       final_match_result_conf: consensus?.matchResult?.confidence || null,
-      final_match_result_agreement: consensus?.matchResult?.agreement || null,
+      // ✅ FIX: Parse agreement properly
+      final_match_result_agreement: parseAgreement(consensus?.matchResult?.agreement) || parseVotes(consensus?.matchResult?.votes) || null,
       
       final_btts: consensus?.btts?.prediction || null,
       final_btts_conf: consensus?.btts?.confidence || null,
-      final_btts_agreement: consensus?.btts?.agreement || null,
+      // ✅ FIX: Parse agreement properly
+      final_btts_agreement: parseAgreement(consensus?.btts?.agreement) || parseVotes(consensus?.btts?.votes) || null,
       
       final_best_bet_type: consensus?.bestBet?.type || null,
       final_best_bet_selection: consensus?.bestBet?.selection || null,
@@ -135,11 +193,18 @@ export async function savePrediction(data: PredictionData): Promise<{ success: b
       final_score_prediction: consensus?.scorePrediction?.score || null,
       final_risk_level: consensus?.riskLevel || null,
       
-      // Ham veri
+      // Ham veri (votes dahil tüm raw data burada saklanır)
       raw_data: {
         reports,
         multiModel,
         timestamp: new Date().toISOString(),
+        // Votes bilgisi raw_data'da saklanır
+        votesRaw: {
+          matchResult: consensus?.matchResult?.votes,
+          overUnder: consensus?.overUnder?.votes,
+          btts: consensus?.btts?.votes,
+          bestBet: consensus?.bestBet?.agreement,
+        },
       },
     };
     
