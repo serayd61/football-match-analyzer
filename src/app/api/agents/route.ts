@@ -1,12 +1,10 @@
 // src/app/api/agents/route.ts
-// Professional Agent Analysis API - FIXED v5
+// Professional Agent Analysis API - v6
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHANGELOG:
+// v6 - Strategy Agent integration with multi-model and sentiment data
 // v5 - Added record and matchCount fields (fixes N/A issue)
 // v5 - Better data mapping for UI display
-// v4 - Uses fixed sportmonks-data.ts with proper includes
-// v4 - Removed duplicate data fetching
-// v4 - Added data quality validation before agent execution
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const dynamic = 'force-dynamic';
@@ -16,11 +14,12 @@ import { authOptions } from '@/lib/auth';
 import { checkUserAccess } from '@/lib/accessControl';
 import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
+import { runStrategyAgent } from '@/lib/heurist/agents/strategy';  // ← YENİ!
 import { savePrediction } from '@/lib/predictions';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 
 // ==================== DATA QUALITY THRESHOLD ====================
-const MIN_DATA_QUALITY = 30; // Minimum %30 data quality required
+const MIN_DATA_QUALITY = 30;
 
 // ==================== PROFESSIONAL OVER/UNDER CALCULATION ====================
 
@@ -30,42 +29,34 @@ function calculateProfessionalOverUnder(
   h2h: any
 ): { prediction: string; confidence: number; breakdown: any } {
   
-  // Ağırlıklar - Venue-specific verilere daha fazla ağırlık
   const WEIGHTS = {
-    homeVenue: 0.30,  // Ev sahibinin EVDEKİ maçları
-    awayVenue: 0.30,  // Deplasmanın DEPLASMANDAKİ maçları
-    h2h: 0.25,        // Kafa kafaya
-    general: 0.15,    // Genel form
+    homeVenue: 0.30,
+    awayVenue: 0.30,
+    h2h: 0.25,
+    general: 0.15,
   };
 
-  // Venue-specific Over 2.5 yüzdeleri
   const homeVenueOver = homeStats?.venueOver25Pct ?? parseInt(homeStats?.over25Percentage || '50');
   const awayVenueOver = awayStats?.venueOver25Pct ?? parseInt(awayStats?.over25Percentage || '50');
   const h2hOver = parseInt(h2h?.over25Percentage || '50');
   const generalOver = (parseInt(homeStats?.over25Percentage || '50') + parseInt(awayStats?.over25Percentage || '50')) / 2;
 
-  // Ağırlıklı hesaplama
   const weightedOver = 
     (homeVenueOver * WEIGHTS.homeVenue) +
     (awayVenueOver * WEIGHTS.awayVenue) +
     (h2hOver * WEIGHTS.h2h) +
     (generalOver * WEIGHTS.general);
 
-  // Beklenen gol hesaplama
   const homeExpectedScored = parseFloat(homeStats?.venueAvgScored || homeStats?.avgGoalsScored || '1.2');
   const homeExpectedConceded = parseFloat(homeStats?.venueAvgConceded || homeStats?.avgGoalsConceded || '1.0');
   const awayExpectedScored = parseFloat(awayStats?.venueAvgScored || awayStats?.avgGoalsScored || '1.0');
   const awayExpectedConceded = parseFloat(awayStats?.venueAvgConceded || awayStats?.avgGoalsConceded || '1.2');
 
-  // Beklenen toplam gol
   const homeExpected = (homeExpectedScored + awayExpectedConceded) / 2;
   const awayExpected = (awayExpectedScored + homeExpectedConceded) / 2;
   const expectedTotal = homeExpected + awayExpected;
 
-  // Tahmin
   const prediction = weightedOver >= 50 ? 'Over' : 'Under';
-  
-  // Güven hesaplama - weighted over'ın 50'den uzaklığı
   const confidence = Math.min(85, Math.max(50, Math.abs(weightedOver - 50) + 55));
 
   return {
@@ -126,14 +117,14 @@ export async function POST(request: NextRequest) {
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
-    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v5');
+    console.log('🤖 PROFESSIONAL AGENT ANALYSIS v6 (with Strategy Agent)');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
     console.log(`📍 Match: ${homeTeam} vs ${awayTeam}`);
     console.log(`🆔 IDs: Home=${homeTeamId}, Away=${awayTeamId}, Fixture=${fixtureId}`);
     console.log('');
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 1: Fetch Complete Match Data (TEK SEFERDE!)
+    // 📊 STEP 1: Fetch Complete Match Data
     // ═══════════════════════════════════════════════════════════════════════════
     
     const dataFetchStart = Date.now();
@@ -158,7 +149,6 @@ export async function POST(request: NextRequest) {
     
     if (dataQuality && dataQuality.score < MIN_DATA_QUALITY) {
       console.log(`⚠️ Data quality too low: ${dataQuality.score}/100`);
-      console.log(`   Warnings: ${dataQuality.warnings.join(', ')}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -172,17 +162,9 @@ export async function POST(request: NextRequest) {
     );
     
     console.log('');
-    console.log('🎯 ═══════════════════════════════════════════════════');
     console.log('🎯 PROFESSIONAL OVER/UNDER CALCULATION');
-    console.log('🎯 ═══════════════════════════════════════════════════');
-    console.log(`   📊 ${homeTeam} EVDEKİ Over 2.5: ${overUnderCalc.breakdown.homeVenueOver}% (ağırlık: 30%)`);
-    console.log(`   📊 ${awayTeam} DEPLASMANDAKİ Over 2.5: ${overUnderCalc.breakdown.awayVenueOver}% (ağırlık: 30%)`);
-    console.log(`   📊 H2H Over 2.5: ${overUnderCalc.breakdown.h2hOver}% (ağırlık: 25%)`);
-    console.log(`   📊 Genel Form Over 2.5: ${overUnderCalc.breakdown.generalOver}% (ağırlık: 15%)`);
-    console.log(`   ─────────────────────────────────────`);
     console.log(`   🎯 WEIGHTED OVER 2.5: ${overUnderCalc.breakdown.weightedOver}%`);
     console.log(`   🎯 PREDICTION: ${overUnderCalc.prediction} (${overUnderCalc.confidence}% güven)`);
-    console.log(`   🎯 Expected Total Goals: ${overUnderCalc.breakdown.expectedTotal}`);
     console.log('');
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -197,11 +179,7 @@ export async function POST(request: NextRequest) {
       awayTeamId,
       league,
       date: new Date().toISOString(),
-      
-      // Odds
       odds: completeMatchData.odds,
-      
-      // Home Form (with venue-specific data) - ✅ FIXED: Added record & matchCount
       homeForm: {
         form: completeMatchData.homeForm.form,
         points: completeMatchData.homeForm.points,
@@ -212,10 +190,8 @@ export async function POST(request: NextRequest) {
         cleanSheetPercentage: completeMatchData.homeForm.cleanSheetPercentage,
         failedToScorePercentage: completeMatchData.homeForm.failedToScorePercentage,
         matches: completeMatchData.homeForm.matchDetails,
-        record: completeMatchData.homeForm.record,           // ✅ N/A FIX
-        matchCount: completeMatchData.homeForm.matchCount,   // ✅ N/A FIX
-        
-        // Venue-specific (KRITIK!)
+        record: completeMatchData.homeForm.record,
+        matchCount: completeMatchData.homeForm.matchCount,
         venueForm: completeMatchData.homeForm.venueForm,
         venuePoints: completeMatchData.homeForm.venuePoints,
         venueAvgScored: completeMatchData.homeForm.venueAvgScored,
@@ -223,10 +199,8 @@ export async function POST(request: NextRequest) {
         venueOver25Pct: completeMatchData.homeForm.venueOver25Pct,
         venueBttsPct: completeMatchData.homeForm.venueBttsPct,
         venueMatchCount: completeMatchData.homeForm.venueMatchCount,
-        venueRecord: completeMatchData.homeForm.venueRecord, // ✅ N/A FIX
+        venueRecord: completeMatchData.homeForm.venueRecord,
       },
-      
-      // Away Form (with venue-specific data) - ✅ FIXED: Added record & matchCount
       awayForm: {
         form: completeMatchData.awayForm.form,
         points: completeMatchData.awayForm.points,
@@ -237,10 +211,8 @@ export async function POST(request: NextRequest) {
         cleanSheetPercentage: completeMatchData.awayForm.cleanSheetPercentage,
         failedToScorePercentage: completeMatchData.awayForm.failedToScorePercentage,
         matches: completeMatchData.awayForm.matchDetails,
-        record: completeMatchData.awayForm.record,           // ✅ N/A FIX
-        matchCount: completeMatchData.awayForm.matchCount,   // ✅ N/A FIX
-        
-        // Venue-specific (KRITIK!)
+        record: completeMatchData.awayForm.record,
+        matchCount: completeMatchData.awayForm.matchCount,
         venueForm: completeMatchData.awayForm.venueForm,
         venuePoints: completeMatchData.awayForm.venuePoints,
         venueAvgScored: completeMatchData.awayForm.venueAvgScored,
@@ -248,10 +220,8 @@ export async function POST(request: NextRequest) {
         venueOver25Pct: completeMatchData.awayForm.venueOver25Pct,
         venueBttsPct: completeMatchData.awayForm.venueBttsPct,
         venueMatchCount: completeMatchData.awayForm.venueMatchCount,
-        venueRecord: completeMatchData.awayForm.venueRecord, // ✅ N/A FIX
+        venueRecord: completeMatchData.awayForm.venueRecord,
       },
-      
-      // H2H
       h2h: {
         totalMatches: completeMatchData.h2h.totalMatches,
         homeWins: completeMatchData.h2h.homeWins,
@@ -262,20 +232,14 @@ export async function POST(request: NextRequest) {
         bttsPercentage: completeMatchData.h2h.bttsPercentage,
         matchDetails: completeMatchData.h2h.matchDetails,
       },
-      
-      // Detailed stats for agents
       detailedStats: {
         home: completeMatchData.homeForm,
         away: completeMatchData.awayForm,
         h2h: completeMatchData.h2h,
       },
-      
-      // Professional calculation
       professionalCalc: {
         overUnder: overUnderCalc,
       },
-      
-      // Odds history
       oddsHistory: completeMatchData.oddsHistory,
     };
 
@@ -297,10 +261,10 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 6: Run Standard Agent Analysis
+    // 📊 STEP 6: Run Standard Agent Analysis (Orchestrator)
     // ═══════════════════════════════════════════════════════════════════════════
     
-    console.log('🤖 Running Agent Analysis...');
+    console.log('🤖 Running Agent Analysis (Orchestrator)...');
     const agentStart = Date.now();
     
     const result = await runFullAnalysis(
@@ -311,7 +275,95 @@ export async function POST(request: NextRequest) {
     console.log(`   ✅ Agent Analysis completed in ${Date.now() - agentStart}ms`);
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 7: Save Prediction for Backtesting
+    // 📊 STEP 7: Run Strategy Agent (NEW!) - Tüm verileri sentezle
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    console.log('🧠 Running Strategy Agent v2.0...');
+    const strategyStart = Date.now();
+    
+    let strategyResult = null;
+    try {
+      strategyResult = await runStrategyAgent(
+        matchData,
+        {
+          deepAnalysis: result.reports?.deepAnalysis,
+          stats: result.reports?.stats,
+          odds: result.reports?.odds,
+          sentiment: result.reports?.sentiment,
+        },
+        multiModelResult,
+        { overUnder: overUnderCalc }, // professionalCalc
+        language as 'tr' | 'en' | 'de'
+      );
+      console.log(`   ✅ Strategy Agent completed in ${Date.now() - strategyStart}ms`);
+      console.log(`   🎯 Best Bet: ${strategyResult?.recommendedBets?.[0]?.type} - ${strategyResult?.recommendedBets?.[0]?.selection}`);
+      console.log(`   ⚠️ Risk: ${strategyResult?.riskAssessment?.level} (${strategyResult?.riskAssessment?.score}/100)`);
+    } catch (strategyError) {
+      console.error('⚠️ Strategy Agent failed:', strategyError);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 STEP 8: Merge Strategy Results into Reports
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Strategy Agent sonuçlarını reports'a ekle
+    if (strategyResult && result.reports) {
+      result.reports.strategy = {
+        ...result.reports.strategy,
+        // Strategy Agent v2 verileri
+        masterAnalysis: strategyResult.masterAnalysis,
+        consensus: strategyResult.consensus,
+        riskAssessment: strategyResult.riskAssessment,
+        recommendedBets: strategyResult.recommendedBets,
+        avoidBets: strategyResult.avoidBets,
+        stakeSuggestion: strategyResult.stakeSuggestion,
+        specialAlerts: strategyResult.specialAlerts,
+        agentSummary: strategyResult.agentSummary,
+        _consensus: strategyResult._consensus,
+        _bestBet: strategyResult._bestBet,
+        _totalAgreement: strategyResult._totalAgreement,
+        _avgConfidence: strategyResult._avgConfidence,
+      };
+      
+      // weightedConsensus'u da güncelle
+      if (strategyResult.consensus) {
+        result.reports.weightedConsensus = {
+          ...result.reports.weightedConsensus,
+          matchResult: {
+            prediction: strategyResult.consensus.matchResult?.prediction || result.reports.weightedConsensus?.matchResult?.prediction,
+            confidence: strategyResult.consensus.matchResult?.confidence || result.reports.weightedConsensus?.matchResult?.confidence,
+            agreement: strategyResult.consensus.matchResult?.agree || result.reports.weightedConsensus?.matchResult?.agreement,
+            votes: strategyResult.consensus.matchResult?.votes,
+          },
+          overUnder: {
+            prediction: strategyResult.consensus.overUnder?.prediction || result.reports.weightedConsensus?.overUnder?.prediction,
+            confidence: strategyResult.consensus.overUnder?.confidence || result.reports.weightedConsensus?.overUnder?.confidence,
+            agreement: strategyResult.consensus.overUnder?.agree || result.reports.weightedConsensus?.overUnder?.agreement,
+            votes: strategyResult.consensus.overUnder?.votes,
+          },
+          btts: {
+            prediction: strategyResult.consensus.btts?.prediction || result.reports.weightedConsensus?.btts?.prediction,
+            confidence: strategyResult.consensus.btts?.confidence || result.reports.weightedConsensus?.btts?.confidence,
+            agreement: strategyResult.consensus.btts?.agree || result.reports.weightedConsensus?.btts?.agreement,
+            votes: strategyResult.consensus.btts?.votes,
+          },
+          bestBet: strategyResult._bestBet ? {
+            type: strategyResult._bestBet.type,
+            selection: strategyResult._bestBet.selection,
+            confidence: strategyResult._bestBet.confidence,
+            agreement: `${strategyResult._bestBet.agree}/${strategyResult._bestBet.total}`,
+          } : result.reports.weightedConsensus?.bestBet,
+          finalPrediction: {
+            ...result.reports.weightedConsensus?.finalPrediction,
+            recommendation: strategyResult.agentSummary || result.reports.weightedConsensus?.finalPrediction?.recommendation,
+          },
+          isConsensus: (strategyResult._totalAgreement || 0) >= 6,
+        };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 STEP 9: Save Prediction for Backtesting
     // ═══════════════════════════════════════════════════════════════════════════
     
     try {
@@ -340,7 +392,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 8: Build Response
+    // 📊 STEP 10: Build Response
     // ═══════════════════════════════════════════════════════════════════════════
     
     const totalTime = Date.now() - startTime;
@@ -360,6 +412,7 @@ export async function POST(request: NextRequest) {
         total: totalTime,
         dataFetch: dataFetchTime,
         agents: result.timing?.agents || 0,
+        strategy: strategyResult ? Date.now() - strategyStart : 0,
       },
       
       errors: result.errors,
@@ -375,6 +428,17 @@ export async function POST(request: NextRequest) {
         modelAgreement: multiModelResult.modelAgreement,
       } : { enabled: false },
       
+      // Strategy Agent Summary (NEW!)
+      strategyAgent: strategyResult ? {
+        enabled: true,
+        masterAnalysis: strategyResult.masterAnalysis,
+        riskAssessment: strategyResult.riskAssessment,
+        recommendedBets: strategyResult.recommendedBets,
+        stakeSuggestion: strategyResult.stakeSuggestion,
+        specialAlerts: strategyResult.specialAlerts,
+        agentSummary: strategyResult.agentSummary,
+      } : { enabled: false },
+      
       // Data quality info
       dataQuality: {
         score: dataQuality?.score || 0,
@@ -385,7 +449,7 @@ export async function POST(request: NextRequest) {
         warnings: dataQuality?.warnings || [],
       },
       
-      // What data was used - ✅ ENHANCED with record info
+      // What data was used
       dataUsed: {
         hasOdds: !!(completeMatchData.odds?.matchWinner?.home > 1),
         hasHomeForm: !!(completeMatchData.homeForm?.form && completeMatchData.homeForm.form !== 'NNNNN'),
@@ -393,14 +457,11 @@ export async function POST(request: NextRequest) {
         hasHomeVenueData: !!(completeMatchData.homeForm?.venueMatchCount && completeMatchData.homeForm.venueMatchCount > 0),
         hasAwayVenueData: !!(completeMatchData.awayForm?.venueMatchCount && completeMatchData.awayForm.venueMatchCount > 0),
         hasH2H: !!(completeMatchData.h2h?.totalMatches && completeMatchData.h2h.totalMatches > 0),
-        
         homeFormMatches: completeMatchData.homeForm?.matchCount || 0,
         awayFormMatches: completeMatchData.awayForm?.matchCount || 0,
         homeVenueMatches: completeMatchData.homeForm?.venueMatchCount || 0,
         awayVenueMatches: completeMatchData.awayForm?.venueMatchCount || 0,
         h2hMatchCount: completeMatchData.h2h?.totalMatches || 0,
-        
-        // ✅ NEW: Record info for UI
         homeRecord: completeMatchData.homeForm?.record || 'N/A',
         awayRecord: completeMatchData.awayForm?.record || 'N/A',
         homeVenueRecord: completeMatchData.homeForm?.venueRecord || 'N/A',
@@ -412,7 +473,7 @@ export async function POST(request: NextRequest) {
         overUnder: overUnderCalc,
       },
       
-      // Raw stats for debugging/transparency - ✅ ENHANCED
+      // Raw stats for debugging/transparency
       rawStats: {
         home: {
           form: completeMatchData.homeForm.form,
@@ -427,8 +488,8 @@ export async function POST(request: NextRequest) {
           venueBtts: completeMatchData.homeForm.venueBttsPct,
           matchCount: completeMatchData.homeForm.matchCount,
           venueMatchCount: completeMatchData.homeForm.venueMatchCount,
-          record: completeMatchData.homeForm.record,           // ✅ NEW
-          venueRecord: completeMatchData.homeForm.venueRecord, // ✅ NEW
+          record: completeMatchData.homeForm.record,
+          venueRecord: completeMatchData.homeForm.venueRecord,
           points: completeMatchData.homeForm.points,
           venuePoints: completeMatchData.homeForm.venuePoints,
         },
@@ -445,8 +506,8 @@ export async function POST(request: NextRequest) {
           venueBtts: completeMatchData.awayForm.venueBttsPct,
           matchCount: completeMatchData.awayForm.matchCount,
           venueMatchCount: completeMatchData.awayForm.venueMatchCount,
-          record: completeMatchData.awayForm.record,           // ✅ NEW
-          venueRecord: completeMatchData.awayForm.venueRecord, // ✅ NEW
+          record: completeMatchData.awayForm.record,
+          venueRecord: completeMatchData.awayForm.venueRecord,
           points: completeMatchData.awayForm.points,
           venuePoints: completeMatchData.awayForm.venuePoints,
         },
@@ -480,14 +541,15 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    version: 'v5',
+    version: 'v6',
     features: [
       'Professional data fetching with includes',
       'Venue-specific statistics',
       'Data quality scoring',
       'Multi-model analysis',
       'Professional Over/Under calculation',
-      'Record & matchCount fields for UI', // ✅ NEW
+      'Record & matchCount fields for UI',
+      'Strategy Agent v2.0 integration',  // ← YENİ
     ],
     timestamp: new Date().toISOString(),
   });
