@@ -48,11 +48,62 @@ const PredictionBadge = ({ prediction, confidence }: { prediction: string; confi
   );
 };
 
+// ============================================================================
+// HELPER: Risk level'ı normalize et (string veya obje olabilir)
+// ============================================================================
+function getRiskLevel(riskAssessment: any): string {
+  if (!riskAssessment) return 'Unknown';
+  
+  // Eğer string ise direkt döndür
+  if (typeof riskAssessment === 'string') {
+    return riskAssessment;
+  }
+  
+  // Eğer obje ise level'ı al
+  if (typeof riskAssessment === 'object' && riskAssessment.level) {
+    return riskAssessment.level;
+  }
+  
+  return 'Unknown';
+}
+
+function getRiskScore(riskAssessment: any): number | null {
+  if (!riskAssessment) return null;
+  
+  if (typeof riskAssessment === 'object' && riskAssessment.score !== undefined) {
+    return riskAssessment.score;
+  }
+  
+  return null;
+}
+
+function getRiskFactors(riskAssessment: any): string[] {
+  if (!riskAssessment) return [];
+  
+  if (typeof riskAssessment === 'object' && Array.isArray(riskAssessment.factors)) {
+    return riskAssessment.factors;
+  }
+  
+  return [];
+}
+
+function isLowRisk(level: string): boolean {
+  const l = level.toLowerCase();
+  return l === 'low' || l === 'düşük' || l === 'niedrig';
+}
+
+function isMediumRisk(level: string): boolean {
+  const l = level.toLowerCase();
+  return l === 'medium' || l === 'orta' || l === 'mittel';
+}
+
 // Deep Analysis Agent Card
 const DeepAnalysisCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: string; awayTeam: string }) => {
   const [expanded, setExpanded] = useState(true);
 
   if (!data) return null;
+
+  const riskLevel = getRiskLevel(data.riskLevel);
 
   return (
     <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl p-6 border border-purple-500/30">
@@ -187,11 +238,11 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: s
           <div className="mt-4 flex items-center gap-2">
             <span className="text-sm text-gray-400">Risk Seviyesi:</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              data.riskLevel === 'Low' ? 'bg-green-500/20 text-green-400' :
-              data.riskLevel === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              isLowRisk(riskLevel) ? 'bg-green-500/20 text-green-400' :
+              isMediumRisk(riskLevel) ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
             }`}>
-              {data.riskLevel === 'Low' ? '🟢 Düşük' : data.riskLevel === 'Medium' ? '🟡 Orta' : '🔴 Yüksek'}
+              {isLowRisk(riskLevel) ? '🟢 Düşük' : isMediumRisk(riskLevel) ? '🟡 Orta' : '🔴 Yüksek'}
             </span>
           </div>
         </>
@@ -530,10 +581,17 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam:
   );
 };
 
-// Strategy Agent Card
+// ============================================================================
+// Strategy Agent Card - FIXED: riskAssessment obje desteği
+// ============================================================================
 const StrategyAgentCard = ({ data }: { data: any }) => {
   const [expanded, setExpanded] = useState(true);
   if (!data) return null;
+
+  // ✅ FIX: riskAssessment string veya obje olabilir
+  const riskLevel = getRiskLevel(data.riskAssessment);
+  const riskScore = getRiskScore(data.riskAssessment);
+  const riskFactors = getRiskFactors(data.riskAssessment);
 
   return (
     <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl p-6 border border-amber-500/30">
@@ -554,16 +612,46 @@ const StrategyAgentCard = ({ data }: { data: any }) => {
 
       {expanded && (
         <>
+          {/* ✅ FIX: Risk Assessment - obje desteği */}
           <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-white flex items-center gap-2">⚠️ Risk Değerlendirmesi</h4>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                data.riskAssessment === 'Düşük' || data.riskAssessment === 'Low' ? 'bg-green-500/20 text-green-400' :
-                data.riskAssessment === 'Orta' || data.riskAssessment === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                'bg-red-500/20 text-red-400'
-              }`}>{data.riskAssessment}</span>
+              <div className="flex items-center gap-2">
+                {riskScore !== null && (
+                  <span className="text-sm text-gray-400">{riskScore}/100</span>
+                )}
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  isLowRisk(riskLevel) ? 'bg-green-500/20 text-green-400' :
+                  isMediumRisk(riskLevel) ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-red-500/20 text-red-400'
+                }`}>
+                  {isLowRisk(riskLevel) ? '🟢 Düşük' : isMediumRisk(riskLevel) ? '🟡 Orta' : '🔴 Yüksek'}
+                </span>
+              </div>
             </div>
-            <p className="text-sm text-gray-300">{data.riskReasoning}</p>
+            
+            {/* Risk Score Bar */}
+            {riskScore !== null && (
+              <div className="mb-2">
+                <ConfidenceBar value={100 - riskScore} />
+              </div>
+            )}
+            
+            {/* Risk Factors */}
+            {riskFactors.length > 0 && (
+              <ul className="space-y-1 mt-2">
+                {riskFactors.map((factor: string, idx: number) => (
+                  <li key={idx} className="text-xs text-gray-400 flex items-start gap-1">
+                    <span className="text-amber-400">•</span> {factor}
+                  </li>
+                ))}
+              </ul>
+            )}
+            
+            {/* Legacy riskReasoning */}
+            {data.riskReasoning && (
+              <p className="text-sm text-gray-300 mt-2">{data.riskReasoning}</p>
+            )}
           </div>
 
           {data._consensus && (
@@ -648,7 +736,7 @@ const StrategyAgentCard = ({ data }: { data: any }) => {
               data.stakeSuggestion === 'Düşük' || data.stakeSuggestion === 'Low' ? 'bg-green-500/20 text-green-400' :
               data.stakeSuggestion === 'Orta' || data.stakeSuggestion === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
-            }`}>{data.stakeSuggestion}</span>
+            }`}>{data.stakeSuggestion || 'N/A'}</span>
           </div>
         </>
       )}
@@ -732,7 +820,7 @@ export default function AgentReports({ reports, homeTeam, awayTeam, language = '
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation - DÜZELTİLDİ */}
+      {/* Tab Navigation */}
       <div className="flex gap-2 p-1 bg-gray-700/30 rounded-xl">
         <button
           onClick={() => setActiveTab('all')}
