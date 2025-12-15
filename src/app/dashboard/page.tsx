@@ -16,7 +16,10 @@ interface Match {
   awayTeam: string;
   homeTeamId: number;
   awayTeamId: number;
+  homeTeamLogo?: string;  
+  awayTeamLogo?: string;  
   league: string;
+  leagueLogo?: string;    
   date: string;
   status: string;
 }
