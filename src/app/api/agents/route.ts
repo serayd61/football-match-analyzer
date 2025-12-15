@@ -285,27 +285,20 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    // ⚠️ TEMPORARY: Auth bypass for local testing - REMOVE BEFORE DEPLOY!
-    const isDev = process.env.NODE_ENV === 'development';
-    
-    if (!isDev) {
-      // Auth check (only in production)
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-      const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-      const access = await checkUserAccess(session.user.email, ip);
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    const access = await checkUserAccess(session.user.email, ip);
 
-      if (!access.canUseAgents) {
-        return NextResponse.json({ 
-          error: 'Pro subscription required for AI Agents',
-          requiresPro: true 
-        }, { status: 403 });
-      }
-    } else {
-      console.log('⚠️ DEV MODE: Auth bypassed for testing');
+    if (!access.canUseAgents) {
+      return NextResponse.json({ 
+        error: 'Pro subscription required for AI Agents',
+        requiresPro: true 
+      }, { status: 403 });
     }
 
     // Parse request

@@ -7,70 +7,36 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    // ⚠️ TEMPORARY: Dev mode bypass - REMOVE BEFORE DEPLOY!
-    const isDev = process.env.NODE_ENV === 'development';
-    
-    let userEmail = 'test@test.com';
-    let userName = 'Test User';
-    
-    if (!isDev) {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      userEmail = session.user.email;
-      userName = session.user.name || 'User';
-    } else {
-      console.log('⚠️ DEV MODE: Using mock user for testing');
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
                request.headers.get('x-real-ip') ||
                'unknown';
 
-    // Dev modda mock access
-    const access = isDev ? {
-      hasAccess: true,
-      isPro: true,
-      isTrial: false,
-      trialDaysLeft: 0,
-      trialExpired: false,
-      analysesUsed: 0,
-      analysesLimit: 999,
-      canAnalyze: true,
-      canUseAgents: true,
-    } : await checkUserAccess(userEmail, ip);
-
-    // Dev modda DB sorguları atlayabiliriz
-    if (isDev) {
-      return NextResponse.json({
-        email: userEmail,
-        name: userName,
-        ...access,
-        subscriptionId: null,
-        subscriptionEnd: null,
-        favorites: [],
-      });
-    }
+    // Erişim durumunu kontrol et
+    const access = await checkUserAccess(session.user.email, ip);
 
     // Profil bilgilerini çek (subscription_id ve subscription_end için)
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('subscription_id, subscription_end')
-      .eq('email', userEmail)
+      .eq('email', session.user.email)
       .single();
 
     // Favorileri çek
     const { data: favorites } = await supabaseAdmin
       .from('favorites')
       .select('fixture_id')
-      .eq('user_email', userEmail);
+      .eq('user_email', session.user.email);
 
     console.log('Profile access:', access.isPro ? 'PRO' : access.isTrial ? `TRIAL (${access.trialDaysLeft} days)` : 'EXPIRED');
 
     return NextResponse.json({
-      email: userEmail,
-      name: userName,
+      email: session.user.email,
+      name: session.user.name,
       ...access,
       subscriptionId: profile?.subscription_id || null,
       subscriptionEnd: profile?.subscription_end || null,
