@@ -393,17 +393,10 @@ export async function fetchTeamRecentMatches(
   leagueId?: number, 
   count: number = 15
 ): Promise<any[]> {
-  // ✅ DOĞRU ENDPOINT - fixtures by team
-  const today = new Date();
-  const pastDate = new Date();
-  pastDate.setMonth(pastDate.getMonth() - 4); // Son 4 ay
+  // ✅ DOĞRU ENDPOINT - Sportmonks v3 syntax
+  const endpoint = `/fixtures?filter[participant_id]=${teamId}&include=scores;participants&per_page=30&order=starting_at&sort=desc`;
   
-  const startDate = pastDate.toISOString().split('T')[0];
-  const endDate = today.toISOString().split('T')[0];
-  
-  const endpoint = `/fixtures/between/${startDate}/${endDate}?filters[participant_id]=${teamId}&include=scores;participants&per_page=50`;
-  
-  console.log(`📡 Fetching fixtures for team ${teamId} (${startDate} to ${endDate})...`);
+  console.log(`📡 Fetching fixtures for team ${teamId}...`);
   const data = await fetchSportmonks(endpoint);
   
   if (!data?.data || data.data.length === 0) {
