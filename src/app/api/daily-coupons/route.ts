@@ -465,35 +465,35 @@ export async function POST(request: NextRequest) {
 
     approvedMatches.sort((a, b) => b.confidence - a.confidence);
 
-    const coupons: any = {};
-    const safeCoupon = createCoupon(approvedMatches, 'safe', 3, 50);
-    if (safeCoupon) coupons.safe = safeCoupon;
-    const balancedCoupon = createCoupon(approvedMatches, 'balanced', 4, 20);
-    if (balancedCoupon) coupons.balanced = balancedCoupon;
-    const riskyCoupon = createCoupon(approvedMatches, 'risky', 5, 10);
-    if (riskyCoupon) coupons.risky = riskyCoupon;
-
-    if (Object.keys(coupons).length === 0) {
-      return NextResponse.json({ error: 'Could not create coupons', approved: approvedMatches.length }, { status: 400 });
+    // Sadece güvenli kupon oluştur (en yüksek güvenli 3-5 maç)
+    const matchCount = Math.min(5, Math.max(3, approvedMatches.length));
+    const safeCoupon = createCoupon(approvedMatches, 'safe', matchCount, 50);
+    
+    if (!safeCoupon) {
+      return NextResponse.json({ error: 'Could not create coupon', approved: approvedMatches.length }, { status: 400 });
     }
 
-    for (const [type, coupon] of Object.entries(coupons)) {
-      await getSupabaseAdmin().from('daily_coupons').insert({
-        date: today,
-        coupon_type: type,
-        matches: (coupon as any).matches,
-        total_odds: (coupon as any).total_odds,
-        confidence: (coupon as any).confidence,
-        suggested_stake: (coupon as any).suggested_stake,
-        potential_win: (coupon as any).potential_win,
-        ai_reasoning: (coupon as any).ai_reasoning,
-        status: 'pending'
-      });
-    }
+    // Veritabanına kaydet
+    await getSupabaseAdmin().from('daily_coupons').insert({
+      date: today,
+      coupon_type: 'safe',
+      matches: safeCoupon.matches,
+      total_odds: safeCoupon.total_odds,
+      confidence: safeCoupon.confidence,
+      suggested_stake: safeCoupon.suggested_stake,
+      potential_win: safeCoupon.potential_win,
+      ai_reasoning: safeCoupon.ai_reasoning,
+      status: 'pending'
+    });
 
-    console.log(`✅ Created ${Object.keys(coupons).length} coupons!`);
+    console.log(`✅ Güvenli kupon oluşturuldu! ${safeCoupon.matches.length} maç`);
 
-    return NextResponse.json({ success: true, date: today, approved: approvedMatches.length, couponsCreated: Object.keys(coupons), coupons });
+    return NextResponse.json({ 
+      success: true, 
+      date: today, 
+      approved: approvedMatches.length, 
+      coupon: safeCoupon 
+    });
   } catch (error: any) {
     console.error('Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
