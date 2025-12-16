@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/settle-admin-predictions",
+      "schedule": "0 */2 * * *"
+    }
+  ]
+}
+
