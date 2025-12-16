@@ -1,17 +1,16 @@
 // ============================================================================
 // CRON JOB - AUTO SETTLE ADMIN PREDICTIONS
-// Maç sonuçlarını SportMonks'tan alıp Admin Panel tahminlerini settle eder
+// Birden fazla kaynaktan maç sonuçlarını alıp Admin Panel tahminlerini settle eder
+// Kaynaklar: API-Football, Football-Data.org, LiveScore, SportMonks, The Odds API
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { settleMatchResult } from '@/lib/admin/service';
+import { matchResultManager } from '@/lib/match-results';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
-const SPORTMONKS_BASE_URL = 'https://api.sportmonks.com/v3/football';
 
 // ============================================================================
 // MAIN HANDLER
@@ -33,6 +32,10 @@ export async function GET(request: NextRequest) {
     console.log('\n' + '═'.repeat(70));
     console.log('🔄 AUTO-SETTLE ADMIN PREDICTIONS CRON JOB');
     console.log('═'.repeat(70));
+
+    // Aktif provider'ları göster
+    const availableProviders = matchResultManager.getAvailableProviders();
+    console.log(`📡 Active Providers: ${availableProviders.length > 0 ? availableProviders.join(', ') : 'SportMonks only'}`);
 
     const supabase = getSupabaseAdmin();
 
@@ -71,31 +74,50 @@ export async function GET(request: NextRequest) {
     console.log(`📋 Found ${pendingPredictions.length} pending predictions to check`);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 2: Get unique fixture IDs
+    // STEP 2: Group predictions by fixture for team info
     // ═══════════════════════════════════════════════════════════════════════
     
-    const fixtureIds = [...new Set(pendingPredictions.map(p => p.fixture_id))];
-    console.log(`🎯 Checking ${fixtureIds.length} unique fixtures`);
+    // Create a map of fixture info
+    const fixtureMap = new Map<number, { homeTeam: string; awayTeam: string; matchDate: string }>();
+    pendingPredictions.forEach(p => {
+      if (!fixtureMap.has(p.fixture_id)) {
+        fixtureMap.set(p.fixture_id, {
+          homeTeam: p.home_team,
+          awayTeam: p.away_team,
+          matchDate: p.match_date,
+        });
+      }
+    });
+    
+    console.log(`🎯 Checking ${fixtureMap.size} unique fixtures`);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 3: Fetch match results from SportMonks
+    // STEP 3: Fetch match results from multiple providers
     // ═══════════════════════════════════════════════════════════════════════
     
     let settledCount = 0;
     let errorCount = 0;
+    const providerStats: { [provider: string]: number } = {};
 
-    for (const fixtureId of fixtureIds) {
+    for (const [fixtureId, fixtureInfo] of fixtureMap) {
       try {
-        console.log(`\n🔍 Fetching result for fixture ${fixtureId}...`);
-        
-        const result = await fetchMatchResult(fixtureId);
+        // Multi-provider'dan sonuç al
+        const result = await matchResultManager.fetchResult(
+          fixtureId,
+          fixtureInfo.homeTeam,
+          fixtureInfo.awayTeam,
+          fixtureInfo.matchDate
+        );
         
         if (!result) {
           console.log(`   ⏳ Match ${fixtureId} not finished yet`);
           continue;
         }
 
-        console.log(`   📊 Result: ${result.homeScore}-${result.awayScore}`);
+        console.log(`   📊 Result: ${result.homeScore}-${result.awayScore} (via ${result.source})`);
+
+        // Provider istatistiği
+        providerStats[result.source] = (providerStats[result.source] || 0) + 1;
 
         // Settle the prediction
         const settleResult = await settleMatchResult({
@@ -134,9 +156,13 @@ export async function GET(request: NextRequest) {
     
     console.log('\n' + '═'.repeat(70));
     console.log('✅ CRON JOB COMPLETED');
-    console.log(`   📊 Checked: ${fixtureIds.length} fixtures`);
+    console.log(`   📊 Checked: ${fixtureMap.size} fixtures`);
     console.log(`   ✅ Settled: ${settledCount}`);
     console.log(`   ❌ Errors: ${errorCount}`);
+    console.log(`   📡 Sources used:`);
+    Object.entries(providerStats).forEach(([provider, count]) => {
+      console.log(`      - ${provider}: ${count} results`);
+    });
     console.log(`   ⏱️ Time: ${totalTime}ms`);
     console.log('═'.repeat(70) + '\n');
 
@@ -144,10 +170,12 @@ export async function GET(request: NextRequest) {
       success: true,
       message: 'Cron job completed',
       stats: {
-        checked: fixtureIds.length,
+        checked: fixtureMap.size,
         settled: settledCount,
         errors: errorCount,
         duration: totalTime,
+        providers: providerStats,
+        availableProviders,
       },
     });
 
@@ -163,115 +191,6 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-interface MatchResult {
-  homeScore: number;
-  awayScore: number;
-  htHomeScore?: number;
-  htAwayScore?: number;
-  corners?: number;
-  yellowCards?: number;
-  redCards?: number;
-}
-
-async function fetchMatchResult(fixtureId: number): Promise<MatchResult | null> {
-  if (!SPORTMONKS_API_KEY) {
-    console.error('SPORTMONKS_API_KEY not set');
-    return null;
-  }
-
-  try {
-    const url = `${SPORTMONKS_BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=scores;statistics`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-      },
-      next: { revalidate: 0 },
-    });
-
-    if (!response.ok) {
-      console.error(`SportMonks API error: ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const fixture = data.data;
-
-    if (!fixture) {
-      return null;
-    }
-
-    // Check if match is finished
-    const state = fixture.state?.state;
-    if (state !== 'FT' && state !== 'AET' && state !== 'PEN') {
-      // Match not finished
-      return null;
-    }
-
-    // Get scores
-    const scores = fixture.scores || [];
-    let homeScore = 0;
-    let awayScore = 0;
-    let htHomeScore: number | undefined;
-    let htAwayScore: number | undefined;
-
-    for (const score of scores) {
-      if (score.description === 'CURRENT') {
-        homeScore = score.score?.participant === 'home' ? score.score?.goals : homeScore;
-        awayScore = score.score?.participant === 'away' ? score.score?.goals : awayScore;
-      }
-      if (score.description === '1ST_HALF') {
-        htHomeScore = score.score?.participant === 'home' ? score.score?.goals : htHomeScore;
-        htAwayScore = score.score?.participant === 'away' ? score.score?.goals : htAwayScore;
-      }
-    }
-
-    // Alternative score extraction
-    if (homeScore === 0 && awayScore === 0) {
-      for (const score of scores) {
-        if (score.participant === 'home' && score.description === 'CURRENT') {
-          homeScore = score.goals || 0;
-        }
-        if (score.participant === 'away' && score.description === 'CURRENT') {
-          awayScore = score.goals || 0;
-        }
-      }
-    }
-
-    // Get statistics
-    let corners: number | undefined;
-    let yellowCards: number | undefined;
-    let redCards: number | undefined;
-
-    const statistics = fixture.statistics || [];
-    for (const stat of statistics) {
-      if (stat.type?.code === 'corners') {
-        corners = (corners || 0) + (stat.data?.value || 0);
-      }
-      if (stat.type?.code === 'yellowcards') {
-        yellowCards = (yellowCards || 0) + (stat.data?.value || 0);
-      }
-      if (stat.type?.code === 'redcards') {
-        redCards = (redCards || 0) + (stat.data?.value || 0);
-      }
-    }
-
-    return {
-      homeScore,
-      awayScore,
-      htHomeScore,
-      htAwayScore,
-      corners,
-      yellowCards,
-      redCards,
-    };
-
-  } catch (error: any) {
-    console.error('Error fetching match result:', error.message);
-    return null;
-  }
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

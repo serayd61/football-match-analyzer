@@ -248,12 +248,16 @@ export default function AdminPage() {
       });
       const data = await res.json();
       
+      const providerInfo = data.stats?.providers 
+        ? Object.entries(data.stats.providers).map(([p, c]) => `${p}: ${c}`).join(', ')
+        : '';
+      
       setSettleResult({
         success: data.success,
         message: data.success 
           ? `✅ ${data.stats?.settled || 0} maç sonucu güncellendi!` 
           : `❌ Hata: ${data.error}`,
-        stats: data.stats,
+        stats: { ...data.stats, providerInfo },
       });
 
       // Sonuçlar güncellendiyse verileri yeniden çek
@@ -352,9 +356,10 @@ export default function AdminPage() {
             <div className="font-semibold mb-1">{settleResult.message}</div>
             {settleResult.stats && (
               <div className="text-sm opacity-90">
-                Kontrol: {settleResult.stats.checked} | 
-                Güncellenen: {settleResult.stats.settled} | 
-                Hata: {settleResult.stats.errors}
+                <div>Kontrol: {settleResult.stats.checked} | Güncellenen: {settleResult.stats.settled} | Hata: {settleResult.stats.errors}</div>
+                {settleResult.stats.providerInfo && (
+                  <div className="mt-1 text-xs opacity-75">📡 Kaynaklar: {settleResult.stats.providerInfo}</div>
+                )}
               </div>
             )}
           </div>
