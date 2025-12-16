@@ -287,24 +287,30 @@ function getOddsValue(odds: any, betType: string, selection: string): number {
 }
 
 function createCoupon(matches: any[], type: string, count: number, stake: number) {
-  const filtered = matches.filter(m => m.confidence >= MIN_CONFIDENCE);
-  if (filtered.length < count) return null;
+  // Tüm maçları confidence'a göre sırala
+  const sorted = [...matches].sort((a, b) => b.confidence - a.confidence);
+  
+  // Minimum 1 maç yeterli
+  const available = Math.min(count, sorted.length);
+  if (available < 1) return null;
 
   let selected;
   if (type === 'safe') {
-    selected = filtered.slice(0, count);
+    // En yüksek güvenli maçları al
+    selected = sorted.slice(0, available);
   } else if (type === 'balanced') {
-    selected = filtered.slice(Math.min(2, filtered.length - count), Math.min(2, filtered.length - count) + count);
+    // Ortadaki maçları al
+    const start = Math.floor(sorted.length / 3);
+    selected = sorted.slice(start, start + available);
   } else {
-    selected = filtered.slice(-count);
+    // En düşük güvenli ama yine de onaylanmış maçları al (risky)
+    selected = sorted.slice(-available);
   }
 
-  if (selected.length < count) return null;
+  if (selected.length < 1) return null;
 
-  const totalOdds = selected.reduce((acc, m) => acc * m.odds_value, 1);
-  const avgConfidence = Math.round(selected.reduce((acc, m) => acc + m.confidence, 0) / selected.length);
-
-  if (avgConfidence < MIN_CONFIDENCE) return null;
+  const totalOdds = selected.reduce((acc, m) => acc * (m.odds_value || 1.5), 1);
+  const avgConfidence = Math.round(selected.reduce((acc, m) => acc + (m.confidence || 50), 0) / selected.length);
 
   return {
     matches: selected.map(m => ({
@@ -315,8 +321,8 @@ function createCoupon(matches: any[], type: string, count: number, stake: number
       kick_off: m.kick_off,
       bet_type: m.bet_type,
       selection: m.selection,
-      odds: m.odds_value,
-      confidence: m.confidence,
+      odds: m.odds_value || 1.5,
+      confidence: m.confidence || 50,
       aiVotes: m.aiVotes,
       agentVotes: m.agentVotes
     })),
@@ -324,7 +330,7 @@ function createCoupon(matches: any[], type: string, count: number, stake: number
     confidence: avgConfidence,
     suggested_stake: stake,
     potential_win: Math.round(stake * totalOdds * 100) / 100,
-    ai_reasoning: `${selected.length} maç seçildi. Tüm maçlarda AI-Agent konsensüsü var. Ortalama güven: %${avgConfidence}`
+    ai_reasoning: `${selected.length} maç seçildi. Ortalama güven: %${avgConfidence}`
   };
 }
 
@@ -453,8 +459,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`\n🎯 Approved: ${approvedMatches.length}`);
 
-    if (approvedMatches.length < 2) {
-      return NextResponse.json({ error: 'Not enough high-confidence matches', approved: approvedMatches.length }, { status: 400 });
+    if (approvedMatches.length < 1) {
+      return NextResponse.json({ error: 'Not enough high-confidence matches', approved: approvedMatches.length, analyzed: matches.length }, { status: 400 });
     }
 
     approvedMatches.sort((a, b) => b.confidence - a.confidence);
