@@ -330,7 +330,7 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
           {/* Probabilities */}
           <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
             <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-              <span>📊</span> Olasılıklar
+              <span>📊</span> {t.probabilities}
             </h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
@@ -340,7 +340,7 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-400">%{data.probabilities?.draw || 0}</div>
-                <div className="text-sm text-gray-400">Beraberlik</div>
+                <div className="text-sm text-gray-400">{t.draw}</div>
                 <ConfidenceBar value={data.probabilities?.draw || 0} />
               </div>
               <div className="text-center">
@@ -354,7 +354,7 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
           {/* Score Prediction */}
           <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
             <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-              <span>⚽</span> Skor Tahmini
+              <span>⚽</span> {t.scorePrediction}
             </h4>
             <div className="flex items-center gap-4">
               <div className="text-4xl font-bold text-purple-400">{data.scorePrediction?.score || 'N/A'}</div>
@@ -362,7 +362,7 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
                 <p className="text-sm text-gray-300">{data.scorePrediction?.reasoning}</p>
                 {data.expectedScores && (
                   <div className="flex gap-2 mt-2">
-                    <span className="text-xs text-gray-500">Diğer olası skorlar:</span>
+                    <span className="text-xs text-gray-500">{t.otherScores}:</span>
                     {data.expectedScores.map((score: string, idx: number) => (
                       <span key={idx} className="px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-300">
                         {score}
@@ -377,18 +377,18 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
           {/* Predictions Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="bg-gray-800/50 rounded-xl p-4">
-              <h5 className="text-sm font-medium text-gray-400 mb-2">Toplam Gol</h5>
-              <PredictionBadge prediction={data.overUnder?.prediction || 'N/A'} confidence={data.overUnder?.confidence || 0} />
+              <h5 className="text-sm font-medium text-gray-400 mb-2">{t.totalGoals}</h5>
+              <PredictionBadge prediction={data.overUnder?.prediction || 'N/A'} confidence={data.overUnder?.confidence || 0} lang={lang} />
               <p className="text-xs text-gray-500 mt-2">{data.overUnder?.reasoning}</p>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-4">
-              <h5 className="text-sm font-medium text-gray-400 mb-2">KG VAR</h5>
-              <PredictionBadge prediction={data.btts?.prediction || 'N/A'} confidence={data.btts?.confidence || 0} />
+              <h5 className="text-sm font-medium text-gray-400 mb-2">{t.btts}</h5>
+              <PredictionBadge prediction={data.btts?.prediction || 'N/A'} confidence={data.btts?.confidence || 0} lang={lang} />
               <p className="text-xs text-gray-500 mt-2">{data.btts?.reasoning}</p>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-4">
-              <h5 className="text-sm font-medium text-gray-400 mb-2">Maç Sonucu</h5>
-              <PredictionBadge prediction={data.matchResult?.prediction || 'N/A'} confidence={data.matchResult?.confidence || 0} />
+              <h5 className="text-sm font-medium text-gray-400 mb-2">{t.matchResult}</h5>
+              <PredictionBadge prediction={data.matchResult?.prediction || 'N/A'} confidence={data.matchResult?.confidence || 0} lang={lang} />
               <p className="text-xs text-gray-500 mt-2">{data.matchResult?.reasoning}</p>
             </div>
           </div>
@@ -397,26 +397,26 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <h5 className="text-sm opacity-80">🎯 En İyi Bahis Önerisi</h5>
+                <h5 className="text-sm opacity-80">🎯 {t.bestBet}</h5>
                 <div className="text-xl font-bold">{data.bestBet?.type}: {data.bestBet?.selection}</div>
                 <p className="text-sm opacity-80 mt-1">{data.bestBet?.reasoning}</p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold">%{data.bestBet?.confidence || 0}</div>
-                <div className="text-sm opacity-80">Güven</div>
+                <div className="text-sm opacity-80">{t.confidence}</div>
               </div>
             </div>
           </div>
 
           {/* Risk Level */}
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-400">Risk Seviyesi:</span>
+            <span className="text-sm text-gray-400">{t.riskLevel}:</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               isLowRisk(riskLevel) ? 'bg-green-500/20 text-green-400' :
               isMediumRisk(riskLevel) ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
             }`}>
-              {isLowRisk(riskLevel) ? '🟢 Düşük' : isMediumRisk(riskLevel) ? '🟡 Orta' : '🔴 Yüksek'}
+              {isLowRisk(riskLevel) ? `🟢 ${t.riskLow}` : isMediumRisk(riskLevel) ? `🟡 ${t.riskMedium}` : `🔴 ${t.riskHigh}`}
             </span>
           </div>
         </>
@@ -467,11 +467,11 @@ const StatsAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-gray-800/50 rounded-xl p-4 text-center">
                 <div className="text-3xl font-bold text-orange-400">%{data._calculatedStats.avgOver25}</div>
-                <div className="text-sm text-gray-400">Over 2.5 Oranı</div>
+                <div className="text-sm text-gray-400">{t.over25Rate}</div>
               </div>
               <div className="bg-gray-800/50 rounded-xl p-4 text-center">
                 <div className="text-3xl font-bold text-green-400">%{data._calculatedStats.avgBtts}</div>
-                <div className="text-sm text-gray-400">KG VAR Oranı</div>
+                <div className="text-sm text-gray-400">{t.bttsRate}</div>
               </div>
             </div>
           )}
@@ -479,28 +479,28 @@ const StatsAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; 
           <div className="space-y-3">
             <div className="bg-gray-800/50 rounded-xl p-4">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-white">Toplam Gol:</span>
-                <PredictionBadge prediction={data.overUnder || 'N/A'} confidence={data.overUnderConfidence || 0} />
+                <span className="font-medium text-white">{t.totalGoals}:</span>
+                <PredictionBadge prediction={data.overUnder || 'N/A'} confidence={data.overUnderConfidence || 0} lang={lang} />
               </div>
               <p className="text-xs text-gray-500 mt-1">{data.overUnderReasoning}</p>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-4">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-white">Maç Sonucu:</span>
-                <PredictionBadge prediction={data.matchResult || 'N/A'} confidence={data.matchResultConfidence || 0} />
+                <span className="font-medium text-white">{t.matchResult}:</span>
+                <PredictionBadge prediction={data.matchResult || 'N/A'} confidence={data.matchResultConfidence || 0} lang={lang} />
               </div>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-4">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-white">KG VAR:</span>
-                <PredictionBadge prediction={data.btts || 'N/A'} confidence={data.bttsConfidence || 0} />
+                <span className="font-medium text-white">{t.btts}:</span>
+                <PredictionBadge prediction={data.btts || 'N/A'} confidence={data.bttsConfidence || 0} lang={lang} />
               </div>
             </div>
           </div>
 
           {data._calculatedStats?.dataQuality && (
             <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-gray-400">Veri Kalitesi:</span>
+              <span className="text-sm text-gray-400">{t.dataQuality}:</span>
               <div className="flex-1 max-w-32"><ConfidenceBar value={data._calculatedStats.dataQuality} /></div>
               <span className="text-sm font-medium text-white">%{data._calculatedStats.dataQuality}</span>
             </div>
@@ -537,34 +537,34 @@ const OddsAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) => {
       {expanded && (
         <>
           <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
-            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">📋 Oran Analizi</h4>
+            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">📋 {t.oddsAnalysisText}</h4>
             <p className="text-gray-300">{data.oddsAnalysis}</p>
           </div>
 
           {data._valueAnalysis && (
             <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
-              <h4 className="font-semibold text-white mb-3 flex items-center gap-2">📈 Değer Analizi</h4>
+              <h4 className="font-semibold text-white mb-3 flex items-center gap-2">📈 {t.valueAnalysis}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-gray-400">Ev Sahibi Değeri</div>
+                  <div className="text-sm text-gray-400">{t.homeValue}</div>
                   <div className={`text-xl font-bold ${data._valueAnalysis.homeValue > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {data._valueAnalysis.homeValue > 0 ? '+' : ''}{data._valueAnalysis.homeValue}%
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-400">Over Değeri</div>
+                  <div className="text-sm text-gray-400">{t.overValue}</div>
                   <div className={`text-xl font-bold ${data._valueAnalysis.overValue > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {data._valueAnalysis.overValue > 0 ? '+' : ''}{data._valueAnalysis.overValue}%
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-400">BTTS Değeri</div>
+                  <div className="text-sm text-gray-400">{t.bttsValue}</div>
                   <div className={`text-xl font-bold ${data._valueAnalysis.bttsValue > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {data._valueAnalysis.bttsValue > 0 ? '+' : ''}{data._valueAnalysis.bttsValue}%
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-400">En İyi Değer</div>
+                  <div className="text-sm text-gray-400">{t.bestValue}</div>
                   <div className="text-xl font-bold text-green-400 uppercase">{data._valueAnalysis.bestValue}</div>
                 </div>
               </div>
@@ -573,7 +573,7 @@ const OddsAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) => {
 
           {data.valueBets && data.valueBets.length > 0 && (
             <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-4 mb-4 text-white">
-              <h5 className="text-sm opacity-80 mb-2">💎 Değerli Bahisler</h5>
+              <h5 className="text-sm opacity-80 mb-2">💎 {t.valueBets}</h5>
               <div className="flex flex-wrap gap-2">
                 {data.valueBets.map((bet: string, idx: number) => (
                   <span key={idx} className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">{bet}</span>
@@ -585,20 +585,20 @@ const OddsAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) => {
           <div className="space-y-3">
             <div className="bg-gray-800/50 rounded-xl p-4">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-white">Öneri:</span>
-                <PredictionBadge prediction={data.recommendation || 'N/A'} confidence={data.confidence || 0} />
+                <span className="font-medium text-white">{t.recommendation}:</span>
+                <PredictionBadge prediction={data.recommendation || 'N/A'} confidence={data.confidence || 0} lang={lang} />
               </div>
             </div>
           </div>
 
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-400">Değer Derecesi:</span>
+            <span className="text-sm text-gray-400">{t.valueRating}:</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               data.valueRating === 'High' ? 'bg-green-500/20 text-green-400' :
               data.valueRating === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
             }`}>
-              {data.valueRating === 'High' ? '🟢 Yüksek' : data.valueRating === 'Medium' ? '🟡 Orta' : '🔴 Düşük'}
+              {data.valueRating === 'High' ? `🟢 ${t.riskHigh}` : data.valueRating === 'Medium' ? `🟡 ${t.riskMedium}` : `🔴 ${t.riskLow}`}
             </span>
           </div>
         </>
@@ -652,17 +652,17 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Moral</span>
+                  <span className="text-sm text-gray-400">{t.morale}</span>
                   <span className="text-white font-bold">{data.homeTeam?.morale || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.homeTeam?.morale || 0) * 10} />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Motivasyon</span>
+                  <span className="text-sm text-gray-400">{t.motivation}</span>
                   <span className="text-white font-bold">{data.homeTeam?.motivation || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.homeTeam?.motivation || 0) * 10} />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Hazırlık</span>
+                  <span className="text-sm text-gray-400">{t.preparation}</span>
                   <span className="text-white font-bold">{data.homeTeam?.preparation || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.homeTeam?.preparation || 0) * 10} />
@@ -679,17 +679,17 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Moral</span>
+                  <span className="text-sm text-gray-400">{t.morale}</span>
                   <span className="text-white font-bold">{data.awayTeam?.morale || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.awayTeam?.morale || 0) * 10} />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Motivasyon</span>
+                  <span className="text-sm text-gray-400">{t.motivation}</span>
                   <span className="text-white font-bold">{data.awayTeam?.motivation || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.awayTeam?.motivation || 0) * 10} />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Hazırlık</span>
+                  <span className="text-sm text-gray-400">{t.preparation}</span>
                   <span className="text-white font-bold">{data.awayTeam?.preparation || 0}/10</span>
                 </div>
                 <ConfidenceBar value={(data.awayTeam?.preparation || 0) * 10} />
@@ -702,7 +702,7 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-gray-800/50 rounded-xl p-4">
-              <h5 className="font-semibold text-white mb-2">📰 {homeTeam} Haberleri</h5>
+              <h5 className="font-semibold text-white mb-2">📰 {homeTeam} {t.news}</h5>
               <ul className="space-y-1">
                 {data.homeTeam?.key_factors?.map((factor: string, idx: number) => (
                   <li key={idx} className="text-xs text-gray-400 flex items-start gap-1">
@@ -712,7 +712,7 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
               </ul>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-4">
-              <h5 className="font-semibold text-white mb-2">📰 {awayTeam} Haberleri</h5>
+              <h5 className="font-semibold text-white mb-2">📰 {awayTeam} {t.news}</h5>
               <ul className="space-y-1">
                 {data.awayTeam?.key_factors?.map((factor: string, idx: number) => (
                   <li key={idx} className="text-xs text-gray-400 flex items-start gap-1">
@@ -727,16 +727,16 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
             <div className="bg-gradient-to-r from-pink-600 to-rose-600 rounded-xl p-4 text-white mb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h5 className="text-sm opacity-80">🎯 Psikolojik Üstünlük</h5>
+                  <h5 className="text-sm opacity-80">🎯 {t.psychEdge}</h5>
                   <div className="text-xl font-bold">
                     {data.psychologicalEdge.team === 'home' ? homeTeam : 
-                     data.psychologicalEdge.team === 'away' ? awayTeam : 'Dengeli'}
+                     data.psychologicalEdge.team === 'away' ? awayTeam : t.balanced}
                   </div>
                   <p className="text-sm opacity-80 mt-1">{data.psychologicalEdge.reasoning}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold">%{data.psychologicalEdge.confidence}</div>
-                  <div className="text-sm opacity-80">Güven</div>
+                  <div className="text-sm opacity-80">{t.confidence}</div>
                 </div>
               </div>
             </div>
@@ -744,7 +744,7 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
 
           {data.warnings && data.warnings.length > 0 && (
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-              <h5 className="font-semibold text-yellow-400 mb-2">⚠️ Uyarılar</h5>
+              <h5 className="font-semibold text-yellow-400 mb-2">⚠️ {t.warnings}</h5>
               <ul className="space-y-1">
                 {data.warnings.map((warning: string, idx: number) => (
                   <li key={idx} className="text-sm text-yellow-300 flex items-start gap-2"><span>•</span> {warning}</li>
@@ -793,7 +793,7 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
           {/* ✅ FIX: Risk Assessment - obje desteği */}
           <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-white flex items-center gap-2">⚠️ Risk Değerlendirmesi</h4>
+              <h4 className="font-semibold text-white flex items-center gap-2">⚠️ {t.riskAssessment}</h4>
               <div className="flex items-center gap-2">
                 {riskScore !== null && (
                   <span className="text-sm text-gray-400">{riskScore}/100</span>
@@ -803,7 +803,7 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
                   isMediumRisk(riskLevel) ? 'bg-yellow-500/20 text-yellow-400' :
                   'bg-red-500/20 text-red-400'
                 }`}>
-                  {isLowRisk(riskLevel) ? '🟢 Düşük' : isMediumRisk(riskLevel) ? '🟡 Orta' : '🔴 Yüksek'}
+                  {isLowRisk(riskLevel) ? `🟢 ${t.riskLow}` : isMediumRisk(riskLevel) ? `🟡 ${t.riskMedium}` : `🔴 ${t.riskHigh}`}
                 </span>
               </div>
             </div>
@@ -834,16 +834,16 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
 
           {data._consensus && (
             <div className="space-y-3 mb-4">
-              <h4 className="font-semibold text-white flex items-center gap-2">🤝 Agent Konsensüsü</h4>
+              <h4 className="font-semibold text-white flex items-center gap-2">🤝 {t.agentConsensus}</h4>
               {data._consensus.overUnderConsensus && (
                 <div className="bg-gray-800/50 rounded-xl p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-white">Toplam Gol</span>
+                    <span className="font-medium text-white">{t.totalGoals}</span>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-sm">
-                        {data._consensus.overUnderConsensus.agree}/3 hemfikir
+                        {data._consensus.overUnderConsensus.agree}/3 {t.agrees}
                       </span>
-                      <PredictionBadge prediction={data._consensus.overUnderConsensus.prediction} confidence={data._consensus.overUnderConsensus.confidence} />
+                      <PredictionBadge prediction={data._consensus.overUnderConsensus.prediction} confidence={data._consensus.overUnderConsensus.confidence} lang={lang} />
                     </div>
                   </div>
                 </div>
@@ -851,12 +851,12 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
               {data._consensus.matchResultConsensus && (
                 <div className="bg-gray-800/50 rounded-xl p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-white">Maç Sonucu</span>
+                    <span className="font-medium text-white">{t.matchResult}</span>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-sm">
-                        {data._consensus.matchResultConsensus.agree}/3 hemfikir
+                        {data._consensus.matchResultConsensus.agree}/3 {t.agrees}
                       </span>
-                      <PredictionBadge prediction={data._consensus.matchResultConsensus.prediction} confidence={data._consensus.matchResultConsensus.confidence} />
+                      <PredictionBadge prediction={data._consensus.matchResultConsensus.prediction} confidence={data._consensus.matchResultConsensus.confidence} lang={lang} />
                     </div>
                   </div>
                 </div>
@@ -864,12 +864,12 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
               {data._consensus.bttsConsensus && (
                 <div className="bg-gray-800/50 rounded-xl p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-white">KG VAR</span>
+                    <span className="font-medium text-white">{t.btts}</span>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-sm">
-                        {data._consensus.bttsConsensus.agree}/3 hemfikir
+                        {data._consensus.bttsConsensus.agree}/3 {t.agrees}
                       </span>
-                      <PredictionBadge prediction={data._consensus.bttsConsensus.prediction} confidence={data._consensus.bttsConsensus.confidence} />
+                      <PredictionBadge prediction={data._consensus.bttsConsensus.prediction} confidence={data._consensus.bttsConsensus.confidence} lang={lang} />
                     </div>
                   </div>
                 </div>
@@ -879,7 +879,7 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
 
           {data.recommendedBets && data.recommendedBets.length > 0 && (
             <div className="bg-gradient-to-r from-amber-600 to-orange-600 rounded-xl p-4 text-white mb-4">
-              <h5 className="text-sm opacity-80 mb-2">✅ Önerilen Bahisler</h5>
+              <h5 className="text-sm opacity-80 mb-2">✅ {t.recommendedBets}</h5>
               {data.recommendedBets.map((bet: any, idx: number) => (
                 <div key={idx} className="bg-white/10 rounded-lg p-3 mb-2">
                   <div className="flex items-center justify-between">
@@ -899,7 +899,7 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
 
           {data.avoidBets && data.avoidBets.length > 0 && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
-              <h5 className="font-semibold text-red-400 mb-2">❌ Kaçınılması Gerekenler</h5>
+              <h5 className="font-semibold text-red-400 mb-2">❌ {t.avoidBets}</h5>
               <div className="flex flex-wrap gap-2">
                 {data.avoidBets.map((bet: string, idx: number) => (
                   <span key={idx} className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm">{bet}</span>
@@ -909,10 +909,10 @@ const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) 
           )}
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400">Stake Önerisi:</span>
+            <span className="text-sm text-gray-400">{t.stakeSuggestion}:</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              data.stakeSuggestion === 'Düşük' || data.stakeSuggestion === 'Low' ? 'bg-green-500/20 text-green-400' :
-              data.stakeSuggestion === 'Orta' || data.stakeSuggestion === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              data.stakeSuggestion === 'Düşük' || data.stakeSuggestion === 'Low' || data.stakeSuggestion === 'Niedrig' ? 'bg-green-500/20 text-green-400' :
+              data.stakeSuggestion === 'Orta' || data.stakeSuggestion === 'Medium' || data.stakeSuggestion === 'Mittel' ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-red-500/20 text-red-400'
             }`}>{data.stakeSuggestion || 'N/A'}</span>
           </div>
@@ -941,36 +941,36 @@ const FinalConsensusCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white/10 rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">Toplam Gol</div>
+          <div className="text-sm text-gray-400 mb-1">{t.totalGoals}</div>
           <div className="flex items-center gap-2">
             <span className="text-3xl font-bold text-white">{data.overUnder?.prediction}</span>
             <span className="text-sm text-gray-400">%{data.overUnder?.confidence}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">{data.overUnder?.agreement}/4 agent</div>
+          <div className="text-xs text-gray-500 mt-1">{data.overUnder?.agreement}/4 {t.agents}</div>
           <ConfidenceBar value={data.overUnder?.confidence || 0} />
         </div>
         <div className="bg-white/10 rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">Maç Sonucu</div>
+          <div className="text-sm text-gray-400 mb-1">{t.matchResult}</div>
           <div className="flex items-center gap-2">
             <span className="text-3xl font-bold text-white">{data.matchResult?.prediction}</span>
             <span className="text-sm text-gray-400">%{data.matchResult?.confidence}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">{data.matchResult?.agreement}/5 agent</div>
+          <div className="text-xs text-gray-500 mt-1">{data.matchResult?.agreement}/5 {t.agents}</div>
           <ConfidenceBar value={data.matchResult?.confidence || 0} />
         </div>
         <div className="bg-white/10 rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">KG VAR</div>
+          <div className="text-sm text-gray-400 mb-1">{t.btts}</div>
           <div className="flex items-center gap-2">
             <span className="text-3xl font-bold text-white">{data.btts?.prediction}</span>
             <span className="text-sm text-gray-400">%{data.btts?.confidence}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">{data.btts?.agreement}/4 agent</div>
+          <div className="text-xs text-gray-500 mt-1">{data.btts?.agreement}/4 {t.agents}</div>
           <ConfidenceBar value={data.btts?.confidence || 0} />
         </div>
       </div>
 
       <div className="bg-white/10 rounded-xl p-4 mb-6 text-center">
-        <div className="text-sm text-gray-400 mb-2">Tahmini Skor</div>
+        <div className="text-sm text-gray-400 mb-2">{t.predictedScore}</div>
         <div className="text-5xl font-bold text-yellow-400">{data.scorePrediction?.score || 'N/A'}</div>
         <div className="text-sm text-gray-400 mt-2">{data.scorePrediction?.reasoning}</div>
       </div>
@@ -978,14 +978,14 @@ const FinalConsensusCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
       <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-black/60">🎯 En İyi Bahis</div>
+            <div className="text-sm text-black/60">🎯 {t.bestBet}</div>
             <div className="text-2xl font-bold text-black">{data.bestBet?.type}</div>
             <div className="text-3xl font-black text-black">{data.bestBet?.selection}</div>
-            <div className="text-sm text-black/60 mt-1">{data.bestBet?.agreement} agent hemfikir</div>
+            <div className="text-sm text-black/60 mt-1">{data.bestBet?.agreement} {t.agents} {t.agrees}</div>
           </div>
           <div className="text-right">
             <div className="text-5xl font-black text-black">%{data.bestBet?.confidence}</div>
-            <div className="text-sm text-black/60">Güven Oranı</div>
+            <div className="text-sm text-black/60">{t.confidenceRate}</div>
           </div>
         </div>
       </div>
