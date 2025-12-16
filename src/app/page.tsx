@@ -53,6 +53,24 @@ export default function HomePage() {
         description: '3 uzman agent (Scout, Analyst, Predictor) Heurist ağı üzerinde bağımsız çalışır. Blockchain destekli şeffaf tahminler.',
         features: ['3 Uzman Agent', 'Web3 Destekli', 'Şeffaf Sonuçlar', 'Gerçek Zamanlı'],
       },
+      quadBrain: {
+        badge: '🧠 YENİ TEKNOLOJİ',
+        title: 'Quad-Brain AI Ensemble',
+        subtitle: '4 Uzman AI, 1 Akıllı Karar',
+        description: 'Her AI modeli kendi uzmanlık alanında analiz yapar. Çatışma durumunda Debate Protocol devreye girer ve en doğru tahmin üretilir.',
+        models: [
+          { name: 'Claude', role: 'Taktik Uzmanı', desc: 'Momentum, psikoloji ve taktik analizi', color: 'orange' },
+          { name: 'GPT-4', role: 'İstatistik Motoru', desc: 'xG, Poisson dağılımı, matematiksel modeller', color: 'green' },
+          { name: 'Gemini', role: 'Pattern Dedektifi', desc: 'H2H kalıpları, seri analizi, anomali tespiti', color: 'blue' },
+          { name: 'Perplexity', role: 'Haber Avcısı', desc: 'Sakatlıklar, son dakika haberleri, kadro bilgileri', color: 'purple' },
+        ],
+        features: [
+          { icon: '🎯', title: 'Debate Protocol', desc: 'AI\'lar anlaşamadığında tartışır ve en güçlü argüman kazanır' },
+          { icon: '⚖️', title: 'Dinamik Ağırlıklar', desc: 'Veri kalitesine göre her AI\'ın etkisi otomatik ayarlanır' },
+          { icon: '📊', title: 'Performans Takibi', desc: 'Her AI\'ın başarı oranı gerçek zamanlı ölçülür' },
+          { icon: '🔥', title: 'Value Bet Tespiti', desc: 'Bahisçi hatalarını otomatik yakalar' },
+        ],
+      },
       features: {
         title: 'Neden Football Analytics Pro?',
         subtitle: 'Rakiplerinizden bir adım önde olmanızı sağlayan özellikler',
@@ -175,6 +193,24 @@ export default function HomePage() {
         description: '3 expert agents (Scout, Analyst, Predictor) work independently on Heurist network. Blockchain-powered transparent predictions.',
         features: ['3 Expert Agents', 'Web3 Powered', 'Transparent Results', 'Real-Time'],
       },
+      quadBrain: {
+        badge: '🧠 NEW TECHNOLOGY',
+        title: 'Quad-Brain AI Ensemble',
+        subtitle: '4 Expert AIs, 1 Smart Decision',
+        description: 'Each AI model analyzes in its own expertise area. In case of conflict, the Debate Protocol kicks in and produces the most accurate prediction.',
+        models: [
+          { name: 'Claude', role: 'Tactical Expert', desc: 'Momentum, psychology and tactical analysis', color: 'orange' },
+          { name: 'GPT-4', role: 'Statistics Engine', desc: 'xG, Poisson distribution, mathematical models', color: 'green' },
+          { name: 'Gemini', role: 'Pattern Detective', desc: 'H2H patterns, streak analysis, anomaly detection', color: 'blue' },
+          { name: 'Perplexity', role: 'News Hunter', desc: 'Injuries, last-minute news, lineup info', color: 'purple' },
+        ],
+        features: [
+          { icon: '🎯', title: 'Debate Protocol', desc: 'When AIs disagree, they debate and the strongest argument wins' },
+          { icon: '⚖️', title: 'Dynamic Weights', desc: 'Each AI\'s influence is automatically adjusted based on data quality' },
+          { icon: '📊', title: 'Performance Tracking', desc: 'Each AI\'s success rate is measured in real-time' },
+          { icon: '🔥', title: 'Value Bet Detection', desc: 'Automatically catches bookmaker mistakes' },
+        ],
+      },
       features: {
         title: 'Why Football Analytics Pro?',
         subtitle: 'Features that keep you ahead of the competition',
@@ -265,7 +301,149 @@ export default function HomePage() {
     },
   };
 
-  const l = labels[lang as keyof typeof labels] || labels.en;
+  const labelsDE = {
+    hero: {
+      badge: '🔗 Web3 + KI-Technologie',
+      title: 'Zwei leistungsstarke Systeme für',
+      titleHighlight: 'Fußball-Analyse',
+      subtitle: 'Die weltweit erste hybride Analyseplattform: 4 Elite-KI-Modelle + 3 Experten-Agenten arbeiten zusammen. Einzigartige Genauigkeit mit Agenten auf dem dezentralen Heurist-Netzwerk.',
+      cta: 'Kostenlos starten',
+      ctaSecondary: 'Wie funktioniert es?',
+      trustedBy: '10.000+ Nutzer vertrauen uns',
+    },
+    stats: {
+      matches: 'Analysierte Spiele',
+      accuracy: 'Genauigkeitsrate',
+      users: 'Aktive Nutzer',
+      leagues: 'Unterstützte Ligen',
+    },
+    systems: {
+      title: 'Zwei unabhängige Analyse-Engines',
+      subtitle: 'Zwei verschiedene Perspektiven für dasselbe Spiel, maximale Genauigkeit',
+    },
+    aiSystem: {
+      badge: 'SYSTEM 1',
+      title: 'AI Consensus Engine',
+      subtitle: 'Die 4 leistungsstärksten KI-Modelle der Welt analysieren gemeinsam',
+      description: 'Claude (Anthropic), GPT-4 (OpenAI), Gemini (Google) und Perplexity arbeiten gleichzeitig. Vorhersagen mit mindestens 2/4 Konsens.',
+      features: ['4 KI-Modelle Parallel', 'Konsens-Abstimmung', 'Konfidenzwert', 'Detaillierte Analyse'],
+    },
+    agentSystem: {
+      badge: 'SYSTEM 2',
+      title: 'Heurist Agent Network',
+      subtitle: 'Dezentralisierte KI-Agenten',
+      description: '3 Experten-Agenten (Scout, Analyst, Predictor) arbeiten unabhängig im Heurist-Netzwerk. Blockchain-gestützte transparente Vorhersagen.',
+      features: ['3 Experten-Agenten', 'Web3-Unterstützung', 'Transparente Ergebnisse', 'Echtzeit'],
+    },
+    quadBrain: {
+      badge: '🧠 NEUE TECHNOLOGIE',
+      title: 'Quad-Brain KI-Ensemble',
+      subtitle: '4 Experten-KIs, 1 intelligente Entscheidung',
+      description: 'Jedes KI-Modell analysiert in seinem eigenen Fachgebiet. Bei Konflikten greift das Debate Protocol ein und liefert die genaueste Vorhersage.',
+      models: [
+        { name: 'Claude', role: 'Taktik-Experte', desc: 'Momentum-, Psychologie- und Taktikanalyse', color: 'orange' },
+        { name: 'GPT-4', role: 'Statistik-Engine', desc: 'xG, Poisson-Verteilung, mathematische Modelle', color: 'green' },
+        { name: 'Gemini', role: 'Pattern-Detektiv', desc: 'H2H-Muster, Serienanalyse, Anomalie-Erkennung', color: 'blue' },
+        { name: 'Perplexity', role: 'News-Jäger', desc: 'Verletzungen, Last-Minute-News, Aufstellungen', color: 'purple' },
+      ],
+      features: [
+        { icon: '🎯', title: 'Debate Protocol', desc: 'Bei Uneinigkeit debattieren die KIs und das stärkste Argument gewinnt' },
+        { icon: '⚖️', title: 'Dynamische Gewichtung', desc: 'Der Einfluss jeder KI wird automatisch basierend auf Datenqualität angepasst' },
+        { icon: '📊', title: 'Performance-Tracking', desc: 'Die Erfolgsrate jeder KI wird in Echtzeit gemessen' },
+        { icon: '🔥', title: 'Value Bet Erkennung', desc: 'Erkennt automatisch Buchmacher-Fehler' },
+      ],
+    },
+    features: {
+      title: 'Warum Football Analytics Pro?',
+      subtitle: 'Funktionen, die Sie der Konkurrenz einen Schritt voraus halten',
+      items: [
+        { icon: '🤖', title: '7 KI-Modelle', desc: '4 KI + 3 Heurist-Agenten arbeiten zusammen' },
+        { icon: '🎯', title: '70%+ Genauigkeit', desc: 'Hohe Erfolgsrate durch Konsens-System' },
+        { icon: '⚡', title: 'Echtzeit', desc: 'Sofortige Quotenänderungen und Live-Analyse' },
+        { icon: '💎', title: 'Value Bet Erkennung', desc: 'Buchmacher-Fehler automatisch finden' },
+        { icon: '📊', title: '27+ Ligen', desc: 'Große europäische Ligen abgedeckt' },
+        { icon: '🔒', title: 'Sicher & Privat', desc: 'Ihre Daten werden verschlüsselt geschützt' },
+      ],
+    },
+    tipsterLeague: {
+      badge: '🏆 NEU',
+      title: 'Tipster League',
+      subtitle: 'Erstelle Wettscheine, konkurriere, gewinne!',
+      description: 'Erstelle eigene Wettscheine, konkurriere mit anderen Nutzern und steige in der Rangliste auf. Top-Tipster gewinnen Preise!',
+      features: [
+        { icon: '📝', title: 'Wettschein erstellen', desc: 'Erstelle Wettscheine mit KI-gestützten Spielen' },
+        { icon: '⭐', title: 'Punkte sammeln', desc: 'Sammle Punkte mit richtigen Vorhersagen' },
+        { icon: '🏅', title: 'Rangliste', desc: 'Wöchentliche und monatliche Rankings' },
+        { icon: '🎁', title: 'Preise gewinnen', desc: 'Top-Performer erhalten Premium-Mitgliedschaft' },
+      ],
+      howItWorks: [
+        { step: '1', title: 'Registrieren', desc: 'Kostenloses Konto erstellen' },
+        { step: '2', title: 'Analyse erhalten', desc: 'KI-Vorhersagen prüfen' },
+        { step: '3', title: 'Wettschein erstellen', desc: 'Spiele auswählen, Wettschein erstellen' },
+        { step: '4', title: 'Konkurrieren', desc: 'In der Rangliste aufsteigen' },
+      ],
+      multipliers: {
+        title: 'Punktemultiplikatoren',
+        items: [
+          { type: 'Einzel', multiplier: '×10' },
+          { type: 'Doppel', multiplier: '×15' },
+          { type: 'Dreifach', multiplier: '×25' },
+          { type: '4+', multiplier: '×50' },
+        ],
+      },
+    },
+    pricing: {
+      title: 'Einfache & transparente Preise',
+      subtitle: 'Wählen Sie den Plan, der am besten zu Ihnen passt',
+      free: {
+        name: 'Kostenlos',
+        price: '€0',
+        period: '/Monat',
+        features: ['3 Spielanalysen täglich', 'Basis-Statistiken', 'Tipster League Zugang', 'E-Mail-Support'],
+        cta: 'Loslegen',
+      },
+      pro: {
+        badge: 'AM BELIEBTESTEN',
+        name: 'Pro',
+        price: '€19,99',
+        period: '/Monat',
+        features: ['Unbegrenzte Spielanalysen', 'Alle KI + Agent-Systeme', 'Value Bet Erkennung', 'Wettschein-Erstellung', 'Prioritäts-Support', 'API-Zugang'],
+        cta: 'Pro werden',
+      },
+    },
+    testimonials: {
+      title: 'Was unsere Nutzer sagen',
+      items: [
+        { text: 'Zwei verschiedene Systeme sind eine großartige Idee. Manchmal denken KIs unterschiedlich, dann bin ich vorsichtiger.', author: 'Thomas M.', role: 'Pro-Mitglied' },
+        { text: 'Heurist-Agenten sind sehr interessant. Sie haben Web3 mit Wetten kombiniert.', author: 'Stefan K.', role: 'Krypto-Investor' },
+        { text: 'Dank Tipster League wurde ich zum Top-Predictor des Monats!', author: 'Markus H.', role: 'Tipster League Champion' },
+      ],
+    },
+    cta: {
+      title: 'Testen Sie zwei leistungsstarke Systeme',
+      subtitle: 'Kostenloses Konto erstellen, in der Tipster League konkurrieren!',
+      button: 'Kostenloses Konto erstellen',
+    },
+    footer: {
+      product: 'Produkt',
+      features: 'Funktionen',
+      pricing: 'Preise',
+      demo: 'Demo',
+      tipsterLeague: 'Tipster League',
+      company: 'Unternehmen',
+      about: 'Über uns',
+      blog: 'Blog',
+      careers: 'Karriere',
+      legal: 'Rechtliches',
+      privacy: 'Datenschutz',
+      terms: 'AGB',
+      copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.',
+      poweredBy: 'Powered by Heurist Network',
+    },
+  };
+
+  const allLabels = { ...labels, de: labelsDE };
+  const l = allLabels[lang as keyof typeof allLabels] || labels.en;
 
   if (status === 'loading') {
     return (
@@ -433,6 +611,82 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Quad-Brain Section */}
+      {'quadBrain' in l && (
+        <section className="py-20 px-4 bg-gradient-to-br from-cyan-900/20 via-purple-900/20 to-pink-900/20">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-400 text-sm font-medium mb-4">
+                {(l as any).quadBrain.badge}
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">{(l as any).quadBrain.title}</h2>
+              <p className="text-xl text-cyan-300 mb-2">{(l as any).quadBrain.subtitle}</p>
+              <p className="text-gray-400 max-w-3xl mx-auto">{(l as any).quadBrain.description}</p>
+            </div>
+
+            {/* AI Models Grid */}
+            <div className="grid md:grid-cols-4 gap-6 mb-12">
+              {(l as any).quadBrain.models.map((model: any, idx: number) => {
+                const colors: any = {
+                  orange: 'from-orange-500 to-amber-600 border-orange-500/30 bg-orange-500/10',
+                  green: 'from-emerald-500 to-green-600 border-emerald-500/30 bg-emerald-500/10',
+                  blue: 'from-blue-500 to-indigo-600 border-blue-500/30 bg-blue-500/10',
+                  purple: 'from-purple-500 to-violet-600 border-purple-500/30 bg-purple-500/10',
+                };
+                const colorClass = colors[model.color] || colors.blue;
+                return (
+                  <div key={idx} className={`rounded-2xl p-6 border ${colorClass.split(' ').slice(1).join(' ')} backdrop-blur-xl`}>
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colorClass.split(' ').slice(0, 2).join(' ')} flex items-center justify-center mb-4 shadow-lg`}>
+                      <span className="text-2xl">🧠</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-1">{model.name}</h3>
+                    <p className="text-cyan-400 text-sm font-medium mb-2">{model.role}</p>
+                    <p className="text-gray-400 text-sm">{model.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Features */}
+            <div className="grid md:grid-cols-4 gap-6 mb-12">
+              {(l as any).quadBrain.features.map((feature: any, idx: number) => (
+                <div key={idx} className="bg-gray-800/50 border border-cyan-500/20 rounded-2xl p-6 text-center hover:border-cyan-500/40 transition-all">
+                  <div className="text-4xl mb-4">{feature.icon}</div>
+                  <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-400 text-sm">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Debate Protocol Visual */}
+            <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-cyan-500/20 rounded-3xl p-8">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/30">🧠</div>
+                  <div className="text-white font-semibold">Claude</div>
+                </div>
+                <div className="text-cyan-400 text-3xl">⚔️</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/30">🧠</div>
+                  <div className="text-white font-semibold">GPT-4</div>
+                </div>
+                <div className="text-yellow-400 text-3xl animate-pulse">→</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/30 ring-4 ring-cyan-500/30">🏆</div>
+                  <div>
+                    <div className="text-white font-bold text-lg">Consensus</div>
+                    <div className="text-cyan-400 text-sm">En İyi Tahmin</div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-gray-400 mt-6 text-sm">
+                AI modelleri farklı düşündüğünde, Debate Protocol devreye girer ve en güçlü argümanlar kazanır.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="py-20 px-4">
