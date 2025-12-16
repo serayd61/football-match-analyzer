@@ -249,6 +249,14 @@ export default function ProfilePage() {
               </Link>
             )}
             
+            {/* Ayarlar Butonu */}
+            <Link
+              href="/settings"
+              className="block w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-medium rounded-xl text-center transition-colors"
+            >
+              ⚙️ {lang === 'tr' ? 'Ayarlar' : lang === 'de' ? 'Einstellungen' : 'Settings'}
+            </Link>
+            
             {/* Stripe Portal Butonu - Sadece Pro üyeler için */}
             {profile?.isPro && profile?.subscriptionId && (
               <button
@@ -256,7 +264,7 @@ export default function ProfilePage() {
                 disabled={openingPortal}
                 className="block w-full py-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-xl text-center transition-colors disabled:opacity-50"
               >
-                {openingPortal ? l.openingPortal : `⚙️ ${l.manageSubscription}`}
+                {openingPortal ? l.openingPortal : `💳 ${l.manageSubscription}`}
               </button>
             )}
             
