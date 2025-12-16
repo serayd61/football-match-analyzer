@@ -30,16 +30,54 @@ const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 const MIN_CONFIDENCE = 60;
 
+// 27 Lig Paketi - Tüm desteklenen ligler
+const SUPPORTED_LEAGUE_IDS = [
+  8,     // Premier League (England)
+  9,     // Championship (England)
+  24,    // FA Cup (England)
+  27,    // League Cup (England)
+  72,    // Eredivisie (Netherlands)
+  82,    // Bundesliga (Germany)
+  181,   // Jupiler Pro League (Belgium)
+  208,   // Pro League (Belgium)
+  244,   // Primeira Liga (Portugal)
+  271,   // Superliga (Denmark)
+  301,   // Ligue 1 (France)
+  384,   // Serie A (Italy)
+  387,   // Serie B (Italy)
+  390,   // Coppa Italia (Italy)
+  444,   // Eredivisie (Netherlands alt)
+  453,   // Ekstraklasa (Poland)
+  462,   // Liga Portugal (Portugal)
+  486,   // Premiership (Scotland)
+  501,   // La Liga 2 (Spain)
+  564,   // La Liga (Spain)
+  567,   // Copa del Rey (Spain)
+  570,   // Super Lig (Turkey)
+  573,   // Turkish Cup (Turkey)
+  591,   // Allsvenskan (Sweden)
+  600,   // Süper Lig (Turkey alt)
+  1371,  // Champions League
+];
+
 async function getTodayMatches() {
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
+  const leagueFilter = SUPPORTED_LEAGUE_IDS.join(',');
+  
   try {
     const response = await fetch(
-      `https://api.sportmonks.com/v3/football/fixtures/between/${today}/${tomorrow}?api_token=${SPORTMONKS_API_KEY}&include=odds;league;participants&per_page=50`
+      `https://api.sportmonks.com/v3/football/fixtures/between/${today}/${tomorrow}?api_token=${SPORTMONKS_API_KEY}&include=odds;league;participants&filters=fixtureLeagues:${leagueFilter}&per_page=150`
     );
-    if (!response.ok) return [];
+    
+    if (!response.ok) {
+      console.error('SportMonks API error:', response.status, await response.text());
+      return [];
+    }
+    
     const data = await response.json();
+    console.log(`📊 SportMonks: ${data.data?.length || 0} maç bulundu (27 lig)`);
     return data.data || [];
   } catch (error) {
     console.error('Sportmonks error:', error);
