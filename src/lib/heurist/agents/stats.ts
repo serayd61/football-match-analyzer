@@ -839,7 +839,7 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
   ];
 
   try {
-    const response = await heurist.chat(messages, { temperature: 0.2, maxTokens: 1000 });
+    const response = await heurist.chat(messages, { temperature: 0.1, maxTokens: 1000 }); // Düşük = tutarlı
     
     if (response) {
       const parsed = extractJSON(response);

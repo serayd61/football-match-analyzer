@@ -49,7 +49,7 @@ export class HeuristClient {
           model: model,
           messages,
           max_tokens: options.maxTokens || 2000,
-          temperature: options.temperature || 0.5,
+          temperature: options.temperature || 0.15, // Default düşük = tutarlı
         }),
       });
 

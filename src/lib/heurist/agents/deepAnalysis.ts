@@ -517,7 +517,7 @@ export async function runDeepAnalysisAgent(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-      temperature: 0.4,
+      temperature: 0.1, // Düşük = daha tutarlı sonuçlar
       maxTokens: 2500
     });
 

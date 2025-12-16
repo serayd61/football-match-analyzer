@@ -247,7 +247,7 @@ async function searchWithPerplexity(
           { role: 'user', content: query }
         ],
         max_tokens: 1500,
-        temperature: 0.2,
+        temperature: 0.1, // Düşük = tutarlı sonuçlar
         return_citations: true,
         search_recency_filter: 'week',
       }),

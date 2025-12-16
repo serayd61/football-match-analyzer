@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -1582,7 +1583,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { homeTeam, awayTeam, homeTeamId, awayTeamId, league, language = 'tr' } = body;
+    const { homeTeam, awayTeam, homeTeamId, awayTeamId, league, language = 'tr', fixtureId } = body;
 
     console.log('═══════════════════════════════════════════════════════════');
     console.log(`🧠 AI BRAIN ANALYSIS: ${homeTeam} vs ${awayTeam}`);
@@ -1594,6 +1595,22 @@ export async function POST(request: NextRequest) {
         error: language === 'tr' ? 'Takım adları gerekli.' : 'Team names required.',
       }, { status: 400 });
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache
+    // ═══════════════════════════════════════════════════════════════════════
+    const cacheKey = fixtureId || `${homeTeamId}-${awayTeamId}`;
+    const cached = getCachedAnalysis(cacheKey, language, 'analyze');
+    
+    if (cached) {
+      console.log(`📦 CACHE HIT - Returning cached analysis from ${cached.cachedAt.toLocaleTimeString()}`);
+      return NextResponse.json({
+        ...cached.data,
+        cached: true,
+        cachedAt: cached.cachedAt.toISOString(),
+      });
+    }
+    console.log('📦 CACHE MISS - Running fresh analysis');
 
     // 1. VERİ ÇEKME
     console.log('\n📊 Fetching data...');
@@ -1715,7 +1732,7 @@ export async function POST(request: NextRequest) {
     console.log(`\n✅ AI BRAIN ANALYSIS COMPLETE in ${totalTime}ms`);
     console.log('═══════════════════════════════════════════════════════════\n');
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       brainVersion: '2.0',
       analysis: {
@@ -1775,7 +1792,14 @@ export async function POST(request: NextRequest) {
         aiCalls: `${aiTime - dataTime}ms`,
         total: `${totalTime}ms`,
       },
-    });
+      analyzedAt: new Date().toISOString(),
+    };
+
+    // 📦 CACHE'E KAYDET
+    setCachedAnalysis(cacheKey, language, 'analyze', responseData);
+    console.log(`📦 Analysis cached for ${cacheKey}:${language}`);
+
+    return NextResponse.json(responseData);
 
   } catch (error: any) {
     console.error('❌ AI BRAIN ERROR:', error);

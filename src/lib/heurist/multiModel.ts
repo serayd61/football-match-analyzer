@@ -88,7 +88,7 @@ Analyze and return JSON prediction:`;
   try {
     const response = await heurist.chat(messages, {
       model,
-      temperature: 0.3,
+      temperature: 0.1, // Düşük = tutarlı sonuçlar
       maxTokens: 500,
     });
 

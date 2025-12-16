@@ -17,6 +17,7 @@ import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 import { runStrategyAgent } from '@/lib/heurist/agents/strategy';
 import { savePrediction } from '@/lib/predictions';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
+import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 
 // ==================== DATA QUALITY THRESHOLD ====================
 const MIN_DATA_QUALITY = 30;
@@ -317,6 +318,21 @@ export async function POST(request: NextRequest) {
     if (!fixtureId) {
       return NextResponse.json({ error: 'Fixture ID required' }, { status: 400 });
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache
+    // ═══════════════════════════════════════════════════════════════════════════
+    const cached = getCachedAnalysis(fixtureId, language, 'agents');
+    
+    if (cached) {
+      console.log(`📦 CACHE HIT - Returning cached agent analysis from ${cached.cachedAt.toLocaleTimeString()}`);
+      return NextResponse.json({
+        ...cached.data,
+        cached: true,
+        cachedAt: cached.cachedAt.toISOString(),
+      });
+    }
+    console.log('📦 CACHE MISS - Running fresh agent analysis');
 
     console.log('');
     console.log('🤖 ═══════════════════════════════════════════════════════════════');
@@ -671,7 +687,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ ═══════════════════════════════════════════════════');
     console.log('');
 
-    return NextResponse.json({
+    const responseData = {
       success: result.success,
       reports: result.reports,
       
@@ -815,7 +831,14 @@ export async function POST(request: NextRequest) {
         },
         odds: completeMatchData.odds,
       },
-    });
+      analyzedAt: new Date().toISOString(),
+    };
+
+    // 📦 CACHE'E KAYDET
+    setCachedAnalysis(fixtureId, language, 'agents', responseData);
+    console.log(`📦 Agent analysis cached for ${fixtureId}:${language}`);
+
+    return NextResponse.json(responseData);
     
   } catch (error: any) {
     console.error('❌ Agent API Error:', error);
