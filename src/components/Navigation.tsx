@@ -8,11 +8,6 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Dashboard ve login sayfalarında navigasyonu gizle
-  if (pathname === '/dashboard' || pathname === '/login') {
-    return null;
-  }
-
   const navItems = [
     { href: '/', label: 'Ana Sayfa', icon: '🏠' },
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -21,12 +16,17 @@ export default function Navigation() {
     { href: '/stats', label: 'İstatistik', icon: '📈' },
   ];
 
-  // Scroll effect
+  // Scroll effect - MUST be before any conditional return
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Dashboard ve login sayfalarında navigasyonu gizle
+  if (pathname === '/dashboard' || pathname === '/login') {
+    return null;
+  }
 
   return (
     <>
