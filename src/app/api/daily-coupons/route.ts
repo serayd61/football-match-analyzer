@@ -108,42 +108,124 @@ function parseOdds(fixture: any) {
   return odds;
 }
 
-async function analyzeMatchWithAI(match: any, model: string): Promise<any> {
-  const prompt = `Maç: ${match.home_team} vs ${match.away_team} (${match.league})
-Oranlar: 1=${match.odds.home} X=${match.odds.draw} 2=${match.odds.away} | Ü2.5=${match.odds.over25} A2.5=${match.odds.under25} | KGVar=${match.odds.bttsYes}
+// 🎯 CLAUDE - TACTICAL ANALYST (30% weight)
+// Formasyon analizi, oyun stili, set piece, defans hattı
+function getClaudePrompt(match: any): string {
+  return `Sen bir TAKTİK ANALİSTİsin. Bu maçı SADECE taktiksel açıdan değerlendir.
 
-Bu maç için EN GÜVENLİ bahis önerisini ver. Güven oranı 60-80 arasında GERÇEKÇI olsun.
+MAÇ: ${match.home_team} vs ${match.away_team} (${match.league})
+ORANLAR: Ev=${match.odds.home} | Beraberlik=${match.odds.draw} | Deplasman=${match.odds.away}
+Ü2.5=${match.odds.over25} | A2.5=${match.odds.under25} | KG Var=${match.odds.bttsYes}
+
+TAKTİKSEL ANALİZ KRİTERLERİ:
+1. Formasyon uyumu (4-3-3 vs 4-4-2 gibi matchup'lar)
+2. Oyun stili (yüksek pres vs kontra atak)
+3. Set piece etkinliği (korner, serbest vuruş gol oranı)
+4. Defans hattı yüksekliği (offside tuzağı riski)
+5. Kanat oyunu vs merkez hakimiyeti
+
+Bu kriterlere göre EN GÜVENLİ tahmini yap. Confidence 55-75 arası GERÇEKÇI olsun.
 SADECE JSON döndür:
-{"bet_type": "MATCH_RESULT veya OVER_UNDER veya BTTS", "selection": "1/X/2/Over/Under/Yes/No", "confidence": 60-80 arası sayı}`;
+{"bet_type": "MATCH_RESULT", "selection": "1/X/2", "confidence": 55-75, "reasoning": "taktiksel neden"}`;
+}
 
+// 📊 GPT-4 - STATISTICAL SCIENTIST (30% weight)
+// xG, şut kalitesi, pas istatistikleri, clean sheet
+function getGPTPrompt(match: any): string {
+  return `Sen bir İSTATİSTİK BİLİMCİSİsin. Bu maçı SADECE sayısal verilerle analiz et.
+
+MAÇ: ${match.home_team} vs ${match.away_team} (${match.league})
+ORANLAR: Ev=${match.odds.home} | Beraberlik=${match.odds.draw} | Deplasman=${match.odds.away}
+Ü2.5=${match.odds.over25} | A2.5=${match.odds.under25} | KG Var=${match.odds.bttsYes}
+
+İSTATİSTİKSEL ANALİZ KRİTERLERİ:
+1. xG (Expected Goals) trendleri - son 5 maç ortalaması
+2. Şut kalitesi metrikleri (şut/gol dönüşüm oranı)
+3. Ceza sahası içi pas yüzdesi
+4. Clean sheet olasılık hesabı
+5. Ev/Deplasman gol ortalaması farkı
+
+Oranlardan implied probability hesapla:
+- Ev kazanma olasılığı: ${match.odds.home ? Math.round(100/match.odds.home) : '?'}%
+- Beraberlik olasılığı: ${match.odds.draw ? Math.round(100/match.odds.draw) : '?'}%
+- Deplasman olasılığı: ${match.odds.away ? Math.round(100/match.odds.away) : '?'}%
+
+İstatistiksel olarak EN GÜVENLİ tahmini yap. Confidence 55-75 arası.
+SADECE JSON döndür:
+{"bet_type": "OVER_UNDER", "selection": "Over/Under", "confidence": 55-75, "reasoning": "istatistiksel neden"}`;
+}
+
+// 🔮 GEMINI - PATTERN HUNTER (25% weight)
+// Tarihsel pattern, momentum, psikoloji, zamanlama
+function getGeminiPrompt(match: any): string {
+  return `Sen bir PATTERN ANALİSTİsin. Bu maçı tarihsel kalıplar ve psikolojik faktörlerle değerlendir.
+
+MAÇ: ${match.home_team} vs ${match.away_team} (${match.league})
+ORANLAR: Ev=${match.odds.home} | Beraberlik=${match.odds.draw} | Deplasman=${match.odds.away}
+Ü2.5=${match.odds.over25} | A2.5=${match.odds.under25} | KG Var=${match.odds.bttsYes}
+
+PATTERN ANALİZ KRİTERLERİ:
+1. H2H tarihsel pattern (son 5 yıl, kim dominant?)
+2. Ev/Deplasman form trendi (son 5 maç momentum)
+3. Milli ara sonrası performans
+4. Gol zamanlaması dağılımı (erken gol vs geç gol)
+5. Takım motivasyonu (derbi, küme düşme, şampiyonluk yarışı)
+
+Tarihsel kalıplara göre EN GÜVENLİ tahmini yap. Confidence 55-75 arası.
+SADECE JSON döndür:
+{"bet_type": "BTTS", "selection": "Yes/No", "confidence": 55-75, "reasoning": "pattern nedeni"}`;
+}
+
+// 📰 PERPLEXITY - NEWS & REAL-TIME (15% weight)
+// Güncel haberler, sakatlıklar, transfer söylentileri
+function getPerplexityPrompt(match: any): string {
+  return `${match.home_team} vs ${match.away_team} maçı için GÜNCEL bilgileri ara:
+1. Son sakatlık haberleri
+2. Kadro değişiklikleri
+3. Takım morali ve iç çekişmeler
+4. Hava durumu etkisi
+5. Hakem istatistikleri
+
+Bu bilgilere göre maç için TAHMİN ver. Confidence 55-75.
+JSON döndür:
+{"bet_type": "MATCH_RESULT/OVER_UNDER/BTTS", "selection": "seçim", "confidence": 55-75, "reasoning": "güncel bilgi"}`;
+}
+
+async function analyzeMatchWithAI(match: any, model: string): Promise<any> {
   try {
     if (model === 'claude') {
       const response = await getAnthropic().messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        messages: [{ role: 'user', content: getClaudePrompt(match) }],
       });
       const text = response.content[0].type === 'text' ? response.content[0].text : '';
       const json = text.match(/\{[\s\S]*?\}/);
-      return json ? JSON.parse(json[0]) : null;
+      const result = json ? JSON.parse(json[0]) : null;
+      if (result) result.weight = 0.30; // 30% ağırlık
+      return result;
     }
 
     if (model === 'gpt') {
       const response = await getOpenAI().chat.completions.create({
         model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 500,
+        messages: [{ role: 'user', content: getGPTPrompt(match) }],
+        max_tokens: 600,
         response_format: { type: 'json_object' },
       });
-      return JSON.parse(response.choices[0]?.message?.content || '{}');
+      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      if (result) result.weight = 0.30; // 30% ağırlık
+      return result;
     }
 
     if (model === 'gemini') {
       const geminiModel = getGenAI().getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-      const result = await geminiModel.generateContent(prompt);
+      const result = await geminiModel.generateContent(getGeminiPrompt(match));
       const text = result.response.text();
       const json = text.match(/\{[\s\S]*?\}/);
-      return json ? JSON.parse(json[0]) : null;
+      const parsed = json ? JSON.parse(json[0]) : null;
+      if (parsed) parsed.weight = 0.25; // 25% ağırlık
+      return parsed;
     }
     
     if (model === 'perplexity') {
@@ -152,14 +234,16 @@ SADECE JSON döndür:
         headers: { 'Authorization': `Bearer ${PERPLEXITY_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'sonar',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 500,
+          messages: [{ role: 'user', content: getPerplexityPrompt(match) }],
+          max_tokens: 600,
         }),
       });
       const data = await response.json();
       const text = data.choices?.[0]?.message?.content || '';
       const json = text.match(/\{[\s\S]*?\}/);
-      return json ? JSON.parse(json[0]) : null;
+      const parsed = json ? JSON.parse(json[0]) : null;
+      if (parsed) parsed.weight = 0.15; // 15% ağırlık
+      return parsed;
     }
   } catch (error) {
     console.error(`${model} error:`, error);
