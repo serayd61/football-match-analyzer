@@ -60,6 +60,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('general');
+  const [autoSaveMessage, setAutoSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -72,7 +73,10 @@ export default function SettingsPage() {
     const savedSettings = localStorage.getItem('userSettings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
+        // Apply saved theme on load
+        applyTheme(parsed.theme);
       } catch (e) {
         console.error('Error loading settings:', e);
       }
@@ -80,14 +84,54 @@ export default function SettingsPage() {
     setLoading(false);
   }, []);
 
+  // Auto-save and apply settings whenever they change
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('userSettings', JSON.stringify(settings));
+      
+      // Update language context immediately
+      if (settings.language !== lang) {
+        setLang(settings.language);
+      }
+      
+      // Apply theme immediately
+      applyTheme(settings.theme);
+      
+      // Show auto-save notification
+      const messages = {
+        tr: '✓ Ayarlar kaydedildi',
+        en: '✓ Settings saved',
+        de: '✓ Einstellungen gespeichert',
+      };
+      setAutoSaveMessage(messages[settings.language] || messages.en);
+      const timer = setTimeout(() => setAutoSaveMessage(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [settings, loading]);
+
+  const applyTheme = (theme: 'dark' | 'light' | 'system') => {
+    const root = document.documentElement;
+    
+    if (theme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('light-theme', !prefersDark);
+      root.classList.toggle('dark-theme', prefersDark);
+    } else if (theme === 'light') {
+      root.classList.add('light-theme');
+      root.classList.remove('dark-theme');
+    } else {
+      root.classList.add('dark-theme');
+      root.classList.remove('light-theme');
+    }
+    
+    // Also update CSS variable for components that need it
+    root.style.setProperty('--theme-mode', theme);
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     try {
       localStorage.setItem('userSettings', JSON.stringify(settings));
-      // Update language context
-      if (settings.language !== lang) {
-        setLang(settings.language);
-      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
@@ -246,6 +290,16 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 p-4 pb-24">
+      {/* Auto-save notification */}
+      {autoSaveMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className="bg-emerald-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 backdrop-blur-sm">
+            <FiCheck className="w-4 h-4" />
+            <span className="text-sm font-medium">{autoSaveMessage}</span>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -260,18 +314,10 @@ export default function SettingsPage() {
               <p className="text-gray-400 text-sm">{session.user?.email}</p>
             </div>
           </div>
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className={`px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all ${
-              saved
-                ? 'bg-emerald-500 text-white'
-                : 'bg-cyan-500 hover:bg-cyan-400 text-white'
-            }`}
-          >
-            {saved ? <FiCheck className="w-5 h-5" /> : <FiSave className="w-5 h-5" />}
-            {saving ? l.saving : saved ? l.saved : l.save}
-          </button>
+          <div className="text-sm text-gray-400 flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            {settings.language === 'tr' ? 'Otomatik Kayıt' : settings.language === 'de' ? 'Auto-Speichern' : 'Auto-save'}
+          </div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">

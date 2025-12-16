@@ -2,10 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   THEME SYSTEM
+   ============================================ */
+
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 15, 23, 42;
   --background-end-rgb: 30, 41, 59;
+  --theme-mode: dark;
+  
+  /* Dark theme colors (default) */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-color: #06b6d4;
+}
+
+/* Light theme */
+:root.light-theme {
+  --foreground-rgb: 30, 41, 59;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 241, 245, 249;
+  --theme-mode: light;
+  
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(0, 0, 0, 0.03);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --accent-color: #0891b2;
 }
 
 body {
@@ -16,6 +46,82 @@ body {
     rgb(var(--background-end-rgb))
   );
   min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Light theme specific overrides */
+:root.light-theme .bg-gray-900,
+:root.light-theme .from-gray-900,
+:root.light-theme .via-slate-900,
+:root.light-theme .to-zinc-900 {
+  --tw-bg-opacity: 1;
+  background-color: var(--bg-primary) !important;
+}
+
+:root.light-theme .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+:root.light-theme .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+:root.light-theme .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+:root.light-theme .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+:root.light-theme .text-white {
+  color: var(--text-primary) !important;
+}
+
+:root.light-theme .text-gray-400 {
+  color: var(--text-secondary) !important;
+}
+
+:root.light-theme .text-gray-300 {
+  color: #475569 !important;
+}
+
+:root.light-theme .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Light theme cards and containers */
+:root.light-theme .mobile-card {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+:root.light-theme .glass {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Light theme scrollbar */
+:root.light-theme ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root.light-theme ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+:root.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Light theme skeleton */
+:root.light-theme .skeleton {
+  background: linear-gradient(90deg, 
+    rgba(0,0,0,0.05) 25%, 
+    rgba(0,0,0,0.08) 50%, 
+    rgba(0,0,0,0.05) 75%
+  );
 }
 
 /* Custom scrollbar */
@@ -49,6 +155,21 @@ body {
 
 .animate-pulse-slow {
   animation: pulse-slow 2s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
 
 /* Form result colors */
