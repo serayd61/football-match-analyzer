@@ -120,16 +120,35 @@ export default function DailyCoupons() {
   };
 
   const getBetTypeLabel = (betType: string, selection: string) => {
+    const betLabels = {
+      tr: {
+        home: 'MS 1', draw: 'MS X', away: 'MS 2',
+        over: 'Üst 2.5', under: 'Alt 2.5',
+        bttsYes: 'KG Var', bttsNo: 'KG Yok'
+      },
+      en: {
+        home: 'Home', draw: 'Draw', away: 'Away',
+        over: 'Over 2.5', under: 'Under 2.5',
+        bttsYes: 'BTTS Yes', bttsNo: 'BTTS No'
+      },
+      de: {
+        home: 'Heim', draw: 'Unent.', away: 'Ausw.',
+        over: 'Über 2.5', under: 'Unter 2.5',
+        bttsYes: 'Beide Ja', bttsNo: 'Beide Nein'
+      }
+    };
+    const bl = betLabels[lang as keyof typeof betLabels] || betLabels.en;
+    
     if (betType === 'MATCH_RESULT') {
-      if (selection === '1') return 'MS 1';
-      if (selection === 'X') return 'MS X';
-      if (selection === '2') return 'MS 2';
+      if (selection === '1') return bl.home;
+      if (selection === 'X') return bl.draw;
+      if (selection === '2') return bl.away;
     }
     if (betType === 'OVER_UNDER') {
-      return selection === 'Over' ? 'Üst 2.5' : 'Alt 2.5';
+      return selection === 'Over' ? bl.over : bl.under;
     }
     if (betType === 'BTTS') {
-      return selection === 'Yes' ? 'KG Var' : 'KG Yok';
+      return selection === 'Yes' ? bl.bttsYes : bl.bttsNo;
     }
     return selection;
   };
