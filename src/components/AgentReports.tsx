@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from './LanguageProvider';
 
 interface AgentReportsProps {
   reports: {
@@ -14,8 +15,179 @@ interface AgentReportsProps {
   };
   homeTeam: string;
   awayTeam: string;
-  language?: 'tr' | 'en' | 'de';
 }
+
+// Çeviri objeleri
+const translations = {
+  tr: {
+    confidence: 'güven',
+    matchAnalysis: 'Maç Analizi',
+    criticalFactors: 'Kritik Faktörler',
+    probabilities: 'Olasılıklar',
+    draw: 'Beraberlik',
+    scorePrediction: 'Skor Tahmini',
+    otherScores: 'Diğer olası skorlar',
+    totalGoals: 'Toplam Gol',
+    btts: 'KG VAR',
+    matchResult: 'Maç Sonucu',
+    bestBet: 'En İyi Bahis Önerisi',
+    riskLevel: 'Risk Seviyesi',
+    riskLow: 'Düşük',
+    riskMedium: 'Orta',
+    riskHigh: 'Yüksek',
+    deepAnalysis: 'Çok Katmanlı Derin Analiz',
+    statsAnalysis: 'İstatistiksel Analiz',
+    goalExpectancy: 'Gol Beklentisi',
+    totalExpectedGoals: 'Toplam Beklenen Gol',
+    over25Rate: 'Over 2.5 Oranı',
+    bttsRate: 'KG VAR Oranı',
+    dataQuality: 'Veri Kalitesi',
+    oddsAnalysis: 'Oran & Değer Analizi',
+    oddsAnalysisText: 'Oran Analizi',
+    valueAnalysis: 'Değer Analizi',
+    homeValue: 'Ev Sahibi Değeri',
+    overValue: 'Over Değeri',
+    bttsValue: 'BTTS Değeri',
+    bestValue: 'En İyi Değer',
+    valueBets: 'Değerli Bahisler',
+    recommendation: 'Öneri',
+    valueRating: 'Değer Derecesi',
+    psychAnalysis: 'Psikolojik Analiz',
+    morale: 'Moral',
+    motivation: 'Motivasyon',
+    preparation: 'Hazırlık',
+    news: 'Haberleri',
+    psychEdge: 'Psikolojik Üstünlük',
+    balanced: 'Dengeli',
+    warnings: 'Uyarılar',
+    strategyConsensus: 'Strateji & Konsensüs',
+    riskAssessment: 'Risk Değerlendirmesi',
+    agentConsensus: 'Agent Konsensüsü',
+    agrees: 'hemfikir',
+    recommendedBets: 'Önerilen Bahisler',
+    avoidBets: 'Kaçınılması Gerekenler',
+    stakeSuggestion: 'Stake Önerisi',
+    finalConsensus: 'Final Konsensüs',
+    weightedAnalysis: '5 Agent Ağırlıklı Analiz',
+    predictedScore: 'Tahmini Skor',
+    agents: 'agent',
+    confidenceRate: 'Güven Oranı',
+    allAgents: 'Tüm Agentlar',
+    finalConsensusTab: 'Final Konsensüs',
+  },
+  en: {
+    confidence: 'confidence',
+    matchAnalysis: 'Match Analysis',
+    criticalFactors: 'Critical Factors',
+    probabilities: 'Probabilities',
+    draw: 'Draw',
+    scorePrediction: 'Score Prediction',
+    otherScores: 'Other possible scores',
+    totalGoals: 'Total Goals',
+    btts: 'BTTS',
+    matchResult: 'Match Result',
+    bestBet: 'Best Bet Suggestion',
+    riskLevel: 'Risk Level',
+    riskLow: 'Low',
+    riskMedium: 'Medium',
+    riskHigh: 'High',
+    deepAnalysis: 'Multi-Layer Deep Analysis',
+    statsAnalysis: 'Statistical Analysis',
+    goalExpectancy: 'Goal Expectancy',
+    totalExpectedGoals: 'Total Expected Goals',
+    over25Rate: 'Over 2.5 Rate',
+    bttsRate: 'BTTS Rate',
+    dataQuality: 'Data Quality',
+    oddsAnalysis: 'Odds & Value Analysis',
+    oddsAnalysisText: 'Odds Analysis',
+    valueAnalysis: 'Value Analysis',
+    homeValue: 'Home Value',
+    overValue: 'Over Value',
+    bttsValue: 'BTTS Value',
+    bestValue: 'Best Value',
+    valueBets: 'Value Bets',
+    recommendation: 'Recommendation',
+    valueRating: 'Value Rating',
+    psychAnalysis: 'Psychological Analysis',
+    morale: 'Morale',
+    motivation: 'Motivation',
+    preparation: 'Preparation',
+    news: 'News',
+    psychEdge: 'Psychological Edge',
+    balanced: 'Balanced',
+    warnings: 'Warnings',
+    strategyConsensus: 'Strategy & Consensus',
+    riskAssessment: 'Risk Assessment',
+    agentConsensus: 'Agent Consensus',
+    agrees: 'agree',
+    recommendedBets: 'Recommended Bets',
+    avoidBets: 'Bets to Avoid',
+    stakeSuggestion: 'Stake Suggestion',
+    finalConsensus: 'Final Consensus',
+    weightedAnalysis: '5 Agent Weighted Analysis',
+    predictedScore: 'Predicted Score',
+    agents: 'agents',
+    confidenceRate: 'Confidence Rate',
+    allAgents: 'All Agents',
+    finalConsensusTab: 'Final Consensus',
+  },
+  de: {
+    confidence: 'Konfidenz',
+    matchAnalysis: 'Spielanalyse',
+    criticalFactors: 'Kritische Faktoren',
+    probabilities: 'Wahrscheinlichkeiten',
+    draw: 'Unentschieden',
+    scorePrediction: 'Ergebnisvorhersage',
+    otherScores: 'Andere mögliche Ergebnisse',
+    totalGoals: 'Gesamttore',
+    btts: 'Beide treffen',
+    matchResult: 'Spielergebnis',
+    bestBet: 'Beste Wettempfehlung',
+    riskLevel: 'Risikoniveau',
+    riskLow: 'Niedrig',
+    riskMedium: 'Mittel',
+    riskHigh: 'Hoch',
+    deepAnalysis: 'Mehrschichtige Tiefenanalyse',
+    statsAnalysis: 'Statistische Analyse',
+    goalExpectancy: 'Torerwartung',
+    totalExpectedGoals: 'Erwartete Gesamttore',
+    over25Rate: 'Über 2.5 Rate',
+    bttsRate: 'BTTS Rate',
+    dataQuality: 'Datenqualität',
+    oddsAnalysis: 'Quoten & Wertanalyse',
+    oddsAnalysisText: 'Quotenanalyse',
+    valueAnalysis: 'Wertanalyse',
+    homeValue: 'Heimwert',
+    overValue: 'Over-Wert',
+    bttsValue: 'BTTS-Wert',
+    bestValue: 'Bester Wert',
+    valueBets: 'Werthafte Wetten',
+    recommendation: 'Empfehlung',
+    valueRating: 'Wertbewertung',
+    psychAnalysis: 'Psychologische Analyse',
+    morale: 'Moral',
+    motivation: 'Motivation',
+    preparation: 'Vorbereitung',
+    news: 'Nachrichten',
+    psychEdge: 'Psychologischer Vorteil',
+    balanced: 'Ausgeglichen',
+    warnings: 'Warnungen',
+    strategyConsensus: 'Strategie & Konsens',
+    riskAssessment: 'Risikobewertung',
+    agentConsensus: 'Agent-Konsens',
+    agrees: 'einig',
+    recommendedBets: 'Empfohlene Wetten',
+    avoidBets: 'Zu vermeidende Wetten',
+    stakeSuggestion: 'Einsatzempfehlung',
+    finalConsensus: 'Finaler Konsens',
+    weightedAnalysis: '5 Agent gewichtete Analyse',
+    predictedScore: 'Vorhergesagtes Ergebnis',
+    agents: 'Agenten',
+    confidenceRate: 'Konfidenzrate',
+    allAgents: 'Alle Agenten',
+    finalConsensusTab: 'Finaler Konsens',
+  }
+};
 
 // Confidence bar component
 const ConfidenceBar = ({ value }: { value: number }) => {
@@ -37,13 +209,14 @@ const ConfidenceBar = ({ value }: { value: number }) => {
 };
 
 // Prediction badge
-const PredictionBadge = ({ prediction, confidence }: { prediction: string; confidence: number }) => {
+const PredictionBadge = ({ prediction, confidence, lang = 'en' }: { prediction: string; confidence: number; lang?: string }) => {
+  const t = translations[lang as keyof typeof translations] || translations.en;
   return (
     <div className="flex items-center gap-2">
       <span className="px-3 py-1 bg-blue-600 text-white rounded-lg font-bold text-lg">
         {prediction}
       </span>
-      <span className="text-sm text-gray-400">%{confidence} güven</span>
+      <span className="text-sm text-gray-400">%{confidence} {t.confidence}</span>
     </div>
   );
 };
@@ -98,8 +271,9 @@ function isMediumRisk(level: string): boolean {
 }
 
 // Deep Analysis Agent Card
-const DeepAnalysisCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: string; awayTeam: string }) => {
+const DeepAnalysisCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
   const [expanded, setExpanded] = useState(true);
+  const t = translations[lang as keyof typeof translations] || translations.en;
 
   if (!data) return null;
 
@@ -115,7 +289,7 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: s
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Deep Analysis Agent</h3>
-            <p className="text-sm text-purple-400">Çok Katmanlı Derin Analiz</p>
+            <p className="text-sm text-purple-400">{t.deepAnalysis}</p>
           </div>
         </div>
         <button
@@ -252,8 +426,9 @@ const DeepAnalysisCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: s
 };
 
 // Stats Agent Card
-const StatsAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: string; awayTeam: string }) => {
+const StatsAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
   const [expanded, setExpanded] = useState(true);
+  const t = translations[lang as keyof typeof translations] || translations.en;
   if (!data) return null;
 
   return (
@@ -265,7 +440,7 @@ const StatsAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: str
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Stats Agent</h3>
-            <p className="text-sm text-blue-400">İstatistiksel Analiz</p>
+            <p className="text-sm text-blue-400">{t.statsAnalysis}</p>
           </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-blue-400 hover:text-blue-300 text-xl">
@@ -337,8 +512,9 @@ const StatsAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: str
 };
 
 // Odds Agent Card
-const OddsAgentCard = ({ data }: { data: any }) => {
+const OddsAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) => {
   const [expanded, setExpanded] = useState(true);
+  const t = translations[lang as keyof typeof translations] || translations.en;
   if (!data) return null;
 
   return (
@@ -350,7 +526,7 @@ const OddsAgentCard = ({ data }: { data: any }) => {
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Odds Agent</h3>
-            <p className="text-sm text-green-400">Oran & Değer Analizi</p>
+            <p className="text-sm text-green-400">{t.oddsAnalysis}</p>
           </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-green-400 hover:text-green-300 text-xl">
@@ -432,8 +608,9 @@ const OddsAgentCard = ({ data }: { data: any }) => {
 };
 
 // Sentiment Agent Card
-const SentimentAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: string; awayTeam: string }) => {
+const SentimentAgentCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
   const [expanded, setExpanded] = useState(true);
+  const t = translations[lang as keyof typeof translations] || translations.en;
   if (!data) return null;
 
   const getSentimentColor = (sentiment: string) => {
@@ -457,7 +634,7 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam:
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Sentiment Agent</h3>
-            <p className="text-sm text-pink-400">Psikolojik Analiz</p>
+            <p className="text-sm text-pink-400">{t.psychAnalysis}</p>
           </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-pink-400 hover:text-pink-300 text-xl">
@@ -584,8 +761,9 @@ const SentimentAgentCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam:
 // ============================================================================
 // Strategy Agent Card - FIXED: riskAssessment obje desteği
 // ============================================================================
-const StrategyAgentCard = ({ data }: { data: any }) => {
+const StrategyAgentCard = ({ data, lang = 'en' }: { data: any; lang?: string }) => {
   const [expanded, setExpanded] = useState(true);
+  const t = translations[lang as keyof typeof translations] || translations.en;
   if (!data) return null;
 
   // ✅ FIX: riskAssessment string veya obje olabilir
@@ -602,7 +780,7 @@ const StrategyAgentCard = ({ data }: { data: any }) => {
           </div>
           <div>
             <h3 className="text-xl font-bold text-white">Strategy Agent</h3>
-            <p className="text-sm text-amber-400">Strateji & Konsensüs</p>
+            <p className="text-sm text-amber-400">{t.strategyConsensus}</p>
           </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-amber-400 hover:text-amber-300 text-xl">
@@ -745,7 +923,8 @@ const StrategyAgentCard = ({ data }: { data: any }) => {
 };
 
 // Final Consensus Card
-const FinalConsensusCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam: string; awayTeam: string }) => {
+const FinalConsensusCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
+  const t = translations[lang as keyof typeof translations] || translations.en;
   if (!data) return null;
 
   return (
@@ -755,8 +934,8 @@ const FinalConsensusCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam:
           <span className="text-3xl">🏆</span>
         </div>
         <div>
-          <h3 className="text-2xl font-bold text-white">Final Konsensüs</h3>
-          <p className="text-gray-400">5 Agent Ağırlıklı Analiz</p>
+          <h3 className="text-2xl font-bold text-white">{t.finalConsensus}</h3>
+          <p className="text-gray-400">{t.weightedAnalysis}</p>
         </div>
       </div>
 
@@ -815,8 +994,10 @@ const FinalConsensusCard = ({ data, homeTeam, awayTeam }: { data: any; homeTeam:
 };
 
 // Main Component
-export default function AgentReports({ reports, homeTeam, awayTeam, language = 'tr' }: AgentReportsProps) {
+export default function AgentReports({ reports, homeTeam, awayTeam }: AgentReportsProps) {
+  const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<'all' | 'consensus'>('all');
+  const t = translations[lang as keyof typeof translations] || translations.en;
 
   return (
     <div className="space-y-6">
@@ -830,7 +1011,7 @@ export default function AgentReports({ reports, homeTeam, awayTeam, language = '
               : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
           }`}
         >
-          📊 Tüm Agentlar
+          📊 {t.allAgents}
         </button>
         <button
           onClick={() => setActiveTab('consensus')}
@@ -840,20 +1021,20 @@ export default function AgentReports({ reports, homeTeam, awayTeam, language = '
               : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
           }`}
         >
-          🏆 Final Konsensüs
+          🏆 {t.finalConsensusTab}
         </button>
       </div>
 
       {activeTab === 'all' ? (
         <div className="space-y-6">
-          <DeepAnalysisCard data={reports.deepAnalysis} homeTeam={homeTeam} awayTeam={awayTeam} />
-          <StatsAgentCard data={reports.stats} homeTeam={homeTeam} awayTeam={awayTeam} />
-          <OddsAgentCard data={reports.odds} />
-          <SentimentAgentCard data={reports.sentiment} homeTeam={homeTeam} awayTeam={awayTeam} />
-          <StrategyAgentCard data={reports.strategy} />
+          <DeepAnalysisCard data={reports.deepAnalysis} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
+          <StatsAgentCard data={reports.stats} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
+          <OddsAgentCard data={reports.odds} lang={lang} />
+          <SentimentAgentCard data={reports.sentiment} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
+          <StrategyAgentCard data={reports.strategy} lang={lang} />
         </div>
       ) : (
-        <FinalConsensusCard data={reports.weightedConsensus} homeTeam={homeTeam} awayTeam={awayTeam} />
+        <FinalConsensusCard data={reports.weightedConsensus} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
       )}
     </div>
   );

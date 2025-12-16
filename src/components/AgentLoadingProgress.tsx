@@ -2,22 +2,80 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from './LanguageProvider';
 
 interface AgentLoadingProgressProps {
   isLoading: boolean;
 }
 
-const agents = [
-  { id: 'scout', name: 'Scout Agent', icon: '🔍', description: 'Veri toplama...', color: 'from-blue-500 to-cyan-500' },
-  { id: 'stats', name: 'Stats Agent', icon: '📊', description: 'İstatistik analizi...', color: 'from-green-500 to-emerald-500' },
-  { id: 'odds', name: 'Odds Agent', icon: '💰', description: 'Oran analizi...', color: 'from-yellow-500 to-orange-500' },
-  { id: 'sentiment', name: 'Sentiment Agent', icon: '🎭', description: 'Duygu analizi...', color: 'from-pink-500 to-rose-500' },
-  { id: 'strategy', name: 'Strategy Agent', icon: '🧠', description: 'Strateji oluşturma...', color: 'from-purple-500 to-indigo-500' },
-];
-
 export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgressProps) {
+  const { lang } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+
+  const labels = {
+    tr: {
+      title: 'AI Ajanları Çalışıyor',
+      subtitle: '5 farklı AI agent maçı analiz ediyor...',
+      working: 'Çalışıyor',
+      completed: 'Tamamlandı',
+      progress: 'Toplam İlerleme',
+      tip: 'İpucu',
+      tipText: 'AI ajanları maç verilerini, istatistikleri, oranları ve haberleri analiz ediyor. Bu işlem 15-30 saniye sürebilir.',
+      agents: [
+        { id: 'scout', name: 'Scout Agent', description: 'Veri toplama...' },
+        { id: 'stats', name: 'Stats Agent', description: 'İstatistik analizi...' },
+        { id: 'odds', name: 'Odds Agent', description: 'Oran analizi...' },
+        { id: 'sentiment', name: 'Sentiment Agent', description: 'Duygu analizi...' },
+        { id: 'strategy', name: 'Strategy Agent', description: 'Strateji oluşturma...' },
+      ]
+    },
+    en: {
+      title: 'AI Agents Working',
+      subtitle: '5 different AI agents analyzing the match...',
+      working: 'Working',
+      completed: 'Completed',
+      progress: 'Total Progress',
+      tip: 'Tip',
+      tipText: 'AI agents are analyzing match data, statistics, odds and news. This process may take 15-30 seconds.',
+      agents: [
+        { id: 'scout', name: 'Scout Agent', description: 'Collecting data...' },
+        { id: 'stats', name: 'Stats Agent', description: 'Statistical analysis...' },
+        { id: 'odds', name: 'Odds Agent', description: 'Odds analysis...' },
+        { id: 'sentiment', name: 'Sentiment Agent', description: 'Sentiment analysis...' },
+        { id: 'strategy', name: 'Strategy Agent', description: 'Creating strategy...' },
+      ]
+    },
+    de: {
+      title: 'KI-Agenten arbeiten',
+      subtitle: '5 verschiedene KI-Agenten analysieren das Spiel...',
+      working: 'Arbeitet',
+      completed: 'Abgeschlossen',
+      progress: 'Gesamtfortschritt',
+      tip: 'Tipp',
+      tipText: 'KI-Agenten analysieren Spieldaten, Statistiken, Quoten und Nachrichten. Dieser Vorgang kann 15-30 Sekunden dauern.',
+      agents: [
+        { id: 'scout', name: 'Scout Agent', description: 'Daten sammeln...' },
+        { id: 'stats', name: 'Stats Agent', description: 'Statistische Analyse...' },
+        { id: 'odds', name: 'Odds Agent', description: 'Quotenanalyse...' },
+        { id: 'sentiment', name: 'Sentiment Agent', description: 'Stimmungsanalyse...' },
+        { id: 'strategy', name: 'Strategy Agent', description: 'Strategie erstellen...' },
+      ]
+    }
+  };
+
+  const l = labels[lang as keyof typeof labels] || labels.en;
+  const agents = l.agents.map((agent, idx) => ({
+    ...agent,
+    icon: ['🔍', '📊', '💰', '🎭', '🧠'][idx],
+    color: [
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-yellow-500 to-orange-500',
+      'from-pink-500 to-rose-500',
+      'from-purple-500 to-indigo-500'
+    ][idx]
+  }));
 
   useEffect(() => {
     if (!isLoading) {
@@ -26,7 +84,6 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
       return;
     }
 
-    // Her 3-4 saniyede bir step ilerle
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < agents.length - 1) {
@@ -38,7 +95,7 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [isLoading]);
+  }, [isLoading, agents.length]);
 
   if (!isLoading) return null;
 
@@ -48,9 +105,9 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-3 px-6 py-3 bg-purple-500/20 rounded-full border border-purple-500/30 mb-4">
           <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-          <span className="text-purple-400 font-medium">AI Ajanları Çalışıyor</span>
+          <span className="text-purple-400 font-medium">{l.title}</span>
         </div>
-        <p className="text-gray-400 text-sm">5 farklı AI agent maçı analiz ediyor...</p>
+        <p className="text-gray-400 text-sm">{l.subtitle}</p>
       </div>
 
       {/* Agent Progress */}
@@ -94,12 +151,12 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
                   <span className="font-semibold text-white">{agent.name}</span>
                   {isActive && (
                     <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full animate-pulse">
-                      Çalışıyor
+                      {l.working}
                     </span>
                   )}
                   {isCompleted && (
                     <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                      Tamamlandı
+                      {l.completed}
                     </span>
                   )}
                 </div>
@@ -135,7 +192,7 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
       {/* Overall Progress Bar */}
       <div className="mt-6">
         <div className="flex justify-between text-sm text-gray-400 mb-2">
-          <span>Toplam İlerleme</span>
+          <span>{l.progress}</span>
           <span>{Math.min(100, Math.round(((completedSteps.length + (currentStep === agents.length - 1 ? 1 : 0)) / agents.length) * 100))}%</span>
         </div>
         <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -151,11 +208,8 @@ export default function AgentLoadingProgress({ isLoading }: AgentLoadingProgress
         <div className="flex items-start gap-3">
           <span className="text-xl">💡</span>
           <div>
-            <p className="text-blue-400 font-medium text-sm">İpucu</p>
-            <p className="text-gray-400 text-xs mt-1">
-              AI ajanları maç verilerini, istatistikleri, oranları ve haberleri analiz ediyor. 
-              Bu işlem 15-30 saniye sürebilir.
-            </p>
+            <p className="text-blue-400 font-medium text-sm">{l.tip}</p>
+            <p className="text-gray-400 text-xs mt-1">{l.tipText}</p>
           </div>
         </div>
       </div>

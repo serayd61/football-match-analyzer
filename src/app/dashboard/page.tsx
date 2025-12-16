@@ -1148,7 +1148,6 @@ export default function DashboardPage() {
                           reports={agentAnalysis.reports}
                           homeTeam={selectedMatch.homeTeam}
                           awayTeam={selectedMatch.awayTeam}
-                          language={lang as 'tr' | 'en' | 'de'}
                         />
                       )}
                     </div>
