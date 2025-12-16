@@ -499,14 +499,18 @@ export async function runDeepAnalysisAgent(
 ): Promise<any> {
   console.log('🔬 Deep Analysis Agent starting...');
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
+  console.log(`   🌍 Language: ${language}`);
   
   const systemPrompt = DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
   const context = buildDeepAnalysisContext(matchData);
   
-  const userMessage = `${context}
-
-Bu verileri kullanarak çok katmanlı derin analiz yap. 
-SADECE JSON formatında döndür, başka açıklama ekleme.`;
+  // Language-specific user message
+  const userMessageByLang = {
+    tr: `${context}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
+    en: `${context}\n\nPerform multi-layered deep analysis using this data.\nReturn ONLY JSON format, no additional explanation.`,
+    de: `${context}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
+  };
+  const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
     const response = await heurist.chat([

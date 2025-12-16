@@ -638,6 +638,27 @@ function generateStatsReasoning(
     return { overUnderReasoning, matchResultReasoning, bttsReasoning, agentSummary };
   }
   
+  // German
+  if (language === 'de') {
+    const overUnderReasoning = expectedTotal >= 2.5
+      ? `📊 Heimteam erzielt ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts kassiert ${awayGoalsConceded.toFixed(1)}. Erwartete Summe: ${expectedTotal.toFixed(2)} Tore. Über 2.5 Rate: ${avgOver25}%. Starkes Over-Signal.`
+      : `📊 Heimteam ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts ${awayGoalsScored.toFixed(1)} Tore/Spiel. Erwartung: ${expectedTotal.toFixed(2)} Tore. Unter 2.5 Rate: ${100 - avgOver25}%. Torarmes Spiel erwartet.`;
+    
+    const matchResultReasoning = homePoints > awayPoints
+      ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
+      : awayPoints > homePoints
+      ? `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${awayPoints - homePoints} Pkt vorne → Auswärtssieg`
+      : `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
+    
+    const bttsReasoning = avgBtts >= 55
+      ? `⚽ Heimteam traf in ${Math.round(100 - (homeLosses/5)*100)}% der Spiele. Auswärts traf in ${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)}%. Kombinierte BTTS-Rate: ${avgBtts}%. Beide Teams treffen wahrscheinlich.`
+      : `🛡️ Heimteam kassiert ${homeGoalsConceded.toFixed(1)} Tore/Spiel, Auswärts erzielt ${awayGoalsScored.toFixed(1)}. BTTS-Rate ${avgBtts}% ist niedrig. Einseitiges Ergebnis wahrscheinlich.`;
+    
+    const agentSummary = `📊 STATS: Form favorisiert ${homePoints > awayPoints ? 'Heim' : awayPoints > homePoints ? 'Auswärts' : 'keinen'}. Torerwartung ${expectedTotal.toFixed(1)} (${expectedTotal >= 2.5 ? 'Über' : 'Unter'}). BTTS ${avgBtts >= 55 ? 'Ja' : 'Nein'} Trend.`;
+    
+    return { overUnderReasoning, matchResultReasoning, bttsReasoning, agentSummary };
+  }
+  
   // English (default)
   const overUnderReasoning = expectedTotal >= 2.5
     ? `📊 Home scores ${homeGoalsScored.toFixed(1)} goals/game, away concedes ${awayGoalsConceded.toFixed(1)}. Expected total: ${expectedTotal.toFixed(2)} goals. Over 2.5 rate: ${avgOver25}%. Strong Over signal.`
