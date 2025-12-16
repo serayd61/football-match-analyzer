@@ -123,12 +123,20 @@ export default function AdminPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Admin sayfası herkese açık - authentication kaldırıldı
-  // useEffect(() => {
-  //   if (status === 'unauthenticated') {
-  //     router.push('/login');
-  //   }
-  // }, [status, router]);
+  // Admin erişim kontrolü - sadece belirli email'ler girebilir
+  const ADMIN_EMAILS = [
+    'serayd61@hotmail.com',
+  ];
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated' && session?.user?.email) {
+      if (!ADMIN_EMAILS.includes(session.user.email)) {
+        router.push('/dashboard');
+      }
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     if (session) {
@@ -183,12 +191,37 @@ export default function AdminPage() {
     });
   };
 
-  if (status === 'loading' || loading) {
+  const isAdmin = session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
+
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Admin Panel yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'authenticated' && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Erişim Engellendi</h1>
+          <p className="text-gray-400">Bu sayfaya erişim yetkiniz yok.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Veriler yükleniyor...</p>
         </div>
       </div>
     );
