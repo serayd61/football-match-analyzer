@@ -16,6 +16,41 @@ export interface MatchResult {
   source: string;
 }
 
+// Takım adlarını normalize et (Türkçe karakterler, kısaltmalar vs)
+export function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[şŞ]/g, 's')
+    .replace(/[çÇ]/g, 'c')
+    .replace(/[ğĞ]/g, 'g')
+    .replace(/[üÜ]/g, 'u')
+    .replace(/[öÖ]/g, 'o')
+    .replace(/[ıİ]/g, 'i')
+    .replace(/\s*(sk|fk|fc|sc|jk|as|ac|cf|cd|ud|sd|afc|bk|if|ff|bsc|vfb|tsv|sv|ssv|fsv)\s*$/i, '')
+    .replace(/[-_.']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Takım adı eşleşmesi kontrol et
+export function matchTeamNames(dbName: string, apiName: string): boolean {
+  const normalizedDb = normalizeTeamName(dbName);
+  const normalizedApi = normalizeTeamName(apiName);
+  
+  // Tam eşleşme
+  if (normalizedDb === normalizedApi) return true;
+  
+  // Birinin diğerini içermesi
+  if (normalizedDb.includes(normalizedApi) || normalizedApi.includes(normalizedDb)) return true;
+  
+  // İlk kelimenin eşleşmesi (örn: "Galatasaray" vs "Galatasaray SK")
+  const dbFirst = normalizedDb.split(' ')[0];
+  const apiFirst = normalizedApi.split(' ')[0];
+  if (dbFirst.length >= 4 && dbFirst === apiFirst) return true;
+  
+  return false;
+}
+
 export interface MatchResultProvider {
   name: string;
   priority: number;
@@ -59,14 +94,35 @@ export class APIFootballProvider implements MatchResultProvider {
       const data = await response.json();
       const fixtures = data.response || [];
 
+      // Takım adlarını normalize et (Türkçe karakterler, kısaltmalar vs)
+      const normalizeTeamName = (name: string): string => {
+        return name
+          .toLowerCase()
+          .replace(/[şŞ]/g, 's')
+          .replace(/[çÇ]/g, 'c')
+          .replace(/[ğĞ]/g, 'g')
+          .replace(/[üÜ]/g, 'u')
+          .replace(/[öÖ]/g, 'o')
+          .replace(/[ıİ]/g, 'i')
+          .replace(/\s*(sk|fk|fc|sc|jk|as|ac|cf|cd|ud|sd|afc|bk|if|ff|bsc|vfb|tsv|sv|ssv|fsv)\s*$/i, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const searchHome = normalizeTeamName(homeTeam);
+      const searchAway = normalizeTeamName(awayTeam);
+
       // Takım adlarına göre maçı bul
       const match = fixtures.find((f: any) => {
-        const home = f.teams?.home?.name?.toLowerCase() || '';
-        const away = f.teams?.away?.name?.toLowerCase() || '';
-        return (
-          (home.includes(homeTeam.toLowerCase()) || homeTeam.toLowerCase().includes(home)) &&
-          (away.includes(awayTeam.toLowerCase()) || awayTeam.toLowerCase().includes(away))
-        );
+        const home = normalizeTeamName(f.teams?.home?.name || '');
+        const away = normalizeTeamName(f.teams?.away?.name || '');
+        
+        const homeMatch = home.includes(searchHome) || searchHome.includes(home) || 
+                          home.split(' ')[0] === searchHome.split(' ')[0];
+        const awayMatch = away.includes(searchAway) || searchAway.includes(away) ||
+                          away.split(' ')[0] === searchAway.split(' ')[0];
+        
+        return homeMatch && awayMatch;
       });
 
       if (!match) {

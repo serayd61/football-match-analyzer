@@ -2,6 +2,8 @@
 
 import { MatchData } from '../types';
 import { heurist } from '../client';
+import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
+import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
 
 const DEEP_ANALYSIS_PROMPT = {
   tr: `Sen profesyonel bir futbol analisti ve bahis uzmanısın. Çok katmanlı derin analiz yaparak maç tahmini üreteceksin.
@@ -500,6 +502,33 @@ export async function runDeepAnalysisAgent(
   console.log('🔬 Deep Analysis Agent starting...');
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`   🌍 Language: ${language}`);
+  
+  // 🆕 LİG PROFİLİ
+  const leagueProfile = getLeagueProfile(matchData.league || '');
+  if (leagueProfile) {
+    console.log(`   🏆 League Profile: ${leagueProfile.name} | Avg Goals: ${leagueProfile.avgGoalsPerMatch} | Home Win: ${leagueProfile.homeWinPercentage}%`);
+  }
+  
+  // 🆕 HAKEM VERİSİ (varsa)
+  let refereeData: RefereeMatchImpact | null = null;
+  if (matchData.fixtureId) {
+    try {
+      const referee = await fetchRefereeFromSportMonks(matchData.fixtureId);
+      if (referee) {
+        refereeData = analyzeRefereeImpact(
+          referee,
+          matchData.homeTeamId || 0,
+          matchData.homeTeam,
+          matchData.awayTeamId || 0,
+          matchData.awayTeam,
+          leagueProfile?.avgYellowCardsPerMatch
+        );
+        console.log(`   🧑‍⚖️ Referee: ${referee.name} | Strictness: ${referee.strictness} | Cards/Match: ${referee.cardsPerMatch}`);
+      }
+    } catch (e) {
+      console.log('   ⚠️ Referee data not available');
+    }
+  }
   
   const systemPrompt = DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
   const context = buildDeepAnalysisContext(matchData);

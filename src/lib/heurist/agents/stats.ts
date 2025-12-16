@@ -1,5 +1,6 @@
 import { heurist, HeuristMessage } from '../client';
 import { MatchData } from '../types';
+import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 
 // ==================== PROMPTS ====================
 
@@ -684,6 +685,14 @@ function generateStatsReasoning(
 export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
   console.log('📊 Stats Agent starting DEEP analysis with xG, timing patterns, clean sheets...');
   
+  // 🆕 LİG PROFİLİ - Lig karakteristiklerini al
+  const leagueProfile = getLeagueProfile(matchData.league || '');
+  if (leagueProfile) {
+    console.log(`   🏆 League Profile Loaded: ${leagueProfile.name}`);
+    console.log(`   📊 League Avg Goals: ${leagueProfile.avgGoalsPerMatch} | Over 2.5: ${leagueProfile.over25Percentage}% | Home Win: ${leagueProfile.homeWinPercentage}%`);
+    console.log(`   📊 League Bias: Over/Under: ${leagueProfile.overUnderBias > 0 ? '+' : ''}${leagueProfile.overUnderBias} | Home: ${leagueProfile.homeAwayBias > 0 ? '+' : ''}${leagueProfile.homeAwayBias}`);
+  }
+  
   // Detaylı verileri al (varsa)
   const detailedHome = (matchData as any).detailedStats?.home;
   const detailedAway = (matchData as any).detailedStats?.away;
@@ -927,6 +936,41 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
         parsed.bttsConfidence = confidences.bttsConf;
         parsed.firstHalfConfidence = confidences.firstHalfConf;
         
+        // 🆕 LİG PROFİLİ İLE AYARLAMA
+        if (leagueProfile) {
+          const adjustedPrediction = adjustPredictionByLeague(
+            {
+              overUnder: parsed.overUnder,
+              overUnderConfidence: parsed.overUnderConfidence,
+              matchResult: parsed.matchResult,
+              matchResultConfidence: parsed.matchResultConfidence,
+              btts: parsed.btts,
+              bttsConfidence: parsed.bttsConfidence,
+            },
+            leagueProfile
+          );
+          
+          parsed.overUnder = adjustedPrediction.overUnder;
+          parsed.overUnderConfidence = adjustedPrediction.overUnderConfidence;
+          parsed.matchResult = adjustedPrediction.matchResult;
+          parsed.matchResultConfidence = adjustedPrediction.matchResultConfidence;
+          parsed.btts = adjustedPrediction.btts;
+          parsed.bttsConfidence = adjustedPrediction.bttsConfidence;
+          
+          // Lig bilgisini ekle
+          parsed.leagueProfile = {
+            name: leagueProfile.name,
+            avgGoals: leagueProfile.avgGoalsPerMatch,
+            over25Pct: leagueProfile.over25Percentage,
+            homeWinPct: leagueProfile.homeWinPercentage,
+            overUnderBias: leagueProfile.overUnderBias,
+            homeAwayBias: leagueProfile.homeAwayBias,
+            xgMultiplier: leagueProfile.xgMultiplier,
+          };
+          
+          console.log(`   🏆 League Adjustment Applied: ${leagueProfile.name}`);
+        }
+        
         console.log(`✅ Stats Agent: ${parsed.matchResult} (${parsed.matchResultConfidence}%) | ${parsed.overUnder} (${parsed.overUnderConfidence}%) | BTTS: ${parsed.btts} (${parsed.bttsConfidence}%)`);
         console.log(`   📈 xG: ${xgAnalysis.totalXG} | 1H: ${parsed.firstHalfPrediction.goals} (${parsed.firstHalfConfidence}%)`);
         console.log(`   📝 Summary: ${parsed.agentSummary}`);
@@ -938,23 +982,58 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
   }
 
   // Fallback with aggressive values
-  const fallbackOverUnder = (expectedTotal >= 2.5 || avgOver25 >= 55 || xgAnalysis.totalXG >= 2.5) ? 'Over' : 'Under';
-  const fallbackMatchResult = formDiff > 3 ? '1' : formDiff < -3 ? '2' : (homeExpected > awayExpected ? '1' : 'X');
-  const fallbackBtts = avgBtts >= 55 ? 'Yes' : 'No';
+  let fallbackOverUnder = (expectedTotal >= 2.5 || avgOver25 >= 55 || xgAnalysis.totalXG >= 2.5) ? 'Over' : 'Under';
+  let fallbackMatchResult = formDiff > 3 ? '1' : formDiff < -3 ? '2' : (homeExpected > awayExpected ? '1' : 'X');
+  let fallbackBtts = avgBtts >= 55 ? 'Yes' : 'No';
+  let fallbackOverUnderConf = confidences.overUnderConf;
+  let fallbackMatchResultConf = confidences.matchResultConf;
+  let fallbackBttsConf = confidences.bttsConf;
+  
+  // 🆕 LİG PROFİLİ İLE AYARLAMA (Fallback için de)
+  if (leagueProfile) {
+    const adjustedFallback = adjustPredictionByLeague(
+      {
+        overUnder: fallbackOverUnder,
+        overUnderConfidence: fallbackOverUnderConf,
+        matchResult: fallbackMatchResult,
+        matchResultConfidence: fallbackMatchResultConf,
+        btts: fallbackBtts,
+        bttsConfidence: fallbackBttsConf,
+      },
+      leagueProfile
+    );
+    
+    fallbackOverUnder = adjustedFallback.overUnder;
+    fallbackOverUnderConf = adjustedFallback.overUnderConfidence;
+    fallbackMatchResult = adjustedFallback.matchResult;
+    fallbackMatchResultConf = adjustedFallback.matchResultConfidence;
+    fallbackBtts = adjustedFallback.btts;
+    fallbackBttsConf = adjustedFallback.bttsConfidence;
+  }
   
   const fallbackResult = {
     formAnalysis: `${matchData.homeTeam}: ${homeForm} (${homePoints}pts, ${homeGoalsScored.toFixed(1)} gol/maç) vs ${matchData.awayTeam}: ${awayForm} (${awayPoints}pts, ${awayGoalsScored.toFixed(1)} gol/maç)`,
     goalExpectancy: parseFloat(expectedTotal.toFixed(2)),
     overUnder: fallbackOverUnder,
     overUnderReasoning: reasoning.overUnderReasoning,
-    overUnderConfidence: confidences.overUnderConf,
-    confidence: confidences.overUnderConf,
+    overUnderConfidence: fallbackOverUnderConf,
+    confidence: fallbackOverUnderConf,
     matchResult: fallbackMatchResult,
     matchResultReasoning: reasoning.matchResultReasoning,
-    matchResultConfidence: confidences.matchResultConf,
+    matchResultConfidence: fallbackMatchResultConf,
     btts: fallbackBtts,
     bttsReasoning: reasoning.bttsReasoning,
-    bttsConfidence: confidences.bttsConf,
+    bttsConfidence: fallbackBttsConf,
+    // 🆕 Lig Profili
+    leagueProfile: leagueProfile ? {
+      name: leagueProfile.name,
+      avgGoals: leagueProfile.avgGoalsPerMatch,
+      over25Pct: leagueProfile.over25Percentage,
+      homeWinPct: leagueProfile.homeWinPercentage,
+      overUnderBias: leagueProfile.overUnderBias,
+      homeAwayBias: leagueProfile.homeAwayBias,
+      xgMultiplier: leagueProfile.xgMultiplier,
+    } : null,
     // 🆕 xG Analysis
     xgAnalysis,
     // 🆕 Timing Patterns
