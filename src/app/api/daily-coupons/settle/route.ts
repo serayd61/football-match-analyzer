@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
-const CRON_SECRET = process.env.CRON_SECRET || 'tipster-league-secret-2024';
+const CRON_SECRET = process.env.CRON_SECRET || 'tipster-league-secret-2025';
 
 // Lazy loaded supabase client
 const getSupabase = () => getSupabaseAdmin();

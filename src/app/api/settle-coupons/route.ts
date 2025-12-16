@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     // API key kontrolü
     const authHeader = request.headers.get('authorization');
-    const expectedKey = process.env.CRON_SECRET || 'tipster-league-secret-2024';
+    const expectedKey = process.env.CRON_SECRET || 'tipster-league-secret-2025';
     
     if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
