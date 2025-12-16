@@ -402,7 +402,7 @@ export async function POST(request: NextRequest) {
     const fixtures = await getTodayMatches();
     console.log(`📊 Found ${fixtures.length} fixtures`);
 
-    if (fixtures.length < 5) {
+    if (fixtures.length < 3) {
       return NextResponse.json({ error: 'Not enough matches today', count: fixtures.length }, { status: 400 });
     }
 
