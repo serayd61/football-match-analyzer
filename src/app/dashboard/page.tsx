@@ -761,6 +761,11 @@ export default function DashboardPage() {
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* 🎯 DAILY COUPONS - n8n Automation */}
+        <div className="mb-6">
+          <DailyCoupons />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Match List */}
