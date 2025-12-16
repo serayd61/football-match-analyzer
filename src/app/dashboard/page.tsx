@@ -113,6 +113,11 @@ export default function DashboardPage() {
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentMode, setAgentMode] = useState(false);
   
+  // Quad-Brain states
+  const [quadBrainAnalysis, setQuadBrainAnalysis] = useState<any>(null);
+  const [quadBrainLoading, setQuadBrainLoading] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<'standard' | 'quadbrain' | 'agents'>('standard');
+  
   // UI states
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeNav, setActiveNav] = useState('matches');
@@ -429,7 +434,7 @@ export default function DashboardPage() {
   const runAgentAnalysis = async () => {
     if (!selectedMatch || !userProfile?.canUseAgents) return;
     
-    setAgentMode(true);
+    setAnalysisMode('agents');
     setAgentLoading(true);
     setAgentAnalysis(null);
 
@@ -456,6 +461,47 @@ export default function DashboardPage() {
       console.error('Agent error:', error);
     }
     setAgentLoading(false);
+  };
+
+  // 🧠 QUAD-BRAIN ANALYSIS
+  const runQuadBrainAnalysis = async () => {
+    if (!selectedMatch || !userProfile?.canAnalyze) return;
+    
+    setAnalysisMode('quadbrain');
+    setQuadBrainLoading(true);
+    setQuadBrainAnalysis(null);
+    setAnalysisError(null);
+
+    try {
+      const res = await fetch('/api/quad-brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: selectedMatch.id,
+          homeTeam: selectedMatch.homeTeam,
+          awayTeam: selectedMatch.awayTeam,
+          homeTeamId: selectedMatch.homeTeamId,
+          awayTeamId: selectedMatch.awayTeamId,
+          league: selectedMatch.league,
+          language: lang,
+          fetchNews: true,
+          trackPerformance: true,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setQuadBrainAnalysis(data.result);
+        fetchUserProfile();
+      } else {
+        setAnalysisError(data.error || 'Quad-Brain analysis failed');
+      }
+    } catch (error) {
+      console.error('Quad-Brain error:', error);
+      setAnalysisError('Network error');
+    }
+    setQuadBrainLoading(false);
   };
 
   const addToCoupon = (betType: string, selection: string, odds: number) => {
@@ -891,23 +937,39 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - 3 Analysis Modes */}
                 <div className="p-4 border-b border-gray-700/50">
-                  <div className="flex gap-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Standard AI Consensus */}
                     <button 
                       onClick={() => analyzeMatch(selectedMatch)} 
                       disabled={analyzing || !userProfile?.canAnalyze} 
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                     >
-                      🤖 {analyzing ? l.analyzing : l.analyze}
+                      <span className="text-lg">🤖</span>
+                      <span className="text-xs">{analyzing ? '...' : 'AI Consensus'}</span>
                     </button>
+                    
+                    {/* 🧠 QUAD-BRAIN - NEW */}
+                    <button 
+                      onClick={runQuadBrainAnalysis} 
+                      disabled={quadBrainLoading || !userProfile?.canAnalyze} 
+                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all relative overflow-hidden ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                    >
+                      <span className="absolute top-1 right-1 px-1 py-0.5 bg-yellow-500 text-black text-[8px] font-bold rounded">NEW</span>
+                      <span className="text-lg">🧠</span>
+                      <span className="text-xs">{quadBrainLoading ? '...' : 'Quad-Brain'}</span>
+                    </button>
+                    
+                    {/* Heurist Agents */}
                     <button 
                       onClick={runAgentAnalysis} 
                       disabled={agentLoading || !userProfile?.canUseAgents} 
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                     >
-                      🧠 {agentLoading ? '...' : l.aiAgents}
-                      {!userProfile?.canUseAgents && <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded font-bold">PRO</span>}
+                      <span className="text-lg">🔮</span>
+                      <span className="text-xs">{agentLoading ? '...' : 'Agents'}</span>
+                      {!userProfile?.canUseAgents && <span className="text-[8px] bg-yellow-500 text-black px-1 rounded font-bold">PRO</span>}
                     </button>
                   </div>
                 </div>
@@ -923,9 +985,34 @@ export default function DashboardPage() {
                   )}
 
                   {/* Loading State */}
-                  {(analyzing || agentLoading) ? (
+                  {(analyzing || agentLoading || quadBrainLoading) ? (
                     agentLoading ? (
                       <AgentLoadingProgress isLoading={true} />
+                    ) : quadBrainLoading ? (
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-6 text-center">
+                          <div className="text-4xl mb-4 animate-pulse">🧠</div>
+                          <h3 className="text-xl font-bold text-white mb-2">Quad-Brain Analysis</h3>
+                          <p className="text-gray-400 text-sm mb-4">4 AI models analyzing in parallel...</p>
+                          <div className="flex justify-center gap-3">
+                            {['Claude', 'GPT-4', 'Gemini', 'Perplexity'].map((model, i) => (
+                              <div key={model} className="flex flex-col items-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg animate-pulse ${
+                                  i === 0 ? 'bg-orange-500/20' :
+                                  i === 1 ? 'bg-green-500/20' :
+                                  i === 2 ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                                }`}>
+                                  {i === 0 ? '🧠' : i === 1 ? '📊' : i === 2 ? '🔍' : '📰'}
+                                </div>
+                                <span className="text-[10px] text-gray-500 mt-1">{model}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 animate-[loading_2s_ease-in-out_infinite]" style={{width: '60%'}}></div>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <AIConsensusLoading 
                         isLoading={true}
@@ -936,24 +1023,33 @@ export default function DashboardPage() {
                         language={lang as 'tr' | 'en' | 'de'}
                       />
                     )
-                  ) : (analysis || agentAnalysis) ? (
+                  ) : (analysis || agentAnalysis || quadBrainAnalysis) ? (
                     <div className="space-y-4">
-                      {/* Mode Toggle */}
-                      {agentAnalysis && (
-                        <div className="flex gap-2 p-1 bg-gray-700/30 rounded-xl">
-                          <button onClick={() => setAgentMode(false)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${!agentMode ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                            {l.standardAnalysis}
-                          </button>
-                          <button onClick={() => setAgentMode(true)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${agentMode ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                            {l.agentAnalysis}
-                          </button>
+                      {/* Mode Toggle - 3 Modes */}
+                      {(analysis || quadBrainAnalysis || agentAnalysis) && (
+                        <div className="flex gap-1 p-1 bg-gray-700/30 rounded-xl">
+                          {analysis && (
+                            <button onClick={() => setAnalysisMode('standard')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'standard' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🤖 AI
+                            </button>
+                          )}
+                          {quadBrainAnalysis && (
+                            <button onClick={() => setAnalysisMode('quadbrain')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'quadbrain' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🧠 Quad-Brain
+                            </button>
+                          )}
+                          {agentAnalysis && (
+                            <button onClick={() => setAnalysisMode('agents')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'agents' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🔮 Agents
+                            </button>
+                          )}
                         </div>
                       )}
 
                       {/* ═══════════════════════════════════════════════════════════════ */}
                       {/* AI BRAIN V2.0 - UPGRADED ANALYSIS VIEW */}
                       {/* ═══════════════════════════════════════════════════════════════ */}
-                      {!agentMode && analysis && (
+                      {analysisMode === 'standard' && analysis && (
                         <div className="space-y-4">
                           
                           {/* AI Status Bar - Enhanced */}
@@ -1142,8 +1238,255 @@ export default function DashboardPage() {
                         </div>
                       )}
 
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* 🧠 QUAD-BRAIN RESULTS */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {analysisMode === 'quadbrain' && quadBrainAnalysis && (
+                        <div className="space-y-4">
+                          {/* Quad-Brain Header */}
+                          <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">🧠</span>
+                                <div>
+                                  <span className="font-bold text-white">Quad-Brain Consensus</span>
+                                  <span className="ml-2 px-2 py-0.5 bg-cyan-500/30 text-cyan-300 text-xs rounded-full">
+                                    v2.0
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-gray-500">Data Quality</div>
+                                <div className="text-sm font-bold text-cyan-400">{quadBrainAnalysis.dataQuality?.overall || 0}/100</div>
+                              </div>
+                            </div>
+
+                            {/* 4 AI Models Status */}
+                            <div className="grid grid-cols-4 gap-2">
+                              {[
+                                { key: 'claude', name: 'Claude', icon: '🧠', color: 'orange', role: 'Tactical' },
+                                { key: 'gpt4', name: 'GPT-4', icon: '📊', color: 'green', role: 'Statistical' },
+                                { key: 'gemini', name: 'Gemini', icon: '🔍', color: 'blue', role: 'Pattern' },
+                                { key: 'perplexity', name: 'Perplexity', icon: '📰', color: 'purple', role: 'Context' }
+                              ].map((model) => {
+                                const pred = quadBrainAnalysis.individualPredictions?.[model.key];
+                                const isActive = !!pred;
+                                return (
+                                  <div 
+                                    key={model.key}
+                                    className={`p-2 rounded-lg text-center ${
+                                      isActive 
+                                        ? `bg-${model.color}-500/20 border border-${model.color}-500/30` 
+                                        : 'bg-gray-700/30 border border-gray-700 opacity-50'
+                                    }`}
+                                  >
+                                    <div className="text-lg">{model.icon}</div>
+                                    <div className={`text-xs font-bold ${isActive ? `text-${model.color}-400` : 'text-gray-500'}`}>
+                                      {model.name}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500">{model.role}</div>
+                                    {isActive && <div className="text-[10px] text-green-400 mt-1">✓</div>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Debate Alert */}
+                          {quadBrainAnalysis.debates?.length > 0 && (
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-center gap-3">
+                              <span className="text-xl">⚖️</span>
+                              <div>
+                                <p className="text-sm font-medium text-yellow-400">AI Debate Occurred</p>
+                                <p className="text-xs text-gray-400">
+                                  {quadBrainAnalysis.debates.length} conflict(s) resolved via arbitration
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Consensus Predictions */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Match Result */}
+                            {quadBrainAnalysis.consensus?.matchResult && (
+                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                                <div className="text-xs text-gray-400 mb-1">Match Result</div>
+                                <div className="flex items-end justify-between mb-2">
+                                  <div className="text-2xl font-bold text-blue-400">
+                                    {quadBrainAnalysis.consensus.matchResult.prediction}
+                                  </div>
+                                  <div className={`text-3xl font-bold ${
+                                    quadBrainAnalysis.consensus.matchResult.confidence >= 70 ? 'text-green-400' :
+                                    quadBrainAnalysis.consensus.matchResult.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {quadBrainAnalysis.consensus.matchResult.confidence}%
+                                  </div>
+                                </div>
+                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                                  <div 
+                                    className={`h-full ${
+                                      quadBrainAnalysis.consensus.matchResult.confidence >= 70 ? 'bg-green-500' :
+                                      quadBrainAnalysis.consensus.matchResult.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${quadBrainAnalysis.consensus.matchResult.confidence}%` }}
+                                  />
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {quadBrainAnalysis.consensus.matchResult.agreement?.majoritySize}/{quadBrainAnalysis.consensus.matchResult.agreement?.totalModels} AI models agree
+                                </div>
+                                <button 
+                                  onClick={() => addToCoupon('MATCH_RESULT', quadBrainAnalysis.consensus.matchResult.prediction, 1.85)} 
+                                  className="w-full mt-2 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  🎫 Add to Coupon
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Over/Under 2.5 */}
+                            {quadBrainAnalysis.consensus?.overUnder25 && (
+                              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                                <div className="text-xs text-gray-400 mb-1">Over/Under 2.5</div>
+                                <div className="flex items-end justify-between mb-2">
+                                  <div className="text-2xl font-bold text-green-400">
+                                    {quadBrainAnalysis.consensus.overUnder25.prediction}
+                                  </div>
+                                  <div className={`text-3xl font-bold ${
+                                    quadBrainAnalysis.consensus.overUnder25.confidence >= 70 ? 'text-green-400' :
+                                    quadBrainAnalysis.consensus.overUnder25.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {quadBrainAnalysis.consensus.overUnder25.confidence}%
+                                  </div>
+                                </div>
+                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                                  <div 
+                                    className={`h-full ${
+                                      quadBrainAnalysis.consensus.overUnder25.confidence >= 70 ? 'bg-green-500' :
+                                      quadBrainAnalysis.consensus.overUnder25.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${quadBrainAnalysis.consensus.overUnder25.confidence}%` }}
+                                  />
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {quadBrainAnalysis.consensus.overUnder25.agreement?.majoritySize}/{quadBrainAnalysis.consensus.overUnder25.agreement?.totalModels} AI models agree
+                                </div>
+                                <button 
+                                  onClick={() => addToCoupon('OVER_UNDER_25', quadBrainAnalysis.consensus.overUnder25.prediction, 1.90)} 
+                                  className="w-full mt-2 py-2 bg-green-600/30 hover:bg-green-600/50 text-green-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  🎫 Add to Coupon
+                                </button>
+                              </div>
+                            )}
+
+                            {/* BTTS */}
+                            {quadBrainAnalysis.consensus?.btts && (
+                              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                                <div className="text-xs text-gray-400 mb-1">BTTS</div>
+                                <div className="flex items-end justify-between mb-2">
+                                  <div className="text-2xl font-bold text-orange-400">
+                                    {quadBrainAnalysis.consensus.btts.prediction}
+                                  </div>
+                                  <div className={`text-3xl font-bold ${
+                                    quadBrainAnalysis.consensus.btts.confidence >= 70 ? 'text-green-400' :
+                                    quadBrainAnalysis.consensus.btts.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {quadBrainAnalysis.consensus.btts.confidence}%
+                                  </div>
+                                </div>
+                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                                  <div 
+                                    className={`h-full ${
+                                      quadBrainAnalysis.consensus.btts.confidence >= 70 ? 'bg-green-500' :
+                                      quadBrainAnalysis.consensus.btts.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${quadBrainAnalysis.consensus.btts.confidence}%` }}
+                                  />
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {quadBrainAnalysis.consensus.btts.agreement?.majoritySize}/{quadBrainAnalysis.consensus.btts.agreement?.totalModels} AI models agree
+                                </div>
+                                <button 
+                                  onClick={() => addToCoupon('BTTS', quadBrainAnalysis.consensus.btts.prediction, 1.80)} 
+                                  className="w-full mt-2 py-2 bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 rounded-lg text-xs font-medium transition-all"
+                                >
+                                  🎫 Add to Coupon
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Risk Level */}
+                            {quadBrainAnalysis.riskAssessment && (
+                              <div className={`rounded-xl p-4 border ${
+                                quadBrainAnalysis.riskAssessment.overall === 'low' ? 'bg-green-500/10 border-green-500/30' :
+                                quadBrainAnalysis.riskAssessment.overall === 'medium' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                                'bg-red-500/10 border-red-500/30'
+                              }`}>
+                                <div className="text-xs text-gray-400 mb-1">Risk Level</div>
+                                <div className={`text-2xl font-bold ${
+                                  quadBrainAnalysis.riskAssessment.overall === 'low' ? 'text-green-400' :
+                                  quadBrainAnalysis.riskAssessment.overall === 'medium' ? 'text-yellow-400' :
+                                  'text-red-400'
+                                }`}>
+                                  {quadBrainAnalysis.riskAssessment.overall === 'low' ? '🛡️ Low' :
+                                   quadBrainAnalysis.riskAssessment.overall === 'medium' ? '⚡ Medium' : '🔥 High'}
+                                </div>
+                                {quadBrainAnalysis.riskAssessment.warnings?.length > 0 && (
+                                  <div className="mt-2 text-xs text-gray-400">
+                                    {quadBrainAnalysis.riskAssessment.warnings[0]}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Best Bets */}
+                          {quadBrainAnalysis.bestBets?.[0] && (
+                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm text-yellow-400 mb-1 font-medium flex items-center gap-2">
+                                    <span className="text-xl">💰</span> Best Bet
+                                    <span className={`px-2 py-0.5 rounded text-xs ${
+                                      quadBrainAnalysis.bestBets[0].consensusStrength === 'strong' ? 'bg-green-500/20 text-green-400' :
+                                      quadBrainAnalysis.bestBets[0].consensusStrength === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      'bg-red-500/20 text-red-400'
+                                    }`}>
+                                      {quadBrainAnalysis.bestBets[0].consensusStrength}
+                                    </span>
+                                  </div>
+                                  <div className="font-bold text-white text-xl">
+                                    {quadBrainAnalysis.bestBets[0].market}: {quadBrainAnalysis.bestBets[0].selection}
+                                  </div>
+                                  <div className="text-sm text-gray-300 mt-1">
+                                    {quadBrainAnalysis.bestBets[0].confidence}% confidence
+                                    <span className="ml-2 text-gray-500">
+                                      • {quadBrainAnalysis.bestBets[0].weightedAgreement}% weighted
+                                    </span>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => addToCoupon(quadBrainAnalysis.bestBets[0].market, quadBrainAnalysis.bestBets[0].selection, 1.85)} 
+                                  className="px-5 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/25"
+                                >
+                                  🎫 Add to Coupon
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Timing Info */}
+                          {quadBrainAnalysis.timing && (
+                            <div className="text-xs text-gray-500 text-right">
+                              ⏱️ Total: {quadBrainAnalysis.timing.total}ms | AI: {quadBrainAnalysis.timing.aiCalls}ms
+                              {quadBrainAnalysis.timing.debate && ` | Debate: ${quadBrainAnalysis.timing.debate}ms`}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Agent Mode */}
-                      {agentMode && agentAnalysis && (
+                      {analysisMode === 'agents' && agentAnalysis && (
                         <AgentReports 
                           reports={agentAnalysis.reports}
                           homeTeam={selectedMatch.homeTeam}

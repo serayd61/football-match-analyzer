@@ -1,12 +1,13 @@
 {
   "name": "Football Analytics Pro",
-  "short_name": "FA Pro",
-  "description": "AI-Powered Football Match Analysis & Predictions",
+  "short_name": "FootballAI",
+  "description": "AI-Powered Football Predictions - Quad-Brain & Agent System",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#10b981",
-  "orientation": "portrait-primary",
+  "theme_color": "#22c55e",
+  "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -59,21 +60,28 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
+      "src": "/screenshots/home.png",
+      "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Home Screen"
     }
   ],
   "categories": ["sports", "entertainment", "utilities"],
-  "lang": "tr",
-  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Today's Matches",
+      "short_name": "Matches",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Live Scores",
+      "short_name": "Live",
+      "url": "/live",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
   "prefer_related_applications": false
 }
-
