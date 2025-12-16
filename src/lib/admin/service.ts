@@ -633,3 +633,349 @@ export async function getAccuracyDetails(fixtureId: number): Promise<PredictionA
   return data || [];
 }
 
+// =========================
+// DETAILED MODEL STATISTICS
+// Model x Market x Period Matrix
+// =========================
+
+export interface DetailedModelStats {
+  model: string;
+  markets: {
+    market: string;
+    periods: {
+      period: 'daily' | 'weekly' | 'monthly' | 'all';
+      total: number;
+      correct: number;
+      accuracy: number;
+      avgConfidence: number;
+      confidenceThresholds: {
+        threshold: number;
+        total: number;
+        correct: number;
+        accuracy: number;
+      }[];
+    }[];
+  }[];
+}
+
+export interface ConfidenceThresholdAnalysis {
+  model: string;
+  market: string;
+  thresholds: {
+    minConfidence: number;
+    maxConfidence: number;
+    total: number;
+    correct: number;
+    accuracy: number;
+    recommendedBet: boolean;
+  }[];
+}
+
+export async function getDetailedModelStatistics(): Promise<{
+  modelStats: DetailedModelStats[];
+  confidenceAnalysis: ConfidenceThresholdAnalysis[];
+  periodComparison: any;
+}> {
+  const supabase = getSupabaseAdmin();
+  
+  // Get all accuracy data
+  const { data: allAccuracy } = await supabase
+    .from('prediction_accuracy')
+    .select('*')
+    .order('settled_at', { ascending: false });
+
+  if (!allAccuracy || allAccuracy.length === 0) {
+    return {
+      modelStats: [],
+      confidenceAnalysis: [],
+      periodComparison: null,
+    };
+  }
+
+  const models = ['claude', 'gpt4', 'gemini', 'perplexity', 'consensus'];
+  const markets = ['matchResult', 'over25', 'btts'];
+  const confidenceThresholds = [50, 60, 70, 80, 90];
+
+  // Calculate period boundaries
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const modelStats: DetailedModelStats[] = [];
+  const confidenceAnalysis: ConfidenceThresholdAnalysis[] = [];
+
+  for (const model of models) {
+    const modelData: DetailedModelStats = {
+      model,
+      markets: [],
+    };
+
+    for (const market of markets) {
+      const marketData = allAccuracy.filter(a => a.market === market);
+      
+      // Daily (today)
+      const dailyData = marketData.filter(a => a.settled_at >= todayStart);
+      // Weekly (last 7 days)
+      const weeklyData = marketData.filter(a => a.settled_at >= weekStart);
+      // Monthly (last 30 days)
+      const monthlyData = marketData.filter(a => a.settled_at >= monthStart);
+      
+      const periods = [
+        { period: 'daily' as const, data: dailyData },
+        { period: 'weekly' as const, data: weeklyData },
+        { period: 'monthly' as const, data: monthlyData },
+        { period: 'all' as const, data: marketData },
+      ];
+
+      const periodStats = periods.map(({ period, data }) => {
+        let total = 0;
+        let correct = 0;
+        let totalConfidence = 0;
+
+        const thresholdStats: { [key: number]: { total: number; correct: number } } = {};
+        confidenceThresholds.forEach(t => {
+          thresholdStats[t] = { total: 0, correct: 0 };
+        });
+
+        data.forEach(record => {
+          if (model === 'consensus') {
+            total++;
+            totalConfidence += record.consensus_confidence || 0;
+            if (record.consensus_correct) correct++;
+
+            // Threshold analysis
+            const conf = record.consensus_confidence || 0;
+            confidenceThresholds.forEach(threshold => {
+              if (conf >= threshold) {
+                thresholdStats[threshold].total++;
+                if (record.consensus_correct) thresholdStats[threshold].correct++;
+              }
+            });
+          } else if (record.model_predictions && record.model_predictions[model]) {
+            total++;
+            totalConfidence += record.model_predictions[model].confidence || 0;
+            if (record.model_predictions[model].correct) correct++;
+
+            // Threshold analysis
+            const conf = record.model_predictions[model].confidence || 0;
+            confidenceThresholds.forEach(threshold => {
+              if (conf >= threshold) {
+                thresholdStats[threshold].total++;
+                if (record.model_predictions[model].correct) thresholdStats[threshold].correct++;
+              }
+            });
+          }
+        });
+
+        return {
+          period,
+          total,
+          correct,
+          accuracy: total > 0 ? Math.round((correct / total) * 1000) / 10 : 0,
+          avgConfidence: total > 0 ? Math.round(totalConfidence / total * 10) / 10 : 0,
+          confidenceThresholds: confidenceThresholds.map(threshold => ({
+            threshold,
+            total: thresholdStats[threshold].total,
+            correct: thresholdStats[threshold].correct,
+            accuracy: thresholdStats[threshold].total > 0 
+              ? Math.round((thresholdStats[threshold].correct / thresholdStats[threshold].total) * 1000) / 10 
+              : 0,
+          })),
+        };
+      });
+
+      modelData.markets.push({
+        market,
+        periods: periodStats,
+      });
+
+      // Build confidence analysis for this model-market combo
+      const allPeriodData = marketData;
+      const ranges = [
+        { min: 50, max: 60 },
+        { min: 60, max: 70 },
+        { min: 70, max: 80 },
+        { min: 80, max: 90 },
+        { min: 90, max: 100 },
+      ];
+
+      const thresholds = ranges.map(range => {
+        let total = 0;
+        let correct = 0;
+
+        allPeriodData.forEach(record => {
+          let conf = 0;
+          let isCorrect = false;
+
+          if (model === 'consensus') {
+            conf = record.consensus_confidence || 0;
+            isCorrect = record.consensus_correct;
+          } else if (record.model_predictions && record.model_predictions[model]) {
+            conf = record.model_predictions[model].confidence || 0;
+            isCorrect = record.model_predictions[model].correct;
+          }
+
+          if (conf >= range.min && conf < range.max) {
+            total++;
+            if (isCorrect) correct++;
+          }
+        });
+
+        const accuracy = total > 0 ? Math.round((correct / total) * 1000) / 10 : 0;
+        return {
+          minConfidence: range.min,
+          maxConfidence: range.max,
+          total,
+          correct,
+          accuracy,
+          recommendedBet: accuracy >= 60 && total >= 5,
+        };
+      });
+
+      confidenceAnalysis.push({
+        model,
+        market,
+        thresholds,
+      });
+    }
+
+    modelStats.push(modelData);
+  }
+
+  // Period comparison (day by day for last 14 days)
+  const periodComparison = {
+    labels: [] as string[],
+    models: {} as { [model: string]: number[] },
+  };
+
+  for (let i = 13; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    periodComparison.labels.push(dateStr);
+
+    const dayData = allAccuracy.filter(a => 
+      a.settled_at && a.settled_at.startsWith(dateStr)
+    );
+
+    models.forEach(model => {
+      if (!periodComparison.models[model]) {
+        periodComparison.models[model] = [];
+      }
+
+      let total = 0;
+      let correct = 0;
+
+      dayData.forEach(record => {
+        if (model === 'consensus') {
+          total++;
+          if (record.consensus_correct) correct++;
+        } else if (record.model_predictions && record.model_predictions[model]) {
+          total++;
+          if (record.model_predictions[model].correct) correct++;
+        }
+      });
+
+      periodComparison.models[model].push(
+        total > 0 ? Math.round((correct / total) * 1000) / 10 : 0
+      );
+    });
+  }
+
+  return {
+    modelStats,
+    confidenceAnalysis,
+    periodComparison,
+  };
+}
+
+// =========================
+// GET WEEKLY/MONTHLY BREAKDOWN
+// =========================
+
+export interface WeeklyBreakdown {
+  weekStart: string;
+  weekEnd: string;
+  models: {
+    model: string;
+    markets: {
+      market: string;
+      total: number;
+      correct: number;
+      accuracy: number;
+    }[];
+    overallAccuracy: number;
+  }[];
+}
+
+export async function getWeeklyBreakdown(weeks: number = 8): Promise<WeeklyBreakdown[]> {
+  const supabase = getSupabaseAdmin();
+  const result: WeeklyBreakdown[] = [];
+
+  for (let w = 0; w < weeks; w++) {
+    const weekEnd = new Date();
+    weekEnd.setDate(weekEnd.getDate() - (w * 7));
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    const { data: weekData } = await supabase
+      .from('prediction_accuracy')
+      .select('*')
+      .gte('settled_at', weekStart.toISOString())
+      .lt('settled_at', weekEnd.toISOString());
+
+    if (!weekData || weekData.length === 0) continue;
+
+    const models = ['claude', 'gpt4', 'gemini', 'perplexity', 'consensus'];
+    const markets = ['matchResult', 'over25', 'btts'];
+
+    const weekBreakdown: WeeklyBreakdown = {
+      weekStart: weekStart.toISOString().split('T')[0],
+      weekEnd: weekEnd.toISOString().split('T')[0],
+      models: [],
+    };
+
+    for (const model of models) {
+      let overallTotal = 0;
+      let overallCorrect = 0;
+
+      const marketStats = markets.map(market => {
+        const marketData = weekData.filter(d => d.market === market);
+        let total = 0;
+        let correct = 0;
+
+        marketData.forEach(record => {
+          if (model === 'consensus') {
+            total++;
+            if (record.consensus_correct) correct++;
+          } else if (record.model_predictions && record.model_predictions[model]) {
+            total++;
+            if (record.model_predictions[model].correct) correct++;
+          }
+        });
+
+        overallTotal += total;
+        overallCorrect += correct;
+
+        return {
+          market,
+          total,
+          correct,
+          accuracy: total > 0 ? Math.round((correct / total) * 1000) / 10 : 0,
+        };
+      });
+
+      weekBreakdown.models.push({
+        model,
+        markets: marketStats,
+        overallAccuracy: overallTotal > 0 ? Math.round((overallCorrect / overallTotal) * 1000) / 10 : 0,
+      });
+    }
+
+    result.push(weekBreakdown);
+  }
+
+  return result;
+}
+
