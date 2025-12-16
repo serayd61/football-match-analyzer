@@ -28,7 +28,7 @@ function getGenAI() {
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
-const MIN_CONFIDENCE = 60;
+const MIN_CONFIDENCE = 50;
 
 // 27 Lig Paketi - Tüm desteklenen ligler
 const SUPPORTED_LEAGUE_IDS = [
@@ -453,7 +453,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`\n🎯 Approved: ${approvedMatches.length}`);
 
-    if (approvedMatches.length < 3) {
+    if (approvedMatches.length < 2) {
       return NextResponse.json({ error: 'Not enough high-confidence matches', approved: approvedMatches.length }, { status: 400 });
     }
 
