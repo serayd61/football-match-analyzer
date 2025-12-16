@@ -123,11 +123,12 @@ export default function AdminPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
+  // Admin sayfası herkese açık - authentication kaldırıldı
+  // useEffect(() => {
+  //   if (status === 'unauthenticated') {
+  //     router.push('/login');
+  //   }
+  // }, [status, router]);
 
   useEffect(() => {
     if (session) {
