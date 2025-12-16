@@ -372,6 +372,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // force=true parametresi ile eski kuponları sil ve yeniden oluştur
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get('force') === 'true';
+
     const today = new Date().toISOString().split('T')[0];
 
     const { data: existing } = await getSupabaseAdmin()
@@ -381,7 +385,16 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (existing && existing.length > 0) {
-      return NextResponse.json({ message: 'Coupons already exist for today', date: today });
+      if (force) {
+        // Force mode: eski kuponları sil
+        await getSupabaseAdmin()
+          .from('daily_coupons')
+          .delete()
+          .eq('date', today);
+        console.log('🗑️ Eski kuponlar silindi, yeniden oluşturuluyor...');
+      } else {
+        return NextResponse.json({ message: 'Coupons already exist for today', date: today });
+      }
     }
 
     console.log('🎯 Generating daily coupons for', today);
