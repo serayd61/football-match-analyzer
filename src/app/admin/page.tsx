@@ -178,6 +178,10 @@ export default function AdminPage() {
   } | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('claude');
   const [selectedMarket, setSelectedMarket] = useState<string>('matchResult');
+  const [isSettling, setIsSettling] = useState(false);
+  const [settleResult, setSettleResult] = useState<{success: boolean; message: string; stats?: any} | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   // Admin erişim kontrolü - sadece belirli email'ler girebilir
   const ADMIN_EMAILS = [
@@ -226,11 +230,58 @@ export default function AdminPage() {
       if (detailedData.success) {
         setDetailedStats(detailedData.data);
       }
+
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching admin data:', error);
     }
     setLoading(false);
   };
+
+  // Maç sonuçlarını güncelle - SportMonks'tan çek
+  const settleResults = async () => {
+    setIsSettling(true);
+    setSettleResult(null);
+    try {
+      const res = await fetch('/api/cron/settle-admin-predictions', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      
+      setSettleResult({
+        success: data.success,
+        message: data.success 
+          ? `✅ ${data.stats?.settled || 0} maç sonucu güncellendi!` 
+          : `❌ Hata: ${data.error}`,
+        stats: data.stats,
+      });
+
+      // Sonuçlar güncellendiyse verileri yeniden çek
+      if (data.success && data.stats?.settled > 0) {
+        await fetchData();
+      }
+    } catch (error: any) {
+      setSettleResult({
+        success: false,
+        message: `❌ Hata: ${error.message}`,
+      });
+    }
+    setIsSettling(false);
+
+    // 5 saniye sonra bildirimi kaldır
+    setTimeout(() => setSettleResult(null), 5000);
+  };
+
+  // Auto-refresh (her 5 dakikada bir)
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5 * 60 * 1000); // 5 dakika
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const getAccuracyColor = (accuracy: number) => {
     if (accuracy >= 70) return 'text-emerald-400';
@@ -293,17 +344,84 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 p-4 md:p-6 pb-24">
       <div className="max-w-7xl mx-auto">
+        {/* Settle Result Notification */}
+        {settleResult && (
+          <div className={`fixed top-4 right-4 z-50 animate-fade-in ${
+            settleResult.success ? 'bg-emerald-500/90' : 'bg-red-500/90'
+          } text-white px-6 py-4 rounded-xl shadow-2xl backdrop-blur-sm max-w-md`}>
+            <div className="font-semibold mb-1">{settleResult.message}</div>
+            {settleResult.stats && (
+              <div className="text-sm opacity-90">
+                Kontrol: {settleResult.stats.checked} | 
+                Güncellenen: {settleResult.stats.settled} | 
+                Hata: {settleResult.stats.errors}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-              <FiBarChart2 className="w-6 h-6 text-white" />
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <FiBarChart2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">
+                  Admin Panel
+                </h1>
+                <p className="text-gray-400 text-sm">AI Prediction Performance Tracker</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">
-                Admin Panel
-              </h1>
-              <p className="text-gray-400 text-sm">AI Prediction Performance Tracker</p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Sonuçları Güncelle Butonu */}
+              <button
+                onClick={settleResults}
+                disabled={isSettling}
+                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                  isSettling
+                    ? 'bg-amber-500/50 text-amber-200 cursor-wait'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500 shadow-lg hover:shadow-amber-500/25'
+                }`}
+              >
+                {isSettling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-amber-200 border-t-transparent rounded-full animate-spin" />
+                    Güncelleniyor...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Sonuçları Güncelle
+                  </>
+                )}
+              </button>
+
+              {/* Auto-refresh Toggle */}
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                  autoRefresh
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
+                {autoRefresh ? 'Otomatik (5dk)' : 'Otomatik Kapalı'}
+              </button>
+
+              {/* Last Updated */}
+              {lastUpdated && (
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <FiClock className="w-3 h-3" />
+                  {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
             </div>
           </div>
         </div>
