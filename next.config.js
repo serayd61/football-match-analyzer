@@ -1,34 +1,3 @@
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  runtimeCaching: [
-    {
-      urlPattern: /^https:\/\/api\.football-data\.org\/.*/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'football-api-cache',
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 30 // 30 minutes
-        }
-      }
-    },
-    {
-      urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'supabase-cache',
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 5 // 5 minutes
-        }
-      }
-    }
-  ]
-});
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -41,4 +10,8 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+// PWA konfigürasyonu - babel uyumsuzluğu nedeniyle geçici olarak devre dışı
+// next-pwa paketinde babel plugin sorunu var
+// TODO: @serwist/next veya next-pwa'nın güncel versiyonuna geçiş yapılacak
+
+module.exports = nextConfig;

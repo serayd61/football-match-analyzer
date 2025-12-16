@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runQuadBrainAnalysis, EnhancedMatchData, QuadBrainAPIResponse } from '@/lib/quad-brain';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
+import { savePrediction } from '@/lib/admin/service';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 saniye timeout
@@ -156,6 +157,86 @@ export async function POST(request: NextRequest): Promise<NextResponse<QuadBrain
     if (result.success) {
       setCachedAnalysis(cacheKey, language, 'quad-brain', result);
       console.log(`📦 Analysis cached for ${cacheKey}:${language}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📊 ADMIN PANEL - TAHMİN KAYDET
+    // ═══════════════════════════════════════════════════════════════════════
+    if (result.success && result.consensus) {
+      try {
+        await savePrediction({
+          fixtureId: fixtureId || 0,
+          homeTeam,
+          awayTeam,
+          league: league || 'Unknown',
+          matchDate: matchData.matchDate || new Date().toISOString(),
+          analysisType: 'quad-brain',
+          predictions: {
+            claude: result.individualPredictions?.claude ? {
+              matchResult: result.individualPredictions.claude.predictions?.matchResult?.prediction || '',
+              matchResultConfidence: result.individualPredictions.claude.predictions?.matchResult?.confidence || 0,
+              over25: result.individualPredictions.claude.predictions?.overUnder25?.prediction || '',
+              over25Confidence: result.individualPredictions.claude.predictions?.overUnder25?.confidence || 0,
+              btts: result.individualPredictions.claude.predictions?.btts?.prediction || '',
+              bttsConfidence: result.individualPredictions.claude.predictions?.btts?.confidence || 0,
+            } : undefined,
+            gpt4: result.individualPredictions?.gpt4 ? {
+              matchResult: result.individualPredictions.gpt4.predictions?.matchResult?.prediction || '',
+              matchResultConfidence: result.individualPredictions.gpt4.predictions?.matchResult?.confidence || 0,
+              over25: result.individualPredictions.gpt4.predictions?.overUnder25?.prediction || '',
+              over25Confidence: result.individualPredictions.gpt4.predictions?.overUnder25?.confidence || 0,
+              btts: result.individualPredictions.gpt4.predictions?.btts?.prediction || '',
+              bttsConfidence: result.individualPredictions.gpt4.predictions?.btts?.confidence || 0,
+            } : undefined,
+            gemini: result.individualPredictions?.gemini ? {
+              matchResult: result.individualPredictions.gemini.predictions?.matchResult?.prediction || '',
+              matchResultConfidence: result.individualPredictions.gemini.predictions?.matchResult?.confidence || 0,
+              over25: result.individualPredictions.gemini.predictions?.overUnder25?.prediction || '',
+              over25Confidence: result.individualPredictions.gemini.predictions?.overUnder25?.confidence || 0,
+              btts: result.individualPredictions.gemini.predictions?.btts?.prediction || '',
+              bttsConfidence: result.individualPredictions.gemini.predictions?.btts?.confidence || 0,
+            } : undefined,
+            perplexity: result.individualPredictions?.perplexity ? {
+              matchResult: result.individualPredictions.perplexity.predictions?.matchResult?.prediction || '',
+              matchResultConfidence: result.individualPredictions.perplexity.predictions?.matchResult?.confidence || 0,
+              over25: result.individualPredictions.perplexity.predictions?.overUnder25?.prediction || '',
+              over25Confidence: result.individualPredictions.perplexity.predictions?.overUnder25?.confidence || 0,
+              btts: result.individualPredictions.perplexity.predictions?.btts?.prediction || '',
+              bttsConfidence: result.individualPredictions.perplexity.predictions?.btts?.confidence || 0,
+            } : undefined,
+          },
+          consensus: {
+            matchResult: {
+              prediction: result.consensus.matchResult?.prediction || '',
+              confidence: result.consensus.matchResult?.confidence || 0,
+              agreement: result.consensus.matchResult?.agreement?.weightedAgreement || 0,
+            },
+            over25: {
+              prediction: result.consensus.overUnder25?.prediction || '',
+              confidence: result.consensus.overUnder25?.confidence || 0,
+              agreement: result.consensus.overUnder25?.agreement?.weightedAgreement || 0,
+            },
+            btts: {
+              prediction: result.consensus.btts?.prediction || '',
+              confidence: result.consensus.btts?.confidence || 0,
+              agreement: result.consensus.btts?.agreement?.weightedAgreement || 0,
+            },
+          },
+          bestBets: result.bestBets?.map((bet, idx) => ({
+            rank: bet.rank || idx + 1,
+            market: bet.market || '',
+            selection: bet.selection || '',
+            confidence: bet.confidence || 0,
+            reasoning: bet.reasoning || '',
+          })) || [],
+          riskLevel: result.riskAssessment?.overall || 'medium',
+          riskFactors: result.riskAssessment?.factors || [],
+          dataQualityScore: result.dataQuality?.overall || 70,
+        });
+        console.log('📊 Quad-Brain prediction saved to Admin Panel');
+      } catch (saveError) {
+        console.error('⚠️ Admin Panel save failed (non-blocking):', saveError);
+      }
     }
 
     const totalTime = Date.now() - startTime;

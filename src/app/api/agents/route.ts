@@ -16,6 +16,7 @@ import { runFullAnalysis } from '@/lib/heurist/orchestrator';
 import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 import { runStrategyAgent } from '@/lib/heurist/agents/strategy';
 import { savePrediction } from '@/lib/predictions';
+import { savePrediction as saveAdminPrediction } from '@/lib/admin/service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 
@@ -672,6 +673,89 @@ export async function POST(request: NextRequest) {
       console.log('📊 Prediction saved to database for backtesting');
     } catch (saveError) {
       console.error('⚠️ Prediction save failed (non-blocking):', saveError);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 ADMIN PANEL - TAHMİN KAYDET
+    // ═══════════════════════════════════════════════════════════════════════════
+    try {
+      const consensus = result.reports?.weightedConsensus;
+      const mmPredictions = multiModelResult?.predictions as any;
+      
+      await saveAdminPrediction({
+        fixtureId: matchData.fixtureId,
+        homeTeam: matchData.homeTeam,
+        awayTeam: matchData.awayTeam,
+        league: matchData.league,
+        matchDate: matchData.date,
+        analysisType: 'agents',
+        predictions: {
+          claude: mmPredictions?.claude ? {
+            matchResult: mmPredictions.claude.matchResult?.prediction || '',
+            matchResultConfidence: mmPredictions.claude.matchResult?.confidence || 0,
+            over25: mmPredictions.claude.overUnder?.prediction || '',
+            over25Confidence: mmPredictions.claude.overUnder?.confidence || 0,
+            btts: mmPredictions.claude.btts?.prediction || '',
+            bttsConfidence: mmPredictions.claude.btts?.confidence || 0,
+          } : undefined,
+          gpt4: mmPredictions?.gpt4 ? {
+            matchResult: mmPredictions.gpt4.matchResult?.prediction || '',
+            matchResultConfidence: mmPredictions.gpt4.matchResult?.confidence || 0,
+            over25: mmPredictions.gpt4.overUnder?.prediction || '',
+            over25Confidence: mmPredictions.gpt4.overUnder?.confidence || 0,
+            btts: mmPredictions.gpt4.btts?.prediction || '',
+            bttsConfidence: mmPredictions.gpt4.btts?.confidence || 0,
+          } : undefined,
+          gemini: mmPredictions?.gemini ? {
+            matchResult: mmPredictions.gemini.matchResult?.prediction || '',
+            matchResultConfidence: mmPredictions.gemini.matchResult?.confidence || 0,
+            over25: mmPredictions.gemini.overUnder?.prediction || '',
+            over25Confidence: mmPredictions.gemini.overUnder?.confidence || 0,
+            btts: mmPredictions.gemini.btts?.prediction || '',
+            bttsConfidence: mmPredictions.gemini.btts?.confidence || 0,
+          } : undefined,
+          perplexity: mmPredictions?.perplexity ? {
+            matchResult: mmPredictions.perplexity.matchResult?.prediction || '',
+            matchResultConfidence: mmPredictions.perplexity.matchResult?.confidence || 0,
+            over25: mmPredictions.perplexity.overUnder?.prediction || '',
+            over25Confidence: mmPredictions.perplexity.overUnder?.confidence || 0,
+            btts: mmPredictions.perplexity.btts?.prediction || '',
+            bttsConfidence: mmPredictions.perplexity.btts?.confidence || 0,
+          } : undefined,
+        },
+        consensus: {
+          matchResult: {
+            prediction: consensus?.matchResult?.prediction || '',
+            confidence: consensus?.matchResult?.confidence || 0,
+            agreement: consensus?.matchResult?.agreement || 0,
+          },
+          over25: {
+            prediction: consensus?.overUnder?.prediction || '',
+            confidence: consensus?.overUnder?.confidence || 0,
+            agreement: consensus?.overUnder?.agreement || 0,
+          },
+          btts: {
+            prediction: consensus?.btts?.prediction || '',
+            confidence: consensus?.btts?.confidence || 0,
+            agreement: consensus?.btts?.agreement || 0,
+          },
+        },
+        bestBets: strategyResult?.recommendedBets?.map((bet: any, idx: number) => ({
+          rank: idx + 1,
+          market: bet.type || '',
+          selection: bet.selection || '',
+          confidence: bet.confidence || 0,
+          reasoning: bet.reasoning || '',
+        })) || [],
+        riskLevel: normalizeRiskAssessment(strategyResult?.riskAssessment) === 'High' ? 'high' : 
+                   normalizeRiskAssessment(strategyResult?.riskAssessment) === 'Low' ? 'low' : 'medium',
+        riskFactors: getRiskFactors(strategyResult?.riskAssessment),
+        dataQualityScore: dataQuality?.score || 70,
+        userId: (session?.user as any)?.id,
+      });
+      console.log('📊 Agent prediction saved to Admin Panel');
+    } catch (adminSaveError) {
+      console.error('⚠️ Admin Panel save failed (non-blocking):', adminSaveError);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

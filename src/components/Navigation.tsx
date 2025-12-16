@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: '/live', label: 'Canlı', icon: '🔴', badge: 'LIVE' },
     { href: '/predictions', label: 'Tahminler', icon: '🎯' },
     { href: '/stats', label: 'İstatistik', icon: '📈' },
+    { href: '/admin', label: 'Admin', icon: '⚙️', badge: 'PRO' },
   ];
 
   // Scroll effect - MUST be before any conditional return
