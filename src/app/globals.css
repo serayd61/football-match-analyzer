@@ -93,3 +93,126 @@ body {
 .markdown-content strong {
   @apply text-emerald-300;
 }
+
+/* ============================================
+   PWA & MOBILE STYLES
+   ============================================ */
+
+/* Safe area for notched devices (iPhone X+) */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* PWA standalone mode adjustments */
+@media all and (display-mode: standalone) {
+  body {
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior-y: none;
+  }
+  
+  /* Add extra padding for status bar */
+  .pwa-header {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  button, a, input, select {
+    min-height: 44px;
+  }
+  
+  /* Disable text selection on interactive elements */
+  button, a {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Pull to refresh prevention */
+html {
+  overscroll-behavior-y: contain;
+}
+
+/* Mobile card shadows */
+.mobile-card {
+  @apply bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-700/50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile button */
+.mobile-btn {
+  @apply px-4 py-3 rounded-xl font-semibold transition-all active:scale-95;
+}
+
+.mobile-btn-primary {
+  @apply mobile-btn bg-gradient-to-r from-green-500 to-emerald-600 text-white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.mobile-btn-secondary {
+  @apply mobile-btn bg-gray-700/50 text-gray-300 border border-gray-600;
+}
+
+/* Smooth scrolling for iOS */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism effect for mobile */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.05) 25%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Bottom nav spacer */
+.pb-mobile-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+}
+
+/* Swipe indicator */
+.swipe-indicator {
+  @apply w-10 h-1 bg-gray-600 rounded-full mx-auto mb-2;
+}

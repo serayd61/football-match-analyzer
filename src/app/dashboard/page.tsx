@@ -10,6 +10,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import AgentReports from '@/components/AgentReports';
 import AgentLoadingProgress from '@/components/AgentLoadingProgress';
 import AIConsensusLoading from '@/components/AIConsensusLoading';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 interface Match {
   id: number;
@@ -687,21 +688,23 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* HEADER */}
-      <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-                <span className="text-xl">⚽</span>
+      {/* HEADER - Mobile Optimized */}
+      <header className="bg-gray-900/95 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50 safe-area-inset-top">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                <span className="text-lg sm:text-xl">⚽</span>
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-white">Football Analytics</h1>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold text-white">
+                  Football<span className="text-green-400">Analytics</span>
+                </h1>
                 <div className="flex items-center gap-2">
                   {userProfile?.isPro ? (
-                    <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-bold rounded text-black">PRO</span>
+                    <span className="px-1.5 sm:px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] sm:text-[10px] font-bold rounded text-black">PRO</span>
                   ) : userProfile?.isTrial ? (
-                    <span className="text-xs text-gray-400">{userProfile.trialDaysLeft} {l.daysLeft}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400">{userProfile.trialDaysLeft} {l.daysLeft}</span>
                   ) : null}
                 </div>
               </div>
@@ -759,8 +762,8 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      {/* MAIN CONTENT - Mobile Optimized */}
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-mobile-nav">
         {/* 🎯 DAILY COUPONS - n8n Automation */}
         <div className="mb-6">
           <DailyCoupons />
@@ -1174,6 +1177,12 @@ export default function DashboardPage() {
       {(showProfileMenu || showMobileMenu) && (
         <div className="fixed inset-0 z-40" onClick={() => { setShowProfileMenu(false); setShowMobileMenu(false); }} />
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+      
+      {/* Mobile Bottom Spacer */}
+      <div className="h-20 md:hidden" />
     </div>
   );
 }
