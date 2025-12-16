@@ -2,11 +2,13 @@
 // Analysis Cache System - 30 dakika geçerli
 // ═══════════════════════════════════════════════════════════════════════════════
 
+type CacheType = 'analyze' | 'agents' | 'quad-brain';
+
 interface CacheEntry {
   data: any;
   timestamp: number;
   language: string;
-  type: 'analyze' | 'agents';
+  type: CacheType;
 }
 
 // In-memory cache (server-side)
@@ -19,7 +21,7 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
  * Cache key oluştur
  * Format: {type}:{fixtureId}:{language}
  */
-function createCacheKey(fixtureId: number, language: string, type: 'analyze' | 'agents'): string {
+function createCacheKey(fixtureId: number | string, language: string, type: CacheType): string {
   return `${type}:${fixtureId}:${language}`;
 }
 
@@ -28,9 +30,9 @@ function createCacheKey(fixtureId: number, language: string, type: 'analyze' | '
  * @returns data veya null (cache miss veya expired)
  */
 export function getCachedAnalysis(
-  fixtureId: number, 
+  fixtureId: number | string, 
   language: string, 
-  type: 'analyze' | 'agents'
+  type: CacheType
 ): { data: any; cachedAt: Date } | null {
   const key = createCacheKey(fixtureId, language, type);
   const entry = cache.get(key);
@@ -61,9 +63,9 @@ export function getCachedAnalysis(
  * Cache'e veri kaydet
  */
 export function setCachedAnalysis(
-  fixtureId: number,
+  fixtureId: number | string,
   language: string,
-  type: 'analyze' | 'agents',
+  type: CacheType,
   data: any
 ): void {
   const key = createCacheKey(fixtureId, language, type);
