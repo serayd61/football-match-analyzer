@@ -131,6 +131,9 @@ export default function HomePage() {
           period: '/ay',
           features: ['Sınırsız maç analizi', 'Tüm AI + Agent sistemleri', 'Value Bet tespiti', 'Kupon oluşturma', 'Öncelikli destek', 'API erişimi'],
           cta: 'Pro\'ya Geç',
+          trial: '🎁 7 Gün Ücretsiz Deneme',
+          trialDesc: 'Kredi kartı bilgilerinizi girdikten sonra 7 gün ücretsiz deneyin. İstediğiniz zaman anında iptal edin!',
+          cancelAnytime: '✓ İstediğiniz zaman iptal',
         },
       },
       testimonials: {
@@ -271,6 +274,9 @@ export default function HomePage() {
           period: '/month',
           features: ['Unlimited match analyses', 'All AI + Agent systems', 'Value Bet detection', 'Coupon creation', 'Priority support', 'API access'],
           cta: 'Go Pro',
+          trial: '🎁 7-Day Free Trial',
+          trialDesc: 'Try free for 7 days after entering your card details. Cancel instantly anytime!',
+          cancelAnytime: '✓ Cancel anytime',
         },
       },
       testimonials: {
@@ -413,6 +419,9 @@ export default function HomePage() {
         period: '/Monat',
         features: ['Unbegrenzte Spielanalysen', 'Alle KI + Agent-Systeme', 'Value Bet Erkennung', 'Wettschein-Erstellung', 'Prioritäts-Support', 'API-Zugang'],
         cta: 'Pro werden',
+        trial: '🎁 7 Tage kostenlos testen',
+        trialDesc: 'Nach Eingabe Ihrer Kartendaten 7 Tage kostenlos testen. Jederzeit sofort kündigen!',
+        cancelAnytime: '✓ Jederzeit kündbar',
       },
     },
     testimonials: {
@@ -810,17 +819,32 @@ export default function HomePage() {
                 {l.pricing.pro.badge}
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">{l.pricing.pro.name}</h3>
-              <div className="flex items-baseline gap-1 mb-6">
+              <div className="flex items-baseline gap-1 mb-2">
                 <span className="text-4xl font-bold text-white">{l.pricing.pro.price}</span>
                 <span className="text-gray-400">{l.pricing.pro.period}</span>
               </div>
-              <ul className="space-y-3 mb-8">
+              
+              {/* 7-Day Trial Banner */}
+              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/40 rounded-xl p-3 mb-4">
+                <p className="text-yellow-400 font-bold text-sm">{l.pricing.pro.trial}</p>
+                <p className="text-yellow-200/80 text-xs mt-1">{l.pricing.pro.trialDesc}</p>
+              </div>
+              
+              <ul className="space-y-3 mb-4">
                 {l.pricing.pro.features.map((f, idx) => (
                   <li key={idx} className="flex items-center gap-2 text-gray-300">
                     <span className="text-green-500">✓</span> {f}
                   </li>
                 ))}
               </ul>
+              
+              {/* Cancel Anytime Badge */}
+              <div className="text-center mb-4">
+                <span className="inline-flex items-center gap-1 text-green-400 text-sm font-medium bg-green-500/10 px-3 py-1 rounded-full">
+                  {l.pricing.pro.cancelAnytime}
+                </span>
+              </div>
+              
               <Link href="/login" className="block w-full py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-semibold rounded-xl text-center transition-all shadow-lg shadow-green-500/30">
                 {l.pricing.pro.cta}
               </Link>
