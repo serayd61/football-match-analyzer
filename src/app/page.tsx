@@ -7,8 +7,8 @@ import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 
-// 📹 YOUTUBE VIDEO ID - Buraya kendi video ID'ni yaz
-const YOUTUBE_VIDEO_ID = 'YOUR_VIDEO_ID_HERE'; // Örnek: 'dQw4w9WgXcQ'
+// 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
+const YOUTUBE_VIDEO_ID = 'na5Cj-954sg';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
