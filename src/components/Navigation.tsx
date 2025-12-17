@@ -13,7 +13,7 @@ export default function Navigation() {
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/live', label: 'Canlı', icon: '🔴', badge: 'LIVE' },
     { href: '/predictions', label: 'Tahminler', icon: '🎯' },
-    { href: '/stats', label: 'İstatistik', icon: '📈' },
+    { href: '/ai-performance', label: 'AI Performans', icon: '🧠', badge: 'NEW' },
     { href: '/admin', label: 'Admin', icon: '⚙️', badge: 'PRO' },
   ];
 
