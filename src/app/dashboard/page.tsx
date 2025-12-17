@@ -11,6 +11,7 @@ import AgentReports from '@/components/AgentReports';
 import AgentLoadingProgress from '@/components/AgentLoadingProgress';
 import AIConsensusLoading from '@/components/AIConsensusLoading';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import DashboardWidgets from '@/components/DashboardWidgets';
 
 interface Match {
   id: number;
@@ -817,7 +818,10 @@ export default function DashboardPage() {
 
       {/* MAIN CONTENT - Mobile Optimized */}
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-mobile-nav">
-        {/* 🎯 DAILY COUPONS - n8n Automation */}
+        {/* 🎯 DASHBOARD WIDGETS - Hot Matches, Stats, Live Scores, AI Insight */}
+        <DashboardWidgets />
+
+        {/* 🎯 DAILY COUPONS - AI Consensus */}
         <div className="mb-6">
           <DailyCoupons />
         </div>
