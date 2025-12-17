@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: '/live', label: 'Canlı', icon: '🔴', badge: 'LIVE' },
     { href: '/predictions', label: 'Tahminler', icon: '🎯' },
     { href: '/ai-performance', label: 'AI Performans', icon: '🧠', badge: 'NEW' },
+    { href: '/contact', label: 'İletişim', icon: '📬' },
     { href: '/admin', label: 'Admin', icon: '⚙️', badge: 'PRO' },
   ];
 
