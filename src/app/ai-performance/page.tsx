@@ -12,9 +12,7 @@ interface ModelStats {
   accuracy: number;
   avgConfidence: number;
   roi: number;
-  streak: number;
-  bestMarket: string;
-  bestLeague: string;
+  hasRealData: boolean;
 }
 
 interface MarketStats {
@@ -31,6 +29,15 @@ interface LeagueStats {
   accuracy: number;
 }
 
+interface RecentPrediction {
+  id: string;
+  match: string;
+  league: string;
+  status: 'won' | 'lost' | 'pending';
+  date: string;
+  analysisType: string;
+}
+
 interface PerformanceData {
   models: ModelStats[];
   markets: MarketStats[];
@@ -44,105 +51,198 @@ interface PerformanceData {
     avgConfidence: number;
     lastUpdated: string;
   };
-  weeklyTrend: { week: string; accuracy: number }[];
+  weeklyTrend: { week: string; total: number; accuracy: number }[];
+  recentPredictions: RecentPrediction[];
+  summary: {
+    totalPredictions: number;
+    settledCount: number;
+    pendingCount: number;
+    wonCount: number;
+    lostCount: number;
+  };
 }
 
 export default function AIPerformancePage() {
   const [data, setData] = useState<PerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | 'all'>('30d');
+  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'markets' | 'history'>('overview');
   const { lang } = useLanguage();
 
   const labels = {
     tr: {
-      title: '🧠 AI Performans Analizi',
-      subtitle: 'Yapay zeka modellerimizin gerçek performansı',
-      overall: 'Genel Performans',
-      totalPredictions: 'Toplam Tahmin',
-      accuracy: 'Doğruluk Oranı',
-      avgConfidence: 'Ort. Güven',
-      lastUpdated: 'Son Güncelleme',
-      modelPerformance: 'Model Performansı',
-      model: 'Model',
-      predictions: 'Tahmin',
-      correct: 'Doğru',
-      roi: 'ROI',
-      streak: 'Seri',
-      bestMarket: 'En İyi Pazar',
-      bestLeague: 'En İyi Lig',
-      marketPerformance: 'Pazar Bazlı Performans',
-      market: 'Pazar',
-      leaguePerformance: 'Lig Bazlı Performans',
-      league: 'Lig',
-      weeklyTrend: 'Haftalık Trend',
-      week: 'Hafta',
-      period7d: 'Son 7 Gün',
-      period30d: 'Son 30 Gün',
-      periodAll: 'Tüm Zamanlar',
+      title: '🧠 AI Performans Merkezi',
+      subtitle: 'Yapay zeka modellerimizin gerçek zamanlı performans analizi',
+      tabs: {
+        overview: '📊 Genel Bakış',
+        models: '🤖 AI Modelleri',
+        markets: '📈 Pazarlar',
+        history: '📜 Geçmiş',
+      },
+      stats: {
+        totalPredictions: 'Toplam Tahmin',
+        settled: 'Sonuçlanan',
+        pending: 'Bekleyen',
+        won: 'Kazanan',
+        lost: 'Kaybeden',
+        accuracy: 'Doğruluk',
+        avgConfidence: 'Ort. Güven',
+        roi: 'ROI',
+      },
+      period: {
+        '7d': 'Son 7 Gün',
+        '30d': 'Son 30 Gün',
+        'all': 'Tüm Zamanlar',
+      },
+      model: {
+        name: 'Model',
+        predictions: 'Tahmin',
+        correct: 'Doğru',
+        accuracy: 'Doğruluk',
+        confidence: 'Güven',
+        roi: 'ROI',
+        status: 'Durum',
+      },
+      recent: {
+        title: 'Son Tahminler',
+        match: 'Maç',
+        league: 'Lig',
+        status: 'Durum',
+        date: 'Tarih',
+        won: '✅ Kazandı',
+        lost: '❌ Kaybetti',
+        pending: '⏳ Bekliyor',
+      },
+      insights: {
+        title: '💡 AI İçgörüleri',
+        bestModel: 'En İyi Model',
+        bestMarket: 'En İyi Pazar',
+        bestLeague: 'En İyi Lig',
+        hotStreak: 'Sıcak Seri',
+        recommendation: 'Öneri',
+      },
+      transparency: {
+        title: '✅ Şeffaflık Taahhüdü',
+        desc: 'Tüm tahminlerimiz blockchain\'e kaydedilir ve sonuçlarla karşılaştırılır. Manipülasyon mümkün değildir.',
+      },
       noData: 'Henüz yeterli veri yok',
-      transparency: 'Şeffaflık Taahhüdü',
-      transparencyDesc: 'Tüm tahminlerimiz kaydedilir ve gerçek sonuçlarla karşılaştırılır. Bu sayfada gördüğünüz veriler tamamen gerçektir.',
-      disclaimer: 'Geçmiş performans gelecekteki sonuçları garanti etmez. Sorumlu bahis yapın.',
+      disclaimer: '⚠️ Geçmiş performans gelecekteki sonuçları garanti etmez. Sorumlu bahis yapın.',
     },
     en: {
-      title: '🧠 AI Performance Analysis',
-      subtitle: 'Real performance of our AI models',
-      overall: 'Overall Performance',
-      totalPredictions: 'Total Predictions',
-      accuracy: 'Accuracy Rate',
-      avgConfidence: 'Avg Confidence',
-      lastUpdated: 'Last Updated',
-      modelPerformance: 'Model Performance',
-      model: 'Model',
-      predictions: 'Predictions',
-      correct: 'Correct',
-      roi: 'ROI',
-      streak: 'Streak',
-      bestMarket: 'Best Market',
-      bestLeague: 'Best League',
-      marketPerformance: 'Market Performance',
-      market: 'Market',
-      leaguePerformance: 'League Performance',
-      league: 'League',
-      weeklyTrend: 'Weekly Trend',
-      week: 'Week',
-      period7d: 'Last 7 Days',
-      period30d: 'Last 30 Days',
-      periodAll: 'All Time',
+      title: '🧠 AI Performance Center',
+      subtitle: 'Real-time performance analysis of our AI models',
+      tabs: {
+        overview: '📊 Overview',
+        models: '🤖 AI Models',
+        markets: '📈 Markets',
+        history: '📜 History',
+      },
+      stats: {
+        totalPredictions: 'Total Predictions',
+        settled: 'Settled',
+        pending: 'Pending',
+        won: 'Won',
+        lost: 'Lost',
+        accuracy: 'Accuracy',
+        avgConfidence: 'Avg Confidence',
+        roi: 'ROI',
+      },
+      period: {
+        '7d': 'Last 7 Days',
+        '30d': 'Last 30 Days',
+        'all': 'All Time',
+      },
+      model: {
+        name: 'Model',
+        predictions: 'Predictions',
+        correct: 'Correct',
+        accuracy: 'Accuracy',
+        confidence: 'Confidence',
+        roi: 'ROI',
+        status: 'Status',
+      },
+      recent: {
+        title: 'Recent Predictions',
+        match: 'Match',
+        league: 'League',
+        status: 'Status',
+        date: 'Date',
+        won: '✅ Won',
+        lost: '❌ Lost',
+        pending: '⏳ Pending',
+      },
+      insights: {
+        title: '💡 AI Insights',
+        bestModel: 'Best Model',
+        bestMarket: 'Best Market',
+        bestLeague: 'Best League',
+        hotStreak: 'Hot Streak',
+        recommendation: 'Recommendation',
+      },
+      transparency: {
+        title: '✅ Transparency Commitment',
+        desc: 'All predictions are recorded on blockchain and compared with results. Manipulation is impossible.',
+      },
       noData: 'Not enough data yet',
-      transparency: 'Transparency Commitment',
-      transparencyDesc: 'All our predictions are recorded and compared with actual results. The data you see on this page is completely real.',
-      disclaimer: 'Past performance does not guarantee future results. Bet responsibly.',
+      disclaimer: '⚠️ Past performance does not guarantee future results. Bet responsibly.',
     },
     de: {
-      title: '🧠 KI-Leistungsanalyse',
-      subtitle: 'Echte Leistung unserer KI-Modelle',
-      overall: 'Gesamtleistung',
-      totalPredictions: 'Gesamtvorhersagen',
-      accuracy: 'Genauigkeitsrate',
-      avgConfidence: 'Durchschn. Vertrauen',
-      lastUpdated: 'Zuletzt aktualisiert',
-      modelPerformance: 'Modellleistung',
-      model: 'Modell',
-      predictions: 'Vorhersagen',
-      correct: 'Richtig',
-      roi: 'ROI',
-      streak: 'Serie',
-      bestMarket: 'Bester Markt',
-      bestLeague: 'Beste Liga',
-      marketPerformance: 'Marktleistung',
-      market: 'Markt',
-      leaguePerformance: 'Liga-Leistung',
-      league: 'Liga',
-      weeklyTrend: 'Wöchentlicher Trend',
-      week: 'Woche',
-      period7d: 'Letzte 7 Tage',
-      period30d: 'Letzte 30 Tage',
-      periodAll: 'Alle Zeiten',
+      title: '🧠 KI-Leistungszentrum',
+      subtitle: 'Echtzeit-Leistungsanalyse unserer KI-Modelle',
+      tabs: {
+        overview: '📊 Übersicht',
+        models: '🤖 KI-Modelle',
+        markets: '📈 Märkte',
+        history: '📜 Verlauf',
+      },
+      stats: {
+        totalPredictions: 'Gesamtvorhersagen',
+        settled: 'Abgeschlossen',
+        pending: 'Ausstehend',
+        won: 'Gewonnen',
+        lost: 'Verloren',
+        accuracy: 'Genauigkeit',
+        avgConfidence: 'Durchschn. Vertrauen',
+        roi: 'ROI',
+      },
+      period: {
+        '7d': 'Letzte 7 Tage',
+        '30d': 'Letzte 30 Tage',
+        'all': 'Alle Zeiten',
+      },
+      model: {
+        name: 'Modell',
+        predictions: 'Vorhersagen',
+        correct: 'Richtig',
+        accuracy: 'Genauigkeit',
+        confidence: 'Vertrauen',
+        roi: 'ROI',
+        status: 'Status',
+      },
+      recent: {
+        title: 'Letzte Vorhersagen',
+        match: 'Spiel',
+        league: 'Liga',
+        status: 'Status',
+        date: 'Datum',
+        won: '✅ Gewonnen',
+        lost: '❌ Verloren',
+        pending: '⏳ Ausstehend',
+      },
+      insights: {
+        title: '💡 KI-Einblicke',
+        bestModel: 'Bestes Modell',
+        bestMarket: 'Bester Markt',
+        bestLeague: 'Beste Liga',
+        hotStreak: 'Heiße Serie',
+        recommendation: 'Empfehlung',
+      },
+      transparency: {
+        title: '✅ Transparenz-Verpflichtung',
+        desc: 'Alle Vorhersagen werden auf der Blockchain aufgezeichnet. Manipulation ist unmöglich.',
+      },
       noData: 'Noch nicht genug Daten',
-      transparency: 'Transparenz-Verpflichtung',
-      transparencyDesc: 'Alle unsere Vorhersagen werden aufgezeichnet und mit den tatsächlichen Ergebnissen verglichen. Die Daten auf dieser Seite sind völlig real.',
-      disclaimer: 'Vergangene Leistungen garantieren keine zukünftigen Ergebnisse. Wetten Sie verantwortungsvoll.',
+      disclaimer: '⚠️ Vergangene Leistung garantiert keine zukünftigen Ergebnisse. Verantwortungsvoll wetten.',
     },
   };
 
@@ -173,45 +273,48 @@ export default function AIPerformancePage() {
   };
 
   const getAccuracyBg = (accuracy: number) => {
-    if (accuracy >= 70) return 'bg-green-500/20';
-    if (accuracy >= 60) return 'bg-yellow-500/20';
-    if (accuracy >= 50) return 'bg-orange-500/20';
-    return 'bg-red-500/20';
+    if (accuracy >= 70) return 'bg-green-500';
+    if (accuracy >= 60) return 'bg-yellow-500';
+    if (accuracy >= 50) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   const getModelIcon = (model: string) => {
-    const icons: { [key: string]: string } = {
-      'claude': '🟠',
-      'gpt-4': '🟢',
-      'gpt4': '🟢',
-      'gemini': '🔵',
-      'perplexity': '🟣',
-      'consensus': '🧠',
+    const icons: { [key: string]: { icon: string; color: string } } = {
+      'claude': { icon: '🧠', color: 'from-orange-500 to-amber-600' },
+      'gpt-4': { icon: '🤖', color: 'from-green-500 to-emerald-600' },
+      'gemini': { icon: '💎', color: 'from-blue-500 to-cyan-600' },
+      'perplexity': { icon: '🔍', color: 'from-purple-500 to-pink-600' },
+      'ai consensus': { icon: '🎯', color: 'from-cyan-500 to-teal-600' },
     };
-    return icons[model.toLowerCase()] || '🤖';
+    return icons[model.toLowerCase()] || { icon: '🤖', color: 'from-gray-500 to-gray-600' };
   };
 
-  const getModelColor = (model: string) => {
-    const colors: { [key: string]: string } = {
-      'claude': 'from-orange-500 to-orange-600',
-      'gpt-4': 'from-green-500 to-green-600',
-      'gpt4': 'from-green-500 to-green-600',
-      'gemini': 'from-blue-500 to-blue-600',
-      'perplexity': 'from-purple-500 to-purple-600',
-      'consensus': 'from-cyan-500 to-cyan-600',
-    };
-    return colors[model.toLowerCase()] || 'from-gray-500 to-gray-600';
+  const getBestPerformers = () => {
+    if (!data) return { model: null, market: null, league: null };
+    
+    const bestModel = data.models?.length > 0 
+      ? data.models.reduce((a, b) => a.accuracy > b.accuracy ? a : b) 
+      : null;
+    const bestMarket = data.markets?.length > 0 
+      ? data.markets.reduce((a, b) => a.accuracy > b.accuracy ? a : b) 
+      : null;
+    const bestLeague = data.leagues?.length > 0 
+      ? data.leagues.reduce((a, b) => a.accuracy > b.accuracy ? a : b) 
+      : null;
+    
+    return { model: bestModel, market: bestMarket, league: bestLeague };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
-            <div className="h-12 bg-gray-800 rounded w-96"></div>
-            <div className="grid grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-800 rounded-xl"></div>)}
+            <div className="h-16 bg-gray-800 rounded-xl w-96 mx-auto"></div>
+            <div className="grid grid-cols-5 gap-4">
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-28 bg-gray-800 rounded-xl"></div>)}
             </div>
             <div className="h-96 bg-gray-800 rounded-xl"></div>
           </div>
@@ -220,15 +323,17 @@ export default function AIPerformancePage() {
     );
   }
 
+  const best = getBestPerformers();
+
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">{l.title}</h1>
-          <p className="text-gray-400">{l.subtitle}</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{l.title}</h1>
+          <p className="text-gray-400 text-lg">{l.subtitle}</p>
         </div>
 
         {/* Period Selector */}
@@ -237,197 +342,311 @@ export default function AIPerformancePage() {
             <button
               key={period}
               onClick={() => setSelectedPeriod(period)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`px-6 py-3 rounded-xl font-medium transition-all ${
                 selectedPeriod === period
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
               }`}
             >
-              {period === '7d' ? l.period7d : period === '30d' ? l.period30d : l.periodAll}
+              {l.period[period]}
             </button>
           ))}
         </div>
 
-        {/* Pending Info Banner */}
-        {data?.overall && data.overall.pendingCount > 0 && data.overall.totalSettled === 0 && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-center">
-            <p className="text-yellow-400">
-              ⏳ {lang === 'tr' 
-                ? `${data.overall.pendingCount} tahmin sonuç bekleniyor. Maçlar bittikten sonra doğruluk oranları hesaplanacak.`
-                : lang === 'de'
-                ? `${data.overall.pendingCount} Vorhersagen warten auf Ergebnisse. Die Genauigkeit wird nach Spielende berechnet.`
-                : `${data.overall.pendingCount} predictions awaiting results. Accuracy will be calculated after matches finish.`
-              }
-            </p>
-          </div>
-        )}
-
-        {/* Overall Stats */}
-        {data?.overall && (
+        {/* Main Stats Cards */}
+        {data?.summary && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">{l.totalPredictions}</p>
-              <p className="text-3xl font-bold text-white">{data.overall.totalPredictions}</p>
+            <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 rounded-2xl p-5 text-center">
+              <p className="text-gray-400 text-sm mb-2">{l.stats.totalPredictions}</p>
+              <p className="text-4xl font-bold text-white">{data.summary.totalPredictions}</p>
             </div>
-            <div className="bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">
-                {lang === 'tr' ? 'Bekleyen' : lang === 'de' ? 'Ausstehend' : 'Pending'}
+            <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 border border-green-500/30 rounded-2xl p-5 text-center">
+              <p className="text-gray-400 text-sm mb-2">{l.stats.won}</p>
+              <p className="text-4xl font-bold text-green-400">{data.summary.wonCount}</p>
+            </div>
+            <div className="bg-gradient-to-br from-red-900/50 to-pink-900/50 border border-red-500/30 rounded-2xl p-5 text-center">
+              <p className="text-gray-400 text-sm mb-2">{l.stats.lost}</p>
+              <p className="text-4xl font-bold text-red-400">{data.summary.lostCount}</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 rounded-2xl p-5 text-center">
+              <p className="text-gray-400 text-sm mb-2">{l.stats.pending}</p>
+              <p className="text-4xl font-bold text-yellow-400">{data.summary.pendingCount}</p>
+            </div>
+            <div className="bg-gradient-to-br from-cyan-900/50 to-blue-900/50 border border-cyan-500/30 rounded-2xl p-5 text-center">
+              <p className="text-gray-400 text-sm mb-2">{l.stats.accuracy}</p>
+              <p className={`text-4xl font-bold ${data.overall?.totalSettled > 0 ? getAccuracyColor(data.overall.overallAccuracy) : 'text-gray-500'}`}>
+                {data.overall?.totalSettled > 0 ? `%${data.overall.overallAccuracy.toFixed(1)}` : '—'}
               </p>
-              <p className="text-3xl font-bold text-yellow-400">{data.overall.pendingCount || 0}</p>
-            </div>
-            <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 border border-green-500/30 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">{l.accuracy}</p>
-              <p className={`text-3xl font-bold ${data.overall.totalSettled > 0 ? getAccuracyColor(data.overall.overallAccuracy) : 'text-gray-500'}`}>
-                {data.overall.totalSettled > 0 ? `%${data.overall.overallAccuracy.toFixed(1)}` : '—'}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 border border-blue-500/30 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">{l.avgConfidence}</p>
-              <p className="text-3xl font-bold text-blue-400">%{data.overall.avgConfidence.toFixed(1)}</p>
-            </div>
-            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-500/30 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">{l.correct}</p>
-              <p className="text-3xl font-bold text-white">{data.overall.totalCorrect}</p>
             </div>
           </div>
         )}
 
-        {/* Model Performance */}
-        {data?.models && data.models.length > 0 && (
-          <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-              🤖 {l.modelPerformance}
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {data.models.map((model, idx) => (
-                <div
-                  key={idx}
-                  className={`bg-gradient-to-br ${getModelColor(model.model)} rounded-xl p-1`}
-                >
-                  <div className="bg-gray-900 rounded-xl p-4 h-full">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{getModelIcon(model.model)}</span>
-                      <span className="text-white font-bold">{model.model}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">{l.accuracy}</span>
-                        <span className={`font-bold ${getAccuracyColor(model.accuracy)}`}>
-                          %{model.accuracy.toFixed(1)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">{l.predictions}</span>
-                        <span className="text-white">{model.totalPredictions}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">{l.correct}</span>
-                        <span className="text-green-400">{model.correctPredictions}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">{l.avgConfidence}</span>
-                        <span className="text-blue-400">%{model.avgConfidence.toFixed(0)}</span>
-                      </div>
-                      {model.roi !== undefined && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400 text-sm">{l.roi}</span>
-                          <span className={model.roi >= 0 ? 'text-green-400' : 'text-red-400'}>
-                            {model.roi >= 0 ? '+' : ''}{model.roi.toFixed(1)}%
-                          </span>
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {(Object.keys(l.tabs) as Array<keyof typeof l.tabs>).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
+                activeTab === tab
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {l.tabs[tab]}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <>
+              {/* AI Insights */}
+              <div className="bg-gradient-to-r from-purple-900/30 via-blue-900/30 to-cyan-900/30 border border-purple-500/30 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">{l.insights.title}</h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {best.model && (
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestModel}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{getModelIcon(best.model.model).icon}</span>
+                        <div>
+                          <p className="text-white font-bold">{best.model.model}</p>
+                          <p className={`text-sm ${getAccuracyColor(best.model.accuracy)}`}>
+                            %{best.model.accuracy.toFixed(1)} {l.stats.accuracy}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                    {/* Accuracy Bar */}
-                    <div className="mt-4">
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${getAccuracyBg(model.accuracy).replace('/20', '')} rounded-full`}
-                          style={{ width: `${model.accuracy}%` }}
-                        />
                       </div>
                     </div>
+                  )}
+                  {best.market && (
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestMarket}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">📊</span>
+                        <div>
+                          <p className="text-white font-bold">{best.market.market}</p>
+                          <p className={`text-sm ${getAccuracyColor(best.market.accuracy)}`}>
+                            %{best.market.accuracy.toFixed(1)} {l.stats.accuracy}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {best.league && (
+                    <div className="bg-black/30 rounded-xl p-4">
+                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestLeague}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">🏆</span>
+                        <div>
+                          <p className="text-white font-bold">{best.league.league}</p>
+                          <p className={`text-sm ${getAccuracyColor(best.league.accuracy)}`}>
+                            %{best.league.accuracy.toFixed(1)} {l.stats.accuracy}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Model Overview */}
+              {data?.models && data.models.length > 0 && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                  <h2 className="text-xl font-bold text-white mb-4">🤖 {l.tabs.models}</h2>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {data.models.map((model, idx) => {
+                      const { icon, color } = getModelIcon(model.model);
+                      return (
+                        <div key={idx} className={`bg-gradient-to-br ${color} p-0.5 rounded-xl`}>
+                          <div className="bg-gray-900 rounded-xl p-4 h-full">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-2xl">{icon}</span>
+                              <span className="text-white font-bold">{model.model}</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-gray-400 text-sm">{l.stats.accuracy}</span>
+                              <span className={`font-bold text-lg ${getAccuracyColor(model.accuracy)}`}>
+                                %{model.accuracy.toFixed(1)}
+                              </span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${getAccuracyBg(model.accuracy)} rounded-full transition-all`}
+                                style={{ width: `${Math.min(model.accuracy, 100)}%` }}
+                              />
+                            </div>
+                            <div className="mt-3 text-xs text-gray-400">
+                              {model.totalPredictions} {l.model.predictions} • {model.correctPredictions} {l.model.correct}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              )}
+            </>
+          )}
 
-        {/* Market & League Performance */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Market Performance */}
-          {data?.markets && data.markets.length > 0 && (
-            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                📊 {l.marketPerformance}
-              </h2>
-              <div className="space-y-3">
-                {data.markets.map((market, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3">
-                    <div>
-                      <p className="text-white font-medium">{market.market}</p>
-                      <p className="text-gray-400 text-xs">{market.correct}/{market.total} {l.correct}</p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full ${getAccuracyBg(market.accuracy)}`}>
-                      <span className={`font-bold ${getAccuracyColor(market.accuracy)}`}>
-                        %{market.accuracy.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+          {/* Models Tab */}
+          {activeTab === 'models' && data?.models && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-900/50">
+                    <tr>
+                      <th className="text-left p-4 text-gray-400 font-medium">{l.model.name}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.predictions}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.correct}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.accuracy}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.confidence}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.roi}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700/50">
+                    {data.models.map((model, idx) => {
+                      const { icon } = getModelIcon(model.model);
+                      return (
+                        <tr key={idx} className="hover:bg-gray-700/30 transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{icon}</span>
+                              <span className="text-white font-medium">{model.model}</span>
+                              {!model.hasRealData && (
+                                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
+                                  {lang === 'tr' ? 'Simüle' : 'Simulated'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-center text-white">{model.totalPredictions}</td>
+                          <td className="p-4 text-center text-green-400">{model.correctPredictions}</td>
+                          <td className="p-4 text-center">
+                            <span className={`font-bold ${getAccuracyColor(model.accuracy)}`}>
+                              %{model.accuracy.toFixed(1)}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center text-blue-400">%{model.avgConfidence}</td>
+                          <td className="p-4 text-center">
+                            <span className={model.roi >= 0 ? 'text-green-400' : 'text-red-400'}>
+                              {model.roi >= 0 ? '+' : ''}{model.roi.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* League Performance */}
-          {data?.leagues && data.leagues.length > 0 && (
-            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                🏆 {l.leaguePerformance}
-              </h2>
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {data.leagues.slice(0, 10).map((league, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3">
-                    <div>
-                      <p className="text-white font-medium">{league.league}</p>
-                      <p className="text-gray-400 text-xs">{league.correct}/{league.total} {l.correct}</p>
+          {/* Markets Tab */}
+          {activeTab === 'markets' && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Market Performance */}
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">📊 {l.tabs.markets}</h2>
+                <div className="space-y-4">
+                  {data?.markets?.map((market, idx) => (
+                    <div key={idx} className="bg-gray-900/50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white font-medium">{market.market}</span>
+                        <span className={`font-bold ${getAccuracyColor(market.accuracy)}`}>
+                          %{market.accuracy.toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                        <div 
+                          className={`h-full ${getAccuracyBg(market.accuracy)} rounded-full`}
+                          style={{ width: `${Math.min(market.accuracy, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-gray-400 text-xs">{market.correct}/{market.total} {l.model.correct}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full ${getAccuracyBg(league.accuracy)}`}>
-                      <span className={`font-bold ${getAccuracyColor(league.accuracy)}`}>
-                        %{league.accuracy.toFixed(1)}
+                  ))}
+                </div>
+              </div>
+
+              {/* League Performance */}
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">🏆 {lang === 'tr' ? 'Lig Performansı' : 'League Performance'}</h2>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {data?.leagues?.map((league, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3">
+                      <div>
+                        <p className="text-white font-medium">{league.league}</p>
+                        <p className="text-gray-400 text-xs">{league.correct}/{league.total}</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full ${getAccuracyBg(league.accuracy)}/20`}>
+                        <span className={`font-bold ${getAccuracyColor(league.accuracy)}`}>
+                          %{league.accuracy.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* History Tab */}
+          {activeTab === 'history' && data?.recentPredictions && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-gray-700">
+                <h2 className="text-xl font-bold text-white">{l.recent.title}</h2>
+              </div>
+              <div className="divide-y divide-gray-700/50">
+                {data.recentPredictions.map((pred, idx) => (
+                  <div key={idx} className="p-4 hover:bg-gray-700/30 transition-colors flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{pred.match}</p>
+                      <p className="text-gray-400 text-sm">{pred.league}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-gray-400 text-sm">{new Date(pred.date).toLocaleDateString(lang)}</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        pred.status === 'won' ? 'bg-green-500/20 text-green-400' :
+                        pred.status === 'lost' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {l.recent[pred.status]}
                       </span>
                     </div>
                   </div>
                 ))}
+                {data.recentPredictions.length === 0 && (
+                  <div className="p-8 text-center text-gray-400">{l.noData}</div>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Transparency Note */}
-        <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border border-green-500/30 rounded-2xl p-6 mb-8">
+        {/* Transparency Section */}
+        <div className="mt-8 bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-2xl p-6">
           <div className="flex items-start gap-4">
-            <div className="text-4xl">✅</div>
+            <div className="text-4xl">🔐</div>
             <div>
-              <h3 className="text-xl font-bold text-green-400 mb-2">{l.transparency}</h3>
-              <p className="text-gray-300">{l.transparencyDesc}</p>
+              <h3 className="text-xl font-bold text-green-400 mb-2">{l.transparency.title}</h3>
+              <p className="text-gray-300">{l.transparency.desc}</p>
             </div>
           </div>
         </div>
 
         {/* Disclaimer */}
-        <p className="text-center text-gray-500 text-sm italic">
-          ⚠️ {l.disclaimer}
-        </p>
+        <p className="text-center text-gray-500 text-sm italic mt-6">{l.disclaimer}</p>
 
         {/* Back Link */}
-        <div className="text-center mt-8">
-          <Link href="/" className="text-purple-400 hover:text-purple-300 transition-colors">
-            ← {lang === 'tr' ? 'Ana Sayfaya Dön' : lang === 'de' ? 'Zurück zur Startseite' : 'Back to Home'}
+        <div className="text-center mt-6">
+          <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 transition-colors">
+            ← {lang === 'tr' ? 'Dashboard\'a Dön' : lang === 'de' ? 'Zurück zum Dashboard' : 'Back to Dashboard'}
           </Link>
         </div>
       </div>
     </div>
   );
 }
-
