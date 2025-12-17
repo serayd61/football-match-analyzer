@@ -9,9 +9,18 @@ const supabase = createClient(
 // Email gönderimi için Resend API veya SMTP kullanılabilir
 // Şimdilik Supabase'e kayıt + webhook bildirimi kullanıyoruz
 
+interface ContactBody {
+  name: string;
+  email: string;
+  subject: string;
+  type: string;
+  message: string;
+  rating: number;
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: ContactBody = await request.json();
     const { name, email, subject, type, message, rating } = body;
 
     // Validation
@@ -57,13 +66,14 @@ export async function POST(request: Request) {
     
     if (RESEND_API_KEY) {
       try {
-        const typeEmoji = {
+        const typeEmojiMap: Record<string, string> = {
           general: '💬',
           bug: '🐛',
           feature: '💡',
           complaint: '😔',
           praise: '⭐',
-        }[type] || '📬';
+        };
+        const typeEmoji = typeEmojiMap[type] || '📬';
 
         const ratingStars = rating ? '⭐'.repeat(rating) : 'Belirtilmedi';
 
