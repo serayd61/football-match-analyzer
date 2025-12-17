@@ -567,7 +567,7 @@ export async function runDeepAnalysisAgent(
     } catch (parseError) {
       console.error('❌ Deep Analysis JSON parse error:', parseError);
       console.log('Raw response:', response.substring(0, 500));
-      result = getDefaultDeepAnalysis(matchData);
+      result = getDefaultDeepAnalysis(matchData, language);
     }
 
     // Validate and fix confidence values
@@ -594,11 +594,11 @@ export async function runDeepAnalysisAgent(
     return result;
   } catch (error: any) {
     console.error('❌ Deep Analysis Agent error:', error);
-    return getDefaultDeepAnalysis(matchData);
+    return getDefaultDeepAnalysis(matchData, language);
   }
 }
 
-function getDefaultDeepAnalysis(matchData: MatchData): any {
+function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): any {
   const { homeForm, awayForm, h2h } = matchData as any;
   
   // Basit hesaplama
@@ -619,15 +619,75 @@ function getDefaultDeepAnalysis(matchData: MatchData): any {
   const expectedCorners = avgOver >= 55 ? 11 : avgOver >= 45 ? 9.5 : 8.5;
   const expectedCards = avgYellowCards + (avgRedCards * 2);
   
+  // Language-specific messages
+  const messages = {
+    tr: {
+      matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçı için derin analiz yapıldı.`,
+      criticalFactors: [
+        `${matchData.homeTeam} ev sahibi avantajı`,
+        `Son form durumları: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}`,
+        `H2H geçmiş: ${h2h?.totalMatches || 0} maç`,
+        `Gol ortalamaları değerlendirildi`,
+        `Hakem eğilimleri analiz edildi`
+      ],
+      scorePredictionReasoning: 'Dengeli güç dengesi beraberliğe işaret ediyor.',
+      overUnderReasoning: `Ev sahibi Over %${homeOver}, Deplasman Over %${awayOver}, H2H Over %${h2hOver}`,
+      bttsReasoning: 'Dikkatli yaklaşım.',
+      matchResultReasoning: 'Dengeli güçler.',
+      bestBetReasoning: `İstatistiksel hesaplama ${overUnderPred} yönünde.`,
+      refereeUnknown: 'Bilinmiyor',
+      refereeReasoning: 'Ortalama hakem verileri kullanıldı',
+      weatherReasoning: 'Hava durumu verisi mevcut değil, standart koşullar varsayıldı',
+      keyBattles: ['Kanat mücadelesi', 'Orta saha kontrolü'],
+      agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5, Korner ${expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5'} tavsiye edilir.`
+    },
+    en: {
+      matchAnalysis: `Deep analysis performed for ${matchData.homeTeam} vs ${matchData.awayTeam}.`,
+      criticalFactors: [
+        `${matchData.homeTeam} home advantage`,
+        `Recent form: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}`,
+        `H2H history: ${h2h?.totalMatches || 0} matches`,
+        `Goal averages evaluated`,
+        `Referee tendencies analyzed`
+      ],
+      scorePredictionReasoning: 'Balanced power suggests a draw.',
+      overUnderReasoning: `Home Over ${homeOver}%, Away Over ${awayOver}%, H2H Over ${h2hOver}%`,
+      bttsReasoning: 'Cautious approach.',
+      matchResultReasoning: 'Balanced teams.',
+      bestBetReasoning: `Statistical calculation points to ${overUnderPred}.`,
+      refereeUnknown: 'Unknown',
+      refereeReasoning: 'Average referee data used',
+      weatherReasoning: 'Weather data unavailable, standard conditions assumed',
+      keyBattles: ['Wing battles', 'Midfield control'],
+      agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5, Corners ${expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5'} recommended.`
+    },
+    de: {
+      matchAnalysis: `Tiefenanalyse für ${matchData.homeTeam} vs ${matchData.awayTeam} durchgeführt.`,
+      criticalFactors: [
+        `${matchData.homeTeam} Heimvorteil`,
+        `Aktuelle Form: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}`,
+        `H2H Geschichte: ${h2h?.totalMatches || 0} Spiele`,
+        `Tordurchschnitte bewertet`,
+        `Schiedsrichtertendenzen analysiert`
+      ],
+      scorePredictionReasoning: 'Ausgeglichene Kräfte deuten auf Unentschieden.',
+      overUnderReasoning: `Heim Over ${homeOver}%, Auswärts Over ${awayOver}%, H2H Over ${h2hOver}%`,
+      bttsReasoning: 'Vorsichtiger Ansatz.',
+      matchResultReasoning: 'Ausgeglichene Teams.',
+      bestBetReasoning: `Statistische Berechnung zeigt ${overUnderPred}.`,
+      refereeUnknown: 'Unbekannt',
+      refereeReasoning: 'Durchschnittliche Schiedsrichterdaten verwendet',
+      weatherReasoning: 'Wetterdaten nicht verfügbar, Standardbedingungen angenommen',
+      keyBattles: ['Flügelkämpfe', 'Mittelfeld-Kontrolle'],
+      agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5, Ecken ${expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5'} empfohlen.`
+    }
+  };
+
+  const msg = messages[language] || messages.en;
+
   return {
-    matchAnalysis: `${matchData.homeTeam} vs ${matchData.awayTeam} maçı için derin analiz yapıldı.`,
-    criticalFactors: [
-      `${matchData.homeTeam} ev sahibi avantajı`,
-      `Son form durumları: ${homeForm?.form || 'N/A'} vs ${awayForm?.form || 'N/A'}`,
-      `H2H geçmiş: ${h2h?.totalMatches || 0} maç`,
-      `Gol ortalamaları değerlendirildi`,
-      `Hakem eğilimleri analiz edildi`
-    ],
+    matchAnalysis: msg.matchAnalysis,
+    criticalFactors: msg.criticalFactors,
     probabilities: { 
       homeWin: 40, 
       draw: 30, 
@@ -636,49 +696,49 @@ function getDefaultDeepAnalysis(matchData: MatchData): any {
     expectedScores: ['1-1', '1-0', '2-1'],
     scorePrediction: { 
       score: '1-1', 
-      reasoning: 'Dengeli güç dengesi beraberliğe işaret ediyor.' 
+      reasoning: msg.scorePredictionReasoning
     },
     overUnder: { 
       prediction: overUnderPred, 
       confidence: Math.round(overUnderConf), 
-      reasoning: `Ev sahibi Over %${homeOver}, Deplasman Over %${awayOver}, H2H Over %${h2hOver}` 
+      reasoning: msg.overUnderReasoning
     },
     btts: { 
       prediction: 'No', 
       confidence: 55, 
-      reasoning: 'Dikkatli yaklaşım.' 
+      reasoning: msg.bttsReasoning
     },
     matchResult: { 
       prediction: 'X', 
       confidence: 50, 
-      reasoning: 'Dengeli güçler.' 
+      reasoning: msg.matchResultReasoning
     },
     bestBet: { 
       type: 'Over/Under 2.5', 
       selection: overUnderPred, 
       confidence: Math.round(overUnderConf), 
-      reasoning: `İstatistiksel hesaplama ${overUnderPred} yönünde.` 
+      reasoning: msg.bestBetReasoning
     },
     // 🆕 New fields
     refereeAnalysis: {
-      name: referee?.name || 'Bilinmiyor',
+      name: referee?.name || msg.refereeUnknown,
       avgYellowCards,
       avgRedCards,
       avgPenalties: referee?.penaltyRate || 0.3,
       homeTeamBias: 'neutral',
       cardPrediction: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
-      reasoning: 'Ortalama hakem verileri kullanıldı'
+      reasoning: msg.refereeReasoning
     },
     weatherImpact: {
       condition: 'Clear',
       temperature: 15,
       impact: 'Low',
-      reasoning: 'Hava durumu verisi mevcut değil, standart koşullar varsayıldı'
+      reasoning: msg.weatherReasoning
     },
     lineupAnalysis: {
       homeFormation: '4-3-3',
       awayFormation: '4-4-2',
-      keyBattles: ['Kanat mücadelesi', 'Orta saha kontrolü'],
+      keyBattles: msg.keyBattles,
       missingKeyPlayers: []
     },
     cornersAndCards: {
@@ -690,6 +750,6 @@ function getDefaultDeepAnalysis(matchData: MatchData): any {
       cardsConfidence: 58
     },
     riskLevel: 'Medium',
-    agentSummary: `${matchData.homeTeam} vs ${matchData.awayTeam}: ${overUnderPred} 2.5, Korner ${expectedCorners > 10 ? 'Over 10.5' : 'Over 9.5'} tavsiye edilir.`
+    agentSummary: msg.agentSummary
   };
 }
