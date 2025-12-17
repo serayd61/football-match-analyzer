@@ -182,6 +182,8 @@ export default function AdminPage() {
   const [settleResult, setSettleResult] = useState<{success: boolean; message: string; stats?: any} | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isDebugging, setIsDebugging] = useState(false);
 
   // Admin erişim kontrolü - sadece belirli email'ler girebilir
   const ADMIN_EMAILS = [
@@ -274,6 +276,19 @@ export default function AdminPage() {
 
     // 5 saniye sonra bildirimi kaldır
     setTimeout(() => setSettleResult(null), 5000);
+  };
+
+  // Debug sistem durumu
+  const runDebug = async () => {
+    setIsDebugging(true);
+    try {
+      const res = await fetch('/api/admin/debug');
+      const data = await res.json();
+      setDebugInfo(data);
+    } catch (error: any) {
+      setDebugInfo({ error: error.message });
+    }
+    setIsDebugging(false);
   };
 
   // Auto-refresh (her 5 dakikada bir)
@@ -403,6 +418,31 @@ export default function AdminPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     Sonuçları Güncelle
+                  </>
+                )}
+              </button>
+
+              {/* Debug Butonu */}
+              <button
+                onClick={runDebug}
+                disabled={isDebugging}
+                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                  isDebugging
+                    ? 'bg-gray-500/50 text-gray-200 cursor-wait'
+                    : 'bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg'
+                }`}
+              >
+                {isDebugging ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gray-200 border-t-transparent rounded-full animate-spin" />
+                    Kontrol Ediliyor...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    🔍 Sistem Durumu
                   </>
                 )}
               </button>
@@ -1168,6 +1208,184 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {/* Debug Modal */}
+      {debugInfo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden border border-white/10 shadow-2xl">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                🔍 Sistem Durumu Kontrolü
+              </h2>
+              <button
+                onClick={() => setDebugInfo(null)}
+                className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {debugInfo.error ? (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-400">
+                  ❌ Hata: {debugInfo.error}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  {debugInfo.summary && (
+                    <div className={`p-4 rounded-xl border ${
+                      debugInfo.summary.overall_status === 'OK' 
+                        ? 'bg-emerald-500/20 border-emerald-500/30' 
+                        : 'bg-amber-500/20 border-amber-500/30'
+                    }`}>
+                      <h3 className="font-semibold text-white mb-2">Özet</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Tahmin Var:</span>
+                          <span className={`ml-2 ${debugInfo.summary.has_predictions ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {debugInfo.summary.has_predictions ? '✅ Evet' : '❌ Hayır'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Bekleyen Maç:</span>
+                          <span className={`ml-2 ${debugInfo.summary.has_pending_to_settle ? 'text-amber-400' : 'text-gray-400'}`}>
+                            {debugInfo.summary.has_pending_to_settle ? '⏳ Var' : 'Yok'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">API Provider:</span>
+                          <span className={`ml-2 ${debugInfo.summary.has_providers ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {debugInfo.summary.has_providers ? '✅ Aktif' : '❌ Yok'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Durum:</span>
+                          <span className={`ml-2 font-semibold ${debugInfo.summary.overall_status === 'OK' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {debugInfo.summary.overall_status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Prediction Records */}
+                  {debugInfo.checks?.prediction_records && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                        📊 Tahmin Kayıtları
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          debugInfo.checks.prediction_records.status === 'OK' ? 'bg-emerald-500/30 text-emerald-400' : 'bg-red-500/30 text-red-400'
+                        }`}>
+                          {debugInfo.checks.prediction_records.status}
+                        </span>
+                      </h3>
+                      <p className="text-gray-400 text-sm mb-3">
+                        Toplam: <span className="text-white font-semibold">{debugInfo.checks.prediction_records.total_count || 0}</span> kayıt
+                      </p>
+                      {debugInfo.checks.prediction_records.recent?.length > 0 ? (
+                        <div className="space-y-2">
+                          {debugInfo.checks.prediction_records.recent.slice(0, 5).map((p: any, i: number) => (
+                            <div key={i} className="text-xs bg-white/5 rounded-lg p-2 flex justify-between items-center">
+                              <span className="text-gray-300">{p.match}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">{new Date(p.match_date).toLocaleDateString('tr-TR')}</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                  p.status === 'settled' ? 'bg-emerald-500/30 text-emerald-400' : 'bg-amber-500/30 text-amber-400'
+                                }`}>
+                                  {p.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-amber-400 text-sm">⚠️ Henüz tahmin kaydı yok. Önce bir maç analizi yapın.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Pending to Settle */}
+                  {debugInfo.checks?.pending_to_settle && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                        ⏳ Settle Bekleyen Maçlar
+                        <span className="text-xs px-2 py-0.5 rounded bg-amber-500/30 text-amber-400">
+                          {debugInfo.checks.pending_to_settle.count || 0} adet
+                        </span>
+                      </h3>
+                      {debugInfo.checks.pending_to_settle.predictions?.length > 0 ? (
+                        <div className="space-y-2">
+                          {debugInfo.checks.pending_to_settle.predictions.map((p: any, i: number) => (
+                            <div key={i} className="text-xs bg-white/5 rounded-lg p-2 flex justify-between items-center">
+                              <span className="text-gray-300">{p.match}</span>
+                              <span className="text-gray-500">{new Date(p.match_date).toLocaleDateString('tr-TR')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 text-sm">Settle bekleyen maç yok (maçlar henüz bitmemiş veya hepsi settle edilmiş)</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* API Providers */}
+                  {debugInfo.checks?.api_providers && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h3 className="font-semibold text-white mb-3">🔌 API Provider&apos;lar</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {Object.entries(debugInfo.checks.api_providers.env_check || {}).map(([key, value]) => (
+                          <div key={key} className="flex items-center gap-2 text-sm">
+                            <span className={value ? 'text-emerald-400' : 'text-red-400'}>
+                              {value ? '✅' : '❌'}
+                            </span>
+                            <span className="text-gray-400">{key.replace(/_/g, ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {debugInfo.checks.api_providers.available?.length > 0 && (
+                        <p className="text-emerald-400 text-sm mt-3">
+                          Aktif: {debugInfo.checks.api_providers.available.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Provider Test */}
+                  {debugInfo.checks?.provider_test && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h3 className="font-semibold text-white mb-3">🧪 Provider Test</h3>
+                      {debugInfo.checks.provider_test.error ? (
+                        <p className="text-red-400 text-sm">❌ {debugInfo.checks.provider_test.error}</p>
+                      ) : (
+                        <div className="text-sm">
+                          <p className="text-gray-400">Maç: <span className="text-white">{debugInfo.checks.provider_test.tested_match}</span></p>
+                          {debugInfo.checks.provider_test.result && typeof debugInfo.checks.provider_test.result === 'object' ? (
+                            <p className="text-emerald-400 mt-1">
+                              ✅ Sonuç: {debugInfo.checks.provider_test.result.score} 
+                              (via {debugInfo.checks.provider_test.result.source})
+                            </p>
+                          ) : (
+                            <p className="text-amber-400 mt-1">⏳ {debugInfo.checks.provider_test.result}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/10 bg-white/5">
+              <p className="text-xs text-gray-500 text-center">
+                Son kontrol: {debugInfo.timestamp ? new Date(debugInfo.timestamp).toLocaleString('tr-TR') : '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
