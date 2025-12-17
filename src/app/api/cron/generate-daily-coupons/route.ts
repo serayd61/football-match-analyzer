@@ -13,21 +13,63 @@ export const maxDuration = 60;
 const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
 const API_TOKEN = process.env.SPORTMONKS_API_KEY || '';
 
-// Desteklenen ligler (geniş liste)
+// Desteklenen ligler (çok geniş liste - 40+ lig)
 const SUPPORTED_LEAGUES = [
+  // Top 5 Ligler
   8,    // Premier League
   564,  // La Liga
   82,   // Bundesliga
   301,  // Serie A
   384,  // Ligue 1
+  
+  // Avrupa Kupaları
   2,    // Champions League
   5,    // Europa League
+  7,    // Conference League
+  
+  // Diğer Avrupa Ligleri
   271,  // Süper Lig (Türkiye)
   501,  // Primeira Liga (Portekiz)
-  72,   // Eredivisie
+  72,   // Eredivisie (Hollanda)
   208,  // Belgian Pro League
+  244,  // Danish Superliga
+  203,  // Russian Premier League
+  318,  // Ukrainian Premier League
+  27,   // Scottish Premiership
+  513,  // Austrian Bundesliga
+  66,   // Swiss Super League
+  600,  // Greek Super League
+  462,  // Czech First League
+  106,  // Polish Ekstraklasa
+  169,  // Croatian HNL
+  99,   // Serbian SuperLiga
+  
+  // İkinci Ligler
+  9,    // Championship (İngiltere)
+  565,  // La Liga 2 (İspanya)
+  83,   // 2. Bundesliga (Almanya)
+  302,  // Serie B (İtalya)
+  385,  // Ligue 2 (Fransa)
+  
+  // Amerika
   462,  // MLS
+  268,  // Brasileirão
+  239,  // Argentina Primera
+  273,  // Liga MX
+  
+  // Asya & Orta Doğu
   1659, // Saudi Pro League
+  406,  // Japanese J1 League
+  292,  // Korean K League
+  636,  // Chinese Super League
+  325,  // Australian A-League
+  
+  // Kupa Maçları
+  24,   // FA Cup
+  320,  // Copa del Rey
+  529,  // DFB Pokal
+  308,  // Coppa Italia
+  19,   // Türkiye Kupası
 ];
 
 interface MatchData {
@@ -78,20 +120,24 @@ export async function GET(request: NextRequest) {
     console.log('📡 Fetching matches from SportMonks...');
     const matches = await fetchTodayMatches();
     
-    if (matches.length < 3) {
-      console.log(`❌ Not enough matches: ${matches.length}`);
+    if (matches.length < 1) {
+      console.log(`❌ No matches found`);
       return NextResponse.json({ 
         success: false, 
-        error: 'Not enough matches today',
+        error: 'No matches found today',
         count: matches.length 
       }, { status: 400 });
     }
+    
+    // Minimum 3 maç yoksa bile devam et, mevcut maçlarla kupon oluştur
+    const minPicks = Math.min(3, matches.length);
 
     console.log(`✅ Found ${matches.length} matches with odds`);
 
-    // Generate coupons
-    const safeCoupon = generateSafeCoupon(matches, today);
-    const riskyCoupon = generateRiskyCoupon(matches, today);
+    // Generate coupons (use available matches, max 3)
+    const pickCount = Math.min(3, matches.length);
+    const safeCoupon = generateSafeCoupon(matches, today, pickCount);
+    const riskyCoupon = generateRiskyCoupon(matches, today, pickCount);
 
     // Save to database
     const { error: safeError } = await supabase
@@ -237,7 +283,7 @@ function parseOdds(fixture: any): { home: number; draw: number; away: number } {
 // COUPON GENERATION LOGIC
 // ============================================================================
 
-function generateSafeCoupon(matches: MatchData[], date: string) {
+function generateSafeCoupon(matches: MatchData[], date: string, pickCount: number = 3) {
   // Safe kupon: Düşük oranlı favoriler (1.20 - 1.80 arası)
   const safeMatches = matches
     .filter(m => {
@@ -249,10 +295,10 @@ function generateSafeCoupon(matches: MatchData[], date: string) {
       const bMin = Math.min(b.odds.home, b.odds.away);
       return aMin - bMin; // En düşük orandan başla
     })
-    .slice(0, 3);
+    .slice(0, pickCount);
 
   // Eğer yeterli maç yoksa, tüm maçlardan en düşük oranlıları al
-  if (safeMatches.length < 3) {
+  if (safeMatches.length < pickCount) {
     const remaining = matches
       .filter(m => !safeMatches.includes(m))
       .sort((a, b) => {
@@ -260,7 +306,7 @@ function generateSafeCoupon(matches: MatchData[], date: string) {
         const bMin = Math.min(b.odds.home, b.odds.away);
         return aMin - bMin;
       })
-      .slice(0, 3 - safeMatches.length);
+      .slice(0, pickCount - safeMatches.length);
     safeMatches.push(...remaining);
   }
 
@@ -297,7 +343,7 @@ function generateSafeCoupon(matches: MatchData[], date: string) {
   };
 }
 
-function generateRiskyCoupon(matches: MatchData[], date: string) {
+function generateRiskyCoupon(matches: MatchData[], date: string, pickCount: number = 3) {
   // Risky kupon: Yüksek oranlı sürprizler veya beraberliker
   const riskyMatches = matches
     .filter(m => {
@@ -310,13 +356,13 @@ function generateRiskyCoupon(matches: MatchData[], date: string) {
       const bMax = Math.max(b.odds.home, b.odds.away, b.odds.draw);
       return bMax - aMax; // En yüksek orandan başla
     })
-    .slice(0, 3);
+    .slice(0, pickCount);
 
   // Eğer yeterli maç yoksa, beraberlikleri ekle
-  if (riskyMatches.length < 3) {
+  if (riskyMatches.length < pickCount) {
     const draws = matches
       .filter(m => !riskyMatches.includes(m) && m.odds.draw >= 3.0)
-      .slice(0, 3 - riskyMatches.length);
+      .slice(0, pickCount - riskyMatches.length);
     riskyMatches.push(...draws);
   }
 
