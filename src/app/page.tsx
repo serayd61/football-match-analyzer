@@ -863,8 +863,8 @@ export default function HomePage() {
             <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-500 hover:to-yellow-400 text-white font-bold rounded-2xl shadow-xl shadow-orange-500/30 transition-all">
               🏆 Hemen Katıl
             </Link>
-            <Link href="/leaderboard" className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-2xl border border-gray-700 transition-all">
-              📊 Liderlik Tablosu
+            <Link href="/ai-performance" className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-2xl border border-gray-700 transition-all">
+              🧠 AI Performans
             </Link>
           </div>
         </div>
@@ -1069,7 +1069,7 @@ export default function HomePage() {
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.features}</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">{l.footer.pricing}</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.demo}</Link></li>
-                <li><Link href="/leaderboard" className="hover:text-white transition-colors">{l.footer.tipsterLeague}</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">{lang === 'tr' ? 'İletişim' : lang === 'de' ? 'Kontakt' : 'Contact'}</Link></li>
               </ul>
             </div>
             <div>

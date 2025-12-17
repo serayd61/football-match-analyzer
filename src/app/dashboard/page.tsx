@@ -767,9 +767,6 @@ export default function DashboardPage() {
               <Link href="/coupons" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
                 <span>🎫</span> {l.coupons}
               </Link>
-              <Link href="/leaderboard" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
-                <span>🏆</span> {l.leaderboard}
-              </Link>
               <Link href="/ai-performance" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all relative">
                 <span>🧠</span> {l.aiPerformance}
                 <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full animate-pulse">NEW</span>

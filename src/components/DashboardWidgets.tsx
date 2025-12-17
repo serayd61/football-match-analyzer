@@ -331,12 +331,6 @@ export default function DashboardWidgets() {
           🧠 AI {lang === 'tr' ? 'Performans' : lang === 'de' ? 'Leistung' : 'Performance'}
         </Link>
         <Link 
-          href="/leaderboard" 
-          className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm transition-all"
-        >
-          🏆 {l.leaderboard}
-        </Link>
-        <Link 
           href="/coupons" 
           className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl text-blue-300 text-sm transition-all"
         >
