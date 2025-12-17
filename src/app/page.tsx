@@ -164,6 +164,7 @@ export default function HomePage() {
         terms: 'Kullanım Şartları',
         copyright: '© 2024 Football Analytics Pro. Tüm hakları saklıdır.',
         poweredBy: 'Powered by Heurist Network',
+        developedBy: 'Swiss Digital tarafından geliştirildi',
       },
     },
     en: {
@@ -307,6 +308,7 @@ export default function HomePage() {
         terms: 'Terms',
         copyright: '© 2024 Football Analytics Pro. All rights reserved.',
         poweredBy: 'Powered by Heurist Network',
+        developedBy: 'Developed by Swiss Digital',
       },
     },
   };
@@ -452,6 +454,7 @@ export default function HomePage() {
       terms: 'AGB',
       copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.',
       poweredBy: 'Powered by Heurist Network',
+      developedBy: 'Entwickelt von Swiss Digital',
     },
   };
 
@@ -903,6 +906,17 @@ export default function HomePage() {
                 <span className="text-white font-bold">Football Analytics Pro</span>
               </div>
               <p className="text-gray-400 text-sm">{l.footer.poweredBy}</p>
+              <a 
+                href="https://swissdigital.life" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-400 text-sm hover:text-green-400 transition-colors flex items-center gap-1 mt-1"
+              >
+                🇨🇭 {l.footer.developedBy}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">{l.footer.product}</h4>
@@ -916,7 +930,14 @@ export default function HomePage() {
             <div>
               <h4 className="text-white font-semibold mb-4">{l.footer.company}</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white transition-colors">{l.footer.about}</Link></li>
+                <li>
+                  <a href="https://swissdigital.life" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1">
+                    {l.footer.about}
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </li>
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.blog}</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">{l.footer.careers}</Link></li>
               </ul>
