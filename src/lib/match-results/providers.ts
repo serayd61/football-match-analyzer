@@ -63,7 +63,7 @@ export interface MatchResultProvider {
 
 export class APIFootballProvider implements MatchResultProvider {
   name = 'API-Football';
-  priority = 1; // En yüksek öncelik
+  priority = 3; // Yedek - rate limit sorunları var
   
   private apiKey = process.env.RAPIDAPI_KEY;
   private baseUrl = 'https://api-football-v1.p.rapidapi.com/v3';
@@ -168,20 +168,22 @@ export class APIFootballProvider implements MatchResultProvider {
 
 export class FootballDataProvider implements MatchResultProvider {
   name = 'Football-Data.org';
-  priority = 2;
+  priority = 1; // En yüksek öncelik - ücretsiz ve güvenilir
   
   private apiKey = process.env.FOOTBALL_DATA_API_KEY;
   private baseUrl = 'https://api.football-data.org/v4';
 
   async fetchResult(fixtureId: number, homeTeam: string, awayTeam: string, matchDate: string): Promise<MatchResult | null> {
     if (!this.apiKey) {
-      console.log(`[${this.name}] API key not configured`);
+      console.log(`[${this.name}] API key not configured - Key exists: ${!!process.env.FOOTBALL_DATA_API_KEY}`);
       return null;
     }
 
     try {
       const date = matchDate.split('T')[0];
       const url = `${this.baseUrl}/matches?dateFrom=${date}&dateTo=${date}&status=FINISHED`;
+      
+      console.log(`[${this.name}] Fetching: ${url}`);
       
       const response = await fetch(url, {
         headers: {
@@ -190,27 +192,64 @@ export class FootballDataProvider implements MatchResultProvider {
       });
 
       if (!response.ok) {
-        console.log(`[${this.name}] API error: ${response.status}`);
+        const errorText = await response.text();
+        console.log(`[${this.name}] API error: ${response.status} - ${errorText.substring(0, 200)}`);
         return null;
       }
 
       const data = await response.json();
       const matches = data.matches || [];
+      
+      console.log(`[${this.name}] Found ${matches.length} finished matches on ${date}`);
+
+      // Normalize team names for better matching
+      const normalizeForMatch = (name: string): string => {
+        return name
+          .toLowerCase()
+          .replace(/[áàäâã]/g, 'a')
+          .replace(/[éèëê]/g, 'e')
+          .replace(/[íìïî]/g, 'i')
+          .replace(/[óòöôõ]/g, 'o')
+          .replace(/[úùüû]/g, 'u')
+          .replace(/[ñ]/g, 'n')
+          .replace(/[şŞ]/g, 's')
+          .replace(/[çÇ]/g, 'c')
+          .replace(/[ğĞ]/g, 'g')
+          .replace(/\s*(fc|sc|cf|cd|ud|sd|afc|bk|if|ff|fk|sk|jk|as|ac)\s*$/i, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const searchHome = normalizeForMatch(homeTeam);
+      const searchAway = normalizeForMatch(awayTeam);
 
       // Takım adlarına göre maçı bul
       const match = matches.find((m: any) => {
-        const home = m.homeTeam?.name?.toLowerCase() || '';
-        const away = m.awayTeam?.name?.toLowerCase() || '';
-        return (
-          (home.includes(homeTeam.toLowerCase()) || homeTeam.toLowerCase().includes(home)) &&
-          (away.includes(awayTeam.toLowerCase()) || awayTeam.toLowerCase().includes(away))
-        );
+        const home = normalizeForMatch(m.homeTeam?.name || m.homeTeam?.shortName || '');
+        const away = normalizeForMatch(m.awayTeam?.name || m.awayTeam?.shortName || '');
+        
+        const homeMatch = home.includes(searchHome) || searchHome.includes(home) ||
+                          home.split(' ')[0] === searchHome.split(' ')[0];
+        const awayMatch = away.includes(searchAway) || searchAway.includes(away) ||
+                          away.split(' ')[0] === searchAway.split(' ')[0];
+        
+        if (homeMatch && awayMatch) {
+          console.log(`[${this.name}] Match found: ${m.homeTeam?.name} vs ${m.awayTeam?.name}`);
+        }
+        
+        return homeMatch && awayMatch;
       });
 
       if (!match) {
         console.log(`[${this.name}] Match not found for ${homeTeam} vs ${awayTeam}`);
+        // Log available matches for debugging
+        if (matches.length > 0 && matches.length < 20) {
+          console.log(`[${this.name}] Available matches:`, matches.map((m: any) => `${m.homeTeam?.name} vs ${m.awayTeam?.name}`).join(', '));
+        }
         return null;
       }
+
+      console.log(`[${this.name}] Score: ${match.score?.fullTime?.home}-${match.score?.fullTime?.away}`);
 
       return {
         fixtureId,
@@ -297,7 +336,7 @@ export class LiveScoreProvider implements MatchResultProvider {
 
 export class SportMonksProvider implements MatchResultProvider {
   name = 'SportMonks';
-  priority = 4; // Yedek olarak kullan
+  priority = 2; // Yüksek öncelik - en güvenilir kaynak
   
   private apiKey = process.env.SPORTMONKS_API_KEY;
   private baseUrl = 'https://api.sportmonks.com/v3/football';
@@ -309,7 +348,8 @@ export class SportMonksProvider implements MatchResultProvider {
     }
 
     try {
-      const url = `${this.baseUrl}/fixtures/${fixtureId}?api_token=${this.apiKey}&include=scores;statistics`;
+      // FIXED: state include eklendi!
+      const url = `${this.baseUrl}/fixtures/${fixtureId}?api_token=${this.apiKey}&include=state;scores;statistics`;
       
       const response = await fetch(url, {
         headers: { 'Accept': 'application/json' },
@@ -323,43 +363,80 @@ export class SportMonksProvider implements MatchResultProvider {
       const data = await response.json();
       const fixture = data.data;
 
-      if (!fixture) return null;
-
-      // Check if match is finished
-      const state = fixture.state?.state;
-      if (state !== 'FT' && state !== 'AET' && state !== 'PEN') {
+      if (!fixture) {
+        console.log(`[${this.name}] No fixture data returned`);
         return null;
       }
 
-      // Get scores
+      // Check if match is finished - multiple ways to check
+      const stateInfo = fixture.state;
+      const stateName = stateInfo?.state || stateInfo?.developer_name || fixture.state_id;
+      
+      console.log(`[${this.name}] Fixture ${fixtureId} state:`, JSON.stringify(stateInfo));
+      
+      // State IDs: 5 = FT, 11 = AET, 12 = PEN (check SportMonks docs)
+      const finishedStates = ['FT', 'AET', 'PEN', 'FINISHED', 'ended'];
+      const finishedStateIds = [5, 11, 12]; // Common finished state IDs
+      
+      const isFinished = 
+        finishedStates.includes(stateName) || 
+        finishedStateIds.includes(fixture.state_id) ||
+        stateInfo?.short_name === 'FT';
+      
+      if (!isFinished) {
+        console.log(`[${this.name}] Match not finished yet. State: ${stateName}, State ID: ${fixture.state_id}`);
+        return null;
+      }
+
+      // Get scores - try multiple formats
       const scores = fixture.scores || [];
       let homeScore = 0;
       let awayScore = 0;
       let htHomeScore: number | undefined;
       let htAwayScore: number | undefined;
 
+      console.log(`[${this.name}] Scores data:`, JSON.stringify(scores));
+
+      // Method 1: Look for CURRENT scores
       for (const score of scores) {
-        if (score.description === 'CURRENT') {
+        if (score.description === 'CURRENT' || score.description === 'FULLTIME') {
           if (score.score?.participant === 'home') homeScore = score.score?.goals || 0;
           if (score.score?.participant === 'away') awayScore = score.score?.goals || 0;
+          // Alternative format
+          if (score.participant === 'home') homeScore = score.goals || score.score?.goals || 0;
+          if (score.participant === 'away') awayScore = score.goals || score.score?.goals || 0;
         }
-        if (score.description === '1ST_HALF') {
+        if (score.description === '1ST_HALF' || score.description === 'HT') {
           if (score.score?.participant === 'home') htHomeScore = score.score?.goals;
           if (score.score?.participant === 'away') htAwayScore = score.score?.goals;
+          if (score.participant === 'home') htHomeScore = score.goals || score.score?.goals;
+          if (score.participant === 'away') htAwayScore = score.goals || score.score?.goals;
         }
       }
 
-      // Alternative score extraction
+      // Method 2: Direct participant lookup
       if (homeScore === 0 && awayScore === 0) {
         for (const score of scores) {
-          if (score.participant === 'home' && score.description === 'CURRENT') {
+          if ((score.participant === 'home' || score.type_id === 1525) && 
+              (score.description === 'CURRENT' || score.description === '2ND_HALF' || !score.description)) {
             homeScore = score.goals || 0;
           }
-          if (score.participant === 'away' && score.description === 'CURRENT') {
+          if ((score.participant === 'away' || score.type_id === 1526) && 
+              (score.description === 'CURRENT' || score.description === '2ND_HALF' || !score.description)) {
             awayScore = score.goals || 0;
           }
         }
       }
+
+      // Method 3: Check for aggregate/final scores
+      if (homeScore === 0 && awayScore === 0) {
+        const homeScoreObj = scores.find((s: any) => s.participant === 'home' && s.description?.includes('CURRENT'));
+        const awayScoreObj = scores.find((s: any) => s.participant === 'away' && s.description?.includes('CURRENT'));
+        if (homeScoreObj) homeScore = homeScoreObj.goals || 0;
+        if (awayScoreObj) awayScore = awayScoreObj.goals || 0;
+      }
+
+      console.log(`[${this.name}] Extracted scores: ${homeScore}-${awayScore}`);
 
       // Get statistics
       let corners: number | undefined;
@@ -379,7 +456,7 @@ export class SportMonksProvider implements MatchResultProvider {
         awayScore,
         htHomeScore,
         htAwayScore,
-        status: state as MatchResult['status'],
+        status: 'FT',
         corners,
         yellowCards,
         redCards,
