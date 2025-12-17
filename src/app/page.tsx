@@ -114,6 +114,33 @@ export default function HomePage() {
           ],
         },
       },
+      proHighlight: {
+        badge: '🚀 PRO ÜYELİK AVANTAJLARI',
+        title: 'Sınırsız Erişim, Maksimum Kazanç',
+        subtitle: 'Pro üyelikle 3 farklı analiz sistemine sınırsız erişim kazanın',
+        cta: 'Hemen Pro\'ya Geç',
+        systems: [
+          {
+            icon: '🤖',
+            name: 'AI Consensus Engine',
+            desc: '4 dünya devi AI modeli (Claude, GPT-4, Gemini, Perplexity) aynı anda analiz yapar. Uzlaşı ile en doğru tahmin!',
+            highlight: '4 AI Model',
+          },
+          {
+            icon: '🔗',
+            name: 'Heurist Agent Network',
+            desc: '3 uzman agent (Scout, Analyst, Predictor) Web3 üzerinde bağımsız çalışır. Blockchain şeffaflığı ile güvenilir sonuçlar!',
+            highlight: '3 Uzman Agent',
+          },
+          {
+            icon: '🧠',
+            name: 'Quad-Brain Ensemble',
+            desc: 'Tüm sistemler birleşir, Debate Protocol devreye girer. AI\'lar tartışır, en güçlü argüman kazanır!',
+            highlight: 'Hibrit Güç',
+          },
+        ],
+        bottomText: '💡 Ücretsiz üyelikte günlük sadece 3 analiz. Pro ile sınırsız analiz yapın ve kazanmaya başlayın!',
+      },
       pricing: {
         title: 'Basit & Şeffaf Fiyatlandırma',
         subtitle: 'Sizin için en uygun planı seçin',
@@ -257,6 +284,33 @@ export default function HomePage() {
             { type: '4+', multiplier: '×50' },
           ],
         },
+      },
+      proHighlight: {
+        badge: '🚀 PRO MEMBERSHIP BENEFITS',
+        title: 'Unlimited Access, Maximum Profit',
+        subtitle: 'Get unlimited access to 3 different analysis systems with Pro',
+        cta: 'Go Pro Now',
+        systems: [
+          {
+            icon: '🤖',
+            name: 'AI Consensus Engine',
+            desc: '4 world-leading AI models (Claude, GPT-4, Gemini, Perplexity) analyze simultaneously. Most accurate prediction through consensus!',
+            highlight: '4 AI Models',
+          },
+          {
+            icon: '🔗',
+            name: 'Heurist Agent Network',
+            desc: '3 expert agents (Scout, Analyst, Predictor) work independently on Web3. Reliable results with blockchain transparency!',
+            highlight: '3 Expert Agents',
+          },
+          {
+            icon: '🧠',
+            name: 'Quad-Brain Ensemble',
+            desc: 'All systems unite, Debate Protocol activates. AIs debate, the strongest argument wins!',
+            highlight: 'Hybrid Power',
+          },
+        ],
+        bottomText: '💡 Free membership: only 3 analyses per day. Go Pro for unlimited analyses and start winning!',
       },
       pricing: {
         title: 'Simple & Transparent Pricing',
@@ -403,6 +457,33 @@ export default function HomePage() {
           { type: '4+', multiplier: '×50' },
         ],
       },
+    },
+    proHighlight: {
+      badge: '🚀 PRO-MITGLIEDSCHAFT VORTEILE',
+      title: 'Unbegrenzter Zugang, maximaler Gewinn',
+      subtitle: 'Mit Pro erhalten Sie unbegrenzten Zugang zu 3 verschiedenen Analysesystemen',
+      cta: 'Jetzt Pro werden',
+      systems: [
+        {
+          icon: '🤖',
+          name: 'AI Consensus Engine',
+          desc: '4 weltweit führende KI-Modelle (Claude, GPT-4, Gemini, Perplexity) analysieren gleichzeitig. Genaueste Vorhersage durch Konsens!',
+          highlight: '4 KI-Modelle',
+        },
+        {
+          icon: '🔗',
+          name: 'Heurist Agent Network',
+          desc: '3 Experten-Agenten (Scout, Analyst, Predictor) arbeiten unabhängig auf Web3. Zuverlässige Ergebnisse mit Blockchain-Transparenz!',
+          highlight: '3 Experten-Agenten',
+        },
+        {
+          icon: '🧠',
+          name: 'Quad-Brain Ensemble',
+          desc: 'Alle Systeme vereint, Debate Protocol aktiviert. KIs debattieren, das stärkste Argument gewinnt!',
+          highlight: 'Hybride Kraft',
+        },
+      ],
+      bottomText: '💡 Kostenlose Mitgliedschaft: nur 3 Analysen pro Tag. Werden Sie Pro für unbegrenzte Analysen und starten Sie zu gewinnen!',
     },
     pricing: {
       title: 'Einfache & transparente Preise',
@@ -788,6 +869,70 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Pro Highlight Section */}
+      {'proHighlight' in l && (
+        <section className="py-20 px-4 bg-gradient-to-br from-green-900/20 via-emerald-900/20 to-teal-900/20 relative overflow-hidden">
+          {/* Animated Background */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+          
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-full text-green-400 text-sm font-bold mb-4 animate-pulse">
+                {(l as any).proHighlight.badge}
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+                {(l as any).proHighlight.title}
+              </h2>
+              <p className="text-xl text-green-300 max-w-2xl mx-auto">
+                {(l as any).proHighlight.subtitle}
+              </p>
+            </div>
+
+            {/* 3 Systems Grid */}
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
+              {(l as any).proHighlight.systems.map((system: any, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-2 border-green-500/30 rounded-3xl p-8 hover:border-green-500/60 hover:scale-105 transition-all duration-300 group"
+                >
+                  <div className="text-5xl mb-4">{system.icon}</div>
+                  <div className="inline-flex px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-green-400 text-xs font-bold mb-3">
+                    {system.highlight}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors">
+                    {system.name}
+                  </h3>
+                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                    {system.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Text & CTA */}
+            <div className="text-center">
+              <p className="text-lg text-yellow-400 font-medium mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-6 py-3 inline-block">
+                {(l as any).proHighlight.bottomText}
+              </p>
+              <div>
+                <Link 
+                  href="/login" 
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all transform hover:scale-105"
+                >
+                  <span>{(l as any).proHighlight.cta}</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Pricing */}
       <section className="py-20 px-4">
