@@ -35,7 +35,7 @@ interface MatchData {
 }
 
 interface AIPrediction {
-  matchId: number;
+  match: number; // Match index (1-based)
   prediction: string; // "1", "X", "2"
   confidence: number;
   reasoning: string;
