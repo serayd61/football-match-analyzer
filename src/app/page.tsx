@@ -934,36 +934,14 @@ export default function HomePage() {
               </svg>
             </button>
 
-            {/* YouTube Embed or Placeholder */}
-            {YOUTUBE_VIDEO_ID === 'YOUR_VIDEO_ID_HERE' ? (
-              <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
-                <div className="text-6xl mb-4">🎬</div>
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  {lang === 'tr' ? 'Video Yakında!' : lang === 'de' ? 'Video kommt bald!' : 'Video Coming Soon!'}
-                </h3>
-                <p className="text-gray-400 max-w-md">
-                  {lang === 'tr' 
-                    ? 'Tanıtım videomuz hazırlanıyor. Çok yakında burada olacak!' 
-                    : lang === 'de'
-                    ? 'Unser Einführungsvideo wird vorbereitet. Es wird sehr bald hier sein!'
-                    : 'Our introduction video is being prepared. It will be here very soon!'}
-                </p>
-                <div className="mt-6 flex items-center gap-4">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-green-400 text-sm">
-                    {lang === 'tr' ? 'Hazırlanıyor...' : lang === 'de' ? 'In Vorbereitung...' : 'In Progress...'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <iframe
-                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
-                title="How It Works"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            )}
+            {/* YouTube Shorts Embed */}
+            <iframe
+              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
+              title="How It Works"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            />
           </div>
         </div>
       )}
