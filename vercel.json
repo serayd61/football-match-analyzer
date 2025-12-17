@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/settle-admin-predictions",
       "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/generate-daily-coupons",
+      "schedule": "0 7 * * *"
     }
   ]
 }
