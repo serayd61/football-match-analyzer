@@ -342,8 +342,8 @@ export default function ContactPage() {
                   <span className="text-2xl">📧</span>
                   <div>
                     <p className="text-gray-400 text-sm">{l.contact.email}</p>
-                    <a href="mailto:serayd61@hotmail.com" className="text-blue-400 hover:underline">
-                      serayd61@hotmail.com
+                    <a href="mailto:info@swissdigital.life" className="text-blue-400 hover:underline">
+                      info@swissdigital.life
                     </a>
                   </div>
                 </div>
