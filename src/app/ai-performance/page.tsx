@@ -38,6 +38,8 @@ interface PerformanceData {
   overall: {
     totalPredictions: number;
     totalCorrect: number;
+    totalSettled: number;
+    pendingCount: number;
     overallAccuracy: number;
     avgConfidence: number;
     lastUpdated: string;
