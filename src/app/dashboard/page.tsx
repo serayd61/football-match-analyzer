@@ -133,6 +133,7 @@ export default function DashboardPage() {
       matches: 'Maçlar',
       coupons: 'Kuponlar',
       leaderboard: 'Liderlik',
+      aiPerformance: 'AI Performans',
       createCoupon: 'Kupon Oluştur',
       todayMatches: 'Günün Maçları',
       search: 'Takım ara...',
@@ -198,6 +199,7 @@ export default function DashboardPage() {
       matches: 'Matches',
       coupons: 'Coupons',
       leaderboard: 'Leaderboard',
+      aiPerformance: 'AI Performance',
       createCoupon: 'Create Coupon',
       todayMatches: 'Today\'s Matches',
       search: 'Search team...',
@@ -263,6 +265,7 @@ export default function DashboardPage() {
       matches: 'Spiele',
       coupons: 'Wettscheine',
       leaderboard: 'Rangliste',
+      aiPerformance: 'KI-Leistung',
       createCoupon: 'Erstellen',
       todayMatches: 'Heutige Spiele',
       search: 'Team suchen...',
@@ -765,6 +768,10 @@ export default function DashboardPage() {
               </Link>
               <Link href="/leaderboard" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
                 <span>🏆</span> {l.leaderboard}
+              </Link>
+              <Link href="/ai-performance" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all relative">
+                <span>🧠</span> {l.aiPerformance}
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full animate-pulse">NEW</span>
               </Link>
               <Link href="/coupons/create" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all ml-2">
                 <span>➕</span> {l.createCoupon}
