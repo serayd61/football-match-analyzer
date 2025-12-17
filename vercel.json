@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/generate-daily-coupons",
-      "schedule": "0 7 * * *"
+      "schedule": "0 5 * * *"
     }
   ]
 }
