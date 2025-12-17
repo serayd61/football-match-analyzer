@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 
+// 📹 YOUTUBE VIDEO ID - Buraya kendi video ID'ni yaz
+const YOUTUBE_VIDEO_ID = 'YOUR_VIDEO_ID_HERE'; // Örnek: 'dQw4w9WgXcQ'
+
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { lang } = useLanguage();
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -501,7 +505,10 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
-              <button className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-lg rounded-2xl border border-gray-700 transition-all flex items-center justify-center gap-2">
+              <button 
+                onClick={() => setShowVideoModal(true)}
+                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-lg rounded-2xl border border-gray-700 transition-all flex items-center justify-center gap-2 hover:scale-105"
+              >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
@@ -903,6 +910,63 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Video Modal */}
+      {showVideoModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setShowVideoModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowVideoModal(false)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors flex items-center gap-2"
+            >
+              <span className="text-sm">
+                {lang === 'tr' ? 'Kapat' : lang === 'de' ? 'Schließen' : 'Close'}
+              </span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* YouTube Embed or Placeholder */}
+            {YOUTUBE_VIDEO_ID === 'YOUR_VIDEO_ID_HERE' ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
+                <div className="text-6xl mb-4">🎬</div>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  {lang === 'tr' ? 'Video Yakında!' : lang === 'de' ? 'Video kommt bald!' : 'Video Coming Soon!'}
+                </h3>
+                <p className="text-gray-400 max-w-md">
+                  {lang === 'tr' 
+                    ? 'Tanıtım videomuz hazırlanıyor. Çok yakında burada olacak!' 
+                    : lang === 'de'
+                    ? 'Unser Einführungsvideo wird vorbereitet. Es wird sehr bald hier sein!'
+                    : 'Our introduction video is being prepared. It will be here very soon!'}
+                </p>
+                <div className="mt-6 flex items-center gap-4">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-green-400 text-sm">
+                    {lang === 'tr' ? 'Hazırlanıyor...' : lang === 'de' ? 'In Vorbereitung...' : 'In Progress...'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <iframe
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
+                title="How It Works"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
