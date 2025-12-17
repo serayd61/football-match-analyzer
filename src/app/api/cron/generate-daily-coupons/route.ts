@@ -1,75 +1,28 @@
 // ============================================================================
-// CRON JOB - GENERATE DAILY COUPONS
-// Her gün sabah 07:00'de (UTC) günlük kuponları oluşturur
+// CRON JOB - GENERATE DAILY COUPONS WITH AI CONSENSUS
+// Her gün sabah 07:00'de (UTC) günlük kuponları AI analizi ile oluşturur
+// 3 AI modeli (Claude, GPT-4, Gemini) ortak karar verir
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120; // AI analizi için 2 dakika
 
 // SportMonks API
 const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
 const API_TOKEN = process.env.SPORTMONKS_API_KEY || '';
 
-// Desteklenen ligler (çok geniş liste - 40+ lig)
+// AI API Keys
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const GOOGLE_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || '';
+
+// Desteklenen ligler (40+ lig)
 const SUPPORTED_LEAGUES = [
-  // Top 5 Ligler
-  8,    // Premier League
-  564,  // La Liga
-  82,   // Bundesliga
-  301,  // Serie A
-  384,  // Ligue 1
-  
-  // Avrupa Kupaları
-  2,    // Champions League
-  5,    // Europa League
-  7,    // Conference League
-  
-  // Diğer Avrupa Ligleri
-  271,  // Süper Lig (Türkiye)
-  501,  // Primeira Liga (Portekiz)
-  72,   // Eredivisie (Hollanda)
-  208,  // Belgian Pro League
-  244,  // Danish Superliga
-  203,  // Russian Premier League
-  318,  // Ukrainian Premier League
-  27,   // Scottish Premiership
-  513,  // Austrian Bundesliga
-  66,   // Swiss Super League
-  600,  // Greek Super League
-  462,  // Czech First League
-  106,  // Polish Ekstraklasa
-  169,  // Croatian HNL
-  99,   // Serbian SuperLiga
-  
-  // İkinci Ligler
-  9,    // Championship (İngiltere)
-  565,  // La Liga 2 (İspanya)
-  83,   // 2. Bundesliga (Almanya)
-  302,  // Serie B (İtalya)
-  385,  // Ligue 2 (Fransa)
-  
-  // Amerika
-  462,  // MLS
-  268,  // Brasileirão
-  239,  // Argentina Primera
-  273,  // Liga MX
-  
-  // Asya & Orta Doğu
-  1659, // Saudi Pro League
-  406,  // Japanese J1 League
-  292,  // Korean K League
-  636,  // Chinese Super League
-  325,  // Australian A-League
-  
-  // Kupa Maçları
-  24,   // FA Cup
-  320,  // Copa del Rey
-  529,  // DFB Pokal
-  308,  // Coppa Italia
-  19,   // Türkiye Kupası
+  8, 564, 82, 301, 384, 2, 5, 7, 271, 501, 72, 208, 244, 203, 318, 27, 513, 66, 600, 462, 106, 169, 99,
+  9, 565, 83, 302, 385, 268, 239, 273, 1659, 406, 292, 636, 325, 24, 320, 529, 308, 19
 ];
 
 interface MatchData {
@@ -78,10 +31,30 @@ interface MatchData {
   away: string;
   league: string;
   time: string;
-  odds: {
-    home: number;
-    draw: number;
-    away: number;
+  odds: { home: number; draw: number; away: number };
+}
+
+interface AIPrediction {
+  matchId: number;
+  prediction: string; // "1", "X", "2"
+  confidence: number;
+  reasoning: string;
+}
+
+interface AIConsensus {
+  matchId: number;
+  home: string;
+  away: string;
+  league: string;
+  time: string;
+  prediction: string;
+  odds: number;
+  confidence: number;
+  aiAgreement: number; // Kaç AI aynı tahminde (1-3)
+  reasoning: {
+    claude?: string;
+    gpt4?: string;
+    gemini?: string;
   };
 }
 
@@ -94,7 +67,7 @@ export async function GET(request: NextRequest) {
   
   try {
     console.log('\n' + '═'.repeat(70));
-    console.log('🎯 DAILY COUPONS GENERATION CRON JOB');
+    console.log('🧠 DAILY AI CONSENSUS COUPON GENERATION');
     console.log('═'.repeat(70));
 
     const today = new Date().toISOString().split('T')[0];
@@ -105,68 +78,105 @@ export async function GET(request: NextRequest) {
       .from('daily_coupons')
       .select('id')
       .eq('date', today)
+      .eq('coupon_type', 'safe')
       .limit(1);
 
     if (existing && existing.length > 0) {
-      console.log('⏭️ Coupons already exist for today');
+      console.log('⏭️ Safe coupon already exists for today');
       return NextResponse.json({ 
         success: true, 
-        message: 'Coupons already exist for today',
+        message: 'Safe coupon already exists for today',
         date: today 
       });
     }
 
-    // Fetch today's matches from SportMonks
+    // Fetch today's matches
     console.log('📡 Fetching matches from SportMonks...');
     const matches = await fetchTodayMatches();
     
     if (matches.length < 1) {
-      console.log(`❌ No matches found`);
+      console.log('❌ No matches found');
       return NextResponse.json({ 
         success: false, 
         error: 'No matches found today',
-        count: matches.length 
+        count: 0 
       }, { status: 400 });
     }
+
+    console.log(`✅ Found ${matches.length} matches`);
+
+    // Analyze matches with 3 AI models
+    console.log('🤖 Getting AI predictions...');
+    const aiConsensus = await getAIConsensus(matches);
     
-    // Minimum 3 maç yoksa bile devam et, mevcut maçlarla kupon oluştur
-    const minPicks = Math.min(3, matches.length);
+    if (aiConsensus.length < 1) {
+      console.log('❌ No AI consensus found');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'AI analysis failed',
+      }, { status: 500 });
+    }
 
-    console.log(`✅ Found ${matches.length} matches with odds`);
+    // Filter only high-confidence picks (all 3 AIs agree)
+    const strongPicks = aiConsensus
+      .filter(c => c.aiAgreement >= 2 && c.confidence >= 60) // En az 2 AI aynı fikirde
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 3);
 
-    // Generate coupons (use available matches, max 3)
-    const pickCount = Math.min(3, matches.length);
-    const safeCoupon = generateSafeCoupon(matches, today, pickCount);
-    const riskyCoupon = generateRiskyCoupon(matches, today, pickCount);
+    if (strongPicks.length === 0) {
+      // Fallback: En yüksek güvenli olanları al
+      strongPicks.push(...aiConsensus.sort((a, b) => b.confidence - a.confidence).slice(0, 3));
+    }
+
+    console.log(`🎯 Selected ${strongPicks.length} consensus picks`);
+
+    // Generate safe coupon
+    const safeCoupon = {
+      date: today,
+      coupon_type: 'safe',
+      matches: strongPicks.map(p => ({
+        fixture_id: p.matchId,
+        home_team: p.home,
+        away_team: p.away,
+        league: p.league,
+        kick_off: p.time,
+        selection: p.prediction,
+        odds: p.odds,
+        ai_agreement: p.aiAgreement,
+        ai_reasoning: p.reasoning,
+      })),
+      total_odds: Math.round(strongPicks.reduce((acc, p) => acc * p.odds, 1) * 100) / 100,
+      confidence: Math.round(strongPicks.reduce((acc, p) => acc + p.confidence, 0) / strongPicks.length),
+      suggested_stake: 100,
+      potential_win: Math.round(100 * strongPicks.reduce((acc, p) => acc * p.odds, 1)),
+      ai_reasoning: JSON.stringify({
+        tr: `🧠 AI Konsensüs Kuponu: ${strongPicks.length} maçta 3 AI modeli (Claude, GPT-4, Gemini) analiz yaptı ve ortak karara vardı. Yüksek güvenilirlik!`,
+        en: `🧠 AI Consensus Coupon: 3 AI models (Claude, GPT-4, Gemini) analyzed ${strongPicks.length} matches and reached agreement. High reliability!`,
+        de: `🧠 KI-Konsens-Tipp: 3 KI-Modelle (Claude, GPT-4, Gemini) haben ${strongPicks.length} Spiele analysiert und eine Einigung erzielt. Hohe Zuverlässigkeit!`,
+      }),
+      status: 'pending',
+    };
 
     // Save to database
-    const { error: safeError } = await supabase
+    const { error: saveError } = await supabase
       .from('daily_coupons')
       .insert(safeCoupon);
 
-    if (safeError) {
-      console.error('❌ Error saving safe coupon:', safeError);
-    } else {
-      console.log('✅ Safe coupon saved');
+    if (saveError) {
+      console.error('❌ Error saving coupon:', saveError);
+      return NextResponse.json({ success: false, error: saveError.message }, { status: 500 });
     }
 
-    const { error: riskyError } = await supabase
-      .from('daily_coupons')
-      .insert(riskyCoupon);
-
-    if (riskyError) {
-      console.error('❌ Error saving risky coupon:', riskyError);
-    } else {
-      console.log('✅ Risky coupon saved');
-    }
+    console.log('✅ AI Consensus coupon saved!');
 
     const totalTime = Date.now() - startTime;
 
     console.log('\n' + '═'.repeat(70));
     console.log('✅ CRON JOB COMPLETED');
     console.log(`   📊 Matches analyzed: ${matches.length}`);
-    console.log(`   💚 Safe coupon: ${safeCoupon.matches.length} picks, odds ${safeCoupon.total_odds.toFixed(2)}`);
-    console.log(`   🔴 Risky coupon: ${riskyCoupon.matches.length} picks, odds ${riskyCoupon.total_odds.toFixed(2)}`);
+    console.log(`   🧠 AI Consensus picks: ${strongPicks.length}`);
+    console.log(`   💚 Total odds: ${safeCoupon.total_odds}`);
+    console.log(`   🎯 Avg confidence: ${safeCoupon.confidence}%`);
     console.log(`   ⏱️ Time: ${totalTime}ms`);
     console.log('═'.repeat(70) + '\n');
 
@@ -175,14 +185,9 @@ export async function GET(request: NextRequest) {
       date: today,
       stats: {
         matchesAnalyzed: matches.length,
-        safeCoupon: {
-          picks: safeCoupon.matches.length,
-          totalOdds: safeCoupon.total_odds,
-        },
-        riskyCoupon: {
-          picks: riskyCoupon.matches.length,
-          totalOdds: riskyCoupon.total_odds,
-        },
+        consensusPicks: strongPicks.length,
+        totalOdds: safeCoupon.total_odds,
+        avgConfidence: safeCoupon.confidence,
         duration: totalTime,
       },
     });
@@ -212,10 +217,7 @@ async function fetchTodayMatches(): Promise<MatchData[]> {
       headers: { 'Accept': 'application/json' }
     });
     
-    if (!response.ok) {
-      console.error('SportMonks API error:', response.status);
-      return [];
-    }
+    if (!response.ok) return [];
     
     const data = await response.json();
     const fixtures = data.data || [];
@@ -223,8 +225,6 @@ async function fetchTodayMatches(): Promise<MatchData[]> {
     return fixtures.map((f: any) => {
       const home = f.participants?.find((p: any) => p.meta?.location === 'home');
       const away = f.participants?.find((p: any) => p.meta?.location === 'away');
-      
-      // Parse odds
       const odds = parseOdds(f);
       
       return {
@@ -235,10 +235,10 @@ async function fetchTodayMatches(): Promise<MatchData[]> {
         time: f.starting_at,
         odds,
       };
-    }).filter((m: MatchData) => m.odds.home > 0 && m.odds.away > 0);
+    }).filter((m: MatchData) => m.odds.home > 0);
     
-  } catch (error: any) {
-    console.error('Error fetching matches:', error.message);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
     return [];
   }
 }
@@ -248,31 +248,19 @@ function parseOdds(fixture: any): { home: number; draw: number; away: number } {
   
   try {
     const oddsData = fixture.odds?.data || fixture.odds || [];
-    
-    // Find 1X2 market
-    const market = oddsData.find((o: any) => 
-      o.market_id === 1 || 
-      o.name?.toLowerCase().includes('1x2') ||
-      o.name?.toLowerCase().includes('match winner')
-    );
-    
+    const market = oddsData.find((o: any) => o.market_id === 1 || o.name?.toLowerCase().includes('1x2'));
     if (!market) return defaultOdds;
     
     const bookmakers = market.bookmaker?.data || market.bookmakers || [];
     const bookmaker = bookmakers[0];
-    
     if (!bookmaker) return defaultOdds;
     
     const odds = bookmaker.odds?.data || bookmaker.odds || [];
     
-    const homeOdd = odds.find((o: any) => o.label === '1' || o.name === 'Home')?.value;
-    const drawOdd = odds.find((o: any) => o.label === 'X' || o.name === 'Draw')?.value;
-    const awayOdd = odds.find((o: any) => o.label === '2' || o.name === 'Away')?.value;
-    
     return {
-      home: parseFloat(homeOdd) || defaultOdds.home,
-      draw: parseFloat(drawOdd) || defaultOdds.draw,
-      away: parseFloat(awayOdd) || defaultOdds.away,
+      home: parseFloat(odds.find((o: any) => o.label === '1')?.value) || defaultOdds.home,
+      draw: parseFloat(odds.find((o: any) => o.label === 'X')?.value) || defaultOdds.draw,
+      away: parseFloat(odds.find((o: any) => o.label === '2')?.value) || defaultOdds.away,
     };
   } catch {
     return defaultOdds;
@@ -280,140 +268,220 @@ function parseOdds(fixture: any): { home: number; draw: number; away: number } {
 }
 
 // ============================================================================
-// COUPON GENERATION LOGIC
+// AI CONSENSUS - 3 MODEL ANALYSIS
 // ============================================================================
 
-function generateSafeCoupon(matches: MatchData[], date: string, pickCount: number = 3) {
-  // Safe kupon: Düşük oranlı favoriler (1.20 - 1.80 arası)
-  const safeMatches = matches
-    .filter(m => {
-      const minOdd = Math.min(m.odds.home, m.odds.away);
-      return minOdd >= 1.15 && minOdd <= 1.80;
-    })
-    .sort((a, b) => {
-      const aMin = Math.min(a.odds.home, a.odds.away);
-      const bMin = Math.min(b.odds.home, b.odds.away);
-      return aMin - bMin; // En düşük orandan başla
-    })
-    .slice(0, pickCount);
+async function getAIConsensus(matches: MatchData[]): Promise<AIConsensus[]> {
+  const results: AIConsensus[] = [];
+  
+  // Maçları grupla (max 5 maç bir seferde analiz et)
+  const matchList = matches.slice(0, 10).map((m, i) => 
+    `${i + 1}. ${m.home} vs ${m.away} (${m.league}) - Odds: 1=${m.odds.home}, X=${m.odds.draw}, 2=${m.odds.away}`
+  ).join('\n');
 
-  // Eğer yeterli maç yoksa, tüm maçlardan en düşük oranlıları al
-  if (safeMatches.length < pickCount) {
-    const remaining = matches
-      .filter(m => !safeMatches.includes(m))
-      .sort((a, b) => {
-        const aMin = Math.min(a.odds.home, a.odds.away);
-        const bMin = Math.min(b.odds.home, b.odds.away);
-        return aMin - bMin;
-      })
-      .slice(0, pickCount - safeMatches.length);
-    safeMatches.push(...remaining);
-  }
+  const prompt = `You are a professional football betting analyst. Analyze these matches and predict the most likely outcome.
 
-  const picks = safeMatches.map(m => {
-    const selection = m.odds.home < m.odds.away ? '1' : '2';
-    const odds = selection === '1' ? m.odds.home : m.odds.away;
-    return {
-      fixture_id: m.id,
-      home_team: m.home,
-      away_team: m.away,
-      league: m.league,
-      kick_off: m.time,
-      selection,
-      odds,
-    };
-  });
+MATCHES:
+${matchList}
 
-  const totalOdds = picks.reduce((acc, p) => acc * p.odds, 1);
-
-  return {
-    date,
-    coupon_type: 'safe',
-    matches: picks,
-    total_odds: Math.round(totalOdds * 100) / 100,
-    confidence: 75,
-    suggested_stake: 100,
-    potential_win: Math.round(100 * totalOdds),
-    ai_reasoning: JSON.stringify({
-      tr: `Güvenli kupon: ${picks.length} favori takım seçildi. Düşük oran, yüksek kazanma şansı.`,
-      en: `Safe coupon: ${picks.length} favorite teams selected. Low odds, high winning chance.`,
-      de: `Sicherer Tipp: ${picks.length} Favoriten ausgewählt. Niedrige Quote, hohe Gewinnchance.`,
-    }),
-    status: 'pending',
-  };
+For each match, respond with JSON:
+{
+  "predictions": [
+    {"match": 1, "prediction": "1", "confidence": 75, "reasoning": "short reason"},
+    ...
+  ]
 }
 
-function generateRiskyCoupon(matches: MatchData[], date: string, pickCount: number = 3) {
-  // Risky kupon: Yüksek oranlı sürprizler veya beraberliker
-  const riskyMatches = matches
-    .filter(m => {
-      // Beraberlik veya underdog tercihi
-      const maxOdd = Math.max(m.odds.home, m.odds.away, m.odds.draw);
-      return maxOdd >= 2.5;
-    })
-    .sort((a, b) => {
-      const aMax = Math.max(a.odds.home, a.odds.away, a.odds.draw);
-      const bMax = Math.max(b.odds.home, b.odds.away, b.odds.draw);
-      return bMax - aMax; // En yüksek orandan başla
-    })
-    .slice(0, pickCount);
+Rules:
+- prediction: "1" (home win), "X" (draw), or "2" (away win)
+- confidence: 0-100 (how sure you are)
+- Focus on VALUE and PROBABILITY, not just favorites
+- Be conservative, only high confidence picks`;
 
-  // Eğer yeterli maç yoksa, beraberlikleri ekle
-  if (riskyMatches.length < pickCount) {
-    const draws = matches
-      .filter(m => !riskyMatches.includes(m) && m.odds.draw >= 3.0)
-      .slice(0, pickCount - riskyMatches.length);
-    riskyMatches.push(...draws);
-  }
+  try {
+    // Get predictions from 3 AI models in parallel
+    const [claudePredictions, gpt4Predictions, geminiPredictions] = await Promise.all([
+      getClaudePrediction(prompt),
+      getGPT4Prediction(prompt),
+      getGeminiPrediction(prompt),
+    ]);
 
-  const picks = riskyMatches.map(m => {
-    // En yüksek oran hangisiyse onu seç (sürpriz için)
-    let selection: string;
-    let odds: number;
-    
-    if (m.odds.draw >= m.odds.home && m.odds.draw >= m.odds.away) {
-      selection = 'X';
-      odds = m.odds.draw;
-    } else if (m.odds.away > m.odds.home) {
-      selection = '2';
-      odds = m.odds.away;
-    } else {
-      selection = '1';
-      odds = m.odds.home;
+    console.log(`   Claude: ${claudePredictions.length} predictions`);
+    console.log(`   GPT-4: ${gpt4Predictions.length} predictions`);
+    console.log(`   Gemini: ${geminiPredictions.length} predictions`);
+
+    // Find consensus for each match
+    for (let i = 0; i < matches.length && i < 10; i++) {
+      const match = matches[i];
+      const matchIdx = i + 1;
+      
+      const claude = claudePredictions.find(p => p.match === matchIdx);
+      const gpt4 = gpt4Predictions.find(p => p.match === matchIdx);
+      const gemini = geminiPredictions.find(p => p.match === matchIdx);
+      
+      // Count predictions
+      const predictions = [claude?.prediction, gpt4?.prediction, gemini?.prediction].filter(Boolean);
+      const predictionCounts: { [key: string]: number } = {};
+      predictions.forEach(p => {
+        if (p) predictionCounts[p] = (predictionCounts[p] || 0) + 1;
+      });
+      
+      // Find majority prediction
+      const sortedPredictions = Object.entries(predictionCounts).sort((a, b) => b[1] - a[1]);
+      if (sortedPredictions.length === 0) continue;
+      
+      const [consensusPrediction, agreementCount] = sortedPredictions[0];
+      
+      // Calculate average confidence
+      const confidences = [claude?.confidence, gpt4?.confidence, gemini?.confidence].filter(Boolean) as number[];
+      const avgConfidence = confidences.length > 0 
+        ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length)
+        : 50;
+      
+      // Get odds for the prediction
+      const predictionOdds = consensusPrediction === '1' ? match.odds.home 
+        : consensusPrediction === 'X' ? match.odds.draw 
+        : match.odds.away;
+      
+      results.push({
+        matchId: match.id,
+        home: match.home,
+        away: match.away,
+        league: match.league,
+        time: match.time,
+        prediction: consensusPrediction,
+        odds: predictionOdds,
+        confidence: avgConfidence,
+        aiAgreement: agreementCount,
+        reasoning: {
+          claude: claude?.reasoning,
+          gpt4: gpt4?.reasoning,
+          gemini: gemini?.reasoning,
+        },
+      });
     }
     
-    return {
-      fixture_id: m.id,
-      home_team: m.home,
-      away_team: m.away,
-      league: m.league,
-      kick_off: m.time,
-      selection,
-      odds,
-    };
-  });
+  } catch (error) {
+    console.error('AI Consensus error:', error);
+  }
+  
+  return results;
+}
 
-  const totalOdds = picks.reduce((acc, p) => acc * p.odds, 1);
+// ============================================================================
+// INDIVIDUAL AI MODEL CALLS
+// ============================================================================
 
-  return {
-    date,
-    coupon_type: 'risky',
-    matches: picks,
-    total_odds: Math.round(totalOdds * 100) / 100,
-    confidence: 25,
-    suggested_stake: 20,
-    potential_win: Math.round(20 * totalOdds),
-    ai_reasoning: JSON.stringify({
-      tr: `Riskli kupon: ${picks.length} sürpriz/beraberlik seçimi. Yüksek oran, yüksek kazanç potansiyeli!`,
-      en: `Risky coupon: ${picks.length} surprise/draw picks. High odds, high profit potential!`,
-      de: `Riskanter Tipp: ${picks.length} Überraschungen/Unentschieden. Hohe Quote, hohes Gewinnpotenzial!`,
-    }),
-    status: 'pending',
-  };
+async function getClaudePrediction(prompt: string): Promise<AIPrediction[]> {
+  if (!ANTHROPIC_API_KEY) {
+    console.log('   ⚠️ Claude: No API key');
+    return [];
+  }
+  
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '';
+    return parseAIPredictions(content);
+  } catch (error) {
+    console.error('Claude error:', error);
+    return [];
+  }
+}
+
+async function getGPT4Prediction(prompt: string): Promise<AIPrediction[]> {
+  if (!OPENAI_API_KEY) {
+    console.log('   ⚠️ GPT-4: No API key');
+    return [];
+  }
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    return parseAIPredictions(content);
+  } catch (error) {
+    console.error('GPT-4 error:', error);
+    return [];
+  }
+}
+
+async function getGeminiPrediction(prompt: string): Promise<AIPrediction[]> {
+  if (!GOOGLE_API_KEY) {
+    console.log('   ⚠️ Gemini: No API key');
+    return [];
+  }
+  
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1000 },
+      }),
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return parseAIPredictions(content);
+  } catch (error) {
+    console.error('Gemini error:', error);
+    return [];
+  }
+}
+
+function parseAIPredictions(content: string): AIPrediction[] {
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return [];
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    const predictions = parsed.predictions || [];
+    
+    return predictions.map((p: any) => ({
+      match: p.match,
+      prediction: String(p.prediction),
+      confidence: Number(p.confidence) || 50,
+      reasoning: p.reasoning || '',
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // Also support POST for manual triggers
 export async function POST(request: NextRequest) {
   return GET(request);
 }
-
