@@ -246,17 +246,37 @@ export default function AIPerformancePage() {
           ))}
         </div>
 
+        {/* Pending Info Banner */}
+        {data?.overall && data.overall.pendingCount > 0 && data.overall.totalSettled === 0 && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-center">
+            <p className="text-yellow-400">
+              ⏳ {lang === 'tr' 
+                ? `${data.overall.pendingCount} tahmin sonuç bekleniyor. Maçlar bittikten sonra doğruluk oranları hesaplanacak.`
+                : lang === 'de'
+                ? `${data.overall.pendingCount} Vorhersagen warten auf Ergebnisse. Die Genauigkeit wird nach Spielende berechnet.`
+                : `${data.overall.pendingCount} predictions awaiting results. Accuracy will be calculated after matches finish.`
+              }
+            </p>
+          </div>
+        )}
+
         {/* Overall Stats */}
         {data?.overall && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 rounded-xl p-6 text-center">
               <p className="text-gray-400 text-sm mb-1">{l.totalPredictions}</p>
               <p className="text-3xl font-bold text-white">{data.overall.totalPredictions}</p>
             </div>
+            <div className="bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 rounded-xl p-6 text-center">
+              <p className="text-gray-400 text-sm mb-1">
+                {lang === 'tr' ? 'Bekleyen' : lang === 'de' ? 'Ausstehend' : 'Pending'}
+              </p>
+              <p className="text-3xl font-bold text-yellow-400">{data.overall.pendingCount || 0}</p>
+            </div>
             <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 border border-green-500/30 rounded-xl p-6 text-center">
               <p className="text-gray-400 text-sm mb-1">{l.accuracy}</p>
-              <p className={`text-3xl font-bold ${getAccuracyColor(data.overall.overallAccuracy)}`}>
-                %{data.overall.overallAccuracy.toFixed(1)}
+              <p className={`text-3xl font-bold ${data.overall.totalSettled > 0 ? getAccuracyColor(data.overall.overallAccuracy) : 'text-gray-500'}`}>
+                {data.overall.totalSettled > 0 ? `%${data.overall.overallAccuracy.toFixed(1)}` : '—'}
               </p>
             </div>
             <div className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 border border-blue-500/30 rounded-xl p-6 text-center">
