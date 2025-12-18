@@ -199,8 +199,76 @@ async function runPerplexityContextual(
 // PROMPT BUILDERS
 // =========================
 
+// Language-specific instructions
+const LANG_INSTRUCTIONS = {
+  tr: {
+    role: 'SEN BİR PROFESYONEL BAHİS ANALİSTİSİN',
+    respond: 'TÜM YANITLARINI TÜRKÇE VER!',
+    critical: 'KRİTİK',
+    banned: 'YASAK',
+    match: 'MAÇ',
+    league: 'LİG/TURNUVA',
+    cupMatch: 'KUPA MAÇI - Rotasyon & motivasyon kritik!',
+    leagueMatch: 'LİG MAÇI',
+    tierDiff: 'LİG SEVİYE FARKI',
+    deepAnalysis: 'DERİN ANALİZ',
+    form: 'Son Form',
+    goals: 'Gol Ortalaması',
+    homePerf: 'EV PERFORMANSI',
+    awayPerf: 'DEPLASMAN PERFORMANSI',
+    injuries: 'SAKATLAR',
+    noInfo: 'Bilgi yok',
+    h2h: 'H2H GEÇMİŞ',
+    odds: 'ORANLAR (Piyasa ne düşünüyor?)',
+    tasks: 'PROFESYONEL ANALİZ GÖREVLERİN',
+  },
+  en: {
+    role: 'YOU ARE A PROFESSIONAL BETTING ANALYST',
+    respond: 'RESPOND IN ENGLISH!',
+    critical: 'CRITICAL',
+    banned: 'BANNED',
+    match: 'MATCH',
+    league: 'LEAGUE/TOURNAMENT',
+    cupMatch: 'CUP MATCH - Rotation & motivation critical!',
+    leagueMatch: 'LEAGUE MATCH',
+    tierDiff: 'LEAGUE TIER DIFFERENCE',
+    deepAnalysis: 'DEEP ANALYSIS',
+    form: 'Recent Form',
+    goals: 'Goal Average',
+    homePerf: 'HOME PERFORMANCE',
+    awayPerf: 'AWAY PERFORMANCE',
+    injuries: 'INJURIES',
+    noInfo: 'No info',
+    h2h: 'H2H HISTORY',
+    odds: 'ODDS (What does the market think?)',
+    tasks: 'YOUR PROFESSIONAL ANALYSIS TASKS',
+  },
+  de: {
+    role: 'SIE SIND EIN PROFESSIONELLER WETTANALYST',
+    respond: 'ANTWORTEN SIE AUF DEUTSCH!',
+    critical: 'KRITISCH',
+    banned: 'VERBOTEN',
+    match: 'SPIEL',
+    league: 'LIGA/TURNIER',
+    cupMatch: 'POKALSPIEL - Rotation & Motivation kritisch!',
+    leagueMatch: 'LIGASPIEL',
+    tierDiff: 'LIGA-NIVEAU-UNTERSCHIED',
+    deepAnalysis: 'TIEFENANALYSE',
+    form: 'Aktuelle Form',
+    goals: 'Tordurchschnitt',
+    homePerf: 'HEIMLEISTUNG',
+    awayPerf: 'AUSWÄRTSLEISTUNG',
+    injuries: 'VERLETZUNGEN',
+    noInfo: 'Keine Info',
+    h2h: 'H2H HISTORIE',
+    odds: 'QUOTEN (Was denkt der Markt?)',
+    tasks: 'IHRE PROFESSIONELLEN ANALYSEAUFGABEN',
+  }
+};
+
 function buildTacticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
   const { homeTeam, awayTeam, homeForm, awayForm, h2h, newsContext, odds } = matchData;
+  const L = LANG_INSTRUCTIONS[language];
   
   // Detect if cup match
   const isCupMatch = matchData.league?.toLowerCase().includes('cup') || 
@@ -213,60 +281,82 @@ function buildTacticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en'
   const awayLeagueTier = detectLeagueTier(awayTeam, awayForm);
   const tierDiff = Math.abs(homeLeagueTier - awayLeagueTier);
   
-  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - MOTİVASYON & PSİKOLOJİ UZMANI
+  return `🎓 ${L.role} - MOTİVASYON & PSİKOLOJİ UZMANI
 
-⚠️ KRITIK: Genel klişe cümleler YASAK! Her tahmin SOMUT veriye dayanmalı.
+⚠️ ${L.respond}
+
+⚠️ ${L.critical}: ${language === 'tr' ? 'Genel klişe cümleler YASAK! Her tahmin SOMUT veriye dayanmalı.' : language === 'de' ? 'Allgemeine Klischees VERBOTEN! Jede Vorhersage muss auf KONKRETEN Daten basieren.' : 'General clichés BANNED! Every prediction must be based on CONCRETE data.'}
 
 ═══════════════════════════════════════════════════════════════════════════════
-MAÇ: ${homeTeam} vs ${awayTeam}
-LİG/TURNUVA: ${matchData.league}
-${isCupMatch ? '🏆 KUPA MAÇI - Rotasyon & motivasyon kritik!' : '📊 LİG MAÇI'}
-${tierDiff > 0 ? `⚡ LİG SEVİYE FARKI: ${tierDiff} kademe (Bu çok önemli!)` : ''}
+${L.match}: ${homeTeam} vs ${awayTeam}
+${L.league}: ${matchData.league}
+${isCupMatch ? `🏆 ${L.cupMatch}` : `📊 ${L.leagueMatch}`}
+${tierDiff > 0 ? `⚡ ${L.tierDiff}: ${tierDiff} ${language === 'tr' ? 'kademe (Bu çok önemli!)' : language === 'de' ? 'Stufen (Sehr wichtig!)' : 'tiers (Very important!)'}` : ''}
 ═══════════════════════════════════════════════════════════════════════════════
 
-🏠 ${homeTeam.toUpperCase()} - DERİN ANALİZ
-• Son Form: ${homeForm?.form || 'N/A'} | Puan: ${homeForm?.points || 0}/15
-• Gol Ortalaması: ${homeForm?.avgGoals || 'N/A'} attı, ${homeForm?.avgConceded || 'N/A'} yedi
-• EV PERFORMANSI: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
-• Over 2.5: ${homeForm?.over25Percentage || 'N/A'}% | KG: ${homeForm?.bttsPercentage || 'N/A'}%
+🏠 ${homeTeam.toUpperCase()} - ${L.deepAnalysis}
+• ${L.form}: ${homeForm?.form || 'N/A'} | ${language === 'tr' ? 'Puan' : language === 'de' ? 'Punkte' : 'Points'}: ${homeForm?.points || 0}/15
+• ${L.goals}: ${homeForm?.avgGoals || 'N/A'} ${language === 'tr' ? 'attı' : language === 'de' ? 'erzielt' : 'scored'}, ${homeForm?.avgConceded || 'N/A'} ${language === 'tr' ? 'yedi' : language === 'de' ? 'kassiert' : 'conceded'}
+• ${L.homePerf}: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
+• Over 2.5: ${homeForm?.over25Percentage || 'N/A'}% | BTTS: ${homeForm?.bttsPercentage || 'N/A'}%
 • Clean Sheet: ${homeForm?.cleanSheetPercentage || 'N/A'}%
-${newsContext?.homeTeam?.injuries?.length ? `• 🚑 SAKATLAR: ${newsContext.homeTeam.injuries.map(i => i.player).join(', ')}` : '• 🚑 SAKATLAR: Bilgi yok'}
+${newsContext?.homeTeam?.injuries?.length ? `• 🚑 ${L.injuries}: ${newsContext.homeTeam.injuries.map(i => i.player).join(', ')}` : `• 🚑 ${L.injuries}: ${L.noInfo}`}
 
-🚌 ${awayTeam.toUpperCase()} - DERİN ANALİZ
-• Son Form: ${awayForm?.form || 'N/A'} | Puan: ${awayForm?.points || 0}/15
-• Gol Ortalaması: ${awayForm?.avgGoals || 'N/A'} attı, ${awayForm?.avgConceded || 'N/A'} yedi
-• DEPLASMAN PERFORMANSI: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
-• Over 2.5: ${awayForm?.over25Percentage || 'N/A'}% | KG: ${awayForm?.bttsPercentage || 'N/A'}%
+🚌 ${awayTeam.toUpperCase()} - ${L.deepAnalysis}
+• ${L.form}: ${awayForm?.form || 'N/A'} | ${language === 'tr' ? 'Puan' : language === 'de' ? 'Punkte' : 'Points'}: ${awayForm?.points || 0}/15
+• ${L.goals}: ${awayForm?.avgGoals || 'N/A'} ${language === 'tr' ? 'attı' : language === 'de' ? 'erzielt' : 'scored'}, ${awayForm?.avgConceded || 'N/A'} ${language === 'tr' ? 'yedi' : language === 'de' ? 'kassiert' : 'conceded'}
+• ${L.awayPerf}: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
+• Over 2.5: ${awayForm?.over25Percentage || 'N/A'}% | BTTS: ${awayForm?.bttsPercentage || 'N/A'}%
 • Clean Sheet: ${awayForm?.cleanSheetPercentage || 'N/A'}%
-${newsContext?.awayTeam?.injuries?.length ? `• 🚑 SAKATLAR: ${newsContext.awayTeam.injuries.map(i => i.player).join(', ')}` : '• 🚑 SAKATLAR: Bilgi yok'}
+${newsContext?.awayTeam?.injuries?.length ? `• 🚑 ${L.injuries}: ${newsContext.awayTeam.injuries.map(i => i.player).join(', ')}` : `• 🚑 ${L.injuries}: ${L.noInfo}`}
 
-🔄 H2H GEÇMİŞ (${h2h?.totalMatches || 0} maç)
-• ${homeTeam}: ${h2h?.homeWins || 0}G | Beraberlik: ${h2h?.draws || 0} | ${awayTeam}: ${h2h?.awayWins || 0}G
-• H2H Gol Ortalaması: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
+🔄 ${L.h2h} (${h2h?.totalMatches || 0} ${language === 'tr' ? 'maç' : language === 'de' ? 'Spiele' : 'matches'})
+• ${homeTeam}: ${h2h?.homeWins || 0}${language === 'tr' ? 'G' : 'W'} | ${language === 'tr' ? 'Beraberlik' : language === 'de' ? 'Unentschieden' : 'Draw'}: ${h2h?.draws || 0} | ${awayTeam}: ${h2h?.awayWins || 0}${language === 'tr' ? 'G' : 'W'}
+• H2H ${L.goals}: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
 
-💰 ORANLAR (Piyasa ne düşünüyor?)
+💰 ${L.odds}
 • MS: ${odds?.matchWinner?.home || 'N/A'} / ${odds?.matchWinner?.draw || 'N/A'} / ${odds?.matchWinner?.away || 'N/A'}
 • Over 2.5: ${odds?.overUnder?.['2.5']?.over || 'N/A'} | Under 2.5: ${odds?.overUnder?.['2.5']?.under || 'N/A'}
 
-🎯 PROFESYONEL ANALİZ GÖREVLERİN:
-${isCupMatch ? `
+🎯 ${L.tasks}:
+${isCupMatch ? (language === 'tr' ? `
 1. KADRO ROTASYONU: Favori takım yedeklerle mi oynayacak? (Kupa maçı!)
 2. MOTİVASYON FARKI: Alt lig takımı için "hayatının maçı" vs üst lig için "zorunluluk"
 3. "Giant Killing" riski: Alt lig takımları kupada %15-20 üst lig yener
 4. İlk gol kritik: Küçük takım öne geçerse maç tamamen değişir
+` : language === 'de' ? `
+1. KADERROTATION: Spielt der Favorit mit Ersatzspielern? (Pokalspiel!)
+2. MOTIVATIONSUNTERSCHIED: Für unterklassigen Verein "Spiel des Lebens" vs "Pflicht" für höherklassigen
+3. "Giant Killing" Risiko: Unterklassige Teams schlagen in 15-20% der Pokalspiele überklassige
+4. Erstes Tor kritisch: Wenn kleines Team führt, ändert sich das Spiel komplett
 ` : `
+1. SQUAD ROTATION: Will the favorite play with reserves? (Cup match!)
+2. MOTIVATION DIFFERENCE: For lower league team "match of their lives" vs "obligation" for top team
+3. "Giant Killing" risk: Lower league teams beat top teams 15-20% in cup
+4. First goal critical: If underdog leads, the match changes completely
+`) : (language === 'tr' ? `
 1. FORM ANALİZİ: Kim yükselişte, kim düşüşte?
 2. EV/DEPLASMAN: Ev sahibi avantajı ne kadar güçlü?
 3. TAKTİK ÇATIŞMA: Ofansif vs defansif, pressing vs counter
 4. PSİKOLOJİK KENAR: Özgüven, baskı durumu
-`}
-5. İLK YARI vs İKİNCİ YARI: Goller ne zaman geliyor?
-6. GOL ZAMANLAMA PATERNİ: Erken gol, geç drama, dağınık?
+` : language === 'de' ? `
+1. FORMANALYSE: Wer steigt auf, wer fällt ab?
+2. HEIM/AUSWÄRTS: Wie stark ist der Heimvorteil?
+3. TAKTISCHER KONFLIKT: Offensiv vs defensiv, Pressing vs Konter
+4. PSYCHOLOGISCHER VORTEIL: Selbstvertrauen, Drucksituation
+` : `
+1. FORM ANALYSIS: Who's rising, who's falling?
+2. HOME/AWAY: How strong is the home advantage?
+3. TACTICAL CLASH: Offensive vs defensive, pressing vs counter
+4. PSYCHOLOGICAL EDGE: Confidence, pressure situation
+`)}
+5. ${language === 'tr' ? 'İLK YARI vs İKİNCİ YARI: Goller ne zaman geliyor?' : language === 'de' ? 'ERSTE vs ZWEITE HALBZEIT: Wann fallen die Tore?' : 'FIRST HALF vs SECOND HALF: When do goals come?'}
+6. ${language === 'tr' ? 'GOL ZAMANLAMA PATERNİ: Erken gol, geç drama, dağınık?' : language === 'de' ? 'TOR-TIMING-MUSTER: Frühe Tore, spätes Drama, verteilt?' : 'GOAL TIMING PATTERN: Early goals, late drama, spread out?'}
 
-⚠️ YASAKLAR:
-- "Cup ties often produce..." gibi genel klişeler YASAK
-- Somut veri olmadan tahmin YASAK
-- Her confidence değeri AÇIKLANMALI
+⚠️ ${L.banned}:
+${language === 'tr' ? '- "Cup ties often produce..." gibi genel klişeler YASAK\n- Somut veri olmadan tahmin YASAK\n- Her confidence değeri AÇIKLANMALI' : language === 'de' ? '- Allgemeine Klischees wie "Pokalspiele produzieren oft..." VERBOTEN\n- Vorhersagen ohne konkrete Daten VERBOTEN\n- Jeder Confidence-Wert muss ERKLÄRT werden' : '- General clichés like "Cup ties often produce..." BANNED\n- Predictions without concrete data BANNED\n- Every confidence value must be EXPLAINED'}
+
+⚠️⚠️⚠️ ${L.respond} ⚠️⚠️⚠️
 
 RETURN ONLY THIS JSON FORMAT:
 {
@@ -307,6 +397,7 @@ function detectLeagueTier(teamName: string, form: any): number {
 
 function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
   const { homeTeam, awayTeam, homeForm, awayForm, h2h, odds } = matchData;
+  const L = LANG_INSTRUCTIONS[language];
   
   // xG hesaplama
   const homeGoals = parseFloat(homeForm?.avgGoals || '1.2');
@@ -332,22 +423,24 @@ function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | '
   const awayImplied = (100 / awayOdds).toFixed(1);
   const over25Implied = (100 / over25Odds).toFixed(1);
 
-  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - İSTATİSTİK & VALUE UZMANI
+  return `🎓 ${L.role} - ${language === 'tr' ? 'İSTATİSTİK & VALUE UZMANI' : language === 'de' ? 'STATISTIK & VALUE EXPERTE' : 'STATISTICS & VALUE EXPERT'}
 
-⚠️ KRITIK: Her tahmin RAKAMLARLA desteklenmeli. "Muhtemelen", "belki" YASAK!
+⚠️ ${L.respond}
+
+⚠️ ${L.critical}: ${language === 'tr' ? 'Her tahmin RAKAMLARLA desteklenmeli. "Muhtemelen", "belki" YASAK!' : language === 'de' ? 'Jede Vorhersage muss mit ZAHLEN unterstützt werden. "Wahrscheinlich", "vielleicht" VERBOTEN!' : 'Every prediction must be supported by NUMBERS. "Probably", "maybe" BANNED!'}
 
 ═══════════════════════════════════════════════════════════════════════════════
-MAÇ: ${homeTeam} vs ${awayTeam}
+${L.match}: ${homeTeam} vs ${awayTeam}
 ═══════════════════════════════════════════════════════════════════════════════
 
-📊 EXPECTED GOALS (xG) HESAPLAMASI
+📊 EXPECTED GOALS (xG) ${language === 'tr' ? 'HESAPLAMASI' : language === 'de' ? 'BERECHNUNG' : 'CALCULATION'}
 ┌────────────────────────────────────────────────────────────────┐
-│ ${homeTeam} xG: ${homeXG} (attığı: ${homeGoals}, rakip yediği: ${awayConceded})     │
-│ ${awayTeam} xG: ${awayXG} (attığı: ${awayGoals}, rakip yediği: ${homeConceded})     │
-│ TOPLAM xG: ${totalXG}                                          │
+│ ${homeTeam} xG: ${homeXG} (${language === 'tr' ? 'attığı' : language === 'de' ? 'erzielt' : 'scored'}: ${homeGoals}, ${language === 'tr' ? 'rakip yediği' : language === 'de' ? 'Gegner kassiert' : 'opp conceded'}: ${awayConceded})     │
+│ ${awayTeam} xG: ${awayXG} (${language === 'tr' ? 'attığı' : language === 'de' ? 'erzielt' : 'scored'}: ${awayGoals}, ${language === 'tr' ? 'rakip yediği' : language === 'de' ? 'Gegner kassiert' : 'opp conceded'}: ${homeConceded})     │
+│ ${language === 'tr' ? 'TOPLAM' : 'TOTAL'} xG: ${totalXG}                                          │
 └────────────────────────────────────────────────────────────────┘
 
-📈 GOL İSTATİSTİKLERİ
+📈 ${language === 'tr' ? 'GOL İSTATİSTİKLERİ' : language === 'de' ? 'TOR-STATISTIKEN' : 'GOAL STATISTICS'}
 ${homeTeam}:
 • Over 2.5: ${homeForm?.over25Percentage || '50'}% | BTTS: ${homeForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${homeForm?.cleanSheetPercentage || '20'}%
@@ -356,12 +449,12 @@ ${awayTeam}:
 • Over 2.5: ${awayForm?.over25Percentage || '50'}% | BTTS: ${awayForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${awayForm?.cleanSheetPercentage || '20'}%
 
-🔄 H2H İSTATİSTİKLERİ (${h2h?.totalMatches || 0} maç)
-• Ortalama Gol: ${h2h?.avgGoals || 'N/A'}
+🔄 H2H ${language === 'tr' ? 'İSTATİSTİKLERİ' : language === 'de' ? 'STATISTIKEN' : 'STATISTICS'} (${h2h?.totalMatches || 0} ${language === 'tr' ? 'maç' : language === 'de' ? 'Spiele' : 'matches'})
+• ${language === 'tr' ? 'Ortalama Gol' : language === 'de' ? 'Durchschnittliche Tore' : 'Average Goals'}: ${h2h?.avgGoals || 'N/A'}
 • Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
 • BTTS: ${h2h?.bttsPercentage || 'N/A'}%
 
-💰 ORAN ANALİZİ & VALUE TESPİTİ
+💰 ${language === 'tr' ? 'ORAN ANALİZİ & VALUE TESPİTİ' : language === 'de' ? 'QUOTENANALYSE & VALUE-ERKENNUNG' : 'ODDS ANALYSIS & VALUE DETECTION'}
 ┌────────────────────────────────────────────────────────────────┐
 │ ORANLAR          │ IMPLIED PROB    │ SENİN HESABIN │ VALUE?   │
 ├────────────────────────────────────────────────────────────────┤
@@ -371,17 +464,27 @@ ${awayTeam}:
 │ Over 2.5: ${over25Odds}   │ %${over25Implied}           │ Hesapla!      │ ?        │
 └────────────────────────────────────────────────────────────────┘
 
-🎯 PROFESYONEL ANALİZ GÖREVLERİN:
-1. POİSSON DAĞILIMI: xG'den skor olasılıkları hesapla
+🎯 ${L.tasks}:
+${language === 'tr' ? `1. POİSSON DAĞILIMI: xG'den skor olasılıkları hesapla
 2. VALUE TESPİTİ: Piyasa oranı vs senin hesabın → %5+ fark = VALUE
 3. İLK YARI GOL: Toplam golün %40-45'i ilk yarıda → İY xG hesapla
 4. TAKIM BAZLI: Her takımın gol atma olasılığı (1 - e^(-xG))
-5. ORAN HAREKETİ: Oran düştüyse → sharp money, yükeldiyse → public money
+5. ORAN HAREKETİ: Oran düştüyse → sharp money, yükeldiyse → public money` : language === 'de' ? `1. POISSON-VERTEILUNG: Berechne Ergebnis-Wahrscheinlichkeiten aus xG
+2. VALUE-ERKENNUNG: Marktquote vs deine Berechnung → >5% Differenz = VALUE
+3. ERSTE HALBZEIT TORE: 40-45% der Tore in H1 → Berechne H1 xG
+4. TEAM-BASIERT: Torwahrscheinlichkeit jedes Teams (1 - e^(-xG))
+5. QUOTENBEWEGUNG: Quote fällt → Sharp Money, steigt → Public Money` : `1. POISSON DISTRIBUTION: Calculate score probabilities from xG
+2. VALUE DETECTION: Market odds vs your calculation → >5% difference = VALUE
+3. FIRST HALF GOALS: 40-45% of goals in H1 → Calculate H1 xG
+4. TEAM-BASED: Goal probability of each team (1 - e^(-xG))
+5. ODDS MOVEMENT: Odds dropping → sharp money, rising → public money`}
 
-⚠️ VALUE BET KURALLARI:
-- Edge > %5 → VALUE VAR
-- Edge > %10 → GÜÇLÜ VALUE
-- Edge < %5 → VALUE YOK, oynama
+⚠️ VALUE BET ${language === 'tr' ? 'KURALLARI' : language === 'de' ? 'REGELN' : 'RULES'}:
+- Edge > 5% → VALUE ${language === 'tr' ? 'VAR' : language === 'de' ? 'VORHANDEN' : 'EXISTS'}
+- Edge > 10% → ${language === 'tr' ? 'GÜÇLÜ' : language === 'de' ? 'STARKER' : 'STRONG'} VALUE
+- Edge < 5% → ${language === 'tr' ? 'VALUE YOK, oynama' : language === 'de' ? 'KEIN VALUE, nicht spielen' : 'NO VALUE, do not play'}
+
+⚠️⚠️⚠️ ${L.respond} ⚠️⚠️⚠️
 
 RETURN ONLY THIS JSON FORMAT:
 {
@@ -408,6 +511,7 @@ RETURN ONLY THIS JSON FORMAT:
 
 function buildPatternPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
   const { homeTeam, awayTeam, homeForm, awayForm, h2h, odds } = matchData;
+  const L = LANG_INSTRUCTIONS[language];
   
   // Form string analysis
   const homeFormStr = homeForm?.form || 'NNNNN';
@@ -423,28 +527,30 @@ function buildPatternPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' 
   const h2hDraws = h2h?.draws || 0;
   const h2hAwayWins = h2h?.awayWins || 0;
 
-  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - TARİHSEL PATTERN & RİSK UZMANI
+  return `🎓 ${L.role} - ${language === 'tr' ? 'TARİHSEL PATTERN & RİSK UZMANI' : language === 'de' ? 'HISTORISCHE MUSTER & RISIKO EXPERTE' : 'HISTORICAL PATTERN & RISK EXPERT'}
 
-⚠️ KRITIK: H2H verisi yoksa veya yetersizse, form verilerine odaklan. Uydurma yapma!
+⚠️ ${L.respond}
+
+⚠️ ${L.critical}: ${language === 'tr' ? 'H2H verisi yoksa veya yetersizse, form verilerine odaklan. Uydurma yapma!' : language === 'de' ? 'Wenn H2H-Daten fehlen oder unzureichend sind, konzentriere dich auf Formdaten. Keine Erfindungen!' : 'If H2H data is missing or insufficient, focus on form data. Do not fabricate!'}
 
 ═══════════════════════════════════════════════════════════════════════════════
-MAÇ: ${homeTeam} vs ${awayTeam}
+${L.match}: ${homeTeam} vs ${awayTeam}
 ═══════════════════════════════════════════════════════════════════════════════
 
-🔄 H2H TARİHSEL ANALİZ (${h2hTotal} maç)
+🔄 H2H ${language === 'tr' ? 'TARİHSEL ANALİZ' : language === 'de' ? 'HISTORISCHE ANALYSE' : 'HISTORICAL ANALYSIS'} (${h2hTotal} ${language === 'tr' ? 'maç' : language === 'de' ? 'Spiele' : 'matches'})
 ${h2hTotal >= 3 ? `
 ┌────────────────────────────────────────────────────────────────┐
-│ ${homeTeam}: ${h2hHomeWins} GALİBİYET (${h2hTotal > 0 ? Math.round(h2hHomeWins/h2hTotal*100) : 0}%)                    │
-│ Beraberlik: ${h2hDraws} (${h2hTotal > 0 ? Math.round(h2hDraws/h2hTotal*100) : 0}%)                                    │
-│ ${awayTeam}: ${h2hAwayWins} GALİBİYET (${h2hTotal > 0 ? Math.round(h2hAwayWins/h2hTotal*100) : 0}%)                    │
+│ ${homeTeam}: ${h2hHomeWins} ${language === 'tr' ? 'GALİBİYET' : language === 'de' ? 'SIEGE' : 'WINS'} (${h2hTotal > 0 ? Math.round(h2hHomeWins/h2hTotal*100) : 0}%)                    │
+│ ${language === 'tr' ? 'Beraberlik' : language === 'de' ? 'Unentschieden' : 'Draw'}: ${h2hDraws} (${h2hTotal > 0 ? Math.round(h2hDraws/h2hTotal*100) : 0}%)                                    │
+│ ${awayTeam}: ${h2hAwayWins} ${language === 'tr' ? 'GALİBİYET' : language === 'de' ? 'SIEGE' : 'WINS'} (${h2hTotal > 0 ? Math.round(h2hAwayWins/h2hTotal*100) : 0}%)                    │
 ├────────────────────────────────────────────────────────────────┤
-│ Ortalama Gol: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}% | BTTS: ${h2h?.bttsPercentage || 'N/A'}% │
+│ ${language === 'tr' ? 'Ortalama Gol' : language === 'de' ? 'Durchschn. Tore' : 'Avg Goals'}: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}% | BTTS: ${h2h?.bttsPercentage || 'N/A'}% │
 └────────────────────────────────────────────────────────────────┘
 ` : `
-⚠️ YETERSİZ H2H VERİSİ (${h2hTotal} maç) - Form analizine odaklan!
+⚠️ ${language === 'tr' ? 'YETERSİZ H2H VERİSİ' : language === 'de' ? 'UNZUREICHENDE H2H-DATEN' : 'INSUFFICIENT H2H DATA'} (${h2hTotal} ${language === 'tr' ? 'maç' : language === 'de' ? 'Spiele' : 'matches'}) - ${language === 'tr' ? 'Form analizine odaklan!' : language === 'de' ? 'Auf Formanalyse konzentrieren!' : 'Focus on form analysis!'}
 `}
 
-📈 SERİ ANALİZİ (REGRESSION RİSKİ)
+📈 ${language === 'tr' ? 'SERİ ANALİZİ (REGRESSION RİSKİ)' : language === 'de' ? 'SERIEN-ANALYSE (REGRESSIONSRISIKO)' : 'STREAK ANALYSIS (REGRESSION RISK)'}
 ┌────────────────────────────────────────────────────────────────┐
 │ ${homeTeam}:                                                   │
 │   • Form: ${homeFormStr} | Puan: ${homeForm?.points || 0}/15             │
@@ -464,21 +570,37 @@ ${awayTeam}: Over 2.5 ${awayForm?.over25Percentage || 'N/A'}% | BTTS ${awayForm?
 💰 ORAN HAREKETİ (Sharp Money?)
 • Ev: ${odds?.matchWinner?.home || 'N/A'} | Beraberlik: ${odds?.matchWinner?.draw || 'N/A'} | Deplasman: ${odds?.matchWinner?.away || 'N/A'}
 
-🎯 PROFESYONEL ANALİZ GÖREVLERİN:
-1. H2H PATTERN: Bu takımlar karşılaştığında ne oluyor? (gollü/golsüz, favori kazanıyor mu?)
+🎯 ${L.tasks}:
+${language === 'tr' ? `1. H2H PATTERN: Bu takımlar karşılaştığında ne oluyor? (gollü/golsüz, favori kazanıyor mu?)
 2. SERİ ANALİZİ: 3+ seri → REGRESSION RİSKİ (ortalamaya dönüş)
 3. EV/DEPLASMAN PATTERN: Ev sahibi evde nasıl, deplasman dışarıda nasıl?
 4. GOL ZAMANLAMA: İlk yarı mı ikinci yarı mı golcü?
-5. ANOMALİ TESPİTİ: Normal dışı bir durum var mı?
+5. ANOMALİ TESPİTİ: Normal dışı bir durum var mı?` : language === 'de' ? `1. H2H MUSTER: Was passiert, wenn diese Teams aufeinandertreffen? (torreich/torlos, gewinnt der Favorit?)
+2. SERIEN-ANALYSE: 3+ Serie → REGRESSIONSRISIKO (Rückkehr zum Mittelwert)
+3. HEIM/AUSWÄRTS MUSTER: Wie spielt der Heimverein zuhause, der Auswärtsverein auswärts?
+4. TOR-TIMING: Erste oder zweite Halbzeit torreich?
+5. ANOMALIE-ERKENNUNG: Gibt es eine ungewöhnliche Situation?` : `1. H2H PATTERN: What happens when these teams meet? (high-scoring/low-scoring, does favorite win?)
+2. STREAK ANALYSIS: 3+ streak → REGRESSION RISK (reversion to mean)
+3. HOME/AWAY PATTERN: How does home team play at home, away team away?
+4. GOAL TIMING: First half or second half goalscoring?
+5. ANOMALY DETECTION: Is there anything unusual?`}
 
-⚠️ REGRESSION KURALLARI:
-- 3+ galibiyet serisi → Düşüş riski %30+
+⚠️ ${language === 'tr' ? 'REGRESSION KURALLARI' : language === 'de' ? 'REGRESSIONSREGELN' : 'REGRESSION RULES'}:
+${language === 'tr' ? `- 3+ galibiyet serisi → Düşüş riski %30+
 - 3+ mağlubiyet serisi → Yükseliş beklentisi %30+
-- "Hot streak" sonsuza kadar sürmez!
+- "Hot streak" sonsuza kadar sürmez!` : language === 'de' ? `- 3+ Siegesserie → Rückgangsrisiko 30%+
+- 3+ Niederlagenserie → Aufstiegserwartung 30%+
+- "Hot Streak" dauert nicht ewig!` : `- 3+ win streak → Decline risk 30%+
+- 3+ loss streak → Recovery expected 30%+
+- "Hot streak" doesn't last forever!`}
 
-🛡️ RİSK DEĞERLENDİRMESİ:
-- Yüksek seri + zayıf rakip = Dikkat!
-- Düşük seri + güçlü rakip = Fırsat olabilir
+🛡️ ${language === 'tr' ? 'RİSK DEĞERLENDİRMESİ' : language === 'de' ? 'RISIKOBEWERTUNG' : 'RISK ASSESSMENT'}:
+${language === 'tr' ? `- Yüksek seri + zayıf rakip = Dikkat!
+- Düşük seri + güçlü rakip = Fırsat olabilir` : language === 'de' ? `- Hohe Serie + schwacher Gegner = Vorsicht!
+- Niedrige Serie + starker Gegner = Könnte eine Chance sein` : `- High streak + weak opponent = Caution!
+- Low streak + strong opponent = Could be opportunity`}
+
+⚠️⚠️⚠️ ${L.respond} ⚠️⚠️⚠️
 
 RETURN ONLY THIS JSON FORMAT:
 {
@@ -504,21 +626,27 @@ RETURN ONLY THIS JSON FORMAT:
 
 function buildContextualPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
   const { homeTeam, awayTeam, newsContext } = matchData;
+  const L = LANG_INSTRUCTIONS[language];
 
-  const homeInjuries = newsContext?.homeTeam?.injuries?.map(i => `${i.player} (${i.status})`).join(', ') || 'No confirmed injuries';
-  const awayInjuries = newsContext?.awayTeam?.injuries?.map(i => `${i.player} (${i.status})`).join(', ') || 'No confirmed injuries';
-  const homeNews = newsContext?.homeTeam?.news?.map(n => `- ${n.headline}`).join('\n') || 'No recent news';
-  const awayNews = newsContext?.awayTeam?.news?.map(n => `- ${n.headline}`).join('\n') || 'No recent news';
+  const noInjuries = language === 'tr' ? 'Onaylanmış sakatlık yok' : language === 'de' ? 'Keine bestätigten Verletzungen' : 'No confirmed injuries';
+  const noNews = language === 'tr' ? 'Güncel haber yok' : language === 'de' ? 'Keine aktuellen Nachrichten' : 'No recent news';
+  
+  const homeInjuries = newsContext?.homeTeam?.injuries?.map(i => `${i.player} (${i.status})`).join(', ') || noInjuries;
+  const awayInjuries = newsContext?.awayTeam?.injuries?.map(i => `${i.player} (${i.status})`).join(', ') || noInjuries;
+  const homeNews = newsContext?.homeTeam?.news?.map(n => `- ${n.headline}`).join('\n') || noNews;
+  const awayNews = newsContext?.awayTeam?.news?.map(n => `- ${n.headline}`).join('\n') || noNews;
 
-  return `You are PERPLEXITY - THE CONTEXT SCOUT in a multi-AI football prediction system.
+  return `${L.role} - ${language === 'tr' ? 'BAĞLAM & HABER ANALİSTİ' : language === 'de' ? 'KONTEXT & NACHRICHTEN ANALYST' : 'CONTEXT & NEWS ANALYST'}
 
-YOUR UNIQUE ROLE: Analyze news, injuries, external factors that statistics can't capture.
+⚠️ ${L.respond}
+
+${language === 'tr' ? 'GÖREV: İstatistiklerin yakalayamadığı haberleri, sakatlıkları ve dış faktörleri analiz et.' : language === 'de' ? 'AUFGABE: Analysiere Nachrichten, Verletzungen und externe Faktoren, die Statistiken nicht erfassen können.' : 'TASK: Analyze news, injuries, and external factors that statistics cannot capture.'}
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH: ${homeTeam} vs ${awayTeam}
+${L.match}: ${homeTeam} vs ${awayTeam}
 ═══════════════════════════════════════════════════════════════════════════════
 
-🏥 INJURY & SUSPENSION REPORT
+🏥 ${language === 'tr' ? 'SAKATLIK & CEZA RAPORU' : language === 'de' ? 'VERLETZUNGS- & SPERRBERICHT' : 'INJURY & SUSPENSION REPORT'}
 
 ${homeTeam}:
 ${homeInjuries}
@@ -526,7 +654,7 @@ ${homeInjuries}
 ${awayTeam}:
 ${awayInjuries}
 
-📰 RECENT NEWS
+📰 ${language === 'tr' ? 'GÜNCEL HABERLER' : language === 'de' ? 'AKTUELLE NACHRICHTEN' : 'RECENT NEWS'}
 
 ${homeTeam}:
 ${homeNews}
@@ -535,24 +663,36 @@ ${awayTeam}:
 ${awayNews}
 
 ${newsContext?.matchPreview?.expertPredictions?.length ? `
-🎯 EXPERT PREDICTIONS
+🎯 ${language === 'tr' ? 'UZMAN TAHMİNLERİ' : language === 'de' ? 'EXPERTEN-VORHERSAGEN' : 'EXPERT PREDICTIONS'}
 ${newsContext.matchPreview.expertPredictions.join('\n')}
 ` : ''}
 
 ${newsContext?.matchPreview?.weatherConditions ? `
-🌤️ WEATHER CONDITIONS
-Temperature: ${newsContext.matchPreview.weatherConditions.temperature}°C
-Condition: ${newsContext.matchPreview.weatherConditions.condition}
-Impact: ${newsContext.matchPreview.weatherConditions.impact}
+🌤️ ${language === 'tr' ? 'HAVA DURUMU' : language === 'de' ? 'WETTERBEDINGUNGEN' : 'WEATHER CONDITIONS'}
+${language === 'tr' ? 'Sıcaklık' : language === 'de' ? 'Temperatur' : 'Temperature'}: ${newsContext.matchPreview.weatherConditions.temperature}°C
+${language === 'tr' ? 'Durum' : language === 'de' ? 'Bedingung' : 'Condition'}: ${newsContext.matchPreview.weatherConditions.condition}
+${language === 'tr' ? 'Etki' : language === 'de' ? 'Auswirkung' : 'Impact'}: ${newsContext.matchPreview.weatherConditions.impact}
 ` : ''}
 
-FOCUS ON:
-1. Impact of injuries on team strength (especially key players)
+${L.tasks}:
+${language === 'tr' ? `1. Sakatlıkların takım gücüne etkisi (özellikle kilit oyuncular)
+2. Güncel haberlerden takım morali
+3. Dış faktörler (hava, saha, seyahat)
+4. Oyunu değiştirebilecek bağlam
+5. Uzman tahminleri ve konsensüs
+6. Motivasyon seviyesi (şampiyonluk yarışı, düşme hattı, kupa önemi)` : language === 'de' ? `1. Auswirkung von Verletzungen auf Teamstärke (besonders Schlüsselspieler)
+2. Teammoral aus aktuellen Nachrichten
+3. Externe Faktoren (Wetter, Spielort, Reise)
+4. Spielverändernder Kontext
+5. Expertenvorhersagen und Konsens
+6. Motivationsniveau (Titelrennen, Abstiegskampf, Pokalwichtigkeit)` : `1. Impact of injuries on team strength (especially key players)
 2. Team morale from recent news
 3. External factors (weather, venue, travel)
 4. Any game-changing context
 5. Expert predictions and consensus
-6. Motivation levels (title race, relegation, cup importance)
+6. Motivation levels (title race, relegation, cup importance)`}
+
+⚠️⚠️⚠️ ${L.respond} ⚠️⚠️⚠️
 
 RETURN ONLY THIS JSON FORMAT:
 {
