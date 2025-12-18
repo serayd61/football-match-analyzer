@@ -12,6 +12,7 @@ import AgentLoadingProgress from '@/components/AgentLoadingProgress';
 import AIConsensusLoading from '@/components/AIConsensusLoading';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import DashboardWidgets from '@/components/DashboardWidgets';
+import ProfessionalBetting from '@/components/ProfessionalBetting';
 
 interface Match {
   id: number;
@@ -1495,11 +1496,23 @@ export default function DashboardPage() {
 
                       {/* Agent Mode */}
                       {analysisMode === 'agents' && agentAnalysis && (
-                        <AgentReports 
-                          reports={agentAnalysis.reports}
-                          homeTeam={selectedMatch.homeTeam}
-                          awayTeam={selectedMatch.awayTeam}
-                        />
+                        <>
+                          <AgentReports 
+                            reports={agentAnalysis.reports}
+                            homeTeam={selectedMatch.homeTeam}
+                            awayTeam={selectedMatch.awayTeam}
+                          />
+                          
+                          {/* Professional Betting Analysis */}
+                          {agentAnalysis.professionalMarkets && (
+                            <ProfessionalBetting 
+                              data={agentAnalysis.professionalMarkets}
+                              homeTeam={selectedMatch.homeTeam}
+                              awayTeam={selectedMatch.awayTeam}
+                              language={lang}
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   ) : (
