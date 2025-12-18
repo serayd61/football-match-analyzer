@@ -176,11 +176,19 @@ export default function AdminPage() {
       // Set professional market stats
       if (proMarketData.success) {
         setProMarketStats({
-          overview: proMarketData.overview,
-          markets: proMarketData.markets,
+          overview: proMarketData.overview || { total: 0, settled: 0, pending: 0 },
+          markets: proMarketData.markets || {},
           recent: proMarketData.recent || []
         });
         console.log('✅ Pro Market Stats set');
+      } else {
+        // Set empty state if API failed or table doesn't exist
+        setProMarketStats({
+          overview: { total: 0, settled: 0, pending: 0 },
+          markets: {},
+          recent: []
+        });
+        console.log('⚠️ Pro Market Stats: No data or table not found');
       }
     } catch (error) {
       console.error('❌ Error fetching admin data:', error);

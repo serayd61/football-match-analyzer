@@ -686,12 +686,18 @@ export async function saveProfessionalMarketPrediction(
   prediction: ProfessionalMarketPrediction
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
-    // Check for duplicate
-    const { data: existing } = await supabase
+    // Check for duplicate - use maybeSingle to handle no rows case
+    const { data: existing, error: checkError } = await supabase
       .from('professional_market_predictions')
       .select('id')
       .eq('fixture_id', prediction.fixture_id)
-      .single();
+      .maybeSingle();
+
+    // If table doesn't exist, log and return gracefully
+    if (checkError && checkError.code === '42P01') {
+      console.log('⚠️ professional_market_predictions table does not exist. Run the SQL migration first.');
+      return { success: false, error: 'Table not found - please run SQL migration' };
+    }
 
     if (existing) {
       console.log(`⚠️ Professional market prediction already exists for fixture ${prediction.fixture_id}`);
@@ -706,6 +712,11 @@ export async function saveProfessionalMarketPrediction(
       .single();
 
     if (error) {
+      // Handle table not found error gracefully
+      if (error.code === '42P01') {
+        console.log('⚠️ professional_market_predictions table does not exist. Run the SQL migration first.');
+        return { success: false, error: 'Table not found - please run SQL migration' };
+      }
       console.error('Error saving professional market prediction:', error);
       return { success: false, error: error.message };
     }
@@ -1018,23 +1029,34 @@ export async function getProfessionalMarketStats(): Promise<{
   markets: Record<string, { total: number; correct: number; accuracy: string; avgConfidence: string }>;
   recent: any[];
 }> {
-  // Get all predictions
-  const { data: predictions } = await supabase
-    .from('professional_market_predictions')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    // Get all predictions
+    const { data: predictions, error } = await supabase
+      .from('professional_market_predictions')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (!predictions || predictions.length === 0) {
-    return {
-      overview: {
-        total: 0,
-        settled: 0,
-        pending: 0
-      },
-      markets: {},
-      recent: []
-    };
-  }
+    // Handle table not found or other errors
+    if (error) {
+      console.log('⚠️ Professional market predictions table error:', error.message);
+      return {
+        overview: { total: 0, settled: 0, pending: 0 },
+        markets: {},
+        recent: []
+      };
+    }
+
+    if (!predictions || predictions.length === 0) {
+      return {
+        overview: {
+          total: 0,
+          settled: 0,
+          pending: 0
+        },
+        markets: {},
+        recent: []
+      };
+    }
 
   const settled = predictions.filter(p => p.is_settled);
   const pending = predictions.filter(p => !p.is_settled);
@@ -1122,6 +1144,14 @@ export async function getProfessionalMarketStats(): Promise<{
       created_at: p.created_at
     }))
   };
+  } catch (error) {
+    console.error('Error in getProfessionalMarketStats:', error);
+    return {
+      overview: { total: 0, settled: 0, pending: 0 },
+      markets: {},
+      recent: []
+    };
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
