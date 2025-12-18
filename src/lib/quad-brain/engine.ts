@@ -234,19 +234,26 @@ FOCUS ON:
 2. Tactical style clash (attacking vs defensive, high press vs deep block)
 3. Psychological edge (confidence, pressure situations)
 4. Home advantage strength
+5. First half vs second half scoring patterns
+6. Goal timing (early goals, late drama)
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
     "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] }
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "firstHalfGoals": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
+    "htft": { "prediction": "1/1, X/1, 2/1, 1/X, X/X, 2/X, 1/2, X/2, 2/2", "confidence": 30-70, "reasoning": "..." }
   },
   "specializedInsights": {
     "momentum": { "home": 1-10, "away": 1-10, "trend": "rising/stable/falling" },
     "tacticalAdvantage": "home/away/neutral",
-    "psychologicalEdge": "Brief description of who has the mental edge"
+    "psychologicalEdge": "Brief description of who has the mental edge",
+    "goalTiming": "early_goals/late_drama/spread_out"
   },
+  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Why this is the strongest bet" },
   "overallAnalysis": "3-4 sentence tactical summary"
 }`;
 }
@@ -300,22 +307,31 @@ H2H Statistics (${h2h?.totalMatches || 0} matches):
 
 FOCUS ON:
 1. xG analysis - expected vs actual goals performance
-2. Poisson probability calculations
+2. Poisson probability calculations for ALL markets
 3. Value bet identification (edge > 5%)
 4. Back EVERY claim with a NUMBER
+5. First half expected goals (typically 40-45% of match)
+6. Team-specific goal probabilities
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] }
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
+    "overUnder35": { "prediction": "Over 3.5/Under 3.5", "confidence": 50-90, "reasoning": "..." },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "firstHalfOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
+    "homeTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
+    "awayTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." }
   },
   "specializedInsights": {
     "xgPrediction": { "homeXG": ${homeXG}, "awayXG": ${awayXG}, "totalXG": ${totalXG} },
-    "poissonScores": [{ "score": "1-1", "probability": 12.5 }, { "score": "2-1", "probability": 10.2 }],
-    "valueBets": [{ "market": "Over 2.5", "selection": "Over", "fairOdds": 1.85, "edge": 5.2 }]
+    "poissonScores": [{ "score": "1-1", "probability": 12.5 }, { "score": "2-1", "probability": 10.2 }, { "score": "1-0", "probability": 8.5 }],
+    "valueBets": [{ "market": "Over 2.5", "selection": "Over", "fairOdds": 1.85, "edge": 5.2 }],
+    "goalProbabilities": { "0goals": 8, "1goal": 18, "2goals": 28, "3goals": 24, "4plus": 22 }
   },
+  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Statistical edge explanation with numbers" },
   "overallAnalysis": "3-4 sentence statistical summary with numbers"
 }`;
 }
@@ -356,22 +372,29 @@ ${awayTeam}:
 FOCUS ON:
 1. H2H patterns - who historically dominates?
 2. Streak analysis - regression to mean?
-3. Recurring themes in this matchup
+3. Recurring themes in this matchup (always BTTS? usually low scoring?)
 4. Any anomalies or pattern breaks
+5. First half patterns in H2H
+6. Common scorelines in this fixture
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] }
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "correctScore": { "prediction": "1-1 or 2-1 or etc", "confidence": 20-50, "reasoning": "Based on H2H patterns" },
+    "doubleChance": { "prediction": "1X/X2/12", "confidence": 60-85, "reasoning": "Safer bet option" }
   },
   "specializedInsights": {
     "h2hPattern": "Description of H2H pattern",
     "streakAnalysis": "Who's on a hot/cold streak",
     "regressionRisk": "Is regression to mean likely?",
-    "anomalyDetected": false
+    "anomalyDetected": false,
+    "commonScorelines": ["1-1", "2-1", "1-0"]
   },
+  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Pattern-based recommendation" },
   "overallAnalysis": "3-4 sentence pattern analysis summary"
 }`;
 }
@@ -421,24 +444,30 @@ Impact: ${newsContext.matchPreview.weatherConditions.impact}
 ` : ''}
 
 FOCUS ON:
-1. Impact of injuries on team strength
+1. Impact of injuries on team strength (especially key players)
 2. Team morale from recent news
 3. External factors (weather, venue, travel)
 4. Any game-changing context
+5. Expert predictions and consensus
+6. Motivation levels (title race, relegation, cup importance)
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] }
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "cleanSheet": { "prediction": "Home/Away/Neither", "confidence": 50-90, "reasoning": "Based on injuries and form" },
+    "cornersBet": { "prediction": "Over 9.5/Under 9.5", "confidence": 50-80, "reasoning": "Based on playing styles" }
   },
   "specializedInsights": {
     "recentNews": ["Key news item 1", "Key news item 2"],
     "confirmedInjuries": ["Player 1", "Player 2"],
     "expertConsensus": "What do experts generally predict?",
-    "lastMinuteFactors": ["Any last minute factors"]
+    "lastMinuteFactors": ["Any last minute factors"],
+    "motivationLevel": { "home": "high/normal/low", "away": "high/normal/low" }
   },
+  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Context-based recommendation" },
   "overallAnalysis": "3-4 sentence contextual summary"
 }`;
 }
