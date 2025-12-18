@@ -17,7 +17,12 @@ import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 import { runStrategyAgent } from '@/lib/heurist/agents/strategy';
 import { savePrediction } from '@/lib/predictions';
 import { savePrediction as saveAdminPrediction } from '@/lib/admin/service';
-import { savePredictionSession, type ModelPrediction } from '@/lib/admin/enhanced-service';
+import { 
+  savePredictionSession, 
+  saveProfessionalMarketPrediction,
+  type ModelPrediction,
+  type ProfessionalMarketPrediction 
+} from '@/lib/admin/enhanced-service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 import { generateProfessionalAnalysis, type MatchStats, type ProfessionalAnalysis } from '@/lib/betting/professional-markets';
@@ -851,6 +856,11 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 STEP 9B: Save Professional Market Predictions for Admin Panel
+    // ═══════════════════════════════════════════════════════════════════════════
+    // This will be done after generating professionalMarkets in Step 10
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // 📊 STEP 10: Generate Professional Markets Analysis
     // ═══════════════════════════════════════════════════════════════════════════
     
@@ -917,6 +927,88 @@ export async function POST(request: NextRequest) {
 
       professionalMarkets = generateProfessionalAnalysis(matchStats, language);
       console.log('📈 Professional markets analysis generated');
+
+      // Save professional market predictions to admin panel
+      try {
+        const proMarketPrediction: ProfessionalMarketPrediction = {
+          fixture_id: matchData.fixtureId,
+          home_team: matchData.homeTeam,
+          away_team: matchData.awayTeam,
+          league: matchData.league,
+          match_date: matchData.date,
+          
+          // Core Markets
+          match_result_selection: professionalMarkets.matchResult?.selection,
+          match_result_confidence: professionalMarkets.matchResult?.confidence,
+          over_under_25_selection: professionalMarkets.overUnder25?.selection,
+          over_under_25_confidence: professionalMarkets.overUnder25?.confidence,
+          over_under_15_selection: professionalMarkets.overUnder15?.selection,
+          over_under_15_confidence: professionalMarkets.overUnder15?.confidence,
+          over_under_35_selection: professionalMarkets.overUnder35?.selection,
+          over_under_35_confidence: professionalMarkets.overUnder35?.confidence,
+          btts_selection: professionalMarkets.btts?.selection,
+          btts_confidence: professionalMarkets.btts?.confidence,
+          
+          // First Half Markets
+          fh_result_selection: professionalMarkets.firstHalfResult?.selection,
+          fh_result_confidence: professionalMarkets.firstHalfResult?.confidence,
+          fh_over_05_selection: professionalMarkets.firstHalfOver05?.selection,
+          fh_over_05_confidence: professionalMarkets.firstHalfOver05?.confidence,
+          fh_over_15_selection: professionalMarkets.firstHalfOver15?.selection,
+          fh_over_15_confidence: professionalMarkets.firstHalfOver15?.confidence,
+          fh_btts_selection: professionalMarkets.firstHalfBtts?.selection,
+          fh_btts_confidence: professionalMarkets.firstHalfBtts?.confidence,
+          
+          // Special Markets
+          htft_selection: professionalMarkets.htft?.selection,
+          htft_confidence: professionalMarkets.htft?.confidence,
+          asian_hc_selection: professionalMarkets.asianHandicap?.selection,
+          asian_hc_confidence: professionalMarkets.asianHandicap?.confidence,
+          first_goal_selection: professionalMarkets.teamToScoreFirst?.selection,
+          first_goal_confidence: professionalMarkets.teamToScoreFirst?.confidence,
+          
+          // Team Goals
+          home_over_05_selection: professionalMarkets.homeOver05?.selection,
+          home_over_05_confidence: professionalMarkets.homeOver05?.confidence,
+          away_over_05_selection: professionalMarkets.awayOver05?.selection,
+          away_over_05_confidence: professionalMarkets.awayOver05?.confidence,
+          home_over_15_selection: professionalMarkets.homeOver15?.selection,
+          home_over_15_confidence: professionalMarkets.homeOver15?.confidence,
+          away_over_15_selection: professionalMarkets.awayOver15?.selection,
+          away_over_15_confidence: professionalMarkets.awayOver15?.confidence,
+          
+          // Combo Bets
+          home_and_over_15_selection: professionalMarkets.homeWinAndOver15?.selection,
+          home_and_over_15_confidence: professionalMarkets.homeWinAndOver15?.confidence,
+          away_and_over_15_selection: professionalMarkets.awayWinAndOver15?.selection,
+          away_and_over_15_confidence: professionalMarkets.awayWinAndOver15?.confidence,
+          draw_and_under_25_selection: professionalMarkets.drawAndUnder25?.selection,
+          draw_and_under_25_confidence: professionalMarkets.drawAndUnder25?.confidence,
+          btts_and_over_25_selection: professionalMarkets.bttsAndOver25?.selection,
+          btts_and_over_25_confidence: professionalMarkets.bttsAndOver25?.confidence,
+          
+          // Corners & Cards
+          corners_selection: professionalMarkets.totalCorners?.selection,
+          corners_confidence: professionalMarkets.totalCorners?.confidence,
+          cards_selection: professionalMarkets.totalCards?.selection,
+          cards_confidence: professionalMarkets.totalCards?.confidence,
+          exact_goals_selection: professionalMarkets.exactGoals?.selection,
+          exact_goals_confidence: professionalMarkets.exactGoals?.confidence,
+          
+          // Safe Bets (top 2 from safeBets array)
+          safe_bet_1_market: professionalMarkets.safeBets?.[0]?.market,
+          safe_bet_1_selection: professionalMarkets.safeBets?.[0]?.selection,
+          safe_bet_1_confidence: professionalMarkets.safeBets?.[0]?.confidence,
+          safe_bet_2_market: professionalMarkets.safeBets?.[1]?.market,
+          safe_bet_2_selection: professionalMarkets.safeBets?.[1]?.selection,
+          safe_bet_2_confidence: professionalMarkets.safeBets?.[1]?.confidence,
+        };
+
+        await saveProfessionalMarketPrediction(proMarketPrediction);
+        console.log('📊 Professional market predictions saved to Admin Panel');
+      } catch (proMarketSaveError) {
+        console.error('⚠️ Professional market save failed (non-blocking):', proMarketSaveError);
+      }
     } catch (pmError) {
       console.error('⚠️ Professional markets error:', pmError);
     }

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { settleMatchResult } from '@/lib/admin/service';
+import { settleProfessionalMarketPrediction } from '@/lib/admin/enhanced-service';
 import { matchResultManager } from '@/lib/match-results';
 
 export const dynamic = 'force-dynamic';
@@ -137,6 +138,38 @@ export async function GET(request: NextRequest) {
         } else {
           errorCount++;
           console.log(`   ❌ Failed to settle: ${settleResult.error}`);
+        }
+
+        // Also settle professional market predictions
+        try {
+          // Handle corners - could be number or object
+          const cornersData = result.corners as any;
+          const cornersHome = typeof cornersData === 'object' ? cornersData?.home : undefined;
+          const cornersAway = typeof cornersData === 'object' ? cornersData?.away : undefined;
+          
+          // Handle cards - could be number or object  
+          const yellowData = result.yellowCards as any;
+          const redData = result.redCards as any;
+          const yellowHome = typeof yellowData === 'object' ? (yellowData?.home || 0) : 0;
+          const yellowAway = typeof yellowData === 'object' ? (yellowData?.away || 0) : 0;
+          const redHome = typeof redData === 'object' ? (redData?.home || 0) : 0;
+          const redAway = typeof redData === 'object' ? (redData?.away || 0) : 0;
+
+          await settleProfessionalMarketPrediction(fixtureId, {
+            fixture_id: fixtureId,
+            home_score: result.homeScore,
+            away_score: result.awayScore,
+            ht_home: result.htHomeScore,
+            ht_away: result.htAwayScore,
+            corners_home: cornersHome,
+            corners_away: cornersAway,
+            cards_home: yellowHome + redHome,
+            cards_away: yellowAway + redAway,
+            result_source: result.source,
+          });
+          console.log(`   🎰 Pro markets settled for fixture ${fixtureId}`);
+        } catch (proSettleErr: any) {
+          console.log(`   ⚠️ Pro markets settle skipped: ${proSettleErr.message?.substring(0, 50)}`);
         }
 
         // Rate limiting

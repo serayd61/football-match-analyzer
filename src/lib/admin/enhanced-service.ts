@@ -74,7 +74,93 @@ export interface MatchResult {
   fixture_id: number;
   home_score: number;
   away_score: number;
+  ht_home?: number;
+  ht_away?: number;
+  corners_home?: number;
+  corners_away?: number;
+  cards_home?: number;
+  cards_away?: number;
+  first_goal_team?: 'home' | 'away' | 'none';
+  first_goal_minute?: number;
   result_source: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONAL MARKET PREDICTION TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ProfessionalMarketPrediction {
+  fixture_id: number;
+  home_team: string;
+  away_team: string;
+  league?: string;
+  match_date: string;
+  
+  // Core Markets
+  match_result_selection?: string;
+  match_result_confidence?: number;
+  over_under_25_selection?: string;
+  over_under_25_confidence?: number;
+  over_under_15_selection?: string;
+  over_under_15_confidence?: number;
+  over_under_35_selection?: string;
+  over_under_35_confidence?: number;
+  btts_selection?: string;
+  btts_confidence?: number;
+  
+  // First Half Markets
+  fh_result_selection?: string;
+  fh_result_confidence?: number;
+  fh_over_05_selection?: string;
+  fh_over_05_confidence?: number;
+  fh_over_15_selection?: string;
+  fh_over_15_confidence?: number;
+  fh_btts_selection?: string;
+  fh_btts_confidence?: number;
+  
+  // Special Markets
+  htft_selection?: string;
+  htft_confidence?: number;
+  asian_hc_selection?: string;
+  asian_hc_confidence?: number;
+  first_goal_selection?: string;
+  first_goal_confidence?: number;
+  
+  // Team Goals
+  home_over_05_selection?: string;
+  home_over_05_confidence?: number;
+  away_over_05_selection?: string;
+  away_over_05_confidence?: number;
+  home_over_15_selection?: string;
+  home_over_15_confidence?: number;
+  away_over_15_selection?: string;
+  away_over_15_confidence?: number;
+  
+  // Combo Bets
+  home_and_over_15_selection?: string;
+  home_and_over_15_confidence?: number;
+  away_and_over_15_selection?: string;
+  away_and_over_15_confidence?: number;
+  draw_and_under_25_selection?: string;
+  draw_and_under_25_confidence?: number;
+  btts_and_over_25_selection?: string;
+  btts_and_over_25_confidence?: number;
+  
+  // Corners & Cards
+  corners_selection?: string;
+  corners_confidence?: number;
+  cards_selection?: string;
+  cards_confidence?: number;
+  exact_goals_selection?: string;
+  exact_goals_confidence?: number;
+  
+  // Safe Bets
+  safe_bet_1_market?: string;
+  safe_bet_1_selection?: string;
+  safe_bet_1_confidence?: number;
+  safe_bet_2_market?: string;
+  safe_bet_2_selection?: string;
+  safe_bet_2_confidence?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -593,6 +679,452 @@ export async function getDailyStats(days: number = 7): Promise<object[]> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONAL MARKET PREDICTIONS - SAVE
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function saveProfessionalMarketPrediction(
+  prediction: ProfessionalMarketPrediction
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    // Check for duplicate
+    const { data: existing } = await supabase
+      .from('professional_market_predictions')
+      .select('id')
+      .eq('fixture_id', prediction.fixture_id)
+      .single();
+
+    if (existing) {
+      console.log(`⚠️ Professional market prediction already exists for fixture ${prediction.fixture_id}`);
+      return { success: false, error: 'Duplicate prediction' };
+    }
+
+    // Insert prediction
+    const { data, error } = await supabase
+      .from('professional_market_predictions')
+      .insert(prediction)
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error saving professional market prediction:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`✅ Professional market prediction saved for ${prediction.home_team} vs ${prediction.away_team}`);
+    return { success: true, id: data.id };
+
+  } catch (error) {
+    console.error('Error in saveProfessionalMarketPrediction:', error);
+    return { success: false, error: String(error) };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONAL MARKET PREDICTIONS - SETTLE
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function settleProfessionalMarketPrediction(
+  fixtureId: number,
+  result: MatchResult
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { 
+      home_score, 
+      away_score, 
+      ht_home = null, 
+      ht_away = null,
+      corners_home = null,
+      corners_away = null,
+      cards_home = null,
+      cards_away = null,
+      first_goal_team = null,
+      first_goal_minute = null,
+      result_source 
+    } = result;
+
+    const total_goals = home_score + away_score;
+    const ht_total = (ht_home !== null && ht_away !== null) ? ht_home + ht_away : null;
+    const total_corners = (corners_home !== null && corners_away !== null) ? corners_home + corners_away : null;
+    const total_cards = (cards_home !== null && cards_away !== null) ? cards_home + cards_away : null;
+
+    // Get the prediction
+    const { data: prediction, error: fetchError } = await supabase
+      .from('professional_market_predictions')
+      .select('*')
+      .eq('fixture_id', fixtureId)
+      .eq('is_settled', false)
+      .single();
+
+    if (fetchError || !prediction) {
+      return { success: false, error: 'No pending prediction found' };
+    }
+
+    // Calculate correctness for each market
+    const updates: Record<string, any> = {
+      actual_home_score: home_score,
+      actual_away_score: away_score,
+      actual_ht_home: ht_home,
+      actual_ht_away: ht_away,
+      actual_corners_home: corners_home,
+      actual_corners_away: corners_away,
+      actual_cards_home: cards_home,
+      actual_cards_away: cards_away,
+      first_goal_team,
+      first_goal_minute,
+      is_settled: true,
+      settled_at: new Date().toISOString(),
+      result_source
+    };
+
+    // Match Result
+    if (prediction.match_result_selection) {
+      const actual = home_score > away_score ? '1' : home_score < away_score ? '2' : 'X';
+      updates.match_result_correct = prediction.match_result_selection === actual;
+    }
+
+    // Over/Under 2.5
+    if (prediction.over_under_25_selection) {
+      const isOver = total_goals > 2.5;
+      updates.over_under_25_correct = prediction.over_under_25_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // Over/Under 1.5
+    if (prediction.over_under_15_selection) {
+      const isOver = total_goals > 1.5;
+      updates.over_under_15_correct = prediction.over_under_15_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // Over/Under 3.5
+    if (prediction.over_under_35_selection) {
+      const isOver = total_goals > 3.5;
+      updates.over_under_35_correct = prediction.over_under_35_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // BTTS
+    if (prediction.btts_selection) {
+      const bttsActual = home_score > 0 && away_score > 0;
+      const bttsPredicted = prediction.btts_selection.toLowerCase().includes('yes') || 
+                           prediction.btts_selection.toLowerCase().includes('var');
+      updates.btts_correct = bttsActual === bttsPredicted;
+    }
+
+    // First Half Result
+    if (prediction.fh_result_selection && ht_home !== null && ht_away !== null) {
+      const htActual = ht_home > ht_away ? '1' : ht_home < ht_away ? '2' : 'X';
+      updates.fh_result_correct = prediction.fh_result_selection === htActual;
+    }
+
+    // First Half Over 0.5
+    if (prediction.fh_over_05_selection && ht_total !== null) {
+      const isOver = ht_total > 0.5;
+      updates.fh_over_05_correct = prediction.fh_over_05_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // First Half Over 1.5
+    if (prediction.fh_over_15_selection && ht_total !== null) {
+      const isOver = ht_total > 1.5;
+      updates.fh_over_15_correct = prediction.fh_over_15_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // First Half BTTS
+    if (prediction.fh_btts_selection && ht_home !== null && ht_away !== null) {
+      const htBttsActual = ht_home > 0 && ht_away > 0;
+      const htBttsPredicted = prediction.fh_btts_selection.toLowerCase().includes('yes') ||
+                              prediction.fh_btts_selection.toLowerCase().includes('var');
+      updates.fh_btts_correct = htBttsActual === htBttsPredicted;
+    }
+
+    // HT/FT
+    if (prediction.htft_selection && ht_home !== null && ht_away !== null) {
+      const htResult = ht_home > ht_away ? '1' : ht_home < ht_away ? '2' : 'X';
+      const ftResult = home_score > away_score ? '1' : home_score < away_score ? '2' : 'X';
+      const actualHtFt = `${htResult}/${ftResult}`;
+      updates.htft_correct = prediction.htft_selection === actualHtFt;
+    }
+
+    // Home Over 0.5
+    if (prediction.home_over_05_selection) {
+      const isOver = home_score > 0.5;
+      updates.home_over_05_correct = prediction.home_over_05_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // Away Over 0.5
+    if (prediction.away_over_05_selection) {
+      const isOver = away_score > 0.5;
+      updates.away_over_05_correct = prediction.away_over_05_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // Home Over 1.5
+    if (prediction.home_over_15_selection) {
+      const isOver = home_score > 1.5;
+      updates.home_over_15_correct = prediction.home_over_15_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // Away Over 1.5
+    if (prediction.away_over_15_selection) {
+      const isOver = away_score > 1.5;
+      updates.away_over_15_correct = prediction.away_over_15_selection.toLowerCase().includes('over') === isOver;
+    }
+
+    // First Goal
+    if (prediction.first_goal_selection && first_goal_team) {
+      const predictedFirst = prediction.first_goal_selection.toLowerCase();
+      updates.first_goal_correct = 
+        (predictedFirst.includes('home') && first_goal_team === 'home') ||
+        (predictedFirst.includes('away') && first_goal_team === 'away') ||
+        (predictedFirst.includes('no') && first_goal_team === 'none');
+    }
+
+    // Corners
+    if (prediction.corners_selection && total_corners !== null) {
+      const match = prediction.corners_selection.match(/[\d.]+/);
+      if (match) {
+        const line = parseFloat(match[0]);
+        const isOver = prediction.corners_selection.toLowerCase().includes('over');
+        updates.corners_correct = isOver ? total_corners > line : total_corners < line;
+      }
+    }
+
+    // Cards
+    if (prediction.cards_selection && total_cards !== null) {
+      const match = prediction.cards_selection.match(/[\d.]+/);
+      if (match) {
+        const line = parseFloat(match[0]);
+        const isOver = prediction.cards_selection.toLowerCase().includes('over');
+        updates.cards_correct = isOver ? total_cards > line : total_cards < line;
+      }
+    }
+
+    // Combo: Home & Over 1.5
+    if (prediction.home_and_over_15_selection) {
+      const homeWin = home_score > away_score;
+      const over15 = total_goals > 1.5;
+      updates.home_and_over_15_correct = homeWin && over15;
+    }
+
+    // Combo: Away & Over 1.5
+    if (prediction.away_and_over_15_selection) {
+      const awayWin = home_score < away_score;
+      const over15 = total_goals > 1.5;
+      updates.away_and_over_15_correct = awayWin && over15;
+    }
+
+    // Combo: Draw & Under 2.5
+    if (prediction.draw_and_under_25_selection) {
+      const isDraw = home_score === away_score;
+      const under25 = total_goals < 2.5;
+      updates.draw_and_under_25_correct = isDraw && under25;
+    }
+
+    // Combo: BTTS & Over 2.5
+    if (prediction.btts_and_over_25_selection) {
+      const btts = home_score > 0 && away_score > 0;
+      const over25 = total_goals > 2.5;
+      updates.btts_and_over_25_correct = btts && over25;
+    }
+
+    // Safe Bets
+    if (prediction.safe_bet_1_market && prediction.safe_bet_1_selection) {
+      updates.safe_bet_1_correct = checkMarketCorrect(
+        prediction.safe_bet_1_market,
+        prediction.safe_bet_1_selection,
+        { home_score, away_score, ht_home, ht_away, total_corners, total_cards, first_goal_team }
+      );
+    }
+
+    if (prediction.safe_bet_2_market && prediction.safe_bet_2_selection) {
+      updates.safe_bet_2_correct = checkMarketCorrect(
+        prediction.safe_bet_2_market,
+        prediction.safe_bet_2_selection,
+        { home_score, away_score, ht_home, ht_away, total_corners, total_cards, first_goal_team }
+      );
+    }
+
+    // Update the prediction
+    const { error: updateError } = await supabase
+      .from('professional_market_predictions')
+      .update(updates)
+      .eq('id', prediction.id);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    console.log(`✅ Professional market prediction settled for fixture ${fixtureId}`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error settling professional market prediction:', error);
+    return { success: false, error: String(error) };
+  }
+}
+
+function checkMarketCorrect(
+  market: string,
+  selection: string,
+  results: {
+    home_score: number;
+    away_score: number;
+    ht_home: number | null;
+    ht_away: number | null;
+    total_corners: number | null;
+    total_cards: number | null;
+    first_goal_team: string | null;
+  }
+): boolean | null {
+  const marketLower = market.toLowerCase();
+  const selectionLower = selection.toLowerCase();
+  const total_goals = results.home_score + results.away_score;
+
+  // Match Result
+  if (marketLower.includes('sonucu') || marketLower.includes('result') || marketLower.includes('winner')) {
+    const actual = results.home_score > results.away_score ? '1' : 
+                   results.home_score < results.away_score ? '2' : 'x';
+    return selectionLower.includes(actual);
+  }
+
+  // Over/Under 2.5
+  if (marketLower.includes('2.5')) {
+    const isOver = total_goals > 2.5;
+    return selectionLower.includes('over') === isOver || selectionLower.includes('üst') === isOver;
+  }
+
+  // BTTS
+  if (marketLower.includes('btts') || marketLower.includes('karşılıklı') || marketLower.includes('kg')) {
+    const btts = results.home_score > 0 && results.away_score > 0;
+    const predictedYes = selectionLower.includes('yes') || selectionLower.includes('var');
+    return btts === predictedYes;
+  }
+
+  // Home Over 0.5
+  if ((marketLower.includes('home') || marketLower.includes('ev')) && marketLower.includes('0.5')) {
+    return results.home_score > 0;
+  }
+
+  // Away Over 0.5
+  if ((marketLower.includes('away') || marketLower.includes('deplasman')) && marketLower.includes('0.5')) {
+    return results.away_score > 0;
+  }
+
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONAL MARKET STATS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getProfessionalMarketStats(): Promise<{
+  overview: Record<string, any>;
+  markets: Record<string, { total: number; correct: number; accuracy: string; avgConfidence: string }>;
+  recent: any[];
+}> {
+  // Get all predictions
+  const { data: predictions } = await supabase
+    .from('professional_market_predictions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (!predictions || predictions.length === 0) {
+    return {
+      overview: {
+        total: 0,
+        settled: 0,
+        pending: 0
+      },
+      markets: {},
+      recent: []
+    };
+  }
+
+  const settled = predictions.filter(p => p.is_settled);
+  const pending = predictions.filter(p => !p.is_settled);
+
+  // Calculate stats for each market
+  const marketStats: Record<string, { total: number; correct: number; totalConfidence: number }> = {};
+
+  const marketFields = [
+    { field: 'match_result', conf: 'match_result_confidence' },
+    { field: 'over_under_25', conf: 'over_under_25_confidence' },
+    { field: 'over_under_15', conf: 'over_under_15_confidence' },
+    { field: 'over_under_35', conf: 'over_under_35_confidence' },
+    { field: 'btts', conf: 'btts_confidence' },
+    { field: 'fh_result', conf: 'fh_result_confidence' },
+    { field: 'fh_over_05', conf: 'fh_over_05_confidence' },
+    { field: 'fh_over_15', conf: 'fh_over_15_confidence' },
+    { field: 'fh_btts', conf: 'fh_btts_confidence' },
+    { field: 'htft', conf: 'htft_confidence' },
+    { field: 'asian_hc', conf: 'asian_hc_confidence' },
+    { field: 'first_goal', conf: 'first_goal_confidence' },
+    { field: 'home_over_05', conf: 'home_over_05_confidence' },
+    { field: 'away_over_05', conf: 'away_over_05_confidence' },
+    { field: 'home_over_15', conf: 'home_over_15_confidence' },
+    { field: 'away_over_15', conf: 'away_over_15_confidence' },
+    { field: 'home_and_over_15', conf: 'home_and_over_15_confidence' },
+    { field: 'away_and_over_15', conf: 'away_and_over_15_confidence' },
+    { field: 'draw_and_under_25', conf: 'draw_and_under_25_confidence' },
+    { field: 'btts_and_over_25', conf: 'btts_and_over_25_confidence' },
+    { field: 'corners', conf: 'corners_confidence' },
+    { field: 'cards', conf: 'cards_confidence' },
+    { field: 'safe_bet_1', conf: 'safe_bet_1_confidence' },
+    { field: 'safe_bet_2', conf: 'safe_bet_2_confidence' },
+  ];
+
+  for (const pred of settled) {
+    for (const { field, conf } of marketFields) {
+      const correctField = `${field}_correct`;
+      if (pred[correctField] !== null && pred[correctField] !== undefined) {
+        if (!marketStats[field]) {
+          marketStats[field] = { total: 0, correct: 0, totalConfidence: 0 };
+        }
+        marketStats[field].total++;
+        if (pred[correctField]) marketStats[field].correct++;
+        if (pred[conf]) marketStats[field].totalConfidence += pred[conf];
+      }
+    }
+  }
+
+  // Format market stats
+  const formattedMarkets: Record<string, { total: number; correct: number; accuracy: string; avgConfidence: string }> = {};
+  
+  for (const [market, stats] of Object.entries(marketStats)) {
+    formattedMarkets[market] = {
+      total: stats.total,
+      correct: stats.correct,
+      accuracy: stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : '0',
+      avgConfidence: stats.total > 0 ? (stats.totalConfidence / stats.total).toFixed(1) : '0'
+    };
+  }
+
+  return {
+    overview: {
+      total: predictions.length,
+      settled: settled.length,
+      pending: pending.length
+    },
+    markets: formattedMarkets,
+    recent: predictions.slice(0, 50).map(p => ({
+      id: p.id,
+      fixture_id: p.fixture_id,
+      home_team: p.home_team,
+      away_team: p.away_team,
+      league: p.league,
+      match_date: p.match_date,
+      is_settled: p.is_settled,
+      actual_home_score: p.actual_home_score,
+      actual_away_score: p.actual_away_score,
+      // Core predictions
+      match_result: { selection: p.match_result_selection, confidence: p.match_result_confidence, correct: p.match_result_correct },
+      over_under_25: { selection: p.over_under_25_selection, confidence: p.over_under_25_confidence, correct: p.over_under_25_correct },
+      btts: { selection: p.btts_selection, confidence: p.btts_confidence, correct: p.btts_correct },
+      // Safe bets
+      safe_bet_1: { market: p.safe_bet_1_market, selection: p.safe_bet_1_selection, confidence: p.safe_bet_1_confidence, correct: p.safe_bet_1_correct },
+      safe_bet_2: { market: p.safe_bet_2_market, selection: p.safe_bet_2_selection, confidence: p.safe_bet_2_confidence, correct: p.safe_bet_2_correct },
+      created_at: p.created_at
+    }))
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -603,6 +1135,10 @@ export default {
   getOverallStats,
   getModelStats,
   getRecentPredictions,
-  getDailyStats
+  getDailyStats,
+  // Professional Markets
+  saveProfessionalMarketPrediction,
+  settleProfessionalMarketPrediction,
+  getProfessionalMarketStats
 };
 

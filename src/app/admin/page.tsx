@@ -62,11 +62,21 @@ interface Prediction {
   ai_model_predictions?: any[];
 }
 
+interface ProMarketStats {
+  overview: {
+    total: number;
+    settled: number;
+    pending: number;
+  };
+  markets: Record<string, { total: number; correct: number; accuracy: string; avgConfidence: string }>;
+  recent: any[];
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'predictions' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'predictions' | 'analytics' | 'pro_markets'>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settling, setSettling] = useState(false);
@@ -74,6 +84,7 @@ export default function AdminPage() {
   const [overall, setOverall] = useState<OverallStats | null>(null);
   const [models, setModels] = useState<ModelStat[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [proMarketStats, setProMarketStats] = useState<ProMarketStats | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'settled'>('all');
   const [selectedModel, setSelectedModel] = useState<string>('all');
 
@@ -97,16 +108,25 @@ export default function AdminPage() {
       
       // Add cache-busting timestamp
       const timestamp = Date.now();
-      const res = await fetch(`/api/admin/enhanced-stats?type=all&limit=100&_t=${timestamp}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
+      
+      // Fetch both regular stats and professional market stats in parallel
+      const [res, proMarketRes] = await Promise.all([
+        fetch(`/api/admin/enhanced-stats?type=all&limit=100&_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`/api/admin/professional-markets?_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+      ]);
+      
       const data = await res.json();
+      const proMarketData = await proMarketRes.json();
       
       console.log('📊 API Response:', data);
       console.log('📊 Recent predictions count:', data.recent?.length || 0);
+      console.log('🎰 Pro Market Stats:', proMarketData);
 
       if (data.success) {
         // Calculate overall from recent if overall is empty
@@ -151,6 +171,16 @@ export default function AdminPage() {
         console.log('✅ Predictions set:', recentData.length, 'items');
       } else {
         console.error('❌ API returned success: false');
+      }
+
+      // Set professional market stats
+      if (proMarketData.success) {
+        setProMarketStats({
+          overview: proMarketData.overview,
+          markets: proMarketData.markets,
+          recent: proMarketData.recent || []
+        });
+        console.log('✅ Pro Market Stats set');
       }
     } catch (error) {
       console.error('❌ Error fetching admin data:', error);
@@ -258,12 +288,13 @@ export default function AdminPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 flex-wrap">
             {[
               { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
               { id: 'models', label: '🤖 AI Modelleri', icon: '🤖' },
               { id: 'predictions', label: '📝 Tahminler', icon: '📝' },
               { id: 'analytics', label: '📈 Analitik', icon: '📈' },
+              { id: 'pro_markets', label: '🎰 Pro Markets', icon: '🎰' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -614,6 +645,257 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* PROFESSIONAL MARKETS TAB */}
+        {activeTab === 'pro_markets' && (
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                icon="🎰"
+                label="Toplam Analiz"
+                value={proMarketStats?.overview.total || 0}
+                color="blue"
+              />
+              <StatCard
+                icon="✅"
+                label="Sonuçlanan"
+                value={proMarketStats?.overview.settled || 0}
+                color="green"
+              />
+              <StatCard
+                icon="⏳"
+                label="Bekleyen"
+                value={proMarketStats?.overview.pending || 0}
+                color="yellow"
+              />
+              <StatCard
+                icon="🎯"
+                label="Safe Bet Başarı"
+                value={`${proMarketStats?.markets.safe_bet_1?.accuracy || '0'}%`}
+                color="purple"
+              />
+            </div>
+
+            {/* Market Performance Grid */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                🎰 Market Başarı Oranları
+              </h3>
+              
+              {proMarketStats && Object.keys(proMarketStats.markets).length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(proMarketStats.markets)
+                    .sort((a, b) => parseFloat(b[1].accuracy) - parseFloat(a[1].accuracy))
+                    .map(([market, stats]) => (
+                      <ProMarketCard 
+                        key={market} 
+                        market={market} 
+                        stats={stats} 
+                      />
+                    ))
+                  }
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-400">
+                  <span className="text-4xl mb-4 block">📭</span>
+                  Henüz veri yok. Maç analizi yapıldıkça veriler burada görünecek.
+                </div>
+              )}
+            </div>
+
+            {/* Core Markets Summary */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <MarketCard
+                title="Üst/Alt 2.5"
+                emoji="📈"
+                total={proMarketStats?.markets.over_under_25?.total || 0}
+                correct={proMarketStats?.markets.over_under_25?.correct || 0}
+                accuracy={proMarketStats?.markets.over_under_25?.accuracy || '0'}
+                color="blue"
+              />
+              <MarketCard
+                title="KG Var/Yok (BTTS)"
+                emoji="⚽"
+                total={proMarketStats?.markets.btts?.total || 0}
+                correct={proMarketStats?.markets.btts?.correct || 0}
+                accuracy={proMarketStats?.markets.btts?.accuracy || '0'}
+                color="emerald"
+              />
+              <MarketCard
+                title="Maç Sonucu"
+                emoji="🏆"
+                total={proMarketStats?.markets.match_result?.total || 0}
+                correct={proMarketStats?.markets.match_result?.correct || 0}
+                accuracy={proMarketStats?.markets.match_result?.accuracy || '0'}
+                color="purple"
+              />
+            </div>
+
+            {/* First Half Markets */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">⏱️ İlk Yarı Marketleri</h3>
+              <div className="grid md:grid-cols-4 gap-4">
+                <MiniMarketCard 
+                  label="İY Sonucu" 
+                  accuracy={proMarketStats?.markets.fh_result?.accuracy} 
+                  total={proMarketStats?.markets.fh_result?.total}
+                />
+                <MiniMarketCard 
+                  label="İY Üst 0.5" 
+                  accuracy={proMarketStats?.markets.fh_over_05?.accuracy}
+                  total={proMarketStats?.markets.fh_over_05?.total}
+                />
+                <MiniMarketCard 
+                  label="İY Üst 1.5" 
+                  accuracy={proMarketStats?.markets.fh_over_15?.accuracy}
+                  total={proMarketStats?.markets.fh_over_15?.total}
+                />
+                <MiniMarketCard 
+                  label="İY BTTS" 
+                  accuracy={proMarketStats?.markets.fh_btts?.accuracy}
+                  total={proMarketStats?.markets.fh_btts?.total}
+                />
+              </div>
+            </div>
+
+            {/* Special Markets */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">⚡ Özel Marketler</h3>
+              <div className="grid md:grid-cols-4 gap-4">
+                <MiniMarketCard 
+                  label="HT/FT" 
+                  accuracy={proMarketStats?.markets.htft?.accuracy}
+                  total={proMarketStats?.markets.htft?.total}
+                />
+                <MiniMarketCard 
+                  label="Asian Handicap" 
+                  accuracy={proMarketStats?.markets.asian_hc?.accuracy}
+                  total={proMarketStats?.markets.asian_hc?.total}
+                />
+                <MiniMarketCard 
+                  label="İlk Gol" 
+                  accuracy={proMarketStats?.markets.first_goal?.accuracy}
+                  total={proMarketStats?.markets.first_goal?.total}
+                />
+                <MiniMarketCard 
+                  label="Korner" 
+                  accuracy={proMarketStats?.markets.corners?.accuracy}
+                  total={proMarketStats?.markets.corners?.total}
+                />
+              </div>
+            </div>
+
+            {/* Team Goals */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">⚽ Takım Gol Marketleri</h3>
+              <div className="grid md:grid-cols-4 gap-4">
+                <MiniMarketCard 
+                  label="Ev Üst 0.5" 
+                  accuracy={proMarketStats?.markets.home_over_05?.accuracy}
+                  total={proMarketStats?.markets.home_over_05?.total}
+                />
+                <MiniMarketCard 
+                  label="Dep Üst 0.5" 
+                  accuracy={proMarketStats?.markets.away_over_05?.accuracy}
+                  total={proMarketStats?.markets.away_over_05?.total}
+                />
+                <MiniMarketCard 
+                  label="Ev Üst 1.5" 
+                  accuracy={proMarketStats?.markets.home_over_15?.accuracy}
+                  total={proMarketStats?.markets.home_over_15?.total}
+                />
+                <MiniMarketCard 
+                  label="Dep Üst 1.5" 
+                  accuracy={proMarketStats?.markets.away_over_15?.accuracy}
+                  total={proMarketStats?.markets.away_over_15?.total}
+                />
+              </div>
+            </div>
+
+            {/* Combo Bets */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">🎲 Kombine Bahisler</h3>
+              <div className="grid md:grid-cols-4 gap-4">
+                <MiniMarketCard 
+                  label="1 & Üst 1.5" 
+                  accuracy={proMarketStats?.markets.home_and_over_15?.accuracy}
+                  total={proMarketStats?.markets.home_and_over_15?.total}
+                />
+                <MiniMarketCard 
+                  label="2 & Üst 1.5" 
+                  accuracy={proMarketStats?.markets.away_and_over_15?.accuracy}
+                  total={proMarketStats?.markets.away_and_over_15?.total}
+                />
+                <MiniMarketCard 
+                  label="X & Alt 2.5" 
+                  accuracy={proMarketStats?.markets.draw_and_under_25?.accuracy}
+                  total={proMarketStats?.markets.draw_and_under_25?.total}
+                />
+                <MiniMarketCard 
+                  label="BTTS & Üst 2.5" 
+                  accuracy={proMarketStats?.markets.btts_and_over_25?.accuracy}
+                  total={proMarketStats?.markets.btts_and_over_25?.total}
+                />
+              </div>
+            </div>
+
+            {/* Safe Bets Summary */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-green-400 mb-4">🛡️ Safe Bet 1 Performansı</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Toplam:</span>
+                    <span className="text-white font-medium">{proMarketStats?.markets.safe_bet_1?.total || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Doğru:</span>
+                    <span className="text-white font-medium">{proMarketStats?.markets.safe_bet_1?.correct || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Başarı:</span>
+                    <span className="text-green-400 font-bold text-xl">%{proMarketStats?.markets.safe_bet_1?.accuracy || '0'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border border-blue-500/30 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-blue-400 mb-4">🛡️ Safe Bet 2 Performansı</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Toplam:</span>
+                    <span className="text-white font-medium">{proMarketStats?.markets.safe_bet_2?.total || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Doğru:</span>
+                    <span className="text-white font-medium">{proMarketStats?.markets.safe_bet_2?.correct || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Başarı:</span>
+                    <span className="text-blue-400 font-bold text-xl">%{proMarketStats?.markets.safe_bet_2?.accuracy || '0'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Pro Predictions */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">📋 Son Analizler</h3>
+              <div className="space-y-3">
+                {proMarketStats?.recent && proMarketStats.recent.length > 0 ? (
+                  proMarketStats.recent.slice(0, 10).map((pred: any) => (
+                    <ProPredictionRow key={pred.id} prediction={pred} />
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    Henüz analiz yok
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -686,6 +968,148 @@ function AccuracyBadge({ accuracy, large }: { accuracy: number; large?: boolean 
     <span className={`inline-block px-2 py-1 rounded-lg font-medium ${color} ${large ? 'text-lg' : 'text-sm'}`}>
       %{accuracy.toFixed(1)}
     </span>
+  );
+}
+
+function ProMarketCard({ market, stats }: { 
+  market: string; 
+  stats: { total: number; correct: number; accuracy: string; avgConfidence: string } 
+}) {
+  const marketNames: Record<string, string> = {
+    match_result: 'Maç Sonucu',
+    over_under_25: 'Üst/Alt 2.5',
+    over_under_15: 'Üst/Alt 1.5',
+    over_under_35: 'Üst/Alt 3.5',
+    btts: 'KG Var/Yok',
+    fh_result: 'İY Sonucu',
+    fh_over_05: 'İY Üst 0.5',
+    fh_over_15: 'İY Üst 1.5',
+    fh_btts: 'İY BTTS',
+    htft: 'HT/FT',
+    asian_hc: 'Asian Handicap',
+    first_goal: 'İlk Gol',
+    home_over_05: 'Ev Üst 0.5',
+    away_over_05: 'Dep Üst 0.5',
+    home_over_15: 'Ev Üst 1.5',
+    away_over_15: 'Dep Üst 1.5',
+    home_and_over_15: '1 & Üst 1.5',
+    away_and_over_15: '2 & Üst 1.5',
+    draw_and_under_25: 'X & Alt 2.5',
+    btts_and_over_25: 'BTTS & Üst 2.5',
+    corners: 'Korner',
+    cards: 'Kart',
+    safe_bet_1: 'Safe Bet 1',
+    safe_bet_2: 'Safe Bet 2',
+  };
+
+  const acc = parseFloat(stats.accuracy);
+  const color = acc >= 60 ? 'green' : acc >= 50 ? 'yellow' : 'red';
+  const colorClasses = {
+    green: 'border-green-500/30 bg-green-500/10',
+    yellow: 'border-yellow-500/30 bg-yellow-500/10',
+    red: 'border-red-500/30 bg-red-500/10'
+  };
+  const textColors = {
+    green: 'text-green-400',
+    yellow: 'text-yellow-400',
+    red: 'text-red-400'
+  };
+
+  return (
+    <div className={`border rounded-xl p-4 ${colorClasses[color]}`}>
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="text-white font-medium">{marketNames[market] || market}</h4>
+        <span className={`text-xl font-bold ${textColors[color]}`}>%{stats.accuracy}</span>
+      </div>
+      <div className="flex justify-between text-sm text-gray-400">
+        <span>{stats.correct}/{stats.total} doğru</span>
+        <span>~%{stats.avgConfidence} güven</span>
+      </div>
+    </div>
+  );
+}
+
+function MiniMarketCard({ label, accuracy, total }: { label: string; accuracy?: string; total?: number }) {
+  const acc = parseFloat(accuracy || '0');
+  const color = !total ? 'gray' : acc >= 60 ? 'green' : acc >= 50 ? 'yellow' : 'red';
+  const textColors = {
+    green: 'text-green-400',
+    yellow: 'text-yellow-400',
+    red: 'text-red-400',
+    gray: 'text-gray-500'
+  };
+
+  return (
+    <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+      <p className="text-gray-400 text-xs mb-1">{label}</p>
+      <p className={`text-lg font-bold ${textColors[color]}`}>
+        {total ? `%${accuracy}` : '-'}
+      </p>
+      {total !== undefined && total > 0 && (
+        <p className="text-xs text-gray-500">{total} tahmin</p>
+      )}
+    </div>
+  );
+}
+
+function ProPredictionRow({ prediction }: { prediction: any }) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors">
+      <div className="flex-1">
+        <p className="text-white font-medium text-sm">
+          {prediction.home_team} vs {prediction.away_team}
+        </p>
+        <p className="text-gray-400 text-xs">{prediction.league}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        {/* Match Result */}
+        <div className="text-center">
+          <p className="text-xs text-gray-400">MS</p>
+          <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+            prediction.match_result?.correct === true ? 'bg-green-500/20 text-green-400' :
+            prediction.match_result?.correct === false ? 'bg-red-500/20 text-red-400' :
+            'bg-gray-600/50 text-gray-400'
+          }`}>
+            {prediction.match_result?.selection || '-'}
+          </span>
+        </div>
+        {/* Over/Under */}
+        <div className="text-center">
+          <p className="text-xs text-gray-400">Ü/A</p>
+          <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+            prediction.over_under_25?.correct === true ? 'bg-green-500/20 text-green-400' :
+            prediction.over_under_25?.correct === false ? 'bg-red-500/20 text-red-400' :
+            'bg-gray-600/50 text-gray-400'
+          }`}>
+            {prediction.over_under_25?.selection?.replace('Over ', 'Ü').replace('Under ', 'A') || '-'}
+          </span>
+        </div>
+        {/* BTTS */}
+        <div className="text-center">
+          <p className="text-xs text-gray-400">KG</p>
+          <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+            prediction.btts?.correct === true ? 'bg-green-500/20 text-green-400' :
+            prediction.btts?.correct === false ? 'bg-red-500/20 text-red-400' :
+            'bg-gray-600/50 text-gray-400'
+          }`}>
+            {prediction.btts?.selection?.replace('Yes', 'V').replace('No', 'Y') || '-'}
+          </span>
+        </div>
+        {/* Score */}
+        <div className="text-center min-w-[40px]">
+          <p className="text-xs text-gray-400">Skor</p>
+          <span className="text-white text-xs">
+            {prediction.is_settled ? `${prediction.actual_home_score}-${prediction.actual_away_score}` : '?'}
+          </span>
+        </div>
+        {/* Status */}
+        <span className={`px-2 py-0.5 rounded text-xs ${
+          prediction.is_settled ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+        }`}>
+          {prediction.is_settled ? '✓' : '⏳'}
+        </span>
+      </div>
+    </div>
   );
 }
 
