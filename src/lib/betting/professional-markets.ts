@@ -359,6 +359,9 @@ export function generateProfessionalAnalysis(
   
   const labels = getLabels(language);
   
+  // Helper to round confidence
+  const round = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
+  
   // Build predictions
   const predictions: ProfessionalAnalysis = {
     // Match Result
@@ -367,7 +370,7 @@ export function generateProfessionalAnalysis(
       selection: resultProbs.home > resultProbs.away ? 
         (resultProbs.home > resultProbs.draw ? '1' : 'X') :
         (resultProbs.away > resultProbs.draw ? '2' : 'X'),
-      confidence: Math.max(resultProbs.home, resultProbs.draw, resultProbs.away),
+      confidence: round(Math.max(resultProbs.home, resultProbs.draw, resultProbs.away)),
       reasoning: buildReasoning('matchResult', resultProbs, language),
       riskLevel: resultProbs.home >= 60 || resultProbs.away >= 60 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(resultProbs.home, resultProbs.draw, resultProbs.away), 0)
@@ -377,7 +380,7 @@ export function generateProfessionalAnalysis(
     overUnder25: {
       market: labels.overUnder25,
       selection: ouProbs.over25 > 50 ? `${labels.over} 2.5` : `${labels.under} 2.5`,
-      confidence: Math.max(ouProbs.over25, ouProbs.under25),
+      confidence: round(Math.max(ouProbs.over25, ouProbs.under25)),
       reasoning: buildReasoning('overUnder', { over: ouProbs.over25, total: expectedGoals.total }, language),
       riskLevel: Math.abs(ouProbs.over25 - 50) > 15 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(ouProbs.over25, ouProbs.under25), 0)
@@ -387,7 +390,7 @@ export function generateProfessionalAnalysis(
     overUnder15: {
       market: labels.overUnder15,
       selection: ouProbs.over15 > 50 ? `${labels.over} 1.5` : `${labels.under} 1.5`,
-      confidence: Math.max(ouProbs.over15, ouProbs.under15),
+      confidence: round(Math.max(ouProbs.over15, ouProbs.under15)),
       reasoning: `${labels.expectedGoals}: ${expectedGoals.total.toFixed(2)}`,
       riskLevel: ouProbs.over15 >= 70 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(ouProbs.over15, ouProbs.under15), 0)
@@ -397,7 +400,7 @@ export function generateProfessionalAnalysis(
     overUnder35: {
       market: labels.overUnder35,
       selection: ouProbs.over35 > 50 ? `${labels.over} 3.5` : `${labels.under} 3.5`,
-      confidence: Math.max(ouProbs.over35, ouProbs.under35),
+      confidence: round(Math.max(ouProbs.over35, ouProbs.under35)),
       reasoning: `${labels.expectedGoals}: ${expectedGoals.total.toFixed(2)}`,
       riskLevel: 'medium',
       recommendation: getRecommendation(Math.max(ouProbs.over35, ouProbs.under35), 0)
@@ -407,7 +410,7 @@ export function generateProfessionalAnalysis(
     btts: {
       market: labels.btts,
       selection: bttsProb > 50 ? labels.bttsYes : labels.bttsNo,
-      confidence: Math.max(bttsProb, 100 - bttsProb),
+      confidence: round(Math.max(bttsProb, 100 - bttsProb)),
       reasoning: buildReasoning('btts', { btts: bttsProb, home: expectedGoals.home, away: expectedGoals.away }, language),
       riskLevel: Math.abs(bttsProb - 50) > 15 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(bttsProb, 100 - bttsProb), 0)
@@ -419,7 +422,7 @@ export function generateProfessionalAnalysis(
       selection: firstHalf.resultProbs.home > firstHalf.resultProbs.away ?
         (firstHalf.resultProbs.home > firstHalf.resultProbs.draw ? '1' : 'X') :
         (firstHalf.resultProbs.away > firstHalf.resultProbs.draw ? '2' : 'X'),
-      confidence: Math.max(firstHalf.resultProbs.home, firstHalf.resultProbs.draw, firstHalf.resultProbs.away),
+      confidence: round(Math.max(firstHalf.resultProbs.home, firstHalf.resultProbs.draw, firstHalf.resultProbs.away)),
       reasoning: `${labels.firstHalfExpected}: ${firstHalf.expectedGoals.toFixed(2)} ${labels.goals}`,
       riskLevel: firstHalf.resultProbs.draw >= 40 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(firstHalf.resultProbs.home, firstHalf.resultProbs.draw, firstHalf.resultProbs.away), 0)
@@ -429,8 +432,8 @@ export function generateProfessionalAnalysis(
     firstHalfOver05: {
       market: labels.firstHalfOver05,
       selection: firstHalf.over05 > 50 ? `${labels.over} 0.5` : `${labels.under} 0.5`,
-      confidence: Math.max(firstHalf.over05, 100 - firstHalf.over05),
-      reasoning: `${labels.firstHalfGoalProb}: ${firstHalf.over05.toFixed(1)}%`,
+      confidence: round(Math.max(firstHalf.over05, 100 - firstHalf.over05)),
+      reasoning: `${labels.firstHalfGoalProb}: ${Math.round(firstHalf.over05)}%`,
       riskLevel: firstHalf.over05 >= 70 ? 'low' : 'medium',
       recommendation: getRecommendation(Math.max(firstHalf.over05, 100 - firstHalf.over05), 0)
     },
@@ -439,7 +442,7 @@ export function generateProfessionalAnalysis(
     firstHalfOver15: {
       market: labels.firstHalfOver15,
       selection: firstHalf.over15 > 50 ? `${labels.over} 1.5` : `${labels.under} 1.5`,
-      confidence: Math.max(firstHalf.over15, 100 - firstHalf.over15),
+      confidence: round(Math.max(firstHalf.over15, 100 - firstHalf.over15)),
       reasoning: `${labels.firstHalfExpected}: ${firstHalf.expectedGoals.toFixed(2)} ${labels.goals}`,
       riskLevel: 'medium',
       recommendation: getRecommendation(Math.max(firstHalf.over15, 100 - firstHalf.over15), 0)
@@ -449,8 +452,8 @@ export function generateProfessionalAnalysis(
     firstHalfBtts: {
       market: labels.firstHalfBtts,
       selection: firstHalf.btts > 50 ? labels.bttsYes : labels.bttsNo,
-      confidence: Math.max(firstHalf.btts, 100 - firstHalf.btts),
-      reasoning: `${labels.firstHalfBttsProb}: ${firstHalf.btts.toFixed(1)}%`,
+      confidence: round(Math.max(firstHalf.btts, 100 - firstHalf.btts)),
+      reasoning: `${labels.firstHalfBttsProb}: ${Math.round(firstHalf.btts)}%`,
       riskLevel: 'high',
       recommendation: getRecommendation(Math.max(firstHalf.btts, 100 - firstHalf.btts), 0)
     },
@@ -459,8 +462,8 @@ export function generateProfessionalAnalysis(
     htft: {
       market: labels.htft,
       selection: `${htft[0].ht}/${htft[0].ft}`,
-      confidence: htft[0].prob,
-      reasoning: `${labels.mostLikely}: ${htft[0].ht}/${htft[0].ft} (${htft[0].prob.toFixed(1)}%)`,
+      confidence: round(htft[0].prob),
+      reasoning: `${labels.mostLikely}: ${htft[0].ht}/${htft[0].ft} (${Math.round(htft[0].prob)}%)`,
       riskLevel: htft[0].prob >= 25 ? 'medium' : 'high',
       recommendation: getRecommendation(htft[0].prob, 0)
     },
@@ -469,7 +472,7 @@ export function generateProfessionalAnalysis(
     asianHandicap: {
       market: labels.asianHandicap,
       selection: `${asianHc.selection === 'home' ? labels.homeTeam : labels.awayTeam} ${asianHc.line > 0 ? '+' : ''}${asianHc.line}`,
-      confidence: asianHc.confidence,
+      confidence: round(asianHc.confidence),
       reasoning: `${labels.expectedDiff}: ${(expectedGoals.home - expectedGoals.away).toFixed(2)}`,
       riskLevel: Math.abs(asianHc.line) >= 1 ? 'medium' : 'low',
       recommendation: getRecommendation(asianHc.confidence, 0)
@@ -479,7 +482,7 @@ export function generateProfessionalAnalysis(
     europeanHandicap: {
       market: labels.europeanHandicap,
       selection: resultProbs.home > resultProbs.away ? `1 (${Math.round(asianHc.line)})` : `2 (${Math.round(-asianHc.line)})`,
-      confidence: Math.max(resultProbs.home, resultProbs.away) * 0.9,
+      confidence: round(Math.max(resultProbs.home, resultProbs.away) * 0.9),
       reasoning: labels.europeanHcReasoning,
       riskLevel: 'medium',
       recommendation: 'skip'
@@ -489,8 +492,8 @@ export function generateProfessionalAnalysis(
     teamToScoreFirst: {
       market: labels.teamToScoreFirst,
       selection: firstGoal.home > firstGoal.away ? labels.homeTeam : labels.awayTeam,
-      confidence: Math.max(firstGoal.home, firstGoal.away),
-      reasoning: `${labels.homeTeam}: ${firstGoal.home.toFixed(1)}%, ${labels.awayTeam}: ${firstGoal.away.toFixed(1)}%`,
+      confidence: round(Math.max(firstGoal.home, firstGoal.away)),
+      reasoning: `${labels.homeTeam}: ${Math.round(firstGoal.home)}%, ${labels.awayTeam}: ${Math.round(firstGoal.away)}%`,
       riskLevel: 'medium',
       recommendation: getRecommendation(Math.max(firstGoal.home, firstGoal.away), 0)
     },
@@ -499,7 +502,7 @@ export function generateProfessionalAnalysis(
     homeOver05: {
       market: labels.homeOver05,
       selection: (1 - poissonProb(expectedGoals.home, 0)) * 100 > 50 ? `${labels.over} 0.5` : `${labels.under} 0.5`,
-      confidence: Math.max((1 - poissonProb(expectedGoals.home, 0)) * 100, poissonProb(expectedGoals.home, 0) * 100),
+      confidence: round(Math.max((1 - poissonProb(expectedGoals.home, 0)) * 100, poissonProb(expectedGoals.home, 0) * 100)),
       reasoning: `${labels.homeExpected}: ${expectedGoals.home.toFixed(2)} ${labels.goals}`,
       riskLevel: 'low',
       recommendation: getRecommendation(Math.max((1 - poissonProb(expectedGoals.home, 0)) * 100, poissonProb(expectedGoals.home, 0) * 100), 0)
@@ -509,7 +512,7 @@ export function generateProfessionalAnalysis(
     awayOver05: {
       market: labels.awayOver05,
       selection: (1 - poissonProb(expectedGoals.away, 0)) * 100 > 50 ? `${labels.over} 0.5` : `${labels.under} 0.5`,
-      confidence: Math.max((1 - poissonProb(expectedGoals.away, 0)) * 100, poissonProb(expectedGoals.away, 0) * 100),
+      confidence: round(Math.max((1 - poissonProb(expectedGoals.away, 0)) * 100, poissonProb(expectedGoals.away, 0) * 100)),
       reasoning: `${labels.awayExpected}: ${expectedGoals.away.toFixed(2)} ${labels.goals}`,
       riskLevel: 'low',
       recommendation: getRecommendation(Math.max((1 - poissonProb(expectedGoals.away, 0)) * 100, poissonProb(expectedGoals.away, 0) * 100), 0)
@@ -569,7 +572,7 @@ export function generateProfessionalAnalysis(
     homeWinAndOver15: {
       market: labels.homeWinAndOver15,
       selection: `1 & ${labels.over} 1.5`,
-      confidence: resultProbs.home * ouProbs.over15 / 100,
+      confidence: round(resultProbs.home * ouProbs.over15 / 100),
       reasoning: labels.comboReasoning,
       riskLevel: 'medium',
       recommendation: getRecommendation(resultProbs.home * ouProbs.over15 / 100, 0)
@@ -579,7 +582,7 @@ export function generateProfessionalAnalysis(
     awayWinAndOver15: {
       market: labels.awayWinAndOver15,
       selection: `2 & ${labels.over} 1.5`,
-      confidence: resultProbs.away * ouProbs.over15 / 100,
+      confidence: round(resultProbs.away * ouProbs.over15 / 100),
       reasoning: labels.comboReasoning,
       riskLevel: 'medium',
       recommendation: getRecommendation(resultProbs.away * ouProbs.over15 / 100, 0)
@@ -589,7 +592,7 @@ export function generateProfessionalAnalysis(
     drawAndUnder25: {
       market: labels.drawAndUnder25,
       selection: `X & ${labels.under} 2.5`,
-      confidence: resultProbs.draw * ouProbs.under25 / 100,
+      confidence: round(resultProbs.draw * ouProbs.under25 / 100),
       reasoning: labels.comboReasoning,
       riskLevel: 'medium',
       recommendation: getRecommendation(resultProbs.draw * ouProbs.under25 / 100, 0)
@@ -599,7 +602,7 @@ export function generateProfessionalAnalysis(
     bttsAndOver25: {
       market: labels.bttsAndOver25,
       selection: `${labels.bttsYes} & ${labels.over} 2.5`,
-      confidence: bttsProb * ouProbs.over25 / 100,
+      confidence: round(bttsProb * ouProbs.over25 / 100),
       reasoning: labels.comboReasoning,
       riskLevel: 'medium',
       recommendation: getRecommendation(bttsProb * ouProbs.over25 / 100, 0)

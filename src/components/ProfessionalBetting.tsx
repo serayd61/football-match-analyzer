@@ -154,18 +154,23 @@ function getRiskBadge(risk: string | undefined, l: typeof labels.tr): JSX.Elemen
 
 // Market Card Component
 function MarketCard({ prediction, showReasoning = false }: { prediction: MarketPrediction; showReasoning?: boolean }) {
-  if (!prediction) return null;
+  if (!prediction || !prediction.market) return null;
+  
+  // Güven değerini yuvarlayıp sınırla
+  const confidence = Math.min(100, Math.max(0, Math.round(Number(prediction.confidence) || 50)));
   
   return (
-    <div className={`p-3 rounded-lg border ${getConfidenceBg(prediction.confidence)}`}>
-      <div className="flex justify-between items-start mb-1">
-        <span className="text-gray-400 text-sm">{prediction.market}</span>
-        <span className={`font-bold ${getConfidenceColor(prediction.confidence)}`}>
-          {prediction.confidence}%
+    <div className={`p-4 rounded-xl border ${getConfidenceBg(confidence)} min-h-[100px]`}>
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide truncate max-w-[70%]">
+          {prediction.market}
+        </span>
+        <span className={`font-bold text-lg ${getConfidenceColor(confidence)}`}>
+          {confidence}%
         </span>
       </div>
-      <div className="text-white font-semibold text-lg">
-        {prediction.selection}
+      <div className="text-white font-bold text-xl">
+        {prediction.selection || '-'}
       </div>
       {showReasoning && prediction.reasoning && (
         <p className="text-gray-400 text-xs mt-2 line-clamp-2">{prediction.reasoning}</p>
@@ -176,21 +181,24 @@ function MarketCard({ prediction, showReasoning = false }: { prediction: MarketP
 
 // Best Bet Card (Featured)
 function BestBetCard({ prediction, index }: { prediction: MarketPrediction; index: number }) {
+  if (!prediction || !prediction.market) return null;
+  
   const medals = ['🥇', '🥈', '🥉'];
   const medal = medals[index] || `${index + 1}.`;
+  const confidence = Math.min(100, Math.max(0, Math.round(Number(prediction.confidence) || 50)));
   
   return (
-    <div className={`p-4 rounded-xl border-2 ${getConfidenceBg(prediction.confidence)} relative overflow-hidden`}>
+    <div className={`p-4 rounded-xl border-2 ${getConfidenceBg(confidence)} relative overflow-hidden`}>
       <div className="absolute -top-2 -right-2 text-4xl opacity-20">{medal}</div>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-2xl">{medal}</span>
-        <div>
+      <div className="flex items-center gap-4">
+        <span className="text-3xl">{medal}</span>
+        <div className="flex-1">
           <p className="text-gray-400 text-sm">{prediction.market}</p>
-          <p className="text-white font-bold text-xl">{prediction.selection}</p>
+          <p className="text-white font-bold text-xl">{prediction.selection || '-'}</p>
         </div>
-        <div className="ml-auto text-right">
-          <p className={`text-2xl font-bold ${getConfidenceColor(prediction.confidence)}`}>
-            {prediction.confidence}%
+        <div className="text-right">
+          <p className={`text-2xl font-bold ${getConfidenceColor(confidence)}`}>
+            {confidence}%
           </p>
           {prediction.riskLevel && (
             <span className={`text-xs px-2 py-0.5 rounded ${
@@ -204,7 +212,7 @@ function BestBetCard({ prediction, index }: { prediction: MarketPrediction; inde
         </div>
       </div>
       {prediction.reasoning && (
-        <p className="text-gray-300 text-sm">{prediction.reasoning}</p>
+        <p className="text-gray-300 text-sm mt-3 line-clamp-2">{prediction.reasoning}</p>
       )}
     </div>
   );
@@ -250,11 +258,11 @@ export default function ProfessionalBetting({ data, homeTeam, awayTeam, language
       )}
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {data.matchResult && <MarketCard prediction={data.matchResult} />}
-        {data.overUnder25 && <MarketCard prediction={data.overUnder25} />}
-        {data.btts && <MarketCard prediction={data.btts} />}
-        {data.overUnder15 && <MarketCard prediction={data.overUnder15} />}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {data.matchResult?.market && <MarketCard prediction={data.matchResult} />}
+        {data.overUnder25?.market && <MarketCard prediction={data.overUnder25} />}
+        {data.btts?.market && <MarketCard prediction={data.btts} />}
+        {data.overUnder15?.market && <MarketCard prediction={data.overUnder15} />}
       </div>
 
       {/* Expanded View */}
