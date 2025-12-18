@@ -7,11 +7,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { settleMatchResult } from '@/lib/admin/service';
-import { settleProfessionalMarketPrediction } from '@/lib/admin/enhanced-service';
+import { settlePrediction, settleProfessionalMarketPrediction } from '@/lib/admin/enhanced-service';
 import { matchResultManager } from '@/lib/match-results';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120; // Increased to 120 seconds
 
 // ============================================================================
 // MAIN HANDLER
@@ -41,29 +41,61 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 1: Get pending predictions with past match dates
+    // STEP 1: Get pending predictions from BOTH tables
     // ═══════════════════════════════════════════════════════════════════════
     
     const now = new Date();
     // Get matches that ended at least 2 hours ago
     const cutoffTime = new Date(now.getTime() - 2 * 60 * 60 * 1000);
     
-    const { data: pendingPredictions, error: fetchError } = await supabase
-      .from('prediction_records')
-      .select('fixture_id, home_team, away_team, match_date')
-      .eq('status', 'pending')
-      .lt('match_date', cutoffTime.toISOString())
-      .limit(50); // Process max 50 per run
-
-    if (fetchError) {
-      console.error('Error fetching pending predictions:', fetchError);
-      return NextResponse.json({ 
-        success: false, 
-        error: fetchError.message 
-      }, { status: 500 });
+    // Fetch from prediction_records (old system)
+    let oldPredictions: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('prediction_records')
+        .select('fixture_id, home_team, away_team, match_date')
+        .eq('status', 'pending')
+        .lt('match_date', cutoffTime.toISOString())
+        .limit(20); // Reduced limit
+      
+      if (!error && data) {
+        oldPredictions = data;
+        console.log(`📋 Found ${data.length} pending from prediction_records`);
+      }
+    } catch (e) {
+      console.log('⚠️ prediction_records table not available');
     }
 
-    if (!pendingPredictions || pendingPredictions.length === 0) {
+    // Fetch from prediction_sessions (new enhanced system)
+    let newPredictions: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('prediction_sessions')
+        .select('fixture_id, home_team, away_team, match_date')
+        .eq('is_settled', false)
+        .lt('match_date', cutoffTime.toISOString())
+        .limit(20); // Reduced limit
+      
+      if (!error && data) {
+        newPredictions = data;
+        console.log(`📋 Found ${data.length} pending from prediction_sessions`);
+      }
+    } catch (e) {
+      console.log('⚠️ prediction_sessions table not available');
+    }
+
+    // Combine both lists, removing duplicates by fixture_id
+    const fixtureSet = new Set<number>();
+    const pendingPredictions: any[] = [];
+    
+    for (const p of [...oldPredictions, ...newPredictions]) {
+      if (!fixtureSet.has(p.fixture_id)) {
+        fixtureSet.add(p.fixture_id);
+        pendingPredictions.push(p);
+      }
+    }
+
+    if (pendingPredictions.length === 0) {
       console.log('✅ No pending predictions to settle');
       return NextResponse.json({ 
         success: true, 
@@ -72,7 +104,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`📋 Found ${pendingPredictions.length} pending predictions to check`);
+    console.log(`📋 Total ${pendingPredictions.length} unique fixtures to check`);
 
     // ═══════════════════════════════════════════════════════════════════════
     // STEP 2: Group predictions by fixture for team info
@@ -120,7 +152,7 @@ export async function GET(request: NextRequest) {
         // Provider istatistiği
         providerStats[result.source] = (providerStats[result.source] || 0) + 1;
 
-        // Settle the prediction
+        // Settle in old prediction_records table
         const settleResult = await settleMatchResult({
           fixtureId,
           homeScore: result.homeScore,
@@ -134,10 +166,20 @@ export async function GET(request: NextRequest) {
 
         if (settleResult.success) {
           settledCount++;
-          console.log(`   ✅ Settled fixture ${fixtureId}`);
-        } else {
-          errorCount++;
-          console.log(`   ❌ Failed to settle: ${settleResult.error}`);
+          console.log(`   ✅ Settled in prediction_records: ${fixtureId}`);
+        }
+
+        // Settle in new prediction_sessions table
+        try {
+          await settlePrediction(fixtureId, {
+            fixture_id: fixtureId,
+            home_score: result.homeScore,
+            away_score: result.awayScore,
+            result_source: result.source,
+          });
+          console.log(`   ✅ Settled in prediction_sessions: ${fixtureId}`);
+        } catch (enhancedSettleErr: any) {
+          console.log(`   ⚠️ prediction_sessions settle: ${enhancedSettleErr.message?.substring(0, 30)}`);
         }
 
         // Also settle professional market predictions
@@ -172,8 +214,8 @@ export async function GET(request: NextRequest) {
           console.log(`   ⚠️ Pro markets settle skipped: ${proSettleErr.message?.substring(0, 50)}`);
         }
 
-        // Rate limiting
-        await sleep(500);
+        // Rate limiting - reduced for faster processing
+        await sleep(200);
 
       } catch (err: any) {
         errorCount++;
