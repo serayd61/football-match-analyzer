@@ -12,6 +12,7 @@
 import { MatchData } from '../types';
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
 
 // ==================== LANGUAGE & TEAM DETECTION ====================
 
@@ -289,6 +290,99 @@ async function searchWithPerplexity(
   }
 }
 
+// ==================== NEWS API SEARCH (FREE ALTERNATIVE) ====================
+
+async function searchWithNewsAPI(
+  teamName: string,
+  language: 'tr' | 'en' | 'de' = 'en'
+): Promise<{ headlines: string[]; descriptions: string[] }> {
+  const apiKey = NEWS_API_KEY || process.env.NEWS_API_KEY;
+  
+  if (!apiKey) {
+    console.log('⚠️ NEWS_API_KEY not configured');
+    return { headlines: [], descriptions: [] };
+  }
+
+  try {
+    // Clean team name for search
+    const searchTerm = `${teamName} football`;
+    const langMap = { tr: 'tr', en: 'en', de: 'de' };
+    
+    console.log(`   🔍 Calling NewsAPI for: ${teamName}...`);
+    
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?` +
+      `q=${encodeURIComponent(searchTerm)}&` +
+      `language=${langMap[language]}&` +
+      `sortBy=publishedAt&` +
+      `pageSize=5&` +
+      `apiKey=${apiKey}`,
+      { 
+        headers: { 'User-Agent': 'FootballAnalytics/1.0' },
+        signal: AbortSignal.timeout(10000) 
+      }
+    );
+
+    if (!response.ok) {
+      console.log(`❌ NewsAPI error: ${response.status}`);
+      return { headlines: [], descriptions: [] };
+    }
+
+    const data = await response.json();
+    const articles = data.articles || [];
+    
+    const headlines = articles.map((a: any) => a.title).filter(Boolean);
+    const descriptions = articles.map((a: any) => a.description).filter(Boolean);
+    
+    console.log(`   ✅ NewsAPI returned ${headlines.length} articles`);
+    
+    return { headlines, descriptions };
+    
+  } catch (error: any) {
+    console.error('❌ NewsAPI exception:', error.message || error);
+    return { headlines: [], descriptions: [] };
+  }
+}
+
+// ==================== HYBRID NEWS FETCH (NewsAPI + Perplexity fallback) ====================
+
+async function fetchTeamNews(
+  teamName: string,
+  language: 'tr' | 'en' | 'de' = 'en'
+): Promise<{ content: string; headlines: string[]; source: 'newsapi' | 'perplexity' | 'none' }> {
+  
+  // 1. Try NewsAPI first (FREE)
+  const newsApiResult = await searchWithNewsAPI(teamName, language);
+  
+  if (newsApiResult.headlines.length > 0) {
+    const content = newsApiResult.descriptions.join(' ');
+    return { 
+      content, 
+      headlines: newsApiResult.headlines,
+      source: 'newsapi' 
+    };
+  }
+  
+  // 2. Fallback to Perplexity (if configured and NewsAPI failed)
+  if (PERPLEXITY_API_KEY) {
+    const searchLang = getSearchLanguage(teamName, language);
+    const prompt = PROMPTS[searchLang].teamNews(teamName);
+    const systemPrompt = PROMPTS[searchLang].systemNews(teamName);
+    
+    const perplexityResult = await searchWithPerplexity(prompt, systemPrompt, searchLang);
+    
+    if (perplexityResult.content) {
+      return {
+        content: perplexityResult.content,
+        headlines: perplexityResult.citations.slice(0, 3),
+        source: 'perplexity'
+      };
+    }
+  }
+  
+  return { content: '', headlines: [], source: 'none' };
+}
+
 // ==================== COMPREHENSIVE NEWS FETCH ====================
 
 interface TeamNewsData {
@@ -316,22 +410,21 @@ async function fetchComprehensiveTeamNews(
 ): Promise<TeamNewsData> {
   
   const searchLang = getSearchLanguage(teamName, language);
-  const prompts = PROMPTS[searchLang];
   
   console.log(`   🔍 Searching news for ${teamName} in ${searchLang.toUpperCase()}...`);
   
-  // Ana haber araması
-  const result = await searchWithPerplexity(
-    prompts.teamNews(teamName),
-    prompts.systemNews(teamName),
-    searchLang
-  );
+  // 🆕 Use hybrid news fetch (NewsAPI first, then Perplexity fallback)
+  const newsResult = await fetchTeamNews(teamName, searchLang);
   
-  if (!result.content || result.content.length < 50) {
+  if (newsResult.source !== 'none') {
+    console.log(`   ✅ News found via ${newsResult.source.toUpperCase()}`);
+  }
+  
+  if (!newsResult.content || newsResult.content.length < 50) {
     console.log(`   ⚠️ No news found for ${teamName}`);
     return {
       raw: '',
-      headlines: [],
+      headlines: newsResult.headlines || [],
       injuries: { out: [], doubtful: [], returning: [] },
       positives: [],
       negatives: [],
@@ -344,7 +437,12 @@ async function fetchComprehensiveTeamNews(
   }
   
   // Parse the content to extract structured data
-  const parsed = parseNewsContent(result.content, teamName, searchLang);
+  const parsed = parseNewsContent(newsResult.content, teamName, searchLang);
+  
+  // Add headlines from NewsAPI if available
+  if (newsResult.headlines.length > 0 && parsed.headlines.length === 0) {
+    parsed.headlines = newsResult.headlines;
+  }
   
   return parsed;
 }
