@@ -200,62 +200,110 @@ async function runPerplexityContextual(
 // =========================
 
 function buildTacticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
-  const { homeTeam, awayTeam, homeForm, awayForm, h2h, newsContext } = matchData;
+  const { homeTeam, awayTeam, homeForm, awayForm, h2h, newsContext, odds } = matchData;
   
-  return `You are CLAUDE - THE TACTICAL ANALYST in a multi-AI football prediction system.
+  // Detect if cup match
+  const isCupMatch = matchData.league?.toLowerCase().includes('cup') || 
+                     matchData.league?.toLowerCase().includes('copa') ||
+                     matchData.league?.toLowerCase().includes('pokal') ||
+                     matchData.league?.toLowerCase().includes('coupe');
+  
+  // Calculate league tier difference (if detectable)
+  const homeLeagueTier = detectLeagueTier(homeTeam, homeForm);
+  const awayLeagueTier = detectLeagueTier(awayTeam, awayForm);
+  const tierDiff = Math.abs(homeLeagueTier - awayLeagueTier);
+  
+  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - MOTİVASYON & PSİKOLOJİ UZMANI
 
-YOUR UNIQUE ROLE: Analyze team momentum, playing styles, psychological factors, and tactical matchups.
+⚠️ KRITIK: Genel klişe cümleler YASAK! Her tahmin SOMUT veriye dayanmalı.
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH: ${homeTeam} vs ${awayTeam}
-LEAGUE: ${matchData.league}
+MAÇ: ${homeTeam} vs ${awayTeam}
+LİG/TURNUVA: ${matchData.league}
+${isCupMatch ? '🏆 KUPA MAÇI - Rotasyon & motivasyon kritik!' : '📊 LİG MAÇI'}
+${tierDiff > 0 ? `⚡ LİG SEVİYE FARKI: ${tierDiff} kademe (Bu çok önemli!)` : ''}
 ═══════════════════════════════════════════════════════════════════════════════
 
-🏠 ${homeTeam.toUpperCase()} - TACTICAL PROFILE
-• Form: ${homeForm?.form || 'N/A'} | Points: ${homeForm?.points || 0}/15
-• Goals: ${homeForm?.avgGoals || 'N/A'} scored, ${homeForm?.avgConceded || 'N/A'} conceded per game
-• Venue Form: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
-• Over 2.5: ${homeForm?.over25Percentage || 'N/A'}% | BTTS: ${homeForm?.bttsPercentage || 'N/A'}%
-${newsContext?.homeTeam?.injuries?.length ? `• KEY INJURIES: ${newsContext.homeTeam.injuries.map(i => i.player).join(', ')}` : ''}
+🏠 ${homeTeam.toUpperCase()} - DERİN ANALİZ
+• Son Form: ${homeForm?.form || 'N/A'} | Puan: ${homeForm?.points || 0}/15
+• Gol Ortalaması: ${homeForm?.avgGoals || 'N/A'} attı, ${homeForm?.avgConceded || 'N/A'} yedi
+• EV PERFORMANSI: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
+• Over 2.5: ${homeForm?.over25Percentage || 'N/A'}% | KG: ${homeForm?.bttsPercentage || 'N/A'}%
+• Clean Sheet: ${homeForm?.cleanSheetPercentage || 'N/A'}%
+${newsContext?.homeTeam?.injuries?.length ? `• 🚑 SAKATLAR: ${newsContext.homeTeam.injuries.map(i => i.player).join(', ')}` : '• 🚑 SAKATLAR: Bilgi yok'}
 
-🚌 ${awayTeam.toUpperCase()} - TACTICAL PROFILE
-• Form: ${awayForm?.form || 'N/A'} | Points: ${awayForm?.points || 0}/15
-• Goals: ${awayForm?.avgGoals || 'N/A'} scored, ${awayForm?.avgConceded || 'N/A'} conceded per game
-• Venue Form: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
-• Over 2.5: ${awayForm?.over25Percentage || 'N/A'}% | BTTS: ${awayForm?.bttsPercentage || 'N/A'}%
-${newsContext?.awayTeam?.injuries?.length ? `• KEY INJURIES: ${newsContext.awayTeam.injuries.map(i => i.player).join(', ')}` : ''}
+🚌 ${awayTeam.toUpperCase()} - DERİN ANALİZ
+• Son Form: ${awayForm?.form || 'N/A'} | Puan: ${awayForm?.points || 0}/15
+• Gol Ortalaması: ${awayForm?.avgGoals || 'N/A'} attı, ${awayForm?.avgConceded || 'N/A'} yedi
+• DEPLASMAN PERFORMANSI: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
+• Over 2.5: ${awayForm?.over25Percentage || 'N/A'}% | KG: ${awayForm?.bttsPercentage || 'N/A'}%
+• Clean Sheet: ${awayForm?.cleanSheetPercentage || 'N/A'}%
+${newsContext?.awayTeam?.injuries?.length ? `• 🚑 SAKATLAR: ${newsContext.awayTeam.injuries.map(i => i.player).join(', ')}` : '• 🚑 SAKATLAR: Bilgi yok'}
 
-🔄 H2H (${h2h?.totalMatches || 0} matches)
-• ${homeTeam}: ${h2h?.homeWins || 0}W | Draws: ${h2h?.draws || 0} | ${awayTeam}: ${h2h?.awayWins || 0}W
-• H2H Avg Goals: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
+🔄 H2H GEÇMİŞ (${h2h?.totalMatches || 0} maç)
+• ${homeTeam}: ${h2h?.homeWins || 0}G | Beraberlik: ${h2h?.draws || 0} | ${awayTeam}: ${h2h?.awayWins || 0}G
+• H2H Gol Ortalaması: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
 
-FOCUS ON:
-1. Momentum and form trajectory (who's improving/declining?)
-2. Tactical style clash (attacking vs defensive, high press vs deep block)
-3. Psychological edge (confidence, pressure situations)
-4. Home advantage strength
-5. First half vs second half scoring patterns
-6. Goal timing (early goals, late drama)
+💰 ORANLAR (Piyasa ne düşünüyor?)
+• MS: ${odds?.matchWinner?.home || 'N/A'} / ${odds?.matchWinner?.draw || 'N/A'} / ${odds?.matchWinner?.away || 'N/A'}
+• Over 2.5: ${odds?.overUnder?.['2.5']?.over || 'N/A'} | Under 2.5: ${odds?.overUnder?.['2.5']?.under || 'N/A'}
+
+🎯 PROFESYONEL ANALİZ GÖREVLERİN:
+${isCupMatch ? `
+1. KADRO ROTASYONU: Favori takım yedeklerle mi oynayacak? (Kupa maçı!)
+2. MOTİVASYON FARKI: Alt lig takımı için "hayatının maçı" vs üst lig için "zorunluluk"
+3. "Giant Killing" riski: Alt lig takımları kupada %15-20 üst lig yener
+4. İlk gol kritik: Küçük takım öne geçerse maç tamamen değişir
+` : `
+1. FORM ANALİZİ: Kim yükselişte, kim düşüşte?
+2. EV/DEPLASMAN: Ev sahibi avantajı ne kadar güçlü?
+3. TAKTİK ÇATIŞMA: Ofansif vs defansif, pressing vs counter
+4. PSİKOLOJİK KENAR: Özgüven, baskı durumu
+`}
+5. İLK YARI vs İKİNCİ YARI: Goller ne zaman geliyor?
+6. GOL ZAMANLAMA PATERNİ: Erken gol, geç drama, dağınık?
+
+⚠️ YASAKLAR:
+- "Cup ties often produce..." gibi genel klişeler YASAK
+- Somut veri olmadan tahmin YASAK
+- Her confidence değeri AÇIKLANMALI
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": ["factor1", "factor2"] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "SOMUT VERİYE DAYALI açıklama", "keyFactors": ["factor1", "factor2"] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "SOMUT VERİYE DAYALI", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "SOMUT VERİYE DAYALI" },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "SOMUT VERİYE DAYALI", "keyFactors": [] },
     "firstHalfGoals": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
     "htft": { "prediction": "1/1, X/1, 2/1, 1/X, X/X, 2/X, 1/2, X/2, 2/2", "confidence": 30-70, "reasoning": "..." }
   },
   "specializedInsights": {
+    "motivation": { "home": 1-10, "away": 1-10, "analysis": "Kısa motivasyon analizi" },
+    "rotationRisk": { "home": "none/low/medium/high", "away": "none/low/medium/high" },
+    "giantKillingRisk": "none/low/medium/high",
     "momentum": { "home": 1-10, "away": 1-10, "trend": "rising/stable/falling" },
     "tacticalAdvantage": "home/away/neutral",
     "psychologicalEdge": "Brief description of who has the mental edge",
     "goalTiming": "early_goals/late_drama/spread_out"
   },
-  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Why this is the strongest bet" },
-  "overallAnalysis": "3-4 sentence tactical summary"
+  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Why this is the strongest bet - SOMUT VERİ İLE" },
+  "overallAnalysis": "3-4 cümle profesyonel özet - klişe yok, somut analiz"
 }`;
+}
+
+// Helper function to detect league tier
+function detectLeagueTier(teamName: string, form: any): number {
+  // Try to detect from form data or team name patterns
+  // Returns 1 for top tier, 2 for second, etc.
+  const formPoints = form?.points || 0;
+  const avgGoals = parseFloat(form?.avgGoals || '0');
+  
+  // Simple heuristic - can be improved with actual league data
+  if (avgGoals > 2 && formPoints > 10) return 1;
+  if (avgGoals > 1.5 && formPoints > 7) return 2;
+  return 3;
+}
 }
 
 function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
@@ -267,135 +315,193 @@ function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | '
   const homeConceded = parseFloat(homeForm?.avgConceded || '1.0');
   const awayConceded = parseFloat(awayForm?.avgConceded || '1.2');
   
-  const homeXG = ((homeGoals + awayConceded) / 2 * 1.1).toFixed(2);
-  const awayXG = ((awayGoals + homeConceded) / 2 * 0.9).toFixed(2);
+  // Ev/Deplasman faktörü ile düzeltilmiş xG
+  const homeXG = ((homeGoals + awayConceded) / 2 * 1.15).toFixed(2); // +15% ev avantajı
+  const awayXG = ((awayGoals + homeConceded) / 2 * 0.85).toFixed(2); // -15% deplasman dezavantajı
   const totalXG = (parseFloat(homeXG) + parseFloat(awayXG)).toFixed(2);
+  
+  // Value hesaplama için oran dönüşümü
+  const homeOdds = parseFloat(odds?.matchWinner?.home || '2.5');
+  const drawOdds = parseFloat(odds?.matchWinner?.draw || '3.5');
+  const awayOdds = parseFloat(odds?.matchWinner?.away || '3.0');
+  const over25Odds = parseFloat(odds?.overUnder?.['2.5']?.over || '1.9');
+  const under25Odds = parseFloat(odds?.overUnder?.['2.5']?.under || '1.9');
+  
+  // Implied probability from odds
+  const homeImplied = (100 / homeOdds).toFixed(1);
+  const drawImplied = (100 / drawOdds).toFixed(1);
+  const awayImplied = (100 / awayOdds).toFixed(1);
+  const over25Implied = (100 / over25Odds).toFixed(1);
 
-  return `You are GPT-4 - THE STATISTICAL ENGINE in a multi-AI football prediction system.
+  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - İSTATİSTİK & VALUE UZMANI
 
-YOUR UNIQUE ROLE: Pure mathematical analysis - xG, Poisson distribution, odds value calculation.
+⚠️ KRITIK: Her tahmin RAKAMLARLA desteklenmeli. "Muhtemelen", "belki" YASAK!
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH: ${homeTeam} vs ${awayTeam}
+MAÇ: ${homeTeam} vs ${awayTeam}
 ═══════════════════════════════════════════════════════════════════════════════
 
-📊 EXPECTED GOALS (xG) CALCULATION
-• ${homeTeam} xG: ${homeXG} (avg scored: ${homeGoals}, opponent conceded: ${awayConceded})
-• ${awayTeam} xG: ${awayXG} (avg scored: ${awayGoals}, opponent conceded: ${homeConceded})
-• TOTAL xG: ${totalXG}
+📊 EXPECTED GOALS (xG) HESAPLAMASI
+┌────────────────────────────────────────────────────────────────┐
+│ ${homeTeam} xG: ${homeXG} (attığı: ${homeGoals}, rakip yediği: ${awayConceded})     │
+│ ${awayTeam} xG: ${awayXG} (attığı: ${awayGoals}, rakip yediği: ${homeConceded})     │
+│ TOPLAM xG: ${totalXG}                                          │
+└────────────────────────────────────────────────────────────────┘
 
-📈 RAW STATISTICS
+📈 GOL İSTATİSTİKLERİ
 ${homeTeam}:
-• Over 2.5: ${homeForm?.over25Percentage || '50'}%
-• BTTS: ${homeForm?.bttsPercentage || '50'}%
+• Over 2.5: ${homeForm?.over25Percentage || '50'}% | BTTS: ${homeForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${homeForm?.cleanSheetPercentage || '20'}%
+• Gol Atamama: ${homeForm?.failedToScorePercentage || '20'}%
 
 ${awayTeam}:
-• Over 2.5: ${awayForm?.over25Percentage || '50'}%
-• BTTS: ${awayForm?.bttsPercentage || '50'}%
+• Over 2.5: ${awayForm?.over25Percentage || '50'}% | BTTS: ${awayForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${awayForm?.cleanSheetPercentage || '20'}%
+• Gol Atamama: ${awayForm?.failedToScorePercentage || '20'}%
 
-H2H Statistics (${h2h?.totalMatches || 0} matches):
-• Avg Goals: ${h2h?.avgGoals || 'N/A'}
+🔄 H2H İSTATİSTİKLERİ (${h2h?.totalMatches || 0} maç)
+• Ortalama Gol: ${h2h?.avgGoals || 'N/A'}
 • Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
 • BTTS: ${h2h?.bttsPercentage || 'N/A'}%
 
-💰 ODDS DATA
-• Match Winner: ${odds?.matchWinner?.home || 'N/A'} / ${odds?.matchWinner?.draw || 'N/A'} / ${odds?.matchWinner?.away || 'N/A'}
-• Over 2.5: ${odds?.overUnder?.['2.5']?.over || 'N/A'} | Under 2.5: ${odds?.overUnder?.['2.5']?.under || 'N/A'}
-• BTTS Yes: ${odds?.btts?.yes || 'N/A'} | No: ${odds?.btts?.no || 'N/A'}
+💰 ORAN ANALİZİ & VALUE TESPİTİ
+┌────────────────────────────────────────────────────────────────┐
+│ ORANLAR          │ IMPLIED PROB    │ SENİN HESABIN │ VALUE?   │
+├────────────────────────────────────────────────────────────────┤
+│ Ev: ${homeOdds}          │ %${homeImplied}           │ Hesapla!      │ ?        │
+│ Beraberlik: ${drawOdds}   │ %${drawImplied}           │ Hesapla!      │ ?        │
+│ Deplasman: ${awayOdds}    │ %${awayImplied}           │ Hesapla!      │ ?        │
+│ Over 2.5: ${over25Odds}   │ %${over25Implied}           │ Hesapla!      │ ?        │
+└────────────────────────────────────────────────────────────────┘
 
-FOCUS ON:
-1. xG analysis - expected vs actual goals performance
-2. Poisson probability calculations for ALL markets
-3. Value bet identification (edge > 5%)
-4. Back EVERY claim with a NUMBER
-5. First half expected goals (typically 40-45% of match)
-6. Team-specific goal probabilities
+🎯 PROFESYONEL ANALİZ GÖREVLERİN:
+1. POİSSON DAĞILIMI: xG'den skor olasılıkları hesapla
+2. VALUE TESPİTİ: Piyasa oranı vs senin hesabın → %5+ fark = VALUE
+3. İLK YARI GOL: Toplam golün %40-45'i ilk yarıda → İY xG hesapla
+4. TAKIM BAZLI: Her takımın gol atma olasılığı (1 - e^(-xG))
+5. ORAN HAREKETİ: Oran düştüyse → sharp money, yükeldiyse → public money
+
+⚠️ VALUE BET KURALLARI:
+- Edge > %5 → VALUE VAR
+- Edge > %10 → GÜÇLÜ VALUE
+- Edge < %5 → VALUE YOK, oynama
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
-    "overUnder35": { "prediction": "Over 3.5/Under 3.5", "confidence": 50-90, "reasoning": "..." },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "firstHalfOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
-    "homeTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." },
-    "awayTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "..." }
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "Poisson: %X Ev, %X Beraberlik, %X Deplasman", "keyFactors": [] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "xG ${totalXG} → Poisson Over 2.5: %X", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "Poisson: 0 gol %X, 1 gol %X → Under 1.5: %X" },
+    "overUnder35": { "prediction": "Over 3.5/Under 3.5", "confidence": 50-90, "reasoning": "Poisson kümülatif hesap" },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "Ev gol %X, Dep gol %X → BTTS: %X", "keyFactors": [] },
+    "firstHalfOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "İY xG: ${(parseFloat(totalXG) * 0.43).toFixed(2)}" },
+    "homeTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "Ev xG ${homeXG} → Gol atma: %X" },
+    "awayTeamOver05": { "prediction": "Over 0.5/Under 0.5", "confidence": 50-90, "reasoning": "Dep xG ${awayXG} → Gol atma: %X" }
   },
   "specializedInsights": {
     "xgPrediction": { "homeXG": ${homeXG}, "awayXG": ${awayXG}, "totalXG": ${totalXG} },
     "poissonScores": [{ "score": "1-1", "probability": 12.5 }, { "score": "2-1", "probability": 10.2 }, { "score": "1-0", "probability": 8.5 }],
-    "valueBets": [{ "market": "Over 2.5", "selection": "Over", "fairOdds": 1.85, "edge": 5.2 }],
-    "goalProbabilities": { "0goals": 8, "1goal": 18, "2goals": 28, "3goals": 24, "4plus": 22 }
+    "valueBets": [{ "market": "Hangi market", "selection": "Seçim", "impliedProb": 0, "calculatedProb": 0, "edge": 0 }],
+    "goalProbabilities": { "0goals": 0, "1goal": 0, "2goals": 0, "3goals": 0, "4plus": 0 }
   },
-  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Statistical edge explanation with numbers" },
-  "overallAnalysis": "3-4 sentence statistical summary with numbers"
+  "bestBet": { "market": "VALUE en yüksek market", "selection": "Seçim", "confidence": 50-90, "reasoning": "Implied %X, Hesaplanan %X → Edge %X" },
+  "overallAnalysis": "xG ${totalXG}. Poisson: En olası skor X-X (%X). VALUE: [market] (%X edge)"
 }`;
 }
 
 function buildPatternPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
-  const { homeTeam, awayTeam, homeForm, awayForm, h2h } = matchData;
+  const { homeTeam, awayTeam, homeForm, awayForm, h2h, odds } = matchData;
+  
+  // Form string analysis
+  const homeFormStr = homeForm?.form || 'NNNNN';
+  const awayFormStr = awayForm?.form || 'NNNNN';
+  const homeWinStreak = (homeFormStr.match(/^W+/) || [''])[0].length;
+  const homeLossStreak = (homeFormStr.match(/^L+/) || [''])[0].length;
+  const awayWinStreak = (awayFormStr.match(/^W+/) || [''])[0].length;
+  const awayLossStreak = (awayFormStr.match(/^L+/) || [''])[0].length;
+  
+  // H2H summary
+  const h2hTotal = h2h?.totalMatches || 0;
+  const h2hHomeWins = h2h?.homeWins || 0;
+  const h2hDraws = h2h?.draws || 0;
+  const h2hAwayWins = h2h?.awayWins || 0;
 
-  return `You are GEMINI - THE PATTERN HUNTER in a multi-AI football prediction system.
+  return `🎓 SEN BİR PROFESYONEL BAHİS ANALİSTİSİN - TARİHSEL PATTERN & RİSK UZMANI
 
-YOUR UNIQUE ROLE: Find patterns in H2H history, seasonal trends, streaks, and anomalies.
+⚠️ KRITIK: H2H verisi yoksa veya yetersizse, form verilerine odaklan. Uydurma yapma!
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH: ${homeTeam} vs ${awayTeam}
+MAÇ: ${homeTeam} vs ${awayTeam}
 ═══════════════════════════════════════════════════════════════════════════════
 
-🔄 H2H HISTORICAL PATTERNS (${h2h?.totalMatches || 0} matches)
-• ${homeTeam} wins: ${h2h?.homeWins || 0}
-• Draws: ${h2h?.draws || 0}
-• ${awayTeam} wins: ${h2h?.awayWins || 0}
-• H2H Dominance: ${(h2h?.homeWins || 0) > (h2h?.awayWins || 0) ? homeTeam : (h2h?.awayWins || 0) > (h2h?.homeWins || 0) ? awayTeam : 'Balanced'}
-• Avg Goals in H2H: ${h2h?.avgGoals || 'N/A'}
-• H2H Over 2.5: ${h2h?.over25Percentage || 'N/A'}%
-• H2H BTTS: ${h2h?.bttsPercentage || 'N/A'}%
+🔄 H2H TARİHSEL ANALİZ (${h2hTotal} maç)
+${h2hTotal >= 3 ? `
+┌────────────────────────────────────────────────────────────────┐
+│ ${homeTeam}: ${h2hHomeWins} GALİBİYET (${h2hTotal > 0 ? Math.round(h2hHomeWins/h2hTotal*100) : 0}%)                    │
+│ Beraberlik: ${h2hDraws} (${h2hTotal > 0 ? Math.round(h2hDraws/h2hTotal*100) : 0}%)                                    │
+│ ${awayTeam}: ${h2hAwayWins} GALİBİYET (${h2hTotal > 0 ? Math.round(h2hAwayWins/h2hTotal*100) : 0}%)                    │
+├────────────────────────────────────────────────────────────────┤
+│ Ortalama Gol: ${h2h?.avgGoals || 'N/A'} | Over 2.5: ${h2h?.over25Percentage || 'N/A'}% | BTTS: ${h2h?.bttsPercentage || 'N/A'}% │
+└────────────────────────────────────────────────────────────────┘
+` : `
+⚠️ YETERSİZ H2H VERİSİ (${h2hTotal} maç) - Form analizine odaklan!
+`}
 
-📈 STREAK ANALYSIS
-${homeTeam}:
-• Current Form: ${homeForm?.form || 'N/A'}
-• Win Streak: ${(homeForm?.form || '').match(/^W+/)?.[0]?.length || 0}
-• Loss Streak: ${(homeForm?.form || '').match(/^L+/)?.[0]?.length || 0}
-• Record: ${homeForm?.record || 'N/A'}
+📈 SERİ ANALİZİ (REGRESSION RİSKİ)
+┌────────────────────────────────────────────────────────────────┐
+│ ${homeTeam}:                                                   │
+│   • Form: ${homeFormStr} | Puan: ${homeForm?.points || 0}/15             │
+│   • Galibiyet Serisi: ${homeWinStreak} ${homeWinStreak >= 3 ? '🔥 SICAK!' : homeWinStreak >= 2 ? '👍' : ''}           │
+│   • Mağlubiyet Serisi: ${homeLossStreak} ${homeLossStreak >= 3 ? '❄️ SOĞUK!' : homeLossStreak >= 2 ? '👎' : ''}        │
+├────────────────────────────────────────────────────────────────┤
+│ ${awayTeam}:                                                   │
+│   • Form: ${awayFormStr} | Puan: ${awayForm?.points || 0}/15             │
+│   • Galibiyet Serisi: ${awayWinStreak} ${awayWinStreak >= 3 ? '🔥 SICAK!' : awayWinStreak >= 2 ? '👍' : ''}           │
+│   • Mağlubiyet Serisi: ${awayLossStreak} ${awayLossStreak >= 3 ? '❄️ SOĞUK!' : awayLossStreak >= 2 ? '👎' : ''}        │
+└────────────────────────────────────────────────────────────────┘
 
-${awayTeam}:
-• Current Form: ${awayForm?.form || 'N/A'}
-• Win Streak: ${(awayForm?.form || '').match(/^W+/)?.[0]?.length || 0}
-• Loss Streak: ${(awayForm?.form || '').match(/^L+/)?.[0]?.length || 0}
-• Record: ${awayForm?.record || 'N/A'}
+📊 GOL PATTERN'LERİ
+${homeTeam}: Over 2.5 ${homeForm?.over25Percentage || 'N/A'}% | BTTS ${homeForm?.bttsPercentage || 'N/A'}%
+${awayTeam}: Over 2.5 ${awayForm?.over25Percentage || 'N/A'}% | BTTS ${awayForm?.bttsPercentage || 'N/A'}%
 
-FOCUS ON:
-1. H2H patterns - who historically dominates?
-2. Streak analysis - regression to mean?
-3. Recurring themes in this matchup (always BTTS? usually low scoring?)
-4. Any anomalies or pattern breaks
-5. First half patterns in H2H
-6. Common scorelines in this fixture
+💰 ORAN HAREKETİ (Sharp Money?)
+• Ev: ${odds?.matchWinner?.home || 'N/A'} | Beraberlik: ${odds?.matchWinner?.draw || 'N/A'} | Deplasman: ${odds?.matchWinner?.away || 'N/A'}
+
+🎯 PROFESYONEL ANALİZ GÖREVLERİN:
+1. H2H PATTERN: Bu takımlar karşılaştığında ne oluyor? (gollü/golsüz, favori kazanıyor mu?)
+2. SERİ ANALİZİ: 3+ seri → REGRESSION RİSKİ (ortalamaya dönüş)
+3. EV/DEPLASMAN PATTERN: Ev sahibi evde nasıl, deplasman dışarıda nasıl?
+4. GOL ZAMANLAMA: İlk yarı mı ikinci yarı mı golcü?
+5. ANOMALİ TESPİTİ: Normal dışı bir durum var mı?
+
+⚠️ REGRESSION KURALLARI:
+- 3+ galibiyet serisi → Düşüş riski %30+
+- 3+ mağlubiyet serisi → Yükseliş beklentisi %30+
+- "Hot streak" sonsuza kadar sürmez!
+
+🛡️ RİSK DEĞERLENDİRMESİ:
+- Yüksek seri + zayıf rakip = Dikkat!
+- Düşük seri + güçlü rakip = Fırsat olabilir
 
 RETURN ONLY THIS JSON FORMAT:
 {
   "predictions": {
-    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "..." },
-    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "...", "keyFactors": [] },
-    "correctScore": { "prediction": "1-1 or 2-1 or etc", "confidence": 20-50, "reasoning": "Based on H2H patterns" },
-    "doubleChance": { "prediction": "1X/X2/12", "confidence": 60-85, "reasoning": "Safer bet option" }
+    "matchResult": { "prediction": "Home Win/Draw/Away Win", "confidence": 50-90, "reasoning": "H2H: %X ev, %X beraberlik. Form: ...", "keyFactors": [] },
+    "overUnder25": { "prediction": "Over 2.5/Under 2.5", "confidence": 50-90, "reasoning": "H2H Over 2.5: %X. Son 5: Ev %X, Dep %X", "keyFactors": [] },
+    "overUnder15": { "prediction": "Over 1.5/Under 1.5", "confidence": 50-90, "reasoning": "H2H'de 0-0 veya 1-0: X/Y maç" },
+    "btts": { "prediction": "Yes/No", "confidence": 50-90, "reasoning": "H2H BTTS: %X. Form BTTS: Ev %X, Dep %X", "keyFactors": [] },
+    "correctScore": { "prediction": "1-1 veya 2-1 vs", "confidence": 20-50, "reasoning": "H2H'de en sık skor: ..." },
+    "doubleChance": { "prediction": "1X/X2/12", "confidence": 60-85, "reasoning": "Güvenli opsiyon çünkü..." }
   },
   "specializedInsights": {
-    "h2hPattern": "Description of H2H pattern",
-    "streakAnalysis": "Who's on a hot/cold streak",
-    "regressionRisk": "Is regression to mean likely?",
+    "h2hPattern": "Bu karşılaşmada X pattern'i var: ...",
+    "streakAnalysis": { "home": "${homeWinStreak > 0 ? 'Galibiyet' : homeLossStreak > 0 ? 'Mağlubiyet' : 'Karışık'} serisi", "away": "${awayWinStreak > 0 ? 'Galibiyet' : awayLossStreak > 0 ? 'Mağlubiyet' : 'Karışık'} serisi" },
+    "regressionRisk": { "home": "${homeWinStreak >= 3 || homeLossStreak >= 3 ? 'HIGH' : 'LOW'}", "away": "${awayWinStreak >= 3 || awayLossStreak >= 3 ? 'HIGH' : 'LOW'}" },
     "anomalyDetected": false,
-    "commonScorelines": ["1-1", "2-1", "1-0"]
+    "commonScorelines": ["X-X", "X-X", "X-X"]
   },
-  "bestBet": { "market": "Market name", "selection": "Selection", "confidence": 50-90, "reasoning": "Pattern-based recommendation" },
-  "overallAnalysis": "3-4 sentence pattern analysis summary"
+  "bestBet": { "market": "Pattern'e dayalı en güçlü market", "selection": "Seçim", "confidence": 50-90, "reasoning": "Tarihsel veri + form analizi" },
+  "overallAnalysis": "H2H: X maçta Y pattern. Seri analizi: ... Regression riski: ..."
 }`;
 }
 
