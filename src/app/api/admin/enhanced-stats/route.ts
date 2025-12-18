@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+import { 
+  getOverallStats, 
+  getModelStats, 
+  getRecentPredictions, 
+  getDailyStats 
+} from '@/lib/admin/enhanced-service';
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type') || 'all';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const days = parseInt(searchParams.get('days') || '7');
+
+    let data: object = {};
+
+    switch (type) {
+      case 'overall':
+        data = await getOverallStats();
+        break;
+
+      case 'models':
+        data = { models: await getModelStats() };
+        break;
+
+      case 'recent':
+        data = { predictions: await getRecentPredictions(limit) };
+        break;
+
+      case 'daily':
+        data = { daily: await getDailyStats(days) };
+        break;
+
+      case 'all':
+      default:
+        const [overall, models, recent, daily] = await Promise.all([
+          getOverallStats(),
+          getModelStats(),
+          getRecentPredictions(limit),
+          getDailyStats(days)
+        ]);
+
+        data = {
+          overall,
+          models,
+          recent,
+          daily,
+          generated_at: new Date().toISOString()
+        };
+        break;
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...data
+    });
+
+  } catch (error) {
+    console.error('Enhanced stats API error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch stats' },
+      { status: 500 }
+    );
+  }
+}
+

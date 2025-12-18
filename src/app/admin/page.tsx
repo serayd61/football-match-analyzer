@@ -1,1040 +1,347 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { 
-  FiBarChart2, FiTrendingUp, FiCheckCircle, FiClock, 
-  FiActivity, FiAward, FiTarget, FiFilter,
-  FiChevronDown, FiChevronUp, FiCalendar, FiRefreshCw
-} from 'react-icons/fi';
-import { 
-  SiGooglegemini, SiOpenai 
-} from 'react-icons/si';
-import { BsRobot, BsCpu } from 'react-icons/bs';
-import { GiBrain } from 'react-icons/gi';
+import Link from 'next/link';
 
-interface DashboardStats {
-  overview: {
-    totalPredictions: number;
-    pendingPredictions: number;
-    settledPredictions: number;
-    overallAccuracy: number;
-    todayPredictions: number;
-    todayAccuracy: number | null;
-  };
-  byAnalysisType: {
-    type: string;
-    total: number;
-    correct: number;
-    accuracy: number;
-  }[];
-  byMarket: {
-    market: string;
-    total: number;
-    correct: number;
-    accuracy: number;
-    byModel: {
-      model: string;
-      total: number;
-      correct: number;
-      accuracy: number;
-    }[];
-  }[];
-  byModel: {
-    model: string;
-    total: number;
-    correct: number;
-    accuracy: number;
-    avgConfidence: number;
-    calibrationScore: number;
-  }[];
-  recentPredictions: any[];
-  dailyTrend: {
-    date: string;
-    total: number;
-    correct: number;
-    accuracy: number;
-  }[];
+// Admin emails that can access this page
+const ADMIN_EMAILS = ['serayd61@hotmail.com', 'info@swissdigital.life'];
+
+// AI Model configurations
+const AI_MODELS: Record<string, { name: string; icon: string; color: string; gradient: string }> = {
+  claude: { name: 'Claude', icon: '🧠', color: '#FF6B35', gradient: 'from-orange-500 to-red-500' },
+  gpt4: { name: 'GPT-4', icon: '🤖', color: '#10B981', gradient: 'from-green-500 to-emerald-500' },
+  gemini: { name: 'Gemini', icon: '💎', color: '#3B82F6', gradient: 'from-blue-500 to-cyan-500' },
+  perplexity: { name: 'Perplexity', icon: '🔮', color: '#8B5CF6', gradient: 'from-purple-500 to-violet-500' },
+  stats_agent: { name: 'Stats Agent', icon: '📊', color: '#F59E0B', gradient: 'from-amber-500 to-yellow-500' },
+  deep_analysis: { name: 'Deep Analysis', icon: '🔬', color: '#EC4899', gradient: 'from-pink-500 to-rose-500' },
+  consensus: { name: 'Consensus', icon: '🎯', color: '#14B8A6', gradient: 'from-teal-500 to-cyan-500' },
+};
+
+interface OverallStats {
+  total_predictions: number;
+  settled_predictions: number;
+  pending_predictions: number;
+  btts: { total: number; correct: number; accuracy: string };
+  over_under: { total: number; correct: number; accuracy: string };
+  match_result: { total: number; correct: number; accuracy: string };
 }
 
-interface DetailedModelStats {
-  model: string;
-  markets: {
-    market: string;
-    periods: {
-      period: 'daily' | 'weekly' | 'monthly' | 'all';
-      total: number;
-      correct: number;
-      accuracy: number;
-      avgConfidence: number;
-      confidenceThresholds: {
-        threshold: number;
-        total: number;
-        correct: number;
-        accuracy: number;
-      }[];
-    }[];
-  }[];
+interface ModelStat {
+  model_name: string;
+  total_predictions: number;
+  btts: { total: number; correct: number; accuracy: string };
+  over_under: { total: number; correct: number; accuracy: string };
+  match_result: { total: number; correct: number; accuracy: string };
+  overall: { total: number; correct: number; accuracy: string };
+  avg_confidence: string;
 }
 
-interface ConfidenceThresholdAnalysis {
-  model: string;
-  market: string;
-  thresholds: {
-    minConfidence: number;
-    maxConfidence: number;
-    total: number;
-    correct: number;
-    accuracy: number;
-    recommendedBet: boolean;
-  }[];
-}
-
-interface WeeklyBreakdown {
-  weekStart: string;
-  weekEnd: string;
-  models: {
-    model: string;
-    markets: {
-      market: string;
-      total: number;
-      correct: number;
-      accuracy: number;
-    }[];
-    overallAccuracy: number;
-  }[];
-}
-
-interface PredictionRecord {
+interface Prediction {
   id: string;
   fixture_id: number;
   home_team: string;
   away_team: string;
   league: string;
   match_date: string;
-  analysis_type: string;
-  predictions: any;
-  consensus: any;
-  best_bets: any[];
-  risk_level: string;
-  status: string;
+  prediction_source: string;
+  consensus_btts: string;
+  consensus_btts_confidence: number;
+  consensus_over_under: string;
+  consensus_over_under_confidence: number;
+  consensus_match_result: string;
+  consensus_match_result_confidence: number;
+  is_settled: boolean;
+  actual_home_score: number;
+  actual_away_score: number;
+  btts_correct: boolean;
+  over_under_correct: boolean;
+  match_result_correct: boolean;
   created_at: string;
+  ai_model_predictions?: any[];
 }
-
-const MODEL_ICONS: { [key: string]: any } = {
-  claude: GiBrain,
-  gpt4: SiOpenai,
-  gemini: SiGooglegemini,
-  perplexity: BsRobot,
-  consensus: FiTarget,
-};
-
-const MODEL_COLORS: { [key: string]: string } = {
-  claude: 'from-orange-500 to-amber-600',
-  gpt4: 'from-emerald-500 to-green-600',
-  gemini: 'from-blue-500 to-indigo-600',
-  perplexity: 'from-purple-500 to-violet-600',
-  consensus: 'from-cyan-500 to-teal-600',
-};
-
-const MODEL_NAMES: { [key: string]: string } = {
-  claude: 'Claude',
-  gpt4: 'GPT-4',
-  gemini: 'Gemini',
-  perplexity: 'Perplexity',
-  consensus: 'Consensus',
-};
-
-const MARKET_NAMES: { [key: string]: string } = {
-  matchResult: 'Maç Sonucu',
-  over25: 'Üst/Alt 2.5',
-  btts: 'KG Var/Yok',
-  firstHalfGoals: 'İlk Yarı Gol',
-};
-
-const ANALYSIS_TYPE_NAMES: { [key: string]: string } = {
-  'quad-brain': 'Quad-Brain',
-  'agents': 'AI Agents',
-  'ai-consensus': 'AI Consensus',
-};
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [predictions, setPredictions] = useState<PredictionRecord[]>([]);
+  
+  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'predictions' | 'analytics'>('overview');
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
-  const [expandedPrediction, setExpandedPrediction] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [settling, setSettling] = useState(false);
+  
+  const [overall, setOverall] = useState<OverallStats | null>(null);
+  const [models, setModels] = useState<ModelStat[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'settled'>('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [activeTab, setActiveTab] = useState<'overview' | 'detailed' | 'predictions'>('overview');
-  const [detailedStats, setDetailedStats] = useState<{
-    modelStats: DetailedModelStats[];
-    confidenceAnalysis: ConfidenceThresholdAnalysis[];
-    weeklyBreakdown: WeeklyBreakdown[];
-  } | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('claude');
-  const [selectedMarket, setSelectedMarket] = useState<string>('matchResult');
-  const [isSettling, setIsSettling] = useState(false);
-  const [settleResult, setSettleResult] = useState<{success: boolean; message: string; stats?: any} | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [isDebugging, setIsDebugging] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>('all');
 
-  // Admin erişim kontrolü - sadece belirli email'ler girebilir
-  const ADMIN_EMAILS = [
-    'serayd61@hotmail.com',
-  ];
-
+  // Auth check
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (status === 'loading') return;
+    if (!session) {
       router.push('/login');
-    } else if (status === 'authenticated' && session?.user?.email) {
-      if (!ADMIN_EMAILS.includes(session.user.email)) {
-        router.push('/dashboard');
-      }
+      return;
     }
-  }, [status, session, router]);
-
-  useEffect(() => {
-    if (session) {
-      fetchData();
+    if (!ADMIN_EMAILS.includes(session.user?.email || '')) {
+      router.push('/dashboard');
     }
-  }, [session, period, filterStatus, currentPage]);
+  }, [session, status, router]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  // Fetch data
+  const fetchData = useCallback(async () => {
     try {
-      // Fetch stats
-      const statsRes = await fetch(`/api/admin/stats?period=${period}`);
-      const statsData = await statsRes.json();
-      if (statsData.success) {
-        setStats(statsData.stats);
-      }
+      setLoading(true);
+      const res = await fetch('/api/admin/enhanced-stats?type=all&limit=100');
+      const data = await res.json();
 
-      // Fetch predictions
-      const predRes = await fetch(
-        `/api/admin/predictions?page=${currentPage}&limit=10&status=${filterStatus}`
-      );
-      const predData = await predRes.json();
-      if (predData.success) {
-        setPredictions(predData.data);
-        setTotalPages(predData.totalPages);
+      if (data.success) {
+        setOverall(data.overall);
+        setModels(data.models || []);
+        setPredictions(data.recent || []);
       }
-
-      // Fetch detailed stats
-      const detailedRes = await fetch('/api/admin/detailed-stats');
-      const detailedData = await detailedRes.json();
-      if (detailedData.success) {
-        setDetailedStats(detailedData.data);
-      }
-
-      setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching admin data:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (session && ADMIN_EMAILS.includes(session.user?.email || '')) {
+      fetchData();
+    }
+  }, [session, fetchData]);
+
+  // Refresh data
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
   };
 
-  // Maç sonuçlarını güncelle - SportMonks'tan çek
-  const settleResults = async () => {
-    setIsSettling(true);
-    setSettleResult(null);
+  // Settle results
+  const handleSettle = async () => {
+    setSettling(true);
     try {
       const res = await fetch('/api/cron/settle-admin-predictions', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
       const data = await res.json();
       
-      const providerInfo = data.stats?.providers 
-        ? Object.entries(data.stats.providers).map(([p, c]) => `${p}: ${c}`).join(', ')
-        : '';
-      
-      setSettleResult({
-        success: data.success,
-        message: data.success 
-          ? `✅ ${data.stats?.settled || 0} maç sonucu güncellendi!` 
-          : `❌ Hata: ${data.error}`,
-        stats: { ...data.stats, providerInfo },
-      });
-
-      // Sonuçlar güncellendiyse verileri yeniden çek
-      if (data.success && data.stats?.settled > 0) {
+      if (data.success) {
+        alert(`✅ ${data.settled || 0} tahmin güncellendi!`);
         await fetchData();
+      } else {
+        alert(`❌ Hata: ${data.error || 'Bilinmeyen hata'}`);
       }
-    } catch (error: any) {
-      setSettleResult({
-        success: false,
-        message: `❌ Hata: ${error.message}`,
-      });
+    } catch (error) {
+      alert('❌ Sonuç güncelleme hatası');
+    } finally {
+      setSettling(false);
     }
-    setIsSettling(false);
-
-    // 5 saniye sonra bildirimi kaldır
-    setTimeout(() => setSettleResult(null), 5000);
   };
 
-  // Debug sistem durumu
-  const runDebug = async () => {
-    setIsDebugging(true);
-    try {
-      const res = await fetch('/api/admin/debug');
-      const data = await res.json();
-      setDebugInfo(data);
-    } catch (error: any) {
-      setDebugInfo({ error: error.message });
-    }
-    setIsDebugging(false);
-  };
+  // Filter predictions
+  const filteredPredictions = predictions.filter(p => {
+    if (filterStatus === 'pending' && p.is_settled) return false;
+    if (filterStatus === 'settled' && !p.is_settled) return false;
+    if (selectedModel !== 'all' && p.prediction_source !== selectedModel) return false;
+    return true;
+  });
 
-  // Auto-refresh (her 5 dakikada bir)
-  useEffect(() => {
-    if (!autoRefresh) return;
-    
-    const interval = setInterval(() => {
-      fetchData();
-    }, 5 * 60 * 1000); // 5 dakika
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  const getAccuracyColor = (accuracy: number) => {
-    if (accuracy >= 70) return 'text-emerald-400';
-    if (accuracy >= 55) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getAccuracyBg = (accuracy: number) => {
-    if (accuracy >= 70) return 'bg-emerald-500/20 border-emerald-500/30';
-    if (accuracy >= 55) return 'bg-yellow-500/20 border-yellow-500/30';
-    return 'bg-red-500/20 border-red-500/30';
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const isAdmin = session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
-
-  if (status === 'loading') {
+  // Loading state
+  if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Admin Panel yükleniyor...</p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Admin Panel Yükleniyor...</p>
         </div>
       </div>
     );
   }
 
-  if (status === 'authenticated' && !isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Erişim Engellendi</h1>
-          <p className="text-gray-400">Bu sayfaya erişim yetkiniz yok.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Veriler yükleniyor...</p>
-        </div>
-      </div>
-    );
+  // Unauthorized
+  if (!session || !ADMIN_EMAILS.includes(session.user?.email || '')) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-zinc-900 p-4 md:p-6 pb-24">
-      <div className="max-w-7xl mx-auto">
-        {/* Settle Result Notification */}
-        {settleResult && (
-          <div className={`fixed top-4 right-4 z-50 animate-fade-in ${
-            settleResult.success ? 'bg-emerald-500/90' : 'bg-red-500/90'
-          } text-white px-6 py-4 rounded-xl shadow-2xl backdrop-blur-sm max-w-md`}>
-            <div className="font-semibold mb-1">{settleResult.message}</div>
-            {settleResult.stats && (
-              <div className="text-sm opacity-90">
-                <div>Kontrol: {settleResult.stats.checked} | Güncellenen: {settleResult.stats.settled} | Hata: {settleResult.stats.errors}</div>
-                {settleResult.stats.providerInfo && (
-                  <div className="mt-1 text-xs opacity-75">📡 Kaynaklar: {settleResult.stats.providerInfo}</div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
+      {/* Header */}
+      <header className="bg-gray-800/50 border-b border-gray-700 sticky top-0 z-50 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard" className="text-gray-400 hover:text-white">
+                ← Dashboard
+              </Link>
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                ⚙️ Admin Panel
+                <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-full">
+                  PRO
+                </span>
+              </h1>
+            </div>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                <FiBarChart2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">
-                  Admin Panel
-                </h1>
-                <p className="text-gray-400 text-sm">AI Prediction Performance Tracker</p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Sonuçları Güncelle Butonu */}
               <button
-                onClick={settleResults}
-                disabled={isSettling}
-                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                  isSettling
-                    ? 'bg-amber-500/50 text-amber-200 cursor-wait'
-                    : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500 shadow-lg hover:shadow-amber-500/25'
-                }`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
-                {isSettling ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-amber-200 border-t-transparent rounded-full animate-spin" />
-                    Güncelleniyor...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Sonuçları Güncelle
-                  </>
-                )}
+                <span className={refreshing ? 'animate-spin' : ''}>🔄</span>
+                Yenile
               </button>
-
-              {/* Debug Butonu */}
               <button
-                onClick={runDebug}
-                disabled={isDebugging}
-                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                  isDebugging
-                    ? 'bg-gray-500/50 text-gray-200 cursor-wait'
-                    : 'bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg'
-                }`}
+                onClick={handleSettle}
+                disabled={settling}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
-                {isDebugging ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-gray-200 border-t-transparent rounded-full animate-spin" />
-                    Kontrol Ediliyor...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    🔍 Sistem Durumu
-                  </>
-                )}
+                <span className={settling ? 'animate-spin' : ''}>⚡</span>
+                Sonuçları Güncelle
               </button>
-
-              {/* Auto-refresh Toggle */}
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                  autoRefresh
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
-                }`}
-              >
-                <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-                {autoRefresh ? 'Otomatik (5dk)' : 'Otomatik Kapalı'}
-              </button>
-
-              {/* Last Updated */}
-              {lastUpdated && (
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <FiClock className="w-3 h-3" />
-                  {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-6 py-3 rounded-t-lg text-sm font-semibold transition-all ${
-              activeTab === 'overview'
-                ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-500'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-            }`}
-          >
-            📊 Genel Bakış
-          </button>
-          <button
-            onClick={() => setActiveTab('detailed')}
-            className={`px-6 py-3 rounded-t-lg text-sm font-semibold transition-all ${
-              activeTab === 'detailed'
-                ? 'bg-purple-500/20 text-purple-400 border-b-2 border-purple-500'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-            }`}
-          >
-            🎯 Detaylı İstatistikler
-          </button>
-          <button
-            onClick={() => setActiveTab('predictions')}
-            className={`px-6 py-3 rounded-t-lg text-sm font-semibold transition-all ${
-              activeTab === 'predictions'
-                ? 'bg-emerald-500/20 text-emerald-400 border-b-2 border-emerald-500'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-            }`}
-          >
-            📋 Tahmin Kayıtları
-          </button>
-          <div className="flex-1"></div>
-          <button
-            onClick={fetchData}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10 transition-all flex items-center gap-2"
-          >
-            <FiRefreshCw className="w-4 h-4" />
-            Yenile
-          </button>
-        </div>
-
-        {/* Period Filter - Only show on overview */}
-        {activeTab === 'overview' && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {(['7d', '30d', '90d', 'all'] as const).map((p) => (
+          {/* Tabs */}
+          <div className="flex gap-2 mt-4">
+            {[
+              { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
+              { id: 'models', label: '🤖 AI Modelleri', icon: '🤖' },
+              { id: 'predictions', label: '📝 Tahminler', icon: '📝' },
+              { id: 'analytics', label: '📈 Analitik', icon: '📈' },
+            ].map(tab => (
               <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  period === p
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-700'
                 }`}
               >
-                {p === '7d' ? '7 Gün' : p === '30d' ? '30 Gün' : p === '90d' ? '90 Gün' : 'Tümü'}
+                {tab.label}
               </button>
             ))}
           </div>
-        )}
+        </div>
+      </header>
 
-        {/* ==================== OVERVIEW TAB ==================== */}
-        {activeTab === 'overview' && (
-          <>
-            {/* Overview Cards */}
-            {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <FiActivity className="w-5 h-5 text-blue-400" />
-                <span className="text-gray-400 text-sm">Toplam Tahmin</span>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.overview.totalPredictions}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Bugün: {stats.overview.todayPredictions}
-              </p>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && overall && (
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                icon="📊"
+                label="Toplam Tahmin"
+                value={overall.total_predictions}
+                color="blue"
+              />
+              <StatCard
+                icon="✅"
+                label="Sonuçlanan"
+                value={overall.settled_predictions}
+                color="green"
+              />
+              <StatCard
+                icon="⏳"
+                label="Bekleyen"
+                value={overall.pending_predictions}
+                color="yellow"
+              />
+              <StatCard
+                icon="🎯"
+                label="Genel Başarı"
+                value={`${((parseInt(overall.btts.accuracy) + parseInt(overall.over_under.accuracy) + parseInt(overall.match_result.accuracy)) / 3).toFixed(1)}%`}
+                color="purple"
+              />
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/20 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <FiCheckCircle className="w-5 h-5 text-emerald-400" />
-                <span className="text-gray-400 text-sm">Sonuçlanan</span>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.overview.settledPredictions}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Bekleyen: {stats.overview.pendingPredictions}
-              </p>
+            {/* Market Performance */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <MarketCard
+                title="KG Var/Yok (BTTS)"
+                emoji="⚽"
+                total={overall.btts.total}
+                correct={overall.btts.correct}
+                accuracy={overall.btts.accuracy}
+                color="emerald"
+              />
+              <MarketCard
+                title="Üst/Alt 2.5"
+                emoji="📈"
+                total={overall.over_under.total}
+                correct={overall.over_under.correct}
+                accuracy={overall.over_under.accuracy}
+                color="blue"
+              />
+              <MarketCard
+                title="Maç Sonucu"
+                emoji="🏆"
+                total={overall.match_result.total}
+                correct={overall.match_result.correct}
+                accuracy={overall.match_result.accuracy}
+                color="purple"
+              />
             </div>
 
-            <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/20 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <FiTarget className="w-5 h-5 text-cyan-400" />
-                <span className="text-gray-400 text-sm">Genel Başarı</span>
-              </div>
-              <p className={`text-3xl font-bold ${getAccuracyColor(stats.overview.overallAccuracy)}`}>
-                %{stats.overview.overallAccuracy.toFixed(1)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {stats.overview.todayAccuracy !== null 
-                  ? `Bugün: %${stats.overview.todayAccuracy.toFixed(1)}`
-                  : 'Bugün: -'
-                }
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <FiClock className="w-5 h-5 text-amber-400" />
-                <span className="text-gray-400 text-sm">Bekleyen</span>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.overview.pendingPredictions}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Maç bekleniyor
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Model Performance */}
-        {stats && stats.byModel.length > 0 && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <FiAward className="w-5 h-5 text-amber-400" />
-              Model Performansları
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {stats.byModel.map((model) => {
-                const Icon = MODEL_ICONS[model.model] || FiTarget;
-                const colorClass = MODEL_COLORS[model.model] || 'from-gray-500 to-gray-600';
-                
-                return (
-                  <div
-                    key={model.model}
-                    className={`rounded-xl p-4 border ${getAccuracyBg(model.accuracy)}`}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
-                        <Icon className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="font-semibold text-white">
-                        {MODEL_NAMES[model.model] || model.model}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">Başarı</span>
-                        <span className={`font-bold ${getAccuracyColor(model.accuracy)}`}>
-                          %{model.accuracy.toFixed(1)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">Toplam</span>
-                        <span className="text-white">{model.total}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">Doğru</span>
-                        <span className="text-emerald-400">{model.correct}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 text-sm">Güven</span>
-                        <span className="text-cyan-400">%{model.avgConfidence.toFixed(0)}</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            model.accuracy >= 70 ? 'bg-emerald-500' : 
-                            model.accuracy >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(model.accuracy, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Market Performance */}
-        {stats && stats.byMarket.length > 0 && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <FiTrendingUp className="w-5 h-5 text-emerald-400" />
-              Bahis Türü Performansları
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-gray-400 font-medium">Bahis Türü</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-medium">Toplam</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-medium">Doğru</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-medium">Başarı %</th>
-                    {['claude', 'gpt4', 'gemini', 'perplexity'].map((model) => (
-                      <th key={model} className="text-center py-3 px-4 text-gray-400 font-medium">
-                        {MODEL_NAMES[model]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.byMarket.map((market) => (
-                    <tr key={market.market} className="border-b border-white/5">
-                      <td className="py-3 px-4 text-white font-medium">
-                        {MARKET_NAMES[market.market] || market.market}
-                      </td>
-                      <td className="text-center py-3 px-4 text-gray-300">{market.total}</td>
-                      <td className="text-center py-3 px-4 text-emerald-400">{market.correct}</td>
-                      <td className={`text-center py-3 px-4 font-bold ${getAccuracyColor(market.accuracy)}`}>
-                        %{market.accuracy.toFixed(1)}
-                      </td>
-                      {['claude', 'gpt4', 'gemini', 'perplexity'].map((model) => {
-                        const modelData = market.byModel.find((m) => m.model === model);
-                        return (
-                          <td key={model} className={`text-center py-3 px-4 ${
-                            modelData ? getAccuracyColor(modelData.accuracy) : 'text-gray-500'
-                          }`}>
-                            {modelData ? `%${modelData.accuracy.toFixed(1)}` : '-'}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Analysis Type Performance */}
-        {stats && stats.byAnalysisType.length > 0 && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <GiBrain className="w-5 h-5 text-purple-400" />
-              Analiz Türü Performansları
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {stats.byAnalysisType.map((type) => (
-                <div
-                  key={type.type}
-                  className={`rounded-xl p-4 border ${getAccuracyBg(type.accuracy)}`}
-                >
-                  <h3 className="font-semibold text-white mb-3">
-                    {ANALYSIS_TYPE_NAMES[type.type] || type.type}
-                  </h3>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className={`text-3xl font-bold ${getAccuracyColor(type.accuracy)}`}>
-                        %{type.accuracy.toFixed(1)}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {type.correct}/{type.total} doğru
-                      </p>
-                    </div>
-                    <div className="w-24 h-16">
-                      <div className="w-full bg-gray-700 rounded-full h-3">
-                        <div
-                          className={`h-3 rounded-full ${
-                            type.accuracy >= 70 ? 'bg-emerald-500' : 
-                            type.accuracy >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(type.accuracy, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Daily Trend Chart */}
-            {stats && stats.dailyTrend.length > 0 && (
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <FiCalendar className="w-5 h-5 text-blue-400" />
-                  Günlük Trend (Son 14 Gün)
-                </h2>
-                <div className="h-48 flex items-end justify-between gap-1">
-                  {stats.dailyTrend.map((day, index) => (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <div
-                        className={`w-full rounded-t-lg ${
-                          day.accuracy >= 70 ? 'bg-emerald-500' : 
-                          day.accuracy >= 55 ? 'bg-yellow-500' : 
-                          day.total === 0 ? 'bg-gray-700' : 'bg-red-500'
-                        }`}
-                        style={{ height: `${day.total > 0 ? Math.max(day.accuracy, 10) : 10}%` }}
-                        title={`${day.date}: %${day.accuracy.toFixed(1)} (${day.correct}/${day.total})`}
-                      />
-                      <span className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left">
-                        {new Date(day.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ==================== DETAILED STATISTICS TAB ==================== */}
-        {activeTab === 'detailed' && detailedStats && (
-          <>
-            {/* Model Selector */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Model Seç</label>
-                <div className="flex gap-2">
-                  {['claude', 'gpt4', 'gemini', 'perplexity', 'consensus'].map((model) => {
-                    const Icon = MODEL_ICONS[model] || FiTarget;
-                    return (
-                      <button
-                        key={model}
-                        onClick={() => setSelectedModel(model)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                          selectedModel === model
-                            ? `bg-gradient-to-r ${MODEL_COLORS[model] || 'from-gray-500 to-gray-600'} text-white`
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        {MODEL_NAMES[model]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* MODEL x MARKET x PERIOD MATRIX TABLE */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-              <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                <FiBarChart2 className="w-5 h-5 text-purple-400" />
-                {MODEL_NAMES[selectedModel]} - Detaylı Performans Matrisi
-              </h2>
-              <p className="text-gray-400 text-sm mb-6">Günlük, Haftalık, Aylık ve Tüm Zamanlar için bahis türü bazında başarı oranları</p>
-              
+            {/* Model Leaderboard */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                🏅 Model Liderlik Tablosu
+              </h3>
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-gray-400 font-semibold">Bahis Türü</th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-semibold">
-                        <span className="text-orange-400">📅 Bugün</span>
-                      </th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-semibold">
-                        <span className="text-blue-400">📆 Haftalık</span>
-                      </th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-semibold">
-                        <span className="text-purple-400">🗓️ Aylık</span>
-                      </th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-semibold">
-                        <span className="text-cyan-400">🏆 Tümü</span>
-                      </th>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">#</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Model</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Tahmin</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">BTTS</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Ü/A 2.5</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">MS</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Genel</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Güven</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {detailedStats.modelStats
-                      .find(m => m.model === selectedModel)
-                      ?.markets.map((market) => (
-                        <tr key={market.market} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-4 px-4">
-                            <span className="text-white font-semibold text-lg">
-                              {MARKET_NAMES[market.market] || market.market}
-                            </span>
-                          </td>
-                          {market.periods.map((period) => (
-                            <td key={period.period} className="text-center py-4 px-4">
-                              <div className={`text-2xl font-bold ${getAccuracyColor(period.accuracy)}`}>
-                                %{period.accuracy.toFixed(1)}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {period.correct}/{period.total} doğru
-                              </div>
-                              <div className="text-xs text-cyan-400 mt-0.5">
-                                ~%{period.avgConfidence.toFixed(0)} güven
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* CONFIDENCE THRESHOLD ANALYSIS */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-              <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                <FiTarget className="w-5 h-5 text-emerald-400" />
-                Güven Eşiği Analizi - {MODEL_NAMES[selectedModel]}
-              </h2>
-              <p className="text-gray-400 text-sm mb-6">Hangi güven oranından itibaren tahminler tutarlı? Yeşil = Önerilen (%60+ başarı, 5+ tahmin)</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {detailedStats.confidenceAnalysis
-                  .filter(ca => ca.model === selectedModel)
-                  .map((analysis) => (
-                    <div key={analysis.market} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h3 className="font-semibold text-white mb-4 text-center text-lg">
-                        {MARKET_NAMES[analysis.market] || analysis.market}
-                      </h3>
-                      <div className="space-y-2">
-                        {analysis.thresholds.map((threshold) => (
-                          <div
-                            key={`${threshold.minConfidence}-${threshold.maxConfidence}`}
-                            className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                              threshold.recommendedBet
-                                ? 'bg-emerald-500/20 border border-emerald-500/30'
-                                : 'bg-white/5 border border-white/5'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-400 text-sm font-medium">
-                                %{threshold.minConfidence}-{threshold.maxConfidence}
-                              </span>
-                              {threshold.recommendedBet && (
-                                <span className="text-xs bg-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full">
-                                  ✓ Önerilir
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <span className={`font-bold text-lg ${getAccuracyColor(threshold.accuracy)}`}>
-                                %{threshold.accuracy.toFixed(1)}
-                              </span>
-                              <span className="text-gray-500 text-xs ml-2">
-                                ({threshold.correct}/{threshold.total})
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* WEEKLY BREAKDOWN TABLE */}
-            {detailedStats.weeklyBreakdown && detailedStats.weeklyBreakdown.length > 0 && (
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-                <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                  <FiCalendar className="w-5 h-5 text-blue-400" />
-                  Haftalık Performans Karşılaştırması
-                </h2>
-                <p className="text-gray-400 text-sm mb-6">Son 8 haftanın model bazında performans analizi</p>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="text-left py-3 px-4 text-gray-400 font-semibold">Hafta</th>
-                        {['claude', 'gpt4', 'gemini', 'perplexity', 'consensus'].map((model) => (
-                          <th key={model} className="text-center py-3 px-4 text-gray-400 font-semibold">
-                            {MODEL_NAMES[model]}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detailedStats.weeklyBreakdown.slice(0, 8).map((week, idx) => (
-                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-3 px-4 text-white font-medium">
-                            {new Date(week.weekStart).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
-                            {' - '}
-                            {new Date(week.weekEnd).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
-                          </td>
-                          {['claude', 'gpt4', 'gemini', 'perplexity', 'consensus'].map((modelName) => {
-                            const modelData = week.models.find(m => m.model === modelName);
-                            const accuracy = modelData?.overallAccuracy || 0;
-                            return (
-                              <td key={modelName} className={`text-center py-3 px-4 font-bold ${getAccuracyColor(accuracy)}`}>
-                                {accuracy > 0 ? `%${accuracy.toFixed(1)}` : '-'}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* ALL MODELS COMPARISON - COMPACT VIEW */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8">
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <FiAward className="w-5 h-5 text-amber-400" />
-                Tüm Modeller - Aylık Karşılaştırma (Bahis Türü Bazında)
-              </h2>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-gray-400 font-semibold">Model</th>
-                      <th className="text-center py-3 px-4 text-orange-400 font-semibold">
-                        ⚽ MS
-                      </th>
-                      <th className="text-center py-3 px-4 text-blue-400 font-semibold">
-                        📊 Ü/A 2.5
-                      </th>
-                      <th className="text-center py-3 px-4 text-green-400 font-semibold">
-                        🥅 KG Var/Yok
-                      </th>
-                      <th className="text-center py-3 px-4 text-purple-400 font-semibold">
-                        📈 Genel
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailedStats.modelStats.map((model) => {
-                      const monthlyStats = model.markets.reduce((acc, market) => {
-                        const monthly = market.periods.find(p => p.period === 'monthly');
-                        acc[market.market] = monthly || { accuracy: 0, total: 0, correct: 0 };
-                        return acc;
-                      }, {} as any);
-                      
-                      const totalCorrect = model.markets.reduce((sum, m) => {
-                        const monthly = m.periods.find(p => p.period === 'monthly');
-                        return sum + (monthly?.correct || 0);
-                      }, 0);
-                      const totalAll = model.markets.reduce((sum, m) => {
-                        const monthly = m.periods.find(p => p.period === 'monthly');
-                        return sum + (monthly?.total || 0);
-                      }, 0);
-                      const overallAccuracy = totalAll > 0 ? (totalCorrect / totalAll) * 100 : 0;
-                      
-                      const Icon = MODEL_ICONS[model.model] || FiTarget;
+                    {models.map((model, idx) => {
+                      const config = AI_MODELS[model.model_name.toLowerCase().replace(/[^a-z0-9]/g, '_')] || 
+                                    AI_MODELS[model.model_name.toLowerCase()] ||
+                                    { name: model.model_name, icon: '🤖', color: '#666', gradient: 'from-gray-500 to-gray-600' };
                       
                       return (
-                        <tr key={model.model} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${MODEL_COLORS[model.model] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
-                                <Icon className="w-5 h-5 text-white" />
-                              </div>
-                              <span className="font-semibold text-white">{MODEL_NAMES[model.model]}</span>
+                        <tr key={model.model_name} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                          <td className="py-3 px-4">
+                            <span className={`text-xl ${idx === 0 ? '' : idx === 1 ? '' : idx === 2 ? '' : 'text-gray-500'}`}>
+                              {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{config.icon}</span>
+                              <span className="text-white font-medium">{config.name}</span>
                             </div>
                           </td>
-                          <td className={`text-center py-4 px-4 font-bold text-lg ${getAccuracyColor(monthlyStats.matchResult?.accuracy || 0)}`}>
-                            %{(monthlyStats.matchResult?.accuracy || 0).toFixed(1)}
-                            <div className="text-xs text-gray-500 font-normal">
-                              ({monthlyStats.matchResult?.correct || 0}/{monthlyStats.matchResult?.total || 0})
-                            </div>
+                          <td className="py-3 px-4 text-center text-gray-300">{model.total_predictions}</td>
+                          <td className="py-3 px-4 text-center">
+                            <AccuracyBadge accuracy={parseFloat(model.btts.accuracy)} />
                           </td>
-                          <td className={`text-center py-4 px-4 font-bold text-lg ${getAccuracyColor(monthlyStats.over25?.accuracy || 0)}`}>
-                            %{(monthlyStats.over25?.accuracy || 0).toFixed(1)}
-                            <div className="text-xs text-gray-500 font-normal">
-                              ({monthlyStats.over25?.correct || 0}/{monthlyStats.over25?.total || 0})
-                            </div>
+                          <td className="py-3 px-4 text-center">
+                            <AccuracyBadge accuracy={parseFloat(model.over_under.accuracy)} />
                           </td>
-                          <td className={`text-center py-4 px-4 font-bold text-lg ${getAccuracyColor(monthlyStats.btts?.accuracy || 0)}`}>
-                            %{(monthlyStats.btts?.accuracy || 0).toFixed(1)}
-                            <div className="text-xs text-gray-500 font-normal">
-                              ({monthlyStats.btts?.correct || 0}/{monthlyStats.btts?.total || 0})
-                            </div>
+                          <td className="py-3 px-4 text-center">
+                            <AccuracyBadge accuracy={parseFloat(model.match_result.accuracy)} />
                           </td>
-                          <td className={`text-center py-4 px-4 font-bold text-xl ${getAccuracyColor(overallAccuracy)}`}>
-                            %{overallAccuracy.toFixed(1)}
+                          <td className="py-3 px-4 text-center">
+                            <AccuracyBadge accuracy={parseFloat(model.overall.accuracy)} large />
                           </td>
+                          <td className="py-3 px-4 text-center text-gray-300">~{model.avg_confidence}%</td>
                         </tr>
                       );
                     })}
@@ -1042,351 +349,419 @@ export default function AdminPage() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
-        {/* ==================== PREDICTIONS TAB ==================== */}
-        {activeTab === 'predictions' && (
-          <>
-            {/* Predictions List */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <FiFilter className="w-5 h-5 text-cyan-400" />
-              Tahmin Kayıtları
-            </h2>
-            <div className="flex gap-2">
-              {(['all', 'pending', 'settled'] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setFilterStatus(s);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1 rounded-lg text-sm ${
-                    filterStatus === s
-                      ? 'bg-cyan-500 text-white'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                  }`}
-                >
-                  {s === 'all' ? 'Tümü' : s === 'pending' ? 'Bekleyen' : 'Sonuçlanan'}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* MODELS TAB */}
+        {activeTab === 'models' && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {models.map(model => {
+              const key = model.model_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+              const config = AI_MODELS[key] || AI_MODELS[model.model_name.toLowerCase()] ||
+                            { name: model.model_name, icon: '🤖', color: '#666', gradient: 'from-gray-500 to-gray-600' };
 
-          <div className="space-y-3">
-            {predictions.map((pred) => (
-              <div
-                key={pred.id}
-                className="bg-white/5 rounded-xl border border-white/10 overflow-hidden"
-              >
-                <div
-                  className="p-4 cursor-pointer"
-                  onClick={() => setExpandedPrediction(
-                    expandedPrediction === pred.id ? null : pred.id
-                  )}
+              return (
+                <div 
+                  key={model.model_name}
+                  className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        pred.status === 'settled' 
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-amber-500/20 text-amber-400'
-                      }`}>
-                        {pred.status === 'settled' ? 'Sonuçlandı' : 'Bekliyor'}
-                      </div>
+                  {/* Header */}
+                  <div className={`bg-gradient-to-r ${config.gradient} p-4`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl">{config.icon}</span>
                       <div>
-                        <p className="text-white font-medium">
-                          {pred.home_team} vs {pred.away_team}
-                        </p>
-                        <p className="text-gray-400 text-sm">{pred.league}</p>
+                        <h3 className="text-xl font-bold text-white">{config.name}</h3>
+                        <p className="text-white/70 text-sm">{model.total_predictions} tahmin</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className={`px-2 py-1 rounded text-xs ${
-                        pred.analysis_type === 'quad-brain' 
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : pred.analysis_type === 'agents'
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-cyan-500/20 text-cyan-400'
+                  </div>
+
+                  {/* Stats */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Genel Başarı</span>
+                      <span className={`text-2xl font-bold ${
+                        parseFloat(model.overall.accuracy) >= 60 ? 'text-green-400' :
+                        parseFloat(model.overall.accuracy) >= 50 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
-                        {ANALYSIS_TYPE_NAMES[pred.analysis_type] || pred.analysis_type}
-                      </div>
-                      <span className="text-gray-500 text-sm">
-                        {formatDate(pred.created_at)}
+                        %{model.overall.accuracy}
                       </span>
-                      {expandedPrediction === pred.id ? (
-                        <FiChevronUp className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <FiChevronDown className="w-5 h-5 text-gray-400" />
-                      )}
+                    </div>
+
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full bg-gradient-to-r ${config.gradient}`}
+                        style={{ width: `${model.overall.accuracy}%` }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2">
+                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                        <p className="text-xs text-gray-400">BTTS</p>
+                        <p className="text-lg font-bold text-white">%{model.btts.accuracy}</p>
+                        <p className="text-xs text-gray-500">{model.btts.correct}/{model.btts.total}</p>
+                      </div>
+                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                        <p className="text-xs text-gray-400">Ü/A</p>
+                        <p className="text-lg font-bold text-white">%{model.over_under.accuracy}</p>
+                        <p className="text-xs text-gray-500">{model.over_under.correct}/{model.over_under.total}</p>
+                      </div>
+                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                        <p className="text-xs text-gray-400">MS</p>
+                        <p className="text-lg font-bold text-white">%{model.match_result.accuracy}</p>
+                        <p className="text-xs text-gray-500">{model.match_result.correct}/{model.match_result.total}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-700">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Ort. Güven</span>
+                        <span className="text-white">~{model.avg_confidence}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {expandedPrediction === pred.id && (
-                  <div className="px-4 pb-4 pt-2 border-t border-white/10">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Consensus Predictions */}
-                      <div>
-                        <h4 className="text-gray-400 text-sm mb-2">Consensus Tahminleri</h4>
-                        <div className="space-y-2">
-                          {Object.entries(pred.consensus || {}).map(([market, data]: [string, any]) => (
-                            <div key={market} className="flex justify-between text-sm">
-                              <span className="text-gray-400">{MARKET_NAMES[market] || market}</span>
-                              <span className="text-white">
-                                {data?.prediction} 
-                                <span className="text-cyan-400 ml-1">(%{data?.confidence})</span>
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Model Predictions */}
-                      <div>
-                        <h4 className="text-gray-400 text-sm mb-2">Model Tahminleri</h4>
-                        <div className="space-y-2">
-                          {Object.entries(pred.predictions || {}).map(([model, data]: [string, any]) => (
-                            <div key={model} className="flex justify-between text-sm">
-                              <span className="text-gray-400">{MODEL_NAMES[model] || model}</span>
-                              <span className="text-white">{data?.matchResult}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Best Bets */}
-                      <div>
-                        <h4 className="text-gray-400 text-sm mb-2">En İyi Bahisler</h4>
-                        <div className="space-y-2">
-                          {(pred.best_bets || []).slice(0, 3).map((bet: any, idx: number) => (
-                            <div key={idx} className="flex justify-between text-sm">
-                              <span className="text-gray-400">#{bet.rank} {bet.market}</span>
-                              <span className="text-emerald-400">{bet.selection}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fixture ID for settling */}
-                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-gray-500 text-sm">Fixture ID: {pred.fixture_id}</span>
-                      <span className="text-gray-500 text-sm">Risk: {pred.risk_level}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
-
-          {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg bg-white/5 text-gray-400 disabled:opacity-50 hover:bg-white/10"
-                >
-                  Önceki
-                </button>
-                <span className="px-4 py-2 text-gray-400">
-                  {currentPage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg bg-white/5 text-gray-400 disabled:opacity-50 hover:bg-white/10"
-                >
-                  Sonraki
-                </button>
-              </div>
-            )}
-          </div>
-          </>
         )}
-      </div>
 
-      {/* Debug Modal */}
-      {debugInfo && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden border border-white/10 shadow-2xl">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                🔍 Sistem Durumu Kontrolü
-              </h2>
-              <button
-                onClick={() => setDebugInfo(null)}
-                className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+        {/* PREDICTIONS TAB */}
+        {activeTab === 'predictions' && (
+          <div className="space-y-4">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="flex gap-2">
+                {['all', 'pending', 'settled'].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status as any)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      filterStatus === status
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {status === 'all' ? '📋 Tümü' : status === 'pending' ? '⏳ Bekleyen' : '✅ Sonuçlanan'}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                <option value="all">Tüm Kaynaklar</option>
+                <option value="quad_brain">Quad-Brain</option>
+                <option value="ai_agents">AI Agents</option>
+                <option value="consensus">Consensus</option>
+                <option value="daily_coupon">Günlük Kupon</option>
+              </select>
+              <span className="text-gray-400 text-sm self-center ml-auto">
+                {filteredPredictions.length} kayıt
+              </span>
             </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {debugInfo.error ? (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-red-400">
-                  ❌ Hata: {debugInfo.error}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Summary */}
-                  {debugInfo.summary && (
-                    <div className={`p-4 rounded-xl border ${
-                      debugInfo.summary.overall_status === 'OK' 
-                        ? 'bg-emerald-500/20 border-emerald-500/30' 
-                        : 'bg-amber-500/20 border-amber-500/30'
-                    }`}>
-                      <h3 className="font-semibold text-white mb-2">Özet</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Tahmin Var:</span>
-                          <span className={`ml-2 ${debugInfo.summary.has_predictions ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {debugInfo.summary.has_predictions ? '✅ Evet' : '❌ Hayır'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Bekleyen Maç:</span>
-                          <span className={`ml-2 ${debugInfo.summary.has_pending_to_settle ? 'text-amber-400' : 'text-gray-400'}`}>
-                            {debugInfo.summary.has_pending_to_settle ? '⏳ Var' : 'Yok'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">API Provider:</span>
-                          <span className={`ml-2 ${debugInfo.summary.has_providers ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {debugInfo.summary.has_providers ? '✅ Aktif' : '❌ Yok'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Durum:</span>
-                          <span className={`ml-2 font-semibold ${debugInfo.summary.overall_status === 'OK' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {debugInfo.summary.overall_status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Prediction Records */}
-                  {debugInfo.checks?.prediction_records && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                        📊 Tahmin Kayıtları
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          debugInfo.checks.prediction_records.status === 'OK' ? 'bg-emerald-500/30 text-emerald-400' : 'bg-red-500/30 text-red-400'
-                        }`}>
-                          {debugInfo.checks.prediction_records.status}
-                        </span>
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-3">
-                        Toplam: <span className="text-white font-semibold">{debugInfo.checks.prediction_records.total_count || 0}</span> kayıt
-                      </p>
-                      {debugInfo.checks.prediction_records.recent?.length > 0 ? (
-                        <div className="space-y-2">
-                          {debugInfo.checks.prediction_records.recent.slice(0, 5).map((p: any, i: number) => (
-                            <div key={i} className="text-xs bg-white/5 rounded-lg p-2 flex justify-between items-center">
-                              <span className="text-gray-300">{p.match}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500">{new Date(p.match_date).toLocaleDateString('tr-TR')}</span>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                                  p.status === 'settled' ? 'bg-emerald-500/30 text-emerald-400' : 'bg-amber-500/30 text-amber-400'
-                                }`}>
-                                  {p.status}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-amber-400 text-sm">⚠️ Henüz tahmin kaydı yok. Önce bir maç analizi yapın.</p>
-                      )}
-                    </div>
-                  )}
+            {/* Predictions List */}
+            <div className="space-y-3">
+              {filteredPredictions.map(pred => (
+                <PredictionCard key={pred.id} prediction={pred} />
+              ))}
 
-                  {/* Pending to Settle */}
-                  {debugInfo.checks?.pending_to_settle && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                        ⏳ Settle Bekleyen Maçlar
-                        <span className="text-xs px-2 py-0.5 rounded bg-amber-500/30 text-amber-400">
-                          {debugInfo.checks.pending_to_settle.count || 0} adet
-                        </span>
-                      </h3>
-                      {debugInfo.checks.pending_to_settle.predictions?.length > 0 ? (
-                        <div className="space-y-2">
-                          {debugInfo.checks.pending_to_settle.predictions.map((p: any, i: number) => (
-                            <div key={i} className="text-xs bg-white/5 rounded-lg p-2 flex justify-between items-center">
-                              <span className="text-gray-300">{p.match}</span>
-                              <span className="text-gray-500">{new Date(p.match_date).toLocaleDateString('tr-TR')}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-400 text-sm">Settle bekleyen maç yok (maçlar henüz bitmemiş veya hepsi settle edilmiş)</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* API Providers */}
-                  {debugInfo.checks?.api_providers && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h3 className="font-semibold text-white mb-3">🔌 API Provider&apos;lar</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {Object.entries(debugInfo.checks.api_providers.env_check || {}).map(([key, value]) => (
-                          <div key={key} className="flex items-center gap-2 text-sm">
-                            <span className={value ? 'text-emerald-400' : 'text-red-400'}>
-                              {value ? '✅' : '❌'}
-                            </span>
-                            <span className="text-gray-400">{key.replace(/_/g, ' ')}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {debugInfo.checks.api_providers.available?.length > 0 && (
-                        <p className="text-emerald-400 text-sm mt-3">
-                          Aktif: {debugInfo.checks.api_providers.available.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Provider Test */}
-                  {debugInfo.checks?.provider_test && (
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h3 className="font-semibold text-white mb-3">🧪 Provider Test</h3>
-                      {debugInfo.checks.provider_test.error ? (
-                        <p className="text-red-400 text-sm">❌ {debugInfo.checks.provider_test.error}</p>
-                      ) : (
-                        <div className="text-sm">
-                          <p className="text-gray-400">Maç: <span className="text-white">{debugInfo.checks.provider_test.tested_match}</span></p>
-                          {debugInfo.checks.provider_test.result && typeof debugInfo.checks.provider_test.result === 'object' ? (
-                            <p className="text-emerald-400 mt-1">
-                              ✅ Sonuç: {debugInfo.checks.provider_test.result.score} 
-                              (via {debugInfo.checks.provider_test.result.source})
-                            </p>
-                          ) : (
-                            <p className="text-amber-400 mt-1">⏳ {debugInfo.checks.provider_test.result}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {filteredPredictions.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <span className="text-4xl mb-4 block">📭</span>
+                  Kayıt bulunamadı
                 </div>
               )}
             </div>
+          </div>
+        )}
 
-            <div className="p-4 border-t border-white/10 bg-white/5">
-              <p className="text-xs text-gray-500 text-center">
-                Son kontrol: {debugInfo.timestamp ? new Date(debugInfo.timestamp).toLocaleString('tr-TR') : '-'}
-              </p>
+        {/* ANALYTICS TAB */}
+        {activeTab === 'analytics' && overall && (
+          <div className="space-y-6">
+            {/* Confidence vs Accuracy Analysis */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">📊 Güven vs Başarı Analizi</h3>
+              <p className="text-gray-400 mb-4">Güven seviyesine göre başarı oranları</p>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="bg-gray-700/50 rounded-xl p-4">
+                  <p className="text-sm text-gray-400 mb-1">Yüksek Güven (&gt;70%)</p>
+                  <p className="text-2xl font-bold text-green-400">Hesaplanıyor...</p>
+                </div>
+                <div className="bg-gray-700/50 rounded-xl p-4">
+                  <p className="text-sm text-gray-400 mb-1">Orta Güven (60-70%)</p>
+                  <p className="text-2xl font-bold text-yellow-400">Hesaplanıyor...</p>
+                </div>
+                <div className="bg-gray-700/50 rounded-xl p-4">
+                  <p className="text-sm text-gray-400 mb-1">Düşük Güven (&lt;60%)</p>
+                  <p className="text-2xl font-bold text-red-400">Hesaplanıyor...</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Best & Worst */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-gray-800/50 border border-green-500/30 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-green-400 mb-4">🏆 En İyi Performans</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">En iyi pazar:</span>
+                    <span className="text-white font-medium">Üst/Alt 2.5 ({overall.over_under.accuracy}%)</span>
+                  </div>
+                  {models[0] && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">En iyi model:</span>
+                      <span className="text-white font-medium">{models[0].model_name} ({models[0].overall.accuracy}%)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-800/50 border border-red-500/30 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-red-400 mb-4">⚠️ İyileştirme Gereken</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Zayıf pazar:</span>
+                    <span className="text-white font-medium">Maç Sonucu ({overall.match_result.accuracy}%)</span>
+                  </div>
+                  {models.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Düşük model:</span>
+                      <span className="text-white font-medium">
+                        {models[models.length - 1].model_name} ({models[models.length - 1].overall.accuracy}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4">💡 Sistem Önerileri</h3>
+              <ul className="space-y-2 text-gray-300">
+                {parseFloat(overall.match_result.accuracy) < 40 && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400">⚠️</span>
+                    Maç Sonucu tahminleri düşük. Daha fazla faktör (kadro, form, ev/deplasman) entegre edilmeli.
+                  </li>
+                )}
+                {parseFloat(overall.over_under.accuracy) > 60 && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400">✅</span>
+                    Üst/Alt tahminleri güçlü. Bu pazara daha fazla odaklanılabilir.
+                  </li>
+                )}
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400">💡</span>
+                  Heurist ajanlarını günlük kupona entegre etmek başarıyı artırabilir.
+                </li>
+              </ul>
             </div>
           </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string | number; color: string }) {
+  const colors: Record<string, string> = {
+    blue: 'from-blue-500/20 to-blue-600/20 border-blue-500/30',
+    green: 'from-green-500/20 to-green-600/20 border-green-500/30',
+    yellow: 'from-yellow-500/20 to-yellow-600/20 border-yellow-500/30',
+    purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/30',
+  };
+
+  return (
+    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>
+      <div className="flex items-center gap-3">
+        <span className="text-3xl">{icon}</span>
+        <div>
+          <p className="text-gray-400 text-sm">{label}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarketCard({ title, emoji, total, correct, accuracy, color }: {
+  title: string;
+  emoji: string;
+  total: number;
+  correct: number;
+  accuracy: string;
+  color: string;
+}) {
+  const colors: Record<string, { bg: string; text: string; bar: string }> = {
+    emerald: { bg: 'from-emerald-500/20 to-emerald-600/20', text: 'text-emerald-400', bar: 'bg-emerald-500' },
+    blue: { bg: 'from-blue-500/20 to-blue-600/20', text: 'text-blue-400', bar: 'bg-blue-500' },
+    purple: { bg: 'from-purple-500/20 to-purple-600/20', text: 'text-purple-400', bar: 'bg-purple-500' },
+  };
+
+  const c = colors[color];
+  const acc = parseFloat(accuracy);
+
+  return (
+    <div className={`bg-gradient-to-br ${c.bg} border border-gray-700 rounded-xl p-5`}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-white font-semibold flex items-center gap-2">
+          <span>{emoji}</span> {title}
+        </h3>
+        <span className={`text-2xl font-bold ${c.text}`}>%{accuracy}</span>
+      </div>
+      <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+        <div className={`h-full ${c.bar}`} style={{ width: `${acc}%` }} />
+      </div>
+      <p className="text-gray-400 text-sm">{correct}/{total} doğru</p>
+    </div>
+  );
+}
+
+function AccuracyBadge({ accuracy, large }: { accuracy: number; large?: boolean }) {
+  const color = accuracy >= 60 ? 'bg-green-500/20 text-green-400' :
+                accuracy >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400';
+  
+  return (
+    <span className={`inline-block px-2 py-1 rounded-lg font-medium ${color} ${large ? 'text-lg' : 'text-sm'}`}>
+      %{accuracy.toFixed(1)}
+    </span>
+  );
+}
+
+function PredictionCard({ prediction }: { prediction: Prediction }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+      <div 
+        className="p-4 cursor-pointer hover:bg-gray-700/30 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={`px-2 py-1 rounded text-xs font-medium ${
+              prediction.is_settled 
+                ? 'bg-green-500/20 text-green-400' 
+                : 'bg-yellow-500/20 text-yellow-400'
+            }`}>
+              {prediction.is_settled ? 'Sonuçlandı' : 'Bekliyor'}
+            </span>
+            <div>
+              <p className="text-white font-medium">
+                {prediction.home_team} vs {prediction.away_team}
+              </p>
+              <p className="text-gray-400 text-sm">{prediction.league}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className={`px-2 py-1 rounded text-xs ${
+              prediction.prediction_source === 'quad_brain' 
+                ? 'bg-purple-500/20 text-purple-400'
+                : prediction.prediction_source === 'ai_agents'
+                ? 'bg-blue-500/20 text-blue-400'
+                : 'bg-gray-500/20 text-gray-400'
+            }`}>
+              {prediction.prediction_source}
+            </span>
+            <span className="text-gray-400 text-sm">
+              {new Date(prediction.created_at).toLocaleDateString('tr-TR')}
+            </span>
+            <span className="text-gray-400">{expanded ? '▲' : '▼'}</span>
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-700 p-4 bg-gray-900/50">
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* BTTS */}
+            <div className={`p-3 rounded-lg ${
+              prediction.is_settled
+                ? prediction.btts_correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
+                : 'bg-gray-700/50'
+            }`}>
+              <p className="text-gray-400 text-sm">KG Var/Yok</p>
+              <p className="text-white font-medium">
+                {prediction.consensus_btts?.toUpperCase() || '-'} 
+                <span className="text-gray-400 text-sm ml-1">({prediction.consensus_btts_confidence}%)</span>
+              </p>
+              {prediction.is_settled && (
+                <p className={`text-sm ${prediction.btts_correct ? 'text-green-400' : 'text-red-400'}`}>
+                  {prediction.btts_correct ? '✅ Doğru' : '❌ Yanlış'}
+                </p>
+              )}
+            </div>
+
+            {/* Over/Under */}
+            <div className={`p-3 rounded-lg ${
+              prediction.is_settled
+                ? prediction.over_under_correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
+                : 'bg-gray-700/50'
+            }`}>
+              <p className="text-gray-400 text-sm">Üst/Alt 2.5</p>
+              <p className="text-white font-medium">
+                {prediction.consensus_over_under?.toUpperCase() || '-'}
+                <span className="text-gray-400 text-sm ml-1">({prediction.consensus_over_under_confidence}%)</span>
+              </p>
+              {prediction.is_settled && (
+                <p className={`text-sm ${prediction.over_under_correct ? 'text-green-400' : 'text-red-400'}`}>
+                  {prediction.over_under_correct ? '✅ Doğru' : '❌ Yanlış'}
+                </p>
+              )}
+            </div>
+
+            {/* Match Result */}
+            <div className={`p-3 rounded-lg ${
+              prediction.is_settled
+                ? prediction.match_result_correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
+                : 'bg-gray-700/50'
+            }`}>
+              <p className="text-gray-400 text-sm">Maç Sonucu</p>
+              <p className="text-white font-medium">
+                {prediction.consensus_match_result?.toUpperCase() || '-'}
+                <span className="text-gray-400 text-sm ml-1">({prediction.consensus_match_result_confidence}%)</span>
+              </p>
+              {prediction.is_settled && (
+                <p className={`text-sm ${prediction.match_result_correct ? 'text-green-400' : 'text-red-400'}`}>
+                  {prediction.match_result_correct ? '✅ Doğru' : '❌ Yanlış'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {prediction.is_settled && (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-gray-400 text-sm">
+                Skor: <span className="text-white font-medium">{prediction.actual_home_score} - {prediction.actual_away_score}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Individual Model Predictions */}
+          {prediction.ai_model_predictions && prediction.ai_model_predictions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-gray-400 text-sm mb-2">Model Tahminleri:</p>
+              <div className="flex flex-wrap gap-2">
+                {prediction.ai_model_predictions.map((mp: any, idx: number) => (
+                  <span key={idx} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">
+                    {mp.model_name}: {mp.match_result_prediction || '-'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
-
