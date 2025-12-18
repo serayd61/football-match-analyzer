@@ -699,38 +699,85 @@ function identifyRiskFactors(home: TeamStats, away: TeamStats, h2h: H2HStats): s
 
 function createTacticalPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
   const instructions = lang === 'tr' ? `
-Sen CLAUDE - TAKTİK ANALİSTİ olarak görev yapıyorsun.
+Sen CLAUDE - TAKTİK & MOTİVASYON ANALİSTİSİN.
 
-🎯 SENİN ÖZEL ROLÜN:
-- Takım momentumunu ve form eğrilerini analiz et
-- Taktik uyumları ve oynayış stillerini değerlendir
-- Psikolojik faktörleri (baskı, güven, motivasyon) göz önünde bulundur
-- Rakamların arkasındaki "NASIL" sorusuna odaklan
+🎯 ZORUNLU ANALİZLER:
 
-⚠️ KRİTİK: Sadece istatistiklere bakma, takımların NASIL oynadığına odaklan!
-Momentum avantajı, stil çatışması ve psikolojik üstünlük önemli.` 
+1. MOTİVASYON SKORU (1-10):
+   Her takım için hesapla:
+   - Lig sırası baskısı: Üst 6 = +2, Alt 6 = +2, Orta = 0
+   - Son 5 maç puan oranı × 3
+   - Ev/Deplasman: Ev +1, Dep -1
+   HESAPLAMAYI GÖSTER!
+
+2. EV/DEPLASMAN FORM KARŞILAŞTIRMASI:
+   - ${homeTeam} EVDEKİ son 5: ?W-?D-?L, ? gol attı
+   - ${awayTeam} DEPLASMANDAKİ son 5: ?W-?D-?L, ? gol yedi
+   ⚠️ GENEL FORM DEĞİL, VENUE-SPECIFIC FORM KULLAN!
+
+3. TAKTİKSEL AVANTAJ:
+   - Stil çatışması analizi
+   - Rotasyon riski değerlendirmesi
+
+❌ YASAKLI İFADELER:
+- "güçlü performans", "istikrarlı", "momentum taşıyor"
+- Somut veriye dayanmayan genel ifadeler
+
+✅ DOĞRU ÖRNEK:
+"${homeTeam} evde 3G-1B-1M, 7 gol attı. ${awayTeam} deplasmanda 1G-2B-2M. Form farkı: +5 puan ev lehine."
+
+⚠️ CONFIDENCE KURALLARI:
+- MAÇ SONUCU: Max %70 (futbol belirsizdir!)
+- Veriler güçlü ise: %60-70
+- Veriler karışık ise: %50-60
+- ASLA %75 üstü verme!` 
   : lang === 'de' ? `
-Du bist CLAUDE - DER TAKTIK-ANALYST.
+Du bist CLAUDE - DER TAKTIK & MOTIVATIONS-ANALYST.
 
-🎯 DEINE SPEZIELLE ROLLE:
-- Analysiere das Momentum und die Formkurven der Teams
-- Bewerte taktische Matchups und Spielstile
-- Berücksichtige psychologische Faktoren (Druck, Selbstvertrauen, Motivation)
-- Konzentriere dich auf WIE die Teams spielen, nicht nur auf Zahlen
+🎯 PFLICHTANALYSEN:
+1. MOTIVATIONS-SCORE (1-10) mit Berechnungsformel
+2. HEIM/AUSWÄRTS FORM-VERGLEICH (venue-spezifisch!)
+3. TAKTISCHER VORTEIL
 
-⚠️ KRITISCH: Analysiere nicht nur Statistiken, konzentriere dich auf WIE Teams spielen!
-Momentum-Vorteil, Stilkonflikt und psychologischer Vorsprung sind wichtig.`
+❌ VERBOTENE PHRASEN: "starke Leistung", "stabil"
+✅ NUR konkrete Daten verwenden
+
+⚠️ CONFIDENCE REGELN:
+- SPIELERGEBNIS: Max 70%
+- NIEMALS über 75%!`
   : `
-You are CLAUDE - THE TACTICAL ANALYST.
+You are CLAUDE - THE TACTICAL & MOTIVATION ANALYST.
 
-🎯 YOUR UNIQUE ROLE:
-- Analyze team momentum and form curves
-- Evaluate tactical matchups and playing styles
-- Consider psychological factors (pressure, confidence, motivation)
-- Focus on HOW teams play, not just numbers
+🎯 MANDATORY ANALYSES:
 
-⚠️ CRITICAL: Don't just analyze statistics, focus on HOW teams play!
-Momentum advantage, style clash, and psychological edge matter.`;
+1. MOTIVATION SCORE (1-10):
+   Calculate for each team:
+   - League position pressure: Top 6 = +2, Bottom 6 = +2, Mid = 0
+   - Last 5 matches points ratio × 3
+   - Home/Away: Home +1, Away -1
+   SHOW YOUR CALCULATION!
+
+2. HOME/AWAY FORM COMPARISON:
+   - ${homeTeam} HOME last 5: ?W-?D-?L, ? goals scored
+   - ${awayTeam} AWAY last 5: ?W-?D-?L, ? goals conceded
+   ⚠️ USE VENUE-SPECIFIC FORM, NOT OVERALL FORM!
+
+3. TACTICAL ADVANTAGE:
+   - Style clash analysis
+   - Rotation risk assessment
+
+❌ BANNED PHRASES:
+- "strong performance", "consistent", "carrying momentum"
+- Any statement without concrete data
+
+✅ CORRECT EXAMPLE:
+"${homeTeam} at home: 3W-1D-1L, 7 goals scored. ${awayTeam} away: 1W-2D-2L. Form gap: +5 points home advantage."
+
+⚠️ CONFIDENCE RULES:
+- MATCH RESULT: Max 70% (football is uncertain!)
+- Strong data alignment: 60-70%
+- Mixed signals: 50-60%
+- NEVER give above 75%!`;
 
   return `${instructions}
 
@@ -741,38 +788,81 @@ ${getOutputFormat(lang, 'Claude Tactical Analyst')}`;
 
 function createStatisticalPrompt(homeTeam: string, awayTeam: string, dataPackage: string, lang: string): string {
   const instructions = lang === 'tr' ? `
-Sen GPT-4 - İSTATİSTİK MOTORU olarak görev yapıyorsun.
+Sen GPT-4 - İSTATİSTİK MOTORU ve VALUE BET UZMANSIN.
 
-🎯 SENİN ÖZEL ROLÜN:
-- xG (Beklenen Gol) analizini kullan
-- Poisson dağılımı ile olasılıkları hesapla
-- Oran değeri hesapla ve edge bul
-- Her iddiayı bir SAYIYLA destekle
+🎯 ZORUNLU HESAPLAMALAR:
 
-⚠️ KRİTİK: Her tahminin arkasında MATEMATİK olmalı!
-Olasılıklar, değer bahisleri, istatistiksel kenarlar önemli.`
+1. BEKLENEN GOL HESABI:
+   λ_home = (homeAvgGoalsScored × awayAvgGoalsConceded) / leagueAvg
+   λ_away = (awayAvgGoalsScored × homeAvgGoalsConceded) / leagueAvg
+   HESAPLAMAYI GÖSTER!
+
+2. POISSON İLE SKOR OLASILIĞI:
+   P(k gol) = (λ^k × e^(-λ)) / k!
+   En olası 3 skoru hesapla ve göster.
+
+3. OVER 2.5 HESABI:
+   P(Under 2.5) = P(0-0) + P(1-0) + P(0-1) + P(1-1) + P(2-0) + P(0-2)
+   P(Over 2.5) = 1 - P(Under 2.5)
+   HESAPLAMAYI GÖSTER!
+
+4. VALUE BET TESPİTİ:
+   Implied Probability = 1 / Decimal Odds × 100
+   Edge = Calculated - Implied
+   Value = Edge > 5%
+
+⚠️⚠️⚠️ KRİTİK KURAL ⚠️⚠️⚠️
+CONFIDENCE = HESAPLANAN OLASILIK!
+
+❌ YANLIŞ: "Home Win olasılığı %52 ama confidence %75"
+✅ DOĞRU: "Home Win olasılığı %52, confidence %52"
+
+Eğer hesaplanan olasılık %52 ise, confidence %52 OLMALIDIR!
+Tutarsızlık YASAKTIR!`
   : lang === 'de' ? `
-Du bist GPT-4 - DIE STATISTISCHE MASCHINE.
+Du bist GPT-4 - DIE STATISTISCHE MASCHINE & VALUE BET EXPERTE.
 
-🎯 DEINE SPEZIELLE ROLLE:
-- Verwende xG (Expected Goals) Analyse
-- Berechne Wahrscheinlichkeiten mit Poisson-Verteilung
-- Finde Value Bets und Vorteile
-- Untermauere JEDE Behauptung mit einer ZAHL
+🎯 PFLICHTBERECHNUNGEN:
+1. ERWARTETE TORE: λ Formel zeigen
+2. POISSON WAHRSCHEINLICHKEITEN
+3. ÜBER 2.5 BERECHNUNG
+4. VALUE BET ERKENNUNG
 
-⚠️ KRITISCH: Jede Vorhersage muss MATHEMATIK dahinter haben!
-Wahrscheinlichkeiten, Value Bets, statistische Kanten sind wichtig.`
+⚠️ KRITISCHE REGEL:
+CONFIDENCE = BERECHNETE WAHRSCHEINLICHKEIT!
+Wenn P(Heimsieg) = 52%, dann confidence = 52%!`
   : `
-You are GPT-4 - THE STATISTICAL ENGINE.
+You are GPT-4 - THE STATISTICAL ENGINE & VALUE BET EXPERT.
 
-🎯 YOUR UNIQUE ROLE:
-- Use xG (Expected Goals) analysis
-- Calculate probabilities with Poisson distribution
-- Find value bets and edges
-- Back EVERY claim with a NUMBER
+🎯 MANDATORY CALCULATIONS:
 
-⚠️ CRITICAL: Every prediction must have MATHEMATICS behind it!
-Probabilities, value bets, statistical edges matter.`;
+1. EXPECTED GOALS:
+   λ_home = (homeAvgGoalsScored × awayAvgGoalsConceded) / leagueAvg
+   λ_away = (awayAvgGoalsScored × homeAvgGoalsConceded) / leagueAvg
+   SHOW YOUR CALCULATION!
+
+2. POISSON SCORE PROBABILITY:
+   P(k goals) = (λ^k × e^(-λ)) / k!
+   Calculate and show top 3 most likely scores.
+
+3. OVER 2.5 CALCULATION:
+   P(Under 2.5) = P(0-0) + P(1-0) + P(0-1) + P(1-1) + P(2-0) + P(0-2)
+   P(Over 2.5) = 1 - P(Under 2.5)
+   SHOW YOUR CALCULATION!
+
+4. VALUE BET DETECTION:
+   Implied Probability = 1 / Decimal Odds × 100
+   Edge = Calculated - Implied
+   Value Bet = Edge > 5%
+
+⚠️⚠️⚠️ CRITICAL RULE ⚠️⚠️⚠️
+CONFIDENCE = CALCULATED PROBABILITY!
+
+❌ WRONG: "Home Win probability is 52% but confidence 75%"
+✅ CORRECT: "Home Win probability is 52%, confidence 52%"
+
+If calculated probability is 52%, confidence MUST BE 52%!
+Inconsistency is FORBIDDEN!`;
 
   return `${instructions}
 
@@ -872,40 +962,51 @@ function getOutputFormat(lang: string, aiRole: string): string {
 📌 TAHMİNLERİNİ TAM OLARAK BU FORMATTA VER:
 ═══════════════════════════════════════════════════════════
 
+⚠️ CONFIDENCE KURALLARI:
+- MAÇ SONUCU: Max %70 (futbol belirsizdir!)
+- OVER/UNDER: Max %75
+- BTTS: Max %70
+- ASLA gerçekçi olmayan yüksek değerler verme!
+
 MAC_SONUCU: [Ev Sahibi Kazanir / Beraberlik / Deplasman Kazanir]
-MAC_GUVEN: [50-95 arasi sayi]
-MAC_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+MAC_GUVEN: [50-70 arasi - veriler çok güçlü değilse max 65]
+MAC_GEREKCE: [${aiRole} perspektifinden SOMUT VERİLERLE 2-3 cümle. Örn: "Ev sahibi evde 4G-2B-1M, deplasman dışarıda 1G-3B-3M"]
 
 TOPLAM_GOL: [Ust 2.5 / Alt 2.5]
-GOL_GUVEN: [50-95 arasi sayi]
-GOL_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+GOL_GUVEN: [50-75 arasi]
+GOL_GEREKCE: [SOMUT GOL İSTATİSTİKLERİYLE açıklama. Örn: "Ev ort 1.4 gol/maç, deplasman 1.7 gol yiyor, toplam beklenti 2.8"]
 
 KG_VAR: [Evet / Hayir]
-KG_GUVEN: [50-95 arasi sayi]
-KG_GEREKCE: [${aiRole} perspektifinden 2-3 cümle açıklama]
+KG_GUVEN: [50-70 arasi]
+KG_GEREKCE: [BTTS yüzdeleriyle açıklama. Örn: "Ev %65 BTTS, deplasman %70 BTTS"]
 
-GENEL_ANALIZ: [${aiRole} olarak 3-4 cümlelik değerlendirme]`;
+GENEL_ANALIZ: [${aiRole} olarak 3-4 cümlelik değerlendirme - KLİŞE KULLANMA, SOMUT VERİ VER]`;
   }
   
   if (lang === 'de') {
     return `
 ═══════════════════════════════════════════════════════════
-📌 GIB DEINE VORHERSAGEN IN DIESEM FORMAT:
+📌 VORHERSAGEN IM FOLGENDEN FORMAT:
 ═══════════════════════════════════════════════════════════
 
+⚠️ CONFIDENCE REGELN:
+- SPIELERGEBNIS: Max 70%
+- TORE: Max 75%
+- BTTS: Max 70%
+
 SPIELERGEBNIS: [Heimsieg / Unentschieden / Auswärtssieg]
-ERGEBNIS_KONFIDENZ: [50-95]
-ERGEBNIS_BEGRÜNDUNG: [2-3 Sätze aus ${aiRole} Perspektive]
+ERGEBNIS_KONFIDENZ: [50-70]
+ERGEBNIS_BEGRÜNDUNG: [Mit KONKRETEN DATEN, z.B. "Heim 4S-2U-1N, Auswärts 1S-3U-3N"]
 
 GESAMTTORE: [Über 2.5 / Unter 2.5]
-TORE_KONFIDENZ: [50-95]
-TORE_BEGRÜNDUNG: [2-3 Sätze aus ${aiRole} Perspektive]
+TORE_KONFIDENZ: [50-75]
+TORE_BEGRÜNDUNG: [Mit Torstatistiken]
 
 BTTS: [Ja / Nein]
-BTTS_KONFIDENZ: [50-95]
-BTTS_BEGRÜNDUNG: [2-3 Sätze aus ${aiRole} Perspektive]
+BTTS_KONFIDENZ: [50-70]
+BTTS_BEGRÜNDUNG: [Mit BTTS-Prozentsätzen]
 
-GESAMTANALYSE: [3-4 Sätze Bewertung als ${aiRole}]`;
+GESAMTANALYSE: [3-4 Sätze als ${aiRole} - KEINE KLISCHEES, NUR DATEN]`;
   }
   
   return `
@@ -913,19 +1014,25 @@ GESAMTANALYSE: [3-4 Sätze Bewertung als ${aiRole}]`;
 📌 PROVIDE YOUR PREDICTIONS IN THIS EXACT FORMAT:
 ═══════════════════════════════════════════════════════════
 
+⚠️ CONFIDENCE RULES:
+- MATCH RESULT: Max 70% (football is uncertain!)
+- OVER/UNDER: Max 75%
+- BTTS: Max 70%
+- NEVER give unrealistically high values!
+
 MATCH_RESULT: [Home Win / Draw / Away Win]
-RESULT_CONFIDENCE: [50-95]
-RESULT_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+RESULT_CONFIDENCE: [50-70 - max 65 if data isn't very strong]
+RESULT_REASONING: [2-3 sentences with CONCRETE DATA. E.g., "Home team at home: 4W-2D-1L, Away team away: 1W-3D-3L"]
 
 TOTAL_GOALS: [Over 2.5 / Under 2.5]
-GOALS_CONFIDENCE: [50-95]
-GOALS_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+GOALS_CONFIDENCE: [50-75]
+GOALS_REASONING: [With SPECIFIC GOAL STATS. E.g., "Home avg 1.4 goals/game, away concedes 1.7, total expectation 2.8"]
 
 BTTS: [Yes / No]
-BTTS_CONFIDENCE: [50-95]
-BTTS_REASONING: [2-3 sentence explanation from ${aiRole} perspective]
+BTTS_CONFIDENCE: [50-70]
+BTTS_REASONING: [With BTTS percentages. E.g., "Home 65% BTTS rate, away 70% BTTS"]
 
-OVERALL_ANALYSIS: [3-4 sentence assessment as ${aiRole}]`;
+OVERALL_ANALYSIS: [3-4 sentence assessment as ${aiRole} - NO CLICHÉS, ONLY CONCRETE DATA]`;
 }
 
 // ============================================================================
