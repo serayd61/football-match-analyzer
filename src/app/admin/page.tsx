@@ -95,7 +95,14 @@ export default function AdminPage() {
       setLoading(true);
       console.log('🔄 Fetching admin data...');
       
-      const res = await fetch('/api/admin/enhanced-stats?type=all&limit=100');
+      // Add cache-busting timestamp
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/enhanced-stats?type=all&limit=100&_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       const data = await res.json();
       
       console.log('📊 API Response:', data);
