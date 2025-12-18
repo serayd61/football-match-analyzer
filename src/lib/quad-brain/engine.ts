@@ -304,7 +304,6 @@ function detectLeagueTier(teamName: string, form: any): number {
   if (avgGoals > 1.5 && formPoints > 7) return 2;
   return 3;
 }
-}
 
 function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | 'en' | 'de'): string {
   const { homeTeam, awayTeam, homeForm, awayForm, h2h, odds } = matchData;
