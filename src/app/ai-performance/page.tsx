@@ -406,50 +406,66 @@ export default function AIPerformancePage() {
               {/* AI Insights */}
               <div className="bg-gradient-to-r from-purple-900/30 via-blue-900/30 to-cyan-900/30 border border-purple-500/30 rounded-2xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4">{l.insights.title}</h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {best.model && (
-                    <div className="bg-black/30 rounded-xl p-4">
-                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestModel}</p>
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{getModelIcon(best.model.model).icon}</span>
-                        <div>
-                          <p className="text-white font-bold">{best.model.model}</p>
-                          <p className={`text-sm ${getAccuracyColor(best.model.accuracy)}`}>
-                            %{best.model.accuracy.toFixed(1)} {l.stats.accuracy}
-                          </p>
+                {(best.model?.hasRealData || (best.market?.accuracy ?? 0) > 0 || (best.league?.accuracy ?? 0) > 0) ? (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {best.model && best.model.hasRealData && (
+                      <div className="bg-black/30 rounded-xl p-4">
+                        <p className="text-gray-400 text-sm mb-2">{l.insights.bestModel}</p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">{getModelIcon(best.model.model).icon}</span>
+                          <div>
+                            <p className="text-white font-bold">{best.model.model}</p>
+                            <p className={`text-sm ${getAccuracyColor(best.model.accuracy)}`}>
+                              %{best.model.accuracy.toFixed(1)} {l.stats.accuracy}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {best.market && (
-                    <div className="bg-black/30 rounded-xl p-4">
-                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestMarket}</p>
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">📊</span>
-                        <div>
-                          <p className="text-white font-bold">{best.market.market}</p>
-                          <p className={`text-sm ${getAccuracyColor(best.market.accuracy)}`}>
-                            %{best.market.accuracy.toFixed(1)} {l.stats.accuracy}
-                          </p>
+                    )}
+                    {best.market && (best.market.accuracy ?? 0) > 0 && (
+                      <div className="bg-black/30 rounded-xl p-4">
+                        <p className="text-gray-400 text-sm mb-2">{l.insights.bestMarket}</p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">📊</span>
+                          <div>
+                            <p className="text-white font-bold">{best.market.market}</p>
+                            <p className={`text-sm ${getAccuracyColor(best.market.accuracy)}`}>
+                              %{best.market.accuracy.toFixed(1)} {l.stats.accuracy}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {best.league && (
-                    <div className="bg-black/30 rounded-xl p-4">
-                      <p className="text-gray-400 text-sm mb-2">{l.insights.bestLeague}</p>
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">🏆</span>
-                        <div>
-                          <p className="text-white font-bold">{best.league.league}</p>
-                          <p className={`text-sm ${getAccuracyColor(best.league.accuracy)}`}>
-                            %{best.league.accuracy.toFixed(1)} {l.stats.accuracy}
-                          </p>
+                    )}
+                    {best.league && (best.league.accuracy ?? 0) > 0 && (
+                      <div className="bg-black/30 rounded-xl p-4">
+                        <p className="text-gray-400 text-sm mb-2">{l.insights.bestLeague}</p>
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">🏆</span>
+                          <div>
+                            <p className="text-white font-bold">{best.league.league}</p>
+                            <p className={`text-sm ${getAccuracyColor(best.league.accuracy)}`}>
+                              %{best.league.accuracy.toFixed(1)} {l.stats.accuracy}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-6xl mb-4">⏳</div>
+                    <p className="text-gray-400 text-lg">
+                      {lang === 'tr' ? 'Maçlar tamamlandığında performans verileri burada görünecek' : 
+                       lang === 'de' ? 'Leistungsdaten werden hier angezeigt, wenn die Spiele abgeschlossen sind' :
+                       'Performance data will appear here once matches are completed'}
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      {lang === 'tr' ? `${data?.summary?.pendingCount || 0} tahmin sonuç bekliyor` :
+                       lang === 'de' ? `${data?.summary?.pendingCount || 0} Vorhersagen warten auf Ergebnisse` :
+                       `${data?.summary?.pendingCount || 0} predictions awaiting results`}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Quick Model Overview */}
@@ -468,18 +484,23 @@ export default function AIPerformancePage() {
                             </div>
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-gray-400 text-sm">{l.stats.accuracy}</span>
-                              <span className={`font-bold text-lg ${getAccuracyColor(model.accuracy)}`}>
-                                %{model.accuracy.toFixed(1)}
-                              </span>
+                              {model.hasRealData ? (
+                                <span className={`font-bold text-lg ${getAccuracyColor(model.accuracy)}`}>
+                                  %{model.accuracy.toFixed(1)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-500 text-sm">—</span>
+                              )}
                             </div>
                             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                               <div 
-                                className={`h-full ${getAccuracyBg(model.accuracy)} rounded-full transition-all`}
-                                style={{ width: `${Math.min(model.accuracy, 100)}%` }}
+                                className={`h-full ${model.hasRealData ? getAccuracyBg(model.accuracy) : 'bg-gray-600'} rounded-full transition-all`}
+                                style={{ width: model.hasRealData ? `${Math.min(model.accuracy, 100)}%` : '0%' }}
                               />
                             </div>
                             <div className="mt-3 text-xs text-gray-400">
                               {model.totalPredictions} {l.model.predictions} • {model.correctPredictions} {l.model.correct}
+                              {!model.hasRealData && <span className="text-yellow-500 ml-2">⏳</span>}
                             </div>
                           </div>
                         </div>
@@ -503,7 +524,7 @@ export default function AIPerformancePage() {
                       <th className="text-center p-4 text-gray-400 font-medium">{l.model.correct}</th>
                       <th className="text-center p-4 text-gray-400 font-medium">{l.model.accuracy}</th>
                       <th className="text-center p-4 text-gray-400 font-medium">{l.model.confidence}</th>
-                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.roi}</th>
+                      <th className="text-center p-4 text-gray-400 font-medium">{l.model.status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700/50">
@@ -515,25 +536,32 @@ export default function AIPerformancePage() {
                             <div className="flex items-center gap-3">
                               <span className="text-2xl">{icon}</span>
                               <span className="text-white font-medium">{model.model}</span>
-                              {!model.hasRealData && (
-                                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
-                                  {lang === 'tr' ? 'Simüle' : 'Simulated'}
-                                </span>
-                              )}
                             </div>
                           </td>
                           <td className="p-4 text-center text-white">{model.totalPredictions}</td>
                           <td className="p-4 text-center text-green-400">{model.correctPredictions}</td>
                           <td className="p-4 text-center">
-                            <span className={`font-bold ${getAccuracyColor(model.accuracy)}`}>
-                              %{model.accuracy.toFixed(1)}
-                            </span>
+                            {model.hasRealData ? (
+                              <span className={`font-bold ${getAccuracyColor(model.accuracy)}`}>
+                                %{model.accuracy.toFixed(1)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">—</span>
+                            )}
                           </td>
-                          <td className="p-4 text-center text-blue-400">%{model.avgConfidence}</td>
+                          <td className="p-4 text-center text-blue-400">
+                            {model.avgConfidence > 0 ? `%${model.avgConfidence}` : '—'}
+                          </td>
                           <td className="p-4 text-center">
-                            <span className={model.roi >= 0 ? 'text-green-400' : 'text-red-400'}>
-                              {model.roi >= 0 ? '+' : ''}{model.roi.toFixed(1)}%
-                            </span>
+                            {model.hasRealData ? (
+                              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                                ✅ {lang === 'tr' ? 'Gerçek' : lang === 'de' ? 'Echt' : 'Real'}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded">
+                                ⏳ {lang === 'tr' ? 'Bekliyor' : lang === 'de' ? 'Wartend' : 'Pending'}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -541,6 +569,17 @@ export default function AIPerformancePage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Info Note */}
+              {data.models.every(m => !m.hasRealData) && (
+                <div className="p-4 bg-yellow-500/10 border-t border-yellow-500/20">
+                  <p className="text-yellow-400 text-sm text-center">
+                    ℹ️ {lang === 'tr' ? 'Maçlar tamamlandığında doğruluk oranları hesaplanacak' : 
+                        lang === 'de' ? 'Die Genauigkeitsraten werden berechnet, wenn die Spiele abgeschlossen sind' :
+                        'Accuracy rates will be calculated when matches are completed'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

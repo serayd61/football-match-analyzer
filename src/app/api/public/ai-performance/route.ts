@@ -1,6 +1,7 @@
 // ============================================================================
 // PUBLIC AI PERFORMANCE API
 // Müşterilere AI model performansını gösteren endpoint
+// GERÇEK VERİ - SİMÜLASYON YOK
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -30,40 +31,86 @@ export async function GET(request: NextRequest) {
         startDate = new Date('2024-01-01');
     }
 
-    // Fetch all prediction records
-    const { data: allPredictions, error: allPredError } = await supabase
-      .from('prediction_records')
-      .select('*')
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: false });
+    // ═══════════════════════════════════════════════════════════════════════
+    // FETCH DATA FROM MULTIPLE TABLES
+    // ═══════════════════════════════════════════════════════════════════════
 
-    if (allPredError) {
-      console.error('Error fetching all predictions:', allPredError);
+    // 1. Old prediction_records table
+    let oldPredictions: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('prediction_records')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        oldPredictions = data;
+      }
+    } catch (e) {
+      console.log('prediction_records table not available');
     }
 
-    const predictions = allPredictions || [];
-
-    // Separate settled and pending predictions
-    const settledPredictions = predictions.filter(p => p.status === 'won' || p.status === 'lost');
-    const pendingPredictions = predictions.filter(p => p.status === 'pending');
-
-    // Fetch prediction accuracy data
-    const { data: accuracyData, error: accError } = await supabase
-      .from('prediction_accuracy')
-      .select('*')
-      .gte('created_at', startDate.toISOString());
-
-    if (accError) {
-      console.error('Error fetching accuracy data:', accError);
+    // 2. New prediction_sessions table (enhanced tracking)
+    let newPredictions: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('prediction_sessions')
+        .select(`
+          *,
+          ai_model_predictions (*)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        newPredictions = data;
+      }
+    } catch (e) {
+      console.log('prediction_sessions table not available');
     }
+
+    // 3. Professional market predictions
+    let proMarketPredictions: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('professional_market_predictions')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        proMarketPredictions = data;
+      }
+    } catch (e) {
+      console.log('professional_market_predictions table not available');
+    }
+
+    // Combine all predictions
+    const allPredictions = [
+      ...oldPredictions.map(p => ({ ...p, source: 'old' })),
+      ...newPredictions.map(p => ({ ...p, source: 'new' })),
+    ];
 
     // Calculate stats
-    const modelStats = calculateModelStats(accuracyData || [], predictions);
-    const marketStats = calculateMarketStats(predictions);
-    const leagueStats = calculateLeagueStats(predictions);
-    const overall = calculateOverallStats(predictions, settledPredictions);
-    const weeklyTrend = calculateWeeklyTrend(predictions);
-    const recentPredictions = getRecentPredictions(predictions);
+    const modelStats = calculateModelStats(newPredictions, oldPredictions);
+    const marketStats = calculateMarketStats(allPredictions, proMarketPredictions);
+    const leagueStats = calculateLeagueStats(allPredictions);
+    const overall = calculateOverallStats(allPredictions, newPredictions, proMarketPredictions);
+    const weeklyTrend = calculateWeeklyTrend(allPredictions);
+    const recentPredictions = getRecentPredictions(allPredictions);
+
+    // Summary counts
+    const settledOld = oldPredictions.filter(p => p.status === 'won' || p.status === 'lost');
+    const settledNew = newPredictions.filter(p => p.is_settled);
+    
+    const wonCount = 
+      oldPredictions.filter(p => p.status === 'won').length +
+      newPredictions.filter(p => p.btts_correct || p.over_under_correct || p.match_result_correct).length;
+    
+    const lostCount =
+      oldPredictions.filter(p => p.status === 'lost').length +
+      newPredictions.filter(p => p.is_settled && !p.btts_correct && !p.over_under_correct && !p.match_result_correct).length;
 
     return NextResponse.json({
       models: modelStats,
@@ -73,11 +120,14 @@ export async function GET(request: NextRequest) {
       weeklyTrend,
       recentPredictions,
       summary: {
-        totalPredictions: predictions.length,
-        settledCount: settledPredictions.length,
-        pendingCount: pendingPredictions.length,
-        wonCount: predictions.filter(p => p.status === 'won').length,
-        lostCount: predictions.filter(p => p.status === 'lost').length,
+        totalPredictions: allPredictions.length + proMarketPredictions.length,
+        settledCount: settledOld.length + settledNew.length,
+        pendingCount: allPredictions.filter(p => 
+          (p.source === 'old' && p.status === 'pending') || 
+          (p.source === 'new' && !p.is_settled)
+        ).length,
+        wonCount,
+        lostCount,
       }
     });
 
@@ -88,15 +138,15 @@ export async function GET(request: NextRequest) {
 }
 
 // ============================================================================
-// CALCULATION HELPERS
+// CALCULATION HELPERS - ONLY REAL DATA
 // ============================================================================
 
-function calculateModelStats(accuracyData: any[], predictions: any[]) {
+function calculateModelStats(newPredictions: any[], oldPredictions: any[]) {
   const modelMap = new Map<string, { 
     total: number; 
+    settled: number;
     correct: number; 
     confidence: number[];
-    predictions: number;
   }>();
   
   // Initialize with known models
@@ -110,83 +160,159 @@ function calculateModelStats(accuracyData: any[], predictions: any[]) {
 
   // Initialize all models
   knownModels.forEach(m => {
-    modelMap.set(m.key, { total: 0, correct: 0, confidence: [], predictions: 0 });
+    modelMap.set(m.key, { total: 0, settled: 0, correct: 0, confidence: [] });
   });
 
-  // Process accuracy data if available
-  for (const acc of accuracyData) {
-    const modelName = acc.model_name?.toLowerCase() || '';
+  // Process new predictions (ai_model_predictions)
+  for (const session of newPredictions) {
+    const modelPreds = session.ai_model_predictions || [];
     
-    for (const known of knownModels) {
-      if (modelName.includes(known.key) || modelName.includes(known.key.replace('-', ''))) {
-        const stats = modelMap.get(known.key)!;
-        stats.total++;
-        if (acc.is_correct) stats.correct++;
-        if (acc.confidence) stats.confidence.push(acc.confidence);
-        break;
+    for (const modelPred of modelPreds) {
+      const modelName = modelPred.model_name?.toLowerCase() || '';
+      
+      for (const known of knownModels) {
+        if (modelName.includes(known.key) || modelName === known.key) {
+          const stats = modelMap.get(known.key)!;
+          stats.total++;
+          
+          if (session.is_settled) {
+            stats.settled++;
+            // Count correct predictions
+            const correctCount = [
+              modelPred.btts_correct,
+              modelPred.over_under_correct,
+              modelPred.match_result_correct
+            ].filter(c => c === true).length;
+            
+            const totalMarkets = [
+              modelPred.btts_correct,
+              modelPred.over_under_correct,
+              modelPred.match_result_correct
+            ].filter(c => c !== null).length;
+            
+            if (totalMarkets > 0 && correctCount > totalMarkets / 2) {
+              stats.correct++;
+            }
+          }
+          
+          // Average confidence
+          const avgConf = [
+            modelPred.btts_confidence,
+            modelPred.over_under_confidence,
+            modelPred.match_result_confidence
+          ].filter(c => c !== null && c !== undefined);
+          
+          if (avgConf.length > 0) {
+            stats.confidence.push(avgConf.reduce((a, b) => a + b, 0) / avgConf.length);
+          }
+          
+          break;
+        }
+      }
+    }
+
+    // Count consensus predictions
+    if (session.consensus_btts || session.consensus_over_under || session.consensus_match_result) {
+      const stats = modelMap.get('consensus')!;
+      stats.total++;
+      
+      if (session.is_settled) {
+        stats.settled++;
+        const correctCount = [
+          session.btts_correct,
+          session.over_under_correct,
+          session.match_result_correct
+        ].filter(c => c === true).length;
+        
+        if (correctCount >= 2) {
+          stats.correct++;
+        }
+      }
+      
+      const avgConf = [
+        session.consensus_btts_confidence,
+        session.consensus_over_under_confidence,
+        session.consensus_match_result_confidence
+      ].filter(c => c !== null && c !== undefined);
+      
+      if (avgConf.length > 0) {
+        stats.confidence.push(avgConf.reduce((a, b) => a + b, 0) / avgConf.length);
       }
     }
   }
 
-  // Count predictions per model from prediction_records
-  for (const pred of predictions) {
+  // Also count from old predictions
+  for (const pred of oldPredictions) {
     if (pred.predictions && typeof pred.predictions === 'object') {
       for (const known of knownModels) {
         if (pred.predictions[known.key] || pred.predictions[known.name.toLowerCase()]) {
           const stats = modelMap.get(known.key)!;
-          stats.predictions++;
+          stats.total++;
+          if (pred.status === 'won') stats.correct++;
+          if (pred.status !== 'pending') stats.settled++;
         }
       }
     }
     
-    // Count consensus predictions
+    // Count consensus
     if (pred.consensus) {
       const stats = modelMap.get('consensus')!;
-      stats.predictions++;
+      stats.total++;
+      if (pred.status === 'won') stats.correct++;
+      if (pred.status !== 'pending') stats.settled++;
     }
   }
 
-  // Convert to array
+  // Convert to array - NO SIMULATION
   const results = knownModels.map(model => {
     const stats = modelMap.get(model.key)!;
     
-    // Calculate accuracy (if we have settled predictions)
-    const accuracy = stats.total > 0 
-      ? (stats.correct / stats.total) * 100 
-      : (stats.predictions > 0 ? 65 + Math.random() * 10 : 0); // Simulated if no real data
+    // Calculate REAL accuracy only from settled predictions
+    const accuracy = stats.settled > 0 
+      ? (stats.correct / stats.settled) * 100 
+      : 0; // NO FAKE DATA!
     
     // Calculate average confidence
     const avgConfidence = stats.confidence.length > 0
       ? stats.confidence.reduce((a, b) => a + b, 0) / stats.confidence.length
-      : 65;
+      : 0;
     
-    // ROI calculation
-    const roi = stats.total > 0 
-      ? ((stats.correct * 1.85 - stats.total) / stats.total) * 100 
+    // ROI calculation (only from settled)
+    const roi = stats.settled > 0 
+      ? ((stats.correct * 1.85 - stats.settled) / stats.settled) * 100 
       : 0;
     
     return {
       model: model.name,
-      totalPredictions: stats.total || stats.predictions,
+      totalPredictions: stats.total,
       correctPredictions: stats.correct,
+      settledPredictions: stats.settled,
       accuracy: Math.round(accuracy * 10) / 10,
       avgConfidence: Math.round(avgConfidence),
       roi: Math.round(roi * 10) / 10,
-      hasRealData: stats.total > 0,
+      hasRealData: stats.settled > 0, // Only true if we have REAL settled data
     };
   }).filter(m => m.totalPredictions > 0);
   
-  return results.sort((a, b) => b.accuracy - a.accuracy);
+  return results.sort((a, b) => {
+    // Sort by settled predictions first, then by accuracy
+    if (b.settledPredictions !== a.settledPredictions) {
+      return b.settledPredictions - a.settledPredictions;
+    }
+    return b.accuracy - a.accuracy;
+  });
 }
 
-function calculateMarketStats(predictions: any[]) {
+function calculateMarketStats(predictions: any[], proMarketPredictions: any[]) {
   const marketMap = new Map<string, { total: number; won: number; lost: number }>();
   
   const marketTypes = [
     { key: 'match_result', label: 'Match Result (1X2)' },
-    { key: 'over_under', label: 'Over/Under 2.5' },
+    { key: 'over_under_25', label: 'Over/Under 2.5' },
     { key: 'btts', label: 'Both Teams to Score' },
-    { key: 'double_chance', label: 'Double Chance' },
+    { key: 'over_under_15', label: 'Over/Under 1.5' },
+    { key: 'fh_result', label: 'First Half Result' },
+    { key: 'asian_hc', label: 'Asian Handicap' },
   ];
 
   // Initialize markets
@@ -194,23 +320,80 @@ function calculateMarketStats(predictions: any[]) {
     marketMap.set(m.key, { total: 0, won: 0, lost: 0 });
   });
 
-  // Count from predictions
+  // Count from professional market predictions
+  for (const pred of proMarketPredictions) {
+    if (pred.is_settled) {
+      // Match Result
+      if (pred.match_result_correct !== null) {
+        const stats = marketMap.get('match_result')!;
+        stats.total++;
+        if (pred.match_result_correct) stats.won++;
+        else stats.lost++;
+      }
+      
+      // Over/Under 2.5
+      if (pred.over_under_25_correct !== null) {
+        const stats = marketMap.get('over_under_25')!;
+        stats.total++;
+        if (pred.over_under_25_correct) stats.won++;
+        else stats.lost++;
+      }
+      
+      // BTTS
+      if (pred.btts_correct !== null) {
+        const stats = marketMap.get('btts')!;
+        stats.total++;
+        if (pred.btts_correct) stats.won++;
+        else stats.lost++;
+      }
+      
+      // Over/Under 1.5
+      if (pred.over_under_15_correct !== null) {
+        const stats = marketMap.get('over_under_15')!;
+        stats.total++;
+        if (pred.over_under_15_correct) stats.won++;
+        else stats.lost++;
+      }
+      
+      // First Half
+      if (pred.fh_result_correct !== null) {
+        const stats = marketMap.get('fh_result')!;
+        stats.total++;
+        if (pred.fh_result_correct) stats.won++;
+        else stats.lost++;
+      }
+      
+      // Asian Handicap
+      if (pred.asian_hc_correct !== null) {
+        const stats = marketMap.get('asian_hc')!;
+        stats.total++;
+        if (pred.asian_hc_correct) stats.won++;
+        else stats.lost++;
+      }
+    }
+  }
+
+  // Also count from prediction_sessions
   for (const pred of predictions) {
-    // Default to match_result
-    const market = pred.market_type || 'match_result';
-    const key = market.toLowerCase().replace(/\s+/g, '_');
-    
-    if (marketMap.has(key)) {
-      const stats = marketMap.get(key)!;
-      stats.total++;
-      if (pred.status === 'won') stats.won++;
-      if (pred.status === 'lost') stats.lost++;
-    } else {
-      // Default to match_result
-      const stats = marketMap.get('match_result')!;
-      stats.total++;
-      if (pred.status === 'won') stats.won++;
-      if (pred.status === 'lost') stats.lost++;
+    if (pred.source === 'new' && pred.is_settled) {
+      if (pred.match_result_correct !== null) {
+        const stats = marketMap.get('match_result')!;
+        stats.total++;
+        if (pred.match_result_correct) stats.won++;
+        else stats.lost++;
+      }
+      if (pred.over_under_correct !== null) {
+        const stats = marketMap.get('over_under_25')!;
+        stats.total++;
+        if (pred.over_under_correct) stats.won++;
+        else stats.lost++;
+      }
+      if (pred.btts_correct !== null) {
+        const stats = marketMap.get('btts')!;
+        stats.total++;
+        if (pred.btts_correct) stats.won++;
+        else stats.lost++;
+      }
     }
   }
 
@@ -227,7 +410,8 @@ function calculateMarketStats(predictions: any[]) {
         accuracy: Math.round(accuracy * 10) / 10,
       };
     })
-    .filter(m => m.total > 0);
+    .filter(m => m.total > 0)
+    .sort((a, b) => b.accuracy - a.accuracy);
 }
 
 function calculateLeagueStats(predictions: any[]) {
@@ -235,6 +419,7 @@ function calculateLeagueStats(predictions: any[]) {
   
   for (const pred of predictions) {
     const league = pred.league || 'Unknown';
+    if (league === 'Unknown') continue;
     
     if (!leagueMap.has(league)) {
       leagueMap.set(league, { total: 0, won: 0, lost: 0 });
@@ -242,8 +427,21 @@ function calculateLeagueStats(predictions: any[]) {
     
     const stats = leagueMap.get(league)!;
     stats.total++;
-    if (pred.status === 'won') stats.won++;
-    if (pred.status === 'lost') stats.lost++;
+    
+    // Check status based on source
+    if (pred.source === 'old') {
+      if (pred.status === 'won') stats.won++;
+      if (pred.status === 'lost') stats.lost++;
+    } else if (pred.source === 'new' && pred.is_settled) {
+      const correctCount = [
+        pred.btts_correct,
+        pred.over_under_correct,
+        pred.match_result_correct
+      ].filter(c => c === true).length;
+      
+      if (correctCount >= 2) stats.won++;
+      else stats.lost++;
+    }
   }
   
   return Array.from(leagueMap.entries())
@@ -263,28 +461,68 @@ function calculateLeagueStats(predictions: any[]) {
     .slice(0, 15);
 }
 
-function calculateOverallStats(allPredictions: any[], settledPredictions: any[]) {
-  const totalPredictions = allPredictions.length;
-  const totalSettled = settledPredictions.length;
-  const totalCorrect = settledPredictions.filter(p => p.status === 'won').length;
+function calculateOverallStats(allPredictions: any[], newPredictions: any[], proMarketPredictions: any[]) {
+  const totalPredictions = allPredictions.length + proMarketPredictions.length;
+  
+  // Count settled from all sources
+  let totalSettled = 0;
+  let totalCorrect = 0;
+  
+  // From old predictions
+  for (const pred of allPredictions) {
+    if (pred.source === 'old') {
+      if (pred.status === 'won' || pred.status === 'lost') {
+        totalSettled++;
+        if (pred.status === 'won') totalCorrect++;
+      }
+    } else if (pred.source === 'new' && pred.is_settled) {
+      totalSettled++;
+      const correctCount = [
+        pred.btts_correct,
+        pred.over_under_correct,
+        pred.match_result_correct
+      ].filter(c => c === true).length;
+      if (correctCount >= 2) totalCorrect++;
+    }
+  }
+  
+  // From professional markets
+  for (const pred of proMarketPredictions) {
+    if (pred.is_settled) {
+      totalSettled++;
+      // Count correct markets
+      const markets = [
+        pred.match_result_correct,
+        pred.over_under_25_correct,
+        pred.btts_correct
+      ].filter(c => c !== null);
+      
+      const correct = markets.filter(c => c === true).length;
+      if (correct > markets.length / 2) totalCorrect++;
+    }
+  }
   
   const overallAccuracy = totalSettled > 0 
     ? (totalCorrect / totalSettled) * 100 
     : 0;
   
-  // Calculate average confidence from predictions
+  // Calculate average confidence
   const confidences: number[] = [];
-  for (const pred of allPredictions) {
-    if (pred.consensus?.confidence) {
-      confidences.push(pred.consensus.confidence);
-    } else if (pred.data_quality_score) {
-      confidences.push(pred.data_quality_score);
+  for (const pred of newPredictions) {
+    const avgConf = [
+      pred.consensus_btts_confidence,
+      pred.consensus_over_under_confidence,
+      pred.consensus_match_result_confidence
+    ].filter(c => c !== null && c !== undefined);
+    
+    if (avgConf.length > 0) {
+      confidences.push(avgConf.reduce((a, b) => a + b, 0) / avgConf.length);
     }
   }
   
   const avgConfidence = confidences.length > 0
     ? confidences.reduce((a, b) => a + b, 0) / confidences.length
-    : 65;
+    : 0;
   
   return {
     totalPredictions,
@@ -311,8 +549,20 @@ function calculateWeeklyTrend(predictions: any[]) {
     
     const stats = weekMap.get(weekKey)!;
     stats.total++;
-    if (pred.status === 'won') stats.won++;
-    if (pred.status === 'lost') stats.lost++;
+    
+    if (pred.source === 'old') {
+      if (pred.status === 'won') stats.won++;
+      if (pred.status === 'lost') stats.lost++;
+    } else if (pred.source === 'new' && pred.is_settled) {
+      const correctCount = [
+        pred.btts_correct,
+        pred.over_under_correct,
+        pred.match_result_correct
+      ].filter(c => c === true).length;
+      
+      if (correctCount >= 2) stats.won++;
+      else stats.lost++;
+    }
   }
   
   return Array.from(weekMap.entries())
@@ -332,15 +582,33 @@ function calculateWeeklyTrend(predictions: any[]) {
 
 function getRecentPredictions(predictions: any[]) {
   return predictions
-    .slice(0, 10)
-    .map(p => ({
-      id: p.id,
-      match: `${p.home_team} vs ${p.away_team}`,
-      league: p.league,
-      status: p.status,
-      date: p.match_date,
-      analysisType: p.analysis_type,
-    }));
+    .slice(0, 20)
+    .map(p => {
+      let status: 'won' | 'lost' | 'pending' = 'pending';
+      
+      if (p.source === 'old') {
+        status = p.status || 'pending';
+      } else if (p.source === 'new') {
+        if (p.is_settled) {
+          const correctCount = [
+            p.btts_correct,
+            p.over_under_correct,
+            p.match_result_correct
+          ].filter(c => c === true).length;
+          
+          status = correctCount >= 2 ? 'won' : 'lost';
+        }
+      }
+      
+      return {
+        id: p.id,
+        match: `${p.home_team} vs ${p.away_team}`,
+        league: p.league || 'Unknown',
+        status,
+        date: p.match_date || p.created_at,
+        analysisType: p.analysis_type || p.prediction_source || 'ai_agents',
+      };
+    });
 }
 
 function getWeekStart(date: Date): Date {
