@@ -93,16 +93,60 @@ export default function AdminPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔄 Fetching admin data...');
+      
       const res = await fetch('/api/admin/enhanced-stats?type=all&limit=100');
       const data = await res.json();
+      
+      console.log('📊 API Response:', data);
+      console.log('📊 Recent predictions count:', data.recent?.length || 0);
 
       if (data.success) {
-        setOverall(data.overall);
+        // Calculate overall from recent if overall is empty
+        const recentData = data.recent || [];
+        
+        if (recentData.length > 0 && (!data.overall || data.overall.total_predictions === 0)) {
+          const settled = recentData.filter((p: any) => p.is_settled);
+          const calculatedOverall = {
+            total_predictions: recentData.length,
+            settled_predictions: settled.length,
+            pending_predictions: recentData.length - settled.length,
+            btts: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.btts_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.btts_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            },
+            over_under: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.over_under_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.over_under_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            },
+            match_result: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.match_result_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.match_result_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            }
+          };
+          setOverall(calculatedOverall);
+          console.log('📊 Calculated overall from recent:', calculatedOverall);
+        } else {
+          setOverall(data.overall);
+        }
+        
         setModels(data.models || []);
-        setPredictions(data.recent || []);
+        setPredictions(recentData);
+        console.log('✅ Predictions set:', recentData.length, 'items');
+      } else {
+        console.error('❌ API returned success: false');
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      console.error('❌ Error fetching admin data:', error);
     } finally {
       setLoading(false);
     }
