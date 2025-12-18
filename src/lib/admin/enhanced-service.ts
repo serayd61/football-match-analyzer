@@ -391,12 +391,20 @@ async function updateDailySummaryAfterSettle(
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getOverallStats(): Promise<object> {
-  const { data: sessions, error } = await supabase
+  console.log('📊 getOverallStats: Starting...');
+  
+  const { data: sessions, error, count } = await supabase
     .from('prediction_sessions')
-    .select('*');
+    .select('*', { count: 'exact' });
+
+  console.log('📊 getOverallStats: Query result:', {
+    error: error ? error.message : null,
+    dataLength: sessions?.length || 0,
+    count
+  });
 
   if (error) {
-    console.error('Error fetching sessions:', error);
+    console.error('❌ getOverallStats Error:', error);
     return {
       total_predictions: 0,
       settled_predictions: 0,
@@ -408,6 +416,7 @@ export async function getOverallStats(): Promise<object> {
   }
 
   if (!sessions || sessions.length === 0) {
+    console.log('⚠️ getOverallStats: No sessions found');
     return {
       total_predictions: 0,
       settled_predictions: 0,
@@ -417,6 +426,8 @@ export async function getOverallStats(): Promise<object> {
       match_result: { total: 0, correct: 0, accuracy: '0' }
     };
   }
+
+  console.log('✅ getOverallStats: Found', sessions.length, 'sessions');
 
   const total = sessions.length;
   const settled = sessions.filter(s => s.is_settled).length;

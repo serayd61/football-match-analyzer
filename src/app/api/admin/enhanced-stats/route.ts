@@ -34,12 +34,21 @@ export async function GET(request: Request) {
 
       case 'all':
       default:
+        console.log('🔄 Enhanced stats API: Fetching all data...');
+        
         const [overall, models, recent, daily] = await Promise.all([
           getOverallStats(),
           getModelStats(),
           getRecentPredictions(limit),
           getDailyStats(days)
         ]);
+
+        console.log('📊 Enhanced stats API results:', {
+          overallTotal: (overall as any)?.total_predictions || 0,
+          modelsCount: (models as any[])?.length || 0,
+          recentCount: (recent as any[])?.length || 0,
+          dailyCount: (daily as any[])?.length || 0
+        });
 
         data = {
           overall,
