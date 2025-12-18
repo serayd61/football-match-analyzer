@@ -184,13 +184,15 @@ async function updateDailySummary(modelNames: string[]): Promise<void> {
         onConflict: 'summary_date,model_name'
       });
 
-    // Increment if exists
-    await supabase.rpc('increment_daily_predictions', {
-      p_date: today,
-      p_model: modelName
-    }).catch(() => {
+    // Increment if exists - wrapped in try-catch since RPC might not exist
+    try {
+      await supabase.rpc('increment_daily_predictions', {
+        p_date: today,
+        p_model: modelName
+      });
+    } catch {
       // RPC might not exist, ignore
-    });
+    }
   }
 }
 
