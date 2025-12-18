@@ -20,6 +20,7 @@ import { savePrediction as saveAdminPrediction } from '@/lib/admin/service';
 import { savePredictionSession, type ModelPrediction } from '@/lib/admin/enhanced-service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
+import { generateProfessionalAnalysis, type MatchStats, type ProfessionalAnalysis } from '@/lib/betting/professional-markets';
 
 // ==================== DATA QUALITY THRESHOLD ====================
 const MIN_DATA_QUALITY = 30;
@@ -850,7 +851,78 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📊 STEP 10: Build Response - ALL NORMALIZED
+    // 📊 STEP 10: Generate Professional Markets Analysis
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    let professionalMarkets: ProfessionalAnalysis | null = null;
+    try {
+      const matchStats: MatchStats = {
+        home: {
+          avgGoalsFor: parseFloat(completeMatchData.homeForm.avgGoalsScored) || 1.5,
+          avgGoalsAgainst: parseFloat(completeMatchData.homeForm.avgGoalsConceded) || 1.2,
+          homeAvgGoalsFor: parseFloat(completeMatchData.homeForm.venueAvgScored) || 1.5,
+          homeAvgGoalsAgainst: parseFloat(completeMatchData.homeForm.venueAvgConceded) || 1.2,
+          over15Pct: parseFloat(completeMatchData.homeForm.over25Percentage) || 60,
+          over25Pct: parseFloat(completeMatchData.homeForm.over25Percentage) || 50,
+          over35Pct: (parseFloat(completeMatchData.homeForm.over25Percentage) || 50) * 0.6,
+          bttsPct: parseFloat(completeMatchData.homeForm.bttsPercentage) || 50,
+          cleanSheetPct: 30,
+          failedToScorePct: 20,
+          firstHalfGoalsPct: 45,
+          secondHalfGoalsPct: 55,
+          form: completeMatchData.homeForm.form || 'DDDDD',
+          xG: result.reports?.stats?.xgAnalysis?.homeXG,
+          xGA: result.reports?.stats?.xgAnalysis?.awayActual,
+        },
+        away: {
+          avgGoalsFor: parseFloat(completeMatchData.awayForm.avgGoalsScored) || 1.3,
+          avgGoalsAgainst: parseFloat(completeMatchData.awayForm.avgGoalsConceded) || 1.4,
+          awayAvgGoalsFor: parseFloat(completeMatchData.awayForm.venueAvgScored) || 1.3,
+          awayAvgGoalsAgainst: parseFloat(completeMatchData.awayForm.venueAvgConceded) || 1.4,
+          over15Pct: parseFloat(completeMatchData.awayForm.over25Percentage) || 60,
+          over25Pct: parseFloat(completeMatchData.awayForm.over25Percentage) || 50,
+          over35Pct: (parseFloat(completeMatchData.awayForm.over25Percentage) || 50) * 0.6,
+          bttsPct: parseFloat(completeMatchData.awayForm.bttsPercentage) || 50,
+          cleanSheetPct: 30,
+          failedToScorePct: 20,
+          firstHalfGoalsPct: 45,
+          secondHalfGoalsPct: 55,
+          form: completeMatchData.awayForm.form || 'DDDDD',
+          xG: result.reports?.stats?.xgAnalysis?.awayXG,
+          xGA: result.reports?.stats?.xgAnalysis?.homeActual,
+        },
+        h2h: {
+          totalMatches: completeMatchData.h2h.totalMatches || 0,
+          homeWins: completeMatchData.h2h.homeWins || 0,
+          awayWins: completeMatchData.h2h.awayWins || 0,
+          draws: completeMatchData.h2h.draws || 0,
+          avgGoals: parseFloat(completeMatchData.h2h.avgTotalGoals) || 2.5,
+          over25Pct: parseFloat(completeMatchData.h2h.over25Percentage) || 50,
+          bttsPct: parseFloat(completeMatchData.h2h.bttsPercentage) || 50,
+          homeTeamScoredFirst: 50,
+          awayTeamScoredFirst: 50,
+        },
+        odds: completeMatchData.odds ? {
+          home: completeMatchData.odds.matchWinner?.home || 2.5,
+          draw: completeMatchData.odds.matchWinner?.draw || 3.2,
+          away: completeMatchData.odds.matchWinner?.away || 2.8,
+          over25: completeMatchData.odds.overUnder?.['2.5']?.over || 1.9,
+          under25: completeMatchData.odds.overUnder?.['2.5']?.under || 1.9,
+          over15: 1.4,
+          under15: 2.8,
+          bttsYes: completeMatchData.odds.btts?.yes || 1.9,
+          bttsNo: completeMatchData.odds.btts?.no || 1.9,
+        } : undefined,
+      };
+
+      professionalMarkets = generateProfessionalAnalysis(matchStats, language);
+      console.log('📈 Professional markets analysis generated');
+    } catch (pmError) {
+      console.error('⚠️ Professional markets error:', pmError);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 STEP 11: Build Response - ALL NORMALIZED
     // ═══════════════════════════════════════════════════════════════════════════
     
     const totalTime = Date.now() - startTime;
@@ -905,6 +977,54 @@ export async function POST(request: NextRequest) {
         newMarkets: normalizeNewMarkets(strategyResult.newMarkets),
         specialAlerts: strategyResult.specialAlerts || [],
         agentSummary: strategyResult.agentSummary || '',
+      } : { enabled: false },
+      
+      // 🆕 Professional Betting Markets - ALL MARKETS
+      professionalMarkets: professionalMarkets ? {
+        enabled: true,
+        // Core Markets
+        matchResult: professionalMarkets.matchResult,
+        overUnder25: professionalMarkets.overUnder25,
+        overUnder15: professionalMarkets.overUnder15,
+        overUnder35: professionalMarkets.overUnder35,
+        btts: professionalMarkets.btts,
+        // First Half Markets
+        firstHalf: {
+          result: professionalMarkets.firstHalfResult,
+          over05: professionalMarkets.firstHalfOver05,
+          over15: professionalMarkets.firstHalfOver15,
+          btts: professionalMarkets.firstHalfBtts,
+        },
+        // HT/FT
+        htft: professionalMarkets.htft,
+        // Handicap
+        asianHandicap: professionalMarkets.asianHandicap,
+        europeanHandicap: professionalMarkets.europeanHandicap,
+        // Team Goals
+        teamGoals: {
+          homeOver05: professionalMarkets.homeOver05,
+          awayOver05: professionalMarkets.awayOver05,
+          homeOver15: professionalMarkets.homeOver15,
+          awayOver15: professionalMarkets.awayOver15,
+        },
+        // First Goal
+        teamToScoreFirst: professionalMarkets.teamToScoreFirst,
+        // Combos
+        comboBets: {
+          homeWinAndOver15: professionalMarkets.homeWinAndOver15,
+          awayWinAndOver15: professionalMarkets.awayWinAndOver15,
+          drawAndUnder25: professionalMarkets.drawAndUnder25,
+          bttsAndOver25: professionalMarkets.bttsAndOver25,
+        },
+        // Other
+        corners: professionalMarkets.totalCorners,
+        cards: professionalMarkets.totalCards,
+        exactGoals: professionalMarkets.exactGoals,
+        // Summary
+        bestBets: professionalMarkets.bestBets,
+        safeBets: professionalMarkets.safeBets,
+        valueBets: professionalMarkets.valueBets,
+        riskyBets: professionalMarkets.riskyBets,
       } : { enabled: false },
       
       // Data quality info
