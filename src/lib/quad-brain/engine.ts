@@ -320,11 +320,11 @@ function buildStatisticalPrompt(matchData: EnhancedMatchData, language: 'tr' | '
   const totalXG = (parseFloat(homeXG) + parseFloat(awayXG)).toFixed(2);
   
   // Value hesaplama için oran dönüşümü
-  const homeOdds = parseFloat(odds?.matchWinner?.home || '2.5');
-  const drawOdds = parseFloat(odds?.matchWinner?.draw || '3.5');
-  const awayOdds = parseFloat(odds?.matchWinner?.away || '3.0');
-  const over25Odds = parseFloat(odds?.overUnder?.['2.5']?.over || '1.9');
-  const under25Odds = parseFloat(odds?.overUnder?.['2.5']?.under || '1.9');
+  const homeOdds = Number(odds?.matchWinner?.home) || 2.5;
+  const drawOdds = Number(odds?.matchWinner?.draw) || 3.5;
+  const awayOdds = Number(odds?.matchWinner?.away) || 3.0;
+  const over25Odds = Number(odds?.overUnder?.['2.5']?.over) || 1.9;
+  const under25Odds = Number(odds?.overUnder?.['2.5']?.under) || 1.9;
   
   // Implied probability from odds
   const homeImplied = (100 / homeOdds).toFixed(1);
