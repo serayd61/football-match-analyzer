@@ -351,12 +351,10 @@ MAÇ: ${homeTeam} vs ${awayTeam}
 ${homeTeam}:
 • Over 2.5: ${homeForm?.over25Percentage || '50'}% | BTTS: ${homeForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${homeForm?.cleanSheetPercentage || '20'}%
-• Gol Atamama: ${homeForm?.failedToScorePercentage || '20'}%
 
 ${awayTeam}:
 • Over 2.5: ${awayForm?.over25Percentage || '50'}% | BTTS: ${awayForm?.bttsPercentage || '50'}%
 • Clean Sheet: ${awayForm?.cleanSheetPercentage || '20'}%
-• Gol Atamama: ${awayForm?.failedToScorePercentage || '20'}%
 
 🔄 H2H İSTATİSTİKLERİ (${h2h?.totalMatches || 0} maç)
 • Ortalama Gol: ${h2h?.avgGoals || 'N/A'}
