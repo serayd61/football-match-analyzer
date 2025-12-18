@@ -17,6 +17,7 @@ import { runMultiModelAnalysis } from '@/lib/heurist/multiModel';
 import { runStrategyAgent } from '@/lib/heurist/agents/strategy';
 import { savePrediction } from '@/lib/predictions';
 import { savePrediction as saveAdminPrediction } from '@/lib/admin/service';
+import { savePredictionSession, type ModelPrediction } from '@/lib/admin/enhanced-service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 
@@ -756,6 +757,96 @@ export async function POST(request: NextRequest) {
       console.log('📊 Agent prediction saved to Admin Panel');
     } catch (adminSaveError) {
       console.error('⚠️ Admin Panel save failed (non-blocking):', adminSaveError);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 📊 ENHANCED ADMIN - YENİ TAHMİN TAKİP SİSTEMİ
+    // ═══════════════════════════════════════════════════════════════════════════
+    try {
+      const consensus = result.reports?.weightedConsensus;
+      const mmPredictions = multiModelResult?.predictions as any;
+      
+      // Model predictions for enhanced tracking
+      const modelPredictions: ModelPrediction[] = [];
+      
+      // Add each AI model's predictions
+      if (mmPredictions?.claude) {
+        modelPredictions.push({
+          session_id: '', // Will be set by savePredictionSession
+          model_name: 'claude',
+          model_type: 'llm',
+          btts_prediction: mmPredictions.claude.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+          btts_confidence: mmPredictions.claude.btts?.confidence || 0,
+          over_under_prediction: mmPredictions.claude.overUnder?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+          over_under_confidence: mmPredictions.claude.overUnder?.confidence || 0,
+          match_result_prediction: mmPredictions.claude.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                   mmPredictions.claude.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+          match_result_confidence: mmPredictions.claude.matchResult?.confidence || 0,
+        });
+      }
+      
+      if (mmPredictions?.gpt4) {
+        modelPredictions.push({
+          session_id: '',
+          model_name: 'gpt4',
+          model_type: 'llm',
+          btts_prediction: mmPredictions.gpt4.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+          btts_confidence: mmPredictions.gpt4.btts?.confidence || 0,
+          over_under_prediction: mmPredictions.gpt4.overUnder?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+          over_under_confidence: mmPredictions.gpt4.overUnder?.confidence || 0,
+          match_result_prediction: mmPredictions.gpt4.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                   mmPredictions.gpt4.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+          match_result_confidence: mmPredictions.gpt4.matchResult?.confidence || 0,
+        });
+      }
+      
+      if (mmPredictions?.gemini) {
+        modelPredictions.push({
+          session_id: '',
+          model_name: 'gemini',
+          model_type: 'llm',
+          btts_prediction: mmPredictions.gemini.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+          btts_confidence: mmPredictions.gemini.btts?.confidence || 0,
+          over_under_prediction: mmPredictions.gemini.overUnder?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+          over_under_confidence: mmPredictions.gemini.overUnder?.confidence || 0,
+          match_result_prediction: mmPredictions.gemini.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                   mmPredictions.gemini.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+          match_result_confidence: mmPredictions.gemini.matchResult?.confidence || 0,
+        });
+      }
+
+      // Save to enhanced tracking system
+      await savePredictionSession({
+        fixture_id: matchData.fixtureId,
+        home_team: matchData.homeTeam,
+        away_team: matchData.awayTeam,
+        league: matchData.league,
+        match_date: matchData.date,
+        prediction_source: 'ai_agents',
+        session_type: 'manual',
+        consensus_btts: consensus?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+        consensus_btts_confidence: consensus?.btts?.confidence || 0,
+        consensus_over_under: consensus?.overUnder?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+        consensus_over_under_confidence: consensus?.overUnder?.confidence || 0,
+        consensus_match_result: consensus?.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                consensus?.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+        consensus_match_result_confidence: consensus?.matchResult?.confidence || 0,
+        best_bet_1_market: strategyResult?.recommendedBets?.[0]?.type || null,
+        best_bet_1_selection: strategyResult?.recommendedBets?.[0]?.selection || null,
+        best_bet_1_confidence: strategyResult?.recommendedBets?.[0]?.confidence || null,
+        best_bet_2_market: strategyResult?.recommendedBets?.[1]?.type || null,
+        best_bet_2_selection: strategyResult?.recommendedBets?.[1]?.selection || null,
+        best_bet_2_confidence: strategyResult?.recommendedBets?.[1]?.confidence || null,
+        best_bet_3_market: strategyResult?.recommendedBets?.[2]?.type || null,
+        best_bet_3_selection: strategyResult?.recommendedBets?.[2]?.selection || null,
+        best_bet_3_confidence: strategyResult?.recommendedBets?.[2]?.confidence || null,
+        risk_level: normalizeRiskAssessment(strategyResult?.riskAssessment) === 'High' ? 'high' : 
+                    normalizeRiskAssessment(strategyResult?.riskAssessment) === 'Low' ? 'low' : 'medium',
+      }, modelPredictions);
+      
+      console.log('📊 Enhanced prediction tracking saved!');
+    } catch (enhancedSaveError) {
+      console.error('⚠️ Enhanced tracking save failed (non-blocking):', enhancedSaveError);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

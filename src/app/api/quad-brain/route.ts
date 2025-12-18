@@ -8,6 +8,7 @@ import { runQuadBrainAnalysis, EnhancedMatchData, QuadBrainAPIResponse } from '@
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
 import { savePrediction } from '@/lib/admin/service';
+import { savePredictionSession, type ModelPrediction } from '@/lib/admin/enhanced-service';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 saniye timeout
@@ -236,6 +237,113 @@ export async function POST(request: NextRequest): Promise<NextResponse<QuadBrain
         console.log('📊 Quad-Brain prediction saved to Admin Panel');
       } catch (saveError) {
         console.error('⚠️ Admin Panel save failed (non-blocking):', saveError);
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 📊 ENHANCED ADMIN - YENİ TAHMİN TAKİP SİSTEMİ
+      // ═══════════════════════════════════════════════════════════════════════
+      try {
+        const modelPredictions: ModelPrediction[] = [];
+        
+        // Add Claude predictions
+        if (result.individualPredictions?.claude) {
+          const cp = result.individualPredictions.claude.predictions;
+          modelPredictions.push({
+            session_id: '',
+            model_name: 'claude',
+            model_type: 'llm',
+            btts_prediction: cp?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+            btts_confidence: cp?.btts?.confidence || 0,
+            over_under_prediction: cp?.overUnder25?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+            over_under_confidence: cp?.overUnder25?.confidence || 0,
+            match_result_prediction: cp?.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                     cp?.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+            match_result_confidence: cp?.matchResult?.confidence || 0,
+          });
+        }
+        
+        // Add GPT-4 predictions
+        if (result.individualPredictions?.gpt4) {
+          const gp = result.individualPredictions.gpt4.predictions;
+          modelPredictions.push({
+            session_id: '',
+            model_name: 'gpt4',
+            model_type: 'llm',
+            btts_prediction: gp?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+            btts_confidence: gp?.btts?.confidence || 0,
+            over_under_prediction: gp?.overUnder25?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+            over_under_confidence: gp?.overUnder25?.confidence || 0,
+            match_result_prediction: gp?.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                     gp?.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+            match_result_confidence: gp?.matchResult?.confidence || 0,
+          });
+        }
+        
+        // Add Gemini predictions
+        if (result.individualPredictions?.gemini) {
+          const gep = result.individualPredictions.gemini.predictions;
+          modelPredictions.push({
+            session_id: '',
+            model_name: 'gemini',
+            model_type: 'llm',
+            btts_prediction: gep?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+            btts_confidence: gep?.btts?.confidence || 0,
+            over_under_prediction: gep?.overUnder25?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+            over_under_confidence: gep?.overUnder25?.confidence || 0,
+            match_result_prediction: gep?.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                     gep?.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+            match_result_confidence: gep?.matchResult?.confidence || 0,
+          });
+        }
+        
+        // Add Perplexity predictions
+        if (result.individualPredictions?.perplexity) {
+          const pp = result.individualPredictions.perplexity.predictions;
+          modelPredictions.push({
+            session_id: '',
+            model_name: 'perplexity',
+            model_type: 'llm',
+            btts_prediction: pp?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+            btts_confidence: pp?.btts?.confidence || 0,
+            over_under_prediction: pp?.overUnder25?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+            over_under_confidence: pp?.overUnder25?.confidence || 0,
+            match_result_prediction: pp?.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                     pp?.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+            match_result_confidence: pp?.matchResult?.confidence || 0,
+          });
+        }
+
+        await savePredictionSession({
+          fixture_id: fixtureId || 0,
+          home_team: homeTeam,
+          away_team: awayTeam,
+          league: league || 'Unknown',
+          match_date: matchData.matchDate || new Date().toISOString(),
+          prediction_source: 'quad_brain',
+          session_type: 'manual',
+          consensus_btts: result.consensus.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
+          consensus_btts_confidence: result.consensus.btts?.confidence || 0,
+          consensus_over_under: result.consensus.overUnder25?.prediction?.toLowerCase()?.includes('over') ? 'over' : 'under',
+          consensus_over_under_confidence: result.consensus.overUnder25?.confidence || 0,
+          consensus_match_result: result.consensus.matchResult?.prediction?.toLowerCase() === 'home' ? 'home' : 
+                                  result.consensus.matchResult?.prediction?.toLowerCase() === 'away' ? 'away' : 'draw',
+          consensus_match_result_confidence: result.consensus.matchResult?.confidence || 0,
+          best_bet_1_market: result.bestBets?.[0]?.market || null,
+          best_bet_1_selection: result.bestBets?.[0]?.selection || null,
+          best_bet_1_confidence: result.bestBets?.[0]?.confidence || null,
+          best_bet_2_market: result.bestBets?.[1]?.market || null,
+          best_bet_2_selection: result.bestBets?.[1]?.selection || null,
+          best_bet_2_confidence: result.bestBets?.[1]?.confidence || null,
+          best_bet_3_market: result.bestBets?.[2]?.market || null,
+          best_bet_3_selection: result.bestBets?.[2]?.selection || null,
+          best_bet_3_confidence: result.bestBets?.[2]?.confidence || null,
+          risk_level: result.riskAssessment?.overall === 'high' ? 'high' : 
+                      result.riskAssessment?.overall === 'low' ? 'low' : 'medium',
+        }, modelPredictions);
+        
+        console.log('📊 Enhanced Quad-Brain tracking saved!');
+      } catch (enhancedSaveError) {
+        console.error('⚠️ Enhanced tracking save failed (non-blocking):', enhancedSaveError);
       }
     }
 
