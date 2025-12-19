@@ -158,39 +158,43 @@ async function runGeminiPattern(
 /**
  * Perplexity Contextual Analysis
  */
-async function runPerplexityContextual(
+async function runMistralContextual(
   matchData: EnhancedMatchData,
   language: 'tr' | 'en' | 'de'
 ): Promise<AIPrediction | null> {
-  const apiKey = process.env.PERPLEXITY_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
   const startTime = Date.now();
   const prompt = buildContextualPrompt(matchData, language);
 
   try {
-    const response = await fetch(API_ENDPOINTS.PERPLEXITY, {
+    const response = await fetch(API_ENDPOINTS.OPENROUTER, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://footballanalytics.pro'
       },
       body: JSON.stringify({
-        model: MODEL_VERSIONS.perplexity,
+        model: MODEL_VERSIONS.mistral,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: AI_MODEL_CONFIGS.perplexity.maxTokens,
-        temperature: AI_MODEL_CONFIGS.perplexity.temperature
+        max_tokens: AI_MODEL_CONFIGS.mistral.maxTokens,
+        temperature: AI_MODEL_CONFIGS.mistral.temperature
       })
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('❌ Mistral API error:', response.status);
+      return null;
+    }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    return parseAIPrediction(content, 'perplexity', startTime);
+    return parseAIPrediction(content, 'mistral', startTime);
   } catch (error) {
-    console.error('❌ Perplexity error:', error);
+    console.error('❌ Mistral error:', error);
     return null;
   }
 }
@@ -789,12 +793,12 @@ function parseAIPrediction(
 
 function buildConsensus(
   market: BettingMarket,
-  predictions: { claude?: AIPrediction; gpt4?: AIPrediction; gemini?: AIPrediction; perplexity?: AIPrediction },
+  predictions: { claude?: AIPrediction; gpt4?: AIPrediction; gemini?: AIPrediction; mistral?: AIPrediction },
   weights: DynamicWeight[]
 ): ConsensusResult {
   const votes: ConsensusResult['votes'] = [];
   
-  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'perplexity'];
+  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'mistral'];
   
   for (const model of models) {
     const pred = predictions[model];
@@ -919,11 +923,11 @@ export async function runQuadBrainAnalysis(
   console.log('\n🤖 Running 4 AI models in parallel...');
   const aiStart = Date.now();
 
-  const [claudeResult, gpt4Result, geminiResult, perplexityResult] = await Promise.all([
+  const [claudeResult, gpt4Result, geminiResult, mistralResult] = await Promise.all([
     runClaudeTactical(matchData, language),
     runGPT4Statistical(matchData, language),
     runGeminiPattern(matchData, language),
-    runPerplexityContextual(matchData, language)
+    runMistralContextual(matchData, language)
   ]);
 
   timing.aiCalls = Date.now() - aiStart;
@@ -932,14 +936,14 @@ export async function runQuadBrainAnalysis(
     claude: claudeResult || undefined,
     gpt4: gpt4Result || undefined,
     gemini: geminiResult || undefined,
-    perplexity: perplexityResult || undefined
+    mistral: mistralResult || undefined
   };
 
   const modelsUsed: AIModel[] = [];
   if (claudeResult) modelsUsed.push('claude');
   if (gpt4Result) modelsUsed.push('gpt4');
   if (geminiResult) modelsUsed.push('gemini');
-  if (perplexityResult) modelsUsed.push('perplexity');
+  if (mistralResult) modelsUsed.push('mistral');
 
   console.log(`✅ ${modelsUsed.length}/4 AI models responded`);
   modelsUsed.forEach(m => {
@@ -1190,7 +1194,7 @@ export {
   runClaudeTactical,
   runGPT4Statistical,
   runGeminiPattern,
-  runPerplexityContextual,
+  runMistralContextual,
   buildTacticalPrompt,
   buildStatisticalPrompt,
   buildPatternPrompt,

@@ -27,7 +27,7 @@ export interface ModelPredictions {
   claude?: ModelPrediction;
   gpt4?: ModelPrediction;
   gemini?: ModelPrediction;
-  perplexity?: ModelPrediction;
+  mistral?: ModelPrediction;
 }
 
 export interface ModelPrediction {

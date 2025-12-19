@@ -721,13 +721,13 @@ export async function POST(request: NextRequest) {
             btts: mmPredictions.gemini.btts?.prediction || '',
             bttsConfidence: mmPredictions.gemini.btts?.confidence || 0,
           } : undefined,
-          perplexity: mmPredictions?.perplexity ? {
-            matchResult: mmPredictions.perplexity.matchResult?.prediction || '',
-            matchResultConfidence: mmPredictions.perplexity.matchResult?.confidence || 0,
-            over25: mmPredictions.perplexity.overUnder?.prediction || '',
-            over25Confidence: mmPredictions.perplexity.overUnder?.confidence || 0,
-            btts: mmPredictions.perplexity.btts?.prediction || '',
-            bttsConfidence: mmPredictions.perplexity.btts?.confidence || 0,
+          mistral: mmPredictions?.mistral ? {
+            matchResult: mmPredictions.mistral.matchResult?.prediction || '',
+            matchResultConfidence: mmPredictions.mistral.matchResult?.confidence || 0,
+            over25: mmPredictions.mistral.overUnder?.prediction || '',
+            over25Confidence: mmPredictions.mistral.overUnder?.confidence || 0,
+            btts: mmPredictions.mistral.btts?.prediction || '',
+            bttsConfidence: mmPredictions.mistral.btts?.confidence || 0,
           } : undefined,
         },
         consensus: {

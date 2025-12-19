@@ -106,25 +106,24 @@ export const AI_MODEL_CONFIGS: Record<AIModel, AIModelConfig> = {
     ]
   },
 
-  perplexity: {
-    model: 'perplexity',
+  mistral: {
+    model: 'mistral',
     role: 'contextual',
-    displayName: 'Perplexity Context',
+    displayName: 'Mistral Context',
     baseWeight: 0.17,
     temperature: 0.5,
     maxTokens: 1800,
-    specialization: 'Contextual Analysis - Real-time news, injuries, external factors, last-minute updates',
+    specialization: 'Contextual Analysis - Team dynamics, external factors, balanced perspective',
     strengths: [
-      'Real-time web search capability',
-      'Current injury and suspension info',
-      'Team news and morale assessment',
-      'Weather and venue factors',
-      'Last-minute lineup changes'
+      'Balanced analysis perspective',
+      'Team dynamics assessment',
+      'Injury impact evaluation',
+      'Contextual reasoning',
+      'Multi-factor synthesis'
     ],
     weaknesses: [
-      'Dependent on news availability',
-      'May amplify media narratives',
-      'Less reliable for historical analysis'
+      'Less specialized than domain models',
+      'May need more context for edge cases'
     ],
     boostConditions: [
       'recent_news_impact',
@@ -160,7 +159,7 @@ export const MARKET_SPECIALISTS: Record<BettingMarket, MarketSpecialization> = {
       claude: 0.35,   // Momentum, psikoloji önemli
       gemini: 0.30,   // H2H patterns kritik
       gpt4: 0.25,     // İstatistiksel destek
-      perplexity: 0.10 // Context eklentisi
+      mistral: 0.10   // Context eklentisi
     },
     description: 'Match result requires tactical insight, H2H psychology, and momentum analysis'
   },
@@ -172,7 +171,7 @@ export const MARKET_SPECIALISTS: Record<BettingMarket, MarketSpecialization> = {
       gpt4: 0.40,     // xG, Poisson en önemli
       claude: 0.30,   // Tactical style (attacking vs defensive)
       gemini: 0.20,   // H2H goal patterns
-      perplexity: 0.10 // Injury impact on goals
+      mistral: 0.10   // Injury impact on goals
     },
     description: 'Over/Under relies heavily on statistical modeling and goal expectancy'
   },
@@ -184,7 +183,7 @@ export const MARKET_SPECIALISTS: Record<BettingMarket, MarketSpecialization> = {
       gpt4: 0.35,     // Scoring rates, clean sheet %
       gemini: 0.30,   // H2H BTTS patterns
       claude: 0.25,   // Defensive style analysis
-      perplexity: 0.10 // Defensive injuries
+      mistral: 0.10   // Defensive injuries
     },
     description: 'BTTS needs scoring/defensive stats plus historical patterns'
   },
@@ -196,7 +195,7 @@ export const MARKET_SPECIALISTS: Record<BettingMarket, MarketSpecialization> = {
       gemini: 0.40,   // Timing patterns
       gpt4: 0.30,     // Half-time statistics
       claude: 0.20,   // Tactical approach (fast start vs slow build)
-      perplexity: 0.10 // Team news
+      mistral: 0.10   // Team news
     },
     description: 'First half goals depend on timing patterns and tactical approach'
   },
@@ -208,17 +207,17 @@ export const MARKET_SPECIALISTS: Record<BettingMarket, MarketSpecialization> = {
       gpt4: 0.40,     // Corner statistics
       claude: 0.35,   // Tactical style (wide play, crossing)
       gemini: 0.15,   // H2H corner patterns
-      perplexity: 0.10 // Weather, pitch conditions
+      mistral: 0.10   // Weather, pitch conditions
     },
     description: 'Corners require statistical modeling plus tactical style analysis'
   },
 
   CARDS: {
     primary: 'gemini',
-    secondary: 'perplexity',
+    secondary: 'mistral',
     weights: {
       gemini: 0.35,   // H2H discipline patterns
-      perplexity: 0.30, // Referee info, rivalry context
+      mistral: 0.30,  // Referee info, rivalry context
       claude: 0.20,   // Match intensity, pressure situations
       gpt4: 0.15      // Historical card averages
     },
@@ -327,7 +326,7 @@ export const API_ENDPOINTS = {
   ANTHROPIC: 'https://api.anthropic.com/v1/messages',
   OPENAI: 'https://api.openai.com/v1/chat/completions',
   GEMINI: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-  PERPLEXITY: 'https://api.perplexity.ai/chat/completions'
+  OPENROUTER: 'https://openrouter.ai/api/v1/chat/completions'
 };
 
 // =========================
@@ -338,7 +337,7 @@ export const MODEL_VERSIONS = {
   claude: 'claude-sonnet-4-20250514',
   gpt4: 'gpt-4o-mini',
   gemini: 'gemini-2.0-flash',
-  perplexity: 'sonar'
+  mistral: 'mistralai/mistral-small'
 };
 
 // =========================
@@ -368,7 +367,7 @@ export function getDefaultWeights(): Record<AIModel, number> {
     claude: AI_MODEL_CONFIGS.claude.baseWeight,
     gpt4: AI_MODEL_CONFIGS.gpt4.baseWeight,
     gemini: AI_MODEL_CONFIGS.gemini.baseWeight,
-    perplexity: AI_MODEL_CONFIGS.perplexity.baseWeight
+    mistral: AI_MODEL_CONFIGS.mistral.baseWeight
   };
 }
 

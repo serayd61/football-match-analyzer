@@ -7,7 +7,7 @@
 // AI MODEL TYPES
 // =========================
 
-export type AIModel = 'claude' | 'gpt4' | 'gemini' | 'perplexity';
+export type AIModel = 'claude' | 'gpt4' | 'gemini' | 'mistral';
 
 export type AIRole = 
   | 'tactical'      // Claude - Taktik analizi, momentum, psikoloji

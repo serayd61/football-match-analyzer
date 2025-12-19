@@ -80,8 +80,8 @@ const AI_MODELS: Record<string, {
     borderColor: 'border-blue-500/30',
     role: 'Pattern'
   },
-  perplexity: {
-    name: 'Perplexity',
+  mistral: {
+    name: 'Mistral',
     icon: '📰',
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
@@ -1108,7 +1108,7 @@ export default function DashboardPage() {
                           <h3 className="text-xl font-bold text-white mb-2">Quad-Brain Analysis</h3>
                           <p className="text-gray-400 text-sm mb-4">4 AI models analyzing in parallel...</p>
                           <div className="flex justify-center gap-3">
-                            {['Claude', 'GPT-4', 'Gemini', 'Perplexity'].map((model, i) => (
+                            {['Claude', 'GPT-4', 'Gemini', 'Mistral'].map((model, i) => (
                               <div key={model} className="flex flex-col items-center">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg animate-pulse ${
                                   i === 0 ? 'bg-orange-500/20' :
@@ -1379,7 +1379,7 @@ export default function DashboardPage() {
                                 { key: 'claude', name: 'Claude', icon: '🧠', color: 'orange', role: 'Tactical' },
                                 { key: 'gpt4', name: 'GPT-4', icon: '📊', color: 'green', role: 'Statistical' },
                                 { key: 'gemini', name: 'Gemini', icon: '🔍', color: 'blue', role: 'Pattern' },
-                                { key: 'perplexity', name: 'Perplexity', icon: '📰', color: 'purple', role: 'Context' }
+                                { key: 'mistral', name: 'Mistral', icon: '🌀', color: 'purple', role: 'Context' }
                               ].map((model) => {
                                 const pred = quadBrainAnalysis.individualPredictions?.[model.key];
                                 const isActive = !!pred;
