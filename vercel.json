@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/auto-analyze-matches",
-      "schedule": "0 */3 * * *"
+      "schedule": "0 */2 * * *"
     },
     {
       "path": "/api/cron/sync-predictions",

@@ -973,29 +973,30 @@ async function saveAnalysisWithMaster(
 // ============================================================================
 
 async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
-  // Get matches from next 24 hours that haven't been analyzed
+  // Get TODAY's matches from dashboard that haven't been analyzed yet
   // ⚠️ IMPORTANT: Only get matches that haven't started yet (at least 30 min buffer)
   const now = new Date();
   const minKickOffTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 dakika sonrası
-  const maxKickOffTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 saat sonrası
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   console.log(`   ⏰ Current time: ${now.toISOString()}`);
+  console.log(`   📅 Today range: ${todayStart.toISOString()} to ${todayEnd.toISOString()}`);
   console.log(`   ⏰ Min kick-off: ${minKickOffTime.toISOString()} (30 min buffer)`);
-  console.log(`   ⏰ Max kick-off: ${maxKickOffTime.toISOString()} (24h ahead)`);
 
   try {
-    // First check existing predictions to know what's already analyzed
-    const { data: existingPredictions } = await supabase
-      .from('prediction_sessions')
+    // Check existing analyses in match_full_analysis table
+    const { data: existingAnalyses } = await supabase
+      .from('match_full_analysis')
       .select('fixture_id')
-      .in('prediction_source', ['auto_analysis', 'deepseek_master']);
+      .not('deepseek_master', 'is', null);
 
-    const analyzedFixtureIds = new Set(existingPredictions?.map(p => p.fixture_id) || []);
+    const analyzedFixtureIds = new Set(existingAnalyses?.map(a => a.fixture_id) || []);
     console.log(`   📊 Already analyzed: ${analyzedFixtureIds.size} matches`);
 
-    // Fetch upcoming fixtures from SportMonks (already have API key)
+    // Fetch TODAY's fixtures from SportMonks
     const today = now.toISOString().split('T')[0];
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const tomorrow = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
     const res = await fetchFromSportmonks(`/fixtures/between/${today}/${tomorrow}`, {
       include: 'participants;league',
@@ -1003,12 +1004,12 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
     });
 
     const fixtures = res.data || [];
-    console.log(`   📡 SportMonks returned: ${fixtures.length} fixtures`);
+    console.log(`   📡 SportMonks returned: ${fixtures.length} fixtures for today`);
 
     // Filter matches:
-    // 1. Not already analyzed
+    // 1. Not already analyzed with DeepSeek Master
     // 2. Kick-off time is at least 30 minutes from now
-    // 3. Kick-off time is within next 24 hours
+    // 3. Match is today
     const matches: MatchToAnalyze[] = fixtures
       .filter((f: any) => {
         const fixtureId = f.id;

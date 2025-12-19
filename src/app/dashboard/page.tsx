@@ -552,6 +552,32 @@ export default function DashboardPage() {
     try {
       console.log('🎯 Starting DeepSeek Master Analysis...');
       
+      // ÖNCE MEVCUT ANALİZİ KONTROL ET
+      console.log('   🔍 Checking for existing analysis...');
+      try {
+        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${match.id}`);
+        if (existingRes.ok) {
+          const existingData = await existingRes.json();
+          if (existingData.success && existingData.analysis?.deepseek_master) {
+            console.log('   ✅ Found existing analysis! Loading...');
+            setDeepSeekMasterAnalysis({
+              ...existingData.analysis.deepseek_master,
+              aiConsensusRaw: existingData.analysis.ai_consensus,
+              quadBrainRaw: existingData.analysis.quad_brain,
+              aiAgentsRaw: existingData.analysis.ai_agents,
+            });
+            // Set individual analyses too
+            if (existingData.analysis.ai_consensus) setAnalysis(existingData.analysis.ai_consensus);
+            if (existingData.analysis.quad_brain) setQuadBrainAnalysis(existingData.analysis.quad_brain);
+            if (existingData.analysis.ai_agents) setAgentAnalysis(existingData.analysis.ai_agents);
+            setDeepSeekLoading(false);
+            return; // Exit early - no need to run new analysis
+          }
+        }
+      } catch (checkError) {
+        console.log('   ℹ️ No existing analysis found, creating new one...');
+      }
+      
       const matchData = {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
