@@ -690,13 +690,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Add to Coupon Button */}
-          <button 
-            onClick={() => addToCoupon(type.toUpperCase(), prediction.prediction, odds)} 
-            className={`w-full py-2 ${color.buttonBg} ${color.text} rounded-lg text-xs font-medium transition-all hover:opacity-80`}
-          >
-            🎫 {l.addToCoupon}
-          </button>
         </div>
 
         {/* Expandable Reasonings */}
@@ -1262,12 +1255,6 @@ export default function DashboardPage() {
                                     )}
                                   </div>
                                 </div>
-                                <button 
-                                  onClick={() => addToCoupon(analysis.analysis.bestBets[0].type, analysis.analysis.bestBets[0].selection, 1.85)} 
-                                  className="px-5 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/25"
-                                >
-                                  🎫 {l.addToCoupon}
-                                </button>
                               </div>
                             </div>
                           )}
@@ -1378,12 +1365,6 @@ export default function DashboardPage() {
                                 <div className="text-xs text-gray-500">
                                   {quadBrainAnalysis.consensus.matchResult.agreement?.majoritySize}/{quadBrainAnalysis.consensus.matchResult.agreement?.totalModels} AI models agree
                                 </div>
-                                <button 
-                                  onClick={() => addToCoupon('MATCH_RESULT', quadBrainAnalysis.consensus.matchResult.prediction, 1.85)} 
-                                  className="w-full mt-2 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 rounded-lg text-xs font-medium transition-all"
-                                >
-                                  🎫 Add to Coupon
-                                </button>
                               </div>
                             )}
 
@@ -1414,12 +1395,6 @@ export default function DashboardPage() {
                                 <div className="text-xs text-gray-500">
                                   {quadBrainAnalysis.consensus.overUnder25.agreement?.majoritySize}/{quadBrainAnalysis.consensus.overUnder25.agreement?.totalModels} AI models agree
                                 </div>
-                                <button 
-                                  onClick={() => addToCoupon('OVER_UNDER_25', quadBrainAnalysis.consensus.overUnder25.prediction, 1.90)} 
-                                  className="w-full mt-2 py-2 bg-green-600/30 hover:bg-green-600/50 text-green-400 rounded-lg text-xs font-medium transition-all"
-                                >
-                                  🎫 Add to Coupon
-                                </button>
                               </div>
                             )}
 
@@ -1450,12 +1425,6 @@ export default function DashboardPage() {
                                 <div className="text-xs text-gray-500">
                                   {quadBrainAnalysis.consensus.btts.agreement?.majoritySize}/{quadBrainAnalysis.consensus.btts.agreement?.totalModels} AI models agree
                                 </div>
-                                <button 
-                                  onClick={() => addToCoupon('BTTS', quadBrainAnalysis.consensus.btts.prediction, 1.80)} 
-                                  className="w-full mt-2 py-2 bg-orange-600/30 hover:bg-orange-600/50 text-orange-400 rounded-lg text-xs font-medium transition-all"
-                                >
-                                  🎫 Add to Coupon
-                                </button>
                               </div>
                             )}
 
@@ -1509,12 +1478,6 @@ export default function DashboardPage() {
                                     </span>
                                   </div>
                                 </div>
-                                <button 
-                                  onClick={() => addToCoupon(quadBrainAnalysis.bestBets[0].market, quadBrainAnalysis.bestBets[0].selection, 1.85)} 
-                                  className="px-5 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/25"
-                                >
-                                  🎫 Add to Coupon
-                                </button>
                               </div>
                             </div>
                           )}
