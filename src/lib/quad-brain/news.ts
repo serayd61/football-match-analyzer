@@ -1,71 +1,28 @@
 // ============================================================================
 // QUAD-BRAIN AI ENSEMBLE SYSTEM - REAL-TIME NEWS INTEGRATION
-// Perplexity Web Search for Latest News, Injuries & Context
+// Using SportMonks API for injuries (Perplexity removed - too expensive)
 // ============================================================================
 
 import { NewsContext } from './types';
-import { API_ENDPOINTS, MODEL_VERSIONS } from './config';
 
 // =========================
-// PERPLEXITY CLIENT
+// NEWS SEARCH (DISABLED - Use SportMonks instead)
 // =========================
 
-interface PerplexitySearchResult {
+interface SearchResult {
   content: string;
   citations?: string[];
 }
 
 /**
- * Perplexity API ile web araması yapar
+ * Web search disabled - use SportMonks for injury data instead
+ * Perplexity was too expensive
  */
-async function searchWithPerplexity(query: string): Promise<PerplexitySearchResult | null> {
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  
-  if (!apiKey) {
-    console.warn('⚠️ PERPLEXITY_API_KEY not found');
-    return null;
-  }
-
-  try {
-    const response = await fetch(API_ENDPOINTS.PERPLEXITY, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'sonar', // Web search enabled model
-        messages: [
-          {
-            role: 'system',
-            content: `You are a football news researcher. Search the web for the latest information and provide accurate, up-to-date data. Always cite your sources. Focus on factual information only.`
-          },
-          {
-            role: 'user',
-            content: query
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.1, // Düşük = daha güvenilir
-        return_citations: true
-      })
-    });
-
-    if (!response.ok) {
-      console.error(`❌ Perplexity API error: ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    return {
-      content: data.choices?.[0]?.message?.content || '',
-      citations: data.citations || []
-    };
-  } catch (error) {
-    console.error('❌ Perplexity search error:', error);
-    return null;
-  }
+async function searchWithPerplexity(query: string): Promise<SearchResult | null> {
+  // Perplexity disabled - too expensive
+  // Use SportMonks getTeamSidelined() instead
+  console.log('ℹ️ Web search disabled - using SportMonks for data');
+  return null;
 }
 
 // =========================
