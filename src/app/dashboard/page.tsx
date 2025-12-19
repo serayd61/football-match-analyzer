@@ -1080,48 +1080,45 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons - 4 Analysis Modes */}
-                <div className="p-4 border-b border-gray-700/50">
-                  <div className="grid grid-cols-4 gap-2">
-                    {/* Standard AI Consensus */}
+                {/* Action Buttons - Clean Layout */}
+                <div className="p-4 border-b border-gray-700/50 space-y-3">
+                  {/* 🎯 MAIN BUTTON - Full Analysis */}
+                  <button 
+                    onClick={runDeepSeekMasterAnalysis} 
+                    disabled={deepSeekLoading || analyzing || quadBrainLoading || agentLoading || !userProfile?.canAnalyze} 
+                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 text-white shadow-lg shadow-orange-500/25' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                  >
+                    <span className="text-2xl">🎯</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm">{deepSeekLoading ? 'Analiz Yapılıyor...' : 'Tam Analiz Başlat'}</span>
+                      <span className="text-[10px] opacity-75">AI + Quad-Brain + Agents → DeepSeek Master</span>
+                    </div>
+                    {deepSeekLoading && <span className="animate-spin text-xl">⏳</span>}
+                  </button>
+
+                  {/* Quick Access - Individual Systems */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-500">Hızlı:</span>
                     <button 
                       onClick={() => analyzeMatch(selectedMatch)} 
                       disabled={analyzing || !userProfile?.canAnalyze} 
-                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-600/30' : 'bg-gray-700/50 text-gray-500'}`}
                     >
-                      <span className="text-lg">🤖</span>
-                      <span className="text-[10px]">{analyzing ? '...' : 'AI'}</span>
+                      🤖 {analyzing ? '...' : 'AI'}
                     </button>
-                    
-                    {/* 🧠 QUAD-BRAIN */}
                     <button 
                       onClick={runQuadBrainAnalysis} 
                       disabled={quadBrainLoading || !userProfile?.canAnalyze} 
-                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 border border-cyan-600/30' : 'bg-gray-700/50 text-gray-500'}`}
                     >
-                      <span className="text-lg">🧠</span>
-                      <span className="text-[10px]">{quadBrainLoading ? '...' : 'Quad'}</span>
+                      🧠 {quadBrainLoading ? '...' : 'Quad'}
                     </button>
-                    
-                    {/* Heurist Agents */}
                     <button 
                       onClick={runAgentAnalysis} 
                       disabled={agentLoading || !userProfile?.canUseAgents} 
-                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canUseAgents ? 'bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-600/30' : 'bg-gray-700/50 text-gray-500'}`}
                     >
-                      <span className="text-lg">🔮</span>
-                      <span className="text-[10px]">{agentLoading ? '...' : 'Agents'}</span>
-                    </button>
-
-                    {/* 🎯 DEEPSEEK MASTER */}
-                    <button 
-                      onClick={runDeepSeekMasterAnalysis} 
-                      disabled={deepSeekLoading || !userProfile?.canAnalyze} 
-                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all relative overflow-hidden ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                    >
-                      <span className="absolute top-0.5 right-0.5 px-1 py-0.5 bg-yellow-400 text-black text-[6px] font-bold rounded">MASTER</span>
-                      <span className="text-lg">🎯</span>
-                      <span className="text-[10px]">{deepSeekLoading ? '...' : 'DeepSeek'}</span>
+                      🔮 {agentLoading ? '...' : 'Agents'}
                     </button>
                   </div>
                 </div>
