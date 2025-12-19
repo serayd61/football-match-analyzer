@@ -678,109 +678,354 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Recent Master Analyses */}
+            {/* Recent Master Analyses - FULL DETAILS */}
             <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>🎯</span> DeepSeek Master Analizleri
+                  <span>🎯</span> DeepSeek Master Analizleri (Tam Detay)
                 </h3>
                 <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm rounded-full">
                   {masterAnalyses.length} analiz
                 </span>
               </div>
               
-              <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto">
+              <div className="divide-y divide-gray-700/50 max-h-[800px] overflow-y-auto">
                 {masterAnalyses.length === 0 ? (
                   <div className="p-8 text-center text-gray-400">
                     <span className="text-4xl mb-4 block">🎯</span>
                     <p>Henüz DeepSeek Master analizi yok</p>
-                    <p className="text-sm mt-2">Auto-Analyze butonuna basarak analiz başlatın</p>
+                    <p className="text-sm mt-2">Dashboard&apos;dan Tam Analiz butonuna basarak analiz başlatın</p>
                   </div>
                 ) : (
                   masterAnalyses.map((analysis) => (
-                    <div key={analysis.id} className="p-4 hover:bg-gray-700/30 transition-colors">
-                      <div className="flex items-start justify-between mb-3">
+                    <div key={analysis.id} className="p-4 hover:bg-gray-700/30 transition-colors space-y-4">
+                      {/* Match Header */}
+                      <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-bold text-white">
+                          <p className="text-xl font-bold text-white">
                             {analysis.home_team} vs {analysis.away_team}
                           </p>
                           <p className="text-sm text-gray-400">{analysis.league}</p>
-                          <p className="text-xs text-gray-500">{new Date(analysis.match_date).toLocaleDateString('tr-TR')}</p>
+                          <p className="text-xs text-gray-500">{new Date(analysis.match_date).toLocaleDateString('tr-TR', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {analysis.is_settled && (
-                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
-                              {analysis.actual_score}
+                            <span className="px-3 py-1 bg-green-500/20 text-green-400 text-sm font-bold rounded-lg">
+                              ⚽ {analysis.actual_score}
                             </span>
                           )}
-                          <span className={`px-2 py-1 text-xs rounded ${
+                          <span className={`px-3 py-1 text-sm font-bold rounded-lg ${
                             analysis.master?.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
                             analysis.master?.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
-                            {analysis.master?.riskLevel?.toUpperCase() || 'N/A'}
-                          </span>
-                          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">
-                            %{analysis.master?.confidence || 0}
+                            {analysis.master?.riskLevel === 'low' ? '🟢 Düşük' :
+                             analysis.master?.riskLevel === 'medium' ? '🟡 Orta' :
+                             '🔴 Yüksek'} Risk
                           </span>
                         </div>
                       </div>
-                      
-                      {/* Master Predictions */}
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
-                          <p className="text-xs text-gray-400">BTTS</p>
-                          <p className="font-bold text-white">{analysis.master?.btts?.prediction?.toUpperCase() || '-'}</p>
-                          <p className="text-xs text-gray-500">%{analysis.master?.btts?.confidence || 0}</p>
-                        </div>
-                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
-                          <p className="text-xs text-gray-400">Ü/A 2.5</p>
-                          <p className="font-bold text-white">{analysis.master?.overUnder?.prediction?.toUpperCase() || '-'}</p>
-                          <p className="text-xs text-gray-500">%{analysis.master?.overUnder?.confidence || 0}</p>
-                        </div>
-                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
-                          <p className="text-xs text-gray-400">MS</p>
-                          <p className="font-bold text-white">{analysis.master?.matchResult?.prediction?.toUpperCase() || '-'}</p>
-                          <p className="text-xs text-gray-500">%{analysis.master?.matchResult?.confidence || 0}</p>
-                        </div>
-                      </div>
-                      
-                      {/* System Agreement */}
-                      {analysis.master?.systemAgreement && (
-                        <div className="flex items-center gap-4 text-xs mb-2">
-                          <span className="text-gray-400">Sistem Uyumu:</span>
-                          <span className={`${analysis.master.systemAgreement.btts >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                            BTTS: {analysis.master.systemAgreement.btts}/3
-                          </span>
-                          <span className={`${analysis.master.systemAgreement.overUnder >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                            Ü/A: {analysis.master.systemAgreement.overUnder}/3
-                          </span>
-                          <span className={`${analysis.master.systemAgreement.matchResult >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                            MS: {analysis.master.systemAgreement.matchResult}/3
-                          </span>
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* DEEPSEEK'İN KENDİ ANALİZİ */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {analysis.myAnalysis && (
+                        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                            <span>🧠</span> DeepSeek Master Kendi Analizi
+                          </h4>
+                          
+                          {/* Team Analysis */}
+                          <div className="grid md:grid-cols-2 gap-4 mb-4">
+                            {/* Home Team */}
+                            {analysis.myAnalysis.homeTeam && (
+                              <div className="bg-gray-800/50 rounded-lg p-3">
+                                <p className="font-bold text-white mb-2">🏠 {analysis.myAnalysis.homeTeam.name}</p>
+                                <p className="text-xs text-gray-300 mb-2">{analysis.myAnalysis.homeTeam.form}</p>
+                                {analysis.myAnalysis.homeTeam.strengths?.length > 0 && (
+                                  <div className="mb-2">
+                                    <p className="text-xs text-green-400 font-medium">💪 Güçlü Yönler:</p>
+                                    <ul className="text-xs text-gray-400 list-disc list-inside">
+                                      {analysis.myAnalysis.homeTeam.strengths.map((s: string, i: number) => (
+                                        <li key={i}>{s}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {analysis.myAnalysis.homeTeam.weaknesses?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-red-400 font-medium">⚠️ Zayıf Yönler:</p>
+                                    <ul className="text-xs text-gray-400 list-disc list-inside">
+                                      {analysis.myAnalysis.homeTeam.weaknesses.map((w: string, i: number) => (
+                                        <li key={i}>{w}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Away Team */}
+                            {analysis.myAnalysis.awayTeam && (
+                              <div className="bg-gray-800/50 rounded-lg p-3">
+                                <p className="font-bold text-white mb-2">✈️ {analysis.myAnalysis.awayTeam.name}</p>
+                                <p className="text-xs text-gray-300 mb-2">{analysis.myAnalysis.awayTeam.form}</p>
+                                {analysis.myAnalysis.awayTeam.strengths?.length > 0 && (
+                                  <div className="mb-2">
+                                    <p className="text-xs text-green-400 font-medium">💪 Güçlü Yönler:</p>
+                                    <ul className="text-xs text-gray-400 list-disc list-inside">
+                                      {analysis.myAnalysis.awayTeam.strengths.map((s: string, i: number) => (
+                                        <li key={i}>{s}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {analysis.myAnalysis.awayTeam.weaknesses?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-red-400 font-medium">⚠️ Zayıf Yönler:</p>
+                                    <ul className="text-xs text-gray-400 list-disc list-inside">
+                                      {analysis.myAnalysis.awayTeam.weaknesses.map((w: string, i: number) => (
+                                        <li key={i}>{w}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Key Factors */}
+                          {analysis.myAnalysis.keyFactors?.length > 0 && (
+                            <div className="bg-gray-800/50 rounded-lg p-3 mb-3">
+                              <p className="text-xs text-cyan-400 font-medium mb-2">🔑 Anahtar Faktörler:</p>
+                              <ul className="text-xs text-gray-300 space-y-1">
+                                {analysis.myAnalysis.keyFactors.map((f: string, i: number) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-cyan-500">•</span> {f}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* DeepSeek's Own Prediction */}
+                          {analysis.myAnalysis.myPrediction && (
+                            <div className="grid grid-cols-4 gap-2 text-center">
+                              <div className="bg-gray-700/50 rounded-lg p-2">
+                                <p className="text-xs text-gray-400">BTTS</p>
+                                <p className="font-bold text-purple-400">{String(analysis.myAnalysis.myPrediction.btts).toUpperCase()}</p>
+                              </div>
+                              <div className="bg-gray-700/50 rounded-lg p-2">
+                                <p className="text-xs text-gray-400">Ü/A 2.5</p>
+                                <p className="font-bold text-purple-400">{String(analysis.myAnalysis.myPrediction.overUnder).toUpperCase()}</p>
+                              </div>
+                              <div className="bg-gray-700/50 rounded-lg p-2">
+                                <p className="text-xs text-gray-400">Maç Sonucu</p>
+                                <p className="font-bold text-purple-400">{String(analysis.myAnalysis.myPrediction.matchResult).toUpperCase()}</p>
+                              </div>
+                              <div className="bg-gray-700/50 rounded-lg p-2">
+                                <p className="text-xs text-gray-400">Skor Tahmini</p>
+                                <p className="font-bold text-purple-400">{analysis.myAnalysis.myPrediction.scorePrediction || '-'}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
-                      
-                      {/* Best Bet */}
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* 3 SİSTEM KARŞILAŞTIRMASI */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                        <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                          <span>⚔️</span> 3 Sistem Karşılaştırması
+                        </h4>
+                        
+                        <div className="grid md:grid-cols-3 gap-3">
+                          {/* AI Consensus */}
+                          <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-500/30 rounded-lg p-3">
+                            <p className="text-xs font-bold text-blue-400 mb-2">🤖 AI Consensus</p>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">BTTS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_consensus?.btts?.prediction || analysis.systems?.ai_consensus?.consensus?.btts?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Ü/A 2.5:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_consensus?.overUnder?.prediction || analysis.systems?.ai_consensus?.consensus?.overUnder?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">MS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_consensus?.matchResult?.prediction || analysis.systems?.ai_consensus?.consensus?.matchResult?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Quad-Brain */}
+                          <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-lg p-3">
+                            <p className="text-xs font-bold text-green-400 mb-2">🧠 Quad-Brain</p>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">BTTS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.quad_brain?.btts?.prediction || analysis.systems?.quad_brain?.consensus?.btts?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Ü/A 2.5:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.quad_brain?.overUnder?.prediction || analysis.systems?.quad_brain?.consensus?.overUnder?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">MS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.quad_brain?.matchResult?.prediction || analysis.systems?.quad_brain?.consensus?.matchResult?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* AI Agents */}
+                          <div className="bg-gradient-to-br from-orange-900/30 to-amber-900/30 border border-orange-500/30 rounded-lg p-3">
+                            <p className="text-xs font-bold text-orange-400 mb-2">🔮 AI Agents</p>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">BTTS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_agents?.btts?.prediction || analysis.systems?.ai_agents?.consensus?.btts?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Ü/A 2.5:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_agents?.overUnder?.prediction || analysis.systems?.ai_agents?.consensus?.overUnder?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">MS:</span>
+                                <span className="text-white font-medium">{String(analysis.systems?.ai_agents?.matchResult?.prediction || analysis.systems?.ai_agents?.consensus?.matchResult?.prediction || '-').toUpperCase()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* SİSTEM DEĞERLENDİRMESİ */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {analysis.systemEvaluation && (
+                        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                            <span>📊</span> DeepSeek Sistem Değerlendirmesi
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            {analysis.systemEvaluation.agreement && (
+                              <p className="text-gray-300">
+                                <span className="text-cyan-400 font-medium">Uyum:</span> {analysis.systemEvaluation.agreement}
+                              </p>
+                            )}
+                            {analysis.systemEvaluation.mostReliable && (
+                              <p className="text-gray-300">
+                                <span className="text-green-400 font-medium">En Güvenilir:</span> {analysis.systemEvaluation.mostReliable}
+                              </p>
+                            )}
+                            {analysis.systemEvaluation.conflicts && (
+                              <p className="text-gray-300">
+                                <span className="text-yellow-400 font-medium">Çelişkiler:</span> {analysis.systemEvaluation.conflicts}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* FİNAL VERDİKT */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      <div className="bg-gradient-to-br from-red-900/30 via-orange-900/30 to-yellow-900/30 border border-orange-500/40 rounded-xl p-4">
+                        <h4 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
+                          <span>🎯</span> MASTER FİNAL VERDİKT
+                        </h4>
+                        
+                        {/* Final Predictions with Details */}
+                        <div className="grid md:grid-cols-3 gap-3 mb-4">
+                          <div className="bg-gray-800/70 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-400 mb-1">BTTS</p>
+                            <p className="text-2xl font-bold text-white">{analysis.master?.btts?.prediction?.toUpperCase() || '-'}</p>
+                            <p className="text-sm text-cyan-400">%{analysis.master?.btts?.confidence || 0}</p>
+                            {analysis.master?.btts?.reasoning && (
+                              <p className="text-xs text-gray-400 mt-2 text-left">{analysis.master.btts.reasoning}</p>
+                            )}
+                          </div>
+                          <div className="bg-gray-800/70 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-400 mb-1">Ü/A 2.5</p>
+                            <p className="text-2xl font-bold text-white">{analysis.master?.overUnder?.prediction?.toUpperCase() || '-'}</p>
+                            <p className="text-sm text-cyan-400">%{analysis.master?.overUnder?.confidence || 0}</p>
+                            {analysis.master?.overUnder?.reasoning && (
+                              <p className="text-xs text-gray-400 mt-2 text-left">{analysis.master.overUnder.reasoning}</p>
+                            )}
+                          </div>
+                          <div className="bg-gray-800/70 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-400 mb-1">Maç Sonucu</p>
+                            <p className="text-2xl font-bold text-white">{analysis.master?.matchResult?.prediction?.toUpperCase() || '-'}</p>
+                            <p className="text-sm text-cyan-400">%{analysis.master?.matchResult?.confidence || 0}</p>
+                            {analysis.master?.matchResult?.reasoning && (
+                              <p className="text-xs text-gray-400 mt-2 text-left">{analysis.master.matchResult.reasoning}</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* System Agreement */}
+                        {analysis.master?.systemAgreement && (
+                          <div className="flex items-center gap-4 text-sm mb-3 justify-center">
+                            <span className="text-gray-400">Sistem Uyumu:</span>
+                            <span className={`px-2 py-1 rounded ${analysis.master.systemAgreement.btts >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              BTTS: {analysis.master.systemAgreement.btts}/3
+                            </span>
+                            <span className={`px-2 py-1 rounded ${analysis.master.systemAgreement.overUnder >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              Ü/A: {analysis.master.systemAgreement.overUnder}/3
+                            </span>
+                            <span className={`px-2 py-1 rounded ${analysis.master.systemAgreement.matchResult >= 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              MS: {analysis.master.systemAgreement.matchResult}/3
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Master Analysis Text */}
+                        {analysis.master?.masterAnalysis && (
+                          <div className="bg-gray-800/50 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-gray-300 italic">&ldquo;{analysis.master.masterAnalysis}&rdquo;</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* EN İYİ BAHİS */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
                       {analysis.master?.bestBet && (
-                        <div className="mt-2 p-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg">
-                          <p className="text-xs text-gray-400 mb-1">🎯 En İyi Bahis:</p>
-                          <p className="text-sm text-white font-medium">
-                            {analysis.master.bestBet.market}: <span className="text-purple-400">{analysis.master.bestBet.selection}</span>
-                            <span className="text-gray-400 ml-2">(%{analysis.master.bestBet.confidence})</span>
-                          </p>
-                          {analysis.master.bestBet.reason && (
-                            <p className="text-xs text-gray-500 mt-1">{analysis.master.bestBet.reason}</p>
-                          )}
+                        <div className="bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-2 border-purple-500/50 rounded-xl p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">🎯 EN İYİ BAHİS ÖNERİSİ</p>
+                              <p className="text-xl font-bold text-white">
+                                {analysis.master.bestBet.market}: <span className="text-purple-400">{analysis.master.bestBet.selection}</span>
+                              </p>
+                              {analysis.master.bestBet.reasoning && (
+                                <p className="text-sm text-gray-300 mt-2">{analysis.master.bestBet.reasoning}</p>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <p className="text-3xl font-bold text-purple-400">%{analysis.master.bestBet.confidence}</p>
+                              <p className="text-xs text-gray-400">Güven</p>
+                            </div>
+                          </div>
                         </div>
                       )}
                       
                       {/* Warnings */}
                       {analysis.master?.warnings && analysis.master.warnings.length > 0 && (
-                        <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                          <p className="text-xs text-yellow-400">
-                            ⚠️ {analysis.master.warnings.join(' | ')}
-                          </p>
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                          <p className="text-xs text-yellow-400 font-medium mb-1">⚠️ Uyarılar:</p>
+                          <ul className="text-xs text-yellow-300 space-y-1">
+                            {analysis.master.warnings.map((w: string, i: number) => (
+                              <li key={i}>• {w}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>

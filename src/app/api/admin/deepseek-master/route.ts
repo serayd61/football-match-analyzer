@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         : 0
     };
 
-    // Format recent analyses
+    // Format recent analyses with FULL DETAILS
     const recent = analyses?.map(a => ({
       id: a.id,
       fixture_id: a.fixture_id,
@@ -83,6 +83,14 @@ export async function GET(request: NextRequest) {
       match_date: a.match_date,
       is_settled: a.is_settled,
       actual_score: a.is_settled ? `${a.actual_home_score}-${a.actual_away_score}` : null,
+      
+      // DeepSeek Master's Own Analysis
+      myAnalysis: a.deepseek_master?.myAnalysis,
+      
+      // System Evaluation
+      systemEvaluation: a.deepseek_master?.systemEvaluation,
+      
+      // Final Verdict
       master: {
         btts: a.deepseek_master?.finalVerdict?.btts,
         overUnder: a.deepseek_master?.finalVerdict?.overUnder,
@@ -90,16 +98,18 @@ export async function GET(request: NextRequest) {
         confidence: a.deepseek_master?.confidence,
         riskLevel: a.deepseek_master?.riskLevel,
         bestBet: a.deepseek_master?.bestBet,
-        reasoning: a.deepseek_master?.reasoning,
+        masterAnalysis: a.deepseek_master?.masterAnalysis,
         systemAgreement: a.deepseek_master?.systemAgreement,
         warnings: a.deepseek_master?.warnings
       },
-      // System comparisons
+      
+      // Full 3-System Data
       systems: {
-        ai_consensus: a.ai_consensus?.consensus,
-        quad_brain: a.quad_brain?.consensus,
-        ai_agents: a.ai_agents?.consensus
+        ai_consensus: a.ai_consensus,
+        quad_brain: a.quad_brain,
+        ai_agents: a.ai_agents
       },
+      
       created_at: a.created_at
     })) || [];
 
