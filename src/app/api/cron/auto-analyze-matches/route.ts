@@ -993,20 +993,17 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
     const analyzedFixtureIds = new Set(existingPredictions?.map(p => p.fixture_id) || []);
     console.log(`   📊 Already analyzed: ${analyzedFixtureIds.size} matches`);
 
-    // Fetch upcoming fixtures from API-Football (only NS = Not Started)
-    const res = await fetch(
-      `https://${FOOTBALL_API_HOST}/v3/fixtures?date=${now.toISOString().split('T')[0]}&status=NS`,
-      {
-        headers: {
-          'X-RapidAPI-Key': FOOTBALL_API_KEY,
-          'X-RapidAPI-Host': FOOTBALL_API_HOST,
-        }
-      }
-    );
+    // Fetch upcoming fixtures from SportMonks (already have API key)
+    const today = now.toISOString().split('T')[0];
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const res = await fetchFromSportmonks(`/fixtures/between/${today}/${tomorrow}`, {
+      include: 'participants;league',
+      per_page: '100'
+    });
 
-    const data = await res.json();
-    const fixtures = data.response || [];
-    console.log(`   📡 API returned: ${fixtures.length} fixtures with status NS`);
+    const fixtures = res.data || [];
+    console.log(`   📡 SportMonks returned: ${fixtures.length} fixtures`);
 
     // Filter matches:
     // 1. Not already analyzed
@@ -1014,8 +1011,8 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
     // 3. Kick-off time is within next 24 hours
     const matches: MatchToAnalyze[] = fixtures
       .filter((f: any) => {
-        const fixtureId = f.fixture.id;
-        const kickOffTime = new Date(f.fixture.date);
+        const fixtureId = f.id;
+        const kickOffTime = new Date(f.starting_at);
         
         // Skip if already analyzed
         if (analyzedFixtureIds.has(fixtureId)) {
@@ -1024,7 +1021,10 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
         
         // Skip if match starts in less than 30 minutes
         if (kickOffTime < minKickOffTime) {
-          console.log(`   ⏭️ Skipping (too soon): ${f.teams.home.name} vs ${f.teams.away.name} @ ${kickOffTime.toISOString()}`);
+          const participants = f.participants || [];
+          const home = participants.find((p: any) => p.meta?.location === 'home')?.name || 'Unknown';
+          const away = participants.find((p: any) => p.meta?.location === 'away')?.name || 'Unknown';
+          console.log(`   ⏭️ Skipping (too soon): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
           return false;
         }
         
@@ -1036,14 +1036,19 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
         return true;
       })
       .slice(0, 15) // Limit to 15 matches per run (save API costs)
-      .map((f: any) => ({
-        fixture_id: f.fixture.id,
-        home_team: f.teams.home.name,
-        away_team: f.teams.away.name,
-        league: f.league.name,
-        match_date: f.fixture.date.split('T')[0],
-        kick_off_time: f.fixture.date
-      }));
+      .map((f: any) => {
+        const participants = f.participants || [];
+        const home = participants.find((p: any) => p.meta?.location === 'home');
+        const away = participants.find((p: any) => p.meta?.location === 'away');
+        return {
+          fixture_id: f.id,
+          home_team: home?.name || 'Unknown',
+          away_team: away?.name || 'Unknown',
+          league: f.league?.name || 'Unknown League',
+          match_date: f.starting_at?.split('T')[0] || today,
+          kick_off_time: f.starting_at
+        };
+      });
 
     console.log(`   ✅ Matches to analyze: ${matches.length}`);
     return matches;

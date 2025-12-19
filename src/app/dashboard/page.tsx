@@ -117,7 +117,11 @@ export default function DashboardPage() {
   // Quad-Brain states
   const [quadBrainAnalysis, setQuadBrainAnalysis] = useState<any>(null);
   const [quadBrainLoading, setQuadBrainLoading] = useState(false);
-  const [analysisMode, setAnalysisMode] = useState<'standard' | 'quadbrain' | 'agents'>('standard');
+  const [analysisMode, setAnalysisMode] = useState<'standard' | 'quadbrain' | 'agents' | 'deepseek'>('standard');
+  
+  // DeepSeek Master states
+  const [deepSeekMasterAnalysis, setDeepSeekMasterAnalysis] = useState<any>(null);
+  const [deepSeekLoading, setDeepSeekLoading] = useState(false);
   
   // UI states
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -526,6 +530,44 @@ export default function DashboardPage() {
       setAnalysisError('Network error');
     }
     setQuadBrainLoading(false);
+  };
+
+  // 🎯 DEEPSEEK MASTER ANALYSIS - 3 Sistem + DeepSeek Master
+  const runDeepSeekMasterAnalysis = async () => {
+    if (!selectedMatch || !userProfile?.canAnalyze) return;
+    
+    setAnalysisMode('deepseek');
+    setDeepSeekLoading(true);
+    setDeepSeekMasterAnalysis(null);
+    setAnalysisError(null);
+
+    try {
+      const res = await fetch('/api/analyze-deepseek-master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixture_id: selectedMatch.id,
+          home_team: selectedMatch.homeTeam,
+          away_team: selectedMatch.awayTeam,
+          league: selectedMatch.league,
+          match_date: selectedMatch.date,
+          kick_off_time: selectedMatch.date,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setDeepSeekMasterAnalysis(data);
+        fetchUserProfile();
+      } else {
+        setAnalysisError(data.error || 'DeepSeek Master analysis failed');
+      }
+    } catch (error) {
+      console.error('DeepSeek Master error:', error);
+      setAnalysisError('Network error');
+    }
+    setDeepSeekLoading(false);
   };
 
   // ============================================================================
@@ -974,9 +1016,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons - 3 Analysis Modes */}
+                {/* Action Buttons - 4 Analysis Modes */}
                 <div className="p-4 border-b border-gray-700/50">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {/* Standard AI Consensus */}
                     <button 
                       onClick={() => analyzeMatch(selectedMatch)} 
@@ -984,18 +1026,17 @@ export default function DashboardPage() {
                       className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                     >
                       <span className="text-lg">🤖</span>
-                      <span className="text-xs">{analyzing ? '...' : 'AI Consensus'}</span>
+                      <span className="text-[10px]">{analyzing ? '...' : 'AI'}</span>
                     </button>
                     
-                    {/* 🧠 QUAD-BRAIN - NEW */}
+                    {/* 🧠 QUAD-BRAIN */}
                     <button 
                       onClick={runQuadBrainAnalysis} 
                       disabled={quadBrainLoading || !userProfile?.canAnalyze} 
-                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all relative overflow-hidden ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                     >
-                      <span className="absolute top-1 right-1 px-1 py-0.5 bg-yellow-500 text-black text-[8px] font-bold rounded">NEW</span>
                       <span className="text-lg">🧠</span>
-                      <span className="text-xs">{quadBrainLoading ? '...' : 'Quad-Brain'}</span>
+                      <span className="text-[10px]">{quadBrainLoading ? '...' : 'Quad'}</span>
                     </button>
                     
                     {/* Heurist Agents */}
@@ -1005,8 +1046,18 @@ export default function DashboardPage() {
                       className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all ${userProfile?.canUseAgents ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                     >
                       <span className="text-lg">🔮</span>
-                      <span className="text-xs">{agentLoading ? '...' : 'Agents'}</span>
-                      {!userProfile?.canUseAgents && <span className="text-[8px] bg-yellow-500 text-black px-1 rounded font-bold">PRO</span>}
+                      <span className="text-[10px]">{agentLoading ? '...' : 'Agents'}</span>
+                    </button>
+
+                    {/* 🎯 DEEPSEEK MASTER */}
+                    <button 
+                      onClick={runDeepSeekMasterAnalysis} 
+                      disabled={deepSeekLoading || !userProfile?.canAnalyze} 
+                      className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 transition-all relative overflow-hidden ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                    >
+                      <span className="absolute top-0.5 right-0.5 px-1 py-0.5 bg-yellow-400 text-black text-[6px] font-bold rounded">MASTER</span>
+                      <span className="text-lg">🎯</span>
+                      <span className="text-[10px]">{deepSeekLoading ? '...' : 'DeepSeek'}</span>
                     </button>
                   </div>
                 </div>
@@ -1022,8 +1073,33 @@ export default function DashboardPage() {
                   )}
 
                   {/* Loading State */}
-                  {(analyzing || agentLoading || quadBrainLoading) ? (
-                    agentLoading ? (
+                  {(analyzing || agentLoading || quadBrainLoading || deepSeekLoading) ? (
+                    deepSeekLoading ? (
+                      <div className="space-y-4">
+                        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+                          <div className="text-4xl mb-4 animate-pulse">🎯</div>
+                          <h3 className="text-xl font-bold text-white mb-2">DeepSeek Master Analysis</h3>
+                          <p className="text-gray-400 text-sm mb-4">3 AI systems + DeepSeek Master evaluating...</p>
+                          <div className="flex justify-center gap-3">
+                            {['AI Consensus', 'Quad-Brain', 'AI Agents', 'DeepSeek'].map((model, i) => (
+                              <div key={model} className="flex flex-col items-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg animate-pulse ${
+                                  i === 0 ? 'bg-green-500/20' :
+                                  i === 1 ? 'bg-cyan-500/20' :
+                                  i === 2 ? 'bg-purple-500/20' : 'bg-red-500/20'
+                                }`}>
+                                  {i === 0 ? '🤖' : i === 1 ? '🧠' : i === 2 ? '🔮' : '🎯'}
+                                </div>
+                                <span className="text-[8px] text-gray-500 mt-1">{model}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 animate-[loading_3s_ease-in-out_infinite]" style={{width: '70%'}}></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : agentLoading ? (
                       <AgentLoadingProgress isLoading={true} />
                     ) : quadBrainLoading ? (
                       <div className="space-y-4">
@@ -1060,24 +1136,29 @@ export default function DashboardPage() {
                         language={lang as 'tr' | 'en' | 'de'}
                       />
                     )
-                  ) : (analysis || agentAnalysis || quadBrainAnalysis) ? (
+                  ) : (analysis || agentAnalysis || quadBrainAnalysis || deepSeekMasterAnalysis) ? (
                     <div className="space-y-4">
-                      {/* Mode Toggle - 3 Modes */}
-                      {(analysis || quadBrainAnalysis || agentAnalysis) && (
+                      {/* Mode Toggle - 4 Modes */}
+                      {(analysis || quadBrainAnalysis || agentAnalysis || deepSeekMasterAnalysis) && (
                         <div className="flex gap-1 p-1 bg-gray-700/30 rounded-xl">
                           {analysis && (
-                            <button onClick={() => setAnalysisMode('standard')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'standard' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🤖 AI
+                            <button onClick={() => setAnalysisMode('standard')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'standard' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🤖
                             </button>
                           )}
                           {quadBrainAnalysis && (
-                            <button onClick={() => setAnalysisMode('quadbrain')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'quadbrain' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🧠 Quad-Brain
+                            <button onClick={() => setAnalysisMode('quadbrain')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'quadbrain' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🧠
                             </button>
                           )}
                           {agentAnalysis && (
-                            <button onClick={() => setAnalysisMode('agents')} className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'agents' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🔮 Agents
+                            <button onClick={() => setAnalysisMode('agents')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'agents' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🔮
+                            </button>
+                          )}
+                          {deepSeekMasterAnalysis && (
+                            <button onClick={() => setAnalysisMode('deepseek')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'deepseek' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                              🎯 Master
                             </button>
                           )}
                         </div>
@@ -1511,6 +1592,172 @@ export default function DashboardPage() {
                             />
                           )}
                         </>
+                      )}
+
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {/* 🎯 DEEPSEEK MASTER RESULTS */}
+                      {/* ═══════════════════════════════════════════════════════════════ */}
+                      {analysisMode === 'deepseek' && deepSeekMasterAnalysis && (
+                        <div className="space-y-4">
+                          {/* Header */}
+                          <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">🎯</span>
+                                <div>
+                                  <span className="font-bold text-white">DeepSeek Master Analyst</span>
+                                  <span className="ml-2 px-2 py-0.5 bg-red-500/30 text-red-300 text-xs rounded-full">
+                                    3 Systems Combined
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
+                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {deepSeekMasterAnalysis.deepseekMaster?.riskLevel?.toUpperCase()} RISK
+                              </div>
+                            </div>
+                            <p className="text-gray-400 text-xs">
+                              AI Consensus + Quad-Brain + AI Agents → DeepSeek Master Final Verdict
+                            </p>
+                          </div>
+
+                          {/* Best Bet */}
+                          {deepSeekMasterAnalysis.deepseekMaster?.bestBet && (
+                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/40 rounded-xl p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-yellow-400 text-xs font-medium mb-1">🏆 BEST BET</div>
+                                  <div className="text-2xl font-bold text-white">
+                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.market} - {deepSeekMasterAnalysis.deepseekMaster.bestBet.selection}
+                                  </div>
+                                  <div className="text-sm text-gray-400 mt-1">
+                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.reasoning}
+                                  </div>
+                                </div>
+                                <div className="text-3xl font-bold text-yellow-400">
+                                  %{deepSeekMasterAnalysis.deepseekMaster.bestBet.confidence}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Final Verdict - 3 Markets */}
+                          {deepSeekMasterAnalysis.deepseekMaster?.finalVerdict && (
+                            <div className="grid grid-cols-3 gap-3">
+                              {/* BTTS */}
+                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+                                <div className="text-xs text-gray-500 mb-1">BTTS</div>
+                                <div className={`text-lg font-bold ${
+                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction?.toUpperCase()}
+                                </div>
+                                <div className="text-sm text-gray-400">
+                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.confidence}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.btts}/3 systems agree
+                                </div>
+                              </div>
+
+                              {/* Over/Under */}
+                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+                                <div className="text-xs text-gray-500 mb-1">Over/Under 2.5</div>
+                                <div className={`text-lg font-bold ${
+                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction === 'over' ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction?.toUpperCase()}
+                                </div>
+                                <div className="text-sm text-gray-400">
+                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.confidence}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.overUnder}/3 systems agree
+                                </div>
+                              </div>
+
+                              {/* Match Result */}
+                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+                                <div className="text-xs text-gray-500 mb-1">Match Result</div>
+                                <div className={`text-lg font-bold ${
+                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'home' ? 'text-blue-400' :
+                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'away' ? 'text-orange-400' : 'text-gray-400'
+                                }`}>
+                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction?.toUpperCase()}
+                                </div>
+                                <div className="text-sm text-gray-400">
+                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.confidence}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.matchResult}/3 systems agree
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 3 System Comparison */}
+                          <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700/30">
+                            <div className="text-sm font-medium text-gray-300 mb-3">📊 System Comparison</div>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                              {/* AI Consensus */}
+                              <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
+                                <div className="text-green-400 text-lg mb-1">🤖</div>
+                                <div className="text-xs text-gray-400 mb-2">AI Consensus</div>
+                                {deepSeekMasterAnalysis.aiConsensus && (
+                                  <div className="space-y-1 text-[10px]">
+                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiConsensus.btts?.prediction?.toUpperCase()}</span></div>
+                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiConsensus.overUnder?.prediction?.toUpperCase()}</span></div>
+                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiConsensus.matchResult?.prediction?.toUpperCase()}</span></div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Quad Brain */}
+                              <div className="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/20">
+                                <div className="text-cyan-400 text-lg mb-1">🧠</div>
+                                <div className="text-xs text-gray-400 mb-2">Quad-Brain</div>
+                                {deepSeekMasterAnalysis.quadBrain && (
+                                  <div className="space-y-1 text-[10px]">
+                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.quadBrain.btts?.prediction?.toUpperCase()}</span></div>
+                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.quadBrain.overUnder?.prediction?.toUpperCase()}</span></div>
+                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.quadBrain.matchResult?.prediction?.toUpperCase()}</span></div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* AI Agents */}
+                              <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
+                                <div className="text-purple-400 text-lg mb-1">🔮</div>
+                                <div className="text-xs text-gray-400 mb-2">AI Agents</div>
+                                {deepSeekMasterAnalysis.aiAgents && (
+                                  <div className="space-y-1 text-[10px]">
+                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiAgents.btts?.prediction?.toUpperCase()}</span></div>
+                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiAgents.overUnder?.prediction?.toUpperCase()}</span></div>
+                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiAgents.matchResult?.prediction?.toUpperCase()}</span></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Warnings */}
+                          {deepSeekMasterAnalysis.deepseekMaster?.warnings && deepSeekMasterAnalysis.deepseekMaster.warnings.length > 0 && (
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
+                              <div className="text-yellow-400 text-xs font-medium mb-2">⚠️ Warnings</div>
+                              {deepSeekMasterAnalysis.deepseekMaster.warnings.map((warning: string, i: number) => (
+                                <div key={i} className="text-sm text-yellow-300/80">• {warning}</div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Processing Time */}
+                          <div className="text-center text-xs text-gray-500">
+                            Analysis completed in {(deepSeekMasterAnalysis.duration / 1000).toFixed(1)}s
+                          </div>
+                        </div>
                       )}
                     </div>
                   ) : (
