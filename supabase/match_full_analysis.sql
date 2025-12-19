@@ -36,6 +36,21 @@ CREATE TABLE IF NOT EXISTS match_full_analysis (
     -- AI Agents System (5 specialized agents)
     ai_agents JSONB,
     
+    -- 🎯 DeepSeek Master Analyst - Final Decision Maker
+    -- Tüm sistemlerin sonuçlarını değerlendirip final kararı veren üst-akıl
+    deepseek_master JSONB,
+    -- Structure:
+    -- {
+    --   "finalVerdict": { "btts": {...}, "overUnder": {...}, "matchResult": {...} },
+    --   "confidence": 75,
+    --   "reasoning": "Master değerlendirmesi...",
+    --   "systemAgreement": { "btts": 3, "overUnder": 2, "matchResult": 2 },
+    --   "riskLevel": "low/medium/high",
+    --   "bestBet": { "market": "BTTS", "selection": "yes", "confidence": 80, "reason": "..." },
+    --   "warnings": ["..."],
+    --   "processingTime": 3500
+    -- }
+    
     -- Summary fields for quick access
     best_system VARCHAR(20), -- Which system has highest confidence
     best_btts VARCHAR(10),
@@ -116,6 +131,22 @@ SELECT
     (mfa.ai_agents->'consensus'->'overUnder'->>'confidence')::int as agents_over_under_conf,
     (mfa.ai_agents->'consensus'->'matchResult'->>'prediction') as agents_match_result,
     (mfa.ai_agents->'consensus'->'matchResult'->>'confidence')::int as agents_match_result_conf,
+    
+    -- DeepSeek Master Analyst (Final Decision)
+    (mfa.deepseek_master->'finalVerdict'->'btts'->>'prediction') as master_btts,
+    (mfa.deepseek_master->'finalVerdict'->'btts'->>'confidence')::int as master_btts_conf,
+    (mfa.deepseek_master->'finalVerdict'->'overUnder'->>'prediction') as master_over_under,
+    (mfa.deepseek_master->'finalVerdict'->'overUnder'->>'confidence')::int as master_over_under_conf,
+    (mfa.deepseek_master->'finalVerdict'->'matchResult'->>'prediction') as master_match_result,
+    (mfa.deepseek_master->'finalVerdict'->'matchResult'->>'confidence')::int as master_match_result_conf,
+    (mfa.deepseek_master->>'confidence')::int as master_overall_confidence,
+    (mfa.deepseek_master->>'riskLevel') as master_risk_level,
+    (mfa.deepseek_master->'systemAgreement'->>'btts')::int as agreement_btts,
+    (mfa.deepseek_master->'systemAgreement'->>'overUnder')::int as agreement_over_under,
+    (mfa.deepseek_master->'systemAgreement'->>'matchResult')::int as agreement_match_result,
+    (mfa.deepseek_master->'bestBet'->>'market') as best_bet_market,
+    (mfa.deepseek_master->'bestBet'->>'selection') as best_bet_selection,
+    (mfa.deepseek_master->'bestBet'->>'confidence')::int as best_bet_confidence,
     
     -- Results
     mfa.is_settled,

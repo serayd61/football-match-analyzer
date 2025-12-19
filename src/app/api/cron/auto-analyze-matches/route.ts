@@ -21,6 +21,7 @@ const supabase = createClient(
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const GOOGLE_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || '';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || '';
 const FOOTBALL_API_HOST = 'api-football-v1.p.rapidapi.com';
 
@@ -121,6 +122,42 @@ async function callOpenRouter(model: string, prompt: string): Promise<string> {
     return data.choices?.[0]?.message?.content || '';
   } catch (error) {
     console.error(`OpenRouter ${model} error:`, error);
+    return '';
+  }
+}
+
+// ============================================================================
+// 🧠 DEEPSEEK MASTER ANALYST - Direct API Call
+// ============================================================================
+
+async function callDeepSeekDirect(prompt: string): Promise<string> {
+  try {
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { 
+            role: 'system', 
+            content: `Sen dünya çapında tanınan bir futbol analiz uzmanısın. 
+Birden fazla AI sisteminden gelen tahminleri değerlendirip, final kararını veriyorsun.
+Analitik düşünce, istatistiksel akıl yürütme ve futbol bilgisi konusunda uzmansın.
+Tüm verileri sentezleyerek en doğru tahminleri üretmelisin.` 
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3 // Daha tutarlı sonuçlar için düşük temperature
+      })
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  } catch (error) {
+    console.error('DeepSeek Direct API error:', error);
     return '';
   }
 }
@@ -437,6 +474,235 @@ function calculateConsensus(predictions: Record<string, AnalysisResult>): Analys
 }
 
 // ============================================================================
+// 🎯 DEEPSEEK MASTER ANALYST - Final Decision Maker
+// Tüm sistemlerin sonuçlarını alıp, uzman görüşü oluşturur
+// ============================================================================
+
+interface MasterAnalysis {
+  finalVerdict: AnalysisResult;
+  confidence: number;
+  reasoning: string;
+  systemAgreement: {
+    btts: number; // Kaç sistem aynı fikirde (0-3)
+    overUnder: number;
+    matchResult: number;
+  };
+  riskLevel: 'low' | 'medium' | 'high';
+  bestBet: {
+    market: string;
+    selection: string;
+    confidence: number;
+    reason: string;
+  };
+  warnings: string[];
+  processingTime: number;
+}
+
+async function runDeepSeekMasterAnalyst(
+  match: MatchToAnalyze,
+  aiConsensus: SystemAnalysis,
+  quadBrain: SystemAnalysis,
+  aiAgents: SystemAnalysis,
+  injuryInfo: string = ''
+): Promise<MasterAnalysis> {
+  const startTime = Date.now();
+
+  // Build comprehensive prompt with all system results
+  const prompt = `
+🎯 MASTER ANALİZ GÖREVİ
+
+Sen DeepSeek Master Analyst'sin - 3 farklı AI sisteminin sonuçlarını değerlendirip final kararı veren üst-akıl.
+
+📊 MAÇ BİLGİSİ:
+- Maç: ${match.home_team} vs ${match.away_team}
+- Lig: ${match.league}
+- Tarih: ${match.match_date}
+${injuryInfo ? `- Sakatlıklar: ${injuryInfo}` : ''}
+
+═══════════════════════════════════════════════════════════════
+
+📈 SİSTEM 1: AI CONSENSUS (Claude + Gemini + DeepSeek)
+Modeller: ${aiConsensus.models.join(', ')}
+İşlem Süresi: ${aiConsensus.processingTime}ms
+
+Sonuçlar:
+- BTTS: ${aiConsensus.consensus.btts.prediction.toUpperCase()} (%${aiConsensus.consensus.btts.confidence})
+  Gerekçe: ${aiConsensus.consensus.btts.reasoning || 'Yok'}
+  
+- Üst/Alt 2.5: ${aiConsensus.consensus.overUnder.prediction.toUpperCase()} (%${aiConsensus.consensus.overUnder.confidence})
+  Gerekçe: ${aiConsensus.consensus.overUnder.reasoning || 'Yok'}
+  
+- Maç Sonucu: ${aiConsensus.consensus.matchResult.prediction.toUpperCase()} (%${aiConsensus.consensus.matchResult.confidence})
+  Gerekçe: ${aiConsensus.consensus.matchResult.reasoning || 'Yok'}
+
+Model Bazlı Detay:
+${Object.entries(aiConsensus.individualPredictions).map(([model, pred]) => 
+  `  ${model}: BTTS=${pred.btts.prediction}(%${pred.btts.confidence}), O/U=${pred.overUnder.prediction}(%${pred.overUnder.confidence}), MS=${pred.matchResult.prediction}(%${pred.matchResult.confidence})`
+).join('\n')}
+
+═══════════════════════════════════════════════════════════════
+
+🧠 SİSTEM 2: QUAD-BRAIN (Claude + Gemini + Grok + Mistral)
+Modeller: ${quadBrain.models.join(', ')}
+İşlem Süresi: ${quadBrain.processingTime}ms
+
+Sonuçlar:
+- BTTS: ${quadBrain.consensus.btts.prediction.toUpperCase()} (%${quadBrain.consensus.btts.confidence})
+- Üst/Alt 2.5: ${quadBrain.consensus.overUnder.prediction.toUpperCase()} (%${quadBrain.consensus.overUnder.confidence})
+- Maç Sonucu: ${quadBrain.consensus.matchResult.prediction.toUpperCase()} (%${quadBrain.consensus.matchResult.confidence})
+
+Model Bazlı Detay:
+${Object.entries(quadBrain.individualPredictions).map(([model, pred]) => 
+  `  ${model}: BTTS=${pred.btts.prediction}(%${pred.btts.confidence}), O/U=${pred.overUnder.prediction}(%${pred.overUnder.confidence}), MS=${pred.matchResult.prediction}(%${pred.matchResult.confidence})`
+).join('\n')}
+
+═══════════════════════════════════════════════════════════════
+
+🤖 SİSTEM 3: AI AGENTS (5 Uzman Ajan)
+Ajanlar: ${aiAgents.models.join(', ')}
+İşlem Süresi: ${aiAgents.processingTime}ms
+
+Sonuçlar:
+- BTTS: ${aiAgents.consensus.btts.prediction.toUpperCase()} (%${aiAgents.consensus.btts.confidence})
+- Üst/Alt 2.5: ${aiAgents.consensus.overUnder.prediction.toUpperCase()} (%${aiAgents.consensus.overUnder.confidence})
+- Maç Sonucu: ${aiAgents.consensus.matchResult.prediction.toUpperCase()} (%${aiAgents.consensus.matchResult.confidence})
+
+Ajan Bazlı Detay:
+${Object.entries(aiAgents.individualPredictions).map(([agent, pred]) => 
+  `  ${agent}: BTTS=${pred.btts.prediction}(%${pred.btts.confidence}), O/U=${pred.overUnder.prediction}(%${pred.overUnder.confidence}), MS=${pred.matchResult.prediction}(%${pred.matchResult.confidence})`
+).join('\n')}
+
+═══════════════════════════════════════════════════════════════
+
+🎯 SENİN GÖREVİN:
+
+1. Yukarıdaki 3 sistemin sonuçlarını analiz et
+2. Modeller arası uyumu değerlendir
+3. Final kararını ver
+4. En güvenli bahis önerisini sun
+
+YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
+
+{
+  "finalVerdict": {
+    "btts": {
+      "prediction": "yes" veya "no",
+      "confidence": 50-95 arası,
+      "reasoning": "Kısa ama öz gerekçe"
+    },
+    "overUnder": {
+      "prediction": "over" veya "under",
+      "confidence": 50-95 arası,
+      "reasoning": "Kısa ama öz gerekçe"
+    },
+    "matchResult": {
+      "prediction": "home", "draw" veya "away",
+      "confidence": 40-85 arası,
+      "reasoning": "Kısa ama öz gerekçe"
+    }
+  },
+  "overallConfidence": 50-90 arası (genel güven),
+  "masterReasoning": "2-3 cümlelik genel değerlendirme",
+  "systemAgreement": {
+    "btts": 0-3 (kaç sistem aynı fikirde),
+    "overUnder": 0-3,
+    "matchResult": 0-3
+  },
+  "riskLevel": "low", "medium" veya "high",
+  "bestBet": {
+    "market": "BTTS", "Over/Under" veya "Match Result",
+    "selection": "Seçim",
+    "confidence": 60-90,
+    "reason": "Neden bu en güvenli"
+  },
+  "warnings": ["Varsa uyarılar dizisi"]
+}`;
+
+  try {
+    const response = await callDeepSeekDirect(prompt);
+    const parsed = parseAIResponse(response);
+
+    // Calculate system agreement
+    const bttsAgreement = [
+      aiConsensus.consensus.btts.prediction,
+      quadBrain.consensus.btts.prediction,
+      aiAgents.consensus.btts.prediction
+    ].filter(p => p === (parsed?.btts.prediction || 'no')).length;
+
+    const ouAgreement = [
+      aiConsensus.consensus.overUnder.prediction,
+      quadBrain.consensus.overUnder.prediction,
+      aiAgents.consensus.overUnder.prediction
+    ].filter(p => p === (parsed?.overUnder.prediction || 'under')).length;
+
+    const mrAgreement = [
+      aiConsensus.consensus.matchResult.prediction,
+      quadBrain.consensus.matchResult.prediction,
+      aiAgents.consensus.matchResult.prediction
+    ].filter(p => p === (parsed?.matchResult.prediction || 'draw')).length;
+
+    // Try to parse extended JSON
+    let extendedData: any = {};
+    try {
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        extendedData = JSON.parse(jsonMatch[0]);
+      }
+    } catch { /* ignore */ }
+
+    return {
+      finalVerdict: parsed || {
+        btts: { prediction: 'no', confidence: 50, reasoning: 'Parse hatası' },
+        overUnder: { prediction: 'under', confidence: 50, reasoning: 'Parse hatası' },
+        matchResult: { prediction: 'draw', confidence: 50, reasoning: 'Parse hatası' }
+      },
+      confidence: extendedData.overallConfidence || 60,
+      reasoning: extendedData.masterReasoning || 'DeepSeek Master Analyst değerlendirmesi',
+      systemAgreement: {
+        btts: bttsAgreement,
+        overUnder: ouAgreement,
+        matchResult: mrAgreement
+      },
+      riskLevel: extendedData.riskLevel || (Math.min(bttsAgreement, ouAgreement, mrAgreement) >= 2 ? 'low' : 'medium'),
+      bestBet: extendedData.bestBet || {
+        market: 'BTTS',
+        selection: parsed?.btts.prediction || 'no',
+        confidence: parsed?.btts.confidence || 60,
+        reason: 'En yüksek sistem uyumu'
+      },
+      warnings: extendedData.warnings || [],
+      processingTime: Date.now() - startTime
+    };
+  } catch (error) {
+    console.error('DeepSeek Master Analyst error:', error);
+    
+    // Fallback: Use weighted average of all systems
+    const allPredictions = {
+      ...aiConsensus.individualPredictions,
+      ...quadBrain.individualPredictions,
+      ...aiAgents.individualPredictions
+    };
+    const fallbackConsensus = calculateConsensus(allPredictions);
+
+    return {
+      finalVerdict: fallbackConsensus,
+      confidence: 55,
+      reasoning: 'DeepSeek hatası - sistem ortalaması kullanıldı',
+      systemAgreement: { btts: 1, overUnder: 1, matchResult: 1 },
+      riskLevel: 'high',
+      bestBet: {
+        market: 'BTTS',
+        selection: fallbackConsensus.btts.prediction,
+        confidence: 55,
+        reason: 'Fallback'
+      },
+      warnings: ['DeepSeek API hatası - sonuçlar güvenilir olmayabilir'],
+      processingTime: Date.now() - startTime
+    };
+  }
+}
+
+// ============================================================================
 // SAVE ANALYSIS TO DATABASE
 // ============================================================================
 
@@ -549,6 +815,160 @@ async function saveAnalysis(
 }
 
 // ============================================================================
+// SAVE ANALYSIS WITH DEEPSEEK MASTER ANALYST
+// ============================================================================
+
+async function saveAnalysisWithMaster(
+  match: MatchToAnalyze,
+  analyses: SystemAnalysis[],
+  masterAnalysis: MasterAnalysis
+): Promise<boolean> {
+  try {
+    // Create or get prediction session
+    const sessionData = {
+      fixture_id: match.fixture_id,
+      home_team: match.home_team,
+      away_team: match.away_team,
+      league: match.league,
+      match_date: match.match_date,
+      prediction_source: 'deepseek_master',
+      session_type: 'auto',
+      is_settled: false,
+      created_at: new Date().toISOString()
+    };
+
+    // Check if already analyzed
+    const { data: existing } = await supabase
+      .from('prediction_sessions')
+      .select('id')
+      .eq('fixture_id', match.fixture_id)
+      .eq('prediction_source', 'deepseek_master')
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`   ⏭️ Already analyzed by Master: ${match.home_team} vs ${match.away_team}`);
+      return false;
+    }
+
+    // Use Master Analyst's final verdict as consensus
+    const fullSessionData = {
+      ...sessionData,
+      consensus_btts: masterAnalysis.finalVerdict.btts.prediction,
+      consensus_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
+      consensus_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
+      consensus_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
+      consensus_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      consensus_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence
+    };
+
+    const { data: session, error: sessionError } = await supabase
+      .from('prediction_sessions')
+      .insert(fullSessionData)
+      .select('id')
+      .single();
+
+    if (sessionError) {
+      console.error('Session insert error:', sessionError);
+      return false;
+    }
+
+    // Save individual model predictions
+    for (const analysis of analyses) {
+      for (const [modelName, prediction] of Object.entries(analysis.individualPredictions)) {
+        const modelData = {
+          session_id: session.id,
+          model_name: modelName,
+          model_type: analysis.system === 'ai_agents' ? 'agent' : 'llm',
+          btts_prediction: prediction.btts.prediction,
+          btts_confidence: prediction.btts.confidence,
+          btts_reasoning: prediction.btts.reasoning,
+          over_under_prediction: prediction.overUnder.prediction,
+          over_under_confidence: prediction.overUnder.confidence,
+          over_under_reasoning: prediction.overUnder.reasoning,
+          match_result_prediction: prediction.matchResult.prediction,
+          match_result_confidence: prediction.matchResult.confidence,
+          match_result_reasoning: prediction.matchResult.reasoning,
+          primary_recommendation_market: prediction.bestBet?.market,
+          primary_recommendation_selection: prediction.bestBet?.selection,
+          primary_recommendation_confidence: prediction.bestBet?.confidence,
+          response_time_ms: Math.round(analysis.processingTime / Object.keys(analysis.individualPredictions).length),
+          raw_response: { system: analysis.system }
+        };
+
+        await supabase.from('ai_model_predictions').insert(modelData);
+      }
+    }
+
+    // Save DeepSeek Master Analyst as a special model
+    const masterModelData = {
+      session_id: session.id,
+      model_name: 'deepseek_master',
+      model_type: 'master_analyst',
+      btts_prediction: masterAnalysis.finalVerdict.btts.prediction,
+      btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
+      btts_reasoning: masterAnalysis.finalVerdict.btts.reasoning,
+      over_under_prediction: masterAnalysis.finalVerdict.overUnder.prediction,
+      over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
+      over_under_reasoning: masterAnalysis.finalVerdict.overUnder.reasoning,
+      match_result_prediction: masterAnalysis.finalVerdict.matchResult.prediction,
+      match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
+      match_result_reasoning: masterAnalysis.finalVerdict.matchResult.reasoning,
+      primary_recommendation_market: masterAnalysis.bestBet.market,
+      primary_recommendation_selection: masterAnalysis.bestBet.selection,
+      primary_recommendation_confidence: masterAnalysis.bestBet.confidence,
+      response_time_ms: masterAnalysis.processingTime,
+      raw_response: {
+        system: 'deepseek_master',
+        overallConfidence: masterAnalysis.confidence,
+        masterReasoning: masterAnalysis.reasoning,
+        systemAgreement: masterAnalysis.systemAgreement,
+        riskLevel: masterAnalysis.riskLevel,
+        warnings: masterAnalysis.warnings
+      }
+    };
+
+    await supabase.from('ai_model_predictions').insert(masterModelData);
+
+    // Save full analysis as JSON with Master Analyst
+    await supabase.from('match_full_analysis').upsert({
+      fixture_id: match.fixture_id,
+      home_team: match.home_team,
+      away_team: match.away_team,
+      league: match.league,
+      match_date: match.match_date,
+      ai_consensus: analyses.find(a => a.system === 'ai_consensus'),
+      quad_brain: analyses.find(a => a.system === 'quad_brain'),
+      ai_agents: analyses.find(a => a.system === 'ai_agents'),
+      deepseek_master: {
+        finalVerdict: masterAnalysis.finalVerdict,
+        confidence: masterAnalysis.confidence,
+        reasoning: masterAnalysis.reasoning,
+        systemAgreement: masterAnalysis.systemAgreement,
+        riskLevel: masterAnalysis.riskLevel,
+        bestBet: masterAnalysis.bestBet,
+        warnings: masterAnalysis.warnings,
+        processingTime: masterAnalysis.processingTime
+      },
+      best_system: 'deepseek_master',
+      best_btts: masterAnalysis.finalVerdict.btts.prediction,
+      best_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
+      best_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
+      best_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
+      best_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      best_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
+      created_at: new Date().toISOString()
+    }, { onConflict: 'fixture_id' });
+
+    console.log(`   ✅ Saved Master Analysis for ${match.home_team} vs ${match.away_team}`);
+    console.log(`   🎯 Risk: ${masterAnalysis.riskLevel} | Agreement: BTTS=${masterAnalysis.systemAgreement.btts}/3, O/U=${masterAnalysis.systemAgreement.overUnder}/3, MS=${masterAnalysis.systemAgreement.matchResult}/3`);
+    return true;
+  } catch (error) {
+    console.error('Save Master error:', error);
+    return false;
+  }
+}
+
+// ============================================================================
 // GET MATCHES TO ANALYZE
 // ============================================================================
 
@@ -655,8 +1075,20 @@ export async function GET(request: NextRequest) {
         console.log(`   🧠 Quad-Brain: ${quadBrain.processingTime}ms`);
         console.log(`   🤖 AI Agents: ${aiAgents.processingTime}ms`);
 
-        // Save all analyses
-        const saved = await saveAnalysis(match, [aiConsensus, quadBrain, aiAgents]);
+        // 🎯 DeepSeek Master Analyst - Final Decision
+        console.log(`   🎯 Running DeepSeek Master Analyst...`);
+        const masterAnalysis = await runDeepSeekMasterAnalyst(
+          match, 
+          aiConsensus, 
+          quadBrain, 
+          aiAgents, 
+          injuryInfo
+        );
+        console.log(`   ✨ Master Analyst: ${masterAnalysis.processingTime}ms (Risk: ${masterAnalysis.riskLevel})`);
+        console.log(`   📌 Best Bet: ${masterAnalysis.bestBet.market} - ${masterAnalysis.bestBet.selection} (%${masterAnalysis.bestBet.confidence})`);
+
+        // Save all analyses including Master Analyst
+        const saved = await saveAnalysisWithMaster(match, [aiConsensus, quadBrain, aiAgents], masterAnalysis);
         if (saved) analyzed++;
 
       } catch (error) {
