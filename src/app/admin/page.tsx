@@ -76,7 +76,7 @@ export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'deepseek_master' | 'models' | 'predictions' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'deepseek_master' | 'system_analyses' | 'models' | 'predictions' | 'analytics'>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settling, setSettling] = useState(false);
@@ -470,6 +470,7 @@ export default function AdminPage() {
             {[
               { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
               { id: 'deepseek_master', label: '🎯 DeepSeek Master', icon: '🎯' },
+              { id: 'system_analyses', label: '🔬 Sistem Analizleri', icon: '🔬' },
               { id: 'models', label: '🤖 AI Modelleri', icon: '🤖' },
               { id: 'predictions', label: '📝 Tahminler', icon: '📝' },
               { id: 'analytics', label: '📈 Analitik', icon: '📈' },
@@ -1028,6 +1029,301 @@ export default function AdminPage() {
                           </ul>
                         </div>
                       )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SYSTEM ANALYSES TAB - AI Consensus, Quad-Brain, AI Agents Details */}
+        {activeTab === 'system_analyses' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600/20 via-green-600/20 to-orange-600/20 border border-gray-700 rounded-2xl p-6">
+              <h2 className="text-2xl font-bold text-white mb-2">🔬 Sistem Analizleri Detay</h2>
+              <p className="text-gray-400">AI Consensus, Quad-Brain ve AI Agents sistemlerinin tam analizleri</p>
+            </div>
+
+            {/* System Stats Summary */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-blue-900/40 to-cyan-900/40 border border-blue-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">🤖</span>
+                  <div>
+                    <p className="text-lg font-bold text-blue-400">AI Consensus</p>
+                    <p className="text-sm text-gray-400">Claude + GPT-4 + Gemini</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-white">{masterAnalyses.filter(m => m.systems?.ai_consensus).length} analiz</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">🧠</span>
+                  <div>
+                    <p className="text-lg font-bold text-green-400">Quad-Brain</p>
+                    <p className="text-sm text-gray-400">4 Model Ağırlıklı</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-white">{masterAnalyses.filter(m => m.systems?.quad_brain).length} analiz</p>
+              </div>
+              <div className="bg-gradient-to-br from-orange-900/40 to-amber-900/40 border border-orange-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">🔮</span>
+                  <div>
+                    <p className="text-lg font-bold text-orange-400">AI Agents</p>
+                    <p className="text-sm text-gray-400">5 Uzman Ajan</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-white">{masterAnalyses.filter(m => m.systems?.ai_agents).length} analiz</p>
+              </div>
+            </div>
+
+            {/* Detailed Analyses List */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-gray-700">
+                <h3 className="text-lg font-bold text-white">📋 Maç Bazlı Sistem Analizleri</h3>
+              </div>
+              
+              <div className="divide-y divide-gray-700/50 max-h-[800px] overflow-y-auto">
+                {masterAnalyses.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">
+                    <span className="text-4xl mb-4 block">🔬</span>
+                    <p>Henüz sistem analizi yok</p>
+                  </div>
+                ) : (
+                  masterAnalyses.map((analysis) => (
+                    <div key={analysis.id} className="p-4 space-y-4">
+                      {/* Match Header */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-bold text-white">{analysis.home_team} vs {analysis.away_team}</p>
+                          <p className="text-sm text-gray-400">{analysis.league} • {new Date(analysis.match_date).toLocaleDateString('tr-TR')}</p>
+                        </div>
+                        {analysis.is_settled && (
+                          <span className="px-3 py-1 bg-green-500/20 text-green-400 text-sm font-bold rounded-lg">
+                            ⚽ {analysis.actual_score}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 3 Systems Side by Side */}
+                      <div className="grid lg:grid-cols-3 gap-4">
+                        
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        {/* AI CONSENSUS DETAIL */}
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-500/30 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
+                            <span>🤖</span> AI Consensus
+                          </h4>
+                          
+                          {analysis.systems?.ai_consensus ? (
+                            <div className="space-y-3">
+                              {/* Consensus Predictions */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">BTTS</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_consensus?.consensus?.btts?.prediction || analysis.systems.ai_consensus?.btts?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-cyan-400 ml-2">%{analysis.systems.ai_consensus?.consensus?.btts?.confidence || analysis.systems.ai_consensus?.btts?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Ü/A 2.5</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_consensus?.consensus?.overUnder?.prediction || analysis.systems.ai_consensus?.overUnder?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-cyan-400 ml-2">%{analysis.systems.ai_consensus?.consensus?.overUnder?.confidence || analysis.systems.ai_consensus?.overUnder?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Maç Sonucu</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_consensus?.consensus?.matchResult?.prediction || analysis.systems.ai_consensus?.matchResult?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-cyan-400 ml-2">%{analysis.systems.ai_consensus?.consensus?.matchResult?.confidence || analysis.systems.ai_consensus?.matchResult?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Individual Model Votes */}
+                              {analysis.systems.ai_consensus?.modelVotes && (
+                                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                                  <p className="text-xs text-gray-400 mb-2">Model Oyları:</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(analysis.systems.ai_consensus.modelVotes).map(([model, votes]: [string, any]) => (
+                                      <div key={model} className="flex justify-between text-xs">
+                                        <span className="text-gray-300">{model}</span>
+                                        <span className="text-blue-300">
+                                          {votes?.btts?.prediction || '-'} | {votes?.overUnder?.prediction || '-'} | {votes?.matchResult?.prediction || '-'}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Reasoning */}
+                              {(analysis.systems.ai_consensus?.reasoning || analysis.systems.ai_consensus?.consensus?.reasoning) && (
+                                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                                  <p className="text-xs text-gray-400 mb-1">Gerekçe:</p>
+                                  <p className="text-xs text-gray-300">{analysis.systems.ai_consensus.reasoning || analysis.systems.ai_consensus.consensus?.reasoning}</p>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">Veri yok</p>
+                          )}
+                        </div>
+
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        {/* QUAD-BRAIN DETAIL */}
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-green-400 mb-3 flex items-center gap-2">
+                            <span>🧠</span> Quad-Brain
+                          </h4>
+                          
+                          {analysis.systems?.quad_brain ? (
+                            <div className="space-y-3">
+                              {/* Consensus Predictions */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">BTTS</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.quad_brain?.consensus?.btts?.prediction || analysis.systems.quad_brain?.btts?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-green-400 ml-2">%{analysis.systems.quad_brain?.consensus?.btts?.confidence || analysis.systems.quad_brain?.btts?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Ü/A 2.5</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.quad_brain?.consensus?.overUnder?.prediction || analysis.systems.quad_brain?.overUnder?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-green-400 ml-2">%{analysis.systems.quad_brain?.consensus?.overUnder?.confidence || analysis.systems.quad_brain?.overUnder?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Maç Sonucu</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.quad_brain?.consensus?.matchResult?.prediction || analysis.systems.quad_brain?.matchResult?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-green-400 ml-2">%{analysis.systems.quad_brain?.consensus?.matchResult?.confidence || analysis.systems.quad_brain?.matchResult?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Individual Model Predictions */}
+                              {analysis.systems.quad_brain?.individualPredictions && (
+                                <div className="mt-3 pt-3 border-t border-green-500/20">
+                                  <p className="text-xs text-gray-400 mb-2">Model Tahminleri:</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(analysis.systems.quad_brain.individualPredictions).map(([model, preds]: [string, any]) => (
+                                      <div key={model} className="flex justify-between text-xs">
+                                        <span className="text-gray-300 capitalize">{model}</span>
+                                        <span className="text-green-300">
+                                          {preds?.btts?.prediction || '-'} | {preds?.overUnder?.prediction || '-'} | {preds?.matchResult?.prediction || '-'}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Weights if available */}
+                              {analysis.systems.quad_brain?.weights && (
+                                <div className="mt-3 pt-3 border-t border-green-500/20">
+                                  <p className="text-xs text-gray-400 mb-1">Model Ağırlıkları:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(analysis.systems.quad_brain.weights).map(([model, weight]: [string, any]) => (
+                                      <span key={model} className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded">
+                                        {model}: {typeof weight === 'number' ? weight.toFixed(2) : weight}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">Veri yok</p>
+                          )}
+                        </div>
+
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        {/* AI AGENTS DETAIL */}
+                        {/* ═══════════════════════════════════════════════════════════════ */}
+                        <div className="bg-gradient-to-br from-orange-900/30 to-amber-900/30 border border-orange-500/30 rounded-xl p-4">
+                          <h4 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
+                            <span>🔮</span> AI Agents
+                          </h4>
+                          
+                          {analysis.systems?.ai_agents ? (
+                            <div className="space-y-3">
+                              {/* Consensus/Final Predictions */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">BTTS</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_agents?.consensus?.btts?.prediction || analysis.systems.ai_agents?.finalConsensus?.btts?.prediction || analysis.systems.ai_agents?.btts?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-orange-400 ml-2">%{analysis.systems.ai_agents?.consensus?.btts?.confidence || analysis.systems.ai_agents?.finalConsensus?.btts?.confidence || analysis.systems.ai_agents?.btts?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Ü/A 2.5</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_agents?.consensus?.overUnder?.prediction || analysis.systems.ai_agents?.finalConsensus?.overUnder?.prediction || analysis.systems.ai_agents?.overUnder?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-orange-400 ml-2">%{analysis.systems.ai_agents?.consensus?.overUnder?.confidence || analysis.systems.ai_agents?.finalConsensus?.overUnder?.confidence || analysis.systems.ai_agents?.overUnder?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
+                                  <span className="text-xs text-gray-400">Maç Sonucu</span>
+                                  <div className="text-right">
+                                    <span className="font-bold text-white">{String(analysis.systems.ai_agents?.consensus?.matchResult?.prediction || analysis.systems.ai_agents?.finalConsensus?.matchResult?.prediction || analysis.systems.ai_agents?.matchResult?.prediction || '-').toUpperCase()}</span>
+                                    <span className="text-xs text-orange-400 ml-2">%{analysis.systems.ai_agents?.consensus?.matchResult?.confidence || analysis.systems.ai_agents?.finalConsensus?.matchResult?.confidence || analysis.systems.ai_agents?.matchResult?.confidence || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Individual Agent Reports */}
+                              {analysis.systems.ai_agents?.agentReports && (
+                                <div className="mt-3 pt-3 border-t border-orange-500/20">
+                                  <p className="text-xs text-gray-400 mb-2">Ajan Raporları:</p>
+                                  <div className="space-y-2">
+                                    {analysis.systems.ai_agents.agentReports.map((agent: any, i: number) => (
+                                      <div key={i} className="p-2 bg-gray-800/50 rounded">
+                                        <p className="text-xs font-medium text-orange-300 mb-1">{agent.agentName || agent.name || `Ajan ${i+1}`}</p>
+                                        <div className="flex gap-2 text-xs">
+                                          <span className="text-gray-400">BTTS: <span className="text-white">{agent.predictions?.btts?.prediction || '-'}</span></span>
+                                          <span className="text-gray-400">Ü/A: <span className="text-white">{agent.predictions?.overUnder?.prediction || '-'}</span></span>
+                                          <span className="text-gray-400">MS: <span className="text-white">{agent.predictions?.matchResult?.prediction || '-'}</span></span>
+                                        </div>
+                                        {agent.reasoning && (
+                                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{agent.reasoning}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Professional Markets if available */}
+                              {analysis.systems.ai_agents?.professionalMarkets && (
+                                <div className="mt-3 pt-3 border-t border-orange-500/20">
+                                  <p className="text-xs text-gray-400 mb-1">Pro Marketler:</p>
+                                  <div className="grid grid-cols-2 gap-1 text-xs">
+                                    {Object.entries(analysis.systems.ai_agents.professionalMarkets).slice(0, 6).map(([market, data]: [string, any]) => (
+                                      <div key={market} className="flex justify-between">
+                                        <span className="text-gray-400">{market}:</span>
+                                        <span className="text-orange-300">{data?.prediction || '-'}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">Veri yok</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
