@@ -334,10 +334,10 @@ export const API_ENDPOINTS = {
 // =========================
 
 export const MODEL_VERSIONS = {
-  claude: 'claude-sonnet-4-20250514',
-  gpt4: 'gpt-4o-mini',
-  gemini: 'gemini-2.0-flash',
-  mistral: 'mistralai/mistral-small'
+  claude: 'claude-3-5-haiku-20241022', // En ucuz Claude modeli
+  gpt4: 'gpt-4o-mini', // En ucuz GPT-4 modeli
+  gemini: 'gemini-2.0-flash', // En ucuz Gemini modeli
+  mistral: 'mistralai/mistral-small' // En ucuz Mistral modeli
 };
 
 // =========================

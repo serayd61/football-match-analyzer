@@ -72,7 +72,7 @@ async function callClaude(prompt: string): Promise<string> {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-haiku-20241022', // En ucuz Claude modeli
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
