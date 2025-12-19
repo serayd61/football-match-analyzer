@@ -973,20 +973,27 @@ async function saveAnalysisWithMaster(
 // ============================================================================
 
 async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
-  // Get matches from the next 24-48 hours that haven't been analyzed
+  // Get matches from next 24 hours that haven't been analyzed
+  // ⚠️ IMPORTANT: Only get matches that haven't started yet (at least 30 min buffer)
   const now = new Date();
-  const tomorrow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  const minKickOffTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 dakika sonrası
+  const maxKickOffTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 saat sonrası
+
+  console.log(`   ⏰ Current time: ${now.toISOString()}`);
+  console.log(`   ⏰ Min kick-off: ${minKickOffTime.toISOString()} (30 min buffer)`);
+  console.log(`   ⏰ Max kick-off: ${maxKickOffTime.toISOString()} (24h ahead)`);
 
   try {
     // First check existing predictions to know what's already analyzed
     const { data: existingPredictions } = await supabase
       .from('prediction_sessions')
       .select('fixture_id')
-      .eq('prediction_source', 'auto_analysis');
+      .in('prediction_source', ['auto_analysis', 'deepseek_master']);
 
     const analyzedFixtureIds = new Set(existingPredictions?.map(p => p.fixture_id) || []);
+    console.log(`   📊 Already analyzed: ${analyzedFixtureIds.size} matches`);
 
-    // Fetch upcoming fixtures from API-Football
+    // Fetch upcoming fixtures from API-Football (only NS = Not Started)
     const res = await fetch(
       `https://${FOOTBALL_API_HOST}/v3/fixtures?date=${now.toISOString().split('T')[0]}&status=NS`,
       {
@@ -999,11 +1006,36 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
 
     const data = await res.json();
     const fixtures = data.response || [];
+    console.log(`   📡 API returned: ${fixtures.length} fixtures with status NS`);
 
-    // Filter and format matches
+    // Filter matches:
+    // 1. Not already analyzed
+    // 2. Kick-off time is at least 30 minutes from now
+    // 3. Kick-off time is within next 24 hours
     const matches: MatchToAnalyze[] = fixtures
-      .filter((f: any) => !analyzedFixtureIds.has(f.fixture.id))
-      .slice(0, 20) // Limit to 20 matches per run
+      .filter((f: any) => {
+        const fixtureId = f.fixture.id;
+        const kickOffTime = new Date(f.fixture.date);
+        
+        // Skip if already analyzed
+        if (analyzedFixtureIds.has(fixtureId)) {
+          return false;
+        }
+        
+        // Skip if match starts in less than 30 minutes
+        if (kickOffTime < minKickOffTime) {
+          console.log(`   ⏭️ Skipping (too soon): ${f.teams.home.name} vs ${f.teams.away.name} @ ${kickOffTime.toISOString()}`);
+          return false;
+        }
+        
+        // Skip if match is more than 24 hours away
+        if (kickOffTime > maxKickOffTime) {
+          return false;
+        }
+        
+        return true;
+      })
+      .slice(0, 15) // Limit to 15 matches per run (save API costs)
       .map((f: any) => ({
         fixture_id: f.fixture.id,
         home_team: f.teams.home.name,
@@ -1013,11 +1045,23 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
         kick_off_time: f.fixture.date
       }));
 
+    console.log(`   ✅ Matches to analyze: ${matches.length}`);
     return matches;
   } catch (error) {
     console.error('Error fetching matches:', error);
     return [];
   }
+}
+
+// ============================================================================
+// HELPER: Check if match has already started
+// ============================================================================
+
+function hasMatchStarted(kickOffTime: string | undefined): boolean {
+  if (!kickOffTime) return false;
+  const kickOff = new Date(kickOffTime);
+  const now = new Date();
+  return kickOff <= now;
 }
 
 // ============================================================================
@@ -1051,7 +1095,18 @@ export async function GET(request: NextRequest) {
     // Process each match
     for (const match of matches) {
       try {
+        // ⚠️ DOUBLE CHECK: Skip if match has already started
+        if (hasMatchStarted(match.kick_off_time)) {
+          console.log(`\n⏭️ Skipping (already started): ${match.home_team} vs ${match.away_team}`);
+          continue;
+        }
+
         console.log(`\n🔍 Analyzing: ${match.home_team} vs ${match.away_team}`);
+        if (match.kick_off_time) {
+          const kickOff = new Date(match.kick_off_time);
+          const minutesUntilKickOff = Math.round((kickOff.getTime() - Date.now()) / 60000);
+          console.log(`   ⏰ Kick-off in ${minutesUntilKickOff} minutes`);
+        }
 
         // Fetch injury info from SportMonks (replaces Perplexity!)
         let injuryInfo = '';
