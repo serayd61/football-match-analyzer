@@ -26,8 +26,13 @@ async function callDeepSeek(prompt: string): Promise<string> {
     return '';
   }
   
+  // Timeout: 30 saniye
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  
   try {
     console.log('📤 Calling DeepSeek Master...');
+    const startTime = Date.now();
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,10 +42,14 @@ async function callDeepSeek(prompt: string): Promise<string> {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 3000,
-        temperature: 0.3
-      })
+        max_tokens: 2500, // Reduced from 3000 for faster response
+        temperature: 0.3,
+        stream: false
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     if (!res.ok) {
       const errorText = await res.text();
@@ -50,10 +59,16 @@ async function callDeepSeek(prompt: string): Promise<string> {
     
     const data = await res.json();
     const result = data.choices?.[0]?.message?.content || '';
-    console.log('✅ DeepSeek Master responded');
+    const duration = Date.now() - startTime;
+    console.log(`✅ DeepSeek Master responded in ${duration}ms`);
     return result;
-  } catch (e) {
-    console.error('❌ DeepSeek exception:', e);
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      console.error('❌ DeepSeek API timeout (>30s)');
+    } else {
+      console.error('❌ DeepSeek exception:', e);
+    }
     return '';
   }
 }

@@ -552,56 +552,46 @@ export default function DashboardPage() {
     try {
       console.log('🎯 Starting DeepSeek Master Analysis...');
       
-      // Step 1: Run AI Consensus (existing API)
-      console.log('   📊 Step 1: AI Consensus...');
-      const aiRes = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-          league: match.league,
-          fixtureId: match.id,
-          language: lang,
-        }),
-      });
-      const aiData = await aiRes.json();
+      const matchData = {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        league: match.league,
+        fixtureId: match.id,
+        language: lang,
+      };
       
-      // Step 2: Run Quad-Brain (existing API)
-      console.log('   🧠 Step 2: Quad-Brain...');
-      const quadRes = await fetch('/api/quad-brain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-          league: match.league,
-          fixtureId: match.id,
-          language: lang,
-        }),
-      });
-      const quadData = await quadRes.json();
+      // PARALEL ÇALIŞTIR: 3 sistem aynı anda!
+      console.log('   ⚡ Running 3 systems in parallel...');
+      const startTime = Date.now();
       
-      // Step 3: Run Agents (existing API)
-      console.log('   🔮 Step 3: AI Agents...');
-      const agentsRes = await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-          league: match.league,
-          fixtureId: match.id,
-          language: lang,
+      const [aiRes, quadRes, agentsRes] = await Promise.all([
+        fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(matchData),
         }),
-      });
-      const agentsData = await agentsRes.json();
+        fetch('/api/quad-brain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(matchData),
+        }),
+        fetch('/api/agents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(matchData),
+        }),
+      ]);
+      
+      const [aiData, quadData, agentsData] = await Promise.all([
+        aiRes.json(),
+        quadRes.json(),
+        agentsRes.json(),
+      ]);
+      
+      const parallelTime = Date.now() - startTime;
+      console.log(`   ✅ All 3 systems completed in ${parallelTime}ms`);
       
       // Step 4: Send all 3 results to DeepSeek Master for evaluation
       console.log('   🎯 Step 4: DeepSeek Master Evaluation...');
