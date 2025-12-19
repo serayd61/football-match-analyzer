@@ -126,7 +126,7 @@ export function calculateDynamicWeights(
   dataQuality: DataQualityScore,
   modelPerformance?: Record<AIModel, ModelPerformance>
 ): DynamicWeight[] {
-  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'perplexity'];
+  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'mistral'];
   const weights: DynamicWeight[] = [];
 
   // Market-specific base weights
@@ -242,7 +242,7 @@ function calculateQualityAdjustments(
       }
       break;
 
-    case 'perplexity':
+    case 'mistral':
       // Perplexity için haber verisi önemli
       if (dataQuality.flags.hasRecentNews || dataQuality.flags.significantAbsences) {
         adjustments.push({
