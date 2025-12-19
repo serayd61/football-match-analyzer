@@ -58,7 +58,12 @@ interface SystemAnalysis {
 // ============================================================================
 
 async function callClaude(prompt: string): Promise<string> {
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is missing!');
+    return '';
+  }
   try {
+    console.log('📤 Calling Claude...');
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -72,16 +77,30 @@ async function callClaude(prompt: string): Promise<string> {
         messages: [{ role: 'user', content: prompt }]
       })
     });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ Claude API error ${res.status}:`, errorText);
+      return '';
+    }
+    
     const data = await res.json();
-    return data.content?.[0]?.text || '';
+    const result = data.content?.[0]?.text || '';
+    console.log('✅ Claude responded:', result.substring(0, 100) + '...');
+    return result;
   } catch (e) {
-    console.error('Claude error:', e);
+    console.error('❌ Claude exception:', e);
     return '';
   }
 }
 
 async function callGemini(prompt: string): Promise<string> {
+  if (!GOOGLE_API_KEY) {
+    console.error('❌ GOOGLE_GEMINI_API_KEY is missing!');
+    return '';
+  }
   try {
+    console.log('📤 Calling Gemini...');
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
       {
@@ -93,16 +112,30 @@ async function callGemini(prompt: string): Promise<string> {
         })
       }
     );
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ Gemini API error ${res.status}:`, errorText);
+      return '';
+    }
+    
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('✅ Gemini responded:', result.substring(0, 100) + '...');
+    return result;
   } catch (e) {
-    console.error('Gemini error:', e);
+    console.error('❌ Gemini exception:', e);
     return '';
   }
 }
 
 async function callOpenRouter(model: string, prompt: string): Promise<string> {
+  if (!OPENROUTER_API_KEY) {
+    console.error('❌ OPENROUTER_API_KEY is missing!');
+    return '';
+  }
   try {
+    console.log(`📤 Calling OpenRouter (${model})...`);
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -116,10 +149,19 @@ async function callOpenRouter(model: string, prompt: string): Promise<string> {
         max_tokens: 2000
       })
     });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ OpenRouter (${model}) API error ${res.status}:`, errorText);
+      return '';
+    }
+    
     const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
+    const result = data.choices?.[0]?.message?.content || '';
+    console.log(`✅ OpenRouter (${model}) responded:`, result.substring(0, 100) + '...');
+    return result;
   } catch (e) {
-    console.error(`OpenRouter (${model}) error:`, e);
+    console.error(`❌ OpenRouter (${model}) exception:`, e);
     return '';
   }
 }
