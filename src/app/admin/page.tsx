@@ -778,26 +778,137 @@ export default function AdminPage() {
         {/* ANALYTICS TAB */}
         {activeTab === 'analytics' && overall && (
           <div className="space-y-6">
-            {/* Confidence vs Accuracy Analysis */}
-            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-white mb-4">📊 Güven vs Başarı Analizi</h3>
-              <p className="text-gray-400 mb-4">Güven seviyesine göre başarı oranları</p>
+            {/* Confidence vs Accuracy Analysis - Real Calculations */}
+            {(() => {
+              // Calculate confidence-based accuracy from settled predictions
+              const settled = predictions.filter(p => p.is_settled);
               
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="bg-gray-700/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-400 mb-1">Yüksek Güven (&gt;70%)</p>
-                  <p className="text-2xl font-bold text-green-400">Hesaplanıyor...</p>
-                </div>
-                <div className="bg-gray-700/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-400 mb-1">Orta Güven (60-70%)</p>
-                  <p className="text-2xl font-bold text-yellow-400">Hesaplanıyor...</p>
-                </div>
-                <div className="bg-gray-700/50 rounded-xl p-4">
-                  <p className="text-sm text-gray-400 mb-1">Düşük Güven (&lt;60%)</p>
-                  <p className="text-2xl font-bold text-red-400">Hesaplanıyor...</p>
-                </div>
-              </div>
-            </div>
+              // High confidence (>70%)
+              const highConf = settled.filter(p => {
+                const avgConf = ((p.consensus_btts_confidence || 0) + 
+                                (p.consensus_over_under_confidence || 0) + 
+                                (p.consensus_match_result_confidence || 0)) / 3;
+                return avgConf > 70;
+              });
+              const highConfCorrect = highConf.filter(p => 
+                (p.btts_correct ? 1 : 0) + (p.over_under_correct ? 1 : 0) + (p.match_result_correct ? 1 : 0) >= 2
+              );
+              const highConfAcc = highConf.length > 0 
+                ? ((highConfCorrect.length / highConf.length) * 100).toFixed(1) 
+                : '0';
+              
+              // Medium confidence (60-70%)
+              const medConf = settled.filter(p => {
+                const avgConf = ((p.consensus_btts_confidence || 0) + 
+                                (p.consensus_over_under_confidence || 0) + 
+                                (p.consensus_match_result_confidence || 0)) / 3;
+                return avgConf >= 60 && avgConf <= 70;
+              });
+              const medConfCorrect = medConf.filter(p => 
+                (p.btts_correct ? 1 : 0) + (p.over_under_correct ? 1 : 0) + (p.match_result_correct ? 1 : 0) >= 2
+              );
+              const medConfAcc = medConf.length > 0 
+                ? ((medConfCorrect.length / medConf.length) * 100).toFixed(1) 
+                : '0';
+              
+              // Low confidence (<60%)
+              const lowConf = settled.filter(p => {
+                const avgConf = ((p.consensus_btts_confidence || 0) + 
+                                (p.consensus_over_under_confidence || 0) + 
+                                (p.consensus_match_result_confidence || 0)) / 3;
+                return avgConf < 60;
+              });
+              const lowConfCorrect = lowConf.filter(p => 
+                (p.btts_correct ? 1 : 0) + (p.over_under_correct ? 1 : 0) + (p.match_result_correct ? 1 : 0) >= 2
+              );
+              const lowConfAcc = lowConf.length > 0 
+                ? ((lowConfCorrect.length / lowConf.length) * 100).toFixed(1) 
+                : '0';
+
+              // Market breakdown
+              const bttsTotal = settled.length;
+              const bttsCorrect = settled.filter(p => p.btts_correct).length;
+              const ouTotal = settled.length;
+              const ouCorrect = settled.filter(p => p.over_under_correct).length;
+              const mrTotal = settled.length;
+              const mrCorrect = settled.filter(p => p.match_result_correct).length;
+
+              return (
+                <>
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-white mb-4">📊 Güven vs Başarı Analizi</h3>
+                    <p className="text-gray-400 mb-4">Güven seviyesine göre başarı oranları (2/3 doğru = başarılı)</p>
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-gray-700/50 rounded-xl p-4">
+                        <p className="text-sm text-gray-400 mb-1">Yüksek Güven (&gt;70%)</p>
+                        <p className={`text-2xl font-bold ${parseFloat(highConfAcc) >= 60 ? 'text-green-400' : parseFloat(highConfAcc) >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {highConf.length > 0 ? `%${highConfAcc}` : 'Veri yok'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{highConfCorrect.length}/{highConf.length} tahmin</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-xl p-4">
+                        <p className="text-sm text-gray-400 mb-1">Orta Güven (60-70%)</p>
+                        <p className={`text-2xl font-bold ${parseFloat(medConfAcc) >= 60 ? 'text-green-400' : parseFloat(medConfAcc) >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {medConf.length > 0 ? `%${medConfAcc}` : 'Veri yok'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{medConfCorrect.length}/{medConf.length} tahmin</p>
+                      </div>
+                      <div className="bg-gray-700/50 rounded-xl p-4">
+                        <p className="text-sm text-gray-400 mb-1">Düşük Güven (&lt;60%)</p>
+                        <p className={`text-2xl font-bold ${parseFloat(lowConfAcc) >= 60 ? 'text-green-400' : parseFloat(lowConfAcc) >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {lowConf.length > 0 ? `%${lowConfAcc}` : 'Veri yok'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{lowConfCorrect.length}/{lowConf.length} tahmin</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Market Breakdown */}
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-white mb-4">📈 Pazar Bazlı Performans</h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-400">⚽ BTTS</span>
+                          <span className={`text-xl font-bold ${bttsTotal > 0 && (bttsCorrect/bttsTotal)*100 >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                            %{bttsTotal > 0 ? ((bttsCorrect/bttsTotal)*100).toFixed(1) : '0'}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500" style={{ width: `${bttsTotal > 0 ? (bttsCorrect/bttsTotal)*100 : 0}%` }} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{bttsCorrect}/{bttsTotal} doğru</p>
+                      </div>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-400">📊 Üst/Alt 2.5</span>
+                          <span className={`text-xl font-bold ${ouTotal > 0 && (ouCorrect/ouTotal)*100 >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                            %{ouTotal > 0 ? ((ouCorrect/ouTotal)*100).toFixed(1) : '0'}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500" style={{ width: `${ouTotal > 0 ? (ouCorrect/ouTotal)*100 : 0}%` }} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{ouCorrect}/{ouTotal} doğru</p>
+                      </div>
+                      <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-400">🏆 Maç Sonucu</span>
+                          <span className={`text-xl font-bold ${mrTotal > 0 && (mrCorrect/mrTotal)*100 >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                            %{mrTotal > 0 ? ((mrCorrect/mrTotal)*100).toFixed(1) : '0'}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-500" style={{ width: `${mrTotal > 0 ? (mrCorrect/mrTotal)*100 : 0}%` }} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">{mrCorrect}/{mrTotal} doğru</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Best & Worst */}
             <div className="grid md:grid-cols-2 gap-4">
