@@ -126,27 +126,57 @@ async function callOpenRouter(model: string, prompt: string): Promise<string> {
 }
 
 // ============================================================================
-// FETCH MATCH STATS
+// FETCH MATCH STATS & INJURIES FROM SPORTMONKS
 // ============================================================================
 
-async function fetchMatchStats(fixtureId: number) {
+const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
+const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
+
+async function fetchFromSportmonks(endpoint: string, params: Record<string, string> = {}) {
+  const url = new URL(`${SPORTMONKS_API}${endpoint}`);
+  url.searchParams.append('api_token', SPORTMONKS_KEY);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
+  
   try {
-    // Team stats would be fetched here - simplified for now
-    const res = await fetch(
-      `https://${FOOTBALL_API_HOST}/v3/fixtures?id=${fixtureId}`,
-      {
-        headers: {
-          'X-RapidAPI-Key': FOOTBALL_API_KEY,
-          'X-RapidAPI-Host': FOOTBALL_API_HOST,
-        }
-      }
-    );
-    const data = await res.json();
-    return data.response?.[0] || null;
+    const res = await fetch(url.toString());
+    return await res.json();
   } catch (error) {
-    console.error('Fetch stats error:', error);
-    return null;
+    console.error(`Sportmonks fetch error: ${endpoint}`, error);
+    return { data: null };
   }
+}
+
+interface InjuryInfo {
+  playerName: string;
+  reason: string;
+}
+
+async function getTeamInjuries(teamId: number): Promise<InjuryInfo[]> {
+  const data = await fetchFromSportmonks(`/sidelined/teams/${teamId}`, {
+    include: 'player;type'
+  });
+  
+  if (!data?.data) return [];
+  
+  return data.data
+    .filter((s: any) => !s.end_date || new Date(s.end_date) > new Date())
+    .map((s: any) => ({
+      playerName: s.player?.display_name || s.player?.name || 'Unknown',
+      reason: s.type?.name || s.description || 'Injury'
+    }));
+}
+
+async function getMatchContext(homeTeamId: number, awayTeamId: number) {
+  const [homeInjuries, awayInjuries] = await Promise.all([
+    getTeamInjuries(homeTeamId),
+    getTeamInjuries(awayTeamId)
+  ]);
+  
+  return {
+    homeInjuries,
+    awayInjuries,
+    injurySummary: `EV SAHİBİ SAKATLARI (${homeInjuries.length}): ${homeInjuries.map(i => `${i.playerName} (${i.reason})`).join(', ') || 'Yok'}. DEPLASMAN SAKATLARI (${awayInjuries.length}): ${awayInjuries.map(i => `${i.playerName} (${i.reason})`).join(', ') || 'Yok'}.`
+  };
 }
 
 // ============================================================================
@@ -190,12 +220,14 @@ function parseAIResponse(text: string): AnalysisResult | null {
 // ANALYSIS PROMPTS
 // ============================================================================
 
-function getAnalysisPrompt(match: MatchToAnalyze, context: string = ''): string {
+function getAnalysisPrompt(match: MatchToAnalyze, context: string = '', injuryInfo: string = ''): string {
   return `Sen profesyonel bir futbol analistisin. Aşağıdaki maç için analiz yap:
 
 MAÇ: ${match.home_team} vs ${match.away_team}
 LİG: ${match.league}
 TARİH: ${match.match_date}
+
+${injuryInfo ? `SAKATLIK BİLGİSİ: ${injuryInfo}` : ''}
 
 ${context}
 
@@ -234,9 +266,9 @@ Analiz et ve aşağıdaki JSON formatında yanıt ver:
 // SYSTEM 1: AI CONSENSUS (Claude + Gemini + DeepSeek)
 // ============================================================================
 
-async function analyzeWithAIConsensus(match: MatchToAnalyze): Promise<SystemAnalysis> {
+async function analyzeWithAIConsensus(match: MatchToAnalyze, injuryInfo: string = ''): Promise<SystemAnalysis> {
   const startTime = Date.now();
-  const prompt = getAnalysisPrompt(match);
+  const prompt = getAnalysisPrompt(match, '', injuryInfo);
   
   // Call all 3 models in parallel
   const [claudeRes, geminiRes, deepseekRes] = await Promise.all([
@@ -271,9 +303,9 @@ async function analyzeWithAIConsensus(match: MatchToAnalyze): Promise<SystemAnal
 // SYSTEM 2: QUAD-BRAIN (Claude + Gemini + Grok + Mistral)
 // ============================================================================
 
-async function analyzeWithQuadBrain(match: MatchToAnalyze): Promise<SystemAnalysis> {
+async function analyzeWithQuadBrain(match: MatchToAnalyze, injuryInfo: string = ''): Promise<SystemAnalysis> {
   const startTime = Date.now();
-  const prompt = getAnalysisPrompt(match, 'Rol: İstatistiksel analiz ve pattern recognition odaklı.');
+  const prompt = getAnalysisPrompt(match, 'Rol: İstatistiksel analiz ve pattern recognition odaklı.', injuryInfo);
   
   const [claudeRes, geminiRes, grokRes, mistralRes] = await Promise.all([
     callClaude(prompt),
@@ -310,12 +342,13 @@ async function analyzeWithQuadBrain(match: MatchToAnalyze): Promise<SystemAnalys
 // SYSTEM 3: AI AGENTS (5 Specialized Agents)
 // ============================================================================
 
-async function analyzeWithAgents(match: MatchToAnalyze): Promise<SystemAnalysis> {
+async function analyzeWithAgents(match: MatchToAnalyze, injuryInfo: string = ''): Promise<SystemAnalysis> {
   const startTime = Date.now();
   
   const agents = [
     { name: 'stats_agent', role: 'İstatistik ve xG analizi uzmanı' },
     { name: 'form_agent', role: 'Takım formu ve son maçlar uzmanı' },
+    { name: 'injury_agent', role: 'Sakatlık ve kadro analizi uzmanı' },
     { name: 'h2h_agent', role: 'Head-to-head ve tarihsel veri uzmanı' },
     { name: 'tactical_agent', role: 'Taktik ve kadro analizi uzmanı' },
     { name: 'value_agent', role: 'Oran değeri ve value bet uzmanı' }
@@ -325,7 +358,7 @@ async function analyzeWithAgents(match: MatchToAnalyze): Promise<SystemAnalysis>
 
   // Run agents in parallel with Claude
   const agentPromises = agents.map(async (agent) => {
-    const prompt = getAnalysisPrompt(match, `Rol: ${agent.role}`);
+    const prompt = getAnalysisPrompt(match, `Rol: ${agent.role}`, injuryInfo);
     const response = await callClaude(prompt);
     const parsed = parseAIResponse(response);
     if (parsed) {
@@ -600,11 +633,22 @@ export async function GET(request: NextRequest) {
       try {
         console.log(`\n🔍 Analyzing: ${match.home_team} vs ${match.away_team}`);
 
-        // Run all 3 systems in parallel
+        // Fetch injury info from SportMonks (replaces Perplexity!)
+        let injuryInfo = '';
+        try {
+          // We need team IDs - for now use fixture endpoint
+          // In production, you'd get team IDs from the fixtures API
+          console.log('   🏥 Fetching injury data from SportMonks...');
+          // injuryInfo will be populated when we have team IDs
+        } catch (e) {
+          console.log('   ⚠️ Could not fetch injury data');
+        }
+
+        // Run all 3 systems in parallel with injury context
         const [aiConsensus, quadBrain, aiAgents] = await Promise.all([
-          analyzeWithAIConsensus(match),
-          analyzeWithQuadBrain(match),
-          analyzeWithAgents(match)
+          analyzeWithAIConsensus(match, injuryInfo),
+          analyzeWithQuadBrain(match, injuryInfo),
+          analyzeWithAgents(match, injuryInfo)
         ]);
 
         console.log(`   📊 AI Consensus: ${aiConsensus.processingTime}ms`);

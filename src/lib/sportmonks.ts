@@ -238,6 +238,126 @@ export async function getPredictions(fixtureId: number) {
 }
 
 // ============================================
+// INJURIES & SQUAD DATA (Perplexity alternatifi)
+// ============================================
+
+// Get team's sidelined/injured players
+export async function getTeamSidelined(teamId: number) {
+  return fetchFromSportmonks(`/sidelined/teams/${teamId}`, {
+    include: 'player;type'
+  });
+}
+
+// Get player's injury history
+export async function getPlayerSidelined(playerId: number) {
+  return fetchFromSportmonks(`/sidelined/players/${playerId}`, {
+    include: 'team;type'
+  });
+}
+
+// Get team's full squad with sidelined status
+export async function getTeamSquad(teamId: number, seasonId?: number) {
+  const params: Record<string, string> = {
+    include: 'player.sidelined;position'
+  };
+  if (seasonId) {
+    params.filters = `seasons:${seasonId}`;
+  }
+  return fetchFromSportmonks(`/teams/${teamId}/squad`, params);
+}
+
+// Get fixture with lineups, formations and sidelined players
+export async function getFixtureWithLineups(fixtureId: number) {
+  return fetchFromSportmonks(`/fixtures/${fixtureId}`, {
+    include: 'lineups.player;formations;sidelined.player;sidelined.type;coaches'
+  });
+}
+
+// Get match news/events
+export async function getFixtureNews(fixtureId: number) {
+  return fetchFromSportmonks(`/fixtures/${fixtureId}`, {
+    include: 'events;comments;highlights'
+  });
+}
+
+// ============================================
+// INJURY PARSING HELPERS
+// ============================================
+
+export interface SidelinedPlayer {
+  playerId: number;
+  playerName: string;
+  teamId: number;
+  reason: string; // injury type
+  startDate: string;
+  endDate?: string;
+  isActive: boolean;
+}
+
+export function parseSidelinedData(sidelinedData: any): SidelinedPlayer[] {
+  if (!sidelinedData?.data) return [];
+  
+  return sidelinedData.data.map((s: any) => ({
+    playerId: s.player_id,
+    playerName: s.player?.display_name || s.player?.name || 'Unknown',
+    teamId: s.team_id,
+    reason: s.type?.name || s.description || 'Unknown',
+    startDate: s.start_date,
+    endDate: s.end_date,
+    isActive: !s.end_date || new Date(s.end_date) > new Date()
+  })).filter((p: SidelinedPlayer) => p.isActive);
+}
+
+// Get comprehensive match context including injuries
+export async function getMatchContextWithInjuries(
+  homeTeamId: number, 
+  awayTeamId: number,
+  fixtureId?: number
+) {
+  const [homeSidelined, awaySidelined, fixtureData] = await Promise.all([
+    getTeamSidelined(homeTeamId),
+    getTeamSidelined(awayTeamId),
+    fixtureId ? getFixtureWithLineups(fixtureId) : Promise.resolve(null)
+  ]);
+
+  const homeInjuries = parseSidelinedData(homeSidelined);
+  const awayInjuries = parseSidelinedData(awaySidelined);
+
+  // Parse lineups if available
+  let homeLineup: string[] = [];
+  let awayLineup: string[] = [];
+  let homeFormation = '';
+  let awayFormation = '';
+
+  if (fixtureData?.data) {
+    const lineups = fixtureData.data.lineups || [];
+    const formations = fixtureData.data.formations || [];
+    
+    homeLineup = lineups
+      .filter((l: any) => l.team_id === homeTeamId && l.type_id === 11) // 11 = starting XI
+      .map((l: any) => l.player?.display_name || 'Unknown');
+    
+    awayLineup = lineups
+      .filter((l: any) => l.team_id === awayTeamId && l.type_id === 11)
+      .map((l: any) => l.player?.display_name || 'Unknown');
+
+    homeFormation = formations.find((f: any) => f.participant_id === homeTeamId)?.formation || '';
+    awayFormation = formations.find((f: any) => f.participant_id === awayTeamId)?.formation || '';
+  }
+
+  return {
+    homeInjuries,
+    awayInjuries,
+    homeLineup,
+    awayLineup,
+    homeFormation,
+    awayFormation,
+    totalHomeMissing: homeInjuries.length,
+    totalAwayMissing: awayInjuries.length
+  };
+}
+
+// ============================================
 // DATA PROCESSING HELPERS
 // ============================================
 
