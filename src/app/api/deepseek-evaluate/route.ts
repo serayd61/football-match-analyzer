@@ -188,62 +188,109 @@ export async function POST(request: NextRequest) {
 
     // Build prompt for DeepSeek
     const prompt = `
-Sen bir futbol maç analizi uzmanısın. Sana 3 farklı yapay zeka sisteminden gelen analizleri sunuyorum. 
-Bu analizleri değerlendirerek kendi nihai kararını ver.
+🎯 SEN "DEEPSEEK MASTER ANALİST"SİN - FUTBOL TAHMİN UZMANI
 
-MAÇ: ${home_team} vs ${away_team} (${league})
+Sen, dünyaca ünlü bir futbol analiz uzmanısın. 20+ yıllık deneyiminle binlerce maçı doğru tahmin ettin.
+Şimdi sana 3 farklı yapay zeka sisteminin analizlerini sunuyorum. 
+
+GÖREV: 
+1. Bu 3 sistemi DEĞERLENDİR
+2. KENDİ BAĞIMSIZ ANALİZİNİ YAP (takımların güçlü/zayıf yönleri, form, motivasyon, taktik)
+3. TÜM VERİLERİ BİRLEŞTİREREK final kararını ver
 
 ═══════════════════════════════════════════════════════════════
-🤖 AI CONSENSUS ANALİZİ (Claude + GPT-4 + Gemini)
+📋 MAÇ BİLGİSİ
 ═══════════════════════════════════════════════════════════════
-• BTTS (Her İki Takım Gol Atar): ${String(aiPreds.btts).toUpperCase()} (%${aiPreds.bttsConf || 0})
+${home_team} vs ${away_team}
+Lig: ${league}
+
+═══════════════════════════════════════════════════════════════
+🤖 SİSTEM 1: AI CONSENSUS (Claude + GPT-4 + Gemini)
+═══════════════════════════════════════════════════════════════
+• BTTS: ${String(aiPreds.btts).toUpperCase()} (%${aiPreds.bttsConf || 0})
 • Over/Under 2.5: ${String(aiPreds.overUnder).toUpperCase()} (%${aiPreds.overUnderConf || 0})
 • Maç Sonucu: ${String(aiPreds.matchResult).toUpperCase()} (%${aiPreds.matchResultConf || 0})
 
 ═══════════════════════════════════════════════════════════════
-🧠 QUAD-BRAIN ANALİZİ (4 Model Ağırlıklı)
+🧠 SİSTEM 2: QUAD-BRAIN (4 Model Ağırlıklı Konsensüs)
 ═══════════════════════════════════════════════════════════════
 • BTTS: ${String(quadPreds.btts).toUpperCase()} (%${quadPreds.bttsConf || 0})
 • Over/Under 2.5: ${String(quadPreds.overUnder).toUpperCase()} (%${quadPreds.overUnderConf || 0})
 • Maç Sonucu: ${String(quadPreds.matchResult).toUpperCase()} (%${quadPreds.matchResultConf || 0})
 
 ═══════════════════════════════════════════════════════════════
-🔮 AI AGENTS ANALİZİ (5 Uzman Ajan)
+🔮 SİSTEM 3: AI AGENTS (5 Uzman Ajan Analizi)
 ═══════════════════════════════════════════════════════════════
 • BTTS: ${String(agentPreds.btts).toUpperCase()} (%${agentPreds.bttsConf || 0})
 • Over/Under 2.5: ${String(agentPreds.overUnder).toUpperCase()} (%${agentPreds.overUnderConf || 0})
 • Maç Sonucu: ${String(agentPreds.matchResult).toUpperCase()} (%${agentPreds.matchResultConf || 0})
 
 ═══════════════════════════════════════════════════════════════
-GÖREVLERİN:
+🎯 MASTER ANALİST GÖREVLERİN:
 ═══════════════════════════════════════════════════════════════
-1. Her market (BTTS, Over/Under 2.5, Maç Sonucu) için 3 sistemin analizlerini karşılaştır
-2. Kendi nihai kararını ver (sistemlerden bağımsız kendi görüşün)
-3. Sistemler arası uyumu belirt (kaç sistem aynı fikirde: 0, 1, 2 veya 3)
-4. Genel risk seviyesi belirle (low, medium, high)
-5. En iyi bahis önerini sun
+
+1. **KENDİ ANALİZİN**: ${home_team} ve ${away_team} hakkında kendi bilgilerinle bağımsız bir analiz yap:
+   - Takımların mevcut formu
+   - Ev sahibi/Deplasman performansları
+   - Gol atma ve yeme eğilimleri
+   - Motivasyon faktörleri
+   - Olası taktik yaklaşımlar
+
+2. **SİSTEM DEĞERLENDİRMESİ**: 3 sistemin tahminlerini karşılaştır ve uyumu değerlendir
+
+3. **FİNAL KARAR**: Kendi analizin + sistem verileri = Final tahmin (her market için)
+
+4. **EN İYİ BAHİS**: Tüm verilere göre en güvenilir bahis önerisi
+
+5. **RİSK ANALİZİ**: Potansiyel riskler ve uyarılar
 
 Yanıtını SADECE JSON formatında ver:
 {
+  "myAnalysis": {
+    "homeTeam": {
+      "name": "${home_team}",
+      "form": "Son 5 maç performansı hakkında kısa değerlendirme",
+      "strengths": ["Güçlü yön 1", "Güçlü yön 2"],
+      "weaknesses": ["Zayıf yön 1"]
+    },
+    "awayTeam": {
+      "name": "${away_team}",
+      "form": "Son 5 maç performansı hakkında kısa değerlendirme",
+      "strengths": ["Güçlü yön 1"],
+      "weaknesses": ["Zayıf yön 1", "Zayıf yön 2"]
+    },
+    "keyFactors": ["Bu maçı etkileyecek en önemli faktör 1", "Faktör 2", "Faktör 3"],
+    "myPrediction": {
+      "btts": "yes/no",
+      "overUnder": "over/under",
+      "matchResult": "home/draw/away",
+      "scorePrediction": "1-0 veya 2-1 gibi tahmin"
+    }
+  },
+  "systemEvaluation": {
+    "agreement": "Sistemler arasındaki uyum hakkında 1-2 cümle",
+    "mostReliable": "En güvenilir görünen sistem ve neden",
+    "conflicts": "Sistemler arası çelişkiler varsa"
+  },
   "finalVerdict": {
-    "btts": { "prediction": "yes/no", "confidence": 75, "reasoning": "Kısa gerekçe" },
-    "overUnder": { "prediction": "over/under", "confidence": 70, "reasoning": "Kısa gerekçe" },
-    "matchResult": { "prediction": "home/draw/away", "confidence": 65, "reasoning": "Kısa gerekçe" }
+    "btts": { "prediction": "yes/no", "confidence": 75, "reasoning": "Kendi analizim + sistemlerin değerlendirmesi" },
+    "overUnder": { "prediction": "over/under", "confidence": 70, "reasoning": "Kendi analizim + sistemlerin değerlendirmesi" },
+    "matchResult": { "prediction": "home/draw/away", "confidence": 65, "reasoning": "Kendi analizim + sistemlerin değerlendirmesi" }
   },
   "systemAgreement": {
     "btts": 2,
     "overUnder": 3,
     "matchResult": 1
   },
-  "riskLevel": "medium",
+  "riskLevel": "low/medium/high",
   "bestBet": {
-    "market": "BTTS",
-    "selection": "YES",
+    "market": "En iyi market",
+    "selection": "Seçim",
     "confidence": 78,
-    "reasoning": "En güvenli seçim gerekçesi"
+    "reasoning": "Neden bu en iyi bahis"
   },
-  "masterAnalysis": "Genel değerlendirme ve öneriler (2-3 cümle)",
-  "warnings": ["Varsa uyarılar"]
+  "masterAnalysis": "Master Analist olarak genel değerlendirmem ve taktik öngörülerim (3-4 cümle)",
+  "warnings": ["Risk uyarısı 1", "Risk uyarısı 2"]
 }`;
 
     // Call DeepSeek
