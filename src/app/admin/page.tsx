@@ -444,75 +444,148 @@ export default function AdminPage() {
 
         {/* MODELS TAB */}
         {activeTab === 'models' && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {models.map(model => {
-              const key = model.model_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-              const config = AI_MODELS[key] || AI_MODELS[model.model_name.toLowerCase()] ||
-                            { name: model.model_name, icon: '🤖', color: '#666', gradient: 'from-gray-500 to-gray-600' };
+          <div className="space-y-6">
+            {/* Model Cards Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {models.map(model => {
+                const key = model.model_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const config = AI_MODELS[key] || AI_MODELS[model.model_name.toLowerCase()] ||
+                              { name: model.model_name, icon: '🤖', color: '#666', gradient: 'from-gray-500 to-gray-600' };
 
-              return (
-                <div 
-                  key={model.model_name}
-                  className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden"
-                >
-                  {/* Header */}
-                  <div className={`bg-gradient-to-r ${config.gradient} p-4`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl">{config.icon}</span>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">{config.name}</h3>
-                        <p className="text-white/70 text-sm">{model.total_predictions} tahmin</p>
+                return (
+                  <div 
+                    key={model.model_name}
+                    className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className={`bg-gradient-to-r ${config.gradient} p-4`}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl">{config.icon}</span>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">{config.name}</h3>
+                          <p className="text-white/70 text-sm">{model.total_predictions} tahmin</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Genel Başarı</span>
+                        <span className={`text-2xl font-bold ${
+                          parseFloat(model.overall.accuracy) >= 60 ? 'text-green-400' :
+                          parseFloat(model.overall.accuracy) >= 50 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          %{model.overall.accuracy}
+                        </span>
+                      </div>
+
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r ${config.gradient}`}
+                          style={{ width: `${model.overall.accuracy}%` }}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pt-2">
+                        <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                          <p className="text-xs text-gray-400">BTTS</p>
+                          <p className="text-lg font-bold text-white">%{model.btts.accuracy}</p>
+                          <p className="text-xs text-gray-500">{model.btts.correct}/{model.btts.total}</p>
+                        </div>
+                        <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                          <p className="text-xs text-gray-400">Ü/A</p>
+                          <p className="text-lg font-bold text-white">%{model.over_under.accuracy}</p>
+                          <p className="text-xs text-gray-500">{model.over_under.correct}/{model.over_under.total}</p>
+                        </div>
+                        <div className="text-center p-2 bg-gray-700/50 rounded-lg">
+                          <p className="text-xs text-gray-400">MS</p>
+                          <p className="text-lg font-bold text-white">%{model.match_result.accuracy}</p>
+                          <p className="text-xs text-gray-500">{model.match_result.correct}/{model.match_result.total}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-700">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Ort. Güven</span>
+                          <span className="text-white">~{model.avg_confidence}%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Stats */}
-                  <div className="p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Genel Başarı</span>
-                      <span className={`text-2xl font-bold ${
-                        parseFloat(model.overall.accuracy) >= 60 ? 'text-green-400' :
-                        parseFloat(model.overall.accuracy) >= 50 ? 'text-yellow-400' : 'text-red-400'
-                      }`}>
-                        %{model.overall.accuracy}
-                      </span>
-                    </div>
-
-                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${config.gradient}`}
-                        style={{ width: `${model.overall.accuracy}%` }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 pt-2">
-                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
-                        <p className="text-xs text-gray-400">BTTS</p>
-                        <p className="text-lg font-bold text-white">%{model.btts.accuracy}</p>
-                        <p className="text-xs text-gray-500">{model.btts.correct}/{model.btts.total}</p>
-                      </div>
-                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
-                        <p className="text-xs text-gray-400">Ü/A</p>
-                        <p className="text-lg font-bold text-white">%{model.over_under.accuracy}</p>
-                        <p className="text-xs text-gray-500">{model.over_under.correct}/{model.over_under.total}</p>
-                      </div>
-                      <div className="text-center p-2 bg-gray-700/50 rounded-lg">
-                        <p className="text-xs text-gray-400">MS</p>
-                        <p className="text-lg font-bold text-white">%{model.match_result.accuracy}</p>
-                        <p className="text-xs text-gray-500">{model.match_result.correct}/{model.match_result.total}</p>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-gray-700">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Ort. Güven</span>
-                        <span className="text-white">~{model.avg_confidence}%</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Model Son Tahminler Table */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                📋 Model Tahmin Geçmişi
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-3 text-gray-400 font-medium">Maç</th>
+                      <th className="text-center py-3 px-3 text-gray-400 font-medium">Tarih</th>
+                      {models.slice(0, 5).map(m => {
+                        const key = m.model_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                        const config = AI_MODELS[key] || AI_MODELS[m.model_name.toLowerCase()] || { icon: '🤖' };
+                        return (
+                          <th key={m.model_name} className="text-center py-3 px-2 text-gray-400 font-medium">
+                            <span title={m.model_name}>{config.icon}</span>
+                          </th>
+                        );
+                      })}
+                      <th className="text-center py-3 px-3 text-gray-400 font-medium">Skor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {predictions.filter(p => p.is_settled).slice(0, 10).map(pred => (
+                      <tr key={pred.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td className="py-2 px-3">
+                          <p className="text-white text-sm">{pred.home_team} vs {pred.away_team}</p>
+                          <p className="text-gray-500 text-xs">{pred.league}</p>
+                        </td>
+                        <td className="py-2 px-3 text-center text-gray-400 text-xs">
+                          {new Date(pred.created_at).toLocaleDateString('tr-TR')}
+                        </td>
+                        {models.slice(0, 5).map(m => {
+                          const modelPred = pred.ai_model_predictions?.find((mp: any) => mp.model_name === m.model_name);
+                          if (!modelPred) return <td key={m.model_name} className="py-2 px-2 text-center text-gray-600">-</td>;
+                          
+                          const correct = (modelPred.btts_correct ? 1 : 0) + 
+                                         (modelPred.over_under_correct ? 1 : 0) + 
+                                         (modelPred.match_result_correct ? 1 : 0);
+                          const total = (modelPred.btts_prediction ? 1 : 0) + 
+                                       (modelPred.over_under_prediction ? 1 : 0) + 
+                                       (modelPred.match_result_prediction ? 1 : 0);
+                          
+                          return (
+                            <td key={m.model_name} className="py-2 px-2 text-center">
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${
+                                correct === total && total > 0 ? 'bg-green-500/20 text-green-400' :
+                                correct > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {correct}/{total}
+                              </span>
+                            </td>
+                          );
+                        })}
+                        <td className="py-2 px-3 text-center text-white font-medium">
+                          {pred.actual_home_score}-{pred.actual_away_score}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {predictions.filter(p => p.is_settled).length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  Henüz sonuçlanmış tahmin yok
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         )}
 
@@ -1123,9 +1196,33 @@ function ProPredictionRow({ prediction }: { prediction: any }) {
 
 function PredictionCard({ prediction }: { prediction: Prediction }) {
   const [expanded, setExpanded] = useState(false);
+  const [activeModelTab, setActiveModelTab] = useState<string | null>(null);
+
+  // Model configurations
+  const modelConfigs: Record<string, { icon: string; color: string; name: string }> = {
+    claude: { icon: '🧠', color: 'from-orange-500 to-red-500', name: 'Claude' },
+    gpt4: { icon: '🤖', color: 'from-green-500 to-emerald-500', name: 'GPT-4' },
+    gemini: { icon: '💎', color: 'from-blue-500 to-cyan-500', name: 'Gemini' },
+    perplexity: { icon: '🔮', color: 'from-purple-500 to-violet-500', name: 'Perplexity' },
+    deepseek: { icon: '🔬', color: 'from-indigo-500 to-purple-500', name: 'DeepSeek' },
+    grok: { icon: '⚡', color: 'from-amber-500 to-orange-500', name: 'Grok' },
+    stats_agent: { icon: '📊', color: 'from-teal-500 to-cyan-500', name: 'Stats Agent' },
+    deep_analysis: { icon: '🔍', color: 'from-pink-500 to-rose-500', name: 'Deep Analysis' },
+    odds_agent: { icon: '💰', color: 'from-yellow-500 to-amber-500', name: 'Odds Agent' },
+    strategy_agent: { icon: '♟️', color: 'from-slate-500 to-gray-500', name: 'Strategy Agent' },
+    news_agent: { icon: '📰', color: 'from-sky-500 to-blue-500', name: 'News Agent' },
+  };
+
+  const getModelConfig = (name: string) => {
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    return modelConfigs[key] || modelConfigs[name.toLowerCase()] || { icon: '🤖', color: 'from-gray-500 to-gray-600', name };
+  };
+
+  const models = prediction.ai_model_predictions || [];
 
   return (
     <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+      {/* Header */}
       <div 
         className="p-4 cursor-pointer hover:bg-gray-700/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
@@ -1165,7 +1262,8 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-700 p-4 bg-gray-900/50">
+        <div className="border-t border-gray-700 p-4 bg-gray-900/50 space-y-4">
+          {/* Consensus Summary */}
           <div className="grid md:grid-cols-3 gap-4">
             {/* BTTS */}
             <div className={`p-3 rounded-lg ${
@@ -1222,25 +1320,237 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
             </div>
           </div>
 
+          {/* Score if settled */}
           {prediction.is_settled && (
-            <div className="mt-4 pt-4 border-t border-gray-700">
+            <div className="pt-2 border-t border-gray-700">
               <p className="text-gray-400 text-sm">
-                Skor: <span className="text-white font-medium">{prediction.actual_home_score} - {prediction.actual_away_score}</span>
+                Skor: <span className="text-white font-medium text-lg">{prediction.actual_home_score} - {prediction.actual_away_score}</span>
               </p>
             </div>
           )}
 
-          {/* Individual Model Predictions */}
-          {prediction.ai_model_predictions && prediction.ai_model_predictions.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-700">
-              <p className="text-gray-400 text-sm mb-2">Model Tahminleri:</p>
-              <div className="flex flex-wrap gap-2">
-                {prediction.ai_model_predictions.map((mp: any, idx: number) => (
-                  <span key={idx} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">
-                    {mp.model_name}: {mp.match_result_prediction || '-'}
-                  </span>
-                ))}
+          {/* ═══════════════════════════════════════════════════════════════════
+              AI MODEL DETAILED ANALYSIS TABLE
+              ═══════════════════════════════════════════════════════════════════ */}
+          {models.length > 0 && (
+            <div className="pt-4 border-t border-gray-700">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                🤖 AI Model Analizleri
+                <span className="text-xs text-gray-400 font-normal">({models.length} model)</span>
+              </h4>
+
+              {/* Model Tabs */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {models.map((mp: any) => {
+                  const config = getModelConfig(mp.model_name);
+                  const isActive = activeModelTab === mp.model_name;
+                  return (
+                    <button
+                      key={mp.model_name}
+                      onClick={() => setActiveModelTab(isActive ? null : mp.model_name)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? `bg-gradient-to-r ${config.color} text-white`
+                          : 'bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-700'
+                      }`}
+                    >
+                      <span>{config.icon}</span>
+                      {config.name}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Model Comparison Table */}
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-2 px-3 text-gray-400 font-medium">Model</th>
+                      <th className="text-center py-2 px-3 text-gray-400 font-medium">BTTS</th>
+                      <th className="text-center py-2 px-3 text-gray-400 font-medium">Ü/A 2.5</th>
+                      <th className="text-center py-2 px-3 text-gray-400 font-medium">MS</th>
+                      <th className="text-center py-2 px-3 text-gray-400 font-medium">Öneri</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {models.map((mp: any) => {
+                      const config = getModelConfig(mp.model_name);
+                      return (
+                        <tr 
+                          key={mp.model_name} 
+                          className={`border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer ${
+                            activeModelTab === mp.model_name ? 'bg-gray-700/50' : ''
+                          }`}
+                          onClick={() => setActiveModelTab(activeModelTab === mp.model_name ? null : mp.model_name)}
+                        >
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-2">
+                              <span>{config.icon}</span>
+                              <span className="text-white font-medium">{config.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                              mp.btts_prediction === 'yes' ? 'bg-green-500/20 text-green-400' : 
+                              mp.btts_prediction === 'no' ? 'bg-red-500/20 text-red-400' : 'bg-gray-600 text-gray-400'
+                            }`}>
+                              {mp.btts_prediction?.toUpperCase() || '-'}
+                              {mp.btts_confidence && <span className="ml-1 opacity-70">{mp.btts_confidence}%</span>}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                              mp.over_under_prediction === 'over' ? 'bg-blue-500/20 text-blue-400' : 
+                              mp.over_under_prediction === 'under' ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-600 text-gray-400'
+                            }`}>
+                              {mp.over_under_prediction?.toUpperCase() || '-'}
+                              {mp.over_under_confidence && <span className="ml-1 opacity-70">{mp.over_under_confidence}%</span>}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                              mp.match_result_prediction === 'home' ? 'bg-green-500/20 text-green-400' : 
+                              mp.match_result_prediction === 'away' ? 'bg-red-500/20 text-red-400' : 
+                              mp.match_result_prediction === 'draw' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-600 text-gray-400'
+                            }`}>
+                              {mp.match_result_prediction === 'home' ? '1' : 
+                               mp.match_result_prediction === 'away' ? '2' : 
+                               mp.match_result_prediction === 'draw' ? 'X' : '-'}
+                              {mp.match_result_confidence && <span className="ml-1 opacity-70">{mp.match_result_confidence}%</span>}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            {mp.primary_recommendation_market && (
+                              <span className="text-xs text-cyan-400">
+                                {mp.primary_recommendation_market}: {mp.primary_recommendation_selection}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Selected Model Detail */}
+              {activeModelTab && (
+                <div className="bg-gray-800/80 border border-gray-600 rounded-xl p-4">
+                  {(() => {
+                    const selectedModel = models.find((m: any) => m.model_name === activeModelTab);
+                    if (!selectedModel) return null;
+                    const config = getModelConfig(selectedModel.model_name);
+                    
+                    return (
+                      <>
+                        <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-gray-700`}>
+                          <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${config.color} flex items-center justify-center text-xl`}>
+                            {config.icon}
+                          </div>
+                          <div>
+                            <h5 className="text-white font-bold">{config.name} Detaylı Analiz</h5>
+                            <p className="text-gray-400 text-xs">
+                              {selectedModel.model_type} • {selectedModel.response_time_ms}ms
+                              {selectedModel.tokens_used && ` • ${selectedModel.tokens_used} tokens`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* BTTS Reasoning */}
+                          {selectedModel.btts_reasoning && (
+                            <div className="bg-gray-700/30 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-300">⚽ BTTS Analizi</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  selectedModel.btts_prediction === 'yes' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {selectedModel.btts_prediction?.toUpperCase()} ({selectedModel.btts_confidence}%)
+                                </span>
+                              </div>
+                              <p className="text-gray-400 text-sm leading-relaxed">{selectedModel.btts_reasoning}</p>
+                            </div>
+                          )}
+
+                          {/* Over/Under Reasoning */}
+                          {selectedModel.over_under_reasoning && (
+                            <div className="bg-gray-700/30 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-300">📊 Üst/Alt 2.5 Analizi</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  selectedModel.over_under_prediction === 'over' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                                }`}>
+                                  {selectedModel.over_under_prediction?.toUpperCase()} ({selectedModel.over_under_confidence}%)
+                                </span>
+                              </div>
+                              <p className="text-gray-400 text-sm leading-relaxed">{selectedModel.over_under_reasoning}</p>
+                            </div>
+                          )}
+
+                          {/* Match Result Reasoning */}
+                          {selectedModel.match_result_reasoning && (
+                            <div className="bg-gray-700/30 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-300">🏆 Maç Sonucu Analizi</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${
+                                  selectedModel.match_result_prediction === 'home' ? 'bg-green-500/20 text-green-400' : 
+                                  selectedModel.match_result_prediction === 'away' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
+                                }`}>
+                                  {selectedModel.match_result_prediction === 'home' ? '1 (Ev)' : 
+                                   selectedModel.match_result_prediction === 'away' ? '2 (Dep)' : 'X (Berabere)'} 
+                                  ({selectedModel.match_result_confidence}%)
+                                </span>
+                              </div>
+                              <p className="text-gray-400 text-sm leading-relaxed">{selectedModel.match_result_reasoning}</p>
+                            </div>
+                          )}
+
+                          {/* No reasoning available */}
+                          {!selectedModel.btts_reasoning && !selectedModel.over_under_reasoning && !selectedModel.match_result_reasoning && (
+                            <div className="text-center py-6 text-gray-500">
+                              <span className="text-2xl block mb-2">📭</span>
+                              Bu model için detaylı analiz metni kaydedilmemiş
+                            </div>
+                          )}
+
+                          {/* Accuracy Results */}
+                          {prediction.is_settled && (
+                            <div className="flex gap-3 pt-3 border-t border-gray-700">
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                selectedModel.btts_correct === true ? 'bg-green-500/20 text-green-400' :
+                                selectedModel.btts_correct === false ? 'bg-red-500/20 text-red-400' : 'bg-gray-600 text-gray-400'
+                              }`}>
+                                BTTS: {selectedModel.btts_correct === true ? '✅' : selectedModel.btts_correct === false ? '❌' : '?'}
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                selectedModel.over_under_correct === true ? 'bg-green-500/20 text-green-400' :
+                                selectedModel.over_under_correct === false ? 'bg-red-500/20 text-red-400' : 'bg-gray-600 text-gray-400'
+                              }`}>
+                                Ü/A: {selectedModel.over_under_correct === true ? '✅' : selectedModel.over_under_correct === false ? '❌' : '?'}
+                              </span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                selectedModel.match_result_correct === true ? 'bg-green-500/20 text-green-400' :
+                                selectedModel.match_result_correct === false ? 'bg-red-500/20 text-red-400' : 'bg-gray-600 text-gray-400'
+                              }`}>
+                                MS: {selectedModel.match_result_correct === true ? '✅' : selectedModel.match_result_correct === false ? '❌' : '?'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No models warning */}
+          {models.length === 0 && (
+            <div className="pt-4 border-t border-gray-700 text-center py-6 text-gray-500">
+              <span className="text-2xl block mb-2">🤖</span>
+              Bu tahmin için bireysel model verileri kaydedilmemiş
             </div>
           )}
         </div>
