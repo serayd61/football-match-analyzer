@@ -65,14 +65,19 @@ async function callDeepSeek(prompt: string): Promise<string> {
 function extractPredictions(systemData: any, systemName: string) {
   try {
     if (!systemData?.success) {
+      console.log(`   ⚠️ ${systemName}: No success flag or failed`);
       return { btts: 'unknown', overUnder: 'unknown', matchResult: 'unknown', confidence: 0 };
     }
     
-    const result = systemData.result;
+    console.log(`   📊 ${systemName} response keys:`, Object.keys(systemData));
     
     if (systemName === 'aiConsensus') {
-      // AI Consensus format
-      const analysis = result?.analysis;
+      // AI Consensus format: { success, analysis: { btts, overUnder25, matchResult } }
+      const analysis = systemData.analysis;
+      if (!analysis) {
+        console.log(`   ⚠️ ${systemName}: No analysis found`);
+        return { btts: 'unknown', overUnder: 'unknown', matchResult: 'unknown', confidence: 0 };
+      }
       return {
         btts: analysis?.btts?.prediction || 'unknown',
         bttsConf: analysis?.btts?.confidence || 0,
@@ -84,8 +89,13 @@ function extractPredictions(systemData: any, systemName: string) {
     }
     
     if (systemName === 'quadBrain') {
-      // Quad-Brain format
+      // Quad-Brain format: { success, result: { consensus: { btts, overUnder25, matchResult } } }
+      const result = systemData.result;
       const consensus = result?.consensus;
+      if (!consensus) {
+        console.log(`   ⚠️ ${systemName}: No consensus found`);
+        return { btts: 'unknown', overUnder: 'unknown', matchResult: 'unknown', confidence: 0 };
+      }
       return {
         btts: consensus?.btts?.prediction || 'unknown',
         bttsConf: consensus?.btts?.confidence || 0,
@@ -97,16 +107,34 @@ function extractPredictions(systemData: any, systemName: string) {
     }
     
     if (systemName === 'aiAgents') {
-      // AI Agents format
+      // AI Agents format: { success, result: { reports, finalConsensus } }
+      const result = systemData.result;
       const reports = result?.reports || [];
       const finalConsensus = result?.finalConsensus;
+      
+      // Try to get from finalConsensus first, then from first report
+      let btts = finalConsensus?.btts?.prediction;
+      let bttsConf = finalConsensus?.btts?.confidence || 0;
+      let overUnder = finalConsensus?.overUnder?.prediction || finalConsensus?.overUnder25?.prediction;
+      let overUnderConf = finalConsensus?.overUnder?.confidence || finalConsensus?.overUnder25?.confidence || 0;
+      let matchResult = finalConsensus?.matchResult?.prediction;
+      let matchResultConf = finalConsensus?.matchResult?.confidence || 0;
+      
+      // Fallback to reports if no finalConsensus
+      if (!btts && reports.length > 0) {
+        const firstReport = reports[0];
+        btts = firstReport?.predictions?.btts?.prediction || firstReport?.probabilities?.btts?.prediction;
+        overUnder = firstReport?.predictions?.overUnder?.prediction || firstReport?.probabilities?.overUnder?.prediction;
+        matchResult = firstReport?.predictions?.matchResult?.prediction || firstReport?.probabilities?.matchResult?.prediction;
+      }
+      
       return {
-        btts: finalConsensus?.btts?.prediction || reports[0]?.predictions?.btts?.prediction || 'unknown',
-        bttsConf: finalConsensus?.btts?.confidence || 0,
-        overUnder: finalConsensus?.overUnder?.prediction || 'unknown',
-        overUnderConf: finalConsensus?.overUnder?.confidence || 0,
-        matchResult: finalConsensus?.matchResult?.prediction || 'unknown',
-        matchResultConf: finalConsensus?.matchResult?.confidence || 0,
+        btts: btts || 'unknown',
+        bttsConf,
+        overUnder: overUnder || 'unknown',
+        overUnderConf,
+        matchResult: matchResult || 'unknown',
+        matchResultConf,
       };
     }
     
