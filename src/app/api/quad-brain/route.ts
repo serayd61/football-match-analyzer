@@ -197,13 +197,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<QuadBrain
               btts: result.individualPredictions.gemini.predictions?.btts?.prediction || '',
               bttsConfidence: result.individualPredictions.gemini.predictions?.btts?.confidence || 0,
             } : undefined,
-            perplexity: result.individualPredictions?.perplexity ? {
-              matchResult: result.individualPredictions.perplexity.predictions?.matchResult?.prediction || '',
-              matchResultConfidence: result.individualPredictions.perplexity.predictions?.matchResult?.confidence || 0,
-              over25: result.individualPredictions.perplexity.predictions?.overUnder25?.prediction || '',
-              over25Confidence: result.individualPredictions.perplexity.predictions?.overUnder25?.confidence || 0,
-              btts: result.individualPredictions.perplexity.predictions?.btts?.prediction || '',
-              bttsConfidence: result.individualPredictions.perplexity.predictions?.btts?.confidence || 0,
+            mistral: result.individualPredictions?.mistral ? {
+              matchResult: result.individualPredictions.mistral.predictions?.matchResult?.prediction || '',
+              matchResultConfidence: result.individualPredictions.mistral.predictions?.matchResult?.confidence || 0,
+              over25: result.individualPredictions.mistral.predictions?.overUnder25?.prediction || '',
+              over25Confidence: result.individualPredictions.mistral.predictions?.overUnder25?.confidence || 0,
+              btts: result.individualPredictions.mistral.predictions?.btts?.prediction || '',
+              bttsConfidence: result.individualPredictions.mistral.predictions?.btts?.confidence || 0,
             } : undefined,
           },
           consensus: {
@@ -297,11 +297,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<QuadBrain
         }
         
         // Add Perplexity predictions
-        if (result.individualPredictions?.perplexity) {
-          const pp = result.individualPredictions.perplexity.predictions;
+        if (result.individualPredictions?.mistral) {
+          const pp = result.individualPredictions.mistral.predictions;
           modelPredictions.push({
             session_id: '',
-            model_name: 'perplexity',
+            model_name: 'mistral',
             model_type: 'llm',
             btts_prediction: pp?.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
             btts_confidence: pp?.btts?.confidence || 0,

@@ -357,7 +357,7 @@ export interface QuadBrainResult {
     claude?: AIPrediction;
     gpt4?: AIPrediction;
     gemini?: AIPrediction;
-    perplexity?: AIPrediction;
+    mistral?: AIPrediction;
   };
   
   // Conflict analizi

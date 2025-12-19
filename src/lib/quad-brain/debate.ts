@@ -143,7 +143,7 @@ export function detectConflicts(
     claude?: AIPrediction;
     gpt4?: AIPrediction;
     gemini?: AIPrediction;
-    perplexity?: AIPrediction;
+    mistral?: AIPrediction;
   }
 ): ConflictAnalysis {
   const markets: BettingMarket[] = ['MATCH_RESULT', 'OVER_UNDER_25', 'BTTS'];
@@ -186,11 +186,11 @@ export function detectConflicts(
       }
     }
 
-    if (predictions.perplexity) {
-      const pred = getMarketPrediction(predictions.perplexity, market);
+    if (predictions.mistral) {
+      const pred = getMarketPrediction(predictions.mistral, market);
       if (pred) {
         marketPredictions.push({
-          model: 'perplexity',
+          model: 'mistral',
           ...pred
         });
       }
@@ -364,7 +364,7 @@ function buildDebatePrompt(input: DebateInput): string {
     claude: 'Claude (Tactical Analyst)',
     gpt4: 'GPT-4 (Statistical Engine)',
     gemini: 'Gemini (Pattern Hunter)',
-    perplexity: 'Perplexity (Context Scout)'
+    mistral: 'Mistral (Context Analyst)'
   };
 
   const predictionsText = predictions.map(p => `
@@ -512,7 +512,7 @@ export async function runBatchDebates(
     claude?: AIPrediction;
     gpt4?: AIPrediction;
     gemini?: AIPrediction;
-    perplexity?: AIPrediction;
+    mistral?: AIPrediction;
   },
   matchInfo: DebateInput['matchInfo'],
   dataQuality: DataQualityScore
