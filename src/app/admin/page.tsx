@@ -80,6 +80,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   
   const [overall, setOverall] = useState<OverallStats | null>(null);
   const [models, setModels] = useState<ModelStat[]>([]);
@@ -207,26 +210,121 @@ export default function AdminPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchData();
+    setLastChecked(new Date());
     setRefreshing(false);
   };
 
-  // Settle results
-  const handleSettle = async () => {
-    setSettling(true);
+  // Check/Sync all data from database
+  const handleCheckData = async () => {
+    setChecking(true);
     try {
-      const res = await fetch('/api/cron/settle-admin-predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      console.log('🔍 Checking all data from database...');
+      
+      // Force fresh data fetch
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/enhanced-stats?type=all&limit=200&_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
       });
+      
       const data = await res.json();
       
       if (data.success) {
-        alert(`✅ ${data.settled || 0} tahmin güncellendi!`);
-        await fetchData();
+        const recentData = data.recent || [];
+        
+        // Calculate overall from recent
+        if (recentData.length > 0) {
+          const settled = recentData.filter((p: any) => p.is_settled);
+          const calculatedOverall = {
+            total_predictions: recentData.length,
+            settled_predictions: settled.length,
+            pending_predictions: recentData.length - settled.length,
+            btts: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.btts_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.btts_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            },
+            over_under: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.over_under_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.over_under_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            },
+            match_result: {
+              total: settled.length,
+              correct: settled.filter((p: any) => p.match_result_correct).length,
+              accuracy: settled.length > 0 
+                ? ((settled.filter((p: any) => p.match_result_correct).length / settled.length) * 100).toFixed(1) 
+                : '0'
+            }
+          };
+          setOverall(calculatedOverall);
+        }
+        
+        setModels(data.models || []);
+        setPredictions(recentData);
+        setLastChecked(new Date());
+        
+        console.log(`✅ Data synced: ${recentData.length} predictions, ${data.models?.length || 0} models`);
+        alert(`✅ Veriler güncellendi!\n\n📊 Toplam: ${recentData.length} tahmin\n🤖 Model: ${data.models?.length || 0} AI modeli`);
       } else {
-        alert(`❌ Hata: ${data.error || 'Bilinmeyen hata'}`);
+        alert('❌ Veri çekme hatası');
       }
     } catch (error) {
+      console.error('Check data error:', error);
+      alert('❌ Veri kontrol hatası');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Auto-refresh every hour
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      console.log('⏰ Auto-refresh triggered (1 hour)');
+      handleCheckData();
+    }, 60 * 60 * 1000); // 1 hour
+    
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
+
+  // Settle results - calls sync-predictions API
+  const handleSettle = async () => {
+    setSettling(true);
+    try {
+      // First try the new sync-predictions endpoint
+      const syncRes = await fetch('/api/cron/sync-predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const syncData = await syncRes.json();
+      
+      // Also call settle-admin-predictions for backward compatibility
+      const settleRes = await fetch('/api/cron/settle-admin-predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const settleData = await settleRes.json();
+      
+      const totalSettled = (syncData.settled || 0) + (settleData.settled || 0);
+      
+      if (syncData.success || settleData.success) {
+        alert(`✅ Sonuçlar güncellendi!\n\n📊 Sync: ${syncData.settled || 0} maç\n⚡ Settle: ${settleData.settled || 0} tahmin\n⏳ Bekleyen: ${syncData.skipped || 0}`);
+        await fetchData();
+        setLastChecked(new Date());
+      } else {
+        alert(`❌ Hata: ${syncData.error || settleData.error || 'Bilinmeyen hata'}`);
+      }
+    } catch (error) {
+      console.error('Settle error:', error);
       alert('❌ Sonuç güncelleme hatası');
     } finally {
       setSettling(false);
@@ -275,22 +373,58 @@ export default function AdminPage() {
                 </span>
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Last Checked Time */}
+              {lastChecked && (
+                <span className="text-xs text-gray-500 hidden sm:block">
+                  Son: {lastChecked.toLocaleTimeString('tr-TR')}
+                </span>
+              )}
+              
+              {/* Auto Refresh Toggle */}
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`px-3 py-2 rounded-lg text-sm flex items-center gap-1.5 transition-all ${
+                  autoRefresh 
+                    ? 'bg-green-600/20 text-green-400 border border-green-500/30' 
+                    : 'bg-gray-700/50 text-gray-400 hover:text-white'
+                }`}
+                title={autoRefresh ? 'Otomatik yenileme aktif (1 saat)' : 'Otomatik yenilemeyi aç'}
+              >
+                <span className={autoRefresh ? 'animate-pulse' : ''}>⏰</span>
+                <span className="hidden sm:inline">{autoRefresh ? 'Auto' : 'Auto'}</span>
+              </button>
+              
+              {/* Check Data Button */}
+              <button
+                onClick={handleCheckData}
+                disabled={checking}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                <span className={checking ? 'animate-spin' : ''}>🔍</span>
+                <span className="hidden sm:inline">Verileri Kontrol Et</span>
+                <span className="sm:hidden">Check</span>
+              </button>
+              
+              {/* Refresh Button */}
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
                 <span className={refreshing ? 'animate-spin' : ''}>🔄</span>
-                Yenile
+                <span className="hidden sm:inline">Yenile</span>
               </button>
+              
+              {/* Settle Results Button */}
               <button
                 onClick={handleSettle}
                 disabled={settling}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
                 <span className={settling ? 'animate-spin' : ''}>⚡</span>
-                Sonuçları Güncelle
+                <span className="hidden sm:inline">Sonuçları Güncelle</span>
+                <span className="sm:hidden">Settle</span>
               </button>
             </div>
           </div>

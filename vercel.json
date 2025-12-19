@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/sync-predictions",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/cron/settle-admin-predictions",
       "schedule": "0 */2 * * *"
     },
