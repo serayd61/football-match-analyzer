@@ -1008,29 +1008,31 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
 
     // Filter matches:
     // 1. Not already analyzed with DeepSeek Master
-    // 2. Kick-off time is at least 30 minutes from now
-    // 3. Match is today
+    // 2. Match has NOT started yet (kick-off time is in the future)
+    // 3. Kick-off time is at least 30 minutes from now
+    // 4. Match is today
     const matches: MatchToAnalyze[] = fixtures
       .filter((f: any) => {
         const fixtureId = f.id;
         const kickOffTime = new Date(f.starting_at);
+        const participants = f.participants || [];
+        const home = participants.find((p: any) => p.meta?.location === 'home')?.name || 'Unknown';
+        const away = participants.find((p: any) => p.meta?.location === 'away')?.name || 'Unknown';
         
         // Skip if already analyzed
         if (analyzedFixtureIds.has(fixtureId)) {
           return false;
         }
         
-        // Skip if match starts in less than 30 minutes
-        if (kickOffTime < minKickOffTime) {
-          const participants = f.participants || [];
-          const home = participants.find((p: any) => p.meta?.location === 'home')?.name || 'Unknown';
-          const away = participants.find((p: any) => p.meta?.location === 'away')?.name || 'Unknown';
-          console.log(`   ⏭️ Skipping (too soon): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
+        // ⚠️ SKIP if match has already started (kick-off time is in the past)
+        if (kickOffTime <= now) {
+          console.log(`   ⏭️ Skipping (match started): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
           return false;
         }
         
-        // Skip if match is more than 24 hours away
-        if (kickOffTime > maxKickOffTime) {
+        // Skip if match starts in less than 30 minutes
+        if (kickOffTime < minKickOffTime) {
+          console.log(`   ⏭️ Skipping (too soon): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
           return false;
         }
         

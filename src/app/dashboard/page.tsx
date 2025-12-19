@@ -539,6 +539,14 @@ export default function DashboardPage() {
     const match = matchToAnalyze || selectedMatch;
     if (!match || !userProfile?.canAnalyze) return;
     
+    // ⚠️ Maç başlamış mı kontrol et
+    const matchDate = new Date(match.date);
+    const now = new Date();
+    if (matchDate <= now) {
+      setAnalysisError('Bu maç başlamış, analiz yapılamaz.');
+      return;
+    }
+    
     // Maçı seç (eğer parametre olarak geldiyse)
     if (matchToAnalyze) {
       setSelectedMatch(matchToAnalyze);
