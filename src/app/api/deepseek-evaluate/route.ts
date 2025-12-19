@@ -107,35 +107,50 @@ function extractPredictions(systemData: any, systemName: string) {
     }
     
     if (systemName === 'aiAgents') {
-      // AI Agents format: { success, result: { reports, finalConsensus } }
-      const result = systemData.result;
-      const reports = result?.reports || [];
-      const finalConsensus = result?.finalConsensus;
+      // AI Agents format: { success, reports, multiModel: { consensus }, professionalMarkets }
       
-      // Try to get from finalConsensus first, then from first report
-      let btts = finalConsensus?.btts?.prediction;
-      let bttsConf = finalConsensus?.btts?.confidence || 0;
-      let overUnder = finalConsensus?.overUnder?.prediction || finalConsensus?.overUnder25?.prediction;
-      let overUnderConf = finalConsensus?.overUnder?.confidence || finalConsensus?.overUnder25?.confidence || 0;
-      let matchResult = finalConsensus?.matchResult?.prediction;
-      let matchResultConf = finalConsensus?.matchResult?.confidence || 0;
-      
-      // Fallback to reports if no finalConsensus
-      if (!btts && reports.length > 0) {
-        const firstReport = reports[0];
-        btts = firstReport?.predictions?.btts?.prediction || firstReport?.probabilities?.btts?.prediction;
-        overUnder = firstReport?.predictions?.overUnder?.prediction || firstReport?.probabilities?.overUnder?.prediction;
-        matchResult = firstReport?.predictions?.matchResult?.prediction || firstReport?.probabilities?.matchResult?.prediction;
+      // Try multiModel.consensus first (most reliable)
+      const multiModel = systemData.multiModel;
+      if (multiModel?.consensus) {
+        const consensus = multiModel.consensus;
+        return {
+          btts: consensus.btts?.prediction || 'unknown',
+          bttsConf: consensus.btts?.confidence || 0,
+          overUnder: consensus.overUnder25?.prediction || consensus.overUnder?.prediction || 'unknown',
+          overUnderConf: consensus.overUnder25?.confidence || consensus.overUnder?.confidence || 0,
+          matchResult: consensus.matchResult?.prediction || 'unknown',
+          matchResultConf: consensus.matchResult?.confidence || 0,
+        };
       }
       
-      return {
-        btts: btts || 'unknown',
-        bttsConf,
-        overUnder: overUnder || 'unknown',
-        overUnderConf,
-        matchResult: matchResult || 'unknown',
-        matchResultConf,
-      };
+      // Try professionalMarkets as fallback
+      const pm = systemData.professionalMarkets;
+      if (pm?.enabled) {
+        return {
+          btts: pm.btts?.prediction || 'unknown',
+          bttsConf: pm.btts?.confidence || 0,
+          overUnder: pm.overUnder25?.prediction || 'unknown',
+          overUnderConf: pm.overUnder25?.confidence || 0,
+          matchResult: pm.matchResult?.prediction || 'unknown',
+          matchResultConf: pm.matchResult?.confidence || 0,
+        };
+      }
+      
+      // Last resort: try reports
+      const reports = systemData.reports || [];
+      if (reports.length > 0) {
+        const firstReport = reports[0];
+        return {
+          btts: firstReport?.predictions?.btts?.prediction || 'unknown',
+          bttsConf: firstReport?.predictions?.btts?.confidence || 0,
+          overUnder: firstReport?.predictions?.overUnder?.prediction || 'unknown',
+          overUnderConf: firstReport?.predictions?.overUnder?.confidence || 0,
+          matchResult: firstReport?.predictions?.matchResult?.prediction || 'unknown',
+          matchResultConf: firstReport?.predictions?.matchResult?.confidence || 0,
+        };
+      }
+      
+      return { btts: 'unknown', overUnder: 'unknown', matchResult: 'unknown', confidence: 0 };
     }
     
     return { btts: 'unknown', overUnder: 'unknown', matchResult: 'unknown', confidence: 0 };
