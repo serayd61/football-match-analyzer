@@ -23,30 +23,58 @@ export async function savePrediction(request: SavePredictionRequest): Promise<{ 
   try {
     const supabase = getSupabaseAdmin();
     
-    const { data, error } = await supabase
+    // First check if record exists
+    const { data: existing } = await supabase
       .from('prediction_records')
-      .upsert({
-        fixture_id: request.fixtureId,
-        home_team: request.homeTeam,
-        away_team: request.awayTeam,
-        league: request.league,
-        match_date: request.matchDate,
-        analysis_type: request.analysisType,
-        predictions: request.predictions,
-        consensus: request.consensus,
-        best_bets: request.bestBets || [],
-        risk_level: request.riskLevel || 'medium',
-        risk_factors: request.riskFactors || [],
-        data_quality_score: request.dataQualityScore || 70,
-        user_id: request.userId || null,
-        status: 'pending',
-      }, { onConflict: 'fixture_id' })
       .select('id')
-      .single();
+      .eq('fixture_id', request.fixtureId)
+      .eq('analysis_type', request.analysisType)
+      .maybeSingle();
+
+    const predictionData = {
+      fixture_id: request.fixtureId,
+      home_team: request.homeTeam,
+      away_team: request.awayTeam,
+      league: request.league,
+      match_date: request.matchDate,
+      analysis_type: request.analysisType,
+      predictions: request.predictions,
+      consensus: request.consensus,
+      best_bets: request.bestBets || [],
+      risk_level: request.riskLevel || 'medium',
+      risk_factors: request.riskFactors || [],
+      data_quality_score: request.dataQualityScore || 70,
+      user_id: request.userId || null,
+      status: 'pending',
+      updated_at: new Date().toISOString(),
+    };
+
+    let data, error;
+
+    if (existing?.id) {
+      // Update existing record
+      ({ data, error } = await supabase
+        .from('prediction_records')
+        .update(predictionData)
+        .eq('id', existing.id)
+        .select('id')
+        .single());
+    } else {
+      // Insert new record
+      ({ data, error } = await supabase
+        .from('prediction_records')
+        .insert(predictionData)
+        .select('id')
+        .single());
+    }
 
     if (error) {
       console.error('Error saving prediction:', error);
       return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: 'No data returned from save operation' };
     }
 
     return { success: true, id: data.id };
