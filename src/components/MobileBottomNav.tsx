@@ -7,7 +7,7 @@ export default function MobileBottomNav() {
 
   const navItems = [
     { href: '/dashboard', label: 'Maçlar', icon: '⚽' },
-    { href: '/coupons', label: 'Kuponlar', icon: '🎫' },
+    { href: '/admin', label: 'Master', icon: '🎯' },
     { href: '/ai-performance', label: 'AI', icon: '🧠' },
     { href: '/profile', label: 'Profil', icon: '👤' },
   ];

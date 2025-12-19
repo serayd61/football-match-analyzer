@@ -76,10 +76,11 @@ export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'predictions' | 'analytics' | 'pro_markets'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'deepseek_master' | 'models' | 'predictions' | 'analytics'>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [masterAnalyses, setMasterAnalyses] = useState<any[]>([]);
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -112,8 +113,8 @@ export default function AdminPage() {
       // Add cache-busting timestamp
       const timestamp = Date.now();
       
-      // Fetch both regular stats and professional market stats in parallel
-      const [res, proMarketRes] = await Promise.all([
+      // Fetch all stats in parallel
+      const [res, proMarketRes, masterRes] = await Promise.all([
         fetch(`/api/admin/enhanced-stats?type=all&limit=100&_t=${timestamp}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache' }
@@ -121,11 +122,22 @@ export default function AdminPage() {
         fetch(`/api/admin/professional-markets?_t=${timestamp}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`/api/admin/deepseek-master?limit=50&_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
         })
       ]);
       
       const data = await res.json();
       const proMarketData = await proMarketRes.json();
+      const masterData = await masterRes.json();
+      
+      // Set DeepSeek Master data
+      if (masterData.success) {
+        setMasterAnalyses(masterData.recent || []);
+        console.log('🎯 DeepSeek Master analyses:', masterData.recent?.length || 0);
+      }
       
       console.log('📊 API Response:', data);
       console.log('📊 Recent predictions count:', data.recent?.length || 0);
@@ -457,10 +469,10 @@ export default function AdminPage() {
           <div className="flex gap-2 mt-4 flex-wrap">
             {[
               { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
+              { id: 'deepseek_master', label: '🎯 DeepSeek Master', icon: '🎯' },
               { id: 'models', label: '🤖 AI Modelleri', icon: '🤖' },
               { id: 'predictions', label: '📝 Tahminler', icon: '📝' },
               { id: 'analytics', label: '📈 Analitik', icon: '📈' },
-              { id: 'pro_markets', label: '🎰 Pro Markets', icon: '🎰' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -595,6 +607,185 @@ export default function AdminPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DEEPSEEK MASTER TAB */}
+        {activeTab === 'deepseek_master' && (
+          <div className="space-y-6">
+            {/* Header Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🎯</span>
+                  <span className="text-gray-400 text-sm">Toplam Analiz</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{masterAnalyses.length}</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">✅</span>
+                  <span className="text-gray-400 text-sm">Sonuçlanan</span>
+                </div>
+                <p className="text-3xl font-bold text-green-400">{masterAnalyses.filter(m => m.is_settled).length}</p>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">⏳</span>
+                  <span className="text-gray-400 text-sm">Bekleyen</span>
+                </div>
+                <p className="text-3xl font-bold text-yellow-400">{masterAnalyses.filter(m => !m.is_settled).length}</p>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">📊</span>
+                  <span className="text-gray-400 text-sm">Ort. Güven</span>
+                </div>
+                <p className="text-3xl font-bold text-cyan-400">
+                  %{masterAnalyses.length > 0 
+                    ? Math.round(masterAnalyses.reduce((sum, m) => sum + (m.master?.confidence || 0), 0) / masterAnalyses.length)
+                    : 0}
+                </p>
+              </div>
+            </div>
+
+            {/* Risk Distribution */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>⚠️</span> Risk Dağılımı
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                  <p className="text-3xl font-bold text-green-400">
+                    {masterAnalyses.filter(m => m.master?.riskLevel === 'low').length}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">Düşük Risk</p>
+                </div>
+                <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                  <p className="text-3xl font-bold text-yellow-400">
+                    {masterAnalyses.filter(m => m.master?.riskLevel === 'medium').length}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">Orta Risk</p>
+                </div>
+                <div className="text-center p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                  <p className="text-3xl font-bold text-red-400">
+                    {masterAnalyses.filter(m => m.master?.riskLevel === 'high').length}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">Yüksek Risk</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Master Analyses */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>🎯</span> DeepSeek Master Analizleri
+                </h3>
+                <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm rounded-full">
+                  {masterAnalyses.length} analiz
+                </span>
+              </div>
+              
+              <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto">
+                {masterAnalyses.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">
+                    <span className="text-4xl mb-4 block">🎯</span>
+                    <p>Henüz DeepSeek Master analizi yok</p>
+                    <p className="text-sm mt-2">Auto-Analyze butonuna basarak analiz başlatın</p>
+                  </div>
+                ) : (
+                  masterAnalyses.map((analysis) => (
+                    <div key={analysis.id} className="p-4 hover:bg-gray-700/30 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-bold text-white">
+                            {analysis.home_team} vs {analysis.away_team}
+                          </p>
+                          <p className="text-sm text-gray-400">{analysis.league}</p>
+                          <p className="text-xs text-gray-500">{new Date(analysis.match_date).toLocaleDateString('tr-TR')}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {analysis.is_settled && (
+                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                              {analysis.actual_score}
+                            </span>
+                          )}
+                          <span className={`px-2 py-1 text-xs rounded ${
+                            analysis.master?.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
+                            analysis.master?.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {analysis.master?.riskLevel?.toUpperCase() || 'N/A'}
+                          </span>
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">
+                            %{analysis.master?.confidence || 0}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Master Predictions */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
+                          <p className="text-xs text-gray-400">BTTS</p>
+                          <p className="font-bold text-white">{analysis.master?.btts?.prediction?.toUpperCase() || '-'}</p>
+                          <p className="text-xs text-gray-500">%{analysis.master?.btts?.confidence || 0}</p>
+                        </div>
+                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
+                          <p className="text-xs text-gray-400">Ü/A 2.5</p>
+                          <p className="font-bold text-white">{analysis.master?.overUnder?.prediction?.toUpperCase() || '-'}</p>
+                          <p className="text-xs text-gray-500">%{analysis.master?.overUnder?.confidence || 0}</p>
+                        </div>
+                        <div className="p-2 bg-gray-700/50 rounded-lg text-center">
+                          <p className="text-xs text-gray-400">MS</p>
+                          <p className="font-bold text-white">{analysis.master?.matchResult?.prediction?.toUpperCase() || '-'}</p>
+                          <p className="text-xs text-gray-500">%{analysis.master?.matchResult?.confidence || 0}</p>
+                        </div>
+                      </div>
+                      
+                      {/* System Agreement */}
+                      {analysis.master?.systemAgreement && (
+                        <div className="flex items-center gap-4 text-xs mb-2">
+                          <span className="text-gray-400">Sistem Uyumu:</span>
+                          <span className={`${analysis.master.systemAgreement.btts >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                            BTTS: {analysis.master.systemAgreement.btts}/3
+                          </span>
+                          <span className={`${analysis.master.systemAgreement.overUnder >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                            Ü/A: {analysis.master.systemAgreement.overUnder}/3
+                          </span>
+                          <span className={`${analysis.master.systemAgreement.matchResult >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                            MS: {analysis.master.systemAgreement.matchResult}/3
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Best Bet */}
+                      {analysis.master?.bestBet && (
+                        <div className="mt-2 p-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg">
+                          <p className="text-xs text-gray-400 mb-1">🎯 En İyi Bahis:</p>
+                          <p className="text-sm text-white font-medium">
+                            {analysis.master.bestBet.market}: <span className="text-purple-400">{analysis.master.bestBet.selection}</span>
+                            <span className="text-gray-400 ml-2">(%{analysis.master.bestBet.confidence})</span>
+                          </p>
+                          {analysis.master.bestBet.reason && (
+                            <p className="text-xs text-gray-500 mt-1">{analysis.master.bestBet.reason}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Warnings */}
+                      {analysis.master?.warnings && analysis.master.warnings.length > 0 && (
+                        <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-xs text-yellow-400">
+                            ⚠️ {analysis.master.warnings.join(' | ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

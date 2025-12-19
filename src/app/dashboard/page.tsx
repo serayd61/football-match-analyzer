@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import DailyCoupons from '@/components/DailyCoupons';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -529,33 +528,6 @@ export default function DashboardPage() {
     setQuadBrainLoading(false);
   };
 
-  const addToCoupon = (betType: string, selection: string, odds: number) => {
-    if (!selectedMatch) return;
-    
-    const pick = {
-      fixtureId: selectedMatch.id,
-      homeTeam: selectedMatch.homeTeam,
-      awayTeam: selectedMatch.awayTeam,
-      league: selectedMatch.league,
-      matchDate: selectedMatch.date,
-      betType,
-      selection,
-      odds,
-    };
-    
-    const existingPicks = JSON.parse(sessionStorage.getItem('pendingCouponPicks') || '[]');
-    const exists = existingPicks.some(
-      (p: any) => p.fixtureId === pick.fixtureId && p.betType === pick.betType
-    );
-    
-    if (!exists) {
-      existingPicks.push(pick);
-      sessionStorage.setItem('pendingCouponPicks', JSON.stringify(existingPicks));
-    }
-    
-    router.push('/coupons/create');
-  };
-
   // ============================================================================
   // HELPER FUNCTIONS
   // ============================================================================
@@ -785,15 +757,12 @@ export default function DashboardPage() {
               <Link href="/dashboard" className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeNav === 'matches' ? 'bg-green-500/20 text-green-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} onClick={() => setActiveNav('matches')}>
                 <span>📅</span> {l.matches}
               </Link>
-              <Link href="/coupons" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
-                <span>🎫</span> {l.coupons}
-              </Link>
               <Link href="/ai-performance" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all relative">
                 <span>🧠</span> {l.aiPerformance}
                 <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full animate-pulse">NEW</span>
               </Link>
-              <Link href="/coupons/create" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all ml-2">
-                <span>➕</span> {l.createCoupon}
+              <Link href="/admin" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all ml-2">
+                <span>🎯</span> DeepSeek Master
               </Link>
             </nav>
 
@@ -840,10 +809,6 @@ export default function DashboardPage() {
         <DashboardWidgets />
 
         {/* 🎯 DAILY COUPONS - AI Consensus */}
-        <div className="mb-6">
-          <DailyCoupons />
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN - Match List */}
