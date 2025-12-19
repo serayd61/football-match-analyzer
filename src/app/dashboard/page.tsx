@@ -146,7 +146,8 @@ export default function DashboardPage() {
       todayMatches: 'Günün Maçları',
       search: 'Takım ara...',
       allLeagues: 'Tüm Ligler',
-      analyze: 'Analiz Et',
+      analyze: 'Tam Analiz',
+      fullAnalysis: '🎯 Tam Analiz',
       analyzing: 'Analiz ediliyor...',
       aiAgents: 'AI Ajanları',
       standardAnalysis: 'AI Konsensüs',
@@ -212,7 +213,8 @@ export default function DashboardPage() {
       todayMatches: 'Today\'s Matches',
       search: 'Search team...',
       allLeagues: 'All Leagues',
-      analyze: 'Analyze',
+      analyze: 'Full Analysis',
+      fullAnalysis: '🎯 Full Analysis',
       analyzing: 'Analyzing...',
       aiAgents: 'AI Agents',
       standardAnalysis: 'AI Consensus',
@@ -505,12 +507,12 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fixtureId: selectedMatch.id,
-          homeTeam: selectedMatch.homeTeam,
-          awayTeam: selectedMatch.awayTeam,
+      fixtureId: selectedMatch.id,
+      homeTeam: selectedMatch.homeTeam,
+      awayTeam: selectedMatch.awayTeam,
           homeTeamId: selectedMatch.homeTeamId,
           awayTeamId: selectedMatch.awayTeamId,
-          league: selectedMatch.league,
+      league: selectedMatch.league,
           language: lang,
           fetchNews: true,
           trackPerformance: true,
@@ -533,8 +535,14 @@ export default function DashboardPage() {
   };
 
   // 🎯 DEEPSEEK MASTER ANALYSIS - 3 Sistem + DeepSeek Master
-  const runDeepSeekMasterAnalysis = async () => {
-    if (!selectedMatch || !userProfile?.canAnalyze) return;
+  const runDeepSeekMasterAnalysis = async (matchToAnalyze?: Match) => {
+    const match = matchToAnalyze || selectedMatch;
+    if (!match || !userProfile?.canAnalyze) return;
+    
+    // Maçı seç (eğer parametre olarak geldiyse)
+    if (matchToAnalyze) {
+      setSelectedMatch(matchToAnalyze);
+    }
     
     setAnalysisMode('deepseek');
     setDeepSeekLoading(true);
@@ -550,12 +558,12 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          homeTeam: selectedMatch.homeTeam,
-          awayTeam: selectedMatch.awayTeam,
-          homeTeamId: selectedMatch.homeTeamId,
-          awayTeamId: selectedMatch.awayTeamId,
-          league: selectedMatch.league,
-          fixtureId: selectedMatch.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          league: match.league,
+          fixtureId: match.id,
           language: lang,
         }),
       });
@@ -567,12 +575,12 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          homeTeam: selectedMatch.homeTeam,
-          awayTeam: selectedMatch.awayTeam,
-          homeTeamId: selectedMatch.homeTeamId,
-          awayTeamId: selectedMatch.awayTeamId,
-          league: selectedMatch.league,
-          fixtureId: selectedMatch.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          league: match.league,
+          fixtureId: match.id,
           language: lang,
         }),
       });
@@ -584,12 +592,12 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          homeTeam: selectedMatch.homeTeam,
-          awayTeam: selectedMatch.awayTeam,
-          homeTeamId: selectedMatch.homeTeamId,
-          awayTeamId: selectedMatch.awayTeamId,
-          league: selectedMatch.league,
-          fixtureId: selectedMatch.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          league: match.league,
+          fixtureId: match.id,
           language: lang,
         }),
       });
@@ -601,10 +609,10 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fixture_id: selectedMatch.id,
-          home_team: selectedMatch.homeTeam,
-          away_team: selectedMatch.awayTeam,
-          league: selectedMatch.league,
+          fixture_id: match.id,
+          home_team: match.homeTeam,
+          away_team: match.awayTeam,
+          league: match.league,
           aiConsensus: aiData,
           quadBrain: quadData,
           aiAgents: agentsData,
@@ -965,20 +973,20 @@ export default function DashboardPage() {
                     const hasPreAnalysis = status?.hasAnalysis;
                     
                     return (
-                      <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
-                              <span className="font-medium text-white">{match.homeTeam}</span>
-                              <span className="text-gray-500 text-xs">vs</span>
-                              <span className="font-medium text-white">{match.awayTeam}</span>
-                              {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
-                              <span>{match.league}</span>
-                            </div>
+                    <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
+                            <span className="font-medium text-white">{match.homeTeam}</span>
+                            <span className="text-gray-500 text-xs">vs</span>
+                            <span className="font-medium text-white">{match.awayTeam}</span>
+                            {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
+                            <span>{match.league}</span>
+                          </div>
                             
                             {/* 3-System Analysis Indicators */}
                             {hasPreAnalysis && (
@@ -1020,25 +1028,25 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                             )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">
-                              {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            <button
-                              onClick={() => analyzeMatch(match)}
-                              disabled={analyzing}
-                              className={`px-3 py-2 text-white text-xs font-medium rounded-lg transition-all disabled:opacity-50 ${
-                                hasPreAnalysis 
-                                  ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400'
-                                  : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400'
-                              }`}
-                            >
-                              {analyzing && selectedMatch?.id === match.id ? '...' : hasPreAnalysis ? '📊' : l.analyze}
-                            </button>
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">
+                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button
+                            onClick={() => runDeepSeekMasterAnalysis(match)}
+                            disabled={deepSeekLoading || analyzing}
+                            className={`px-3 py-2 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
+                              hasPreAnalysis 
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400'
+                                : 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 shadow-lg shadow-orange-500/25'
+                            }`}
+                          >
+                            {(deepSeekLoading || analyzing) && selectedMatch?.id === match.id ? '⏳' : hasPreAnalysis ? '📊' : '🎯 Tam Analiz'}
+                          </button>
                         </div>
                       </div>
+                    </div>
                     );
                   })
                 )}
@@ -1084,7 +1092,7 @@ export default function DashboardPage() {
                 <div className="p-4 border-b border-gray-700/50 space-y-3">
                   {/* 🎯 MAIN BUTTON - Full Analysis */}
                   <button 
-                    onClick={runDeepSeekMasterAnalysis} 
+                    onClick={() => runDeepSeekMasterAnalysis()} 
                     disabled={deepSeekLoading || analyzing || quadBrainLoading || agentLoading || !userProfile?.canAnalyze} 
                     className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 text-white shadow-lg shadow-orange-500/25' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
                   >
@@ -1212,15 +1220,15 @@ export default function DashboardPage() {
                               🧠
                             </button>
                           )}
-                          {agentAnalysis && (
+                      {agentAnalysis && (
                             <button onClick={() => setAnalysisMode('agents')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'agents' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
                               🔮
-                            </button>
+                          </button>
                           )}
                           {deepSeekMasterAnalysis && (
                             <button onClick={() => setAnalysisMode('deepseek')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'deepseek' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
                               🎯 Master
-                            </button>
+                          </button>
                           )}
                         </div>
                       )}
@@ -1637,10 +1645,10 @@ export default function DashboardPage() {
                       {/* Agent Mode */}
                       {analysisMode === 'agents' && agentAnalysis && (
                         <>
-                          <AgentReports 
-                            reports={agentAnalysis.reports}
-                            homeTeam={selectedMatch.homeTeam}
-                            awayTeam={selectedMatch.awayTeam}
+                        <AgentReports 
+                          reports={agentAnalysis.reports}
+                          homeTeam={selectedMatch.homeTeam}
+                          awayTeam={selectedMatch.awayTeam}
                           />
                           
                           {/* Professional Betting Analysis */}
