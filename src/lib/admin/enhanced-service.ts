@@ -194,24 +194,13 @@ export async function savePredictionSession(
   modelPredictions: ModelPrediction[]
 ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
   try {
-    // Check for duplicate
-    const isDuplicate = await checkDuplicatePrediction(
-      session.fixture_id,
-      session.prediction_source
-    );
-
-    if (isDuplicate) {
-      console.log(`⚠️ Duplicate prediction for fixture ${session.fixture_id} from ${session.prediction_source}`);
-      return { 
-        success: false, 
-        error: `Duplicate prediction exists for fixture ${session.fixture_id}` 
-      };
-    }
-
-    // Insert session
+    // Upsert session (update if exists, insert if not)
     const { data: sessionData, error: sessionError } = await supabase
       .from('prediction_sessions')
-      .insert(session)
+      .upsert(session, { 
+        onConflict: 'fixture_id,prediction_source',
+        ignoreDuplicates: false 
+      })
       .select('id')
       .single();
 
@@ -222,13 +211,20 @@ export async function savePredictionSession(
 
     const sessionId = sessionData.id;
 
-    // Insert model predictions
+    // Upsert model predictions
     if (modelPredictions.length > 0) {
       const predictionsWithSession = modelPredictions.map(p => ({
         ...p,
         session_id: sessionId
       }));
 
+      // Delete old predictions for this session first
+      await supabase
+        .from('ai_model_predictions')
+        .delete()
+        .eq('session_id', sessionId);
+
+      // Insert new predictions
       const { error: predError } = await supabase
         .from('ai_model_predictions')
         .insert(predictionsWithSession);
@@ -242,7 +238,7 @@ export async function savePredictionSession(
     // Update daily summary
     await updateDailySummary(modelPredictions.map(p => p.model_name));
 
-    console.log(`✅ Prediction saved: ${session.home_team} vs ${session.away_team} (${session.prediction_source})`);
+    console.log(`✅ Prediction saved/updated: ${session.home_team} vs ${session.away_team} (${session.prediction_source})`);
     return { success: true, sessionId };
 
   } catch (error) {

@@ -57,7 +57,7 @@ export async function recordPrediction(record: Omit<PredictionRecord, 'id' | 'cr
   try {
     const { data, error } = await supabase
       .from(TABLES.PREDICTIONS)
-      .insert({
+      .upsert({
         fixture_id: record.fixtureId,
         home_team: record.homeTeam,
         away_team: record.awayTeam,
@@ -66,7 +66,7 @@ export async function recordPrediction(record: Omit<PredictionRecord, 'id' | 'cr
         predictions: record.predictions,
         consensus: record.consensus,
         created_at: new Date().toISOString()
-      })
+      }, { onConflict: 'fixture_id' })
       .select('id')
       .single();
 
@@ -75,7 +75,7 @@ export async function recordPrediction(record: Omit<PredictionRecord, 'id' | 'cr
       return null;
     }
 
-    console.log(`✅ Prediction recorded: ${data.id}`);
+    console.log(`✅ Prediction recorded/updated: ${data.id}`);
     return data.id;
   } catch (error) {
     console.error('❌ Error recording prediction:', error);
@@ -252,7 +252,7 @@ async function updateModelPerformance(
   const supabase = getSupabase();
   if (!supabase || !accuracy) return;
 
-  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'perplexity'];
+  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'mistral'];
   const markets: BettingMarket[] = ['MATCH_RESULT', 'OVER_UNDER_25', 'BTTS'];
 
   for (const model of models) {
@@ -422,7 +422,7 @@ export async function getModelPerformance(
 export async function getAllModelPerformance(
   period: '7d' | '30d' | '90d' | 'all' = '30d'
 ): Promise<Record<AIModel, ModelPerformance> | null> {
-  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'perplexity'];
+  const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'mistral'];
   const results: Partial<Record<AIModel, ModelPerformance>> = {};
 
   for (const model of models) {
@@ -540,7 +540,7 @@ export async function getDailyStats(date?: Date): Promise<{
 
     const settled = predictions?.filter(p => p.accuracy) || [];
     
-    const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'perplexity'];
+    const models: AIModel[] = ['claude', 'gpt4', 'gemini', 'mistral'];
     const markets: BettingMarket[] = ['MATCH_RESULT', 'OVER_UNDER_25', 'BTTS'];
 
     const byModel: Record<AIModel, { accuracy: number; predictions: number }> = {} as any;

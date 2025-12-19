@@ -25,7 +25,7 @@ export async function savePrediction(request: SavePredictionRequest): Promise<{ 
     
     const { data, error } = await supabase
       .from('prediction_records')
-      .insert({
+      .upsert({
         fixture_id: request.fixtureId,
         home_team: request.homeTeam,
         away_team: request.awayTeam,
@@ -40,7 +40,7 @@ export async function savePrediction(request: SavePredictionRequest): Promise<{ 
         data_quality_score: request.dataQualityScore || 70,
         user_id: request.userId || null,
         status: 'pending',
-      })
+      }, { onConflict: 'fixture_id' })
       .select('id')
       .single();
 
