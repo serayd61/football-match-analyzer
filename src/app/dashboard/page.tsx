@@ -128,6 +128,9 @@ export default function DashboardPage() {
   // NEW: Expanded AI card state
   const [expandedAI, setExpandedAI] = useState<string | null>(null);
   const [showAllReasonings, setShowAllReasonings] = useState(false);
+  
+  // NEW: Pre-analyzed matches status
+  const [matchAnalysisStatus, setMatchAnalysisStatus] = useState<Record<number, any>>({});
 
   // Labels
   const labels = {
@@ -354,8 +357,25 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/matches?date=${selectedDate}`);
       const data = await res.json();
-      setMatches(data.matches || []);
-      setFilteredMatches(data.matches || []);
+      const matchList = data.matches || [];
+      setMatches(matchList);
+      setFilteredMatches(matchList);
+      
+      // Fetch pre-analysis status for all matches
+      if (matchList.length > 0) {
+        const fixtureIds = matchList.map((m: Match) => m.id);
+        try {
+          const statusRes = await fetch('/api/match-analysis-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fixture_ids: fixtureIds })
+          });
+          const statusData = await statusRes.json();
+          setMatchAnalysisStatus(statusData);
+        } catch (e) {
+          console.error('Analysis status fetch error:', e);
+        }
+      }
     } catch (error) {
       console.error('Fetch matches error:', error);
     }
@@ -876,37 +896,87 @@ export default function DashboardPage() {
                 ) : filteredMatches.length === 0 ? (
                   <div className="p-8 text-center text-gray-400">{l.noMatches}</div>
                 ) : (
-                  filteredMatches.map((match) => (
-                    <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
-                            <span className="font-medium text-white">{match.homeTeam}</span>
-                            <span className="text-gray-500 text-xs">vs</span>
-                            <span className="font-medium text-white">{match.awayTeam}</span>
-                            {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
+                  filteredMatches.map((match) => {
+                    const status = matchAnalysisStatus[match.id];
+                    const hasPreAnalysis = status?.hasAnalysis;
+                    
+                    return (
+                      <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
+                              <span className="font-medium text-white">{match.homeTeam}</span>
+                              <span className="text-gray-500 text-xs">vs</span>
+                              <span className="font-medium text-white">{match.awayTeam}</span>
+                              {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
+                              <span>{match.league}</span>
+                            </div>
+                            
+                            {/* 3-System Analysis Indicators */}
+                            {hasPreAnalysis && (
+                              <div className="flex items-center gap-1 mt-2">
+                                {/* AI Consensus */}
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  status.ai_consensus?.available 
+                                    ? 'bg-green-500/20 text-green-400' 
+                                    : 'bg-gray-700/50 text-gray-500'
+                                }`} title={status.ai_consensus?.available ? `BTTS: ${status.ai_consensus.summary?.btts} (${status.ai_consensus.summary?.bttsConf}%)` : ''}>
+                                  <span>🤖</span>
+                                  {status.ai_consensus?.available && status.ai_consensus.summary?.btts && (
+                                    <span className="hidden sm:inline">{status.ai_consensus.summary.btts?.toUpperCase()}</span>
+                                  )}
+                                </div>
+                                
+                                {/* Quad-Brain */}
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  status.quad_brain?.available 
+                                    ? 'bg-cyan-500/20 text-cyan-400' 
+                                    : 'bg-gray-700/50 text-gray-500'
+                                }`} title={status.quad_brain?.available ? `BTTS: ${status.quad_brain.summary?.btts} (${status.quad_brain.summary?.bttsConf}%)` : ''}>
+                                  <span>🧠</span>
+                                  {status.quad_brain?.available && status.quad_brain.summary?.btts && (
+                                    <span className="hidden sm:inline">{status.quad_brain.summary.btts?.toUpperCase()}</span>
+                                  )}
+                                </div>
+                                
+                                {/* AI Agents */}
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  status.ai_agents?.available 
+                                    ? 'bg-purple-500/20 text-purple-400' 
+                                    : 'bg-gray-700/50 text-gray-500'
+                                }`} title={status.ai_agents?.available ? `BTTS: ${status.ai_agents.summary?.btts} (${status.ai_agents.summary?.bttsConf}%)` : ''}>
+                                  <span>🔮</span>
+                                  {status.ai_agents?.available && status.ai_agents.summary?.btts && (
+                                    <span className="hidden sm:inline">{status.ai_agents.summary.btts?.toUpperCase()}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
-                            <span>{match.league}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">
+                              {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <button
+                              onClick={() => analyzeMatch(match)}
+                              disabled={analyzing}
+                              className={`px-3 py-2 text-white text-xs font-medium rounded-lg transition-all disabled:opacity-50 ${
+                                hasPreAnalysis 
+                                  ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400'
+                                  : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400'
+                              }`}
+                            >
+                              {analyzing && selectedMatch?.id === match.id ? '...' : hasPreAnalysis ? '📊' : l.analyze}
+                            </button>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">
-                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <button
-                            onClick={() => analyzeMatch(match)}
-                            disabled={analyzing}
-                            className="px-3 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white text-xs font-medium rounded-lg transition-all disabled:opacity-50"
-                          >
-                            {analyzing && selectedMatch?.id === match.id ? '...' : l.analyze}
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

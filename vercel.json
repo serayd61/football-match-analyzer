@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/auto-analyze-matches",
+      "schedule": "30 * * * *"
+    },
+    {
       "path": "/api/cron/sync-predictions",
       "schedule": "0 * * * *"
     },

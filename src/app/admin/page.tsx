@@ -426,6 +426,30 @@ export default function AdminPage() {
                 <span className="hidden sm:inline">Sonuçları Güncelle</span>
                 <span className="sm:hidden">Settle</span>
               </button>
+              
+              {/* Auto-Analyze Button */}
+              <button
+                onClick={async () => {
+                  const btn = document.activeElement as HTMLButtonElement;
+                  btn.disabled = true;
+                  btn.innerHTML = '<span class="animate-spin">🤖</span> Analyzing...';
+                  try {
+                    const res = await fetch('/api/cron/auto-analyze-matches', { method: 'POST' });
+                    const data = await res.json();
+                    alert(`🤖 Otomatik Analiz Tamamlandı!\n\n✅ Analiz Edilen: ${data.analyzed || 0} maç\n❌ Hata: ${data.errors || 0}\n⏱️ Süre: ${Math.round((data.duration || 0) / 1000)}s`);
+                    await fetchData();
+                  } catch (e) {
+                    alert('Hata: ' + e);
+                  } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>🤖</span> Auto-Analyze';
+                  }
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white rounded-lg flex items-center gap-2"
+              >
+                <span>🤖</span>
+                <span className="hidden sm:inline">Auto-Analyze</span>
+              </button>
             </div>
           </div>
 
