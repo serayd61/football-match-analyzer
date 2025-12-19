@@ -542,7 +542,62 @@ export default function DashboardPage() {
     setAnalysisError(null);
 
     try {
-      const res = await fetch('/api/analyze-deepseek-master', {
+      console.log('🎯 Starting DeepSeek Master Analysis...');
+      
+      // Step 1: Run AI Consensus (existing API)
+      console.log('   📊 Step 1: AI Consensus...');
+      const aiRes = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeTeam: selectedMatch.homeTeam,
+          awayTeam: selectedMatch.awayTeam,
+          homeTeamId: selectedMatch.homeTeamId,
+          awayTeamId: selectedMatch.awayTeamId,
+          league: selectedMatch.league,
+          fixtureId: selectedMatch.id,
+          language: lang,
+        }),
+      });
+      const aiData = await aiRes.json();
+      
+      // Step 2: Run Quad-Brain (existing API)
+      console.log('   🧠 Step 2: Quad-Brain...');
+      const quadRes = await fetch('/api/quad-brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeTeam: selectedMatch.homeTeam,
+          awayTeam: selectedMatch.awayTeam,
+          homeTeamId: selectedMatch.homeTeamId,
+          awayTeamId: selectedMatch.awayTeamId,
+          league: selectedMatch.league,
+          fixtureId: selectedMatch.id,
+          language: lang,
+        }),
+      });
+      const quadData = await quadRes.json();
+      
+      // Step 3: Run Agents (existing API)
+      console.log('   🔮 Step 3: AI Agents...');
+      const agentsRes = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeTeam: selectedMatch.homeTeam,
+          awayTeam: selectedMatch.awayTeam,
+          homeTeamId: selectedMatch.homeTeamId,
+          awayTeamId: selectedMatch.awayTeamId,
+          league: selectedMatch.league,
+          fixtureId: selectedMatch.id,
+          language: lang,
+        }),
+      });
+      const agentsData = await agentsRes.json();
+      
+      // Step 4: Send all 3 results to DeepSeek Master for evaluation
+      console.log('   🎯 Step 4: DeepSeek Master Evaluation...');
+      const masterRes = await fetch('/api/deepseek-evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -550,18 +605,27 @@ export default function DashboardPage() {
           home_team: selectedMatch.homeTeam,
           away_team: selectedMatch.awayTeam,
           league: selectedMatch.league,
-          match_date: selectedMatch.date,
-          kick_off_time: selectedMatch.date,
+          aiConsensus: aiData,
+          quadBrain: quadData,
+          aiAgents: agentsData,
         }),
       });
+      const masterData = await masterRes.json();
       
-      const data = await res.json();
-      
-      if (data.success) {
-        setDeepSeekMasterAnalysis(data);
+      if (masterData.success) {
+        setDeepSeekMasterAnalysis({
+          ...masterData,
+          aiConsensusRaw: aiData,
+          quadBrainRaw: quadData,
+          aiAgentsRaw: agentsData,
+        });
+        // Also set the individual analyses so they can be viewed
+        if (aiData.success) setAnalysis(aiData.result);
+        if (quadData.success) setQuadBrainAnalysis(quadData.result);
+        if (agentsData.success) setAgentAnalysis(agentsData.result);
         fetchUserProfile();
       } else {
-        setAnalysisError(data.error || 'DeepSeek Master analysis failed');
+        setAnalysisError(masterData.error || 'DeepSeek Master analysis failed');
       }
     } catch (error) {
       console.error('DeepSeek Master error:', error);
