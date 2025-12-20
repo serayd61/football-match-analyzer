@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -27,10 +29,14 @@ export async function GET(request: NextRequest) {
       .from('match_full_analysis')
       .select('*')
       .eq('fixture_id', fixtureId)
-      .not('deepseek_master', 'is', null)
-      .single();
+      .maybeSingle();
 
-    if (error || !analysis) {
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    if (!analysis) {
       return NextResponse.json({ success: false, error: 'Analysis not found' }, { status: 404 });
     }
 

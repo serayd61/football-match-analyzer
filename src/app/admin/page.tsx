@@ -1146,8 +1146,24 @@ export default function AdminPage() {
                                 </div>
                               </div>
                               
-                              {/* Individual Model Votes */}
-                              {analysis.systems.ai_consensus?.modelVotes && (
+                              {/* Individual Model Predictions - FIXED: Use individualPredictions structure */}
+                              {analysis.systems.ai_consensus?.individualPredictions ? (
+                                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                                  <p className="text-xs text-gray-400 mb-2">Model Tahminleri:</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(analysis.systems.ai_consensus.individualPredictions).map(([model, pred]: [string, any]) => (
+                                      <div key={model} className="flex justify-between text-xs">
+                                        <span className="text-gray-300 capitalize">{model}</span>
+                                        <span className="text-blue-300">
+                                          BTTS: <span className="text-white font-medium">{pred?.btts?.prediction?.toUpperCase() || '-'}</span> <span className="text-cyan-400">%{pred?.btts?.confidence || 0}</span> | 
+                                          O/U: <span className="text-white font-medium">{pred?.overUnder?.prediction?.toUpperCase() || '-'}</span> <span className="text-cyan-400">%{pred?.overUnder?.confidence || 0}</span> | 
+                                          MS: <span className="text-white font-medium">{pred?.matchResult?.prediction?.toUpperCase() || '-'}</span> <span className="text-cyan-400">%{pred?.matchResult?.confidence || 0}</span>
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : analysis.systems.ai_consensus?.modelVotes ? (
                                 <div className="mt-3 pt-3 border-t border-blue-500/20">
                                   <p className="text-xs text-gray-400 mb-2">Model Oyları:</p>
                                   <div className="space-y-1">
@@ -1161,7 +1177,7 @@ export default function AdminPage() {
                                     ))}
                                   </div>
                                 </div>
-                              )}
+                              ) : null}
                               
                               {/* Reasoning */}
                               {(analysis.systems.ai_consensus?.reasoning || analysis.systems.ai_consensus?.consensus?.reasoning) && (
@@ -1211,7 +1227,7 @@ export default function AdminPage() {
                                 </div>
                               </div>
                               
-                              {/* Individual Model Predictions */}
+                              {/* Individual Model Predictions - FIXED: Show confidence values */}
                               {analysis.systems.quad_brain?.individualPredictions && (
                                 <div className="mt-3 pt-3 border-t border-green-500/20">
                                   <p className="text-xs text-gray-400 mb-2">Model Tahminleri:</p>
@@ -1219,8 +1235,10 @@ export default function AdminPage() {
                                     {Object.entries(analysis.systems.quad_brain.individualPredictions).map(([model, preds]: [string, any]) => (
                                       <div key={model} className="flex justify-between text-xs">
                                         <span className="text-gray-300 capitalize">{model}</span>
-                                        <span className="text-green-300">
-                                          {preds?.btts?.prediction || '-'} | {preds?.overUnder?.prediction || '-'} | {preds?.matchResult?.prediction || '-'}
+                                        <span className="text-green-300 text-right">
+                                          BTTS: <span className="text-white font-medium">{preds?.btts?.prediction?.toUpperCase() || '-'}</span> <span className="text-green-400">%{preds?.btts?.confidence || 0}</span> | 
+                                          O/U: <span className="text-white font-medium">{preds?.overUnder?.prediction?.toUpperCase() || '-'}</span> <span className="text-green-400">%{preds?.overUnder?.confidence || 0}</span> | 
+                                          MS: <span className="text-white font-medium">{preds?.matchResult?.prediction?.toUpperCase() || '-'}</span> <span className="text-green-400">%{preds?.matchResult?.confidence || 0}</span>
                                         </span>
                                       </div>
                                     ))}
@@ -1282,8 +1300,27 @@ export default function AdminPage() {
                                 </div>
                               </div>
                               
-                              {/* Individual Agent Reports */}
-                              {analysis.systems.ai_agents?.agentReports && (
+                              {/* Individual Agent Predictions - FIXED: Use individualPredictions structure */}
+                              {analysis.systems.ai_agents?.individualPredictions ? (
+                                <div className="mt-3 pt-3 border-t border-orange-500/20">
+                                  <p className="text-xs text-gray-400 mb-2">Ajan Tahminleri:</p>
+                                  <div className="space-y-1.5">
+                                    {Object.entries(analysis.systems.ai_agents.individualPredictions).map(([agentName, pred]: [string, any]) => (
+                                      <div key={agentName} className="p-2 bg-gray-800/50 rounded">
+                                        <p className="text-xs font-medium text-orange-300 mb-1 capitalize">{agentName.replace(/_/g, ' ')}</p>
+                                        <div className="flex gap-2 text-xs">
+                                          <span className="text-gray-400">BTTS: <span className="text-white font-medium">{pred?.btts?.prediction?.toUpperCase() || '-'}</span> <span className="text-orange-400">%{pred?.btts?.confidence || 0}</span></span>
+                                          <span className="text-gray-400">Ü/A: <span className="text-white font-medium">{pred?.overUnder?.prediction?.toUpperCase() || '-'}</span> <span className="text-orange-400">%{pred?.overUnder?.confidence || 0}</span></span>
+                                          <span className="text-gray-400">MS: <span className="text-white font-medium">{pred?.matchResult?.prediction?.toUpperCase() || '-'}</span> <span className="text-orange-400">%{pred?.matchResult?.confidence || 0}</span></span>
+                                        </div>
+                                        {pred?.btts?.reasoning && (
+                                          <p className="text-xs text-gray-500 mt-1 line-clamp-1">{pred.btts.reasoning}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : analysis.systems.ai_agents?.agentReports ? (
                                 <div className="mt-3 pt-3 border-t border-orange-500/20">
                                   <p className="text-xs text-gray-400 mb-2">Ajan Raporları:</p>
                                   <div className="space-y-2">
@@ -1302,7 +1339,7 @@ export default function AdminPage() {
                                     ))}
                                   </div>
                                 </div>
-                              )}
+                              ) : null}
                               
                               {/* Professional Markets if available */}
                               {analysis.systems.ai_agents?.professionalMarkets && (
@@ -1505,6 +1542,7 @@ export default function AdminPage() {
                 className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
               >
                 <option value="all">Tüm Kaynaklar</option>
+                <option value="deepseek_master">🎯 DeepSeek Master</option>
                 <option value="quad_brain">Quad-Brain</option>
                 <option value="ai_agents">AI Agents</option>
                 <option value="consensus">Consensus</option>
@@ -1996,13 +2034,17 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
           </div>
           <div className="flex items-center gap-4">
             <span className={`px-2 py-1 rounded text-xs ${
-              prediction.prediction_source === 'quad_brain' 
+              prediction.prediction_source === 'deepseek_master'
+                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/30'
+                : prediction.prediction_source === 'quad_brain' 
                 ? 'bg-purple-500/20 text-purple-400'
                 : prediction.prediction_source === 'ai_agents'
                 ? 'bg-blue-500/20 text-blue-400'
+                : prediction.prediction_source === 'consensus'
+                ? 'bg-green-500/20 text-green-400'
                 : 'bg-gray-500/20 text-gray-400'
             }`}>
-              {prediction.prediction_source}
+              {prediction.prediction_source === 'deepseek_master' ? '🎯 DeepSeek Master' : prediction.prediction_source}
             </span>
             <span className="text-gray-400 text-sm">
               {new Date(prediction.created_at).toLocaleDateString('tr-TR')}
