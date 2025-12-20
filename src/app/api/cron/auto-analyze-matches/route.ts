@@ -239,6 +239,20 @@ async function getMatchContext(homeTeamId: number, awayTeamId: number) {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// Normalize match result prediction to database format (home/draw/away)
+function normalizeMatchResultToDb(pred: string): 'home' | 'draw' | 'away' {
+  if (!pred) return 'draw';
+  const lower = String(pred).toLowerCase().trim();
+  if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
+  if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
+  if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+  return 'draw';
+}
+
+// ============================================================================
 // PARSE AI RESPONSE
 // ============================================================================
 
@@ -936,16 +950,6 @@ async function saveAnalysisWithMaster(
       return false;
     }
 
-    // Normalize match result helper
-    const normalizeMatchResultToDb = (pred: string): 'home' | 'draw' | 'away' => {
-      if (!pred) return 'draw';
-      const lower = String(pred).toLowerCase().trim();
-      if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
-      if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
-      if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
-      return 'draw';
-    };
-
     // Use Master Analyst's final verdict as consensus
     const fullSessionData = {
       ...sessionData,
@@ -967,16 +971,6 @@ async function saveAnalysisWithMaster(
       console.error('Session insert error:', sessionError);
       return false;
     }
-
-    // Normalize match result helper
-    const normalizeMatchResultToDb = (pred: string): 'home' | 'draw' | 'away' => {
-      if (!pred) return 'draw';
-      const lower = String(pred).toLowerCase().trim();
-      if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
-      if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
-      if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
-      return 'draw';
-    };
 
     // Save individual model predictions
     for (const analysis of analyses) {
