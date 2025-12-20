@@ -1892,39 +1892,86 @@ export default function DashboardPage() {
                               <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
                                 <div className="text-green-400 text-lg mb-1">🤖</div>
                                 <div className="text-xs text-gray-400 mb-2">AI Consensus</div>
-                                {deepSeekMasterAnalysis.aiConsensus && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiConsensus.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiConsensus.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiConsensus.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
+                                {(() => {
+                                  // Try consensus from existing analysis first
+                                  const consensus = deepSeekMasterAnalysis.aiConsensusRaw?.consensus;
+                                  // Try analysis from new API response
+                                  const analysis = deepSeekMasterAnalysis.aiConsensusRaw?.analysis || deepSeekMasterAnalysis.aiConsensusRaw?.result;
+                                  
+                                  const btts = consensus?.btts || analysis?.btts;
+                                  const overUnder = consensus?.overUnder || consensus?.overUnder25 || analysis?.overUnder25 || analysis?.overUnder;
+                                  const matchResult = consensus?.matchResult || analysis?.matchResult;
+                                  
+                                  if (btts || overUnder || matchResult) {
+                                    return (
+                                      <div className="space-y-1 text-[10px]">
+                                        <div>BTTS: <span className="text-green-400">{(btts?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
+                                        <div>O/U: <span className="text-blue-400">{(overUnder?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
+                                        <div>MS: <span className="text-yellow-400">{(matchResult?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
+                                      </div>
+                                    );
+                                  }
+                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                })()}
                               </div>
 
                               {/* Quad Brain */}
                               <div className="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/20">
                                 <div className="text-cyan-400 text-lg mb-1">🧠</div>
                                 <div className="text-xs text-gray-400 mb-2">Quad-Brain</div>
-                                {deepSeekMasterAnalysis.quadBrain && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.quadBrain.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.quadBrain.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.quadBrain.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
+                                {(() => {
+                                  // Try consensus from existing analysis first
+                                  const consensus = deepSeekMasterAnalysis.quadBrainRaw?.consensus;
+                                  // Try result.consensus from new API response
+                                  const resultConsensus = deepSeekMasterAnalysis.quadBrainRaw?.result?.consensus;
+                                  const finalConsensus = consensus || resultConsensus;
+                                  
+                                  const btts = finalConsensus?.btts;
+                                  const overUnder = finalConsensus?.overUnder || finalConsensus?.overUnder25;
+                                  const matchResult = finalConsensus?.matchResult;
+                                  
+                                  if (btts || overUnder || matchResult) {
+                                    return (
+                                      <div className="space-y-1 text-[10px]">
+                                        <div>BTTS: <span className="text-green-400">{(btts?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
+                                        <div>O/U: <span className="text-blue-400">{(overUnder?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
+                                        <div>MS: <span className="text-yellow-400">{(matchResult?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
+                                      </div>
+                                    );
+                                  }
+                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                })()}
                               </div>
 
                               {/* AI Agents */}
                               <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
                                 <div className="text-purple-400 text-lg mb-1">🔮</div>
                                 <div className="text-xs text-gray-400 mb-2">AI Agents</div>
-                                {deepSeekMasterAnalysis.aiAgents && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiAgents.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiAgents.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiAgents.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
+                                {(() => {
+                                  // Try consensus from existing analysis first
+                                  const consensus = deepSeekMasterAnalysis.aiAgentsRaw?.consensus;
+                                  // Try multiModel.consensus from new API response
+                                  const multiModelConsensus = deepSeekMasterAnalysis.aiAgentsRaw?.multiModel?.consensus;
+                                  // Try professionalMarkets as fallback
+                                  const professionalMarkets = deepSeekMasterAnalysis.aiAgentsRaw?.professionalMarkets;
+                                  
+                                  const finalConsensus = consensus || multiModelConsensus;
+                                  
+                                  const btts = finalConsensus?.btts || professionalMarkets?.btts;
+                                  const overUnder = finalConsensus?.overUnder || finalConsensus?.overUnder25 || professionalMarkets?.overUnder25;
+                                  const matchResult = finalConsensus?.matchResult || professionalMarkets?.matchResult;
+                                  
+                                  if (btts || overUnder || matchResult) {
+                                    return (
+                                      <div className="space-y-1 text-[10px]">
+                                        <div>BTTS: <span className="text-green-400">{(btts?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
+                                        <div>O/U: <span className="text-blue-400">{(overUnder?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
+                                        <div>MS: <span className="text-yellow-400">{(matchResult?.prediction || '-').toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
+                                      </div>
+                                    );
+                                  }
+                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                })()}
                               </div>
                             </div>
                           </div>
