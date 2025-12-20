@@ -139,6 +139,10 @@ export default function DashboardPage() {
   // NEW: League standings state
   const [leagueStandings, setLeagueStandings] = useState<any>(null);
   const [leagueStandingsLoading, setLeagueStandingsLoading] = useState(false);
+  
+  // NEW: Analyzed matches state (sorted by confidence)
+  const [analyzedMatches, setAnalyzedMatches] = useState<any[]>([]);
+  const [analyzedMatchesLoading, setAnalyzedMatchesLoading] = useState(false);
 
   // Labels
   const labels = {
@@ -392,12 +396,28 @@ export default function DashboardPage() {
     setLoading(false);
   }, [selectedDate]);
 
+  // Fetch analyzed matches sorted by confidence
+  const fetchAnalyzedMatches = useCallback(async () => {
+    setAnalyzedMatchesLoading(true);
+    try {
+      const res = await fetch(`/api/analyzed-matches?date=${selectedDate}&limit=20`);
+      const data = await res.json();
+      if (data.success) {
+        setAnalyzedMatches(data.matches || []);
+      }
+    } catch (error) {
+      console.error('Fetch analyzed matches error:', error);
+    }
+    setAnalyzedMatchesLoading(false);
+  }, [selectedDate]);
+
   useEffect(() => {
     if (session) {
       fetchMatches();
       fetchUserProfile();
+      fetchAnalyzedMatches();
     }
-  }, [session, fetchMatches]);
+  }, [session, fetchMatches, fetchAnalyzedMatches]);
 
   // Fetch league standings when match is selected
   useEffect(() => {
@@ -1122,6 +1142,111 @@ export default function DashboardPage() {
                 ))}
               </select>
             </div>
+
+            {/* Analyzed Matches (Top Confidence) */}
+            {analyzedMatches.length > 0 && (
+              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl border border-purple-500/30 overflow-hidden">
+                <div className="p-4 border-b border-purple-500/30 bg-purple-900/20">
+                  <h2 className="font-bold text-white flex items-center gap-2">
+                    <span>🎯</span> {lang === 'tr' ? 'En İyi Analizler' : 'Top Analyses'}
+                    <span className="ml-auto px-2 py-1 bg-purple-500/30 text-purple-200 text-xs rounded-lg">{analyzedMatches.length}</span>
+                  </h2>
+                  <p className="text-xs text-purple-300/70 mt-1">{lang === 'tr' ? 'DeepSeek Master confidence\'a göre sıralanmış' : 'Sorted by DeepSeek Master confidence'}</p>
+                </div>
+                
+                <div className="max-h-[500px] overflow-y-auto divide-y divide-purple-500/20">
+                  {analyzedMatchesLoading ? (
+                    <div className="p-8 text-center text-purple-300/50">
+                      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      {l.loading}
+                    </div>
+                  ) : (
+                    analyzedMatches.map((analyzedMatch: any) => {
+                      const confidence = analyzedMatch.averageConfidence || 0;
+                      const riskLevel = analyzedMatch.risk_level?.toLowerCase() || 'medium';
+                      
+                      // Confidence color based on value
+                      const confidenceColor = confidence >= 75 ? 'text-green-400' : confidence >= 60 ? 'text-yellow-400' : 'text-orange-400';
+                      const confidenceBg = confidence >= 75 ? 'bg-green-500/20' : confidence >= 60 ? 'bg-yellow-500/20' : 'bg-orange-500/20';
+                      
+                      // Risk color
+                      const riskColor = riskLevel === 'low' ? 'text-green-400' : riskLevel === 'medium' ? 'text-yellow-400' : 'text-red-400';
+                      
+                      return (
+                        <div
+                          key={analyzedMatch.fixture_id}
+                          onClick={async () => {
+                            // Find match in matches list and select it
+                            const match = matches.find(m => m.id === analyzedMatch.fixture_id);
+                            if (match) {
+                              setSelectedMatch(match);
+                              // Load existing analysis
+                              try {
+                                const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${analyzedMatch.fixture_id}`);
+                                if (existingRes.ok) {
+                                  const existingData = await existingRes.json();
+                                  if (existingData.success && existingData.analysis?.deepseek_master) {
+                                    setDeepSeekMasterAnalysis({
+                                      ...existingData.analysis.deepseek_master,
+                                      aiConsensusRaw: existingData.analysis.ai_consensus,
+                                      quadBrainRaw: existingData.analysis.quad_brain,
+                                      aiAgentsRaw: existingData.analysis.ai_agents,
+                                    });
+                                    setAnalysisMode('deepseek');
+                                  }
+                                }
+                              } catch (e) {
+                                console.error('Error loading analysis:', e);
+                              }
+                            }
+                          }}
+                          className={`p-4 hover:bg-purple-900/40 transition-all cursor-pointer ${
+                            selectedMatch?.id === analyzedMatch.fixture_id ? 'bg-purple-800/50 border-l-4 border-purple-400' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="font-medium text-white text-sm mb-1">
+                                {analyzedMatch.home_team} vs {analyzedMatch.away_team}
+                              </div>
+                              <div className="text-xs text-purple-300/70">{analyzedMatch.league}</div>
+                            </div>
+                            <div className={`px-2 py-1 rounded-lg ${confidenceBg} ${confidenceColor} text-xs font-bold ml-2`}>
+                              %{confidence}
+                            </div>
+                          </div>
+                          
+                          {/* Predictions Preview */}
+                          <div className="flex items-center gap-3 text-xs mt-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-purple-300/70">BTTS:</span>
+                              <span className={`font-medium ${analyzedMatch.best_btts === 'yes' ? 'text-green-400' : 'text-red-400'}`}>
+                                {analyzedMatch.best_btts?.toUpperCase() || '-'}
+                              </span>
+                              <span className="text-purple-300/50">({analyzedMatch.best_btts_confidence || 0}%)</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-purple-300/70">O/U:</span>
+                              <span className={`font-medium ${analyzedMatch.best_over_under === 'over' ? 'text-green-400' : 'text-red-400'}`}>
+                                {analyzedMatch.best_over_under?.toUpperCase() || '-'}
+                              </span>
+                              <span className="text-purple-300/50">({analyzedMatch.best_over_under_confidence || 0}%)</span>
+                            </div>
+                          </div>
+                          
+                          {/* Risk Level */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className={`text-xs px-2 py-0.5 rounded ${riskColor} bg-gray-800/50`}>
+                              {lang === 'tr' ? 'Risk' : 'Risk'}: {riskLevel === 'low' ? (lang === 'tr' ? 'Düşük' : 'Low') : riskLevel === 'medium' ? (lang === 'tr' ? 'Orta' : 'Medium') : (lang === 'tr' ? 'Yüksek' : 'High')}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Match List */}
             <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
