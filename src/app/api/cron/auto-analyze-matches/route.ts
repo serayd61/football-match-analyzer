@@ -837,7 +837,7 @@ async function saveAnalysis(
       consensus_btts_confidence: bestAnalysis.consensus.btts.confidence,
       consensus_over_under: bestAnalysis.consensus.overUnder.prediction,
       consensus_over_under_confidence: bestAnalysis.consensus.overUnder.confidence,
-      consensus_match_result: bestAnalysis.consensus.matchResult.prediction,
+      consensus_match_result: normalizeMatchResultToDb(bestAnalysis.consensus.matchResult.prediction),
       consensus_match_result_confidence: bestAnalysis.consensus.matchResult.confidence
     };
 
