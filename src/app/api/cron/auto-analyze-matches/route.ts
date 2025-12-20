@@ -936,6 +936,16 @@ async function saveAnalysisWithMaster(
       return false;
     }
 
+    // Normalize match result helper
+    const normalizeMatchResultToDb = (pred: string): 'home' | 'draw' | 'away' => {
+      if (!pred) return 'draw';
+      const lower = String(pred).toLowerCase().trim();
+      if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
+      if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
+      if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+      return 'draw';
+    };
+
     // Use Master Analyst's final verdict as consensus
     const fullSessionData = {
       ...sessionData,
@@ -943,7 +953,7 @@ async function saveAnalysisWithMaster(
       consensus_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
       consensus_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
       consensus_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
-      consensus_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      consensus_match_result: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       consensus_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence
     };
 
