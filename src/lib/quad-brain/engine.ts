@@ -757,9 +757,22 @@ function parseAIPrediction(
     // Confidence sınırları
     const clampConfidence = (c: number) => Math.min(90, Math.max(50, c || 60));
 
+    // Normalize match result prediction
+    const normalizeMatchResult = (pred: string): 'Home Win' | 'Draw' | 'Away Win' => {
+      if (!pred) return 'Draw';
+      const lower = String(pred).toLowerCase().trim();
+      if (lower.includes('home') || lower === '1' || lower === 'home win') return 'Home Win';
+      if (lower.includes('away') || lower === '2' || lower === 'away win') return 'Away Win';
+      if (lower.includes('draw') || lower === 'x' || lower === '0') return 'Draw';
+      return 'Draw'; // Default fallback
+    };
+
+    const rawMatchResult = parsed.predictions?.matchResult?.prediction || 'Draw';
+    const normalizedMatchResult = normalizeMatchResult(rawMatchResult);
+
     const predictions = {
       matchResult: {
-        prediction: parsed.predictions?.matchResult?.prediction || 'Draw',
+        prediction: normalizedMatchResult,
         confidence: clampConfidence(parsed.predictions?.matchResult?.confidence),
         reasoning: parsed.predictions?.matchResult?.reasoning || '',
         keyFactors: parsed.predictions?.matchResult?.keyFactors || [],

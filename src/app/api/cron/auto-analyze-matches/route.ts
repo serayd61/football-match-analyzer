@@ -260,9 +260,21 @@ function parseAIResponse(text: string): AnalysisResult | null {
           reasoning: parsed.overUnder?.reasoning || ''
         },
         matchResult: {
-          prediction: ['home', 'draw', 'away'].includes(parsed.matchResult?.prediction?.toLowerCase()) 
-            ? parsed.matchResult.prediction.toLowerCase() 
-            : 'draw',
+          prediction: (() => {
+            const pred = parsed.matchResult?.prediction;
+            if (!pred) return 'draw';
+            const lower = String(pred).toLowerCase().trim();
+            // Check for normalized values first
+            if (lower === 'home' || lower === '1') return 'home';
+            if (lower === 'away' || lower === '2') return 'away';
+            if (lower === 'draw' || lower === 'x' || lower === '0') return 'draw';
+            // Check for full format
+            if (lower.includes('home') || lower.includes('home win')) return 'home';
+            if (lower.includes('away') || lower.includes('away win')) return 'away';
+            if (lower.includes('draw')) return 'draw';
+            // Default fallback
+            return 'draw';
+          })(),
           confidence: Math.min(100, Math.max(0, parseInt(parsed.matchResult?.confidence) || 50)),
           reasoning: parsed.matchResult?.reasoning || ''
         },
@@ -669,9 +681,15 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
               reasoning: fv.overUnder?.reasoning || ''
             },
             matchResult: {
-              prediction: (['home', 'draw', 'away'].includes(fv.matchResult?.prediction?.toLowerCase()) 
-                ? fv.matchResult.prediction.toLowerCase() 
-                : 'draw') as 'home' | 'draw' | 'away',
+              prediction: (() => {
+                const pred = fv.matchResult?.prediction;
+                if (!pred) return 'draw';
+                const lower = String(pred).toLowerCase().trim();
+                if (lower === 'home' || lower === '1' || lower.includes('home')) return 'home';
+                if (lower === 'away' || lower === '2' || lower.includes('away')) return 'away';
+                if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+                return 'draw';
+              })() as 'home' | 'draw' | 'away',
               confidence: Math.min(100, Math.max(0, parseInt(fv.matchResult?.confidence) || 50)),
               reasoning: fv.matchResult?.reasoning || ''
             },
