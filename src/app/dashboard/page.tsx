@@ -1223,6 +1223,76 @@ export default function DashboardPage() {
               </select>
             </div>
 
+            {/* Match List */}
+            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+              <div className="p-4 border-b border-gray-700/50">
+                <h2 className="font-bold text-white flex items-center gap-2">
+                  <span>📅</span> {l.todayMatches}
+                  <span className="ml-auto px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">{filteredMatches.length}</span>
+                </h2>
+              </div>
+              
+              <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-700/30">
+                {loading ? (
+                  <div className="p-8 text-center text-gray-400">
+                    <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    {l.loading}
+                  </div>
+                ) : filteredMatches.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">{l.noMatches}</div>
+                ) : (
+                  filteredMatches.map((match) => {
+                    const status = matchAnalysisStatus[match.id];
+                    const hasPreAnalysis = status?.hasAnalysis;
+                    
+                    return (
+                    <div 
+                      key={match.id} 
+                      onClick={() => setSelectedMatch(match)}
+                      className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
+                            <span className="font-medium text-white">{match.homeTeam}</span>
+                            <span className="text-gray-500 text-xs">vs</span>
+                            <span className="font-medium text-white">{match.awayTeam}</span>
+                            {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
+                            <span>{match.league}</span>
+                          </div>
+                            
+                            {/* 3-System Analysis Indicators */}
+                            {hasPreAnalysis && (
+                              <div className="flex items-center gap-1 mt-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500" title="AI Consensus"></span>
+                                <span className="w-2 h-2 rounded-full bg-cyan-500" title="Quad-Brain"></span>
+                                <span className="w-2 h-2 rounded-full bg-purple-500" title="AI Agents"></span>
+                                <span className="text-[10px] text-gray-400 ml-1">✓ Analyzed</span>
+                              </div>
+                            )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            runDeepSeekMasterAnalysis(match);
+                          }}
+                          className="ml-2 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white text-xs font-medium rounded-lg transition-all flex items-center gap-1"
+                          title={l.fullAnalysis}
+                        >
+                          🎯 <span className="hidden sm:inline">{l.fullAnalysis}</span>
+                        </button>
+                      </div>
+                    </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
             {/* Analyzed Matches (Top Confidence) */}
             {analyzedMatches.length > 0 && (
               <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl border border-purple-500/30 overflow-hidden">
@@ -1490,6 +1560,23 @@ export default function DashboardPage() {
               <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
                 {/* Match Header */}
                 <div className="p-6 bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-b border-gray-700/50">
+                  {/* Back Button */}
+                  {(analysis || agentAnalysis || quadBrainAnalysis || deepSeekMasterAnalysis) && (
+                    <button
+                      onClick={() => {
+                        setSelectedMatch(null);
+                        setDeepSeekMasterAnalysis(null);
+                        setAnalysis(null);
+                        setAgentAnalysis(null);
+                        setQuadBrainAnalysis(null);
+                        setAnalysisMode('standard');
+                      }}
+                      className="mb-4 flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 hover:text-white rounded-lg transition-all text-sm"
+                    >
+                      <span>←</span>
+                      <span>{lang === 'tr' ? 'Geri' : lang === 'de' ? 'Zurück' : 'Back'}</span>
+                    </button>
+                  )}
                   <div className="flex items-center justify-center gap-4">
                     {selectedMatch.homeTeamLogo ? (
                       <img src={selectedMatch.homeTeamLogo} alt="" className="w-12 h-12 object-contain" />
