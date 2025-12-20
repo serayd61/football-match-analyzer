@@ -620,43 +620,89 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
 
   try {
     const response = await callDeepSeekDirect(prompt);
-    const parsed = parseAIResponse(response);
+    console.log(`   📝 DeepSeek raw response length: ${response.length} chars`);
+    
+    // ✅ DÜZELTME: DeepSeek'in döndürdüğü JSON'u parse et (finalVerdict içinde nested yapı var)
+    let extendedData: any = {};
+    let finalVerdict: AnalysisResult | null = null;
+    
+    try {
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        extendedData = JSON.parse(jsonMatch[0]);
+        console.log(`   ✅ Parsed JSON successfully`);
+        
+        // DeepSeek finalVerdict içinde nested yapı döndürüyor
+        if (extendedData.finalVerdict) {
+          const fv = extendedData.finalVerdict;
+          finalVerdict = {
+            btts: {
+              prediction: (fv.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no') as 'yes' | 'no',
+              confidence: Math.min(100, Math.max(0, parseInt(fv.btts?.confidence) || 60)),
+              reasoning: fv.btts?.reasoning || ''
+            },
+            overUnder: {
+              prediction: (fv.overUnder?.prediction?.toLowerCase() === 'over' ? 'over' : 'under') as 'over' | 'under',
+              confidence: Math.min(100, Math.max(0, parseInt(fv.overUnder?.confidence) || 60)),
+              reasoning: fv.overUnder?.reasoning || ''
+            },
+            matchResult: {
+              prediction: (['home', 'draw', 'away'].includes(fv.matchResult?.prediction?.toLowerCase()) 
+                ? fv.matchResult.prediction.toLowerCase() 
+                : 'draw') as 'home' | 'draw' | 'away',
+              confidence: Math.min(100, Math.max(0, parseInt(fv.matchResult?.confidence) || 50)),
+              reasoning: fv.matchResult?.reasoning || ''
+            },
+            bestBet: extendedData.bestBet
+          };
+          console.log(`   ✅ Final Verdict: BTTS=${finalVerdict.btts.prediction}(${finalVerdict.btts.confidence}%), O/U=${finalVerdict.overUnder.prediction}(${finalVerdict.overUnder.confidence}%), MS=${finalVerdict.matchResult.prediction}(${finalVerdict.matchResult.confidence}%)`);
+        } else {
+          // Eğer finalVerdict yoksa, eski parseAIResponse fonksiyonunu kullan
+          finalVerdict = parseAIResponse(response);
+        }
+      } else {
+        console.log(`   ⚠️ No JSON found in response, using fallback`);
+      }
+    } catch (parseError) {
+      console.error('   ❌ JSON parse error:', parseError);
+      // Fallback: parseAIResponse kullan
+      finalVerdict = parseAIResponse(response);
+    }
 
-    // Calculate system agreement
+    // Eğer hala null ise fallback değerler kullan
+    if (!finalVerdict) {
+      console.log(`   ⚠️ Using fallback values`);
+      finalVerdict = {
+        btts: { prediction: 'no', confidence: 50, reasoning: 'Parse hatası' },
+        overUnder: { prediction: 'under', confidence: 50, reasoning: 'Parse hatası' },
+        matchResult: { prediction: 'draw', confidence: 50, reasoning: 'Parse hatası' }
+      };
+    }
+
+    // Calculate system agreement based on actual finalVerdict
     const bttsAgreement = [
       aiConsensus.consensus.btts.prediction,
       quadBrain.consensus.btts.prediction,
       aiAgents.consensus.btts.prediction
-    ].filter(p => p === (parsed?.btts.prediction || 'no')).length;
+    ].filter(p => p === finalVerdict.btts.prediction).length;
 
     const ouAgreement = [
       aiConsensus.consensus.overUnder.prediction,
       quadBrain.consensus.overUnder.prediction,
       aiAgents.consensus.overUnder.prediction
-    ].filter(p => p === (parsed?.overUnder.prediction || 'under')).length;
+    ].filter(p => p === finalVerdict.overUnder.prediction).length;
 
     const mrAgreement = [
       aiConsensus.consensus.matchResult.prediction,
       quadBrain.consensus.matchResult.prediction,
       aiAgents.consensus.matchResult.prediction
-    ].filter(p => p === (parsed?.matchResult.prediction || 'draw')).length;
+    ].filter(p => p === finalVerdict.matchResult.prediction).length;
 
-    // Try to parse extended JSON
-    let extendedData: any = {};
-    try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        extendedData = JSON.parse(jsonMatch[0]);
-      }
-    } catch { /* ignore */ }
+    console.log(`   📊 System Agreement: BTTS=${bttsAgreement}/3, O/U=${ouAgreement}/3, MS=${mrAgreement}/3`);
 
     return {
-      finalVerdict: parsed || {
-        btts: { prediction: 'no', confidence: 50, reasoning: 'Parse hatası' },
-        overUnder: { prediction: 'under', confidence: 50, reasoning: 'Parse hatası' },
-        matchResult: { prediction: 'draw', confidence: 50, reasoning: 'Parse hatası' }
-      },
-      confidence: extendedData.overallConfidence || 60,
+      finalVerdict: finalVerdict,
+      confidence: extendedData.overallConfidence || Math.round((finalVerdict.btts.confidence + finalVerdict.overUnder.confidence + finalVerdict.matchResult.confidence) / 3),
       reasoning: extendedData.masterReasoning || 'DeepSeek Master Analyst değerlendirmesi',
       systemAgreement: {
         btts: bttsAgreement,
@@ -666,8 +712,8 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
       riskLevel: extendedData.riskLevel || (Math.min(bttsAgreement, ouAgreement, mrAgreement) >= 2 ? 'low' : 'medium'),
       bestBet: extendedData.bestBet || {
         market: 'BTTS',
-        selection: parsed?.btts.prediction || 'no',
-        confidence: parsed?.btts.confidence || 60,
+        selection: finalVerdict.btts.prediction,
+        confidence: finalVerdict.btts.confidence,
         reason: 'En yüksek sistem uyumu'
       },
       warnings: extendedData.warnings || [],
