@@ -92,20 +92,23 @@ export async function settleMatchResult(request: SettlePredictionRequest): Promi
   try {
     const supabase = getSupabaseAdmin();
     
-    // Calculate derived values
-    const matchResult = request.homeScore > request.awayScore ? '1' : 
-                        request.homeScore < request.awayScore ? '2' : 'X';
-    const totalGoals = request.homeScore + request.awayScore;
-    const btts = request.homeScore > 0 && request.awayScore > 0;
-    const firstHalfGoals = (request.htHomeScore || 0) + (request.htAwayScore || 0);
+    // Calculate derived values - ensure scores are numbers
+    const homeScore = Number(request.homeScore);
+    const awayScore = Number(request.awayScore);
+    
+    const matchResult = homeScore > awayScore ? '1' : 
+                        homeScore < awayScore ? '2' : 'X';
+    const totalGoals = homeScore + awayScore;
+    const btts = homeScore > 0 && awayScore > 0;
+    const firstHalfGoals = (Number(request.htHomeScore) || 0) + (Number(request.htAwayScore) || 0);
     
     // Insert or update match result
     const { error: resultError } = await supabase
       .from('match_results')
       .upsert({
         fixture_id: request.fixtureId,
-        home_score: request.homeScore,
-        away_score: request.awayScore,
+        home_score: homeScore,
+        away_score: awayScore,
         match_result: matchResult,
         total_goals: totalGoals,
         btts: btts,
