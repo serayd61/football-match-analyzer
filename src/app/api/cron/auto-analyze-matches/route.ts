@@ -973,48 +973,77 @@ async function saveAnalysisWithMaster(
 // ============================================================================
 
 async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
-  // Get TODAY's matches from dashboard that haven't been analyzed yet
-  // ⚠️ IMPORTANT: Only get matches that haven't started yet (at least 30 min buffer)
+  // Get matches from dashboard that haven't been analyzed yet
+  // ⚠️ IMPORTANT: Only get matches that haven't started yet (at least 15 min buffer)
   const now = new Date();
-  const minKickOffTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 dakika sonrası
+  const minKickOffTime = new Date(now.getTime() + 15 * 60 * 1000); // 15 dakika sonrası (30'dan 15'e düşürüldü)
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+  
+  // Dashboard gibi bugünden 3 gün sonrasına kadar bak (dashboard 7 gün bakıyor ama cron için 3 gün yeterli)
+  const endDate = new Date(todayStart.getTime() + 3 * 24 * 60 * 60 * 1000);
 
   console.log(`   ⏰ Current time: ${now.toISOString()}`);
-  console.log(`   📅 Today range: ${todayStart.toISOString()} to ${todayEnd.toISOString()}`);
-  console.log(`   ⏰ Min kick-off: ${minKickOffTime.toISOString()} (30 min buffer)`);
+  console.log(`   📅 Date range: ${todayStart.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
+  console.log(`   ⏰ Min kick-off: ${minKickOffTime.toISOString()} (15 min buffer)`);
 
   try {
     // Check existing analyses in match_full_analysis table
-    const { data: existingAnalyses } = await supabase
+    // ✅ DÜZELTME: Tüm kayıtları al ve deepseek_master null olmayanları filtrele
+    // Bu yöntem daha güvenilir çünkü Supabase'in null kontrolü syntax'ı bazen sorunlu olabiliyor
+    const { data: allAnalyses, error: queryError } = await supabase
       .from('match_full_analysis')
-      .select('fixture_id')
-      .not('deepseek_master', 'is', null);
+      .select('fixture_id, deepseek_master');
 
-    const analyzedFixtureIds = new Set(existingAnalyses?.map(a => a.fixture_id) || []);
+    if (queryError) {
+      console.error('   ⚠️ Error querying existing analyses:', queryError);
+    }
+
+    // deepseek_master alanı null olmayan (yani analiz edilmiş) maçları filtrele
+    const analyzedFixtureIds = new Set(
+      (allAnalyses || [])
+        .filter((a: any) => a.deepseek_master !== null && a.deepseek_master !== undefined)
+        .map((a: any) => a.fixture_id)
+    );
     console.log(`   📊 Already analyzed: ${analyzedFixtureIds.size} matches`);
 
-    // Fetch TODAY's fixtures from SportMonks
+    // Fetch fixtures from SportMonks (bugünden 3 gün sonrasına kadar)
     const today = now.toISOString().split('T')[0];
-    const tomorrow = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
     
-    const res = await fetchFromSportmonks(`/fixtures/between/${today}/${tomorrow}`, {
+    console.log(`   📡 Fetching fixtures from SportMonks: ${today} to ${endDateStr}`);
+    
+    const res = await fetchFromSportmonks(`/fixtures/between/${today}/${endDateStr}`, {
       include: 'participants;league',
       per_page: '100'
     });
 
+    if (!res || !res.data) {
+      console.error('   ❌ SportMonks API returned invalid response:', res);
+      return [];
+    }
+
     const fixtures = res.data || [];
-    console.log(`   📡 SportMonks returned: ${fixtures.length} fixtures for today`);
+    console.log(`   📡 SportMonks returned: ${fixtures.length} fixtures`);
 
     // Filter matches:
     // 1. Not already analyzed with DeepSeek Master
     // 2. Match has NOT started yet (kick-off time is in the future)
-    // 3. Kick-off time is at least 30 minutes from now
-    // 4. Match is today
+    // 3. Kick-off time is at least 15 minutes from now
     const matches: MatchToAnalyze[] = fixtures
       .filter((f: any) => {
+        if (!f.starting_at) {
+          return false; // Tarih yoksa atla
+        }
+
         const fixtureId = f.id;
         const kickOffTime = new Date(f.starting_at);
+        
+        // Geçersiz tarih kontrolü
+        if (isNaN(kickOffTime.getTime())) {
+          console.log(`   ⚠️ Invalid date for fixture ${fixtureId}: ${f.starting_at}`);
+          return false;
+        }
+
         const participants = f.participants || [];
         const home = participants.find((p: any) => p.meta?.location === 'home')?.name || 'Unknown';
         const away = participants.find((p: any) => p.meta?.location === 'away')?.name || 'Unknown';
@@ -1026,19 +1055,17 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
         
         // ⚠️ SKIP if match has already started (kick-off time is in the past)
         if (kickOffTime <= now) {
-          console.log(`   ⏭️ Skipping (match started): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
-          return false;
+          return false; // Sessizce atla, çok fazla log olmasın
         }
         
-        // Skip if match starts in less than 30 minutes
+        // Skip if match starts in less than 15 minutes
         if (kickOffTime < minKickOffTime) {
-          console.log(`   ⏭️ Skipping (too soon): ${home} vs ${away} @ ${kickOffTime.toISOString()}`);
-          return false;
+          return false; // Sessizce atla
         }
         
         return true;
       })
-      .slice(0, 15) // Limit to 15 matches per run (save API costs)
+      .slice(0, 20) // Limit to 20 matches per run (15'ten 20'ye çıkarıldı)
       .map((f: any) => {
         const participants = f.participants || [];
         const home = participants.find((p: any) => p.meta?.location === 'home');
@@ -1054,9 +1081,15 @@ async function getMatchesToAnalyze(): Promise<MatchToAnalyze[]> {
       });
 
     console.log(`   ✅ Matches to analyze: ${matches.length}`);
+    if (matches.length > 0) {
+      console.log(`   📋 Sample matches: ${matches.slice(0, 3).map(m => `${m.home_team} vs ${m.away_team}`).join(', ')}`);
+    }
     return matches;
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    console.error('   ❌ Error fetching matches:', error);
+    if (error instanceof Error) {
+      console.error('   ❌ Error details:', error.message, error.stack);
+    }
     return [];
   }
 }
