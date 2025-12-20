@@ -22,6 +22,7 @@ interface Match {
   homeTeamLogo?: string;  
   awayTeamLogo?: string;  
   league: string;
+  leagueId?: number;
   leagueLogo?: string;    
   date: string;
   status: string;
@@ -134,6 +135,10 @@ export default function DashboardPage() {
   
   // NEW: Pre-analyzed matches status
   const [matchAnalysisStatus, setMatchAnalysisStatus] = useState<Record<number, any>>({});
+  
+  // NEW: League standings state
+  const [leagueStandings, setLeagueStandings] = useState<any>(null);
+  const [leagueStandingsLoading, setLeagueStandingsLoading] = useState(false);
 
   // Labels
   const labels = {
@@ -393,6 +398,36 @@ export default function DashboardPage() {
       fetchUserProfile();
     }
   }, [session, fetchMatches]);
+
+  // Fetch league standings when match is selected
+  useEffect(() => {
+    const fetchLeagueStandings = async () => {
+      if (!selectedMatch?.leagueId && !selectedMatch?.league) return;
+      
+      setLeagueStandingsLoading(true);
+      try {
+        const params = selectedMatch.leagueId 
+          ? `leagueId=${selectedMatch.leagueId}`
+          : `leagueName=${encodeURIComponent(selectedMatch.league)}`;
+        
+        const res = await fetch(`/api/league-standings?${params}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          setLeagueStandings(data);
+        } else {
+          setLeagueStandings(null);
+        }
+      } catch (error) {
+        console.error('Error fetching league standings:', error);
+        setLeagueStandings(null);
+      } finally {
+        setLeagueStandingsLoading(false);
+      }
+    };
+
+    fetchLeagueStandings();
+  }, [selectedMatch?.leagueId, selectedMatch?.league]);
 
   useEffect(() => {
     let filtered = matches;
@@ -1078,7 +1113,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Analysis Panel */}
+          {/* MIDDLE COLUMN - Analysis Panel */}
           <div className="lg:col-span-2">
             {selectedMatch ? (
               <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
@@ -1868,6 +1903,205 @@ export default function DashboardPage() {
                   <div className="text-7xl mb-4">⚽</div>
                   <p className="text-xl font-medium">{l.selectMatch}</p>
                   <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN - League Standings & Stats */}
+          <div className="lg:col-span-1 space-y-4">
+            {selectedMatch ? (
+              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+                {/* League Header */}
+                <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-700/80">
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedMatch.leagueLogo && (
+                      <img src={selectedMatch.leagueLogo} alt="" className="w-6 h-6" />
+                    )}
+                    <h3 className="font-bold text-white text-sm">{selectedMatch.league}</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">Lig Analiz Tablosu</p>
+                </div>
+
+                {/* Standings Content */}
+                <div className="p-4 max-h-[800px] overflow-y-auto">
+                  {leagueStandingsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : leagueStandings?.standings ? (
+                    <div className="space-y-4">
+                      {/* Overall Standings Table */}
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
+                          <span>📊</span> Genel Puan Tablosu
+                        </h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-gray-700/50">
+                                <th className="text-left py-2 px-2 text-gray-400 font-medium">#</th>
+                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {leagueStandings.standings.slice(0, 10).map((team: any) => (
+                                <tr 
+                                  key={team.teamId} 
+                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
+                                    team.teamId === selectedMatch.homeTeamId || team.teamId === selectedMatch.awayTeamId
+                                      ? 'bg-green-500/10'
+                                      : ''
+                                  }`}
+                                >
+                                  <td className="py-2 px-2 text-gray-300 font-medium">{team.position}</td>
+                                  <td className="py-2 px-2">
+                                    <div className="flex items-center gap-1.5">
+                                      {team.teamLogo && (
+                                        <img src={team.teamLogo} alt="" className="w-4 h-4" />
+                                      )}
+                                      <span className="text-white text-[10px] font-medium truncate max-w-[80px]">
+                                        {team.teamName}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.played}</td>
+                                  <td className="py-2 px-1 text-center text-green-400">{team.won}</td>
+                                  <td className="py-2 px-1 text-center text-yellow-400">{team.drawn}</td>
+                                  <td className="py-2 px-1 text-center text-red-400">{team.lost}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.goalsFor}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.goalsAgainst}</td>
+                                  <td className="py-2 px-1 text-center text-white font-bold">{team.points}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Home Standings Table */}
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
+                          <span>🏠</span> Ev Sahibi İstatistikleri
+                        </h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-gray-700/50">
+                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {leagueStandings.standings
+                                .sort((a: any, b: any) => b.homePoints - a.homePoints)
+                                .slice(0, 10)
+                                .map((team: any) => (
+                                <tr 
+                                  key={team.teamId} 
+                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
+                                    team.teamId === selectedMatch.homeTeamId
+                                      ? 'bg-green-500/10'
+                                      : ''
+                                  }`}
+                                >
+                                  <td className="py-2 px-2">
+                                    <span className="text-white text-[10px] font-medium truncate max-w-[100px] block">
+                                      {team.teamName}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.homePlayed}</td>
+                                  <td className="py-2 px-1 text-center text-green-400">{team.homeWon}</td>
+                                  <td className="py-2 px-1 text-center text-yellow-400">{team.homeDrawn}</td>
+                                  <td className="py-2 px-1 text-center text-red-400">{team.homeLost}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.homeGoalsFor}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.homeGoalsAgainst}</td>
+                                  <td className="py-2 px-1 text-center text-white font-bold">{team.homePoints}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Away Standings Table */}
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
+                          <span>✈️</span> Deplasman İstatistikleri
+                        </h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-gray-700/50">
+                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
+                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {leagueStandings.standings
+                                .sort((a: any, b: any) => b.awayPoints - a.awayPoints)
+                                .slice(0, 10)
+                                .map((team: any) => (
+                                <tr 
+                                  key={team.teamId} 
+                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
+                                    team.teamId === selectedMatch.awayTeamId
+                                      ? 'bg-green-500/10'
+                                      : ''
+                                  }`}
+                                >
+                                  <td className="py-2 px-2">
+                                    <span className="text-white text-[10px] font-medium truncate max-w-[100px] block">
+                                      {team.teamName}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayPlayed}</td>
+                                  <td className="py-2 px-1 text-center text-green-400">{team.awayWon}</td>
+                                  <td className="py-2 px-1 text-center text-yellow-400">{team.awayDrawn}</td>
+                                  <td className="py-2 px-1 text-center text-red-400">{team.awayLost}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayGoalsFor}</td>
+                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayGoalsAgainst}</td>
+                                  <td className="py-2 px-1 text-center text-white font-bold">{team.awayPoints}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <span className="text-2xl block mb-2">📊</span>
+                      <p className="text-xs">Lig verileri yüklenemedi</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 flex items-center justify-center h-[400px] text-gray-400">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <p className="text-sm">Maç seçin</p>
+                  <p className="text-xs text-gray-500 mt-1">Lig analiz tablosu görüntülenecek</p>
                 </div>
               </div>
             )}
