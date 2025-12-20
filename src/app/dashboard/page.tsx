@@ -770,13 +770,22 @@ export default function DashboardPage() {
       
       if (masterData.success) {
         const totalDuration = Date.now() - overallStartTime;
+        // masterData structure: { success, match, duration, deepseekMaster: { finalVerdict, ... }, systemInputs: { ... } }
         setDeepSeekMasterAnalysis({
-          ...masterData,
+          // Extract deepseekMaster data
+          finalVerdict: masterData.deepseekMaster?.finalVerdict,
+          confidence: masterData.deepseekMaster?.confidence,
+          reasoning: masterData.deepseekMaster?.reasoning,
+          systemAgreement: masterData.deepseekMaster?.systemAgreement,
+          riskLevel: masterData.deepseekMaster?.riskLevel,
+          bestBet: masterData.deepseekMaster?.bestBet,
+          warnings: masterData.deepseekMaster?.warnings,
+          processingTime: masterData.duration || totalDuration,
           // Extract actual data from API responses (they might be wrapped in { success, result })
           aiConsensusRaw: aiData.success ? aiData.result || aiData.analysis : aiData,
           quadBrainRaw: quadData.success ? quadData.result : quadData,
           aiAgentsRaw: agentsData.success ? agentsData.result : agentsData,
-          duration: totalDuration, // Add total duration
+          duration: totalDuration,
         });
         // Also set the individual analyses so they can be viewed
         if (aiData.success) setAnalysis(aiData.result);
