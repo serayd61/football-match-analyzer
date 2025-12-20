@@ -459,9 +459,6 @@ export default function DashboardPage() {
           const existingData = await existingRes.json();
           if (existingData.success && existingData.analysis?.deepseek_master) {
             console.log('✅ Found existing analysis! Auto-loading...');
-            console.log('📊 AI Consensus structure:', JSON.stringify(existingData.analysis.ai_consensus, null, 2));
-            console.log('📊 Quad Brain structure:', JSON.stringify(existingData.analysis.quad_brain, null, 2));
-            console.log('📊 AI Agents structure:', JSON.stringify(existingData.analysis.ai_agents, null, 2));
             
             // DeepSeek Master analysis
             setDeepSeekMasterAnalysis({
@@ -735,9 +732,10 @@ export default function DashboardPage() {
         const totalDuration = Date.now() - overallStartTime;
         setDeepSeekMasterAnalysis({
           ...masterData,
-          aiConsensusRaw: aiData,
-          quadBrainRaw: quadData,
-          aiAgentsRaw: agentsData,
+          // Extract actual data from API responses (they might be wrapped in { success, result })
+          aiConsensusRaw: aiData.success ? aiData.result || aiData.analysis : aiData,
+          quadBrainRaw: quadData.success ? quadData.result : quadData,
+          aiAgentsRaw: agentsData.success ? agentsData.result : agentsData,
           duration: totalDuration, // Add total duration
         });
         // Also set the individual analyses so they can be viewed
@@ -758,6 +756,68 @@ export default function DashboardPage() {
   // ============================================================================
   // HELPER FUNCTIONS
   // ============================================================================
+
+  // Extract predictions from any system response structure
+  const extractSystemPredictions = (raw: any) => {
+    if (!raw) return null;
+    
+    // Try various possible structures
+    // 1. Direct consensus (from database)
+    if (raw.consensus) {
+      return {
+        btts: raw.consensus.btts,
+        overUnder: raw.consensus.overUnder || raw.consensus.overUnder25,
+        matchResult: raw.consensus.matchResult,
+      };
+    }
+    
+    // 2. result.consensus (from API response)
+    if (raw.result?.consensus) {
+      return {
+        btts: raw.result.consensus.btts,
+        overUnder: raw.result.consensus.overUnder || raw.result.consensus.overUnder25,
+        matchResult: raw.result.consensus.matchResult,
+      };
+    }
+    
+    // 3. analysis object (from API response)
+    if (raw.analysis) {
+      return {
+        btts: raw.analysis.btts,
+        overUnder: raw.analysis.overUnder || raw.analysis.overUnder25,
+        matchResult: raw.analysis.matchResult,
+      };
+    }
+    
+    // 4. multiModel.consensus (for AI Agents)
+    if (raw.multiModel?.consensus) {
+      return {
+        btts: raw.multiModel.consensus.btts,
+        overUnder: raw.multiModel.consensus.overUnder || raw.multiModel.consensus.overUnder25,
+        matchResult: raw.multiModel.consensus.matchResult,
+      };
+    }
+    
+    // 5. professionalMarkets (for AI Agents fallback)
+    if (raw.professionalMarkets) {
+      return {
+        btts: raw.professionalMarkets.btts,
+        overUnder: raw.professionalMarkets.overUnder25,
+        matchResult: raw.professionalMarkets.matchResult,
+      };
+    }
+    
+    // 6. reports[0].predictions (for AI Agents last resort)
+    if (raw.reports?.[0]?.predictions) {
+      return {
+        btts: raw.reports[0].predictions.btts,
+        overUnder: raw.reports[0].predictions.overUnder || raw.reports[0].predictions.overUnder25,
+        matchResult: raw.reports[0].predictions.matchResult,
+      };
+    }
+    
+    return null;
+  };
 
   const getVoteStatus = (votes: number, total: number) => {
     if (votes === total) return { text: l.unanimous, color: 'text-green-400', bg: 'bg-green-500/20' };
@@ -1896,31 +1956,18 @@ export default function DashboardPage() {
                                 <div className="text-green-400 text-lg mb-1">🤖</div>
                                 <div className="text-xs text-gray-400 mb-2">AI Consensus</div>
                                 {(() => {
-                                  const raw = deepSeekMasterAnalysis.aiConsensusRaw;
-                                  if (!raw) {
+                                  const predictions = extractSystemPredictions(deepSeekMasterAnalysis.aiConsensusRaw);
+                                  if (!predictions || (!predictions.btts && !predictions.overUnder && !predictions.matchResult)) {
                                     return <div className="text-[10px] text-gray-500">No data</div>;
                                   }
                                   
-                                  // Database'den gelen veri yapısı: { system, models, consensus: { btts, overUnder, matchResult }, ... }
-                                  const consensus = raw.consensus;
-                                  // API'den gelen veri yapısı: { analysis: { btts, overUnder25, matchResult }, ... }
-                                  const analysis = raw.analysis;
-                                  
-                                  const btts = consensus?.btts || analysis?.btts;
-                                  const overUnder = consensus?.overUnder || consensus?.overUnder25 || analysis?.overUnder25 || analysis?.overUnder;
-                                  const matchResult = consensus?.matchResult || analysis?.matchResult;
-                                  
-                                  if (btts || overUnder || matchResult) {
-                                    return (
-                                      <div className="space-y-1 text-[10px]">
-                                        <div>BTTS: <span className="text-green-400">{(String(btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
-                                        <div>O/U: <span className="text-blue-400">{(String(overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
-                                        <div>MS: <span className="text-yellow-400">{(String(matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
-                                      </div>
-                                    );
-                                  }
-                                  console.log('⚠️ AI Consensus: No valid data found', { raw, consensus, analysis });
-                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                  return (
+                                    <div className="space-y-1 text-[10px]">
+                                      <div>BTTS: <span className="text-green-400">{(String(predictions.btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.btts?.confidence || 0}</span></div>
+                                      <div>O/U: <span className="text-blue-400">{(String(predictions.overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.overUnder?.confidence || 0}</span></div>
+                                      <div>MS: <span className="text-yellow-400">{(String(predictions.matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.matchResult?.confidence || 0}</span></div>
+                                    </div>
+                                  );
                                 })()}
                               </div>
 
@@ -1929,33 +1976,18 @@ export default function DashboardPage() {
                                 <div className="text-cyan-400 text-lg mb-1">🧠</div>
                                 <div className="text-xs text-gray-400 mb-2">Quad-Brain</div>
                                 {(() => {
-                                  const raw = deepSeekMasterAnalysis.quadBrainRaw;
-                                  if (!raw) {
+                                  const predictions = extractSystemPredictions(deepSeekMasterAnalysis.quadBrainRaw);
+                                  if (!predictions || (!predictions.btts && !predictions.overUnder && !predictions.matchResult)) {
                                     return <div className="text-[10px] text-gray-500">No data</div>;
                                   }
                                   
-                                  // Database'den gelen veri yapısı: { system, models, consensus: { btts, overUnder, matchResult }, ... }
-                                  const consensus = raw.consensus;
-                                  // API'den gelen veri yapısı: { result: { consensus: { btts, overUnder25, matchResult } }, ... }
-                                  const resultConsensus = raw.result?.consensus;
-                                  
-                                  const finalConsensus = consensus || resultConsensus;
-                                  
-                                  const btts = finalConsensus?.btts;
-                                  const overUnder = finalConsensus?.overUnder || finalConsensus?.overUnder25;
-                                  const matchResult = finalConsensus?.matchResult;
-                                  
-                                  if (btts || overUnder || matchResult) {
-                                    return (
-                                      <div className="space-y-1 text-[10px]">
-                                        <div>BTTS: <span className="text-green-400">{(String(btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
-                                        <div>O/U: <span className="text-blue-400">{(String(overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
-                                        <div>MS: <span className="text-yellow-400">{(String(matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
-                                      </div>
-                                    );
-                                  }
-                                  console.log('⚠️ Quad Brain: No valid data found', { raw, consensus, resultConsensus });
-                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                  return (
+                                    <div className="space-y-1 text-[10px]">
+                                      <div>BTTS: <span className="text-green-400">{(String(predictions.btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.btts?.confidence || 0}</span></div>
+                                      <div>O/U: <span className="text-blue-400">{(String(predictions.overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.overUnder?.confidence || 0}</span></div>
+                                      <div>MS: <span className="text-yellow-400">{(String(predictions.matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.matchResult?.confidence || 0}</span></div>
+                                    </div>
+                                  );
                                 })()}
                               </div>
 
@@ -1964,35 +1996,18 @@ export default function DashboardPage() {
                                 <div className="text-purple-400 text-lg mb-1">🔮</div>
                                 <div className="text-xs text-gray-400 mb-2">AI Agents</div>
                                 {(() => {
-                                  const raw = deepSeekMasterAnalysis.aiAgentsRaw;
-                                  if (!raw) {
+                                  const predictions = extractSystemPredictions(deepSeekMasterAnalysis.aiAgentsRaw);
+                                  if (!predictions || (!predictions.btts && !predictions.overUnder && !predictions.matchResult)) {
                                     return <div className="text-[10px] text-gray-500">No data</div>;
                                   }
                                   
-                                  // Database'den gelen veri yapısı: { system, models, consensus: { btts, overUnder, matchResult }, ... }
-                                  const consensus = raw.consensus;
-                                  // API'den gelen veri yapısı: { multiModel: { consensus: { btts, overUnder25, matchResult } }, ... }
-                                  const multiModelConsensus = raw.multiModel?.consensus;
-                                  // Fallback: professionalMarkets
-                                  const professionalMarkets = raw.professionalMarkets;
-                                  
-                                  const finalConsensus = consensus || multiModelConsensus;
-                                  
-                                  const btts = finalConsensus?.btts || professionalMarkets?.btts;
-                                  const overUnder = finalConsensus?.overUnder || finalConsensus?.overUnder25 || professionalMarkets?.overUnder25;
-                                  const matchResult = finalConsensus?.matchResult || professionalMarkets?.matchResult;
-                                  
-                                  if (btts || overUnder || matchResult) {
-                                    return (
-                                      <div className="space-y-1 text-[10px]">
-                                        <div>BTTS: <span className="text-green-400">{(String(btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{btts?.confidence || 0}</span></div>
-                                        <div>O/U: <span className="text-blue-400">{(String(overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{overUnder?.confidence || 0}</span></div>
-                                        <div>MS: <span className="text-yellow-400">{(String(matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{matchResult?.confidence || 0}</span></div>
-                                      </div>
-                                    );
-                                  }
-                                  console.log('⚠️ AI Agents: No valid data found', { raw, consensus, multiModelConsensus, professionalMarkets });
-                                  return <div className="text-[10px] text-gray-500">No data</div>;
+                                  return (
+                                    <div className="space-y-1 text-[10px]">
+                                      <div>BTTS: <span className="text-green-400">{(String(predictions.btts?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.btts?.confidence || 0}</span></div>
+                                      <div>O/U: <span className="text-blue-400">{(String(predictions.overUnder?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.overUnder?.confidence || 0}</span></div>
+                                      <div>MS: <span className="text-yellow-400">{(String(predictions.matchResult?.prediction || '-')).toUpperCase()}</span> <span className="text-gray-500">%{predictions.matchResult?.confidence || 0}</span></div>
+                                    </div>
+                                  );
                                 })()}
                               </div>
                             </div>
