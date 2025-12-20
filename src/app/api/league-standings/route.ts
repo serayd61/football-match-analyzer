@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStandings, parseStandingsForTeam, LEAGUES } from '@/lib/sportmonks';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 export async function GET(request: NextRequest) {
   try {
