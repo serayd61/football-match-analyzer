@@ -52,7 +52,38 @@ export async function GET(request: NextRequest) {
     });
 
     // Parse each team's stats
-    const teams = flatStandings.map((item: any) => {
+    interface TeamStanding {
+      position: number;
+      teamId: number;
+      teamName: string;
+      teamLogo: string | null;
+      points: number;
+      played: number;
+      won: number;
+      drawn: number;
+      lost: number;
+      goalsFor: number;
+      goalsAgainst: number;
+      goalDifference: number;
+      homePlayed: number;
+      homeWon: number;
+      homeDrawn: number;
+      homeLost: number;
+      homePoints: number;
+      homeGoalsFor: number;
+      homeGoalsAgainst: number;
+      homeGoalDifference: number;
+      awayPlayed: number;
+      awayWon: number;
+      awayDrawn: number;
+      awayLost: number;
+      awayPoints: number;
+      awayGoalsFor: number;
+      awayGoalsAgainst: number;
+      awayGoalDifference: number;
+    }
+
+    const teams: TeamStanding[] = flatStandings.map((item: any) => {
       const details = item.details || [];
       const getDetail = (typeId: number) => details.find((d: any) => d.type_id === typeId)?.value || 0;
 
@@ -92,7 +123,7 @@ export async function GET(request: NextRequest) {
         awayGoalsAgainst: getDetail(151) || 0,
         awayGoalDifference: (getDetail(150) || 0) - (getDetail(151) || 0),
       };
-    }).filter(t => t.teamId > 0).sort((a, b) => a.position - b.position);
+    }).filter((t: TeamStanding) => t.teamId > 0).sort((a: TeamStanding, b: TeamStanding) => a.position - b.position);
 
     return NextResponse.json({
       success: true,
