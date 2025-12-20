@@ -1202,9 +1202,11 @@ export default function DashboardPage() {
                                   
                                   if (existingData.success && existingData.analysis?.deepseek_master) {
                                     console.log('✅ Setting DeepSeek Master analysis...');
-                                    console.log('   - AI Consensus:', existingData.analysis.ai_consensus);
-                                    console.log('   - Quad Brain:', existingData.analysis.quad_brain);
-                                    console.log('   - AI Agents:', existingData.analysis.ai_agents);
+                                    console.log('   - AI Consensus structure:', existingData.analysis.ai_consensus ? 'EXISTS' : 'MISSING');
+                                    console.log('   - AI Consensus keys:', existingData.analysis.ai_consensus ? Object.keys(existingData.analysis.ai_consensus) : 'N/A');
+                                    console.log('   - AI Consensus.consensus:', existingData.analysis.ai_consensus?.consensus);
+                                    console.log('   - Quad Brain structure:', existingData.analysis.quad_brain ? 'EXISTS' : 'MISSING');
+                                    console.log('   - AI Agents structure:', existingData.analysis.ai_agents ? 'EXISTS' : 'MISSING');
                                     
                                     // Set DeepSeek Master with raw system data
                                     setDeepSeekMasterAnalysis({
