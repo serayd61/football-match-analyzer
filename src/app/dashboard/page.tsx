@@ -484,8 +484,16 @@ export default function DashboardPage() {
             console.log('✅ Found existing analysis! Auto-loading...');
             
             // DeepSeek Master analysis
+            // Note: deepseek_master contains: finalVerdict, confidence, reasoning, systemAgreement, riskLevel, bestBet, warnings, processingTime
             setDeepSeekMasterAnalysis({
-              ...existingData.analysis.deepseek_master,
+              finalVerdict: existingData.analysis.deepseek_master?.finalVerdict,
+              confidence: existingData.analysis.deepseek_master?.confidence,
+              reasoning: existingData.analysis.deepseek_master?.reasoning,
+              systemAgreement: existingData.analysis.deepseek_master?.systemAgreement,
+              riskLevel: existingData.analysis.deepseek_master?.riskLevel,
+              bestBet: existingData.analysis.deepseek_master?.bestBet,
+              warnings: existingData.analysis.deepseek_master?.warnings,
+              processingTime: existingData.analysis.deepseek_master?.processingTime,
               aiConsensusRaw: existingData.analysis.ai_consensus,
               quadBrainRaw: existingData.analysis.quad_brain,
               aiAgentsRaw: existingData.analysis.ai_agents,
@@ -796,7 +804,34 @@ export default function DashboardPage() {
       return null;
     }
     
-    console.log('🔍 extractSystemPredictions input:', JSON.stringify(raw, null, 2));
+    // Helper function to normalize prediction strings to standard format
+    const normalizeBtts = (val: any): { prediction: 'yes' | 'no'; confidence: number } | null => {
+      if (!val) return null;
+      if (typeof val === 'object' && val.prediction) return val;
+      const str = String(val).toLowerCase();
+      const confidence = raw.bttsConf || raw.btts?.confidence || 0;
+      return { prediction: (str.includes('yes') || str === '1') ? 'yes' : 'no', confidence };
+    };
+    
+    const normalizeOverUnder = (val: any): { prediction: 'over' | 'under'; confidence: number } | null => {
+      if (!val) return null;
+      if (typeof val === 'object' && val.prediction) return val;
+      const str = String(val).toLowerCase();
+      const confidence = raw.overUnderConf || raw.overUnder?.confidence || raw.overUnder25?.confidence || 0;
+      return { prediction: str.includes('over') ? 'over' : 'under', confidence };
+    };
+    
+    const normalizeMatchResult = (val: any): { prediction: 'home' | 'draw' | 'away'; confidence: number } | null => {
+      if (!val) return null;
+      if (typeof val === 'object' && val.prediction) return val;
+      const str = String(val).toLowerCase();
+      const confidence = raw.matchResultConf || raw.matchResult?.confidence || 0;
+      let prediction: 'home' | 'draw' | 'away' = 'home';
+      if (str.includes('draw') || str === 'x' || str === '0') prediction = 'draw';
+      else if (str.includes('away') || str === '2' || str.includes('win') && str.includes('away')) prediction = 'away';
+      else if (str.includes('home') || str === '1' || str.includes('win') && str.includes('home')) prediction = 'home';
+      return { prediction, confidence };
+    };
     
     // Try various possible structures
     // 1. Direct consensus (from database) - SystemAnalysis format
@@ -857,6 +892,18 @@ export default function DashboardPage() {
         overUnder: raw.reports[0].predictions.overUnder || raw.reports[0].predictions.overUnder25,
         matchResult: raw.reports[0].predictions.matchResult,
       };
+    }
+    
+    // 7. Flat structure with btts, overUnder, matchResult as strings (from DeepSeek evaluate)
+    if (raw.btts || raw.overUnder || raw.matchResult) {
+      console.log('✅ Found: flat structure with string predictions');
+      const btts = normalizeBtts(raw.btts);
+      const overUnder = normalizeOverUnder(raw.overUnder || raw.overUnder25);
+      const matchResult = normalizeMatchResult(raw.matchResult);
+      
+      if (btts || overUnder || matchResult) {
+        return { btts, overUnder, matchResult };
+      }
     }
     
     console.log('❌ extractSystemPredictions: No valid structure found');
@@ -1230,8 +1277,16 @@ export default function DashboardPage() {
                                     console.log('   - AI Agents structure:', existingData.analysis.ai_agents ? 'EXISTS' : 'MISSING');
                                     
                                     // Set DeepSeek Master with raw system data
+                                    // Note: deepseek_master contains: finalVerdict, confidence, reasoning, systemAgreement, riskLevel, bestBet, warnings, processingTime
                                     setDeepSeekMasterAnalysis({
-                                      ...existingData.analysis.deepseek_master,
+                                      finalVerdict: existingData.analysis.deepseek_master?.finalVerdict,
+                                      confidence: existingData.analysis.deepseek_master?.confidence,
+                                      reasoning: existingData.analysis.deepseek_master?.reasoning,
+                                      systemAgreement: existingData.analysis.deepseek_master?.systemAgreement,
+                                      riskLevel: existingData.analysis.deepseek_master?.riskLevel,
+                                      bestBet: existingData.analysis.deepseek_master?.bestBet,
+                                      warnings: existingData.analysis.deepseek_master?.warnings,
+                                      processingTime: existingData.analysis.deepseek_master?.processingTime,
                                       aiConsensusRaw: existingData.analysis.ai_consensus,
                                       quadBrainRaw: existingData.analysis.quad_brain,
                                       aiAgentsRaw: existingData.analysis.ai_agents,
@@ -2047,11 +2102,11 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
-                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                deepSeekMasterAnalysis.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
+                                deepSeekMasterAnalysis.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                                 'bg-red-500/20 text-red-400'
                               }`}>
-                                {deepSeekMasterAnalysis.deepseekMaster?.riskLevel?.toUpperCase()} RISK
+                                {deepSeekMasterAnalysis.riskLevel?.toUpperCase() || 'MEDIUM'} RISK
                               </div>
                             </div>
                             <p className="text-gray-400 text-xs">
@@ -2060,41 +2115,41 @@ export default function DashboardPage() {
                           </div>
 
                           {/* Best Bet */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.bestBet && (
+                          {deepSeekMasterAnalysis.bestBet && (
                             <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/40 rounded-xl p-4">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="text-yellow-400 text-xs font-medium mb-1">🏆 BEST BET</div>
                                   <div className="text-2xl font-bold text-white">
-                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.market} - {deepSeekMasterAnalysis.deepseekMaster.bestBet.selection}
+                                    {deepSeekMasterAnalysis.bestBet.market} - {deepSeekMasterAnalysis.bestBet.selection}
                                   </div>
                                   <div className="text-sm text-gray-400 mt-1">
-                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.reasoning}
+                                    {deepSeekMasterAnalysis.bestBet.reasoning}
                                   </div>
                                 </div>
                                 <div className="text-3xl font-bold text-yellow-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.bestBet.confidence}
+                                  %{deepSeekMasterAnalysis.bestBet.confidence}
                                 </div>
                               </div>
                             </div>
                           )}
 
                           {/* Final Verdict - 3 Markets */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.finalVerdict && (
+                          {deepSeekMasterAnalysis.finalVerdict && (
                             <div className="grid grid-cols-3 gap-3">
                               {/* BTTS */}
                               <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
                                 <div className="text-xs text-gray-500 mb-1">BTTS</div>
                                 <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
+                                  deepSeekMasterAnalysis.finalVerdict.btts?.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
                                 }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction?.toUpperCase()}
+                                  {deepSeekMasterAnalysis.finalVerdict.btts?.prediction?.toUpperCase()}
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.confidence}
+                                  %{deepSeekMasterAnalysis.finalVerdict.btts?.confidence}
                                 </div>
                                 <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.btts}/3 systems agree
+                                  {deepSeekMasterAnalysis.systemAgreement?.btts}/3 systems agree
                                 </div>
                               </div>
 
@@ -2102,15 +2157,15 @@ export default function DashboardPage() {
                               <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
                                 <div className="text-xs text-gray-500 mb-1">Over/Under 2.5</div>
                                 <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction === 'over' ? 'text-green-400' : 'text-red-400'
+                                  deepSeekMasterAnalysis.finalVerdict.overUnder?.prediction === 'over' ? 'text-green-400' : 'text-red-400'
                                 }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction?.toUpperCase()}
+                                  {deepSeekMasterAnalysis.finalVerdict.overUnder?.prediction?.toUpperCase()}
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.confidence}
+                                  %{deepSeekMasterAnalysis.finalVerdict.overUnder?.confidence}
                                 </div>
                                 <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.overUnder}/3 systems agree
+                                  {deepSeekMasterAnalysis.systemAgreement?.overUnder}/3 systems agree
                                 </div>
                               </div>
 
@@ -2118,16 +2173,16 @@ export default function DashboardPage() {
                               <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
                                 <div className="text-xs text-gray-500 mb-1">Match Result</div>
                                 <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'home' ? 'text-blue-400' :
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'away' ? 'text-orange-400' : 'text-gray-400'
+                                  deepSeekMasterAnalysis.finalVerdict.matchResult?.prediction === 'home' ? 'text-blue-400' :
+                                  deepSeekMasterAnalysis.finalVerdict.matchResult?.prediction === 'away' ? 'text-orange-400' : 'text-gray-400'
                                 }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction?.toUpperCase()}
+                                  {deepSeekMasterAnalysis.finalVerdict.matchResult?.prediction?.toUpperCase()}
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.confidence}
+                                  %{deepSeekMasterAnalysis.finalVerdict.matchResult?.confidence}
                                 </div>
                                 <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.matchResult}/3 systems agree
+                                  {deepSeekMasterAnalysis.systemAgreement?.matchResult}/3 systems agree
                                 </div>
                               </div>
                             </div>
@@ -2200,10 +2255,10 @@ export default function DashboardPage() {
                           </div>
 
                           {/* Warnings */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.warnings && deepSeekMasterAnalysis.deepseekMaster.warnings.length > 0 && (
+                          {deepSeekMasterAnalysis.warnings && deepSeekMasterAnalysis.warnings.length > 0 && (
                             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
                               <div className="text-yellow-400 text-xs font-medium mb-2">⚠️ Warnings</div>
-                              {deepSeekMasterAnalysis.deepseekMaster.warnings.map((warning: string, i: number) => (
+                              {deepSeekMasterAnalysis.warnings.map((warning: string, i: number) => (
                                 <div key={i} className="text-sm text-yellow-300/80">• {warning}</div>
                               ))}
                             </div>
