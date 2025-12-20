@@ -779,11 +779,17 @@ export default function DashboardPage() {
 
   // Extract predictions from any system response structure
   const extractSystemPredictions = (raw: any) => {
-    if (!raw) return null;
+    if (!raw) {
+      console.log('⚠️ extractSystemPredictions: raw is null/undefined');
+      return null;
+    }
+    
+    console.log('🔍 extractSystemPredictions input:', JSON.stringify(raw, null, 2));
     
     // Try various possible structures
-    // 1. Direct consensus (from database)
-    if (raw.consensus) {
+    // 1. Direct consensus (from database) - SystemAnalysis format
+    if (raw.consensus && raw.consensus.btts) {
+      console.log('✅ Found: raw.consensus');
       return {
         btts: raw.consensus.btts,
         overUnder: raw.consensus.overUnder || raw.consensus.overUnder25,
@@ -793,6 +799,7 @@ export default function DashboardPage() {
     
     // 2. result.consensus (from API response)
     if (raw.result?.consensus) {
+      console.log('✅ Found: raw.result.consensus');
       return {
         btts: raw.result.consensus.btts,
         overUnder: raw.result.consensus.overUnder || raw.result.consensus.overUnder25,
@@ -802,6 +809,7 @@ export default function DashboardPage() {
     
     // 3. analysis object (from API response)
     if (raw.analysis) {
+      console.log('✅ Found: raw.analysis');
       return {
         btts: raw.analysis.btts,
         overUnder: raw.analysis.overUnder || raw.analysis.overUnder25,
@@ -811,6 +819,7 @@ export default function DashboardPage() {
     
     // 4. multiModel.consensus (for AI Agents)
     if (raw.multiModel?.consensus) {
+      console.log('✅ Found: raw.multiModel.consensus');
       return {
         btts: raw.multiModel.consensus.btts,
         overUnder: raw.multiModel.consensus.overUnder || raw.multiModel.consensus.overUnder25,
@@ -820,6 +829,7 @@ export default function DashboardPage() {
     
     // 5. professionalMarkets (for AI Agents fallback)
     if (raw.professionalMarkets) {
+      console.log('✅ Found: raw.professionalMarkets');
       return {
         btts: raw.professionalMarkets.btts,
         overUnder: raw.professionalMarkets.overUnder25,
@@ -829,6 +839,7 @@ export default function DashboardPage() {
     
     // 6. reports[0].predictions (for AI Agents last resort)
     if (raw.reports?.[0]?.predictions) {
+      console.log('✅ Found: raw.reports[0].predictions');
       return {
         btts: raw.reports[0].predictions.btts,
         overUnder: raw.reports[0].predictions.overUnder || raw.reports[0].predictions.overUnder25,
@@ -836,6 +847,7 @@ export default function DashboardPage() {
       };
     }
     
+    console.log('❌ extractSystemPredictions: No valid structure found');
     return null;
   };
 
@@ -1180,24 +1192,50 @@ export default function DashboardPage() {
                             const match = matches.find(m => m.id === analyzedMatch.fixture_id);
                             if (match) {
                               setSelectedMatch(match);
-                              // Load existing analysis
+                              // Load existing analysis immediately
                               try {
+                                console.log(`🔍 Loading analysis for ${analyzedMatch.home_team} vs ${analyzedMatch.away_team}...`);
                                 const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${analyzedMatch.fixture_id}`);
                                 if (existingRes.ok) {
                                   const existingData = await existingRes.json();
+                                  console.log('📊 Analysis data received:', existingData);
+                                  
                                   if (existingData.success && existingData.analysis?.deepseek_master) {
+                                    console.log('✅ Setting DeepSeek Master analysis...');
+                                    console.log('   - AI Consensus:', existingData.analysis.ai_consensus);
+                                    console.log('   - Quad Brain:', existingData.analysis.quad_brain);
+                                    console.log('   - AI Agents:', existingData.analysis.ai_agents);
+                                    
+                                    // Set DeepSeek Master with raw system data
                                     setDeepSeekMasterAnalysis({
                                       ...existingData.analysis.deepseek_master,
                                       aiConsensusRaw: existingData.analysis.ai_consensus,
                                       quadBrainRaw: existingData.analysis.quad_brain,
                                       aiAgentsRaw: existingData.analysis.ai_agents,
                                     });
+                                    
+                                    // Also set individual analyses so they can be viewed separately
+                                    if (existingData.analysis.ai_consensus) {
+                                      setAnalysis(existingData.analysis.ai_consensus);
+                                    }
+                                    if (existingData.analysis.quad_brain) {
+                                      setQuadBrainAnalysis(existingData.analysis.quad_brain);
+                                    }
+                                    if (existingData.analysis.ai_agents) {
+                                      setAgentAnalysis(existingData.analysis.ai_agents);
+                                    }
+                                    
+                                    // Set to deepseek mode to show the results
                                     setAnalysisMode('deepseek');
+                                  } else {
+                                    console.warn('⚠️ No DeepSeek Master analysis found');
                                   }
                                 }
                               } catch (e) {
-                                console.error('Error loading analysis:', e);
+                                console.error('❌ Error loading analysis:', e);
                               }
+                            } else {
+                              console.warn(`⚠️ Match not found in matches list for fixture_id: ${analyzedMatch.fixture_id}`);
                             }
                           }}
                           className={`p-4 hover:bg-purple-900/40 transition-all cursor-pointer ${
