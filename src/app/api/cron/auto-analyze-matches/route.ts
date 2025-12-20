@@ -1006,7 +1006,7 @@ async function saveAnalysisWithMaster(
       over_under_prediction: masterAnalysis.finalVerdict.overUnder.prediction,
       over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
       over_under_reasoning: masterAnalysis.finalVerdict.overUnder.reasoning,
-      match_result_prediction: masterAnalysis.finalVerdict.matchResult.prediction,
+      match_result_prediction: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
       match_result_reasoning: masterAnalysis.finalVerdict.matchResult.reasoning,
       primary_recommendation_market: masterAnalysis.bestBet.market,
