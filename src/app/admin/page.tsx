@@ -1542,6 +1542,7 @@ export default function AdminPage() {
                 className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
               >
                 <option value="all">Tüm Kaynaklar</option>
+                <option value="deepseek_master">🎯 DeepSeek Master</option>
                 <option value="quad_brain">Quad-Brain</option>
                 <option value="ai_agents">AI Agents</option>
                 <option value="consensus">Consensus</option>
@@ -2033,13 +2034,17 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
           </div>
           <div className="flex items-center gap-4">
             <span className={`px-2 py-1 rounded text-xs ${
-              prediction.prediction_source === 'quad_brain' 
+              prediction.prediction_source === 'deepseek_master'
+                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/30'
+                : prediction.prediction_source === 'quad_brain' 
                 ? 'bg-purple-500/20 text-purple-400'
                 : prediction.prediction_source === 'ai_agents'
                 ? 'bg-blue-500/20 text-blue-400'
+                : prediction.prediction_source === 'consensus'
+                ? 'bg-green-500/20 text-green-400'
                 : 'bg-gray-500/20 text-gray-400'
             }`}>
-              {prediction.prediction_source}
+              {prediction.prediction_source === 'deepseek_master' ? '🎯 DeepSeek Master' : prediction.prediction_source}
             </span>
             <span className="text-gray-400 text-sm">
               {new Date(prediction.created_at).toLocaleDateString('tr-TR')}
