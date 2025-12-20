@@ -473,7 +473,10 @@ export default function DashboardPage() {
     const loadExistingAnalysis = async () => {
       try {
         console.log(`🔍 Auto-loading analysis for ${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}...`);
-        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${selectedMatch.id}`);
+        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${selectedMatch.id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
         
         if (existingRes.ok) {
           const existingData = await existingRes.json();
@@ -666,11 +669,20 @@ export default function DashboardPage() {
       // ÖNCE MEVCUT ANALİZİ KONTROL ET
       console.log('   🔍 Checking for existing analysis...');
       try {
-        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${match.id}`);
+        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${match.id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
         if (existingRes.ok) {
           const existingData = await existingRes.json();
           if (existingData.success && existingData.analysis?.deepseek_master) {
             console.log('   ✅ Found existing analysis! Loading...');
+            console.log('   📊 Analysis structure check:', {
+              hasDeepSeek: !!existingData.analysis.deepseek_master,
+              hasAIConsensus: !!existingData.analysis.ai_consensus,
+              hasQuadBrain: !!existingData.analysis.quad_brain,
+              hasAIAgents: !!existingData.analysis.ai_agents,
+            });
             setDeepSeekMasterAnalysis({
               ...existingData.analysis.deepseek_master,
               aiConsensusRaw: existingData.analysis.ai_consensus,
@@ -1195,10 +1207,19 @@ export default function DashboardPage() {
                               // Load existing analysis immediately
                               try {
                                 console.log(`🔍 Loading analysis for ${analyzedMatch.home_team} vs ${analyzedMatch.away_team}...`);
-                                const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${analyzedMatch.fixture_id}`);
+                                const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${analyzedMatch.fixture_id}`, {
+                                  method: 'GET',
+                                  headers: { 'Content-Type': 'application/json' },
+                                });
                                 if (existingRes.ok) {
                                   const existingData = await existingRes.json();
                                   console.log('📊 Analysis data received:', existingData);
+                                  console.log('   📊 Analysis structure check:', {
+                                    hasDeepSeek: !!existingData.analysis?.deepseek_master,
+                                    hasAIConsensus: !!existingData.analysis?.ai_consensus,
+                                    hasQuadBrain: !!existingData.analysis?.quad_brain,
+                                    hasAIAgents: !!existingData.analysis?.ai_agents,
+                                  });
                                   
                                   if (existingData.success && existingData.analysis?.deepseek_master) {
                                     console.log('✅ Setting DeepSeek Master analysis...');
