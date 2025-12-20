@@ -605,6 +605,7 @@ export default function DashboardPage() {
     setAnalysisError(null);
 
     try {
+      const overallStartTime = Date.now();
       console.log('🎯 Starting DeepSeek Master Analysis...');
       
       // ÖNCE MEVCUT ANALİZİ KONTROL ET
@@ -620,6 +621,7 @@ export default function DashboardPage() {
               aiConsensusRaw: existingData.analysis.ai_consensus,
               quadBrainRaw: existingData.analysis.quad_brain,
               aiAgentsRaw: existingData.analysis.ai_agents,
+              duration: existingData.analysis.deepseek_master?.processingTime || 0, // Fallback to 0 if not available
             });
             // Set individual analyses too
             if (existingData.analysis.ai_consensus) setAnalysis(existingData.analysis.ai_consensus);
@@ -692,11 +694,13 @@ export default function DashboardPage() {
       const masterData = await masterRes.json();
       
       if (masterData.success) {
+        const totalDuration = Date.now() - overallStartTime;
         setDeepSeekMasterAnalysis({
           ...masterData,
           aiConsensusRaw: aiData,
           quadBrainRaw: quadData,
           aiAgentsRaw: agentsData,
+          duration: totalDuration, // Add total duration
         });
         // Also set the individual analyses so they can be viewed
         if (aiData.success) setAnalysis(aiData.result);
@@ -1901,9 +1905,11 @@ export default function DashboardPage() {
                           )}
 
                           {/* Processing Time */}
-                          <div className="text-center text-xs text-gray-500">
-                            Analysis completed in {(deepSeekMasterAnalysis.duration / 1000).toFixed(1)}s
-                          </div>
+                          {deepSeekMasterAnalysis.duration && (
+                            <div className="text-center text-xs text-gray-500">
+                              Analysis completed in {(deepSeekMasterAnalysis.duration / 1000).toFixed(1)}s
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
