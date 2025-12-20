@@ -958,6 +958,16 @@ async function saveAnalysisWithMaster(
       return false;
     }
 
+    // Normalize match result helper
+    const normalizeMatchResultToDb = (pred: string): 'home' | 'draw' | 'away' => {
+      if (!pred) return 'draw';
+      const lower = String(pred).toLowerCase().trim();
+      if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
+      if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
+      if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+      return 'draw';
+    };
+
     // Save individual model predictions
     for (const analysis of analyses) {
       for (const [modelName, prediction] of Object.entries(analysis.individualPredictions)) {
@@ -971,7 +981,7 @@ async function saveAnalysisWithMaster(
           over_under_prediction: prediction.overUnder.prediction,
           over_under_confidence: prediction.overUnder.confidence,
           over_under_reasoning: prediction.overUnder.reasoning,
-          match_result_prediction: prediction.matchResult.prediction,
+          match_result_prediction: normalizeMatchResultToDb(prediction.matchResult.prediction),
           match_result_confidence: prediction.matchResult.confidence,
           match_result_reasoning: prediction.matchResult.reasoning,
           primary_recommendation_market: prediction.bestBet?.market,
@@ -1040,7 +1050,7 @@ async function saveAnalysisWithMaster(
       best_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
       best_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
       best_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
-      best_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      best_match_result: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       best_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
       created_at: new Date().toISOString()
     }, { onConflict: 'fixture_id' });
