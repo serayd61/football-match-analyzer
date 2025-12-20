@@ -1442,31 +1442,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-                          <span className="text-xs text-gray-400">
-                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent match selection when clicking button
-                              runDeepSeekMasterAnalysis(match);
-                            }}
-                            disabled={deepSeekLoading || analyzing}
-                            className={`px-3 py-2 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
-                              hasPreAnalysis 
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400'
-                                : 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 shadow-lg shadow-orange-500/25'
-                            }`}
-                          >
-                            {(deepSeekLoading || analyzing) && selectedMatch?.id === match.id ? '⏳' : hasPreAnalysis ? '📊' : '🎯 Tam Analiz'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
           </div>
 
           {/* RIGHT COLUMN - Analysis Panel or League Stats */}
