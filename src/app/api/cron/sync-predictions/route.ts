@@ -79,8 +79,8 @@ async function settlePrediction(
     .from('prediction_sessions')
     .update({
       is_settled: true,
-      actual_home_score: homeScore,
-      actual_away_score: awayScore,
+      actual_home_score: home,
+      actual_away_score: away,
       settled_at: new Date().toISOString()
     })
     .eq('id', sessionId);
