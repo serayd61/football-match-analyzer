@@ -1,6 +1,6 @@
 // ============================================================================
 // CRON JOB - AUTO ANALYZE ALL NEW MATCHES
-// Her saat başı yeni eklenen maçları 3 farklı sistemle analiz eder:
+// Her saat başı (00:00, 01:00, 02:00, ...) yeni eklenen maçları 3 farklı sistemle analiz eder:
 // 1. AI Consensus (Claude, Gemini, DeepSeek)
 // 2. Quad-Brain (4 model ağırlıklı)
 // 3. AI Agents (5 uzman ajan)
