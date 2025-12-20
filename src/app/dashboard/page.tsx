@@ -1281,9 +1281,9 @@ export default function DashboardPage() {
                             runDeepSeekMasterAnalysis(match);
                           }}
                           className="ml-2 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white text-xs font-medium rounded-lg transition-all flex items-center gap-1"
-                          title={l.fullAnalysis}
+                          title={l.analyze || 'Tam Analiz'}
                         >
-                          🎯 <span className="hidden sm:inline">{l.fullAnalysis}</span>
+                          🎯 <span className="hidden sm:inline">{l.analyze || 'Tam Analiz'}</span>
                         </button>
                       </div>
                     </div>
