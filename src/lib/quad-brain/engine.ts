@@ -62,14 +62,31 @@ async function runClaudeTactical(
       })
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Claude API error ${response.status}:`, errorText);
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+      } catch {
+        errorDetails = { raw: errorText };
+      }
+      console.error(`   Model: ${MODEL_VERSIONS.claude}, Status: ${response.status}`);
+      return null;
+    }
 
     const data = await response.json();
     const content = data.content?.[0]?.text;
+    
+    if (!content) {
+      console.error('❌ Claude returned empty response');
+      return null;
+    }
 
     return parseAIPrediction(content, 'claude', startTime);
-  } catch (error) {
-    console.error('❌ Claude error:', error);
+  } catch (error: any) {
+    console.error('❌ Claude exception:', error);
+    console.error(`   Model: ${MODEL_VERSIONS.claude}, Error: ${error.message || error}`);
     return null;
   }
 }

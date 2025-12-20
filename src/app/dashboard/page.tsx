@@ -411,6 +411,53 @@ export default function DashboardPage() {
 
   const leagues = Array.from(new Set(matches.map((m) => m.league)));
 
+  // ⚡ OTOMATIK ANALİZ KONTROLÜ: Maç seçildiğinde mevcut analizi kontrol et
+  useEffect(() => {
+    if (!selectedMatch) return;
+
+    const loadExistingAnalysis = async () => {
+      try {
+        console.log(`🔍 Auto-loading analysis for ${selectedMatch.homeTeam} vs ${selectedMatch.awayTeam}...`);
+        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${selectedMatch.id}`);
+        
+        if (existingRes.ok) {
+          const existingData = await existingRes.json();
+          if (existingData.success && existingData.analysis?.deepseek_master) {
+            console.log('✅ Found existing analysis! Auto-loading...');
+            
+            // DeepSeek Master analysis
+            setDeepSeekMasterAnalysis({
+              ...existingData.analysis.deepseek_master,
+              aiConsensusRaw: existingData.analysis.ai_consensus,
+              quadBrainRaw: existingData.analysis.quad_brain,
+              aiAgentsRaw: existingData.analysis.ai_agents,
+            });
+            
+            // Individual analyses
+            if (existingData.analysis.ai_consensus) {
+              setAnalysis(existingData.analysis.ai_consensus);
+            }
+            if (existingData.analysis.quad_brain) {
+              setQuadBrainAnalysis(existingData.analysis.quad_brain);
+            }
+            if (existingData.analysis.ai_agents) {
+              setAgentAnalysis(existingData.analysis.ai_agents);
+            }
+            
+            // Set to deepseek mode to show the results
+            setAnalysisMode('deepseek');
+            setDeepSeekLoading(false);
+            setAnalyzing(false);
+          }
+        }
+      } catch (error) {
+        console.log('No existing analysis found');
+      }
+    };
+
+    loadExistingAnalysis();
+  }, [selectedMatch?.id]); // Only run when match ID changes
+
   const analyzeMatch = async (match: Match) => {
     if (!userProfile?.canAnalyze) {
       setAnalysisError(l.limitReached);
@@ -997,7 +1044,11 @@ export default function DashboardPage() {
                     const hasPreAnalysis = status?.hasAnalysis;
                     
                     return (
-                    <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
+                    <div 
+                      key={match.id} 
+                      onClick={() => setSelectedMatch(match)}
+                      className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -1058,7 +1109,10 @@ export default function DashboardPage() {
                             {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <button
-                            onClick={() => runDeepSeekMasterAnalysis(match)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent match selection when clicking button
+                              runDeepSeekMasterAnalysis(match);
+                            }}
                             disabled={deepSeekLoading || analyzing}
                             className={`px-3 py-2 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
                               hasPreAnalysis 
@@ -1078,7 +1132,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Analysis Panel */}
+          {/* RIGHT COLUMN - Analysis Panel or League Stats */}
           <div className="lg:col-span-2">
             {selectedMatch ? (
               <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
@@ -1863,11 +1917,96 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 flex items-center justify-center h-[600px] text-gray-400">
-                <div className="text-center">
-                  <div className="text-7xl mb-4">⚽</div>
-                  <p className="text-xl font-medium">{l.selectMatch}</p>
-                  <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
+              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+                <div className="p-6 border-b border-gray-700/50">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <span>📊</span> Lig Analiz Özeti
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-1">Bugünün maçlarına göre lig bazında analiz durumu</p>
+                </div>
+                
+                <div className="max-h-[600px] overflow-y-auto p-4">
+                  {leagues.length === 0 ? (
+                    <div className="text-center py-16 text-gray-400">
+                      <div className="text-6xl mb-4">⚽</div>
+                      <p className="text-lg">Maç bulunamadı</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {leagues.map((league) => {
+                        const leagueMatches = filteredMatches.filter(m => m.league === league);
+                        const analyzedCount = leagueMatches.filter(m => matchAnalysisStatus[m.id]?.hasAnalysis).length;
+                        const totalCount = leagueMatches.length;
+                        const analysisPercentage = totalCount > 0 ? Math.round((analyzedCount / totalCount) * 100) : 0;
+                        
+                        return (
+                          <div key={league} className="bg-gray-700/30 rounded-xl p-4 border border-gray-600/30">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="font-bold text-white">{league}</h3>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">{analyzedCount}/{totalCount} analiz</span>
+                                <div className="w-24 h-2 bg-gray-600 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all ${
+                                      analysisPercentage >= 80 ? 'bg-green-500' :
+                                      analysisPercentage >= 50 ? 'bg-yellow-500' :
+                                      'bg-red-500'
+                                    }`}
+                                    style={{ width: `${analysisPercentage}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-gray-400 w-12 text-right">{analysisPercentage}%</span>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                              {leagueMatches.slice(0, 6).map((match) => {
+                                const status = matchAnalysisStatus[match.id];
+                                const hasAnalysis = status?.hasAnalysis;
+                                
+                                return (
+                                  <div
+                                    key={match.id}
+                                    onClick={() => setSelectedMatch(match)}
+                                    className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-all cursor-pointer border border-gray-600/20"
+                                  >
+                                    <div className="text-xs text-white font-medium truncate">
+                                      {match.homeTeam} vs {match.awayTeam}
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      {hasAnalysis ? (
+                                        <>
+                                          <span className="text-[10px] text-green-400">✅</span>
+                                          <span className="text-[10px] text-gray-400">
+                                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-[10px] text-gray-500">⏳</span>
+                                          <span className="text-[10px] text-gray-500">
+                                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            
+                            {leagueMatches.length > 6 && (
+                              <div className="text-center mt-3">
+                                <span className="text-xs text-gray-500">
+                                  +{leagueMatches.length - 6} maç daha
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

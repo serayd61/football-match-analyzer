@@ -59,7 +59,13 @@ interface SystemAnalysis {
 // ============================================================================
 
 async function callClaude(prompt: string): Promise<string> {
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is missing!');
+    return '';
+  }
+  
   try {
+    console.log('   📤 Calling Claude (Haiku)...');
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -73,10 +79,26 @@ async function callClaude(prompt: string): Promise<string> {
         messages: [{ role: 'user', content: prompt }]
       })
     });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`   ❌ Claude API error ${res.status}:`, errorText);
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+        console.error(`   Error type: ${errorDetails.error?.type || 'unknown'}, Message: ${errorDetails.error?.message || 'unknown'}`);
+      } catch {
+        console.error(`   Raw error: ${errorText}`);
+      }
+      return '';
+    }
+    
     const data = await res.json();
-    return data.content?.[0]?.text || '';
-  } catch (error) {
-    console.error('Claude error:', error);
+    const result = data.content?.[0]?.text || '';
+    console.log(`   ✅ Claude responded (${result.length} chars)`);
+    return result;
+  } catch (error: any) {
+    console.error('   ❌ Claude exception:', error.message || error);
     return '';
   }
 }
