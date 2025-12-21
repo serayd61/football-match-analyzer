@@ -707,8 +707,24 @@ export default function DashboardPage() {
           }
         }
       } catch (checkError) {
-        console.log('   ℹ️ No existing analysis found, creating new one...');
+        console.log('   ℹ️ No existing analysis found');
       }
+      
+      // ⚠️ ANALİZ YOKSA: Otomatik analiz sistemini bilgilendir, yeni analiz yapma
+      console.log('   ⚠️ No existing analysis found');
+      setAnalysisError(
+        lang === 'tr' 
+          ? 'Bu maç henüz analiz edilmemiş. Otomatik analiz sistemi yakında bu maçı analiz edecek. Lütfen birkaç dakika sonra tekrar deneyin. (Otomatik analiz her 30 dakikada bir çalışır)'
+          : lang === 'de'
+          ? 'Dieses Spiel wurde noch nicht analysiert. Das automatische Analysesystem wird dieses Spiel bald analysieren. Bitte versuchen Sie es in ein paar Minuten erneut. (Automatische Analyse läuft alle 30 Minuten)'
+          : 'This match has not been analyzed yet. The automatic analysis system will analyze this match soon. Please try again in a few minutes. (Automatic analysis runs every 30 minutes)'
+      );
+      setDeepSeekLoading(false);
+      return; // Exit - don't create new analysis, wait for cron job
+      
+      /* 
+      // ❌ MANUEL ANALİZ KAPALI - Otomatik analiz sistemi kullanılıyor
+      // Eğer gerçekten manuel analiz yapmak isterseniz aşağıdaki kodu aktif edin
       
       const matchData = {
         homeTeam: match.homeTeam,
