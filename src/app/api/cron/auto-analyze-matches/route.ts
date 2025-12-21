@@ -625,9 +625,14 @@ ${Object.entries(aiAgents.individualPredictions).map(([agent, pred]) =>
 🎯 SENİN GÖREVİN:
 
 1. Yukarıdaki 3 sistemin sonuçlarını analiz et
-2. Modeller arası uyumu değerlendir
-3. Final kararını ver
-4. En güvenli bahis önerisini sun
+2. Modeller arası uyumu değerlendir (3 sistemin kaçı aynı fikirde?)
+3. Final kararını ver - çoğunluk oyu önemli ama kalite faktörlerini de dikkate al
+4. CONFIDENCE'ı GERÇEKÇİ tut - %70 confidence demek gerçekten %70 başarı şansı demektir!
+   ⚠️ ÖNEMLİ: Aşırı güvenli olma! Eğer sistemler çelişiyorsa confidence'ı düşür.
+   - 3/3 sistem aynı fikirde + yüksek confidence = %70-80
+   - 2/3 sistem aynı fikirde = %55-65
+   - Sistemler çelişiyor = %50-55
+5. Match Result için özel dikkat: Maç sonucu tahmin etmek çok zor! Eğer %60'tan fazla confidence veriyorsan, çok güçlü kanıt olmalı.
 
 YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
 
@@ -635,18 +640,18 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
   "finalVerdict": {
     "btts": {
       "prediction": "yes" veya "no",
-      "confidence": 50-95 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": GERÇEKÇİ (3/3 uyum varsa 65-75, 2/3 varsa 55-65, çelişki varsa 50-55),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu belirt"
     },
     "overUnder": {
       "prediction": "over" veya "under",
-      "confidence": 50-95 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": GERÇEKÇİ (3/3 uyum varsa 65-75, 2/3 varsa 55-65, çelişki varsa 50-55),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu belirt"
     },
     "matchResult": {
       "prediction": "home", "draw" veya "away",
-      "confidence": 40-85 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": ÇOK GERÇEKÇİ (Maç sonucu zor! 3/3 uyum varsa 60-70, 2/3 varsa 50-60, çelişki varsa 45-50),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu ve güvenilirlik faktörlerini belirt"
     }
   },
   "overallConfidence": 50-90 arası (genel güven),
@@ -733,7 +738,8 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
       };
     }
 
-    // Calculate system agreement based on actual finalVerdict
+    // System agreement already calculated above (before finalVerdict creation)
+    // Recalculate for logging if needed
     const bttsAgreement = [
       aiConsensus.consensus.btts.prediction,
       quadBrain.consensus.btts.prediction,
@@ -753,6 +759,7 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
     ].filter(p => p === finalVerdict.matchResult.prediction).length;
 
     console.log(`   📊 System Agreement: BTTS=${bttsAgreement}/3, O/U=${ouAgreement}/3, MS=${mrAgreement}/3`);
+    console.log(`   🎯 Calibrated Confidence: BTTS=${finalVerdict.btts.confidence}%, O/U=${finalVerdict.overUnder.confidence}%, MS=${finalVerdict.matchResult.confidence}%`);
 
     return {
       finalVerdict: finalVerdict,
