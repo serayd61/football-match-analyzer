@@ -58,9 +58,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // ✅ FIX: hasAnalysis should only be true if deepseek_master exists
+    // ✅ FIX: hasAnalysis should only be true if deepseek_master.finalVerdict exists
     // Because the dashboard only shows DeepSeek Master analysis
-    const hasDeepSeekMaster = !!(analysis.deepseek_master && analysis.deepseek_master.finalVerdict);
+    const hasDeepSeekMaster = !!(
+      analysis.deepseek_master && 
+      analysis.deepseek_master.finalVerdict &&
+      typeof analysis.deepseek_master.finalVerdict === 'object'
+    );
 
     // Parse each system's analysis
     const parseSystem = (data: any): SystemStatus => {
