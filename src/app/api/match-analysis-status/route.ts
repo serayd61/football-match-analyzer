@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const { data: analyses, error } = await supabase
       .from('match_full_analysis')
-      .select('fixture_id, ai_consensus, quad_brain, ai_agents')
+      .select('fixture_id, ai_consensus, quad_brain, ai_agents, deepseek_master')
       .in('fixture_id', fixture_ids);
 
     if (error) {
