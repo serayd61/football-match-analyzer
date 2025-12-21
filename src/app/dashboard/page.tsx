@@ -721,101 +721,11 @@ export default function DashboardPage() {
       );
       setDeepSeekLoading(false);
       return; // Exit - don't create new analysis, wait for cron job
-      
-      /* 
-      // ❌ MANUEL ANALİZ KAPALI - Otomatik analiz sistemi kullanılıyor
-      // Eğer gerçekten manuel analiz yapmak isterseniz aşağıdaki kodu aktif edin
-      
-      const matchData = {
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-        league: match.league,
-        fixtureId: match.id,
-        language: lang,
-      };
-      
-      // PARALEL ÇALIŞTIR: 3 sistem aynı anda!
-      console.log('   ⚡ Running 3 systems in parallel...');
-      const startTime = Date.now();
-      
-      const [aiRes, quadRes, agentsRes] = await Promise.all([
-        fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-        fetch('/api/quad-brain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-        fetch('/api/agents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-      ]);
-      
-      const [aiData, quadData, agentsData] = await Promise.all([
-        aiRes.json(),
-        quadRes.json(),
-        agentsRes.json(),
-      ]);
-      
-      const parallelTime = Date.now() - startTime;
-      console.log(`   ✅ All 3 systems completed in ${parallelTime}ms`);
-      
-      // Step 4: Send all 3 results to DeepSeek Master for evaluation
-      console.log('   🎯 Step 4: DeepSeek Master Evaluation...');
-      const masterRes = await fetch('/api/deepseek-evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fixture_id: match.id,
-          home_team: match.homeTeam,
-          away_team: match.awayTeam,
-          league: match.league,
-          aiConsensus: aiData,
-          quadBrain: quadData,
-          aiAgents: agentsData,
-        }),
-      });
-      const masterData = await masterRes.json();
-      
-      if (masterData.success) {
-        const totalDuration = Date.now() - overallStartTime;
-        // masterData structure: { success, match, duration, deepseekMaster: { finalVerdict, ... }, systemInputs: { ... } }
-        setDeepSeekMasterAnalysis({
-          // Extract deepseekMaster data
-          finalVerdict: masterData.deepseekMaster?.finalVerdict,
-          confidence: masterData.deepseekMaster?.confidence,
-          reasoning: masterData.deepseekMaster?.reasoning,
-          systemAgreement: masterData.deepseekMaster?.systemAgreement,
-          riskLevel: masterData.deepseekMaster?.riskLevel,
-          bestBet: masterData.deepseekMaster?.bestBet,
-          warnings: masterData.deepseekMaster?.warnings,
-          processingTime: masterData.duration || totalDuration,
-          // Extract actual data from API responses (they might be wrapped in { success, result })
-          aiConsensusRaw: aiData.success ? aiData.result || aiData.analysis : aiData,
-          quadBrainRaw: quadData.success ? quadData.result : quadData,
-          aiAgentsRaw: agentsData.success ? agentsData.result : agentsData,
-          duration: totalDuration,
-        });
-        // Also set the individual analyses so they can be viewed
-        if (aiData.success) setAnalysis(aiData.result);
-        if (quadData.success) setQuadBrainAnalysis(quadData.result);
-        if (agentsData.success) setAgentAnalysis(agentsData.result);
-        fetchUserProfile();
-      } else {
-        setAnalysisError(masterData.error || 'DeepSeek Master analysis failed');
-      }
     } catch (error) {
       console.error('DeepSeek Master error:', error);
       setAnalysisError('Network error');
+      setDeepSeekLoading(false);
     }
-    setDeepSeekLoading(false);
   };
 
   // ============================================================================
