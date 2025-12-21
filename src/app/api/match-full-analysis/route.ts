@@ -48,7 +48,21 @@ export async function GET(request: NextRequest) {
 
     if (!analysis) {
       console.log(`⚠️ Analysis not found for fixture_id: ${fixtureIdNum}`);
-      return NextResponse.json({ success: false, error: 'Analysis not found' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Analysis not found',
+        fixture_id: fixtureIdNum
+      }, { status: 404 });
+    }
+    
+    // Additional check: If analysis exists but deepseek_master is missing/invalid, log it
+    if (analysis && (!analysis.deepseek_master || !analysis.deepseek_master.finalVerdict)) {
+      console.log(`⚠️ Analysis exists for fixture_id: ${fixtureIdNum} but deepseek_master is missing or invalid`);
+      console.log(`   - deepseek_master exists: ${!!analysis.deepseek_master}`);
+      if (analysis.deepseek_master) {
+        console.log(`   - deepseek_master keys: ${Object.keys(analysis.deepseek_master)}`);
+        console.log(`   - has finalVerdict: ${!!analysis.deepseek_master.finalVerdict}`);
+      }
     }
 
     console.log(`✅ Analysis found for fixture_id: ${fixtureIdNum}`);
