@@ -58,6 +58,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ✅ FIX: hasAnalysis should only be true if deepseek_master exists
+    // Because the dashboard only shows DeepSeek Master analysis
+    const hasDeepSeekMaster = !!(analysis.deepseek_master && analysis.deepseek_master.finalVerdict);
+
     // Parse each system's analysis
     const parseSystem = (data: any): SystemStatus => {
       if (!data) return { available: false };
@@ -72,7 +76,7 @@ export async function GET(request: NextRequest) {
     };
 
     const result: AnalysisStatus = {
-      hasAnalysis: true,
+      hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master exists
       ai_consensus: parseSystem(analysis.ai_consensus),
       quad_brain: parseSystem(analysis.quad_brain),
       ai_agents: parseSystem(analysis.ai_agents)
@@ -138,8 +142,11 @@ export async function POST(request: NextRequest) {
           ai_agents: { available: false }
         };
       } else {
+        // ✅ FIX: hasAnalysis should only be true if deepseek_master exists
+        const hasDeepSeekMaster = !!(analysis.deepseek_master && analysis.deepseek_master.finalVerdict);
+        
         result[id] = {
-          hasAnalysis: true,
+          hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master exists
           ai_consensus: { 
             available: !!analysis.ai_consensus,
             summary: analysis.ai_consensus ? summarize(analysis.ai_consensus) : null
