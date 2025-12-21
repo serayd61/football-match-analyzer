@@ -152,11 +152,21 @@ export async function POST(request: NextRequest) {
           ai_agents: { available: false }
         };
       } else {
-        // ✅ FIX: hasAnalysis should only be true if deepseek_master exists
-        const hasDeepSeekMaster = !!(analysis.deepseek_master && analysis.deepseek_master.finalVerdict);
+        // ✅ FIX: hasAnalysis should only be true if deepseek_master.finalVerdict exists
+        const hasDeepSeekMaster = !!(
+          analysis.deepseek_master && 
+          typeof analysis.deepseek_master === 'object' &&
+          analysis.deepseek_master.finalVerdict &&
+          typeof analysis.deepseek_master.finalVerdict === 'object'
+        );
+        
+        // Debug logging
+        if (!hasDeepSeekMaster && (analysis.ai_consensus || analysis.quad_brain || analysis.ai_agents)) {
+          console.log(`⚠️ Fixture ${id} has 3 systems but no deepseek_master.finalVerdict`);
+        }
         
         result[id] = {
-          hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master exists
+          hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master.finalVerdict exists
           ai_consensus: { 
             available: !!analysis.ai_consensus,
             summary: analysis.ai_consensus ? summarize(analysis.ai_consensus) : null
