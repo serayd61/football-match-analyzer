@@ -27,11 +27,19 @@ interface Fixture {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   league: string;
+  leagueId?: number;
   leagueLogo?: string;
   date: string;
   status: string;
   homeScore?: number;
   awayScore?: number;
+}
+
+interface League {
+  id: number;
+  name: string;
+  logo?: string;
+  count: number;
 }
 
 interface SmartAnalysis {
@@ -60,14 +68,17 @@ export default function DashboardV2() {
   
   // States
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedLeague, setSelectedLeague] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
   const [analysis, setAnalysis] = useState<SmartAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   
   // Auth check
   useEffect(() => {
@@ -83,19 +94,22 @@ export default function DashboardV2() {
   const fetchFixtures = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v2/fixtures?date=${selectedDate}`);
+      const leagueParam = selectedLeague !== 'all' ? `&league_id=${selectedLeague}` : '';
+      const res = await fetch(`/api/v2/fixtures?date=${selectedDate}${leagueParam}`);
       const data = await res.json();
       
       if (data.success) {
         setFixtures(data.fixtures);
+        setLeagues(data.leagues || []);
+        setTotalCount(data.totalCount || data.count);
         setCached(data.cached);
-        console.log(`📦 Fixtures loaded in ${data.processingTime}ms (cached: ${data.cached})`);
+        console.log(`📦 Fixtures loaded: ${data.count}/${data.totalCount} in ${data.processingTime}ms (cached: ${data.cached})`);
       }
     } catch (error) {
       console.error('Fetch fixtures error:', error);
     }
     setLoading(false);
-  }, [selectedDate]);
+  }, [selectedDate, selectedLeague]);
   
   useEffect(() => {
     fetchFixtures();
@@ -209,9 +223,33 @@ export default function DashboardV2() {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedLeague('all');
+                }}
                 className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
               />
+            </div>
+            
+            {/* League Selector */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <span className="text-white font-medium">Lig Seç</span>
+                <span className="text-xs text-gray-500 ml-auto">{totalCount} maç</span>
+              </div>
+              <select
+                value={selectedLeague}
+                onChange={(e) => setSelectedLeague(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white appearance-none cursor-pointer"
+              >
+                <option value="all" className="bg-gray-900">Tüm Ligler ({totalCount})</option>
+                {leagues.map(league => (
+                  <option key={league.id} value={league.id} className="bg-gray-900">
+                    {league.name} ({league.count})
+                  </option>
+                ))}
+              </select>
             </div>
             
             {/* Search */}

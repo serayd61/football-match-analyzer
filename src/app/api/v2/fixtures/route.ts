@@ -18,23 +18,46 @@ const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
 
 async function fetchFixturesFromAPI(date: string): Promise<any[]> {
   try {
-    const url = new URL(`${SPORTMONKS_API}/fixtures/date/${date}`);
-    url.searchParams.append('api_token', SPORTMONKS_KEY);
-    url.searchParams.append('include', 'participants;league;scores');
-    url.searchParams.append('per_page', '100');
+    // Tüm sayfaları çek
+    let allFixtures: any[] = [];
+    let page = 1;
+    let hasMore = true;
     
-    const res = await fetch(url.toString(), {
-      headers: { 'Accept': 'application/json' },
-      next: { revalidate: 300 } // 5 dakika cache
-    });
-    
-    if (!res.ok) {
-      console.error(`SportMonks API error: ${res.status}`);
-      return [];
+    while (hasMore && page <= 5) { // Max 5 sayfa (500 maç)
+      const url = new URL(`${SPORTMONKS_API}/fixtures/date/${date}`);
+      url.searchParams.append('api_token', SPORTMONKS_KEY);
+      url.searchParams.append('include', 'participants;league;scores');
+      url.searchParams.append('per_page', '100');
+      url.searchParams.append('page', String(page));
+      
+      const res = await fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+        next: { revalidate: 300 }
+      });
+      
+      if (!res.ok) {
+        console.error(`SportMonks API error: ${res.status}`);
+        break;
+      }
+      
+      const data = await res.json();
+      const fixtures = data.data || [];
+      
+      if (fixtures.length === 0) {
+        hasMore = false;
+      } else {
+        allFixtures = [...allFixtures, ...fixtures];
+        page++;
+        
+        // Pagination bilgisi varsa kontrol et
+        if (data.pagination && page > data.pagination.last_page) {
+          hasMore = false;
+        }
+      }
     }
     
-    const data = await res.json();
-    return data.data || [];
+    console.log(`📊 Fetched ${allFixtures.length} fixtures for ${date}`);
+    return allFixtures;
   } catch (error) {
     console.error('SportMonks fetch error:', error);
     return [];
@@ -63,6 +86,7 @@ function transformFixtures(fixtures: any[]): any[] {
         league: f.league?.name || 'Unknown League',
         leagueId: f.league?.id,
         leagueLogo: f.league?.image_path,
+        leagueCountry: f.league?.country?.name || '',
         date: f.starting_at,
         status: f.state?.short || 'NS',
         homeScore: f.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals,
@@ -70,6 +94,26 @@ function transformFixtures(fixtures: any[]): any[] {
       };
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+// Ligleri çıkar
+function extractLeagues(fixtures: any[]): { id: number; name: string; logo?: string; count: number }[] {
+  const leagueMap = new Map<number, { name: string; logo?: string; count: number }>();
+  
+  for (const f of fixtures) {
+    if (f.leagueId) {
+      const existing = leagueMap.get(f.leagueId);
+      if (existing) {
+        existing.count++;
+      } else {
+        leagueMap.set(f.leagueId, { name: f.league, logo: f.leagueLogo, count: 1 });
+      }
+    }
+  }
+  
+  return Array.from(leagueMap.entries())
+    .map(([id, data]) => ({ id, ...data }))
+    .sort((a, b) => b.count - a.count);
 }
 
 // ============================================================================
@@ -82,12 +126,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const leagueId = searchParams.get('league_id');
     
     // Cache key
     const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
     
     // Get from cache or fetch
-    const fixtures = await getOrSet(
+    const allFixtures = await getOrSet(
       cacheKey,
       async () => {
         const rawFixtures = await fetchFixturesFromAPI(date);
@@ -96,14 +141,24 @@ export async function GET(request: NextRequest) {
       CACHE_TTL.FIXTURES
     );
     
+    // Ligleri çıkar
+    const leagues = extractLeagues(allFixtures);
+    
+    // Lig filtresi uygula
+    const fixtures = leagueId 
+      ? allFixtures.filter(f => f.leagueId === parseInt(leagueId))
+      : allFixtures;
+    
     const processingTime = Date.now() - startTime;
     
     return NextResponse.json({
       success: true,
       date,
       count: fixtures.length,
+      totalCount: allFixtures.length,
       fixtures,
-      cached: processingTime < 50, // Cache hit if < 50ms
+      leagues,
+      cached: processingTime < 50,
       processingTime
     }, {
       headers: {
