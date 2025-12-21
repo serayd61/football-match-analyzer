@@ -480,8 +480,18 @@ export default function DashboardPage() {
         
         if (existingRes.ok) {
           const existingData = await existingRes.json();
-          if (existingData.success && existingData.analysis?.deepseek_master) {
+          // ✅ FIX: Check for deepseek_master.finalVerdict (not just deepseek_master)
+          const hasValidDeepSeek = existingData.success && 
+                                   existingData.analysis?.deepseek_master && 
+                                   existingData.analysis.deepseek_master.finalVerdict;
+          
+          if (hasValidDeepSeek) {
             console.log('✅ Found existing analysis! Auto-loading...');
+            console.log('📊 DeepSeek Master structure:', {
+              hasDeepSeek: !!existingData.analysis.deepseek_master,
+              hasFinalVerdict: !!existingData.analysis.deepseek_master.finalVerdict,
+              finalVerdictKeys: existingData.analysis.deepseek_master.finalVerdict ? Object.keys(existingData.analysis.deepseek_master.finalVerdict) : []
+            });
             
             // DeepSeek Master analysis
             // Note: deepseek_master contains: finalVerdict, confidence, reasoning, systemAgreement, riskLevel, bestBet, warnings, processingTime
@@ -683,10 +693,16 @@ export default function DashboardPage() {
         });
         if (existingRes.ok) {
           const existingData = await existingRes.json();
-          if (existingData.success && existingData.analysis?.deepseek_master) {
+          // ✅ FIX: Check for deepseek_master.finalVerdict (not just deepseek_master)
+          const hasValidDeepSeek = existingData.success && 
+                                   existingData.analysis?.deepseek_master && 
+                                   existingData.analysis.deepseek_master.finalVerdict;
+          
+          if (hasValidDeepSeek) {
             console.log('   ✅ Found existing analysis! Loading...');
             console.log('   📊 Analysis structure check:', {
               hasDeepSeek: !!existingData.analysis.deepseek_master,
+              hasFinalVerdict: !!existingData.analysis.deepseek_master.finalVerdict,
               hasAIConsensus: !!existingData.analysis.ai_consensus,
               hasQuadBrain: !!existingData.analysis.quad_brain,
               hasAIAgents: !!existingData.analysis.ai_agents,
@@ -1273,8 +1289,14 @@ export default function DashboardPage() {
                                     hasAIAgents: !!existingData.analysis?.ai_agents,
                                   });
                                   
-                                  if (existingData.success && existingData.analysis?.deepseek_master) {
+                                  // ✅ FIX: Check for deepseek_master.finalVerdict (not just deepseek_master)
+                                  const hasValidDeepSeek = existingData.success && 
+                                                           existingData.analysis?.deepseek_master && 
+                                                           existingData.analysis.deepseek_master.finalVerdict;
+                                  
+                                  if (hasValidDeepSeek) {
                                     console.log('✅ Setting DeepSeek Master analysis...');
+                                    console.log('   - DeepSeek Master finalVerdict exists:', !!existingData.analysis.deepseek_master.finalVerdict);
                                     console.log('   - AI Consensus structure:', existingData.analysis.ai_consensus ? 'EXISTS' : 'MISSING');
                                     console.log('   - AI Consensus keys:', existingData.analysis.ai_consensus ? Object.keys(existingData.analysis.ai_consensus) : 'N/A');
                                     console.log('   - AI Consensus.consensus:', existingData.analysis.ai_consensus?.consensus);
