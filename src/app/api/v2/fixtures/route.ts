@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge'; // Edge runtime for speed
+export const maxDuration = 30;
 
 const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
 const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
