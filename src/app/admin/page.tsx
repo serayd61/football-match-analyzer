@@ -76,7 +76,7 @@ export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'deepseek_master' | 'system_analyses' | 'models' | 'predictions' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'smart_analysis' | 'deepseek_master' | 'system_analyses' | 'models' | 'predictions' | 'analytics'>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [settling, setSettling] = useState(false);
@@ -84,6 +84,7 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [smartStats, setSmartStats] = useState<any>(null);
   
   const [overall, setOverall] = useState<OverallStats | null>(null);
   const [models, setModels] = useState<ModelStat[]>([]);
@@ -114,7 +115,7 @@ export default function AdminPage() {
       const timestamp = Date.now();
       
       // Fetch all stats in parallel
-      const [res, proMarketRes, masterRes] = await Promise.all([
+      const [res, proMarketRes, masterRes, smartRes] = await Promise.all([
         fetch(`/api/admin/enhanced-stats?type=all&limit=100&_t=${timestamp}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache' }
@@ -126,17 +127,28 @@ export default function AdminPage() {
         fetch(`/api/admin/deepseek-master?limit=50&_t=${timestamp}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`/api/v2/performance?days=30&_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
         })
       ]);
       
       const data = await res.json();
       const proMarketData = await proMarketRes.json();
       const masterData = await masterRes.json();
+      const smartData = await smartRes.json();
       
       // Set DeepSeek Master data
       if (masterData.success) {
         setMasterAnalyses(masterData.recent || []);
         console.log('🎯 DeepSeek Master analyses:', masterData.recent?.length || 0);
+      }
+      
+      // Set Smart Analysis data
+      if (smartData.success) {
+        setSmartStats(smartData.stats);
+        console.log('⚡ Smart Analysis stats:', smartData.stats?.overview?.total || 0);
       }
       
       console.log('📊 API Response:', data);
@@ -469,6 +481,7 @@ export default function AdminPage() {
           <div className="flex gap-2 mt-4 flex-wrap">
             {[
               { id: 'overview', label: '📊 Genel Bakış', icon: '📊' },
+              { id: 'smart_analysis', label: '⚡ Smart Analysis', icon: '⚡' },
               { id: 'deepseek_master', label: '🎯 DeepSeek Master', icon: '🎯' },
               { id: 'system_analyses', label: '🔬 Sistem Analizleri', icon: '🔬' },
               { id: 'models', label: '🤖 AI Modelleri', icon: '🤖' },
@@ -606,6 +619,208 @@ export default function AdminPage() {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SMART ANALYSIS TAB - V2 Performance */}
+        {activeTab === 'smart_analysis' && smartStats && (
+          <div className="space-y-6">
+            {/* Header Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-2xl p-4">
+                <div className="text-3xl mb-2">⚡</div>
+                <div className="text-3xl font-bold text-white">{smartStats.overview?.total || 0}</div>
+                <div className="text-purple-400 text-sm">Toplam Analiz</div>
+              </div>
+              <div className="bg-gradient-to-r from-green-600/20 to-green-500/10 border border-green-500/30 rounded-2xl p-4">
+                <div className="text-3xl mb-2">✅</div>
+                <div className="text-3xl font-bold text-white">{smartStats.overview?.settled || 0}</div>
+                <div className="text-green-400 text-sm">Sonuçlanan</div>
+              </div>
+              <div className="bg-gradient-to-r from-yellow-600/20 to-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4">
+                <div className="text-3xl mb-2">⏳</div>
+                <div className="text-3xl font-bold text-white">{smartStats.overview?.pending || 0}</div>
+                <div className="text-yellow-400 text-sm">Bekleyen</div>
+              </div>
+              <div className="bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-2xl p-4">
+                <div className="text-3xl mb-2">🎯</div>
+                <div className="text-3xl font-bold text-white">{smartStats.accuracy?.overall?.rate || 0}%</div>
+                <div className="text-blue-400 text-sm">Genel Başarı</div>
+              </div>
+            </div>
+
+            {/* Market Performance */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">⚽</span>
+                  <h4 className="text-lg font-bold text-white">BTTS</h4>
+                </div>
+                <div className="text-4xl font-bold text-emerald-400 mb-2">{smartStats.accuracy?.btts?.rate || 0}%</div>
+                <div className="text-gray-400 text-sm">
+                  {smartStats.accuracy?.btts?.correct || 0} / {smartStats.accuracy?.btts?.total || 0} doğru
+                </div>
+                <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full"
+                    style={{ width: `${smartStats.accuracy?.btts?.rate || 0}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">📈</span>
+                  <h4 className="text-lg font-bold text-white">Üst/Alt 2.5</h4>
+                </div>
+                <div className="text-4xl font-bold text-blue-400 mb-2">{smartStats.accuracy?.overUnder?.rate || 0}%</div>
+                <div className="text-gray-400 text-sm">
+                  {smartStats.accuracy?.overUnder?.correct || 0} / {smartStats.accuracy?.overUnder?.total || 0} doğru
+                </div>
+                <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${smartStats.accuracy?.overUnder?.rate || 0}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🏆</span>
+                  <h4 className="text-lg font-bold text-white">Maç Sonucu</h4>
+                </div>
+                <div className="text-4xl font-bold text-purple-400 mb-2">{smartStats.accuracy?.matchResult?.rate || 0}%</div>
+                <div className="text-gray-400 text-sm">
+                  {smartStats.accuracy?.matchResult?.correct || 0} / {smartStats.accuracy?.matchResult?.total || 0} doğru
+                </div>
+                <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{ width: `${smartStats.accuracy?.matchResult?.rate || 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Confidence Distribution */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                📊 Güven Seviyesi vs Başarı
+              </h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+                  <div className="text-green-400 font-bold mb-1">Yüksek Güven (&gt;70%)</div>
+                  <div className="text-2xl font-bold text-white">{smartStats.confidenceDistribution?.high?.rate || 0}%</div>
+                  <div className="text-gray-400 text-sm">{smartStats.confidenceDistribution?.high?.correct || 0} / {smartStats.confidenceDistribution?.high?.count || 0}</div>
+                </div>
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                  <div className="text-yellow-400 font-bold mb-1">Orta Güven (60-70%)</div>
+                  <div className="text-2xl font-bold text-white">{smartStats.confidenceDistribution?.medium?.rate || 0}%</div>
+                  <div className="text-gray-400 text-sm">{smartStats.confidenceDistribution?.medium?.correct || 0} / {smartStats.confidenceDistribution?.medium?.count || 0}</div>
+                </div>
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                  <div className="text-red-400 font-bold mb-1">Düşük Güven (&lt;60%)</div>
+                  <div className="text-2xl font-bold text-white">{smartStats.confidenceDistribution?.low?.rate || 0}%</div>
+                  <div className="text-gray-400 text-sm">{smartStats.confidenceDistribution?.low?.correct || 0} / {smartStats.confidenceDistribution?.low?.count || 0}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  ⚡ Performans
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Ortalama Analiz Süresi</span>
+                    <span className="text-white font-bold">{smartStats.performance?.avgProcessingTime || 0}ms</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Ortalama Güven</span>
+                    <span className="text-white font-bold">%{smartStats.performance?.avgConfidence || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Period</span>
+                    <span className="text-white font-bold">{smartStats.overview?.periodDays || 30} gün</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  🤖 Kullanılan Modeller
+                </h3>
+                <div className="space-y-2">
+                  {smartStats.performance?.modelsUsage && Object.entries(smartStats.performance.modelsUsage).map(([model, count]) => (
+                    <div key={model} className="flex justify-between items-center">
+                      <span className="text-gray-400 capitalize">{model}</span>
+                      <span className="text-white font-bold">{String(count)} analiz</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Analyses */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                📋 Son Analizler
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Maç</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">BTTS</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Ü/A</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">MS</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Risk</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Süre</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {smartStats.recentAnalyses?.slice(0, 10).map((a: any, idx: number) => (
+                      <tr key={idx} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td className="py-3 px-4">
+                          <div className="text-white font-medium">{a.homeTeam} vs {a.awayTeam}</div>
+                          <div className="text-gray-500 text-sm">{a.league}</div>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${a.btts?.prediction === 'yes' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {a.btts?.prediction?.toUpperCase()} %{a.btts?.confidence}
+                          </span>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${a.overUnder?.prediction === 'over' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                            {a.overUnder?.prediction?.toUpperCase()} %{a.overUnder?.confidence}
+                          </span>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-purple-500/20 text-purple-400">
+                            {a.matchResult?.prediction?.toUpperCase()} %{a.matchResult?.confidence}
+                          </span>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            a.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
+                            a.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {a.riskLevel}
+                          </span>
+                        </td>
+                        <td className="text-center py-3 px-4 text-gray-400 text-sm">
+                          {a.processingTime}ms
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
