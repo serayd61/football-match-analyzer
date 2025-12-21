@@ -726,20 +726,72 @@ export default function DashboardPage() {
         console.log('   ℹ️ No existing analysis found');
       }
       
-      // ⚠️ ANALİZ YOKSA: Otomatik analiz sistemini bilgilendir, yeni analiz yapma
-      console.log('   ⚠️ No existing analysis found');
-      setAnalysisError(
-        lang === 'tr' 
-          ? 'Bu maç henüz analiz edilmemiş. Otomatik analiz sistemi yakında bu maçı analiz edecek. Lütfen birkaç dakika sonra tekrar deneyin. (Otomatik analiz her 30 dakikada bir çalışır)'
-          : lang === 'de'
-          ? 'Dieses Spiel wurde noch nicht analysiert. Das automatische Analysesystem wird dieses Spiel bald analysieren. Bitte versuchen Sie es in ein paar Minuten erneut. (Automatische Analyse läuft alle 30 Minuten)'
-          : 'This match has not been analyzed yet. The automatic analysis system will analyze this match soon. Please try again in a few minutes. (Automatic analysis runs every 30 minutes)'
-      );
-      setDeepSeekLoading(false);
-      return; // Exit - don't create new analysis, wait for cron job
+      // ✅ ANALİZ YOKSA: Manuel olarak yeni analiz başlat
+      console.log('   🚀 No existing analysis found, starting new analysis...');
+      
+      // 1. AI CONSENSUS (Claude + Gemini + DeepSeek)
+      console.log('   🤖 Step 1: Running AI Consensus...');
+      const consensusRes = await fetch('/api/quad-brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          league: match.league,
+          language: lang,
+          fetchNews: false,
+          trackPerformance: true,
+        }),
+      });
+      const consensusData = await consensusRes.json();
+      if (consensusData.success) {
+        setQuadBrainAnalysis(consensusData.result);
+      }
+      
+      // 2. DEEPSEEK MASTER için tüm verileri topla ve API'ye gönder
+      console.log('   🎯 Step 2: Running DeepSeek Master Analysis...');
+      const masterRes = await fetch('/api/deepseek-master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeTeamId: match.homeTeamId,
+          awayTeamId: match.awayTeamId,
+          league: match.league,
+          matchDate: match.date,
+          language: lang,
+        }),
+      });
+      
+      const masterData = await masterRes.json();
+      
+      if (masterData.success) {
+        console.log('   ✅ DeepSeek Master Analysis complete!');
+        setDeepSeekMasterAnalysis({
+          ...masterData.result,
+          duration: Date.now() - overallStartTime,
+        });
+        
+        // Update individual analyses if available
+        if (masterData.result.aiConsensusRaw) setAnalysis(masterData.result.aiConsensusRaw);
+        if (masterData.result.quadBrainRaw) setQuadBrainAnalysis(masterData.result.quadBrainRaw);
+        if (masterData.result.aiAgentsRaw) setAgentAnalysis(masterData.result.aiAgentsRaw);
+        
+        fetchUserProfile(); // Update credit count
+      } else {
+        console.error('   ❌ DeepSeek Master failed:', masterData.error);
+        setAnalysisError(masterData.error || 'DeepSeek Master analysis failed');
+      }
+      
     } catch (error) {
       console.error('DeepSeek Master error:', error);
       setAnalysisError('Network error');
+    } finally {
       setDeepSeekLoading(false);
     }
   };
