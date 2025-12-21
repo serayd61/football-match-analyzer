@@ -62,9 +62,15 @@ export async function GET(request: NextRequest) {
     // Because the dashboard only shows DeepSeek Master analysis
     const hasDeepSeekMaster = !!(
       analysis.deepseek_master && 
+      typeof analysis.deepseek_master === 'object' &&
       analysis.deepseek_master.finalVerdict &&
       typeof analysis.deepseek_master.finalVerdict === 'object'
     );
+    
+    // Debug logging if no deepseek_master but has other systems
+    if (!hasDeepSeekMaster && (analysis.ai_consensus || analysis.quad_brain || analysis.ai_agents)) {
+      console.log(`⚠️ Fixture ${fixtureId} has 3 systems but no deepseek_master.finalVerdict`);
+    }
 
     // Parse each system's analysis
     const parseSystem = (data: any): SystemStatus => {
