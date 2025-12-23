@@ -265,14 +265,33 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     // Corners - IMPORTANT: getStatValue(45) might return TOTAL corners, not average per match
     // Normal match has 5-12 corners per match, so values > 25 are likely totals, not averages
     const cornersStatValue = getStatValue(45);
-    const validAvgCornersFor = (cornersStatValue > 0 && cornersStatValue <= 25) 
-      ? cornersStatValue 
-      : avgCornersFromMatches;
+    
+    // If stat value is > 25, it's likely a total, not average - don't use it
+    // Only use if it's in reasonable range (5-12 per match is normal, max 20 for very high)
+    let validAvgCornersFor = 0;
+    if (cornersStatValue > 0 && cornersStatValue <= 20) {
+      // Valid average per match
+      validAvgCornersFor = cornersStatValue;
+    } else if (avgCornersFromMatches > 0) {
+      // Use calculated from recent matches
+      validAvgCornersFor = avgCornersFromMatches;
+    } else {
+      // No valid data - use default
+      validAvgCornersFor = 5;
+    }
     
     const cornersAgainstValue = getStatValue(46);
-    const validAvgCornersAgainst = (cornersAgainstValue > 0 && cornersAgainstValue <= 25)
-      ? cornersAgainstValue
-      : 4.5;
+    let validAvgCornersAgainst = 0;
+    if (cornersAgainstValue > 0 && cornersAgainstValue <= 20) {
+      validAvgCornersAgainst = cornersAgainstValue;
+    } else {
+      validAvgCornersAgainst = 4.5; // Default
+    }
+    
+    // Log for debugging
+    if (cornersStatValue > 20) {
+      console.warn(`⚠️ Invalid corner stat value ${cornersStatValue} for team ${teamId} - using calculated ${avgCornersFromMatches} or default`);
+    }
 
     return {
       teamId,
@@ -821,12 +840,13 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     console.log(`🔄 Fetching team details for ${homeTeamId} and ${awayTeamId}...`);
     
     // 20 saniye timeout - kritik veriler için daha uzun süre
+    // Use same include format as getTeamStats for consistency
     const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
       fetchSportmonks(`/teams/${homeTeamId}`, {
-        include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
+        include: 'statistics.details;latest.participants;latest.scores;latest.statistics;coach'  // Same as getTeamStats
       }, 2, 20000), // 2 retries, 20s timeout
       fetchSportmonks(`/teams/${awayTeamId}`, {
-        include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
+        include: 'statistics.details;latest.participants;latest.scores;latest.statistics;coach'  // Same as getTeamStats
       }, 2, 20000), // 2 retries, 20s timeout
       fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
         include: 'participants;scores;statistics',  // statistics for corners
@@ -875,6 +895,27 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     const awayForm = calculateForm(awayTeam?.latest || [], awayTeam?.id || awayTeamId);
     
     console.log(`✅ Step 3: Form calculated - Home: ${homeForm.form}, Away: ${awayForm.form}`);
+    
+    // Get detailed team stats using getTeamStats for consistency
+    // This ensures same calculation logic as getCompleteMatchContext
+    console.log(`🔍 Step 3.5: Getting detailed team stats...`);
+    const [homeTeamStats, awayTeamStats] = await Promise.all([
+      getTeamStats(homeTeamId),
+      getTeamStats(awayTeamId)
+    ]);
+    
+    // Use stats from getTeamStats if available, otherwise use calculated form
+    const finalHomeForm = homeTeamStats ? {
+      form: homeTeamStats.recentForm,
+      points: homeTeamStats.formPoints
+    } : homeForm;
+    
+    const finalAwayForm = awayTeamStats ? {
+      form: awayTeamStats.recentForm,
+      points: awayTeamStats.formPoints
+    } : awayForm;
+    
+    console.log(`✅ Step 3.5: Team stats loaded - Home: ${finalHomeForm.form} (${finalHomeForm.points}), Away: ${finalAwayForm.form} (${finalAwayForm.points})`);
     
     // H2H verilerini işle
     console.log(`🔍 Step 4: Processing H2H data...`);
@@ -998,8 +1039,8 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         name: homeTeam.name || 'Unknown',
         shortCode: homeTeam.short_code || '',
         logo: homeTeam.image_path || '',
-        form: homeForm.form,
-        formPoints: homeForm.points,
+        form: finalHomeForm.form,
+        formPoints: finalHomeForm.points,
         position: homeParticipant.meta?.position || 0,
         statistics: homeTeam.statistics || [],
         recentMatches: homeTeam.latest?.slice(0, 10) || [],
@@ -1010,8 +1051,8 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         name: awayTeam.name || 'Unknown',
         shortCode: awayTeam.short_code || '',
         logo: awayTeam.image_path || '',
-        form: awayForm.form,
-        formPoints: awayForm.points,
+        form: finalAwayForm.form,
+        formPoints: finalAwayForm.points,
         position: awayParticipant.meta?.position || 0,
         statistics: awayTeam.statistics || [],
         recentMatches: awayTeam.latest?.slice(0, 10) || [],
