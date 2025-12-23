@@ -34,6 +34,24 @@ CREATE TABLE IF NOT EXISTS public.agent_analysis (
   corners_reasoning TEXT,
   corners_line NUMERIC,
   
+  -- YENİ: İlk Yarı Gol Tahmini (Agent özel)
+  half_time_goals_prediction TEXT,
+  half_time_goals_confidence INTEGER,
+  half_time_goals_reasoning TEXT,
+  half_time_goals_line NUMERIC,
+  half_time_goals_expected NUMERIC,
+  
+  -- YENİ: İlk Yarı / Maç Sonucu Kombinasyonu (Agent özel)
+  half_time_full_time_prediction TEXT,
+  half_time_full_time_confidence INTEGER,
+  half_time_full_time_reasoning TEXT,
+  
+  -- YENİ: Detaylı Maç Sonucu Oranları (Agent özel)
+  match_result_odds_home INTEGER,
+  match_result_odds_draw INTEGER,
+  match_result_odds_away INTEGER,
+  match_result_odds_reasoning TEXT,
+  
   -- Summary
   best_bet_market TEXT,
   best_bet_selection TEXT,

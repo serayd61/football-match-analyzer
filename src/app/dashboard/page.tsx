@@ -55,6 +55,10 @@ interface SmartAnalysis {
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
   corners?: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable?: boolean };
+  // YENİ: Agent özel tahminler
+  halfTimeGoals?: { prediction: string; confidence: number; reasoning: string; line: number; expectedGoals?: number };
+  halfTimeFullTime?: { prediction: string; confidence: number; reasoning: string };
+  matchResultOdds?: { home: number; draw: number; away: number; reasoning: string };
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -95,6 +99,9 @@ const translations = {
     overUnder: 'Üst/Alt 2.5',
     matchResult: 'Maç Sonucu',
     corners: 'Korner',
+    halfTimeGoals: 'İlk Yarı Goller',
+    halfTimeFullTime: 'İlk Yarı/Maç Sonucu',
+    matchResultOdds: 'Maç Sonucu Oranları',
     bestBet: 'En İyi Bahis',
     aiRecommendation: 'AI önerisi',
     confidence: 'güven',
@@ -140,6 +147,9 @@ const translations = {
     overUnder: 'Over/Under 2.5',
     matchResult: 'Match Result',
     corners: 'Corners',
+    halfTimeGoals: 'Half-Time Goals',
+    halfTimeFullTime: 'HT/FT Result',
+    matchResultOdds: 'Match Result Odds',
     bestBet: 'Best Bet',
     aiRecommendation: 'AI recommendation',
     confidence: 'confidence',
@@ -185,6 +195,9 @@ const translations = {
     overUnder: 'Über/Unter 2.5',
     matchResult: 'Spielergebnis',
     corners: 'Ecken',
+    halfTimeGoals: 'Halbzeit-Tore',
+    halfTimeFullTime: 'HZ/ET Ergebnis',
+    matchResultOdds: 'Spielergebnis Quoten',
     bestBet: 'Beste Wette',
     aiRecommendation: 'KI-Empfehlung',
     confidence: 'Vertrauen',
@@ -807,6 +820,99 @@ export default function DashboardPage() {
                   </div>
                   )}
                 </div>
+                
+                {/* YENİ: Agent Özel Tahminler (Sadece Agent Analysis için) */}
+                {analysisType === 'agent' && (
+                  <div className="grid md:grid-cols-3 gap-4 mt-4">
+                    {/* İlk Yarı Gol Tahmini */}
+                    {analysis.halfTimeGoals && (
+                      <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⏱️</span>
+                          <h4 className="text-white font-medium">{t.halfTimeGoals}</h4>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-400">
+                          {analysis.halfTimeGoals.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.halfTimeGoals.line}
+                        </div>
+                        {analysis.halfTimeGoals.expectedGoals !== undefined && (
+                          <div className="text-sm text-gray-400 mt-1">
+                            Beklenen: {analysis.halfTimeGoals.expectedGoals.toFixed(1)} gol
+                          </div>
+                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 rounded-full"
+                              style={{ width: `${analysis.halfTimeGoals.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-blue-400">%{analysis.halfTimeGoals.confidence}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">{analysis.halfTimeGoals.reasoning}</p>
+                      </div>
+                    )}
+                    
+                    {/* İlk Yarı / Maç Sonucu Kombinasyonu */}
+                    {analysis.halfTimeFullTime && (
+                      <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">🎯</span>
+                          <h4 className="text-white font-medium">{t.halfTimeFullTime}</h4>
+                        </div>
+                        <div className="text-3xl font-bold text-purple-400">
+                          {analysis.halfTimeFullTime.prediction}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {analysis.halfTimeFullTime.prediction === '1/1' ? 'İY Ev - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === '1/X' ? 'İY Ev - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === '1/2' ? 'İY Ev - Maç Deplasman' :
+                           analysis.halfTimeFullTime.prediction === 'X/1' ? 'İY Beraberlik - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === 'X/X' ? 'İY Beraberlik - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === 'X/2' ? 'İY Beraberlik - Maç Deplasman' :
+                           analysis.halfTimeFullTime.prediction === '2/1' ? 'İY Deplasman - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === '2/X' ? 'İY Deplasman - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === '2/2' ? 'İY Deplasman - Maç Deplasman' :
+                           'Kombinasyon'}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-purple-500 rounded-full"
+                              style={{ width: `${analysis.halfTimeFullTime.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-purple-400">%{analysis.halfTimeFullTime.confidence}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">{analysis.halfTimeFullTime.reasoning}</p>
+                      </div>
+                    )}
+                    
+                    {/* Maç Sonucu Oranları */}
+                    {analysis.matchResultOdds && (
+                      <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">📊</span>
+                          <h4 className="text-white font-medium">{t.matchResultOdds}</h4>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.home}</span>
+                            <span className="text-green-400 font-bold">{analysis.matchResultOdds.home}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.draw}</span>
+                            <span className="text-yellow-400 font-bold">{analysis.matchResultOdds.draw}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.away}</span>
+                            <span className="text-red-400 font-bold">{analysis.matchResultOdds.away}%</span>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-xs text-gray-400">{analysis.matchResultOdds.reasoning}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 {/* Best Bet */}
                 {analysis.bestBet && (

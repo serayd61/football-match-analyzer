@@ -131,6 +131,24 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "cardsLine": "Over 3.5",
     "cardsConfidence": 62
   },
+  "halfTimeGoals": {
+    "prediction": "Over veya Under",
+    "line": 1.5,
+    "expectedGoals": 1.2,
+    "confidence": 65,
+    "reasoning": "İlk yarı gol tahmini - takımların ilk yarı performanslarına göre"
+  },
+  "halfTimeFullTime": {
+    "prediction": "1/1 veya 1/X veya X/1 veya X/X veya 2/1 veya 2/X veya 1/2 veya X/2 veya 2/2",
+    "confidence": 60,
+    "reasoning": "İlk yarı sonucu / Maç sonucu kombinasyonu tahmini. Örnek: 1/1 = İlk yarı ev sahibi önde, maç sonunda ev sahibi kazandı"
+  },
+  "matchResultOdds": {
+    "home": 65,
+    "draw": 25,
+    "away": 10,
+    "reasoning": "Maç sonucu olasılıkları (yüzde olarak)"
+  },
   "riskLevel": "Low veya Medium veya High",
   "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
 }`,
@@ -546,8 +564,8 @@ export async function runDeepAnalysisAgent(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-      temperature: 0.1, // Düşük = daha tutarlı sonuçlar
-      maxTokens: 2500
+      temperature: 0.4, // Agresif analiz için artırıldı - farklı bakış açıları
+      maxTokens: 3000
     });
 
     if (!response) {

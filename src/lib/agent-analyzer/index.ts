@@ -58,6 +58,30 @@ export interface AgentAnalysisResult {
     line: number;
   };
   
+  // YENİ: İlk Yarı Gol Tahmini
+  halfTimeGoals?: {
+    prediction: string; // "over" | "under"
+    confidence: number;
+    reasoning: string;
+    line: number; // Genellikle 1.5 veya 0.5
+    expectedGoals: number;
+  };
+  
+  // YENİ: İlk Yarı / Maç Sonucu Kombinasyonu
+  halfTimeFullTime?: {
+    prediction: string; // "1/1", "1/X", "X/1", "X/X", "2/1", "2/X", "1/2", "X/2", "2/2"
+    confidence: number;
+    reasoning: string;
+  };
+  
+  // YENİ: Detaylı Maç Sonucu Oranları
+  matchResultOdds?: {
+    home: number; // 1 oranı (ör: 65%)
+    draw: number; // X oranı (ör: 25%)
+    away: number; // 2 oranı (ör: 10%)
+    reasoning: string;
+  };
+  
   bestBet: {
     market: string;
     selection: string;
@@ -549,6 +573,35 @@ export async function runAgentAnalysis(
       line: 9.5
     } : undefined;
     
+    // Step 8: YENİ - İlk Yarı Gol Tahmini (Agent özel)
+    const halfTimeGoals = deepAnalysisResult?.halfTimeGoals ? {
+      prediction: deepAnalysisResult.halfTimeGoals.prediction?.toLowerCase().includes('over') ? 'over' : 'under',
+      confidence: deepAnalysisResult.halfTimeGoals.confidence || 60,
+      reasoning: deepAnalysisResult.halfTimeGoals.reasoning || 'İlk yarı gol tahmini',
+      line: deepAnalysisResult.halfTimeGoals.line || 1.5,
+      expectedGoals: deepAnalysisResult.halfTimeGoals.expectedGoals || 1.2
+    } : undefined;
+    
+    // Step 9: YENİ - İlk Yarı / Maç Sonucu Kombinasyonu (Agent özel)
+    const halfTimeFullTime = deepAnalysisResult?.halfTimeFullTime ? {
+      prediction: deepAnalysisResult.halfTimeFullTime.prediction || '1/1',
+      confidence: deepAnalysisResult.halfTimeFullTime.confidence || 55,
+      reasoning: deepAnalysisResult.halfTimeFullTime.reasoning || 'İlk yarı / Maç sonucu kombinasyonu tahmini'
+    } : undefined;
+    
+    // Step 10: YENİ - Detaylı Maç Sonucu Oranları (Agent özel)
+    const matchResultOdds = deepAnalysisResult?.matchResultOdds ? {
+      home: deepAnalysisResult.matchResultOdds.home || 33,
+      draw: deepAnalysisResult.matchResultOdds.draw || 33,
+      away: deepAnalysisResult.matchResultOdds.away || 34,
+      reasoning: deepAnalysisResult.matchResultOdds.reasoning || 'Maç sonucu olasılıkları'
+    } : (deepAnalysisResult?.probabilities ? {
+      home: deepAnalysisResult.probabilities.homeWin || 33,
+      draw: deepAnalysisResult.probabilities.draw || 33,
+      away: deepAnalysisResult.probabilities.awayWin || 34,
+      reasoning: 'Maç sonucu olasılıkları (probabilities\'ten)'
+    } : undefined);
+    
     const result: AgentAnalysisResult = {
       fixtureId,
       homeTeam: fullData.homeTeam.name,
@@ -567,6 +620,9 @@ export async function runAgentAnalysis(
       matchResult: consensus.matchResult,
       
       corners,
+      halfTimeGoals,
+      halfTimeFullTime,
+      matchResultOdds,
       
       bestBet: consensus.bestBet,
       agreement: consensus.agreement,
@@ -625,6 +681,24 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
         corners_confidence: result.corners?.confidence,
         corners_reasoning: result.corners?.reasoning,
         corners_line: result.corners?.line,
+        
+        // YENİ: İlk Yarı Gol Tahmini
+        half_time_goals_prediction: result.halfTimeGoals?.prediction,
+        half_time_goals_confidence: result.halfTimeGoals?.confidence,
+        half_time_goals_reasoning: result.halfTimeGoals?.reasoning,
+        half_time_goals_line: result.halfTimeGoals?.line,
+        half_time_goals_expected: result.halfTimeGoals?.expectedGoals,
+        
+        // YENİ: İlk Yarı / Maç Sonucu Kombinasyonu
+        half_time_full_time_prediction: result.halfTimeFullTime?.prediction,
+        half_time_full_time_confidence: result.halfTimeFullTime?.confidence,
+        half_time_full_time_reasoning: result.halfTimeFullTime?.reasoning,
+        
+        // YENİ: Detaylı Maç Sonucu Oranları
+        match_result_odds_home: result.matchResultOdds?.home,
+        match_result_odds_draw: result.matchResultOdds?.draw,
+        match_result_odds_away: result.matchResultOdds?.away,
+        match_result_odds_reasoning: result.matchResultOdds?.reasoning,
         
         // Summary
         best_bet_market: result.bestBet.market,

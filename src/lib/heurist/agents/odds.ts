@@ -796,7 +796,7 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
   ];
 
   try {
-    const response = await heurist.chat(messages, { temperature: 0.1, maxTokens: 1000 }); // Düşük = tutarlı
+    const response = await heurist.chat(messages, { temperature: 0.4, maxTokens: 1500 }); // Agresif analiz için artırıldı
     
     if (response) {
       const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
