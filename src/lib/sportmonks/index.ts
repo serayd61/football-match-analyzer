@@ -138,10 +138,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
       
-      // Calculate corners from match statistics
+      // Calculate corners from match statistics (type_id 45 = corners, location based)
       if (match.statistics) {
         const teamCorners = match.statistics.find((s: any) => 
-          s.type_id === 34 && s.participant === (isHome ? 'home' : 'away')
+          s.type_id === 45 && s.location === (isHome ? 'home' : 'away')
         )?.data?.value || 0;
         if (teamCorners > 0) {
           totalCornersFromMatches += teamCorners;
@@ -352,10 +352,10 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
       awayScore = match.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
     }
     
-    // Get corners from statistics if available
+    // Get corners from statistics if available (type_id 45 = corners)
     if (match.statistics) {
-      const homeCorners = match.statistics.find((s: any) => s.type_id === 34 && s.participant === 'home')?.data?.value || 0;
-      const awayCorners = match.statistics.find((s: any) => s.type_id === 34 && s.participant === 'away')?.data?.value || 0;
+      const homeCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'home')?.data?.value || 0;
+      const awayCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'away')?.data?.value || 0;
       matchCorners = homeCorners + awayCorners;
       if (matchCorners > 0) {
         totalCorners += matchCorners;
