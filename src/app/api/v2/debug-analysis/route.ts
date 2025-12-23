@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         avgCorners: context?.h2h?.avgCorners || fullData?.h2h?.avgCorners || 0,
         over85CornersPercentage: context?.h2h?.over85CornersPercentage || fullData?.h2h?.over85CornersPercentage || 0,
         over95CornersPercentage: context?.h2h?.over95CornersPercentage || fullData?.h2h?.over95CornersPercentage || 0,
-        recentMatches: fullData?.h2h?.recentMatches?.length || 0
+        recentMatches: context?.h2h?.recentMatches || fullData?.h2h?.recentMatches || []
       } as any
     } as any);
     
@@ -155,9 +155,15 @@ export async function GET(request: NextRequest) {
           draws: fullData.h2h?.draws || 0,
           avgGoals: fullData.h2h?.avgGoals || 2.5,
           bttsPercentage: fullData.h2h?.bttsPercentage || 50,
-          avgCorners: fullData.h2h?.avgCorners || 0
-        }
-      };
+          over25Percentage: fullData.h2h?.over25Percentage || 50,
+          avgCorners: fullData.h2h?.avgCorners || 0,
+          over85CornersPercentage: fullData.h2h?.over85CornersPercentage || 0,
+          over95CornersPercentage: fullData.h2h?.over95CornersPercentage || 0,
+          recentMatches: fullData.h2h?.recentMatches || []
+        } as any,
+        homeInjuries: fullData.injuries?.home || [],
+        awayInjuries: fullData.injuries?.away || []
+      } as MatchContext;
     }
     
     // STEP 2: İstatistiksel tahmin hesaplama
