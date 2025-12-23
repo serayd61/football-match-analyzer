@@ -3,8 +3,10 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getFullFixtureData } from '@/lib/sportmonks';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
 const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
@@ -98,12 +100,36 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Test 4: getFullFixtureData function
+    console.log('🔍 Test 4: getFullFixtureData function...');
+    try {
+      const fullData = await getFullFixtureData(parseInt(fixtureId));
+      results.tests.fullFixtureData = {
+        success: !!fullData,
+        hasData: !!fullData,
+        homeTeam: fullData?.homeTeam?.name || null,
+        awayTeam: fullData?.awayTeam?.name || null,
+        homeForm: fullData?.homeTeam?.form || null,
+        awayForm: fullData?.awayTeam?.form || null,
+        h2hMatches: fullData?.h2h?.totalMatches || 0,
+        dataQualityScore: fullData?.dataQuality?.score || 0,
+        error: null
+      };
+    } catch (e: any) {
+      results.tests.fullFixtureData = {
+        success: false,
+        hasData: false,
+        error: e.message || String(e)
+      };
+    }
+    
     // Özet
     results.summary = {
       allTestsPassed: Object.values(results.tests).every((t: any) => t.success),
       dataAvailable: results.tests.fixture?.hasData && 
                      results.tests.team?.hasData && 
-                     (results.tests.h2h?.hasData || results.tests.h2h?.matchCount >= 0)
+                     (results.tests.h2h?.hasData || results.tests.h2h?.matchCount >= 0),
+      fullDataWorks: results.tests.fullFixtureData?.success || false
     };
     
     return NextResponse.json(results, {
