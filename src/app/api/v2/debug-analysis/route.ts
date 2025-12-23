@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFullFixtureData } from '@/lib/sportmonks/index';
+import { getFullFixtureData, getCompleteMatchContext, MatchContext } from '@/lib/sportmonks/index';
 import { calculateStatisticalPrediction, buildFullDataPrompt } from '@/lib/smart-prompt/index';
 import { runSmartAnalysis } from '@/lib/smart-analyzer/index';
 
@@ -29,7 +29,13 @@ export async function GET(request: NextRequest) {
     console.log('📊 Step 1: Fetching data from Sportmonks...');
     const fullData = await getFullFixtureData(parseInt(fixtureId));
     
-    debug.steps.sportmonks = {
+    // Get calculated context (with stats)
+    let context: MatchContext | null = null;
+    if (fullData) {
+      context = await getCompleteMatchContext(fullData.homeTeam.id, fullData.awayTeam.id);
+    }
+    
+    debug.steps.sportmonks = ({
       success: !!fullData,
       hasData: !!fullData,
       dataQuality: fullData?.dataQuality || null,
@@ -38,48 +44,120 @@ export async function GET(request: NextRequest) {
         name: fullData?.homeTeam?.name,
         form: fullData?.homeTeam?.form,
         formPoints: fullData?.homeTeam?.formPoints,
-        avgGoalsScored: fullData?.homeTeam?.avgGoalsScored,
-        avgGoalsConceded: fullData?.homeTeam?.avgGoalsConceded,
-        bttsPercentage: fullData?.homeTeam?.bttsPercentage,
-        over25Percentage: fullData?.homeTeam?.over25Percentage,
-        homeWins: fullData?.homeTeam?.homeWins,
-        homeDraws: fullData?.homeTeam?.homeDraws,
-        homeLosses: fullData?.homeTeam?.homeLosses,
-        avgCornersFor: fullData?.homeTeam?.avgCornersFor,
-        avgCornersAgainst: fullData?.homeTeam?.avgCornersAgainst,
-        recentMatches: fullData?.homeTeam?.recentMatches?.length || 0
+        position: fullData?.homeTeam?.position,
+        recentMatches: fullData?.homeTeam?.recentMatches?.length || 0,
+        hasStatistics: !!fullData?.homeTeam?.statistics,
+        // Calculated values from context
+        avgGoalsScored: context?.homeTeam?.avgGoalsScored || 0,
+        avgGoalsConceded: context?.homeTeam?.avgGoalsConceded || 0,
+        bttsPercentage: context?.homeTeam?.bttsPercentage || 0,
+        over25Percentage: context?.homeTeam?.over25Percentage || 0,
+        homeWins: context?.homeTeam?.homeWins || 0,
+        homeDraws: context?.homeTeam?.homeDraws || 0,
+        homeLosses: context?.homeTeam?.homeLosses || 0,
+        avgCornersFor: context?.homeTeam?.avgCornersFor || 0,
+        avgCornersAgainst: context?.homeTeam?.avgCornersAgainst || 0
       },
       awayTeam: {
         id: fullData?.awayTeam?.id,
         name: fullData?.awayTeam?.name,
         form: fullData?.awayTeam?.form,
         formPoints: fullData?.awayTeam?.formPoints,
-        avgGoalsScored: fullData?.awayTeam?.avgGoalsScored,
-        avgGoalsConceded: fullData?.awayTeam?.avgGoalsConceded,
-        bttsPercentage: fullData?.awayTeam?.bttsPercentage,
-        over25Percentage: fullData?.awayTeam?.over25Percentage,
-        awayWins: fullData?.awayTeam?.awayWins,
-        awayDraws: fullData?.awayTeam?.awayDraws,
-        awayLosses: fullData?.awayTeam?.awayLosses,
-        avgCornersFor: fullData?.awayTeam?.avgCornersFor,
-        avgCornersAgainst: fullData?.awayTeam?.avgCornersAgainst,
-        recentMatches: fullData?.awayTeam?.recentMatches?.length || 0
+        position: fullData?.awayTeam?.position,
+        recentMatches: fullData?.awayTeam?.recentMatches?.length || 0,
+        hasStatistics: !!fullData?.awayTeam?.statistics,
+        // Calculated values from context
+        avgGoalsScored: context?.awayTeam?.avgGoalsScored || 0,
+        avgGoalsConceded: context?.awayTeam?.avgGoalsConceded || 0,
+        bttsPercentage: context?.awayTeam?.bttsPercentage || 0,
+        over25Percentage: context?.awayTeam?.over25Percentage || 0,
+        awayWins: context?.awayTeam?.awayWins || 0,
+        awayDraws: context?.awayTeam?.awayDraws || 0,
+        awayLosses: context?.awayTeam?.awayLosses || 0,
+        avgCornersFor: context?.awayTeam?.avgCornersFor || 0,
+        avgCornersAgainst: context?.awayTeam?.avgCornersAgainst || 0
       },
       h2h: {
-        totalMatches: fullData?.h2h?.totalMatches || 0,
-        team1Wins: fullData?.h2h?.team1Wins || 0,
-        team2Wins: fullData?.h2h?.team2Wins || 0,
-        draws: fullData?.h2h?.draws || 0,
-        avgGoals: fullData?.h2h?.avgGoals || 0,
-        bttsPercentage: fullData?.h2h?.bttsPercentage || 0,
-        avgCorners: fullData?.h2h?.avgCorners || 0,
+        totalMatches: context?.h2h?.totalMatches || fullData?.h2h?.totalMatches || 0,
+        team1Wins: context?.h2h?.team1Wins || fullData?.h2h?.team1Wins || 0,
+        team2Wins: context?.h2h?.team2Wins || fullData?.h2h?.team2Wins || 0,
+        draws: context?.h2h?.draws || fullData?.h2h?.draws || 0,
+        avgGoals: context?.h2h?.avgGoals || fullData?.h2h?.avgGoals || 0,
+        bttsPercentage: context?.h2h?.bttsPercentage || fullData?.h2h?.bttsPercentage || 0,
+        over25Percentage: context?.h2h?.over25Percentage || fullData?.h2h?.over25Percentage || 0,
+        avgCorners: context?.h2h?.avgCorners || fullData?.h2h?.avgCorners || 0,
+        over85CornersPercentage: context?.h2h?.over85CornersPercentage || fullData?.h2h?.over85CornersPercentage || 0,
+        over95CornersPercentage: context?.h2h?.over95CornersPercentage || fullData?.h2h?.over95CornersPercentage || 0,
         recentMatches: fullData?.h2h?.recentMatches?.length || 0
-      }
-    };
+      } as any
+    } as any);
     
     if (!fullData) {
       debug.error = 'Failed to fetch data from Sportmonks';
       return NextResponse.json(debug, { status: 200 });
+    }
+    
+    // Use context if available, otherwise create from fullData
+    if (!context) {
+      context = {
+        homeTeam: {
+          teamId: fullData.homeTeam.id,
+          teamName: fullData.homeTeam.name,
+          recentForm: fullData.homeTeam.form || '',
+          formPoints: fullData.homeTeam.formPoints || 0,
+          goalsScored: 0,
+          goalsConceded: 0,
+          avgGoalsScored: 1.2,
+          avgGoalsConceded: 1.0,
+          homeWins: 0,
+          homeDraws: 0,
+          homeLosses: 0,
+          awayWins: 0,
+          awayDraws: 0,
+          awayLosses: 0,
+          bttsPercentage: 50,
+          over25Percentage: 50,
+          under25Percentage: 50,
+          cleanSheets: 0,
+          failedToScore: 0,
+          avgCornersFor: 0,
+          avgCornersAgainst: 0,
+          totalCorners: 0
+        },
+        awayTeam: {
+          teamId: fullData.awayTeam.id,
+          teamName: fullData.awayTeam.name,
+          recentForm: fullData.awayTeam.form || '',
+          formPoints: fullData.awayTeam.formPoints || 0,
+          goalsScored: 0,
+          goalsConceded: 0,
+          avgGoalsScored: 1.1,
+          avgGoalsConceded: 1.1,
+          homeWins: 0,
+          homeDraws: 0,
+          homeLosses: 0,
+          awayWins: 0,
+          awayDraws: 0,
+          awayLosses: 0,
+          bttsPercentage: 50,
+          over25Percentage: 50,
+          under25Percentage: 50,
+          cleanSheets: 0,
+          failedToScore: 0,
+          avgCornersFor: 0,
+          avgCornersAgainst: 0,
+          totalCorners: 0
+        },
+        h2h: {
+          totalMatches: fullData.h2h?.totalMatches || 0,
+          team1Wins: fullData.h2h?.team1Wins || 0,
+          team2Wins: fullData.h2h?.team2Wins || 0,
+          draws: fullData.h2h?.draws || 0,
+          avgGoals: fullData.h2h?.avgGoals || 2.5,
+          bttsPercentage: fullData.h2h?.bttsPercentage || 50,
+          avgCorners: fullData.h2h?.avgCorners || 0
+        }
+      };
     }
     
     // STEP 2: İstatistiksel tahmin hesaplama
@@ -88,64 +166,85 @@ export async function GET(request: NextRequest) {
       fixtureId: parseInt(fixtureId),
       homeTeamId: fullData.homeTeam.id,
       awayTeamId: fullData.awayTeam.id,
-      homeTeamName: fullData.homeTeam.name,
-      awayTeamName: fullData.awayTeam.name,
+      homeTeam: fullData.homeTeam.name,
+      awayTeam: fullData.awayTeam.name,
       league: fullData.league?.name || '',
-      matchDate: fullData.fixture?.startingAt || ''
+      matchDate: fullData.fixtureId?.toString() || ''
     };
     
-    // Context oluştur
-    const context = {
-      homeTeam: {
-        teamId: fullData.homeTeam.id,
-        teamName: fullData.homeTeam.name,
-        recentForm: fullData.homeTeam.form || '',
-        formPoints: fullData.homeTeam.formPoints || 0,
-        goalsScored: 0,
-        goalsConceded: 0,
-        avgGoalsScored: fullData.homeTeam.avgGoalsScored || 1.2,
-        avgGoalsConceded: fullData.homeTeam.avgGoalsConceded || 1.0,
-        homeWins: fullData.homeTeam.homeWins || 0,
-        homeDraws: fullData.homeTeam.homeDraws || 0,
-        homeLosses: fullData.homeTeam.homeLosses || 0,
-        awayWins: 0,
-        awayDraws: 0,
-        awayLosses: 0,
-        bttsPercentage: fullData.homeTeam.bttsPercentage || 50,
-        over25Percentage: fullData.homeTeam.over25Percentage || 50,
-        avgCornersFor: fullData.homeTeam.avgCornersFor || 0,
-        avgCornersAgainst: fullData.homeTeam.avgCornersAgainst || 0
-      },
-      awayTeam: {
-        teamId: fullData.awayTeam.id,
-        teamName: fullData.awayTeam.name,
-        recentForm: fullData.awayTeam.form || '',
-        formPoints: fullData.awayTeam.formPoints || 0,
-        goalsScored: 0,
-        goalsConceded: 0,
-        avgGoalsScored: fullData.awayTeam.avgGoalsScored || 1.1,
-        avgGoalsConceded: fullData.awayTeam.avgGoalsConceded || 1.1,
-        homeWins: 0,
-        homeDraws: 0,
-        homeLosses: 0,
-        awayWins: fullData.awayTeam.awayWins || 0,
-        awayDraws: fullData.awayTeam.awayDraws || 0,
-        awayLosses: fullData.awayTeam.awayLosses || 0,
-        bttsPercentage: fullData.awayTeam.bttsPercentage || 50,
-        over25Percentage: fullData.awayTeam.over25Percentage || 50,
-        avgCornersFor: fullData.awayTeam.avgCornersFor || 0,
-        avgCornersAgainst: fullData.awayTeam.avgCornersAgainst || 0
-      },
-      h2h: {
-        totalMatches: fullData.h2h.totalMatches || 0,
-        team1Wins: fullData.h2h.team1Wins || 0,
-        team2Wins: fullData.h2h.team2Wins || 0,
-        draws: fullData.h2h.draws || 0,
-        avgGoals: fullData.h2h.avgGoals || 2.5,
-        bttsPercentage: fullData.h2h.bttsPercentage || 50,
-        avgCorners: fullData.h2h.avgCorners || 0
-      }
-    };
+    // Use context from getCompleteMatchContext, or create fallback with defaults
+    if (!context) {
+      context = {
+        homeTeam: {
+          teamId: fullData.homeTeam.id,
+          teamName: fullData.homeTeam.name,
+          recentForm: fullData.homeTeam.form || '',
+          formPoints: fullData.homeTeam.formPoints || 0,
+          goalsScored: 0,
+          goalsConceded: 0,
+          avgGoalsScored: 1.2,
+          avgGoalsConceded: 1.0,
+          homeWins: 0,
+          homeDraws: 0,
+          homeLosses: 0,
+          awayWins: 0,
+          awayDraws: 0,
+          awayLosses: 0,
+          bttsPercentage: 50,
+          over25Percentage: 50,
+          under25Percentage: 50,
+          cleanSheets: 0,
+          failedToScore: 0,
+          avgCornersFor: 0,
+          avgCornersAgainst: 0,
+          totalCorners: 0
+        },
+        awayTeam: {
+          teamId: fullData.awayTeam.id,
+          teamName: fullData.awayTeam.name,
+          recentForm: fullData.awayTeam.form || '',
+          formPoints: fullData.awayTeam.formPoints || 0,
+          goalsScored: 0,
+          goalsConceded: 0,
+          avgGoalsScored: 1.1,
+          avgGoalsConceded: 1.1,
+          homeWins: 0,
+          homeDraws: 0,
+          homeLosses: 0,
+          awayWins: 0,
+          awayDraws: 0,
+          awayLosses: 0,
+          bttsPercentage: 50,
+          over25Percentage: 50,
+          under25Percentage: 50,
+          cleanSheets: 0,
+          failedToScore: 0,
+          avgCornersFor: 0,
+          avgCornersAgainst: 0,
+          totalCorners: 0
+        },
+        h2h: {
+          totalMatches: fullData.h2h?.totalMatches || 0,
+          team1Wins: fullData.h2h?.team1Wins || 0,
+          team2Wins: fullData.h2h?.team2Wins || 0,
+          draws: fullData.h2h?.draws || 0,
+          avgGoals: fullData.h2h?.avgGoals || 2.5,
+          bttsPercentage: fullData.h2h?.bttsPercentage || 50,
+          over25Percentage: fullData.h2h?.over25Percentage || 50,
+          avgCorners: fullData.h2h?.avgCorners || 0,
+          over85CornersPercentage: fullData.h2h?.over85CornersPercentage || 0,
+          over95CornersPercentage: fullData.h2h?.over95CornersPercentage || 0,
+          recentMatches: fullData.h2h?.recentMatches || []
+        },
+        homeInjuries: fullData.injuries?.home || [],
+        awayInjuries: fullData.injuries?.away || []
+      } as MatchContext;
+    }
+    
+    if (!context) {
+      debug.error = 'Failed to get match context';
+      return NextResponse.json(debug, { status: 200 });
+    }
     
     const statsPrediction = calculateStatisticalPrediction(context);
     
@@ -204,10 +303,10 @@ export async function GET(request: NextRequest) {
     console.log('📊 Step 4: Running full analysis...');
     const analysisResult = await runSmartAnalysis({
       fixtureId: parseInt(fixtureId),
-      homeTeamId: matchData.homeTeamId,
-      awayTeamId: matchData.awayTeamId,
-      homeTeam: matchData.homeTeamName,
-      awayTeam: matchData.awayTeamName,
+      homeTeamId: fullData.homeTeam.id,
+      awayTeamId: fullData.awayTeam.id,
+      homeTeam: matchData.homeTeam,
+      awayTeam: matchData.awayTeam,
       league: matchData.league,
       matchDate: matchData.matchDate
     });
