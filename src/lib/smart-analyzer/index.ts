@@ -240,8 +240,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: homeCornersResult.value,
-        avgCornersAgainst: awayCornersResult.value, // Opponent's corners = this team's corners against
+        avgCornersFor: homeCornersResult.hasData ? homeCornersResult.value : 0,
+        avgCornersAgainst: awayCornersResult.hasData ? awayCornersResult.value : 0, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       awayTeam: {
@@ -264,8 +264,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: awayCornersResult.value,
-        avgCornersAgainst: homeCornersResult.value, // Opponent's corners = this team's corners against
+        avgCornersFor: awayCornersResult.hasData ? awayCornersResult.value : 0,
+        avgCornersAgainst: homeCornersResult.hasData ? homeCornersResult.value : 0, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       h2h: fullData.h2h,

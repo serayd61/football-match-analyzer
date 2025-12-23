@@ -379,17 +379,27 @@ export function combineAIandStats(
   // Corners prediction from AI - check if AI provided valid corners data
   const aiCorners = aiPrediction.corners;
   
-  // Check if context has REAL corner data (not default values)
-  // Default values are: home/away = 5, h2h = 9
-  // Only calculate if we have REAL data (significantly different from defaults)
-  const homeHasData = context && context.homeTeam.avgCornersFor && 
-    (context.homeTeam.avgCornersFor < 4.5 || context.homeTeam.avgCornersFor > 5.5);
-  const awayHasData = context && context.awayTeam.avgCornersFor && 
-    (context.awayTeam.avgCornersFor < 4.5 || context.awayTeam.avgCornersFor > 5.5);
-  const h2hHasData = context && context.h2h.avgCorners && 
-    (context.h2h.avgCorners < 8 || context.h2h.avgCorners > 10);
+  // Check if context has corner data
+  // Accept any reasonable value (0-25 range) - 5.0 is a valid average!
+  // If value is 0, it means no data was found
+  const homeHasData = context && context.homeTeam.avgCornersFor > 0 && context.homeTeam.avgCornersFor <= 25;
+  const awayHasData = context && context.awayTeam.avgCornersFor > 0 && context.awayTeam.avgCornersFor <= 25;
+  const h2hHasData = context && context.h2h.avgCorners > 0 && context.h2h.avgCorners <= 25;
   
+  // At least one source must have valid data
   const hasContextCornerData = homeHasData || awayHasData || h2hHasData;
+  
+  console.log('🚩 Context corner data check:', {
+    home: context?.homeTeam?.avgCornersFor,
+    away: context?.awayTeam?.avgCornersFor,
+    h2h: context?.h2h?.avgCorners,
+    homeHasData,
+    awayHasData,
+    h2hHasData,
+    hasContextCornerData,
+    aiCorners: !!aiCorners,
+    hasCornerData
+  });
   
   // Check if reasoning mentions corners (AI might have corner data but forgot to add corners field)
   const allReasoning = [
