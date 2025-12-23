@@ -92,13 +92,18 @@ async function fetchSportmonks(endpoint: string, params: Record<string, string> 
     });
     
     if (!res.ok) {
-      console.error(`Sportmonks API error ${res.status}: ${endpoint}`);
+      // 404 is normal for some teams/data, don't log as error
+      if (res.status === 404) {
+        console.log(`⚠️ Sportmonks 404 (expected for some teams): ${endpoint}`);
+      } else {
+        console.error(`❌ Sportmonks API error ${res.status}: ${endpoint}`);
+      }
       return null;
     }
     
     return await res.json();
   } catch (error) {
-    console.error(`Sportmonks fetch error: ${endpoint}`, error);
+    console.error(`❌ Sportmonks fetch error: ${endpoint}`, error);
     return null;
   }
 }
@@ -510,16 +515,44 @@ export async function getCompleteMatchContext(
       getTeamInjuries(awayTeamId)
     ]);
 
+    // If team stats missing, use default values (404 is normal for some teams)
+    const defaultTeamStats = (teamId: number, name: string): TeamStats => ({
+      teamId,
+      teamName: name,
+      recentForm: 'DDDDD',
+      formPoints: 5,
+      goalsScored: 0,
+      goalsConceded: 0,
+      avgGoalsScored: 1.2,
+      avgGoalsConceded: 1.2,
+      homeWins: 0,
+      homeDraws: 0,
+      homeLosses: 0,
+      awayWins: 0,
+      awayDraws: 0,
+      awayLosses: 0,
+      bttsPercentage: 50,
+      over25Percentage: 50,
+      under25Percentage: 50,
+      cleanSheets: 0,
+      failedToScore: 0,
+      avgCornersFor: 5,
+      avgCornersAgainst: 4.5,
+      totalCorners: 0
+    });
+
+    const finalHomeStats = homeStats || defaultTeamStats(homeTeamId, 'Home Team');
+    const finalAwayStats = awayStats || defaultTeamStats(awayTeamId, 'Away Team');
+
     if (!homeStats || !awayStats) {
-      console.error('Failed to get team stats');
-      return null;
+      console.warn(`⚠️ Some team stats missing, using defaults for analysis`);
     }
 
-    console.log(`✅ Match context loaded: ${homeStats.teamName} vs ${awayStats.teamName}`);
+    console.log(`✅ Match context loaded: ${finalHomeStats.teamName} vs ${finalAwayStats.teamName}`);
 
     return {
-      homeTeam: homeStats,
-      awayTeam: awayStats,
+      homeTeam: finalHomeStats,
+      awayTeam: finalAwayStats,
       h2h: h2h || {
         totalMatches: 0,
         team1Wins: 0,
