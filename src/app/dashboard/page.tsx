@@ -54,6 +54,7 @@ interface SmartAnalysis {
   btts: { prediction: string; confidence: number; reasoning: string };
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
+  corners?: { prediction: string; confidence: number; reasoning: string; line: number };
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
