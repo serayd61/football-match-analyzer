@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`🎯 Starting Smart Analysis: ${homeTeam} vs ${awayTeam}`);
+    console.log(`📊 Input data: fixtureId=${fixtureId}, homeTeamId=${homeTeamId}, awayTeamId=${awayTeamId}`);
     
     // Analiz yap
     const analysis = await runSmartAnalysis({

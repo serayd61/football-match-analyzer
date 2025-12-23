@@ -588,8 +588,11 @@ export interface FullFixtureData {
 }
 
 export async function getFullFixtureData(fixtureId: number): Promise<FullFixtureData | null> {
+  console.log(`\n🚀 ========== getFullFixtureData START ==========`);
+  console.log(`📍 Fixture ID: ${fixtureId}`);
+  
   try {
-    console.log(`🔄 Fetching COMPLETE fixture data for ${fixtureId}...`);
+    console.log(`🔄 Step 1: Fetching fixture base data...`);
     
     // Sportmonks API - Temel include'lar (nested olanlar sorun çıkarabilir)
     const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}`, {
@@ -884,8 +887,11 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     
     return result;
     
-  } catch (error) {
-    console.error('getFullFixtureData error:', error);
+  } catch (error: any) {
+    console.error(`\n❌ ========== getFullFixtureData FAILED ==========`);
+    console.error(`📍 Fixture ID: ${fixtureId}`);
+    console.error(`❌ Error: ${error?.message || error}`);
+    console.error(`📋 Stack: ${error?.stack || 'No stack'}`);
     return null;
   }
 }
