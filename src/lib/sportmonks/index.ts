@@ -120,9 +120,9 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       return stat?.value?.all || stat?.value?.home || stat?.value?.away || 0;
     };
 
-    // Get recent matches for form
+    // Get recent matches for form (last 10 matches for better accuracy)
     const recentMatches = team.latest || [];
-    const form = recentMatches.slice(0, 5).map((match: any) => {
+    const form = recentMatches.slice(0, 10).map((match: any) => {
       const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
@@ -209,7 +209,7 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
     let bttsCount = 0;
     let over25Count = 0;
 
-    const recentMatches = matches.slice(0, 5).map((match: any) => {
+    const recentMatches = matches.slice(0, 10).map((match: any) => {
       const home = match.participants?.find((p: any) => p.meta?.location === 'home');
       const away = match.participants?.find((p: any) => p.meta?.location === 'away');
       
@@ -260,9 +260,9 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
       team1Wins,
       team2Wins,
       draws,
-      avgGoals: totalMatches > 0 ? Math.round((totalGoals / Math.min(totalMatches, 5)) * 10) / 10 : 0,
-      bttsPercentage: totalMatches > 0 ? Math.round((bttsCount / Math.min(totalMatches, 5)) * 100) : 0,
-      over25Percentage: totalMatches > 0 ? Math.round((over25Count / Math.min(totalMatches, 5)) * 100) : 0,
+      avgGoals: totalMatches > 0 ? Math.round((totalGoals / Math.min(totalMatches, 10)) * 10) / 10 : 0,
+      bttsPercentage: totalMatches > 0 ? Math.round((bttsCount / Math.min(totalMatches, 10)) * 100) : 0,
+      over25Percentage: totalMatches > 0 ? Math.round((over25Count / Math.min(totalMatches, 10)) * 100) : 0,
       recentMatches
     };
   } catch (error) {

@@ -38,7 +38,7 @@ export function buildDataDrivenPrompt(match: MatchDetails, context: MatchContext
 ═══════════════════════════════════════════════════════════════════════════════
 
 📊 FORM
-• Son 5 Maç: ${homeTeam.recentForm || 'N/A'} (${homeTeam.formPoints}/15 puan)
+• Son 10 Maç: ${homeTeam.recentForm || 'N/A'} (${homeTeam.formPoints}/30 puan)
 • Ev Performansı: ${homeTeam.homeWins}G - ${homeTeam.homeDraws}B - ${homeTeam.homeLosses}M
 
 ⚽ GOL İSTATİSTİKLERİ
@@ -62,7 +62,7 @@ ${context.homeInjuries.length > 0
 ═══════════════════════════════════════════════════════════════════════════════
 
 📊 FORM
-• Son 5 Maç: ${awayTeam.recentForm || 'N/A'} (${awayTeam.formPoints}/15 puan)
+• Son 10 Maç: ${awayTeam.recentForm || 'N/A'} (${awayTeam.formPoints}/30 puan)
 • Deplasman Performansı: ${awayTeam.awayWins}G - ${awayTeam.awayDraws}B - ${awayTeam.awayLosses}M
 
 ⚽ GOL İSTATİSTİKLERİ
@@ -96,8 +96,8 @@ ${context.awayInjuries.length > 0
 • Üst 2.5 Oranı: %${h2h.over25Percentage}
 
 ${h2h.recentMatches.length > 0 ? `
-📅 SON MAÇLAR
-${h2h.recentMatches.slice(0, 3).map(m => 
+📅 SON 5 H2H MAÇI
+${h2h.recentMatches.slice(0, 5).map(m => 
   `• ${m.date.split('T')[0]}: ${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam}`
 ).join('\n')}
 ` : ''}
