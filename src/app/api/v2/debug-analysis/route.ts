@@ -35,18 +35,23 @@ export async function GET(request: NextRequest) {
       context = await getCompleteMatchContext(fullData.homeTeam.id, fullData.awayTeam.id);
     }
     
-    debug.steps.sportmonks = ({
+    if (!fullData) {
+      debug.error = 'Failed to fetch data from Sportmonks';
+      return NextResponse.json(debug, { status: 200 });
+    }
+    
+    debug.steps.sportmonks = {
       success: !!fullData,
       hasData: !!fullData,
-      dataQuality: fullData?.dataQuality || null,
+      dataQuality: fullData.dataQuality || null,
       homeTeam: {
-        id: fullData?.homeTeam?.id,
-        name: fullData?.homeTeam?.name,
-        form: fullData?.homeTeam?.form,
-        formPoints: fullData?.homeTeam?.formPoints,
-        position: fullData?.homeTeam?.position,
-        recentMatches: fullData?.homeTeam?.recentMatches?.length || 0,
-        hasStatistics: !!fullData?.homeTeam?.statistics,
+        id: fullData.homeTeam.id,
+        name: fullData.homeTeam.name,
+        form: fullData.homeTeam.form,
+        formPoints: fullData.homeTeam.formPoints,
+        position: fullData.homeTeam.position,
+        recentMatches: fullData.homeTeam.recentMatches?.length || 0,
+        hasStatistics: !!fullData.homeTeam.statistics,
         // Calculated values from context
         avgGoalsScored: context?.homeTeam?.avgGoalsScored || 0,
         avgGoalsConceded: context?.homeTeam?.avgGoalsConceded || 0,
@@ -59,13 +64,13 @@ export async function GET(request: NextRequest) {
         avgCornersAgainst: context?.homeTeam?.avgCornersAgainst || 0
       },
       awayTeam: {
-        id: fullData?.awayTeam?.id,
-        name: fullData?.awayTeam?.name,
-        form: fullData?.awayTeam?.form,
-        formPoints: fullData?.awayTeam?.formPoints,
-        position: fullData?.awayTeam?.position,
-        recentMatches: fullData?.awayTeam?.recentMatches?.length || 0,
-        hasStatistics: !!fullData?.awayTeam?.statistics,
+        id: fullData.awayTeam.id,
+        name: fullData.awayTeam.name,
+        form: fullData.awayTeam.form,
+        formPoints: fullData.awayTeam.formPoints,
+        position: fullData.awayTeam.position,
+        recentMatches: fullData.awayTeam.recentMatches?.length || 0,
+        hasStatistics: !!fullData.awayTeam.statistics,
         // Calculated values from context
         avgGoalsScored: context?.awayTeam?.avgGoalsScored || 0,
         avgGoalsConceded: context?.awayTeam?.avgGoalsConceded || 0,
@@ -78,24 +83,19 @@ export async function GET(request: NextRequest) {
         avgCornersAgainst: context?.awayTeam?.avgCornersAgainst || 0
       },
       h2h: {
-        totalMatches: context?.h2h?.totalMatches || fullData?.h2h?.totalMatches || 0,
-        team1Wins: context?.h2h?.team1Wins || fullData?.h2h?.team1Wins || 0,
-        team2Wins: context?.h2h?.team2Wins || fullData?.h2h?.team2Wins || 0,
-        draws: context?.h2h?.draws || fullData?.h2h?.draws || 0,
-        avgGoals: context?.h2h?.avgGoals || fullData?.h2h?.avgGoals || 0,
-        bttsPercentage: context?.h2h?.bttsPercentage || fullData?.h2h?.bttsPercentage || 0,
-        over25Percentage: context?.h2h?.over25Percentage || fullData?.h2h?.over25Percentage || 0,
-        avgCorners: context?.h2h?.avgCorners || fullData?.h2h?.avgCorners || 0,
-        over85CornersPercentage: context?.h2h?.over85CornersPercentage || fullData?.h2h?.over85CornersPercentage || 0,
-        over95CornersPercentage: context?.h2h?.over95CornersPercentage || fullData?.h2h?.over95CornersPercentage || 0,
-        recentMatches: context?.h2h?.recentMatches || fullData?.h2h?.recentMatches || []
-      } as any
-    } as any);
-    
-    if (!fullData) {
-      debug.error = 'Failed to fetch data from Sportmonks';
-      return NextResponse.json(debug, { status: 200 });
-    }
+        totalMatches: context?.h2h?.totalMatches || fullData.h2h?.totalMatches || 0,
+        team1Wins: context?.h2h?.team1Wins || fullData.h2h?.team1Wins || 0,
+        team2Wins: context?.h2h?.team2Wins || fullData.h2h?.team2Wins || 0,
+        draws: context?.h2h?.draws || fullData.h2h?.draws || 0,
+        avgGoals: context?.h2h?.avgGoals || fullData.h2h?.avgGoals || 0,
+        bttsPercentage: context?.h2h?.bttsPercentage || fullData.h2h?.bttsPercentage || 0,
+        over25Percentage: context?.h2h?.over25Percentage || fullData.h2h?.over25Percentage || 0,
+        avgCorners: context?.h2h?.avgCorners || fullData.h2h?.avgCorners || 0,
+        over85CornersPercentage: context?.h2h?.over85CornersPercentage || fullData.h2h?.over85CornersPercentage || 0,
+        over95CornersPercentage: context?.h2h?.over95CornersPercentage || fullData.h2h?.over95CornersPercentage || 0,
+        recentMatches: context?.h2h?.recentMatches || fullData.h2h?.recentMatches || []
+      }
+    };
     
     // Use context if available, otherwise create from fullData
     if (!context) {
