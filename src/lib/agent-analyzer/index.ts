@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
-import { getFullFixtureData, type FullFixtureData } from '@/lib/sportmonks/index';
+import { getFullFixtureData, getTeamStats, getHeadToHead, getTeamInjuries, type FullFixtureData } from '@/lib/sportmonks/index';
 import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
@@ -77,7 +77,16 @@ export interface AgentAnalysisResult {
 // FULL FIXTURE DATA → MATCH DATA CONVERTER
 // ============================================================================
 
-function convertFullFixtureToMatchData(fullData: FullFixtureData): MatchData {
+function convertFullFixtureToMatchData(
+  fullData: FullFixtureData,
+  additionalData?: {
+    homeTeamStats?: any;
+    awayTeamStats?: any;
+    h2hData?: any;
+    homeInjuries?: any[];
+    awayInjuries?: any[];
+  }
+): MatchData {
   const homeForm = fullData.homeTeam.form || 'DDDDD';
   const awayForm = fullData.awayTeam.form || 'DDDDD';
   
@@ -168,8 +177,64 @@ function convertFullFixtureToMatchData(fullData: FullFixtureData): MatchData {
         yes: fullData.odds.btts.yes,
         no: fullData.odds.btts.no
       }
+    } : undefined,
+    
+    // Add detailedStats for agents
+    detailedStats: additionalData ? {
+      home: additionalData.homeTeamStats ? {
+        form: additionalData.homeTeamStats.recentForm || homeForm,
+        avgGoalsScored: additionalData.homeTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(homeMatches, true).toFixed(2)),
+        avgGoalsConceded: additionalData.homeTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(homeMatches, false).toFixed(2)),
+        bttsPercentage: additionalData.homeTeamStats.bttsPercentage || parseFloat(calculateBTTS(homeMatches).toFixed(0)),
+        over25Percentage: additionalData.homeTeamStats.over25Percentage || parseFloat(calculateOver25(homeMatches).toFixed(0)),
+        cleanSheetPercentage: additionalData.homeTeamStats.cleanSheets || parseFloat(calculateCleanSheets(homeMatches).toFixed(0)),
+        matchCount: homeMatches.length,
+        matchDetails: homeMatches.slice(0, 10).map((m: any) => ({
+          opponent: m.opponent || 'Unknown',
+          score: m.score || '0-0',
+          result: getResult(m.score || '0-0', true),
+          goalsScored: parseInt((m.score || '0-0').split('-')[0]) || 0,
+          goalsConceded: parseInt((m.score || '0-0').split('-')[1]) || 0,
+          date: m.date || ''
+        })),
+        record: `${(homeForm.match(/W/g) || []).length}W-${(homeForm.match(/D/g) || []).length}D-${(homeForm.match(/L/g) || []).length}L`
+      } : undefined,
+      away: additionalData.awayTeamStats ? {
+        form: additionalData.awayTeamStats.recentForm || awayForm,
+        avgGoalsScored: additionalData.awayTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(awayMatches, true).toFixed(2)),
+        avgGoalsConceded: additionalData.awayTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(awayMatches, false).toFixed(2)),
+        bttsPercentage: additionalData.awayTeamStats.bttsPercentage || parseFloat(calculateBTTS(awayMatches).toFixed(0)),
+        over25Percentage: additionalData.awayTeamStats.over25Percentage || parseFloat(calculateOver25(awayMatches).toFixed(0)),
+        cleanSheetPercentage: additionalData.awayTeamStats.cleanSheets || parseFloat(calculateCleanSheets(awayMatches).toFixed(0)),
+        matchCount: awayMatches.length,
+        matchDetails: awayMatches.slice(0, 10).map((m: any) => ({
+          opponent: m.opponent || 'Unknown',
+          score: m.score || '0-0',
+          result: getResult(m.score || '0-0', false),
+          goalsScored: parseInt((m.score || '0-0').split('-')[0]) || 0,
+          goalsConceded: parseInt((m.score || '0-0').split('-')[1]) || 0,
+          date: m.date || ''
+        })),
+        record: `${(awayForm.match(/W/g) || []).length}W-${(awayForm.match(/D/g) || []).length}D-${(awayForm.match(/L/g) || []).length}L`
+      } : undefined,
+      h2h: additionalData.h2hData ? {
+        totalMatches: additionalData.h2hData.totalMatches || fullData.h2h?.totalMatches || 0,
+        homeWins: additionalData.h2hData.team1Wins || fullData.h2h?.team1Wins || 0,
+        awayWins: additionalData.h2hData.team2Wins || fullData.h2h?.team2Wins || 0,
+        draws: additionalData.h2hData.draws || fullData.h2h?.draws || 0,
+        avgTotalGoals: additionalData.h2hData.avgGoals || fullData.h2h?.avgGoals || 0,
+        over25Percentage: additionalData.h2hData.over25Percentage || fullData.h2h?.over25Percentage || 50,
+        bttsPercentage: additionalData.h2hData.bttsPercentage || fullData.h2h?.bttsPercentage || 50,
+        matchDetails: h2hMatches.slice(0, 10).map((m: any) => ({
+          home: fullData.homeTeam.name,
+          away: fullData.awayTeam.name,
+          score: `${m.homeScore || 0}-${m.awayScore || 0}`,
+          date: m.date || ''
+        }))
+      } : undefined,
+      injuries: [...(additionalData.homeInjuries || []), ...(additionalData.awayInjuries || [])]
     } : undefined
-  } as MatchData;
+  } as MatchData & { detailedStats?: any };
 }
 
 // Helper functions
@@ -414,12 +479,28 @@ export async function runAgentAnalysis(
     
     console.log(`✅ Data loaded! Quality: ${fullData.dataQuality.score}/100`);
     
-    // Step 2: Convert to MatchData format
-    console.log('🔄 Step 2: Converting to MatchData format...');
-    const matchData = convertFullFixtureToMatchData(fullData);
+    // Step 2: Fetch detailed stats for agents (getTeamStats ve getHeadToHead)
+    console.log('🔄 Step 2: Fetching detailed team stats and H2H data...');
+    const [homeTeamStats, awayTeamStats, h2hData, homeInjuries, awayInjuries] = await Promise.all([
+      getTeamStats(homeTeamId),
+      getTeamStats(awayTeamId),
+      getHeadToHead(homeTeamId, awayTeamId),
+      getTeamInjuries(homeTeamId),
+      getTeamInjuries(awayTeamId)
+    ]);
     
-    // Step 3: Run agents in parallel
-    console.log('🤖 Step 3: Running agents (Stats, Odds, DeepAnalysis)...');
+    // Step 3: Convert to MatchData format with detailedStats
+    console.log('🔄 Step 3: Converting to MatchData format with detailed stats...');
+    const matchData = convertFullFixtureToMatchData(fullData, {
+      homeTeamStats,
+      awayTeamStats,
+      h2hData,
+      homeInjuries,
+      awayInjuries
+    });
+    
+    // Step 4: Run agents in parallel
+    console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis)...');
     const language: 'tr' | 'en' | 'de' = 'tr'; // Türkçe varsayılan
     
     const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
@@ -447,8 +528,8 @@ export async function runAgentAnalysis(
     if (oddsResult) console.log(`   Odds: ${oddsResult.matchWinnerValue || 'N/A'}`);
     if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'}`);
     
-    // Step 4: Build consensus
-    console.log('🔄 Step 4: Building consensus...');
+    // Step 5: Build consensus
+    console.log('🔄 Step 5: Building consensus...');
     const consensus = buildConsensus(statsResult, oddsResult, deepAnalysisResult);
     
     // Step 5: Calculate overall confidence
