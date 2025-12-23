@@ -58,24 +58,60 @@ export async function GET(request: NextRequest) {
     results.awayTeamId = awayTeamId;
     
     if (homeTeamId) {
-      // Test 2: Takım detayları
-      console.log('🔍 Test 2: Team details...');
+      // Test 2: Takım detayları (korner dahil)
+      console.log('🔍 Test 2: Team details with corners...');
       const teamUrl = new URL(`${SPORTMONKS_API}/teams/${homeTeamId}`);
       teamUrl.searchParams.append('api_token', SPORTMONKS_KEY);
-      teamUrl.searchParams.append('include', 'statistics;latest;coaches');
+      teamUrl.searchParams.append('include', 'statistics.details;latest.statistics;latest.scores');
+      teamUrl.searchParams.append('filters[latestLimit]', '5');
       
       const teamRes = await fetch(teamUrl.toString());
       const teamData = await teamRes.json();
+      
+      // Check for corner stats in statistics
+      const stats = teamData?.data?.statistics || [];
+      const cornerStats = stats.filter((s: any) => 
+        s.type_id === 34 || s.type_id === 45 || s.type_id === 46 ||
+        s.details?.some((d: any) => d.type_id === 34 || d.type_id === 45 || d.type_id === 46)
+      );
+      
+      // Check for corners in latest matches
+      const latestMatches = teamData?.data?.latest || [];
+      const matchesWithCorners = latestMatches.filter((m: any) => 
+        m.statistics?.some((s: any) => s.type_id === 34)
+      );
+      
+      // Find actual corner values
+      let cornerSamples: any[] = [];
+      latestMatches.slice(0, 3).forEach((m: any, idx: number) => {
+        if (m.statistics) {
+          const homeCorners = m.statistics.find((s: any) => s.type_id === 34 && s.location === 'home');
+          const awayCorners = m.statistics.find((s: any) => s.type_id === 34 && s.location === 'away');
+          cornerSamples.push({
+            matchIndex: idx,
+            homeCorners: homeCorners?.data?.value,
+            awayCorners: awayCorners?.data?.value,
+            hasStats: !!m.statistics?.length,
+            statsCount: m.statistics?.length || 0,
+            statTypes: m.statistics?.map((s: any) => s.type_id)?.slice(0, 10) || []
+          });
+        } else {
+          cornerSamples.push({ matchIndex: idx, hasStats: false });
+        }
+      });
       
       results.tests.team = {
         status: teamRes.status,
         success: teamRes.ok,
         hasData: !!teamData?.data,
         teamName: teamData?.data?.name,
-        hasStatistics: !!teamData?.data?.statistics?.length,
-        hasLatest: !!teamData?.data?.latest?.length,
-        latestCount: teamData?.data?.latest?.length || 0,
-        hasCoaches: !!teamData?.data?.coaches?.length,
+        hasStatistics: !!stats.length,
+        statsCount: stats.length,
+        cornerStatsFound: cornerStats.length,
+        hasLatest: !!latestMatches.length,
+        latestCount: latestMatches.length,
+        matchesWithCorners: matchesWithCorners.length,
+        cornerSamples,
         error: teamData?.error || teamData?.message || null
       };
       
