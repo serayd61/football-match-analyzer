@@ -402,11 +402,15 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
       const homeCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'home')?.data?.value || 0;
       const awayCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'away')?.data?.value || 0;
       matchCorners = homeCorners + awayCorners;
-      if (matchCorners > 0) {
+      
+      // Validate: Normal maçta 0-25 korner olur, 25'ten fazlası veri hatası
+      if (matchCorners > 0 && matchCorners <= 25) {
         totalCorners += matchCorners;
         cornersDataCount++;
         if (matchCorners > 8.5) over85CornersCount++;
         if (matchCorners > 9.5) over95CornersCount++;
+      } else if (matchCorners > 25) {
+        console.warn(`⚠️ Invalid corner value detected in H2H: ${matchCorners} (match ${match.id || 'unknown'}) - ignoring`);
       }
     }
 

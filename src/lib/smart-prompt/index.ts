@@ -436,12 +436,37 @@ export function combineAIandStats(
   // If context has corner data but AI didn't provide corners field, calculate from context
   else if (hasContextCornerData && context) {
     // Use actual values (not defaults)
-    const homeAvg = context.homeTeam.avgCornersFor;
-    const awayAvg = context.awayTeam.avgCornersFor;
-    const h2hAvg = context.h2h.avgCorners;
+    let homeAvg = context.homeTeam.avgCornersFor;
+    let awayAvg = context.awayTeam.avgCornersFor;
+    let h2hAvg = context.h2h.avgCorners;
     
-    // Weighted average: H2H is more important (40%), teams 30% each
-    const expectedCorners = (homeAvg * 0.3) + (awayAvg * 0.3) + (h2hAvg * 0.4);
+    // Validate values: Normal range is 0-20 corners per match
+    // If H2H is abnormal (>20), ignore it and use teams only
+    const hasValidH2H = h2hAvg > 0 && h2hAvg <= 20;
+    const hasValidHome = homeAvg > 0 && homeAvg <= 20;
+    const hasValidAway = awayAvg > 0 && awayAvg <= 20;
+    
+    if (!hasValidH2H) {
+      console.warn(`⚠️ Invalid H2H corners value: ${h2hAvg} - ignoring from calculation`);
+      h2hAvg = 0; // Will be excluded from calculation
+    }
+    if (!hasValidHome) {
+      console.warn(`⚠️ Invalid home corners value: ${homeAvg} - using default`);
+      homeAvg = 5;
+    }
+    if (!hasValidAway) {
+      console.warn(`⚠️ Invalid away corners value: ${awayAvg} - using default`);
+      awayAvg = 5;
+    }
+    
+    // Weighted average: If H2H is valid, use it (40%), teams 30% each
+    // If H2H invalid, use teams only (50% each)
+    let expectedCorners: number;
+    if (hasValidH2H) {
+      expectedCorners = (homeAvg * 0.3) + (awayAvg * 0.3) + (h2hAvg * 0.4);
+    } else {
+      expectedCorners = (homeAvg * 0.5) + (awayAvg * 0.5);
+    }
     
     const prediction = expectedCorners > 9.5 ? 'over' : 'under';
     
@@ -467,10 +492,11 @@ export function combineAIandStats(
       confidence
     });
     
+    const h2hDisplay = hasValidH2H ? h2hAvg.toFixed(1) : 'Veri yok';
     corners = {
       prediction,
       confidence,
-      reasoning: `Hesaplanan korner: Ev ${homeAvg.toFixed(1)}, Dep ${awayAvg.toFixed(1)}, H2H ${h2hAvg.toFixed(1)}. Beklenen: ${expectedCorners.toFixed(1)}`,
+      reasoning: `Hesaplanan korner: Ev ${homeAvg.toFixed(1)}, Dep ${awayAvg.toFixed(1)}, H2H ${h2hDisplay}. Beklenen: ${expectedCorners.toFixed(1)}`,
       line: 9.5,
       dataAvailable: true
     };
