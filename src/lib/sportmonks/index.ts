@@ -644,10 +644,10 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     
     const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
       fetchSportmonks(`/teams/${homeTeamId}`, {
-        include: 'statistics;latest;coaches;sidelined'
+        include: 'statistics;latest;coach'  // Removed sidelined, coaches->coach
       }),
       fetchSportmonks(`/teams/${awayTeamId}`, {
-        include: 'statistics;latest;coaches;sidelined'
+        include: 'statistics;latest;coach'  // Removed sidelined, coaches->coach
       }),
       fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
         include: 'participants;scores',
@@ -812,7 +812,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         position: homeParticipant.meta?.position || 0,
         statistics: homeTeam.statistics || [],
         recentMatches: homeTeam.latest?.slice(0, 10) || [],
-        coach: homeTeam.coaches?.[0]?.name || 'Unknown'
+        coach: homeTeam.coach?.name || homeTeam.coaches?.[0]?.name || 'Unknown'
       },
       awayTeam: {
         id: awayTeam.id,
@@ -824,7 +824,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         position: awayParticipant.meta?.position || 0,
         statistics: awayTeam.statistics || [],
         recentMatches: awayTeam.latest?.slice(0, 10) || [],
-        coach: awayTeam.coaches?.[0]?.name || 'Unknown'
+        coach: awayTeam.coach?.name || awayTeam.coaches?.[0]?.name || 'Unknown'
       },
       league: {
         id: fixture.league?.id || 0,
