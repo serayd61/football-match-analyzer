@@ -177,10 +177,48 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     let totalCornersFromMatches = 0;
     let cornersMatchCount = 0;
     
+    // Calculate goals, wins/draws/losses from recent matches
+    let totalGoalsScored = 0;
+    let totalGoalsConceded = 0;
+    let homeWinsCount = 0;
+    let homeDrawsCount = 0;
+    let homeLossesCount = 0;
+    let awayWinsCount = 0;
+    let awayDrawsCount = 0;
+    let awayLossesCount = 0;
+    let bttsCount = 0;
+    let over25Count = 0;
+    let validMatchesCount = 0;
+    
     const form = recentMatches.slice(0, 10).map((match: any) => {
       const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
+      
+      const teamScore = isHome ? homeScore : awayScore;
+      const opponentScore = isHome ? awayScore : homeScore;
+      
+      // Only count matches with valid scores
+      if (teamScore >= 0 && opponentScore >= 0) {
+        totalGoalsScored += teamScore;
+        totalGoalsConceded += opponentScore;
+        validMatchesCount++;
+        
+        // Count BTTS and Over 2.5
+        if (teamScore > 0 && opponentScore > 0) bttsCount++;
+        if ((teamScore + opponentScore) > 2.5) over25Count++;
+        
+        // Count home/away results
+        if (isHome) {
+          if (teamScore > opponentScore) homeWinsCount++;
+          else if (teamScore < opponentScore) homeLossesCount++;
+          else homeDrawsCount++;
+        } else {
+          if (teamScore > opponentScore) awayWinsCount++;
+          else if (teamScore < opponentScore) awayLossesCount++;
+          else awayDrawsCount++;
+        }
+      }
       
       // Calculate corners from match statistics (type_id 45 = corners, location based)
       if (match.statistics) {
@@ -192,9 +230,6 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
           cornersMatchCount++;
         }
       }
-      
-      const teamScore = isHome ? homeScore : awayScore;
-      const opponentScore = isHome ? awayScore : homeScore;
       
       if (teamScore > opponentScore) return 'W';
       if (teamScore < opponentScore) return 'L';
@@ -213,10 +248,15 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       return acc;
     }, 0);
 
-    // Goals stats
-    const goalsScored = getStatValue(52) || getStatValue(88) || 0;
-    const goalsConceded = getStatValue(53) || getStatValue(89) || 0;
-    const matchesPlayed = getStatValue(129) || recentMatches.length || 10; // Default 10 to avoid division issues
+    // Goals stats - Use API stats if available, otherwise calculate from recent matches
+    const goalsScoredFromAPI = getStatValue(52) || getStatValue(88) || 0;
+    const goalsConcededFromAPI = getStatValue(53) || getStatValue(89) || 0;
+    const matchesPlayedFromAPI = getStatValue(129) || 0;
+    
+    // If API data available, use it; otherwise use calculated from recent matches
+    const goalsScored = goalsScoredFromAPI > 0 ? goalsScoredFromAPI : totalGoalsScored;
+    const goalsConceded = goalsConcededFromAPI > 0 ? goalsConcededFromAPI : totalGoalsConceded;
+    const matchesPlayed = matchesPlayedFromAPI > 0 ? matchesPlayedFromAPI : (validMatchesCount || recentMatches.length || 10);
 
     // Calculate averages with NaN protection
     const avgGoalsScored = matchesPlayed > 0 ? Math.round((goalsScored / matchesPlayed) * 100) / 100 : 1.2;
@@ -243,15 +283,17 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       goalsConceded: goalsConceded || 10,
       avgGoalsScored: isNaN(avgGoalsScored) ? 1.2 : avgGoalsScored,
       avgGoalsConceded: isNaN(avgGoalsConceded) ? 1.0 : avgGoalsConceded,
-      homeWins: getStatValue(130),
-      homeDraws: getStatValue(131),
-      homeLosses: getStatValue(132),
-      awayWins: getStatValue(133),
-      awayDraws: getStatValue(134),
-      awayLosses: getStatValue(135),
-      bttsPercentage: getStatValue(99) || 0,
-      over25Percentage: getStatValue(100) || 0,
-      under25Percentage: getStatValue(101) || 0,
+      // Home/Away stats - Use API if available, otherwise from recent matches
+      homeWins: getStatValue(130) || homeWinsCount,
+      homeDraws: getStatValue(131) || homeDrawsCount,
+      homeLosses: getStatValue(132) || homeLossesCount,
+      awayWins: getStatValue(133) || awayWinsCount,
+      awayDraws: getStatValue(134) || awayDrawsCount,
+      awayLosses: getStatValue(135) || awayLossesCount,
+      // BTTS and Over25 - Calculate from recent matches if API data not available
+      bttsPercentage: getStatValue(99) || (validMatchesCount > 0 ? Math.round((bttsCount / validMatchesCount) * 100) : 0),
+      over25Percentage: getStatValue(100) || (validMatchesCount > 0 ? Math.round((over25Count / validMatchesCount) * 100) : 0),
+      under25Percentage: getStatValue(101) || (validMatchesCount > 0 ? Math.round(((validMatchesCount - over25Count) / validMatchesCount) * 100) : 0),
       cleanSheets: getStatValue(56),
       failedToScore: getStatValue(57),
       // Corners - validated to ensure reasonable values (5-12 per match is normal)
