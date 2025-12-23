@@ -656,10 +656,14 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     ]);
     
     // Extract data from response objects
+    console.log(`🔍 homeTeamRes exists: ${!!homeTeamRes}, has data: ${!!homeTeamRes?.data}`);
+    console.log(`🔍 awayTeamRes exists: ${!!awayTeamRes}, has data: ${!!awayTeamRes?.data}`);
+    console.log(`🔍 h2hData exists: ${!!h2hData}, has data: ${!!h2hData?.data}`);
+    
     const homeTeam = homeTeamRes?.data || homeParticipant;
     const awayTeam = awayTeamRes?.data || awayParticipant;
     
-    console.log(`✅ Team details loaded: ${homeTeam.name || 'Unknown'} vs ${awayTeam.name || 'Unknown'}`);
+    console.log(`✅ Step 2: Team details loaded: ${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`);
     
     // Form hesapla
     const calculateForm = (latestMatches: any[], teamId: number) => {
@@ -684,11 +688,19 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       return { form: form || 'DDDDD', points: points || 5 };
     };
     
-    const homeForm = calculateForm(homeTeam.latest, homeTeam.id || homeTeamId);
-    const awayForm = calculateForm(awayTeam.latest, awayTeam.id || awayTeamId);
+    console.log(`🔍 Step 3: Calculating form...`);
+    console.log(`   homeTeam.latest exists: ${!!homeTeam?.latest}, count: ${homeTeam?.latest?.length || 0}`);
+    console.log(`   awayTeam.latest exists: ${!!awayTeam?.latest}, count: ${awayTeam?.latest?.length || 0}`);
+    
+    const homeForm = calculateForm(homeTeam?.latest || [], homeTeam?.id || homeTeamId);
+    const awayForm = calculateForm(awayTeam?.latest || [], awayTeam?.id || awayTeamId);
+    
+    console.log(`✅ Step 3: Form calculated - Home: ${homeForm.form}, Away: ${awayForm.form}`);
     
     // H2H verilerini işle
+    console.log(`🔍 Step 4: Processing H2H data...`);
     const h2h = processH2HData(h2hData?.data || [], homeTeamId, awayTeamId);
+    console.log(`✅ Step 4: H2H processed - ${h2h.totalMatches} matches`);
     
     // Sakatları işle
     const processInjuries = (sidelined: any[]): Injury[] => {
@@ -881,9 +893,12 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       rawData: fixture
     };
     
-    console.log(`✅ Full fixture data loaded! Quality: ${dataQuality.score}/100`);
+    console.log(`✅ Step FINAL: Full fixture data assembled!`);
+    console.log(`   📊 Quality: ${dataQuality.score}/100`);
     console.log(`   📊 Stats: ${dataQuality.hasStatistics}, H2H: ${dataQuality.hasH2H}, Odds: ${dataQuality.hasOdds}`);
     console.log(`   👥 Lineups: ${dataQuality.hasLineups}, 🏥 Injuries: ${dataQuality.hasInjuries}`);
+    console.log(`   🏠 Home: ${result.homeTeam.name}, Form: ${result.homeTeam.form}`);
+    console.log(`   ✈️ Away: ${result.awayTeam.name}, Form: ${result.awayTeam.form}`);
     
     return result;
     
