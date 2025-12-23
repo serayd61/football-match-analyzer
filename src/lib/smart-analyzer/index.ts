@@ -267,10 +267,11 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
   console.log('🔄 Step 6: Combining AI + Statistical predictions...');
   const combined = combineAIandStats(aiPrediction, statsPrediction);
 
-  // Calculate overall confidence
-  const overallConfidence = Math.round(
-    (combined.btts.confidence + combined.overUnder.confidence + combined.matchResult.confidence) / 3
-  );
+  // Calculate overall confidence (with NaN protection)
+  const bttsConf = combined.btts.confidence || 50;
+  const ouConf = combined.overUnder.confidence || 50;
+  const mrConf = combined.matchResult.confidence || 50;
+  const overallConfidence = Math.round((bttsConf + ouConf + mrConf) / 3) || 55;
 
   const result: SmartAnalysisResult = {
     fixtureId: match.fixtureId,

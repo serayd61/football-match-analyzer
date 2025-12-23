@@ -163,11 +163,17 @@ export interface StatisticalPrediction {
 export function calculateStatisticalPrediction(context: MatchContext): StatisticalPrediction {
   const { homeTeam, awayTeam, h2h } = context;
 
+  // Helper to ensure valid number
+  const safeNum = (val: number | undefined | null, defaultVal: number): number => {
+    if (val === undefined || val === null || isNaN(val)) return defaultVal;
+    return val;
+  };
+
   // ========== BTTS CALCULATION ==========
   // Factors: Team BTTS rates, goals scored/conceded, H2H BTTS
-  const homeBttsRate = homeTeam.bttsPercentage || 50;
-  const awayBttsRate = awayTeam.bttsPercentage || 50;
-  const h2hBttsRate = h2h.bttsPercentage || 50;
+  const homeBttsRate = safeNum(homeTeam.bttsPercentage, 50);
+  const awayBttsRate = safeNum(awayTeam.bttsPercentage, 50);
+  const h2hBttsRate = safeNum(h2h.bttsPercentage, 50);
   
   // Weight: Team rates 30% each, H2H 40%
   const bttsScore = (homeBttsRate * 0.3) + (awayBttsRate * 0.3) + (h2hBttsRate * 0.4);
@@ -178,13 +184,18 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
 
   // ========== OVER/UNDER CALCULATION ==========
   // Factors: Avg goals scored, avg goals conceded, H2H avg goals
-  const homeGoalAvg = homeTeam.avgGoalsScored + awayTeam.avgGoalsConceded;
-  const awayGoalAvg = awayTeam.avgGoalsScored + homeTeam.avgGoalsConceded;
+  const homeAvgScored = safeNum(homeTeam.avgGoalsScored, 1.2);
+  const homeAvgConceded = safeNum(homeTeam.avgGoalsConceded, 1.0);
+  const awayAvgScored = safeNum(awayTeam.avgGoalsScored, 1.1);
+  const awayAvgConceded = safeNum(awayTeam.avgGoalsConceded, 1.1);
+  
+  const homeGoalAvg = homeAvgScored + awayAvgConceded;
+  const awayGoalAvg = awayAvgScored + homeAvgConceded;
   const expectedGoals = (homeGoalAvg + awayGoalAvg) / 2;
-  const h2hAvgGoals = h2h.avgGoals || 2.5;
+  const h2hAvgGoals = safeNum(h2h.avgGoals, 2.5);
   
   // Weighted average
-  const totalExpectedGoals = (expectedGoals * 0.6) + (h2hAvgGoals * 0.4);
+  const totalExpectedGoals = safeNum((expectedGoals * 0.6) + (h2hAvgGoals * 0.4), 2.5);
   const overPrediction = totalExpectedGoals >= 2.5 ? 'over' : 'under';
   const overConfidence = Math.min(75, Math.max(50, Math.round(
     50 + (Math.abs(totalExpectedGoals - 2.5) * 15)
@@ -196,29 +207,34 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
   let awayScore = 0;
 
   // Form points (max 15)
-  homeScore += homeTeam.formPoints * 2;
-  awayScore += awayTeam.formPoints * 2;
+  homeScore += safeNum(homeTeam.formPoints, 5) * 2;
+  awayScore += safeNum(awayTeam.formPoints, 5) * 2;
 
   // Home advantage
   homeScore += 10;
 
   // Home/Away specific performance
-  const homeWinRate = homeTeam.homeWins / Math.max(1, homeTeam.homeWins + homeTeam.homeDraws + homeTeam.homeLosses);
-  const awayWinRate = awayTeam.awayWins / Math.max(1, awayTeam.awayWins + awayTeam.awayDraws + awayTeam.awayLosses);
-  homeScore += homeWinRate * 30;
-  awayScore += awayWinRate * 30;
+  const homeTotal = safeNum(homeTeam.homeWins, 2) + safeNum(homeTeam.homeDraws, 1) + safeNum(homeTeam.homeLosses, 1);
+  const awayTotal = safeNum(awayTeam.awayWins, 1) + safeNum(awayTeam.awayDraws, 1) + safeNum(awayTeam.awayLosses, 2);
+  const homeWinRate = safeNum(homeTeam.homeWins, 2) / Math.max(1, homeTotal);
+  const awayWinRate = safeNum(awayTeam.awayWins, 1) / Math.max(1, awayTotal);
+  homeScore += safeNum(homeWinRate * 30, 15);
+  awayScore += safeNum(awayWinRate * 30, 10);
 
   // H2H
   if (h2h.totalMatches > 0) {
-    homeScore += (h2h.team1Wins / h2h.totalMatches) * 20;
-    awayScore += (h2h.team2Wins / h2h.totalMatches) * 20;
+    homeScore += (safeNum(h2h.team1Wins, 1) / h2h.totalMatches) * 20;
+    awayScore += (safeNum(h2h.team2Wins, 1) / h2h.totalMatches) * 20;
+  } else {
+    homeScore += 10; // Default home advantage
+    awayScore += 5;
   }
 
   // Goal difference
-  const homeGD = homeTeam.avgGoalsScored - homeTeam.avgGoalsConceded;
-  const awayGD = awayTeam.avgGoalsScored - awayTeam.avgGoalsConceded;
-  homeScore += homeGD * 5;
-  awayScore += awayGD * 5;
+  const homeGD = homeAvgScored - homeAvgConceded;
+  const awayGD = awayAvgScored - awayAvgConceded;
+  homeScore += safeNum(homeGD * 5, 0);
+  awayScore += safeNum(awayGD * 5, 0);
 
   // Determine result
   const scoreDiff = homeScore - awayScore;
@@ -289,26 +305,34 @@ export function combineAIandStats(
   
   const agreement = Math.round((agreementCount / 3) * 100);
 
+  // Helper to ensure valid number
+  const safeConf = (val: number | undefined | null): number => {
+    if (val === undefined || val === null || isNaN(val)) return 50;
+    return Math.max(50, Math.min(80, val));
+  };
+
   // Combine predictions (AI gets 60% weight if agrees with stats, 40% if not)
   const combinePrediction = (
     aiPred: { prediction: string; confidence: number; reasoning?: string },
     statPred: { prediction: string; confidence: number; reason: string }
   ) => {
-    const agrees = aiPred.prediction === statPred.prediction;
+    const aiConf = safeConf(aiPred?.confidence);
+    const statConf = safeConf(statPred?.confidence);
+    const agrees = aiPred?.prediction === statPred?.prediction;
     
     if (agrees) {
       // Both agree - boost confidence
       return {
-        prediction: aiPred.prediction,
-        confidence: Math.min(80, Math.round((aiPred.confidence * 0.5) + (statPred.confidence * 0.5) + 5)),
-        reasoning: `${aiPred.reasoning || ''} | Stats: ${statPred.reason}`
+        prediction: aiPred?.prediction || statPred?.prediction || 'no',
+        confidence: safeConf(Math.round((aiConf * 0.5) + (statConf * 0.5) + 5)),
+        reasoning: `${aiPred?.reasoning || ''} | Stats: ${statPred?.reason || ''}`
       };
     } else {
       // Disagree - use stats with lower confidence
       return {
-        prediction: statPred.prediction,
-        confidence: Math.max(50, Math.round(statPred.confidence * 0.9)),
-        reasoning: `İstatistikler farklı gösteriyor: ${statPred.reason}`
+        prediction: statPred?.prediction || 'no',
+        confidence: safeConf(Math.round(statConf * 0.9)),
+        reasoning: `İstatistikler farklı gösteriyor: ${statPred?.reason || ''}`
       };
     }
   };
