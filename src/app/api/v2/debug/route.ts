@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFullFixtureData } from '@/lib/sportmonks';
+import { getFullFixtureData } from '@/lib/sportmonks/index';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
