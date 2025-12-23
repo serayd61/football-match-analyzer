@@ -40,7 +40,7 @@ export interface SmartAnalysisResult {
   btts: { prediction: string; confidence: number; reasoning: string };
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
-  corners: { prediction: string; confidence: number; reasoning: string; line: number }; // Korner tahmini
+  corners: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable?: boolean }; // Korner tahmini
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -325,10 +325,11 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
       overUnder: { ...statsPrediction.overUnder, reasoning: statsPrediction.overUnder.reason },
       matchResult: { ...statsPrediction.matchResult, reasoning: statsPrediction.matchResult.reason },
       corners: {
-        prediction: 'over',
-        confidence: 55,
-        reasoning: 'Korner verisi hesaplanıyor',
-        line: 9.5
+        prediction: 'unknown',
+        confidence: 0,
+        reasoning: 'Korner verisi mevcut değil',
+        line: 9.5,
+        dataAvailable: false
       },
       bestBet: {
         market: 'BTTS',
@@ -370,10 +371,11 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
     overUnder: combined.overUnder,
     matchResult: combined.matchResult,
     corners: combined.corners || {
-      prediction: 'over',
-      confidence: 55,
-      reasoning: 'Korner verisi hesaplanıyor',
-      line: 9.5
+      prediction: 'unknown',
+      confidence: 0,
+      reasoning: 'Korner verisi mevcut değil',
+      line: 9.5,
+      dataAvailable: false
     },
     bestBet: combined.bestBet,
     agreement: combined.agreement,
@@ -448,10 +450,11 @@ NOT: Veri olmadan analiz yapıyorsun, güven değerleri düşük olmalı!
       reasoning: parsed.matchResult?.reasoning || 'Veri eksik'
     },
     corners: {
-      prediction: 'over',
-      confidence: 50,
-      reasoning: 'Veri eksik',
-      line: 9.5
+      prediction: 'unknown',
+      confidence: 0,
+      reasoning: 'Korner verisi mevcut değil',
+      line: 9.5,
+      dataAvailable: false
     },
     bestBet: parsed.bestBet || {
       market: 'BTTS',

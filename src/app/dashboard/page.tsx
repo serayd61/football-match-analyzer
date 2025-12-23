@@ -54,7 +54,7 @@ interface SmartAnalysis {
   btts: { prediction: string; confidence: number; reasoning: string };
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
-  corners?: { prediction: string; confidence: number; reasoning: string; line: number };
+  corners?: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable?: boolean };
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -678,24 +678,37 @@ export default function DashboardPage() {
                   
                   {/* Corners */}
                   {analysis.corners && (
-                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                  <div className={`rounded-xl border p-4 ${
+                    analysis.corners.dataAvailable 
+                      ? 'bg-white/5 border-white/10' 
+                      : 'bg-gray-800/30 border-gray-700/50'
+                  }`}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg">🚩</span>
                       <h4 className="text-white font-medium">{t.corners}</h4>
                     </div>
-                    <div className="text-2xl font-bold text-orange-400">
-                      {analysis.corners.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.corners.line}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-orange-500 rounded-full"
-                          style={{ width: `${analysis.corners.confidence}%` }}
-                        />
+                    {analysis.corners.dataAvailable ? (
+                      <>
+                        <div className="text-2xl font-bold text-orange-400">
+                          {analysis.corners.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.corners.line}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-orange-500 rounded-full"
+                              style={{ width: `${analysis.corners.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-orange-400">%{analysis.corners.confidence}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">{analysis.corners.reasoning}</p>
+                      </>
+                    ) : (
+                      <div className="text-center py-2">
+                        <div className="text-gray-500 text-sm">⚠️ Korner verisi mevcut değil</div>
+                        <p className="text-xs text-gray-600 mt-1">Bu maç için korner istatistikleri bulunamadı</p>
                       </div>
-                      <span className="text-sm text-orange-400">%{analysis.corners.confidence}</span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-400">{analysis.corners.reasoning}</p>
+                    )}
                   </div>
                   )}
                 </div>

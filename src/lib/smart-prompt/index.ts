@@ -365,12 +365,24 @@ export function combineAIandStats(
     statsPrediction.matchResult
   );
 
-  // Corners prediction from AI
-  const corners = {
+  // Corners prediction from AI - only if AI provided real data
+  const hasCornerData = aiPrediction.corners?.reasoning && 
+    !aiPrediction.corners.reasoning.includes('hesaplanıyor') &&
+    !aiPrediction.corners.reasoning.includes('Veri yok') &&
+    aiPrediction.corners.confidence > 50;
+  
+  const corners = hasCornerData ? {
     prediction: aiPrediction.corners?.prediction || 'over',
     confidence: safeConf(aiPrediction.corners?.confidence || 55),
-    reasoning: aiPrediction.corners?.reasoning || 'Korner verisi hesaplanıyor',
-    line: aiPrediction.corners?.line || 9.5
+    reasoning: aiPrediction.corners?.reasoning || '',
+    line: aiPrediction.corners?.line || 9.5,
+    dataAvailable: true
+  } : {
+    prediction: 'unknown',
+    confidence: 0,
+    reasoning: 'Korner verisi mevcut değil',
+    line: 9.5,
+    dataAvailable: false
   };
 
   // Determine best bet (highest confidence where AI and stats agree)
