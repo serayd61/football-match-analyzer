@@ -177,34 +177,46 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
                   fullData.dataQuality.score >= 30 ? 'partial' : 'minimal';
     
     // Calculate corners from fullData statistics
-    const calculateCornersFromStats = (teamStats: any, recentMatches: any[]) => {
+    const calculateCornersFromStats = (teamStats: any, recentMatches: any[]): { value: number; hasData: boolean } => {
       // Try to get from statistics first
       const stats = teamStats?.statistics || [];
       const seasonStats = stats[0]?.details || [];
       const cornerStat = seasonStats.find((s: any) => s.type_id === 45);
       const avgCornersFor = cornerStat?.value?.all || cornerStat?.value?.home || 0;
       
+      if (avgCornersFor > 0) {
+        return { value: avgCornersFor, hasData: true };
+      }
+      
       // If not in stats, calculate from recent matches
-      if (!avgCornersFor && recentMatches?.length) {
+      if (recentMatches?.length) {
         let totalCorners = 0;
         let cornersCount = 0;
         recentMatches.slice(0, 10).forEach((m: any) => {
           if (m.statistics) {
             const corners = m.statistics.find((s: any) => s.type_id === 45);
-            if (corners?.data?.value) {
+            if (corners?.data?.value && corners.data.value > 0) {
               totalCorners += corners.data.value;
               cornersCount++;
             }
           }
         });
-        return cornersCount > 0 ? Math.round((totalCorners / cornersCount) * 10) / 10 : 5;
+        if (cornersCount > 0) {
+          return { value: Math.round((totalCorners / cornersCount) * 10) / 10, hasData: true };
+        }
       }
       
-      return avgCornersFor || 5;
+      return { value: 5, hasData: false }; // Default value but mark as no data
     };
     
-    const homeCornersFor = calculateCornersFromStats(fullData.homeTeam.statistics, fullData.homeTeam.recentMatches);
-    const awayCornersFor = calculateCornersFromStats(fullData.awayTeam.statistics, fullData.awayTeam.recentMatches);
+    const homeCornersResult = calculateCornersFromStats(fullData.homeTeam.statistics, fullData.homeTeam.recentMatches);
+    const awayCornersResult = calculateCornersFromStats(fullData.awayTeam.statistics, fullData.awayTeam.recentMatches);
+    
+    console.log('🚩 Corner data check:', {
+      home: { value: homeCornersResult.value, hasData: homeCornersResult.hasData },
+      away: { value: awayCornersResult.value, hasData: awayCornersResult.hasData },
+      h2h: fullData.h2h?.avgCorners || 9
+    });
     
     // Convert fullData to context format for statistical prediction
     context = {
@@ -228,8 +240,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: homeCornersFor,
-        avgCornersAgainst: awayCornersFor, // Opponent's corners = this team's corners against
+        avgCornersFor: homeCornersResult.value,
+        avgCornersAgainst: awayCornersResult.value, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       awayTeam: {
@@ -252,8 +264,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: awayCornersFor,
-        avgCornersAgainst: homeCornersFor, // Opponent's corners = this team's corners against
+        avgCornersFor: awayCornersResult.value,
+        avgCornersAgainst: homeCornersResult.value, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       h2h: fullData.h2h,

@@ -379,12 +379,17 @@ export function combineAIandStats(
   // Corners prediction from AI - check if AI provided valid corners data
   const aiCorners = aiPrediction.corners;
   
-  // Check if context has corner data
-  const hasContextCornerData = context && (
-    (context.homeTeam.avgCornersFor > 0 && context.homeTeam.avgCornersFor !== 5) ||
-    (context.awayTeam.avgCornersFor > 0 && context.awayTeam.avgCornersFor !== 5) ||
-    (context.h2h.avgCorners > 0 && context.h2h.avgCorners !== 9)
-  );
+  // Check if context has REAL corner data (not default values)
+  // Default values are: home/away = 5, h2h = 9
+  // Only calculate if we have REAL data (significantly different from defaults)
+  const homeHasData = context && context.homeTeam.avgCornersFor && 
+    (context.homeTeam.avgCornersFor < 4.5 || context.homeTeam.avgCornersFor > 5.5);
+  const awayHasData = context && context.awayTeam.avgCornersFor && 
+    (context.awayTeam.avgCornersFor < 4.5 || context.awayTeam.avgCornersFor > 5.5);
+  const h2hHasData = context && context.h2h.avgCorners && 
+    (context.h2h.avgCorners < 8 || context.h2h.avgCorners > 10);
+  
+  const hasContextCornerData = homeHasData || awayHasData || h2hHasData;
   
   // Check if reasoning mentions corners (AI might have corner data but forgot to add corners field)
   const allReasoning = [
@@ -430,13 +435,37 @@ export function combineAIandStats(
   } 
   // If context has corner data but AI didn't provide corners field, calculate from context
   else if (hasContextCornerData && context) {
-    const homeAvg = context.homeTeam.avgCornersFor || 5;
-    const awayAvg = context.awayTeam.avgCornersFor || 5;
-    const h2hAvg = context.h2h.avgCorners || 9;
-    const expectedCorners = (homeAvg + awayAvg + h2hAvg) / 3;
+    // Use actual values (not defaults)
+    const homeAvg = context.homeTeam.avgCornersFor;
+    const awayAvg = context.awayTeam.avgCornersFor;
+    const h2hAvg = context.h2h.avgCorners;
+    
+    // Weighted average: H2H is more important (40%), teams 30% each
+    const expectedCorners = (homeAvg * 0.3) + (awayAvg * 0.3) + (h2hAvg * 0.4);
     
     const prediction = expectedCorners > 9.5 ? 'over' : 'under';
-    const confidence = expectedCorners > 10.5 ? 60 : expectedCorners > 9.5 ? 55 : expectedCorners < 8.5 ? 55 : 50;
+    
+    // More nuanced confidence based on how far from 9.5
+    const distanceFromLine = Math.abs(expectedCorners - 9.5);
+    let confidence = 50;
+    if (distanceFromLine > 2) {
+      confidence = 65; // Very clear (e.g., 12 or 7)
+    } else if (distanceFromLine > 1) {
+      confidence = 60; // Clear (e.g., 10.5 or 8.5)
+    } else if (distanceFromLine > 0.5) {
+      confidence = 55; // Slight edge (e.g., 10 or 9)
+    } else {
+      confidence = 50; // Too close to call
+    }
+    
+    console.log('🚩 Corner calculation from context:', {
+      homeAvg,
+      awayAvg,
+      h2hAvg,
+      expectedCorners: expectedCorners.toFixed(2),
+      prediction,
+      confidence
+    });
     
     corners = {
       prediction,
