@@ -274,6 +274,81 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
   }
 }
 
+// Helper function to process H2H data from raw API response
+function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadToHead {
+  if (!matches?.length) {
+    return {
+      totalMatches: 0,
+      team1Wins: 0,
+      team2Wins: 0,
+      draws: 0,
+      avgGoals: 0,
+      bttsPercentage: 0,
+      over25Percentage: 0,
+      recentMatches: []
+    };
+  }
+
+  let team1Wins = 0;
+  let team2Wins = 0;
+  let draws = 0;
+  let totalGoals = 0;
+  let bttsCount = 0;
+  let over25Count = 0;
+
+  const recentMatches = matches.slice(0, 10).map((match: any) => {
+    const home = match.participants?.find((p: any) => p.meta?.location === 'home');
+    const away = match.participants?.find((p: any) => p.meta?.location === 'away');
+    
+    let homeScore = 0;
+    let awayScore = 0;
+    
+    if (match.scores) {
+      homeScore = match.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0;
+      awayScore = match.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
+    }
+
+    const matchGoals = homeScore + awayScore;
+    totalGoals += matchGoals;
+    
+    if (homeScore > 0 && awayScore > 0) bttsCount++;
+    if (matchGoals > 2.5) over25Count++;
+
+    const homeTeamId = home?.id;
+    if (homeScore > awayScore) {
+      if (homeTeamId === team1Id) team1Wins++;
+      else team2Wins++;
+    } else if (awayScore > homeScore) {
+      if (homeTeamId === team1Id) team2Wins++;
+      else team1Wins++;
+    } else {
+      draws++;
+    }
+
+    return {
+      date: match.starting_at || '',
+      homeTeam: home?.name || 'Unknown',
+      awayTeam: away?.name || 'Unknown',
+      homeScore,
+      awayScore
+    };
+  });
+
+  const totalMatches = matches.length;
+  const matchCount = Math.min(totalMatches, 10);
+
+  return {
+    totalMatches,
+    team1Wins,
+    team2Wins,
+    draws,
+    avgGoals: matchCount > 0 ? Math.round((totalGoals / matchCount) * 10) / 10 : 0,
+    bttsPercentage: matchCount > 0 ? Math.round((bttsCount / matchCount) * 100) : 0,
+    over25Percentage: matchCount > 0 ? Math.round((over25Count / matchCount) * 100) : 0,
+    recentMatches
+  };
+}
+
 // ============================================================================
 // INJURIES / SIDELINED PLAYERS
 // ============================================================================
@@ -516,47 +591,35 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
   try {
     console.log(`🔄 Fetching COMPLETE fixture data for ${fixtureId}...`);
     
-    // TEK API ÇAĞRISI - Sportmonks'un sunduğu TÜM include'lar
+    // Sportmonks API - Temel include'lar (nested olanlar sorun çıkarabilir)
     const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}`, {
       include: [
-        // Takım bilgileri
-        'participants.team.statistics.details',
-        'participants.team.latest.participants',
-        'participants.team.latest.scores',
-        'participants.team.coaches',
-        'participants.team.sidelined.player',
-        // Maç bilgileri
+        // Temel bilgiler
+        'participants',
         'scores',
-        'statistics',
-        'events.player',
-        'events.type',
-        'lineups.player',
-        'lineups.details',
-        // Lig & Turnuva
         'league',
         'round',
         'stage',
-        // Stadyum & Hakem
         'venue',
         'referee',
-        // Hava Durumu
         'weatherReport',
-        // Bahis Oranları
-        'odds.bookmaker',
-        // Sportmonks Tahminleri
-        'predictions',
-        // TV
-        'tvstations',
-        // Yorumlar
-        'comments'
+        // Kadro ve olaylar
+        'lineups',
+        'events',
+        'statistics',
+        // Bahis ve tahmin
+        'odds',
+        'predictions'
       ].join(';')
     });
 
     if (!fixtureData?.data) {
-      console.error('❌ No fixture data returned');
+      console.error('❌ No fixture data returned for fixture', fixtureId);
       return null;
     }
-
+    
+    console.log(`✅ Fixture base data received`);
+    
     const fixture = fixtureData.data;
     
     // Takımları ayır
@@ -564,12 +627,32 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     const awayParticipant = fixture.participants?.find((p: any) => p.meta?.location === 'away');
     
     if (!homeParticipant || !awayParticipant) {
-      console.error('❌ Could not identify teams');
+      console.error('❌ Could not identify teams from participants');
       return null;
     }
-
-    const homeTeamData = homeParticipant.team || homeParticipant;
-    const awayTeamData = awayParticipant.team || awayParticipant;
+    
+    console.log(`✅ Teams identified: ${homeParticipant.name} vs ${awayParticipant.name}`);
+    
+    // Takım detaylarını ayrı çek (paralel)
+    const homeTeamId = homeParticipant.id;
+    const awayTeamId = awayParticipant.id;
+    
+    console.log(`🔄 Fetching team details for ${homeTeamId} and ${awayTeamId}...`);
+    
+    const [homeTeam, awayTeam, h2hData] = await Promise.all([
+      fetchSportmonks(`/teams/${homeTeamId}`, {
+        include: 'statistics;latest;coaches;sidelined'
+      }),
+      fetchSportmonks(`/teams/${awayTeamId}`, {
+        include: 'statistics;latest;coaches;sidelined'
+      }),
+      fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
+        include: 'participants;scores',
+        per_page: '10'
+      })
+    ]);
+    
+    console.log(`✅ Team details loaded: ${homeTeam.name || 'Unknown'} vs ${awayTeam.name || 'Unknown'}`);
     
     // Form hesapla
     const calculateForm = (latestMatches: any[], teamId: number) => {
@@ -594,11 +677,11 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       return { form: form || 'DDDDD', points: points || 5 };
     };
     
-    const homeForm = calculateForm(homeTeamData.latest, homeTeamData.id);
-    const awayForm = calculateForm(awayTeamData.latest, awayTeamData.id);
+    const homeForm = calculateForm(homeTeam.latest, homeTeam.id || homeTeamId);
+    const awayForm = calculateForm(awayTeam.latest, awayTeam.id || awayTeamId);
     
-    // H2H çek (ayrı API gerekli)
-    const h2h = await getHeadToHead(homeTeamData.id, awayTeamData.id);
+    // H2H verilerini işle
+    const h2h = processH2HData(h2hData?.data || [], homeTeamId, awayTeamId);
     
     // Sakatları işle
     const processInjuries = (sidelined: any[]): Injury[] => {
@@ -673,7 +756,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
           isCaptain: lineup.captain || false
         };
         
-        if (lineup.team_id === homeTeamData.id) {
+        if (lineup.team_id === homeTeam.id) {
           result.home.push(player);
           if (lineup.formation) result.homeFormation = lineup.formation;
         } else {
@@ -689,9 +772,9 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     const dataQuality = {
       hasOdds: !!fixture.odds?.length,
       hasLineups: !!fixture.lineups?.length,
-      hasStatistics: !!fixture.statistics?.length || !!homeTeamData.statistics?.length,
+      hasStatistics: !!fixture.statistics?.length || !!homeTeam.statistics?.length,
       hasH2H: !!(h2h && h2h.totalMatches > 0),
-      hasInjuries: !!(homeTeamData.sidelined?.length || awayTeamData.sidelined?.length),
+      hasInjuries: !!(homeTeam.sidelined?.length || awayTeam.sidelined?.length),
       hasPredictions: !!fixture.predictions?.length,
       hasWeather: !!fixture.weatherReport,
       score: 0
@@ -713,28 +796,28 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     const result: FullFixtureData = {
       fixtureId,
       homeTeam: {
-        id: homeTeamData.id,
-        name: homeTeamData.name || 'Unknown',
-        shortCode: homeTeamData.short_code || '',
-        logo: homeTeamData.image_path || '',
+        id: homeTeam.id,
+        name: homeTeam.name || 'Unknown',
+        shortCode: homeTeam.short_code || '',
+        logo: homeTeam.image_path || '',
         form: homeForm.form,
         formPoints: homeForm.points,
         position: homeParticipant.meta?.position || 0,
-        statistics: homeTeamData.statistics || [],
-        recentMatches: homeTeamData.latest?.slice(0, 10) || [],
-        coach: homeTeamData.coaches?.[0]?.name || 'Unknown'
+        statistics: homeTeam.statistics || [],
+        recentMatches: homeTeam.latest?.slice(0, 10) || [],
+        coach: homeTeam.coaches?.[0]?.name || 'Unknown'
       },
       awayTeam: {
-        id: awayTeamData.id,
-        name: awayTeamData.name || 'Unknown',
-        shortCode: awayTeamData.short_code || '',
-        logo: awayTeamData.image_path || '',
+        id: awayTeam.id,
+        name: awayTeam.name || 'Unknown',
+        shortCode: awayTeam.short_code || '',
+        logo: awayTeam.image_path || '',
         form: awayForm.form,
         formPoints: awayForm.points,
         position: awayParticipant.meta?.position || 0,
-        statistics: awayTeamData.statistics || [],
-        recentMatches: awayTeamData.latest?.slice(0, 10) || [],
-        coach: awayTeamData.coaches?.[0]?.name || 'Unknown'
+        statistics: awayTeam.statistics || [],
+        recentMatches: awayTeam.latest?.slice(0, 10) || [],
+        coach: awayTeam.coaches?.[0]?.name || 'Unknown'
       },
       league: {
         id: fixture.league?.id || 0,
@@ -784,8 +867,8 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         recentMatches: []
       },
       injuries: {
-        home: processInjuries(homeTeamData.sidelined),
-        away: processInjuries(awayTeamData.sidelined)
+        home: processInjuries(homeTeam.sidelined),
+        away: processInjuries(awayTeam.sidelined)
       },
       dataQuality,
       rawData: fixture
