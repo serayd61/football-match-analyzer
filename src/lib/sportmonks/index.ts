@@ -639,7 +639,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     
     console.log(`🔄 Fetching team details for ${homeTeamId} and ${awayTeamId}...`);
     
-    const [homeTeam, awayTeam, h2hData] = await Promise.all([
+    const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
       fetchSportmonks(`/teams/${homeTeamId}`, {
         include: 'statistics;latest;coaches;sidelined'
       }),
@@ -651,6 +651,10 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         per_page: '10'
       })
     ]);
+    
+    // Extract data from response objects
+    const homeTeam = homeTeamRes?.data || homeParticipant;
+    const awayTeam = awayTeamRes?.data || awayParticipant;
     
     console.log(`✅ Team details loaded: ${homeTeam.name || 'Unknown'} vs ${awayTeam.name || 'Unknown'}`);
     
