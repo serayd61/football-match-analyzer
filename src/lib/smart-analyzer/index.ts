@@ -40,6 +40,7 @@ export interface SmartAnalysisResult {
   btts: { prediction: string; confidence: number; reasoning: string };
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
+  corners: { prediction: string; confidence: number; reasoning: string; line: number }; // Korner tahmini
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -196,7 +197,10 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         over25Percentage: 50,
         under25Percentage: 50,
         cleanSheets: 0,
-        failedToScore: 0
+        failedToScore: 0,
+        avgCornersFor: 5,
+        avgCornersAgainst: 4.5,
+        totalCorners: 0
       },
       awayTeam: {
         teamId: fullData.awayTeam.id,
@@ -217,7 +221,10 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         over25Percentage: 50,
         under25Percentage: 50,
         cleanSheets: 0,
-        failedToScore: 0
+        failedToScore: 0,
+        avgCornersFor: 4.5,
+        avgCornersAgainst: 5,
+        totalCorners: 0
       },
       h2h: fullData.h2h,
       homeInjuries: fullData.injuries.home,
@@ -317,6 +324,12 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
       btts: { ...statsPrediction.btts, reasoning: statsPrediction.btts.reason },
       overUnder: { ...statsPrediction.overUnder, reasoning: statsPrediction.overUnder.reason },
       matchResult: { ...statsPrediction.matchResult, reasoning: statsPrediction.matchResult.reason },
+      corners: {
+        prediction: 'over',
+        confidence: 55,
+        reasoning: 'Korner verisi hesaplanıyor',
+        line: 9.5
+      },
       bestBet: {
         market: 'BTTS',
         selection: statsPrediction.btts.prediction,
@@ -356,6 +369,12 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
     btts: combined.btts,
     overUnder: combined.overUnder,
     matchResult: combined.matchResult,
+    corners: combined.corners || {
+      prediction: 'over',
+      confidence: 55,
+      reasoning: 'Korner verisi hesaplanıyor',
+      line: 9.5
+    },
     bestBet: combined.bestBet,
     agreement: combined.agreement,
     riskLevel: combined.riskLevel,
@@ -427,6 +446,12 @@ NOT: Veri olmadan analiz yapıyorsun, güven değerleri düşük olmalı!
       prediction: parsed.matchResult?.prediction || 'draw',
       confidence: Math.min(55, parsed.matchResult?.confidence || 50),
       reasoning: parsed.matchResult?.reasoning || 'Veri eksik'
+    },
+    corners: {
+      prediction: 'over',
+      confidence: 50,
+      reasoning: 'Veri eksik',
+      line: 9.5
     },
     bestBet: parsed.bestBet || {
       market: 'BTTS',

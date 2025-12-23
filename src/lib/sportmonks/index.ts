@@ -35,6 +35,10 @@ export interface TeamStats {
   // Clean sheets
   cleanSheets: number;
   failedToScore: number;
+  // Corners
+  avgCornersFor: number;      // Maç başına aldığı korner
+  avgCornersAgainst: number;  // Maç başına yediği korner
+  totalCorners: number;       // Toplam korner (atılan)
 }
 
 export interface HeadToHead {
@@ -45,12 +49,16 @@ export interface HeadToHead {
   avgGoals: number;
   bttsPercentage: number;
   over25Percentage: number;
+  avgCorners: number;           // H2H maçlarında ortalama korner
+  over85CornersPercentage: number; // 8.5 üstü korner yüzdesi
+  over95CornersPercentage: number; // 9.5 üstü korner yüzdesi
   recentMatches: Array<{
     date: string;
     homeTeam: string;
     awayTeam: string;
     homeScore: number;
     awayScore: number;
+    totalCorners?: number;
   }>;
 }
 
@@ -171,7 +179,11 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       over25Percentage: getStatValue(100) || 0,
       under25Percentage: getStatValue(101) || 0,
       cleanSheets: getStatValue(56),
-      failedToScore: getStatValue(57)
+      failedToScore: getStatValue(57),
+      // Corners - type_id 34=total, 45=for, 46=against
+      avgCornersFor: getStatValue(45) || getStatValue(34) / Math.max(matchesPlayed, 1) || 5,
+      avgCornersAgainst: getStatValue(46) || 4.5,
+      totalCorners: getStatValue(34) || 0
     };
   } catch (error) {
     console.error('getTeamStats error:', error);
@@ -200,6 +212,9 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
         avgGoals: 0,
         bttsPercentage: 0,
         over25Percentage: 0,
+        avgCorners: 9,
+        over85CornersPercentage: 50,
+        over95CornersPercentage: 40,
         recentMatches: []
       };
     }
@@ -266,6 +281,9 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
       avgGoals: totalMatches > 0 ? Math.round((totalGoals / Math.min(totalMatches, 10)) * 10) / 10 : 0,
       bttsPercentage: totalMatches > 0 ? Math.round((bttsCount / Math.min(totalMatches, 10)) * 100) : 0,
       over25Percentage: totalMatches > 0 ? Math.round((over25Count / Math.min(totalMatches, 10)) * 100) : 0,
+      avgCorners: 9,
+      over85CornersPercentage: 50,
+      over95CornersPercentage: 40,
       recentMatches
     };
   } catch (error) {
@@ -285,6 +303,9 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
       avgGoals: 0,
       bttsPercentage: 0,
       over25Percentage: 0,
+      avgCorners: 9,
+      over85CornersPercentage: 50,
+      over95CornersPercentage: 40,
       recentMatches: []
     };
   }
@@ -293,8 +314,12 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
   let team2Wins = 0;
   let draws = 0;
   let totalGoals = 0;
+  let totalCorners = 0;
   let bttsCount = 0;
   let over25Count = 0;
+  let over85CornersCount = 0;
+  let over95CornersCount = 0;
+  let cornersDataCount = 0;
 
   const recentMatches = matches.slice(0, 10).map((match: any) => {
     const home = match.participants?.find((p: any) => p.meta?.location === 'home');
@@ -302,10 +327,24 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
     
     let homeScore = 0;
     let awayScore = 0;
+    let matchCorners = 0;
     
     if (match.scores) {
       homeScore = match.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0;
       awayScore = match.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
+    }
+    
+    // Get corners from statistics if available
+    if (match.statistics) {
+      const homeCorners = match.statistics.find((s: any) => s.type_id === 34 && s.participant === 'home')?.data?.value || 0;
+      const awayCorners = match.statistics.find((s: any) => s.type_id === 34 && s.participant === 'away')?.data?.value || 0;
+      matchCorners = homeCorners + awayCorners;
+      if (matchCorners > 0) {
+        totalCorners += matchCorners;
+        cornersDataCount++;
+        if (matchCorners > 8.5) over85CornersCount++;
+        if (matchCorners > 9.5) over95CornersCount++;
+      }
     }
 
     const matchGoals = homeScore + awayScore;
@@ -330,7 +369,8 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
       homeTeam: home?.name || 'Unknown',
       awayTeam: away?.name || 'Unknown',
       homeScore,
-      awayScore
+      awayScore,
+      totalCorners: matchCorners || undefined
     };
   });
 
@@ -345,6 +385,9 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
     avgGoals: matchCount > 0 ? Math.round((totalGoals / matchCount) * 10) / 10 : 0,
     bttsPercentage: matchCount > 0 ? Math.round((bttsCount / matchCount) * 100) : 0,
     over25Percentage: matchCount > 0 ? Math.round((over25Count / matchCount) * 100) : 0,
+    avgCorners: cornersDataCount > 0 ? Math.round((totalCorners / cornersDataCount) * 10) / 10 : 9,
+    over85CornersPercentage: cornersDataCount > 0 ? Math.round((over85CornersCount / cornersDataCount) * 100) : 50,
+    over95CornersPercentage: cornersDataCount > 0 ? Math.round((over95CornersCount / cornersDataCount) * 100) : 40,
     recentMatches
   };
 }
@@ -467,6 +510,9 @@ export async function getCompleteMatchContext(
         avgGoals: 0,
         bttsPercentage: 0,
         over25Percentage: 0,
+        avgCorners: 9,
+        over85CornersPercentage: 50,
+        over95CornersPercentage: 40,
         recentMatches: []
       },
       homeInjuries,
@@ -866,6 +912,9 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         avgGoals: 0,
         bttsPercentage: 0,
         over25Percentage: 0,
+        avgCorners: 9,
+        over85CornersPercentage: 50,
+        over95CornersPercentage: 40,
         recentMatches: []
       },
       injuries: {

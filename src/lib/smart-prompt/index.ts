@@ -95,6 +95,11 @@ ${context.awayInjuries.length > 0
 • BTTS Oranı: %${h2h.bttsPercentage}
 • Üst 2.5 Oranı: %${h2h.over25Percentage}
 
+🚩 KORNER İSTATİSTİKLERİ
+• Ortalama Korner: ${h2h.avgCorners || 9}/maç
+• Üst 8.5 Korner: %${h2h.over85CornersPercentage || 50}
+• Üst 9.5 Korner: %${h2h.over95CornersPercentage || 40}
+
 ${h2h.recentMatches.length > 0 ? `
 📅 SON 5 H2H MAÇI
 ${h2h.recentMatches.slice(0, 5).map(m => 
@@ -113,6 +118,7 @@ YUKARIDAKİ VERİLERE DAYANARAK aşağıdaki tahminleri yap.
 - BTTS: Her iki takımın gol atma oranlarına, H2H BTTS'e ve form'a bak
 - Üst/Alt 2.5: Gol ortalamalarına, H2H gol ortalamasına bak
 - Maç Sonucu: Form, ev/deplasman performansı ve H2H'a bak
+- Korner: Takımların korner ortalamalarına ve H2H korner verilerine bak
 
 📌 GÜVEN SEVİYESİ KURALLARI:
 - Veriler güçlü bir yöne işaret ediyorsa: %65-75
@@ -138,8 +144,14 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
     "confidence": 50-70 arası sayı,
     "reasoning": "VERİLERE dayanan kısa gerekçe (örn: 'Ev sahibi 7/8 ev galibiyeti')"
   },
+  "corners": {
+    "prediction": "over" veya "under",
+    "line": 9.5,
+    "confidence": 50-70 arası sayı,
+    "reasoning": "VERİLERE dayanan kısa gerekçe (örn: 'H2H ort. 10.2 korner, %70 üst 9.5')"
+  },
   "bestBet": {
-    "market": "BTTS", "Over/Under" veya "Match Result",
+    "market": "BTTS", "Over/Under", "Match Result" veya "Corners",
     "selection": "Seçim",
     "confidence": 55-75 arası,
     "reason": "En güçlü veri desteği olan bahis"
@@ -288,6 +300,7 @@ export interface CombinedPrediction {
   btts: { prediction: string; confidence: number; reasoning: string };
   overUnder: { prediction: string; confidence: number; reasoning: string };
   matchResult: { prediction: string; confidence: number; reasoning: string };
+  corners: { prediction: string; confidence: number; reasoning: string; line: number };
   bestBet: { market: string; selection: string; confidence: number; reason: string };
   agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
@@ -352,6 +365,14 @@ export function combineAIandStats(
     statsPrediction.matchResult
   );
 
+  // Corners prediction from AI
+  const corners = {
+    prediction: aiPrediction.corners?.prediction || 'over',
+    confidence: safeConf(aiPrediction.corners?.confidence || 55),
+    reasoning: aiPrediction.corners?.reasoning || 'Korner verisi hesaplanıyor',
+    line: aiPrediction.corners?.line || 9.5
+  };
+
   // Determine best bet (highest confidence where AI and stats agree)
   let bestBet = { market: 'BTTS', selection: btts.prediction, confidence: btts.confidence, reason: 'En yüksek güven' };
   
@@ -363,6 +384,11 @@ export function combineAIandStats(
   if (matchResult.confidence > 65 && matchResult.confidence > bestBet.confidence) {
     bestBet = { market: 'Match Result', selection: matchResult.prediction, confidence: matchResult.confidence, reason: 'Güçlü veri desteği' };
   }
+  
+  // Corners if very high confidence
+  if (corners.confidence > 65 && corners.confidence > bestBet.confidence) {
+    bestBet = { market: 'Corners', selection: `${corners.prediction} ${corners.line}`, confidence: corners.confidence, reason: 'Korner verisi güçlü' };
+  }
 
   // Risk level based on agreement and confidence
   let riskLevel: 'low' | 'medium' | 'high' = 'medium';
@@ -373,6 +399,7 @@ export function combineAIandStats(
     btts,
     overUnder,
     matchResult,
+    corners,
     bestBet,
     agreement,
     riskLevel
@@ -481,6 +508,11 @@ ${injuries.away.length > 0
 • Ortalama Gol: ${h2h.avgGoals}/maç
 • BTTS Oranı: %${h2h.bttsPercentage}
 • Üst 2.5 Oranı: %${h2h.over25Percentage}
+
+🚩 KORNER İSTATİSTİKLERİ
+• Ortalama Korner: ${h2h.avgCorners || 9}/maç
+• Üst 8.5 Korner: %${h2h.over85CornersPercentage || 50}
+• Üst 9.5 Korner: %${h2h.over95CornersPercentage || 40}
 
 ${h2h.recentMatches.length > 0 ? `
 📅 SON H2H MAÇLARI
