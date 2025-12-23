@@ -678,18 +678,18 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
         // Agent results (JSON)
         agent_results: result.agents,
         
-        // Predictions
-        btts_prediction: result.btts.prediction,
-        btts_confidence: result.btts.confidence,
-        btts_reasoning: result.btts.reasoning,
+        // Predictions (Agent analizinde undefined - sadece özel tahminler var)
+        btts_prediction: result.btts?.prediction || null,
+        btts_confidence: result.btts?.confidence || null,
+        btts_reasoning: result.btts?.reasoning || null,
         
-        over_under_prediction: result.overUnder.prediction,
-        over_under_confidence: result.overUnder.confidence,
-        over_under_reasoning: result.overUnder.reasoning,
+        over_under_prediction: result.overUnder?.prediction || null,
+        over_under_confidence: result.overUnder?.confidence || null,
+        over_under_reasoning: result.overUnder?.reasoning || null,
         
-        match_result_prediction: result.matchResult.prediction,
-        match_result_confidence: result.matchResult.confidence,
-        match_result_reasoning: result.matchResult.reasoning,
+        match_result_prediction: result.matchResult?.prediction || null,
+        match_result_confidence: result.matchResult?.confidence || null,
+        match_result_reasoning: result.matchResult?.reasoning || null,
         
         // Corners (if available)
         corners_prediction: result.corners?.prediction,

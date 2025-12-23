@@ -714,10 +714,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                {/* Predictions Grid */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  {/* BTTS */}
-                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                {/* Predictions Grid - Sadece AI Analiz için standart tahminler */}
+                {analysisType === 'ai' && analysis.btts && analysis.overUnder && analysis.matchResult && (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* BTTS */}
+                    <div className="bg-white/5 rounded-xl border border-white/10 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Target className="w-5 h-5 text-blue-400" />
                       <h4 className="text-white font-medium">{t.btts}</h4>
@@ -819,11 +820,12 @@ export default function DashboardPage() {
                     )}
                   </div>
                   )}
-                </div>
+                  </div>
+                )}
                 
-                {/* YENİ: Agent Özel Tahminler (Sadece Agent Analysis için) */}
+                {/* Agent Özel Tahminler (Sadece Agent Analysis için - Standart tahminler yok) */}
                 {analysisType === 'agent' && (
-                  <div className="grid md:grid-cols-3 gap-4 mt-4">
+                  <div className="grid md:grid-cols-3 gap-4">
                     {/* İlk Yarı Gol Tahmini */}
                     {analysis.halfTimeGoals && (
                       <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/30 p-4">
