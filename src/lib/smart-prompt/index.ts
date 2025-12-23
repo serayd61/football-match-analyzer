@@ -3,7 +3,7 @@
 // Sportmonks verilerini AI için optimize edilmiş prompt'a çevirir
 // ============================================================================
 
-import { MatchContext, TeamStats, HeadToHead, Injury } from '../sportmonks';
+import { type MatchContext, type TeamStats, type HeadToHead, type Injury } from '../sportmonks/index';
 
 export interface MatchDetails {
   fixtureId: number;
