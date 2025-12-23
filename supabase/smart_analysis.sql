@@ -38,6 +38,7 @@ CREATE TABLE smart_analysis (
   -- Performance
   processing_time INTEGER,
   models_used TEXT[],
+  data_quality TEXT, -- excellent, good, partial, minimal, no_data
   
   -- Settlement
   is_settled BOOLEAN DEFAULT FALSE,
