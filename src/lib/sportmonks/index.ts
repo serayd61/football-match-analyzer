@@ -594,26 +594,9 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
   try {
     console.log(`🔄 Step 1: Fetching fixture base data...`);
     
-    // Sportmonks API - Temel include'lar (nested olanlar sorun çıkarabilir)
+    // Sportmonks API - Sadece temel include'lar (çok fazla include API'yi kırabiliyor)
     const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}`, {
-      include: [
-        // Temel bilgiler
-        'participants',
-        'scores',
-        'league',
-        'round',
-        'stage',
-        'venue',
-        'referee',
-        'weatherReport',
-        // Kadro ve olaylar
-        'lineups',
-        'events',
-        'statistics',
-        // Bahis ve tahmin
-        'odds',
-        'predictions'
-      ].join(';')
+      include: 'participants;scores;league;venue'
     });
 
     if (!fixtureData?.data) {
