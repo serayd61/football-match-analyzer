@@ -63,7 +63,6 @@ export async function GET(request: NextRequest) {
       const teamUrl = new URL(`${SPORTMONKS_API}/teams/${homeTeamId}`);
       teamUrl.searchParams.append('api_token', SPORTMONKS_KEY);
       teamUrl.searchParams.append('include', 'statistics.details;latest.statistics;latest.scores');
-      teamUrl.searchParams.append('filters[latestLimit]', '5');
       
       const teamRes = await fetch(teamUrl.toString());
       const teamData = await teamRes.json();

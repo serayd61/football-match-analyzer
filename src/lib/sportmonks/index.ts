@@ -109,10 +109,9 @@ async function fetchSportmonks(endpoint: string, params: Record<string, string> 
 
 export async function getTeamStats(teamId: number, seasonId?: number): Promise<TeamStats | null> {
   try {
-    // Get team details with statistics and last 15 matches (including corner stats)
+    // Get team details with statistics and recent matches (including corner stats)
     const teamData = await fetchSportmonks(`/teams/${teamId}`, {
-      include: 'statistics.details;latest.participants;latest.scores;latest.statistics',
-      'filters[latestLimit]': '15'  // Get last 15 matches for form calculation
+      include: 'statistics.details;latest.participants;latest.scores;latest.statistics'
     });
 
     if (!teamData?.data) return null;
