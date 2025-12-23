@@ -33,18 +33,18 @@ export interface AgentAnalysisResult {
     deepAnalysis?: any;
   };
   
-  // Birleştirilmiş tahminler
-  btts: {
+  // Birleştirilmiş tahminler (Agent analizinde kullanılmıyor - sadece yeni özel tahminler kullanılıyor)
+  btts?: {
     prediction: string;
     confidence: number;
     reasoning: string;
   };
-  overUnder: {
+  overUnder?: {
     prediction: string;
     confidence: number;
     reasoning: string;
   };
-  matchResult: {
+  matchResult?: {
     prediction: string;
     confidence: number;
     reasoning: string;
@@ -615,19 +615,34 @@ export async function runAgentAnalysis(
         deepAnalysis: deepAnalysisResult
       },
       
-      btts: consensus.btts,
-      overUnder: consensus.overUnder,
-      matchResult: consensus.matchResult,
+      // Agent analizinde standart tahminler YOK - sadece özel tahminler kullanılıyor
+      btts: undefined,
+      overUnder: undefined,
+      matchResult: undefined,
       
       corners,
       halfTimeGoals,
       halfTimeFullTime,
       matchResultOdds,
       
-      bestBet: consensus.bestBet,
-      agreement: consensus.agreement,
-      riskLevel: consensus.riskLevel,
-      overallConfidence,
+      // Agent analizinde consensus değerleri kullanılmıyor
+      bestBet: {
+        market: 'Agent Özel Tahminler',
+        selection: halfTimeGoals ? 'İlk Yarı Goller' : halfTimeFullTime ? 'İlk Yarı/Maç Sonucu' : 'Maç Sonucu Oranları',
+        confidence: Math.max(
+          halfTimeGoals?.confidence || 0,
+          halfTimeFullTime?.confidence || 0,
+          matchResultOdds ? Math.max(matchResultOdds.home, matchResultOdds.draw, matchResultOdds.away) : 0
+        ),
+        reason: 'Agent özel tahminleri'
+      },
+      agreement: 0, // Agent analizinde consensus yok
+      riskLevel: 'medium' as const,
+      overallConfidence: Math.max(
+        halfTimeGoals?.confidence || 0,
+        halfTimeFullTime?.confidence || 0,
+        matchResultOdds ? Math.max(matchResultOdds.home, matchResultOdds.draw, matchResultOdds.away) : 0
+      ),
       dataQuality,
       processingTime: Date.now() - startTime,
       analyzedAt: new Date().toISOString()

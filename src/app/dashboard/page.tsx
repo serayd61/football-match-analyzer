@@ -51,9 +51,9 @@ interface SmartAnalysis {
   fixtureId: number;
   homeTeam: string;
   awayTeam: string;
-  btts: { prediction: string; confidence: number; reasoning: string };
-  overUnder: { prediction: string; confidence: number; reasoning: string };
-  matchResult: { prediction: string; confidence: number; reasoning: string };
+  btts?: { prediction: string; confidence: number; reasoning: string };
+  overUnder?: { prediction: string; confidence: number; reasoning: string };
+  matchResult?: { prediction: string; confidence: number; reasoning: string };
   corners?: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable?: boolean };
   // YENİ: Agent özel tahminler
   halfTimeGoals?: { prediction: string; confidence: number; reasoning: string; line: number; expectedGoals?: number };
