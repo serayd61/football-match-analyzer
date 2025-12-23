@@ -178,6 +178,7 @@ const translations = {
     btts: 'BTTS',
     overUnder: 'Über/Unter 2.5',
     matchResult: 'Spielergebnis',
+    corners: 'Ecken',
     bestBet: 'Beste Wette',
     aiRecommendation: 'KI-Empfehlung',
     confidence: 'Vertrauen',
