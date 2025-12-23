@@ -375,6 +375,19 @@ export function combineAIandStats(
 
   // Corners prediction from AI - check if AI provided valid corners data
   const aiCorners = aiPrediction.corners;
+  
+  // Check if reasoning mentions corners (AI might have corner data but forgot to add corners field)
+  const allReasoning = [
+    aiPrediction.btts?.reasoning || '',
+    aiPrediction.overUnder?.reasoning || '',
+    aiPrediction.matchResult?.reasoning || '',
+    aiCorners?.reasoning || ''
+  ].join(' ').toLowerCase();
+  
+  const mentionsCorners = allReasoning.includes('korner') || 
+                          allReasoning.includes('corner') ||
+                          allReasoning.includes('köşe');
+  
   const hasCornerData = aiCorners && 
     aiCorners.prediction && 
     (aiCorners.prediction === 'over' || aiCorners.prediction === 'under') &&
@@ -387,23 +400,54 @@ export function combineAIandStats(
     hasAICorners: !!aiCorners,
     prediction: aiCorners?.prediction,
     confidence: aiCorners?.confidence,
-    hasReasoning: !!aiCorners?.reasoning,
+    mentionsCorners,
     hasCornerData
   });
   
-  const corners = hasCornerData ? {
-    prediction: aiCorners.prediction,
-    confidence: safeConf(aiCorners.confidence || 55),
-    reasoning: aiCorners.reasoning,
-    line: aiCorners.line || 9.5,
-    dataAvailable: true
-  } : {
-    prediction: 'unknown',
-    confidence: 0,
-    reasoning: 'Korner verisi mevcut değil',
-    line: 9.5,
-    dataAvailable: false
-  };
+  // Determine corners prediction
+  let corners: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable: boolean };
+  
+  // If AI has corners field, use it
+  if (hasCornerData) {
+    corners = {
+      prediction: aiCorners.prediction,
+      confidence: safeConf(aiCorners.confidence || 55),
+      reasoning: aiCorners.reasoning,
+      line: aiCorners.line || 9.5,
+      dataAvailable: true
+    };
+  } 
+  // If reasoning mentions corners but no field, extract from reasoning
+  else if (mentionsCorners) {
+    // Try to extract prediction from all reasoning
+    const hasOver = allReasoning.includes('over') || allReasoning.includes('üst') || allReasoning.includes('yüksek');
+    const hasUnder = allReasoning.includes('under') || allReasoning.includes('alt') || allReasoning.includes('düşük');
+    
+    // Extract corner stats from reasoning (e.g., "99.9/maç", "10.2 korner")
+    const cornerMatch = allReasoning.match(/(\d+\.?\d*)\s*(korner|corner|\/maç)/);
+    const cornerValue = cornerMatch?.[1] ? parseFloat(cornerMatch[1]) : null;
+    
+    const prediction = hasOver ? 'over' : hasUnder ? 'under' : (cornerValue !== null && cornerValue > 9.5 ? 'over' : 'under');
+    const confidence = cornerValue !== null && cornerValue > 9.5 ? 60 : cornerValue !== null && cornerValue < 9.5 ? 55 : 50;
+    
+    corners = {
+      prediction,
+      confidence,
+      reasoning: aiCorners?.reasoning || `Korner verisi mevcut (reasoning'den çıkarıldı)`,
+      line: 9.5,
+      dataAvailable: true
+    };
+  }
+  // No corner data at all
+  else {
+    corners = {
+      prediction: 'unknown',
+      confidence: 0,
+      reasoning: 'Korner verisi mevcut değil',
+      line: 9.5,
+      dataAvailable: false
+    };
+  }
 
   // Determine best bet (highest confidence where AI and stats agree)
   let bestBet = { market: 'BTTS', selection: btts.prediction, confidence: btts.confidence, reason: 'En yüksek güven' };

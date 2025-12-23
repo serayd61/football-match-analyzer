@@ -297,12 +297,41 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         confidence: Math.round((claudeParsed.matchResult?.confidence + deepseekParsed.matchResult?.confidence) / 2),
         reasoning: `Claude: ${claudeParsed.matchResult?.reasoning} | DeepSeek: ${deepseekParsed.matchResult?.reasoning}`
       },
-      corners: (claudeParsed.corners || deepseekParsed.corners) ? {
-        prediction: claudeParsed.corners?.prediction || deepseekParsed.corners?.prediction || 'over',
-        confidence: Math.round(((claudeParsed.corners?.confidence || 50) + (deepseekParsed.corners?.confidence || 50)) / 2),
-        reasoning: `Claude: ${claudeParsed.corners?.reasoning || 'N/A'} | DeepSeek: ${deepseekParsed.corners?.reasoning || 'N/A'}`,
-        line: claudeParsed.corners?.line || deepseekParsed.corners?.line || 9.5
-      } : null,
+      // Try to get corners from AI response or extract from reasoning
+      corners: (() => {
+        // If either AI has corners field, use it
+        if (claudeParsed.corners || deepseekParsed.corners) {
+          return {
+            prediction: claudeParsed.corners?.prediction || deepseekParsed.corners?.prediction || 'over',
+            confidence: Math.round(((claudeParsed.corners?.confidence || 50) + (deepseekParsed.corners?.confidence || 50)) / 2),
+            reasoning: `Claude: ${claudeParsed.corners?.reasoning || 'N/A'} | DeepSeek: ${deepseekParsed.corners?.reasoning || 'N/A'}`,
+            line: claudeParsed.corners?.line || deepseekParsed.corners?.line || 9.5
+          };
+        }
+        
+        // Check if reasoning mentions corners (AI might have data but forgot corners field)
+        const allReasoning = [
+          claudeParsed.overUnder?.reasoning || '',
+          deepseekParsed.overUnder?.reasoning || '',
+          claudeParsed.btts?.reasoning || '',
+          deepseekParsed.btts?.reasoning || ''
+        ].join(' ').toLowerCase();
+        
+        if (allReasoning.includes('korner') || allReasoning.includes('corner')) {
+          // Try to extract prediction from reasoning
+          const hasOver = allReasoning.includes('over') || allReasoning.includes('üst') || allReasoning.includes('yüksek');
+          const hasUnder = allReasoning.includes('under') || allReasoning.includes('alt') || allReasoning.includes('düşük');
+          
+          return {
+            prediction: hasOver ? 'over' : hasUnder ? 'under' : 'over',
+            confidence: 55, // Default medium confidence
+            reasoning: `Corners mentioned in analysis but not explicitly predicted`,
+            line: 9.5
+          };
+        }
+        
+        return null;
+      })(),
       bestBet: claudeParsed.bestBet?.confidence > deepseekParsed.bestBet?.confidence ? claudeParsed.bestBet : deepseekParsed.bestBet
     };
     modelsUsed = ['claude', 'deepseek'];
