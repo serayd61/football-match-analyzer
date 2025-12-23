@@ -263,18 +263,24 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     const avgGoalsConceded = matchesPlayed > 0 ? Math.round((goalsConceded / matchesPlayed) * 100) / 100 : 1.0;
 
     // Corners - IMPORTANT: getStatValue(45) might return TOTAL corners, not average per match
-    // Normal match has 5-12 corners per match, so values > 25 are likely totals, not averages
+    // Normal match has 5-12 corners per match, so values > 20 are likely totals, not averages
     const cornersStatValue = getStatValue(45);
     
-    // If stat value is > 25, it's likely a total, not average - don't use it
+    // Validate avgCornersFromMatches - should be between 0-20 (realistic range)
+    // If it's > 20, it's invalid data (could be total instead of average, or parsing error)
+    const validatedAvgCornersFromMatches = (avgCornersFromMatches > 0 && avgCornersFromMatches <= 20) 
+      ? avgCornersFromMatches 
+      : 0;
+    
+    // If stat value is > 20, it's likely a total, not average - don't use it
     // Only use if it's in reasonable range (5-12 per match is normal, max 20 for very high)
     let validAvgCornersFor = 0;
     if (cornersStatValue > 0 && cornersStatValue <= 20) {
-      // Valid average per match
+      // Valid average per match from API
       validAvgCornersFor = cornersStatValue;
-    } else if (avgCornersFromMatches > 0) {
-      // Use calculated from recent matches
-      validAvgCornersFor = avgCornersFromMatches;
+    } else if (validatedAvgCornersFromMatches > 0) {
+      // Use validated calculated from recent matches
+      validAvgCornersFor = validatedAvgCornersFromMatches;
     } else {
       // No valid data - use default
       validAvgCornersFor = 5;
@@ -290,7 +296,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     
     // Log for debugging
     if (cornersStatValue > 20) {
-      console.warn(`⚠️ Invalid corner stat value ${cornersStatValue} for team ${teamId} - using calculated ${avgCornersFromMatches} or default`);
+      console.warn(`⚠️ Invalid corner stat value ${cornersStatValue} for team ${teamId} - using calculated ${validatedAvgCornersFromMatches} or default`);
+    }
+    if (avgCornersFromMatches > 20) {
+      console.warn(`⚠️ Invalid calculated corner average ${avgCornersFromMatches} for team ${teamId} (from ${cornersMatchCount} matches, total: ${totalCornersFromMatches}) - using default`);
     }
 
     return {
