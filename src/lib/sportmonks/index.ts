@@ -199,7 +199,7 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
   try {
     // Fetch more H2H matches for better historical analysis
     const h2hData = await fetchSportmonks(`/fixtures/head-to-head/${team1Id}/${team2Id}`, {
-      include: 'participants;scores',
+      include: 'participants;scores;statistics',  // statistics for corners
       per_page: '15'  // Get last 15 H2H matches
     });
 
@@ -679,7 +679,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         include: 'statistics;latest;coach'  // Removed sidelined, coaches->coach
       }),
       fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
-        include: 'participants;scores',
+        include: 'participants;scores;statistics',  // statistics for corners
         per_page: '10'
       })
     ]);
