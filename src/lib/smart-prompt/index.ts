@@ -283,21 +283,28 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
     }
   }
 
+  // Build detailed statistical reasoning
+  const bttsReason = `İstatistiksel analiz: Ev sahibi %${homeBttsRate.toFixed(0)} BTTS, Deplasman %${awayBttsRate.toFixed(0)} BTTS, H2H %${h2hBttsRate.toFixed(0)} BTTS. Ağırlıklı ortalama: %${bttsScore.toFixed(1)} → ${bttsPrediction === 'yes' ? 'Her iki takım gol atabilir' : 'Her iki takım gol atmayabilir'}`;
+  
+  const overUnderReason = `İstatistiksel analiz: Beklenen toplam gol ${totalExpectedGoals.toFixed(1)} (Takımlar ortalaması: ${expectedGoals.toFixed(1)}, H2H ortalaması: ${h2hAvgGoals.toFixed(1)}). ${overPrediction === 'over' ? '2.5 üstü' : '2.5 altı'} bekleniyor.`;
+  
+  const matchResultReason = `İstatistiksel skorlama: Ev ${Math.round(homeScore)} - Dep ${Math.round(awayScore)} (Form: Ev ${homeTeam.formPoints}/30, Dep ${awayTeam.formPoints}/30 | Ev performansı: ${Math.round(homeWinRate * 100)}%, Dep performansı: ${Math.round(awayWinRate * 100)}% | H2H: ${h2h.team1Wins}-${h2h.draws}-${h2h.team2Wins}). Fark: ${Math.round(scoreDiff)} → ${matchResult === 'home' ? 'Ev sahibi avantajlı' : matchResult === 'away' ? 'Deplasman avantajlı' : 'Beraberlik olası'}`;
+
   return {
     btts: {
       prediction: bttsPrediction,
       confidence: bttsConfidence,
-      reason: `BTTS oranları: Ev %${homeBttsRate}, Dep %${awayBttsRate}, H2H %${h2hBttsRate}`
+      reason: bttsReason
     },
     overUnder: {
       prediction: overPrediction,
       confidence: overConfidence,
-      reason: `Beklenen gol: ${totalExpectedGoals.toFixed(1)} (Takımlar: ${expectedGoals.toFixed(1)}, H2H: ${h2hAvgGoals})`
+      reason: overUnderReason
     },
     matchResult: {
       prediction: matchResult,
       confidence: matchConfidence,
-      reason: `Skor: Ev ${homeScore.toFixed(0)} - Dep ${awayScore.toFixed(0)} (Form, performans, H2H dahil)`
+      reason: matchResultReason
     }
   };
 }
@@ -335,28 +342,36 @@ export function combineAIandStats(
     return Math.max(50, Math.min(80, val));
   };
 
-  // Combine predictions (AI gets 60% weight if agrees with stats, 40% if not)
+  // STATISTICS-FIRST APPROACH: Use statistical model for prediction and primary reasoning
+  // AI reasoning is only used as supporting evidence if it agrees
   const combinePrediction = (
     aiPred: { prediction: string; confidence: number; reasoning?: string },
     statPred: { prediction: string; confidence: number; reason: string }
   ) => {
-    const aiConf = safeConf(aiPred?.confidence);
     const statConf = safeConf(statPred?.confidence);
     const agrees = aiPred?.prediction === statPred?.prediction;
     
-    if (agrees) {
-      // Both agree - boost confidence
+    // Always use statistical prediction and primary reasoning
+    // If AI agrees, boost confidence slightly (max +5) and add AI reasoning as support
+    // If AI disagrees, use stats only with note
+    if (agrees && aiPred?.reasoning && !aiPred.reasoning.includes('İstatistikler farklı')) {
+      // AI agrees with stats - use stats prediction, boost confidence slightly, add AI as support
+      const boostedConf = Math.min(75, statConf + 5);
       return {
-        prediction: aiPred?.prediction || statPred?.prediction || 'no',
-        confidence: safeConf(Math.round((aiConf * 0.5) + (statConf * 0.5) + 5)),
-        reasoning: `${aiPred?.reasoning || ''} | Stats: ${statPred?.reason || ''}`
+        prediction: statPred.prediction,
+        confidence: boostedConf,
+        reasoning: `${statPred.reason} | AI desteği: ${aiPred.reasoning.substring(0, 150)}`
       };
     } else {
-      // Disagree - use stats with lower confidence
+      // Use stats prediction, confidence, and reasoning only
+      // Only mention AI disagreement if it's significant
+      const aiNote = aiPred?.prediction && !agrees && aiPred.confidence > 60
+        ? ` (Not: AI ${aiPred.prediction} %${aiPred.confidence} tahmin etti, ancak istatistikler ${statPred.prediction} gösteriyor)` 
+        : '';
       return {
-        prediction: statPred?.prediction || 'no',
-        confidence: safeConf(Math.round(statConf * 0.9)),
-        reasoning: `İstatistikler farklı gösteriyor: ${statPred?.reason || ''}`
+        prediction: statPred.prediction,
+        confidence: statConf,
+        reasoning: `${statPred.reason}${aiNote}`
       };
     }
   };
@@ -389,18 +404,6 @@ export function combineAIandStats(
   // At least one source must have valid data
   const hasContextCornerData = homeHasData || awayHasData || h2hHasData;
   
-  console.log('🚩 Context corner data check:', {
-    home: context?.homeTeam?.avgCornersFor,
-    away: context?.awayTeam?.avgCornersFor,
-    h2h: context?.h2h?.avgCorners,
-    homeHasData,
-    awayHasData,
-    h2hHasData,
-    hasContextCornerData,
-    aiCorners: !!aiCorners,
-    hasCornerData
-  });
-  
   // Check if reasoning mentions corners (AI might have corner data but forgot to add corners field)
   const allReasoning = [
     aiPrediction.btts?.reasoning || '',
@@ -420,6 +423,18 @@ export function combineAIandStats(
     !aiCorners.reasoning.includes('hesaplanıyor') &&
     !aiCorners.reasoning.includes('Veri yok') &&
     !aiCorners.reasoning.includes('mevcut değil');
+  
+  console.log('🚩 Context corner data check:', {
+    home: context?.homeTeam?.avgCornersFor,
+    away: context?.awayTeam?.avgCornersFor,
+    h2h: context?.h2h?.avgCorners,
+    homeHasData,
+    awayHasData,
+    h2hHasData,
+    hasContextCornerData,
+    aiCorners: !!aiCorners,
+    hasCornerData
+  });
   
   console.log('🚩 Corner check:', {
     hasAICorners: !!aiCorners,
@@ -560,10 +575,11 @@ export function combineAIandStats(
     bestBet = { market: 'Corners', selection: `${corners.prediction} ${corners.line}`, confidence: corners.confidence, reason: 'Korner verisi güçlü' };
   }
 
-  // Risk level based on agreement and confidence
+  // Risk level based on statistical confidence (AI agreement is less important now)
   let riskLevel: 'low' | 'medium' | 'high' = 'medium';
-  if (agreement >= 80 && bestBet.confidence >= 65) riskLevel = 'low';
-  else if (agreement < 50 || bestBet.confidence < 55) riskLevel = 'high';
+  if (bestBet.confidence >= 70) riskLevel = 'low';  // High statistical confidence
+  else if (bestBet.confidence >= 60) riskLevel = 'medium';  // Medium confidence
+  else riskLevel = 'high';  // Low confidence
 
   return {
     btts,
