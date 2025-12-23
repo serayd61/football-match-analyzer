@@ -101,9 +101,10 @@ async function fetchSportmonks(endpoint: string, params: Record<string, string> 
 
 export async function getTeamStats(teamId: number, seasonId?: number): Promise<TeamStats | null> {
   try {
-    // Get team details with statistics
+    // Get team details with statistics and last 15 matches
     const teamData = await fetchSportmonks(`/teams/${teamId}`, {
-      include: 'statistics.details;latest'
+      include: 'statistics.details;latest.participants;latest.scores',
+      'filters[latestLimit]': 15  // Get last 15 matches for form calculation
     });
 
     if (!teamData?.data) return null;
@@ -184,8 +185,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
 
 export async function getHeadToHead(team1Id: number, team2Id: number): Promise<HeadToHead | null> {
   try {
+    // Fetch more H2H matches for better historical analysis
     const h2hData = await fetchSportmonks(`/fixtures/head-to-head/${team1Id}/${team2Id}`, {
-      include: 'participants;scores'
+      include: 'participants;scores',
+      per_page: 15  // Get last 15 H2H matches
     });
 
     if (!h2hData?.data || h2hData.data.length === 0) {
