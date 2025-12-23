@@ -4,9 +4,15 @@
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
-import { getCompleteMatchContext, type MatchContext } from '../sportmonks/index';
+import { 
+  getCompleteMatchContext, 
+  getFullFixtureData,
+  type MatchContext,
+  type FullFixtureData
+} from '../sportmonks/index';
 import { 
   buildDataDrivenPrompt, 
+  buildFullDataPrompt,
   calculateStatisticalPrediction,
   combineAIandStats,
   MatchDetails,
@@ -151,21 +157,90 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
   console.log(`🔬 DATA-DRIVEN ANALYSIS: ${match.homeTeam} vs ${match.awayTeam}`);
   console.log(`🔬 ========================================\n`);
 
-  // Step 1: Fetch complete match context from Sportmonks
-  console.log('📊 Step 1: Fetching match data from Sportmonks...');
-  const context = await getCompleteMatchContext(match.homeTeamId, match.awayTeamId);
-  
+  let context: MatchContext | null = null;
+  let fullData: FullFixtureData | null = null;
   let dataQuality = 'good';
-  
-  if (!context) {
-    console.error('❌ Failed to get match context - using basic analysis');
-    dataQuality = 'no_data';
-    
-    // Fallback to basic analysis without data
-    return runBasicAnalysis(match, startTime);
-  }
+  let prompt = '';
 
-  console.log(`✅ Data loaded: ${context.homeTeam.teamName} (Form: ${context.homeTeam.recentForm}) vs ${context.awayTeam.teamName} (Form: ${context.awayTeam.recentForm})`);
+  // Step 1: Try to fetch FULL fixture data (single API call with everything)
+  console.log('📊 Step 1: Fetching FULL match data from Sportmonks (single API call)...');
+  fullData = await getFullFixtureData(match.fixtureId);
+  
+  if (fullData) {
+    console.log(`✅ FULL DATA loaded! Quality: ${fullData.dataQuality.score}/100`);
+    console.log(`   📊 Stats: ${fullData.dataQuality.hasStatistics}, H2H: ${fullData.dataQuality.hasH2H}, Odds: ${fullData.dataQuality.hasOdds}`);
+    console.log(`   👥 Lineups: ${fullData.dataQuality.hasLineups}, 🏥 Injuries: ${fullData.dataQuality.hasInjuries}`);
+    
+    dataQuality = fullData.dataQuality.score >= 70 ? 'excellent' : 
+                  fullData.dataQuality.score >= 50 ? 'good' : 
+                  fullData.dataQuality.score >= 30 ? 'partial' : 'minimal';
+    
+    // Convert fullData to context format for statistical prediction
+    context = {
+      homeTeam: {
+        teamId: fullData.homeTeam.id,
+        teamName: fullData.homeTeam.name,
+        recentForm: fullData.homeTeam.form,
+        formPoints: fullData.homeTeam.formPoints,
+        goalsScored: 0,
+        goalsConceded: 0,
+        avgGoalsScored: 1.5,
+        avgGoalsConceded: 1.2,
+        homeWins: 0,
+        homeDraws: 0,
+        homeLosses: 0,
+        awayWins: 0,
+        awayDraws: 0,
+        awayLosses: 0,
+        bttsPercentage: 50,
+        over25Percentage: 50,
+        under25Percentage: 50,
+        cleanSheets: 0,
+        failedToScore: 0
+      },
+      awayTeam: {
+        teamId: fullData.awayTeam.id,
+        teamName: fullData.awayTeam.name,
+        recentForm: fullData.awayTeam.form,
+        formPoints: fullData.awayTeam.formPoints,
+        goalsScored: 0,
+        goalsConceded: 0,
+        avgGoalsScored: 1.3,
+        avgGoalsConceded: 1.4,
+        homeWins: 0,
+        homeDraws: 0,
+        homeLosses: 0,
+        awayWins: 0,
+        awayDraws: 0,
+        awayLosses: 0,
+        bttsPercentage: 50,
+        over25Percentage: 50,
+        under25Percentage: 50,
+        cleanSheets: 0,
+        failedToScore: 0
+      },
+      h2h: fullData.h2h,
+      homeInjuries: fullData.injuries.home,
+      awayInjuries: fullData.injuries.away
+    };
+    
+    // Build FULL data prompt
+    prompt = buildFullDataPrompt(match, fullData);
+    
+  } else {
+    // Fallback: Try legacy method (multiple API calls)
+    console.log('⚠️ Full data fetch failed, trying legacy method...');
+    context = await getCompleteMatchContext(match.homeTeamId, match.awayTeamId);
+    
+    if (!context) {
+      console.error('❌ Failed to get match context - using basic analysis');
+      dataQuality = 'no_data';
+      return runBasicAnalysis(match, startTime);
+    }
+    
+    console.log(`✅ Legacy data loaded: ${context.homeTeam.teamName} vs ${context.awayTeam.teamName}`);
+    prompt = buildDataDrivenPrompt(match, context);
+  }
 
   // Step 2: Calculate statistical prediction (AI-independent)
   console.log('📈 Step 2: Calculating statistical prediction...');
@@ -174,9 +249,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
   console.log(`   O/U: ${statsPrediction.overUnder.prediction} (%${statsPrediction.overUnder.confidence})`);
   console.log(`   MS: ${statsPrediction.matchResult.prediction} (%${statsPrediction.matchResult.confidence})`);
 
-  // Step 3: Build data-driven prompt
-  console.log('🤖 Step 3: Building AI prompt with real data...');
-  const prompt = buildDataDrivenPrompt(match, context);
+  // Step 3: Prompt already built above
+  console.log('🤖 Step 3: AI prompt ready with real data...');
 
   // Step 4: Call AI models in parallel
   console.log('🧠 Step 4: Calling Claude & DeepSeek with data...');

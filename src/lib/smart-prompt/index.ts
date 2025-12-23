@@ -3,7 +3,7 @@
 // Sportmonks verilerini AI için optimize edilmiş prompt'a çevirir
 // ============================================================================
 
-import { type MatchContext, type TeamStats, type HeadToHead, type Injury } from '../sportmonks/index';
+import { type MatchContext, type TeamStats, type HeadToHead, type Injury, type FullFixtureData } from '../sportmonks/index';
 
 export interface MatchDetails {
   fixtureId: number;
@@ -377,5 +377,191 @@ export function combineAIandStats(
     agreement,
     riskLevel
   };
+}
+
+// ============================================================================
+// 🚀 FULL DATA PROMPT - TEK API'DEN GELEN TÜM VERİYLE PROMPT
+// ============================================================================
+
+export function buildFullDataPrompt(match: MatchDetails, data: FullFixtureData): string {
+  const home = data.homeTeam;
+  const away = data.awayTeam;
+  const h2h = data.h2h;
+  const odds = data.odds;
+  const injuries = data.injuries;
+  const venue = data.venue;
+  const referee = data.referee;
+  const weather = data.weather;
+  const lineups = data.lineups;
+  const predictions = data.predictions;
+  
+  // Format recent form with results
+  const formatRecentForm = (recentMatches: any[], teamId: number) => {
+    if (!recentMatches?.length) return 'Veri yok';
+    
+    return recentMatches.slice(0, 5).map((m: any) => {
+      const isHome = m.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+      const homeScore = m.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
+      const awayScore = m.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
+      const teamScore = isHome ? homeScore : awayScore;
+      const oppScore = isHome ? awayScore : homeScore;
+      const opponent = m.participants?.find((p: any) => p.id !== teamId)?.name || 'Unknown';
+      const result = teamScore > oppScore ? 'G' : teamScore < oppScore ? 'M' : 'B';
+      return `${result} vs ${opponent} (${teamScore}-${oppScore})`;
+    }).join('\n• ');
+  };
+
+  return `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  🎯 PROFESYONEL MAÇ ANALİZİ - TÜM VERİLER                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 MAÇ BİLGİSİ
+─────────────────────────────────────────────────────────
+• Maç: ${match.homeTeam} vs ${match.awayTeam}
+• Lig: ${data.league.name} (${data.league.country})
+• Hafta: ${data.round || 'N/A'} | Aşama: ${data.stage || 'N/A'}
+• Tarih: ${match.matchDate}
+• Veri Kalitesi: ${data.dataQuality.score}/100 ⭐
+
+═══════════════════════════════════════════════════════════════════════════════
+🏟️ STADYUM & KOŞULLAR
+═══════════════════════════════════════════════════════════════════════════════
+• Stadyum: ${venue.name} (${venue.city})
+• Kapasite: ${venue.capacity > 0 ? venue.capacity.toLocaleString() : 'N/A'} | Zemin: ${venue.surface}
+• Hakem: ${referee.name}${referee.avgCardsPerMatch > 0 ? ` (Ort. ${referee.avgCardsPerMatch} kart/maç)` : ''}
+${weather.temperature > 0 ? `• Hava: ${weather.description} | ${weather.temperature}°C | Nem: %${weather.humidity} | Rüzgar: ${weather.wind} km/s` : ''}
+
+═══════════════════════════════════════════════════════════════════════════════
+🏠 EV SAHİBİ: ${home.name}
+═══════════════════════════════════════════════════════════════════════════════
+• Sıralama: ${home.position > 0 ? `#${home.position}` : 'N/A'}
+• Teknik Direktör: ${home.coach}
+
+📊 FORM (Son 10 Maç): ${home.form} (${home.formPoints}/30 puan)
+• ${formatRecentForm(home.recentMatches, home.id)}
+
+${lineups.home.length > 0 ? `
+🔢 KADRO (${lineups.homeFormation || 'N/A'})
+${lineups.home.slice(0, 11).map(p => `• ${p.number}. ${p.name} (${p.position})${p.isCaptain ? ' ©' : ''}`).join('\n')}
+` : ''}
+
+🏥 SAKATLIKLAR (${injuries.home.length} oyuncu)
+${injuries.home.length > 0 
+  ? injuries.home.slice(0, 5).map(i => `• ❌ ${i.playerName} - ${i.reason}`).join('\n')
+  : '• ✅ Sakatlık yok'}
+
+═══════════════════════════════════════════════════════════════════════════════
+✈️ DEPLASMAN: ${away.name}
+═══════════════════════════════════════════════════════════════════════════════
+• Sıralama: ${away.position > 0 ? `#${away.position}` : 'N/A'}
+• Teknik Direktör: ${away.coach}
+
+📊 FORM (Son 10 Maç): ${away.form} (${away.formPoints}/30 puan)
+• ${formatRecentForm(away.recentMatches, away.id)}
+
+${lineups.away.length > 0 ? `
+🔢 KADRO (${lineups.awayFormation || 'N/A'})
+${lineups.away.slice(0, 11).map(p => `• ${p.number}. ${p.name} (${p.position})${p.isCaptain ? ' ©' : ''}`).join('\n')}
+` : ''}
+
+🏥 SAKATLIKLAR (${injuries.away.length} oyuncu)
+${injuries.away.length > 0 
+  ? injuries.away.slice(0, 5).map(i => `• ❌ ${i.playerName} - ${i.reason}`).join('\n')
+  : '• ✅ Sakatlık yok'}
+
+═══════════════════════════════════════════════════════════════════════════════
+🔄 KARŞILAŞMA GEÇMİŞİ (H2H) - SON ${h2h.totalMatches} MAÇ
+═══════════════════════════════════════════════════════════════════════════════
+• ${home.name}: ${h2h.team1Wins} galibiyet
+• Beraberlik: ${h2h.draws}
+• ${away.name}: ${h2h.team2Wins} galibiyet
+
+⚽ H2H İSTATİSTİKLERİ
+• Ortalama Gol: ${h2h.avgGoals}/maç
+• BTTS Oranı: %${h2h.bttsPercentage}
+• Üst 2.5 Oranı: %${h2h.over25Percentage}
+
+${h2h.recentMatches.length > 0 ? `
+📅 SON H2H MAÇLARI
+${h2h.recentMatches.slice(0, 5).map(m => 
+  `• ${m.date.split('T')[0]}: ${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam}`
+).join('\n')}
+` : ''}
+
+${odds.matchResult.home > 0 ? `
+═══════════════════════════════════════════════════════════════════════════════
+💰 BAHİS ORANLARI (Piyasa Beklentisi)
+═══════════════════════════════════════════════════════════════════════════════
+🎯 MAÇ SONUCU
+• Ev Galibiyeti: ${odds.matchResult.home.toFixed(2)}
+• Beraberlik: ${odds.matchResult.draw.toFixed(2)}
+• Deplasman Galibiyeti: ${odds.matchResult.away.toFixed(2)}
+
+⚽ DİĞER PAZARLAR
+• BTTS - Evet: ${odds.btts.yes.toFixed(2)} | Hayır: ${odds.btts.no.toFixed(2)}
+• Üst 2.5: ${odds.overUnder25.over.toFixed(2)} | Alt 2.5: ${odds.overUnder25.under.toFixed(2)}
+` : ''}
+
+${predictions.sportmonks ? `
+═══════════════════════════════════════════════════════════════════════════════
+🔮 SPORTMONKS TAHMİNLERİ (Referans)
+═══════════════════════════════════════════════════════════════════════════════
+• Ev Kazanma: %${predictions.probability.home}
+• Beraberlik: %${predictions.probability.draw}
+• Deplasman Kazanma: %${predictions.probability.away}
+` : ''}
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 ANALİZ GÖREVİ
+═══════════════════════════════════════════════════════════════════════════════
+
+TÜM YUKARIDAKİ VERİLERE DAYANARAK analiz yap.
+
+📌 KULLANACAĞIN VERİLER:
+1. FORM: Son 10 maç sonuçları ve kalitesi
+2. H2H: Tarihsel karşılaşma verileri
+3. KADROLAR: Sakatlıklar ve 11'ler (varsa)
+4. ORANLAR: Piyasa beklentisi (varsa)
+5. KOŞULLAR: Stadyum, hakem, hava durumu
+
+📌 TAHMİN KRİTERLERİ:
+- BTTS: H2H BTTS oranı, gol ortalamaları
+- Üst/Alt: Gol ortalamaları, H2H gol ortalaması
+- Maç Sonucu: Form, lig sıralaması, ev/deplasman performansı, H2H
+
+📌 GÜVEN SEVİYESİ:
+- Veri kalitesi ${data.dataQuality.score}/100
+- %65-75: Güçlü veri desteği varsa
+- %55-65: Karışık sinyaller
+- %50-55: Belirsiz
+
+YANITINI SADECE JSON OLARAK VER:
+
+{
+  "btts": {
+    "prediction": "yes" veya "no",
+    "confidence": 50-75,
+    "reasoning": "H2H ve form verilerine dayanan gerekçe"
+  },
+  "overUnder": {
+    "prediction": "over" veya "under",
+    "confidence": 50-75,
+    "reasoning": "Gol verilerine dayanan gerekçe"
+  },
+  "matchResult": {
+    "prediction": "home", "draw" veya "away",
+    "confidence": 50-70,
+    "reasoning": "Form ve performans verilerine dayanan gerekçe"
+  },
+  "bestBet": {
+    "market": "BTTS", "Over/Under" veya "Match Result",
+    "selection": "Seçim",
+    "confidence": 55-75,
+    "reason": "En güçlü veri desteği"
+  },
+  "riskLevel": "low", "medium" veya "high"
+}
+`;
 }
 

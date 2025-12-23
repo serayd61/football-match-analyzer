@@ -104,7 +104,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     // Get team details with statistics and last 15 matches
     const teamData = await fetchSportmonks(`/teams/${teamId}`, {
       include: 'statistics.details;latest.participants;latest.scores',
-      'filters[latestLimit]': 15  // Get last 15 matches for form calculation
+      'filters[latestLimit]': '15'  // Get last 15 matches for form calculation
     });
 
     if (!teamData?.data) return null;
@@ -188,7 +188,7 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
     // Fetch more H2H matches for better historical analysis
     const h2hData = await fetchSportmonks(`/fixtures/head-to-head/${team1Id}/${team2Id}`, {
       include: 'participants;scores',
-      per_page: 15  // Get last 15 H2H matches
+      per_page: '15'  // Get last 15 H2H matches
     });
 
     if (!h2hData?.data || h2hData.data.length === 0) {
@@ -356,7 +356,7 @@ export async function getTeamRecentMatches(teamId: number, limit: number = 5): P
 }
 
 // ============================================================================
-// COMPLETE MATCH CONTEXT
+// COMPLETE MATCH CONTEXT (Legacy - multiple API calls)
 // ============================================================================
 
 export async function getCompleteMatchContext(
@@ -399,6 +399,406 @@ export async function getCompleteMatchContext(
     };
   } catch (error) {
     console.error('getCompleteMatchContext error:', error);
+    return null;
+  }
+}
+
+// ============================================================================
+// 🚀 FULL FIXTURE DATA - TEK API ÇAĞRISIYLA TÜM VERİ
+// Sportmonks'un sunduğu HER ŞEYİ tek seferde çeker
+// ============================================================================
+
+export interface FullFixtureData {
+  // Maç Temel Bilgileri
+  fixtureId: number;
+  homeTeam: {
+    id: number;
+    name: string;
+    shortCode: string;
+    logo: string;
+    form: string;
+    formPoints: number;
+    position: number;
+    statistics: any;
+    recentMatches: any[];
+    coach: string;
+  };
+  awayTeam: {
+    id: number;
+    name: string;
+    shortCode: string;
+    logo: string;
+    form: string;
+    formPoints: number;
+    position: number;
+    statistics: any;
+    recentMatches: any[];
+    coach: string;
+  };
+  
+  // Lig & Turnuva
+  league: {
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+  };
+  round: string;
+  stage: string;
+  
+  // Maç Detayları
+  venue: {
+    name: string;
+    city: string;
+    capacity: number;
+    surface: string;
+  };
+  referee: {
+    name: string;
+    avgCardsPerMatch: number;
+    avgFoulsPerMatch: number;
+  };
+  weather: {
+    temperature: number;
+    description: string;
+    humidity: number;
+    wind: number;
+  };
+  
+  // İstatistikler
+  matchStatistics: any[];
+  events: any[];
+  lineups: {
+    home: any[];
+    away: any[];
+    homeFormation: string;
+    awayFormation: string;
+  };
+  
+  // Bahis & Tahminler
+  odds: {
+    matchResult: { home: number; draw: number; away: number };
+    btts: { yes: number; no: number };
+    overUnder25: { over: number; under: number };
+    asianHandicap: any;
+  };
+  predictions: {
+    sportmonks: any;
+    probability: { home: number; draw: number; away: number };
+  };
+  
+  // H2H
+  h2h: HeadToHead;
+  
+  // Sakatlar
+  injuries: {
+    home: Injury[];
+    away: Injury[];
+  };
+  
+  // Veri Kalitesi
+  dataQuality: {
+    hasOdds: boolean;
+    hasLineups: boolean;
+    hasStatistics: boolean;
+    hasH2H: boolean;
+    hasInjuries: boolean;
+    hasPredictions: boolean;
+    hasWeather: boolean;
+    score: number; // 0-100
+  };
+  
+  // Raw Data (AI için)
+  rawData: any;
+}
+
+export async function getFullFixtureData(fixtureId: number): Promise<FullFixtureData | null> {
+  try {
+    console.log(`🔄 Fetching COMPLETE fixture data for ${fixtureId}...`);
+    
+    // TEK API ÇAĞRISI - Sportmonks'un sunduğu TÜM include'lar
+    const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}`, {
+      include: [
+        // Takım bilgileri
+        'participants.team.statistics.details',
+        'participants.team.latest.participants',
+        'participants.team.latest.scores',
+        'participants.team.coaches',
+        'participants.team.sidelined.player',
+        // Maç bilgileri
+        'scores',
+        'statistics',
+        'events.player',
+        'events.type',
+        'lineups.player',
+        'lineups.details',
+        // Lig & Turnuva
+        'league',
+        'round',
+        'stage',
+        // Stadyum & Hakem
+        'venue',
+        'referee',
+        // Hava Durumu
+        'weatherReport',
+        // Bahis Oranları
+        'odds.bookmaker',
+        // Sportmonks Tahminleri
+        'predictions',
+        // TV
+        'tvstations',
+        // Yorumlar
+        'comments'
+      ].join(';')
+    });
+
+    if (!fixtureData?.data) {
+      console.error('❌ No fixture data returned');
+      return null;
+    }
+
+    const fixture = fixtureData.data;
+    
+    // Takımları ayır
+    const homeParticipant = fixture.participants?.find((p: any) => p.meta?.location === 'home');
+    const awayParticipant = fixture.participants?.find((p: any) => p.meta?.location === 'away');
+    
+    if (!homeParticipant || !awayParticipant) {
+      console.error('❌ Could not identify teams');
+      return null;
+    }
+
+    const homeTeamData = homeParticipant.team || homeParticipant;
+    const awayTeamData = awayParticipant.team || awayParticipant;
+    
+    // Form hesapla
+    const calculateForm = (latestMatches: any[], teamId: number) => {
+      if (!latestMatches?.length) return { form: 'DDDDD', points: 5 };
+      
+      let form = '';
+      let points = 0;
+      
+      latestMatches.slice(0, 10).forEach((match: any) => {
+        const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+        const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
+        const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
+        
+        const teamScore = isHome ? homeScore : awayScore;
+        const oppScore = isHome ? awayScore : homeScore;
+        
+        if (teamScore > oppScore) { form += 'W'; points += 3; }
+        else if (teamScore < oppScore) { form += 'L'; }
+        else { form += 'D'; points += 1; }
+      });
+      
+      return { form: form || 'DDDDD', points: points || 5 };
+    };
+    
+    const homeForm = calculateForm(homeTeamData.latest, homeTeamData.id);
+    const awayForm = calculateForm(awayTeamData.latest, awayTeamData.id);
+    
+    // H2H çek (ayrı API gerekli)
+    const h2h = await getHeadToHead(homeTeamData.id, awayTeamData.id);
+    
+    // Sakatları işle
+    const processInjuries = (sidelined: any[]): Injury[] => {
+      if (!sidelined?.length) return [];
+      const now = new Date();
+      return sidelined
+        .filter((inj: any) => !inj.end_date || new Date(inj.end_date) > now)
+        .slice(0, 10)
+        .map((inj: any) => ({
+          playerName: inj.player?.display_name || inj.player?.name || 'Unknown',
+          reason: inj.type?.name || 'Injury',
+          expectedReturn: inj.end_date,
+          isOut: !inj.end_date || new Date(inj.end_date) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }));
+    };
+    
+    // Bahis oranlarını işle
+    const processOdds = (odds: any[]) => {
+      const defaultOdds = {
+        matchResult: { home: 0, draw: 0, away: 0 },
+        btts: { yes: 0, no: 0 },
+        overUnder25: { over: 0, under: 0 },
+        asianHandicap: null
+      };
+      
+      if (!odds?.length) return defaultOdds;
+      
+      // En popüler bookmaker'ı bul (Bet365, 1xBet, etc.)
+      const preferredBookmakers = [2, 8, 1, 6]; // Bet365, 1xBet, etc.
+      
+      odds.forEach((odd: any) => {
+        const marketId = odd.market_id;
+        const value = parseFloat(odd.value) || 0;
+        
+        // 1X2 Market
+        if (marketId === 1) {
+          if (odd.label === 'Home' || odd.label === '1') defaultOdds.matchResult.home = value;
+          if (odd.label === 'Draw' || odd.label === 'X') defaultOdds.matchResult.draw = value;
+          if (odd.label === 'Away' || odd.label === '2') defaultOdds.matchResult.away = value;
+        }
+        // BTTS Market
+        if (marketId === 28) {
+          if (odd.label === 'Yes') defaultOdds.btts.yes = value;
+          if (odd.label === 'No') defaultOdds.btts.no = value;
+        }
+        // Over/Under 2.5 Market
+        if (marketId === 2 && odd.total === '2.5') {
+          if (odd.label === 'Over') defaultOdds.overUnder25.over = value;
+          if (odd.label === 'Under') defaultOdds.overUnder25.under = value;
+        }
+      });
+      
+      return defaultOdds;
+    };
+    
+    // Lineups işle
+    const processLineups = (lineups: any[]) => {
+      const result = {
+        home: [] as any[],
+        away: [] as any[],
+        homeFormation: '',
+        awayFormation: ''
+      };
+      
+      if (!lineups?.length) return result;
+      
+      lineups.forEach((lineup: any) => {
+        const player = {
+          name: lineup.player?.display_name || lineup.player?.name || 'Unknown',
+          position: lineup.position || lineup.details?.find((d: any) => d.type_id === 1)?.value || 'Unknown',
+          number: lineup.jersey_number || 0,
+          isCaptain: lineup.captain || false
+        };
+        
+        if (lineup.team_id === homeTeamData.id) {
+          result.home.push(player);
+          if (lineup.formation) result.homeFormation = lineup.formation;
+        } else {
+          result.away.push(player);
+          if (lineup.formation) result.awayFormation = lineup.formation;
+        }
+      });
+      
+      return result;
+    };
+    
+    // Veri kalitesi hesapla
+    const dataQuality = {
+      hasOdds: !!fixture.odds?.length,
+      hasLineups: !!fixture.lineups?.length,
+      hasStatistics: !!fixture.statistics?.length || !!homeTeamData.statistics?.length,
+      hasH2H: !!(h2h && h2h.totalMatches > 0),
+      hasInjuries: !!(homeTeamData.sidelined?.length || awayTeamData.sidelined?.length),
+      hasPredictions: !!fixture.predictions?.length,
+      hasWeather: !!fixture.weatherReport,
+      score: 0
+    };
+    
+    // Kalite skoru hesapla (100 üzerinden)
+    const qualityScore = [
+      dataQuality.hasOdds ? 15 : 0,
+      dataQuality.hasLineups ? 20 : 0,
+      dataQuality.hasStatistics ? 25 : 0,
+      dataQuality.hasH2H ? 20 : 0,
+      dataQuality.hasInjuries ? 10 : 0,
+      dataQuality.hasPredictions ? 5 : 0,
+      dataQuality.hasWeather ? 5 : 0
+    ].reduce((a, b) => a + b, 0);
+    
+    dataQuality.score = qualityScore;
+    
+    const result: FullFixtureData = {
+      fixtureId,
+      homeTeam: {
+        id: homeTeamData.id,
+        name: homeTeamData.name || 'Unknown',
+        shortCode: homeTeamData.short_code || '',
+        logo: homeTeamData.image_path || '',
+        form: homeForm.form,
+        formPoints: homeForm.points,
+        position: homeParticipant.meta?.position || 0,
+        statistics: homeTeamData.statistics || [],
+        recentMatches: homeTeamData.latest?.slice(0, 10) || [],
+        coach: homeTeamData.coaches?.[0]?.name || 'Unknown'
+      },
+      awayTeam: {
+        id: awayTeamData.id,
+        name: awayTeamData.name || 'Unknown',
+        shortCode: awayTeamData.short_code || '',
+        logo: awayTeamData.image_path || '',
+        form: awayForm.form,
+        formPoints: awayForm.points,
+        position: awayParticipant.meta?.position || 0,
+        statistics: awayTeamData.statistics || [],
+        recentMatches: awayTeamData.latest?.slice(0, 10) || [],
+        coach: awayTeamData.coaches?.[0]?.name || 'Unknown'
+      },
+      league: {
+        id: fixture.league?.id || 0,
+        name: fixture.league?.name || 'Unknown',
+        country: fixture.league?.country?.name || '',
+        logo: fixture.league?.image_path || ''
+      },
+      round: fixture.round?.name || '',
+      stage: fixture.stage?.name || '',
+      venue: {
+        name: fixture.venue?.name || 'Unknown',
+        city: fixture.venue?.city?.name || fixture.venue?.city || '',
+        capacity: fixture.venue?.capacity || 0,
+        surface: fixture.venue?.surface || 'grass'
+      },
+      referee: {
+        name: fixture.referee?.name || 'Unknown',
+        avgCardsPerMatch: fixture.referee?.statistics?.cards_per_match || 0,
+        avgFoulsPerMatch: fixture.referee?.statistics?.fouls_per_match || 0
+      },
+      weather: {
+        temperature: fixture.weatherReport?.temperature?.temp || 0,
+        description: fixture.weatherReport?.description || '',
+        humidity: fixture.weatherReport?.humidity || 0,
+        wind: fixture.weatherReport?.wind?.speed || 0
+      },
+      matchStatistics: fixture.statistics || [],
+      events: fixture.events || [],
+      lineups: processLineups(fixture.lineups),
+      odds: processOdds(fixture.odds),
+      predictions: {
+        sportmonks: fixture.predictions?.[0] || null,
+        probability: {
+          home: fixture.predictions?.[0]?.predictions?.home || 0,
+          draw: fixture.predictions?.[0]?.predictions?.draw || 0,
+          away: fixture.predictions?.[0]?.predictions?.away || 0
+        }
+      },
+      h2h: h2h || {
+        totalMatches: 0,
+        team1Wins: 0,
+        team2Wins: 0,
+        draws: 0,
+        avgGoals: 0,
+        bttsPercentage: 0,
+        over25Percentage: 0,
+        recentMatches: []
+      },
+      injuries: {
+        home: processInjuries(homeTeamData.sidelined),
+        away: processInjuries(awayTeamData.sidelined)
+      },
+      dataQuality,
+      rawData: fixture
+    };
+    
+    console.log(`✅ Full fixture data loaded! Quality: ${dataQuality.score}/100`);
+    console.log(`   📊 Stats: ${dataQuality.hasStatistics}, H2H: ${dataQuality.hasH2H}, Odds: ${dataQuality.hasOdds}`);
+    console.log(`   👥 Lineups: ${dataQuality.hasLineups}, 🏥 Injuries: ${dataQuality.hasInjuries}`);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('getFullFixtureData error:', error);
     return null;
   }
 }
