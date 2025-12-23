@@ -109,9 +109,9 @@ async function fetchSportmonks(endpoint: string, params: Record<string, string> 
 
 export async function getTeamStats(teamId: number, seasonId?: number): Promise<TeamStats | null> {
   try {
-    // Get team details with statistics and last 15 matches
+    // Get team details with statistics and last 15 matches (including corner stats)
     const teamData = await fetchSportmonks(`/teams/${teamId}`, {
-      include: 'statistics.details;latest.participants;latest.scores',
+      include: 'statistics.details;latest.participants;latest.scores;latest.statistics',
       'filters[latestLimit]': '15'  // Get last 15 matches for form calculation
     });
 
@@ -131,10 +131,24 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
 
     // Get recent matches for form (last 10 matches for better accuracy)
     const recentMatches = team.latest || [];
+    let totalCornersFromMatches = 0;
+    let cornersMatchCount = 0;
+    
     const form = recentMatches.slice(0, 10).map((match: any) => {
       const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
+      
+      // Calculate corners from match statistics
+      if (match.statistics) {
+        const teamCorners = match.statistics.find((s: any) => 
+          s.type_id === 34 && s.participant === (isHome ? 'home' : 'away')
+        )?.data?.value || 0;
+        if (teamCorners > 0) {
+          totalCornersFromMatches += teamCorners;
+          cornersMatchCount++;
+        }
+      }
       
       const teamScore = isHome ? homeScore : awayScore;
       const opponentScore = isHome ? awayScore : homeScore;
@@ -143,6 +157,11 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       if (teamScore < opponentScore) return 'L';
       return 'D';
     }).join('');
+    
+    // Calculate average corners from recent matches
+    const avgCornersFromMatches = cornersMatchCount > 0 
+      ? Math.round((totalCornersFromMatches / cornersMatchCount) * 10) / 10 
+      : 0;
 
     // Calculate form points
     const formPoints = form.split('').reduce((acc: number, result: string) => {
@@ -180,10 +199,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       under25Percentage: getStatValue(101) || 0,
       cleanSheets: getStatValue(56),
       failedToScore: getStatValue(57),
-      // Corners - type_id 34=total, 45=for, 46=against
-      avgCornersFor: getStatValue(45) || getStatValue(34) / Math.max(matchesPlayed, 1) || 5,
+      // Corners - from statistics or calculated from recent matches
+      avgCornersFor: getStatValue(45) || avgCornersFromMatches || 5,
       avgCornersAgainst: getStatValue(46) || 4.5,
-      totalCorners: getStatValue(34) || 0
+      totalCorners: getStatValue(34) || totalCornersFromMatches || 0
     };
   } catch (error) {
     console.error('getTeamStats error:', error);
@@ -673,10 +692,10 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     
     const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
       fetchSportmonks(`/teams/${homeTeamId}`, {
-        include: 'statistics;latest;coach'  // Removed sidelined, coaches->coach
+        include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
       }),
       fetchSportmonks(`/teams/${awayTeamId}`, {
-        include: 'statistics;latest;coach'  // Removed sidelined, coaches->coach
+        include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
       }),
       fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
         include: 'participants;scores;statistics',  // statistics for corners

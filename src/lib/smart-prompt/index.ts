@@ -52,6 +52,10 @@ export function buildDataDrivenPrompt(match: MatchDetails, context: MatchContext
 • Üst 2.5: %${homeTeam.over25Percentage}
 • Alt 2.5: %${homeTeam.under25Percentage}
 
+🚩 KORNER İSTATİSTİKLERİ
+• Aldığı Korner: ${homeTeam.avgCornersFor || 'Veri yok'}/maç
+• Verdiği Korner: ${homeTeam.avgCornersAgainst || 'Veri yok'}/maç
+
 🏥 SAKATLIKLAR (${context.homeInjuries.length} oyuncu)
 ${context.homeInjuries.length > 0 
   ? context.homeInjuries.map(i => `• ${i.playerName} - ${i.reason}${i.isOut ? ' (DIŞARI)' : ' (Şüpheli)'}`).join('\n')
@@ -75,6 +79,10 @@ ${context.homeInjuries.length > 0
 • BTTS (KG Var): %${awayTeam.bttsPercentage}
 • Üst 2.5: %${awayTeam.over25Percentage}
 • Alt 2.5: %${awayTeam.under25Percentage}
+
+🚩 KORNER İSTATİSTİKLERİ
+• Aldığı Korner: ${awayTeam.avgCornersFor || 'Veri yok'}/maç
+• Verdiği Korner: ${awayTeam.avgCornersAgainst || 'Veri yok'}/maç
 
 🏥 SAKATLIKLAR (${context.awayInjuries.length} oyuncu)
 ${context.awayInjuries.length > 0 
