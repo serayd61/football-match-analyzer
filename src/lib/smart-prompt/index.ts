@@ -134,6 +134,8 @@ YUKARIDAKİ VERİLERE DAYANARAK aşağıdaki tahminleri yap.
 - Veriler yetersizse veya çelişkiliyse: %50-55
 - Maç sonucu için her zaman daha temkinli ol (max %70)
 
+⚠️ ZORUNLU: Aşağıdaki JSON formatında TÜM 4 tahmini (BTTS, Over/Under, Match Result, CORNERS) mutlaka döndürmelisin!
+
 YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
 
 {
@@ -156,7 +158,7 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
     "prediction": "over" veya "under",
     "line": 9.5,
     "confidence": 50-70 arası sayı,
-    "reasoning": "VERİLERE dayanan kısa gerekçe (örn: 'H2H ort. 10.2 korner, %70 üst 9.5')"
+    "reasoning": "VERİLERE dayanan kısa gerekçe (örn: 'H2H ort. 10.2 korner, %70 üst 9.5'). Eğer korner verisi yoksa 'Korner verisi mevcut değil' yaz"
   },
   "bestBet": {
     "market": "BTTS", "Over/Under", "Match Result" veya "Corners",
@@ -316,7 +318,8 @@ export interface CombinedPrediction {
 
 export function combineAIandStats(
   aiPrediction: any,
-  statsPrediction: StatisticalPrediction
+  statsPrediction: StatisticalPrediction,
+  context?: MatchContext | null
 ): CombinedPrediction {
   // Calculate agreement
   let agreementCount = 0;
@@ -376,6 +379,13 @@ export function combineAIandStats(
   // Corners prediction from AI - check if AI provided valid corners data
   const aiCorners = aiPrediction.corners;
   
+  // Check if context has corner data
+  const hasContextCornerData = context && (
+    (context.homeTeam.avgCornersFor > 0 && context.homeTeam.avgCornersFor !== 5) ||
+    (context.awayTeam.avgCornersFor > 0 && context.awayTeam.avgCornersFor !== 5) ||
+    (context.h2h.avgCorners > 0 && context.h2h.avgCorners !== 9)
+  );
+  
   // Check if reasoning mentions corners (AI might have corner data but forgot to add corners field)
   const allReasoning = [
     aiPrediction.btts?.reasoning || '',
@@ -401,6 +411,7 @@ export function combineAIandStats(
     prediction: aiCorners?.prediction,
     confidence: aiCorners?.confidence,
     mentionsCorners,
+    hasContextCornerData,
     hasCornerData
   });
   
@@ -417,6 +428,24 @@ export function combineAIandStats(
       dataAvailable: true
     };
   } 
+  // If context has corner data but AI didn't provide corners field, calculate from context
+  else if (hasContextCornerData && context) {
+    const homeAvg = context.homeTeam.avgCornersFor || 5;
+    const awayAvg = context.awayTeam.avgCornersFor || 5;
+    const h2hAvg = context.h2h.avgCorners || 9;
+    const expectedCorners = (homeAvg + awayAvg + h2hAvg) / 3;
+    
+    const prediction = expectedCorners > 9.5 ? 'over' : 'under';
+    const confidence = expectedCorners > 10.5 ? 60 : expectedCorners > 9.5 ? 55 : expectedCorners < 8.5 ? 55 : 50;
+    
+    corners = {
+      prediction,
+      confidence,
+      reasoning: `Hesaplanan korner: Ev ${homeAvg.toFixed(1)}, Dep ${awayAvg.toFixed(1)}, H2H ${h2hAvg.toFixed(1)}. Beklenen: ${expectedCorners.toFixed(1)}`,
+      line: 9.5,
+      dataAvailable: true
+    };
+  }
   // If reasoning mentions corners but no field, extract from reasoning
   else if (mentionsCorners) {
     // Try to extract prediction from all reasoning

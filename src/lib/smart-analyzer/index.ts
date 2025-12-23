@@ -176,6 +176,36 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
                   fullData.dataQuality.score >= 50 ? 'good' : 
                   fullData.dataQuality.score >= 30 ? 'partial' : 'minimal';
     
+    // Calculate corners from fullData statistics
+    const calculateCornersFromStats = (teamStats: any, recentMatches: any[]) => {
+      // Try to get from statistics first
+      const stats = teamStats?.statistics || [];
+      const seasonStats = stats[0]?.details || [];
+      const cornerStat = seasonStats.find((s: any) => s.type_id === 45);
+      const avgCornersFor = cornerStat?.value?.all || cornerStat?.value?.home || 0;
+      
+      // If not in stats, calculate from recent matches
+      if (!avgCornersFor && recentMatches?.length) {
+        let totalCorners = 0;
+        let cornersCount = 0;
+        recentMatches.slice(0, 10).forEach((m: any) => {
+          if (m.statistics) {
+            const corners = m.statistics.find((s: any) => s.type_id === 45);
+            if (corners?.data?.value) {
+              totalCorners += corners.data.value;
+              cornersCount++;
+            }
+          }
+        });
+        return cornersCount > 0 ? Math.round((totalCorners / cornersCount) * 10) / 10 : 5;
+      }
+      
+      return avgCornersFor || 5;
+    };
+    
+    const homeCornersFor = calculateCornersFromStats(fullData.homeTeam.statistics, fullData.homeTeam.recentMatches);
+    const awayCornersFor = calculateCornersFromStats(fullData.awayTeam.statistics, fullData.awayTeam.recentMatches);
+    
     // Convert fullData to context format for statistical prediction
     context = {
       homeTeam: {
@@ -198,8 +228,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: 5,
-        avgCornersAgainst: 4.5,
+        avgCornersFor: homeCornersFor,
+        avgCornersAgainst: awayCornersFor, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       awayTeam: {
@@ -222,8 +252,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         under25Percentage: 50,
         cleanSheets: 0,
         failedToScore: 0,
-        avgCornersFor: 4.5,
-        avgCornersAgainst: 5,
+        avgCornersFor: awayCornersFor,
+        avgCornersAgainst: homeCornersFor, // Opponent's corners = this team's corners against
         totalCorners: 0
       },
       h2h: fullData.h2h,
@@ -389,7 +419,7 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
 
   // Step 6: Combine AI + Statistical predictions
   console.log('🔄 Step 6: Combining AI + Statistical predictions...');
-  const combined = combineAIandStats(aiPrediction, statsPrediction);
+  const combined = combineAIandStats(aiPrediction, statsPrediction, context);
 
   // Calculate overall confidence (with NaN protection)
   const bttsConf = combined.btts.confidence || 50;
