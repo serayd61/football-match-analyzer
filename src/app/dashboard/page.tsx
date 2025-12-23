@@ -93,6 +93,7 @@ const translations = {
     btts: 'BTTS',
     overUnder: 'Üst/Alt 2.5',
     matchResult: 'Maç Sonucu',
+    corners: 'Korner',
     bestBet: 'En İyi Bahis',
     aiRecommendation: 'AI önerisi',
     confidence: 'güven',
@@ -134,6 +135,7 @@ const translations = {
     btts: 'BTTS',
     overUnder: 'Over/Under 2.5',
     matchResult: 'Match Result',
+    corners: 'Corners',
     bestBet: 'Best Bet',
     aiRecommendation: 'AI recommendation',
     confidence: 'confidence',
@@ -671,6 +673,29 @@ export default function DashboardPage() {
                     </div>
                     <p className="mt-2 text-xs text-gray-400">{analysis.matchResult.reasoning}</p>
                   </div>
+                  
+                  {/* Corners */}
+                  {analysis.corners && (
+                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">🚩</span>
+                      <h4 className="text-white font-medium">{t.corners}</h4>
+                    </div>
+                    <div className="text-2xl font-bold text-orange-400">
+                      {analysis.corners.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.corners.line}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-orange-500 rounded-full"
+                          style={{ width: `${analysis.corners.confidence}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-orange-400">%{analysis.corners.confidence}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">{analysis.corners.reasoning}</p>
+                  </div>
+                  )}
                 </div>
                 
                 {/* Best Bet */}
