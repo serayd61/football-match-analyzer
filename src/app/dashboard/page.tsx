@@ -109,7 +109,10 @@ const translations = {
     away: 'DEPLASMAN',
     draw: 'BERABERLİK',
     cached: 'Önbellek',
-    analyzed: 'Analiz Edildi'
+    analyzed: 'Analiz Edildi',
+    aiAnalysis: 'AI Analiz',
+    agentAnalysis: 'Agent Analiz',
+    selectAnalysisType: 'Analiz Türü Seçin'
   },
   en: {
     title: 'Football Analytics',
@@ -151,7 +154,10 @@ const translations = {
     away: 'AWAY',
     draw: 'DRAW',
     cached: 'Cached',
-    analyzed: 'Analyzed'
+    analyzed: 'Analyzed',
+    aiAnalysis: 'AI Analysis',
+    agentAnalysis: 'Agent Analysis',
+    selectAnalysisType: 'Select Analysis Type'
   },
   de: {
     title: 'Football Analytics',
@@ -193,7 +199,10 @@ const translations = {
     away: 'AUSWÄRTS',
     draw: 'UNENTSCHIEDEN',
     cached: 'Zwischengespeichert',
-    analyzed: 'Analysiert'
+    analyzed: 'Analysiert',
+    aiAnalysis: 'KI-Analyse',
+    agentAnalysis: 'Agent-Analyse',
+    selectAnalysisType: 'Analysetyp auswählen'
   }
 };
 
@@ -222,6 +231,7 @@ export default function DashboardPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('ai');
   
   // Auth check
   useEffect(() => {
@@ -261,14 +271,15 @@ export default function DashboardPage() {
   // ANALYZE MATCH
   // ============================================================================
   
-  const analyzeMatch = async (fixture: Fixture) => {
+  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType) => {
     setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
     setAnalysisError(null);
     
     try {
-      const res = await fetch('/api/v2/analyze', {
+      const endpoint = type === 'ai' ? '/api/v2/analyze' : '/api/v2/analyze-agents';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -506,7 +517,11 @@ export default function DashboardPage() {
                   filteredFixtures.map((fixture) => (
                     <button
                       key={fixture.id}
-                      onClick={() => analyzeMatch(fixture)}
+                      onClick={() => {
+                        setSelectedFixture(fixture);
+                        setAnalysis(null);
+                        setAnalysisError(null);
+                      }}
                       className={`w-full p-3 border-b border-white/5 hover:bg-white/5 transition text-left ${
                         selectedFixture?.id === fixture.id ? 'bg-purple-500/20 border-l-2 border-l-purple-500' : ''
                       }`}
@@ -552,7 +567,47 @@ export default function DashboardPage() {
           
           {/* Right: Analysis Panel */}
           <div className="lg:col-span-2">
-            {analyzing ? (
+            {selectedFixture && !analyzing && !analysis && !analysisError ? (
+              <div className="bg-white/5 rounded-xl border border-white/10 p-8">
+                <h3 className="text-lg font-bold text-white mb-4">{t.selectAnalysisType}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setAnalysisType('ai');
+                      analyzeMatch(selectedFixture, 'ai');
+                    }}
+                    className={`p-6 rounded-xl border-2 transition-all ${
+                      analysisType === 'ai'
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Zap className="w-6 h-6 text-purple-400" />
+                      <span className="text-white font-medium">{t.aiAnalysis}</span>
+                    </div>
+                    <p className="text-sm text-gray-400">Claude + DeepSeek AI modelleri</p>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAnalysisType('agent');
+                      analyzeMatch(selectedFixture, 'agent');
+                    }}
+                    className={`p-6 rounded-xl border-2 transition-all ${
+                      analysisType === 'agent'
+                        ? 'border-blue-500 bg-blue-500/20'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Target className="w-6 h-6 text-blue-400" />
+                      <span className="text-white font-medium">{t.agentAnalysis}</span>
+                    </div>
+                    <p className="text-sm text-gray-400">Stats, Odds, DeepAnalysis Agent'ları</p>
+                  </button>
+                </div>
+              </div>
+            ) : analyzing ? (
               <div className="bg-white/5 rounded-xl border border-white/10 p-8 flex flex-col items-center justify-center min-h-[400px]">
                 <div className="relative">
                   <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent" />
@@ -574,8 +629,48 @@ export default function DashboardPage() {
               </div>
             ) : analysis ? (
               <div className="space-y-4">
+                {/* Analysis Type Tabs */}
+                <div className="flex gap-2 bg-white/5 rounded-lg p-1 border border-white/10">
+                  <button
+                    onClick={() => {
+                      setAnalysisType('ai');
+                      if (selectedFixture) {
+                        setAnalysis(null);
+                        analyzeMatch(selectedFixture, 'ai');
+                      }
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
+                      analysisType === 'ai'
+                        ? 'bg-purple-500/20 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t.aiAnalysis}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAnalysisType('agent');
+                      if (selectedFixture) {
+                        setAnalysis(null);
+                        analyzeMatch(selectedFixture, 'agent');
+                      }
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
+                      analysisType === 'agent'
+                        ? 'bg-blue-500/20 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t.agentAnalysis}
+                  </button>
+                </div>
+                
                 {/* Match Header */}
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30 p-6">
+                <div className={`bg-gradient-to-r rounded-xl border p-6 ${
+                  analysisType === 'ai'
+                    ? 'from-purple-500/20 to-pink-500/20 border-purple-500/30'
+                    : 'from-blue-500/20 to-cyan-500/20 border-blue-500/30'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="text-center flex-1">
                       <h3 className="text-xl font-bold text-white">{analysis.homeTeam}</h3>

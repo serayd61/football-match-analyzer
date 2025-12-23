@@ -51,6 +51,7 @@ export const CACHE_KEYS = {
   
   // Analiz sonuçları cache
   ANALYSIS: (fixtureId: number) => `analysis:${fixtureId}`,
+  AGENT_ANALYSIS: (fixtureId: number) => `agent_analysis:${fixtureId}`,
   ANALYSIS_STATUS: (fixtureId: number) => `analysis:status:${fixtureId}`,
   
   // Queue status
