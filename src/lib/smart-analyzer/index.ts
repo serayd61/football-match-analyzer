@@ -297,10 +297,17 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         confidence: Math.round((claudeParsed.matchResult?.confidence + deepseekParsed.matchResult?.confidence) / 2),
         reasoning: `Claude: ${claudeParsed.matchResult?.reasoning} | DeepSeek: ${deepseekParsed.matchResult?.reasoning}`
       },
+      corners: (claudeParsed.corners || deepseekParsed.corners) ? {
+        prediction: claudeParsed.corners?.prediction || deepseekParsed.corners?.prediction || 'over',
+        confidence: Math.round(((claudeParsed.corners?.confidence || 50) + (deepseekParsed.corners?.confidence || 50)) / 2),
+        reasoning: `Claude: ${claudeParsed.corners?.reasoning || 'N/A'} | DeepSeek: ${deepseekParsed.corners?.reasoning || 'N/A'}`,
+        line: claudeParsed.corners?.line || deepseekParsed.corners?.line || 9.5
+      } : null,
       bestBet: claudeParsed.bestBet?.confidence > deepseekParsed.bestBet?.confidence ? claudeParsed.bestBet : deepseekParsed.bestBet
     };
     modelsUsed = ['claude', 'deepseek'];
     console.log('✅ Both AI models responded');
+    console.log('🚩 Corners from AI:', { claude: claudeParsed.corners, deepseek: deepseekParsed.corners });
   } else if (claudeParsed) {
     aiPrediction = claudeParsed;
     modelsUsed = ['claude'];

@@ -373,17 +373,29 @@ export function combineAIandStats(
     statsPrediction.matchResult
   );
 
-  // Corners prediction from AI - only if AI provided real data
-  const hasCornerData = aiPrediction.corners?.reasoning && 
-    !aiPrediction.corners.reasoning.includes('hesaplanıyor') &&
-    !aiPrediction.corners.reasoning.includes('Veri yok') &&
-    aiPrediction.corners.confidence > 50;
+  // Corners prediction from AI - check if AI provided valid corners data
+  const aiCorners = aiPrediction.corners;
+  const hasCornerData = aiCorners && 
+    aiCorners.prediction && 
+    (aiCorners.prediction === 'over' || aiCorners.prediction === 'under') &&
+    aiCorners.reasoning &&
+    !aiCorners.reasoning.includes('hesaplanıyor') &&
+    !aiCorners.reasoning.includes('Veri yok') &&
+    !aiCorners.reasoning.includes('mevcut değil');
+  
+  console.log('🚩 Corner check:', {
+    hasAICorners: !!aiCorners,
+    prediction: aiCorners?.prediction,
+    confidence: aiCorners?.confidence,
+    hasReasoning: !!aiCorners?.reasoning,
+    hasCornerData
+  });
   
   const corners = hasCornerData ? {
-    prediction: aiPrediction.corners?.prediction || 'over',
-    confidence: safeConf(aiPrediction.corners?.confidence || 55),
-    reasoning: aiPrediction.corners?.reasoning || '',
-    line: aiPrediction.corners?.line || 9.5,
+    prediction: aiCorners.prediction,
+    confidence: safeConf(aiCorners.confidence || 55),
+    reasoning: aiCorners.reasoning,
+    line: aiCorners.line || 9.5,
     dataAvailable: true
   } : {
     prediction: 'unknown',
