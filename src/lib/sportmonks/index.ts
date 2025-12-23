@@ -519,7 +519,8 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
       awayTeam: away?.name || 'Unknown',
       homeScore,
       awayScore,
-      totalCorners: matchCorners || undefined
+      // Only include totalCorners if it's valid (0-25 range)
+      totalCorners: (matchCorners > 0 && matchCorners <= 25) ? matchCorners : undefined
     };
   });
 
