@@ -81,31 +81,69 @@ export interface MatchContext {
 // API HELPERS
 // ============================================================================
 
-async function fetchSportmonks(endpoint: string, params: Record<string, string> = {}): Promise<any> {
+async function fetchSportmonks(
+  endpoint: string, 
+  params: Record<string, string> = {},
+  retries: number = 2,
+  timeout: number = 15000 // 15 saniye timeout
+): Promise<any> {
   const url = new URL(`${SPORTMONKS_API}${endpoint}`);
   url.searchParams.append('api_token', SPORTMONKS_KEY);
   Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
 
-  try {
-    const res = await fetch(url.toString(), { 
-      next: { revalidate: 300 } // Cache for 5 minutes
-    });
-    
-    if (!res.ok) {
-      // 404 is normal for some teams/data, don't log as error
-      if (res.status === 404) {
-        console.log(`⚠️ Sportmonks 404 (expected for some teams): ${endpoint}`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let timeoutId: NodeJS.Timeout | null = null;
+    try {
+      // Timeout için AbortController kullan
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const res = await fetch(url.toString(), { 
+        next: { revalidate: 300 }, // Cache for 5 minutes
+        signal: controller.signal as any
+      });
+      
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        // 404 is normal for some teams/data, don't log as error
+        if (res.status === 404) {
+          console.log(`⚠️ Sportmonks 404 (expected for some teams): ${endpoint}`);
+          return null;
+        } else {
+          console.error(`❌ Sportmonks API error ${res.status}: ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
+          if (attempt < retries && res.status >= 500) {
+            // Server errors için retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+          return null;
+        }
+      }
+      
+      return await res.json();
+    } catch (error: any) {
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ Sportmonks timeout (${timeout}ms): ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
+        if (attempt < retries) {
+          // Timeout için retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
       } else {
-        console.error(`❌ Sportmonks API error ${res.status}: ${endpoint}`);
+        console.error(`❌ Sportmonks fetch error: ${endpoint}`, error.message);
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
       }
       return null;
     }
-    
-    return await res.json();
-  } catch (error) {
-    console.error(`❌ Sportmonks fetch error: ${endpoint}`, error);
-    return null;
   }
+  
+  return null;
 }
 
 // ============================================================================
@@ -115,9 +153,10 @@ async function fetchSportmonks(endpoint: string, params: Record<string, string> 
 export async function getTeamStats(teamId: number, seasonId?: number): Promise<TeamStats | null> {
   try {
     // Get team details with statistics and recent matches (including corner stats)
+    // 20 saniye timeout - takım verileri kritik
     const teamData = await fetchSportmonks(`/teams/${teamId}`, {
       include: 'statistics.details;latest.participants;latest.scores;latest.statistics'
-    });
+    }, 2, 20000); // 2 retries, 20s timeout
 
     if (!teamData?.data) return null;
 
@@ -221,10 +260,11 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
 export async function getHeadToHead(team1Id: number, team2Id: number): Promise<HeadToHead | null> {
   try {
     // Fetch more H2H matches for better historical analysis
+    // 20 saniye timeout - H2H verileri kritik
     const h2hData = await fetchSportmonks(`/fixtures/head-to-head/${team1Id}/${team2Id}`, {
       include: 'participants;scores;statistics',  // statistics for corners
       per_page: '15'  // Get last 15 H2H matches
-    });
+    }, 2, 20000); // 2 retries, 20s timeout
 
     if (!h2hData?.data || h2hData.data.length === 0) {
       return {
@@ -722,17 +762,18 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
     
     console.log(`🔄 Fetching team details for ${homeTeamId} and ${awayTeamId}...`);
     
+    // 20 saniye timeout - kritik veriler için daha uzun süre
     const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
       fetchSportmonks(`/teams/${homeTeamId}`, {
         include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
-      }),
+      }, 2, 20000), // 2 retries, 20s timeout
       fetchSportmonks(`/teams/${awayTeamId}`, {
         include: 'statistics;latest.statistics;latest.scores;coach'  // Added latest.statistics for corners
-      }),
+      }, 2, 20000), // 2 retries, 20s timeout
       fetchSportmonks(`/fixtures/head-to-head/${homeTeamId}/${awayTeamId}`, {
         include: 'participants;scores;statistics',  // statistics for corners
         per_page: '10'
-      })
+      }, 2, 20000) // 2 retries, 20s timeout
     ]);
     
     // Extract data from response objects
