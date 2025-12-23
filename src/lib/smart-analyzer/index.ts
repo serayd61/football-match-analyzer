@@ -1,77 +1,58 @@
 // ============================================================================
-// SMART ANALYZER - Basitleştirilmiş Analiz Motoru
-// Sadece 2 model: Claude (Primary) + DeepSeek (Secondary)
-// Hedef: 10-15 saniyede analiz
+// SMART ANALYZER V2 - Data-Driven AI Analysis
+// Sportmonks verileri + AI analizi + İstatistiksel model
 // ============================================================================
+
+import { createClient } from '@supabase/supabase-js';
+import { getCompleteMatchContext, type MatchContext } from '../sportmonks/index';
+import { 
+  buildDataDrivenPrompt, 
+  calculateStatisticalPrediction,
+  combineAIandStats,
+  MatchDetails,
+  CombinedPrediction
+} from '../smart-prompt';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export interface MatchData {
-  fixtureId: number;
-  homeTeam: string;
-  awayTeam: string;
-  homeTeamId?: number;
-  awayTeamId?: number;
-  league: string;
-  matchDate: string;
-}
-
-export interface Prediction {
-  prediction: string;
-  confidence: number;
-  reasoning: string;
-}
-
-export interface SmartAnalysis {
+export interface SmartAnalysisResult {
   fixtureId: number;
   homeTeam: string;
   awayTeam: string;
   league: string;
   matchDate: string;
-  
-  // Tahminler
-  btts: Prediction;
-  overUnder: Prediction;
-  matchResult: Prediction;
-  
-  // Meta
-  bestBet: {
-    market: string;
-    selection: string;
-    confidence: number;
-    reason: string;
-  };
-  
-  // Scoring
-  agreement: number; // 0-100 arası, iki modelin uyumu
+  btts: { prediction: string; confidence: number; reasoning: string };
+  overUnder: { prediction: string; confidence: number; reasoning: string };
+  matchResult: { prediction: string; confidence: number; reasoning: string };
+  bestBet: { market: string; selection: string; confidence: number; reason: string };
+  agreement: number;
   riskLevel: 'low' | 'medium' | 'high';
   overallConfidence: number;
-  
-  // Performance
   processingTime: number;
   modelsUsed: string[];
-  
-  // Timestamps
+  dataQuality: string;
   analyzedAt: string;
 }
 
-interface AIResponse {
-  btts: { prediction: 'yes' | 'no'; confidence: number; reasoning: string };
-  overUnder: { prediction: 'over' | 'under'; confidence: number; reasoning: string };
-  matchResult: { prediction: 'home' | 'draw' | 'away'; confidence: number; reasoning: string };
-}
-
 // ============================================================================
-// AI API CALLS
+// AI CALLS
 // ============================================================================
-
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 
 async function callClaude(prompt: string): Promise<string> {
-  if (!ANTHROPIC_API_KEY) return '';
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is missing!');
+    return '';
+  }
   
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -83,21 +64,30 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-3-5-haiku-20241022',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     
-    if (!res.ok) return '';
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ Claude API error ${res.status}:`, errorText);
+      return '';
+    }
+    
     const data = await res.json();
     return data.content?.[0]?.text || '';
-  } catch {
+  } catch (error: any) {
+    console.error('❌ Claude exception:', error.message || error);
     return '';
   }
 }
 
 async function callDeepSeek(prompt: string): Promise<string> {
-  if (!DEEPSEEK_API_KEY) return '';
+  if (!DEEPSEEK_API_KEY) {
+    console.error('❌ DEEPSEEK_API_KEY is missing!');
+    return '';
+  }
   
   try {
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -108,299 +98,317 @@ async function callDeepSeek(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1000,
-        temperature: 0.3
+        messages: [
+          {
+            role: 'system',
+            content: 'Sen bir futbol istatistik analistisin. Sadece verilen verilere dayanarak analiz yaparsın. Tahmin etmezsin, verileri yorumlarsın.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 1500,
+        temperature: 0.2
       })
     });
     
-    if (!res.ok) return '';
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ DeepSeek API error ${res.status}:`, errorText);
+      return '';
+    }
+    
     const data = await res.json();
     return data.choices?.[0]?.message?.content || '';
-  } catch {
+  } catch (error) {
+    console.error('❌ DeepSeek exception:', error);
     return '';
   }
 }
 
 // ============================================================================
-// PROMPT BUILDER
+// PARSE AI RESPONSE
 // ============================================================================
 
-function buildAnalysisPrompt(match: MatchData): string {
-  return `Futbol maç analizi yap. SADECE JSON formatında yanıt ver.
-
-MAÇ: ${match.homeTeam} vs ${match.awayTeam}
-LİG: ${match.league}
-TARİH: ${match.matchDate}
-
-{
-  "btts": {
-    "prediction": "yes" veya "no",
-    "confidence": 50-75 arası sayı,
-    "reasoning": "1 cümle gerekçe"
-  },
-  "overUnder": {
-    "prediction": "over" veya "under",
-    "confidence": 50-75 arası sayı,
-    "reasoning": "1 cümle gerekçe"
-  },
-  "matchResult": {
-    "prediction": "home", "draw" veya "away",
-    "confidence": 45-65 arası sayı,
-    "reasoning": "1 cümle gerekçe"
-  }
-}
-
-ÖNEMLİ:
-- SADECE JSON döndür, başka bir şey yazma
-- Confidence değerleri gerçekçi olsun
-- Match Result için max %65 confidence`;
-}
-
-// ============================================================================
-// RESPONSE PARSER
-// ============================================================================
-
-function parseAIResponse(text: string): AIResponse | null {
+function parseAIResponse(text: string): any | null {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    
-    const parsed = JSON.parse(jsonMatch[0]);
-    
-    return {
-      btts: {
-        prediction: parsed.btts?.prediction?.toLowerCase() === 'yes' ? 'yes' : 'no',
-        confidence: Math.min(75, Math.max(50, parseInt(parsed.btts?.confidence) || 60)),
-        reasoning: parsed.btts?.reasoning || ''
-      },
-      overUnder: {
-        prediction: parsed.overUnder?.prediction?.toLowerCase() === 'over' ? 'over' : 'under',
-        confidence: Math.min(75, Math.max(50, parseInt(parsed.overUnder?.confidence) || 60)),
-        reasoning: parsed.overUnder?.reasoning || ''
-      },
-      matchResult: {
-        prediction: normalizeMatchResult(parsed.matchResult?.prediction),
-        confidence: Math.min(65, Math.max(45, parseInt(parsed.matchResult?.confidence) || 55)),
-        reasoning: parsed.matchResult?.reasoning || ''
-      }
-    };
-  } catch {
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to parse AI response:', e);
     return null;
   }
 }
 
-function normalizeMatchResult(pred: string): 'home' | 'draw' | 'away' {
-  if (!pred) return 'draw';
-  const lower = String(pred).toLowerCase().trim();
-  if (lower === 'home' || lower === '1' || lower.includes('home')) return 'home';
-  if (lower === 'away' || lower === '2' || lower.includes('away')) return 'away';
-  return 'draw';
-}
-
 // ============================================================================
-// CONSENSUS CALCULATOR
+// MAIN ANALYSIS FUNCTION
 // ============================================================================
 
-function calculateConsensus(claude: AIResponse | null, deepseek: AIResponse | null): {
-  btts: Prediction;
-  overUnder: Prediction;
-  matchResult: Prediction;
-  agreement: number;
-} {
-  // Her iki model başarısızsa default değerler
-  if (!claude && !deepseek) {
-    return {
-      btts: { prediction: 'no', confidence: 50, reasoning: 'Analiz başarısız' },
-      overUnder: { prediction: 'under', confidence: 50, reasoning: 'Analiz başarısız' },
-      matchResult: { prediction: 'draw', confidence: 50, reasoning: 'Analiz başarısız' },
-      agreement: 0
-    };
-  }
-  
-  // Sadece bir model varsa onu kullan
-  if (!claude) {
-    return {
-      btts: deepseek!.btts,
-      overUnder: deepseek!.overUnder,
-      matchResult: deepseek!.matchResult,
-      agreement: 50
-    };
-  }
-  
-  if (!deepseek) {
-    return {
-      btts: claude.btts,
-      overUnder: claude.overUnder,
-      matchResult: claude.matchResult,
-      agreement: 50
-    };
-  }
-  
-  // Her iki model de varsa konsensüs hesapla
-  let agreementScore = 0;
-  
-  // BTTS uyumu
-  const bttsAgree = claude.btts.prediction === deepseek.btts.prediction;
-  if (bttsAgree) agreementScore += 33;
-  
-  // Over/Under uyumu
-  const ouAgree = claude.overUnder.prediction === deepseek.overUnder.prediction;
-  if (ouAgree) agreementScore += 33;
-  
-  // Match Result uyumu
-  const mrAgree = claude.matchResult.prediction === deepseek.matchResult.prediction;
-  if (mrAgree) agreementScore += 34;
-  
-  // Konsensüs tahminleri
-  const btts: Prediction = bttsAgree 
-    ? {
-        prediction: claude.btts.prediction,
-        confidence: Math.round((claude.btts.confidence + deepseek.btts.confidence) / 2),
-        reasoning: claude.btts.reasoning
-      }
-    : claude.btts.confidence >= deepseek.btts.confidence 
-      ? { ...claude.btts, confidence: Math.max(50, claude.btts.confidence - 10) }
-      : { ...deepseek.btts, confidence: Math.max(50, deepseek.btts.confidence - 10) };
-  
-  const overUnder: Prediction = ouAgree
-    ? {
-        prediction: claude.overUnder.prediction,
-        confidence: Math.round((claude.overUnder.confidence + deepseek.overUnder.confidence) / 2),
-        reasoning: claude.overUnder.reasoning
-      }
-    : claude.overUnder.confidence >= deepseek.overUnder.confidence
-      ? { ...claude.overUnder, confidence: Math.max(50, claude.overUnder.confidence - 10) }
-      : { ...deepseek.overUnder, confidence: Math.max(50, deepseek.overUnder.confidence - 10) };
-  
-  const matchResult: Prediction = mrAgree
-    ? {
-        prediction: claude.matchResult.prediction,
-        confidence: Math.round((claude.matchResult.confidence + deepseek.matchResult.confidence) / 2),
-        reasoning: claude.matchResult.reasoning
-      }
-    : claude.matchResult.confidence >= deepseek.matchResult.confidence
-      ? { ...claude.matchResult, confidence: Math.max(45, claude.matchResult.confidence - 10) }
-      : { ...deepseek.matchResult, confidence: Math.max(45, deepseek.matchResult.confidence - 10) };
-  
-  return { btts, overUnder, matchResult, agreement: agreementScore };
-}
-
-// ============================================================================
-// BEST BET CALCULATOR
-// ============================================================================
-
-function calculateBestBet(
-  btts: Prediction,
-  overUnder: Prediction,
-  matchResult: Prediction,
-  agreement: number
-): { market: string; selection: string; confidence: number; reason: string } {
-  // En yüksek confidence'a sahip marketi bul
-  const markets = [
-    { market: 'BTTS', selection: btts.prediction === 'yes' ? 'Evet' : 'Hayır', confidence: btts.confidence },
-    { market: 'Over/Under 2.5', selection: overUnder.prediction === 'over' ? 'Üst' : 'Alt', confidence: overUnder.confidence },
-    { market: 'Maç Sonucu', selection: matchResult.prediction === 'home' ? 'Ev Sahibi' : matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik', confidence: matchResult.confidence }
-  ];
-  
-  // Uyum yüksekse Match Result'ı tercih etme (zor tahmin)
-  if (agreement >= 66) {
-    // BTTS veya O/U tercih et
-    const safeMarkets = markets.filter(m => m.market !== 'Maç Sonucu');
-    const best = safeMarkets.reduce((a, b) => a.confidence > b.confidence ? a : b);
-    return { ...best, reason: 'Yüksek sistem uyumu ile güvenilir tahmin' };
-  }
-  
-  // Genel durumda en yüksek confidence
-  const best = markets.reduce((a, b) => a.confidence > b.confidence ? a : b);
-  return { ...best, reason: 'En yüksek güven seviyesine sahip market' };
-}
-
-// ============================================================================
-// MAIN ANALYZER FUNCTION
-// ============================================================================
-
-export async function analyzeMatch(match: MatchData): Promise<SmartAnalysis> {
+export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalysisResult | null> {
   const startTime = Date.now();
-  const prompt = buildAnalysisPrompt(match);
+  console.log(`\n🔬 ========================================`);
+  console.log(`🔬 DATA-DRIVEN ANALYSIS: ${match.homeTeam} vs ${match.awayTeam}`);
+  console.log(`🔬 ========================================\n`);
+
+  // Step 1: Fetch complete match context from Sportmonks
+  console.log('📊 Step 1: Fetching match data from Sportmonks...');
+  const context = await getCompleteMatchContext(match.homeTeamId, match.awayTeamId);
   
-  console.log(`🎯 Smart Analysis: ${match.homeTeam} vs ${match.awayTeam}`);
+  let dataQuality = 'good';
   
-  // Her iki modeli paralel çağır
+  if (!context) {
+    console.error('❌ Failed to get match context - using basic analysis');
+    dataQuality = 'no_data';
+    
+    // Fallback to basic analysis without data
+    return runBasicAnalysis(match, startTime);
+  }
+
+  console.log(`✅ Data loaded: ${context.homeTeam.teamName} (Form: ${context.homeTeam.recentForm}) vs ${context.awayTeam.teamName} (Form: ${context.awayTeam.recentForm})`);
+
+  // Step 2: Calculate statistical prediction (AI-independent)
+  console.log('📈 Step 2: Calculating statistical prediction...');
+  const statsPrediction = calculateStatisticalPrediction(context);
+  console.log(`   BTTS: ${statsPrediction.btts.prediction} (%${statsPrediction.btts.confidence})`);
+  console.log(`   O/U: ${statsPrediction.overUnder.prediction} (%${statsPrediction.overUnder.confidence})`);
+  console.log(`   MS: ${statsPrediction.matchResult.prediction} (%${statsPrediction.matchResult.confidence})`);
+
+  // Step 3: Build data-driven prompt
+  console.log('🤖 Step 3: Building AI prompt with real data...');
+  const prompt = buildDataDrivenPrompt(match, context);
+
+  // Step 4: Call AI models in parallel
+  console.log('🧠 Step 4: Calling Claude & DeepSeek with data...');
   const [claudeRes, deepseekRes] = await Promise.all([
     callClaude(prompt),
     callDeepSeek(prompt)
   ]);
-  
-  // Parse responses
+
   const claudeParsed = parseAIResponse(claudeRes);
   const deepseekParsed = parseAIResponse(deepseekRes);
+
+  // Step 5: Combine AI predictions
+  let aiPrediction: any = null;
+  let modelsUsed: string[] = [];
+
+  if (claudeParsed && deepseekParsed) {
+    // Average both AI predictions
+    aiPrediction = {
+      btts: {
+        prediction: claudeParsed.btts?.prediction === deepseekParsed.btts?.prediction 
+          ? claudeParsed.btts.prediction 
+          : (claudeParsed.btts?.confidence > deepseekParsed.btts?.confidence ? claudeParsed.btts.prediction : deepseekParsed.btts.prediction),
+        confidence: Math.round((claudeParsed.btts?.confidence + deepseekParsed.btts?.confidence) / 2),
+        reasoning: `Claude: ${claudeParsed.btts?.reasoning} | DeepSeek: ${deepseekParsed.btts?.reasoning}`
+      },
+      overUnder: {
+        prediction: claudeParsed.overUnder?.prediction === deepseekParsed.overUnder?.prediction 
+          ? claudeParsed.overUnder.prediction 
+          : (claudeParsed.overUnder?.confidence > deepseekParsed.overUnder?.confidence ? claudeParsed.overUnder.prediction : deepseekParsed.overUnder.prediction),
+        confidence: Math.round((claudeParsed.overUnder?.confidence + deepseekParsed.overUnder?.confidence) / 2),
+        reasoning: `Claude: ${claudeParsed.overUnder?.reasoning} | DeepSeek: ${deepseekParsed.overUnder?.reasoning}`
+      },
+      matchResult: {
+        prediction: claudeParsed.matchResult?.prediction === deepseekParsed.matchResult?.prediction 
+          ? claudeParsed.matchResult.prediction 
+          : (claudeParsed.matchResult?.confidence > deepseekParsed.matchResult?.confidence ? claudeParsed.matchResult.prediction : deepseekParsed.matchResult.prediction),
+        confidence: Math.round((claudeParsed.matchResult?.confidence + deepseekParsed.matchResult?.confidence) / 2),
+        reasoning: `Claude: ${claudeParsed.matchResult?.reasoning} | DeepSeek: ${deepseekParsed.matchResult?.reasoning}`
+      },
+      bestBet: claudeParsed.bestBet?.confidence > deepseekParsed.bestBet?.confidence ? claudeParsed.bestBet : deepseekParsed.bestBet
+    };
+    modelsUsed = ['claude', 'deepseek'];
+    console.log('✅ Both AI models responded');
+  } else if (claudeParsed) {
+    aiPrediction = claudeParsed;
+    modelsUsed = ['claude'];
+    console.log('⚠️ Only Claude responded');
+  } else if (deepseekParsed) {
+    aiPrediction = deepseekParsed;
+    modelsUsed = ['deepseek'];
+    console.log('⚠️ Only DeepSeek responded');
+  } else {
+    // Use only statistical prediction
+    console.log('⚠️ No AI response - using statistical model only');
+    dataQuality = 'ai_failed';
+    modelsUsed = ['stats_only'];
+    
+    return {
+      fixtureId: match.fixtureId,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      matchDate: match.matchDate,
+      btts: { ...statsPrediction.btts, reasoning: statsPrediction.btts.reason },
+      overUnder: { ...statsPrediction.overUnder, reasoning: statsPrediction.overUnder.reason },
+      matchResult: { ...statsPrediction.matchResult, reasoning: statsPrediction.matchResult.reason },
+      bestBet: {
+        market: 'BTTS',
+        selection: statsPrediction.btts.prediction,
+        confidence: statsPrediction.btts.confidence,
+        reason: 'İstatistiksel model'
+      },
+      agreement: 100,
+      riskLevel: 'medium',
+      overallConfidence: Math.round(
+        (statsPrediction.btts.confidence + 
+         statsPrediction.overUnder.confidence + 
+         statsPrediction.matchResult.confidence) / 3
+      ),
+      processingTime: Date.now() - startTime,
+      modelsUsed,
+      dataQuality,
+      analyzedAt: new Date().toISOString()
+    };
+  }
+
+  // Step 6: Combine AI + Statistical predictions
+  console.log('🔄 Step 6: Combining AI + Statistical predictions...');
+  const combined = combineAIandStats(aiPrediction, statsPrediction);
+
+  // Calculate overall confidence
+  const overallConfidence = Math.round(
+    (combined.btts.confidence + combined.overUnder.confidence + combined.matchResult.confidence) / 3
+  );
+
+  const result: SmartAnalysisResult = {
+    fixtureId: match.fixtureId,
+    homeTeam: match.homeTeam,
+    awayTeam: match.awayTeam,
+    league: match.league,
+    matchDate: match.matchDate,
+    btts: combined.btts,
+    overUnder: combined.overUnder,
+    matchResult: combined.matchResult,
+    bestBet: combined.bestBet,
+    agreement: combined.agreement,
+    riskLevel: combined.riskLevel,
+    overallConfidence,
+    processingTime: Date.now() - startTime,
+    modelsUsed,
+    dataQuality,
+    analyzedAt: new Date().toISOString()
+  };
+
+  console.log(`\n✅ ANALYSIS COMPLETE in ${result.processingTime}ms`);
+  console.log(`   Agreement: ${result.agreement}%`);
+  console.log(`   Risk: ${result.riskLevel}`);
+  console.log(`   Best Bet: ${result.bestBet.market} → ${result.bestBet.selection} (%${result.bestBet.confidence})`);
+
+  return result;
+}
+
+// ============================================================================
+// BASIC ANALYSIS (Fallback when no Sportmonks data)
+// ============================================================================
+
+async function runBasicAnalysis(match: MatchDetails, startTime: number): Promise<SmartAnalysisResult | null> {
+  const basicPrompt = `
+Futbol maçı analizi yap:
+${match.homeTeam} vs ${match.awayTeam}
+Lig: ${match.league}
+Tarih: ${match.matchDate}
+
+Sadece JSON formatında yanıt ver:
+{
+  "btts": { "prediction": "yes/no", "confidence": 50-65, "reasoning": "kısa gerekçe" },
+  "overUnder": { "prediction": "over/under", "confidence": 50-65, "reasoning": "kısa gerekçe" },
+  "matchResult": { "prediction": "home/draw/away", "confidence": 50-60, "reasoning": "kısa gerekçe" },
+  "bestBet": { "market": "...", "selection": "...", "confidence": 50-60, "reason": "..." }
+}
+
+NOT: Veri olmadan analiz yapıyorsun, güven değerleri düşük olmalı!
+`;
+
+  const [claudeRes, deepseekRes] = await Promise.all([
+    callClaude(basicPrompt),
+    callDeepSeek(basicPrompt)
+  ]);
+
+  const parsed = parseAIResponse(claudeRes) || parseAIResponse(deepseekRes);
   
-  // Kullanılan modelleri belirle
-  const modelsUsed: string[] = [];
-  if (claudeParsed) modelsUsed.push('claude');
-  if (deepseekParsed) modelsUsed.push('deepseek');
-  
-  // Konsensüs hesapla
-  const { btts, overUnder, matchResult, agreement } = calculateConsensus(claudeParsed, deepseekParsed);
-  
-  // Risk seviyesi
-  const riskLevel: 'low' | 'medium' | 'high' = 
-    agreement >= 66 ? 'low' : agreement >= 33 ? 'medium' : 'high';
-  
-  // Best bet
-  const bestBet = calculateBestBet(btts, overUnder, matchResult, agreement);
-  
-  // Overall confidence
-  const overallConfidence = Math.round((btts.confidence + overUnder.confidence + matchResult.confidence) / 3);
-  
-  const processingTime = Date.now() - startTime;
-  
-  console.log(`✅ Analysis complete in ${processingTime}ms (Agreement: ${agreement}%, Models: ${modelsUsed.join(', ')})`);
-  
+  if (!parsed) {
+    return null;
+  }
+
   return {
     fixtureId: match.fixtureId,
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
     league: match.league,
     matchDate: match.matchDate,
-    
-    btts,
-    overUnder,
-    matchResult,
-    
-    bestBet,
-    
-    agreement,
-    riskLevel,
-    overallConfidence,
-    
-    processingTime,
-    modelsUsed,
-    
+    btts: {
+      prediction: parsed.btts?.prediction || 'no',
+      confidence: Math.min(60, parsed.btts?.confidence || 50),
+      reasoning: parsed.btts?.reasoning || 'Veri eksik'
+    },
+    overUnder: {
+      prediction: parsed.overUnder?.prediction || 'under',
+      confidence: Math.min(60, parsed.overUnder?.confidence || 50),
+      reasoning: parsed.overUnder?.reasoning || 'Veri eksik'
+    },
+    matchResult: {
+      prediction: parsed.matchResult?.prediction || 'draw',
+      confidence: Math.min(55, parsed.matchResult?.confidence || 50),
+      reasoning: parsed.matchResult?.reasoning || 'Veri eksik'
+    },
+    bestBet: parsed.bestBet || {
+      market: 'BTTS',
+      selection: 'no',
+      confidence: 50,
+      reason: 'Veri eksik - düşük güven'
+    },
+    agreement: 50,
+    riskLevel: 'high',
+    overallConfidence: 52,
+    processingTime: Date.now() - startTime,
+    modelsUsed: ['basic'],
+    dataQuality: 'no_data',
     analyzedAt: new Date().toISOString()
   };
 }
 
 // ============================================================================
-// BATCH ANALYZER
+// SAVE TO DATABASE
 // ============================================================================
 
-export async function analyzeBatch(matches: MatchData[], concurrency: number = 3): Promise<SmartAnalysis[]> {
-  const results: SmartAnalysis[] = [];
-  
-  // Batch olarak işle
-  for (let i = 0; i < matches.length; i += concurrency) {
-    const batch = matches.slice(i, i + concurrency);
-    const batchResults = await Promise.all(batch.map(analyzeMatch));
-    results.push(...batchResults);
-    
-    // Rate limiting için küçük gecikme
-    if (i + concurrency < matches.length) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
-  
-  return results;
-}
+export async function saveSmartAnalysis(match: MatchDetails, analysis: SmartAnalysisResult): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('smart_analysis')
+      .upsert({
+        fixture_id: match.fixtureId,
+        home_team: match.homeTeam,
+        away_team: match.awayTeam,
+        league: match.league,
+        match_date: match.matchDate,
+        analysis: analysis,
+        btts_prediction: analysis.btts.prediction,
+        btts_confidence: analysis.btts.confidence,
+        over_under_prediction: analysis.overUnder.prediction,
+        over_under_confidence: analysis.overUnder.confidence,
+        match_result_prediction: analysis.matchResult.prediction,
+        match_result_confidence: analysis.matchResult.confidence,
+        agreement: analysis.agreement,
+        risk_level: analysis.riskLevel,
+        overall_confidence: analysis.overallConfidence,
+        processing_time: analysis.processingTime,
+        models_used: analysis.modelsUsed,
+        data_quality: analysis.dataQuality,
+        is_settled: false,
+        created_at: new Date().toISOString()
+      }, { onConflict: 'fixture_id' });
 
+    if (error) {
+      console.error('❌ Error saving analysis:', error);
+      return false;
+    }
+    
+    console.log(`💾 Analysis saved to database`);
+    return true;
+  } catch (error) {
+    console.error('❌ Exception saving analysis:', error);
+    return false;
+  }
+}
