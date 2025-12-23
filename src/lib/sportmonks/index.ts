@@ -222,6 +222,18 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     const avgGoalsScored = matchesPlayed > 0 ? Math.round((goalsScored / matchesPlayed) * 100) / 100 : 1.2;
     const avgGoalsConceded = matchesPlayed > 0 ? Math.round((goalsConceded / matchesPlayed) * 100) / 100 : 1.0;
 
+    // Corners - IMPORTANT: getStatValue(45) might return TOTAL corners, not average per match
+    // Normal match has 5-12 corners per match, so values > 25 are likely totals, not averages
+    const cornersStatValue = getStatValue(45);
+    const validAvgCornersFor = (cornersStatValue > 0 && cornersStatValue <= 25) 
+      ? cornersStatValue 
+      : avgCornersFromMatches;
+    
+    const cornersAgainstValue = getStatValue(46);
+    const validAvgCornersAgainst = (cornersAgainstValue > 0 && cornersAgainstValue <= 25)
+      ? cornersAgainstValue
+      : 4.5;
+
     return {
       teamId,
       teamName: team.name || 'Unknown',
@@ -242,9 +254,9 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       under25Percentage: getStatValue(101) || 0,
       cleanSheets: getStatValue(56),
       failedToScore: getStatValue(57),
-      // Corners - from statistics or calculated from recent matches
-      avgCornersFor: getStatValue(45) || avgCornersFromMatches || 5,
-      avgCornersAgainst: getStatValue(46) || 4.5,
+      // Corners - validated to ensure reasonable values (5-12 per match is normal)
+      avgCornersFor: validAvgCornersFor > 0 ? validAvgCornersFor : 5,
+      avgCornersAgainst: validAvgCornersAgainst > 0 ? validAvgCornersAgainst : 4.5,
       totalCorners: getStatValue(34) || totalCornersFromMatches || 0
     };
   } catch (error) {
