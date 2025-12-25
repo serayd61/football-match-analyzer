@@ -328,6 +328,155 @@ function getResult(score: string, isHome: boolean): 'W' | 'D' | 'L' {
 }
 
 // ============================================================================
+// SPORTMONKS DATA-BASED MATCH RESULT PREDICTION
+// ============================================================================
+
+/**
+ * Sportmonks verilerine göre puan bazlı maç sonucu tahmini
+ * Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı puan sistemi
+ */
+function calculateMatchResultFromSportmonksData(
+  fullData: FullFixtureData,
+  homeTeamStats?: any,
+  awayTeamStats?: any,
+  h2hData?: any
+): {
+  prediction: '1' | 'X' | '2';
+  confidence: number;
+  reasoning: string;
+  homeScore: number;
+  awayScore: number;
+  probabilities: { home: number; draw: number; away: number };
+} {
+  
+  // Helper: Güvenli sayı dönüştürme
+  const safeNum = (val: any, defaultVal: number): number => {
+    if (val === undefined || val === null || isNaN(val)) return defaultVal;
+    return parseFloat(val) || defaultVal;
+  };
+  
+  // ========== PUAN HESAPLAMA ==========
+  let homeScore = 0;
+  let awayScore = 0;
+  
+  // 1. Form Puanları (max 30 puan)
+  const homeFormPoints = safeNum(fullData.homeTeam.formPoints, 5);
+  const awayFormPoints = safeNum(fullData.awayTeam.formPoints, 5);
+  homeScore += homeFormPoints * 2; // Max 30 (15 * 2)
+  awayScore += awayFormPoints * 2; // Max 30 (15 * 2)
+  
+  // 2. Ev Sahibi Avantajı (10 puan)
+  homeScore += 10;
+  
+  // 3. Gol İstatistikleri (max 20 puan)
+  // Sadece homeTeamStats ve awayTeamStats'tan al (fullData'da bu property'ler yok)
+  const homeAvgScored = safeNum(homeTeamStats?.avgGoalsScored, 1.2);
+  const homeAvgConceded = safeNum(homeTeamStats?.avgGoalsConceded, 1.0);
+  const awayAvgScored = safeNum(awayTeamStats?.avgGoalsScored, 1.1);
+  const awayAvgConceded = safeNum(awayTeamStats?.avgGoalsConceded, 1.1);
+  
+  // Gol farkı
+  const homeGD = homeAvgScored - homeAvgConceded;
+  const awayGD = awayAvgScored - awayAvgConceded;
+  homeScore += Math.max(0, Math.min(20, homeGD * 5));
+  awayScore += Math.max(0, Math.min(20, awayGD * 5));
+  
+  // 4. H2H Verileri (max 20 puan)
+  if (h2hData && h2hData.totalMatches > 0) {
+    const totalMatches = h2hData.totalMatches;
+    const homeWins = safeNum(h2hData.team1Wins || h2hData.homeWins, 0);
+    const awayWins = safeNum(h2hData.team2Wins || h2hData.awayWins, 0);
+    
+    homeScore += (homeWins / totalMatches) * 20;
+    awayScore += (awayWins / totalMatches) * 20;
+  } else if (fullData.h2h && fullData.h2h.totalMatches > 0) {
+    const totalMatches = fullData.h2h.totalMatches;
+    const homeWins = safeNum(fullData.h2h.team1Wins, 0);
+    const awayWins = safeNum(fullData.h2h.team2Wins, 0);
+    
+    homeScore += (homeWins / totalMatches) * 20;
+    awayScore += (awayWins / totalMatches) * 20;
+  } else {
+    // H2H yoksa ev sahibi avantajı
+    homeScore += 10;
+    awayScore += 5;
+  }
+  
+  // 5. Ev Sahibi/Deplasman Performansı (max 20 puan)
+  // Ev sahibi evdeki performansı
+  const homeHomeWinRate = safeNum(homeTeamStats?.homeWinRate, 0.4);
+  const awayAwayWinRate = safeNum(awayTeamStats?.awayWinRate, 0.3);
+  
+  homeScore += homeHomeWinRate * 20;
+  awayScore += awayAwayWinRate * 20;
+  
+  // 6. Lig Pozisyonu (eğer varsa, max 10 puan)
+  // Bu veri genelde Sportmonks'ta yok, atlayabiliriz
+  
+  // ========== TAHMİN BELİRLEME ==========
+  const scoreDiff = homeScore - awayScore;
+  let prediction: '1' | 'X' | '2';
+  let confidence: number;
+  
+  // Puan farkına göre tahmin
+  if (scoreDiff > 20) {
+    prediction = '1';
+    confidence = Math.min(75, 55 + Math.floor(scoreDiff / 5));
+  } else if (scoreDiff < -20) {
+    prediction = '2';
+    confidence = Math.min(75, 55 + Math.floor(Math.abs(scoreDiff) / 5));
+  } else if (scoreDiff > 10) {
+    prediction = '1';
+    confidence = Math.min(70, 52 + Math.floor(scoreDiff / 3));
+  } else if (scoreDiff < -10) {
+    prediction = '2';
+    confidence = Math.min(70, 52 + Math.floor(Math.abs(scoreDiff) / 3));
+  } else if (scoreDiff > 5) {
+    prediction = '1';
+    confidence = 55;
+  } else if (scoreDiff < -5) {
+    prediction = '2';
+    confidence = 55;
+  } else {
+    prediction = 'X';
+    confidence = 50 + Math.min(10, Math.abs(scoreDiff));
+  }
+  
+  // ========== OLASILIKLAR ==========
+  // Puanlara göre olasılık hesapla
+  const totalScore = homeScore + awayScore;
+  const homeProb = Math.round((homeScore / totalScore) * 100);
+  const awayProb = Math.round((awayScore / totalScore) * 100);
+  const drawProb = 100 - homeProb - awayProb;
+  
+  // Normalize et (draw için minimum %20)
+  const normalizedHome = Math.max(20, Math.min(70, homeProb));
+  const normalizedAway = Math.max(20, Math.min(70, awayProb));
+  const normalizedDraw = 100 - normalizedHome - normalizedAway;
+  
+  // ========== REASONING ==========
+  const reasoning = `Sportmonks verilerine göre puan bazlı analiz:
+- Form: Ev ${homeFormPoints}p vs Dep ${awayFormPoints}p (Fark: ${homeFormPoints - awayFormPoints})
+- Gol Farkı: Ev ${homeGD.toFixed(1)} vs Dep ${awayGD.toFixed(1)}
+- H2H: ${fullData.h2h?.totalMatches || 0} maç (Ev ${fullData.h2h?.team1Wins || 0}G, Dep ${fullData.h2h?.team2Wins || 0}G)
+- Toplam Puan: Ev ${homeScore.toFixed(0)}p vs Dep ${awayScore.toFixed(0)}p (Fark: ${scoreDiff.toFixed(0)})
+→ ${prediction === '1' ? 'Ev Sahibi' : prediction === '2' ? 'Deplasman' : 'Beraberlik'} favori (${confidence}% güven)`;
+  
+  return {
+    prediction,
+    confidence: Math.max(50, Math.min(75, confidence)),
+    reasoning,
+    homeScore: Math.round(homeScore),
+    awayScore: Math.round(awayScore),
+    probabilities: {
+      home: normalizedHome,
+      draw: normalizedDraw,
+      away: normalizedAway
+    }
+  };
+}
+
+// ============================================================================
 // SMART BEST BET CALCULATOR
 // ============================================================================
 
@@ -769,18 +918,33 @@ export async function runAgentAnalysis(
       reasoning: deepAnalysisResult.halfTimeFullTime.reasoning || 'İlk yarı / Maç sonucu kombinasyonu tahmini'
     } : undefined;
     
-    // Step 10: YENİ - Detaylı Maç Sonucu Oranları (Agent özel)
-    const matchResultOdds = deepAnalysisResult?.matchResultOdds ? {
-      home: deepAnalysisResult.matchResultOdds.home || 33,
-      draw: deepAnalysisResult.matchResultOdds.draw || 33,
-      away: deepAnalysisResult.matchResultOdds.away || 34,
-      reasoning: deepAnalysisResult.matchResultOdds.reasoning || 'Maç sonucu olasılıkları'
-    } : (deepAnalysisResult?.probabilities ? {
-      home: deepAnalysisResult.probabilities.homeWin || 33,
-      draw: deepAnalysisResult.probabilities.draw || 33,
-      away: deepAnalysisResult.probabilities.awayWin || 34,
-      reasoning: 'Maç sonucu olasılıkları (probabilities\'ten)'
-    } : undefined);
+    // Step 10: 🆕 SPORTMONKS VERİLERİNE GÖRE PUAN BAZLI MAÇ SONUCU TAHMİNİ
+    console.log('📊 Step 10: Calculating match result from Sportmonks data (point-based)...');
+    const sportmonksMatchResult = calculateMatchResultFromSportmonksData(
+      fullData,
+      homeTeamStats,
+      awayTeamStats,
+      h2hData
+    );
+    
+    console.log(`   ✅ Sportmonks Prediction: ${sportmonksMatchResult.prediction} (${sportmonksMatchResult.confidence}%)`);
+    console.log(`   📊 Scores: Home ${sportmonksMatchResult.homeScore}p vs Away ${sportmonksMatchResult.awayScore}p`);
+    console.log(`   📊 Probabilities: Home ${sportmonksMatchResult.probabilities.home}% | Draw ${sportmonksMatchResult.probabilities.draw}% | Away ${sportmonksMatchResult.probabilities.away}%`);
+    
+    // Detaylı Maç Sonucu Oranları (Sportmonks verilerine göre)
+    const matchResultOdds = {
+      home: sportmonksMatchResult.probabilities.home,
+      draw: sportmonksMatchResult.probabilities.draw,
+      away: sportmonksMatchResult.probabilities.away,
+      reasoning: sportmonksMatchResult.reasoning
+    };
+    
+    // Maç Sonucu Tahmini (Sportmonks verilerine göre)
+    const matchResult = {
+      prediction: sportmonksMatchResult.prediction === '1' ? 'home' : sportmonksMatchResult.prediction === '2' ? 'away' : 'draw',
+      confidence: sportmonksMatchResult.confidence,
+      reasoning: sportmonksMatchResult.reasoning
+    };
     
     const result: AgentAnalysisResult = {
       fixtureId,
@@ -795,10 +959,10 @@ export async function runAgentAnalysis(
         deepAnalysis: deepAnalysisResult
       },
       
-      // Agent analizinde standart tahminler YOK - sadece özel tahminler kullanılıyor
+      // Agent analizinde standart tahminler - Sportmonks verilerine göre puan bazlı
       btts: undefined,
       overUnder: undefined,
-      matchResult: undefined,
+      matchResult: matchResult, // 🆕 Sportmonks verilerine göre puan bazlı tahmin
       
       corners,
       halfTimeGoals,
