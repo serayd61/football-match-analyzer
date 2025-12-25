@@ -83,6 +83,10 @@ CREATE INDEX IF NOT EXISTS idx_agent_analysis_settled ON public.agent_analysis(i
 -- RLS Policies
 ALTER TABLE public.agent_analysis ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Public read access" ON public.agent_analysis;
+DROP POLICY IF EXISTS "Service role full access" ON public.agent_analysis;
+
 -- Public read access
 CREATE POLICY "Public read access" ON public.agent_analysis
   FOR SELECT
@@ -96,15 +100,23 @@ CREATE POLICY "Service role full access" ON public.agent_analysis
   USING (true)
   WITH CHECK (true);
 
--- Updated at trigger
+-- Updated at trigger function
 CREATE OR REPLACE FUNCTION update_agent_analysis_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
-  NEW.updated_at = NOW();
+  NEW.updated_at = pg_catalog.now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS trigger_agent_analysis_updated_at ON public.agent_analysis;
+
+-- Create trigger
 CREATE TRIGGER trigger_agent_analysis_updated_at
   BEFORE UPDATE ON public.agent_analysis
   FOR EACH ROW

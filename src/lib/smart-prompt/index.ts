@@ -558,21 +558,90 @@ export function combineAIandStats(
     };
   }
 
-  // Determine best bet (highest confidence where AI and stats agree)
-  let bestBet = { market: 'BTTS', selection: btts.prediction, confidence: btts.confidence, reason: 'En yüksek güven' };
+  // 🆕 AKILLI BEST BET HESAPLAMA - Birleşik öneri mantığı
+  const highConfidenceThreshold = 60; // %60 ve üzeri yüksek güven
+  const veryHighConfidenceThreshold = 65; // %65 ve üzeri çok yüksek güven
   
-  if (overUnder.confidence > bestBet.confidence) {
-    bestBet = { market: 'Over/Under', selection: overUnder.prediction, confidence: overUnder.confidence, reason: 'En yüksek güven' };
+  // BTTS ve Over/Under tahminlerini Türkçe'ye çevir
+  const bttsSelection = btts.prediction === 'yes' ? 'Evet' : 'Hayır';
+  const overUnderSelection = overUnder.prediction === 'over' ? 'Üst' : 'Alt';
+  
+  // 🎯 BİRLEŞİK ÖNERİ: Eğer hem BTTS hem Over/Under yüksek güvenliyse
+  if (btts.confidence >= highConfidenceThreshold && overUnder.confidence >= highConfidenceThreshold) {
+    const combinedConfidence = Math.round((btts.confidence + overUnder.confidence) / 2);
+    
+    // Eğer Over 2.5 ve BTTS Evet ise → "En sağlam bahis: Karşılıklı Gol VEYA Over 2.5"
+    if (overUnderSelection === 'Üst' && bttsSelection === 'Evet') {
+      bestBet = {
+        market: 'En Sağlam Bahis',
+        selection: 'Karşılıklı Gol VEYA Over 2.5',
+        confidence: Math.min(85, combinedConfidence + 5), // Birleşik öneri bonusu
+        reason: `AI analizleri hem Karşılıklı Gol (${btts.confidence}%) hem Over 2.5 (${overUnder.confidence}%) için yüksek güven gösteriyor. İkisi de gerçekleşme olasılığı yüksek.`
+      };
+    }
+    // Eğer Under 2.5 ve BTTS Hayır ise → "En sağlam bahis: Karşılıklı Gol Yok VEYA Under 2.5"
+    else if (overUnderSelection === 'Alt' && bttsSelection === 'Hayır') {
+      bestBet = {
+        market: 'En Sağlam Bahis',
+        selection: 'Karşılıklı Gol Yok VEYA Under 2.5',
+        confidence: Math.min(85, combinedConfidence + 5),
+        reason: `AI analizleri hem Karşılıklı Gol Yok (${btts.confidence}%) hem Under 2.5 (${overUnder.confidence}%) için yüksek güven gösteriyor. Düşük skorlu maç beklentisi güçlü.`
+      };
+    }
+    // Diğer kombinasyonlar için genel birleşik öneri
+    else {
+      bestBet = {
+        market: 'En Sağlam Bahis',
+        selection: `Karşılıklı Gol ${bttsSelection === 'Evet' ? 'Var' : 'Yok'} VEYA Over/Under ${overUnderSelection}`,
+        confidence: combinedConfidence,
+        reason: `AI analizleri hem Karşılıklı Gol (${btts.confidence}%) hem Over/Under (${overUnder.confidence}%) için yüksek güven gösteriyor.`
+      };
+    }
   }
-  
+  // Tek bir yüksek güvenli tahmin varsa onu seç
+  else if (btts.confidence >= veryHighConfidenceThreshold) {
+    bestBet = {
+      market: 'Karşılıklı Gol',
+      selection: bttsSelection,
+      confidence: btts.confidence,
+      reason: `AI analizleri Karşılıklı Gol ${bttsSelection === 'Evet' ? 'Var' : 'Yok'} için çok yüksek güven gösteriyor (${btts.confidence}%).`
+    };
+  }
+  else if (overUnder.confidence >= veryHighConfidenceThreshold) {
+    bestBet = {
+      market: 'Over/Under 2.5',
+      selection: overUnderSelection,
+      confidence: overUnder.confidence,
+      reason: `AI analizleri Over/Under ${overUnderSelection} için çok yüksek güven gösteriyor (${overUnder.confidence}%).`
+    };
+  }
   // Match result only if very high confidence
-  if (matchResult.confidence > 65 && matchResult.confidence > bestBet.confidence) {
-    bestBet = { market: 'Match Result', selection: matchResult.prediction, confidence: matchResult.confidence, reason: 'Güçlü veri desteği' };
+  else if (matchResult.confidence > 65 && matchResult.confidence > Math.max(btts.confidence, overUnder.confidence)) {
+    const mrSelection = matchResult.prediction === 'home' ? 'Ev Sahibi' : 
+                       matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik';
+    bestBet = {
+      market: 'Maç Sonucu',
+      selection: mrSelection,
+      confidence: matchResult.confidence,
+      reason: 'Güçlü veri desteği'
+    };
   }
-  
   // Corners if very high confidence
-  if (corners.confidence > 65 && corners.confidence > bestBet.confidence) {
-    bestBet = { market: 'Corners', selection: `${corners.prediction} ${corners.line}`, confidence: corners.confidence, reason: 'Korner verisi güçlü' };
+  else if (corners.confidence > 65 && corners.confidence > Math.max(btts.confidence, overUnder.confidence)) {
+    bestBet = {
+      market: 'Korner',
+      selection: `${corners.prediction} ${corners.line}`,
+      confidence: corners.confidence,
+      reason: 'Korner verisi güçlü'
+    };
+  }
+  // Fallback: En yüksek güvenli olanı seç
+  else {
+    bestBet = { market: 'BTTS', selection: bttsSelection, confidence: btts.confidence, reason: 'En yüksek güven' };
+    
+    if (overUnder.confidence > bestBet.confidence) {
+      bestBet = { market: 'Over/Under', selection: overUnderSelection, confidence: overUnder.confidence, reason: 'En yüksek güven' };
+    }
   }
 
   // Risk level based on statistical confidence (AI agreement is less important now)
