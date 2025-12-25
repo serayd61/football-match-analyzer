@@ -58,29 +58,15 @@ export interface AgentAnalysisResult {
     line: number;
   };
   
-  // YENİ: İlk Yarı Gol Tahmini
-  halfTimeGoals?: {
-    prediction: string; // "over" | "under"
+  // 🆕 EN İYİ 3 İDDA TAHMİNİ (Agent'ların verilere göre özel tahminleri)
+  top3Predictions: Array<{
+    rank: number;
+    market: string;
+    selection: string;
     confidence: number;
     reasoning: string;
-    line: number; // Genellikle 1.5 veya 0.5
-    expectedGoals: number;
-  };
-  
-  // YENİ: İlk Yarı / Maç Sonucu Kombinasyonu
-  halfTimeFullTime?: {
-    prediction: string; // "1/1", "1/X", "X/1", "X/X", "2/1", "2/X", "1/2", "X/2", "2/2"
-    confidence: number;
-    reasoning: string;
-  };
-  
-  // YENİ: Detaylı Maç Sonucu Oranları
-  matchResultOdds?: {
-    home: number; // 1 oranı (ör: 65%)
-    draw: number; // X oranı (ör: 25%)
-    away: number; // 2 oranı (ör: 10%)
-    reasoning: string;
-  };
+    agentSupport: string[]; // Hangi agent'lar bu tahmini destekliyor
+  }>;
   
   bestBet: {
     market: string;
@@ -477,183 +463,329 @@ function calculateMatchResultFromSportmonksData(
 }
 
 // ============================================================================
-// SMART BEST BET CALCULATOR
+// TOP 3 PREDICTIONS FROM AGENTS
 // ============================================================================
 
-function calculateSmartBestBet(
+/**
+ * Agent'ların tüm tahminlerini toplayıp en iyi 3'ünü seçer
+ * Her maç için verilere göre özel tahminler üretir
+ */
+function extractTop3PredictionsFromAgents(
   stats: any,
   odds: any,
-  deepAnalysis: any,
-  halfTimeGoals?: any,
-  halfTimeFullTime?: any,
-  matchResultOdds?: any
-): { market: string; selection: string; confidence: number; reason: string } {
+  deepAnalysis: any
+): Array<{
+  rank: number;
+  market: string;
+  selection: string;
+  confidence: number;
+  reasoning: string;
+  agentSupport: string[];
+}> {
   
-  // Agent'ların BTTS tahminlerini topla
-  const bttsPredictions: { prediction: string; confidence: number; source: string }[] = [];
-  if (stats?.btts && stats?.bttsConfidence) {
-    bttsPredictions.push({
-      prediction: stats.btts === 'Yes' ? 'Evet' : 'Hayır',
-      confidence: stats.bttsConfidence,
-      source: 'Stats Agent'
-    });
-  }
-  if (odds?.bttsValue && odds?.bttsConfidence) {
-    bttsPredictions.push({
-      prediction: odds.bttsValue === 'yes' ? 'Evet' : 'Hayır',
-      confidence: odds.bttsConfidence || 60,
-      source: 'Odds Agent'
-    });
-  }
-  if (deepAnalysis?.btts?.prediction && deepAnalysis?.btts?.confidence) {
-    bttsPredictions.push({
-      prediction: deepAnalysis.btts.prediction === 'Yes' ? 'Evet' : 'Hayır',
-      confidence: deepAnalysis.btts.confidence,
-      source: 'Deep Analysis Agent'
-    });
-  }
+  const allPredictions: Array<{
+    market: string;
+    selection: string;
+    confidence: number;
+    reasoning: string;
+    agent: string;
+  }> = [];
   
-  // Agent'ların Over/Under tahminlerini topla
-  const overUnderPredictions: { prediction: string; confidence: number; source: string }[] = [];
-  if (stats?.overUnder && stats?.overUnderConfidence) {
-    overUnderPredictions.push({
-      prediction: stats.overUnder === 'Over' ? 'Üst' : 'Alt',
-      confidence: stats.overUnderConfidence,
-      source: 'Stats Agent'
-    });
-  }
-  if (odds?.recommendation && odds?.confidence) {
-    overUnderPredictions.push({
-      prediction: odds.recommendation === 'Over' ? 'Üst' : 'Alt',
-      confidence: odds.confidence,
-      source: 'Odds Agent'
-    });
-  }
-  if (deepAnalysis?.overUnder?.prediction && deepAnalysis?.overUnder?.confidence) {
-    overUnderPredictions.push({
-      prediction: deepAnalysis.overUnder.prediction === 'Over' ? 'Üst' : 'Alt',
-      confidence: deepAnalysis.overUnder.confidence,
-      source: 'Deep Analysis Agent'
-    });
-  }
-  
-  // Ortalama güven seviyelerini hesapla
-  const avgBttsConf = bttsPredictions.length > 0
-    ? Math.round(bttsPredictions.reduce((sum, p) => sum + p.confidence, 0) / bttsPredictions.length)
-    : 0;
-  const avgOverUnderConf = overUnderPredictions.length > 0
-    ? Math.round(overUnderPredictions.reduce((sum, p) => sum + p.confidence, 0) / overUnderPredictions.length)
-    : 0;
-  
-  // En yaygın tahminleri bul
-  const bttsVotes = bttsPredictions.map(p => p.prediction);
-  const bttsYesCount = bttsVotes.filter(v => v === 'Evet').length;
-  const bttsNoCount = bttsVotes.filter(v => v === 'Hayır').length;
-  const bttsConsensus = bttsYesCount > bttsNoCount ? 'Evet' : 'Hayır';
-  
-  const overUnderVotes = overUnderPredictions.map(p => p.prediction);
-  const overCount = overUnderVotes.filter(v => v === 'Üst').length;
-  const underCount = overUnderVotes.filter(v => v === 'Alt').length;
-  const overUnderConsensus = overCount > underCount ? 'Üst' : 'Alt';
-  
-  // 🎯 BİRLEŞİK ÖNERİ: Eğer hem BTTS hem Over/Under yüksek güvenliyse
-  const highConfidenceThreshold = 60; // %60 ve üzeri yüksek güven
-  const veryHighConfidenceThreshold = 65; // %65 ve üzeri çok yüksek güven
-  
-  if (avgBttsConf >= highConfidenceThreshold && avgOverUnderConf >= highConfidenceThreshold) {
-    // İkisi de yüksek güvenli → Birleşik öneri
-    const combinedConfidence = Math.round((avgBttsConf + avgOverUnderConf) / 2);
-    
-    // Eğer Over 2.5 ve BTTS Evet ise → "En sağlam bahis: Karşılıklı Gol VEYA Over 2.5"
-    if (overUnderConsensus === 'Üst' && bttsConsensus === 'Evet') {
-      return {
-        market: 'En Sağlam Bahis',
-        selection: 'Karşılıklı Gol VEYA Over 2.5',
-        confidence: Math.min(85, combinedConfidence + 5), // Birleşik öneri bonusu
-        reason: `Agent'lar hem Karşılıklı Gol (${avgBttsConf}%) hem Over 2.5 (${avgOverUnderConf}%) için yüksek güven gösteriyor. İkisi de gerçekleşme olasılığı yüksek.`
-      };
+  // ========== STATS AGENT TAHMİNLERİ ==========
+  if (stats) {
+    // Over/Under
+    if (stats.overUnder && stats.overUnderConfidence) {
+      allPredictions.push({
+        market: 'Over/Under 2.5',
+        selection: stats.overUnder === 'Over' ? 'Üst' : 'Alt',
+        confidence: stats.overUnderConfidence,
+        reasoning: stats.overUnderReasoning || 'İstatistiksel analiz',
+        agent: 'Stats Agent'
+      });
     }
     
-    // Eğer Under 2.5 ve BTTS Hayır ise → "En sağlam bahis: Karşılıklı Gol Yok VEYA Under 2.5"
-    if (overUnderConsensus === 'Alt' && bttsConsensus === 'Hayır') {
-      return {
-        market: 'En Sağlam Bahis',
-        selection: 'Karşılıklı Gol Yok VEYA Under 2.5',
-        confidence: Math.min(85, combinedConfidence + 5),
-        reason: `Agent'lar hem Karşılıklı Gol Yok (${avgBttsConf}%) hem Under 2.5 (${avgOverUnderConf}%) için yüksek güven gösteriyor. Düşük skorlu maç beklentisi güçlü.`
-      };
+    // BTTS
+    if (stats.btts && stats.bttsConfidence) {
+      allPredictions.push({
+        market: 'Karşılıklı Gol',
+        selection: stats.btts === 'Yes' ? 'Evet' : 'Hayır',
+        confidence: stats.bttsConfidence,
+        reasoning: stats.bttsReasoning || 'İstatistiksel analiz',
+        agent: 'Stats Agent'
+      });
     }
     
-    // Diğer kombinasyonlar için genel birleşik öneri
-    return {
-      market: 'En Sağlam Bahis',
-      selection: `Karşılıklı Gol ${bttsConsensus === 'Evet' ? 'Var' : 'Yok'} VEYA Over/Under ${overUnderConsensus === 'Üst' ? 'Üst' : 'Alt'}`,
-      confidence: combinedConfidence,
-      reason: `Agent'lar hem Karşılıklı Gol (${avgBttsConf}%) hem Over/Under (${avgOverUnderConf}%) için yüksek güven gösteriyor.`
-    };
+    // İlk Yarı Goller
+    if (stats.firstHalfPrediction && stats.firstHalfConfidence) {
+      allPredictions.push({
+        market: 'İlk Yarı Goller',
+        selection: stats.firstHalfPrediction.goals || 'Under 1.5',
+        confidence: stats.firstHalfConfidence,
+        reasoning: stats.firstHalfPrediction.reasoning || 'İlk yarı analizi',
+        agent: 'Stats Agent'
+      });
+    }
   }
   
-  // Tek bir yüksek güvenli tahmin varsa onu seç
-  if (avgBttsConf >= veryHighConfidenceThreshold) {
-    return {
-      market: 'Karşılıklı Gol',
-      selection: bttsConsensus,
-      confidence: avgBttsConf,
-      reason: `Agent'lar Karşılıklı Gol ${bttsConsensus === 'Evet' ? 'Var' : 'Yok'} için çok yüksek güven gösteriyor (${avgBttsConf}%). ${bttsPredictions.map(p => `${p.source}: ${p.confidence}%`).join(', ')}`
-    };
+  // ========== ODDS AGENT TAHMİNLERİ ==========
+  if (odds) {
+    // Over/Under
+    if (odds.recommendation && odds.confidence) {
+      allPredictions.push({
+        market: 'Over/Under 2.5',
+        selection: odds.recommendation === 'Over' ? 'Üst' : 'Alt',
+        confidence: odds.confidence,
+        reasoning: odds.recommendationReasoning || 'Oran analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // BTTS
+    if (odds.bttsValue && odds.bttsConfidence) {
+      allPredictions.push({
+        market: 'Karşılıklı Gol',
+        selection: odds.bttsValue === 'yes' ? 'Evet' : 'Hayır',
+        confidence: odds.bttsConfidence || 60,
+        reasoning: odds.bttsReasoning || 'Oran analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // Maç Sonucu (Value bet)
+    if (odds.matchWinnerValue && odds.matchWinnerConfidence) {
+      const selection = odds.matchWinnerValue === 'home' ? 'Ev Sahibi' : 
+                       odds.matchWinnerValue === 'away' ? 'Deplasman' : 'Beraberlik';
+      allPredictions.push({
+        market: 'Maç Sonucu',
+        selection,
+        confidence: odds.matchWinnerConfidence || 60,
+        reasoning: odds.matchWinnerReasoning || 'Value bet analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // Asian Handicap
+    if (odds.asianHandicap && odds.asianHandicap.confidence) {
+      allPredictions.push({
+        market: 'Asian Handicap',
+        selection: odds.asianHandicap.recommendation,
+        confidence: odds.asianHandicap.confidence,
+        reasoning: odds.asianHandicap.reasoning || 'Handikap analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // HT/FT
+    if (odds.htftPrediction && odds.htftPrediction.confidence) {
+      allPredictions.push({
+        market: 'İlk Yarı/Maç Sonucu',
+        selection: odds.htftPrediction.prediction,
+        confidence: odds.htftPrediction.confidence,
+        reasoning: odds.htftPrediction.reasoning || 'HT/FT analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // Correct Score
+    if (odds.correctScore && odds.correctScore.confidence) {
+      allPredictions.push({
+        market: 'Kesin Skor',
+        selection: odds.correctScore.mostLikely,
+        confidence: odds.correctScore.confidence,
+        reasoning: `En olası skor: ${odds.correctScore.mostLikely}`,
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // Corners
+    if (odds.cornersAnalysis && odds.cornersAnalysis.confidence) {
+      allPredictions.push({
+        market: 'Korner',
+        selection: odds.cornersAnalysis.totalCorners,
+        confidence: odds.cornersAnalysis.confidence,
+        reasoning: odds.cornersAnalysis.reasoning || 'Korner analizi',
+        agent: 'Odds Agent'
+      });
+    }
+    
+    // Cards
+    if (odds.cardsAnalysis && odds.cardsAnalysis.confidence) {
+      allPredictions.push({
+        market: 'Kart',
+        selection: odds.cardsAnalysis.totalCards,
+        confidence: odds.cardsAnalysis.confidence,
+        reasoning: odds.cardsAnalysis.reasoning || 'Kart analizi',
+        agent: 'Odds Agent'
+      });
+    }
   }
   
-  if (avgOverUnderConf >= veryHighConfidenceThreshold) {
-    return {
-      market: 'Over/Under 2.5',
-      selection: overUnderConsensus,
-      confidence: avgOverUnderConf,
-      reason: `Agent'lar Over/Under ${overUnderConsensus === 'Üst' ? 'Üst' : 'Alt'} için çok yüksek güven gösteriyor (${avgOverUnderConf}%). ${overUnderPredictions.map(p => `${p.source}: ${p.confidence}%`).join(', ')}`
-    };
+  // ========== DEEP ANALYSIS AGENT TAHMİNLERİ ==========
+  if (deepAnalysis) {
+    // Over/Under
+    if (deepAnalysis.overUnder?.prediction && deepAnalysis.overUnder?.confidence) {
+      allPredictions.push({
+        market: 'Over/Under 2.5',
+        selection: deepAnalysis.overUnder.prediction === 'Over' ? 'Üst' : 'Alt',
+        confidence: deepAnalysis.overUnder.confidence,
+        reasoning: deepAnalysis.overUnder.reasoning || 'Derin analiz',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // BTTS
+    if (deepAnalysis.btts?.prediction && deepAnalysis.btts?.confidence) {
+      allPredictions.push({
+        market: 'Karşılıklı Gol',
+        selection: deepAnalysis.btts.prediction === 'Yes' ? 'Evet' : 'Hayır',
+        confidence: deepAnalysis.btts.confidence,
+        reasoning: deepAnalysis.btts.reasoning || 'Derin analiz',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // Maç Sonucu
+    if (deepAnalysis.matchResult?.prediction && deepAnalysis.matchResult?.confidence) {
+      const mr = deepAnalysis.matchResult.prediction;
+      const selection = mr === '1' ? 'Ev Sahibi' : mr === '2' ? 'Deplasman' : 'Beraberlik';
+      allPredictions.push({
+        market: 'Maç Sonucu',
+        selection,
+        confidence: deepAnalysis.matchResult.confidence,
+        reasoning: deepAnalysis.matchResult.reasoning || 'Derin analiz',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // İlk Yarı Goller
+    if (deepAnalysis.halfTimeGoals?.prediction && deepAnalysis.halfTimeGoals?.confidence) {
+      const htSelection = deepAnalysis.halfTimeGoals.prediction === 'Over' 
+        ? `Over ${deepAnalysis.halfTimeGoals.line || 1.5}` 
+        : `Under ${deepAnalysis.halfTimeGoals.line || 1.5}`;
+      allPredictions.push({
+        market: 'İlk Yarı Goller',
+        selection: htSelection,
+        confidence: deepAnalysis.halfTimeGoals.confidence,
+        reasoning: deepAnalysis.halfTimeGoals.reasoning || 'İlk yarı analizi',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // HT/FT
+    if (deepAnalysis.halfTimeFullTime?.prediction && deepAnalysis.halfTimeFullTime?.confidence) {
+      allPredictions.push({
+        market: 'İlk Yarı/Maç Sonucu',
+        selection: deepAnalysis.halfTimeFullTime.prediction,
+        confidence: deepAnalysis.halfTimeFullTime.confidence,
+        reasoning: deepAnalysis.halfTimeFullTime.reasoning || 'HT/FT analizi',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // Corners
+    if (deepAnalysis.cornersAndCards?.cornersLine && deepAnalysis.cornersAndCards?.cornersConfidence) {
+      allPredictions.push({
+        market: 'Korner',
+        selection: deepAnalysis.cornersAndCards.cornersLine,
+        confidence: deepAnalysis.cornersAndCards.cornersConfidence,
+        reasoning: deepAnalysis.cornersAndCards.cornersAnalysis || 'Korner analizi',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // Cards
+    if (deepAnalysis.cornersAndCards?.cardsLine && deepAnalysis.cornersAndCards?.cardsConfidence) {
+      allPredictions.push({
+        market: 'Kart',
+        selection: deepAnalysis.cornersAndCards.cardsLine,
+        confidence: deepAnalysis.cornersAndCards.cardsConfidence,
+        reasoning: deepAnalysis.cornersAndCards.cardsAnalysis || 'Kart analizi',
+        agent: 'Deep Analysis Agent'
+      });
+    }
+    
+    // Best Bet
+    if (deepAnalysis.bestBet?.type && deepAnalysis.bestBet?.confidence) {
+      allPredictions.push({
+        market: deepAnalysis.bestBet.type,
+        selection: deepAnalysis.bestBet.selection,
+        confidence: deepAnalysis.bestBet.confidence,
+        reasoning: deepAnalysis.bestBet.reasoning || 'En iyi bahis',
+        agent: 'Deep Analysis Agent'
+      });
+    }
   }
   
-  // Özel tahminler varsa onları kontrol et
-  if (halfTimeGoals && halfTimeGoals.confidence >= 60) {
+  // ========== TAHMİNLERİ BİRLEŞTİR VE SIRALA ==========
+  // Aynı market+selection kombinasyonlarını birleştir
+  const predictionMap = new Map<string, {
+    market: string;
+    selection: string;
+    confidences: number[];
+    reasonings: string[];
+    agents: string[];
+  }>();
+  
+  allPredictions.forEach(pred => {
+    const key = `${pred.market}|${pred.selection}`;
+    if (predictionMap.has(key)) {
+      const existing = predictionMap.get(key)!;
+      existing.confidences.push(pred.confidence);
+      existing.reasonings.push(pred.reasoning);
+      existing.agents.push(pred.agent);
+    } else {
+      predictionMap.set(key, {
+        market: pred.market,
+        selection: pred.selection,
+        confidences: [pred.confidence],
+        reasonings: [pred.reasoning],
+        agents: [pred.agent]
+      });
+    }
+  });
+  
+  // Ortalama confidence hesapla ve sırala
+  const combinedPredictions = Array.from(predictionMap.values()).map(pred => {
+    const avgConfidence = Math.round(
+      pred.confidences.reduce((a, b) => a + b, 0) / pred.confidences.length
+    );
+    const uniqueAgents = [...new Set(pred.agents)];
+    const combinedReasoning = pred.reasonings
+      .filter((r, i, arr) => arr.indexOf(r) === i) // Unique
+      .slice(0, 2) // İlk 2 reasoning
+      .join(' | ');
+    
     return {
-      market: 'Agent Özel Tahminler',
-      selection: 'İlk Yarı Goller',
-      confidence: halfTimeGoals.confidence,
-      reason: `İlk yarı gol tahmini en yüksek güven seviyesine sahip (${halfTimeGoals.confidence}%). ${halfTimeGoals.reasoning}`
+      market: pred.market,
+      selection: pred.selection,
+      confidence: avgConfidence,
+      reasoning: combinedReasoning || 'Agent analizleri',
+      agentSupport: uniqueAgents,
+      agentCount: uniqueAgents.length
     };
-  }
+  });
   
-  if (halfTimeFullTime && halfTimeFullTime.confidence >= 60) {
-    return {
-      market: 'Agent Özel Tahminler',
-      selection: 'İlk Yarı/Maç Sonucu',
-      confidence: halfTimeFullTime.confidence,
-      reason: `İlk yarı/maç sonucu kombinasyonu yüksek güven seviyesine sahip (${halfTimeFullTime.confidence}%).`
-    };
-  }
+  // Confidence'a göre sırala (yüksekten düşüğe)
+  combinedPredictions.sort((a, b) => {
+    // Önce agent sayısına göre (daha fazla agent destekliyorsa öncelik)
+    if (a.agentCount !== b.agentCount) {
+      return b.agentCount - a.agentCount;
+    }
+    // Sonra confidence'a göre
+    return b.confidence - a.confidence;
+  });
   
-  // En yüksek güvenli genel tahmin
-  const allOptions = [
-    ...(avgBttsConf > 0 ? [{ market: 'Karşılıklı Gol', selection: bttsConsensus || 'Evet', confidence: avgBttsConf }] : []),
-    ...(avgOverUnderConf > 0 ? [{ market: 'Over/Under 2.5', selection: overUnderConsensus || 'Üst', confidence: avgOverUnderConf }] : []),
-    ...(halfTimeGoals?.confidence ? [{ market: 'Agent Özel Tahminler', selection: 'İlk Yarı Goller', confidence: halfTimeGoals.confidence }] : []),
-    ...(halfTimeFullTime?.confidence ? [{ market: 'Agent Özel Tahminler', selection: 'İlk Yarı/Maç Sonucu', confidence: halfTimeFullTime.confidence }] : [])
-  ].filter(opt => opt.confidence > 0);
+  // En iyi 3'ü seç
+  const top3 = combinedPredictions.slice(0, 3).map((pred, index) => ({
+    rank: index + 1,
+    market: pred.market,
+    selection: pred.selection,
+    confidence: pred.confidence,
+    reasoning: pred.reasoning,
+    agentSupport: pred.agentSupport
+  }));
   
-  if (allOptions.length > 0) {
-    const best = allOptions.sort((a, b) => b.confidence - a.confidence)[0];
-    return {
-      ...best,
-      reason: `${best.market} için agent analizleri ${best.confidence}% güven gösteriyor.`
-    };
-  }
-  
-  // Fallback
-  return {
-    market: 'Agent Özel Tahminler',
-    selection: 'Maç Sonucu Oranları',
-    confidence: matchResultOdds ? Math.max(matchResultOdds.home, matchResultOdds.draw, matchResultOdds.away) : 50,
-    reason: 'Agent özel tahminleri'
-  };
+  return top3;
 }
 
 // ============================================================================
@@ -894,32 +1026,8 @@ export async function runAgentAnalysis(
     const dataQuality = fullData.dataQuality.score >= 70 ? 'good' : 
                        fullData.dataQuality.score >= 40 ? 'minimal' : 'no_data';
     
-    // Step 7: Corners (if available in deepAnalysis)
-    const corners = deepAnalysisResult?.cornersAndCards ? {
-      prediction: deepAnalysisResult.cornersAndCards.cornersLine?.toLowerCase().includes('over') ? 'over' : 'under',
-      confidence: deepAnalysisResult.cornersAndCards.cornersConfidence || 60,
-      reasoning: deepAnalysisResult.cornersAndCards.cornersAnalysis || 'Korner analizi mevcut',
-      line: 9.5
-    } : undefined;
-    
-    // Step 8: YENİ - İlk Yarı Gol Tahmini (Agent özel)
-    const halfTimeGoals = deepAnalysisResult?.halfTimeGoals ? {
-      prediction: deepAnalysisResult.halfTimeGoals.prediction?.toLowerCase().includes('over') ? 'over' : 'under',
-      confidence: deepAnalysisResult.halfTimeGoals.confidence || 60,
-      reasoning: deepAnalysisResult.halfTimeGoals.reasoning || 'İlk yarı gol tahmini',
-      line: deepAnalysisResult.halfTimeGoals.line || 1.5,
-      expectedGoals: deepAnalysisResult.halfTimeGoals.expectedGoals || 1.2
-    } : undefined;
-    
-    // Step 9: YENİ - İlk Yarı / Maç Sonucu Kombinasyonu (Agent özel)
-    const halfTimeFullTime = deepAnalysisResult?.halfTimeFullTime ? {
-      prediction: deepAnalysisResult.halfTimeFullTime.prediction || '1/1',
-      confidence: deepAnalysisResult.halfTimeFullTime.confidence || 55,
-      reasoning: deepAnalysisResult.halfTimeFullTime.reasoning || 'İlk yarı / Maç sonucu kombinasyonu tahmini'
-    } : undefined;
-    
-    // Step 10: 🆕 SPORTMONKS VERİLERİNE GÖRE PUAN BAZLI MAÇ SONUCU TAHMİNİ
-    console.log('📊 Step 10: Calculating match result from Sportmonks data (point-based)...');
+    // Step 7: 🆕 SPORTMONKS VERİLERİNE GÖRE PUAN BAZLI MAÇ SONUCU TAHMİNİ
+    console.log('📊 Step 7: Calculating match result from Sportmonks data (point-based)...');
     const sportmonksMatchResult = calculateMatchResultFromSportmonksData(
       fullData,
       homeTeamStats,
@@ -929,15 +1037,6 @@ export async function runAgentAnalysis(
     
     console.log(`   ✅ Sportmonks Prediction: ${sportmonksMatchResult.prediction} (${sportmonksMatchResult.confidence}%)`);
     console.log(`   📊 Scores: Home ${sportmonksMatchResult.homeScore}p vs Away ${sportmonksMatchResult.awayScore}p`);
-    console.log(`   📊 Probabilities: Home ${sportmonksMatchResult.probabilities.home}% | Draw ${sportmonksMatchResult.probabilities.draw}% | Away ${sportmonksMatchResult.probabilities.away}%`);
-    
-    // Detaylı Maç Sonucu Oranları (Sportmonks verilerine göre)
-    const matchResultOdds = {
-      home: sportmonksMatchResult.probabilities.home,
-      draw: sportmonksMatchResult.probabilities.draw,
-      away: sportmonksMatchResult.probabilities.away,
-      reasoning: sportmonksMatchResult.reasoning
-    };
     
     // Maç Sonucu Tahmini (Sportmonks verilerine göre)
     const matchResult = {
@@ -945,6 +1044,19 @@ export async function runAgentAnalysis(
       confidence: sportmonksMatchResult.confidence,
       reasoning: sportmonksMatchResult.reasoning
     };
+    
+    // Step 8: 🆕 AGENT'LARDAN EN İYİ 3 İDDA TAHMİNİ
+    console.log('🎯 Step 8: Extracting top 3 predictions from agents...');
+    const top3Predictions = extractTop3PredictionsFromAgents(
+      statsResult,
+      oddsResult,
+      deepAnalysisResult
+    );
+    
+    console.log(`   ✅ Top 3 Predictions:`);
+    top3Predictions.forEach((pred, idx) => {
+      console.log(`      ${idx + 1}. ${pred.market} → ${pred.selection} (${pred.confidence}%) - ${pred.agentSupport.join(', ')}`);
+    });
     
     const result: AgentAnalysisResult = {
       fixtureId,
@@ -964,28 +1076,27 @@ export async function runAgentAnalysis(
       overUnder: undefined,
       matchResult: matchResult, // 🆕 Sportmonks verilerine göre puan bazlı tahmin
       
-      corners,
-      halfTimeGoals,
-      halfTimeFullTime,
-      matchResultOdds,
+      // 🆕 EN İYİ 3 İDDA TAHMİNİ (Agent'ların verilere göre özel tahminleri)
+      top3Predictions: top3Predictions,
       
-      // 🆕 GELİŞTİRİLMİŞ BEST BET HESAPLAMA
-      // Agent'ların BTTS ve Over/Under tahminlerini analiz et
-      bestBet: calculateSmartBestBet(
-        statsResult,
-        oddsResult,
-        deepAnalysisResult,
-        halfTimeGoals,
-        halfTimeFullTime,
-        matchResultOdds
-      ),
+      // 🆕 BEST BET (En yüksek güvenli tahmin)
+      bestBet: top3Predictions.length > 0 ? {
+        market: top3Predictions[0].market,
+        selection: top3Predictions[0].selection,
+        confidence: top3Predictions[0].confidence,
+        reason: top3Predictions[0].reasoning
+      } : {
+        market: 'Maç Sonucu',
+        selection: matchResult.prediction === 'home' ? 'Ev Sahibi' : matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik',
+        confidence: matchResult.confidence,
+        reason: matchResult.reasoning
+      },
       agreement: 0, // Agent analizinde consensus yok
-      riskLevel: 'medium' as const,
-      overallConfidence: Math.max(
-        halfTimeGoals?.confidence || 0,
-        halfTimeFullTime?.confidence || 0,
-        matchResultOdds ? Math.max(matchResultOdds.home, matchResultOdds.draw, matchResultOdds.away) : 0
-      ),
+      riskLevel: top3Predictions.length > 0 && top3Predictions[0].confidence >= 70 ? 'low' : 
+                 top3Predictions.length > 0 && top3Predictions[0].confidence >= 60 ? 'medium' : 'high',
+      overallConfidence: top3Predictions.length > 0 
+        ? Math.round(top3Predictions.reduce((sum, p) => sum + p.confidence, 0) / top3Predictions.length)
+        : matchResult.confidence,
       dataQuality,
       processingTime: Date.now() - startTime,
       analyzedAt: new Date().toISOString()
@@ -1040,23 +1151,8 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
         corners_reasoning: result.corners?.reasoning,
         corners_line: result.corners?.line,
         
-        // YENİ: İlk Yarı Gol Tahmini
-        half_time_goals_prediction: result.halfTimeGoals?.prediction,
-        half_time_goals_confidence: result.halfTimeGoals?.confidence,
-        half_time_goals_reasoning: result.halfTimeGoals?.reasoning,
-        half_time_goals_line: result.halfTimeGoals?.line,
-        half_time_goals_expected: result.halfTimeGoals?.expectedGoals,
-        
-        // YENİ: İlk Yarı / Maç Sonucu Kombinasyonu
-        half_time_full_time_prediction: result.halfTimeFullTime?.prediction,
-        half_time_full_time_confidence: result.halfTimeFullTime?.confidence,
-        half_time_full_time_reasoning: result.halfTimeFullTime?.reasoning,
-        
-        // YENİ: Detaylı Maç Sonucu Oranları
-        match_result_odds_home: result.matchResultOdds?.home,
-        match_result_odds_draw: result.matchResultOdds?.draw,
-        match_result_odds_away: result.matchResultOdds?.away,
-        match_result_odds_reasoning: result.matchResultOdds?.reasoning,
+        // 🆕 EN İYİ 3 İDDA TAHMİNİ (JSON olarak kaydet)
+        // top3Predictions array'i agent_results içinde zaten var, ayrıca kaydetmeye gerek yok
         
         // Summary
         best_bet_market: result.bestBet.market,
