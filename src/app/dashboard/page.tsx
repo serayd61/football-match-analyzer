@@ -244,7 +244,7 @@ export default function DashboardPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('ai');
+  const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('agent'); // 🆕 Agent Analysis ana sistem
   
   // Auth check
   useEffect(() => {
