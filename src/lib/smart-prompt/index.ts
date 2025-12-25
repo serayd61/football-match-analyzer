@@ -566,6 +566,9 @@ export function combineAIandStats(
   const bttsSelection = btts.prediction === 'yes' ? 'Evet' : 'Hayır';
   const overUnderSelection = overUnder.prediction === 'over' ? 'Üst' : 'Alt';
   
+  // Best bet değişkenini tanımla
+  let bestBet: { market: string; selection: string; confidence: number; reason: string };
+  
   // 🎯 BİRLEŞİK ÖNERİ: Eğer hem BTTS hem Over/Under yüksek güvenliyse
   if (btts.confidence >= highConfidenceThreshold && overUnder.confidence >= highConfidenceThreshold) {
     const combinedConfidence = Math.round((btts.confidence + overUnder.confidence) / 2);
