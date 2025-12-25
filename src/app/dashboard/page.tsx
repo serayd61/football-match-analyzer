@@ -291,7 +291,9 @@ export default function DashboardPage() {
     setAnalysisError(null);
     
     try {
-      const endpoint = type === 'ai' ? '/api/v2/analyze' : '/api/v2/analyze-agents';
+      // 🆕 /api/v2/analyze artık Agent Analysis'i önce deniyor, başarısız olursa Smart Analysis'e geçiyor
+      // Bu yüzden her zaman /api/v2/analyze kullanıyoruz
+      const endpoint = '/api/v2/analyze';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -310,6 +312,12 @@ export default function DashboardPage() {
       
       if (data.success) {
         setAnalysis(data.analysis);
+        // 🆕 Response'dan gelen analysisType'a göre UI'ı güncelle
+        if (data.analysisType === 'agent') {
+          setAnalysisType('agent');
+        } else if (data.analysisType === 'smart') {
+          setAnalysisType('ai'); // Smart Analysis = AI Analysis UI'da
+        }
         // Update fixture hasAnalysis status
         setFixtures(prev => prev.map(f => 
           f.id === fixture.id ? { ...f, hasAnalysis: true } : f
