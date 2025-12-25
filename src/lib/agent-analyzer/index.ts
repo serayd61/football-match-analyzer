@@ -529,8 +529,10 @@ function extractTop3PredictionsFromAgents(
   
   // ========== ODDS AGENT TAHMİNLERİ ==========
   if (odds) {
-    // Over/Under
-    if (odds.recommendation && odds.confidence) {
+    // Over/Under - recommendation field'ı Over/Under için kullanılıyor
+    // Ama bazen maç sonucu değeri ("Away", "Home", "Draw") dönebiliyor
+    // Bu yüzden sadece "Over" veya "Under" değerlerini kabul et
+    if (odds.recommendation && (odds.recommendation === 'Over' || odds.recommendation === 'Under') && odds.confidence) {
       allPredictions.push({
         market: 'Over/Under 2.5',
         selection: odds.recommendation === 'Over' ? 'Üst' : 'Alt',
@@ -775,15 +777,51 @@ function extractTop3PredictionsFromAgents(
     return b.confidence - a.confidence;
   });
   
-  // En iyi 3'ü seç
-  const top3 = combinedPredictions.slice(0, 3).map((pred, index) => ({
-    rank: index + 1,
-    market: pred.market,
-    selection: pred.selection,
-    confidence: pred.confidence,
-    reasoning: pred.reasoning,
-    agentSupport: pred.agentSupport
-  }));
+  // 🆕 EN İYİ 3'Ü SEÇ - FARKLI MARKET'LERDEN
+  // Aynı market'ten birden fazla tahmin seçmemek için
+  const top3: Array<{
+    rank: number;
+    market: string;
+    selection: string;
+    confidence: number;
+    reasoning: string;
+    agentSupport: string[];
+  }> = [];
+  const usedMarkets = new Set<string>();
+  
+  for (const pred of combinedPredictions) {
+    // Eğer bu market'ten henüz tahmin seçilmediyse ekle
+    if (!usedMarkets.has(pred.market) && top3.length < 3) {
+      top3.push({
+        rank: top3.length + 1,
+        market: pred.market,
+        selection: pred.selection,
+        confidence: pred.confidence,
+        reasoning: pred.reasoning,
+        agentSupport: pred.agentSupport
+      });
+      usedMarkets.add(pred.market);
+    }
+  }
+  
+  // Eğer 3 farklı market bulunamadıysa, en yüksek confidence'lı olanları ekle
+  if (top3.length < 3) {
+    for (const pred of combinedPredictions) {
+      if (top3.length >= 3) break;
+      // Zaten eklenmiş mi kontrol et
+      const alreadyAdded = top3.some(t => t.market === pred.market && t.selection === pred.selection);
+      if (!alreadyAdded) {
+        top3.push({
+          rank: top3.length + 1,
+          market: pred.market,
+          selection: pred.selection,
+          confidence: pred.confidence,
+          reasoning: pred.reasoning,
+          agentSupport: pred.agentSupport
+        });
+      }
+    }
+  }
   
   return top3;
 }
