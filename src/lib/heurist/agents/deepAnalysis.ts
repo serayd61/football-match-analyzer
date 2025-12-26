@@ -307,10 +307,10 @@ function buildDeepAnalysisContext(matchData: MatchData): string {
 │
 │ 🏟️ EVDEKİ MAÇLAR (ÖNEMLİ!):
 │   • Ev Formu: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
-│   • Ev Gol Ortalaması: ${homeForm?.venueAvgScored || homeForm?.avgGoals || 'N/A'} attı, ${homeForm?.venueAvgConceded || homeForm?.avgConceded || 'N/A'} yedi
-│   • Ev Over 2.5: %${homeForm?.venueOver25Pct || homeForm?.over25Percentage || 'N/A'}
-│   • Ev BTTS: %${homeForm?.venueBttsPct || homeForm?.bttsPercentage || 'N/A'}
-│   • Ev Clean Sheet: %${homeForm?.cleanSheetPercentage || 'N/A'}
+│   • Ev Gol Ortalaması: ${detailedStats?.home?.homeAvgGoalsScored || detailedStats?.home?.avgGoalsScored || homeForm?.venueAvgScored || homeForm?.avgGoals || 'N/A'} attı, ${detailedStats?.home?.homeAvgGoalsConceded || detailedStats?.home?.avgGoalsConceded || homeForm?.venueAvgConceded || homeForm?.avgConceded || 'N/A'} yedi
+│   • Ev Over 2.5: %${homeForm?.venueOver25Pct || detailedStats?.home?.homeOver25Percentage || homeForm?.over25Percentage || 'N/A'}
+│   • Ev BTTS: %${homeForm?.venueBttsPct || detailedStats?.home?.homeBttsPercentage || homeForm?.bttsPercentage || 'N/A'}
+│   • Ev Clean Sheet: %${detailedStats?.home?.homeCleanSheets || homeForm?.cleanSheetPercentage || 'N/A'}
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -326,10 +326,10 @@ function buildDeepAnalysisContext(matchData: MatchData): string {
 │
 │ ✈️ DEPLASMANDAKİ MAÇLAR (ÖNEMLİ!):
 │   • Deplasman Formu: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
-│   • Deplasman Gol Ortalaması: ${awayForm?.venueAvgScored || awayForm?.avgGoals || 'N/A'} attı, ${awayForm?.venueAvgConceded || awayForm?.avgConceded || 'N/A'} yedi
-│   • Deplasman Over 2.5: %${awayForm?.venueOver25Pct || awayForm?.over25Percentage || 'N/A'}
-│   • Deplasman BTTS: %${awayForm?.venueBttsPct || awayForm?.bttsPercentage || 'N/A'}
-│   • Deplasman Clean Sheet: %${awayForm?.cleanSheetPercentage || 'N/A'}
+│   • Deplasman Gol Ortalaması: ${detailedStats?.away?.awayAvgGoalsScored || detailedStats?.away?.avgGoalsScored || awayForm?.venueAvgScored || awayForm?.avgGoals || 'N/A'} attı, ${detailedStats?.away?.awayAvgGoalsConceded || detailedStats?.away?.avgGoalsConceded || awayForm?.venueAvgConceded || awayForm?.avgConceded || 'N/A'} yedi
+│   • Deplasman Over 2.5: %${awayForm?.venueOver25Pct || detailedStats?.away?.awayOver25Percentage || awayForm?.over25Percentage || 'N/A'}
+│   • Deplasman BTTS: %${awayForm?.venueBttsPct || detailedStats?.away?.awayBttsPercentage || awayForm?.bttsPercentage || 'N/A'}
+│   • Deplasman Clean Sheet: %${detailedStats?.away?.awayCleanSheets || awayForm?.cleanSheetPercentage || 'N/A'}
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐

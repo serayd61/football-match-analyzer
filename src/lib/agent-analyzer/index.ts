@@ -195,9 +195,15 @@ function convertFullFixtureToMatchData(
         form: additionalData.homeTeamStats.recentForm || homeForm,
         avgGoalsScored: additionalData.homeTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(homeMatches, true).toFixed(2)),
         avgGoalsConceded: additionalData.homeTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(homeMatches, false).toFixed(2)),
+        // 🆕 Ev sahibi için evdeki maçları filtrele ve hesapla
+        homeAvgGoalsScored: parseFloat(calculateAvgGoals(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined), true).toFixed(2)),
+        homeAvgGoalsConceded: parseFloat(calculateAvgGoals(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined), false).toFixed(2)),
         bttsPercentage: additionalData.homeTeamStats.bttsPercentage || parseFloat(calculateBTTS(homeMatches).toFixed(0)),
         over25Percentage: additionalData.homeTeamStats.over25Percentage || parseFloat(calculateOver25(homeMatches).toFixed(0)),
+        homeOver25Percentage: parseFloat(calculateOver25(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
+        homeBttsPercentage: parseFloat(calculateBTTS(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
         cleanSheetPercentage: additionalData.homeTeamStats.cleanSheets || parseFloat(calculateCleanSheets(homeMatches).toFixed(0)),
+        homeCleanSheets: parseFloat(calculateCleanSheets(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
         matchCount: homeMatches.length,
         matchDetails: homeMatches.slice(0, 10).map((m: any) => ({
           opponent: m.opponent || 'Unknown',
@@ -213,9 +219,15 @@ function convertFullFixtureToMatchData(
         form: additionalData.awayTeamStats.recentForm || awayForm,
         avgGoalsScored: additionalData.awayTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(awayMatches, true).toFixed(2)),
         avgGoalsConceded: additionalData.awayTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(awayMatches, false).toFixed(2)),
+        // 🆕 Deplasman takımı için deplasmandaki maçları filtrele ve hesapla
+        awayAvgGoalsScored: parseFloat(calculateAvgGoals(awayMatches.filter((m: any) => m.isHome === false), true).toFixed(2)),
+        awayAvgGoalsConceded: parseFloat(calculateAvgGoals(awayMatches.filter((m: any) => m.isHome === false), false).toFixed(2)),
         bttsPercentage: additionalData.awayTeamStats.bttsPercentage || parseFloat(calculateBTTS(awayMatches).toFixed(0)),
         over25Percentage: additionalData.awayTeamStats.over25Percentage || parseFloat(calculateOver25(awayMatches).toFixed(0)),
+        awayOver25Percentage: parseFloat(calculateOver25(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
+        awayBttsPercentage: parseFloat(calculateBTTS(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
         cleanSheetPercentage: additionalData.awayTeamStats.cleanSheets || parseFloat(calculateCleanSheets(awayMatches).toFixed(0)),
+        awayCleanSheets: parseFloat(calculateCleanSheets(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
         matchCount: awayMatches.length,
         matchDetails: awayMatches.slice(0, 10).map((m: any) => ({
           opponent: m.opponent || 'Unknown',
