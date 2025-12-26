@@ -15,7 +15,8 @@ import {
   Trophy, Calendar, Search, RefreshCw, Zap, 
   TrendingUp, CheckCircle, AlertCircle, Clock,
   ChevronRight, Star, Target, Shield, User,
-  Settings, LogOut, Crown, BarChart3, Menu, X
+  Settings, LogOut, Crown, BarChart3, Menu, X,
+  ChevronDown, FileText
 } from 'lucide-react';
 
 // ============================================================================
@@ -66,6 +67,23 @@ interface SmartAnalysis {
   processingTime: number;
   modelsUsed: string[];
   analyzedAt: string;
+  // Agent analiz verileri (sadece Agent Analysis için)
+  agents?: {
+    stats?: any;
+    odds?: any;
+    deepAnalysis?: any;
+  };
+  top3Predictions?: Array<{
+    rank: number;
+    market: string;
+    selection: string;
+    confidence: number;
+    reasoning: string;
+    agentSupport: string[];
+  }>;
+  league?: string;
+  matchDate?: string;
+  dataQuality?: string;
 }
 
 // ============================================================================
@@ -218,6 +236,360 @@ const translations = {
     selectAnalysisType: 'Analysetyp auswählen'
   }
 };
+
+// ============================================================================
+// ANALYSIS DETAILS SECTION COMPONENT
+// ============================================================================
+
+function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { lang } = useLanguage();
+  const t = translations[lang as keyof typeof translations] || translations.en;
+
+  if (!analysis.agents) return null;
+
+  const { stats, odds, deepAnalysis } = analysis.agents;
+
+  return (
+    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <FileText className="w-5 h-5 text-blue-400" />
+          <h4 className="text-white font-bold">Analiz Detayı</h4>
+          <span className="text-xs text-gray-400">(Detaylı agent analizleri)</span>
+        </div>
+        {isOpen ? (
+          <ChevronDown className="w-5 h-5 text-gray-400" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="p-6 space-y-6 border-t border-white/10">
+          {/* STATS AGENT */}
+          {stats && (
+            <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 className="w-5 h-5 text-blue-400" />
+                <h5 className="text-white font-bold text-lg">📊 STATS AGENT (İstatistik Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Form, gol istatistikleri, xG (Expected Goals), timing patterns ve clean sheet analizi yapar.</p>
+                </div>
+
+                {stats.formAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Form Analizi:</p>
+                    <p className="text-gray-300">{stats.formAnalysis}</p>
+                  </div>
+                )}
+
+                {stats.xgAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">xG (Expected Goals) Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 space-y-1 text-xs">
+                      <p className="text-gray-300">Ev Sahibi xG: <span className="text-blue-400">{stats.xgAnalysis.homeXG}</span></p>
+                      <p className="text-gray-300">Deplasman xG: <span className="text-blue-400">{stats.xgAnalysis.awayXG}</span></p>
+                      <p className="text-gray-300">Toplam xG: <span className="text-blue-400">{stats.xgAnalysis.totalXG}</span></p>
+                      <p className="text-gray-300">Performans: <span className="text-blue-400">{stats.xgAnalysis.homePerformance} / {stats.xgAnalysis.awayPerformance}</span></p>
+                      {stats.xgAnalysis.regressionRisk && (
+                        <p className="text-yellow-400">⚠️ {stats.xgAnalysis.regressionRisk}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats.goalExpectancy && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Gol Beklentisi:</p>
+                    <p className="text-gray-300">Goal Expectancy: <span className="text-blue-400 font-bold">{stats.goalExpectancy}</span> gol</p>
+                    {stats._calculatedStats && (
+                      <div className="bg-black/20 rounded p-2 mt-1 text-xs space-y-1">
+                        <p className="text-gray-300">Son 5 Maç Over 2.5: <span className="text-blue-400">%{stats._calculatedStats.avgOver25}</span></p>
+                        <p className="text-gray-300">Son 5 Maç BTTS: <span className="text-blue-400">%{stats._calculatedStats.avgBtts}</span></p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {stats.timingPatterns && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Timing Patterns (Zamanlama Paternleri):</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Sahibi: İlk yarı %{stats.timingPatterns.homeFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.homeSecondHalfGoals}</p>
+                      <p className="text-gray-300">Deplasman: İlk yarı %{stats.timingPatterns.awayFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.awaySecondHalfGoals}</p>
+                      {stats.timingPatterns.htftPattern && (
+                        <p className="text-yellow-400 mt-1">📌 {stats.timingPatterns.htftPattern}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats.cleanSheetAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Clean Sheet Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.homeCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">Dep Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.awayCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">Clean Sheet %: Ev %{stats.cleanSheetAnalysis.homeCleanSheetPct}, Dep %{stats.cleanSheetAnalysis.awayCleanSheetPct}</p>
+                      {stats.cleanSheetAnalysis.defensiveRating && (
+                        <p className="text-yellow-400 mt-1">🛡️ {stats.cleanSheetAnalysis.defensiveRating}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-blue-500/30 pt-3 mt-3">
+                  <p className="text-blue-400 font-semibold mb-2">STATS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {stats.overUnder && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{stats.overUnderConfidence || stats.confidence} güven)</p>
+                        {stats.overUnderReasoning && <p className="text-gray-400 text-xs mt-1">{stats.overUnderReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.btts && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{stats.bttsConfidence || stats.confidence} güven)</p>
+                        {stats.bttsReasoning && <p className="text-gray-400 text-xs mt-1">{stats.bttsReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.matchResult && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-blue-400">{stats.matchResult === '1' ? 'Ev Sahibi' : stats.matchResult === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{stats.matchResultConfidence || stats.confidence} güven)</p>
+                        {stats.matchResultReasoning && <p className="text-gray-400 text-xs mt-1">{stats.matchResultReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.firstHalfPrediction && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">İlk Yarı: <span className="text-blue-400">{stats.firstHalfPrediction.goals}</span> (%{stats.firstHalfConfidence || stats.confidence} güven)</p>
+                        {stats.firstHalfPrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{stats.firstHalfPrediction.reasoning}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ODDS AGENT */}
+          {odds && (
+            <div className="bg-green-500/10 rounded-lg border border-green-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                <h5 className="text-white font-bold text-lg">💰 ODDS AGENT (Bahis Oranları Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Bahis oranlarını form verileriyle karşılaştırarak VALUE BET (değerli bahis) tespit eder.</p>
+                </div>
+
+                {odds._valueAnalysis && (
+                  <div>
+                    <p className="text-green-400 font-semibold mb-1">Oran Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Sahibi: Oran %{odds._valueAnalysis.homeImplied} implied, Form %{odds._valueAnalysis.homeFormProb} → Value: <span className={odds._valueAnalysis.homeValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.homeValue > 0 ? '+' : ''}{odds._valueAnalysis.homeValue}%</span></p>
+                      <p className="text-gray-300">Deplasman: Oran %{odds._valueAnalysis.awayImplied} implied, Form %{odds._valueAnalysis.awayFormProb} → Value: <span className={odds._valueAnalysis.awayValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.awayValue > 0 ? '+' : ''}{odds._valueAnalysis.awayValue}%</span></p>
+                      <p className="text-gray-300">Over 2.5: Oran %{odds._valueAnalysis.overImplied} implied, Form %{odds._valueAnalysis.overProb} → Value: <span className={odds._valueAnalysis.overValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.overValue > 0 ? '+' : ''}{odds._valueAnalysis.overValue}%</span></p>
+                      {odds._valueAnalysis.bestValue && (
+                        <p className="text-green-400 font-semibold mt-2">🏆 En İyi Value: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-green-500/30 pt-3 mt-3">
+                  <p className="text-green-400 font-semibold mb-2">ODDS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {odds.recommendation && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Ana Öneri: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{odds.confidence} güven)</p>
+                        {odds.recommendationReasoning && <p className="text-gray-400 text-xs mt-1">{odds.recommendationReasoning}</p>}
+                      </div>
+                    )}
+                    {odds.matchWinnerValue && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu Value: <span className="text-green-400">{odds.matchWinnerValue === 'home' ? 'Ev Sahibi' : odds.matchWinnerValue === 'away' ? 'Deplasman' : 'Beraberlik'}</span></p>
+                        {odds.matchWinnerReasoning && <p className="text-gray-400 text-xs mt-1">{odds.matchWinnerReasoning}</p>}
+                      </div>
+                    )}
+                    {odds.asianHandicap && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Asian Handicap: <span className="text-green-400">{odds.asianHandicap.recommendation}</span> (%{odds.asianHandicap.confidence} güven)</p>
+                        {odds.asianHandicap.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.asianHandicap.reasoning}</p>}
+                      </div>
+                    )}
+                    {odds.correctScore && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Correct Score: <span className="text-green-400">{odds.correctScore.mostLikely}</span> (%{odds.correctScore.confidence} güven)</p>
+                        <p className="text-gray-400 text-xs mt-1">2. Olası: {odds.correctScore.second}, 3. Olası: {odds.correctScore.third}</p>
+                      </div>
+                    )}
+                    {odds.cornersAnalysis && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Korner: <span className="text-green-400">{odds.cornersAnalysis.totalCorners}</span> (%{odds.cornersAnalysis.confidence} güven)</p>
+                        {odds.cornersAnalysis.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.cornersAnalysis.reasoning}</p>}
+                      </div>
+                    )}
+                    {odds.valueBets && odds.valueBets.length > 0 && (
+                      <div className="bg-green-500/20 rounded p-2">
+                        <p className="text-green-400 font-semibold">💰 Value Bets: {odds.valueBets.join(', ')}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DEEP ANALYSIS AGENT */}
+          {deepAnalysis && (
+            <div className="bg-purple-500/10 rounded-lg border border-purple-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-5 h-5 text-purple-400" />
+                <h5 className="text-white font-bold text-lg">🎯 DEEP ANALYSIS AGENT (Derin Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu, diziliş analizi.</p>
+                </div>
+
+                {deepAnalysis.matchAnalysis && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Maç Analizi:</p>
+                    <p className="text-gray-300">{deepAnalysis.matchAnalysis}</p>
+                  </div>
+                )}
+
+                {deepAnalysis.criticalFactors && deepAnalysis.criticalFactors.length > 0 && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Kritik Faktörler:</p>
+                    <ul className="bg-black/20 rounded p-2 space-y-1">
+                      {deepAnalysis.criticalFactors.map((factor: string, idx: number) => (
+                        <li key={idx} className="text-gray-300 text-xs">• {factor}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {deepAnalysis.probabilities && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Olasılıklar:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.homeWin}</span></p>
+                      <p className="text-gray-300">Beraberlik: <span className="text-purple-400">%{deepAnalysis.probabilities.draw}</span></p>
+                      <p className="text-gray-300">Deplasman Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.awayWin}</span></p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-purple-500/30 pt-3 mt-3">
+                  <p className="text-purple-400 font-semibold mb-2">DEEP ANALYSIS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {deepAnalysis.overUnder && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{deepAnalysis.overUnder.prediction}</span> (%{deepAnalysis.overUnder.confidence} güven)</p>
+                        {deepAnalysis.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.overUnder.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.btts && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{deepAnalysis.btts.prediction}</span> (%{deepAnalysis.btts.confidence} güven)</p>
+                        {deepAnalysis.btts.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.btts.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.matchResult && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-purple-400">{deepAnalysis.matchResult.prediction === '1' ? 'Ev Sahibi' : deepAnalysis.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{deepAnalysis.matchResult.confidence} güven)</p>
+                        {deepAnalysis.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.matchResult.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.scorePrediction && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Skor Tahmini: <span className="text-purple-400">{deepAnalysis.scorePrediction.score}</span></p>
+                        {deepAnalysis.scorePrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.scorePrediction.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.halfTimeGoals && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">İlk Yarı: <span className="text-purple-400">{deepAnalysis.halfTimeGoals.prediction} {deepAnalysis.halfTimeGoals.line}</span> (%{deepAnalysis.halfTimeGoals.confidence} güven)</p>
+                        {deepAnalysis.halfTimeGoals.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.halfTimeGoals.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.cornersAndCards && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Korner: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cornersLine}</span> (%{deepAnalysis.cornersAndCards.cornersConfidence} güven)</p>
+                        <p className="text-white font-semibold mt-1">Kart: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cardsLine}</span> (%{deepAnalysis.cornersAndCards.cardsConfidence} güven)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SPORTMONKS VERİ BAZLI MAÇ SONUCU */}
+          {analysis.matchResult && (
+            <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <h5 className="text-white font-bold text-lg">📊 SPORTMONKS VERİ BAZLI MAÇ SONUCU TAHMİNİ</h5>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-300 mb-2"><strong>Sistem:</strong> Puan bazlı hesaplama (Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı)</p>
+                <div className="bg-black/20 rounded p-2">
+                  <p className="text-white font-semibold">Tahmin: <span className="text-yellow-400">{analysis.matchResult.prediction === 'home' ? 'Ev Sahibi' : analysis.matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik'}</span> (%{analysis.matchResult.confidence} güven)</p>
+                  {analysis.matchResult.reasoning && (
+                    <div className="text-gray-400 text-xs mt-2 whitespace-pre-line">{analysis.matchResult.reasoning}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TOP 3 TAHMİN */}
+          {analysis.top3Predictions && analysis.top3Predictions.length > 0 && (
+            <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-5 h-5 text-cyan-400" />
+                <h5 className="text-white font-bold text-lg">🏆 TOP 3 TAHMİN (Agent'ların Birleşik Analizi)</h5>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-300 mb-3">Sistem, tüm agent'ların tahminlerini toplayıp en yüksek güven ve agent desteğine göre sıralar:</p>
+                {analysis.top3Predictions.map((pred, idx) => (
+                  <div key={idx} className="bg-black/20 rounded p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-cyan-400 font-bold">#{pred.rank} {pred.market}</span>
+                      <span className="text-white font-semibold">%{pred.confidence} güven</span>
+                    </div>
+                    <p className="text-white font-semibold mb-1">{pred.selection}</p>
+                    <p className="text-gray-400 text-xs mb-1">{pred.reasoning}</p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <span className="text-gray-500 text-xs">Agent Desteği:</span>
+                      {pred.agentSupport.map((agent, i) => (
+                        <span key={i} className="text-cyan-400 text-xs bg-cyan-500/10 px-2 py-0.5 rounded">{agent}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -951,6 +1323,11 @@ export default function DashboardPage() {
                     
                     <p className="mt-3 text-sm text-gray-400">{analysis.bestBet.reason}</p>
                   </div>
+                )}
+                
+                {/* Analiz Detayı - Sadece Agent Analysis için */}
+                {analysisType !== 'ai' && analysis.agents && (
+                  <AnalysisDetailsSection analysis={analysis} />
                 )}
                 
                 {/* Models Used */}
