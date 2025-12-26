@@ -793,8 +793,8 @@ export default function DashboardPage() {
                     <p className="mt-2 text-xs text-gray-400">{analysis.matchResult.reasoning}</p>
                   </div>
                   
-                  {/* Corners */}
-                  {analysis.corners && (
+                  {/* Corners - Sadece Agent Analysis için göster (AI Analysis'te korner verisi gelmiyor) */}
+                  {analysisType === 'agent' && analysis.corners && (
                   <div className={`rounded-xl border p-4 ${
                     analysis.corners.dataAvailable 
                       ? 'bg-white/5 border-white/10' 
