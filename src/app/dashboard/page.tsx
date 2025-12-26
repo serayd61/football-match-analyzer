@@ -615,7 +615,7 @@ export default function DashboardPage() {
                       analyzeMatch(selectedFixture, 'agent');
                     }}
                     className={`p-6 rounded-xl border-2 transition-all ${
-                      analysisType === 'agent'
+                      analysisType !== 'ai'
                         ? 'border-blue-500 bg-blue-500/20'
                         : 'border-white/10 hover:border-white/20'
                     }`}
@@ -677,7 +677,7 @@ export default function DashboardPage() {
                       }
                     }}
                     className={`flex-1 px-4 py-2 rounded-md transition-all ${
-                      analysisType === 'agent'
+                      analysisType !== 'ai'
                         ? 'bg-blue-500/20 text-white'
                         : 'text-gray-400 hover:text-white'
                     }`}
@@ -832,7 +832,7 @@ export default function DashboardPage() {
                 )}
                 
                 {/* Agent Özel Tahminler (Sadece Agent Analysis için - Standart tahminler yok) */}
-                {analysisType === 'agent' && (
+                {analysisType !== 'ai' && (
                   <div className="grid md:grid-cols-3 gap-4">
                     {/* İlk Yarı Gol Tahmini */}
                     {analysis.halfTimeGoals && (
