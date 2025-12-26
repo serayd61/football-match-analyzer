@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Önce Agent Analysis'i kontrol et (ana sistem)
     const { data: existingAgent } = await supabase
       .from('agent_analysis')
-      .select('agent_results, match_result_prediction, best_bet_market, best_bet_selection, best_bet_confidence, analyzed_at')
+      .select('agent_results, match_result_prediction, match_result_confidence, match_result_reasoning, best_bet_market, best_bet_selection, best_bet_confidence, best_bet_reason, agreement, risk_level, overall_confidence, data_quality, processing_time, analyzed_at')
       .eq('fixture_id', fixtureId)
       .maybeSingle();
     
@@ -103,6 +103,11 @@ export async function POST(request: NextRequest) {
       console.log(`📦 Returning cached Agent Analysis for fixture ${fixtureId}`);
       // Agent Analysis formatını Smart Analysis formatına dönüştür
       const agentData = existingAgent.agent_results;
+      
+      // Backward compatibility: Eski kayıtlarda agent_results içinde sadece agents olabilir
+      // Yeni kayıtlarda agent_results içinde agents, matchResult, top3Predictions, vb. var
+      const isNewFormat = agentData.agents !== undefined && agentData.matchResult !== undefined;
+      
       return NextResponse.json({
         success: true,
         analysis: {
@@ -111,20 +116,24 @@ export async function POST(request: NextRequest) {
           awayTeam,
           league,
           matchDate: existingAgent.analyzed_at || matchDate,
-          agents: agentData.agents || {},
-          matchResult: agentData.matchResult,
-          top3Predictions: agentData.top3Predictions || [],
+          agents: isNewFormat ? (agentData.agents || {}) : (agentData || {}), // Eski format: agent_results direkt agents
+          matchResult: isNewFormat ? agentData.matchResult : (existingAgent.match_result_prediction ? {
+            prediction: existingAgent.match_result_prediction,
+            confidence: existingAgent.match_result_confidence || 50,
+            reasoning: existingAgent.match_result_reasoning || ''
+          } : undefined),
+          top3Predictions: isNewFormat ? (agentData.top3Predictions || []) : [],
           bestBet: {
-            market: existingAgent.best_bet_market || agentData.bestBet?.market,
-            selection: existingAgent.best_bet_selection || agentData.bestBet?.selection,
-            confidence: existingAgent.best_bet_confidence || agentData.bestBet?.confidence,
-            reason: agentData.bestBet?.reason || ''
+            market: existingAgent.best_bet_market || agentData.bestBet?.market || 'Maç Sonucu',
+            selection: existingAgent.best_bet_selection || agentData.bestBet?.selection || 'Beraberlik',
+            confidence: existingAgent.best_bet_confidence || agentData.bestBet?.confidence || 50,
+            reason: existingAgent.best_bet_reason || agentData.bestBet?.reason || ''
           },
-          agreement: agentData.agreement || 0,
-          riskLevel: agentData.riskLevel || 'medium',
-          overallConfidence: agentData.overallConfidence || 60,
-          dataQuality: agentData.dataQuality || 'minimal',
-          processingTime: agentData.processingTime || 0,
+          agreement: isNewFormat ? (agentData.agreement || 0) : (existingAgent.agreement || 0),
+          riskLevel: isNewFormat ? (agentData.riskLevel || 'medium') : (existingAgent.risk_level || 'medium'),
+          overallConfidence: isNewFormat ? (agentData.overallConfidence || 60) : (existingAgent.overall_confidence || 60),
+          dataQuality: isNewFormat ? (agentData.dataQuality || 'minimal') : (existingAgent.data_quality || 'minimal'),
+          processingTime: isNewFormat ? (agentData.processingTime || 0) : (existingAgent.processing_time || 0),
           analyzedAt: existingAgent.analyzed_at || new Date().toISOString()
         },
         processingTime: Date.now() - startTime,

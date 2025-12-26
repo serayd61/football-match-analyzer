@@ -1167,8 +1167,19 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
         league: result.league,
         match_date: result.matchDate,
         
-        // Agent results (JSON)
-        agent_results: result.agents,
+        // Agent results (JSON) - Tüm analiz sonucunu kaydet (agents, matchResult, top3Predictions, vb.)
+        agent_results: {
+          agents: result.agents,
+          matchResult: result.matchResult,
+          top3Predictions: result.top3Predictions,
+          bestBet: result.bestBet,
+          agreement: result.agreement,
+          riskLevel: result.riskLevel,
+          overallConfidence: result.overallConfidence,
+          dataQuality: result.dataQuality,
+          processingTime: result.processingTime,
+          analyzedAt: result.analyzedAt
+        },
         
         // Predictions (Agent analizinde undefined - sadece özel tahminler var)
         btts_prediction: result.btts?.prediction || null,
