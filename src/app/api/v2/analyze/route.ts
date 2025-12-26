@@ -10,7 +10,7 @@ import { runAgentAnalysis, saveAgentAnalysis } from '@/lib/agent-analyzer';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120; // 120 saniye max (Agent Analysis daha uzun sürebilir)
+export const maxDuration = 60; // 60 saniye max (Vercel Pro plan limiti) - Agent Analysis timeout handling ile yönetiliyor
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -167,7 +167,23 @@ export async function POST(request: NextRequest) {
     if (homeTeamId && awayTeamId) {
       console.log('🤖 Attempting Agent Analysis (primary system)...');
       try {
-        const agentAnalysis = await runAgentAnalysis(fixtureId, homeTeamId, awayTeamId);
+        // Timeout handling: 50 saniye timeout (Vercel Pro plan limiti 60 saniye)
+        const AGENT_TIMEOUT_MS = 50000;
+        const agentAnalysisPromise = runAgentAnalysis(fixtureId, homeTeamId, awayTeamId);
+        const timeoutPromise = new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Agent Analysis timeout after 50 seconds')), AGENT_TIMEOUT_MS)
+        );
+        
+        let agentAnalysis;
+        try {
+          agentAnalysis = await Promise.race([agentAnalysisPromise, timeoutPromise]);
+        } catch (timeoutError: any) {
+          if (timeoutError?.message?.includes('timeout')) {
+            console.warn('⏱️ Agent Analysis timeout after 50s, falling back to Smart Analysis');
+          } else {
+            throw timeoutError; // Diğer hataları yukarı fırlat
+          }
+        }
         
         if (agentAnalysis) {
           console.log(`✅ Agent Analysis successful in ${Date.now() - startTime}ms`);
@@ -184,8 +200,8 @@ export async function POST(request: NextRequest) {
             analysisType: 'agent'
           });
         }
-      } catch (agentError) {
-        console.warn('⚠️ Agent Analysis failed, falling back to Smart Analysis:', agentError);
+      } catch (agentError: any) {
+        console.warn('⚠️ Agent Analysis failed, falling back to Smart Analysis:', agentError?.message || agentError);
         // Fallback'e geç
       }
     } else {
