@@ -26,10 +26,70 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, preferAnalysis } = body;
     
     if (!fixtureId || !homeTeam || !awayTeam) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    }
+    
+    // 🆕 Eğer preferAnalysis === 'smart' ise direkt Smart Analysis çalıştır (AI Analysis için)
+    if (preferAnalysis === 'smart') {
+      console.log(`📊 AI Analysis requested - Running Smart Analysis directly`);
+      
+      // Smart Analysis cache kontrolü
+      const { data: existingSmart } = await supabase
+        .from('smart_analysis')
+        .select('analysis')
+        .eq('fixture_id', fixtureId)
+        .maybeSingle();
+      
+      if (existingSmart?.analysis) {
+        console.log(`📦 Returning cached Smart Analysis for fixture ${fixtureId}`);
+        return NextResponse.json({
+          success: true,
+          analysis: existingSmart.analysis,
+          processingTime: Date.now() - startTime,
+          cached: true,
+          analysisType: 'smart'
+        });
+      }
+      
+      // Smart Analysis çalıştır
+      const smartAnalysis = await runSmartAnalysis({
+        fixtureId,
+        homeTeam,
+        awayTeam,
+        homeTeamId,
+        awayTeamId,
+        league,
+        matchDate
+      });
+      
+      if (!smartAnalysis) {
+        return NextResponse.json({ success: false, error: 'Smart Analysis failed' }, { status: 500 });
+      }
+      
+      // Smart Analysis'i kaydet
+      await saveSmartAnalysis({
+        fixtureId,
+        homeTeam,
+        awayTeam,
+        homeTeamId,
+        awayTeamId,
+        league,
+        matchDate
+      }, smartAnalysis);
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ Smart Analysis complete: ${homeTeam} vs ${awayTeam} in ${totalTime}ms`);
+      
+      return NextResponse.json({
+        success: true,
+        analysis: smartAnalysis,
+        processingTime: totalTime,
+        cached: false,
+        analysisType: 'smart'
+      });
     }
     
     // Önce Agent Analysis'i kontrol et (ana sistem)

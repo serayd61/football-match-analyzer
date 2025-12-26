@@ -291,8 +291,7 @@ export default function DashboardPage() {
     setAnalysisError(null);
     
     try {
-      // 🆕 /api/v2/analyze artık Agent Analysis'i önce deniyor, başarısız olursa Smart Analysis'e geçiyor
-      // Bu yüzden her zaman /api/v2/analyze kullanıyoruz
+      // 🆕 type === 'ai' ise Smart Analysis, type === 'agent' ise Agent Analysis
       const endpoint = '/api/v2/analyze';
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -304,7 +303,8 @@ export default function DashboardPage() {
           homeTeamId: fixture.homeTeamId,
           awayTeamId: fixture.awayTeamId,
           league: fixture.league,
-          matchDate: fixture.date.split('T')[0]
+          matchDate: fixture.date.split('T')[0],
+          preferAnalysis: type === 'ai' ? 'smart' : 'agent' // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
         })
       });
       
