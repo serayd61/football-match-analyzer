@@ -100,12 +100,30 @@ function convertFullFixtureToMatchData(
   const homeForm = fullData.homeTeam.form || 'DDDDD';
   const awayForm = fullData.awayTeam.form || 'DDDDD';
   
-  // Home form details
-  const homeMatches = fullData.homeTeam.recentMatches || [];
+  // Home form details - recentMatches'i düzelt (isHome field'ı ekle)
+  const homeMatches = (fullData.homeTeam.recentMatches || []).map((m: any) => {
+    const isHome = m.participants?.find((p: any) => p.id === fullData.homeTeam.id)?.meta?.location === 'home';
+    return {
+      ...m,
+      isHome: isHome !== undefined ? isHome : true, // Ev sahibi takım için varsayılan true
+      score: m.scores ? `${m.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0}-${m.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0}` : (m.score || '0-0'),
+      opponent: m.participants?.find((p: any) => p.id !== fullData.homeTeam.id)?.name || 'Unknown',
+      date: m.starting_at || m.date || ''
+    };
+  });
   const homePoints = fullData.homeTeam.formPoints || 5;
   
-  // Away form details  
-  const awayMatches = fullData.awayTeam.recentMatches || [];
+  // Away form details - recentMatches'i düzelt (isHome field'ı ekle)
+  const awayMatches = (fullData.awayTeam.recentMatches || []).map((m: any) => {
+    const isHome = m.participants?.find((p: any) => p.id === fullData.awayTeam.id)?.meta?.location === 'home';
+    return {
+      ...m,
+      isHome: isHome !== undefined ? isHome : false, // Deplasman takımı için varsayılan false
+      score: m.scores ? `${m.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0}-${m.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0}` : (m.score || '0-0'),
+      opponent: m.participants?.find((p: any) => p.id !== fullData.awayTeam.id)?.name || 'Unknown',
+      date: m.starting_at || m.date || ''
+    };
+  });
   const awayPoints = fullData.awayTeam.formPoints || 5;
   
   // H2H data
@@ -195,9 +213,9 @@ function convertFullFixtureToMatchData(
         form: additionalData.homeTeamStats.recentForm || homeForm,
         avgGoalsScored: additionalData.homeTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(homeMatches, true).toFixed(2)),
         avgGoalsConceded: additionalData.homeTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(homeMatches, false).toFixed(2)),
-        // 🆕 Ev sahibi için evdeki maçları filtrele ve hesapla
-        homeAvgGoalsScored: parseFloat(calculateAvgGoals(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined), true).toFixed(2)),
-        homeAvgGoalsConceded: parseFloat(calculateAvgGoals(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined), false).toFixed(2)),
+        // 🆕 Ev sahibi için evdeki maçları filtrele ve hesapla - homeTeamStats'tan direkt al veya hesapla
+        homeAvgGoalsScored: additionalData.homeTeamStats?.homeAvgGoalsScored || parseFloat(calculateAvgGoalsForTeam(homeMatches.filter((m: any) => m.isHome === true), fullData.homeTeam.id, true).toFixed(2)) || additionalData.homeTeamStats?.avgGoalsScored || 1.2,
+        homeAvgGoalsConceded: additionalData.homeTeamStats?.homeAvgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(homeMatches.filter((m: any) => m.isHome === true), fullData.homeTeam.id, false).toFixed(2)) || additionalData.homeTeamStats?.avgGoalsConceded || 1.0,
         bttsPercentage: additionalData.homeTeamStats.bttsPercentage || parseFloat(calculateBTTS(homeMatches).toFixed(0)),
         over25Percentage: additionalData.homeTeamStats.over25Percentage || parseFloat(calculateOver25(homeMatches).toFixed(0)),
         homeOver25Percentage: parseFloat(calculateOver25(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
@@ -219,9 +237,9 @@ function convertFullFixtureToMatchData(
         form: additionalData.awayTeamStats.recentForm || awayForm,
         avgGoalsScored: additionalData.awayTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(awayMatches, true).toFixed(2)),
         avgGoalsConceded: additionalData.awayTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(awayMatches, false).toFixed(2)),
-        // 🆕 Deplasman takımı için deplasmandaki maçları filtrele ve hesapla
-        awayAvgGoalsScored: parseFloat(calculateAvgGoals(awayMatches.filter((m: any) => m.isHome === false), true).toFixed(2)),
-        awayAvgGoalsConceded: parseFloat(calculateAvgGoals(awayMatches.filter((m: any) => m.isHome === false), false).toFixed(2)),
+        // 🆕 Deplasman takımı için deplasmandaki maçları filtrele ve hesapla - awayTeamStats'tan direkt al veya hesapla
+        awayAvgGoalsScored: additionalData.awayTeamStats?.awayAvgGoalsScored || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, true).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsScored || 1.1,
+        awayAvgGoalsConceded: additionalData.awayTeamStats?.awayAvgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, false).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsConceded || 1.1,
         bttsPercentage: additionalData.awayTeamStats.bttsPercentage || parseFloat(calculateBTTS(awayMatches).toFixed(0)),
         over25Percentage: additionalData.awayTeamStats.over25Percentage || parseFloat(calculateOver25(awayMatches).toFixed(0)),
         awayOver25Percentage: parseFloat(calculateOver25(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
@@ -271,6 +289,43 @@ function calculateAvgGoals(matches: any[], forGoals: boolean): number {
   });
   
   return total / matches.length;
+}
+
+// 🆕 Takım bazlı gol ortalaması hesapla (ev/deplasman ayrımı ile)
+function calculateAvgGoalsForTeam(matches: any[], teamId: number, forGoalsScored: boolean): number {
+  if (!matches || matches.length === 0) return forGoalsScored ? 1.2 : 1.0;
+  
+  let total = 0;
+  let validMatches = 0;
+  
+  matches.forEach((m: any) => {
+    // Score'u parse et
+    let homeScore = 0;
+    let awayScore = 0;
+    
+    if (m.scores) {
+      // Sportmonks format
+      homeScore = m.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0;
+      awayScore = m.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
+    } else if (m.score) {
+      // String format "1-0"
+      const [home, away] = (m.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      homeScore = home;
+      awayScore = away;
+    }
+    
+    // Takımın ev sahibi mi deplasman mı olduğunu bul
+    const isHome = m.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+    const teamScore = isHome ? homeScore : awayScore;
+    const opponentScore = isHome ? awayScore : homeScore;
+    
+    if (teamScore >= 0 && opponentScore >= 0) {
+      total += forGoalsScored ? teamScore : opponentScore;
+      validMatches++;
+    }
+  });
+  
+  return validMatches > 0 ? total / validMatches : (forGoalsScored ? 1.2 : 1.0);
 }
 
 function calculateOver25(matches: any[]): number {
