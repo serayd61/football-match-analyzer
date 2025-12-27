@@ -223,6 +223,9 @@ function convertFullFixtureToMatchData(
         homeBttsPercentage: parseFloat(calculateBTTS(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
         cleanSheetPercentage: additionalData.homeTeamStats.cleanSheets || parseFloat(calculateCleanSheets(homeMatches).toFixed(0)),
         homeCleanSheets: parseFloat(calculateCleanSheets(homeMatches.filter((m: any) => m.isHome === true || m.isHome === undefined)).toFixed(0)),
+        // 🆕 Timing Patterns
+        firstHalfGoalsPct: calculateFirstHalfGoalsPct(homeMatches, fullData.homeTeam.id),
+        lateGoalsPct: calculateLateGoalsPct(homeMatches, fullData.homeTeam.id),
         matchCount: homeMatches.length,
         matchDetails: homeMatches.slice(0, 10).map((m: any) => ({
           opponent: m.opponent || 'Unknown',
@@ -247,6 +250,9 @@ function convertFullFixtureToMatchData(
         awayBttsPercentage: parseFloat(calculateBTTS(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
         cleanSheetPercentage: additionalData.awayTeamStats.cleanSheets || parseFloat(calculateCleanSheets(awayMatches).toFixed(0)),
         awayCleanSheets: parseFloat(calculateCleanSheets(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
+        // 🆕 Timing Patterns
+        firstHalfGoalsPct: calculateFirstHalfGoalsPct(awayMatches, fullData.awayTeam.id),
+        lateGoalsPct: calculateLateGoalsPct(awayMatches, fullData.awayTeam.id),
         matchCount: awayMatches.length,
         matchDetails: awayMatches.slice(0, 10).map((m: any) => ({
           opponent: m.opponent || 'Unknown',
@@ -379,6 +385,114 @@ function getResult(score: string, isHome: boolean): 'W' | 'D' | 'L' {
     if (away < home) return 'L';
     return 'D';
   }
+}
+
+// 🆕 İlk yarı gol yüzdesi hesapla
+function calculateFirstHalfGoalsPct(matches: any[], teamId: number): number {
+  if (!matches || matches.length === 0) return 45; // Varsayılan %45
+  
+  let firstHalfGoals = 0;
+  let totalGoals = 0;
+  let validMatches = 0;
+  
+  matches.slice(0, 10).forEach((m: any) => {
+    // HT score varsa kullan
+    let htHomeScore = 0;
+    let htAwayScore = 0;
+    let ftHomeScore = 0;
+    let ftAwayScore = 0;
+    
+    if (m.scores) {
+      // Sportmonks format
+      const htScore = m.scores.find((s: any) => s.score?.description === 'HT' || s.score?.description === 'CURRENT');
+      const ftScore = m.scores.find((s: any) => s.score?.description === 'FT' || s.score?.description === 'CURRENT');
+      
+      if (htScore) {
+        htHomeScore = htScore.score?.participant === 'home' ? htScore.score.goals : 0;
+        htAwayScore = htScore.score?.participant === 'away' ? htScore.score.goals : 0;
+      }
+      
+      if (ftScore) {
+        ftHomeScore = ftScore.score?.participant === 'home' ? ftScore.score.goals : 0;
+        ftAwayScore = ftScore.score?.participant === 'away' ? ftScore.score.goals : 0;
+      }
+    } else if (m.htScore) {
+      // HT score string format
+      const [htHome, htAway] = (m.htScore || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      htHomeScore = htHome;
+      htAwayScore = htAway;
+      
+      const [ftHome, ftAway] = (m.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      ftHomeScore = ftHome;
+      ftAwayScore = ftAway;
+    } else {
+      // HT score yoksa, maç skorundan tahmin et (ortalama %45)
+      const [ftHome, ftAway] = (m.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      ftHomeScore = ftHome;
+      ftAwayScore = ftAway;
+      // HT score yoksa varsayılan %45 kullan
+      return 45;
+    }
+    
+    const isHome = m.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+    const teamHTGoals = isHome ? htHomeScore : htAwayScore;
+    const teamFTGoals = isHome ? ftHomeScore : ftAwayScore;
+    const teamTotalGoals = teamFTGoals;
+    
+    if (teamTotalGoals > 0) {
+      firstHalfGoals += teamHTGoals;
+      totalGoals += teamTotalGoals;
+      validMatches++;
+    }
+  });
+  
+  if (totalGoals === 0 || validMatches === 0) return 45;
+  return Math.round((firstHalfGoals / totalGoals) * 100);
+}
+
+// 🆕 Son 15 dakika gol yüzdesi hesapla
+function calculateLateGoalsPct(matches: any[], teamId: number): number {
+  if (!matches || matches.length === 0) return 20; // Varsayılan %20
+  
+  // Sportmonks'tan detaylı zaman verisi yoksa, genel istatistiklere göre tahmin et
+  // Son 15 dakika genelde toplam gollerin %15-25'i arasında
+  // Bu veri yoksa, maç başına gol ortalamasına göre tahmin et
+  let totalGoals = 0;
+  let validMatches = 0;
+  
+  matches.slice(0, 10).forEach((m: any) => {
+    let ftHomeScore = 0;
+    let ftAwayScore = 0;
+    
+    if (m.scores) {
+      const ftScore = m.scores.find((s: any) => s.score?.description === 'FT' || s.score?.description === 'CURRENT');
+      if (ftScore) {
+        ftHomeScore = ftScore.score?.participant === 'home' ? ftScore.score.goals : 0;
+        ftAwayScore = ftScore.score?.participant === 'away' ? ftScore.score.goals : 0;
+      }
+    } else if (m.score) {
+      const [ftHome, ftAway] = (m.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      ftHomeScore = ftHome;
+      ftAwayScore = ftAway;
+    }
+    
+    const isHome = m.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+    const teamGoals = isHome ? ftHomeScore : ftAwayScore;
+    
+    if (teamGoals >= 0) {
+      totalGoals += teamGoals;
+      validMatches++;
+    }
+  });
+  
+  if (totalGoals === 0 || validMatches === 0) return 20;
+  
+  // Ortalama gol başına son 15 dakika gol oranı (genelde %15-25)
+  // Daha fazla gol atan takımlar genelde daha fazla geç gol atar
+  const avgGoalsPerMatch = totalGoals / validMatches;
+  const lateGoalsPct = Math.min(30, Math.max(10, avgGoalsPerMatch * 8)); // Basit bir formül
+  
+  return Math.round(lateGoalsPct);
 }
 
 // ============================================================================

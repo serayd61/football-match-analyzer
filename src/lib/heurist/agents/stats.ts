@@ -431,18 +431,56 @@ function analyzeCleanSheets(matchData: MatchData, language: 'tr' | 'en' | 'de'):
   const homeMatches = homeForm?.matches || [];
   const awayMatches = awayForm?.matches || [];
   
+  // Ev sahibi için: son maçlardan geriye doğru, gol yemediği maçları say
   for (const match of homeMatches) {
-    const score = match.score || '0-0';
-    const goalsConceded = parseInt(score.split('-')[1]) || 0;
-    if (goalsConceded === 0) homeCleanSheetStreak++;
-    else break;
+    let goalsConceded = 0;
+    
+    if (match.scores) {
+      // Sportmonks format
+      const teamScore = match.scores.find((s: any) => 
+        s.score?.participant === 'home' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'home')?.id
+      );
+      const opponentScore = match.scores.find((s: any) => 
+        s.score?.participant === 'away' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'away')?.id
+      );
+      goalsConceded = opponentScore?.score?.goals || 0;
+    } else if (match.score) {
+      // String format
+      const [home, away] = (match.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      goalsConceded = away; // Ev sahibi için deplasman takımının golleri = yediği goller
+    }
+    
+    if (goalsConceded === 0) {
+      homeCleanSheetStreak++;
+    } else {
+      break;
+    }
   }
   
+  // Deplasman için: son maçlardan geriye doğru, gol yemediği maçları say
   for (const match of awayMatches) {
-    const score = match.score || '0-0';
-    const goalsScored = parseInt(score.split('-')[0]) || 0;
-    if (goalsScored === 0) awayCleanSheetStreak++;
-    else break;
+    let goalsConceded = 0;
+    
+    if (match.scores) {
+      // Sportmonks format
+      const teamScore = match.scores.find((s: any) => 
+        s.score?.participant === 'away' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'away')?.id
+      );
+      const opponentScore = match.scores.find((s: any) => 
+        s.score?.participant === 'home' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'home')?.id
+      );
+      goalsConceded = opponentScore?.score?.goals || 0;
+    } else if (match.score) {
+      // String format
+      const [home, away] = (match.score || '0-0').split('-').map((s: string) => parseInt(s) || 0);
+      goalsConceded = home; // Deplasman için ev sahibi takımının golleri = yediği goller
+    }
+    
+    if (goalsConceded === 0) {
+      awayCleanSheetStreak++;
+    } else {
+      break;
+    }
   }
   
   // Failed to score
