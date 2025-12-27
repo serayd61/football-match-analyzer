@@ -77,49 +77,97 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Starting settle process...');
     
-    // Get unsettled analyses where match date is in the past
-    const { data: pendingAnalyses, error } = await supabase
+    // Get unsettled smart_analysis where match date is in the past
+    const { data: pendingSmartAnalyses, error: smartError } = await supabase
       .from('smart_analysis')
       .select('*')
       .eq('is_settled', false)
       .lt('match_date', new Date().toISOString().split('T')[0]);
     
-    if (error) {
-      console.error('Error fetching pending analyses:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (smartError) {
+      console.error('Error fetching pending smart analyses:', smartError);
     }
     
-    console.log(`Found ${pendingAnalyses?.length || 0} pending analyses to settle`);
+    // Get unsettled agent_analysis where match date is in the past
+    const { data: pendingAgentAnalyses, error: agentError } = await supabase
+      .from('agent_analysis')
+      .select('*')
+      .eq('is_settled', false)
+      .lt('match_date', new Date().toISOString().split('T')[0]);
+    
+    if (agentError) {
+      console.error('Error fetching pending agent analyses:', agentError);
+    }
+    
+    const allPending = [
+      ...(pendingSmartAnalyses || []).map(a => ({ ...a, type: 'smart' })),
+      ...(pendingAgentAnalyses || []).map(a => ({ ...a, type: 'agent' }))
+    ];
+    
+    console.log(`Found ${allPending.length} pending analyses to settle (${pendingSmartAnalyses?.length || 0} smart, ${pendingAgentAnalyses?.length || 0} agent)`);
     
     let updated = 0;
     let errors = 0;
+    const processedFixtures = new Set<number>();
     
-    for (const analysis of pendingAnalyses || []) {
+    for (const analysis of allPending) {
+      // Skip if we already processed this fixture
+      if (processedFixtures.has(analysis.fixture_id)) {
+        continue;
+      }
+      
       try {
         const result = await fetchFixtureResult(analysis.fixture_id);
         
         if (!result) {
-          console.log(`⏳ No result yet for ${analysis.home_team} vs ${analysis.away_team}`);
+          console.log(`⏳ No result yet for fixture ${analysis.fixture_id}`);
           continue;
         }
         
-        // Update analysis with actual results
-        const { error: updateError } = await supabase
-          .from('smart_analysis')
-          .update({
-            is_settled: true,
-            actual_btts: result.btts,
-            actual_total_goals: result.totalGoals,
-            actual_match_result: result.matchResult
-          })
-          .eq('fixture_id', analysis.fixture_id);
+        processedFixtures.add(analysis.fixture_id);
         
-        if (updateError) {
-          console.error(`Error updating ${analysis.fixture_id}:`, updateError);
-          errors++;
-        } else {
-          console.log(`✅ Settled: ${analysis.home_team} vs ${analysis.away_team} (${result.homeScore}-${result.awayScore})`);
-          updated++;
+        // Update smart_analysis if exists
+        if (analysis.type === 'smart' || pendingSmartAnalyses?.some(a => a.fixture_id === analysis.fixture_id)) {
+          const { error: updateError } = await supabase
+            .from('smart_analysis')
+            .update({
+              is_settled: true,
+              actual_btts: result.btts ? 'yes' : 'no',
+              actual_total_goals: result.totalGoals,
+              actual_match_result: result.matchResult === 'home' ? '1' : result.matchResult === 'away' ? '2' : 'X'
+            })
+            .eq('fixture_id', analysis.fixture_id)
+            .eq('is_settled', false);
+          
+          if (updateError) {
+            console.error(`Error updating smart_analysis ${analysis.fixture_id}:`, updateError);
+            errors++;
+          } else {
+            console.log(`✅ Settled smart_analysis: ${analysis.fixture_id} (${result.homeScore}-${result.awayScore})`);
+            updated++;
+          }
+        }
+        
+        // Update agent_analysis if exists
+        if (analysis.type === 'agent' || pendingAgentAnalyses?.some(a => a.fixture_id === analysis.fixture_id)) {
+          const { error: updateError } = await supabase
+            .from('agent_analysis')
+            .update({
+              is_settled: true,
+              actual_btts: result.btts ? 'yes' : 'no',
+              actual_total_goals: result.totalGoals,
+              actual_match_result: result.matchResult === 'home' ? '1' : result.matchResult === 'away' ? '2' : 'X'
+            })
+            .eq('fixture_id', analysis.fixture_id)
+            .eq('is_settled', false);
+          
+          if (updateError) {
+            console.error(`Error updating agent_analysis ${analysis.fixture_id}:`, updateError);
+            errors++;
+          } else {
+            console.log(`✅ Settled agent_analysis: ${analysis.fixture_id} (${result.homeScore}-${result.awayScore})`);
+            updated++;
+          }
         }
         
         // Small delay to avoid rate limiting
@@ -136,7 +184,9 @@ export async function POST(request: NextRequest) {
       success: true,
       updated,
       errors,
-      total: pendingAnalyses?.length || 0
+      total: allPending.length,
+      smart: pendingSmartAnalyses?.length || 0,
+      agent: pendingAgentAnalyses?.length || 0
     });
     
   } catch (error) {

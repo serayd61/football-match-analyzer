@@ -21,20 +21,36 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
     
     // Get all smart analyses
-    const { data: analyses, error } = await supabase
+    const { data: smartAnalyses, error: smartError } = await supabase
       .from('smart_analysis')
       .select('*')
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('Error fetching analyses:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (smartError) {
+      console.error('Error fetching smart analyses:', smartError);
     }
     
-    const totalAnalyses = analyses?.length || 0;
-    const settledAnalyses = analyses?.filter(a => a.is_settled) || [];
-    const pendingAnalyses = analyses?.filter(a => !a.is_settled) || [];
+    // Get all agent analyses
+    const { data: agentAnalyses, error: agentError } = await supabase
+      .from('agent_analysis')
+      .select('*')
+      .gte('analyzed_at', startDate.toISOString())
+      .order('analyzed_at', { ascending: false });
+    
+    if (agentError) {
+      console.error('Error fetching agent analyses:', agentError);
+    }
+    
+    // Combine both types of analyses
+    const analyses = [
+      ...(smartAnalyses || []).map(a => ({ ...a, type: 'smart' })),
+      ...(agentAnalyses || []).map(a => ({ ...a, type: 'agent' }))
+    ];
+    
+    const totalAnalyses = analyses.length;
+    const settledAnalyses = analyses.filter(a => a.is_settled) || [];
+    const pendingAnalyses = analyses.filter(a => !a.is_settled) || [];
     
     // Calculate accuracy for settled predictions
     let bttsCorrect = 0;
@@ -73,38 +89,49 @@ export async function GET(request: NextRequest) {
       // Only count settled for accuracy
       if (analysis.is_settled) {
         // BTTS
-        if (analysis.btts_prediction && analysis.actual_btts !== null) {
+        const bttsPred = analysis.btts_prediction;
+        const actualBtts = analysis.actual_btts;
+        if (bttsPred && actualBtts !== null && actualBtts !== undefined) {
           bttsTotal++;
-          const predictedBtts = analysis.btts_prediction === 'yes';
-          const actualBtts = analysis.actual_btts;
-          if (predictedBtts === actualBtts) bttsCorrect++;
+          const predictedBtts = bttsPred === 'yes' || bttsPred === 'Yes';
+          const actualBttsBool = actualBtts === 'yes' || actualBtts === 'Yes' || actualBtts === true;
+          if (predictedBtts === actualBttsBool) bttsCorrect++;
           
           // Confidence tracking
           const conf = analysis.btts_confidence || 50;
           if (conf > 70) {
             confidenceDistribution.high.count++;
-            if (predictedBtts === actualBtts) confidenceDistribution.high.correct++;
+            if (predictedBtts === actualBttsBool) confidenceDistribution.high.correct++;
           } else if (conf >= 60) {
             confidenceDistribution.medium.count++;
-            if (predictedBtts === actualBtts) confidenceDistribution.medium.correct++;
+            if (predictedBtts === actualBttsBool) confidenceDistribution.medium.correct++;
           } else {
             confidenceDistribution.low.count++;
-            if (predictedBtts === actualBtts) confidenceDistribution.low.correct++;
+            if (predictedBtts === actualBttsBool) confidenceDistribution.low.correct++;
           }
         }
         
         // Over/Under
-        if (analysis.over_under_prediction && analysis.actual_total_goals !== null) {
+        const ouPred = analysis.over_under_prediction;
+        const actualGoals = analysis.actual_total_goals;
+        if (ouPred && actualGoals !== null && actualGoals !== undefined) {
           ouTotal++;
-          const predictedOver = analysis.over_under_prediction === 'over';
-          const actualOver = analysis.actual_total_goals > 2.5;
+          const predictedOver = ouPred.toLowerCase() === 'over';
+          const actualOver = actualGoals > 2.5;
           if (predictedOver === actualOver) ouCorrect++;
         }
         
         // Match Result
-        if (analysis.match_result_prediction && analysis.actual_match_result) {
+        const mrPred = analysis.match_result_prediction;
+        const actualMr = analysis.actual_match_result;
+        if (mrPred && actualMr) {
           mrTotal++;
-          if (analysis.match_result_prediction === analysis.actual_match_result) mrCorrect++;
+          // Normalize match result format (1/X/2 vs home/draw/away)
+          const normalizedPred = mrPred === '1' || mrPred === 'home' ? '1' : 
+                                 mrPred === '2' || mrPred === 'away' ? '2' : 'X';
+          const normalizedActual = actualMr === '1' || actualMr === 'home' ? '1' : 
+                                   actualMr === '2' || actualMr === 'away' ? '2' : 'X';
+          if (normalizedPred === normalizedActual) mrCorrect++;
         }
       }
     }
@@ -124,15 +151,15 @@ export async function GET(request: NextRequest) {
       homeTeam: a.home_team,
       awayTeam: a.away_team,
       league: a.league,
-      matchDate: a.match_date,
+      matchDate: a.match_date || a.matchDate,
       btts: { prediction: a.btts_prediction, confidence: a.btts_confidence },
       overUnder: { prediction: a.over_under_prediction, confidence: a.over_under_confidence },
       matchResult: { prediction: a.match_result_prediction, confidence: a.match_result_confidence },
-      riskLevel: a.risk_level,
-      overallConfidence: a.overall_confidence,
-      processingTime: a.processing_time,
+      riskLevel: a.risk_level || a.riskLevel,
+      overallConfidence: a.overall_confidence || a.overallConfidence,
+      processingTime: a.processing_time || a.processingTime,
       isSettled: a.is_settled,
-      createdAt: a.created_at
+      createdAt: a.created_at || a.analyzed_at
     }));
     
     return NextResponse.json({
