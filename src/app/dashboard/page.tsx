@@ -813,6 +813,14 @@ export default function DashboardPage() {
                         <Crown className="w-4 h-4 text-yellow-400" />
                         {t.admin}
                       </Link>
+                      <Link
+                        href="/odds-analysis"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <TrendingUp className="w-4 h-4 text-green-400" />
+                        Odds Analiz Kayıtları
+                      </Link>
                     </div>
                     
                     <div className="border-t border-white/10 py-2">
