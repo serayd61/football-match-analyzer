@@ -821,6 +821,14 @@ export default function DashboardPage() {
                         <TrendingUp className="w-4 h-4 text-green-400" />
                         Odds Analiz Kayıtları
                       </Link>
+                      <Link
+                        href="/odds-patterns"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <BarChart3 className="w-4 h-4 text-blue-400" />
+                        Pattern Analizi
+                      </Link>
                     </div>
                     
                     <div className="border-t border-white/10 py-2">
