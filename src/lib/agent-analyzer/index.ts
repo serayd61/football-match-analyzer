@@ -9,6 +9,7 @@ import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { MatchData } from '../heurist/types';
+import { saveOddsAnalysisLog } from '../odds-logger';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -1117,6 +1118,112 @@ export async function runAgentAnalysis(
     if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
     if (oddsResult) console.log(`   Odds: ${oddsResult.matchWinnerValue || 'N/A'}`);
     if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'}`);
+    
+    // 🆕 Step 4.5: Save Odds Analysis Log
+    if (oddsResult && oddsResult._valueAnalysis) {
+      console.log('💾 Saving odds analysis log...');
+      try {
+        await saveOddsAnalysisLog({
+          fixtureId,
+          homeTeam: fullData.homeTeam.name,
+          awayTeam: fullData.awayTeam.name,
+          league: fullData.league.name,
+          matchDate: new Date().toISOString(),
+          
+          // Odds
+          homeOdds: matchData.odds?.matchWinner?.home || 2.0,
+          drawOdds: matchData.odds?.matchWinner?.draw || 3.5,
+          awayOdds: matchData.odds?.matchWinner?.away || 3.5,
+          over25Odds: matchData.odds?.overUnder?.['2.5']?.over || 1.9,
+          under25Odds: matchData.odds?.overUnder?.['2.5']?.under || 1.9,
+          bttsYesOdds: matchData.odds?.btts?.yes || 1.8,
+          bttsNoOdds: matchData.odds?.btts?.no || 1.9,
+          
+          // Implied Probabilities
+          homeImpliedProb: oddsResult._valueAnalysis.homeImplied,
+          drawImpliedProb: Math.round((1 / (matchData.odds?.matchWinner?.draw || 3.5)) * 100),
+          awayImpliedProb: oddsResult._valueAnalysis.awayImplied,
+          over25ImpliedProb: oddsResult._valueAnalysis.overImplied,
+          under25ImpliedProb: Math.round((1 / (matchData.odds?.overUnder?.['2.5']?.under || 1.9)) * 100),
+          bttsYesImpliedProb: oddsResult._valueAnalysis.bttsYesImplied,
+          bttsNoImpliedProb: Math.round((1 / (matchData.odds?.btts?.no || 1.9)) * 100),
+          
+          // Form-Based Probabilities
+          homeFormProb: oddsResult._valueAnalysis.homeFormProb,
+          awayFormProb: oddsResult._valueAnalysis.awayFormProb,
+          drawFormProb: 100 - oddsResult._valueAnalysis.homeFormProb - oddsResult._valueAnalysis.awayFormProb,
+          over25FormProb: oddsResult._valueAnalysis.overProb,
+          under25FormProb: 100 - oddsResult._valueAnalysis.overProb,
+          bttsYesFormProb: oddsResult._valueAnalysis.bttsProb,
+          bttsNoFormProb: 100 - oddsResult._valueAnalysis.bttsProb,
+          
+          // Value Calculations
+          homeValue: oddsResult._valueAnalysis.homeValue,
+          awayValue: oddsResult._valueAnalysis.awayValue || 0,
+          drawValue: 0, // Calculate if needed
+          over25Value: oddsResult._valueAnalysis.overValue,
+          under25Value: -oddsResult._valueAnalysis.overValue,
+          bttsYesValue: oddsResult._valueAnalysis.bttsValue,
+          bttsNoValue: -oddsResult._valueAnalysis.bttsValue,
+          
+          // Best Value
+          bestValueMarket: oddsResult._valueAnalysis.bestValue || 'none',
+          bestValueAmount: oddsResult._valueAnalysis.bestValueAmount || 0,
+          valueRating: oddsResult.valueRating || 'None',
+          
+          // Odds Movement
+          homeOddsMovement: oddsResult.oddsMovement?.homeWin?.movement,
+          awayOddsMovement: oddsResult.oddsMovement?.awayWin?.movement,
+          over25OddsMovement: oddsResult.oddsMovement?.over25?.movement,
+          bttsOddsMovement: oddsResult.oddsMovement?.bttsYes?.movement,
+          
+          // Sharp Money
+          sharpMoneyDirection: oddsResult.sharpMoneyAnalysis?.direction,
+          sharpMoneyConfidence: oddsResult.sharpMoneyAnalysis?.confidence,
+          sharpMoneyReasoning: oddsResult.sharpMoneyAnalysis?.reasoning,
+          
+          // Predictions
+          recommendation: oddsResult.recommendation,
+          matchWinnerValue: oddsResult.matchWinnerValue,
+          bttsValue: oddsResult.bttsValue,
+          asianHandicapRecommendation: oddsResult.asianHandicap?.recommendation,
+          correctScoreMostLikely: oddsResult.correctScore?.mostLikely,
+          htftPrediction: oddsResult.htftPrediction?.prediction,
+          cornersPrediction: oddsResult.cornersAnalysis?.totalCorners,
+          cardsPrediction: oddsResult.cardsAnalysis?.totalCards,
+          
+          // Confidence Levels
+          recommendationConfidence: oddsResult.confidence,
+          matchWinnerConfidence: oddsResult.confidence,
+          bttsConfidence: oddsResult.confidence,
+          asianHandicapConfidence: oddsResult.asianHandicap?.confidence,
+          correctScoreConfidence: oddsResult.correctScore?.confidence,
+          htftConfidence: oddsResult.htftPrediction?.confidence,
+          cornersConfidence: oddsResult.cornersAnalysis?.confidence,
+          cardsConfidence: oddsResult.cardsAnalysis?.confidence,
+          
+          // Reasoning
+          recommendationReasoning: oddsResult.recommendationReasoning,
+          matchWinnerReasoning: oddsResult.matchWinnerReasoning,
+          bttsReasoning: oddsResult.bttsReasoning,
+          asianHandicapReasoning: oddsResult.asianHandicap?.reasoning,
+          correctScoreReasoning: oddsResult.correctScore?.mostLikely,
+          htftReasoning: oddsResult.htftPrediction?.reasoning,
+          cornersReasoning: oddsResult.cornersAnalysis?.reasoning,
+          cardsReasoning: oddsResult.cardsAnalysis?.reasoning,
+          
+          // Value Bets
+          valueBets: oddsResult.valueBets || [],
+          
+          // Full Analysis Data
+          fullAnalysisData: oddsResult
+        });
+        console.log('✅ Odds analysis log saved');
+      } catch (logError) {
+        console.error('⚠️ Failed to save odds analysis log:', logError);
+        // Continue even if logging fails
+      }
+    }
     
     // Step 5: Build consensus
     console.log('🔄 Step 5: Building consensus...');
