@@ -67,7 +67,7 @@ export default function AdminPage() {
   const [settling, setSettling] = useState(false);
   const [stats, setStats] = useState<PerformanceStats | null>(null);
   const [periodDays, setPeriodDays] = useState(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'analyses' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analyses' | 'patterns' | 'settings'>('overview');
 
   // Auth check
   useEffect(() => {
@@ -199,6 +199,7 @@ export default function AdminPage() {
             {[
               { id: 'overview', label: '📊 Genel Bakış', icon: BarChart3 },
               { id: 'analyses', label: '📋 Analizler', icon: Target },
+              { id: 'patterns', label: '🔍 Pattern Analizi', icon: TrendingUp },
               { id: 'settings', label: '⚙️ Ayarlar', icon: Settings },
             ].map(tab => (
               <button
@@ -443,6 +444,11 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* PATTERNS TAB */}
+        {activeTab === 'patterns' && (
+          <PatternAnalysisTab />
+        )}
+
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
@@ -509,6 +515,404 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+// ============================================================================
+// PATTERN ANALYSIS TAB COMPONENT
+// ============================================================================
+
+function PatternAnalysisTab() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const [settling, setSettling] = useState(false);
+  const [similarMatches, setSimilarMatches] = useState<any[]>([]);
+  
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+  
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/v2/odds-analysis-detailed?limit=100');
+      const data = await response.json();
+      if (data.success) {
+        setLogs(data.logs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSettleAll = async () => {
+    setSettling(true);
+    try {
+      const response = await fetch('/api/v2/odds-analysis-settle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settleAll: true })
+      });
+      const data = await response.json();
+      alert(`✅ ${data.settled || 0} maç sonucu güncellendi`);
+      await fetchLogs();
+    } catch (error) {
+      alert('Hata: ' + error);
+    } finally {
+      setSettling(false);
+    }
+  };
+  
+  const findSimilarMatches = (log: any) => {
+    const similar = logs.filter(l => 
+      l.fixture_id !== log.fixture_id &&
+      l.best_value_market === log.best_value_market &&
+      Math.abs((l.best_value_amount || 0) - (log.best_value_amount || 0)) < 5 &&
+      l.actual_result // Only settled matches
+    );
+    
+    // Sort by success rate
+    const withSuccess = similar.map(l => ({
+      ...l,
+      success: l.value_bet_success
+    }));
+    
+    setSimilarMatches(withSuccess.slice(0, 5));
+  };
+  
+  if (loading) {
+    return (
+      <div className="text-center py-12 text-gray-400">
+        Yükleniyor...
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">🔍 Pattern Analizi</h2>
+          <p className="text-gray-400">Analiz edilen maçlar ve detaylı analizler</p>
+        </div>
+        <button
+          onClick={handleSettleAll}
+          disabled={settling}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white font-medium disabled:opacity-50"
+        >
+          {settling ? 'Güncelleniyor...' : '✅ Tüm Sonuçları Güncelle'}
+        </button>
+      </div>
+      
+      {/* Logs List */}
+      <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white/10">
+              <tr>
+                <th className="text-left py-3 px-4 text-gray-400 font-medium">Maç</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">Best Value</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">Value %</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">Rating</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">Sonuç</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">Başarı</th>
+                <th className="text-center py-3 px-4 text-gray-400 font-medium">İşlem</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-white/5 transition">
+                  <td className="py-3 px-4">
+                    <div className="text-white font-medium">{log.home_team} vs {log.away_team}</div>
+                    <div className="text-gray-400 text-sm">{log.league}</div>
+                    <div className="text-gray-500 text-xs">
+                      {new Date(log.match_date).toLocaleDateString('tr-TR')}
+                    </div>
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    <span className="text-blue-400 font-medium">{log.best_value_market || 'N/A'}</span>
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    <span className={`font-bold ${
+                      (log.best_value_amount || 0) >= 10 ? 'text-green-400' :
+                      (log.best_value_amount || 0) >= 5 ? 'text-yellow-400' :
+                      'text-gray-400'
+                    }`}>
+                      +{log.best_value_amount || 0}%
+                    </span>
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      log.value_rating === 'High' ? 'bg-green-500/20 text-green-400' :
+                      log.value_rating === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      log.value_rating === 'Low' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {log.value_rating || 'None'}
+                    </span>
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    {log.actual_result ? (
+                      <div>
+                        <div className="text-white font-medium">{log.actual_result}</div>
+                        <div className="text-gray-400 text-sm">{log.actual_score}</div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">Bekleniyor</span>
+                    )}
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    {log.value_bet_success !== undefined ? (
+                      log.value_bet_success ? (
+                        <span className="text-green-400 font-bold">✓ Başarılı</span>
+                      ) : (
+                        <span className="text-red-400 font-bold">✗ Başarısız</span>
+                      )
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    <button
+                      onClick={() => {
+                        setSelectedLog(log);
+                        findSimilarMatches(log);
+                      }}
+                      className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm"
+                    >
+                      Detay
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Detailed Analysis Modal */}
+      {selectedLog && (
+        <DetailedAnalysisModal
+          log={selectedLog}
+          similarMatches={similarMatches}
+          onClose={() => setSelectedLog(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// DETAILED ANALYSIS MODAL
+// ============================================================================
+
+function DetailedAnalysisModal({ log, similarMatches, onClose }: { 
+  log: any; 
+  similarMatches: any[];
+  onClose: () => void;
+}) {
+  const agents = log.agentAnalysis || {};
+  const odds = agents.odds || {};
+  const stats = agents.stats || {};
+  const deepAnalysis = agents.deepAnalysis || {};
+  
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-xl border border-white/10 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gray-900 border-b border-white/10 p-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-white">{log.home_team} vs {log.away_team}</h3>
+            <p className="text-gray-400 text-sm">{log.league} • {new Date(log.match_date).toLocaleDateString('tr-TR')}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-2xl"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Match Result */}
+          {log.actual_result && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+              <h4 className="text-green-400 font-bold mb-2">✅ Maç Sonucu</h4>
+              <div className="text-white text-lg font-bold">{log.actual_score} ({log.actual_result})</div>
+              <div className="text-gray-400 text-sm mt-1">
+                Over 2.5: {log.actual_over_25 ? 'Evet' : 'Hayır'} • BTTS: {log.actual_btts ? 'Evet' : 'Hayır'}
+              </div>
+            </div>
+          )}
+          
+          {/* ODDS AGENT */}
+          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+            <h4 className="text-green-400 font-bold mb-3 flex items-center gap-2">
+              💰 ODDS AGENT (Bahis Oranları Analiz Ajanı)
+            </h4>
+            <p className="text-gray-300 text-sm mb-4">Görevi: Bahis oranlarını form verileriyle karşılaştırarak VALUE BET (değerli bahis) tespit eder.</p>
+            
+            <div className="space-y-3">
+              <div>
+                <h5 className="text-white font-semibold mb-2">Oran Analizi:</h5>
+                <div className="bg-black/20 rounded p-3 space-y-1 text-sm">
+                  <p className="text-gray-300">
+                    Ev Sahibi: Oran %{log.home_implied_prob} implied, Form %{log.home_form_prob} → Value: 
+                    <span className={log.home_value > 0 ? 'text-green-400' : 'text-red-400'}>
+                      {log.home_value > 0 ? '+' : ''}{log.home_value}%
+                    </span>
+                  </p>
+                  <p className="text-gray-300">
+                    Deplasman: Oran %{log.away_implied_prob} implied, Form %{log.away_form_prob} → Value: 
+                    <span className={log.away_value > 0 ? 'text-green-400' : 'text-red-400'}>
+                      {log.away_value > 0 ? '+' : ''}{log.away_value}%
+                    </span>
+                  </p>
+                  <p className="text-gray-300">
+                    Over 2.5: Oran %{log.over_25_implied_prob} implied, Form %{log.over_25_form_prob} → Value: 
+                    <span className={log.over_25_value > 0 ? 'text-green-400' : 'text-red-400'}>
+                      {log.over_25_value > 0 ? '+' : ''}{log.over_25_value}%
+                    </span>
+                  </p>
+                  <p className="text-green-400 font-semibold mt-2">
+                    🏆 En İyi Value: {log.best_value_market} (+{log.best_value_amount}%)
+                  </p>
+                </div>
+              </div>
+              
+              {odds.recommendation && (
+                <div>
+                  <h5 className="text-white font-semibold mb-2">ODDS AGENT TAHMİNLERİ:</h5>
+                  <div className="bg-black/20 rounded p-3 space-y-2 text-sm">
+                    <p className="text-white">
+                      <span className="text-green-400 font-semibold">Ana Öneri:</span> {odds.recommendation} (%{odds.confidence} güven)
+                    </p>
+                    {odds.recommendationReasoning && (
+                      <p className="text-gray-400 text-xs">{odds.recommendationReasoning}</p>
+                    )}
+                    {odds.matchWinnerValue && (
+                      <p className="text-white">
+                        <span className="text-green-400 font-semibold">Maç Sonucu Value:</span> {odds.matchWinnerValue}
+                      </p>
+                    )}
+                    {odds.matchWinnerReasoning && (
+                      <p className="text-gray-400 text-xs">{odds.matchWinnerReasoning}</p>
+                    )}
+                    {odds.asianHandicap && (
+                      <p className="text-white">
+                        <span className="text-green-400 font-semibold">Asian Handicap:</span> {odds.asianHandicap.recommendation} (%{odds.asianHandicap.confidence} güven)
+                      </p>
+                    )}
+                    {odds.correctScore && (
+                      <p className="text-white">
+                        <span className="text-green-400 font-semibold">Correct Score:</span> {odds.correctScore.mostLikely} (%{odds.correctScore.confidence} güven)
+                        {odds.correctScore.second && (
+                          <span className="text-gray-400"> • 2. Olası: {odds.correctScore.second}, 3. Olası: {odds.correctScore.third}</span>
+                        )}
+                      </p>
+                    )}
+                    {odds.cornersAnalysis && (
+                      <p className="text-white">
+                        <span className="text-green-400 font-semibold">Korner:</span> {odds.cornersAnalysis.totalCorners} (%{odds.cornersAnalysis.confidence} güven)
+                      </p>
+                    )}
+                    {log.value_bets && log.value_bets.length > 0 && (
+                      <p className="text-green-400 font-semibold mt-2">
+                        💰 Value Bets: {log.value_bets.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* STATS AGENT */}
+          {stats.formAnalysis && (
+            <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+              <h4 className="text-blue-400 font-bold mb-3">📊 STATS AGENT (İstatistik Analiz Ajanı)</h4>
+              <p className="text-gray-300 text-sm mb-4">Görevi: Form, gol istatistikleri, xG (Expected Goals), timing patterns ve clean sheet analizi yapar.</p>
+              
+              <div className="bg-black/20 rounded p-3 space-y-2 text-sm">
+                {stats.formAnalysis && (
+                  <p className="text-white">
+                    <span className="text-blue-400 font-semibold">Form Analizi:</span> {stats.formAnalysis}
+                  </p>
+                )}
+                {stats.xgAnalysis && (
+                  <div>
+                    <p className="text-white">
+                      <span className="text-blue-400 font-semibold">xG Analizi:</span> Ev {stats.xgAnalysis.homeXG}, Dep {stats.xgAnalysis.awayXG}, Toplam {stats.xgAnalysis.totalXG}
+                    </p>
+                  </div>
+                )}
+                {stats.overUnder && (
+                  <p className="text-white">
+                    <span className="text-blue-400 font-semibold">Over/Under:</span> {stats.overUnder} (%{stats.confidence} güven)
+                  </p>
+                )}
+                {stats.matchResult && (
+                  <p className="text-white">
+                    <span className="text-blue-400 font-semibold">Maç Sonucu:</span> {stats.matchResult} (%{stats.matchResultConfidence || stats.confidence} güven)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* DEEP ANALYSIS AGENT */}
+          {deepAnalysis.matchAnalysis && (
+            <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+              <h4 className="text-purple-400 font-bold mb-3">🎯 DEEP ANALYSIS AGENT (Derin Analiz Ajanı)</h4>
+              <p className="text-gray-300 text-sm mb-4">Görevi: Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu, diziliş analizi.</p>
+              
+              <div className="bg-black/20 rounded p-3 space-y-2 text-sm">
+                <p className="text-gray-300">{deepAnalysis.matchAnalysis}</p>
+                {deepAnalysis.overUnder && (
+                  <p className="text-white">
+                    <span className="text-purple-400 font-semibold">Over/Under:</span> {deepAnalysis.overUnder.prediction} (%{deepAnalysis.overUnder.confidence} güven)
+                  </p>
+                )}
+                {deepAnalysis.matchResult && (
+                  <p className="text-white">
+                    <span className="text-purple-400 font-semibold">Maç Sonucu:</span> {deepAnalysis.matchResult.prediction} (%{deepAnalysis.matchResult.confidence} güven)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Similar Matches */}
+          {similarMatches.length > 0 && (
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+              <h4 className="text-blue-400 font-bold mb-3">🔍 Benzer Durumlar</h4>
+              <p className="text-gray-400 text-sm mb-3">Gelecekte benzer durumlarla karşılaştığınızda bu sonuçları referans alabilirsiniz:</p>
+              <div className="space-y-2">
+                {similarMatches.map((match, idx) => (
+                  <div key={idx} className="bg-black/20 rounded p-2 text-sm">
+                    <div className="text-white font-medium">{match.home_team} vs {match.away_team}</div>
+                    <div className="text-gray-400">
+                      Value: +{match.best_value_amount}% • 
+                      Sonuç: {match.actual_result} ({match.actual_score}) • 
+                      {match.value_bet_success ? (
+                        <span className="text-green-400">✓ Başarılı</span>
+                      ) : (
+                        <span className="text-red-400">✗ Başarısız</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
