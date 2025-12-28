@@ -342,9 +342,9 @@ function calculateTeamMotivationScore(
   const recent3Matches = formPoints.slice(0, 3);
   const previous3Matches = formPoints.slice(3, 6);
   
-  const recentAvg = recent3Matches.reduce((a, b) => a + b, 0) / recent3Matches.length;
+  const recentAvg = recent3Matches.reduce((a: number, b: number) => a + b, 0) / recent3Matches.length;
   const previousAvg = previous3Matches.length > 0 
-    ? previous3Matches.reduce((a, b) => a + b, 0) / previous3Matches.length 
+    ? previous3Matches.reduce((a: number, b: number) => a + b, 0) / previous3Matches.length 
     : recentAvg;
 
   // Trend analizi
@@ -366,7 +366,7 @@ function calculateTeamMotivationScore(
   }
 
   // Son maçlar momentum (son 2-3 maçın ağırlığı)
-  const last3Avg = formPoints.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+  const last3Avg = formPoints.slice(0, 3).reduce((a: number, b: number) => a + b, 0) / 3;
   const momentumBonus = (last3Avg / 3) * 20; // +0-20
 
   // Final puan
