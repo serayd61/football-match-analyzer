@@ -56,10 +56,14 @@ ANALİZ KATMANLARI:
 ÖNEMLİ KURALLAR:
 - Ev sahibi EVDEKİ maç istatistiklerini kullan
 - Deplasman DEPLASMANDAKİ maç istatistiklerini kullan
+- "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri MUTLAKA kullan - bu sistem hesaplamasıdır
+- Beklenen toplam gol 2.5'ten fazlaysa OVER, azsa UNDER tahmin et
+- Form farkı büyükse (10+ puan) favori takımı seç
 - Düşük gollü takımlar için Under'a eğilimli ol
 - H2H verisi yoksa form verilerine ağırlık ver
 - Hakem sert ise Over cards tahmin et
 - Confidence %50-85 arasında olmalı
+- MUTLAKA verilen "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri kullan, genel ortalamaları değil
 
 MUTLAKA BU JSON FORMATINDA DÖNDÜR:
 {
@@ -330,6 +334,36 @@ function buildDeepAnalysisContext(matchData: MatchData): string {
 │   • Deplasman Over 2.5: %${awayForm?.venueOver25Pct || detailedStats?.away?.awayOver25Percentage || awayForm?.over25Percentage || 'N/A'}
 │   • Deplasman BTTS: %${awayForm?.venueBttsPct || detailedStats?.away?.awayBttsPercentage || awayForm?.bttsPercentage || 'N/A'}
 │   • Deplasman Clean Sheet: %${detailedStats?.away?.awayCleanSheets || awayForm?.cleanSheetPercentage || 'N/A'}
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🎯 BEKLENEN GOL HESAPLAMALARI (Sistem Hesaplaması)
+├─────────────────────────────────────────────────────────────────────────────┤
+${(() => {
+  const detailedHome = (matchData as any).detailedStats?.home;
+  const detailedAway = (matchData as any).detailedStats?.away;
+  
+  // Stats Agent'ın hesapladığı beklenen goller
+  const homeGoalsScored = parseFloat(detailedHome?.avgGoalsScored || homeForm?.avgGoals || '1.2');
+  const homeGoalsConceded = parseFloat(detailedHome?.avgGoalsConceded || homeForm?.avgConceded || '1.0');
+  const awayGoalsScored = parseFloat(detailedAway?.avgGoalsScored || awayForm?.avgGoals || '1.0');
+  const awayGoalsConceded = parseFloat(detailedAway?.avgGoalsConceded || awayForm?.avgConceded || '1.2');
+  
+  // Beklenen goller (gol atma beklentisi)
+  const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
+  const awayExpected = (awayGoalsScored + homeGoalsConceded) / 2;
+  const expectedTotal = homeExpected + awayExpected;
+  
+  // Gol yeme beklentisi
+  const homeConcededExpected = (homeGoalsConceded + awayGoalsScored) / 2;
+  const awayConcededExpected = (awayGoalsConceded + homeGoalsScored) / 2;
+  
+  return `│   • ${homeTeam} Beklenen Gol Atma: ${homeExpected.toFixed(2)} (Ev ${detailedStats?.home?.homeAvgGoalsScored || homeGoalsScored.toFixed(2)} + Dep Yediği ${awayGoalsConceded.toFixed(2)}) / 2
+│   • ${awayTeam} Beklenen Gol Atma: ${awayExpected.toFixed(2)} (Dep ${detailedStats?.away?.awayAvgGoalsScored || awayGoalsScored.toFixed(2)} + Ev Yediği ${homeGoalsConceded.toFixed(2)}) / 2
+│   • ${homeTeam} Beklenen Gol Yeme: ${homeConcededExpected.toFixed(2)} (Ev Yediği ${homeGoalsConceded.toFixed(2)} + Dep Attığı ${awayGoalsScored.toFixed(2)}) / 2
+│   • ${awayTeam} Beklenen Gol Yeme: ${awayConcededExpected.toFixed(2)} (Dep Yediği ${awayGoalsConceded.toFixed(2)} + Ev Attığı ${homeGoalsScored.toFixed(2)}) / 2
+│   • TOPLAM BEKLENEN GOL: ${expectedTotal.toFixed(2)} (${expectedTotal >= 2.5 ? 'OVER 2.5' : 'UNDER 2.5'})`;
+})()}
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
