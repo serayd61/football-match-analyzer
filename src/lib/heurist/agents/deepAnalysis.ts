@@ -353,7 +353,7 @@ function calculateTeamMotivationScore(
   else if (recentAvg < previousAvg - 0.3) trend = 'declining';
 
   // Temel puan (form puanlarına göre)
-  const totalFormPoints = formPoints.reduce((a, b) => a + b, 0);
+  const totalFormPoints = formPoints.reduce((a: number, b: number) => a + b, 0);
   const maxPossible = 10 * 3; // 10 maç, her biri 3 puan
   const baseScore = (totalFormPoints / maxPossible) * 60; // 0-60 arası
 
