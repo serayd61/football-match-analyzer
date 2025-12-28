@@ -59,6 +59,12 @@ ANALİZ KATMANLARI:
 - "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri MUTLAKA kullan - bu sistem hesaplamasıdır
 - Beklenen toplam gol 2.5'ten fazlaysa OVER, azsa UNDER tahmin et
 - Form farkı büyükse (10+ puan) favori takımı seç
+- "MOTİVASYON & HAZIRLIK PUANLARI" bölümünü MUTLAKA dikkate al:
+  * Yüksek motivasyon puanı (>70) = takım daha hazır ve motivasyonlu
+  * Düşük motivasyon puanı (<40) = takım form düşüklüğü yaşıyor
+  * İyileşen trend = takım yükselişte, daha tehlikeli
+  * Düşen trend = takım düşüşte, zayıf
+  * Motivasyon farkı 20+ puan ise yüksek motivasyonlu takımı favori yap
 - Düşük gollü takımlar için Under'a eğilimli ol
 - H2H verisi yoksa form verilerine ağırlık ver
 - Hakem sert ise Over cards tahmin et
@@ -152,6 +158,13 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "draw": 25,
     "away": 10,
     "reasoning": "Maç sonucu olasılıkları (yüzde olarak)"
+  },
+  "motivationScores": {
+    "home": 75,
+    "away": 60,
+    "homeTrend": "improving/declining/stable",
+    "awayTrend": "improving/declining/stable",
+    "reasoning": "Takımların motivasyon ve hazırlık durumu analizi"
   },
   "riskLevel": "Low veya Medium veya High",
   "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
@@ -289,8 +302,113 @@ MUSS IN DIESEM JSON-FORMAT ZURÜCKGEBEN:
 }`
 };
 
+// ==================== MOTIVATION & PREPARATION SCORE ====================
+
+/**
+ * Takımın son 10 maç form grafiğini analiz ederek motivasyon/hazırlık puanı hesapla (0-100)
+ */
+function calculateTeamMotivationScore(
+  formString: string,
+  matches: any[],
+  points: number,
+  recentWeeks: number = 3
+): {
+  score: number;
+  trend: 'improving' | 'declining' | 'stable';
+  reasoning: string;
+  formGraph: string;
+} {
+  if (!formString || formString.length === 0) {
+    return {
+      score: 50,
+      trend: 'stable',
+      reasoning: 'Form verisi yetersiz',
+      formGraph: 'N/A'
+    };
+  }
+
+  // Son 10 maç form grafiği (en yeni en sağda)
+  const last10Form = formString.slice(-10).split('').reverse(); // En yeni maç ilk sırada
+  const formGraph = last10Form.join(' → ');
+
+  // Form puanları (W=3, D=1, L=0)
+  const formPoints = last10Form.map((r: string) => {
+    if (r === 'W') return 3;
+    if (r === 'D') return 1;
+    return 0;
+  });
+
+  // Son 3 hafta (son 3 maç) vs önceki 3 hafta (4-6. maçlar)
+  const recent3Matches = formPoints.slice(0, 3);
+  const previous3Matches = formPoints.slice(3, 6);
+  
+  const recentAvg = recent3Matches.reduce((a, b) => a + b, 0) / recent3Matches.length;
+  const previousAvg = previous3Matches.length > 0 
+    ? previous3Matches.reduce((a, b) => a + b, 0) / previous3Matches.length 
+    : recentAvg;
+
+  // Trend analizi
+  let trend: 'improving' | 'declining' | 'stable' = 'stable';
+  if (recentAvg > previousAvg + 0.3) trend = 'improving';
+  else if (recentAvg < previousAvg - 0.3) trend = 'declining';
+
+  // Temel puan (form puanlarına göre)
+  const totalFormPoints = formPoints.reduce((a, b) => a + b, 0);
+  const maxPossible = 10 * 3; // 10 maç, her biri 3 puan
+  const baseScore = (totalFormPoints / maxPossible) * 60; // 0-60 arası
+
+  // Trend bonusu/cezası
+  let trendBonus = 0;
+  if (trend === 'improving') {
+    trendBonus = Math.min(20, (recentAvg - previousAvg) * 10); // +0-20
+  } else if (trend === 'declining') {
+    trendBonus = Math.max(-20, (recentAvg - previousAvg) * 10); // -0-20
+  }
+
+  // Son maçlar momentum (son 2-3 maçın ağırlığı)
+  const last3Avg = formPoints.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+  const momentumBonus = (last3Avg / 3) * 20; // +0-20
+
+  // Final puan
+  const finalScore = Math.round(Math.max(0, Math.min(100, baseScore + trendBonus + momentumBonus)));
+
+  // Reasoning
+  const wins = last10Form.filter((r: string) => r === 'W').length;
+  const draws = last10Form.filter((r: string) => r === 'D').length;
+  const losses = last10Form.filter((r: string) => r === 'L').length;
+  
+  let reasoning = `Son 10 maç: ${wins}G-${draws}B-${losses}M (${totalFormPoints}/${maxPossible} puan)`;
+  if (trend === 'improving') {
+    reasoning += `. Son haftalarda performans artıyor (${recentAvg.toFixed(1)} vs ${previousAvg.toFixed(1)} puan/maç)`;
+  } else if (trend === 'declining') {
+    reasoning += `. Son haftalarda performans düşüyor (${recentAvg.toFixed(1)} vs ${previousAvg.toFixed(1)} puan/maç)`;
+  } else {
+    reasoning += `. Performans stabil (${recentAvg.toFixed(1)} puan/maç)`;
+  }
+
+  return {
+    score: finalScore,
+    trend,
+    reasoning,
+    formGraph
+  };
+}
+
 function buildDeepAnalysisContext(matchData: MatchData): string {
   const { homeTeam, awayTeam, league, homeForm, awayForm, h2h, odds, detailedStats, professionalCalc } = matchData as any;
+  
+  // 🆕 Motivasyon puanları hesapla
+  const homeMotivation = calculateTeamMotivationScore(
+    homeForm?.form || '',
+    homeForm?.matches || [],
+    homeForm?.points || 0
+  );
+  
+  const awayMotivation = calculateTeamMotivationScore(
+    awayForm?.form || '',
+    awayForm?.matches || [],
+    awayForm?.points || 0
+  );
   
   let context = `
 ═══════════════════════════════════════════════════════════════════════════════
@@ -364,6 +482,25 @@ ${(() => {
 │   • ${awayTeam} Beklenen Gol Yeme: ${awayConcededExpected.toFixed(2)} (Dep Yediği ${awayGoalsConceded.toFixed(2)} + Ev Attığı ${homeGoalsScored.toFixed(2)}) / 2
 │   • TOPLAM BEKLENEN GOL: ${expectedTotal.toFixed(2)} (${expectedTotal >= 2.5 ? 'OVER 2.5' : 'UNDER 2.5'})`;
 })()}
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🎯 MOTİVASYON & HAZIRLIK PUANLARI (0-100)
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ${homeTeam}:
+│   • Motivasyon Puanı: ${homeMotivation.score}/100
+│   • Trend: ${homeMotivation.trend === 'improving' ? '📈 İyileşiyor' : homeMotivation.trend === 'declining' ? '📉 Düşüyor' : '➡️ Stabil'}
+│   • Form Grafiği (Son 10): ${homeMotivation.formGraph}
+│   • Analiz: ${homeMotivation.reasoning}
+│
+│ ${awayTeam}:
+│   • Motivasyon Puanı: ${awayMotivation.score}/100
+│   • Trend: ${awayMotivation.trend === 'improving' ? '📈 İyileşiyor' : awayMotivation.trend === 'declining' ? '📉 Düşüyor' : '➡️ Stabil'}
+│   • Form Grafiği (Son 10): ${awayMotivation.formGraph}
+│   • Analiz: ${awayMotivation.reasoning}
+│
+│ PUAN FARKI: ${Math.abs(homeMotivation.score - awayMotivation.score)} puan
+│ ${homeMotivation.score > awayMotivation.score ? homeTeam : awayMotivation.score > homeMotivation.score ? awayTeam : 'Eşit'} daha motivasyonlu görünüyor
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
