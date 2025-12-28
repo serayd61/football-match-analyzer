@@ -313,6 +313,24 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       <div className="bg-black/20 rounded p-2 mt-1 text-xs space-y-1">
                         <p className="text-gray-300">Son 5 Maç Over 2.5: <span className="text-blue-400">%{stats._calculatedStats.avgOver25}</span></p>
                         <p className="text-gray-300">Son 5 Maç BTTS: <span className="text-blue-400">%{stats._calculatedStats.avgBtts}</span></p>
+                        {stats._calculatedStats.homeExpected && stats._calculatedStats.awayExpected && (
+                          <>
+                            <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
+                              <span className="text-blue-400 font-semibold">Gol Atma Beklentisi:</span>
+                            </p>
+                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeExpected}</span> gol</p>
+                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayExpected}</span> gol</p>
+                          </>
+                        )}
+                        {stats._calculatedStats.homeConcededExpected && stats._calculatedStats.awayConcededExpected && (
+                          <>
+                            <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
+                              <span className="text-blue-400 font-semibold">Gol Yeme Beklentisi:</span>
+                            </p>
+                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeConcededExpected}</span> gol</p>
+                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayConcededExpected}</span> gol</p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -743,10 +743,14 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   const awayGoalsScored = parseFloat(detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0');
   const awayGoalsConceded = parseFloat(detailedAway?.avgGoalsConceded || matchData.awayForm?.avgConceded || '1.2');
   
-  // Beklenen goller
+  // Beklenen goller (gol atma beklentisi)
   const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
   const awayExpected = (awayGoalsScored + homeGoalsConceded) / 2;
   const expectedTotal = homeExpected + awayExpected;
+  
+  // 🆕 Gol yeme beklentisi
+  const homeConcededExpected = (homeGoalsConceded + awayGoalsScored) / 2;
+  const awayConcededExpected = (awayGoalsConceded + homeGoalsScored) / 2;
   
   // Form verileri
   const homeForm = detailedHome?.form || matchData.homeForm?.form || 'DDDDD';
@@ -866,7 +870,8 @@ Home CS Streak: ${cleanSheetAnalysis.homeCleanSheetStreak} | Away CS Streak: ${c
 ═══════════════════════════════════════════════════════════════
 📊 CALCULATED PREDICTIONS
 ═══════════════════════════════════════════════════════════════
-Expected Goals: ${matchData.homeTeam} ${homeExpected.toFixed(2)} - ${awayExpected.toFixed(2)} ${matchData.awayTeam}
+Expected Goals Scored: ${matchData.homeTeam} ${homeExpected.toFixed(2)} - ${awayExpected.toFixed(2)} ${matchData.awayTeam}
+Expected Goals Conceded: ${matchData.homeTeam} ${homeConcededExpected.toFixed(2)} - ${awayConcededExpected.toFixed(2)} ${matchData.awayTeam}
 TOTAL EXPECTED: ${expectedTotal.toFixed(2)} goals | xG TOTAL: ${xgAnalysis.totalXG}
 Combined Over 2.5: ${avgOver25}% | Combined BTTS: ${avgBtts}%
 Form Difference: ${formDiff > 0 ? '+' : ''}${formDiff} points (${formDiff > 3 ? 'HOME favored' : formDiff < -3 ? 'AWAY favored' : 'BALANCED'})
@@ -945,6 +950,8 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
           expectedTotal: expectedTotal.toFixed(2),
           homeExpected: homeExpected.toFixed(2),
           awayExpected: awayExpected.toFixed(2),
+          homeConcededExpected: homeConcededExpected.toFixed(2),
+          awayConcededExpected: awayConcededExpected.toFixed(2),
           avgOver25,
           avgBtts,
           formDiff,
@@ -1103,6 +1110,8 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
       expectedTotal: expectedTotal.toFixed(2),
       homeExpected: homeExpected.toFixed(2),
       awayExpected: awayExpected.toFixed(2),
+      homeConcededExpected: homeConcededExpected.toFixed(2),
+      awayConcededExpected: awayConcededExpected.toFixed(2),
       avgOver25,
       avgBtts,
       formDiff,
