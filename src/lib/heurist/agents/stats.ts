@@ -434,14 +434,15 @@ function analyzeCleanSheets(matchData: MatchData, language: 'tr' | 'en' | 'de'):
   // Ev sahibi için: son maçlardan geriye doğru, gol yemediği maçları say
   for (const match of homeMatches) {
     let goalsConceded = 0;
+    const matchAny = match as any;
     
-    if (match.scores) {
+    if (matchAny.scores) {
       // Sportmonks format
-      const teamScore = match.scores.find((s: any) => 
-        s.score?.participant === 'home' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'home')?.id
+      const teamScore = matchAny.scores.find((s: any) => 
+        s.score?.participant === 'home' || s.score?.participant_id === matchAny.participants?.find((p: any) => p.meta?.location === 'home')?.id
       );
-      const opponentScore = match.scores.find((s: any) => 
-        s.score?.participant === 'away' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'away')?.id
+      const opponentScore = matchAny.scores.find((s: any) => 
+        s.score?.participant === 'away' || s.score?.participant_id === matchAny.participants?.find((p: any) => p.meta?.location === 'away')?.id
       );
       goalsConceded = opponentScore?.score?.goals || 0;
     } else if (match.score) {
@@ -460,14 +461,15 @@ function analyzeCleanSheets(matchData: MatchData, language: 'tr' | 'en' | 'de'):
   // Deplasman için: son maçlardan geriye doğru, gol yemediği maçları say
   for (const match of awayMatches) {
     let goalsConceded = 0;
+    const matchAny = match as any;
     
-    if (match.scores) {
+    if (matchAny.scores) {
       // Sportmonks format
-      const teamScore = match.scores.find((s: any) => 
-        s.score?.participant === 'away' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'away')?.id
+      const teamScore = matchAny.scores.find((s: any) => 
+        s.score?.participant === 'away' || s.score?.participant_id === matchAny.participants?.find((p: any) => p.meta?.location === 'away')?.id
       );
-      const opponentScore = match.scores.find((s: any) => 
-        s.score?.participant === 'home' || s.score?.participant_id === match.participants?.find((p: any) => p.meta?.location === 'home')?.id
+      const opponentScore = matchAny.scores.find((s: any) => 
+        s.score?.participant === 'home' || s.score?.participant_id === matchAny.participants?.find((p: any) => p.meta?.location === 'home')?.id
       );
       goalsConceded = opponentScore?.score?.goals || 0;
     } else if (match.score) {
