@@ -773,12 +773,40 @@ export async function runDeepAnalysisAgent(
       result.bestBet.confidence = Math.min(85, Math.max(50, result.bestBet.confidence));
     }
 
+    // 🆕 Motivasyon puanlarını ekle (eğer response'da yoksa veya eksikse)
+    const { homeForm, awayForm } = matchData as any;
+    const homeMotivation = calculateTeamMotivationScore(
+      homeForm?.form || '',
+      homeForm?.matches || [],
+      homeForm?.points || 0
+    );
+    
+    const awayMotivation = calculateTeamMotivationScore(
+      awayForm?.form || '',
+      awayForm?.matches || [],
+      awayForm?.points || 0
+    );
+
+    // Response'daki motivationScores'u güncelle veya ekle
+    if (!result.motivationScores || !result.motivationScores.home || !result.motivationScores.away) {
+      result.motivationScores = {
+        home: homeMotivation.score,
+        away: awayMotivation.score,
+        homeTrend: homeMotivation.trend,
+        awayTrend: awayMotivation.trend,
+        homeFormGraph: homeMotivation.formGraph,
+        awayFormGraph: awayMotivation.formGraph,
+        reasoning: `${matchData.homeTeam}: ${homeMotivation.reasoning}. ${matchData.awayTeam}: ${awayMotivation.reasoning}. Puan farkı: ${Math.abs(homeMotivation.score - awayMotivation.score)} puan.`
+      };
+    }
+
     console.log(`✅ Deep Analysis complete:`);
     console.log(`   🎯 Best Bet: ${result.bestBet?.type} → ${result.bestBet?.selection} (${result.bestBet?.confidence}%)`);
     console.log(`   ⚽ Score: ${result.scorePrediction?.score}`);
     console.log(`   📊 Over/Under: ${result.overUnder?.prediction} (${result.overUnder?.confidence}%)`);
     console.log(`   🎲 BTTS: ${result.btts?.prediction} (${result.btts?.confidence}%)`);
     console.log(`   🏆 Match: ${result.matchResult?.prediction} (${result.matchResult?.confidence}%)`);
+    console.log(`   💪 Motivation: Home ${homeMotivation.score}/100 (${homeMotivation.trend}), Away ${awayMotivation.score}/100 (${awayMotivation.trend})`);
     
     return result;
   } catch (error: any) {
@@ -789,6 +817,19 @@ export async function runDeepAnalysisAgent(
 
 function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): any {
   const { homeForm, awayForm, h2h } = matchData as any;
+  
+  // 🆕 Motivasyon puanları hesapla
+  const homeMotivation = calculateTeamMotivationScore(
+    homeForm?.form || '',
+    homeForm?.matches || [],
+    homeForm?.points || 0
+  );
+  
+  const awayMotivation = calculateTeamMotivationScore(
+    awayForm?.form || '',
+    awayForm?.matches || [],
+    awayForm?.points || 0
+  );
   
   // Basit hesaplama
   const homeOver = parseInt(homeForm?.venueOver25Pct || homeForm?.over25Percentage || '50');
@@ -937,6 +978,16 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
       expectedCards,
       cardsLine: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
       cardsConfidence: 58
+    },
+    // 🆕 Motivasyon puanları
+    motivationScores: {
+      home: homeMotivation.score,
+      away: awayMotivation.score,
+      homeTrend: homeMotivation.trend,
+      awayTrend: awayMotivation.trend,
+      homeFormGraph: homeMotivation.formGraph,
+      awayFormGraph: awayMotivation.formGraph,
+      reasoning: `${matchData.homeTeam}: ${homeMotivation.reasoning}. ${matchData.awayTeam}: ${awayMotivation.reasoning}. Puan farkı: ${Math.abs(homeMotivation.score - awayMotivation.score)} puan.`
     },
     riskLevel: 'Medium',
     agentSummary: msg.agentSummary

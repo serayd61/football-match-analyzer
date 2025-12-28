@@ -509,6 +509,43 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   </div>
                 )}
 
+                {deepAnalysis.motivationScores && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">💪 Motivasyon & Hazırlık Puanları:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-2">
+                      <div>
+                        <p className="text-gray-300">
+                          Ev Sahibi: <span className={`font-bold ${deepAnalysis.motivationScores.home >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {deepAnalysis.motivationScores.home}/100
+                          </span>
+                          {deepAnalysis.motivationScores.homeTrend === 'improving' && <span className="text-green-400 ml-1">📈</span>}
+                          {deepAnalysis.motivationScores.homeTrend === 'declining' && <span className="text-red-400 ml-1">📉</span>}
+                          {deepAnalysis.motivationScores.homeTrend === 'stable' && <span className="text-gray-400 ml-1">➡️</span>}
+                        </p>
+                        {deepAnalysis.motivationScores.homeFormGraph && (
+                          <p className="text-gray-500 text-xs mt-1">Form: {deepAnalysis.motivationScores.homeFormGraph}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-300">
+                          Deplasman: <span className={`font-bold ${deepAnalysis.motivationScores.away >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {deepAnalysis.motivationScores.away}/100
+                          </span>
+                          {deepAnalysis.motivationScores.awayTrend === 'improving' && <span className="text-green-400 ml-1">📈</span>}
+                          {deepAnalysis.motivationScores.awayTrend === 'declining' && <span className="text-red-400 ml-1">📉</span>}
+                          {deepAnalysis.motivationScores.awayTrend === 'stable' && <span className="text-gray-400 ml-1">➡️</span>}
+                        </p>
+                        {deepAnalysis.motivationScores.awayFormGraph && (
+                          <p className="text-gray-500 text-xs mt-1">Form: {deepAnalysis.motivationScores.awayFormGraph}</p>
+                        )}
+                      </div>
+                      {deepAnalysis.motivationScores.reasoning && (
+                        <p className="text-gray-400 text-xs mt-2 pt-2 border-t border-white/10">{deepAnalysis.motivationScores.reasoning}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="border-t border-purple-500/30 pt-3 mt-3">
                   <p className="text-purple-400 font-semibold mb-2">DEEP ANALYSIS AGENT TAHMİNLERİ:</p>
                   <div className="space-y-2">
