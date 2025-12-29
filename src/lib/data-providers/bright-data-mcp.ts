@@ -6,7 +6,7 @@
 import { DataProvider, FixtureData, TeamStats, MatchData, Injury, H2HData, OddsData, RefereeData, LineupData, XGData } from './types';
 
 export class BrightDataMCPProvider implements DataProvider {
-  name = 'Bright Data (MCP)';
+  name = 'Bright Data (Web Unlocker)';
   priority = 1; // Yüksek öncelik - Sportmonks'tan önce dene
   
   private apiKey: string;
@@ -101,9 +101,18 @@ export class BrightDataMCPProvider implements DataProvider {
   /**
    * Bright Data Web Unlocker API kullanarak web scraping yap
    * FlashScore, SofaScore gibi sitelerden veri çeker
+   * Dashboard'da görünen zone: web_unlocker1
    * Timeout: 10 saniye
    */
-  private async scrapeWithBrightData(url: string, zone: string = 'web_unlocker'): Promise<any> {
+  private async scrapeWithBrightData(
+    url: string, 
+    zone: string = 'web_unlocker1', 
+    format: 'raw' | 'json' | 'html' = 'raw'
+  ): Promise<any> {
+    if (!this.apiKey) {
+      return null;
+    }
+    
     try {
       // Timeout controller - 10 saniye sonra iptal et
       const controller = new AbortController();
@@ -116,9 +125,9 @@ export class BrightDataMCPProvider implements DataProvider {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          zone,
+          zone, // web_unlocker1 (dashboard'da görünen)
           url,
-          format: 'json',
+          format, // raw, json, veya html
           method: 'GET',
           country: 'us'
         }),
@@ -128,16 +137,23 @@ export class BrightDataMCPProvider implements DataProvider {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        console.error(`❌ Bright Data API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ Bright Data API error ${response.status}:`, errorText.substring(0, 200));
         return null;
       }
       
-      return await response.json();
+      // Format'a göre response'u parse et
+      if (format === 'raw' || format === 'html') {
+        const text = await response.text();
+        return { html: text, url };
+      } else {
+        return await response.json();
+      }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.error('❌ Bright Data scraping timeout (10s)');
       } else {
-        console.error('❌ Bright Data scraping error:', error);
+        console.error('❌ Bright Data scraping error:', error.message?.substring(0, 100));
       }
       return null;
     }
@@ -174,9 +190,50 @@ export class BrightDataMCPProvider implements DataProvider {
         };
       }
       
-      // MCP başarısız - direkt scraping HTML parsing gerektirir, zaman alır
-      // Şimdilik null döndür, Sportmonks fallback devreye girecek
-      console.log(`⚠️ Bright Data MCP failed (session error or timeout) - will use Sportmonks fallback`);
+      // MCP başarısız - direkt Bright Data Web Unlocker API'yi kullan
+      console.log(`⚠️ MCP failed, trying direct Bright Data Web Unlocker API...`);
+      
+      // FlashScore'dan dene
+      const flashScoreUrl = `https://www.flashscore.com/match/${fixtureId}/`;
+      const flashScoreData = await this.scrapeWithBrightData(flashScoreUrl, 'web_unlocker1', 'raw');
+      
+      if (flashScoreData?.html) {
+        console.log(`✅ Bright Data: Scraped HTML from FlashScore (${flashScoreData.html.length} bytes)`);
+        // TODO: HTML parsing implementasyonu gerekli
+        // Şimdilik basit bir response döndür
+        // Gerçek implementasyon için Cheerio veya benzeri HTML parser gerekli
+        return {
+          fixtureId,
+          homeTeam: { id: 0, name: 'FlashScore - Parse Required' },
+          awayTeam: { id: 0, name: 'FlashScore - Parse Required' },
+          league: { id: 0, name: 'FlashScore - Parse Required' },
+          date: new Date().toISOString(),
+          status: 'scheduled',
+          score: undefined,
+          venue: undefined
+        };
+      }
+      
+      // SofaScore'dan dene
+      const sofaScoreUrl = `https://www.sofascore.com/match/${fixtureId}`;
+      const sofaScoreData = await this.scrapeWithBrightData(sofaScoreUrl, 'web_unlocker1', 'raw');
+      
+      if (sofaScoreData?.html) {
+        console.log(`✅ Bright Data: Scraped HTML from SofaScore (${sofaScoreData.html.length} bytes)`);
+        // TODO: HTML parsing implementasyonu gerekli
+        return {
+          fixtureId,
+          homeTeam: { id: 0, name: 'SofaScore - Parse Required' },
+          awayTeam: { id: 0, name: 'SofaScore - Parse Required' },
+          league: { id: 0, name: 'SofaScore - Parse Required' },
+          date: new Date().toISOString(),
+          status: 'scheduled',
+          score: undefined,
+          venue: undefined
+        };
+      }
+      
+      console.log(`⚠️ Bright Data: Failed to scrape from FlashScore and SofaScore - will use Sportmonks fallback`);
       return null;
     } catch (error: any) {
       console.error('❌ getFixture error:', error.message?.substring(0, 100));
