@@ -81,7 +81,7 @@ const SPORTMONKS_BASE_URL = 'https://api.sportmonks.com/v3/football';
 /**
  * SportMonks'tan takım xG verilerini çek
  */
-async function fetchTeamXGFromSportMonks(teamId: number): Promise<Partial<TeamXGData> | null> {
+export async function fetchTeamXGFromSportMonks(teamId: number): Promise<Partial<TeamXGData> | null> {
   if (!SPORTMONKS_API_KEY) {
     console.warn('SPORTMONKS_API_KEY not set for xG fetch');
     return null;

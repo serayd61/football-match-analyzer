@@ -3,8 +3,8 @@
 // Provider manager'dan gelen verileri FullFixtureData formatına çevirir
 // ============================================================================
 
-import { FullFixtureData } from '../sportmonks';
-import { dataProviderManager, FixtureData, TeamStats, H2HData, Injury, OddsData, RefereeData, LineupData } from './index';
+import { FullFixtureData } from '../sportmonks/index';
+import { dataProviderManager, FixtureData, TeamStats, MatchData, H2HData, Injury, OddsData, RefereeData, LineupData } from './index';
 
 /**
  * Provider manager'dan gelen verileri FullFixtureData formatına çevir
@@ -23,7 +23,7 @@ export async function fetchFullFixtureDataFromProvider(
       return null;
     }
     
-    const fixture = fixtureResult.data;
+    const fixture = fixtureResult.data as FixtureData;
     console.log(`✅ Fixture data from ${fixtureResult.provider}`);
     
     // 2. Team stats
@@ -37,8 +37,8 @@ export async function fetchFullFixtureDataFromProvider(
       return null;
     }
     
-    const homeStats = homeStatsResult.data;
-    const awayStats = awayStatsResult.data;
+    const homeStats = homeStatsResult.data as TeamStats;
+    const awayStats = awayStatsResult.data as TeamStats;
     console.log(`✅ Team stats from ${homeStatsResult.provider} / ${awayStatsResult.provider}`);
     
     // 3. Recent matches
@@ -47,12 +47,12 @@ export async function fetchFullFixtureDataFromProvider(
       dataProviderManager.getTeamRecentMatches(awayTeamId, 10)
     ]);
     
-    const homeMatches = homeMatchesResult?.data || [];
-    const awayMatches = awayMatchesResult?.data || [];
+    const homeMatches = (homeMatchesResult?.data || []) as MatchData[];
+    const awayMatches = (awayMatchesResult?.data || []) as MatchData[];
     
     // 4. H2H
     const h2hResult = await dataProviderManager.getHeadToHead(homeTeamId, awayTeamId);
-    const h2h = h2hResult?.data;
+    const h2h = h2hResult?.data as H2HData | undefined;
     
     // 5. Injuries
     const [homeInjuriesResult, awayInjuriesResult] = await Promise.all([
@@ -60,20 +60,20 @@ export async function fetchFullFixtureDataFromProvider(
       dataProviderManager.getTeamInjuries(awayTeamId)
     ]);
     
-    const homeInjuries = homeInjuriesResult?.data || [];
-    const awayInjuries = awayInjuriesResult?.data || [];
+    const homeInjuries = (homeInjuriesResult?.data || []) as Injury[];
+    const awayInjuries = (awayInjuriesResult?.data || []) as Injury[];
     
     // 6. Odds
     const oddsResult = await dataProviderManager.getPreMatchOdds(fixtureId);
-    const odds = oddsResult?.data;
+    const odds = oddsResult?.data as OddsData | undefined;
     
     // 7. Referee
     const refereeResult = await dataProviderManager.getReferee(fixtureId);
-    const referee = refereeResult?.data;
+    const referee = refereeResult?.data as RefereeData | undefined;
     
     // 8. Lineup
     const lineupResult = await dataProviderManager.getLineup(fixtureId);
-    const lineup = lineupResult?.data;
+    const lineup = lineupResult?.data as LineupData | undefined;
     
     // Convert to FullFixtureData format
     const fullData: FullFixtureData = {
@@ -170,7 +170,7 @@ export async function fetchFullFixtureDataFromProvider(
         surface: ''
       },
       referee: referee ? {
-        name: referee.name,
+        name: referee.name || '',
         avgCardsPerMatch: referee.avgYellowCards + referee.avgRedCards,
         avgFoulsPerMatch: 0
       } : {

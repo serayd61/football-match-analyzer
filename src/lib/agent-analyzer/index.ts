@@ -1221,8 +1221,8 @@ export async function runAgentAnalysis(
       homeTeamStats = homeStatsResult?.data;
       awayTeamStats = awayStatsResult?.data;
       h2hData = h2hResult?.data;
-      homeInjuries = homeInjResult?.data || [];
-      awayInjuries = awayInjResult?.data || [];
+      homeInjuries = Array.isArray(homeInjResult?.data) ? homeInjResult.data : [];
+      awayInjuries = Array.isArray(awayInjResult?.data) ? awayInjResult.data : [];
     } else {
       // Sportmonks fallback
       [homeTeamStats, awayTeamStats, h2hData, homeInjuries, awayInjuries] = await Promise.all([

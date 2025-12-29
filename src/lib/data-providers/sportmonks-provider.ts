@@ -8,9 +8,9 @@ import {
   getTeamRecentMatches as getTeamRecentMatchesSM,
   getTeamInjuries as getTeamInjuriesSM,
   getHeadToHead as getHeadToHeadSM,
-  getPreMatchOdds as getPreMatchOddsSM,
   getFullFixtureData
-} from '../sportmonks';
+} from '../sportmonks/index';
+import { getPreMatchOdds as getPreMatchOddsSM } from '../sportmonks';
 import { fetchRefereeFromSportMonks } from '../football-intelligence/referee-stats';
 import { fetchLineupFromSportMonks } from '../football-intelligence/lineup-injuries';
 import { fetchTeamXGFromSportMonks } from '../football-intelligence/xg-provider';
