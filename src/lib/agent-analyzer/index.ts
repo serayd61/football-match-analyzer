@@ -10,6 +10,8 @@ import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { MatchData } from '../heurist/types';
 import { saveOddsAnalysisLog } from '../odds-logger';
+import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
+import { dataProviderManager } from '../data-providers';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -1173,26 +1175,64 @@ export async function runAgentAnalysis(
   const startTime = Date.now();
   
   try {
-    // Step 1: Fetch full fixture data from Sportmonks
-    console.log('📊 Step 1: Fetching full match data from Sportmonks...');
-    const fullData = await getFullFixtureData(fixtureId);
+    // Step 1: Fetch full fixture data from Provider Manager (Bright Data veya Sportmonks)
+    console.log('📊 Step 1: Fetching full match data from Provider Manager...');
+    
+    // Önce provider manager'dan dene (Bright Data öncelikli)
+    let fullData = await fetchFullFixtureDataFromProvider(fixtureId, homeTeamId, awayTeamId);
+    let dataSource = 'Provider Manager';
+    
+    // Provider manager başarısız olursa Sportmonks'a fallback
+    if (!fullData) {
+      console.log('⚠️ Provider Manager failed, falling back to Sportmonks...');
+      fullData = await getFullFixtureData(fixtureId);
+      dataSource = 'Sportmonks (Fallback)';
+    }
     
     if (!fullData) {
-      console.error('❌ Failed to fetch fixture data');
+      console.error('❌ Failed to fetch fixture data from all sources');
       return null;
     }
     
-    console.log(`✅ Data loaded! Quality: ${fullData.dataQuality.score}/100`);
+    console.log(`✅ Data loaded from ${dataSource}! Quality: ${fullData.dataQuality.score}/100`);
     
-    // Step 2: Fetch detailed stats for agents (getTeamStats ve getHeadToHead)
+    // Step 2: Fetch detailed stats for agents
+    // Provider manager kullanıyorsak, adapter zaten bu verileri içeriyor
+    // Ama agent'lar için ayrıca detaylı stats gerekebilir
     console.log('🔄 Step 2: Fetching detailed team stats and H2H data...');
-    const [homeTeamStats, awayTeamStats, h2hData, homeInjuries, awayInjuries] = await Promise.all([
-      getTeamStats(homeTeamId),
-      getTeamStats(awayTeamId),
-      getHeadToHead(homeTeamId, awayTeamId),
-      getTeamInjuries(homeTeamId),
-      getTeamInjuries(awayTeamId)
-    ]);
+    
+    let homeTeamStats: any = null;
+    let awayTeamStats: any = null;
+    let h2hData: any = null;
+    let homeInjuries: any[] = [];
+    let awayInjuries: any[] = [];
+    
+    // Provider manager'dan gelen verileri kullan veya Sportmonks'a fallback
+    if (dataSource === 'Provider Manager') {
+      // Provider manager'dan gelen verileri kullan
+      const [homeStatsResult, awayStatsResult, h2hResult, homeInjResult, awayInjResult] = await Promise.all([
+        dataProviderManager.getTeamStats(homeTeamId),
+        dataProviderManager.getTeamStats(awayTeamId),
+        dataProviderManager.getHeadToHead(homeTeamId, awayTeamId),
+        dataProviderManager.getTeamInjuries(homeTeamId),
+        dataProviderManager.getTeamInjuries(awayTeamId)
+      ]);
+      
+      homeTeamStats = homeStatsResult?.data;
+      awayTeamStats = awayStatsResult?.data;
+      h2hData = h2hResult?.data;
+      homeInjuries = homeInjResult?.data || [];
+      awayInjuries = awayInjResult?.data || [];
+    } else {
+      // Sportmonks fallback
+      [homeTeamStats, awayTeamStats, h2hData, homeInjuries, awayInjuries] = await Promise.all([
+        getTeamStats(homeTeamId),
+        getTeamStats(awayTeamId),
+        getHeadToHead(homeTeamId, awayTeamId),
+        getTeamInjuries(homeTeamId),
+        getTeamInjuries(awayTeamId)
+      ]);
+    }
     
     // Step 3: Convert to MatchData format with detailedStats
     console.log('🔄 Step 3: Converting to MatchData format with detailed stats...');

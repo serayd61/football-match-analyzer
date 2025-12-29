@@ -117,14 +117,18 @@ export class BrightDataMCPProvider implements DataProvider {
   
   async getFixture(fixtureId: number): Promise<FixtureData | null> {
     try {
-      // Önce MCP agent üzerinden dene
+      console.log(`🔍 Bright Data: Fetching fixture ${fixtureId} from FlashScore/SofaScore...`);
+      
+      // Önce MCP agent üzerinden dene (FlashScore ve SofaScore öncelikli)
       const mcpResult = await this.callMCPAgent('get_fixture', {
         fixtureId,
-        sources: ['flashscore', 'sofa_score']
+        sources: ['flashscore', 'sofa_score'],
+        priority: 'flashscore' // FlashScore öncelikli
       });
       
       if (mcpResult?.data) {
         const data = mcpResult.data;
+        console.log(`✅ Bright Data MCP: Fixture data received from ${data.source || 'MCP'}`);
         return {
           fixtureId: data.id || fixtureId,
           homeTeam: { id: data.homeTeam?.id || 0, name: data.homeTeam?.name || '' },
@@ -137,17 +141,30 @@ export class BrightDataMCPProvider implements DataProvider {
         };
       }
       
-      // MCP başarısız olursa direkt Bright Data API'yi dene
+      // MCP başarısız olursa direkt Bright Data Web Unlocker API'yi dene
       // FlashScore'dan maç verisi çek
+      console.log(`⚠️ MCP failed, trying direct Bright Data scraping...`);
       const flashScoreUrl = `https://www.flashscore.com/match/${fixtureId}/`;
-      const scraped = await this.scrapeWithBrightData(flashScoreUrl);
+      const scraped = await this.scrapeWithBrightData(flashScoreUrl, 'web_unlocker');
       
       if (scraped) {
         // Scraped data'yı parse et ve döndür
-        // Bu kısım FlashScore'un HTML yapısına göre implement edilecek
+        // FlashScore HTML yapısına göre parse edilecek
+        // Şimdilik basit bir parse yapıyoruz, gerçek implementasyon için HTML parser gerekebilir
+        console.log(`✅ Bright Data: Scraped data from FlashScore (raw)`);
+        return null; // TODO: Parse scraped HTML - Cheerio veya benzeri parser gerekli
+      }
+      
+      // SofaScore'u da dene
+      const sofaScoreUrl = `https://www.sofascore.com/match/${fixtureId}`;
+      const sofaScraped = await this.scrapeWithBrightData(sofaScoreUrl, 'web_unlocker');
+      
+      if (sofaScraped) {
+        console.log(`✅ Bright Data: Scraped data from SofaScore (raw)`);
         return null; // TODO: Parse scraped HTML
       }
       
+      console.log(`❌ Bright Data: Failed to fetch fixture from all sources`);
       return null;
     } catch (error) {
       console.error('❌ getFixture error:', error);
@@ -177,37 +194,53 @@ export class BrightDataMCPProvider implements DataProvider {
   }
   
   async getTeamStats(teamId: number, seasonId?: number): Promise<TeamStats | null> {
-    // Bright Data ile takım istatistiklerini çek
-    const result = await this.callMCPAgent('get_team_stats', {
-      teamId,
-      seasonId,
-      sources: ['transfermarkt', 'fbref', 'whoscored']
-    });
-    
-    if (!result?.data) return null;
-    
-    const stats = result.data;
-    return {
-      teamId: stats.id,
-      teamName: stats.name,
-      recentForm: stats.form || 'DDDDD',
-      formPoints: stats.points || 0,
-      goalsScored: stats.goalsScored || 0,
-      goalsConceded: stats.goalsConceded || 0,
-      avgGoalsScored: stats.avgGoalsScored || 1.2,
-      avgGoalsConceded: stats.avgGoalsConceded || 1.2,
-      homeWins: stats.homeWins || 0,
-      homeDraws: stats.homeDraws || 0,
-      homeLosses: stats.homeLosses || 0,
-      awayWins: stats.awayWins || 0,
-      awayDraws: stats.awayDraws || 0,
-      awayLosses: stats.awayLosses || 0,
-      bttsPercentage: stats.bttsPercentage || 50,
-      over25Percentage: stats.over25Percentage || 50,
-      under25Percentage: stats.under25Percentage || 50,
-      cleanSheets: stats.cleanSheets || 0,
-      failedToScore: stats.failedToScore || 0
-    };
+    try {
+      console.log(`🔍 Bright Data: Fetching team stats ${teamId} from FlashScore/SofaScore...`);
+      
+      // FlashScore ve SofaScore'dan takım istatistiklerini çek
+      const result = await this.callMCPAgent('get_team_stats', {
+        teamId,
+        seasonId,
+        sources: ['flashscore', 'sofa_score', 'transfermarkt'],
+        priority: 'flashscore' // FlashScore öncelikli
+      });
+      
+      if (!result?.data) {
+        console.log(`⚠️ Bright Data MCP: No team stats from MCP, trying direct scraping...`);
+        // MCP başarısız olursa direkt scraping dene
+        // FlashScore team URL formatı: https://www.flashscore.com/team/{teamName}/{teamId}/
+        // Ancak teamName'i bilmiyoruz, bu yüzden MCP'ye güveniyoruz
+        return null;
+      }
+      
+      const stats = result.data;
+      console.log(`✅ Bright Data MCP: Team stats received from ${stats.source || 'MCP'}`);
+      
+      return {
+        teamId: stats.id || teamId,
+        teamName: stats.name || '',
+        recentForm: stats.form || 'DDDDD',
+        formPoints: stats.points || 0,
+        goalsScored: stats.goalsScored || 0,
+        goalsConceded: stats.goalsConceded || 0,
+        avgGoalsScored: stats.avgGoalsScored || 1.2,
+        avgGoalsConceded: stats.avgGoalsConceded || 1.2,
+        homeWins: stats.homeWins || 0,
+        homeDraws: stats.homeDraws || 0,
+        homeLosses: stats.homeLosses || 0,
+        awayWins: stats.awayWins || 0,
+        awayDraws: stats.awayDraws || 0,
+        awayLosses: stats.awayLosses || 0,
+        bttsPercentage: stats.bttsPercentage || 50,
+        over25Percentage: stats.over25Percentage || 50,
+        under25Percentage: stats.under25Percentage || 50,
+        cleanSheets: stats.cleanSheets || 0,
+        failedToScore: stats.failedToScore || 0
+      };
+    } catch (error) {
+      console.error('❌ getTeamStats error:', error);
+      return null;
+    }
   }
   
   async getTeamRecentMatches(teamId: number, limit: number = 10): Promise<MatchData[]> {
@@ -247,51 +280,79 @@ export class BrightDataMCPProvider implements DataProvider {
   }
   
   async getHeadToHead(homeTeamId: number, awayTeamId: number): Promise<H2HData | null> {
-    const result = await this.callMCPAgent('get_h2h', {
-      homeTeamId,
-      awayTeamId,
-      sources: ['flashscore', 'transfermarkt']
-    });
-    
-    if (!result?.data) return null;
-    
-    const h2h = result.data;
-    return {
-      totalMatches: h2h.totalMatches || 0,
-      homeWins: h2h.homeWins || 0,
-      awayWins: h2h.awayWins || 0,
-      draws: h2h.draws || 0,
-      avgGoals: h2h.avgGoals || 0,
-      over25Percentage: h2h.over25Percentage || 50,
-      bttsPercentage: h2h.bttsPercentage || 50,
-      recentMatches: h2h.recentMatches || []
-    };
+    try {
+      console.log(`🔍 Bright Data: Fetching H2H ${homeTeamId} vs ${awayTeamId} from FlashScore...`);
+      
+      // FlashScore'dan H2H verilerini çek
+      const result = await this.callMCPAgent('get_h2h', {
+        homeTeamId,
+        awayTeamId,
+        sources: ['flashscore', 'sofa_score'],
+        priority: 'flashscore'
+      });
+      
+      if (!result?.data) {
+        console.log(`⚠️ Bright Data MCP: No H2H data from MCP`);
+        return null;
+      }
+      
+      const h2h = result.data;
+      console.log(`✅ Bright Data MCP: H2H data received from ${h2h.source || 'MCP'}`);
+      
+      return {
+        totalMatches: h2h.totalMatches || 0,
+        homeWins: h2h.homeWins || 0,
+        awayWins: h2h.awayWins || 0,
+        draws: h2h.draws || 0,
+        avgGoals: h2h.avgGoals || 0,
+        over25Percentage: h2h.over25Percentage || 50,
+        bttsPercentage: h2h.bttsPercentage || 50,
+        recentMatches: h2h.recentMatches || []
+      };
+    } catch (error) {
+      console.error('❌ getHeadToHead error:', error);
+      return null;
+    }
   }
   
   async getPreMatchOdds(fixtureId: number): Promise<OddsData | null> {
-    const result = await this.callMCPAgent('get_odds', {
-      fixtureId,
-      sources: ['bet365', 'betfair', 'oddschecker']
-    });
-    
-    if (!result?.data) return null;
-    
-    const odds = result.data;
-    return {
-      matchWinner: {
-        home: odds.matchWinner?.home || 2.0,
-        draw: odds.matchWinner?.draw || 3.0,
-        away: odds.matchWinner?.away || 2.5
-      },
-      overUnder25: {
-        over: odds.overUnder25?.over || 1.9,
-        under: odds.overUnder25?.under || 1.9
-      },
-      btts: {
-        yes: odds.btts?.yes || 1.8,
-        no: odds.btts?.no || 2.0
+    try {
+      console.log(`🔍 Bright Data: Fetching odds ${fixtureId} from SofaScore...`);
+      
+      // SofaScore'dan odds verilerini çek (FlashScore'da odds yok)
+      const result = await this.callMCPAgent('get_odds', {
+        fixtureId,
+        sources: ['sofa_score', 'bet365', 'betfair'],
+        priority: 'sofa_score'
+      });
+      
+      if (!result?.data) {
+        console.log(`⚠️ Bright Data MCP: No odds data from MCP`);
+        return null;
       }
-    };
+      
+      const odds = result.data;
+      console.log(`✅ Bright Data MCP: Odds data received from ${odds.source || 'MCP'}`);
+      
+      return {
+        matchWinner: {
+          home: odds.matchWinner?.home || 2.0,
+          draw: odds.matchWinner?.draw || 3.0,
+          away: odds.matchWinner?.away || 2.5
+        },
+        overUnder25: {
+          over: odds.overUnder25?.over || 1.9,
+          under: odds.overUnder25?.under || 1.9
+        },
+        btts: {
+          yes: odds.btts?.yes || 1.8,
+          no: odds.btts?.no || 2.0
+        }
+      };
+    } catch (error) {
+      console.error('❌ getPreMatchOdds error:', error);
+      return null;
+    }
   }
   
   async getReferee(fixtureId: number): Promise<RefereeData | null> {
