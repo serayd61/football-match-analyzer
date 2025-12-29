@@ -34,6 +34,7 @@ class DataProviderManager {
   
   /**
    * İlk başarılı sonucu döndür (fallback mekanizması)
+   * Her provider için timeout: 10 saniye
    */
   private async tryProviders<T>(
     method: keyof DataProvider,
@@ -42,14 +43,25 @@ class DataProviderManager {
     for (const provider of this.providers) {
       try {
         const fn = provider[method] as (...args: any[]) => Promise<T | null>;
-        const result = await fn.apply(provider, args);
+        
+        // Timeout wrapper - 10 saniye sonra iptal et
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), 10000);
+        });
+        
+        const result = await Promise.race([
+          fn.apply(provider, args),
+          timeoutPromise
+        ]);
         
         if (result !== null && result !== undefined) {
           console.log(`✅ ${method} from ${provider.name}`);
           return { data: result, provider: provider.name };
+        } else if (result === null) {
+          console.log(`⏱️ ${provider.name} timeout for ${method} - trying next provider`);
         }
-      } catch (error) {
-        console.error(`❌ ${provider.name} error for ${method}:`, error);
+      } catch (error: any) {
+        console.error(`❌ ${provider.name} error for ${method}:`, error.message?.substring(0, 100));
         continue; // Sonraki provider'ı dene
       }
     }

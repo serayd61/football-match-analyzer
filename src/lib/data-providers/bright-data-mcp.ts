@@ -34,6 +34,7 @@ export class BrightDataMCPProvider implements DataProvider {
   /**
    * MCP agent üzerinden Bright Data API'sini çağır
    * Bright Data MCP server'ına HTTP isteği gönderir
+   * Timeout: 8 saniye (hızlı fallback için)
    */
   private async callMCPAgent(action: string, params: Record<string, any>): Promise<any> {
     if (!this.apiKey) {
@@ -41,6 +42,10 @@ export class BrightDataMCPProvider implements DataProvider {
     }
     
     try {
+      // Timeout controller - 8 saniye sonra iptal et
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
       // Bright Data MCP server'a istek gönder
       // MCP protokolüne göre istek formatı
       const response = await fetch(this.mcpServerUrl, {
@@ -57,8 +62,11 @@ export class BrightDataMCPProvider implements DataProvider {
             ...params,
             token: this.apiKey
           }
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         console.error(`❌ Bright Data MCP error: ${response.status} ${response.statusText}`);
@@ -72,12 +80,20 @@ export class BrightDataMCPProvider implements DataProvider {
       // MCP JSON-RPC response formatı
       if (result.error) {
         console.error(`❌ Bright Data MCP error:`, result.error);
+        // Session ID hatası varsa, direkt Bright Data API'yi dene
+        if (result.error.message?.includes('session') || result.error.code === -32000) {
+          console.log(`⚠️ MCP session error, will try direct Bright Data API`);
+        }
         return null;
       }
       
       return result.result || result.data;
     } catch (error: any) {
-      console.error('❌ Bright Data MCP call error:', error.message);
+      if (error.name === 'AbortError') {
+        console.error('❌ Bright Data MCP timeout (8s) - falling back to Sportmonks');
+      } else {
+        console.error('❌ Bright Data MCP call error:', error.message);
+      }
       return null;
     }
   }
@@ -85,9 +101,14 @@ export class BrightDataMCPProvider implements DataProvider {
   /**
    * Bright Data Web Unlocker API kullanarak web scraping yap
    * FlashScore, SofaScore gibi sitelerden veri çeker
+   * Timeout: 10 saniye
    */
   private async scrapeWithBrightData(url: string, zone: string = 'web_unlocker'): Promise<any> {
     try {
+      // Timeout controller - 10 saniye sonra iptal et
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch('https://api.brightdata.com/request', {
         method: 'POST',
         headers: {
@@ -100,8 +121,11 @@ export class BrightDataMCPProvider implements DataProvider {
           format: 'json',
           method: 'GET',
           country: 'us'
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         console.error(`❌ Bright Data API error: ${response.status}`);
@@ -109,8 +133,12 @@ export class BrightDataMCPProvider implements DataProvider {
       }
       
       return await response.json();
-    } catch (error) {
-      console.error('❌ Bright Data scraping error:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('❌ Bright Data scraping timeout (10s)');
+      } else {
+        console.error('❌ Bright Data scraping error:', error);
+      }
       return null;
     }
   }
@@ -119,11 +147,16 @@ export class BrightDataMCPProvider implements DataProvider {
     try {
       console.log(`🔍 Bright Data: Fetching fixture ${fixtureId} from FlashScore/SofaScore...`);
       
-      // Önce MCP agent üzerinden dene (FlashScore ve SofaScore öncelikli)
+      // ⚠️ MCP session hatası var, şimdilik direkt Bright Data API'yi kullanmayı atlayalım
+      // Çünkü HTML parsing gerekiyor ve bu zaman alıyor
+      // Şimdilik Sportmonks fallback'e güveniyoruz
+      
+      // MCP agent üzerinden dene (FlashScore ve SofaScore öncelikli)
+      // Timeout: 8 saniye (hızlı fallback için)
       const mcpResult = await this.callMCPAgent('get_fixture', {
         fixtureId,
         sources: ['flashscore', 'sofa_score'],
-        priority: 'flashscore' // FlashScore öncelikli
+        priority: 'flashscore'
       });
       
       if (mcpResult?.data) {
@@ -141,33 +174,12 @@ export class BrightDataMCPProvider implements DataProvider {
         };
       }
       
-      // MCP başarısız olursa direkt Bright Data Web Unlocker API'yi dene
-      // FlashScore'dan maç verisi çek
-      console.log(`⚠️ MCP failed, trying direct Bright Data scraping...`);
-      const flashScoreUrl = `https://www.flashscore.com/match/${fixtureId}/`;
-      const scraped = await this.scrapeWithBrightData(flashScoreUrl, 'web_unlocker');
-      
-      if (scraped) {
-        // Scraped data'yı parse et ve döndür
-        // FlashScore HTML yapısına göre parse edilecek
-        // Şimdilik basit bir parse yapıyoruz, gerçek implementasyon için HTML parser gerekebilir
-        console.log(`✅ Bright Data: Scraped data from FlashScore (raw)`);
-        return null; // TODO: Parse scraped HTML - Cheerio veya benzeri parser gerekli
-      }
-      
-      // SofaScore'u da dene
-      const sofaScoreUrl = `https://www.sofascore.com/match/${fixtureId}`;
-      const sofaScraped = await this.scrapeWithBrightData(sofaScoreUrl, 'web_unlocker');
-      
-      if (sofaScraped) {
-        console.log(`✅ Bright Data: Scraped data from SofaScore (raw)`);
-        return null; // TODO: Parse scraped HTML
-      }
-      
-      console.log(`❌ Bright Data: Failed to fetch fixture from all sources`);
+      // MCP başarısız - direkt scraping HTML parsing gerektirir, zaman alır
+      // Şimdilik null döndür, Sportmonks fallback devreye girecek
+      console.log(`⚠️ Bright Data MCP failed (session error or timeout) - will use Sportmonks fallback`);
       return null;
-    } catch (error) {
-      console.error('❌ getFixture error:', error);
+    } catch (error: any) {
+      console.error('❌ getFixture error:', error.message?.substring(0, 100));
       return null;
     }
   }
@@ -198,18 +210,16 @@ export class BrightDataMCPProvider implements DataProvider {
       console.log(`🔍 Bright Data: Fetching team stats ${teamId} from FlashScore/SofaScore...`);
       
       // FlashScore ve SofaScore'dan takım istatistiklerini çek
+      // Timeout: 8 saniye
       const result = await this.callMCPAgent('get_team_stats', {
         teamId,
         seasonId,
         sources: ['flashscore', 'sofa_score', 'transfermarkt'],
-        priority: 'flashscore' // FlashScore öncelikli
+        priority: 'flashscore'
       });
       
       if (!result?.data) {
-        console.log(`⚠️ Bright Data MCP: No team stats from MCP, trying direct scraping...`);
-        // MCP başarısız olursa direkt scraping dene
-        // FlashScore team URL formatı: https://www.flashscore.com/team/{teamName}/{teamId}/
-        // Ancak teamName'i bilmiyoruz, bu yüzden MCP'ye güveniyoruz
+        console.log(`⚠️ Bright Data MCP: No team stats from MCP - will use Sportmonks fallback`);
         return null;
       }
       
@@ -237,8 +247,8 @@ export class BrightDataMCPProvider implements DataProvider {
         cleanSheets: stats.cleanSheets || 0,
         failedToScore: stats.failedToScore || 0
       };
-    } catch (error) {
-      console.error('❌ getTeamStats error:', error);
+    } catch (error: any) {
+      console.error('❌ getTeamStats error:', error.message?.substring(0, 100));
       return null;
     }
   }
@@ -284,6 +294,7 @@ export class BrightDataMCPProvider implements DataProvider {
       console.log(`🔍 Bright Data: Fetching H2H ${homeTeamId} vs ${awayTeamId} from FlashScore...`);
       
       // FlashScore'dan H2H verilerini çek
+      // Timeout: 8 saniye
       const result = await this.callMCPAgent('get_h2h', {
         homeTeamId,
         awayTeamId,
@@ -292,7 +303,7 @@ export class BrightDataMCPProvider implements DataProvider {
       });
       
       if (!result?.data) {
-        console.log(`⚠️ Bright Data MCP: No H2H data from MCP`);
+        console.log(`⚠️ Bright Data MCP: No H2H data from MCP - will use Sportmonks fallback`);
         return null;
       }
       
@@ -309,8 +320,8 @@ export class BrightDataMCPProvider implements DataProvider {
         bttsPercentage: h2h.bttsPercentage || 50,
         recentMatches: h2h.recentMatches || []
       };
-    } catch (error) {
-      console.error('❌ getHeadToHead error:', error);
+    } catch (error: any) {
+      console.error('❌ getHeadToHead error:', error.message?.substring(0, 100));
       return null;
     }
   }
@@ -320,6 +331,7 @@ export class BrightDataMCPProvider implements DataProvider {
       console.log(`🔍 Bright Data: Fetching odds ${fixtureId} from SofaScore...`);
       
       // SofaScore'dan odds verilerini çek (FlashScore'da odds yok)
+      // Timeout: 8 saniye
       const result = await this.callMCPAgent('get_odds', {
         fixtureId,
         sources: ['sofa_score', 'bet365', 'betfair'],
@@ -327,7 +339,7 @@ export class BrightDataMCPProvider implements DataProvider {
       });
       
       if (!result?.data) {
-        console.log(`⚠️ Bright Data MCP: No odds data from MCP`);
+        console.log(`⚠️ Bright Data MCP: No odds data from MCP - will use Sportmonks fallback`);
         return null;
       }
       
@@ -349,8 +361,8 @@ export class BrightDataMCPProvider implements DataProvider {
           no: odds.btts?.no || 2.0
         }
       };
-    } catch (error) {
-      console.error('❌ getPreMatchOdds error:', error);
+    } catch (error: any) {
+      console.error('❌ getPreMatchOdds error:', error.message?.substring(0, 100));
       return null;
     }
   }
