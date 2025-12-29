@@ -14,13 +14,13 @@ class DataProviderManager {
     // Öncelik sırasına göre provider'ları ekle
     // Düşük priority numarası = yüksek öncelik
     
-    // Bright Data MCP (yüksek öncelik - eğer aktifse)
-    if (process.env.BRIGHT_DATA_API_KEY) {
-      this.providers.push(new BrightDataMCPProvider());
-      console.log('✅ Bright Data MCP Provider loaded');
-    }
+    // ⚠️ Bright Data devre dışı - kullanıcı isteği üzerine sadece Sportmonks kullanılıyor
+    // if (process.env.BRIGHT_DATA_API_KEY) {
+    //   this.providers.push(new BrightDataMCPProvider());
+    //   console.log('✅ Bright Data MCP Provider loaded');
+    // }
     
-    // Sportmonks (fallback)
+    // Sportmonks (tek kaynak)
     if (process.env.SPORTMONKS_API_KEY) {
       this.providers.push(new SportmonksProvider());
       console.log('✅ Sportmonks Provider loaded');
@@ -30,6 +30,7 @@ class DataProviderManager {
     this.providers.sort((a, b) => a.priority - b.priority);
     
     console.log(`📊 Data Providers: ${this.providers.map(p => p.name).join(', ')}`);
+    console.log(`⚠️ Bright Data disabled - using Sportmonks only`);
   }
   
   /**
