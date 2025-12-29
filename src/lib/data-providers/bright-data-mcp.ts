@@ -10,20 +10,30 @@ export class BrightDataMCPProvider implements DataProvider {
   priority = 1; // Yüksek öncelik - Sportmonks'tan önce dene
   
   private apiKey: string;
-  private mcpServerUrl?: string;
+  private mcpServerUrl: string;
   
   constructor() {
+    // API key ve MCP server URL'ini environment'tan al
     this.apiKey = process.env.BRIGHT_DATA_API_KEY || '';
-    this.mcpServerUrl = process.env.BRIGHT_DATA_MCP_SERVER_URL;
     
-    if (!this.apiKey) {
-      console.warn('⚠️ BRIGHT_DATA_API_KEY not set');
+    // MCP server URL'i token ile birlikte
+    if (this.apiKey) {
+      this.mcpServerUrl = `https://mcp.brightdata.com/mcp?token=${this.apiKey}`;
+    } else {
+      this.mcpServerUrl = process.env.BRIGHT_DATA_MCP_SERVER_URL || '';
+    }
+    
+    if (!this.apiKey && !this.mcpServerUrl) {
+      console.warn('⚠️ BRIGHT_DATA_API_KEY or BRIGHT_DATA_MCP_SERVER_URL not set');
+    } else {
+      console.log('✅ Bright Data MCP Provider initialized');
+      console.log(`   MCP Server: ${this.mcpServerUrl?.substring(0, 50)}...`);
     }
   }
   
   /**
    * MCP agent üzerinden Bright Data API'sini çağır
-   * Bu fonksiyon MCP server'a istek gönderir
+   * Bright Data MCP server'ına HTTP isteği gönderir
    */
   private async callMCPAgent(action: string, params: Record<string, any>): Promise<any> {
     if (!this.apiKey) {
@@ -31,65 +41,118 @@ export class BrightDataMCPProvider implements DataProvider {
     }
     
     try {
-      // MCP server'a istek gönder
-      // Not: MCP server'ın nasıl çalıştığına bağlı olarak bu kısım değişebilir
-      const response = await fetch(this.mcpServerUrl || 'http://localhost:3001/mcp', {
+      // Bright Data MCP server'a istek gönder
+      // MCP protokolüne göre istek formatı
+      const response = await fetch(this.mcpServerUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`
         },
         body: JSON.stringify({
-          action,
-          params,
-          provider: 'bright_data'
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: action,
+          params: {
+            ...params,
+            token: this.apiKey
+          }
         })
       });
       
       if (!response.ok) {
-        console.error(`❌ Bright Data MCP error: ${response.status}`);
+        console.error(`❌ Bright Data MCP error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`   Error details: ${errorText.substring(0, 200)}`);
         return null;
       }
       
-      return await response.json();
-    } catch (error) {
-      console.error('❌ Bright Data MCP call error:', error);
+      const result = await response.json();
+      
+      // MCP JSON-RPC response formatı
+      if (result.error) {
+        console.error(`❌ Bright Data MCP error:`, result.error);
+        return null;
+      }
+      
+      return result.result || result.data;
+    } catch (error: any) {
+      console.error('❌ Bright Data MCP call error:', error.message);
       return null;
     }
   }
   
   /**
-   * Web scraping ile maç verilerini çek
-   * Bright Data'nın web scraping özelliklerini kullanır
+   * Bright Data Web Unlocker API kullanarak web scraping yap
+   * FlashScore, SofaScore gibi sitelerden veri çeker
    */
-  private async scrapeMatchData(url: string, selector?: string): Promise<any> {
-    return this.callMCPAgent('scrape', {
-      url,
-      selector,
-      format: 'json'
-    });
+  private async scrapeWithBrightData(url: string, zone: string = 'web_unlocker'): Promise<any> {
+    try {
+      const response = await fetch('https://api.brightdata.com/request', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          zone,
+          url,
+          format: 'json',
+          method: 'GET',
+          country: 'us'
+        })
+      });
+      
+      if (!response.ok) {
+        console.error(`❌ Bright Data API error: ${response.status}`);
+        return null;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Bright Data scraping error:', error);
+      return null;
+    }
   }
   
   async getFixture(fixtureId: number): Promise<FixtureData | null> {
-    // Bright Data ile web scraping veya API çağrısı
-    // Örnek: FlashScore, SofaScore, ESPN gibi sitelerden veri çek
-    const result = await this.callMCPAgent('get_fixture', {
-      fixtureId,
-      sources: ['flashscore', 'sofa_score', 'espn'] // Birden fazla kaynak
-    });
-    
-    if (!result?.data) return null;
-    
-    return {
-      fixtureId: result.data.id,
-      homeTeam: { id: result.data.homeTeam.id, name: result.data.homeTeam.name },
-      awayTeam: { id: result.data.awayTeam.id, name: result.data.awayTeam.name },
-      league: { id: result.data.league.id, name: result.data.league.name },
-      date: result.data.date,
-      status: result.data.status,
-      score: result.data.score,
-      venue: result.data.venue
-    };
+    try {
+      // Önce MCP agent üzerinden dene
+      const mcpResult = await this.callMCPAgent('get_fixture', {
+        fixtureId,
+        sources: ['flashscore', 'sofa_score']
+      });
+      
+      if (mcpResult?.data) {
+        const data = mcpResult.data;
+        return {
+          fixtureId: data.id || fixtureId,
+          homeTeam: { id: data.homeTeam?.id || 0, name: data.homeTeam?.name || '' },
+          awayTeam: { id: data.awayTeam?.id || 0, name: data.awayTeam?.name || '' },
+          league: { id: data.league?.id || 0, name: data.league?.name || '' },
+          date: data.date || new Date().toISOString(),
+          status: data.status || 'scheduled',
+          score: data.score,
+          venue: data.venue
+        };
+      }
+      
+      // MCP başarısız olursa direkt Bright Data API'yi dene
+      // FlashScore'dan maç verisi çek
+      const flashScoreUrl = `https://www.flashscore.com/match/${fixtureId}/`;
+      const scraped = await this.scrapeWithBrightData(flashScoreUrl);
+      
+      if (scraped) {
+        // Scraped data'yı parse et ve döndür
+        // Bu kısım FlashScore'un HTML yapısına göre implement edilecek
+        return null; // TODO: Parse scraped HTML
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ getFixture error:', error);
+      return null;
+    }
   }
   
   async getFixturesByDate(date: string, leagueId?: number): Promise<FixtureData[]> {
