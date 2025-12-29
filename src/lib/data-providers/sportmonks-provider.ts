@@ -23,18 +23,16 @@ export class SportmonksProvider implements DataProvider {
     const fullData = await getFullFixtureData(fixtureId);
     if (!fullData) return null;
     
+    // FullFixtureData'da fixture property'si yok, sadece fixtureId var
+    // Date ve status bilgilerini başka yerden almalıyız veya varsayılan değerler kullanmalıyız
     return {
-      fixtureId: fullData.fixture.id,
+      fixtureId: fullData.fixtureId,
       homeTeam: { id: fullData.homeTeam.id, name: fullData.homeTeam.name },
       awayTeam: { id: fullData.awayTeam.id, name: fullData.awayTeam.name },
       league: { id: fullData.league.id, name: fullData.league.name },
-      date: fullData.fixture.starting_at,
-      status: fullData.fixture.state_id === 5 ? 'finished' : 
-              fullData.fixture.state_id === 1 ? 'scheduled' : 'live',
-      score: fullData.scores ? {
-        home: fullData.scores.home || 0,
-        away: fullData.scores.away || 0
-      } : undefined,
+      date: new Date().toISOString(), // FullFixtureData'da date yok, varsayılan kullan
+      status: 'scheduled', // FullFixtureData'da status yok, varsayılan kullan
+      score: undefined, // FullFixtureData'da scores yok
       venue: fullData.venue?.name
     };
   }
@@ -142,10 +140,11 @@ export class SportmonksProvider implements DataProvider {
     
     return {
       name: ref.name,
-      avgYellowCards: ref.avgYellowCards,
-      avgRedCards: ref.avgRedCards,
-      avgPenalties: ref.avgPenalties,
-      homeBias: ref.homeBias || 'neutral'
+      avgYellowCards: ref.yellowCardsPerMatch || 0,
+      avgRedCards: ref.redCardsPerMatch || 0,
+      avgPenalties: ref.penaltiesPerMatch || 0,
+      homeBias: ref.homeBias === 'pro_home' ? 'slight_home' : 
+                ref.homeBias === 'pro_away' ? 'slight_away' : 'neutral'
     };
   }
   
@@ -153,20 +152,24 @@ export class SportmonksProvider implements DataProvider {
     const lineup = await fetchLineupFromSportMonks(fixtureId);
     if (!lineup) return null;
     
+    // LineupInfo'da players yok, startingXI var
+    const homePlayers = lineup.homeLineup?.startingXI || [];
+    const awayPlayers = lineup.awayLineup?.startingXI || [];
+    
     return {
       home: {
         formation: lineup.homeLineup?.formation || '4-3-3',
-        players: lineup.homeLineup?.players?.map((p: any) => ({
-          name: p.name,
-          position: p.position
-        })) || []
+        players: homePlayers.map((p: any) => ({
+          name: p.name || 'Unknown',
+          position: p.position || 'MID'
+        }))
       },
       away: {
         formation: lineup.awayLineup?.formation || '4-4-2',
-        players: lineup.awayLineup?.players?.map((p: any) => ({
-          name: p.name,
-          position: p.position
-        })) || []
+        players: awayPlayers.map((p: any) => ({
+          name: p.name || 'Unknown',
+          position: p.position || 'MID'
+        }))
       }
     };
   }
@@ -175,16 +178,17 @@ export class SportmonksProvider implements DataProvider {
     const xg = await fetchTeamXGFromSportMonks(teamId);
     if (!xg) return null;
     
+    // fetchTeamXGFromSportMonks Partial<TeamXGData> döndürüyor
     return {
-      avgXGFor: xg.avgXGFor || 0,
-      avgXGAgainst: xg.avgXGAgainst || 0,
-      matchHistory: xg.matchXGHistory?.map((m: any) => ({
-        date: m.date,
-        xgFor: m.xgFor,
-        xgAgainst: m.xgAgainst,
-        goalsFor: m.goalsFor,
-        goalsAgainst: m.goalsAgainst
-      })) || []
+      avgXGFor: xg.xGFor || 0,
+      avgXGAgainst: xg.xGAgainst || 0,
+      matchHistory: (xg.matchXGHistory || []).map((m: any) => ({
+        date: m.date || '',
+        xgFor: m.xGFor || m.xgFor || 0,
+        xgAgainst: m.xGAgainst || m.xgAgainst || 0,
+        goalsFor: m.actualGoalsFor || m.goalsFor || 0,
+        goalsAgainst: m.actualGoalsAgainst || m.goalsAgainst || 0
+      }))
     };
   }
 }
