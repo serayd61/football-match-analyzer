@@ -1252,7 +1252,7 @@ export async function runAgentAnalysis(
     console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis, GeniusAnalyst)...');
     const language: 'tr' | 'en' | 'de' = 'tr'; // Türkçe varsayılan
     
-    // 🆕 Timeout wrapper - agent'ları 15 saniye içinde tamamlamaya zorla
+    // 🆕 Optimized timeout wrapper - agent'ları verimli çalıştır
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, agentName: string): Promise<T | null> => {
       return Promise.race([
         promise,
@@ -1265,36 +1265,56 @@ export async function runAgentAnalysis(
       ]);
     };
     
+    // 🆕 Veri kalitesi kontrolü - agent'lara yeterli veri var mı?
+    const dataQuality = fullData.dataQuality?.score || 0;
+    const hasMinimalData = dataQuality >= 30; // En az %30 veri kalitesi gerekli
+    
+    if (!hasMinimalData) {
+      console.warn(`⚠️ Low data quality (${dataQuality}%), some agents may produce less reliable results`);
+    }
+    
+    // 🆕 Agent'ları paralel çalıştır - optimize edilmiş timeout'lar
     const [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).catch(err => {
-        console.error('❌ Stats agent failed:', err);
+        console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 15000, 'Stats Agent'),
+      }), 12000, 'Stats Agent'), // 12 saniye - optimize edildi
       withTimeout(runOddsAgent(matchData, language).catch(err => {
-        console.error('❌ Odds agent failed:', err);
+        console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 15000, 'Odds Agent'),
+      }), 12000, 'Odds Agent'), // 12 saniye - optimize edildi
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
-        console.error('❌ DeepAnalysis agent failed:', err);
+        console.error('❌ DeepAnalysis agent failed:', err?.message || err);
         return null;
-      }), 15000, 'DeepAnalysis Agent'),
+      }), 12000, 'DeepAnalysis Agent'), // 12 saniye - optimize edildi
       // 🆕 Genius Analyst Agent - daha kısa timeout (opsiyonel agent)
       withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
-        console.error('❌ GeniusAnalyst agent failed:', err);
+        console.error('❌ GeniusAnalyst agent failed:', err?.message || err);
         return null;
-      }), 12000, 'GeniusAnalyst Agent'), // 12 saniye - daha agresif
+      }), 10000, 'GeniusAnalyst Agent'), // 10 saniye - daha agresif
     ]);
     
-    if (!statsResult && !oddsResult && !deepAnalysisResult && !geniusAnalystResult) {
-      console.error('❌ All agents failed');
+    // 🆕 Minimum agent başarı kontrolü - en az 2 agent başarılı olmalı
+    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult].filter(r => r !== null).length;
+    
+    if (successfulAgents < 2) {
+      console.error(`❌ Insufficient agents completed (${successfulAgents}/4). Minimum 2 required.`);
       return null;
     }
     
-    console.log('✅ Agents completed');
-    if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
-    if (oddsResult) console.log(`   Odds: ${oddsResult.matchWinnerValue || 'N/A'}`);
-    if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'}`);
-    if (geniusAnalystResult) console.log(`   🧠 GeniusAnalyst: ${geniusAnalystResult.predictions?.matchResult?.prediction || 'N/A'} | Conf: ${geniusAnalystResult.finalRecommendation?.overallConfidence || 0}%`);
+    console.log(`✅ Agents completed: ${successfulAgents}/4 successful`);
+    if (statsResult) {
+      console.log(`   📊 Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts} | Conf: ${statsResult.confidence || statsResult.overUnderConfidence || 'N/A'}%`);
+    }
+    if (oddsResult) {
+      console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
+    }
+    if (deepAnalysisResult) {
+      console.log(`   🔬 DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'} | ${deepAnalysisResult.overUnder?.prediction || 'N/A'} | Conf: ${deepAnalysisResult.matchResult?.confidence || 'N/A'}%`);
+    }
+    if (geniusAnalystResult) {
+      console.log(`   🧠 GeniusAnalyst: ${geniusAnalystResult.predictions?.matchResult?.prediction || 'N/A'} | Conf: ${geniusAnalystResult.finalRecommendation?.overallConfidence || 0}%`);
+    }
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     // ⚠️ Master Strategist opsiyonel - timeout olursa atla (ana agent'lar yeterli)

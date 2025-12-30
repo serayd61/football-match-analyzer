@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
@@ -808,15 +809,16 @@ export default function DashboardPage() {
   // ANALYZE MATCH
   // ============================================================================
   
-  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType, forceRefresh: boolean = false) => {
+  // 🆕 Unified Analysis - Tek analiz butonu, Agent + AI birleşik sistem
+  const analyzeMatch = async (fixture: Fixture, forceRefresh: boolean = false) => {
     setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
     setAnalysisError(null);
     
     try {
-      // 🆕 type === 'ai' ise Smart Analysis, type === 'agent' ise Agent Analysis
-      const endpoint = '/api/v2/analyze';
+      // Unified Consensus System endpoint
+      const endpoint = '/api/unified/analyze';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -828,21 +830,60 @@ export default function DashboardPage() {
           awayTeamId: fixture.awayTeamId,
           league: fixture.league,
           matchDate: fixture.date.split('T')[0],
-          preferAnalysis: type === 'ai' ? 'smart' : 'agent', // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
-          skipCache: forceRefresh // 🆕 Cache'i bypass etmek için
+          skipCache: forceRefresh
         })
       });
       
       const data = await res.json();
       
       if (data.success) {
-        setAnalysis(data.analysis);
-        // 🆕 Response'dan gelen analysisType'a göre UI'ı güncelle
-        if (data.analysisType === 'agent') {
-          setAnalysisType('agent');
-        } else if (data.analysisType === 'smart') {
-          setAnalysisType('ai'); // Smart Analysis = AI Analysis UI'da
-        }
+        // Unified analysis formatını SmartAnalysis formatına dönüştür (UI uyumluluğu için)
+        const unifiedAnalysis = data.analysis;
+        const convertedAnalysis: SmartAnalysis = {
+          fixtureId: fixture.id,
+          homeTeam: fixture.homeTeam,
+          awayTeam: fixture.awayTeam,
+          league: fixture.league,
+          matchDate: fixture.date.split('T')[0],
+          agents: {
+            stats: unifiedAnalysis.sources?.agents?.stats,
+            odds: unifiedAnalysis.sources?.agents?.odds,
+            deepAnalysis: unifiedAnalysis.sources?.agents?.deepAnalysis,
+            masterStrategist: unifiedAnalysis.sources?.agents?.masterStrategist,
+            geniusAnalyst: unifiedAnalysis.sources?.agents?.geniusAnalyst
+          },
+          matchResult: {
+            prediction: unifiedAnalysis.predictions.matchResult.prediction,
+            confidence: unifiedAnalysis.predictions.matchResult.confidence,
+            reasoning: unifiedAnalysis.predictions.matchResult.reasoning
+          },
+          top3Predictions: [
+            {
+              rank: 1,
+              market: unifiedAnalysis.bestBet.market,
+              selection: unifiedAnalysis.bestBet.selection,
+              confidence: unifiedAnalysis.bestBet.confidence,
+              reasoning: unifiedAnalysis.bestBet.reasoning,
+              agentSupport: ['Unified Consensus']
+            }
+          ],
+          bestBet: {
+            market: unifiedAnalysis.bestBet.market,
+            selection: unifiedAnalysis.bestBet.selection,
+            confidence: unifiedAnalysis.bestBet.confidence,
+            reason: unifiedAnalysis.bestBet.reasoning
+          },
+          agreement: unifiedAnalysis.systemPerformance.agreement,
+          riskLevel: unifiedAnalysis.systemPerformance.riskLevel,
+          overallConfidence: unifiedAnalysis.systemPerformance.overallConfidence,
+          dataQuality: unifiedAnalysis.systemPerformance.dataQuality,
+          processingTime: unifiedAnalysis.metadata.processingTime,
+          analyzedAt: unifiedAnalysis.metadata.analyzedAt
+        };
+        
+        setAnalysis(convertedAnalysis);
+        setAnalysisType('agent'); // Unified system = agent formatında göster
+        
         // Update fixture hasAnalysis status
         setFixtures(prev => prev.map(f => 
           f.id === fixture.id ? { ...f, hasAnalysis: true } : f
@@ -851,6 +892,7 @@ export default function DashboardPage() {
         setAnalysisError(data.error || 'Analiz başarısız');
       }
     } catch (error) {
+      console.error('Analysis error:', error);
       setAnalysisError('Bağlantı hatası');
     }
     
@@ -900,8 +942,11 @@ export default function DashboardPage() {
             transition={{ type: "spring", stiffness: 400 }}
           >
             <div className="relative">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#00f0ff] to-[#ff00f0] flex items-center justify-center neon-border-cyan">
-                <Zap className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#00f0ff] to-[#ff00f0] flex items-center justify-center neon-border-cyan relative overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <SimpleFootballIcon className="w-8 h-8" />
+                </div>
+                <Zap className="w-5 h-5 text-white relative z-10" />
               </div>
               <div className="absolute inset-0 rounded-lg bg-[#00f0ff] opacity-20 blur-xl animate-pulse" />
             </div>
@@ -934,6 +979,16 @@ export default function DashboardPage() {
             >
               <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
             </motion.button>
+            
+            <motion.div whileHover={{ scale: 1.05 }}>
+              <Link
+                href="/performance"
+                className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+                title="Performans Takibi"
+              >
+                <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
+              </Link>
+            </motion.div>
             
             <LanguageSelector />
             
@@ -973,34 +1028,34 @@ export default function DashboardPage() {
                     
                     <div className="py-2">
                       <motion.div whileHover={{ x: 5 }}>
-                        <Link
-                          href="/profile"
+                      <Link
+                        href="/profile"
                           className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00f0ff]/10 transition-all group"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
+                        onClick={() => setShowProfileMenu(false)}
+                      >
                           <User className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
                           <span className="font-medium">{t.profile}</span>
-                        </Link>
+                      </Link>
                       </motion.div>
                       <motion.div whileHover={{ x: 5 }}>
-                        <Link
-                          href="/settings"
+                      <Link
+                        href="/settings"
                           className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00f0ff]/10 transition-all group"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
+                        onClick={() => setShowProfileMenu(false)}
+                      >
                           <Settings className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
                           <span className="font-medium">{t.settings}</span>
-                        </Link>
+                      </Link>
                       </motion.div>
                       <motion.div whileHover={{ x: 5 }}>
-                        <Link
-                          href="/admin"
-                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#ffff00]/10 transition-all group"
-                          onClick={() => setShowProfileMenu(false)}
-                        >
-                          <Crown className="w-5 h-5 text-[#ffff00] group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">{t.admin}</span>
-                        </Link>
+                      <Link
+                          href="/performance"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00ff88]/10 transition-all group"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                          <BarChart3 className="w-5 h-5 text-[#00ff88] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Performans Takibi</span>
+                      </Link>
                       </motion.div>
                       <motion.div whileHover={{ x: 5 }}>
                         <Link
@@ -1166,16 +1221,16 @@ export default function DashboardPage() {
                   <AnimatePresence>
                     {filteredFixtures.map((fixture, index) => (
                       <motion.button
-                        key={fixture.id}
+                      key={fixture.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ delay: index * 0.05 }}
-                        onClick={() => {
-                          setSelectedFixture(fixture);
-                          setAnalysis(null);
-                          setAnalysisError(null);
-                        }}
+                      onClick={() => {
+                        setSelectedFixture(fixture);
+                        setAnalysis(null);
+                        setAnalysisError(null);
+                      }}
                         whileHover={{ scale: 1.02, x: 5 }}
                         className={`w-full p-4 border-b border-[#00f0ff]/10 hover:bg-[#00f0ff]/5 transition-all text-left relative overflow-hidden group ${
                           selectedFixture?.id === fixture.id 
@@ -1192,15 +1247,15 @@ export default function DashboardPage() {
                           />
                         )}
                         <div className="flex items-center justify-between relative z-10">
-                          <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 mb-2">
-                              {fixture.homeTeamLogo && (
+                            {fixture.homeTeamLogo && (
                                 <img src={fixture.homeTeamLogo} alt="" className="w-6 h-6 object-contain" />
-                              )}
+                            )}
                               <span className="text-white text-sm font-semibold truncate">
-                                {fixture.homeTeam}
-                              </span>
-                              {fixture.hasAnalysis && (
+                              {fixture.homeTeam}
+                            </span>
+                            {fixture.hasAnalysis && (
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
@@ -1208,27 +1263,27 @@ export default function DashboardPage() {
                                 >
                                   <CheckCircle className="w-4 h-4 text-[#00ff88]" />
                                 </motion.div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {fixture.awayTeamLogo && (
-                                <img src={fixture.awayTeamLogo} alt="" className="w-6 h-6 object-contain" />
-                              )}
-                              <span className="text-gray-400 text-sm truncate">
-                                {fixture.awayTeam}
-                              </span>
-                            </div>
+                            )}
                           </div>
+                            <div className="flex items-center gap-3">
+                            {fixture.awayTeamLogo && (
+                                <img src={fixture.awayTeamLogo} alt="" className="w-6 h-6 object-contain" />
+                            )}
+                            <span className="text-gray-400 text-sm truncate">
+                              {fixture.awayTeam}
+                            </span>
+                          </div>
+                        </div>
                           <div className="text-right ml-4">
                             <div className="text-sm text-[#00f0ff] font-mono font-semibold">
-                              {new Date(fixture.date).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate max-w-[100px] mt-1">
-                              {fixture.league}
-                            </div>
+                            {new Date(fixture.date).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                           </div>
-                          <ChevronRight className="w-5 h-5 text-[#00f0ff] ml-3 group-hover:translate-x-1 transition-transform" />
+                            <div className="text-xs text-gray-500 truncate max-w-[100px] mt-1">
+                            {fixture.league}
+                          </div>
                         </div>
+                          <ChevronRight className="w-5 h-5 text-[#00f0ff] ml-3 group-hover:translate-x-1 transition-transform" />
+                      </div>
                       </motion.button>
                     ))}
                   </AnimatePresence>
@@ -1251,75 +1306,58 @@ export default function DashboardPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.4 }}
               >
-                <h3 className="text-xl font-bold text-white mb-6 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {t.selectAnalysisType}
-                </h3>
-                <div className="grid grid-cols-2 gap-5">
-                  <motion.button
-                    onClick={() => {
-                      setAnalysisType('ai');
-                      analyzeMatch(selectedFixture, 'ai');
-                    }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${
-                      analysisType === 'ai'
-                        ? 'neon-border-magenta bg-[#ff00f0]/10'
-                        : 'border-[#00f0ff]/30 hover:neon-border-cyan glass-futuristic'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-3 relative z-10">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        analysisType === 'ai' ? 'bg-[#ff00f0]/20' : 'bg-[#00f0ff]/20'
-                      }`}>
-                        <Zap className={`w-7 h-7 ${analysisType === 'ai' ? 'text-[#ff00f0]' : 'text-[#00f0ff]'}`} />
-                      </div>
-                      <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {t.aiAnalysis}
-                      </span>
-                      <p className="text-xs text-gray-400 text-center">Claude + DeepSeek AI modelleri</p>
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-3 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                    Unified Consensus Analysis
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    Agent'lar ve AI sistemlerini birleştiren en gelişmiş analiz
+                  </p>
                     </div>
-                    {analysisType === 'ai' && (
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-br from-[#ff00f0]/20 to-transparent"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      />
-                    )}
-                  </motion.button>
-                  <motion.button
-                    onClick={() => {
-                      setAnalysisType('agent');
-                      analyzeMatch(selectedFixture, 'agent');
+                
+                <motion.button
+                  onClick={() => analyzeMatch(selectedFixture)}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full p-8 rounded-2xl border-2 neon-border-cyan bg-gradient-to-br from-[#00f0ff]/10 via-[#ff00f0]/10 to-[#00f0ff]/10 relative overflow-hidden group"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/20 to-[#ff00f0]/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                    animate={{ 
+                      backgroundPosition: ['0% 0%', '100% 100%'],
                     }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${
-                      analysisType !== 'ai'
-                        ? 'neon-border-cyan bg-[#00f0ff]/10'
-                        : 'border-[#00f0ff]/30 hover:neon-border-cyan glass-futuristic'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-3 relative z-10">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        analysisType !== 'ai' ? 'bg-[#00f0ff]/20' : 'bg-[#00f0ff]/20'
-                      }`}>
-                        <Target className="w-7 h-7 text-[#00f0ff]" />
-                      </div>
-                      <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {t.agentAnalysis}
-                      </span>
-                      <p className="text-xs text-gray-400 text-center">Stats, Odds, DeepAnalysis, Master Strategist, Genius Analyst</p>
+                    transition={{ duration: 3, repeat: Infinity, repeatType: 'reverse' }}
+                  />
+                  
+                  {/* 3D Football Background */}
+                  <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className="absolute top-4 left-4">
+                      <FootballBall3D size={60} autoRotate={true} />
                     </div>
-                    {analysisType !== 'ai' && (
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/20 to-transparent"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      />
-                    )}
-                  </motion.button>
+                    <div className="absolute bottom-4 right-4">
+                      <FootballBall3D size={40} autoRotate={true} />
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-center gap-4 relative z-10">
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#00f0ff]/30 to-[#ff00f0]/30 relative">
+                      <FootballBall3D size={50} className="absolute" autoRotate={true} />
+                      <Target className="w-6 h-6 text-white relative z-10" />
+                    </div>
+                    <div>
+                      <span className="text-white font-bold text-xl block mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                        Analiz Başlat
+                      </span>
+                      <p className="text-xs text-gray-400 text-center">
+                        Stats • Odds • Deep Analysis • Master Strategist • Genius Analyst • AI Systems
+                      </p>
                 </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Zap className="w-4 h-4 text-[#00f0ff]" />
+                      <span className="text-[#00f0ff] text-sm font-mono">~15-20 saniye</span>
+              </div>
+                  </div>
+                </motion.button>
               </motion.div>
             ) : analyzing ? (
               <motion.div 
@@ -1364,46 +1402,40 @@ export default function DashboardPage() {
               </div>
             ) : analysis ? (
               <div className="space-y-4">
-                {/* Analysis Type Tabs */}
-                <div className="flex gap-2 bg-white/5 rounded-lg p-1 border border-white/10">
+                {/* 🆕 Unified Analysis Badge */}
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00f0]/10 rounded-lg p-4 border border-[#00f0ff]/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#00f0ff]/30 to-[#ff00f0]/30 flex items-center justify-center relative overflow-hidden">
+                      <FootballBall3D size={30} className="absolute" autoRotate={true} />
+                      <Target className="w-4 h-4 text-white relative z-10" />
+                    </div>
+                    <div>
+                      <span className="text-white font-bold text-sm block">Unified Consensus Analysis</span>
+                      <span className="text-xs text-gray-400">Agent + AI Systems Combined</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {cached && (
+                      <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Cached</span>
+                    )}
                   <button
-                    onClick={() => {
-                      setAnalysisType('ai');
-                      if (selectedFixture) {
-                        setAnalysis(null);
-                        analyzeMatch(selectedFixture, 'ai');
-                      }
-                    }}
-                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
-                      analysisType === 'ai'
-                        ? 'bg-purple-500/20 text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {t.aiAnalysis}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAnalysisType('agent');
-                      if (selectedFixture) {
-                        setAnalysis(null);
-                        analyzeMatch(selectedFixture, 'agent');
-                      }
-                    }}
-                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
-                      analysisType !== 'ai'
-                        ? 'bg-blue-500/20 text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {t.agentAnalysis}
+                      onClick={() => selectedFixture && analyzeMatch(selectedFixture, true)}
+                      className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                      title="Yenile"
+                    >
+                      <RefreshCw className="w-4 h-4 text-gray-400 hover:text-[#00f0ff]" />
                   </button>
                 </div>
+                </motion.div>
                 
                 {/* Match Header - Futuristic */}
                 <motion.div 
                   className={`glass-futuristic rounded-2xl border p-8 relative overflow-hidden ${
-                    analysisType === 'ai'
+                  analysisType === 'ai'
                       ? 'neon-border-magenta'
                       : 'neon-border-cyan'
                   }`}
@@ -1412,20 +1444,37 @@ export default function DashboardPage() {
                   transition={{ delay: 0.2 }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00f0ff]/5 to-transparent opacity-50" />
+                  {/* 3D Football Background Effect */}
+                  <div className="absolute inset-0 opacity-5 pointer-events-none">
+                    <div className="absolute top-4 left-1/4">
+                      <FootballBall3D size={40} autoRotate={true} />
+                    </div>
+                    <div className="absolute bottom-4 right-1/4">
+                      <FootballBall3D size={30} autoRotate={true} />
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center justify-between relative z-10">
                     <div className="text-center flex-1">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <FootballBall3D size={25} autoRotate={true} />
+                      </div>
                       <h3 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
                         {analysis.homeTeam}
                       </h3>
                     </div>
-                    <div className="px-6">
-                      <span className={`text-3xl font-black ${
+                    <div className="px-6 relative">
+                      <FootballBall3D size={50} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" autoRotate={true} />
+                      <span className={`text-3xl font-black relative z-10 ${
                         analysisType === 'ai' ? 'text-[#ff00f0] neon-glow-magenta' : 'text-[#00f0ff] neon-glow-cyan'
                       }`} style={{ fontFamily: 'var(--font-heading)' }}>
                         VS
                       </span>
                     </div>
                     <div className="text-center flex-1">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <FootballBall3D size={25} autoRotate={true} />
+                      </div>
                       <h3 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
                         {analysis.awayTeam}
                       </h3>
@@ -1472,14 +1521,14 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3 mb-4 relative z-10">
                         <div className="w-10 h-10 rounded-lg bg-[#00f0ff]/20 flex items-center justify-center">
                           <Target className="w-5 h-5 text-[#00f0ff]" />
-                        </div>
+                    </div>
                         <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.btts}</h4>
                       </div>
                       <div className={`text-4xl font-black mb-3 relative z-10 ${
                         analysis.btts.prediction === 'yes' ? 'text-[#00ff88] neon-glow-yellow' : 'text-[#ff00f0] neon-glow-magenta'
                       }`} style={{ fontFamily: 'var(--font-heading)' }}>
-                        {analysis.btts.prediction === 'yes' ? t.yes : t.no}
-                      </div>
+                      {analysis.btts.prediction === 'yes' ? t.yes : t.no}
+                    </div>
                       <div className="mt-4 flex items-center gap-3 relative z-10">
                         <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden border border-[#00f0ff]/20">
                           <motion.div 
@@ -1487,10 +1536,10 @@ export default function DashboardPage() {
                             initial={{ width: 0 }}
                             animate={{ width: `${analysis.btts.confidence}%` }}
                             transition={{ duration: 1, delay: 0.5 }}
-                          />
-                        </div>
-                        <span className="text-sm text-[#00f0ff] font-mono font-bold">%{analysis.btts.confidence}</span>
+                        />
                       </div>
+                        <span className="text-sm text-[#00f0ff] font-mono font-bold">%{analysis.btts.confidence}</span>
+                    </div>
                       <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.btts.reasoning}</p>
                     </motion.div>
                   
@@ -1506,7 +1555,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                       <div className="w-10 h-10 rounded-lg bg-[#ff00f0]/20 flex items-center justify-center">
                         <TrendingUp className="w-5 h-5 text-[#ff00f0]" />
-                      </div>
+                    </div>
                       <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.overUnder}</h4>
                     </div>
                     <div className={`text-4xl font-black mb-3 relative z-10 ${
@@ -1540,7 +1589,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                       <div className="w-10 h-10 rounded-lg bg-[#ffff00]/20 flex items-center justify-center">
                         <Trophy className="w-5 h-5 text-[#ffff00]" />
-                      </div>
+                    </div>
                       <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.matchResult}</h4>
                     </div>
                     <div className="text-4xl font-black mb-3 relative z-10 text-[#ffff00] neon-glow-yellow" style={{ fontFamily: 'var(--font-heading)' }}>
