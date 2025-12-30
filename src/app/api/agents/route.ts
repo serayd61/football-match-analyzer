@@ -24,7 +24,7 @@ import {
   type ProfessionalMarketPrediction 
 } from '@/lib/admin/enhanced-service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
-import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
+import { getCachedAnalysis, setCachedAnalysis, clearCacheForMatch } from '@/lib/analysisCache';
 import { generateProfessionalAnalysis, type MatchStats, type ProfessionalAnalysis } from '@/lib/betting/professional-markets';
 
 // ==================== DATA QUALITY THRESHOLD ====================
@@ -320,7 +320,8 @@ export async function POST(request: NextRequest) {
       awayTeamId, 
       league = '', 
       language = 'en', 
-      useMultiModel = true 
+      useMultiModel = true,
+      skipCache = false // 🆕 Cache'i bypass etmek için
     } = body;
 
     if (!fixtureId) {
@@ -328,17 +329,21 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache
+    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache (skipCache=true ise bypass)
     // ═══════════════════════════════════════════════════════════════════════════
-    const cached = getCachedAnalysis(fixtureId, language, 'agents');
-    
-    if (cached) {
-      console.log(`📦 CACHE HIT - Returning cached agent analysis from ${cached.cachedAt.toLocaleTimeString()}`);
-      return NextResponse.json({
-        ...cached.data,
-        cached: true,
-        cachedAt: cached.cachedAt.toISOString(),
-      });
+    if (!skipCache) {
+      const cached = getCachedAnalysis(fixtureId, language, 'agents');
+      
+      if (cached) {
+        console.log(`📦 CACHE HIT - Returning cached agent analysis from ${cached.cachedAt.toLocaleTimeString()}`);
+        return NextResponse.json({
+          ...cached.data,
+          cached: true,
+          cachedAt: cached.cachedAt.toISOString(),
+        });
+      }
+    } else {
+      console.log('📦 CACHE BYPASS - skipCache=true, running fresh analysis');
     }
     console.log('📦 CACHE MISS - Running fresh agent analysis');
 
@@ -1028,7 +1033,12 @@ export async function POST(request: NextRequest) {
 
     const responseData = {
       success: result.success,
-      reports: result.reports,
+      reports: {
+        ...result.reports,
+        // 🆕 Yeni agent'ların sonuçları (zaten reports içinde ama açıkça gösteriyoruz)
+        masterStrategist: result.reports?.masterStrategist || null,
+        geniusAnalyst: result.reports?.geniusAnalyst || null,
+      },
       
       timing: {
         total: totalTime,
@@ -1167,7 +1177,36 @@ export async function POST(request: NextRequest) {
         weatherImpact: result.reports.deepAnalysis.weatherImpact || null,
         pitchConditions: result.reports.deepAnalysis.pitchConditions || null,
         lineupImpact: result.reports.deepAnalysis.lineupImpact || null,
+        preparationScore: result.reports.deepAnalysis.preparationScore || null,
       } : null,
+      
+      // 🆕 NEW: Master Strategist Agent results
+      masterStrategist: result.reports?.masterStrategist ? {
+        enabled: true,
+        agentEvaluation: result.reports.masterStrategist.agentEvaluation,
+        conflictAnalysis: result.reports.masterStrategist.conflictAnalysis,
+        finalConsensus: result.reports.masterStrategist.finalConsensus,
+        bestBets: result.reports.masterStrategist.bestBets,
+        riskAssessment: result.reports.masterStrategist.riskAssessment,
+        agentFeedback: result.reports.masterStrategist.agentFeedback,
+        masterInsights: result.reports.masterStrategist.masterInsights,
+        overallConfidence: result.reports.masterStrategist.overallConfidence,
+        recommendation: result.reports.masterStrategist.recommendation,
+      } : { enabled: false },
+      
+      // 🆕 NEW: Genius Analyst Agent results
+      geniusAnalyst: result.reports?.geniusAnalyst ? {
+        enabled: true,
+        matchAnalysis: result.reports.geniusAnalyst.matchAnalysis,
+        mathematicalModel: result.reports.geniusAnalyst.mathematicalModel,
+        predictions: result.reports.geniusAnalyst.predictions,
+        valueBets: result.reports.geniusAnalyst.valueBets,
+        riskFactors: result.reports.geniusAnalyst.riskFactors,
+        motivationAnalysis: result.reports.geniusAnalyst.motivationAnalysis,
+        tacticalInsights: result.reports.geniusAnalyst.tacticalInsights,
+        finalRecommendation: result.reports.geniusAnalyst.finalRecommendation,
+        geniusInsights: result.reports.geniusAnalyst.geniusInsights,
+      } : { enabled: false },
       
       // Raw stats for debugging/transparency
       rawStats: {

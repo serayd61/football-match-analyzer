@@ -893,7 +893,11 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
   ];
 
   try {
-    const response = await heurist.chat(messages, { temperature: 0.4, maxTokens: 1500 }); // Agresif analiz için artırıldı
+    const response = await heurist.chat(messages, { 
+      temperature: 0.4, 
+      maxTokens: 1500,
+      timeout: 12000 // 🆕 12 saniye timeout
+    }); // Agresif analiz için artırıldı
     
     if (response) {
       const parsed = extractJSON(response);

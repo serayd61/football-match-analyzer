@@ -12,6 +12,8 @@ interface AgentReportsProps {
     strategy?: any;
     sentiment?: any;
     weightedConsensus?: any;
+    masterStrategist?: any;
+    geniusAnalyst?: any;
   };
   homeTeam: string;
   awayTeam: string;
@@ -993,6 +995,231 @@ const FinalConsensusCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: a
   );
 };
 
+// 🆕 Master Strategist Agent Card
+const MasterStrategistCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
+  const [expanded, setExpanded] = useState(true);
+  if (!data) return null;
+
+  return (
+    <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border border-purple-500/30 rounded-2xl p-6 shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-2xl">
+            🎯
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">Master Strategist Agent</h3>
+            <p className="text-sm text-purple-300">Üst-akıl Konsensüs Analizi</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {expanded ? '▼' : '▶'}
+        </button>
+      </div>
+
+      {expanded && (
+        <>
+          {data.overallConfidence && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-300 font-medium">Genel Güven</span>
+                <span className="text-2xl font-bold text-purple-400">{data.overallConfidence}%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full"
+                  style={{ width: `${data.overallConfidence}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {data.finalConsensus && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-3">Final Konsensüs</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Maç Sonucu</div>
+                  <div className="text-lg font-bold text-white">{data.finalConsensus.matchResult?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-purple-400">{data.finalConsensus.matchResult?.confidence || 0}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Over/Under</div>
+                  <div className="text-lg font-bold text-white">{data.finalConsensus.overUnder?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-purple-400">{data.finalConsensus.overUnder?.confidence || 0}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">BTTS</div>
+                  <div className="text-lg font-bold text-white">{data.finalConsensus.btts?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-purple-400">{data.finalConsensus.btts?.confidence || 0}%</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {data.bestBets && data.bestBets.length > 0 && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-3">En İyi Bahisler</h4>
+              <div className="space-y-2">
+                {data.bestBets.slice(0, 3).map((bet: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-700/50 rounded">
+                    <div>
+                      <div className="text-sm font-medium text-white">{bet.market} - {bet.selection}</div>
+                      <div className="text-xs text-gray-400">{bet.reasoning}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-purple-400">{bet.confidence}%</div>
+                      <div className="text-xs text-gray-500">{bet.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.masterInsights && data.masterInsights.length > 0 && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-3">🎯 Master İçgörüler</h4>
+              <ul className="space-y-2">
+                {data.masterInsights.map((insight: string, idx: number) => (
+                  <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                    <span className="text-purple-400 mt-1">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {data.recommendation && (
+            <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4">
+              <h4 className="font-semibold text-white mb-2">📌 Tavsiye</h4>
+              <p className="text-sm text-gray-300">{data.recommendation}</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// 🆕 Genius Analyst Agent Card
+const GeniusAnalystCard = ({ data, homeTeam, awayTeam, lang = 'en' }: { data: any; homeTeam: string; awayTeam: string; lang?: string }) => {
+  const [expanded, setExpanded] = useState(true);
+  if (!data) return null;
+
+  return (
+    <div className="bg-gradient-to-br from-amber-900/40 to-orange-900/40 border border-amber-500/30 rounded-2xl p-6 shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-2xl">
+            🧠
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">Genius Analyst Agent</h3>
+            <p className="text-sm text-amber-300">Matematiksel ve Taktiksel Analiz</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {expanded ? '▼' : '▶'}
+        </button>
+      </div>
+
+      {expanded && (
+        <>
+          {data.mathematicalModel && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-3">📊 Matematiksel Model</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Ev xG</div>
+                  <div className="text-lg font-bold text-white">{data.mathematicalModel.homeExpectedGoals?.toFixed(2) || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Deplasman xG</div>
+                  <div className="text-lg font-bold text-white">{data.mathematicalModel.awayExpectedGoals?.toFixed(2) || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Toplam xG</div>
+                  <div className="text-lg font-bold text-amber-400">{data.mathematicalModel.totalExpectedGoals?.toFixed(2) || 'N/A'}</div>
+                </div>
+              </div>
+              {data.mathematicalModel.poissonProbabilities && (
+                <div className="mt-3 pt-3 border-t border-gray-700 grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-400">Over 2.5</div>
+                    <div className="text-sm font-bold text-white">{data.mathematicalModel.poissonProbabilities.over25}%</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">BTTS</div>
+                    <div className="text-sm font-bold text-white">{data.mathematicalModel.poissonProbabilities.btts}%</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {data.predictions && (
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-3">🎯 Tahminler</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Maç Sonucu</div>
+                  <div className="text-lg font-bold text-white">{data.predictions.matchResult?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-amber-400">{data.predictions.matchResult?.confidence || 0}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Over/Under</div>
+                  <div className="text-lg font-bold text-white">{data.predictions.overUnder?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-amber-400">{data.predictions.overUnder?.confidence || 0}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">BTTS</div>
+                  <div className="text-lg font-bold text-white">{data.predictions.btts?.prediction || 'N/A'}</div>
+                  <div className="text-xs text-amber-400">{data.predictions.btts?.confidence || 0}%</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {data.finalRecommendation && (
+            <div className="bg-amber-900/30 border border-amber-500/30 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-white mb-2">🏆 Final Tavsiye</h4>
+              <div className="mb-2">
+                <div className="text-sm text-gray-300">
+                  <span className="font-medium">En İyi Bahis:</span> {data.finalRecommendation.bestBet?.market} - {data.finalRecommendation.bestBet?.selection}
+                </div>
+                <div className="text-xs text-amber-400 mt-1">Güven: {data.finalRecommendation.bestBet?.confidence}% | Değer: {data.finalRecommendation.bestBet?.value}</div>
+              </div>
+              <p className="text-sm text-gray-300">{data.finalRecommendation.summary}</p>
+            </div>
+          )}
+
+          {data.geniusInsights && data.geniusInsights.length > 0 && (
+            <div className="bg-gray-800/50 rounded-xl p-4">
+              <h4 className="font-semibold text-white mb-3">💡 Genius İçgörüler</h4>
+              <ul className="space-y-2">
+                {data.geniusInsights.map((insight: string, idx: number) => (
+                  <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                    <span className="text-amber-400 mt-1">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 // Main Component
 export default function AgentReports({ reports, homeTeam, awayTeam }: AgentReportsProps) {
   const { lang } = useLanguage();
@@ -1032,6 +1259,14 @@ export default function AgentReports({ reports, homeTeam, awayTeam }: AgentRepor
           <OddsAgentCard data={reports.odds} lang={lang} />
           <SentimentAgentCard data={reports.sentiment} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
           <StrategyAgentCard data={reports.strategy} lang={lang} />
+          {/* 🆕 NEW: Master Strategist Card */}
+          {reports.masterStrategist && (
+            <MasterStrategistCard data={reports.masterStrategist} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
+          )}
+          {/* 🆕 NEW: Genius Analyst Card */}
+          {reports.geniusAnalyst && (
+            <GeniusAnalystCard data={reports.geniusAnalyst} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />
+          )}
         </div>
       ) : (
         <FinalConsensusCard data={reports.weightedConsensus} homeTeam={homeTeam} awayTeam={awayTeam} lang={lang} />

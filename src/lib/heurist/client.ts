@@ -16,6 +16,7 @@ export interface HeuristOptions {
   model?: HeuristModel;
   temperature?: number;
   maxTokens?: number;
+  timeout?: number; // 🆕 Timeout in milliseconds
 }
 
 export class HeuristClient {
@@ -39,6 +40,11 @@ export class HeuristClient {
       const model = options.model || this.defaultModel;
       console.log(`🤖 Heurist calling ${model}`);
       
+      // 🆕 Timeout ekle (30 saniye - Vercel 60 saniye limiti için güvenli)
+      const controller = new AbortController();
+      const timeoutMs = options.timeout || 30000; // 30 saniye default
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
       const response = await fetch(HEURIST_API_URL, {
         method: 'POST',
         headers: {
@@ -51,7 +57,10 @@ export class HeuristClient {
           max_tokens: options.maxTokens || 2000,
           temperature: options.temperature || 0.15, // Default düşük = tutarlı
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -67,8 +76,12 @@ export class HeuristClient {
       }
       
       return content;
-    } catch (error) {
-      console.error('❌ Heurist request error:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ Heurist API timeout after ${options.timeout || 30000}ms`);
+      } else {
+        console.error('❌ Heurist request error:', error);
+      }
       return null;
     }
   }

@@ -74,6 +74,8 @@ interface SmartAnalysis {
     stats?: any;
     odds?: any;
     deepAnalysis?: any;
+    masterStrategist?: any;
+    geniusAnalyst?: any;
   };
   top3Predictions?: Array<{
     rank: number;
@@ -250,7 +252,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
   if (!analysis.agents) return null;
 
-  const { stats, odds, deepAnalysis } = analysis.agents;
+  const { stats, odds, deepAnalysis, masterStrategist, geniusAnalyst } = analysis.agents;
 
   return (
     <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
@@ -613,6 +615,99 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             </div>
           )}
 
+          {/* 🆕 MASTER STRATEGIST AGENT */}
+          {masterStrategist && (
+            <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-lg border border-purple-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-5 h-5 text-purple-400" />
+                <h5 className="text-white font-bold text-lg">🎯 MASTER STRATEGIST AGENT (Üst-Akıl Konsensüs)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Tüm agent'ların çıktılarını analiz eder, tutarsızlıkları tespit eder ve ağırlıklı konsensüs oluşturur.</p>
+                </div>
+
+                {masterStrategist.finalConsensus && (
+                  <div className="border-t border-purple-500/30 pt-3 mt-3">
+                    <p className="text-purple-400 font-semibold mb-2">FİNAL KONSENSÜS:</p>
+                    <div className="space-y-2">
+                      {masterStrategist.finalConsensus.matchResult && (
+                        <div className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">Maç Sonucu: <span className="text-purple-400">{masterStrategist.finalConsensus.matchResult.prediction === '1' ? 'Ev Sahibi' : masterStrategist.finalConsensus.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{masterStrategist.finalConsensus.matchResult.confidence} güven)</p>
+                          {masterStrategist.finalConsensus.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.matchResult.reasoning}</p>}
+                        </div>
+                      )}
+                      {masterStrategist.finalConsensus.overUnder && (
+                        <div className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{masterStrategist.finalConsensus.overUnder.prediction}</span> (%{masterStrategist.finalConsensus.overUnder.confidence} güven)</p>
+                          {masterStrategist.finalConsensus.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.overUnder.reasoning}</p>}
+                        </div>
+                      )}
+                      {masterStrategist.finalConsensus.btts && (
+                        <div className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{masterStrategist.finalConsensus.btts.prediction}</span> (%{masterStrategist.finalConsensus.btts.confidence} güven)</p>
+                          {masterStrategist.finalConsensus.btts.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.btts.reasoning}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {masterStrategist.overallConfidence && (
+                  <div className="bg-purple-500/20 rounded p-2">
+                    <p className="text-purple-400 font-semibold">Toplam Güven: %{masterStrategist.overallConfidence}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 🆕 GENIUS ANALYST AGENT */}
+          {geniusAnalyst && (
+            <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-lg border border-amber-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-5 h-5 text-amber-400" />
+                <h5 className="text-white font-bold text-lg">🧠 GENIUS ANALYST AGENT (Matematiksel & Taktiksel Analiz)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Matematiksel modelleme (xG, Poisson), taktiksel analiz, value betting ve risk senaryoları.</p>
+                </div>
+
+                {geniusAnalyst.predictions && (
+                  <div className="border-t border-amber-500/30 pt-3 mt-3">
+                    <p className="text-amber-400 font-semibold mb-2">TAHMİNLER:</p>
+                    <div className="space-y-2">
+                      {geniusAnalyst.predictions.matchResult && (
+                        <div className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">Maç Sonucu: <span className="text-amber-400">{geniusAnalyst.predictions.matchResult.prediction === '1' ? 'Ev Sahibi' : geniusAnalyst.predictions.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{geniusAnalyst.predictions.matchResult.confidence} güven)</p>
+                          {geniusAnalyst.predictions.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{geniusAnalyst.predictions.matchResult.reasoning}</p>}
+                        </div>
+                      )}
+                      {geniusAnalyst.predictions.overUnder && (
+                        <div className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-amber-400">{geniusAnalyst.predictions.overUnder.prediction}</span> (%{geniusAnalyst.predictions.overUnder.confidence} güven)</p>
+                          {geniusAnalyst.predictions.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{geniusAnalyst.predictions.overUnder.reasoning}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {geniusAnalyst.mathematicalModel && (
+                  <div className="bg-black/20 rounded p-2 text-xs">
+                    <p className="text-amber-400 font-semibold mb-1">Matematiksel Model:</p>
+                    <p className="text-gray-300">Ev xG: {geniusAnalyst.mathematicalModel.homeExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-gray-300">Dep xG: {geniusAnalyst.mathematicalModel.awayExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-gray-300">Toplam xG: {geniusAnalyst.mathematicalModel.totalExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TOP 3 TAHMİN */}
           {analysis.top3Predictions && analysis.top3Predictions.length > 0 && (
             <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/30 p-4">
@@ -713,7 +808,7 @@ export default function DashboardPage() {
   // ANALYZE MATCH
   // ============================================================================
   
-  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType) => {
+  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType, forceRefresh: boolean = false) => {
     setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
@@ -733,7 +828,8 @@ export default function DashboardPage() {
           awayTeamId: fixture.awayTeamId,
           league: fixture.league,
           matchDate: fixture.date.split('T')[0],
-          preferAnalysis: type === 'ai' ? 'smart' : 'agent' // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
+          preferAnalysis: type === 'ai' ? 'smart' : 'agent', // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
+          skipCache: forceRefresh // 🆕 Cache'i bypass etmek için
         })
       });
       
@@ -1213,7 +1309,7 @@ export default function DashboardPage() {
                       <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
                         {t.agentAnalysis}
                       </span>
-                      <p className="text-xs text-gray-400 text-center">Stats, Odds, DeepAnalysis Agent'ları</p>
+                      <p className="text-xs text-gray-400 text-center">Stats, Odds, DeepAnalysis, Master Strategist, Genius Analyst</p>
                     </div>
                     {analysisType !== 'ai' && (
                       <motion.div
