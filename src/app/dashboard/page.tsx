@@ -72,6 +72,8 @@ interface SmartAnalysis {
     stats?: any;
     odds?: any;
     deepAnalysis?: any;
+    masterStrategist?: any;
+    geniusAnalyst?: any;
   };
   top3Predictions?: Array<{
     rank: number;
