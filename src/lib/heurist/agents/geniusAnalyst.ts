@@ -464,7 +464,8 @@ export async function runGeniusAnalyst(
       { role: 'user', content: userMessage }
     ], {
       temperature: 0.15, // Çok düşük = daha tutarlı ve matematiksel
-      maxTokens: 4000
+      maxTokens: 3000, // 🆕 Azaltıldı (4000 -> 3000) - daha hızlı response
+      timeout: 25000 // 🆕 25 saniye timeout
     });
 
     if (!response) {
