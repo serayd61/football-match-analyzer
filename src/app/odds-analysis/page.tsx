@@ -307,41 +307,44 @@ export default function OddsAnalysisPage() {
             className="glass-futuristic border border-[#00f0ff]/30 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-4 gap-4 hover:neon-border-cyan transition-all"
           >
             <div>
-              <label className="text-sm text-gray-300 mb-1 block">Lig</label>
+              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Lig</label>
               <input
                 type="text"
                 value={filters.league}
                 onChange={(e) => setFilters({ ...filters, league: e.target.value })}
                 placeholder="Lig ara..."
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
+                style={{ fontFamily: 'var(--font-body)' }}
               />
             </div>
             <div>
-              <label className="text-sm text-gray-300 mb-1 block">Value Rating</label>
+              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Value Rating</label>
               <select
                 value={filters.valueRating}
                 onChange={(e) => setFilters({ ...filters, valueRating: e.target.value })}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white hover:neon-border-cyan transition-all bg-black/50"
+                style={{ fontFamily: 'var(--font-body)' }}
               >
-                <option value="">Tümü</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-                <option value="None">None</option>
+                <option value="" className="bg-black">Tümü</option>
+                <option value="High" className="bg-black">High</option>
+                <option value="Medium" className="bg-black">Medium</option>
+                <option value="Low" className="bg-black">Low</option>
+                <option value="None" className="bg-black">None</option>
               </select>
             </div>
             <div>
-              <label className="text-sm text-gray-300 mb-1 block">Min Value Amount</label>
+              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Min Value Amount</label>
               <input
                 type="number"
                 value={filters.minValueAmount}
                 onChange={(e) => setFilters({ ...filters, minValueAmount: e.target.value })}
                 placeholder="Min value %"
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
+                style={{ fontFamily: 'var(--font-body)' }}
               />
             </div>
             <div>
-              <label className="text-sm text-gray-300 mb-1 block">Ara</label>
+              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Ara</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -349,12 +352,13 @@ export default function OddsAnalysisPage() {
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   placeholder="Takım veya lig ara..."
-                  className="w-full pl-10 pr-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400"
+                  className="w-full pl-10 pr-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
+                  style={{ fontFamily: 'var(--font-body)' }}
                 />
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
         
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
