@@ -1226,12 +1226,12 @@ export async function runAgentAnalysis(
     } else {
       // Sportmonks fallback
       [homeTeamStats, awayTeamStats, h2hData, homeInjuries, awayInjuries] = await Promise.all([
-        getTeamStats(homeTeamId),
-        getTeamStats(awayTeamId),
-        getHeadToHead(homeTeamId, awayTeamId),
-        getTeamInjuries(homeTeamId),
-        getTeamInjuries(awayTeamId)
-      ]);
+      getTeamStats(homeTeamId),
+      getTeamStats(awayTeamId),
+      getHeadToHead(homeTeamId, awayTeamId),
+      getTeamInjuries(homeTeamId),
+      getTeamInjuries(awayTeamId)
+    ]);
     }
     
     // Step 3: Convert to MatchData format with detailedStats

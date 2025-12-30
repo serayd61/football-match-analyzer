@@ -455,7 +455,7 @@ function analyzeCleanSheets(matchData: MatchData, language: 'tr' | 'en' | 'de'):
       homeCleanSheetStreak++;
     } else {
       break;
-    }
+  }
   }
   
   // Deplasman için: son maçlardan geriye doğru, gol yemediği maçları say

@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import CustomCursor from '@/components/CustomCursor';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
   TrendingUp, CheckCircle, AlertCircle, Clock,
@@ -784,36 +786,58 @@ export default function DashboardPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      
+      {/* Header - Futuristic Design */}
+      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
+        <motion.div
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          {/* Logo - Neon Glow */}
+          <motion.div 
+            className="flex items-center gap-4"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 400 }}
+          >
+            <div className="relative">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#00f0ff] to-[#ff00f0] flex items-center justify-center neon-border-cyan">
+                <Zap className="w-7 h-7 text-white" />
+              </div>
+              <div className="absolute inset-0 rounded-lg bg-[#00f0ff] opacity-20 blur-xl animate-pulse" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-white">{t.title}</h1>
-              <p className="text-xs text-purple-300">{t.subtitle}</p>
+              <h1 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                {t.title}
+              </h1>
+              <p className="text-xs text-[#00f0ff] font-medium tracking-wider uppercase">{t.subtitle}</p>
             </div>
-          </div>
+          </motion.div>
           
-          {/* Right Controls */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* Right Controls - Futuristic */}
+          <div className="flex items-center gap-3 sm:gap-4">
             {cached && (
-              <span className="hidden sm:flex text-xs text-green-400 items-center gap-1">
+              <motion.span 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden sm:flex text-xs text-[#00ff88] items-center gap-2 px-3 py-1.5 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/30"
+              >
                 <Zap className="w-3 h-3" /> {t.cached}
-              </span>
+              </motion.span>
             )}
             
-            <button
+            <motion.button
               onClick={fetchFixtures}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              whileHover={{ scale: 1.1, rotate: 180 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
               title="Refresh"
             >
-              <RefreshCw className={`w-5 h-5 text-white ${loading ? 'animate-spin' : ''}`} />
-            </button>
+              <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
+            </motion.button>
             
             <LanguageSelector />
             
@@ -837,81 +861,114 @@ export default function DashboardPage() {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowProfileMenu(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <div className="p-3 border-b border-white/10">
-                      <p className="text-white font-medium truncate">{session?.user?.name}</p>
-                      <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+                  <motion.div 
+                    className="absolute right-0 mt-2 w-64 glass-futuristic rounded-2xl border neon-border-cyan shadow-2xl z-50 overflow-hidden"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="p-4 border-b border-[#00f0ff]/20 bg-black/20">
+                      <p className="text-white font-bold truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {session?.user?.name}
+                      </p>
+                      <p className="text-xs text-[#00f0ff] font-mono truncate mt-1">{session?.user?.email}</p>
                     </div>
                     
                     <div className="py-2">
-                      <Link
-                        href="/profile"
-                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <User className="w-4 h-4" />
-                        {t.profile}
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <Settings className="w-4 h-4" />
-                        {t.settings}
-                      </Link>
-                      <Link
-                        href="/admin"
-                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <Crown className="w-4 h-4 text-yellow-400" />
-                        {t.admin}
-                      </Link>
-                      <Link
-                        href="/odds-analysis"
-                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                        Odds Analiz Kayıtları
-                      </Link>
-                      <Link
-                        href="/odds-patterns"
-                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        <BarChart3 className="w-4 h-4 text-blue-400" />
-                        Pattern Analizi
-                      </Link>
+                      <motion.div whileHover={{ x: 5 }}>
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00f0ff]/10 transition-all group"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <User className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">{t.profile}</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div whileHover={{ x: 5 }}>
+                        <Link
+                          href="/settings"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00f0ff]/10 transition-all group"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <Settings className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">{t.settings}</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div whileHover={{ x: 5 }}>
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#ffff00]/10 transition-all group"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <Crown className="w-5 h-5 text-[#ffff00] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">{t.admin}</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div whileHover={{ x: 5 }}>
+                        <Link
+                          href="/odds-analysis"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00ff88]/10 transition-all group"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <TrendingUp className="w-5 h-5 text-[#00ff88] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Odds Analiz Kayıtları</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div whileHover={{ x: 5 }}>
+                        <Link
+                          href="/odds-patterns"
+                          className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-[#00f0ff]/10 transition-all group"
+                          onClick={() => setShowProfileMenu(false)}
+                        >
+                          <BarChart3 className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Pattern Analizi</span>
+                        </Link>
+                      </motion.div>
                     </div>
                     
-                    <div className="border-t border-white/10 py-2">
-                      <button
+                    <div className="border-t border-[#00f0ff]/20 py-2">
+                      <motion.button
                         onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="flex items-center gap-3 px-4 py-2 w-full text-red-400 hover:bg-red-500/10 transition"
+                        className="flex items-center gap-3 px-4 py-3 w-full text-[#ff00f0] hover:bg-[#ff00f0]/10 transition-all group"
+                        whileHover={{ x: 5 }}
                       >
-                        <LogOut className="w-4 h-4" />
-                        {t.logout}
-                      </button>
+                        <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium">{t.logout}</span>
+                      </motion.button>
                     </div>
-                  </div>
+                  </motion.div>
                 </>
               )}
             </div>
           </div>
         </div>
+        </motion.div>
       </header>
       
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left: Fixtures List */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Date Picker */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-5 h-5 text-purple-400" />
-                <span className="text-white font-medium">{t.selectDate}</span>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left: Fixtures List - Futuristic Cards */}
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-1 space-y-5"
+          >
+            {/* Date Picker - Neon Style */}
+            <motion.div 
+              className="glass-futuristic rounded-2xl p-5 neon-border-cyan"
+              whileHover={{ scale: 1.02, borderColor: 'rgba(0, 240, 255, 0.5)' }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-[#00f0ff]/20 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-[#00f0ff]" />
+                </div>
+                <span className="text-white font-semibold tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {t.selectDate}
+                </span>
               </div>
               <input
                 type="date"
@@ -922,164 +979,282 @@ export default function DashboardPage() {
                   setSelectedFixture(null);
                   setAnalysis(null);
                 }}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+                className="w-full bg-black/40 border border-[#00f0ff]/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:neon-border-cyan transition-all"
+                style={{ fontFamily: 'var(--font-body)' }}
               />
-            </div>
+            </motion.div>
             
-            {/* League Selector */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="w-5 h-5 text-yellow-400" />
-                <span className="text-white font-medium">{t.selectLeague}</span>
-                <span className="text-xs text-gray-500 ml-auto">{totalCount} {t.matches.toLowerCase()}</span>
+            {/* League Selector - Neon Style */}
+            <motion.div 
+              className="glass-futuristic rounded-2xl p-5 neon-border-cyan"
+              whileHover={{ scale: 1.02, borderColor: 'rgba(0, 240, 255, 0.5)' }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-[#ffff00]/20 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-[#ffff00]" />
+                </div>
+                <span className="text-white font-semibold tracking-wide flex-1" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {t.selectLeague}
+                </span>
+                <span className="text-xs text-[#00f0ff] font-mono bg-[#00f0ff]/10 px-2 py-1 rounded">
+                  {totalCount}
+                </span>
               </div>
               <select
                 value={selectedLeague}
                 onChange={(e) => setSelectedLeague(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white appearance-none cursor-pointer"
+                className="w-full bg-black/40 border border-[#00f0ff]/30 rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:neon-border-cyan transition-all"
+                style={{ fontFamily: 'var(--font-body)' }}
               >
-                <option value="all" className="bg-gray-900">{t.allLeagues} ({totalCount})</option>
+                <option value="all" className="bg-black">{t.allLeagues} ({totalCount})</option>
                 {leagues.map(league => (
-                  <option key={league.id} value={league.id} className="bg-gray-900">
+                  <option key={league.id} value={league.id} className="bg-black">
                     {league.name} ({league.count})
                   </option>
                 ))}
               </select>
-            </div>
+            </motion.div>
             
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Search - Futuristic */}
+            <motion.div 
+              className="relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00f0ff]" />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500"
+                className="w-full glass-futuristic rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:neon-border-cyan transition-all"
+                style={{ fontFamily: 'var(--font-body)' }}
               />
-            </div>
+            </motion.div>
             
-            {/* Fixtures */}
-            <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-              <div className="p-3 border-b border-white/10 flex items-center justify-between">
-                <span className="text-white font-medium flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-yellow-400" />
-                  {t.matches} ({filteredFixtures.length})
+            {/* Fixtures - Futuristic Cards */}
+            <motion.div 
+              className="glass-futuristic rounded-2xl overflow-hidden neon-border-cyan"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="p-4 border-b border-[#00f0ff]/20 flex items-center justify-between bg-black/20">
+                <span className="text-white font-bold flex items-center gap-2 tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                  <Trophy className="w-5 h-5 text-[#ffff00]" />
+                  {t.matches}
+                </span>
+                <span className="text-[#00f0ff] text-sm font-mono bg-[#00f0ff]/10 px-2 py-1 rounded">
+                  {filteredFixtures.length}
                 </span>
               </div>
               
-              <div className="max-h-[60vh] overflow-y-auto">
+              <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
                 {loading ? (
-                  <div className="p-8 flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent" />
+                  <div className="p-12 flex flex-col items-center justify-center">
+                    <motion.div 
+                      className="w-12 h-12 border-2 border-[#00f0ff] border-t-transparent rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <p className="mt-4 text-[#00f0ff] text-sm">Loading...</p>
                   </div>
                 ) : filteredFixtures.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    {t.noMatches}
+                  <div className="p-12 text-center">
+                    <Shield className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500">{t.noMatches}</p>
                   </div>
                 ) : (
-                  filteredFixtures.map((fixture) => (
-                    <button
-                      key={fixture.id}
-                      onClick={() => {
-                        setSelectedFixture(fixture);
-                        setAnalysis(null);
-                        setAnalysisError(null);
-                      }}
-                      className={`w-full p-3 border-b border-white/5 hover:bg-white/5 transition text-left ${
-                        selectedFixture?.id === fixture.id ? 'bg-purple-500/20 border-l-2 border-l-purple-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {fixture.homeTeamLogo && (
-                              <img src={fixture.homeTeamLogo} alt="" className="w-5 h-5 object-contain" />
-                            )}
-                            <span className="text-white text-sm font-medium truncate">
-                              {fixture.homeTeam}
-                            </span>
-                            {fixture.hasAnalysis && (
-                              <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
-                            )}
+                  <AnimatePresence>
+                    {filteredFixtures.map((fixture, index) => (
+                      <motion.button
+                        key={fixture.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => {
+                          setSelectedFixture(fixture);
+                          setAnalysis(null);
+                          setAnalysisError(null);
+                        }}
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        className={`w-full p-4 border-b border-[#00f0ff]/10 hover:bg-[#00f0ff]/5 transition-all text-left relative overflow-hidden group ${
+                          selectedFixture?.id === fixture.id 
+                            ? 'bg-[#00f0ff]/10 border-l-4 border-l-[#00f0ff]' 
+                            : ''
+                        }`}
+                      >
+                        {selectedFixture?.id === fixture.id && (
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-[#00f0ff]/10 to-transparent"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        )}
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              {fixture.homeTeamLogo && (
+                                <img src={fixture.homeTeamLogo} alt="" className="w-6 h-6 object-contain" />
+                              )}
+                              <span className="text-white text-sm font-semibold truncate">
+                                {fixture.homeTeam}
+                              </span>
+                              {fixture.hasAnalysis && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring" }}
+                                >
+                                  <CheckCircle className="w-4 h-4 text-[#00ff88]" />
+                                </motion.div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {fixture.awayTeamLogo && (
+                                <img src={fixture.awayTeamLogo} alt="" className="w-6 h-6 object-contain" />
+                              )}
+                              <span className="text-gray-400 text-sm truncate">
+                                {fixture.awayTeam}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            {fixture.awayTeamLogo && (
-                              <img src={fixture.awayTeamLogo} alt="" className="w-5 h-5 object-contain" />
-                            )}
-                            <span className="text-gray-400 text-sm truncate">
-                              {fixture.awayTeam}
-                            </span>
+                          <div className="text-right ml-4">
+                            <div className="text-sm text-[#00f0ff] font-mono font-semibold">
+                              {new Date(fixture.date).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate max-w-[100px] mt-1">
+                              {fixture.league}
+                            </div>
                           </div>
+                          <ChevronRight className="w-5 h-5 text-[#00f0ff] ml-3 group-hover:translate-x-1 transition-transform" />
                         </div>
-                        <div className="text-right ml-2">
-                          <div className="text-xs text-purple-400">
-                            {new Date(fixture.date).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate max-w-[80px]">
-                            {fixture.league}
-                          </div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-500 ml-2" />
-                      </div>
-                    </button>
-                  ))
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
                 )}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
           
-          {/* Right: Analysis Panel */}
-          <div className="lg:col-span-2">
+          {/* Right: Analysis Panel - Futuristic */}
+          <motion.div 
+            className="lg:col-span-2"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             {selectedFixture && !analyzing && !analysis && !analysisError ? (
-              <div className="bg-white/5 rounded-xl border border-white/10 p-8">
-                <h3 className="text-lg font-bold text-white mb-4">{t.selectAnalysisType}</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
+              <motion.div 
+                className="glass-futuristic rounded-2xl p-8 neon-border-cyan"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h3 className="text-xl font-bold text-white mb-6 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {t.selectAnalysisType}
+                </h3>
+                <div className="grid grid-cols-2 gap-5">
+                  <motion.button
                     onClick={() => {
                       setAnalysisType('ai');
                       analyzeMatch(selectedFixture, 'ai');
                     }}
-                    className={`p-6 rounded-xl border-2 transition-all ${
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${
                       analysisType === 'ai'
-                        ? 'border-purple-500 bg-purple-500/20'
-                        : 'border-white/10 hover:border-white/20'
+                        ? 'neon-border-magenta bg-[#ff00f0]/10'
+                        : 'border-[#00f0ff]/30 hover:neon-border-cyan glass-futuristic'
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Zap className="w-6 h-6 text-purple-400" />
-                      <span className="text-white font-medium">{t.aiAnalysis}</span>
+                    <div className="flex flex-col items-center gap-3 relative z-10">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        analysisType === 'ai' ? 'bg-[#ff00f0]/20' : 'bg-[#00f0ff]/20'
+                      }`}>
+                        <Zap className={`w-7 h-7 ${analysisType === 'ai' ? 'text-[#ff00f0]' : 'text-[#00f0ff]'}`} />
+                      </div>
+                      <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {t.aiAnalysis}
+                      </span>
+                      <p className="text-xs text-gray-400 text-center">Claude + DeepSeek AI modelleri</p>
                     </div>
-                    <p className="text-sm text-gray-400">Claude + DeepSeek AI modelleri</p>
-                  </button>
-                  <button
+                    {analysisType === 'ai' && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-[#ff00f0]/20 to-transparent"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      />
+                    )}
+                  </motion.button>
+                  <motion.button
                     onClick={() => {
                       setAnalysisType('agent');
                       analyzeMatch(selectedFixture, 'agent');
                     }}
-                    className={`p-6 rounded-xl border-2 transition-all ${
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${
                       analysisType !== 'ai'
-                        ? 'border-blue-500 bg-blue-500/20'
-                        : 'border-white/10 hover:border-white/20'
+                        ? 'neon-border-cyan bg-[#00f0ff]/10'
+                        : 'border-[#00f0ff]/30 hover:neon-border-cyan glass-futuristic'
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Target className="w-6 h-6 text-blue-400" />
-                      <span className="text-white font-medium">{t.agentAnalysis}</span>
+                    <div className="flex flex-col items-center gap-3 relative z-10">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        analysisType !== 'ai' ? 'bg-[#00f0ff]/20' : 'bg-[#00f0ff]/20'
+                      }`}>
+                        <Target className="w-7 h-7 text-[#00f0ff]" />
+                      </div>
+                      <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {t.agentAnalysis}
+                      </span>
+                      <p className="text-xs text-gray-400 text-center">Stats, Odds, DeepAnalysis Agent'ları</p>
                     </div>
-                    <p className="text-sm text-gray-400">Stats, Odds, DeepAnalysis Agent'ları</p>
-                  </button>
+                    {analysisType !== 'ai' && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/20 to-transparent"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      />
+                    )}
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ) : analyzing ? (
-              <div className="bg-white/5 rounded-xl border border-white/10 p-8 flex flex-col items-center justify-center min-h-[400px]">
+              <motion.div 
+                className="glass-futuristic rounded-2xl p-12 flex flex-col items-center justify-center min-h-[400px] neon-border-cyan"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
                 <div className="relative">
-                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent" />
-                  <Zap className="absolute inset-0 m-auto w-8 h-8 text-purple-400 animate-pulse" />
+                  <motion.div 
+                    className="w-20 h-20 border-4 border-[#00f0ff] border-t-transparent rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <Zap className="w-10 h-10 text-[#00f0ff]" />
+                  </motion.div>
                 </div>
-                <p className="mt-4 text-white font-medium">{t.analyzing}</p>
-                <p className="text-sm text-gray-400">{t.analyzeTime}</p>
-              </div>
+                <motion.p 
+                  className="mt-6 text-white font-bold text-xl neon-glow-cyan"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  {t.analyzing}
+                </motion.p>
+                <p className="mt-2 text-sm text-[#00f0ff] font-mono">{t.analyzeTime}</p>
+              </motion.div>
             ) : analysisError ? (
               <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-8 flex flex-col items-center justify-center min-h-[400px]">
                 <AlertCircle className="w-12 h-12 text-red-400" />
@@ -1129,112 +1304,166 @@ export default function DashboardPage() {
                   </button>
                 </div>
                 
-                {/* Match Header */}
-                <div className={`bg-gradient-to-r rounded-xl border p-6 ${
-                  analysisType === 'ai'
-                    ? 'from-purple-500/20 to-pink-500/20 border-purple-500/30'
-                    : 'from-blue-500/20 to-cyan-500/20 border-blue-500/30'
-                }`}>
-                  <div className="flex items-center justify-between">
+                {/* Match Header - Futuristic */}
+                <motion.div 
+                  className={`glass-futuristic rounded-2xl border p-8 relative overflow-hidden ${
+                    analysisType === 'ai'
+                      ? 'neon-border-magenta'
+                      : 'neon-border-cyan'
+                  }`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00f0ff]/5 to-transparent opacity-50" />
+                  <div className="flex items-center justify-between relative z-10">
                     <div className="text-center flex-1">
-                      <h3 className="text-xl font-bold text-white">{analysis.homeTeam}</h3>
+                      <h3 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {analysis.homeTeam}
+                      </h3>
                     </div>
-                    <div className="px-4">
-                      <span className="text-2xl font-bold text-purple-400">vs</span>
+                    <div className="px-6">
+                      <span className={`text-3xl font-black ${
+                        analysisType === 'ai' ? 'text-[#ff00f0] neon-glow-magenta' : 'text-[#00f0ff] neon-glow-cyan'
+                      }`} style={{ fontFamily: 'var(--font-heading)' }}>
+                        VS
+                      </span>
                     </div>
                     <div className="text-center flex-1">
-                      <h3 className="text-xl font-bold text-white">{analysis.awayTeam}</h3>
+                      <h3 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                        {analysis.awayTeam}
+                      </h3>
                     </div>
                   </div>
                   
-                  {/* Meta Info */}
-                  <div className="mt-4 flex items-center justify-center gap-4 text-sm flex-wrap">
-                    <span className={`px-3 py-1 rounded-full ${
-                      analysis.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
-                      analysis.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
+                  {/* Meta Info - Futuristic */}
+                  <div className="mt-6 flex items-center justify-center gap-4 text-sm flex-wrap relative z-10">
+                    <motion.span 
+                      className={`px-4 py-2 rounded-full font-semibold border ${
+                        analysis.riskLevel === 'low' ? 'bg-[#00ff88]/10 text-[#00ff88] border-[#00ff88]/30' :
+                        analysis.riskLevel === 'medium' ? 'bg-[#ffff00]/10 text-[#ffff00] border-[#ffff00]/30' :
+                        'bg-[#ff00f0]/10 text-[#ff00f0] border-[#ff00f0]/30'
+                      }`}
+                      whileHover={{ scale: 1.1 }}
+                    >
                       Risk: {analysis.riskLevel === 'low' ? t.riskLow : analysis.riskLevel === 'medium' ? t.riskMedium : t.riskHigh}
-                    </span>
-                    <span className="text-gray-400">
+                    </motion.span>
+                    <span className="text-[#00f0ff] font-mono bg-[#00f0ff]/10 px-3 py-1.5 rounded">
                       {t.agreement}: %{analysis.agreement}
                     </span>
-                    <span className="text-gray-400">
+                    <span className="text-gray-400 font-mono">
                       {analysis.processingTime}ms
                     </span>
                   </div>
-                </div>
+                </motion.div>
                 
-                {/* Predictions Grid - Sadece AI Analiz için standart tahminler */}
+                {/* Predictions Grid - Futuristic Cards */}
                 {analysisType === 'ai' && analysis.btts && analysis.overUnder && analysis.matchResult && (
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <motion.div 
+                    className="grid md:grid-cols-3 gap-5"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, staggerChildren: 0.1 }}
+                  >
                     {/* BTTS */}
-                    <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Target className="w-5 h-5 text-blue-400" />
-                      <h4 className="text-white font-medium">{t.btts}</h4>
-                    </div>
-                    <div className={`text-2xl font-bold ${
-                      analysis.btts.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {analysis.btts.prediction === 'yes' ? t.yes : t.no}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 rounded-full"
-                          style={{ width: `${analysis.btts.confidence}%` }}
-                        />
+                    <motion.div 
+                      className="glass-futuristic rounded-2xl border p-5 neon-border-cyan relative overflow-hidden group"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.8)' }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-3 mb-4 relative z-10">
+                        <div className="w-10 h-10 rounded-lg bg-[#00f0ff]/20 flex items-center justify-center">
+                          <Target className="w-5 h-5 text-[#00f0ff]" />
+                        </div>
+                        <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.btts}</h4>
                       </div>
-                      <span className="text-sm text-blue-400">%{analysis.btts.confidence}</span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-400">{analysis.btts.reasoning}</p>
-                  </div>
+                      <div className={`text-4xl font-black mb-3 relative z-10 ${
+                        analysis.btts.prediction === 'yes' ? 'text-[#00ff88] neon-glow-yellow' : 'text-[#ff00f0] neon-glow-magenta'
+                      }`} style={{ fontFamily: 'var(--font-heading)' }}>
+                        {analysis.btts.prediction === 'yes' ? t.yes : t.no}
+                      </div>
+                      <div className="mt-4 flex items-center gap-3 relative z-10">
+                        <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden border border-[#00f0ff]/20">
+                          <motion.div 
+                            className="h-full bg-gradient-to-r from-[#00f0ff] to-[#00ff88] rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${analysis.btts.confidence}%` }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                          />
+                        </div>
+                        <span className="text-sm text-[#00f0ff] font-mono font-bold">%{analysis.btts.confidence}</span>
+                      </div>
+                      <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.btts.reasoning}</p>
+                    </motion.div>
                   
                   {/* Over/Under */}
-                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-5 h-5 text-purple-400" />
-                      <h4 className="text-white font-medium">{t.overUnder}</h4>
+                  <motion.div 
+                    className="glass-futuristic rounded-2xl border p-5 neon-border-cyan relative overflow-hidden group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.8)' }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#ff00f0]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center gap-3 mb-4 relative z-10">
+                      <div className="w-10 h-10 rounded-lg bg-[#ff00f0]/20 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-[#ff00f0]" />
+                      </div>
+                      <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.overUnder}</h4>
                     </div>
-                    <div className={`text-2xl font-bold ${
-                      analysis.overUnder.prediction === 'over' ? 'text-green-400' : 'text-orange-400'
-                    }`}>
+                    <div className={`text-4xl font-black mb-3 relative z-10 ${
+                      analysis.overUnder.prediction === 'over' ? 'text-[#00ff88] neon-glow-yellow' : 'text-[#ffff00] neon-glow-yellow'
+                    }`} style={{ fontFamily: 'var(--font-heading)' }}>
                       {analysis.overUnder.prediction === 'over' ? t.over : t.under}
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-purple-500 rounded-full"
-                          style={{ width: `${analysis.overUnder.confidence}%` }}
+                    <div className="mt-4 flex items-center gap-3 relative z-10">
+                      <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden border border-[#ff00f0]/20">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-[#ff00f0] to-[#00f0ff] rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${analysis.overUnder.confidence}%` }}
+                          transition={{ duration: 1, delay: 0.6 }}
                         />
                       </div>
-                      <span className="text-sm text-purple-400">%{analysis.overUnder.confidence}</span>
+                      <span className="text-sm text-[#ff00f0] font-mono font-bold">%{analysis.overUnder.confidence}</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-400">{analysis.overUnder.reasoning}</p>
-                  </div>
+                    <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.overUnder.reasoning}</p>
+                  </motion.div>
                   
                   {/* Match Result */}
-                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                      <h4 className="text-white font-medium">{t.matchResult}</h4>
+                  <motion.div 
+                    className="glass-futuristic rounded-2xl border p-5 neon-border-cyan relative overflow-hidden group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.8)' }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#ffff00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center gap-3 mb-4 relative z-10">
+                      <div className="w-10 h-10 rounded-lg bg-[#ffff00]/20 flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-[#ffff00]" />
+                      </div>
+                      <h4 className="text-white font-bold" style={{ fontFamily: 'var(--font-heading)' }}>{t.matchResult}</h4>
                     </div>
-                    <div className="text-2xl font-bold text-yellow-400">
+                    <div className="text-4xl font-black mb-3 relative z-10 text-[#ffff00] neon-glow-yellow" style={{ fontFamily: 'var(--font-heading)' }}>
                       {analysis.matchResult.prediction === 'home' ? t.home :
                        analysis.matchResult.prediction === 'away' ? t.away : t.draw}
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-yellow-500 rounded-full"
-                          style={{ width: `${analysis.matchResult.confidence}%` }}
+                    <div className="mt-4 flex items-center gap-3 relative z-10">
+                      <div className="flex-1 h-3 bg-black/40 rounded-full overflow-hidden border border-[#ffff00]/20">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-[#ffff00] to-[#00ff88] rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${analysis.matchResult.confidence}%` }}
+                          transition={{ duration: 1, delay: 0.7 }}
                         />
                       </div>
-                      <span className="text-sm text-yellow-400">%{analysis.matchResult.confidence}</span>
+                      <span className="text-sm text-[#ffff00] font-mono font-bold">%{analysis.matchResult.confidence}</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-400">{analysis.matchResult.reasoning}</p>
-                  </div>
+                    <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.matchResult.reasoning}</p>
+                  </motion.div>
                   
                   {/* Corners - Sadece Agent Analysis için göster (AI Analysis'te korner verisi gelmiyor) */}
                   {analysisType !== 'ai' && analysis.corners && (
@@ -1271,7 +1500,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   )}
-                  </div>
+                  </motion.div>
                 )}
                 
                 {/* Agent Özel Tahminler (Sadece Agent Analysis için - Standart tahminler yok) */}
@@ -1367,33 +1596,63 @@ export default function DashboardPage() {
                   </div>
                 )}
                 
-                {/* Best Bet */}
+                {/* Best Bet - Futuristic Highlight */}
                 {analysis.bestBet && (
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/30 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <Star className="w-5 h-5 text-green-400" />
-                      </div>
+                  <motion.div 
+                    className="glass-futuristic rounded-2xl border p-8 neon-border-cyan relative overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.8, type: "spring" }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#00ff88]/10 via-[#00f0ff]/10 to-[#ff00f0]/10 animate-pulse" />
+                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                      <motion.div 
+                        className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#00ff88] to-[#00f0ff] flex items-center justify-center"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Star className="w-7 h-7 text-black" fill="currentColor" />
+                      </motion.div>
                       <div>
-                        <h4 className="text-white font-bold">{t.bestBet}</h4>
-                        <p className="text-xs text-gray-400">{t.aiRecommendation}</p>
+                        <h4 className="text-white font-black text-2xl neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                          {t.bestBet}
+                        </h4>
+                        <p className="text-xs text-[#00f0ff] font-mono mt-1">{t.aiRecommendation}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                      <div>
-                        <span className="text-green-400 text-lg font-bold">{analysis.bestBet.market}</span>
-                        <span className="text-white text-lg mx-2">→</span>
-                        <span className="text-white text-lg font-bold">{analysis.bestBet.selection}</span>
+                    <div className="flex items-center justify-between flex-wrap gap-6 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#00ff88] text-xl font-black neon-glow-yellow" style={{ fontFamily: 'var(--font-heading)' }}>
+                          {analysis.bestBet.market}
+                        </span>
+                        <motion.span 
+                          className="text-[#00f0ff] text-2xl"
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          →
+                        </motion.span>
+                        <span className="text-white text-xl font-black" style={{ fontFamily: 'var(--font-heading)' }}>
+                          {analysis.bestBet.selection}
+                        </span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-green-400">%{analysis.bestBet.confidence}</div>
-                        <div className="text-xs text-gray-400">{t.confidence}</div>
+                        <motion.div 
+                          className="text-4xl font-black text-[#00ff88] neon-glow-yellow"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 1, type: "spring", stiffness: 200 }}
+                          style={{ fontFamily: 'var(--font-heading)' }}
+                        >
+                          %{analysis.bestBet.confidence}
+                        </motion.div>
+                        <div className="text-xs text-[#00f0ff] font-mono mt-1">{t.confidence}</div>
                       </div>
                     </div>
                     
-                    <p className="mt-3 text-sm text-gray-400">{analysis.bestBet.reason}</p>
-                  </div>
+                    <p className="mt-4 text-sm text-gray-300 relative z-10">{analysis.bestBet.reason}</p>
+                  </motion.div>
                 )}
                 
                 {/* Analiz Detayı - Sadece Agent Analysis için */}
@@ -1409,16 +1668,28 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white/5 rounded-xl border border-white/10 p-8 flex flex-col items-center justify-center min-h-[400px]">
-                <Shield className="w-16 h-16 text-purple-400/50" />
-                <h3 className="mt-4 text-xl font-bold text-white">{t.selectMatch}</h3>
-                <p className="mt-2 text-gray-400 text-center">
+              <motion.div 
+                className="glass-futuristic rounded-2xl border p-12 flex flex-col items-center justify-center min-h-[400px] neon-border-cyan"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <Shield className="w-20 h-20 text-[#00f0ff]/50" />
+                </motion.div>
+                <h3 className="mt-6 text-2xl font-black text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {t.selectMatch}
+                </h3>
+                <p className="mt-4 text-gray-400 text-center max-w-md">
                   {t.selectMatchDesc}<br />
-                  {t.analyzeTimeShort}
+                  <span className="text-[#00f0ff] font-mono">{t.analyzeTimeShort}</span>
                 </p>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
       </main>
     </div>

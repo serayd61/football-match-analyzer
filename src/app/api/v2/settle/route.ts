@@ -128,14 +128,14 @@ export async function POST(request: NextRequest) {
         
         // Update smart_analysis if exists
         if (analysis.type === 'smart' || pendingSmartAnalyses?.some(a => a.fixture_id === analysis.fixture_id)) {
-          const { error: updateError } = await supabase
-            .from('smart_analysis')
-            .update({
-              is_settled: true,
+        const { error: updateError } = await supabase
+          .from('smart_analysis')
+          .update({
+            is_settled: true,
               actual_btts: result.btts ? 'yes' : 'no',
-              actual_total_goals: result.totalGoals,
+            actual_total_goals: result.totalGoals,
               actual_match_result: result.matchResult === 'home' ? '1' : result.matchResult === 'away' ? '2' : 'X'
-            })
+          })
             .eq('fixture_id', analysis.fixture_id)
             .eq('is_settled', false);
           
@@ -160,13 +160,13 @@ export async function POST(request: NextRequest) {
             })
             .eq('fixture_id', analysis.fixture_id)
             .eq('is_settled', false);
-          
-          if (updateError) {
+        
+        if (updateError) {
             console.error(`Error updating agent_analysis ${analysis.fixture_id}:`, updateError);
-            errors++;
-          } else {
+          errors++;
+        } else {
             console.log(`✅ Settled agent_analysis: ${analysis.fixture_id} (${result.homeScore}-${result.awayScore})`);
-            updated++;
+          updated++;
           }
         }
         
