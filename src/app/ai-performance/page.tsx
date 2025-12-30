@@ -255,9 +255,86 @@ export default function AIPerformancePage() {
   const fetchPerformanceData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/public/ai-performance?period=${selectedPeriod}`);
+      // 🆕 Unified performance endpoint kullan
+      const res = await fetch(`/api/unified/performance?days=${selectedPeriod === '7d' ? 7 : selectedPeriod === '30d' ? 30 : 365}&_t=${Date.now()}`);
       const json = await res.json();
-      setData(json);
+      
+      if (json.success) {
+        // Unified format'ı eski format'a dönüştür (backward compatibility)
+        const unifiedStats = json.stats;
+        setData({
+          models: [
+            {
+              model: 'Unified Consensus',
+              totalPredictions: unifiedStats.overview.settled,
+              correctPredictions: unifiedStats.accuracy.overall.correct,
+              accuracy: unifiedStats.accuracy.overall.rate,
+              avgConfidence: unifiedStats.confidenceDistribution.high.count > 0 
+                ? (unifiedStats.confidenceDistribution.high.count * 75 + 
+                   unifiedStats.confidenceDistribution.medium.count * 65 + 
+                   unifiedStats.confidenceDistribution.low.count * 50) / unifiedStats.overview.settled
+                : 60,
+              roi: 0,
+              hasRealData: true
+            }
+          ],
+          markets: [
+            {
+              market: 'Match Result',
+              total: unifiedStats.accuracy.matchResult.total,
+              correct: unifiedStats.accuracy.matchResult.correct,
+              accuracy: unifiedStats.accuracy.matchResult.rate
+            },
+            {
+              market: 'Over/Under',
+              total: unifiedStats.accuracy.overUnder.total,
+              correct: unifiedStats.accuracy.overUnder.correct,
+              accuracy: unifiedStats.accuracy.overUnder.rate
+            },
+            {
+              market: 'BTTS',
+              total: unifiedStats.accuracy.btts.total,
+              correct: unifiedStats.accuracy.btts.correct,
+              accuracy: unifiedStats.accuracy.btts.rate
+            }
+          ],
+          leagues: [],
+          overall: {
+            totalPredictions: unifiedStats.overview.total,
+            totalCorrect: unifiedStats.accuracy.overall.correct,
+            totalSettled: unifiedStats.overview.settled,
+            pendingCount: unifiedStats.overview.pending,
+            overallAccuracy: unifiedStats.accuracy.overall.rate,
+            avgConfidence: unifiedStats.confidenceDistribution.high.count > 0 
+              ? (unifiedStats.confidenceDistribution.high.count * 75 + 
+                 unifiedStats.confidenceDistribution.medium.count * 65 + 
+                 unifiedStats.confidenceDistribution.low.count * 50) / unifiedStats.overview.settled
+              : 60,
+            lastUpdated: new Date().toISOString()
+          },
+          weeklyTrend: [],
+          recentPredictions: unifiedStats.recentAnalyses.map((a: any) => ({
+            id: String(a.fixtureId),
+            match: `${a.homeTeam} vs ${a.awayTeam}`,
+            league: a.league,
+            status: a.isSettled ? (a.accuracy?.matchResult ? 'won' : 'lost') : 'pending',
+            date: a.matchDate,
+            analysisType: 'unified'
+          })),
+          summary: {
+            totalPredictions: unifiedStats.overview.total,
+            settledCount: unifiedStats.overview.settled,
+            pendingCount: unifiedStats.overview.pending,
+            wonCount: unifiedStats.accuracy.overall.correct,
+            lostCount: unifiedStats.overview.settled - unifiedStats.accuracy.overall.correct
+          }
+        });
+      } else {
+        // Fallback to old endpoint
+        const res = await fetch(`/api/public/ai-performance?period=${selectedPeriod}`);
+        const json = await res.json();
+        setData(json);
+      }
     } catch (err) {
       console.error('Error fetching performance data:', err);
     } finally {

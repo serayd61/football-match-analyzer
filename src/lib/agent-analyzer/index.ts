@@ -1564,6 +1564,19 @@ export async function runAgentAnalysis(
 
 export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<boolean> {
   try {
+    // 🆕 Otomatik performans takibi - unified_analysis'a kaydet
+    const { trackAgentAnalysis } = await import('../unified-consensus/auto-track');
+    await trackAgentAnalysis(
+      result.fixtureId,
+      result.homeTeam,
+      result.awayTeam,
+      result.league,
+      result.matchDate,
+      result
+    ).catch(err => {
+      console.warn('⚠️ Auto-tracking failed (non-blocking):', err);
+    });
+
     const { error } = await supabase
       .from('agent_analysis')
       .upsert({

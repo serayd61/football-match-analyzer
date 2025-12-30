@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FootballBall3D } from '@/components/Football3D';
 import {
   BarChart3, TrendingUp, Target, CheckCircle, XCircle,
   Calendar, Filter, Download, RefreshCw, Award, Activity,
@@ -140,12 +141,15 @@ export default function PerformancePage() {
               >
                 <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
               </motion.button>
-              <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                  <BarChart3 className="w-6 h-6 text-[#00f0ff]" />
-                  Performans Takibi
-                </h1>
-                <p className="text-gray-400 text-sm mt-1">Analiz doğruluk oranları ve istatistikler</p>
+              <div className="flex items-center gap-3">
+                <FootballBall3D size={40} autoRotate={true} />
+                <div>
+                  <h1 className="text-2xl font-bold text-white flex items-center gap-2 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                    <BarChart3 className="w-6 h-6 text-[#00f0ff]" />
+                    Performans Takibi
+                  </h1>
+                  <p className="text-gray-400 text-sm mt-1">Analiz doğruluk oranları ve istatistikler</p>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -194,16 +198,19 @@ export default function PerformancePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20 hover:neon-border-cyan transition-all"
+            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20 hover:neon-border-cyan transition-all relative overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="absolute top-2 right-2 opacity-10">
+              <FootballBall3D size={50} autoRotate={true} />
+            </div>
+            <div className="flex items-center justify-between mb-4 relative z-10">
               <h3 className="text-gray-400 text-sm font-medium">Genel Doğruluk</h3>
               <Target className="w-5 h-5 text-[#00f0ff]" />
             </div>
-            <p className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+            <p className="text-3xl font-bold text-white neon-glow-cyan relative z-10" style={{ fontFamily: 'var(--font-heading)' }}>
               {stats.accuracy.overall.rate.toFixed(1)}%
             </p>
-            <p className="text-xs text-gray-400 mt-2">{stats.accuracy.overall.correct}/{stats.accuracy.overall.total} doğru tahmin</p>
+            <p className="text-xs text-gray-400 mt-2 relative z-10">{stats.accuracy.overall.correct}/{stats.accuracy.overall.total} doğru tahmin</p>
           </motion.div>
 
           <motion.div

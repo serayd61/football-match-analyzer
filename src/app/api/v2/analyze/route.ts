@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Smart Analysis failed' }, { status: 500 });
       }
       
-      // Smart Analysis'i kaydet
+      // Smart Analysis'i kaydet (otomatik olarak unified_analysis'a da kaydedilir)
       await saveSmartAnalysis({
         fixtureId,
         homeTeam,
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         if (agentAnalysis) {
           console.log(`✅ Agent Analysis successful in ${Date.now() - startTime}ms`);
           
-          // Agent Analysis'i kaydet
+          // Agent Analysis'i kaydet (otomatik olarak unified_analysis'a da kaydedilir)
           await saveAgentAnalysis(agentAnalysis);
           
           // Agent Analysis formatını response formatına dönüştür

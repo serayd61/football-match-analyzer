@@ -556,6 +556,19 @@ NOT: Veri olmadan analiz yapıyorsun, güven değerleri düşük olmalı!
 
 export async function saveSmartAnalysis(match: MatchDetails, analysis: SmartAnalysisResult): Promise<boolean> {
   try {
+    // 🆕 Otomatik performans takibi - unified_analysis'a kaydet
+    const { trackSmartAnalysis } = await import('../unified-consensus/auto-track');
+    await trackSmartAnalysis(
+      match.fixtureId,
+      match.homeTeam,
+      match.awayTeam,
+      match.league,
+      match.matchDate,
+      analysis
+    ).catch(err => {
+      console.warn('⚠️ Auto-tracking failed (non-blocking):', err);
+    });
+
     const { error } = await supabase
       .from('smart_analysis')
       .upsert({
