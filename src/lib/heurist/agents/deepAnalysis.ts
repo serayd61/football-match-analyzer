@@ -1048,7 +1048,6 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
       cardsLine: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
       cardsConfidence: 58
     },
-<<<<<<< HEAD
     preparationScore: {
       home: Math.min(100, Math.max(0, Math.round(
         (homeOver >= 55 ? 20 : 10) + // Form pozitif ise +20, negatif ise +10
@@ -1074,7 +1073,7 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
           ? `Formanalyse: ${awayOver}% Over, ${awayForm?.wins || 0} Siege. Auswärtsdurchschnitt: ${awayForm?.venueAvgScored || 'N/A'} Tore.`
           : `Form analysis: ${awayOver}% Over, ${awayForm?.wins || 0} wins. Away average: ${awayForm?.venueAvgScored || 'N/A'} goals.`
       }
-=======
+    },
     // 🆕 Motivasyon puanları
     motivationScores: {
       home: homeMotivation.score,
@@ -1084,7 +1083,6 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
       homeFormGraph: homeMotivation.formGraph,
       awayFormGraph: awayMotivation.formGraph,
       reasoning: `${matchData.homeTeam}: ${homeMotivation.reasoning}. ${matchData.awayTeam}: ${awayMotivation.reasoning}. Puan farkı: ${Math.abs(homeMotivation.score - awayMotivation.score)} puan.`
->>>>>>> 49b4e2f7bd5a92c900e21d17f896cd0b4d50c100
     },
     riskLevel: 'Medium',
     agentSummary: msg.agentSummary
