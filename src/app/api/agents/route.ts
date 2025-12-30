@@ -24,7 +24,7 @@ import {
   type ProfessionalMarketPrediction 
 } from '@/lib/admin/enhanced-service';
 import { fetchCompleteMatchData } from '@/lib/heurist/sportmonks-data';
-import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
+import { getCachedAnalysis, setCachedAnalysis, clearCacheForMatch } from '@/lib/analysisCache';
 import { generateProfessionalAnalysis, type MatchStats, type ProfessionalAnalysis } from '@/lib/betting/professional-markets';
 
 // ==================== DATA QUALITY THRESHOLD ====================
@@ -320,7 +320,8 @@ export async function POST(request: NextRequest) {
       awayTeamId, 
       league = '', 
       language = 'en', 
-      useMultiModel = true 
+      useMultiModel = true,
+      skipCache = false // 🆕 Cache'i bypass etmek için
     } = body;
 
     if (!fixtureId) {
@@ -328,17 +329,21 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache
+    // 📦 CACHE KONTROLÜ - Aynı maç + dil için 30 dk cache (skipCache=true ise bypass)
     // ═══════════════════════════════════════════════════════════════════════════
-    const cached = getCachedAnalysis(fixtureId, language, 'agents');
-    
-    if (cached) {
-      console.log(`📦 CACHE HIT - Returning cached agent analysis from ${cached.cachedAt.toLocaleTimeString()}`);
-      return NextResponse.json({
-        ...cached.data,
-        cached: true,
-        cachedAt: cached.cachedAt.toISOString(),
-      });
+    if (!skipCache) {
+      const cached = getCachedAnalysis(fixtureId, language, 'agents');
+      
+      if (cached) {
+        console.log(`📦 CACHE HIT - Returning cached agent analysis from ${cached.cachedAt.toLocaleTimeString()}`);
+        return NextResponse.json({
+          ...cached.data,
+          cached: true,
+          cachedAt: cached.cachedAt.toISOString(),
+        });
+      }
+    } else {
+      console.log('📦 CACHE BYPASS - skipCache=true, running fresh analysis');
     }
     console.log('📦 CACHE MISS - Running fresh agent analysis');
 
