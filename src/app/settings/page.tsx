@@ -5,6 +5,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 import { 
   FiGlobe, FiBell, FiSun, FiMoon, FiHeart, FiShield, 
   FiSettings, FiChevronRight, FiCheck, FiX, FiSave

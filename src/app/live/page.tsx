@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 interface Match {
   id: number;
@@ -67,9 +71,9 @@ export default function LiveScoresPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#00f0ff] mx-auto mb-4 neon-glow-cyan"></div>
           <p className="text-white text-xl">Yükleniyor...</p>
         </div>
       </div>
@@ -77,9 +81,16 @@ export default function LiveScoresPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
       {/* Header */}
-      <header className="bg-black/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
+      <header className="glass-futuristic border-b border-[#00f0ff]/30 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -106,10 +117,10 @@ export default function LiveScoresPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6 relative z-10">
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
+          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
             <div className="text-2xl font-bold text-white">{matches.length}</div>
             <div className="text-gray-400 text-sm">Toplam</div>
           </div>
@@ -117,13 +128,13 @@ export default function LiveScoresPage() {
             <div className="text-2xl font-bold text-red-400">{liveCount}</div>
             <div className="text-red-300 text-sm">Canlı</div>
           </div>
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
+          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
             <div className="text-2xl font-bold text-yellow-400">
               {matches.filter(m => m.statusCode === 1).length}
             </div>
             <div className="text-gray-400 text-sm">Başlayacak</div>
           </div>
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
+          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
             <div className="text-2xl font-bold text-green-400">
               {matches.filter(m => m.statusCode === 5).length}
             </div>

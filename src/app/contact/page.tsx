@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
+import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 type FeedbackType = 'general' | 'bug' | 'feature' | 'complaint' | 'praise';
 
@@ -199,20 +202,37 @@ export default function ContactPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900">
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
       <Navigation />
       
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
+      
+      <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{l.title}</h1>
+        <motion.div 
+          className="text-center mb-10"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>{l.title}</h1>
           <p className="text-gray-400 text-lg">{l.subtitle}</p>
-        </div>
+        </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Contact Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 md:p-8">
+            <motion.form 
+              onSubmit={handleSubmit} 
+              className="glass-futuristic border border-[#00f0ff]/30 rounded-2xl p-6 md:p-8 neon-border-cyan"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               {/* Success Message */}
               {success && (
                 <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl">
@@ -237,7 +257,7 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder={l.namePlaceholder}
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 glass-futuristic border border-[#00f0ff]/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00f0ff] focus:border-[#00f0ff] transition-all"
                   />
                 </div>
 
@@ -250,7 +270,7 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder={l.emailPlaceholder}
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 glass-futuristic border border-[#00f0ff]/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00f0ff] focus:border-[#00f0ff] transition-all"
                   />
                 </div>
               </div>
@@ -329,7 +349,7 @@ export default function ContactPage() {
                   </span>
                 )}
               </button>
-            </form>
+            </motion.form>
           </div>
 
           {/* Sidebar */}

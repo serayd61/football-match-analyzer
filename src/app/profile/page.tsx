@@ -5,6 +5,10 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -116,8 +120,8 @@ export default function ProfilePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin neon-glow-cyan"></div>
       </div>
     );
   }
@@ -125,7 +129,16 @@ export default function ProfilePage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-4">
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
+      
+      <div className="p-4 relative z-10">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -138,7 +151,12 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-3xl overflow-hidden">
+        <motion.div 
+          className="glass-futuristic border border-[#00f0ff]/30 rounded-3xl overflow-hidden neon-border-cyan"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           {/* Header */}
           <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-b border-gray-700">
             <div className="flex items-center gap-4">
@@ -275,7 +293,8 @@ export default function ProfilePage() {
               {l.logout}
             </button>
           </div>
-        </div>
+        </motion.div>
+      </div>
       </div>
     </div>
   );

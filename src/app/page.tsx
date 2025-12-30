@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 // 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
 const YOUTUBE_VIDEO_ID = 'na5Cj-954sg';
@@ -551,63 +555,84 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-                <span className="text-xl">⚽</span>
-              </div>
-              <span className="text-xl font-bold text-white">Football Analytics Pro</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <LanguageSelector />
-              <Link href="/login" className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-semibold rounded-xl shadow-lg shadow-green-500/20 transition-all">
-                {l.hero.cta}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-20 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
+      <div className="fixed bottom-20 left-10 z-0 opacity-20 pointer-events-none">
+        <FootballBall3D size={120} />
+      </div>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <section className="pt-32 pb-20 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-full text-purple-400 text-sm font-medium mb-8">
+          <motion.div 
+            className="text-center max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.div 
+              className="inline-flex items-center gap-2 px-4 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-full text-[#00f0ff] text-sm font-medium mb-8 neon-glow-cyan"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
               {l.hero.badge}
-            </div>
+            </motion.div>
 
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            <motion.h1 
+              className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+              style={{ fontFamily: 'var(--font-heading)' }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               {l.hero.title}{' '}
-              <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#00f0ff] via-[#ff00f0] to-[#ffff00] bg-clip-text text-transparent neon-glow-cyan">
                 {l.hero.titleHighlight}
               </span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <motion.p 
+              className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
               {l.hero.subtitle}
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-green-500/30 transition-all flex items-center justify-center gap-2">
-                {l.hero.cta}
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-              <button 
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link href="/login" className="px-8 py-4 glass-futuristic border border-[#00f0ff]/50 text-white font-bold text-lg rounded-2xl neon-border-cyan neon-glow-cyan transition-all flex items-center justify-center gap-2">
+                  {l.hero.cta}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </motion.div>
+              <motion.button 
                 onClick={() => setShowVideoModal(true)}
-                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-lg rounded-2xl border border-gray-700 transition-all flex items-center justify-center gap-2 hover:scale-105"
+                className="px-8 py-4 glass-futuristic border border-gray-700/50 text-white font-semibold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 hover:border-[#00f0ff]/50"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                 </svg>
                 {l.hero.ctaSecondary}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
 
             <div className="flex items-center justify-center gap-4">
               <div className="flex -space-x-3">
@@ -622,22 +647,34 @@ export default function HomePage() {
                 <div className="text-sm text-gray-400">{l.hero.trustedBy}</div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
+          <motion.div 
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+          >
             {[
               { value: '500+', label: l.stats.matches },
               { value: '70%+', label: l.stats.accuracy },
               { value: '10K+', label: l.stats.users },
               { value: '27+', label: l.stats.leagues },
             ].map((stat, idx) => (
-              <div key={idx} className="text-center p-6 bg-gray-800/50 backdrop-blur border border-gray-700/50 rounded-2xl">
-                <div className="text-4xl font-bold text-white mb-1">{stat.value}</div>
+              <motion.div 
+                key={idx} 
+                className="text-center p-6 glass-futuristic border border-[#00f0ff]/20 rounded-2xl neon-border-cyan"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1 + idx * 0.1 }}
+                whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.5)' }}
+              >
+                <div className="text-4xl font-bold text-white mb-1 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>{stat.value}</div>
                 <div className="text-gray-400">{stat.label}</div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 

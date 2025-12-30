@@ -4,6 +4,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 interface TeamStats {
   id: number;
@@ -341,9 +345,9 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4 neon-glow-cyan"></div>
           <p className="text-gray-400">{l.loading}</p>
           <p className="text-gray-500 text-sm mt-2">Takım istatistikleri yükleniyor...</p>
         </div>
@@ -352,9 +356,17 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
+      
       {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
+      <header className="glass-futuristic border-b border-[#00f0ff]/30 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>

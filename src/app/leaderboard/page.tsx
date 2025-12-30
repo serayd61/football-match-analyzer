@@ -6,6 +6,10 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 interface LeaderboardEntry {
   rank: number;
@@ -287,7 +291,14 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={150} />
+      </div>
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {/* HEADER */}
       {/* ══════════════════════════════════════════════════════════════════════ */}

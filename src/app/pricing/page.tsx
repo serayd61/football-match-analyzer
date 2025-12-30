@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import CustomCursor from '@/components/CustomCursor';
+import Navigation from '@/components/Navigation';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 
 export default function PricingPage() {
   const { data: session } = useSession();
@@ -103,25 +107,46 @@ export default function PricingPage() {
   const l = labels[lang as keyof typeof labels] || labels.en;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 py-12 px-4">
-      <div className="absolute top-4 right-4">
-        <LanguageSelector />
+    <div className="min-h-screen bg-black relative">
+      <CustomCursor />
+      <Navigation />
+      
+      {/* 3D Football Decorations */}
+      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
+        <FootballBall3D size={200} />
       </div>
       
+      <div className="py-12 px-4 relative z-10">
+        <div className="absolute top-4 right-4 z-20">
+          <LanguageSelector />
+        </div>
+      
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <Link href="/" className="inline-block mb-6 text-gray-400 hover:text-white">
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link href="/" className="inline-block mb-6 text-gray-400 hover:text-[#00f0ff] transition-colors">
             {l.backToHome}
           </Link>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">⚽ {l.title}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+            ⚽ {l.title}
+          </h1>
           <p className="text-gray-400 text-lg mb-6">{l.subtitle}</p>
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-500/20 border border-green-500/30 rounded-full text-green-400 font-medium">
+          <div className="inline-flex items-center gap-2 px-6 py-3 glass-futuristic border border-[#00f0ff]/30 rounded-full text-[#00f0ff] font-medium neon-glow-cyan">
             {l.trialBadge}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="max-w-md mx-auto">
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl p-8 ring-2 ring-green-500 shadow-2xl shadow-green-500/20">
+        <motion.div 
+          className="max-w-md mx-auto"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="glass-futuristic border-2 border-[#00f0ff]/50 rounded-3xl p-8 neon-border-cyan neon-glow-cyan shadow-2xl shadow-[#00f0ff]/20">
             <div className="text-center mb-8">
               <span className="inline-block px-4 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-bold rounded-full mb-4">PRO</span>
               <div className="flex items-baseline justify-center gap-1">
@@ -140,31 +165,46 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <button
+            <motion.button
               onClick={handleSubscribe}
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold text-lg rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-green-500/30"
+              className="w-full py-4 glass-futuristic border border-[#00f0ff]/50 text-white font-bold text-lg rounded-xl neon-border-cyan neon-glow-cyan transition-all disabled:opacity-50"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               {loading ? l.loading : session ? l.startNow : l.startTrial}
-            </button>
+            </motion.button>
 
             <div className="mt-6 text-center text-sm text-gray-500 space-y-1">
               <p>{l.note}</p>
               <p>{l.cancel}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* AI Models */}
-        <div className="mt-16 text-center">
+        <motion.div 
+          className="mt-16 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
           <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto">
-            {['🟣 Claude', '🟢 GPT-4', '🔵 Gemini', '🟠 Heurist'].map((model) => (
-              <div key={model} className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 text-sm text-white">
+            {['🟣 Claude', '🟢 GPT-4', '🔵 Gemini', '🟠 Heurist'].map((model, idx) => (
+              <motion.div 
+                key={model} 
+                className="glass-futuristic border border-[#00f0ff]/20 rounded-xl p-3 text-sm text-white neon-border-cyan"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + idx * 0.1 }}
+                whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.5)' }}
+              >
                 {model}
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
+      </div>
       </div>
     </div>
   );
