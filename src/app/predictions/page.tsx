@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
+import Navigation from '@/components/Navigation';
 
 interface Match {
   fixture_id: number;
@@ -202,52 +206,78 @@ export default function PredictionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <CustomCursor />
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">{l.loading}</p>
+          <div className="w-16 h-16 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400 neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>{l.loading}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
+    <div className="min-h-screen bg-black">
+      <CustomCursor />
+      <Navigation />
       {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
+      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <Link href="/dashboard" className="text-gray-400 hover:text-white text-sm mb-2 inline-block">
-                {l.back}
-              </Link>
-              <h1 className="text-2xl font-bold text-white">{l.title}</h1>
-              <p className="text-gray-400 text-sm">{l.subtitle}</p>
+            <div className="flex items-center gap-4">
+              <motion.div
+                whileHover={{ scale: 1.1, x: -5 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Link href="/dashboard" className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all inline-block">
+                  <span className="text-[#00f0ff] text-sm">{l.back}</span>
+                </Link>
+              </motion.div>
+              <div className="flex items-center gap-3">
+                <FootballBall3D size={40} autoRotate={true} />
+                <div>
+                  <h1 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                    {l.title}
+                  </h1>
+                  <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'var(--font-body)' }}>{l.subtitle}</p>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-gray-800 text-white px-4 py-2 rounded-xl border border-gray-700"
+                className="glass-futuristic border border-[#00f0ff]/30 rounded-lg px-4 py-2 text-white hover:neon-border-cyan transition-all bg-black/50"
+                style={{ fontFamily: 'var(--font-body)' }}
               />
-              <div className="flex gap-2 bg-gray-800 p-1 rounded-xl">
-                <button
+              <div className="flex gap-2 glass-futuristic p-1 rounded-xl border border-[#00f0ff]/20">
+                <motion.button
                   onClick={() => setActiveTab('coupons')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'coupons' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
+                    activeTab === 'coupons' 
+                      ? 'bg-[#00f0ff] text-black neon-glow-cyan' 
+                      : 'text-gray-400 hover:text-white'
                   }`}
+                  style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   {l.coupons}
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={() => setActiveTab('all')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'all' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
+                    activeTab === 'all' 
+                      ? 'bg-[#00f0ff] text-black neon-glow-cyan' 
+                      : 'text-gray-400 hover:text-white'
                   }`}
+                  style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   {l.allPredictions}
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -256,35 +286,34 @@ export default function PredictionsPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* AI Models Banner */}
-        <div className="mb-8 p-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-6 glass-futuristic border border-[#00f0ff]/30 rounded-2xl hover:neon-border-cyan transition-all"
+        >
           <div className="flex items-center justify-center gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🟣</span>
+            {[
+              { name: 'Claude', icon: '🟣', color: 'from-[#ff00f0]/20 to-[#ff00f0]/5' },
+              { name: 'GPT-4', icon: '🟢', color: 'from-[#00ff88]/20 to-[#00ff88]/5' },
+              { name: 'Gemini', icon: '🔵', color: 'from-[#00f0ff]/20 to-[#00f0ff]/5' },
+              { name: l.consensus, icon: '🎯', color: 'from-[#ffff00]/20 to-[#ffff00]/5', isConsensus: true }
+            ].map((model, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <div className={`text-center ${idx < 3 ? '' : 'ml-4'}`}>
+                  <div className={`w-12 h-12 bg-gradient-to-br ${model.color} rounded-xl flex items-center justify-center mx-auto mb-2 border border-[#00f0ff]/20`}>
+                    <span className="text-2xl">{model.icon}</span>
+                  </div>
+                  <span className={`text-sm ${model.isConsensus ? 'text-[#ffff00] font-bold neon-glow-cyan' : 'text-gray-300'}`} style={{ fontFamily: 'var(--font-body)' }}>
+                    {model.name}
+                  </span>
+                </div>
+                {idx < 3 && (
+                  <div className="text-[#00f0ff] text-lg">→</div>
+                )}
               </div>
-              <span className="text-sm text-gray-300">Claude</span>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🟢</span>
-              </div>
-              <span className="text-sm text-gray-300">GPT-4</span>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🔵</span>
-              </div>
-              <span className="text-sm text-gray-300">Gemini</span>
-            </div>
-            <div className="text-gray-400 text-lg">→</div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🎯</span>
-              </div>
-              <span className="text-sm text-yellow-400 font-medium">{l.consensus}</span>
-            </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
         {activeTab === 'coupons' ? (
           /* Kuponlar */

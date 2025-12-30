@@ -8,9 +8,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
+import Navigation from '@/components/Navigation';
 import { 
   TrendingUp, Download, Filter, Search, Calendar,
-  ArrowUp, ArrowDown, Minus, CheckCircle, XCircle
+  ArrowUp, ArrowDown, Minus, CheckCircle, XCircle, ArrowLeft
 } from 'lucide-react';
 
 interface OddsAnalysisLog {
@@ -228,42 +232,80 @@ export default function OddsAnalysisPage() {
   
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Yükleniyor...</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <CustomCursor />
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
+          <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black">
+      <CustomCursor />
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">💰 Odds Analiz Kayıtları</h1>
-              <p className="text-gray-300">Tüm odds analizlerinin detaylı kayıtları ve value bet tespitleri</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => router.push('/dashboard')}
+                whileHover={{ scale: 1.1, x: -5 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+              >
+                <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
+              </motion.button>
+              <div className="flex items-center gap-3">
+                <FootballBall3D size={40} autoRotate={true} />
+                <div>
+                  <h1 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                    💰 Odds Analiz Kayıtları
+                  </h1>
+                  <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+                    Tüm odds analizlerinin detaylı kayıtları ve value bet tespitleri
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="flex gap-2">
-              <button
+              <motion.button
                 onClick={exportToCSV}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 py-2 bg-[#00ff88] text-black rounded-lg hover:bg-[#00ff88]/80 font-bold flex items-center gap-2 neon-glow-cyan"
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 <Download className="w-4 h-4" />
                 CSV Export
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={exportToJSON}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 py-2 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold flex items-center gap-2 neon-glow-cyan"
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 <Download className="w-4 h-4" />
                 JSON Export
-              </button>
+              </motion.button>
             </div>
           </div>
           
           {/* Filters */}
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-futuristic border border-[#00f0ff]/30 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-4 gap-4 hover:neon-border-cyan transition-all"
+          >
             <div>
               <label className="text-sm text-gray-300 mb-1 block">Lig</label>
               <input

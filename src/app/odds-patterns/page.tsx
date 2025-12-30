@@ -8,9 +8,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
+import Navigation from '@/components/Navigation';
 import { 
   TrendingUp, BarChart3, Target, CheckCircle, XCircle,
-  ArrowUp, ArrowDown, Filter, Download
+  ArrowUp, ArrowDown, Filter, Download, ArrowLeft
 } from 'lucide-react';
 
 interface PatternAnalysis {
@@ -70,51 +74,86 @@ export default function OddsPatternsPage() {
   
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Yükleniyor...</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <CustomCursor />
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
+          <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black">
+      <CustomCursor />
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">📊 Odds Pattern Analizi</h1>
-          <p className="text-gray-300">Analizlerden çıkarılan pattern'ler ve başarı oranları</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 flex items-center gap-4"
+        >
+          <motion.button
+            onClick={() => router.push('/dashboard')}
+            whileHover={{ scale: 1.1, x: -5 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+          >
+            <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
+          </motion.button>
+          <div className="flex items-center gap-3">
+            <FootballBall3D size={40} autoRotate={true} />
+            <div>
+              <h1 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+                📊 Odds Pattern Analizi
+              </h1>
+              <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+                Analizlerden çıkarılan pattern'ler ve başarı oranları
+              </p>
+            </div>
+          </div>
+        </motion.div>
         
         {/* Filters */}
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4 grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-futuristic border border-[#00f0ff]/30 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 hover:neon-border-cyan transition-all"
+        >
           <div>
-            <label className="text-sm text-gray-300 mb-1 block">Min Maç Sayısı</label>
+            <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Min Maç Sayısı</label>
             <input
               type="number"
               value={filters.minMatches}
               onChange={(e) => setFilters({ ...filters, minMatches: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+              className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white hover:neon-border-cyan transition-all bg-black/50"
+              style={{ fontFamily: 'var(--font-body)' }}
             />
           </div>
           <div>
-            <label className="text-sm text-gray-300 mb-1 block">Min Başarı Oranı (%)</label>
+            <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Min Başarı Oranı (%)</label>
             <input
               type="number"
               value={filters.minSuccessRate}
               onChange={(e) => setFilters({ ...filters, minSuccessRate: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+              className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white hover:neon-border-cyan transition-all bg-black/50"
+              style={{ fontFamily: 'var(--font-body)' }}
             />
           </div>
           <div>
-            <label className="text-sm text-gray-300 mb-1 block">Min Value (%)</label>
+            <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Min Value (%)</label>
             <input
               type="number"
               value={filters.minValue}
               onChange={(e) => setFilters({ ...filters, minValue: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+              className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white hover:neon-border-cyan transition-all bg-black/50"
+              style={{ fontFamily: 'var(--font-body)' }}
             />
           </div>
-        </div>
+        </motion.div>
         
         {/* Patterns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

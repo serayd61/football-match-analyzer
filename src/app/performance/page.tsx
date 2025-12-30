@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import {
   BarChart3, TrendingUp, Target, CheckCircle, XCircle,
@@ -101,10 +102,11 @@ export default function PerformancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <CustomCursor />
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto" />
-          <p className="mt-4 text-white">Yükleniyor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
+          <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
         </div>
       </div>
     );
@@ -112,22 +114,27 @@ export default function PerformancePage() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <CustomCursor />
         <div className="text-center text-white">
-          <p>Veri yüklenemedi</p>
-          <button
+          <p className="text-gray-400 mb-4">Veri yüklenemedi</p>
+          <motion.button
             onClick={handleRefresh}
-            className="mt-4 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold transition-all neon-glow-cyan"
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             Yenile
-          </button>
+          </motion.button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-black">
+      <CustomCursor />
       {/* Header */}
       <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -156,21 +163,25 @@ export default function PerformancePage() {
               <select
                 value={periodDays}
                 onChange={(e) => setPeriodDays(Number(e.target.value))}
-                className="bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
+                className="glass-futuristic border border-[#00f0ff]/30 rounded-lg px-3 py-2 text-white text-sm hover:neon-border-cyan transition-all bg-black/50"
+                style={{ fontFamily: 'var(--font-body)' }}
               >
-                <option value={7}>Son 7 gün</option>
-                <option value={30}>Son 30 gün</option>
-                <option value={90}>Son 90 gün</option>
-                <option value={365}>Son 1 yıl</option>
+                <option value={7} className="bg-black">Son 7 gün</option>
+                <option value={30} className="bg-black">Son 30 gün</option>
+                <option value={90} className="bg-black">Son 90 gün</option>
+                <option value={365} className="bg-black">Son 1 yıl</option>
               </select>
-              <button
+              <motion.button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-4 py-2 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold transition-all disabled:opacity-50 flex items-center gap-2 neon-glow-cyan"
+                style={{ fontFamily: 'var(--font-heading)' }}
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Yenile
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>

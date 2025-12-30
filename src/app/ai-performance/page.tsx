@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Navigation from '@/components/Navigation';
+import CustomCursor from '@/components/CustomCursor';
+import { FootballBall3D } from '@/components/Football3D';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 interface ModelStats {
@@ -385,15 +388,15 @@ export default function AIPerformancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+      <div className="min-h-screen bg-black">
+        <CustomCursor />
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-16 bg-gray-800 rounded-xl w-96 mx-auto"></div>
-            <div className="grid grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-28 bg-gray-800 rounded-xl"></div>)}
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
+              <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
             </div>
-            <div className="h-96 bg-gray-800 rounded-xl"></div>
           </div>
         </div>
       </div>
@@ -403,58 +406,72 @@ export default function AIPerformancePage() {
   const best = getBestPerformers();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+    <div className="min-h-screen bg-black">
+      <CustomCursor />
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{l.title}</h1>
-          <p className="text-gray-400 text-lg">{l.subtitle}</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8 flex flex-col items-center gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <FootballBall3D size={50} autoRotate={true} />
+            <h1 className="text-4xl md:text-5xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+              {l.title}
+            </h1>
+          </div>
+          <p className="text-gray-400 text-lg" style={{ fontFamily: 'var(--font-body)' }}>{l.subtitle}</p>
+        </motion.div>
 
         {/* Period Selector */}
         <div className="flex justify-center gap-2 mb-8">
           {(['7d', '30d', 'all'] as const).map(period => (
-            <button
+            <motion.button
               key={period}
               onClick={() => setSelectedPeriod(period)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className={`px-6 py-3 rounded-xl font-medium transition-all ${
                 selectedPeriod === period
-                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-[#00f0ff] text-black shadow-lg shadow-[#00f0ff]/30 neon-glow-cyan'
+                  : 'glass-futuristic border border-[#00f0ff]/30 text-gray-400 hover:neon-border-cyan hover:text-white'
               }`}
+              style={{ fontFamily: 'var(--font-heading)' }}
             >
               {l.period[period]}
-            </button>
+            </motion.button>
           ))}
         </div>
 
         {/* Main Stats Cards */}
         {data?.summary && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/30 rounded-2xl p-5 text-center">
-              <p className="text-gray-400 text-sm mb-2">{l.stats.totalPredictions}</p>
-              <p className="text-4xl font-bold text-white">{data.summary.totalPredictions}</p>
-            </div>
-            <div className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 border border-green-500/30 rounded-2xl p-5 text-center">
-              <p className="text-gray-400 text-sm mb-2">{l.stats.won}</p>
-              <p className="text-4xl font-bold text-green-400">{data.summary.wonCount}</p>
-            </div>
-            <div className="bg-gradient-to-br from-red-900/50 to-pink-900/50 border border-red-500/30 rounded-2xl p-5 text-center">
-              <p className="text-gray-400 text-sm mb-2">{l.stats.lost}</p>
-              <p className="text-4xl font-bold text-red-400">{data.summary.lostCount}</p>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-900/50 to-orange-900/50 border border-yellow-500/30 rounded-2xl p-5 text-center">
-              <p className="text-gray-400 text-sm mb-2">{l.stats.pending}</p>
-              <p className="text-4xl font-bold text-yellow-400">{data.summary.pendingCount}</p>
-            </div>
-            <div className="bg-gradient-to-br from-cyan-900/50 to-blue-900/50 border border-cyan-500/30 rounded-2xl p-5 text-center">
-              <p className="text-gray-400 text-sm mb-2">{l.stats.accuracy}</p>
-              <p className={`text-4xl font-bold ${data.overall?.totalSettled > 0 ? getAccuracyColor(data.overall.overallAccuracy) : 'text-gray-500'}`}>
-                {data.overall?.totalSettled > 0 ? `%${data.overall.overallAccuracy.toFixed(1)}` : '—'}
-              </p>
-            </div>
+            {[
+              { label: l.stats.totalPredictions, value: data.summary.totalPredictions, color: 'text-white', bg: 'from-[#00f0ff]/20 to-[#00f0ff]/5', border: 'border-[#00f0ff]/30' },
+              { label: l.stats.won, value: data.summary.wonCount, color: 'text-[#00ff88]', bg: 'from-[#00ff88]/20 to-[#00ff88]/5', border: 'border-[#00ff88]/30' },
+              { label: l.stats.lost, value: data.summary.lostCount, color: 'text-[#ff00f0]', bg: 'from-[#ff00f0]/20 to-[#ff00f0]/5', border: 'border-[#ff00f0]/30' },
+              { label: l.stats.pending, value: data.summary.pendingCount, color: 'text-[#ffff00]', bg: 'from-[#ffff00]/20 to-[#ffff00]/5', border: 'border-[#ffff00]/30' },
+              { label: l.stats.accuracy, value: data.overall?.totalSettled > 0 ? `%${data.overall.overallAccuracy.toFixed(1)}` : '—', color: data.overall?.totalSettled > 0 ? getAccuracyColor(data.overall.overallAccuracy) : 'text-gray-500', bg: 'from-[#00f0ff]/20 to-[#00f0ff]/5', border: 'border-[#00f0ff]/30' }
+            ].map((stat, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className={`glass-futuristic bg-gradient-to-br ${stat.bg} border ${stat.border} rounded-2xl p-5 text-center hover:neon-border-cyan transition-all relative overflow-hidden`}
+              >
+                <div className="absolute top-2 right-2 opacity-10">
+                  <FootballBall3D size={30} autoRotate={true} />
+                </div>
+                <p className="text-gray-400 text-sm mb-2 relative z-10" style={{ fontFamily: 'var(--font-body)' }}>{stat.label}</p>
+                <p className={`text-4xl font-bold ${stat.color} neon-glow-cyan relative z-10`} style={{ fontFamily: 'var(--font-heading)' }}>
+                  {stat.value}
+                </p>
+              </motion.div>
+            ))}
           </div>
         )}
 
