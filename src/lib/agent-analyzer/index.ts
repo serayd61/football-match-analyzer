@@ -8,6 +8,8 @@ import { getFullFixtureData, getTeamStats, getHeadToHead, getTeamInjuries, type 
 import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
+import { runMasterStrategist } from '../heurist/agents/masterStrategist';
+import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
 import { MatchData } from '../heurist/types';
 import { saveOddsAnalysisLog } from '../odds-logger';
 import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
@@ -34,6 +36,8 @@ export interface AgentAnalysisResult {
     stats?: any;
     odds?: any;
     deepAnalysis?: any;
+    masterStrategist?: any;
+    geniusAnalyst?: any;
   };
   
   // Birleştirilmiş tahminler (Agent analizinde kullanılmıyor - sadece yeni özel tahminler kullanılıyor)
@@ -1245,10 +1249,10 @@ export async function runAgentAnalysis(
     });
     
     // Step 4: Run agents in parallel
-    console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis)...');
+    console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis, GeniusAnalyst)...');
     const language: 'tr' | 'en' | 'de' = 'tr'; // Türkçe varsayılan
     
-    const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
+    const [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
       runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err);
         return null;
@@ -1261,9 +1265,14 @@ export async function runAgentAnalysis(
         console.error('❌ DeepAnalysis agent failed:', err);
         return null;
       }),
+      // 🆕 Genius Analyst Agent
+      runGeniusAnalyst(matchData, language).catch(err => {
+        console.error('❌ GeniusAnalyst agent failed:', err);
+        return null;
+      }),
     ]);
     
-    if (!statsResult && !oddsResult && !deepAnalysisResult) {
+    if (!statsResult && !oddsResult && !deepAnalysisResult && !geniusAnalystResult) {
       console.error('❌ All agents failed');
       return null;
     }
@@ -1272,6 +1281,27 @@ export async function runAgentAnalysis(
     if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
     if (oddsResult) console.log(`   Odds: ${oddsResult.matchWinnerValue || 'N/A'}`);
     if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'}`);
+    if (geniusAnalystResult) console.log(`   🧠 GeniusAnalyst: ${geniusAnalystResult.predictions?.matchResult?.prediction || 'N/A'} | Conf: ${geniusAnalystResult.finalRecommendation?.overallConfidence || 0}%`);
+    
+    // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
+    console.log('🧠 Step 4.1: Running Master Strategist Agent...');
+    let masterStrategistResult = null;
+    try {
+      masterStrategistResult = await runMasterStrategist(
+        matchData,
+        {
+          stats: statsResult,
+          odds: oddsResult,
+          sentiment: null, // agent-analyzer'da sentiment yok
+          deepAnalysis: deepAnalysisResult,
+          geniusAnalyst: geniusAnalystResult,
+        },
+        language
+      );
+      console.log(`   ✅ Master Strategist: ${masterStrategistResult.finalConsensus?.matchResult?.prediction || 'N/A'} | Conf: ${masterStrategistResult.overallConfidence || 0}%`);
+    } catch (err) {
+      console.error('   ❌ Master Strategist failed:', err);
+    }
     
     // 🆕 Step 4.5: Save Odds Analysis Log
     if (oddsResult && oddsResult._valueAnalysis) {
@@ -1434,7 +1464,9 @@ export async function runAgentAnalysis(
       agents: {
         stats: statsResult,
         odds: oddsResult,
-        deepAnalysis: deepAnalysisResult
+        deepAnalysis: deepAnalysisResult,
+        geniusAnalyst: geniusAnalystResult,
+        masterStrategist: masterStrategistResult
       },
       
       // Agent analizinde standart tahminler - Sportmonks verilerine göre puan bazlı
