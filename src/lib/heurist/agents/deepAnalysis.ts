@@ -60,12 +60,28 @@ const DEEP_ANALYSIS_PROMPT = {
    - Her iki takımın agresiflik seviyesi + Derbi/rivalry etkisi
    - YARATICI İÇGÖRÜ: Maçın gidişatına göre kart/korner sayısı değişir mi?
 
-8. HAZIRLANMA SKORU (YARATICI DEĞERLENDİRME)
-   - Her iki takım için 0-100 arası hazırlanma skoru hesapla
-   - Dikkate alınacaklar: Son form trendi, motivasyon seviyesi, sakatlık durumu, maçın önemi (lig pozisyonu), yorgunluk belirtileri, takım ruh hali
-   - Ev sahibi için EVDEKİ performans ve hazırlanma durumu
-   - Deplasman için DEPLASMANDAKİ performans ve hazırlanma durumu
-   - Skor gerekçesini açıkça belirt + YARATICI FAKTÖRLER: Takımın "kritik maç" performansı, taraftar desteği, teknik direktör baskısı
+8. HAZIRLANMA SKORU (YARATICI DEĞERLENDİRME) - ⚠️ KRİTİK BÖLÜM ⚠️
+   - Her iki takım için 0-100 arası hazırlanma skoru hesapla (MUTLAKA HESAPLA VE JSON'A EKLE!)
+   - Bu skor takımın maça ne kadar hazır olduğunu, motivasyonunu ve duygusal durumunu gösterir
+   - 70-100: Takım çok hazır, yüksek motivasyon, pozitif tempo, form yükselişte
+   - 50-69: Takım normal hazırlıkta, dengeli motivasyon, stabil form
+   - 30-49: Takım hazırlıksız, düşük motivasyon, form düşüşte, yorgunluk belirtileri
+   - 0-29: Takım çok kötü durumda, motivasyon çok düşük, ciddi form problemi
+   - Dikkate alınacaklar: 
+     * Son 10 maç form grafiği ve trend (improving/declining/stable)
+     * Son 3 maç vs önceki 3 maç karşılaştırması
+     * Motivasyon seviyesi (lig pozisyonu, maçın önemi)
+     * Sakatlık durumu (anahtar oyuncu eksikliği)
+     * Yorgunluk belirtileri (yoğun maç programı)
+     * Takım ruh hali (son maçlardaki dramatik sonuçlar)
+     * Ev sahibi için: EVDEKİ performans, taraftar desteği, ev sahibi avantajı
+     - Deplasman için: DEPLASMANDAKİ performans, seyahat yorgunluğu, "nothing to lose" mentalitesi
+   - Skor gerekçesini açıkça belirt + YARATICI FAKTÖRLER: 
+     * Takımın "kritik maç" performansı (önemli maçlarda overperform/underperform?)
+     * Taraftar desteği ve baskısı
+     * Teknik direktör baskısı ve güven durumu
+     * Takım kimyası ve uyum
+   - ⚠️ MUTLAKA "motivationScores" objesini JSON'a ekle: { "home": 0-100, "away": 0-100, "homeTrend": "improving/declining/stable", "awayTrend": "improving/declining/stable", "reasoning": "..." }
 
 9. PSİKOLOJİK VE DUYGUSAL FAKTÖRLER (YENİ - YARATICI)
    - Ev sahibi taraftar baskısı: Takım overperform mi underperform mu yapar?
@@ -201,7 +217,9 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "away": 60,
     "homeTrend": "improving/declining/stable",
     "awayTrend": "improving/declining/stable",
-    "reasoning": "Takımların motivasyon ve hazırlık durumu analizi"
+    "homeFormGraph": "WWLWDWWLWW (son 10 maç formu)",
+    "awayFormGraph": "LWWDLWLLWW (son 10 maç formu)",
+    "reasoning": "Ev sahibi: Son 10 maçta 7 galibiyet, form yükselişte, yüksek motivasyon. Deplasman: Son 10 maçta 5 galibiyet, form düşüşte, orta motivasyon. Puan farkı: 15 puan."
   },
   "riskLevel": "Low veya Medium veya High",
   "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
