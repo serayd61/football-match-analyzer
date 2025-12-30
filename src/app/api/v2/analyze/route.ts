@@ -101,7 +101,13 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       
       if (existingAgent?.agent_results) {
-        console.log(`📦 Returning cached Agent Analysis for fixture ${fixtureId}`);
+        // 🆕 Eğer cache'de masterStrategist veya geniusAnalyst yoksa, cache'i bypass et (yeni agent'lar eklendi)
+        const agentData = existingAgent.agent_results;
+        const agents = agentData?.agents || agentData; // Eski format: direkt agents, yeni format: data.agents
+        const hasNewAgents = agents?.masterStrategist || agents?.geniusAnalyst;
+        
+        if (hasNewAgents) {
+          console.log(`📦 Returning cached Agent Analysis for fixture ${fixtureId} (includes new agents)`);
       // Agent Analysis formatını Smart Analysis formatına dönüştür
       const agentData = existingAgent.agent_results;
       
@@ -141,6 +147,9 @@ export async function POST(request: NextRequest) {
         cached: true,
         analysisType: 'agent'
       });
+        } else {
+          console.log(`🔄 CACHE OUTDATED - Missing new agents (masterStrategist/geniusAnalyst), running fresh analysis`);
+        }
       }
     } else {
       console.log(`📦 CACHE BYPASS - skipCache=true, running fresh analysis`);

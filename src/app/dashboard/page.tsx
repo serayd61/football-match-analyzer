@@ -806,7 +806,7 @@ export default function DashboardPage() {
   // ANALYZE MATCH
   // ============================================================================
   
-  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType) => {
+  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType, forceRefresh: boolean = false) => {
     setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
@@ -826,7 +826,8 @@ export default function DashboardPage() {
           awayTeamId: fixture.awayTeamId,
           league: fixture.league,
           matchDate: fixture.date.split('T')[0],
-          preferAnalysis: type === 'ai' ? 'smart' : 'agent' // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
+          preferAnalysis: type === 'ai' ? 'smart' : 'agent', // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
+          skipCache: forceRefresh // 🆕 Cache'i bypass etmek için
         })
       });
       
