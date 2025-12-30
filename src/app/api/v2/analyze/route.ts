@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, preferAnalysis } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, preferAnalysis, skipCache = false } = body;
     
     if (!fixtureId || !homeTeam || !awayTeam) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -92,15 +92,16 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Önce Agent Analysis'i kontrol et (ana sistem)
-    const { data: existingAgent } = await supabase
-      .from('agent_analysis')
-      .select('agent_results, match_result_prediction, match_result_confidence, match_result_reasoning, best_bet_market, best_bet_selection, best_bet_confidence, best_bet_reason, agreement, risk_level, overall_confidence, data_quality, processing_time, analyzed_at')
-      .eq('fixture_id', fixtureId)
-      .maybeSingle();
-    
-    if (existingAgent?.agent_results) {
-      console.log(`📦 Returning cached Agent Analysis for fixture ${fixtureId}`);
+    // Önce Agent Analysis'i kontrol et (ana sistem) - skipCache=true ise bypass
+    if (!skipCache) {
+      const { data: existingAgent } = await supabase
+        .from('agent_analysis')
+        .select('agent_results, match_result_prediction, match_result_confidence, match_result_reasoning, best_bet_market, best_bet_selection, best_bet_confidence, best_bet_reason, agreement, risk_level, overall_confidence, data_quality, processing_time, analyzed_at')
+        .eq('fixture_id', fixtureId)
+        .maybeSingle();
+      
+      if (existingAgent?.agent_results) {
+        console.log(`📦 Returning cached Agent Analysis for fixture ${fixtureId}`);
       // Agent Analysis formatını Smart Analysis formatına dönüştür
       const agentData = existingAgent.agent_results;
       
@@ -140,6 +141,9 @@ export async function POST(request: NextRequest) {
         cached: true,
         analysisType: 'agent'
       });
+      }
+    } else {
+      console.log(`📦 CACHE BYPASS - skipCache=true, running fresh analysis`);
     }
     
     // Smart Analysis cache kontrolü (fallback için)
