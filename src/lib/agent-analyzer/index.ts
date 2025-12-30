@@ -1266,11 +1266,11 @@ export async function runAgentAnalysis(
     };
     
     // 🆕 Veri kalitesi kontrolü - agent'lara yeterli veri var mı?
-    const dataQuality = fullData.dataQuality?.score || 0;
-    const hasMinimalData = dataQuality >= 30; // En az %30 veri kalitesi gerekli
+    const dataQualityScore = fullData.dataQuality?.score || 0;
+    const hasMinimalData = dataQualityScore >= 30; // En az %30 veri kalitesi gerekli
     
     if (!hasMinimalData) {
-      console.warn(`⚠️ Low data quality (${dataQuality}%), some agents may produce less reliable results`);
+      console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
     }
     
     // 🆕 Agent'ları paralel çalıştır - optimize edilmiş timeout'lar

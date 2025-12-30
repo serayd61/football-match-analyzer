@@ -878,6 +878,7 @@ export default function DashboardPage() {
           overallConfidence: unifiedAnalysis.systemPerformance.overallConfidence,
           dataQuality: unifiedAnalysis.systemPerformance.dataQuality,
           processingTime: unifiedAnalysis.metadata.processingTime,
+          modelsUsed: unifiedAnalysis.metadata.systemsUsed || ['unified-consensus'],
           analyzedAt: unifiedAnalysis.metadata.analyzedAt
         };
         
