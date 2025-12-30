@@ -1162,7 +1162,7 @@ export default function DashboardPage() {
                       <Target className="w-6 h-6 text-blue-400" />
                       <span className="text-white font-medium">{t.agentAnalysis}</span>
                     </div>
-                    <p className="text-sm text-gray-400">Stats, Odds, DeepAnalysis Agent'ları</p>
+                    <p className="text-sm text-gray-400">Stats, Odds, DeepAnalysis, Master Strategist, Genius Analyst</p>
                   </button>
                 </div>
               </div>
