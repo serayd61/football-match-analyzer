@@ -338,6 +338,7 @@ function buildAgentContext(
     odds: AgentResult | null;
     sentiment: any | null;
     deepAnalysis: any | null;
+    geniusAnalyst?: any | null;
   },
   matchData: MatchData,
   language: 'tr' | 'en' | 'de'
@@ -428,11 +429,30 @@ function buildAgentContext(
 
   context += `└─────────────────────────────────────────────────────────────────────────────┘
 
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🧠 GENIUS ANALYST RAPORU
+├─────────────────────────────────────────────────────────────────────────────┤
+`;
+
+  if (agentResults.geniusAnalyst) {
+    const g = agentResults.geniusAnalyst;
+    context += `│ Match Result: ${g.predictions?.matchResult?.prediction || 'N/A'} (${g.predictions?.matchResult?.confidence || 0}%)\n`;
+    context += `│ Over/Under: ${g.predictions?.overUnder?.prediction || 'N/A'} (${g.predictions?.overUnder?.confidence || 0}%)\n`;
+    context += `│ BTTS: ${g.predictions?.btts?.prediction || 'N/A'} (${g.predictions?.btts?.confidence || 0}%)\n`;
+    context += `│ xG Model: Home ${g.mathematicalModel?.homeExpectedGoals?.toFixed(2) || 'N/A'}, Away ${g.mathematicalModel?.awayExpectedGoals?.toFixed(2) || 'N/A'}\n`;
+    context += `│ Best Bet: ${g.finalRecommendation?.bestBet?.market || 'N/A'} - ${g.finalRecommendation?.bestBet?.selection || 'N/A'}\n`;
+    context += `│ Overall Confidence: ${g.finalRecommendation?.overallConfidence || 0}%\n`;
+  } else {
+    context += `│ ⚠️ Genius Analyst sonuç bulunamadı\n`;
+  }
+
+  context += `└─────────────────────────────────────────────────────────────────────────────┘
+
 ═══════════════════════════════════════════════════════════════════════════════
                          MASTER ANALİZ TALİMATI
 ═══════════════════════════════════════════════════════════════════════════════
 
-Yukarıdaki 4 agent'ın çıktılarını analiz et:
+Yukarıdaki agent'ların çıktılarını analiz et:
 1. Her agent'ı değerlendir (güvenilirlik, güçlü/zayıf yönler)
 2. Tutarsızlıkları tespit et ve çöz
 3. Güçlü sinyalleri belirle
@@ -452,6 +472,7 @@ export async function runMasterStrategist(
     odds: AgentResult | null;
     sentiment: any | null;
     deepAnalysis: any | null;
+    geniusAnalyst?: any | null;
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<MasterStrategistResult> {

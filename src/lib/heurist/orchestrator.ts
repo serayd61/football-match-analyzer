@@ -799,6 +799,7 @@ export async function runOrchestrator(
       sentiment: sentimentResult,
       deepAnalysis: deepAnalysisResult,
       geniusAnalyst: geniusAnalystResult,
+      masterStrategist: null as MasterStrategistResult | null, // Başlangıçta null, sonra güncellenecek
     };
     
     // 🆕 4. Master Strategist çalıştır (diğer agent'ların çıktılarını analiz eder)
@@ -814,6 +815,7 @@ export async function runOrchestrator(
           odds: oddsResult,
           sentiment: sentimentResult,
           deepAnalysis: deepAnalysisResult,
+          geniusAnalyst: geniusAnalystResult,
         },
         language
       );
