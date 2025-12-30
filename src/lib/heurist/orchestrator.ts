@@ -6,6 +6,8 @@ import { runStatsAgent } from './agents/stats';
 import { runOddsAgent } from './agents/odds';
 import { runSentimentAgent, SentimentResult } from './agents/sentimentAgent';
 import { runDeepAnalysisAgent } from './agents/deepAnalysis';
+import { runMasterStrategist, MasterStrategistResult } from './agents/masterStrategist';
+import { runGeniusAnalyst, GeniusAnalystResult } from './agents/geniusAnalyst';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -73,6 +75,8 @@ export interface OrchestratorResult {
     odds: AgentResult | null;
     sentiment: SentimentAgentResult | null;
     deepAnalysis: any | null;
+    masterStrategist?: MasterStrategistResult | null;
+    geniusAnalyst?: GeniusAnalystResult | null;
   };
   consensus: ConsensusResult;
   finalPrediction: {
@@ -101,6 +105,8 @@ export interface OrchestratorResult {
     sentiment: any;
     strategy: any;
     weightedConsensus: any;
+    masterStrategist?: MasterStrategistResult | null;
+    geniusAnalyst?: GeniusAnalystResult | null;
   };
   timing?: {
     total: number;
@@ -453,7 +459,9 @@ function buildReports(
   valueBets: string[],
   warnings: string[],
   dataQuality: { score: number; hasOdds: boolean; hasOddsHistory: boolean; homeFormMatches: number; awayFormMatches: number; h2hMatches: number },
-  sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert']
+  sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert'],
+  masterStrategistResult?: MasterStrategistResult | null,
+  geniusAnalystResult?: GeniusAnalystResult | null
 ): OrchestratorResult['reports'] {
   // Deep Analysis Agent'tan gelen veriyi kullan, yoksa fallback
   const deepAnalysis = deepAnalysisResult ? {
@@ -676,6 +684,9 @@ function buildReports(
       finalPrediction,
       isConsensus: consensus.matchResult.isConsensus && consensus.overUnder.isConsensus,
     },
+    // 🆕 Yeni agent'ların sonuçları
+    masterStrategist: masterStrategistResult || null,
+    geniusAnalyst: geniusAnalystResult || null,
   };
 }
 
@@ -753,11 +764,11 @@ export async function runOrchestrator(
     const dataQuality = assessDataQuality(matchData);
     console.log(`📊 Data Quality Score: ${dataQuality.score}/100`);
     
-    // 3. Agent'ları paralel çalıştır
-    console.log('\n🤖 Running agents in parallel...');
+    // 3. Agent'ları paralel çalıştır (İlk tur: Stats, Odds, Sentiment, Deep Analysis, Genius Analyst)
+    console.log('\n🤖 Running agents in parallel (Round 1)...');
     const agentsStart = Date.now();
     
-    const [statsResult, oddsResult, sentimentResult, deepAnalysisResult] = await Promise.all([
+    const [statsResult, oddsResult, sentimentResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
         console.error('Stats agent failed:', err);
         return null;
@@ -774,6 +785,11 @@ export async function runOrchestrator(
         console.error('Deep Analysis agent failed:', err);
         return null;
       }),
+      // 🆕 Genius Analyst - Paralel çalıştır (mevcut AI analizi yerine kullanılabilir)
+      runGeniusAnalyst(matchData as unknown as MatchData, language).catch(err => {
+        console.error('Genius Analyst failed:', err);
+        return null;
+      }),
     ]);
     agentsTime = Date.now() - agentsStart;
     
@@ -782,32 +798,91 @@ export async function runOrchestrator(
       odds: oddsResult,
       sentiment: sentimentResult,
       deepAnalysis: deepAnalysisResult,
+      geniusAnalyst: geniusAnalystResult,
     };
+    
+    // 🆕 4. Master Strategist çalıştır (diğer agent'ların çıktılarını analiz eder)
+    console.log('\n🧠 Running Master Strategist Agent...');
+    const masterStart = Date.now();
+    let masterStrategistResult: MasterStrategistResult | null = null;
+    
+    try {
+      masterStrategistResult = await runMasterStrategist(
+        matchData as unknown as MatchData,
+        {
+          stats: statsResult,
+          odds: oddsResult,
+          sentiment: sentimentResult,
+          deepAnalysis: deepAnalysisResult,
+        },
+        language
+      );
+      console.log(`   ✅ Master Strategist completed in ${Date.now() - masterStart}ms`);
+      console.log(`   🎯 Overall Confidence: ${masterStrategistResult.overallConfidence}%`);
+    } catch (err) {
+      console.error('Master Strategist failed:', err);
+    }
+    
+    agentResults.masterStrategist = masterStrategistResult;
     
     console.log('\n📊 Agent Results:');
     if (statsResult) console.log(`   Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts}`);
     if (oddsResult) console.log(`   Odds:  ${oddsResult.matchWinnerValue || oddsResult.matchResult} | ${oddsResult.recommendation || oddsResult.overUnder} | BTTS: ${oddsResult.bttsValue || oddsResult.btts}`);
     if (sentimentResult) console.log(`   Sentiment: Edge=${sentimentResult.psychologicalEdge?.team} | Conf=${sentimentResult.psychologicalEdge?.confidence}%`);
-    if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult || 'N/A'} | Risk: ${deepAnalysisResult.riskLevel || 'N/A'}`);
+    if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'} | Risk: ${deepAnalysisResult.riskLevel || 'N/A'}`);
+    if (geniusAnalystResult) console.log(`   🧠 Genius Analyst: ${geniusAnalystResult.predictions.matchResult.prediction} | Conf: ${geniusAnalystResult.finalRecommendation.overallConfidence}%`);
+    if (masterStrategistResult) console.log(`   🎯 Master Strategist: ${masterStrategistResult.finalConsensus.matchResult.prediction} | Conf: ${masterStrategistResult.overallConfidence}%`);
     
-    // 4. Consensus oluştur (sadece stats ve odds için)
+    // 5. Consensus oluştur - Master Strategist varsa onu kullan, yoksa klasik yöntem
     console.log('\n🗳️ Building consensus...');
-    const consensus = buildConsensus({ stats: statsResult, odds: oddsResult }, language);
+    let consensus: ConsensusResult;
+    
+    if (masterStrategistResult) {
+      // Master Strategist'in final konsensüsünü kullan
+      consensus = {
+        matchResult: {
+          prediction: masterStrategistResult.finalConsensus.matchResult.prediction,
+          confidence: masterStrategistResult.finalConsensus.matchResult.confidence,
+          votes: {},
+          reasoning: masterStrategistResult.finalConsensus.matchResult.reasoning,
+          isConsensus: true
+        },
+        overUnder: {
+          prediction: masterStrategistResult.finalConsensus.overUnder.prediction,
+          confidence: masterStrategistResult.finalConsensus.overUnder.confidence,
+          votes: {},
+          reasoning: masterStrategistResult.finalConsensus.overUnder.reasoning,
+          isConsensus: true
+        },
+        btts: {
+          prediction: masterStrategistResult.finalConsensus.btts.prediction,
+          confidence: masterStrategistResult.finalConsensus.btts.confidence,
+          votes: {},
+          reasoning: masterStrategistResult.finalConsensus.btts.reasoning,
+          isConsensus: true
+        }
+      };
+      console.log('   ✅ Using Master Strategist consensus');
+    } else {
+      // Fallback: Klasik consensus yöntemi
+      consensus = buildConsensus({ stats: statsResult, odds: oddsResult }, language);
+      console.log('   ⚠️ Using fallback consensus (no Master Strategist)');
+    }
     
     console.log(`   Match Result: ${consensus.matchResult.prediction} (${consensus.matchResult.isConsensus ? '✅ Consensus' : '⚠️ No consensus'})`);
     console.log(`   Over/Under: ${consensus.overUnder.prediction} (${consensus.overUnder.isConsensus ? '✅ Consensus' : '⚠️ No consensus'})`);
     console.log(`   BTTS: ${consensus.btts.prediction} (${consensus.btts.isConsensus ? '✅ Consensus' : '⚠️ No consensus'})`);
     
-    // 5. Final prediction
+    // 6. Final prediction
     const finalPrediction = buildFinalPrediction(consensus, agentResults, dataQuality, language);
     
-    // 6. Value bets
+    // 7. Value bets
     const valueBets = collectValueBets(agentResults);
     
-    // 7. Warnings
+    // 8. Warnings
     const warnings = collectWarnings(agentResults, dataQuality, consensus, language);
     
-    // 8. Sharp money alert
+    // 9. Sharp money alert
     let sharpMoneyAlert: OrchestratorResult['sharpMoneyAlert'] = undefined;
     if (oddsResult?.sharpMoneyAnalysis?.confidence === 'high') {
       sharpMoneyAlert = {
@@ -818,7 +893,7 @@ export async function runOrchestrator(
       };
     }
     
-    // 9. Build reports for UI
+    // 10. Build reports for UI
     const reports = buildReports(
       matchData,
       statsResult,
@@ -830,7 +905,9 @@ export async function runOrchestrator(
       valueBets,
       warnings,
       dataQuality,
-      sharpMoneyAlert
+      sharpMoneyAlert,
+      masterStrategistResult,
+      geniusAnalystResult
     );
     
     const elapsed = Date.now() - startTime;
@@ -886,7 +963,7 @@ export async function runOrchestrator(
         hasOddsHistory: false,
         score: 0,
       },
-      agentResults: { stats: null, odds: null, sentiment: null, deepAnalysis: null },
+      agentResults: { stats: null, odds: null, sentiment: null, deepAnalysis: null, masterStrategist: null, geniusAnalyst: null },
       consensus: {
         matchResult: { prediction: 'X', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
         overUnder: { prediction: 'Over', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },

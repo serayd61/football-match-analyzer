@@ -1028,7 +1028,12 @@ export async function POST(request: NextRequest) {
 
     const responseData = {
       success: result.success,
-      reports: result.reports,
+      reports: {
+        ...result.reports,
+        // 🆕 Yeni agent'ların sonuçları (zaten reports içinde ama açıkça gösteriyoruz)
+        masterStrategist: result.reports?.masterStrategist || null,
+        geniusAnalyst: result.reports?.geniusAnalyst || null,
+      },
       
       timing: {
         total: totalTime,
@@ -1167,7 +1172,36 @@ export async function POST(request: NextRequest) {
         weatherImpact: result.reports.deepAnalysis.weatherImpact || null,
         pitchConditions: result.reports.deepAnalysis.pitchConditions || null,
         lineupImpact: result.reports.deepAnalysis.lineupImpact || null,
+        preparationScore: result.reports.deepAnalysis.preparationScore || null,
       } : null,
+      
+      // 🆕 NEW: Master Strategist Agent results
+      masterStrategist: result.reports?.masterStrategist ? {
+        enabled: true,
+        agentEvaluation: result.reports.masterStrategist.agentEvaluation,
+        conflictAnalysis: result.reports.masterStrategist.conflictAnalysis,
+        finalConsensus: result.reports.masterStrategist.finalConsensus,
+        bestBets: result.reports.masterStrategist.bestBets,
+        riskAssessment: result.reports.masterStrategist.riskAssessment,
+        agentFeedback: result.reports.masterStrategist.agentFeedback,
+        masterInsights: result.reports.masterStrategist.masterInsights,
+        overallConfidence: result.reports.masterStrategist.overallConfidence,
+        recommendation: result.reports.masterStrategist.recommendation,
+      } : { enabled: false },
+      
+      // 🆕 NEW: Genius Analyst Agent results
+      geniusAnalyst: result.reports?.geniusAnalyst ? {
+        enabled: true,
+        matchAnalysis: result.reports.geniusAnalyst.matchAnalysis,
+        mathematicalModel: result.reports.geniusAnalyst.mathematicalModel,
+        predictions: result.reports.geniusAnalyst.predictions,
+        valueBets: result.reports.geniusAnalyst.valueBets,
+        riskFactors: result.reports.geniusAnalyst.riskFactors,
+        motivationAnalysis: result.reports.geniusAnalyst.motivationAnalysis,
+        tacticalInsights: result.reports.geniusAnalyst.tacticalInsights,
+        finalRecommendation: result.reports.geniusAnalyst.finalRecommendation,
+        geniusInsights: result.reports.geniusAnalyst.geniusInsights,
+      } : { enabled: false },
       
       // Raw stats for debugging/transparency
       rawStats: {

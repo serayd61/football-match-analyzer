@@ -17,6 +17,7 @@ ANALİZ KATMANLARI:
    - İç saha / deplasman istatistikleri (ÇOK ÖNEMLİ!)
    - Gol beklentisi trendi
    - Takımın mental durumu ve motivasyon düzeyi
+   - HAZIRLANMA SKORU (0-100): Takımın maça hazırlanma duygusu, temposu, motivasyonu, form eğilimi, sakatlık durumu, maçın önemi gibi faktörleri değerlendirerek 0-100 arası puan ver. Yüksek skor = iyi hazırlanmış, yüksek motivasyon, pozitif tempo. Düşük skor = kötü form, düşük motivasyon, yorgunluk belirtileri.
 
 2. TAKTİKSEL YAPI
    - Güçlü ve zayıf yönler
@@ -52,6 +53,13 @@ ANALİZ KATMANLARI:
    - Beklenen korner sayısı
    - Beklenen kart sayısı
    - Her iki takımın agresiflik seviyesi
+
+8. HAZIRLANMA SKORU (YENİ!)
+   - Her iki takım için 0-100 arası hazırlanma skoru hesapla
+   - Dikkate alınacaklar: Son form trendi, motivasyon seviyesi, sakatlık durumu, maçın önemi (lig pozisyonu), yorgunluk belirtileri, takım ruh hali
+   - Ev sahibi için EVDEKİ performans ve hazırlanma durumu
+   - Deplasman için DEPLASMANDAKİ performans ve hazırlanma durumu
+   - Skor gerekçesini açıkça belirt
 
 ÖNEMLİ KURALLAR:
 - Ev sahibi EVDEKİ maç istatistiklerini kullan
@@ -131,6 +139,14 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "cardsLine": "Over 3.5",
     "cardsConfidence": 62
   },
+  "preparationScore": {
+    "home": 65,
+    "away": 58,
+    "reasoning": {
+      "home": "Takımın maça hazırlanma durumu, motivasyonu, temposu ve form eğilimi",
+      "away": "Takımın maça hazırlanma durumu, motivasyonu, temposu ve form eğilimi"
+    }
+  },
   "riskLevel": "Low veya Medium veya High",
   "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
 }`,
@@ -146,6 +162,7 @@ ANALYSIS LAYERS:
    - Home / Away statistics (VERY IMPORTANT!)
    - Goal expectancy trend
    - Team mental state and motivation level
+   - PREPARATION SCORE (0-100): Evaluate team's match preparation feeling, tempo, motivation, form trend, injury situation, match importance to give a 0-100 score. High score = well prepared, high motivation, positive tempo. Low score = poor form, low motivation, fatigue signs.
 
 2. TACTICAL STRUCTURE
    - Strengths and weaknesses
@@ -181,6 +198,13 @@ ANALYSIS LAYERS:
    - Expected corner count
    - Expected card count
    - Both teams' aggression level
+
+8. PREPARATION SCORE (NEW!)
+   - Calculate 0-100 preparation score for both teams
+   - Consider: Recent form trend, motivation level, injury situation, match importance (league position), fatigue signs, team mood
+   - For home team: HOME performance and preparation status
+   - For away team: AWAY performance and preparation status
+   - Clearly state the reasoning for each score
 
 IMPORTANT RULES:
 - Use home team's HOME match statistics
@@ -231,6 +255,43 @@ MUST RETURN IN THIS JSON FORMAT with refereeAnalysis, weatherImpact, lineupAnaly
     "confidence": 72,
     "reasoning": "Why this is the best betting option"
   },
+  "refereeAnalysis": {
+    "name": "Referee name",
+    "avgYellowCards": 4.2,
+    "avgRedCards": 0.2,
+    "avgPenalties": 0.3,
+    "homeTeamBias": "neutral/slight_home/slight_away",
+    "cardPrediction": "Over 3.5 or Under 3.5",
+    "reasoning": "Referee analysis summary"
+  },
+  "weatherImpact": {
+    "condition": "Clear/Rain/Wind/Cold/Hot",
+    "temperature": 15,
+    "impact": "Low/Medium/High",
+    "reasoning": "How weather affects the match"
+  },
+  "lineupAnalysis": {
+    "homeFormation": "4-3-3",
+    "awayFormation": "4-4-2",
+    "keyBattles": ["Wing play critical", "Midfield battle decisive"],
+    "missingKeyPlayers": ["Player 1 (home)", "Player 2 (away)"]
+  },
+  "cornersAndCards": {
+    "expectedCorners": 10.5,
+    "cornersLine": "Over 9.5",
+    "cornersConfidence": 65,
+    "expectedCards": 4.2,
+    "cardsLine": "Over 3.5",
+    "cardsConfidence": 62
+  },
+  "preparationScore": {
+    "home": 65,
+    "away": 58,
+    "reasoning": {
+      "home": "Team's match preparation state, motivation, tempo, and form trend",
+      "away": "Team's match preparation state, motivation, tempo, and form trend"
+    }
+  },
   "riskLevel": "Low or Medium or High",
   "agentSummary": "One sentence match summary and recommendation"
 }`,
@@ -240,11 +301,14 @@ MUST RETURN IN THIS JSON FORMAT with refereeAnalysis, weatherImpact, lineupAnaly
 AUFGABE: Verwende die bereitgestellten Daten für eine umfassende Analyse und gib sie im JSON-Format zurück.
 
 ANALYSE-EBENEN:
-1. TEAMFORM UND DYNAMIK - Letzte 10 Spiele, Heim/Auswärts-Statistiken
+1. TEAMFORM UND DYNAMIK - Letzte 10 Spiele, Heim/Auswärts-Statistiken, VORBEREITUNGSSKOR (0-100)
 2. TAKTISCHE STRUKTUR - Stärken und Schwächen
 3. HISTORISCHE DATEN - H2H-Geschichte
 4. STATISTISCHE MODELLIERUNG - Erwartete Tore, Over/Under, BTTS
 5. KRITISCHE FAKTOREN - Verletzungen, Spielbedeutung
+6. SCHIEDSRICHTER-ANALYSE - Kartentendenz, Penaltys
+7. ECKEN UND KARTEN - Erwartete Ecken und Karten
+8. VORBEREITUNGSSKOR (NEU!) - 0-100 Skor für beide Teams basierend auf Formtrend, Motivation, Verletzungen, Spielbedeutung
 
 WICHTIGE REGELN:
 - Verwende Heimstatistiken für Heimteam
@@ -262,6 +326,11 @@ MUSS IN DIESEM JSON-FORMAT ZURÜCKGEBEN:
   "btts": { "prediction": "Yes oder No", "confidence": 65, "reasoning": "Erklärung" },
   "matchResult": { "prediction": "1 oder X oder 2", "confidence": 55, "reasoning": "Erklärung" },
   "bestBet": { "type": "Typ", "selection": "Auswahl", "confidence": 72, "reasoning": "Warum beste Wette" },
+  "refereeAnalysis": { "name": "Name", "avgYellowCards": 4.2, "avgRedCards": 0.2, "avgPenalties": 0.3, "homeTeamBias": "neutral", "cardPrediction": "Over 3.5", "reasoning": "Schiedsrichter-Analyse" },
+  "weatherImpact": { "condition": "Clear", "temperature": 15, "impact": "Low", "reasoning": "Wetterauswirkung" },
+  "lineupAnalysis": { "homeFormation": "4-3-3", "awayFormation": "4-4-2", "keyBattles": ["Flügel", "Mittelfeld"], "missingKeyPlayers": [] },
+  "cornersAndCards": { "expectedCorners": 10.5, "cornersLine": "Over 9.5", "cornersConfidence": 65, "expectedCards": 4.2, "cardsLine": "Over 3.5", "cardsConfidence": 62 },
+  "preparationScore": { "home": 65, "away": 58, "reasoning": { "home": "Vorbereitungszustand, Motivation, Tempo, Formtrend", "away": "Vorbereitungszustand, Motivation, Tempo, Formtrend" } },
   "riskLevel": "Low oder Medium oder High",
   "agentSummary": "Einzeilige Zusammenfassung"
 }`
@@ -748,6 +817,32 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
       expectedCards,
       cardsLine: expectedCards > 4 ? 'Over 3.5' : 'Under 4.5',
       cardsConfidence: 58
+    },
+    preparationScore: {
+      home: Math.min(100, Math.max(0, Math.round(
+        (homeOver >= 55 ? 20 : 10) + // Form pozitif ise +20, negatif ise +10
+        (homeForm?.wins && homeForm.wins > homeForm.losses ? 15 : 5) + // Kazanma oranı
+        35 + // Base score
+        (homeForm?.venueAvgScored && parseFloat(homeForm.venueAvgScored) > 1.5 ? 10 : 5) // Gol atma gücü
+      ))),
+      away: Math.min(100, Math.max(0, Math.round(
+        (awayOver >= 55 ? 20 : 10) + // Form pozitif ise +20, negatif ise +10
+        (awayForm?.wins && awayForm.wins > awayForm.losses ? 15 : 5) + // Kazanma oranı
+        30 + // Base score (deplasman için biraz düşük)
+        (awayForm?.venueAvgScored && parseFloat(awayForm.venueAvgScored) > 1.5 ? 10 : 5) // Gol atma gücü
+      ))),
+      reasoning: {
+        home: language === 'tr' 
+          ? `Form analizi: ${homeOver}% Over, ${homeForm?.wins || 0} galibiyet. Evde ${homeForm?.venueAvgScored || 'N/A'} gol atma ortalaması.`
+          : language === 'de'
+          ? `Formanalyse: ${homeOver}% Over, ${homeForm?.wins || 0} Siege. Heimdurchschnitt: ${homeForm?.venueAvgScored || 'N/A'} Tore.`
+          : `Form analysis: ${homeOver}% Over, ${homeForm?.wins || 0} wins. Home average: ${homeForm?.venueAvgScored || 'N/A'} goals.`,
+        away: language === 'tr'
+          ? `Form analizi: ${awayOver}% Over, ${awayForm?.wins || 0} galibiyet. Deplasman ${awayForm?.venueAvgScored || 'N/A'} gol atma ortalaması.`
+          : language === 'de'
+          ? `Formanalyse: ${awayOver}% Over, ${awayForm?.wins || 0} Siege. Auswärtsdurchschnitt: ${awayForm?.venueAvgScored || 'N/A'} Tore.`
+          : `Form analysis: ${awayOver}% Over, ${awayForm?.wins || 0} wins. Away average: ${awayForm?.venueAvgScored || 'N/A'} goals.`
+      }
     },
     riskLevel: 'Medium',
     agentSummary: msg.agentSummary
