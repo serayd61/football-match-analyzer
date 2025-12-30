@@ -1,2123 +1,1426 @@
 'use client';
 
+// ============================================================================
+// DASHBOARD - Hızlı AI Analiz Sistemi
+// Claude + DeepSeek | ~10-15 saniye analiz
+// ============================================================================
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
-import AgentReports from '@/components/AgentReports';
-import AgentLoadingProgress from '@/components/AgentLoadingProgress';
-import AIConsensusLoading from '@/components/AIConsensusLoading';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import DashboardWidgets from '@/components/DashboardWidgets';
-import ProfessionalBetting from '@/components/ProfessionalBetting';
+import { 
+  Trophy, Calendar, Search, RefreshCw, Zap, 
+  TrendingUp, CheckCircle, AlertCircle, Clock,
+  ChevronRight, Star, Target, Shield, User,
+  Settings, LogOut, Crown, BarChart3, Menu, X,
+  ChevronDown, FileText
+} from 'lucide-react';
 
-interface Match {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface Fixture {
   id: number;
   homeTeam: string;
   awayTeam: string;
-  homeTeamId: number;
-  awayTeamId: number;
-  homeTeamLogo?: string;  
-  awayTeamLogo?: string;  
+  homeTeamId?: number;
+  awayTeamId?: number;
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
   league: string;
   leagueId?: number;
-  leagueLogo?: string;    
+  leagueLogo?: string;
   date: string;
   status: string;
+  homeScore?: number;
+  awayScore?: number;
+  hasAnalysis?: boolean;
 }
 
-interface UserProfile {
-  email: string;
+interface League {
+  id: number;
   name: string;
-  hasAccess: boolean;
-  isPro: boolean;
-  isTrial: boolean;
-  trialDaysLeft: number;
-  trialExpired: boolean;
-  analysesUsed: number;
-  analysesLimit: number;
-  canAnalyze: boolean;
-  canUseAgents: boolean;
-  favorites: { fixture_id: number }[];
-  totalPoints?: number;
-  rank?: number;
+  logo?: string;
+  count: number;
+}
+
+interface SmartAnalysis {
+  fixtureId: number;
+  homeTeam: string;
+  awayTeam: string;
+  btts?: { prediction: string; confidence: number; reasoning: string };
+  overUnder?: { prediction: string; confidence: number; reasoning: string };
+  matchResult?: { prediction: string; confidence: number; reasoning: string };
+  corners?: { prediction: string; confidence: number; reasoning: string; line: number; dataAvailable?: boolean };
+  // YENİ: Agent özel tahminler
+  halfTimeGoals?: { prediction: string; confidence: number; reasoning: string; line: number; expectedGoals?: number };
+  halfTimeFullTime?: { prediction: string; confidence: number; reasoning: string };
+  matchResultOdds?: { home: number; draw: number; away: number; reasoning: string };
+  bestBet: { market: string; selection: string; confidence: number; reason: string };
+  agreement: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  overallConfidence: number;
+  processingTime: number;
+  modelsUsed: string[];
+  analyzedAt: string;
+  // Agent analiz verileri (sadece Agent Analysis için)
+  agents?: {
+    stats?: any;
+    odds?: any;
+    deepAnalysis?: any;
+  };
+  top3Predictions?: Array<{
+    rank: number;
+    market: string;
+    selection: string;
+    confidence: number;
+    reasoning: string;
+    agentSupport: string[];
+  }>;
+  league?: string;
+  matchDate?: string;
+  dataQuality?: string;
 }
 
 // ============================================================================
-// AI MODEL CONFIGURATION
+// TRANSLATIONS
 // ============================================================================
 
-const AI_MODELS: Record<string, { 
-  name: string; 
-  icon: string; 
-  color: string; 
-  bgColor: string; 
-  borderColor: string;
-  role: string;
-}> = {
-  claude: {
-    name: 'Claude',
-    icon: '🧠',
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/20',
-    borderColor: 'border-orange-500/30',
-    role: 'Tactical'
+const translations = {
+  tr: {
+    title: 'Football Analytics',
+    subtitle: 'AI Tahmin Sistemi',
+    profile: 'Profil',
+    settings: 'Ayarlar',
+    admin: 'Admin Panel',
+    logout: 'Çıkış Yap',
+    selectDate: 'Tarih Seç',
+    selectLeague: 'Lig Seç',
+    allLeagues: 'Tüm Ligler',
+    matches: 'Maçlar',
+    searchPlaceholder: 'Takım veya lig ara...',
+    noMatches: 'Maç bulunamadı',
+    analyzing: 'Analiz Yapılıyor...',
+    analyzeTime: '~10-15 saniye',
+    tryAgain: 'Tekrar Dene',
+    selectMatch: 'Maç Seçin',
+    selectMatchDesc: 'Sol taraftan bir maç seçerek analiz başlatın.',
+    analyzeTimeShort: 'Analiz sadece 10-15 saniye sürer!',
+    riskLow: 'Düşük',
+    riskMedium: 'Orta',
+    riskHigh: 'Yüksek',
+    btts: 'BTTS',
+    overUnder: 'Üst/Alt 2.5',
+    matchResult: 'Maç Sonucu',
+    corners: 'Korner',
+    halfTimeGoals: 'İlk Yarı Goller',
+    halfTimeFullTime: 'İlk Yarı/Maç Sonucu',
+    matchResultOdds: 'Maç Sonucu Oranları',
+    bestBet: 'En İyi Bahis',
+    aiRecommendation: 'AI önerisi',
+    confidence: 'güven',
+    agreement: 'Uyum',
+    models: 'Modeller',
+    analysis: 'Analiz',
+    yes: 'EVET',
+    no: 'HAYIR',
+    over: 'ÜST',
+    under: 'ALT',
+    home: 'EV SAHİBİ',
+    away: 'DEPLASMAN',
+    draw: 'BERABERLİK',
+    cached: 'Önbellek',
+    analyzed: 'Analiz Edildi',
+    aiAnalysis: 'AI Analiz',
+    agentAnalysis: 'Agent Analiz',
+    selectAnalysisType: 'Analiz Türü Seçin'
   },
-  openai: {
-    name: 'GPT-4',
-    icon: '📊',
-    color: 'text-green-400',
-    bgColor: 'bg-green-500/20',
-    borderColor: 'border-green-500/30',
-    role: 'Statistical'
+  en: {
+    title: 'Football Analytics',
+    subtitle: 'AI Prediction System',
+    profile: 'Profile',
+    settings: 'Settings',
+    admin: 'Admin Panel',
+    logout: 'Sign Out',
+    selectDate: 'Select Date',
+    selectLeague: 'Select League',
+    allLeagues: 'All Leagues',
+    matches: 'Matches',
+    searchPlaceholder: 'Search team or league...',
+    noMatches: 'No matches found',
+    analyzing: 'Analyzing...',
+    analyzeTime: '~10-15 seconds',
+    tryAgain: 'Try Again',
+    selectMatch: 'Select a Match',
+    selectMatchDesc: 'Select a match from the left to start analysis.',
+    analyzeTimeShort: 'Analysis takes only 10-15 seconds!',
+    riskLow: 'Low',
+    riskMedium: 'Medium',
+    riskHigh: 'High',
+    btts: 'BTTS',
+    overUnder: 'Over/Under 2.5',
+    matchResult: 'Match Result',
+    corners: 'Corners',
+    halfTimeGoals: 'Half-Time Goals',
+    halfTimeFullTime: 'HT/FT Result',
+    matchResultOdds: 'Match Result Odds',
+    bestBet: 'Best Bet',
+    aiRecommendation: 'AI recommendation',
+    confidence: 'confidence',
+    agreement: 'Agreement',
+    models: 'Models',
+    analysis: 'Analysis',
+    yes: 'YES',
+    no: 'NO',
+    over: 'OVER',
+    under: 'UNDER',
+    home: 'HOME',
+    away: 'AWAY',
+    draw: 'DRAW',
+    cached: 'Cached',
+    analyzed: 'Analyzed',
+    aiAnalysis: 'AI Analysis',
+    agentAnalysis: 'Agent Analysis',
+    selectAnalysisType: 'Select Analysis Type'
   },
-  gemini: {
-    name: 'Gemini',
-    icon: '🔍',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/20',
-    borderColor: 'border-blue-500/30',
-    role: 'Pattern'
-  },
-  mistral: {
-    name: 'Mistral',
-    icon: '📰',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/20',
-    borderColor: 'border-purple-500/30',
-    role: 'Context'
+  de: {
+    title: 'Football Analytics',
+    subtitle: 'KI-Vorhersagesystem',
+    profile: 'Profil',
+    settings: 'Einstellungen',
+    admin: 'Admin Panel',
+    logout: 'Abmelden',
+    selectDate: 'Datum wählen',
+    selectLeague: 'Liga wählen',
+    allLeagues: 'Alle Ligen',
+    matches: 'Spiele',
+    searchPlaceholder: 'Team oder Liga suchen...',
+    noMatches: 'Keine Spiele gefunden',
+    analyzing: 'Analysieren...',
+    analyzeTime: '~10-15 Sekunden',
+    tryAgain: 'Erneut versuchen',
+    selectMatch: 'Spiel auswählen',
+    selectMatchDesc: 'Wählen Sie ein Spiel auf der linken Seite.',
+    analyzeTimeShort: 'Die Analyse dauert nur 10-15 Sekunden!',
+    riskLow: 'Niedrig',
+    riskMedium: 'Mittel',
+    riskHigh: 'Hoch',
+    btts: 'BTTS',
+    overUnder: 'Über/Unter 2.5',
+    matchResult: 'Spielergebnis',
+    corners: 'Ecken',
+    halfTimeGoals: 'Halbzeit-Tore',
+    halfTimeFullTime: 'HZ/ET Ergebnis',
+    matchResultOdds: 'Spielergebnis Quoten',
+    bestBet: 'Beste Wette',
+    aiRecommendation: 'KI-Empfehlung',
+    confidence: 'Vertrauen',
+    agreement: 'Übereinstimmung',
+    models: 'Modelle',
+    analysis: 'Analyse',
+    yes: 'JA',
+    no: 'NEIN',
+    over: 'ÜBER',
+    under: 'UNTER',
+    home: 'HEIM',
+    away: 'AUSWÄRTS',
+    draw: 'UNENTSCHIEDEN',
+    cached: 'Zwischengespeichert',
+    analyzed: 'Analysiert',
+    aiAnalysis: 'KI-Analyse',
+    agentAnalysis: 'Agent-Analyse',
+    selectAnalysisType: 'Analysetyp auswählen'
   }
 };
+
+// ============================================================================
+// ANALYSIS DETAILS SECTION COMPONENT
+// ============================================================================
+
+function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { lang } = useLanguage();
+  const t = translations[lang as keyof typeof translations] || translations.en;
+
+  if (!analysis.agents) return null;
+
+  const { stats, odds, deepAnalysis } = analysis.agents;
+
+  return (
+    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <FileText className="w-5 h-5 text-blue-400" />
+          <h4 className="text-white font-bold">Analiz Detayı</h4>
+          <span className="text-xs text-gray-400">(Detaylı agent analizleri)</span>
+        </div>
+        {isOpen ? (
+          <ChevronDown className="w-5 h-5 text-gray-400" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="p-6 space-y-6 border-t border-white/10">
+          {/* STATS AGENT */}
+          {stats && (
+            <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 className="w-5 h-5 text-blue-400" />
+                <h5 className="text-white font-bold text-lg">📊 STATS AGENT (İstatistik Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Form, gol istatistikleri, xG (Expected Goals), timing patterns ve clean sheet analizi yapar.</p>
+                </div>
+
+                {stats.formAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Form Analizi:</p>
+                    <p className="text-gray-300">{stats.formAnalysis}</p>
+                  </div>
+                )}
+
+                {stats.xgAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">xG (Expected Goals) Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 space-y-1 text-xs">
+                      <p className="text-gray-300">Ev Sahibi xG: <span className="text-blue-400">{stats.xgAnalysis.homeXG}</span></p>
+                      <p className="text-gray-300">Deplasman xG: <span className="text-blue-400">{stats.xgAnalysis.awayXG}</span></p>
+                      <p className="text-gray-300">Toplam xG: <span className="text-blue-400">{stats.xgAnalysis.totalXG}</span></p>
+                      <p className="text-gray-300">Performans: <span className="text-blue-400">{stats.xgAnalysis.homePerformance} / {stats.xgAnalysis.awayPerformance}</span></p>
+                      {stats.xgAnalysis.regressionRisk && (
+                        <p className="text-yellow-400">⚠️ {stats.xgAnalysis.regressionRisk}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats.goalExpectancy && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Gol Beklentisi:</p>
+                    <p className="text-gray-300">Goal Expectancy: <span className="text-blue-400 font-bold">{stats.goalExpectancy}</span> gol</p>
+                    {stats._calculatedStats && (
+                      <div className="bg-black/20 rounded p-2 mt-1 text-xs space-y-1">
+                        <p className="text-gray-300">Son 5 Maç Over 2.5: <span className="text-blue-400">%{stats._calculatedStats.avgOver25}</span></p>
+                        <p className="text-gray-300">Son 5 Maç BTTS: <span className="text-blue-400">%{stats._calculatedStats.avgBtts}</span></p>
+                        {stats._calculatedStats.homeExpected && stats._calculatedStats.awayExpected && (
+                          <>
+                            <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
+                              <span className="text-blue-400 font-semibold">Gol Atma Beklentisi:</span>
+                            </p>
+                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeExpected}</span> gol</p>
+                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayExpected}</span> gol</p>
+                          </>
+                        )}
+                        {stats._calculatedStats.homeConcededExpected && stats._calculatedStats.awayConcededExpected && (
+                          <>
+                            <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
+                              <span className="text-blue-400 font-semibold">Gol Yeme Beklentisi:</span>
+                            </p>
+                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeConcededExpected}</span> gol</p>
+                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayConcededExpected}</span> gol</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {stats.timingPatterns && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Timing Patterns (Zamanlama Paternleri):</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Sahibi: İlk yarı %{stats.timingPatterns.homeFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.homeSecondHalfGoals}</p>
+                      <p className="text-gray-300">Deplasman: İlk yarı %{stats.timingPatterns.awayFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.awaySecondHalfGoals}</p>
+                      {stats.timingPatterns.htftPattern && (
+                        <p className="text-yellow-400 mt-1">📌 {stats.timingPatterns.htftPattern}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {stats.cleanSheetAnalysis && (
+                  <div>
+                    <p className="text-blue-400 font-semibold mb-1">Clean Sheet Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.homeCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">Dep Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.awayCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">Clean Sheet %: Ev %{stats.cleanSheetAnalysis.homeCleanSheetPct}, Dep %{stats.cleanSheetAnalysis.awayCleanSheetPct}</p>
+                      {stats.cleanSheetAnalysis.defensiveRating && (
+                        <p className="text-yellow-400 mt-1">🛡️ {stats.cleanSheetAnalysis.defensiveRating}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-blue-500/30 pt-3 mt-3">
+                  <p className="text-blue-400 font-semibold mb-2">STATS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {stats.overUnder && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{stats.overUnderConfidence || stats.confidence} güven)</p>
+                        {stats.overUnderReasoning && <p className="text-gray-400 text-xs mt-1">{stats.overUnderReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.btts && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{stats.bttsConfidence || stats.confidence} güven)</p>
+                        {stats.bttsReasoning && <p className="text-gray-400 text-xs mt-1">{stats.bttsReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.matchResult && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-blue-400">{stats.matchResult === '1' ? 'Ev Sahibi' : stats.matchResult === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{stats.matchResultConfidence || stats.confidence} güven)</p>
+                        {stats.matchResultReasoning && <p className="text-gray-400 text-xs mt-1">{stats.matchResultReasoning}</p>}
+                      </div>
+                    )}
+                    {stats.firstHalfPrediction && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">İlk Yarı: <span className="text-blue-400">{stats.firstHalfPrediction.goals}</span> (%{stats.firstHalfConfidence || stats.confidence} güven)</p>
+                        {stats.firstHalfPrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{stats.firstHalfPrediction.reasoning}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ODDS AGENT */}
+          {odds && (
+            <div className="bg-green-500/10 rounded-lg border border-green-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                <h5 className="text-white font-bold text-lg">💰 ODDS AGENT (Bahis Oranları Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Bahis oranlarını form verileriyle karşılaştırarak VALUE BET (değerli bahis) tespit eder.</p>
+                </div>
+
+                {odds._valueAnalysis && (
+                  <div>
+                    <p className="text-green-400 font-semibold mb-1">Oran Analizi:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Sahibi: Oran %{odds._valueAnalysis.homeImplied} implied, Form %{odds._valueAnalysis.homeFormProb} → Value: <span className={odds._valueAnalysis.homeValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.homeValue > 0 ? '+' : ''}{odds._valueAnalysis.homeValue}%</span></p>
+                      <p className="text-gray-300">Deplasman: Oran %{odds._valueAnalysis.awayImplied} implied, Form %{odds._valueAnalysis.awayFormProb} → Value: <span className={odds._valueAnalysis.awayValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.awayValue > 0 ? '+' : ''}{odds._valueAnalysis.awayValue}%</span></p>
+                      <p className="text-gray-300">Over 2.5: Oran %{odds._valueAnalysis.overImplied} implied, Form %{odds._valueAnalysis.overProb} → Value: <span className={odds._valueAnalysis.overValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.overValue > 0 ? '+' : ''}{odds._valueAnalysis.overValue}%</span></p>
+                      {odds._valueAnalysis.bestValue && (
+                        <p className="text-green-400 font-semibold mt-2">🏆 En İyi Value: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-green-500/30 pt-3 mt-3">
+                  <p className="text-green-400 font-semibold mb-2">ODDS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {odds.recommendation && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Ana Öneri: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{odds.confidence} güven)</p>
+                        {odds.recommendationReasoning && <p className="text-gray-400 text-xs mt-1">{odds.recommendationReasoning}</p>}
+                      </div>
+                    )}
+                    {odds.matchWinnerValue && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu Value: <span className="text-green-400">{odds.matchWinnerValue === 'home' ? 'Ev Sahibi' : odds.matchWinnerValue === 'away' ? 'Deplasman' : 'Beraberlik'}</span></p>
+                        {odds.matchWinnerReasoning && <p className="text-gray-400 text-xs mt-1">{odds.matchWinnerReasoning}</p>}
+                      </div>
+                    )}
+                    {odds.asianHandicap && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Asian Handicap: <span className="text-green-400">{odds.asianHandicap.recommendation}</span> (%{odds.asianHandicap.confidence} güven)</p>
+                        {odds.asianHandicap.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.asianHandicap.reasoning}</p>}
+                      </div>
+                    )}
+                    {odds.correctScore && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Correct Score: <span className="text-green-400">{odds.correctScore.mostLikely}</span> (%{odds.correctScore.confidence} güven)</p>
+                        <p className="text-gray-400 text-xs mt-1">2. Olası: {odds.correctScore.second}, 3. Olası: {odds.correctScore.third}</p>
+                      </div>
+                    )}
+                    {odds.cornersAnalysis && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Korner: <span className="text-green-400">{odds.cornersAnalysis.totalCorners}</span> (%{odds.cornersAnalysis.confidence} güven)</p>
+                        {odds.cornersAnalysis.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.cornersAnalysis.reasoning}</p>}
+                      </div>
+                    )}
+                    {odds.valueBets && odds.valueBets.length > 0 && (
+                      <div className="bg-green-500/20 rounded p-2">
+                        <p className="text-green-400 font-semibold">💰 Value Bets: {odds.valueBets.join(', ')}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DEEP ANALYSIS AGENT */}
+          {deepAnalysis && (
+            <div className="bg-purple-500/10 rounded-lg border border-purple-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-5 h-5 text-purple-400" />
+                <h5 className="text-white font-bold text-lg">🎯 DEEP ANALYSIS AGENT (Derin Analiz Ajanı)</h5>
+              </div>
+              
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu, diziliş analizi.</p>
+                </div>
+
+                {deepAnalysis.matchAnalysis && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Maç Analizi:</p>
+                    <p className="text-gray-300">{deepAnalysis.matchAnalysis}</p>
+                  </div>
+                )}
+
+                {deepAnalysis.criticalFactors && deepAnalysis.criticalFactors.length > 0 && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Kritik Faktörler:</p>
+                    <ul className="bg-black/20 rounded p-2 space-y-1">
+                      {deepAnalysis.criticalFactors.map((factor: string, idx: number) => (
+                        <li key={idx} className="text-gray-300 text-xs">• {factor}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {deepAnalysis.probabilities && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">Olasılıklar:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-1">
+                      <p className="text-gray-300">Ev Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.homeWin}</span></p>
+                      <p className="text-gray-300">Beraberlik: <span className="text-purple-400">%{deepAnalysis.probabilities.draw}</span></p>
+                      <p className="text-gray-300">Deplasman Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.awayWin}</span></p>
+                    </div>
+                  </div>
+                )}
+
+                {deepAnalysis.motivationScores && (
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-1">💪 Motivasyon & Hazırlık Puanları:</p>
+                    <div className="bg-black/20 rounded p-2 text-xs space-y-2">
+                      <div>
+                        <p className="text-gray-300">
+                          Ev Sahibi: <span className={`font-bold ${deepAnalysis.motivationScores.home >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {deepAnalysis.motivationScores.home}/100
+                          </span>
+                          {deepAnalysis.motivationScores.homeTrend === 'improving' && <span className="text-green-400 ml-1">📈</span>}
+                          {deepAnalysis.motivationScores.homeTrend === 'declining' && <span className="text-red-400 ml-1">📉</span>}
+                          {deepAnalysis.motivationScores.homeTrend === 'stable' && <span className="text-gray-400 ml-1">➡️</span>}
+                        </p>
+                        {deepAnalysis.motivationScores.homeFormGraph && (
+                          <p className="text-gray-500 text-xs mt-1">Form: {deepAnalysis.motivationScores.homeFormGraph}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-300">
+                          Deplasman: <span className={`font-bold ${deepAnalysis.motivationScores.away >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                            {deepAnalysis.motivationScores.away}/100
+                          </span>
+                          {deepAnalysis.motivationScores.awayTrend === 'improving' && <span className="text-green-400 ml-1">📈</span>}
+                          {deepAnalysis.motivationScores.awayTrend === 'declining' && <span className="text-red-400 ml-1">📉</span>}
+                          {deepAnalysis.motivationScores.awayTrend === 'stable' && <span className="text-gray-400 ml-1">➡️</span>}
+                        </p>
+                        {deepAnalysis.motivationScores.awayFormGraph && (
+                          <p className="text-gray-500 text-xs mt-1">Form: {deepAnalysis.motivationScores.awayFormGraph}</p>
+                        )}
+                      </div>
+                      {deepAnalysis.motivationScores.reasoning && (
+                        <p className="text-gray-400 text-xs mt-2 pt-2 border-t border-white/10">{deepAnalysis.motivationScores.reasoning}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-purple-500/30 pt-3 mt-3">
+                  <p className="text-purple-400 font-semibold mb-2">DEEP ANALYSIS AGENT TAHMİNLERİ:</p>
+                  <div className="space-y-2">
+                    {deepAnalysis.overUnder && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{deepAnalysis.overUnder.prediction}</span> (%{deepAnalysis.overUnder.confidence} güven)</p>
+                        {deepAnalysis.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.overUnder.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.btts && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{deepAnalysis.btts.prediction}</span> (%{deepAnalysis.btts.confidence} güven)</p>
+                        {deepAnalysis.btts.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.btts.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.matchResult && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-purple-400">{deepAnalysis.matchResult.prediction === '1' ? 'Ev Sahibi' : deepAnalysis.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{deepAnalysis.matchResult.confidence} güven)</p>
+                        {deepAnalysis.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.matchResult.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.scorePrediction && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Skor Tahmini: <span className="text-purple-400">{deepAnalysis.scorePrediction.score}</span></p>
+                        {deepAnalysis.scorePrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.scorePrediction.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.halfTimeGoals && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">İlk Yarı: <span className="text-purple-400">{deepAnalysis.halfTimeGoals.prediction} {deepAnalysis.halfTimeGoals.line}</span> (%{deepAnalysis.halfTimeGoals.confidence} güven)</p>
+                        {deepAnalysis.halfTimeGoals.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.halfTimeGoals.reasoning}</p>}
+                      </div>
+                    )}
+                    {deepAnalysis.cornersAndCards && (
+                      <div className="bg-black/20 rounded p-2">
+                        <p className="text-white font-semibold">Korner: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cornersLine}</span> (%{deepAnalysis.cornersAndCards.cornersConfidence} güven)</p>
+                        <p className="text-white font-semibold mt-1">Kart: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cardsLine}</span> (%{deepAnalysis.cornersAndCards.cardsConfidence} güven)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SPORTMONKS VERİ BAZLI MAÇ SONUCU */}
+          {analysis.matchResult && (
+            <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <h5 className="text-white font-bold text-lg">📊 SPORTMONKS VERİ BAZLI MAÇ SONUCU TAHMİNİ</h5>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-300 mb-2"><strong>Sistem:</strong> Puan bazlı hesaplama (Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı)</p>
+                <div className="bg-black/20 rounded p-2">
+                  <p className="text-white font-semibold">Tahmin: <span className="text-yellow-400">{analysis.matchResult.prediction === 'home' ? 'Ev Sahibi' : analysis.matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik'}</span> (%{analysis.matchResult.confidence} güven)</p>
+                  {analysis.matchResult.reasoning && (
+                    <div className="text-gray-400 text-xs mt-2 whitespace-pre-line">{analysis.matchResult.reasoning}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TOP 3 TAHMİN */}
+          {analysis.top3Predictions && analysis.top3Predictions.length > 0 && (
+            <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-5 h-5 text-cyan-400" />
+                <h5 className="text-white font-bold text-lg">🏆 TOP 3 TAHMİN (Agent'ların Birleşik Analizi)</h5>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-300 mb-3">Sistem, tüm agent'ların tahminlerini toplayıp en yüksek güven ve agent desteğine göre sıralar:</p>
+                {analysis.top3Predictions.map((pred, idx) => (
+                  <div key={idx} className="bg-black/20 rounded p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-cyan-400 font-bold">#{pred.rank} {pred.market}</span>
+                      <span className="text-white font-semibold">%{pred.confidence} güven</span>
+                    </div>
+                    <p className="text-white font-semibold mb-1">{pred.selection}</p>
+                    <p className="text-gray-400 text-xs mb-1">{pred.reasoning}</p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <span className="text-gray-500 text-xs">Agent Desteği:</span>
+                      {pred.agentSupport.map((agent, i) => (
+                        <span key={i} className="text-cyan-400 text-xs bg-cyan-500/10 px-2 py-0.5 rounded">{agent}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { lang } = useLanguage();
-
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const t = translations[lang as keyof typeof translations] || translations.en;
+  
+  // States
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedLeague, setSelectedLeague] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLeague, setSelectedLeague] = useState('all');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  
-  // Analysis states
+  const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
+  const [analysis, setAnalysis] = useState<SmartAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [analysis, setAnalysis] = useState<any>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  
-  // Agent states
-  const [agentAnalysis, setAgentAnalysis] = useState<any>(null);
-  const [agentLoading, setAgentLoading] = useState(false);
-  const [agentMode, setAgentMode] = useState(false);
-  
-  // Quad-Brain states
-  const [quadBrainAnalysis, setQuadBrainAnalysis] = useState<any>(null);
-  const [quadBrainLoading, setQuadBrainLoading] = useState(false);
-  const [analysisMode, setAnalysisMode] = useState<'standard' | 'quadbrain' | 'agents' | 'deepseek'>('standard');
-  
-  // DeepSeek Master states
-  const [deepSeekMasterAnalysis, setDeepSeekMasterAnalysis] = useState<any>(null);
-  const [deepSeekLoading, setDeepSeekLoading] = useState(false);
-  
-  // UI states
+  const [cached, setCached] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [activeNav, setActiveNav] = useState('matches');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('agent'); // 🆕 Agent Analysis ana sistem
   
-  // NEW: Expanded AI card state
-  const [expandedAI, setExpandedAI] = useState<string | null>(null);
-  const [showAllReasonings, setShowAllReasonings] = useState(false);
-  
-  // NEW: Pre-analyzed matches status
-  const [matchAnalysisStatus, setMatchAnalysisStatus] = useState<Record<number, any>>({});
-  
-  // NEW: League standings state
-  const [leagueStandings, setLeagueStandings] = useState<any>(null);
-  const [leagueStandingsLoading, setLeagueStandingsLoading] = useState(false);
-
-  // Labels
-  const labels = {
-    tr: {
-      matches: 'Maçlar',
-      coupons: 'Kuponlar',
-      leaderboard: 'Liderlik',
-      aiPerformance: 'AI Performans',
-      createCoupon: 'Kupon Oluştur',
-      todayMatches: 'Günün Maçları',
-      search: 'Takım ara...',
-      allLeagues: 'Tüm Ligler',
-      analyze: 'Tam Analiz',
-      fullAnalysis: '🎯 Tam Analiz',
-      analyzing: 'Analiz ediliyor...',
-      aiAgents: 'AI Ajanları',
-      standardAnalysis: 'AI Konsensüs',
-      agentAnalysis: 'Ajan Analizi',
-      noMatches: 'Maç bulunamadı',
-      loading: 'Yükleniyor...',
-      profile: 'Profil',
-      settings: 'Ayarlar',
-      logout: 'Çıkış Yap',
-      pro: 'PRO',
-      proMember: 'Pro Üye',
-      trialMember: 'Deneme',
-      upgradeToPro: "Pro'ya Geç",
-      selectMatch: 'Analiz için maç seçin',
-      matchResult: 'Maç Sonucu',
-      overUnder: 'Üst/Alt 2.5',
-      btts: 'KG Var/Yok',
-      bestBet: 'En İyi Bahis',
-      confidence: 'Güven',
-      trialBanner: 'Deneme Süresi',
-      daysLeft: 'gün kaldı',
-      analysesUsed: 'analiz kullanıldı',
-      trialExpired: 'Deneme Süresi Bitti',
-      trialExpiredMsg: 'Devam etmek için Pro üyelik satın alın.',
-      limitReached: 'Günlük limit doldu',
-      goToPricing: "Pro'ya Geç",
-      onlyPro: 'Sadece Pro',
-      unlimitedAnalysis: 'Sınırsız analiz + AI Ajanları',
-      weightedConsensus: 'Ağırlıklı Konsensüs',
-      agentContributions: 'Agent Katkıları',
-      aiConsensus: 'AI Konsensüs',
-      modelVotes: 'Model Oyları',
-      unanimous: 'Oybirliği',
-      majority: 'Çoğunluk',
-      split: 'Bölünmüş',
-      riskLevel: 'Risk Seviyesi',
-      overallAnalysis: 'Genel Analiz',
-      addToCoupon: 'Kupona Ekle',
-      added: 'Eklendi',
-      yourPoints: 'Puanınız',
-      yourRank: 'Sıralamanız',
-      activeCoupons: 'Aktif Kupon',
-      monthlyPrize: 'Aylık Ödül',
-      prizeDesc: 'En çok puan toplayın, 1 ay Pro kazanın!',
-      viewAll: 'Tümünü Gör',
-      noCoupons: 'Henüz kupon yok',
-      startPredicting: 'Tahmin yapmaya başla!',
-      aiDetails: 'AI Detayları',
-      showReasons: 'Gerekçeleri Göster',
-      hideReasons: 'Gizle',
-      agreed: 'Hemfikir',
-      disagreed: 'Farklı Görüş',
-      weightedAgreement: 'Ağırlıklı Oy',
-      brainVersion: 'Brain v2.0',
-      conflictWarning: 'AI modelleri farklı görüşlerde',
-    },
-    en: {
-      matches: 'Matches',
-      coupons: 'Coupons',
-      leaderboard: 'Leaderboard',
-      aiPerformance: 'AI Performance',
-      createCoupon: 'Create Coupon',
-      todayMatches: 'Today\'s Matches',
-      search: 'Search team...',
-      allLeagues: 'All Leagues',
-      analyze: 'Full Analysis',
-      fullAnalysis: '🎯 Full Analysis',
-      analyzing: 'Analyzing...',
-      aiAgents: 'AI Agents',
-      standardAnalysis: 'AI Consensus',
-      agentAnalysis: 'Agent Analysis',
-      noMatches: 'No matches found',
-      loading: 'Loading...',
-      profile: 'Profile',
-      settings: 'Settings',
-      logout: 'Sign Out',
-      pro: 'PRO',
-      proMember: 'Pro Member',
-      trialMember: 'Trial',
-      upgradeToPro: 'Upgrade to Pro',
-      selectMatch: 'Select a match to analyze',
-      matchResult: 'Match Result',
-      overUnder: 'Over/Under 2.5',
-      btts: 'BTTS',
-      bestBet: 'Best Bet',
-      confidence: 'Confidence',
-      trialBanner: 'Trial Period',
-      daysLeft: 'days left',
-      analysesUsed: 'analyses used',
-      trialExpired: 'Trial Expired',
-      trialExpiredMsg: 'Purchase Pro to continue using the platform.',
-      limitReached: 'Daily limit reached',
-      goToPricing: 'Go Pro',
-      onlyPro: 'Pro Only',
-      unlimitedAnalysis: 'Unlimited analyses + AI Agents',
-      weightedConsensus: 'Weighted Consensus',
-      agentContributions: 'Agent Contributions',
-      aiConsensus: 'AI Consensus',
-      modelVotes: 'Model Votes',
-      unanimous: 'Unanimous',
-      majority: 'Majority',
-      split: 'Split',
-      riskLevel: 'Risk Level',
-      overallAnalysis: 'Overall Analysis',
-      addToCoupon: 'Add to Coupon',
-      added: 'Added',
-      yourPoints: 'Your Points',
-      yourRank: 'Your Rank',
-      activeCoupons: 'Active Coupons',
-      monthlyPrize: 'Monthly Prize',
-      prizeDesc: 'Top scorer wins 1 month Pro!',
-      viewAll: 'View All',
-      noCoupons: 'No coupons yet',
-      startPredicting: 'Start predicting!',
-      aiDetails: 'AI Details',
-      showReasons: 'Show Reasons',
-      hideReasons: 'Hide',
-      agreed: 'Agreed',
-      disagreed: 'Disagreed',
-      weightedAgreement: 'Weighted',
-      brainVersion: 'Brain v2.0',
-      conflictWarning: 'AI models have different opinions',
-    },
-    de: {
-      matches: 'Spiele',
-      coupons: 'Wettscheine',
-      leaderboard: 'Rangliste',
-      aiPerformance: 'KI-Leistung',
-      createCoupon: 'Erstellen',
-      todayMatches: 'Heutige Spiele',
-      search: 'Team suchen...',
-      allLeagues: 'Alle Ligen',
-      analyze: 'Analysieren',
-      analyzing: 'Analysiere...',
-      aiAgents: 'KI-Agenten',
-      standardAnalysis: 'KI-Konsens',
-      agentAnalysis: 'Agent-Analyse',
-      noMatches: 'Keine Spiele gefunden',
-      loading: 'Laden...',
-      profile: 'Profil',
-      settings: 'Einstellungen',
-      logout: 'Abmelden',
-      pro: 'PRO',
-      proMember: 'Pro-Mitglied',
-      trialMember: 'Testversion',
-      upgradeToPro: 'Pro werden',
-      selectMatch: 'Wählen Sie ein Spiel',
-      matchResult: 'Ergebnis',
-      overUnder: 'Über/Unter 2.5',
-      btts: 'Beide treffen',
-      bestBet: 'Beste Wette',
-      confidence: 'Konfidenz',
-      trialBanner: 'Testversion',
-      daysLeft: 'Tage übrig',
-      analysesUsed: 'Analysen verwendet',
-      trialExpired: 'Testversion abgelaufen',
-      trialExpiredMsg: 'Kaufen Sie Pro, um fortzufahren.',
-      limitReached: 'Tageslimit erreicht',
-      goToPricing: 'Pro werden',
-      onlyPro: 'Nur Pro',
-      unlimitedAnalysis: 'Unbegrenzte Analysen + KI-Agenten',
-      weightedConsensus: 'Gewichteter Konsens',
-      agentContributions: 'Agent-Beiträge',
-      aiConsensus: 'KI-Konsens',
-      modelVotes: 'Modell-Stimmen',
-      unanimous: 'Einstimmig',
-      majority: 'Mehrheit',
-      split: 'Geteilt',
-      riskLevel: 'Risikostufe',
-      overallAnalysis: 'Gesamtanalyse',
-      addToCoupon: 'Zum Wettschein',
-      added: 'Hinzugefügt',
-      yourPoints: 'Ihre Punkte',
-      yourRank: 'Ihr Rang',
-      activeCoupons: 'Aktive Scheine',
-      monthlyPrize: 'Monatspreis',
-      prizeDesc: 'Topscorer gewinnt 1 Monat Pro!',
-      viewAll: 'Alle anzeigen',
-      noCoupons: 'Keine Wettscheine',
-      startPredicting: 'Starten Sie!',
-      aiDetails: 'KI-Details',
-      showReasons: 'Gründe zeigen',
-      hideReasons: 'Ausblenden',
-      agreed: 'Einig',
-      disagreed: 'Anders',
-      weightedAgreement: 'Gewichtet',
-      brainVersion: 'Brain v2.0',
-      conflictWarning: 'KI-Modelle haben unterschiedliche Meinungen',
-    },
-  };
-
-  const l = labels[lang as keyof typeof labels] || labels.en;
-
+  // Auth check
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
-
-  const fetchUserProfile = async () => {
-    try {
-      const res = await fetch('/api/user/profile');
-      const data = await res.json();
-      setUserProfile(data);
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-    }
-  };
-
-  const fetchMatches = useCallback(async () => {
+  
+  // ============================================================================
+  // FETCH FIXTURES
+  // ============================================================================
+  
+  const fetchFixtures = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/matches?date=${selectedDate}`);
+      const leagueParam = selectedLeague !== 'all' ? `&league_id=${selectedLeague}` : '';
+      const res = await fetch(`/api/v2/fixtures?date=${selectedDate}${leagueParam}`);
       const data = await res.json();
-      const matchList = data.matches || [];
-      setMatches(matchList);
-      setFilteredMatches(matchList);
       
-      // Fetch pre-analysis status for all matches
-      if (matchList.length > 0) {
-        const fixtureIds = matchList.map((m: Match) => m.id);
-        try {
-          const statusRes = await fetch('/api/match-analysis-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fixture_ids: fixtureIds })
-          });
-          const statusData = await statusRes.json();
-          setMatchAnalysisStatus(statusData);
-        } catch (e) {
-          console.error('Analysis status fetch error:', e);
-        }
+      if (data.success) {
+        setFixtures(data.fixtures);
+        setLeagues(data.leagues || []);
+        setTotalCount(data.totalCount || data.count);
+        setCached(data.cached);
       }
     } catch (error) {
-      console.error('Fetch matches error:', error);
+      console.error('Fetch fixtures error:', error);
     }
     setLoading(false);
-  }, [selectedDate]);
-
+  }, [selectedDate, selectedLeague]);
+  
   useEffect(() => {
-    if (session) {
-      fetchMatches();
-      fetchUserProfile();
-    }
-  }, [session, fetchMatches]);
-
-  // Fetch league standings when match is selected
-  useEffect(() => {
-    const fetchLeagueStandings = async () => {
-      if (!selectedMatch?.leagueId && !selectedMatch?.league) return;
-      
-      setLeagueStandingsLoading(true);
-      try {
-        const params = selectedMatch.leagueId 
-          ? `leagueId=${selectedMatch.leagueId}`
-          : `leagueName=${encodeURIComponent(selectedMatch.league)}`;
-        
-        const res = await fetch(`/api/league-standings?${params}`);
-        const data = await res.json();
-        
-        if (data.success) {
-          setLeagueStandings(data);
-        } else {
-          setLeagueStandings(null);
-        }
-      } catch (error) {
-        console.error('Error fetching league standings:', error);
-        setLeagueStandings(null);
-      } finally {
-        setLeagueStandingsLoading(false);
-      }
-    };
-
-    fetchLeagueStandings();
-  }, [selectedMatch?.leagueId, selectedMatch?.league]);
-
-  useEffect(() => {
-    let filtered = matches;
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (m) =>
-          m.homeTeam.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          m.awayTeam.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    if (selectedLeague !== 'all') {
-      filtered = filtered.filter((m) => m.league === selectedLeague);
-    }
-    setFilteredMatches(filtered);
-  }, [matches, searchQuery, selectedLeague]);
-
-  const leagues = Array.from(new Set(matches.map((m) => m.league)));
-
-  const analyzeMatch = async (match: Match) => {
-    if (!userProfile?.canAnalyze) {
-      setAnalysisError(l.limitReached);
-      return;
-    }
-
-    setSelectedMatch(match);
+    fetchFixtures();
+  }, [fetchFixtures]);
+  
+  // ============================================================================
+  // ANALYZE MATCH
+  // ============================================================================
+  
+  const analyzeMatch = async (fixture: Fixture, type: 'ai' | 'agent' = analysisType) => {
+    setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
     setAnalysisError(null);
-    setAgentMode(false);
-    setAgentAnalysis(null);
-    setExpandedAI(null);
-    setShowAllReasonings(false);
-
+    
     try {
-      const res = await fetch('/api/analyze', {
+      // 🆕 type === 'ai' ise Smart Analysis, type === 'agent' ise Agent Analysis
+      const endpoint = '/api/v2/analyze';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fixtureId: match.id,
-          homeTeam: match.homeTeam,
-          awayTeam: match.awayTeam,
-          homeTeamId: match.homeTeamId,
-          awayTeamId: match.awayTeamId,
-          language: lang,
-        }),
+          fixtureId: fixture.id,
+          homeTeam: fixture.homeTeam,
+          awayTeam: fixture.awayTeam,
+          homeTeamId: fixture.homeTeamId,
+          awayTeamId: fixture.awayTeamId,
+          league: fixture.league,
+          matchDate: fixture.date.split('T')[0],
+          preferAnalysis: type === 'ai' ? 'smart' : 'agent' // 🆕 AI Analysis için Smart Analysis, Agent için Agent Analysis
+        })
       });
       
       const data = await res.json();
       
-      if (!res.ok) {
-        if (data.limitReached) {
-          setAnalysisError(l.limitReached);
-        } else if (data.trialExpired) {
-          setAnalysisError(l.trialExpired);
-        } else {
-          setAnalysisError(data.error || 'Analysis failed');
+      if (data.success) {
+        setAnalysis(data.analysis);
+        // 🆕 Response'dan gelen analysisType'a göre UI'ı güncelle
+        if (data.analysisType === 'agent') {
+          setAnalysisType('agent');
+        } else if (data.analysisType === 'smart') {
+          setAnalysisType('ai'); // Smart Analysis = AI Analysis UI'da
         }
-      } else if (data.success) {
-        setAnalysis(data);
-        fetchUserProfile();
+        // Update fixture hasAnalysis status
+        setFixtures(prev => prev.map(f => 
+          f.id === fixture.id ? { ...f, hasAnalysis: true } : f
+        ));
+      } else {
+        setAnalysisError(data.error || 'Analiz başarısız');
       }
     } catch (error) {
-      console.error('Analysis error:', error);
-      setAnalysisError('Network error');
+      setAnalysisError('Bağlantı hatası');
     }
+    
     setAnalyzing(false);
   };
-
-  const runAgentAnalysis = async () => {
-    if (!selectedMatch || !userProfile?.canUseAgents) return;
-    
-    setAnalysisMode('agents');
-    setAgentLoading(true);
-    setAgentAnalysis(null);
-
-    try {
-      const res = await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fixtureId: selectedMatch.id,
-          homeTeam: selectedMatch.homeTeam,
-          awayTeam: selectedMatch.awayTeam,
-          homeTeamId: selectedMatch.homeTeamId,
-          awayTeamId: selectedMatch.awayTeamId,
-          language: lang,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setAgentAnalysis(data);
-      }
-    } catch (error) {
-      console.error('Agent error:', error);
-    }
-    setAgentLoading(false);
-  };
-
-  // 🧠 QUAD-BRAIN ANALYSIS
-  const runQuadBrainAnalysis = async () => {
-    if (!selectedMatch || !userProfile?.canAnalyze) return;
-    
-    setAnalysisMode('quadbrain');
-    setQuadBrainLoading(true);
-    setQuadBrainAnalysis(null);
-    setAnalysisError(null);
-
-    try {
-      const res = await fetch('/api/quad-brain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-      fixtureId: selectedMatch.id,
-      homeTeam: selectedMatch.homeTeam,
-      awayTeam: selectedMatch.awayTeam,
-          homeTeamId: selectedMatch.homeTeamId,
-          awayTeamId: selectedMatch.awayTeamId,
-      league: selectedMatch.league,
-          language: lang,
-          fetchNews: true,
-          trackPerformance: true,
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setQuadBrainAnalysis(data.result);
-        fetchUserProfile();
-      } else {
-        setAnalysisError(data.error || 'Quad-Brain analysis failed');
-      }
-    } catch (error) {
-      console.error('Quad-Brain error:', error);
-      setAnalysisError('Network error');
-    }
-    setQuadBrainLoading(false);
-  };
-
-  // 🎯 DEEPSEEK MASTER ANALYSIS - 3 Sistem + DeepSeek Master
-  const runDeepSeekMasterAnalysis = async (matchToAnalyze?: Match) => {
-    const match = matchToAnalyze || selectedMatch;
-    if (!match || !userProfile?.canAnalyze) return;
-    
-    // ⚠️ Maç başlamış mı kontrol et
-    const matchDate = new Date(match.date);
-    const now = new Date();
-    if (matchDate <= now) {
-      setAnalysisError('Bu maç başlamış, analiz yapılamaz.');
-      return;
-    }
-    
-    // Maçı seç (eğer parametre olarak geldiyse)
-    if (matchToAnalyze) {
-      setSelectedMatch(matchToAnalyze);
-    }
-    
-    setAnalysisMode('deepseek');
-    setDeepSeekLoading(true);
-    setDeepSeekMasterAnalysis(null);
-    setAnalysisError(null);
-
-    try {
-      console.log('🎯 Starting DeepSeek Master Analysis...');
-      
-      // ÖNCE MEVCUT ANALİZİ KONTROL ET
-      console.log('   🔍 Checking for existing analysis...');
-      try {
-        const existingRes = await fetch(`/api/match-full-analysis?fixture_id=${match.id}`);
-        if (existingRes.ok) {
-          const existingData = await existingRes.json();
-          if (existingData.success && existingData.analysis?.deepseek_master) {
-            console.log('   ✅ Found existing analysis! Loading...');
-            setDeepSeekMasterAnalysis({
-              ...existingData.analysis.deepseek_master,
-              aiConsensusRaw: existingData.analysis.ai_consensus,
-              quadBrainRaw: existingData.analysis.quad_brain,
-              aiAgentsRaw: existingData.analysis.ai_agents,
-            });
-            // Set individual analyses too
-            if (existingData.analysis.ai_consensus) setAnalysis(existingData.analysis.ai_consensus);
-            if (existingData.analysis.quad_brain) setQuadBrainAnalysis(existingData.analysis.quad_brain);
-            if (existingData.analysis.ai_agents) setAgentAnalysis(existingData.analysis.ai_agents);
-            setDeepSeekLoading(false);
-            return; // Exit early - no need to run new analysis
-          }
-        }
-      } catch (checkError) {
-        console.log('   ℹ️ No existing analysis found, creating new one...');
-      }
-      
-      const matchData = {
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        homeTeamId: match.homeTeamId,
-        awayTeamId: match.awayTeamId,
-        league: match.league,
-        fixtureId: match.id,
-        language: lang,
-      };
-      
-      // PARALEL ÇALIŞTIR: 3 sistem aynı anda!
-      console.log('   ⚡ Running 3 systems in parallel...');
-      const startTime = Date.now();
-      
-      const [aiRes, quadRes, agentsRes] = await Promise.all([
-        fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-        fetch('/api/quad-brain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-        fetch('/api/agents', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(matchData),
-        }),
-      ]);
-      
-      const [aiData, quadData, agentsData] = await Promise.all([
-        aiRes.json(),
-        quadRes.json(),
-        agentsRes.json(),
-      ]);
-      
-      const parallelTime = Date.now() - startTime;
-      console.log(`   ✅ All 3 systems completed in ${parallelTime}ms`);
-      
-      // Step 4: Send all 3 results to DeepSeek Master for evaluation
-      console.log('   🎯 Step 4: DeepSeek Master Evaluation...');
-      const masterRes = await fetch('/api/deepseek-evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fixture_id: match.id,
-          home_team: match.homeTeam,
-          away_team: match.awayTeam,
-          league: match.league,
-          aiConsensus: aiData,
-          quadBrain: quadData,
-          aiAgents: agentsData,
-        }),
-      });
-      const masterData = await masterRes.json();
-      
-      if (masterData.success) {
-        setDeepSeekMasterAnalysis({
-          ...masterData,
-          aiConsensusRaw: aiData,
-          quadBrainRaw: quadData,
-          aiAgentsRaw: agentsData,
-        });
-        // Also set the individual analyses so they can be viewed
-        if (aiData.success) setAnalysis(aiData.result);
-        if (quadData.success) setQuadBrainAnalysis(quadData.result);
-        if (agentsData.success) setAgentAnalysis(agentsData.result);
-        fetchUserProfile();
-      } else {
-        setAnalysisError(masterData.error || 'DeepSeek Master analysis failed');
-      }
-    } catch (error) {
-      console.error('DeepSeek Master error:', error);
-      setAnalysisError('Network error');
-    }
-    setDeepSeekLoading(false);
-  };
-
+  
   // ============================================================================
-  // HELPER FUNCTIONS
+  // FILTER FIXTURES
   // ============================================================================
-
-  const getVoteStatus = (votes: number, total: number) => {
-    if (votes === total) return { text: l.unanimous, color: 'text-green-400', bg: 'bg-green-500/20' };
-    if (votes >= total * 0.75) return { text: l.majority, color: 'text-blue-400', bg: 'bg-blue-500/20' };
-    return { text: l.split, color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
-  };
-
-  const getRiskColor = (risk: string) => {
-    const r = risk?.toLowerCase();
-    if (r === 'low') return 'text-green-400';
-    if (r === 'medium') return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getRiskBg = (risk: string) => {
-    const r = risk?.toLowerCase();
-    if (r === 'low') return 'bg-green-500/10 border-green-500/30';
-    if (r === 'medium') return 'bg-yellow-500/10 border-yellow-500/30';
-    return 'bg-red-500/10 border-red-500/30';
-  };
-
-  const getConfidenceColor = (conf: number) => {
-    if (conf >= 70) return 'text-green-400';
-    if (conf >= 55) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  // Find which AIs agreed/disagreed with consensus
-  const getAIAgreement = (consensusPrediction: string, type: 'matchResult' | 'overUnder25' | 'btts') => {
-    const agreed: string[] = [];
-    const disagreed: string[] = [];
-
-    if (analysis?.individualAnalyses) {
-      Object.entries(analysis.individualAnalyses).forEach(([key, ai]: [string, any]) => {
-        if (!ai) return;
-        
-        let aiPrediction = '';
-        if (type === 'matchResult') aiPrediction = ai.matchResult?.prediction;
-        else if (type === 'overUnder25') aiPrediction = ai.overUnder25?.prediction;
-        else if (type === 'btts') aiPrediction = ai.btts?.prediction;
-
-        if (aiPrediction === consensusPrediction) {
-          agreed.push(key);
-        } else if (aiPrediction) {
-          disagreed.push(key);
-        }
-      });
-    }
-
-    return { agreed, disagreed };
-  };
-
+  
+  const filteredFixtures = fixtures.filter(f => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return f.homeTeam.toLowerCase().includes(query) ||
+           f.awayTeam.toLowerCase().includes(query) ||
+           f.league.toLowerCase().includes(query);
+  });
+  
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">{l.loading}</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent" />
       </div>
     );
   }
-
-  if (!session) return null;
-
-  if (userProfile?.trialExpired && !userProfile?.isPro) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-gray-800/50 backdrop-blur border border-gray-700 rounded-3xl p-8 text-center">
-          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-5xl">⏰</span>
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold text-white">{t.title}</h1>
+              <p className="text-xs text-purple-300">{t.subtitle}</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">{l.trialExpired}</h1>
-          <p className="text-gray-400 mb-8">{l.trialExpiredMsg}</p>
-          <Link href="/pricing" className="block w-full py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl">
-            {l.goToPricing}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================================================
-  // RENDER - AI BRAIN PREDICTION CARD
-  // ============================================================================
-
-  const renderPredictionCard = (
-    title: string,
-    prediction: any,
-    type: 'matchResult' | 'overUnder25' | 'btts',
-    color: { bg: string; border: string; text: string; buttonBg: string },
-    odds: number = 1.85
-  ) => {
-    if (!prediction) return null;
-
-    const agreement = getAIAgreement(prediction.prediction, type);
-    const hasConflict = agreement.disagreed.length > 0;
-
-    return (
-      <div className={`${color.bg} border ${color.border} rounded-xl overflow-hidden transition-all hover:scale-[1.02]`}>
-        <div className="p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">{title}</span>
-            {prediction.weightedAgreement && (
-              <span className="text-xs text-gray-500">
-                {prediction.weightedAgreement}% {l.weightedAgreement}
+          
+          {/* Right Controls */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {cached && (
+              <span className="hidden sm:flex text-xs text-green-400 items-center gap-1">
+                <Zap className="w-3 h-3" /> {t.cached}
               </span>
             )}
-          </div>
-
-          {/* Prediction */}
-          <div className="flex items-end justify-between mb-3">
-            <div className={`text-2xl font-bold ${color.text}`}>
-              {prediction.prediction}
-            </div>
-            <div className={`text-3xl font-bold ${getConfidenceColor(prediction.confidence)}`}>
-              {prediction.confidence}%
-            </div>
-          </div>
-
-          {/* Confidence Bar */}
-          <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-3">
-            <div 
-              className={`h-full transition-all duration-500 ${
-                prediction.confidence >= 70 ? 'bg-green-500' :
-                prediction.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${prediction.confidence}%` }}
-            />
-          </div>
-
-          {/* AI Agreement Badges */}
-          <div className="flex flex-wrap gap-1 mb-3">
-            {agreement.agreed.map(key => (
-              <span 
-                key={key}
-                className={`px-2 py-0.5 rounded text-xs ${AI_MODELS[key]?.bgColor} ${AI_MODELS[key]?.color}`}
-              >
-                {AI_MODELS[key]?.icon} {AI_MODELS[key]?.name} ✓
-              </span>
-            ))}
-            {agreement.disagreed.map(key => (
-              <span 
-                key={key}
-                className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400"
-              >
-                {AI_MODELS[key]?.icon} {AI_MODELS[key]?.name} ✗
-              </span>
-            ))}
-          </div>
-
-          {/* Vote Count Badge */}
-          {prediction.votes && (
-            <div className={`text-xs mb-3 px-2 py-1 rounded-lg inline-block ${getVoteStatus(prediction.votes, prediction.totalVotes || 4).bg} ${getVoteStatus(prediction.votes, prediction.totalVotes || 4).color}`}>
-              {prediction.votes}/{prediction.totalVotes || 4} {l.modelVotes}
-            </div>
-          )}
-
-        </div>
-
-        {/* Expandable Reasonings */}
-        {prediction.reasonings && prediction.reasonings.length > 0 && (
-          <div className="border-t border-gray-700/50">
+            
             <button
-              onClick={() => setShowAllReasonings(!showAllReasonings)}
-              className="w-full px-4 py-2 text-xs text-gray-400 hover:text-white flex items-center justify-between transition-colors"
+              onClick={fetchFixtures}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              title="Refresh"
             >
-              <span>{showAllReasonings ? l.hideReasons : l.showReasons}</span>
-              <span>{showAllReasonings ? '▲' : '▼'}</span>
+              <RefreshCw className={`w-5 h-5 text-white ${loading ? 'animate-spin' : ''}`} />
             </button>
             
-            {showAllReasonings && (
-              <div className="px-4 pb-4 space-y-2">
-                {prediction.reasonings.slice(0, 3).map((reason: string, idx: number) => (
-                  <p key={idx} className="text-xs text-gray-400 leading-relaxed pl-3 border-l-2 border-gray-600">
-                    {reason}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ============================================================================
-  // MAIN RENDER
-  // ============================================================================
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* HEADER - Mobile Optimized */}
-      <header className="bg-gray-900/95 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50 safe-area-inset-top">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
-                <span className="text-lg sm:text-xl">⚽</span>
-              </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-bold text-white">
-                  Football<span className="text-green-400">Analytics</span>
-                </h1>
-                <div className="flex items-center gap-2">
-                  {userProfile?.isPro ? (
-                    <span className="px-1.5 sm:px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-[9px] sm:text-[10px] font-bold rounded text-black">PRO</span>
-                  ) : userProfile?.isTrial ? (
-                    <span className="text-[10px] sm:text-xs text-gray-400">{userProfile.trialDaysLeft} {l.daysLeft}</span>
-                  ) : null}
+            <LanguageSelector />
+            
+            {/* Profile Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
                 </div>
-              </div>
-            </div>
-
-            <nav className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard" className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${activeNav === 'matches' ? 'bg-green-500/20 text-green-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`} onClick={() => setActiveNav('matches')}>
-                <span>📅</span> {l.matches}
-              </Link>
-              <Link href="/ai-performance" className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all relative">
-                <span>🧠</span> {l.aiPerformance}
-                <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full animate-pulse">NEW</span>
-              </Link>
-              <Link href="/admin" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all ml-2">
-                <span>🎯</span> DeepSeek Master
-              </Link>
-            </nav>
-
-            <div className="flex items-center gap-3">
-              <LanguageSelector />
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/80 hover:bg-gray-700/80 rounded-xl transition-all"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {session?.user?.name?.charAt(0) || userProfile?.name?.charAt(0) || 'T'}
+                <span className="hidden sm:block text-white text-sm truncate max-w-[100px]">
+                  {session?.user?.name || session?.user?.email?.split('@')[0]}
+                </span>
+              </button>
+              
+              {showProfileMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowProfileMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-white/10">
+                      <p className="text-white font-medium truncate">{session?.user?.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+                    </div>
+                    
+                    <div className="py-2">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <User className="w-4 h-4" />
+                        {t.profile}
+                      </Link>
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <Settings className="w-4 h-4" />
+                        {t.settings}
+                      </Link>
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <Crown className="w-4 h-4 text-yellow-400" />
+                        {t.admin}
+                      </Link>
+                      <Link
+                        href="/odds-analysis"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <TrendingUp className="w-4 h-4 text-green-400" />
+                        Odds Analiz Kayıtları
+                      </Link>
+                      <Link
+                        href="/odds-patterns"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:bg-white/5 transition"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <BarChart3 className="w-4 h-4 text-blue-400" />
+                        Pattern Analizi
+                      </Link>
+                    </div>
+                    
+                    <div className="border-t border-white/10 py-2">
+                      <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="flex items-center gap-3 px-4 py-2 w-full text-red-400 hover:bg-red-500/10 transition"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t.logout}
+                      </button>
+                    </div>
                   </div>
-                  <span className="hidden sm:block text-white font-medium">{session?.user?.name?.split(' ')[0] || userProfile?.name || 'Test'}</span>
-                  <span className="text-gray-400">▼</span>
-                </button>
-                
-                {showProfileMenu && (
-                  <div className="absolute right-0 top-12 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
-                    <Link href="/profile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition-all">
-                      <span>👤</span>
-                      <span className="text-gray-300">{l.profile}</span>
-                    </Link>
-                    <Link href="/settings" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition-all">
-                      <span>⚙️</span>
-                      <span className="text-gray-300">{l.settings}</span>
-                    </Link>
-                    <hr className="border-gray-700" />
-                    <button onClick={() => signOut()} className="flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 transition-all w-full text-left">
-                      <span>🚪</span>
-                      <span className="text-red-400">{l.logout}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
       </header>
-
-      {/* MAIN CONTENT - Mobile Optimized */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-mobile-nav">
-        {/* 🎯 DASHBOARD WIDGETS - Hot Matches, Stats, Live Scores, AI Insight */}
-        <DashboardWidgets />
-
-        {/* 🎯 DAILY COUPONS - AI Consensus */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* LEFT COLUMN - Match List */}
+      
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left: Fixtures List */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Date & Filters */}
-            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-4 space-y-4">
+            {/* Date Picker */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-5 h-5 text-purple-400" />
+                <span className="text-white font-medium">{t.selectDate}</span>
+              </div>
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedLeague('all');
+                  setSelectedFixture(null);
+                  setAnalysis(null);
+                }}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
               />
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-400">🔍</span>
-                <input
-                  type="text"
-                  placeholder={l.search}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+            </div>
+            
+            {/* League Selector */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <span className="text-white font-medium">{t.selectLeague}</span>
+                <span className="text-xs text-gray-500 ml-auto">{totalCount} {t.matches.toLowerCase()}</span>
               </div>
               <select
                 value={selectedLeague}
                 onChange={(e) => setSelectedLeague(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white appearance-none cursor-pointer"
               >
-                <option value="all">{l.allLeagues}</option>
-                {leagues.map((league) => (
-                  <option key={league} value={league}>{league}</option>
+                <option value="all" className="bg-gray-900">{t.allLeagues} ({totalCount})</option>
+                {leagues.map(league => (
+                  <option key={league.id} value={league.id} className="bg-gray-900">
+                    {league.name} ({league.count})
+                  </option>
                 ))}
               </select>
             </div>
-
-            {/* Match List */}
-            <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
-              <div className="p-4 border-b border-gray-700/50">
-                <h2 className="font-bold text-white flex items-center gap-2">
-                  <span>📅</span> {l.todayMatches}
-                  <span className="ml-auto px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg">{filteredMatches.length}</span>
-                </h2>
+            
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500"
+              />
+            </div>
+            
+            {/* Fixtures */}
+            <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+              <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                <span className="text-white font-medium flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  {t.matches} ({filteredFixtures.length})
+                </span>
               </div>
               
-              <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-700/30">
+              <div className="max-h-[60vh] overflow-y-auto">
                 {loading ? (
-                  <div className="p-8 text-center text-gray-400">
-                    <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    {l.loading}
+                  <div className="p-8 flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent" />
                   </div>
-                ) : filteredMatches.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400">{l.noMatches}</div>
+                ) : filteredFixtures.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    {t.noMatches}
+                  </div>
                 ) : (
-                  filteredMatches.map((match) => {
-                    const status = matchAnalysisStatus[match.id];
-                    const hasPreAnalysis = status?.hasAnalysis;
-                    
-                    return (
-                    <div key={match.id} className={`p-4 hover:bg-gray-700/30 transition-all cursor-pointer ${selectedMatch?.id === match.id ? 'bg-green-500/10 border-l-4 border-green-500' : ''}`}>
+                  filteredFixtures.map((fixture) => (
+                    <button
+                      key={fixture.id}
+                      onClick={() => {
+                        setSelectedFixture(fixture);
+                        setAnalysis(null);
+                        setAnalysisError(null);
+                      }}
+                      className={`w-full p-3 border-b border-white/5 hover:bg-white/5 transition text-left ${
+                        selectedFixture?.id === fixture.id ? 'bg-purple-500/20 border-l-2 border-l-purple-500' : ''
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {match.homeTeamLogo && <img src={match.homeTeamLogo} alt="" className="w-5 h-5" />}
-                            <span className="font-medium text-white">{match.homeTeam}</span>
-                            <span className="text-gray-500 text-xs">vs</span>
-                            <span className="font-medium text-white">{match.awayTeam}</span>
-                            {match.awayTeamLogo && <img src={match.awayTeamLogo} alt="" className="w-5 h-5" />}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {match.leagueLogo && <img src={match.leagueLogo} alt="" className="w-3 h-3" />}
-                            <span>{match.league}</span>
-                          </div>
-                            
-                            {/* 3-System Analysis Indicators */}
-                            {hasPreAnalysis && (
-                              <div className="flex items-center gap-1 mt-2">
-                                {/* AI Consensus */}
-                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                  status.ai_consensus?.available 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-gray-700/50 text-gray-500'
-                                }`} title={status.ai_consensus?.available ? `BTTS: ${status.ai_consensus.summary?.btts} (${status.ai_consensus.summary?.bttsConf}%)` : ''}>
-                                  <span>🤖</span>
-                                  {status.ai_consensus?.available && status.ai_consensus.summary?.btts && (
-                                    <span className="hidden sm:inline">{status.ai_consensus.summary.btts?.toUpperCase()}</span>
-                                  )}
-                                </div>
-                                
-                                {/* Quad-Brain */}
-                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                  status.quad_brain?.available 
-                                    ? 'bg-cyan-500/20 text-cyan-400' 
-                                    : 'bg-gray-700/50 text-gray-500'
-                                }`} title={status.quad_brain?.available ? `BTTS: ${status.quad_brain.summary?.btts} (${status.quad_brain.summary?.bttsConf}%)` : ''}>
-                                  <span>🧠</span>
-                                  {status.quad_brain?.available && status.quad_brain.summary?.btts && (
-                                    <span className="hidden sm:inline">{status.quad_brain.summary.btts?.toUpperCase()}</span>
-                                  )}
-                                </div>
-                                
-                                {/* AI Agents */}
-                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                  status.ai_agents?.available 
-                                    ? 'bg-purple-500/20 text-purple-400' 
-                                    : 'bg-gray-700/50 text-gray-500'
-                                }`} title={status.ai_agents?.available ? `BTTS: ${status.ai_agents.summary?.btts} (${status.ai_agents.summary?.bttsConf}%)` : ''}>
-                                  <span>🔮</span>
-                                  {status.ai_agents?.available && status.ai_agents.summary?.btts && (
-                                    <span className="hidden sm:inline">{status.ai_agents.summary.btts?.toUpperCase()}</span>
-                                  )}
-                                </div>
-                              </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {fixture.homeTeamLogo && (
+                              <img src={fixture.homeTeamLogo} alt="" className="w-5 h-5 object-contain" />
                             )}
+                            <span className="text-white text-sm font-medium truncate">
+                              {fixture.homeTeam}
+                            </span>
+                            {fixture.hasAnalysis && (
+                              <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {fixture.awayTeamLogo && (
+                              <img src={fixture.awayTeamLogo} alt="" className="w-5 h-5 object-contain" />
+                            )}
+                            <span className="text-gray-400 text-sm truncate">
+                              {fixture.awayTeam}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">
-                            {new Date(match.date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <button
-                            onClick={() => runDeepSeekMasterAnalysis(match)}
-                            disabled={deepSeekLoading || analyzing}
-                            className={`px-3 py-2 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
-                              hasPreAnalysis 
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400'
-                                : 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 shadow-lg shadow-orange-500/25'
-                            }`}
-                          >
-                            {(deepSeekLoading || analyzing) && selectedMatch?.id === match.id ? '⏳' : hasPreAnalysis ? '📊' : '🎯 Tam Analiz'}
-                          </button>
+                        <div className="text-right ml-2">
+                          <div className="text-xs text-purple-400">
+                            {new Date(fixture.date).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate max-w-[80px]">
+                            {fixture.league}
+                          </div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-gray-500 ml-2" />
                       </div>
-                    </div>
-                    );
-                  })
+                    </button>
+                  ))
                 )}
               </div>
             </div>
           </div>
-
-          {/* MIDDLE COLUMN - Analysis Panel */}
+          
+          {/* Right: Analysis Panel */}
           <div className="lg:col-span-2">
-            {selectedMatch ? (
-              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+            {selectedFixture && !analyzing && !analysis && !analysisError ? (
+              <div className="bg-white/5 rounded-xl border border-white/10 p-8">
+                <h3 className="text-lg font-bold text-white mb-4">{t.selectAnalysisType}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setAnalysisType('ai');
+                      analyzeMatch(selectedFixture, 'ai');
+                    }}
+                    className={`p-6 rounded-xl border-2 transition-all ${
+                      analysisType === 'ai'
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Zap className="w-6 h-6 text-purple-400" />
+                      <span className="text-white font-medium">{t.aiAnalysis}</span>
+                    </div>
+                    <p className="text-sm text-gray-400">Claude + DeepSeek AI modelleri</p>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAnalysisType('agent');
+                      analyzeMatch(selectedFixture, 'agent');
+                    }}
+                    className={`p-6 rounded-xl border-2 transition-all ${
+                      analysisType !== 'ai'
+                        ? 'border-blue-500 bg-blue-500/20'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Target className="w-6 h-6 text-blue-400" />
+                      <span className="text-white font-medium">{t.agentAnalysis}</span>
+                    </div>
+                    <p className="text-sm text-gray-400">Stats, Odds, DeepAnalysis Agent'ları</p>
+                  </button>
+                </div>
+              </div>
+            ) : analyzing ? (
+              <div className="bg-white/5 rounded-xl border border-white/10 p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="relative">
+                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent" />
+                  <Zap className="absolute inset-0 m-auto w-8 h-8 text-purple-400 animate-pulse" />
+                </div>
+                <p className="mt-4 text-white font-medium">{t.analyzing}</p>
+                <p className="text-sm text-gray-400">{t.analyzeTime}</p>
+              </div>
+            ) : analysisError ? (
+              <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <AlertCircle className="w-12 h-12 text-red-400" />
+                <p className="mt-4 text-red-400 font-medium">{analysisError}</p>
+                <button
+                  onClick={() => selectedFixture && analyzeMatch(selectedFixture)}
+                  className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 text-sm"
+                >
+                  {t.tryAgain}
+                </button>
+              </div>
+            ) : analysis ? (
+              <div className="space-y-4">
+                {/* Analysis Type Tabs */}
+                <div className="flex gap-2 bg-white/5 rounded-lg p-1 border border-white/10">
+                  <button
+                    onClick={() => {
+                      setAnalysisType('ai');
+                      if (selectedFixture) {
+                        setAnalysis(null);
+                        analyzeMatch(selectedFixture, 'ai');
+                      }
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
+                      analysisType === 'ai'
+                        ? 'bg-purple-500/20 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t.aiAnalysis}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAnalysisType('agent');
+                      if (selectedFixture) {
+                        setAnalysis(null);
+                        analyzeMatch(selectedFixture, 'agent');
+                      }
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-md transition-all ${
+                      analysisType !== 'ai'
+                        ? 'bg-blue-500/20 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t.agentAnalysis}
+                  </button>
+                </div>
+                
                 {/* Match Header */}
-                <div className="p-6 bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-b border-gray-700/50">
-                  <div className="flex items-center justify-center gap-4">
-                    {selectedMatch.homeTeamLogo ? (
-                      <img src={selectedMatch.homeTeamLogo} alt="" className="w-12 h-12 object-contain" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xl font-bold text-white">
-                        {selectedMatch.homeTeam.charAt(0)}
-                      </div>
-                    )}
-                    <span className="font-bold text-white text-xl">{selectedMatch.homeTeam}</span>
-                    <span className="text-gray-400 font-bold px-3">vs</span>
-                    <span className="font-bold text-white text-xl">{selectedMatch.awayTeam}</span>
-                    {selectedMatch.awayTeamLogo ? (
-                      <img src={selectedMatch.awayTeamLogo} alt="" className="w-12 h-12 object-contain" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xl font-bold text-white">
-                        {selectedMatch.awayTeam.charAt(0)}
-                      </div>
-                    )}
+                <div className={`bg-gradient-to-r rounded-xl border p-6 ${
+                  analysisType === 'ai'
+                    ? 'from-purple-500/20 to-pink-500/20 border-purple-500/30'
+                    : 'from-blue-500/20 to-cyan-500/20 border-blue-500/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-center flex-1">
+                      <h3 className="text-xl font-bold text-white">{analysis.homeTeam}</h3>
+                    </div>
+                    <div className="px-4">
+                      <span className="text-2xl font-bold text-purple-400">vs</span>
+                    </div>
+                    <div className="text-center flex-1">
+                      <h3 className="text-xl font-bold text-white">{analysis.awayTeam}</h3>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center gap-3 mt-3">
-                    {selectedMatch.leagueLogo && <img src={selectedMatch.leagueLogo} alt="" className="w-5 h-5" />}
-                    <span className="text-sm text-gray-400">{selectedMatch.league}</span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(selectedMatch.date).toLocaleString(lang, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  
+                  {/* Meta Info */}
+                  <div className="mt-4 flex items-center justify-center gap-4 text-sm flex-wrap">
+                    <span className={`px-3 py-1 rounded-full ${
+                      analysis.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
+                      analysis.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      Risk: {analysis.riskLevel === 'low' ? t.riskLow : analysis.riskLevel === 'medium' ? t.riskMedium : t.riskHigh}
+                    </span>
+                    <span className="text-gray-400">
+                      {t.agreement}: %{analysis.agreement}
+                    </span>
+                    <span className="text-gray-400">
+                      {analysis.processingTime}ms
                     </span>
                   </div>
                 </div>
-
-                {/* Action Buttons - Clean Layout */}
-                <div className="p-4 border-b border-gray-700/50 space-y-3">
-                  {/* 🎯 MAIN BUTTON - Full Analysis */}
-                  <button 
-                    onClick={() => runDeepSeekMasterAnalysis()} 
-                    disabled={deepSeekLoading || analyzing || quadBrainLoading || agentLoading || !userProfile?.canAnalyze} 
-                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all ${userProfile?.canAnalyze ? 'bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 hover:from-red-500 hover:via-orange-400 hover:to-yellow-400 text-white shadow-lg shadow-orange-500/25' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                  >
-                    <span className="text-2xl">🎯</span>
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm">{deepSeekLoading ? 'Analiz Yapılıyor...' : 'Tam Analiz Başlat'}</span>
-                      <span className="text-[10px] opacity-75">AI + Quad-Brain + Agents → DeepSeek Master</span>
+                
+                {/* Predictions Grid - Sadece AI Analiz için standart tahminler */}
+                {analysisType === 'ai' && analysis.btts && analysis.overUnder && analysis.matchResult && (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* BTTS */}
+                    <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="w-5 h-5 text-blue-400" />
+                      <h4 className="text-white font-medium">{t.btts}</h4>
                     </div>
-                    {deepSeekLoading && <span className="animate-spin text-xl">⏳</span>}
-                  </button>
-
-                  {/* Quick Access - Individual Systems */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-500">Hızlı:</span>
-                    <button 
-                      onClick={() => analyzeMatch(selectedMatch)} 
-                      disabled={analyzing || !userProfile?.canAnalyze} 
-                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-600/30' : 'bg-gray-700/50 text-gray-500'}`}
-                    >
-                      🤖 {analyzing ? '...' : 'AI'}
-                    </button>
-                    <button 
-                      onClick={runQuadBrainAnalysis} 
-                      disabled={quadBrainLoading || !userProfile?.canAnalyze} 
-                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canAnalyze ? 'bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 border border-cyan-600/30' : 'bg-gray-700/50 text-gray-500'}`}
-                    >
-                      🧠 {quadBrainLoading ? '...' : 'Quad'}
-                    </button>
-                    <button 
-                      onClick={runAgentAnalysis} 
-                      disabled={agentLoading || !userProfile?.canUseAgents} 
-                      className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${userProfile?.canUseAgents ? 'bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-600/30' : 'bg-gray-700/50 text-gray-500'}`}
-                    >
-                      🔮 {agentLoading ? '...' : 'Agents'}
-                    </button>
+                    <div className={`text-2xl font-bold ${
+                      analysis.btts.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {analysis.btts.prediction === 'yes' ? t.yes : t.no}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${analysis.btts.confidence}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-blue-400">%{analysis.btts.confidence}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">{analysis.btts.reasoning}</p>
                   </div>
-                </div>
-
-                {/* Analysis Content */}
-                <div className="p-4 max-h-[600px] overflow-y-auto">
-                  {/* Error State */}
-                  {analysisError && (
-                    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-                      <p className="text-red-400 font-medium">{analysisError}</p>
-                      <Link href="/pricing" className="text-yellow-400 hover:underline text-sm mt-2 inline-block">{l.goToPricing} →</Link>
+                  
+                  {/* Over/Under */}
+                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="w-5 h-5 text-purple-400" />
+                      <h4 className="text-white font-medium">{t.overUnder}</h4>
                     </div>
-                  )}
-
-                  {/* Loading State */}
-                  {(analyzing || agentLoading || quadBrainLoading || deepSeekLoading) ? (
-                    deepSeekLoading ? (
-                      <div className="space-y-4">
-                        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-                          <div className="text-4xl mb-4 animate-pulse">🎯</div>
-                          <h3 className="text-xl font-bold text-white mb-2">DeepSeek Master Analysis</h3>
-                          <p className="text-gray-400 text-sm mb-4">3 AI systems + DeepSeek Master evaluating...</p>
-                          <div className="flex justify-center gap-3">
-                            {['AI Consensus', 'Quad-Brain', 'AI Agents', 'DeepSeek'].map((model, i) => (
-                              <div key={model} className="flex flex-col items-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg animate-pulse ${
-                                  i === 0 ? 'bg-green-500/20' :
-                                  i === 1 ? 'bg-cyan-500/20' :
-                                  i === 2 ? 'bg-purple-500/20' : 'bg-red-500/20'
-                                }`}>
-                                  {i === 0 ? '🤖' : i === 1 ? '🧠' : i === 2 ? '🔮' : '🎯'}
-                                </div>
-                                <span className="text-[8px] text-gray-500 mt-1">{model}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 animate-[loading_3s_ease-in-out_infinite]" style={{width: '70%'}}></div>
-                          </div>
-                        </div>
+                    <div className={`text-2xl font-bold ${
+                      analysis.overUnder.prediction === 'over' ? 'text-green-400' : 'text-orange-400'
+                    }`}>
+                      {analysis.overUnder.prediction === 'over' ? t.over : t.under}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-purple-500 rounded-full"
+                          style={{ width: `${analysis.overUnder.confidence}%` }}
+                        />
                       </div>
-                    ) : agentLoading ? (
-                      <AgentLoadingProgress isLoading={true} />
-                    ) : quadBrainLoading ? (
-                      <div className="space-y-4">
-                        <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-6 text-center">
-                          <div className="text-4xl mb-4 animate-pulse">🧠</div>
-                          <h3 className="text-xl font-bold text-white mb-2">Quad-Brain Analysis</h3>
-                          <p className="text-gray-400 text-sm mb-4">4 AI models analyzing in parallel...</p>
-                          <div className="flex justify-center gap-3">
-                            {['Claude', 'GPT-4', 'Gemini', 'Mistral'].map((model, i) => (
-                              <div key={model} className="flex flex-col items-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg animate-pulse ${
-                                  i === 0 ? 'bg-orange-500/20' :
-                                  i === 1 ? 'bg-green-500/20' :
-                                  i === 2 ? 'bg-blue-500/20' : 'bg-purple-500/20'
-                                }`}>
-                                  {i === 0 ? '🧠' : i === 1 ? '📊' : i === 2 ? '🔍' : '📰'}
-                                </div>
-                                <span className="text-[10px] text-gray-500 mt-1">{model}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 animate-[loading_2s_ease-in-out_infinite]" style={{width: '60%'}}></div>
-                          </div>
-                        </div>
+                      <span className="text-sm text-purple-400">%{analysis.overUnder.confidence}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">{analysis.overUnder.reasoning}</p>
+                  </div>
+                  
+                  {/* Match Result */}
+                  <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      <h4 className="text-white font-medium">{t.matchResult}</h4>
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-400">
+                      {analysis.matchResult.prediction === 'home' ? t.home :
+                       analysis.matchResult.prediction === 'away' ? t.away : t.draw}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-yellow-500 rounded-full"
+                          style={{ width: `${analysis.matchResult.confidence}%` }}
+                        />
                       </div>
-                    ) : (
-                      <AIConsensusLoading 
-                        isLoading={true}
-                        homeTeam={selectedMatch.homeTeam}
-                        awayTeam={selectedMatch.awayTeam}
-                        homeTeamLogo={selectedMatch.homeTeamLogo}
-                        awayTeamLogo={selectedMatch.awayTeamLogo}
-                        language={lang as 'tr' | 'en' | 'de'}
-                      />
-                    )
-                  ) : (analysis || agentAnalysis || quadBrainAnalysis || deepSeekMasterAnalysis) ? (
-                    <div className="space-y-4">
-                      {/* Mode Toggle - 4 Modes */}
-                      {(analysis || quadBrainAnalysis || agentAnalysis || deepSeekMasterAnalysis) && (
-                        <div className="flex gap-1 p-1 bg-gray-700/30 rounded-xl">
-                          {analysis && (
-                            <button onClick={() => setAnalysisMode('standard')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'standard' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🤖
-                            </button>
-                          )}
-                          {quadBrainAnalysis && (
-                            <button onClick={() => setAnalysisMode('quadbrain')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'quadbrain' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🧠
-                            </button>
-                          )}
-                      {agentAnalysis && (
-                            <button onClick={() => setAnalysisMode('agents')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'agents' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🔮
-                          </button>
-                          )}
-                          {deepSeekMasterAnalysis && (
-                            <button onClick={() => setAnalysisMode('deepseek')} className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${analysisMode === 'deepseek' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                              🎯 Master
-                          </button>
-                          )}
+                      <span className="text-sm text-yellow-400">%{analysis.matchResult.confidence}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">{analysis.matchResult.reasoning}</p>
+                  </div>
+                  
+                  {/* Corners - Sadece Agent Analysis için göster (AI Analysis'te korner verisi gelmiyor) */}
+                  {analysisType !== 'ai' && analysis.corners && (
+                  <div className={`rounded-xl border p-4 ${
+                    analysis.corners.dataAvailable 
+                      ? 'bg-white/5 border-white/10' 
+                      : 'bg-gray-800/30 border-gray-700/50'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">🚩</span>
+                      <h4 className="text-white font-medium">{t.corners}</h4>
+                    </div>
+                    {analysis.corners.dataAvailable ? (
+                      <>
+                        <div className="text-2xl font-bold text-orange-400">
+                          {analysis.corners.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.corners.line}
                         </div>
-                      )}
-
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {/* AI BRAIN V2.0 - UPGRADED ANALYSIS VIEW */}
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {analysisMode === 'standard' && analysis && (
-                        <div className="space-y-4">
-                          
-                          {/* AI Status Bar - Enhanced */}
-                          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl">🧠</span>
-                                <div>
-                                  <span className="font-bold text-white">{l.aiConsensus}</span>
-                                  <span className="ml-2 px-2 py-0.5 bg-purple-500/30 text-purple-300 text-xs rounded-full">
-                                    {l.brainVersion}
-                                  </span>
-                                </div>
-                              </div>
-                              {analysis.timing?.total && (
-                                <span className="text-xs text-gray-500 font-mono">{analysis.timing.total}</span>
-                              )}
-                            </div>
-                            
-                            {/* AI Model Cards */}
-                            <div className="grid grid-cols-4 gap-2">
-                              {Object.entries(AI_MODELS).map(([key, model]) => {
-                                const isActive = analysis.aiStatus?.[key]?.active;
-                                const aiAnalysis = analysis.individualAnalyses?.[key];
-                                
-                                return (
-                                  <button
-                                    key={key}
-                                    onClick={() => setExpandedAI(expandedAI === key ? null : key)}
-                                    disabled={!isActive}
-                                    className={`p-3 rounded-xl text-center transition-all ${
-                                      isActive 
-                                        ? `${model.bgColor} border ${model.borderColor} hover:scale-105 cursor-pointer` 
-                                        : 'bg-gray-700/30 border border-gray-700 opacity-50 cursor-not-allowed'
-                                    } ${expandedAI === key ? 'ring-2 ring-white/50' : ''}`}
-                                  >
-                                    <div className="text-xl mb-1">{model.icon}</div>
-                                    <div className={`text-xs font-bold ${isActive ? model.color : 'text-gray-500'}`}>
-                                      {model.name}
-                                    </div>
-                                    <div className={`text-[10px] ${isActive ? 'text-gray-400' : 'text-gray-600'}`}>
-                                      {model.role}
-                                    </div>
-                                    {isActive && (
-                                      <div className="mt-1 text-[10px] text-green-400">✓ Active</div>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Expanded AI Detail */}
-                            {expandedAI && analysis.individualAnalyses?.[expandedAI] && (
-                              <div className={`mt-4 p-4 rounded-xl ${AI_MODELS[expandedAI]?.bgColor} border ${AI_MODELS[expandedAI]?.borderColor}`}>
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="text-lg">{AI_MODELS[expandedAI]?.icon}</span>
-                                  <span className={`font-bold ${AI_MODELS[expandedAI]?.color}`}>
-                                    {AI_MODELS[expandedAI]?.name} Analysis
-                                  </span>
-                                </div>
-                                
-                                <div className="grid grid-cols-3 gap-2 mb-3">
-                                  <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                                    <p className="text-xs text-gray-500">Result</p>
-                                    <p className="text-sm font-bold text-white">{analysis.individualAnalyses[expandedAI]?.matchResult?.prediction}</p>
-                                    <p className="text-xs text-gray-400">{analysis.individualAnalyses[expandedAI]?.matchResult?.confidence}%</p>
-                                  </div>
-                                  <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                                    <p className="text-xs text-gray-500">Goals</p>
-                                    <p className="text-sm font-bold text-white">{analysis.individualAnalyses[expandedAI]?.overUnder25?.prediction}</p>
-                                    <p className="text-xs text-gray-400">{analysis.individualAnalyses[expandedAI]?.overUnder25?.confidence}%</p>
-                                  </div>
-                                  <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                                    <p className="text-xs text-gray-500">BTTS</p>
-                                    <p className="text-sm font-bold text-white">{analysis.individualAnalyses[expandedAI]?.btts?.prediction}</p>
-                                    <p className="text-xs text-gray-400">{analysis.individualAnalyses[expandedAI]?.btts?.confidence}%</p>
-                                  </div>
-                                </div>
-
-                                {analysis.individualAnalyses[expandedAI]?.overallAnalysis && (
-                                  <p className="text-sm text-gray-300 leading-relaxed">
-                                    {analysis.individualAnalyses[expandedAI].overallAnalysis}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Conflict Warning */}
-                          {analysis.analysis?.matchResult?.votes < (analysis.analysis?.matchResult?.totalVotes || 4) && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-center gap-3">
-                              <span className="text-xl">⚠️</span>
-                              <div>
-                                <p className="text-sm font-medium text-yellow-400">{l.conflictWarning}</p>
-                                <p className="text-xs text-gray-400">
-                                  {analysis.analysis.matchResult.votes}/{analysis.analysis.matchResult.totalVotes || 4} AI models agree on {analysis.analysis.matchResult.prediction}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Prediction Cards Grid */}
-                          <div className="grid grid-cols-2 gap-3">
-                            {renderPredictionCard(
-                              l.matchResult,
-                              analysis.analysis?.matchResult,
-                              'matchResult',
-                              { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', buttonBg: 'bg-blue-600/30 hover:bg-blue-600/50' },
-                              1.85
-                            )}
-
-                            {renderPredictionCard(
-                              l.overUnder,
-                              analysis.analysis?.overUnder25,
-                              'overUnder25',
-                              { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', buttonBg: 'bg-green-600/30 hover:bg-green-600/50' },
-                              1.90
-                            )}
-
-                            {renderPredictionCard(
-                              l.btts,
-                              analysis.analysis?.btts,
-                              'btts',
-                              { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', buttonBg: 'bg-orange-600/30 hover:bg-orange-600/50' },
-                              1.80
-                            )}
-
-                            {/* Risk Level Card */}
-                            {analysis.analysis?.riskLevel && (
-                              <div className={`${getRiskBg(analysis.analysis.riskLevel)} border rounded-xl p-4`}>
-                                <div className="text-xs text-gray-400 mb-1">{l.riskLevel}</div>
-                                <div className={`text-2xl font-bold ${getRiskColor(analysis.analysis.riskLevel)}`}>
-                                  {analysis.analysis.riskLevel === 'Low' ? '🛡️ Low' : 
-                                   analysis.analysis.riskLevel === 'Medium' ? '⚡ Medium' : '🔥 High'}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Best Bet Highlight */}
-                          {analysis.analysis?.bestBets?.[0] && (
-                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm text-yellow-400 mb-1 font-medium flex items-center gap-2">
-                                    <span className="text-xl">💰</span> {l.bestBet}
-                                    {analysis.analysis.bestBets[0].consensusStrength && (
-                                      <span className={`px-2 py-0.5 rounded text-xs ${
-                                        analysis.analysis.bestBets[0].consensusStrength === 'Strong' ? 'bg-green-500/20 text-green-400' :
-                                        analysis.analysis.bestBets[0].consensusStrength === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-red-500/20 text-red-400'
-                                      }`}>
-                                        {analysis.analysis.bestBets[0].consensusStrength}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="font-bold text-white text-xl">
-                                    {analysis.analysis.bestBets[0].type}: {analysis.analysis.bestBets[0].selection}
-                                  </div>
-                                  <div className="text-sm text-gray-300 mt-1">
-                                    {analysis.analysis.bestBets[0].confidence}% {l.confidence}
-                                    {analysis.analysis.bestBets[0].weightedAgreement && (
-                                      <span className="ml-2 text-gray-500">
-                                        • {analysis.analysis.bestBets[0].weightedAgreement}% {l.weightedAgreement}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Overall Analysis */}
-                          {analysis.analysis?.overallAnalyses?.[0] && (
-                            <div className="bg-gray-700/30 rounded-xl p-4">
-                              <div className="text-sm text-gray-400 mb-2 font-medium">📝 {l.overallAnalysis}</div>
-                              <p className="text-sm text-gray-300 leading-relaxed">{analysis.analysis.overallAnalyses[0]}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {/* 🧠 QUAD-BRAIN RESULTS */}
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {analysisMode === 'quadbrain' && quadBrainAnalysis && (
-                        <div className="space-y-4">
-                          {/* Quad-Brain Header */}
-                          <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl">🧠</span>
-                                <div>
-                                  <span className="font-bold text-white">Quad-Brain Consensus</span>
-                                  <span className="ml-2 px-2 py-0.5 bg-cyan-500/30 text-cyan-300 text-xs rounded-full">
-                                    v2.0
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xs text-gray-500">Data Quality</div>
-                                <div className="text-sm font-bold text-cyan-400">{quadBrainAnalysis.dataQuality?.overall || 0}/100</div>
-                              </div>
-                            </div>
-
-                            {/* 4 AI Models Status */}
-                            <div className="grid grid-cols-4 gap-2">
-                              {[
-                                { key: 'claude', name: 'Claude', icon: '🧠', color: 'orange', role: 'Tactical' },
-                                { key: 'gpt4', name: 'GPT-4', icon: '📊', color: 'green', role: 'Statistical' },
-                                { key: 'gemini', name: 'Gemini', icon: '🔍', color: 'blue', role: 'Pattern' },
-                                { key: 'mistral', name: 'Mistral', icon: '🌀', color: 'purple', role: 'Context' }
-                              ].map((model) => {
-                                const pred = quadBrainAnalysis.individualPredictions?.[model.key];
-                                const isActive = !!pred;
-                                return (
-                                  <div 
-                                    key={model.key}
-                                    className={`p-2 rounded-lg text-center ${
-                                      isActive 
-                                        ? `bg-${model.color}-500/20 border border-${model.color}-500/30` 
-                                        : 'bg-gray-700/30 border border-gray-700 opacity-50'
-                                    }`}
-                                  >
-                                    <div className="text-lg">{model.icon}</div>
-                                    <div className={`text-xs font-bold ${isActive ? `text-${model.color}-400` : 'text-gray-500'}`}>
-                                      {model.name}
-                                    </div>
-                                    <div className="text-[10px] text-gray-500">{model.role}</div>
-                                    {isActive && <div className="text-[10px] text-green-400 mt-1">✓</div>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Debate Alert */}
-                          {quadBrainAnalysis.debates?.length > 0 && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-center gap-3">
-                              <span className="text-xl">⚖️</span>
-                              <div>
-                                <p className="text-sm font-medium text-yellow-400">AI Debate Occurred</p>
-                                <p className="text-xs text-gray-400">
-                                  {quadBrainAnalysis.debates.length} conflict(s) resolved via arbitration
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Consensus Predictions */}
-                          <div className="grid grid-cols-2 gap-3">
-                            {/* Match Result */}
-                            {quadBrainAnalysis.consensus?.matchResult && (
-                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                                <div className="text-xs text-gray-400 mb-1">Match Result</div>
-                                <div className="flex items-end justify-between mb-2">
-                                  <div className="text-2xl font-bold text-blue-400">
-                                    {quadBrainAnalysis.consensus.matchResult.prediction}
-                                  </div>
-                                  <div className={`text-3xl font-bold ${
-                                    quadBrainAnalysis.consensus.matchResult.confidence >= 70 ? 'text-green-400' :
-                                    quadBrainAnalysis.consensus.matchResult.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
-                                  }`}>
-                                    {quadBrainAnalysis.consensus.matchResult.confidence}%
-                                  </div>
-                                </div>
-                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
-                                  <div 
-                                    className={`h-full ${
-                                      quadBrainAnalysis.consensus.matchResult.confidence >= 70 ? 'bg-green-500' :
-                                      quadBrainAnalysis.consensus.matchResult.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${quadBrainAnalysis.consensus.matchResult.confidence}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {quadBrainAnalysis.consensus.matchResult.agreement?.majoritySize}/{quadBrainAnalysis.consensus.matchResult.agreement?.totalModels} AI models agree
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Over/Under 2.5 */}
-                            {quadBrainAnalysis.consensus?.overUnder25 && (
-                              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                                <div className="text-xs text-gray-400 mb-1">Over/Under 2.5</div>
-                                <div className="flex items-end justify-between mb-2">
-                                  <div className="text-2xl font-bold text-green-400">
-                                    {quadBrainAnalysis.consensus.overUnder25.prediction}
-                                  </div>
-                                  <div className={`text-3xl font-bold ${
-                                    quadBrainAnalysis.consensus.overUnder25.confidence >= 70 ? 'text-green-400' :
-                                    quadBrainAnalysis.consensus.overUnder25.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
-                                  }`}>
-                                    {quadBrainAnalysis.consensus.overUnder25.confidence}%
-                                  </div>
-                                </div>
-                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
-                                  <div 
-                                    className={`h-full ${
-                                      quadBrainAnalysis.consensus.overUnder25.confidence >= 70 ? 'bg-green-500' :
-                                      quadBrainAnalysis.consensus.overUnder25.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${quadBrainAnalysis.consensus.overUnder25.confidence}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {quadBrainAnalysis.consensus.overUnder25.agreement?.majoritySize}/{quadBrainAnalysis.consensus.overUnder25.agreement?.totalModels} AI models agree
-                                </div>
-                              </div>
-                            )}
-
-                            {/* BTTS */}
-                            {quadBrainAnalysis.consensus?.btts && (
-                              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-                                <div className="text-xs text-gray-400 mb-1">BTTS</div>
-                                <div className="flex items-end justify-between mb-2">
-                                  <div className="text-2xl font-bold text-orange-400">
-                                    {quadBrainAnalysis.consensus.btts.prediction}
-                                  </div>
-                                  <div className={`text-3xl font-bold ${
-                                    quadBrainAnalysis.consensus.btts.confidence >= 70 ? 'text-green-400' :
-                                    quadBrainAnalysis.consensus.btts.confidence >= 55 ? 'text-yellow-400' : 'text-red-400'
-                                  }`}>
-                                    {quadBrainAnalysis.consensus.btts.confidence}%
-                                  </div>
-                                </div>
-                                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
-                                  <div 
-                                    className={`h-full ${
-                                      quadBrainAnalysis.consensus.btts.confidence >= 70 ? 'bg-green-500' :
-                                      quadBrainAnalysis.consensus.btts.confidence >= 55 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${quadBrainAnalysis.consensus.btts.confidence}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {quadBrainAnalysis.consensus.btts.agreement?.majoritySize}/{quadBrainAnalysis.consensus.btts.agreement?.totalModels} AI models agree
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Risk Level */}
-                            {quadBrainAnalysis.riskAssessment && (
-                              <div className={`rounded-xl p-4 border ${
-                                quadBrainAnalysis.riskAssessment.overall === 'low' ? 'bg-green-500/10 border-green-500/30' :
-                                quadBrainAnalysis.riskAssessment.overall === 'medium' ? 'bg-yellow-500/10 border-yellow-500/30' :
-                                'bg-red-500/10 border-red-500/30'
-                              }`}>
-                                <div className="text-xs text-gray-400 mb-1">Risk Level</div>
-                                <div className={`text-2xl font-bold ${
-                                  quadBrainAnalysis.riskAssessment.overall === 'low' ? 'text-green-400' :
-                                  quadBrainAnalysis.riskAssessment.overall === 'medium' ? 'text-yellow-400' :
-                                  'text-red-400'
-                                }`}>
-                                  {quadBrainAnalysis.riskAssessment.overall === 'low' ? '🛡️ Low' :
-                                   quadBrainAnalysis.riskAssessment.overall === 'medium' ? '⚡ Medium' : '🔥 High'}
-                                </div>
-                                {quadBrainAnalysis.riskAssessment.warnings?.length > 0 && (
-                                  <div className="mt-2 text-xs text-gray-400">
-                                    {quadBrainAnalysis.riskAssessment.warnings[0]}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Best Bets */}
-                          {quadBrainAnalysis.bestBets?.[0] && (
-                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm text-yellow-400 mb-1 font-medium flex items-center gap-2">
-                                    <span className="text-xl">💰</span> Best Bet
-                                    <span className={`px-2 py-0.5 rounded text-xs ${
-                                      quadBrainAnalysis.bestBets[0].consensusStrength === 'strong' ? 'bg-green-500/20 text-green-400' :
-                                      quadBrainAnalysis.bestBets[0].consensusStrength === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
-                                      'bg-red-500/20 text-red-400'
-                                    }`}>
-                                      {quadBrainAnalysis.bestBets[0].consensusStrength}
-                                    </span>
-                                  </div>
-                                  <div className="font-bold text-white text-xl">
-                                    {quadBrainAnalysis.bestBets[0].market}: {quadBrainAnalysis.bestBets[0].selection}
-                                  </div>
-                                  <div className="text-sm text-gray-300 mt-1">
-                                    {quadBrainAnalysis.bestBets[0].confidence}% confidence
-                                    <span className="ml-2 text-gray-500">
-                                      • {quadBrainAnalysis.bestBets[0].weightedAgreement}% weighted
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Timing Info */}
-                          {quadBrainAnalysis.timing && (
-                            <div className="text-xs text-gray-500 text-right">
-                              ⏱️ Total: {quadBrainAnalysis.timing.total}ms | AI: {quadBrainAnalysis.timing.aiCalls}ms
-                              {quadBrainAnalysis.timing.debate && ` | Debate: ${quadBrainAnalysis.timing.debate}ms`}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Agent Mode */}
-                      {analysisMode === 'agents' && agentAnalysis && (
-                        <>
-                        <AgentReports 
-                          reports={agentAnalysis.reports}
-                          homeTeam={selectedMatch.homeTeam}
-                          awayTeam={selectedMatch.awayTeam}
-                          />
-                          
-                          {/* Professional Betting Analysis */}
-                          {agentAnalysis.professionalMarkets && (
-                            <ProfessionalBetting 
-                              data={agentAnalysis.professionalMarkets}
-                              homeTeam={selectedMatch.homeTeam}
-                              awayTeam={selectedMatch.awayTeam}
-                              language={lang}
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-orange-500 rounded-full"
+                              style={{ width: `${analysis.corners.confidence}%` }}
                             />
-                          )}
-                        </>
-                      )}
-
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {/* 🎯 DEEPSEEK MASTER RESULTS */}
-                      {/* ═══════════════════════════════════════════════════════════════ */}
-                      {analysisMode === 'deepseek' && deepSeekMasterAnalysis && (
-                        <div className="space-y-4">
-                          {/* Header */}
-                          <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl">🎯</span>
-                                <div>
-                                  <span className="font-bold text-white">DeepSeek Master Analyst</span>
-                                  <span className="ml-2 px-2 py-0.5 bg-red-500/30 text-red-300 text-xs rounded-full">
-                                    3 Systems Combined
-                                  </span>
-                                </div>
-                              </div>
-                              <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'low' ? 'bg-green-500/20 text-green-400' :
-                                deepSeekMasterAnalysis.deepseekMaster?.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
-                                {deepSeekMasterAnalysis.deepseekMaster?.riskLevel?.toUpperCase()} RISK
-                              </div>
-                            </div>
-                            <p className="text-gray-400 text-xs">
-                              AI Consensus + Quad-Brain + AI Agents → DeepSeek Master Final Verdict
-                            </p>
                           </div>
-
-                          {/* Best Bet */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.bestBet && (
-                            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/40 rounded-xl p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-yellow-400 text-xs font-medium mb-1">🏆 BEST BET</div>
-                                  <div className="text-2xl font-bold text-white">
-                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.market} - {deepSeekMasterAnalysis.deepseekMaster.bestBet.selection}
-                                  </div>
-                                  <div className="text-sm text-gray-400 mt-1">
-                                    {deepSeekMasterAnalysis.deepseekMaster.bestBet.reasoning}
-                                  </div>
-                                </div>
-                                <div className="text-3xl font-bold text-yellow-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.bestBet.confidence}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Final Verdict - 3 Markets */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.finalVerdict && (
-                            <div className="grid grid-cols-3 gap-3">
-                              {/* BTTS */}
-                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
-                                <div className="text-xs text-gray-500 mb-1">BTTS</div>
-                                <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction === 'yes' ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.prediction?.toUpperCase()}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.btts?.confidence}
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.btts}/3 systems agree
-                                </div>
-                              </div>
-
-                              {/* Over/Under */}
-                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
-                                <div className="text-xs text-gray-500 mb-1">Over/Under 2.5</div>
-                                <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction === 'over' ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.prediction?.toUpperCase()}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.overUnder?.confidence}
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.overUnder}/3 systems agree
-                                </div>
-                              </div>
-
-                              {/* Match Result */}
-                              <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
-                                <div className="text-xs text-gray-500 mb-1">Match Result</div>
-                                <div className={`text-lg font-bold ${
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'home' ? 'text-blue-400' :
-                                  deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction === 'away' ? 'text-orange-400' : 'text-gray-400'
-                                }`}>
-                                  {deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.prediction?.toUpperCase()}
-                                </div>
-                                <div className="text-sm text-gray-400">
-                                  %{deepSeekMasterAnalysis.deepseekMaster.finalVerdict.matchResult?.confidence}
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-1">
-                                  {deepSeekMasterAnalysis.deepseekMaster.systemAgreement?.matchResult}/3 systems agree
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 3 System Comparison */}
-                          <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700/30">
-                            <div className="text-sm font-medium text-gray-300 mb-3">📊 System Comparison</div>
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                              {/* AI Consensus */}
-                              <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
-                                <div className="text-green-400 text-lg mb-1">🤖</div>
-                                <div className="text-xs text-gray-400 mb-2">AI Consensus</div>
-                                {deepSeekMasterAnalysis.aiConsensus && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiConsensus.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiConsensus.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiConsensus.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Quad Brain */}
-                              <div className="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/20">
-                                <div className="text-cyan-400 text-lg mb-1">🧠</div>
-                                <div className="text-xs text-gray-400 mb-2">Quad-Brain</div>
-                                {deepSeekMasterAnalysis.quadBrain && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.quadBrain.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.quadBrain.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.quadBrain.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* AI Agents */}
-                              <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
-                                <div className="text-purple-400 text-lg mb-1">🔮</div>
-                                <div className="text-xs text-gray-400 mb-2">AI Agents</div>
-                                {deepSeekMasterAnalysis.aiAgents && (
-                                  <div className="space-y-1 text-[10px]">
-                                    <div>BTTS: <span className="text-green-400">{deepSeekMasterAnalysis.aiAgents.btts?.prediction?.toUpperCase()}</span></div>
-                                    <div>O/U: <span className="text-blue-400">{deepSeekMasterAnalysis.aiAgents.overUnder?.prediction?.toUpperCase()}</span></div>
-                                    <div>MS: <span className="text-yellow-400">{deepSeekMasterAnalysis.aiAgents.matchResult?.prediction?.toUpperCase()}</span></div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Warnings */}
-                          {deepSeekMasterAnalysis.deepseekMaster?.warnings && deepSeekMasterAnalysis.deepseekMaster.warnings.length > 0 && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
-                              <div className="text-yellow-400 text-xs font-medium mb-2">⚠️ Warnings</div>
-                              {deepSeekMasterAnalysis.deepseekMaster.warnings.map((warning: string, i: number) => (
-                                <div key={i} className="text-sm text-yellow-300/80">• {warning}</div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Processing Time */}
-                          <div className="text-center text-xs text-gray-500">
-                            Analysis completed in {(deepSeekMasterAnalysis.duration / 1000).toFixed(1)}s
-                          </div>
+                          <span className="text-sm text-orange-400">%{analysis.corners.confidence}</span>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 text-gray-400">
-                      <div className="text-6xl mb-4">🤖</div>
-                      <p className="text-lg">{l.selectMatch}</p>
-                      <p className="text-sm text-gray-500 mt-2">Click &quot;Analyze&quot; to get AI predictions</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 flex items-center justify-center h-[600px] text-gray-400">
-                <div className="text-center">
-                  <div className="text-7xl mb-4">⚽</div>
-                  <p className="text-xl font-medium">{l.selectMatch}</p>
-                  <p className="text-sm text-gray-500 mt-2">Choose a match from the list to analyze</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN - League Standings & Stats */}
-          <div className="lg:col-span-1 space-y-4">
-            {selectedMatch ? (
-              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
-                {/* League Header */}
-                <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-700/80">
-                  <div className="flex items-center gap-2 mb-2">
-                    {selectedMatch.leagueLogo && (
-                      <img src={selectedMatch.leagueLogo} alt="" className="w-6 h-6" />
+                        <p className="mt-2 text-xs text-gray-400">{analysis.corners.reasoning}</p>
+                      </>
+                    ) : (
+                      <div className="text-center py-2">
+                        <div className="text-gray-500 text-sm">⚠️ Korner verisi mevcut değil</div>
+                        <p className="text-xs text-gray-600 mt-1">Bu maç için korner istatistikleri bulunamadı</p>
+                      </div>
                     )}
-                    <h3 className="font-bold text-white text-sm">{selectedMatch.league}</h3>
                   </div>
-                  <p className="text-xs text-gray-400">Lig Analiz Tablosu</p>
-                </div>
-
-                {/* Standings Content */}
-                <div className="p-4 max-h-[800px] overflow-y-auto">
-                  {leagueStandingsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : leagueStandings?.standings ? (
-                    <div className="space-y-4">
-                      {/* Overall Standings Table */}
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
-                          <span>📊</span> Genel Puan Tablosu
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-700/50">
-                                <th className="text-left py-2 px-2 text-gray-400 font-medium">#</th>
-                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {leagueStandings.standings.slice(0, 10).map((team: any) => (
-                                <tr 
-                                  key={team.teamId} 
-                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
-                                    team.teamId === selectedMatch.homeTeamId || team.teamId === selectedMatch.awayTeamId
-                                      ? 'bg-green-500/10'
-                                      : ''
-                                  }`}
-                                >
-                                  <td className="py-2 px-2 text-gray-300 font-medium">{team.position}</td>
-                                  <td className="py-2 px-2">
-                                    <div className="flex items-center gap-1.5">
-                                      {team.teamLogo && (
-                                        <img src={team.teamLogo} alt="" className="w-4 h-4" />
-                                      )}
-                                      <span className="text-white text-[10px] font-medium truncate max-w-[80px]">
-                                        {team.teamName}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.played}</td>
-                                  <td className="py-2 px-1 text-center text-green-400">{team.won}</td>
-                                  <td className="py-2 px-1 text-center text-yellow-400">{team.drawn}</td>
-                                  <td className="py-2 px-1 text-center text-red-400">{team.lost}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.goalsFor}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.goalsAgainst}</td>
-                                  <td className="py-2 px-1 text-center text-white font-bold">{team.points}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Home Standings Table */}
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
-                          <span>🏠</span> Ev Sahibi İstatistikleri
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-700/50">
-                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {leagueStandings.standings
-                                .sort((a: any, b: any) => b.homePoints - a.homePoints)
-                                .slice(0, 10)
-                                .map((team: any) => (
-                                <tr 
-                                  key={team.teamId} 
-                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
-                                    team.teamId === selectedMatch.homeTeamId
-                                      ? 'bg-green-500/10'
-                                      : ''
-                                  }`}
-                                >
-                                  <td className="py-2 px-2">
-                                    <span className="text-white text-[10px] font-medium truncate max-w-[100px] block">
-                                      {team.teamName}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.homePlayed}</td>
-                                  <td className="py-2 px-1 text-center text-green-400">{team.homeWon}</td>
-                                  <td className="py-2 px-1 text-center text-yellow-400">{team.homeDrawn}</td>
-                                  <td className="py-2 px-1 text-center text-red-400">{team.homeLost}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.homeGoalsFor}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.homeGoalsAgainst}</td>
-                                  <td className="py-2 px-1 text-center text-white font-bold">{team.homePoints}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Away Standings Table */}
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-300 mb-2 flex items-center gap-2">
-                          <span>✈️</span> Deplasman İstatistikleri
-                        </h4>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b border-gray-700/50">
-                                <th className="text-left py-2 px-2 text-gray-400 font-medium">Takım</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">O</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">G</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">B</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">M</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">A</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">Y</th>
-                                <th className="text-center py-2 px-1 text-gray-400 font-medium">P</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {leagueStandings.standings
-                                .sort((a: any, b: any) => b.awayPoints - a.awayPoints)
-                                .slice(0, 10)
-                                .map((team: any) => (
-                                <tr 
-                                  key={team.teamId} 
-                                  className={`border-b border-gray-700/30 hover:bg-gray-700/20 ${
-                                    team.teamId === selectedMatch.awayTeamId
-                                      ? 'bg-green-500/10'
-                                      : ''
-                                  }`}
-                                >
-                                  <td className="py-2 px-2">
-                                    <span className="text-white text-[10px] font-medium truncate max-w-[100px] block">
-                                      {team.teamName}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayPlayed}</td>
-                                  <td className="py-2 px-1 text-center text-green-400">{team.awayWon}</td>
-                                  <td className="py-2 px-1 text-center text-yellow-400">{team.awayDrawn}</td>
-                                  <td className="py-2 px-1 text-center text-red-400">{team.awayLost}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayGoalsFor}</td>
-                                  <td className="py-2 px-1 text-center text-gray-300">{team.awayGoalsAgainst}</td>
-                                  <td className="py-2 px-1 text-center text-white font-bold">{team.awayPoints}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <span className="text-2xl block mb-2">📊</span>
-                      <p className="text-xs">Lig verileri yüklenemedi</p>
-                    </div>
                   )}
+                  </div>
+                )}
+                
+                {/* Agent Özel Tahminler (Sadece Agent Analysis için - Standart tahminler yok) */}
+                {analysisType !== 'ai' && (
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* İlk Yarı Gol Tahmini */}
+                    {analysis.halfTimeGoals && (
+                      <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⏱️</span>
+                          <h4 className="text-white font-medium">{t.halfTimeGoals}</h4>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-400">
+                          {analysis.halfTimeGoals.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.halfTimeGoals.line}
+                        </div>
+                        {analysis.halfTimeGoals.expectedGoals !== undefined && (
+                          <div className="text-sm text-gray-400 mt-1">
+                            Beklenen: {analysis.halfTimeGoals.expectedGoals.toFixed(1)} gol
+                          </div>
+                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 rounded-full"
+                              style={{ width: `${analysis.halfTimeGoals.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-blue-400">%{analysis.halfTimeGoals.confidence}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">{analysis.halfTimeGoals.reasoning}</p>
+                      </div>
+                    )}
+                    
+                    {/* İlk Yarı / Maç Sonucu Kombinasyonu */}
+                    {analysis.halfTimeFullTime && (
+                      <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">🎯</span>
+                          <h4 className="text-white font-medium">{t.halfTimeFullTime}</h4>
+                        </div>
+                        <div className="text-3xl font-bold text-purple-400">
+                          {analysis.halfTimeFullTime.prediction}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {analysis.halfTimeFullTime.prediction === '1/1' ? 'İY Ev - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === '1/X' ? 'İY Ev - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === '1/2' ? 'İY Ev - Maç Deplasman' :
+                           analysis.halfTimeFullTime.prediction === 'X/1' ? 'İY Beraberlik - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === 'X/X' ? 'İY Beraberlik - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === 'X/2' ? 'İY Beraberlik - Maç Deplasman' :
+                           analysis.halfTimeFullTime.prediction === '2/1' ? 'İY Deplasman - Maç Ev' :
+                           analysis.halfTimeFullTime.prediction === '2/X' ? 'İY Deplasman - Maç Beraberlik' :
+                           analysis.halfTimeFullTime.prediction === '2/2' ? 'İY Deplasman - Maç Deplasman' :
+                           'Kombinasyon'}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-purple-500 rounded-full"
+                              style={{ width: `${analysis.halfTimeFullTime.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-purple-400">%{analysis.halfTimeFullTime.confidence}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-400">{analysis.halfTimeFullTime.reasoning}</p>
+                      </div>
+                    )}
+                    
+                    {/* Maç Sonucu Oranları */}
+                    {analysis.matchResultOdds && (
+                      <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/30 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">📊</span>
+                          <h4 className="text-white font-medium">{t.matchResultOdds}</h4>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.home}</span>
+                            <span className="text-green-400 font-bold">{analysis.matchResultOdds.home}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.draw}</span>
+                            <span className="text-yellow-400 font-bold">{analysis.matchResultOdds.draw}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-sm">{t.away}</span>
+                            <span className="text-red-400 font-bold">{analysis.matchResultOdds.away}%</span>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-xs text-gray-400">{analysis.matchResultOdds.reasoning}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Best Bet */}
+                {analysis.bestBet && (
+                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/30 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <Star className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold">{t.bestBet}</h4>
+                        <p className="text-xs text-gray-400">{t.aiRecommendation}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div>
+                        <span className="text-green-400 text-lg font-bold">{analysis.bestBet.market}</span>
+                        <span className="text-white text-lg mx-2">→</span>
+                        <span className="text-white text-lg font-bold">{analysis.bestBet.selection}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-400">%{analysis.bestBet.confidence}</div>
+                        <div className="text-xs text-gray-400">{t.confidence}</div>
+                      </div>
+                    </div>
+                    
+                    <p className="mt-3 text-sm text-gray-400">{analysis.bestBet.reason}</p>
+                  </div>
+                )}
+                
+                {/* Analiz Detayı - Sadece Agent Analysis için */}
+                {analysisType !== 'ai' && analysis.agents && (
+                  <AnalysisDetailsSection analysis={analysis} />
+                )}
+                
+                {/* Models Used */}
+                <div className="flex items-center justify-center gap-4 text-sm text-gray-500 flex-wrap">
+                  <span>{t.models}: {analysis.modelsUsed?.join(', ') || 'Claude, DeepSeek'}</span>
+                  <span>•</span>
+                  <span>{t.analysis}: {analysis.analyzedAt ? new Date(analysis.analyzedAt).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : 'en-US') : 'Şimdi'}</span>
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 flex items-center justify-center h-[400px] text-gray-400">
-                <div className="text-center">
-                  <div className="text-4xl mb-2">📊</div>
-                  <p className="text-sm">Maç seçin</p>
-                  <p className="text-xs text-gray-500 mt-1">Lig analiz tablosu görüntülenecek</p>
-                </div>
+              <div className="bg-white/5 rounded-xl border border-white/10 p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <Shield className="w-16 h-16 text-purple-400/50" />
+                <h3 className="mt-4 text-xl font-bold text-white">{t.selectMatch}</h3>
+                <p className="mt-2 text-gray-400 text-center">
+                  {t.selectMatchDesc}<br />
+                  {t.analyzeTimeShort}
+                </p>
               </div>
             )}
           </div>
         </div>
       </main>
-
-      {(showProfileMenu || showMobileMenu) && (
-        <div className="fixed inset-0 z-40" onClick={() => { setShowProfileMenu(false); setShowMobileMenu(false); }} />
-      )}
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-      
-      {/* Mobile Bottom Spacer */}
-      <div className="h-20 md:hidden" />
     </div>
   );
 }

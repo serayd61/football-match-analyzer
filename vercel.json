@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/auto-analyze-matches",
-      "schedule": "0 */2 * * *"
+      "path": "/api/v2/queue-daily",
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/sync-predictions",

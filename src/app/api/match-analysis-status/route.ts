@@ -58,6 +58,20 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ✅ FIX: hasAnalysis should only be true if deepseek_master.finalVerdict exists
+    // Because the dashboard only shows DeepSeek Master analysis
+    const hasDeepSeekMaster = !!(
+      analysis.deepseek_master && 
+      typeof analysis.deepseek_master === 'object' &&
+      analysis.deepseek_master.finalVerdict &&
+      typeof analysis.deepseek_master.finalVerdict === 'object'
+    );
+    
+    // Debug logging if no deepseek_master but has other systems
+    if (!hasDeepSeekMaster && (analysis.ai_consensus || analysis.quad_brain || analysis.ai_agents)) {
+      console.log(`⚠️ Fixture ${fixtureId} has 3 systems but no deepseek_master.finalVerdict`);
+    }
+
     // Parse each system's analysis
     const parseSystem = (data: any): SystemStatus => {
       if (!data) return { available: false };
@@ -72,7 +86,7 @@ export async function GET(request: NextRequest) {
     };
 
     const result: AnalysisStatus = {
-      hasAnalysis: true,
+      hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master exists
       ai_consensus: parseSystem(analysis.ai_consensus),
       quad_brain: parseSystem(analysis.quad_brain),
       ai_agents: parseSystem(analysis.ai_agents)
@@ -117,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     const { data: analyses, error } = await supabase
       .from('match_full_analysis')
-      .select('fixture_id, ai_consensus, quad_brain, ai_agents')
+      .select('fixture_id, ai_consensus, quad_brain, ai_agents, deepseek_master')
       .in('fixture_id', fixture_ids);
 
     if (error) {
@@ -138,8 +152,21 @@ export async function POST(request: NextRequest) {
           ai_agents: { available: false }
         };
       } else {
+        // ✅ FIX: hasAnalysis should only be true if deepseek_master.finalVerdict exists
+        const hasDeepSeekMaster = !!(
+          analysis.deepseek_master && 
+          typeof analysis.deepseek_master === 'object' &&
+          analysis.deepseek_master.finalVerdict &&
+          typeof analysis.deepseek_master.finalVerdict === 'object'
+        );
+        
+        // Debug logging
+        if (!hasDeepSeekMaster && (analysis.ai_consensus || analysis.quad_brain || analysis.ai_agents)) {
+          console.log(`⚠️ Fixture ${id} has 3 systems but no deepseek_master.finalVerdict`);
+        }
+        
         result[id] = {
-          hasAnalysis: true,
+          hasAnalysis: hasDeepSeekMaster, // Only true if deepseek_master.finalVerdict exists
           ai_consensus: { 
             available: !!analysis.ai_consensus,
             summary: analysis.ai_consensus ? summarize(analysis.ai_consensus) : null

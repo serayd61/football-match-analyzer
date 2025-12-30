@@ -1,6 +1,6 @@
 // ============================================================================
 // CRON JOB - AUTO ANALYZE ALL NEW MATCHES
-// Her saat başı yeni eklenen maçları 3 farklı sistemle analiz eder:
+// Her saat başı (00:00, 01:00, 02:00, ...) yeni eklenen maçları 3 farklı sistemle analiz eder:
 // 1. AI Consensus (Claude, Gemini, DeepSeek)
 // 2. Quad-Brain (4 model ağırlıklı)
 // 3. AI Agents (5 uzman ajan)
@@ -59,7 +59,13 @@ interface SystemAnalysis {
 // ============================================================================
 
 async function callClaude(prompt: string): Promise<string> {
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is missing!');
+    return '';
+  }
+  
   try {
+    console.log('   📤 Calling Claude (Haiku)...');
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -73,10 +79,26 @@ async function callClaude(prompt: string): Promise<string> {
         messages: [{ role: 'user', content: prompt }]
       })
     });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`   ❌ Claude API error ${res.status}:`, errorText);
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+        console.error(`   Error type: ${errorDetails.error?.type || 'unknown'}, Message: ${errorDetails.error?.message || 'unknown'}`);
+      } catch {
+        console.error(`   Raw error: ${errorText}`);
+      }
+      return '';
+    }
+    
     const data = await res.json();
-    return data.content?.[0]?.text || '';
-  } catch (error) {
-    console.error('Claude error:', error);
+    const result = data.content?.[0]?.text || '';
+    console.log(`   ✅ Claude responded (${result.length} chars)`);
+    return result;
+  } catch (error: any) {
+    console.error('   ❌ Claude exception:', error.message || error);
     return '';
   }
 }
@@ -217,6 +239,20 @@ async function getMatchContext(homeTeamId: number, awayTeamId: number) {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// Normalize match result prediction to database format (home/draw/away)
+function normalizeMatchResultToDb(pred: string): 'home' | 'draw' | 'away' {
+  if (!pred) return 'draw';
+  const lower = String(pred).toLowerCase().trim();
+  if (lower === 'home' || lower === '1' || lower.includes('home') || lower === 'home win') return 'home';
+  if (lower === 'away' || lower === '2' || lower.includes('away') || lower === 'away win') return 'away';
+  if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+  return 'draw';
+}
+
+// ============================================================================
 // PARSE AI RESPONSE
 // ============================================================================
 
@@ -238,9 +274,21 @@ function parseAIResponse(text: string): AnalysisResult | null {
           reasoning: parsed.overUnder?.reasoning || ''
         },
         matchResult: {
-          prediction: ['home', 'draw', 'away'].includes(parsed.matchResult?.prediction?.toLowerCase()) 
-            ? parsed.matchResult.prediction.toLowerCase() 
-            : 'draw',
+          prediction: (() => {
+            const pred = parsed.matchResult?.prediction;
+            if (!pred) return 'draw';
+            const lower = String(pred).toLowerCase().trim();
+            // Check for normalized values first
+            if (lower === 'home' || lower === '1') return 'home';
+            if (lower === 'away' || lower === '2') return 'away';
+            if (lower === 'draw' || lower === 'x' || lower === '0') return 'draw';
+            // Check for full format
+            if (lower.includes('home') || lower.includes('home win')) return 'home';
+            if (lower.includes('away') || lower.includes('away win')) return 'away';
+            if (lower.includes('draw')) return 'draw';
+            // Default fallback
+            return 'draw';
+          })(),
           confidence: Math.min(100, Math.max(0, parseInt(parsed.matchResult?.confidence) || 50)),
           reasoning: parsed.matchResult?.reasoning || ''
         },
@@ -577,9 +625,14 @@ ${Object.entries(aiAgents.individualPredictions).map(([agent, pred]) =>
 🎯 SENİN GÖREVİN:
 
 1. Yukarıdaki 3 sistemin sonuçlarını analiz et
-2. Modeller arası uyumu değerlendir
-3. Final kararını ver
-4. En güvenli bahis önerisini sun
+2. Modeller arası uyumu değerlendir (3 sistemin kaçı aynı fikirde?)
+3. Final kararını ver - çoğunluk oyu önemli ama kalite faktörlerini de dikkate al
+4. CONFIDENCE'ı GERÇEKÇİ tut - %70 confidence demek gerçekten %70 başarı şansı demektir!
+   ⚠️ ÖNEMLİ: Aşırı güvenli olma! Eğer sistemler çelişiyorsa confidence'ı düşür.
+   - 3/3 sistem aynı fikirde + yüksek confidence = %70-80
+   - 2/3 sistem aynı fikirde = %55-65
+   - Sistemler çelişiyor = %50-55
+5. Match Result için özel dikkat: Maç sonucu tahmin etmek çok zor! Eğer %60'tan fazla confidence veriyorsan, çok güçlü kanıt olmalı.
 
 YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
 
@@ -587,18 +640,18 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
   "finalVerdict": {
     "btts": {
       "prediction": "yes" veya "no",
-      "confidence": 50-95 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": GERÇEKÇİ (3/3 uyum varsa 65-75, 2/3 varsa 55-65, çelişki varsa 50-55),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu belirt"
     },
     "overUnder": {
       "prediction": "over" veya "under",
-      "confidence": 50-95 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": GERÇEKÇİ (3/3 uyum varsa 65-75, 2/3 varsa 55-65, çelişki varsa 50-55),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu belirt"
     },
     "matchResult": {
       "prediction": "home", "draw" veya "away",
-      "confidence": 40-85 arası,
-      "reasoning": "Kısa ama öz gerekçe"
+      "confidence": ÇOK GERÇEKÇİ (Maç sonucu zor! 3/3 uyum varsa 60-70, 2/3 varsa 50-60, çelişki varsa 45-50),
+      "reasoning": "Kısa ama öz gerekçe - sistem uyumunu ve güvenilirlik faktörlerini belirt"
     }
   },
   "overallConfidence": 50-90 arası (genel güven),
@@ -647,9 +700,15 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
               reasoning: fv.overUnder?.reasoning || ''
             },
             matchResult: {
-              prediction: (['home', 'draw', 'away'].includes(fv.matchResult?.prediction?.toLowerCase()) 
-                ? fv.matchResult.prediction.toLowerCase() 
-                : 'draw') as 'home' | 'draw' | 'away',
+              prediction: (() => {
+                const pred = fv.matchResult?.prediction;
+                if (!pred) return 'draw';
+                const lower = String(pred).toLowerCase().trim();
+                if (lower === 'home' || lower === '1' || lower.includes('home')) return 'home';
+                if (lower === 'away' || lower === '2' || lower.includes('away')) return 'away';
+                if (lower === 'draw' || lower === 'x' || lower === '0' || lower.includes('draw')) return 'draw';
+                return 'draw';
+              })() as 'home' | 'draw' | 'away',
               confidence: Math.min(100, Math.max(0, parseInt(fv.matchResult?.confidence) || 50)),
               reasoning: fv.matchResult?.reasoning || ''
             },
@@ -679,7 +738,8 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
       };
     }
 
-    // Calculate system agreement based on actual finalVerdict
+    // System agreement already calculated above (before finalVerdict creation)
+    // Recalculate for logging if needed
     const bttsAgreement = [
       aiConsensus.consensus.btts.prediction,
       quadBrain.consensus.btts.prediction,
@@ -699,6 +759,7 @@ YANITINI SADECE AŞAĞIDAKİ JSON FORMATINDA VER:
     ].filter(p => p === finalVerdict.matchResult.prediction).length;
 
     console.log(`   📊 System Agreement: BTTS=${bttsAgreement}/3, O/U=${ouAgreement}/3, MS=${mrAgreement}/3`);
+    console.log(`   🎯 Calibrated Confidence: BTTS=${finalVerdict.btts.confidence}%, O/U=${finalVerdict.overUnder.confidence}%, MS=${finalVerdict.matchResult.confidence}%`);
 
     return {
       finalVerdict: finalVerdict,
@@ -797,7 +858,7 @@ async function saveAnalysis(
       consensus_btts_confidence: bestAnalysis.consensus.btts.confidence,
       consensus_over_under: bestAnalysis.consensus.overUnder.prediction,
       consensus_over_under_confidence: bestAnalysis.consensus.overUnder.confidence,
-      consensus_match_result: bestAnalysis.consensus.matchResult.prediction,
+      consensus_match_result: normalizeMatchResultToDb(bestAnalysis.consensus.matchResult.prediction),
       consensus_match_result_confidence: bestAnalysis.consensus.matchResult.confidence
     };
 
@@ -903,7 +964,7 @@ async function saveAnalysisWithMaster(
       consensus_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
       consensus_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
       consensus_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
-      consensus_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      consensus_match_result: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       consensus_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence
     };
 
@@ -931,7 +992,7 @@ async function saveAnalysisWithMaster(
           over_under_prediction: prediction.overUnder.prediction,
           over_under_confidence: prediction.overUnder.confidence,
           over_under_reasoning: prediction.overUnder.reasoning,
-          match_result_prediction: prediction.matchResult.prediction,
+          match_result_prediction: normalizeMatchResultToDb(prediction.matchResult.prediction),
           match_result_confidence: prediction.matchResult.confidence,
           match_result_reasoning: prediction.matchResult.reasoning,
           primary_recommendation_market: prediction.bestBet?.market,
@@ -956,7 +1017,7 @@ async function saveAnalysisWithMaster(
       over_under_prediction: masterAnalysis.finalVerdict.overUnder.prediction,
       over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
       over_under_reasoning: masterAnalysis.finalVerdict.overUnder.reasoning,
-      match_result_prediction: masterAnalysis.finalVerdict.matchResult.prediction,
+      match_result_prediction: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
       match_result_reasoning: masterAnalysis.finalVerdict.matchResult.reasoning,
       primary_recommendation_market: masterAnalysis.bestBet.market,
@@ -1000,7 +1061,7 @@ async function saveAnalysisWithMaster(
       best_btts_confidence: masterAnalysis.finalVerdict.btts.confidence,
       best_over_under: masterAnalysis.finalVerdict.overUnder.prediction,
       best_over_under_confidence: masterAnalysis.finalVerdict.overUnder.confidence,
-      best_match_result: masterAnalysis.finalVerdict.matchResult.prediction,
+      best_match_result: normalizeMatchResultToDb(masterAnalysis.finalVerdict.matchResult.prediction),
       best_match_result_confidence: masterAnalysis.finalVerdict.matchResult.confidence,
       created_at: new Date().toISOString()
     }, { onConflict: 'fixture_id' });

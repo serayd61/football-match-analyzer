@@ -338,7 +338,9 @@ CREATE POLICY "Auth read - pro_stats" ON professional_market_stats FOR SELECT TO
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Professional Markets Overview
-CREATE OR REPLACE VIEW pro_markets_overview AS
+-- SECURITY INVOKER: View runs with the permissions of the user querying it (safer)
+CREATE OR REPLACE VIEW pro_markets_overview
+WITH (security_invoker = true) AS
 SELECT 
     COUNT(*) as total_predictions,
     COUNT(*) FILTER (WHERE is_settled = TRUE) as settled_predictions,
@@ -378,7 +380,9 @@ FROM professional_market_predictions
 WHERE is_settled = TRUE;
 
 -- Recent Professional Predictions
-CREATE OR REPLACE VIEW recent_pro_predictions AS
+-- SECURITY INVOKER: View runs with the permissions of the user querying it (safer)
+CREATE OR REPLACE VIEW recent_pro_predictions
+WITH (security_invoker = true) AS
 SELECT 
     fixture_id,
     home_team,

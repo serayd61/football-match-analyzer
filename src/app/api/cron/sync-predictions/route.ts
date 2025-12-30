@@ -65,9 +65,13 @@ async function settlePrediction(
   homeScore: number, 
   awayScore: number
 ) {
-  const totalGoals = homeScore + awayScore;
-  const bttsActual = homeScore > 0 && awayScore > 0;
-  const matchResultActual = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
+  // Ensure scores are numbers
+  const home = Number(homeScore);
+  const away = Number(awayScore);
+  
+  const totalGoals = home + away;
+  const bttsActual = home > 0 && away > 0;
+  const matchResultActual = home > away ? 'home' : home < away ? 'away' : 'draw';
   const overUnderActual = totalGoals > 2.5 ? 'over' : 'under';
 
   // Update prediction_sessions
@@ -75,8 +79,8 @@ async function settlePrediction(
     .from('prediction_sessions')
     .update({
       is_settled: true,
-      actual_home_score: homeScore,
-      actual_away_score: awayScore,
+      actual_home_score: home,
+      actual_away_score: away,
       settled_at: new Date().toISOString()
     })
     .eq('id', sessionId);

@@ -289,12 +289,16 @@ export async function settlePrediction(
   try {
     const { home_score, away_score, result_source } = result;
 
+    // Ensure scores are numbers
+    const homeScore = Number(home_score);
+    const awayScore = Number(away_score);
+
     // Calculate actual results
-    const actual_btts = (home_score > 0 && away_score > 0) ? 'yes' : 'no';
-    const total_goals = home_score + away_score;
+    const actual_btts = (homeScore > 0 && awayScore > 0) ? 'yes' : 'no';
+    const total_goals = homeScore + awayScore;
     const actual_over_under = total_goals > 2.5 ? 'over' : 'under';
-    const actual_match_result = home_score > away_score ? 'home' : 
-                                 home_score < away_score ? 'away' : 'draw';
+    const actual_match_result = homeScore > awayScore ? 'home' : 
+                                 homeScore < awayScore ? 'away' : 'draw';
 
     // Get all pending sessions for this fixture
     const { data: sessions, error: fetchError } = await supabase
@@ -336,8 +340,8 @@ export async function settlePrediction(
       const { error: updateError } = await supabase
         .from('prediction_sessions')
         .update({
-          actual_home_score: home_score,
-          actual_away_score: away_score,
+          actual_home_score: homeScore,
+          actual_away_score: awayScore,
           actual_btts,
           actual_over_under,
           actual_match_result,
@@ -749,7 +753,11 @@ export async function settleProfessionalMarketPrediction(
       result_source 
     } = result;
 
-    const total_goals = home_score + away_score;
+    // Ensure scores are numbers
+    const homeScore = Number(home_score);
+    const awayScore = Number(away_score);
+    
+    const total_goals = homeScore + awayScore;
     const ht_total = (ht_home !== null && ht_away !== null) ? ht_home + ht_away : null;
     const total_corners = (corners_home !== null && corners_away !== null) ? corners_home + corners_away : null;
     const total_cards = (cards_home !== null && cards_away !== null) ? cards_home + cards_away : null;
@@ -768,8 +776,8 @@ export async function settleProfessionalMarketPrediction(
 
     // Calculate correctness for each market
     const updates: Record<string, any> = {
-      actual_home_score: home_score,
-      actual_away_score: away_score,
+      actual_home_score: homeScore,
+      actual_away_score: awayScore,
       actual_ht_home: ht_home,
       actual_ht_away: ht_away,
       actual_corners_home: corners_home,
@@ -785,7 +793,7 @@ export async function settleProfessionalMarketPrediction(
 
     // Match Result
     if (prediction.match_result_selection) {
-      const actual = home_score > away_score ? '1' : home_score < away_score ? '2' : 'X';
+      const actual = homeScore > awayScore ? '1' : homeScore < awayScore ? '2' : 'X';
       updates.match_result_correct = prediction.match_result_selection === actual;
     }
 
@@ -809,7 +817,7 @@ export async function settleProfessionalMarketPrediction(
 
     // BTTS
     if (prediction.btts_selection) {
-      const bttsActual = home_score > 0 && away_score > 0;
+      const bttsActual = homeScore > 0 && awayScore > 0;
       const bttsPredicted = prediction.btts_selection.toLowerCase().includes('yes') || 
                            prediction.btts_selection.toLowerCase().includes('var');
       updates.btts_correct = bttsActual === bttsPredicted;
@@ -843,8 +851,10 @@ export async function settleProfessionalMarketPrediction(
 
     // HT/FT
     if (prediction.htft_selection && ht_home !== null && ht_away !== null) {
-      const htResult = ht_home > ht_away ? '1' : ht_home < ht_away ? '2' : 'X';
-      const ftResult = home_score > away_score ? '1' : home_score < away_score ? '2' : 'X';
+      const htHome = Number(ht_home);
+      const htAway = Number(ht_away);
+      const htResult = htHome > htAway ? '1' : htHome < htAway ? '2' : 'X';
+      const ftResult = homeScore > awayScore ? '1' : homeScore < awayScore ? '2' : 'X';
       const actualHtFt = `${htResult}/${ftResult}`;
       updates.htft_correct = prediction.htft_selection === actualHtFt;
     }
