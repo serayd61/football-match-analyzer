@@ -1252,24 +1252,37 @@ export async function runAgentAnalysis(
     console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis, GeniusAnalyst)...');
     const language: 'tr' | 'en' | 'de' = 'tr'; // Türkçe varsayılan
     
+    // 🆕 Timeout wrapper - agent'ları 15 saniye içinde tamamlamaya zorla
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, agentName: string): Promise<T | null> => {
+      return Promise.race([
+        promise,
+        new Promise<T | null>((resolve) => {
+          setTimeout(() => {
+            console.warn(`⏱️ ${agentName} timeout after ${timeoutMs}ms, skipping...`);
+            resolve(null);
+          }, timeoutMs);
+        })
+      ]);
+    };
+    
     const [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
-      runStatsAgent(matchData, language).catch(err => {
+      withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err);
         return null;
-      }),
-      runOddsAgent(matchData, language).catch(err => {
+      }), 15000, 'Stats Agent'),
+      withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err);
         return null;
-      }),
-      runDeepAnalysisAgent(matchData, language).catch(err => {
+      }), 15000, 'Odds Agent'),
+      withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ DeepAnalysis agent failed:', err);
         return null;
-      }),
-      // 🆕 Genius Analyst Agent
-      runGeniusAnalyst(matchData, language).catch(err => {
+      }), 15000, 'DeepAnalysis Agent'),
+      // 🆕 Genius Analyst Agent - daha kısa timeout (opsiyonel agent)
+      withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
         console.error('❌ GeniusAnalyst agent failed:', err);
         return null;
-      }),
+      }), 12000, 'GeniusAnalyst Agent'), // 12 saniye - daha agresif
     ]);
     
     if (!statsResult && !oddsResult && !deepAnalysisResult && !geniusAnalystResult) {
@@ -1284,21 +1297,34 @@ export async function runAgentAnalysis(
     if (geniusAnalystResult) console.log(`   🧠 GeniusAnalyst: ${geniusAnalystResult.predictions?.matchResult?.prediction || 'N/A'} | Conf: ${geniusAnalystResult.finalRecommendation?.overallConfidence || 0}%`);
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
-    console.log('🧠 Step 4.1: Running Master Strategist Agent...');
+    // ⚠️ Master Strategist opsiyonel - timeout olursa atla (ana agent'lar yeterli)
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (optional, 10s timeout)...');
     let masterStrategistResult = null;
     try {
-      masterStrategistResult = await runMasterStrategist(
-        matchData,
-        {
-          stats: statsResult,
-          odds: oddsResult,
-          sentiment: null, // agent-analyzer'da sentiment yok
-          deepAnalysis: deepAnalysisResult,
-          geniusAnalyst: geniusAnalystResult,
-        },
-        language
-      );
-      console.log(`   ✅ Master Strategist: ${masterStrategistResult.finalConsensus?.matchResult?.prediction || 'N/A'} | Conf: ${masterStrategistResult.overallConfidence || 0}%`);
+      // 10 saniye timeout ile çalıştır
+      masterStrategistResult = await Promise.race([
+        runMasterStrategist(
+          matchData,
+          {
+            stats: statsResult,
+            odds: oddsResult,
+            sentiment: null, // agent-analyzer'da sentiment yok
+            deepAnalysis: deepAnalysisResult,
+            geniusAnalyst: geniusAnalystResult,
+          },
+          language
+        ),
+        new Promise<null>((resolve) => {
+          setTimeout(() => {
+            console.warn('   ⏱️ Master Strategist timeout after 10s, skipping (optional agent)');
+            resolve(null);
+          }, 10000);
+        })
+      ]);
+      
+      if (masterStrategistResult) {
+        console.log(`   ✅ Master Strategist: ${masterStrategistResult.finalConsensus?.matchResult?.prediction || 'N/A'} | Conf: ${masterStrategistResult.overallConfidence || 0}%`);
+      }
     } catch (err) {
       console.error('   ❌ Master Strategist failed:', err);
     }

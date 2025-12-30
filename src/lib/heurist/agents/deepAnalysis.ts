@@ -805,7 +805,8 @@ export async function runDeepAnalysisAgent(
       { role: 'user', content: userMessage }
     ], {
       temperature: 0.4, // Agresif analiz için artırıldı - farklı bakış açıları
-      maxTokens: 3000
+      maxTokens: 2500, // 🆕 Azaltıldı (3000 -> 2500) - daha hızlı
+      timeout: 12000 // 🆕 12 saniye timeout
     });
 
     if (!response) {

@@ -495,8 +495,8 @@ export async function runMasterStrategist(
       { role: 'user', content: userMessage }
     ], {
       temperature: 0.2, // Düşük temperature = daha tutarlı
-      maxTokens: 2500, // 🆕 Azaltıldı (3000 -> 2500) - daha hızlı response
-      timeout: 20000 // 🆕 20 saniye timeout
+      maxTokens: 2000, // 🆕 Daha da azaltıldı (2500 -> 2000) - daha hızlı response
+      timeout: 8000 // 🆕 8 saniye timeout (daha agresif)
     });
 
     if (!response) {
