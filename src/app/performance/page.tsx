@@ -8,11 +8,121 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useLanguage } from '@/components/LanguageProvider';
 import {
   BarChart3, TrendingUp, Target, CheckCircle, XCircle,
   RefreshCw, Award, Activity, Zap, Trophy, Clock,
   ChevronDown, ChevronUp, Loader2, AlertCircle
 } from 'lucide-react';
+
+// ============================================================================
+// TRANSLATIONS
+// ============================================================================
+
+const labels = {
+  tr: {
+    title: 'Performans Takibi',
+    subtitle: 'Agent ve AI performansını izle',
+    refresh: 'Yenile',
+    settleMatches: 'Sonuçları Görüntüle',
+    settling: 'Sonuçlar Alınıyor...',
+    loading: 'Yükleniyor...',
+    errorLoading: 'Veri yüklenemedi',
+    tryAgain: 'Tekrar Dene',
+    noData: 'Henüz analiz verisi yok',
+    noDataDesc: 'Dashboard\'dan maç analizi yaparak başlayın',
+    goToDashboard: 'Dashboard\'a Git',
+    summary: {
+      totalMatches: 'Toplam Analiz',
+      settledMatches: 'Sonuçlanan',
+      pendingMatches: 'Bekleyen',
+      overallAccuracy: 'Genel Doğruluk',
+    },
+    agentPerformance: 'Agent Performansları',
+    pendingAnalyses: 'Bekleyen Analizler',
+    settledAnalyses: 'Sonuçlanan Analizler',
+    matchResult: 'Maç Sonucu',
+    overUnder: 'Alt/Üst',
+    btts: 'KG Var',
+    prediction: 'Tahmin',
+    result: 'Sonuç',
+    correct: 'Doğru',
+    incorrect: 'Yanlış',
+    pending: 'Bekliyor',
+    confidence: 'Güven',
+    accuracy: 'Doğruluk',
+    home: 'Ana Sayfa',
+    contact: 'İletişim',
+  },
+  en: {
+    title: 'Performance Tracking',
+    subtitle: 'Monitor agent and AI performance',
+    refresh: 'Refresh',
+    settleMatches: 'View Results',
+    settling: 'Fetching Results...',
+    loading: 'Loading...',
+    errorLoading: 'Failed to load data',
+    tryAgain: 'Try Again',
+    noData: 'No analysis data yet',
+    noDataDesc: 'Start by analyzing matches from the Dashboard',
+    goToDashboard: 'Go to Dashboard',
+    summary: {
+      totalMatches: 'Total Analyses',
+      settledMatches: 'Settled',
+      pendingMatches: 'Pending',
+      overallAccuracy: 'Overall Accuracy',
+    },
+    agentPerformance: 'Agent Performance',
+    pendingAnalyses: 'Pending Analyses',
+    settledAnalyses: 'Settled Analyses',
+    matchResult: 'Match Result',
+    overUnder: 'Over/Under',
+    btts: 'BTTS',
+    prediction: 'Prediction',
+    result: 'Result',
+    correct: 'Correct',
+    incorrect: 'Incorrect',
+    pending: 'Pending',
+    confidence: 'Confidence',
+    accuracy: 'Accuracy',
+    home: 'Home',
+    contact: 'Contact',
+  },
+  de: {
+    title: 'Leistungsverfolgung',
+    subtitle: 'Agent- und KI-Leistung überwachen',
+    refresh: 'Aktualisieren',
+    settleMatches: 'Ergebnisse anzeigen',
+    settling: 'Ergebnisse werden abgerufen...',
+    loading: 'Laden...',
+    errorLoading: 'Daten konnten nicht geladen werden',
+    tryAgain: 'Erneut versuchen',
+    noData: 'Noch keine Analysedaten',
+    noDataDesc: 'Beginnen Sie mit der Analyse von Spielen im Dashboard',
+    goToDashboard: 'Zum Dashboard',
+    summary: {
+      totalMatches: 'Gesamtanalysen',
+      settledMatches: 'Abgeschlossen',
+      pendingMatches: 'Ausstehend',
+      overallAccuracy: 'Gesamtgenauigkeit',
+    },
+    agentPerformance: 'Agent-Leistung',
+    pendingAnalyses: 'Ausstehende Analysen',
+    settledAnalyses: 'Abgeschlossene Analysen',
+    matchResult: 'Spielergebnis',
+    overUnder: 'Über/Unter',
+    btts: 'Beide treffen',
+    prediction: 'Vorhersage',
+    result: 'Ergebnis',
+    correct: 'Richtig',
+    incorrect: 'Falsch',
+    pending: 'Ausstehend',
+    confidence: 'Vertrauen',
+    accuracy: 'Genauigkeit',
+    home: 'Startseite',
+    contact: 'Kontakt',
+  },
+};
 
 // ============================================================================
 // TYPES
@@ -57,6 +167,9 @@ interface AnalysisRecord {
 // ============================================================================
 
 export default function PerformancePage() {
+  const { lang } = useLanguage();
+  const t = labels[lang as keyof typeof labels] || labels.en;
+  
   const [stats, setStats] = useState<AccuracyStats[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [analyses, setAnalyses] = useState<AnalysisRecord[]>([]);
@@ -96,7 +209,7 @@ export default function PerformancePage() {
       }
       
     } catch (err: any) {
-      setError(err.message || 'Veri yüklenemedi');
+      setError(err.message || t.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -169,25 +282,25 @@ export default function PerformancePage() {
           </Link>
           
           <div className="flex items-center gap-6">
-            {/* Ana Sayfa */}
+            {/* Home */}
             <Link 
               href="/dashboard" 
               className="flex items-center gap-2 px-4 py-2 text-white/70 hover:text-white transition-colors"
             >
               <span>🏠</span>
-              <span>Ana Sayfa</span>
+              <span>{t.home}</span>
             </Link>
             
-            {/* İletişim */}
+            {/* Contact */}
             <Link 
               href="/contact" 
               className="flex items-center gap-2 px-4 py-2 text-white/70 hover:text-white transition-colors"
             >
               <span>💬</span>
-              <span>İletişim</span>
+              <span>{t.contact}</span>
             </Link>
 
-            {/* Yenile */}
+            {/* Refresh */}
             <motion.button
               onClick={fetchData}
               disabled={loading}
@@ -196,10 +309,10 @@ export default function PerformancePage() {
               className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#00f0ff]/50 flex items-center gap-2 transition-all"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Yenile
+              {t.refresh}
             </motion.button>
             
-            {/* Sonuçları Görüntüle */}
+            {/* Settle Matches */}
             <motion.button
               onClick={handleSettleMatches}
               disabled={settling || loading}
@@ -212,7 +325,7 @@ export default function PerformancePage() {
               ) : (
                 <Zap className="w-4 h-4" />
               )}
-              Sonuçları Görüntüle
+              {settling ? t.settling : t.settleMatches}
             </motion.button>
           </div>
         </div>
@@ -229,11 +342,11 @@ export default function PerformancePage() {
         >
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-[#00f0ff] via-white to-[#ff00ff] bg-clip-text text-transparent">
-              Agent Performans Takibi
+              {t.title}
             </span>
           </h1>
           <p className="text-white/50 text-lg max-w-2xl mx-auto">
-            Tüm analizlerin kaydedildiği ve maç sonuçlarına göre doğruluk oranlarının hesaplandığı profesyonel takip sistemi
+            {t.subtitle}
           </p>
         </motion.div>
         
@@ -241,7 +354,7 @@ export default function PerformancePage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-[#00f0ff] animate-spin mb-4" />
-            <p className="text-white/60">Veriler yükleniyor...</p>
+            <p className="text-white/60">{t.loading}</p>
           </div>
         )}
 
@@ -254,14 +367,14 @@ export default function PerformancePage() {
           >
             <AlertCircle className="w-8 h-8 text-red-400" />
             <div>
-              <h3 className="text-red-400 font-semibold">Hata</h3>
+              <h3 className="text-red-400 font-semibold">{t.errorLoading}</h3>
               <p className="text-white/60">{error}</p>
             </div>
             <button 
               onClick={fetchData}
               className="ml-auto px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
             >
-              Tekrar Dene
+              {t.tryAgain}
             </button>
           </motion.div>
         )}
@@ -279,48 +392,44 @@ export default function PerformancePage() {
               <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                 <div className="flex items-center justify-between mb-4">
                   <BarChart3 className="w-8 h-8 text-[#00f0ff]" />
-                  <span className="text-xs text-white/40 uppercase tracking-wider">Toplam</span>
+                  <span className="text-xs text-white/40 uppercase tracking-wider">{t.summary.totalMatches}</span>
                 </div>
                 <div className="text-4xl font-bold text-white mb-1">
                   {summary?.totalMatches || 0}
                 </div>
-                <div className="text-sm text-white/40">Analiz</div>
               </div>
 
               {/* Settled */}
               <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                 <div className="flex items-center justify-between mb-4">
                   <CheckCircle className="w-8 h-8 text-emerald-400" />
-                  <span className="text-xs text-white/40 uppercase tracking-wider">Sonuçlanan</span>
+                  <span className="text-xs text-white/40 uppercase tracking-wider">{t.summary.settledMatches}</span>
                 </div>
                 <div className="text-4xl font-bold text-emerald-400 mb-1">
                   {summary?.settledMatches || 0}
                 </div>
-                <div className="text-sm text-white/40">Maç</div>
               </div>
 
               {/* Pending */}
               <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                 <div className="flex items-center justify-between mb-4">
                   <Clock className="w-8 h-8 text-amber-400" />
-                  <span className="text-xs text-white/40 uppercase tracking-wider">Bekleyen</span>
+                  <span className="text-xs text-white/40 uppercase tracking-wider">{t.summary.pendingMatches}</span>
                 </div>
                 <div className="text-4xl font-bold text-amber-400 mb-1">
                   {summary?.pendingMatches || 0}
                 </div>
-                <div className="text-sm text-white/40">Maç</div>
               </div>
 
               {/* Consensus Accuracy */}
               <div className="bg-gradient-to-br from-[#00f0ff]/10 to-[#ff00ff]/5 border border-[#00f0ff]/30 rounded-2xl p-6 backdrop-blur-xl">
                 <div className="flex items-center justify-between mb-4">
                   <Trophy className="w-8 h-8 text-[#00f0ff]" />
-                  <span className="text-xs text-[#00f0ff]/60 uppercase tracking-wider">Konsensüs</span>
+                  <span className="text-xs text-[#00f0ff]/60 uppercase tracking-wider">{t.summary.overallAccuracy}</span>
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-[#00f0ff] to-[#ff00ff] bg-clip-text text-transparent mb-1">
                   {summary?.consensusAccuracy || 0}%
                 </div>
-                <div className="text-sm text-white/40">Başarı Oranı</div>
               </div>
             </motion.div>
 
@@ -334,7 +443,7 @@ export default function PerformancePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-3">
                   <Activity className="w-6 h-6 text-[#00f0ff]" />
-                  Agent Performansı
+                  {t.agentPerformance}
                 </h2>
                 {bestAgent && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
@@ -349,8 +458,8 @@ export default function PerformancePage() {
               {stats.length === 0 ? (
                 <div className="text-center py-12 text-white/40">
                   <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Henüz sonuçlanan maç yok</p>
-                  <p className="text-sm mt-2">Maçlar sonuçlandığında agent performansları burada görünecek</p>
+                  <p>{t.noData}</p>
+                  <p className="text-sm mt-2">{t.noDataDesc}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -424,7 +533,7 @@ export default function PerformancePage() {
             >
               {/* Pending Matches */}
               <CollapsibleSection
-                title="Bekleyen Maçlar"
+                title={t.pendingAnalyses}
                 count={pendingAnalyses.length}
                 icon={<Clock className="w-5 h-5 text-amber-400" />}
                 color="amber"
@@ -433,7 +542,7 @@ export default function PerformancePage() {
               >
                 {pendingAnalyses.length === 0 ? (
                   <div className="text-center py-8 text-white/40">
-                    Bekleyen maç yok
+                    {t.noData}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -446,7 +555,7 @@ export default function PerformancePage() {
 
               {/* Settled Matches */}
               <CollapsibleSection
-                title="Sonuçlanan Maçlar"
+                title={t.settledAnalyses}
                 count={settledAnalyses.length}
                 icon={<CheckCircle className="w-5 h-5 text-emerald-400" />}
                 color="emerald"
@@ -455,7 +564,7 @@ export default function PerformancePage() {
               >
                 {settledAnalyses.length === 0 ? (
                   <div className="text-center py-8 text-white/40">
-                    Henüz sonuçlanan maç yok
+                    {t.noData}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -484,7 +593,7 @@ export default function PerformancePage() {
             </div>
             <div className="flex items-center gap-6 text-sm text-white/40">
               <Link href="/contact" className="hover:text-[#00f0ff] transition-colors">
-                İletişim
+                {t.contact}
               </Link>
               <span>•</span>
               <span>Made with 💜 for Football</span>

@@ -1169,7 +1169,8 @@ function buildConsensus(
 export async function runAgentAnalysis(
   fixtureId: number,
   homeTeamId: number,
-  awayTeamId: number
+  awayTeamId: number,
+  lang: 'tr' | 'en' | 'de' = 'en'
 ): Promise<AgentAnalysisResult | null> {
   
   console.log(`\n🤖 ========================================`);
@@ -1250,7 +1251,7 @@ export async function runAgentAnalysis(
     
     // Step 4: Run agents in parallel
     console.log('🤖 Step 4: Running agents (Stats, Odds, DeepAnalysis, GeniusAnalyst)...');
-    const language: 'tr' | 'en' | 'de' = 'tr'; // Türkçe varsayılan
+    const language: 'tr' | 'en' | 'de' = lang; // API'den gelen dil
     
     // 🆕 Optimized timeout wrapper - agent'ları verimli çalıştır
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, agentName: string): Promise<T | null> => {

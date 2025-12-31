@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en' } = body;
     
     if (!fixtureId || !homeTeam || !awayTeam || !homeTeamId || !awayTeamId) {
       return NextResponse.json(
@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       homeTeamId,
       awayTeamId,
       league: league || 'Unknown',
-      matchDate: matchDate || new Date().toISOString().split('T')[0]
+      matchDate: matchDate || new Date().toISOString().split('T')[0],
+      lang: lang as 'tr' | 'en' | 'de'
     };
     
     const result = await runUnifiedConsensus(input);

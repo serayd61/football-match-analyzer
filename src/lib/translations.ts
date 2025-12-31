@@ -203,6 +203,168 @@ export const translations = {
     october: 'Ekim',
     november: 'Kasım',
     december: 'Aralık',
+
+    // ==================== DASHBOARD & ANALYSIS ====================
+    
+    // Analysis Buttons
+    startAnalysis: 'Analiz Başlat',
+    analyzing: 'Analiz yapılıyor...',
+    analyzeAgain: 'Tekrar Analiz Et',
+    
+    // Agent Names
+    statsAgent: 'İSTATİSTİK AGENT',
+    oddsAgent: 'ORANLAR AGENT',
+    deepAnalysisAgent: 'DERİN ANALİZ AGENT',
+    masterStrategistAgent: 'MASTER STRATEJİST AGENT',
+    
+    // Agent Descriptions
+    statsAgentDesc: 'Form analizi, xG, gol beklentisi, timing pattern ve istatistiksel verileri analiz eder.',
+    oddsAgentDesc: 'Bahis oranlarını analiz ederek value bet fırsatlarını tespit eder.',
+    deepAnalysisAgentDesc: 'Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu.',
+    masterStrategistAgentDesc: 'Tüm agent çıktılarını analiz eder ve ağırlıklı konsensüs oluşturur.',
+    
+    // Analysis Sections
+    formAnalysis: 'Form Analizi',
+    goalExpectancy: 'Gol Beklentisi',
+    xgAnalysis: 'xG Analizi',
+    timingPatterns: 'Zamanlama Desenleri',
+    cleanSheetAnalysis: 'Gol Yememe Analizi',
+    valueAnalysis: 'Value Analizi',
+    oddsAnalysis: 'Oran Analizi',
+    matchAnalysis: 'Maç Analizi',
+    criticalFactors: 'Kritik Faktörler',
+    probabilities: 'Olasılıklar',
+    finalConsensus: 'Final Konsensüs',
+    
+    // Predictions
+    matchResult: 'Maç Sonucu',
+    overUnder: 'Alt/Üst 2.5',
+    btts: 'Karşılıklı Gol',
+    corners: 'Korner',
+    cards: 'Kartlar',
+    firstHalf: 'İlk Yarı',
+    halfTimeFullTime: 'İY/MS',
+    asianHandicap: 'Asya Handikap',
+    correctScore: 'Doğru Skor',
+    
+    // Results
+    homeWin: 'Ev Sahibi Kazanır',
+    draw: 'Beraberlik',
+    awayWin: 'Deplasman Kazanır',
+    over: 'Üst',
+    under: 'Alt',
+    yes: 'Var',
+    no: 'Yok',
+    
+    // Confidence
+    confidence: 'Güven',
+    highConfidence: 'Yüksek Güven',
+    mediumConfidence: 'Orta Güven',
+    lowConfidence: 'Düşük Güven',
+    
+    // Best Bet
+    bestBet: 'En İyi Bahis',
+    valueBet: 'Value Bet',
+    recommendedStake: 'Önerilen Bahis',
+    
+    // Risk
+    riskLevel: 'Risk Seviyesi',
+    lowRisk: 'Düşük Risk',
+    mediumRisk: 'Orta Risk',
+    highRisk: 'Yüksek Risk',
+    
+    // Data Quality
+    dataQuality: 'Veri Kalitesi',
+    excellent: 'Mükemmel',
+    good: 'İyi',
+    minimal: 'Minimal',
+    
+    // Motivation Scores
+    motivationAnalysis: 'MAÇA HAZIRLANMA & MOTİVASYON ANALİZİ',
+    homeTeam: 'Ev Sahibi',
+    awayTeam: 'Deplasman',
+    form: 'Form',
+    trend: 'Trend',
+    improving: 'Yükselişte',
+    declining: 'Düşüşte',
+    stable: 'Stabil',
+    scoreExplanation: 'Skor Anlamı',
+    veryReady: 'Çok hazır',
+    normal: 'Normal',
+    unprepared: 'Hazırlıksız',
+    veryBad: 'Çok kötü durum',
+    
+    // Sportmonks
+    sportmonksData: 'Sportmonks Veri Bazlı Tahmin',
+    
+    // System
+    systemAnalysis: 'sistem analizi',
+    agentConsensus: 'agent konsensüsü',
+    processingTime: 'İşlem Süresi',
+    
+    // Performance
+    performance: 'Performans',
+    accuracy: 'Doğruluk',
+    pendingMatches: 'Bekleyen Maçlar',
+    settledMatches: 'Sonuçlanan Maçlar',
+    viewResults: 'Sonuçları Görüntüle',
+    noDataAvailable: 'Veri mevcut değil',
+    
+    // Contact
+    contact: 'İletişim',
+    contactUs: 'Bize Ulaşın',
+    yourMessage: 'Mesajınız',
+    send: 'Gönder',
+    messageSent: 'Mesajınız gönderildi!',
+    
+    // General UI
+    details: 'Detaylar',
+    summary: 'Özet',
+    showMore: 'Daha Fazla Göster',
+    showLess: 'Daha Az Göster',
+    refresh: 'Yenile',
+    close: 'Kapat',
+    save: 'Kaydet',
+    cancel: 'İptal',
+    confirm: 'Onayla',
+    back: 'Geri',
+    next: 'İleri',
+    previous: 'Önceki',
+    today: 'Bugün',
+    tomorrow: 'Yarın',
+    yesterday: 'Dün',
+    noData: 'Veri bulunamadı',
+    loadingData: 'Veri yükleniyor...',
+    errorLoading: 'Veri yüklenirken hata oluştu',
+    tryAgain: 'Tekrar Dene',
+    
+    // Dashboard Specific
+    title: 'Football Analytics',
+    subtitle: 'AI Tahmin Sistemi',
+    profile: 'Profil',
+    settings: 'Ayarlar',
+    admin: 'Admin Panel',
+    selectDate: 'Tarih Seç',
+    selectLeague: 'Lig Seç',
+    allLeagues: 'Tüm Ligler',
+    searchPlaceholder: 'Takım veya lig ara...',
+    noMatches: 'Maç bulunamadı',
+    analyzeTime: '~10-15 saniye',
+    selectMatch: 'Maç Seçin',
+    selectMatchDesc: 'Sol taraftan bir maç seçerek analiz başlatın.',
+    analyzeTimeShort: 'Analiz sadece 10-15 saniye sürer!',
+    riskLow: 'Düşük',
+    riskMedium: 'Orta',
+    halfTimeGoals: 'İlk Yarı Goller',
+    aiRecommendation: 'AI önerisi',
+    agreement: 'Uyum',
+    models: 'Modeller',
+    analysis: 'Analiz',
+    cached: 'Önbellek',
+    analyzed: 'Analiz Edildi',
+    aiAnalysis: 'AI Analiz',
+    agentAnalysis: 'Agent Analiz',
+    selectAnalysisType: 'Analiz Türü Seçin',
   },
   
   en: {
@@ -409,6 +571,168 @@ export const translations = {
     october: 'October',
     november: 'November',
     december: 'December',
+
+    // ==================== DASHBOARD & ANALYSIS ====================
+    
+    // Analysis Buttons
+    startAnalysis: 'Start Analysis',
+    analyzing: 'Analyzing...',
+    analyzeAgain: 'Analyze Again',
+    
+    // Agent Names
+    statsAgent: 'STATS AGENT',
+    oddsAgent: 'ODDS AGENT',
+    deepAnalysisAgent: 'DEEP ANALYSIS AGENT',
+    masterStrategistAgent: 'MASTER STRATEGIST AGENT',
+    
+    // Agent Descriptions
+    statsAgentDesc: 'Analyzes form, xG, goal expectancy, timing patterns and statistical data.',
+    oddsAgentDesc: 'Analyzes betting odds to identify value bet opportunities.',
+    deepAnalysisAgentDesc: 'Multi-layer analysis - team form, tactics, H2H, referee, weather.',
+    masterStrategistAgentDesc: 'Analyzes all agent outputs and creates weighted consensus.',
+    
+    // Analysis Sections
+    formAnalysis: 'Form Analysis',
+    goalExpectancy: 'Goal Expectancy',
+    xgAnalysis: 'xG Analysis',
+    timingPatterns: 'Timing Patterns',
+    cleanSheetAnalysis: 'Clean Sheet Analysis',
+    valueAnalysis: 'Value Analysis',
+    oddsAnalysis: 'Odds Analysis',
+    matchAnalysis: 'Match Analysis',
+    criticalFactors: 'Critical Factors',
+    probabilities: 'Probabilities',
+    finalConsensus: 'Final Consensus',
+    
+    // Predictions
+    matchResult: 'Match Result',
+    overUnder: 'Over/Under 2.5',
+    btts: 'Both Teams to Score',
+    corners: 'Corners',
+    cards: 'Cards',
+    firstHalf: 'First Half',
+    halfTimeFullTime: 'HT/FT',
+    asianHandicap: 'Asian Handicap',
+    correctScore: 'Correct Score',
+    
+    // Results
+    homeWin: 'Home Win',
+    draw: 'Draw',
+    awayWin: 'Away Win',
+    over: 'Over',
+    under: 'Under',
+    yes: 'Yes',
+    no: 'No',
+    
+    // Confidence
+    confidence: 'Confidence',
+    highConfidence: 'High Confidence',
+    mediumConfidence: 'Medium Confidence',
+    lowConfidence: 'Low Confidence',
+    
+    // Best Bet
+    bestBet: 'Best Bet',
+    valueBet: 'Value Bet',
+    recommendedStake: 'Recommended Stake',
+    
+    // Risk
+    riskLevel: 'Risk Level',
+    lowRisk: 'Low Risk',
+    mediumRisk: 'Medium Risk',
+    highRisk: 'High Risk',
+    
+    // Data Quality
+    dataQuality: 'Data Quality',
+    excellent: 'Excellent',
+    good: 'Good',
+    minimal: 'Minimal',
+    
+    // Motivation Scores
+    motivationAnalysis: 'PREPARATION & MOTIVATION ANALYSIS',
+    homeTeam: 'Home Team',
+    awayTeam: 'Away Team',
+    form: 'Form',
+    trend: 'Trend',
+    improving: 'Improving',
+    declining: 'Declining',
+    stable: 'Stable',
+    scoreExplanation: 'Score Meaning',
+    veryReady: 'Very ready',
+    normal: 'Normal',
+    unprepared: 'Unprepared',
+    veryBad: 'Very bad condition',
+    
+    // Sportmonks
+    sportmonksData: 'Sportmonks Data-Based Prediction',
+    
+    // System
+    systemAnalysis: 'system analysis',
+    agentConsensus: 'agent consensus',
+    processingTime: 'Processing Time',
+    
+    // Performance
+    performance: 'Performance',
+    accuracy: 'Accuracy',
+    pendingMatches: 'Pending Matches',
+    settledMatches: 'Settled Matches',
+    viewResults: 'View Results',
+    noDataAvailable: 'No data available',
+    
+    // Contact
+    contact: 'Contact',
+    contactUs: 'Contact Us',
+    yourMessage: 'Your Message',
+    send: 'Send',
+    messageSent: 'Message sent!',
+    
+    // General UI
+    details: 'Details',
+    summary: 'Summary',
+    showMore: 'Show More',
+    showLess: 'Show Less',
+    refresh: 'Refresh',
+    close: 'Close',
+    save: 'Save',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    back: 'Back',
+    next: 'Next',
+    previous: 'Previous',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    yesterday: 'Yesterday',
+    noData: 'No data found',
+    loadingData: 'Loading data...',
+    errorLoading: 'Error loading data',
+    tryAgain: 'Try Again',
+    
+    // Dashboard Specific
+    title: 'Football Analytics',
+    subtitle: 'AI Prediction System',
+    profile: 'Profile',
+    settings: 'Settings',
+    admin: 'Admin Panel',
+    selectDate: 'Select Date',
+    selectLeague: 'Select League',
+    allLeagues: 'All Leagues',
+    searchPlaceholder: 'Search team or league...',
+    noMatches: 'No matches found',
+    analyzeTime: '~10-15 seconds',
+    selectMatch: 'Select a Match',
+    selectMatchDesc: 'Select a match from the left to start analysis.',
+    analyzeTimeShort: 'Analysis takes only 10-15 seconds!',
+    riskLow: 'Low',
+    riskMedium: 'Medium',
+    halfTimeGoals: 'Half-Time Goals',
+    aiRecommendation: 'AI recommendation',
+    agreement: 'Agreement',
+    models: 'Models',
+    analysis: 'Analysis',
+    cached: 'Cached',
+    analyzed: 'Analyzed',
+    aiAnalysis: 'AI Analysis',
+    agentAnalysis: 'Agent Analysis',
+    selectAnalysisType: 'Select Analysis Type',
   },
   
   de: {
@@ -615,6 +939,168 @@ export const translations = {
     october: 'Oktober',
     november: 'November',
     december: 'Dezember',
+
+    // ==================== DASHBOARD & ANALYSIS ====================
+    
+    // Analysis Buttons
+    startAnalysis: 'Analyse starten',
+    analyzing: 'Analysiert...',
+    analyzeAgain: 'Erneut analysieren',
+    
+    // Agent Names
+    statsAgent: 'STATISTIK-AGENT',
+    oddsAgent: 'QUOTEN-AGENT',
+    deepAnalysisAgent: 'TIEFENANALYSE-AGENT',
+    masterStrategistAgent: 'MASTER-STRATEGEN-AGENT',
+    
+    // Agent Descriptions
+    statsAgentDesc: 'Analysiert Form, xG, Torerwartung, Zeitmuster und statistische Daten.',
+    oddsAgentDesc: 'Analysiert Wettquoten, um Value-Bet-Möglichkeiten zu identifizieren.',
+    deepAnalysisAgentDesc: 'Mehrstufige Analyse - Teamform, Taktik, H2H, Schiedsrichter, Wetter.',
+    masterStrategistAgentDesc: 'Analysiert alle Agent-Ausgaben und erstellt gewichteten Konsens.',
+    
+    // Analysis Sections
+    formAnalysis: 'Formanalyse',
+    goalExpectancy: 'Torerwartung',
+    xgAnalysis: 'xG-Analyse',
+    timingPatterns: 'Zeitmuster',
+    cleanSheetAnalysis: 'Zu-Null-Analyse',
+    valueAnalysis: 'Value-Analyse',
+    oddsAnalysis: 'Quotenanalyse',
+    matchAnalysis: 'Spielanalyse',
+    criticalFactors: 'Kritische Faktoren',
+    probabilities: 'Wahrscheinlichkeiten',
+    finalConsensus: 'Finaler Konsens',
+    
+    // Predictions
+    matchResult: 'Spielergebnis',
+    overUnder: 'Über/Unter 2.5',
+    btts: 'Beide Teams treffen',
+    corners: 'Ecken',
+    cards: 'Karten',
+    firstHalf: 'Erste Halbzeit',
+    halfTimeFullTime: 'HZ/EZ',
+    asianHandicap: 'Asian Handicap',
+    correctScore: 'Korrektes Ergebnis',
+    
+    // Results
+    homeWin: 'Heimsieg',
+    draw: 'Unentschieden',
+    awayWin: 'Auswärtssieg',
+    over: 'Über',
+    under: 'Unter',
+    yes: 'Ja',
+    no: 'Nein',
+    
+    // Confidence
+    confidence: 'Vertrauen',
+    highConfidence: 'Hohes Vertrauen',
+    mediumConfidence: 'Mittleres Vertrauen',
+    lowConfidence: 'Niedriges Vertrauen',
+    
+    // Best Bet
+    bestBet: 'Beste Wette',
+    valueBet: 'Value Wette',
+    recommendedStake: 'Empfohlener Einsatz',
+    
+    // Risk
+    riskLevel: 'Risikoniveau',
+    lowRisk: 'Niedriges Risiko',
+    mediumRisk: 'Mittleres Risiko',
+    highRisk: 'Hohes Risiko',
+    
+    // Data Quality
+    dataQuality: 'Datenqualität',
+    excellent: 'Ausgezeichnet',
+    good: 'Gut',
+    minimal: 'Minimal',
+    
+    // Motivation Scores
+    motivationAnalysis: 'VORBEREITUNG & MOTIVATIONSANALYSE',
+    homeTeam: 'Heimmannschaft',
+    awayTeam: 'Auswärtsmannschaft',
+    form: 'Form',
+    trend: 'Trend',
+    improving: 'Steigend',
+    declining: 'Fallend',
+    stable: 'Stabil',
+    scoreExplanation: 'Score-Bedeutung',
+    veryReady: 'Sehr bereit',
+    normal: 'Normal',
+    unprepared: 'Unvorbereitet',
+    veryBad: 'Sehr schlechter Zustand',
+    
+    // Sportmonks
+    sportmonksData: 'Sportmonks-datenbasierte Vorhersage',
+    
+    // System
+    systemAnalysis: 'Systemanalyse',
+    agentConsensus: 'Agent-Konsens',
+    processingTime: 'Verarbeitungszeit',
+    
+    // Performance
+    performance: 'Leistung',
+    accuracy: 'Genauigkeit',
+    pendingMatches: 'Ausstehende Spiele',
+    settledMatches: 'Abgeschlossene Spiele',
+    viewResults: 'Ergebnisse anzeigen',
+    noDataAvailable: 'Keine Daten verfügbar',
+    
+    // Contact
+    contact: 'Kontakt',
+    contactUs: 'Kontaktieren Sie uns',
+    yourMessage: 'Ihre Nachricht',
+    send: 'Senden',
+    messageSent: 'Nachricht gesendet!',
+    
+    // General UI
+    details: 'Details',
+    summary: 'Zusammenfassung',
+    showMore: 'Mehr anzeigen',
+    showLess: 'Weniger anzeigen',
+    refresh: 'Aktualisieren',
+    close: 'Schließen',
+    save: 'Speichern',
+    cancel: 'Abbrechen',
+    confirm: 'Bestätigen',
+    back: 'Zurück',
+    next: 'Weiter',
+    previous: 'Vorherige',
+    today: 'Heute',
+    tomorrow: 'Morgen',
+    yesterday: 'Gestern',
+    noData: 'Keine Daten gefunden',
+    loadingData: 'Daten werden geladen...',
+    errorLoading: 'Fehler beim Laden der Daten',
+    tryAgain: 'Erneut versuchen',
+    
+    // Dashboard Specific
+    title: 'Football Analytics',
+    subtitle: 'KI-Vorhersagesystem',
+    profile: 'Profil',
+    settings: 'Einstellungen',
+    admin: 'Admin Panel',
+    selectDate: 'Datum wählen',
+    selectLeague: 'Liga wählen',
+    allLeagues: 'Alle Ligen',
+    searchPlaceholder: 'Team oder Liga suchen...',
+    noMatches: 'Keine Spiele gefunden',
+    analyzeTime: '~10-15 Sekunden',
+    selectMatch: 'Spiel auswählen',
+    selectMatchDesc: 'Wählen Sie ein Spiel auf der linken Seite.',
+    analyzeTimeShort: 'Die Analyse dauert nur 10-15 Sekunden!',
+    riskLow: 'Niedrig',
+    riskMedium: 'Mittel',
+    halfTimeGoals: 'Halbzeit-Tore',
+    aiRecommendation: 'KI-Empfehlung',
+    agreement: 'Übereinstimmung',
+    models: 'Modelle',
+    analysis: 'Analyse',
+    cached: 'Zwischengespeichert',
+    analyzed: 'Analysiert',
+    aiAnalysis: 'KI-Analyse',
+    agentAnalysis: 'Agent-Analyse',
+    selectAnalysisType: 'Analysetyp wählen',
   },
 };
 

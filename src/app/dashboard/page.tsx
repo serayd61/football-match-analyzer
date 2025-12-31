@@ -966,7 +966,8 @@ export default function DashboardPage() {
           awayTeamId: fixture.awayTeamId,
           league: fixture.league,
           matchDate: fixture.date.split('T')[0],
-          skipCache: forceRefresh
+          skipCache: forceRefresh,
+          lang: lang // Dil parametresini API'ye gönder
         })
       });
       

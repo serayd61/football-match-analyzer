@@ -20,6 +20,7 @@ export interface UnifiedAnalysisInput {
   awayTeamId: number;
   league: string;
   matchDate: string;
+  lang?: 'tr' | 'en' | 'de';
 }
 
 export interface UnifiedConsensusResult {
@@ -101,12 +102,14 @@ export async function runUnifiedConsensus(
   try {
     // 1. Agent Analysis çalıştır (ana sistem)
     let agentResult: AgentAnalysisResult | null = null;
+    const lang = input.lang || 'en';
     try {
       console.log('\n🤖 Running Agent Analysis...');
       agentResult = await runAgentAnalysis(
         input.fixtureId,
         input.homeTeamId,
-        input.awayTeamId
+        input.awayTeamId,
+        lang
       );
       if (agentResult) {
         systemsUsed.push('agents');
