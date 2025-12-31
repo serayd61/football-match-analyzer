@@ -853,17 +853,16 @@ export async function runDeepAnalysisAgent(
       console.log('   🟣 [1/3] Trying DeepSeek with MCP for deep analysis...');
       try {
         response = await aiClient.chat([
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ], {
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ], {
           model: 'deepseek',
-          useMCP: true,
-          mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
-          mcpFallback: true,
+          useMCP: false, // MCP şimdilik devre dışı - direkt çalışsın
+          mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.25, // Daha deterministik
-          maxTokens: 2000,
-          timeout: 10000 // 10 saniye
+          maxTokens: 1500, // Daha az token = daha hızlı
+          timeout: 8000 // 8 saniye - hızlı yanıt
         });
         
         if (response) {
