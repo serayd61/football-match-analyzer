@@ -94,6 +94,16 @@ export class AIClient {
         finalMessages = await this.enrichWithMCP(messages, options.mcpTools);
       }
 
+      // Claude API requires system message as separate parameter
+      let systemMessage: string | undefined;
+      const userMessages = finalMessages.filter(m => {
+        if (m.role === 'system') {
+          systemMessage = m.content;
+          return false;
+        }
+        return true;
+      });
+
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -105,7 +115,8 @@ export class AIClient {
           model,
           max_tokens: maxTokens,
           temperature,
-          messages: finalMessages,
+          ...(systemMessage && { system: systemMessage }),
+          messages: userMessages,
         }),
         signal: controller.signal,
       });
