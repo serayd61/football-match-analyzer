@@ -476,10 +476,12 @@ export async function runGeniusAnalyst(
     ], {
       model: 'gpt-4',
       useMCP: true,
-      mcpTools: ['mathematical_modeling', 'statistical_analysis', 'monte_carlo'],
-      temperature: 0.15, // Çok düşük = daha tutarlı ve matematiksel
-      maxTokens: 2500, // 🆕 Daha da azaltıldı (3000 -> 2500) - daha hızlı response
-      timeout: 25000 // 25 saniye timeout - GPT-4 için yeterli süre
+      mcpTools: ['football_data', 'odds_data', 'team_stats'],
+      mcpFallback: true, // 🆕 MCP fallback aktif
+      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
+      temperature: 0.15,
+      maxTokens: 2500,
+      timeout: 25000
     });
 
     if (!response) {

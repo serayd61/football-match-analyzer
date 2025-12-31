@@ -905,11 +905,13 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
     const response = await aiClient.chat(messages, {
       model: 'claude',
       useMCP: true,
-      mcpTools: ['odds_data', 'market_analysis'], 
+      mcpTools: ['football_data', 'odds_data'], 
+      mcpFallback: true, // 🆕 MCP fallback aktif
+      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
       temperature: 0.4, 
       maxTokens: 1500,
-      timeout: 20000 // 20 saniye timeout - Claude için yeterli süre
-    }); // Agresif analiz için artırıldı
+      timeout: 20000
+    });
     
     if (response) {
       const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();

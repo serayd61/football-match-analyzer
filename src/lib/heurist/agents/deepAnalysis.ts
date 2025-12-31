@@ -846,9 +846,11 @@ export async function runDeepAnalysisAgent(
       model: 'claude',
       useMCP: true,
       mcpTools: ['football_data', 'team_stats', 'match_context'],
-      temperature: 0.4, // Agresif analiz için artırıldı - farklı bakış açıları
-      maxTokens: 2500, // 🆕 Azaltıldı (3000 -> 2500) - daha hızlı
-      timeout: 25000 // 25 saniye timeout - Claude için yeterli süre
+      mcpFallback: true, // 🆕 MCP fallback aktif
+      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
+      temperature: 0.4,
+      maxTokens: 2500,
+      timeout: 25000
     });
 
     if (!response) {

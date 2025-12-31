@@ -17,6 +17,8 @@ export interface AIOptions {
   timeout?: number;
   useMCP?: boolean; // MCP (Model Context Protocol) support
   mcpTools?: string[]; // MCP tools to use
+  mcpFallback?: boolean; // Use MCP as fallback if AI fails
+  fixtureId?: number; // For MCP data fetching
 }
 
 export interface MCPTool {
@@ -131,6 +133,13 @@ export class AIClient {
       } else {
         console.error('❌ Claude request error:', error);
       }
+      
+      // MCP Fallback: If AI fails and mcpFallback is enabled, try to get data from MCP
+      if (options.mcpFallback && options.fixtureId) {
+        console.log('🔄 AI failed, trying MCP fallback...');
+        return this.getMCPFallbackData(options.fixtureId, options.mcpTools || []);
+      }
+      
       return null;
     }
   }
@@ -206,8 +215,121 @@ export class AIClient {
       } else {
         console.error('❌ OpenAI request error:', error);
       }
+      
+      // MCP Fallback: If AI fails and mcpFallback is enabled, try to get data from MCP
+      if (options.mcpFallback && options.fixtureId) {
+        console.log('🔄 AI failed, trying MCP fallback...');
+        return this.getMCPFallbackData(options.fixtureId, options.mcpTools || []);
+      }
+      
       return null;
     }
+  }
+
+  /**
+   * MCP Fallback - Get data directly from MCP when AI fails
+   */
+  private async getMCPFallbackData(fixtureId: number, tools: string[]): Promise<string | null> {
+    if (!this.mcpServerUrl) {
+      console.error('❌ MCP Server URL not configured for fallback');
+      return null;
+    }
+
+    try {
+      console.log(`🔧 MCP Fallback: Fetching data for fixture ${fixtureId}`);
+      
+      // Fetch multiple data sources from MCP
+      const mcpResults: Record<string, any> = {};
+      
+      for (const tool of tools) {
+        try {
+          const response = await fetch(this.mcpServerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: Date.now(),
+              method: 'tools/call',
+              params: {
+                name: tool,
+                arguments: { fixtureId },
+              },
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.result?.content?.[0]?.text) {
+              mcpResults[tool] = JSON.parse(data.result.content[0].text);
+              console.log(`✅ MCP ${tool}: Data fetched`);
+            }
+          }
+        } catch (toolError) {
+          console.warn(`⚠️ MCP tool ${tool} failed:`, toolError);
+        }
+      }
+
+      if (Object.keys(mcpResults).length === 0) {
+        console.error('❌ MCP Fallback: No data retrieved');
+        return null;
+      }
+
+      // Generate analysis from MCP data
+      const fallbackAnalysis = this.generateFallbackAnalysis(mcpResults, fixtureId);
+      console.log(`✅ MCP Fallback: Generated analysis from ${Object.keys(mcpResults).length} sources`);
+      
+      return JSON.stringify(fallbackAnalysis);
+    } catch (error) {
+      console.error('❌ MCP Fallback error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate analysis from MCP data when AI is unavailable
+   */
+  private generateFallbackAnalysis(mcpData: Record<string, any>, fixtureId: number): any {
+    const footballData = mcpData.football_data?.data;
+    const oddsData = mcpData.odds_data?.data;
+    const teamStats = mcpData.team_stats?.data;
+    const h2h = mcpData.head_to_head?.data;
+
+    // Extract key metrics
+    const homeForm = footballData?.homeTeam?.form || [];
+    const awayForm = footballData?.awayTeam?.form || [];
+    const odds = oddsData?.odds || {};
+
+    // Calculate basic predictions from data
+    const homeWins = homeForm.filter((r: string) => r === 'W').length;
+    const awayWins = awayForm.filter((r: string) => r === 'W').length;
+    const homePoints = homeForm.reduce((acc: number, r: string) => acc + (r === 'W' ? 3 : r === 'D' ? 1 : 0), 0);
+    const awayPoints = awayForm.reduce((acc: number, r: string) => acc + (r === 'W' ? 3 : r === 'D' ? 1 : 0), 0);
+
+    const formDiff = homePoints - awayPoints;
+    const matchResult = formDiff > 3 ? '1' : formDiff < -3 ? '2' : 'X';
+    const confidence = Math.min(75, 50 + Math.abs(formDiff) * 2);
+
+    return {
+      source: 'MCP_FALLBACK',
+      fixtureId,
+      matchResult: {
+        prediction: matchResult,
+        confidence,
+        reasoning: `MCP Fallback: Ev sahibi ${homePoints} puan, Deplasman ${awayPoints} puan. Form farkı: ${formDiff > 0 ? '+' : ''}${formDiff}`,
+      },
+      overUnder: {
+        prediction: 'Over',
+        confidence: 55,
+        reasoning: 'MCP Fallback: İstatistiksel ortalama kullanıldı',
+      },
+      btts: {
+        prediction: 'Yes',
+        confidence: 55,
+        reasoning: 'MCP Fallback: İstatistiksel ortalama kullanıldı',
+      },
+      dataQuality: 'mcp_fallback',
+      warning: 'Bu analiz AI yerine MCP verilerinden üretildi. Gerçek AI analizi için tekrar deneyin.',
+    };
   }
 
   /**

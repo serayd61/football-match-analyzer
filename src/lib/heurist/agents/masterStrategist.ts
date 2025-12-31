@@ -507,10 +507,12 @@ export async function runMasterStrategist(
     ], {
       model: 'claude',
       useMCP: true,
-      mcpTools: ['consensus_analysis', 'risk_assessment'],
-      temperature: 0.2, // Düşük temperature = daha tutarlı
-      maxTokens: 2000, // 🆕 Daha da azaltıldı (2500 -> 2000) - daha hızlı response
-      timeout: 25000 // 25 saniye timeout - Claude için yeterli süre
+      mcpTools: ['football_data', 'odds_data', 'team_stats'],
+      mcpFallback: true, // 🆕 MCP fallback aktif
+      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
+      temperature: 0.2,
+      maxTokens: 2000,
+      timeout: 25000
     });
 
     if (!response) {

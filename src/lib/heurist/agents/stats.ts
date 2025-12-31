@@ -994,11 +994,13 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
     const response = await aiClient.chat(messages, {
       model: 'claude',
       useMCP: true,
-      mcpTools: ['football_data', 'odds_data'], 
+      mcpTools: ['football_data', 'odds_data', 'team_stats'], 
+      mcpFallback: true, // 🆕 MCP fallback aktif
+      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
       temperature: 0.4, 
       maxTokens: 1500,
-      timeout: 20000 // 20 saniye timeout - Claude için yeterli süre
-    }); // Agresif analiz için artırıldı
+      timeout: 20000
+    });
     
     if (response) {
       const parsed = extractJSON(response);
