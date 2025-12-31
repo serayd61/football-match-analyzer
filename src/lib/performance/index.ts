@@ -175,10 +175,11 @@ export async function getAnalyses(options: {
   try {
     console.log('📋 getAnalyses called with options:', JSON.stringify(options));
     
+    // Use created_at for ordering (more reliable than match_date)
     let query = getSupabase()
       .from('analysis_performance')
       .select('*', { count: 'exact' })
-      .order('match_date', { ascending: false });
+      .order('created_at', { ascending: false, nullsFirst: false });
     
     if (options.settled !== undefined) {
       query = query.eq('match_settled', options.settled);
@@ -196,21 +197,27 @@ export async function getAnalyses(options: {
       query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
     }
     
+    console.log('   Executing Supabase query...');
     const { data, count, error } = await query;
     
     if (error) {
       console.error('❌ Supabase query error:', error.message);
       console.error('   Code:', error.code);
       console.error('   Details:', error.details);
+      console.error('   Hint:', error.hint);
       return { data: [], count: 0, error: error.message };
     }
     
     console.log(`✅ getAnalyses returned ${data?.length || 0} records (total: ${count})`);
+    if (data && data.length > 0) {
+      console.log('   First record:', data[0].fixture_id, data[0].home_team, 'vs', data[0].away_team);
+    }
     
     return { data: data || [], count: count || 0 };
     
   } catch (error: any) {
     console.error('❌ Get analyses exception:', error?.message || error);
+    console.error('   Stack:', error?.stack);
     return { data: [], count: 0, error: error?.message || 'Unknown error' };
   }
 }
