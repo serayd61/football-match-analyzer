@@ -82,12 +82,12 @@ export class AIClient {
       return null;
     }
 
-    // Claude 3.5 Sonnet - en hızlı ve güvenilir model
+    // Claude Sonnet 4 - en hızlı ve güvenilir model
     const model = 'claude-sonnet-4-20250514';
     
     const temperature = options.temperature ?? 0.15;
-    const maxTokens = options.maxTokens ?? 2000; // Daha düşük token limiti = daha hızlı
-    const timeout = options.timeout ?? 25000; // 25 saniye default
+    const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı
+    const timeout = options.timeout ?? 8000; // 8 saniye default (Vercel 60s limit)
 
     try {
       console.log(`🤖 Claude calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
@@ -177,8 +177,8 @@ export class AIClient {
     const model = 'gpt-4-turbo-preview';
     
     const temperature = options.temperature ?? 0.15;
-    const maxTokens = options.maxTokens ?? 2000; // Daha düşük token limiti = daha hızlı
-    const timeout = options.timeout ?? 25000; // 25 saniye default
+    const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı
+    const timeout = options.timeout ?? 8000; // 8 saniye (Vercel 60s limit)
 
     try {
       console.log(`🤖 OpenAI calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
@@ -254,8 +254,8 @@ export class AIClient {
 
     const model = 'deepseek-chat';
     const temperature = options.temperature ?? 0.3;
-    const maxTokens = options.maxTokens ?? 3000;
-    const timeout = options.timeout ?? 30000; // 30 saniye - DeepSeek için daha uzun
+    const maxTokens = options.maxTokens ?? 2000; // Daha düşük token
+    const timeout = options.timeout ?? 10000; // 10 saniye (Vercel 60s limit)
 
     try {
       console.log(`🤖 DeepSeek calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);

@@ -479,8 +479,8 @@ export async function runGeniusAnalyst(
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.15,
-      maxTokens: 2000, // Daha az token = daha hızlı
-      timeout: 20000 // 20 saniye
+      maxTokens: 1000, // Daha az token = daha hızlı
+      timeout: 8000 // 8 saniye - Vercel limit
     });
 
     if (!response) {

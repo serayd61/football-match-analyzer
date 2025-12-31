@@ -857,8 +857,8 @@ export async function runDeepAnalysisAgent(
         mcpFallback: false,
         fixtureId: matchData.fixtureId,
         temperature: 0.35,
-        maxTokens: 2500,
-        timeout: 25000 // 25 saniye
+        maxTokens: 1500,
+        timeout: 8000 // 8 saniye - Vercel limit
       });
       
       if (response) {
@@ -885,8 +885,8 @@ export async function runDeepAnalysisAgent(
             mcpFallback: true,
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
-            maxTokens: 3000,
-            timeout: 30000 // 30 saniye
+            maxTokens: 2000,
+            timeout: 10000 // 10 saniye - Vercel limit
           });
           
           if (response) {

@@ -510,8 +510,8 @@ export async function runMasterStrategist(
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.2,
-      maxTokens: 1500, // Daha az token = daha hızlı
-      timeout: 20000 // 20 saniye
+      maxTokens: 1000, // Daha az token = daha hızlı
+      timeout: 6000 // 6 saniye - Vercel limit
     });
 
     if (!response) {

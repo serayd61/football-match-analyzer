@@ -908,8 +908,8 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.4, 
-      maxTokens: 1500,
-      timeout: 18000 // 18 saniye
+      maxTokens: 1000,
+      timeout: 6000 // 6 saniye - Vercel limit
     });
     
     if (response) {

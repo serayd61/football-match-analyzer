@@ -997,8 +997,8 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.4, 
-      maxTokens: 1500,
-      timeout: 18000 // 18 saniye
+      maxTokens: 1000,
+      timeout: 6000 // 6 saniye - Vercel limit
     });
     
     if (response) {

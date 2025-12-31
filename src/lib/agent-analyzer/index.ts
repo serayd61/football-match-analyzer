@@ -1273,24 +1273,24 @@ export async function runAgentAnalysis(
       console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
     }
     
-    // 🆕 Agent'ları paralel çalıştır - optimize edilmiş timeout'lar
+    // 🆕 Agent'ları paralel çalıştır - AGRESİF timeout'lar (Vercel 60s limit)
     const [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 20000, 'Stats Agent'), // 20 saniye
+      }), 8000, 'Stats Agent'), // 8 saniye
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 20000, 'Odds Agent'), // 20 saniye
+      }), 8000, 'Odds Agent'), // 8 saniye
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ DeepAnalysis agent failed:', err?.message || err);
         return null;
-      }), 22000, 'DeepAnalysis Agent'), // 22 saniye
+      }), 12000, 'DeepAnalysis Agent'), // 12 saniye
       withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
         console.error('❌ GeniusAnalyst agent failed:', err?.message || err);
         return null;
-      }), 22000, 'GeniusAnalyst Agent'), // 22 saniye
+      }), 10000, 'GeniusAnalyst Agent'), // 10 saniye
     ]);
     
     // 🆕 Minimum agent başarı kontrolü - en az 2 agent başarılı olmalı
@@ -1316,10 +1316,10 @@ export async function runAgentAnalysis(
     }
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (22s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (8s timeout)...');
     let masterStrategistResult = null;
     try {
-      // 22 saniye timeout - hızlı analiz
+      // 8 saniye timeout - Vercel limit için agresif
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
@@ -1334,9 +1334,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 22s');
+            console.warn('   ⏱️ Master Strategist timeout after 8s');
             resolve(null);
-          }, 22000);
+          }, 8000);
         })
       ]);
       
