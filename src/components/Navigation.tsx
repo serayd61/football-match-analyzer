@@ -99,11 +99,6 @@ export default function Navigation() {
                 >
                   <span>{item.icon}</span>
                   <span>{item.label}</span>
-                  {item.badge && (
-                    <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded animate-pulse">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               ))}
             </div>
@@ -167,11 +162,6 @@ export default function Navigation() {
                 >
                   <span className="text-xl">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
-                  {item.badge && (
-                    <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded animate-pulse">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               ))}
             </div>
