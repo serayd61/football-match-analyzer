@@ -510,11 +510,11 @@ export async function runMasterStrategist(
       mcpTools: ['consensus_analysis', 'risk_assessment'],
       temperature: 0.2, // Düşük temperature = daha tutarlı
       maxTokens: 2000, // 🆕 Daha da azaltıldı (2500 -> 2000) - daha hızlı response
-      timeout: 8000 // 🆕 8 saniye timeout (daha agresif)
+      timeout: 25000 // 25 saniye timeout - Claude için yeterli süre
     });
 
     if (!response) {
-      throw new Error('No response from Heurist');
+      throw new Error('No response from AI');
     }
 
     // Parse JSON

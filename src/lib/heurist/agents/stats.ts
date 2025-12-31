@@ -997,7 +997,7 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
       mcpTools: ['football_data', 'odds_data'], 
       temperature: 0.4, 
       maxTokens: 1500,
-      timeout: 12000 // 🆕 12 saniye timeout
+      timeout: 20000 // 20 saniye timeout - Claude için yeterli süre
     }); // Agresif analiz için artırıldı
     
     if (response) {

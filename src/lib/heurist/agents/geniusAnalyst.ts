@@ -479,11 +479,11 @@ export async function runGeniusAnalyst(
       mcpTools: ['mathematical_modeling', 'statistical_analysis', 'monte_carlo'],
       temperature: 0.15, // Çok düşük = daha tutarlı ve matematiksel
       maxTokens: 2500, // 🆕 Daha da azaltıldı (3000 -> 2500) - daha hızlı response
-      timeout: 10000 // 🆕 10 saniye timeout (daha agresif)
+      timeout: 25000 // 25 saniye timeout - GPT-4 için yeterli süre
     });
 
     if (!response) {
-      throw new Error('No response from Heurist');
+      throw new Error('No response from AI');
     }
 
     // Parse JSON

@@ -848,7 +848,7 @@ export async function runDeepAnalysisAgent(
       mcpTools: ['football_data', 'team_stats', 'match_context'],
       temperature: 0.4, // Agresif analiz için artırıldı - farklı bakış açıları
       maxTokens: 2500, // 🆕 Azaltıldı (3000 -> 2500) - daha hızlı
-      timeout: 12000 // 🆕 12 saniye timeout
+      timeout: 25000 // 25 saniye timeout - Claude için yeterli süre
     });
 
     if (!response) {
