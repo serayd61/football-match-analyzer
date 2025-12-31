@@ -841,47 +841,71 @@ export async function runDeepAnalysisAgent(
   try {
     let response = null;
     
-    // DeepSeek varsa önce onu dene, yoksa direkt Claude'a geç
-    const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+    // ============================================================
+    // STRATEJİ: Claude → DeepSeek → Intelligent Fallback
+    // ============================================================
     
-    if (hasDeepSeek) {
-      console.log('   🧠 Trying DeepSeek with MCP for deep analysis...');
+    // 1️⃣ ÖNCE CLAUDE DENE (daha stabil ve hızlı)
+    console.log('   🔵 [1/3] Trying Claude for deep analysis...');
+    try {
       response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-        model: 'deepseek',
-        useMCP: true,
-        mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
-        mcpFallback: true,
-        fixtureId: matchData.fixtureId,
-        temperature: 0.3,
-        maxTokens: 3000,
-        timeout: 25000
-      });
-    }
-
-    // DeepSeek yok veya başarısız olursa Claude'u dene
-    if (!response) {
-      console.log('   🔄 Trying Claude for deep analysis...');
-      response = await aiClient.chat([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ], {
         model: 'claude',
         useMCP: false,
         mcpFallback: false,
         fixtureId: matchData.fixtureId,
-        temperature: 0.4,
+        temperature: 0.35,
         maxTokens: 2500,
-        timeout: 20000
+        timeout: 25000 // 25 saniye
       });
+      
+      if (response) {
+        console.log('   ✅ Claude responded successfully');
+      }
+    } catch (claudeError: any) {
+      console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
     }
 
-    // Her ikisi de başarısız olursa fallback kullan
+    // 2️⃣ CLAUDE BAŞARISIZ OLURSA DEEPSEEK DENE
     if (!response) {
-      console.log('   ⚠️ AI models failed, using intelligent fallback...');
-      return getDefaultDeepAnalysis(matchData, language);
+      const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+      
+      if (hasDeepSeek) {
+        console.log('   🟣 [2/3] Trying DeepSeek with MCP...');
+        try {
+          response = await aiClient.chat([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ], {
+            model: 'deepseek',
+            useMCP: true,
+            mcpTools: ['football_data', 'team_stats', 'head_to_head'],
+            mcpFallback: true,
+            fixtureId: matchData.fixtureId,
+            temperature: 0.3,
+            maxTokens: 3000,
+            timeout: 30000 // 30 saniye
+          });
+          
+          if (response) {
+            console.log('   ✅ DeepSeek responded successfully');
+          }
+        } catch (deepseekError: any) {
+          console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
+        }
+      } else {
+        console.log('   ⚠️ DeepSeek API key not available, skipping...');
+      }
+    }
+
+    // 3️⃣ HER İKİSİ DE BAŞARISIZ OLURSA AKILLI FALLBACK
+    if (!response) {
+      console.log('   🟠 [3/3] Using intelligent fallback analysis...');
+      const fallbackResult = getDefaultDeepAnalysis(matchData, language);
+      console.log(`   ✅ Fallback generated: ${fallbackResult.matchResult?.prediction} (${fallbackResult.matchResult?.confidence}%)`);
+      return fallbackResult;
     }
     
     // JSON parse
