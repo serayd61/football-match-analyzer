@@ -87,7 +87,7 @@ export class AIClient {
     
     const temperature = options.temperature ?? 0.15;
     const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı
-    const timeout = options.timeout ?? 8000; // 8 saniye default (Vercel 60s limit)
+    const timeout = options.timeout ?? 20000; // 20 saniye default
 
     try {
       console.log(`🤖 Claude calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
@@ -178,7 +178,7 @@ export class AIClient {
     
     const temperature = options.temperature ?? 0.15;
     const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı
-    const timeout = options.timeout ?? 8000; // 8 saniye (Vercel 60s limit)
+    const timeout = options.timeout ?? 20000; // 20 saniye
 
     try {
       console.log(`🤖 OpenAI calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
@@ -255,7 +255,7 @@ export class AIClient {
     const model = 'deepseek-chat';
     const temperature = options.temperature ?? 0.3;
     const maxTokens = options.maxTokens ?? 2000; // Daha düşük token
-    const timeout = options.timeout ?? 10000; // 10 saniye (Vercel 60s limit)
+    const timeout = options.timeout ?? 25000; // 25 saniye (DeepSeek)
 
     try {
       console.log(`🤖 DeepSeek calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);

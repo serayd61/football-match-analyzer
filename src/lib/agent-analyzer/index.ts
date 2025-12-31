@@ -1281,19 +1281,29 @@ export async function runAgentAnalysis(
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 10000, 'Stats Agent'), // 10 saniye
+      }), 20000, 'Stats Agent'), // 20 saniye
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 10000, 'Odds Agent'), // 10 saniye
+      }), 20000, 'Odds Agent'), // 20 saniye
     ]);
     
-    // Deep Analysis ve Genius Analyst devre dışı - sadece 3 agent
-    const deepAnalysisResult = null;
+    // 🔥 Deep Analysis'i aktifleştir (timeout artırıldı)
+    console.log('\n🔬 [DEEP ANALYSIS AGENT]');
+    const deepAnalysisResult = await withTimeout(
+      runDeepAnalysisAgent(matchData, language).catch(err => {
+        console.error('❌ Deep Analysis agent failed:', err?.message || err);
+        return null;
+      }), 
+      25000, // 25 saniye timeout
+      'Deep Analysis Agent'
+    );
+    
+    // Genius Analyst devre dışı
     const geniusAnalystResult = null;
     
     // 🆕 Minimum agent başarı kontrolü - en az 1 agent başarılı olmalı
-    const successfulAgents = [statsResult, oddsResult].filter(r => r !== null).length;
+    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult].filter(r => r !== null).length;
     
     if (successfulAgents < 1) {
       console.error(`❌ No agents completed. Cannot proceed.`);
@@ -1327,9 +1337,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 8s');
+            console.warn('   ⏱️ Master Strategist timeout after 25s');
             resolve(null);
-          }, 8000);
+          }, 25000);
         })
       ]);
       
