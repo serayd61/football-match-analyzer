@@ -1273,46 +1273,39 @@ export async function runAgentAnalysis(
       console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
     }
     
-    // 🆕 Agent'ları paralel çalıştır - AGRESİF timeout'lar (Vercel 60s limit)
-    const [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
+    // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Master Strategist
+    // Sınırsız bahis seçenekleri üretir - herhangi bir iddaa türüne bağlı değil
+    console.log('🎯 3-Agent System: Stats, Odds, Master Strategist');
+    
+    const [statsResult, oddsResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 8000, 'Stats Agent'), // 8 saniye
+      }), 10000, 'Stats Agent'), // 10 saniye
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 8000, 'Odds Agent'), // 8 saniye
-      withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
-        console.error('❌ DeepAnalysis agent failed:', err?.message || err);
-        return null;
-      }), 12000, 'DeepAnalysis Agent'), // 12 saniye
-      withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
-        console.error('❌ GeniusAnalyst agent failed:', err?.message || err);
-        return null;
-      }), 10000, 'GeniusAnalyst Agent'), // 10 saniye
+      }), 10000, 'Odds Agent'), // 10 saniye
     ]);
     
-    // 🆕 Minimum agent başarı kontrolü - en az 2 agent başarılı olmalı
-    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult, geniusAnalystResult].filter(r => r !== null).length;
+    // Deep Analysis ve Genius Analyst devre dışı - sadece 3 agent
+    const deepAnalysisResult = null;
+    const geniusAnalystResult = null;
     
-    if (successfulAgents < 2) {
-      console.error(`❌ Insufficient agents completed (${successfulAgents}/4). Minimum 2 required.`);
+    // 🆕 Minimum agent başarı kontrolü - en az 1 agent başarılı olmalı
+    const successfulAgents = [statsResult, oddsResult].filter(r => r !== null).length;
+    
+    if (successfulAgents < 1) {
+      console.error(`❌ No agents completed. Cannot proceed.`);
       return null;
     }
     
-    console.log(`✅ Agents completed: ${successfulAgents}/4 successful`);
+    console.log(`✅ Core Agents completed: ${successfulAgents}/2 successful`);
     if (statsResult) {
       console.log(`   📊 Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts} | Conf: ${statsResult.confidence || statsResult.overUnderConfidence || 'N/A'}%`);
     }
     if (oddsResult) {
       console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
-    }
-    if (deepAnalysisResult) {
-      console.log(`   🔬 DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'} | ${deepAnalysisResult.overUnder?.prediction || 'N/A'} | Conf: ${deepAnalysisResult.matchResult?.confidence || 'N/A'}%`);
-    }
-    if (geniusAnalystResult) {
-      console.log(`   🧠 GeniusAnalyst: ${geniusAnalystResult.predictions?.matchResult?.prediction || 'N/A'} | Conf: ${geniusAnalystResult.finalRecommendation?.overallConfidence || 0}%`);
     }
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
