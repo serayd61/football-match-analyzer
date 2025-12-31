@@ -1278,20 +1278,19 @@ export async function runAgentAnalysis(
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 12000, 'Stats Agent'), // 12 saniye - optimize edildi
+      }), 25000, 'Stats Agent'), // 25 saniye - Claude için yeterli
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 12000, 'Odds Agent'), // 12 saniye - optimize edildi
+      }), 25000, 'Odds Agent'), // 25 saniye - Claude için yeterli
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ DeepAnalysis agent failed:', err?.message || err);
         return null;
-      }), 12000, 'DeepAnalysis Agent'), // 12 saniye - optimize edildi
-      // 🆕 Genius Analyst Agent - daha kısa timeout (opsiyonel agent)
+      }), 30000, 'DeepAnalysis Agent'), // 30 saniye - Claude için yeterli
       withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
         console.error('❌ GeniusAnalyst agent failed:', err?.message || err);
         return null;
-      }), 10000, 'GeniusAnalyst Agent'), // 10 saniye - daha agresif
+      }), 30000, 'GeniusAnalyst Agent'), // 30 saniye - GPT-4 için yeterli
     ]);
     
     // 🆕 Minimum agent başarı kontrolü - en az 2 agent başarılı olmalı
@@ -1317,11 +1316,10 @@ export async function runAgentAnalysis(
     }
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
-    // ⚠️ Master Strategist opsiyonel - timeout olursa atla (ana agent'lar yeterli)
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (optional, 10s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (30s timeout)...');
     let masterStrategistResult = null;
     try {
-      // 10 saniye timeout ile çalıştır
+      // 30 saniye timeout ile çalıştır - Claude için yeterli süre
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
@@ -1336,9 +1334,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 10s, skipping (optional agent)');
+            console.warn('   ⏱️ Master Strategist timeout after 30s');
             resolve(null);
-          }, 10000);
+          }, 30000);
         })
       ]);
       
