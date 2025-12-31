@@ -83,7 +83,7 @@ export class AIClient {
     }
 
     // Claude 3.5 Sonnet - en hızlı ve güvenilir model
-    const model = 'claude-3-5-sonnet-20241022';
+    const model = 'claude-sonnet-4-20250514';
     
     const temperature = options.temperature ?? 0.15;
     const maxTokens = options.maxTokens ?? 2000; // Daha düşük token limiti = daha hızlı

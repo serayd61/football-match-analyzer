@@ -1,7 +1,13 @@
 -- ============================================================================
--- COMPLETE MIGRATION - TÜM EKSİK TABLOLAR
+-- COMPLETE MIGRATION v3 - TÜM EKSİK TABLOLAR + RLS POLICY
 -- Bu SQL'i Supabase Dashboard > SQL Editor'da çalıştır
 -- ============================================================================
+
+-- ============================================================================
+-- 0. RLS'Yİ DEVRE DIŞI BIRAK (Mevcut tablolarda)
+-- ============================================================================
+ALTER TABLE IF EXISTS unified_analysis DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS analysis_performance DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- 1. UNIFIED_ANALYSIS TABLOSU
@@ -21,16 +27,24 @@ CREATE TABLE unified_analysis (
   
   -- Quick access fields
   match_result_prediction VARCHAR(10),
+  match_result_confidence INTEGER DEFAULT 50,
   over_under_prediction VARCHAR(10),
+  over_under_confidence INTEGER DEFAULT 50,
   btts_prediction VARCHAR(10),
+  btts_confidence INTEGER DEFAULT 50,
   overall_confidence INTEGER DEFAULT 50,
   agreement INTEGER DEFAULT 0,
   risk_level VARCHAR(20),
   
   -- Best bet
-  best_bet_market VARCHAR(50),
-  best_bet_selection VARCHAR(50),
+  best_bet_market VARCHAR(100),
+  best_bet_selection VARCHAR(100),
   best_bet_confidence INTEGER,
+  best_bet_value VARCHAR(20),
+  
+  -- Score prediction
+  score_prediction VARCHAR(10),
+  expected_goals DECIMAL(4,2),
   
   -- Metadata
   processing_time INTEGER,
@@ -40,6 +54,9 @@ CREATE TABLE unified_analysis (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- RLS devre dışı bırak
+ALTER TABLE unified_analysis DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_ua_fixture_id ON unified_analysis(fixture_id);
 CREATE INDEX idx_ua_match_date ON unified_analysis(match_date);
@@ -114,6 +131,9 @@ CREATE TABLE analysis_performance (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- RLS devre dışı bırak
+ALTER TABLE analysis_performance DISABLE ROW LEVEL SECURITY;
+
 CREATE INDEX idx_ap_fixture_id ON analysis_performance(fixture_id);
 CREATE INDEX idx_ap_match_settled ON analysis_performance(match_settled);
 CREATE INDEX idx_ap_match_date ON analysis_performance(match_date);
@@ -143,7 +163,17 @@ CREATE TRIGGER trigger_ap_timestamp
   EXECUTE FUNCTION update_timestamp();
 
 -- ============================================================================
+-- 4. PUBLIC INSERT/SELECT/UPDATE İZNİ (Anon key için)
+-- ============================================================================
+GRANT ALL ON unified_analysis TO anon;
+GRANT ALL ON unified_analysis TO authenticated;
+GRANT ALL ON unified_analysis TO service_role;
+
+GRANT ALL ON analysis_performance TO anon;
+GRANT ALL ON analysis_performance TO authenticated;
+GRANT ALL ON analysis_performance TO service_role;
+
+-- ============================================================================
 -- DONE!
 -- ============================================================================
-SELECT 'Migration completed successfully!' as status;
-
+SELECT 'Migration v3 completed successfully! RLS disabled, all permissions granted.' as status;
