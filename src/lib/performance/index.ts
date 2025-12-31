@@ -14,9 +14,13 @@ function getSupabase(): SupabaseClient {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Supabase credentials missing!');
+      console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'set' : 'MISSING');
+      console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseKey ? 'set' : 'MISSING');
       throw new Error('Supabase credentials not configured');
     }
     
+    console.log('🔗 Initializing Supabase client...');
     supabase = createClient(supabaseUrl, supabaseKey);
   }
   return supabase;
@@ -169,6 +173,8 @@ export async function getAnalyses(options: {
   league?: string;
 } = {}): Promise<{ data: any[]; count: number; error?: string }> {
   try {
+    console.log('📋 getAnalyses called with options:', JSON.stringify(options));
+    
     let query = getSupabase()
       .from('analysis_performance')
       .select('*', { count: 'exact' })
@@ -193,15 +199,19 @@ export async function getAnalyses(options: {
     const { data, count, error } = await query;
     
     if (error) {
-      console.error('❌ Error fetching analyses:', error);
+      console.error('❌ Supabase query error:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   Details:', error.details);
       return { data: [], count: 0, error: error.message };
     }
+    
+    console.log(`✅ getAnalyses returned ${data?.length || 0} records (total: ${count})`);
     
     return { data: data || [], count: count || 0 };
     
   } catch (error: any) {
-    console.error('❌ Get analyses error:', error);
-    return { data: [], count: 0, error: error.message };
+    console.error('❌ Get analyses exception:', error?.message || error);
+    return { data: [], count: 0, error: error?.message || 'Unknown error' };
   }
 }
 

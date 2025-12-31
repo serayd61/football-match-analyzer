@@ -10,9 +10,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    console.log('📊 GET /api/performance/stats called');
+    
     const result = await getAccuracyStats();
     
+    console.log(`   Stats: ${result.stats?.length || 0} agents, summary: ${result.summary ? 'yes' : 'no'}, error: ${result.error || 'none'}`);
+    
     if (result.error) {
+      console.error('❌ getAccuracyStats error:', result.error);
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500 }

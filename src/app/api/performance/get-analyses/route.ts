@@ -6,8 +6,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyses } from '@/lib/performance';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
+    console.log('📊 GET /api/performance/get-analyses called');
+    
     const { searchParams } = new URL(request.url);
     
     const settled = searchParams.get('settled');
@@ -33,9 +37,14 @@ export async function GET(request: NextRequest) {
       options.league = league;
     }
     
+    console.log('   Options:', JSON.stringify(options));
+    
     const result = await getAnalyses(options);
     
+    console.log(`   Result: ${result.data?.length || 0} records, error: ${result.error || 'none'}`);
+    
     if (result.error) {
+      console.error('❌ getAnalyses error:', result.error);
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500 }
