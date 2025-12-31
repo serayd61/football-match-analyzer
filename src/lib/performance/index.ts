@@ -86,66 +86,75 @@ export interface AccuracyStats {
 export async function saveAnalysisToPerformance(analysis: AnalysisRecord): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`💾 Saving analysis for fixture ${analysis.fixtureId}...`);
-    
-    // Extract agent predictions
-    const extractPrediction = (agent: any): AgentPrediction | null => {
-      if (!agent) return null;
-      
-      return {
-        matchResult: agent.matchResult || agent.prediction?.matchResult?.prediction || agent.finalConsensus?.matchResult?.prediction || '',
-        overUnder: agent.overUnder || agent.prediction?.overUnder?.prediction || agent.finalConsensus?.overUnder?.prediction || '',
-        btts: agent.btts || agent.prediction?.btts?.prediction || agent.finalConsensus?.btts?.prediction || '',
-        confidence: agent.confidence || agent.overallConfidence || 50,
-        reasoning: agent.agentSummary || agent.recommendation || ''
-      };
-    };
+    console.log(`   📋 Match: ${analysis.homeTeam} vs ${analysis.awayTeam}`);
     
     const record = {
       fixture_id: analysis.fixtureId,
       home_team: analysis.homeTeam,
       away_team: analysis.awayTeam,
-      league: analysis.league,
-      match_date: analysis.matchDate,
+      league: analysis.league || 'Unknown',
+      match_date: analysis.matchDate || new Date().toISOString(),
       
       // Agent predictions as JSONB
-      stats_agent: analysis.statsAgent ? JSON.stringify(analysis.statsAgent) : null,
-      odds_agent: analysis.oddsAgent ? JSON.stringify(analysis.oddsAgent) : null,
-      deep_analysis_agent: analysis.deepAnalysisAgent ? JSON.stringify(analysis.deepAnalysisAgent) : null,
-      genius_analyst: analysis.geniusAnalyst ? JSON.stringify(analysis.geniusAnalyst) : null,
-      master_strategist: analysis.masterStrategist ? JSON.stringify(analysis.masterStrategist) : null,
-      ai_smart: analysis.aiSmart ? JSON.stringify(analysis.aiSmart) : null,
+      stats_agent: analysis.statsAgent || {},
+      odds_agent: analysis.oddsAgent || {},
+      deep_analysis_agent: analysis.deepAnalysisAgent || {},
+      genius_analyst: analysis.geniusAnalyst || {},
+      master_strategist: analysis.masterStrategist || {},
+      ai_smart: analysis.aiSmart || {},
       
       // Consensus
-      consensus_match_result: analysis.consensusMatchResult,
-      consensus_over_under: analysis.consensusOverUnder,
-      consensus_btts: analysis.consensusBtts,
-      consensus_confidence: analysis.consensusConfidence,
-      consensus_score_prediction: analysis.consensusScorePrediction,
+      consensus_match_result: analysis.consensusMatchResult || '',
+      consensus_over_under: analysis.consensusOverUnder || '',
+      consensus_btts: analysis.consensusBtts || '',
+      consensus_confidence: analysis.consensusConfidence || 50,
+      consensus_score_prediction: analysis.consensusScorePrediction || '',
       
       // Not settled yet
-      match_settled: false
+      match_settled: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
-    // Upsert - update if exists, insert if not
-    const { data, error } = await getSupabase()
-      .from('analysis_performance')
-      .upsert(record, { 
-        onConflict: 'fixture_id',
-        ignoreDuplicates: false 
-      })
-      .select();
+    console.log(`   🔄 Attempting upsert to analysis_performance...`);
     
-    if (error) {
-      console.error('❌ Error saving analysis:', error);
-      return { success: false, error: error.message };
+    // First try insert, if fails due to duplicate, update
+    const { data: existingData } = await getSupabase()
+      .from('analysis_performance')
+      .select('id')
+      .eq('fixture_id', analysis.fixtureId)
+      .maybeSingle();
+    
+    let result;
+    if (existingData) {
+      // Update existing
+      console.log(`   📝 Updating existing record...`);
+      result = await getSupabase()
+        .from('analysis_performance')
+        .update(record)
+        .eq('fixture_id', analysis.fixtureId)
+        .select();
+    } else {
+      // Insert new
+      console.log(`   ➕ Inserting new record...`);
+      result = await getSupabase()
+        .from('analysis_performance')
+        .insert(record)
+        .select();
+    }
+    
+    if (result.error) {
+      console.error('❌ Supabase error:', result.error.message);
+      console.error('   Details:', JSON.stringify(result.error, null, 2));
+      return { success: false, error: result.error.message };
     }
     
     console.log(`✅ Analysis saved for ${analysis.homeTeam} vs ${analysis.awayTeam}`);
     return { success: true };
     
   } catch (error: any) {
-    console.error('❌ Save analysis error:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Save analysis error:', error?.message || error);
+    return { success: false, error: error?.message || 'Unknown error' };
   }
 }
 
