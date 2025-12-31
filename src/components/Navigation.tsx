@@ -51,11 +51,7 @@ export default function Navigation() {
   const navItems = [
     { href: '/', label: l.home, icon: '🏠' },
     { href: '/dashboard', label: l.dashboard, icon: '📊' },
-    { href: '/live', label: l.live, icon: '🔴', badge: 'LIVE' },
-    { href: '/predictions', label: l.predictions, icon: '🎯' },
-    { href: '/ai-performance', label: l.aiPerformance, icon: '🧠', badge: 'NEW' },
     { href: '/contact', label: l.contact, icon: '📬' },
-    { href: '/admin', label: l.admin, icon: '⚙️', badge: 'PRO' },
   ];
 
   // Scroll effect - MUST be before any conditional return
@@ -65,8 +61,8 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Dashboard ve login sayfalarında navigasyonu gizle
-  if (pathname === '/dashboard' || pathname === '/login') {
+  // Dashboard, login ve performance sayfalarında navigasyonu gizle (kendi navbar'ları var)
+  if (pathname === '/dashboard' || pathname === '/login' || pathname === '/performance') {
     return null;
   }
 
