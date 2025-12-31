@@ -3,7 +3,7 @@
 // Replaces Heurist with direct API calls + MCP support
 // ============================================================================
 
-export type AIModel = 'claude' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo';
+export type AIModel = 'claude' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'deepseek';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -34,11 +34,13 @@ export interface MCPTool {
 export class AIClient {
   private anthropicApiKey: string;
   private openaiApiKey: string;
+  private deepseekApiKey: string;
   private mcpServerUrl?: string;
 
   constructor() {
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
     this.openaiApiKey = process.env.OPENAI_API_KEY || '';
+    this.deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
     // Use internal MCP server by default, or external if configured
     this.mcpServerUrl = process.env.MCP_SERVER_URL || this.getInternalMCPUrl();
     
@@ -47,6 +49,11 @@ export class AIClient {
     }
     if (!this.openaiApiKey) {
       console.warn('⚠️ OPENAI_API_KEY not found');
+    }
+    if (!this.deepseekApiKey) {
+      console.warn('⚠️ DEEPSEEK_API_KEY not found');
+    } else {
+      console.log('✅ DeepSeek API key loaded');
     }
     console.log('✅ MCP Server URL:', this.mcpServerUrl);
   }
@@ -234,6 +241,84 @@ export class AIClient {
   }
 
   /**
+   * Call DeepSeek API - Specialized for deep analysis
+   */
+  async callDeepSeek(
+    messages: AIMessage[],
+    options: AIOptions = {}
+  ): Promise<string | null> {
+    if (!this.deepseekApiKey) {
+      console.error('❌ DEEPSEEK_API_KEY missing');
+      return null;
+    }
+
+    const model = 'deepseek-chat';
+    const temperature = options.temperature ?? 0.3;
+    const maxTokens = options.maxTokens ?? 3000;
+    const timeout = options.timeout ?? 30000; // 30 saniye - DeepSeek için daha uzun
+
+    try {
+      console.log(`🤖 DeepSeek calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      // MCP support: If enabled, add MCP context to messages
+      let finalMessages = messages;
+      if (options.useMCP && this.mcpServerUrl && options.mcpTools) {
+        finalMessages = await this.enrichWithMCP(messages, options.mcpTools);
+      }
+
+      // DeepSeek API OpenAI uyumlu format kullanıyor
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.deepseekApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          messages: finalMessages,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ DeepSeek API error: ${response.status}`, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || null;
+      
+      if (content) {
+        console.log(`✅ DeepSeek response: ${content.length} chars`);
+      }
+      
+      return content;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ DeepSeek API timeout after ${timeout}ms`);
+      } else {
+        console.error('❌ DeepSeek request error:', error);
+      }
+      
+      // MCP Fallback: If AI fails and mcpFallback is enabled, try to get data from MCP
+      if (options.mcpFallback && options.fixtureId) {
+        console.log('🔄 DeepSeek failed, trying MCP fallback...');
+        return this.getMCPFallbackData(options.fixtureId, options.mcpTools || []);
+      }
+      
+      return null;
+    }
+  }
+
+  /**
    * MCP Fallback - Get data directly from MCP when AI fails
    */
   private async getMCPFallbackData(fixtureId: number, tools: string[]): Promise<string | null> {
@@ -348,7 +433,9 @@ export class AIClient {
   ): Promise<string | null> {
     const model = options.model || 'claude';
     
-    if (model === 'claude' || model.startsWith('claude')) {
+    if (model === 'deepseek') {
+      return this.callDeepSeek(messages, options);
+    } else if (model === 'claude' || model.startsWith('claude')) {
       return this.callClaude(messages, options);
     } else {
       return this.callOpenAI(messages, options);

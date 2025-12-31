@@ -839,21 +839,41 @@ export async function runDeepAnalysisAgent(
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    const response = await aiClient.chat([
+    // 🆕 ÖNCELİKLE DeepSeek + MCP ile dene (daha derin analiz)
+    console.log('   🧠 Trying DeepSeek with MCP for deep analysis...');
+    let response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-      model: 'claude',
-      useMCP: false, // MCP devre dışı - daha hızlı
+      model: 'deepseek', // DeepSeek kullan
+      useMCP: true, // MCP aktif
+      mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
-      temperature: 0.4,
-      maxTokens: 2000, // Daha az token = daha hızlı
-      timeout: 20000 // 20 saniye
+      temperature: 0.3, // Daha deterministik
+      maxTokens: 3000, // Daha uzun analiz
+      timeout: 25000 // 25 saniye
     });
 
+    // DeepSeek başarısız olursa Claude'u dene
     if (!response) {
-      console.error('❌ No response from AI');
+      console.log('   ⚠️ DeepSeek failed, trying Claude...');
+      response = await aiClient.chat([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ], {
+        model: 'claude',
+        useMCP: false,
+        mcpFallback: true,
+        fixtureId: matchData.fixtureId,
+        temperature: 0.4,
+        maxTokens: 2000,
+        timeout: 18000
+      });
+    }
+
+    if (!response) {
+      console.error('❌ No response from both DeepSeek and Claude');
       return getDefaultDeepAnalysis(matchData);
     }
     
@@ -944,6 +964,25 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
     awayForm?.points || 0
   );
   
+  // 🆕 FORM PUANLARI HESAPLA - Beraberlik yerine gerçek tahmin yap!
+  const homeFormStr = homeForm?.form || '';
+  const awayFormStr = awayForm?.form || '';
+  const homeWins = (homeFormStr.match(/W/g) || []).length;
+  const awayWins = (awayFormStr.match(/W/g) || []).length;
+  const homePoints = homeWins * 3 + (homeFormStr.match(/D/g) || []).length;
+  const awayPoints = awayWins * 3 + (awayFormStr.match(/D/g) || []).length;
+  const formDiff = homePoints - awayPoints;
+  
+  // 🆕 Maç sonucu tahmini - Form farkına göre!
+  // formDiff > 5: Ev sahibi favori
+  // formDiff < -5: Deplasman favori
+  // -5 <= formDiff <= 5: Dengeli
+  const matchResultPred = formDiff > 5 ? '1' : formDiff < -5 ? '2' : 'X';
+  const homeWinProb = Math.min(65, Math.max(20, 35 + formDiff * 2));
+  const awayWinProb = Math.min(65, Math.max(20, 35 - formDiff * 2));
+  const drawProb = 100 - homeWinProb - awayWinProb;
+  const matchResultConf = Math.min(70, 50 + Math.abs(formDiff) * 1.5);
+  
   // Basit hesaplama
   const homeOver = parseInt(homeForm?.venueOver25Pct || homeForm?.over25Percentage || '50');
   const awayOver = parseInt(awayForm?.venueOver25Pct || awayForm?.over25Percentage || '50');
@@ -1027,19 +1066,45 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
   };
 
   const msg = messages[language] || messages.en;
+  
+  // 🆕 Skor tahminleri - form farkına göre
+  const scoreByResult = {
+    '1': ['2-1', '2-0', '1-0'],
+    '2': ['0-1', '1-2', '0-2'],
+    'X': ['1-1', '0-0', '2-2']
+  };
+  
+  // 🆕 Maç sonucu reasoning - form farkına göre
+  const matchResultReasoningByLang = {
+    tr: matchResultPred === '1' 
+      ? `Ev sahibi form avantajı: ${homePoints}p vs ${awayPoints}p (+${formDiff} puan farkı)`
+      : matchResultPred === '2'
+      ? `Deplasman form avantajı: ${awayPoints}p vs ${homePoints}p (${formDiff} puan farkı)`
+      : `Dengeli form: ${homePoints}p vs ${awayPoints}p (${formDiff > 0 ? '+' : ''}${formDiff} puan farkı)`,
+    en: matchResultPred === '1' 
+      ? `Home team form advantage: ${homePoints}p vs ${awayPoints}p (+${formDiff} points difference)`
+      : matchResultPred === '2'
+      ? `Away team form advantage: ${awayPoints}p vs ${homePoints}p (${formDiff} points difference)`
+      : `Balanced form: ${homePoints}p vs ${awayPoints}p (${formDiff > 0 ? '+' : ''}${formDiff} points difference)`,
+    de: matchResultPred === '1' 
+      ? `Heimmannschaft Formvorteil: ${homePoints}p vs ${awayPoints}p (+${formDiff} Punktedifferenz)`
+      : matchResultPred === '2'
+      ? `Auswärtsmannschaft Formvorteil: ${awayPoints}p vs ${homePoints}p (${formDiff} Punktedifferenz)`
+      : `Ausgeglichene Form: ${homePoints}p vs ${awayPoints}p (${formDiff > 0 ? '+' : ''}${formDiff} Punktedifferenz)`
+  };
 
   return {
     matchAnalysis: msg.matchAnalysis,
     criticalFactors: msg.criticalFactors,
     probabilities: { 
-      homeWin: 40, 
-      draw: 30, 
-      awayWin: 30 
+      homeWin: Math.round(homeWinProb), 
+      draw: Math.round(drawProb), 
+      awayWin: Math.round(awayWinProb) 
     },
-    expectedScores: ['1-1', '1-0', '2-1'],
+    expectedScores: scoreByResult[matchResultPred as keyof typeof scoreByResult] || ['1-1', '1-0', '2-1'],
     scorePrediction: { 
-      score: '1-1', 
-      reasoning: msg.scorePredictionReasoning
+      score: scoreByResult[matchResultPred as keyof typeof scoreByResult]?.[0] || '1-1', 
+      reasoning: matchResultReasoningByLang[language] || matchResultReasoningByLang.en
     },
     overUnder: { 
       prediction: overUnderPred, 
@@ -1047,20 +1112,26 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
       reasoning: msg.overUnderReasoning
     },
     btts: { 
-      prediction: 'No', 
-      confidence: 55, 
-      reasoning: msg.bttsReasoning
+      prediction: avgOver > 55 ? 'Yes' : 'No', // Over yüksekse BTTS Yes
+      confidence: Math.round(50 + Math.abs(avgOver - 55) * 0.5), 
+      reasoning: avgOver > 55 
+        ? `Yüksek gol beklentisi (%${Math.round(avgOver)}) → Her iki takım da gol atabilir`
+        : msg.bttsReasoning
     },
     matchResult: { 
-      prediction: 'X', 
-      confidence: 50, 
-      reasoning: msg.matchResultReasoning
+      prediction: matchResultPred, // 🆕 Form bazlı tahmin!
+      confidence: Math.round(matchResultConf), 
+      reasoning: matchResultReasoningByLang[language] || matchResultReasoningByLang.en
     },
     bestBet: { 
-      type: 'Over/Under 2.5', 
-      selection: overUnderPred, 
-      confidence: Math.round(overUnderConf), 
-      reasoning: msg.bestBetReasoning
+      type: Math.abs(formDiff) > 5 ? 'Match Result' : 'Over/Under 2.5',
+      selection: Math.abs(formDiff) > 5 
+        ? (matchResultPred === '1' ? 'Home' : matchResultPred === '2' ? 'Away' : 'Draw')
+        : overUnderPred, 
+      confidence: Math.abs(formDiff) > 5 ? Math.round(matchResultConf) : Math.round(overUnderConf), 
+      reasoning: Math.abs(formDiff) > 5 
+        ? matchResultReasoningByLang[language] || matchResultReasoningByLang.en
+        : msg.bestBetReasoning
     },
     // 🆕 New fields
     refereeAnalysis: {
