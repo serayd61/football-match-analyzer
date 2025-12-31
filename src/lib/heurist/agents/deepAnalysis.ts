@@ -839,42 +839,49 @@ export async function runDeepAnalysisAgent(
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    // 🆕 ÖNCELİKLE DeepSeek + MCP ile dene (daha derin analiz)
-    console.log('   🧠 Trying DeepSeek with MCP for deep analysis...');
-    let response = await aiClient.chat([
+    let response = null;
+    
+    // DeepSeek varsa önce onu dene, yoksa direkt Claude'a geç
+    const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+    
+    if (hasDeepSeek) {
+      console.log('   🧠 Trying DeepSeek with MCP for deep analysis...');
+      response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-      model: 'deepseek', // DeepSeek kullan
-      useMCP: true, // MCP aktif
-      mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
-      mcpFallback: true,
-      fixtureId: matchData.fixtureId,
-      temperature: 0.3, // Daha deterministik
-      maxTokens: 3000, // Daha uzun analiz
-      timeout: 25000 // 25 saniye
-    });
+        model: 'deepseek',
+        useMCP: true,
+        mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
+        mcpFallback: true,
+        fixtureId: matchData.fixtureId,
+        temperature: 0.3,
+        maxTokens: 3000,
+        timeout: 25000
+      });
+    }
 
-    // DeepSeek başarısız olursa Claude'u dene
+    // DeepSeek yok veya başarısız olursa Claude'u dene
     if (!response) {
-      console.log('   ⚠️ DeepSeek failed, trying Claude...');
+      console.log('   🔄 Trying Claude for deep analysis...');
       response = await aiClient.chat([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
       ], {
         model: 'claude',
         useMCP: false,
-        mcpFallback: true,
+        mcpFallback: false,
         fixtureId: matchData.fixtureId,
         temperature: 0.4,
-        maxTokens: 2000,
-        timeout: 18000
+        maxTokens: 2500,
+        timeout: 20000
       });
     }
 
+    // Her ikisi de başarısız olursa fallback kullan
     if (!response) {
-      console.error('❌ No response from both DeepSeek and Claude');
-      return getDefaultDeepAnalysis(matchData);
+      console.log('   ⚠️ AI models failed, using intelligent fallback...');
+      return getDefaultDeepAnalysis(matchData, language);
     }
     
     // JSON parse
