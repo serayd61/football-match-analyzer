@@ -474,14 +474,13 @@ export async function runGeniusAnalyst(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
-      model: 'gpt-4',
-      useMCP: true,
-      mcpTools: ['football_data', 'odds_data', 'team_stats'],
-      mcpFallback: true, // 🆕 MCP fallback aktif
-      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
+      model: 'claude', // Claude daha hızlı ve güvenilir
+      useMCP: false, // MCP devre dışı - daha hızlı
+      mcpFallback: true,
+      fixtureId: matchData.fixtureId,
       temperature: 0.15,
-      maxTokens: 2500,
-      timeout: 25000
+      maxTokens: 2000, // Daha az token = daha hızlı
+      timeout: 20000 // 20 saniye
     });
 
     if (!response) {

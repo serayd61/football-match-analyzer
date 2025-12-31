@@ -1278,19 +1278,19 @@ export async function runAgentAnalysis(
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 25000, 'Stats Agent'), // 25 saniye - Claude için yeterli
+      }), 20000, 'Stats Agent'), // 20 saniye
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 25000, 'Odds Agent'), // 25 saniye - Claude için yeterli
+      }), 20000, 'Odds Agent'), // 20 saniye
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ DeepAnalysis agent failed:', err?.message || err);
         return null;
-      }), 30000, 'DeepAnalysis Agent'), // 30 saniye - Claude için yeterli
+      }), 22000, 'DeepAnalysis Agent'), // 22 saniye
       withTimeout(runGeniusAnalyst(matchData, language).catch(err => {
         console.error('❌ GeniusAnalyst agent failed:', err?.message || err);
         return null;
-      }), 30000, 'GeniusAnalyst Agent'), // 30 saniye - GPT-4 için yeterli
+      }), 22000, 'GeniusAnalyst Agent'), // 22 saniye
     ]);
     
     // 🆕 Minimum agent başarı kontrolü - en az 2 agent başarılı olmalı
@@ -1316,17 +1316,17 @@ export async function runAgentAnalysis(
     }
     
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (30s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (22s timeout)...');
     let masterStrategistResult = null;
     try {
-      // 30 saniye timeout ile çalıştır - Claude için yeterli süre
+      // 22 saniye timeout - hızlı analiz
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
           {
             stats: statsResult,
             odds: oddsResult,
-            sentiment: null, // agent-analyzer'da sentiment yok
+            sentiment: null,
             deepAnalysis: deepAnalysisResult,
             geniusAnalyst: geniusAnalystResult,
           },
@@ -1334,9 +1334,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 30s');
+            console.warn('   ⏱️ Master Strategist timeout after 22s');
             resolve(null);
-          }, 30000);
+          }, 22000);
         })
       ]);
       

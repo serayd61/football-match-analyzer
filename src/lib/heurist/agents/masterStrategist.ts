@@ -506,13 +506,12 @@ export async function runMasterStrategist(
       { role: 'user', content: userMessage }
     ], {
       model: 'claude',
-      useMCP: true,
-      mcpTools: ['football_data', 'odds_data', 'team_stats'],
-      mcpFallback: true, // 🆕 MCP fallback aktif
-      fixtureId: matchData.fixtureId, // 🆕 Fixture ID for MCP fallback
+      useMCP: false, // MCP devre dışı - daha hızlı
+      mcpFallback: true,
+      fixtureId: matchData.fixtureId,
       temperature: 0.2,
-      maxTokens: 2000,
-      timeout: 25000
+      maxTokens: 1500, // Daha az token = daha hızlı
+      timeout: 20000 // 20 saniye
     });
 
     if (!response) {

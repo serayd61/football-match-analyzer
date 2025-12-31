@@ -75,13 +75,12 @@ export class AIClient {
       return null;
     }
 
-    const model = options.model === 'claude' 
-      ? 'claude-3-5-sonnet-20241022' 
-      : 'claude-3-5-sonnet-20241022';
+    // Claude 3.5 Sonnet - en hızlı ve güvenilir model
+    const model = 'claude-3-5-sonnet-20241022';
     
     const temperature = options.temperature ?? 0.15;
-    const maxTokens = options.maxTokens ?? 4000;
-    const timeout = options.timeout ?? 30000;
+    const maxTokens = options.maxTokens ?? 2000; // Daha düşük token limiti = daha hızlı
+    const timeout = options.timeout ?? 25000; // 25 saniye default
 
     try {
       console.log(`🤖 Claude calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
@@ -156,15 +155,12 @@ export class AIClient {
       return null;
     }
 
-    const model = options.model === 'gpt-4' 
-      ? 'gpt-4-turbo-preview'
-      : options.model === 'gpt-4-turbo'
-      ? 'gpt-4-turbo-preview'
-      : 'gpt-4-turbo-preview';
+    // GPT-4 Turbo - en hızlı GPT-4 versiyonu
+    const model = 'gpt-4-turbo-preview';
     
     const temperature = options.temperature ?? 0.15;
-    const maxTokens = options.maxTokens ?? 4000;
-    const timeout = options.timeout ?? 30000;
+    const maxTokens = options.maxTokens ?? 2000; // Daha düşük token limiti = daha hızlı
+    const timeout = options.timeout ?? 25000; // 25 saniye default
 
     try {
       console.log(`🤖 OpenAI calling ${model}${options.useMCP ? ' (with MCP)' : ''}`);
