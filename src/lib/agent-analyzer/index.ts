@@ -1273,31 +1273,24 @@ export async function runAgentAnalysis(
       console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
     }
     
-    // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Master Strategist
-    // Sınırsız bahis seçenekleri üretir - herhangi bir iddaa türüne bağlı değil
-    console.log('🎯 3-Agent System: Stats, Odds, Master Strategist');
+    // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Deep Analysis (PARALEL)
+    // Tüm agent'lar aynı anda çalışır - toplam süre ~15 saniye
+    console.log('🎯 3-Agent System: Stats, Odds, Deep Analysis (PARALLEL)');
     
-    const [statsResult, oddsResult] = await Promise.all([
+    const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 20000, 'Stats Agent'), // 20 saniye
+      }), 12000, 'Stats Agent'), // 12 saniye
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 20000, 'Odds Agent'), // 20 saniye
-    ]);
-    
-    // 🔥 Deep Analysis'i aktifleştir (timeout artırıldı)
-    console.log('\n🔬 [DEEP ANALYSIS AGENT]');
-    const deepAnalysisResult = await withTimeout(
-      runDeepAnalysisAgent(matchData, language).catch(err => {
+      }), 12000, 'Odds Agent'), // 12 saniye
+      withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 
-      25000, // 25 saniye timeout
-      'Deep Analysis Agent'
-    );
+      }), 15000, 'Deep Analysis Agent'), // 15 saniye
+    ]);
     
     // Genius Analyst devre dışı
     const geniusAnalystResult = null;
@@ -1337,9 +1330,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 25s');
+            console.warn('   ⏱️ Master Strategist timeout after 12s');
             resolve(null);
-          }, 25000);
+          }, 12000);
         })
       ]);
       

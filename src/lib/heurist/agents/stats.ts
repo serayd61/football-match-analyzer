@@ -998,7 +998,7 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
       fixtureId: matchData.fixtureId,
       temperature: 0.4, 
       maxTokens: 1000,
-      timeout: 15000 // 15 saniye
+      timeout: 8000 // 8 saniye
     });
     
     if (response) {

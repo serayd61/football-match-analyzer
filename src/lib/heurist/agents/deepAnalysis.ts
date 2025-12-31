@@ -861,8 +861,8 @@ export async function runDeepAnalysisAgent(
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.25, // Daha deterministik
-          maxTokens: 2000, // Daha fazla token
-          timeout: 18000 // 18 saniye - daha fazla süre
+          maxTokens: 1200, // Kısa yanıt
+          timeout: 10000 // 10 saniye
         });
         
         if (response) {
@@ -888,8 +888,8 @@ export async function runDeepAnalysisAgent(
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.35,
-          maxTokens: 2000,
-          timeout: 18000 // 18 saniye - daha fazla süre
+          maxTokens: 1200, // Kısa yanıt
+          timeout: 10000 // 10 saniye
         });
         
         if (response) {

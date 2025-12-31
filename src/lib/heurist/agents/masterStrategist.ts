@@ -485,7 +485,7 @@ export async function runMasterStrategist(
       fixtureId: matchData.fixtureId,
       temperature: 0.2,
       maxTokens: 1000, // Daha az token = daha hızlı
-      timeout: 15000 // 15 saniye
+      timeout: 8000 // 8 saniye
     });
 
     if (!response) {
