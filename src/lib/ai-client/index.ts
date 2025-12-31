@@ -37,7 +37,8 @@ export class AIClient {
   constructor() {
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
     this.openaiApiKey = process.env.OPENAI_API_KEY || '';
-    this.mcpServerUrl = process.env.MCP_SERVER_URL;
+    // Use internal MCP server by default, or external if configured
+    this.mcpServerUrl = process.env.MCP_SERVER_URL || this.getInternalMCPUrl();
     
     if (!this.anthropicApiKey) {
       console.warn('⚠️ ANTHROPIC_API_KEY not found');
@@ -45,9 +46,19 @@ export class AIClient {
     if (!this.openaiApiKey) {
       console.warn('⚠️ OPENAI_API_KEY not found');
     }
-    if (this.mcpServerUrl) {
-      console.log('✅ MCP Server URL configured:', this.mcpServerUrl);
+    console.log('✅ MCP Server URL:', this.mcpServerUrl);
+  }
+
+  private getInternalMCPUrl(): string {
+    // In production, use the deployed URL
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}/api/mcp`;
     }
+    // In development, use localhost
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      return `${process.env.NEXT_PUBLIC_SITE_URL}/api/mcp`;
+    }
+    return 'http://localhost:3000/api/mcp';
   }
 
   /**
