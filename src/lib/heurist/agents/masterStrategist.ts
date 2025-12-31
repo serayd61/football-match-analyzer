@@ -778,10 +778,10 @@ function getDefaultMasterStrategist(
     overallConfidence,
     recommendation: language === 'tr' 
       ? strongSignals.length > 0 
-        ? `Güçlü sinyaller: ${strongSignals.join(', ')}` 
+        ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
         : `${agentCount} agent konsensüsü - Orta güven`
       : strongSignals.length > 0 
-        ? `Strong signals: ${strongSignals.join(', ')}` 
+        ? `Strong signals: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
         : `${agentCount} agent consensus - Medium confidence`
   };
 }
