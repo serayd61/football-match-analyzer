@@ -156,16 +156,38 @@ export default function PerformancePage() {
       {/* Navigation */}
       <nav className="relative z-50 border-b border-[#00f0ff]/20 bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00f0ff] to-[#ff00ff] flex items-center justify-center">
+          <Link href="/dashboard" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00f0ff] to-[#ff00ff] flex items-center justify-center group-hover:scale-110 transition-transform">
               <span className="text-xl">⚽</span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-[#00f0ff] to-[#ff00ff] bg-clip-text text-transparent">
-              Performance
+              FootballAnalytics
+            </span>
+            <span className="px-2 py-0.5 rounded text-xs font-bold bg-gradient-to-r from-[#00f0ff] to-[#ff00ff] text-black">
+              PRO
             </span>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            {/* Ana Sayfa */}
+            <Link 
+              href="/dashboard" 
+              className="flex items-center gap-2 px-4 py-2 text-white/70 hover:text-white transition-colors"
+            >
+              <span>🏠</span>
+              <span>Ana Sayfa</span>
+            </Link>
+            
+            {/* İletişim */}
+            <Link 
+              href="/contact" 
+              className="flex items-center gap-2 px-4 py-2 text-white/70 hover:text-white transition-colors"
+            >
+              <span>💬</span>
+              <span>İletişim</span>
+            </Link>
+
+            {/* Yenile */}
             <motion.button
               onClick={fetchData}
               disabled={loading}
@@ -177,6 +199,7 @@ export default function PerformancePage() {
               Yenile
             </motion.button>
             
+            {/* Sonuçları Görüntüle */}
             <motion.button
               onClick={handleSettleMatches}
               disabled={settling || loading}
@@ -197,6 +220,22 @@ export default function PerformancePage() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        {/* Page Title */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-[#00f0ff] via-white to-[#ff00ff] bg-clip-text text-transparent">
+              Agent Performans Takibi
+            </span>
+          </h1>
+          <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            Tüm analizlerin kaydedildiği ve maç sonuçlarına göre doğruluk oranlarının hesaplandığı profesyonel takip sistemi
+          </p>
+        </motion.div>
         
         {/* Loading State */}
         {loading && (
@@ -430,6 +469,29 @@ export default function PerformancePage() {
           </>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/10 mt-16">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f0ff] to-[#ff00ff] flex items-center justify-center">
+                <span className="text-sm">⚽</span>
+              </div>
+              <span className="text-white/60">
+                © 2025 FootballAnalytics Pro. Tüm hakları saklıdır.
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-white/40">
+              <Link href="/contact" className="hover:text-[#00f0ff] transition-colors">
+                İletişim
+              </Link>
+              <span>•</span>
+              <span>Made with 💜 for Football</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
