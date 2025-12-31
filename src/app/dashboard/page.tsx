@@ -527,91 +527,102 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 )}
 
                 {/* 💪 MOTİVASYON & HAZIRLIK SKORLARI - ÖNEMLİ BÖLÜM */}
-                {(deepAnalysis.motivationScores || deepAnalysis.preparationScore) && (
-                  <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-purple-500/50 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">💪</span>
-                      <h6 className="text-purple-300 font-bold text-base">MACA HAZIRLANMA & MOTİVASYON ANALİZİ (0-100)</h6>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Ev Sahibi */}
-                      <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
-                        <p className="text-xs text-gray-400 mb-2">🏠 EV SAHİBİ</p>
-                        {deepAnalysis.motivationScores ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-3xl font-bold ${deepAnalysis.motivationScores.home >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                {deepAnalysis.motivationScores.home}
-                              </span>
-                              <span className="text-gray-400 text-sm">/100</span>
-                              {deepAnalysis.motivationScores.homeTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
-                              {deepAnalysis.motivationScores.homeTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
-                              {deepAnalysis.motivationScores.homeTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
-                            </div>
-                            {deepAnalysis.motivationScores.homeFormGraph && (
-                              <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{deepAnalysis.motivationScores.homeFormGraph}</span></p>
-                            )}
-                            <div className={`h-2 rounded-full mt-2 ${deepAnalysis.motivationScores.home >= 70 ? 'bg-green-500' : deepAnalysis.motivationScores.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${deepAnalysis.motivationScores.home}%` }}></div>
-                          </>
-                        ) : deepAnalysis.preparationScore ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-3xl font-bold ${deepAnalysis.preparationScore.home >= 70 ? 'text-green-400' : deepAnalysis.preparationScore.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                {deepAnalysis.preparationScore.home}
-                              </span>
-                              <span className="text-gray-400 text-sm">/100</span>
-                            </div>
-                            {deepAnalysis.preparationScore.reasoning?.home && (
-                              <p className="text-gray-300 text-xs">{deepAnalysis.preparationScore.reasoning.home}</p>
-                            )}
-                            <div className={`h-2 rounded-full mt-2 ${deepAnalysis.preparationScore.home >= 70 ? 'bg-green-500' : deepAnalysis.preparationScore.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${deepAnalysis.preparationScore.home}%` }}></div>
-                          </>
-                        ) : null}
+                {/* Deep Analysis, Stats Agent veya Fallback'tan alınır */}
+                {(() => {
+                  // Motivasyon skorlarını bul (Deep Analysis > Stats Agent > null)
+                  const motivationScores = deepAnalysis?.motivationScores || 
+                                          (analysis.agents?.stats as any)?.motivationScores || 
+                                          null;
+                  const preparationScore = deepAnalysis?.preparationScore || null;
+                  
+                  if (!motivationScores && !preparationScore) return null;
+                  
+                  return (
+                    <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-purple-500/50 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl">💪</span>
+                        <h6 className="text-purple-300 font-bold text-base">MACA HAZIRLANMA & MOTİVASYON ANALİZİ (0-100)</h6>
                       </div>
-                      
-                      {/* Deplasman */}
-                      <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
-                        <p className="text-xs text-gray-400 mb-2">✈️ DEPLASMAN</p>
-                        {deepAnalysis.motivationScores ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-3xl font-bold ${deepAnalysis.motivationScores.away >= 70 ? 'text-green-400' : deepAnalysis.motivationScores.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                {deepAnalysis.motivationScores.away}
-                              </span>
-                              <span className="text-gray-400 text-sm">/100</span>
-                              {deepAnalysis.motivationScores.awayTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
-                              {deepAnalysis.motivationScores.awayTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
-                              {deepAnalysis.motivationScores.awayTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
-                            </div>
-                            {deepAnalysis.motivationScores.awayFormGraph && (
-                              <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{deepAnalysis.motivationScores.awayFormGraph}</span></p>
-                            )}
-                            <div className={`h-2 rounded-full mt-2 ${deepAnalysis.motivationScores.away >= 70 ? 'bg-green-500' : deepAnalysis.motivationScores.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${deepAnalysis.motivationScores.away}%` }}></div>
-                          </>
-                        ) : deepAnalysis.preparationScore ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className={`text-3xl font-bold ${deepAnalysis.preparationScore.away >= 70 ? 'text-green-400' : deepAnalysis.preparationScore.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                {deepAnalysis.preparationScore.away}
-                              </span>
-                              <span className="text-gray-400 text-sm">/100</span>
-                            </div>
-                            {deepAnalysis.preparationScore.reasoning?.away && (
-                              <p className="text-gray-300 text-xs">{deepAnalysis.preparationScore.reasoning.away}</p>
-                            )}
-                            <div className={`h-2 rounded-full mt-2 ${deepAnalysis.preparationScore.away >= 70 ? 'bg-green-500' : deepAnalysis.preparationScore.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${deepAnalysis.preparationScore.away}%` }}></div>
-                          </>
-                        ) : null}
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Ev Sahibi */}
+                        <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
+                          <p className="text-xs text-gray-400 mb-2">🏠 EV SAHİBİ</p>
+                          {motivationScores ? (
+                            <>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-3xl font-bold ${motivationScores.home >= 70 ? 'text-green-400' : motivationScores.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                  {motivationScores.home}
+                                </span>
+                                <span className="text-gray-400 text-sm">/100</span>
+                                {motivationScores.homeTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
+                                {motivationScores.homeTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
+                                {motivationScores.homeTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
+                              </div>
+                              {motivationScores.homeFormGraph && (
+                                <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.homeFormGraph}</span></p>
+                              )}
+                              <div className={`h-2 rounded-full mt-2 ${motivationScores.home >= 70 ? 'bg-green-500' : motivationScores.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.home}%` }}></div>
+                            </>
+                          ) : preparationScore ? (
+                            <>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-3xl font-bold ${preparationScore.home >= 70 ? 'text-green-400' : preparationScore.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                  {preparationScore.home}
+                                </span>
+                                <span className="text-gray-400 text-sm">/100</span>
+                              </div>
+                              {preparationScore.reasoning?.home && (
+                                <p className="text-gray-300 text-xs">{preparationScore.reasoning.home}</p>
+                              )}
+                              <div className={`h-2 rounded-full mt-2 ${preparationScore.home >= 70 ? 'bg-green-500' : preparationScore.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${preparationScore.home}%` }}></div>
+                            </>
+                          ) : null}
+                        </div>
+                        
+                        {/* Deplasman */}
+                        <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
+                          <p className="text-xs text-gray-400 mb-2">✈️ DEPLASMAN</p>
+                          {motivationScores ? (
+                            <>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-3xl font-bold ${motivationScores.away >= 70 ? 'text-green-400' : motivationScores.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                  {motivationScores.away}
+                                </span>
+                                <span className="text-gray-400 text-sm">/100</span>
+                                {motivationScores.awayTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
+                                {motivationScores.awayTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
+                                {motivationScores.awayTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
+                              </div>
+                              {motivationScores.awayFormGraph && (
+                                <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.awayFormGraph}</span></p>
+                              )}
+                              <div className={`h-2 rounded-full mt-2 ${motivationScores.away >= 70 ? 'bg-green-500' : motivationScores.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.away}%` }}></div>
+                            </>
+                          ) : preparationScore ? (
+                            <>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`text-3xl font-bold ${preparationScore.away >= 70 ? 'text-green-400' : preparationScore.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                  {preparationScore.away}
+                                </span>
+                                <span className="text-gray-400 text-sm">/100</span>
+                              </div>
+                              {preparationScore.reasoning?.away && (
+                                <p className="text-gray-300 text-xs">{preparationScore.reasoning.away}</p>
+                              )}
+                              <div className={`h-2 rounded-full mt-2 ${preparationScore.away >= 70 ? 'bg-green-500' : preparationScore.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${preparationScore.away}%` }}></div>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                      {motivationScores?.reasoning && (
+                        <p className="text-gray-300 text-xs mt-3 pt-3 border-t border-purple-500/30">{motivationScores.reasoning}</p>
+                      )}
+                      <div className="mt-3 text-xs text-gray-400">
+                        <p>💡 <strong>Skor Anlamı:</strong> 70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum</p>
                       </div>
                     </div>
-                    {deepAnalysis.motivationScores?.reasoning && (
-                      <p className="text-gray-300 text-xs mt-3 pt-3 border-t border-purple-500/30">{deepAnalysis.motivationScores.reasoning}</p>
-                    )}
-                    <div className="mt-3 text-xs text-gray-400">
-                      <p>💡 <strong>Skor Anlamı:</strong> 70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum</p>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="border-t border-purple-500/30 pt-3 mt-3">
                   <p className="text-purple-400 font-semibold mb-2">DEEP ANALYSIS AGENT TAHMİNLERİ:</p>

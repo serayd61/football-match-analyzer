@@ -2,6 +2,94 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 
+// ==================== MOTİVASYON SKORU HESAPLAMA ====================
+
+function calculateMotivationFromForm(
+  matchData: MatchData,
+  homeForm: string,
+  awayForm: string,
+  homePoints: number,
+  awayPoints: number,
+  formDiff: number,
+  language: 'tr' | 'en' | 'de'
+): {
+  home: number;
+  away: number;
+  homeTrend: 'improving' | 'declining' | 'stable';
+  awayTrend: 'improving' | 'declining' | 'stable';
+  homeFormGraph: string;
+  awayFormGraph: string;
+  reasoning: string;
+} {
+  // Form string'inden puan hesapla (W=3, D=1, L=0)
+  const getFormPoints = (form: string): number[] => {
+    return form.split('').map(c => c === 'W' ? 3 : c === 'D' ? 1 : 0);
+  };
+
+  const homeFormPoints = getFormPoints(homeForm);
+  const awayFormPoints = getFormPoints(awayForm);
+
+  // Son 3 vs önceki 3 karşılaştırması
+  const homeRecent3 = homeFormPoints.slice(0, 3).reduce((a, b) => a + b, 0);
+  const homePrevious3 = homeFormPoints.slice(3, 6).reduce((a, b) => a + b, 0);
+  const awayRecent3 = awayFormPoints.slice(0, 3).reduce((a, b) => a + b, 0);
+  const awayPrevious3 = awayFormPoints.slice(3, 6).reduce((a, b) => a + b, 0);
+
+  // Trend hesapla
+  const homeTrend: 'improving' | 'declining' | 'stable' = 
+    homeRecent3 > homePrevious3 + 1 ? 'improving' : 
+    homeRecent3 < homePrevious3 - 1 ? 'declining' : 'stable';
+  
+  const awayTrend: 'improving' | 'declining' | 'stable' = 
+    awayRecent3 > awayPrevious3 + 1 ? 'improving' : 
+    awayRecent3 < awayPrevious3 - 1 ? 'declining' : 'stable';
+
+  // Motivasyon skoru hesapla (0-100)
+  // Base: Form puanları üzerinden (max 30 puan = 100 temel)
+  const maxFormPoints = 30; // 10 maç * 3 puan
+  let homeScore = Math.round((homePoints / maxFormPoints) * 60); // 0-60 arası
+  let awayScore = Math.round((awayPoints / maxFormPoints) * 60); // 0-60 arası
+
+  // Trend bonusu/cezası
+  if (homeTrend === 'improving') homeScore += 15;
+  else if (homeTrend === 'declining') homeScore -= 10;
+  
+  if (awayTrend === 'improving') awayScore += 15;
+  else if (awayTrend === 'declining') awayScore -= 10;
+
+  // Ev avantajı bonusu
+  homeScore += 10;
+
+  // Son 3 maç performansı bonusu
+  if (homeRecent3 >= 7) homeScore += 10; // 2W+1D veya daha iyi
+  if (awayRecent3 >= 7) awayScore += 10;
+
+  // Min/max sınırları
+  homeScore = Math.min(100, Math.max(10, homeScore));
+  awayScore = Math.min(100, Math.max(10, awayScore));
+
+  // Form grafiği (görsel)
+  const homeFormGraph = homeForm.split('').map(c => c === 'W' ? '🟢' : c === 'D' ? '🟡' : '🔴').join('');
+  const awayFormGraph = awayForm.split('').map(c => c === 'W' ? '🟢' : c === 'D' ? '🟡' : '🔴').join('');
+
+  // Reasoning
+  const reasoningByLang = {
+    tr: `${matchData.homeTeam}: ${homePoints}p (${homeForm}), Trend: ${homeTrend === 'improving' ? '📈 Yükselişte' : homeTrend === 'declining' ? '📉 Düşüşte' : '➡️ Stabil'}. ${matchData.awayTeam}: ${awayPoints}p (${awayForm}), Trend: ${awayTrend === 'improving' ? '📈 Yükselişte' : awayTrend === 'declining' ? '📉 Düşüşte' : '➡️ Stabil'}. Form farkı: ${formDiff > 0 ? '+' : ''}${formDiff} puan.`,
+    en: `${matchData.homeTeam}: ${homePoints}pts (${homeForm}), Trend: ${homeTrend === 'improving' ? '📈 Rising' : homeTrend === 'declining' ? '📉 Falling' : '➡️ Stable'}. ${matchData.awayTeam}: ${awayPoints}pts (${awayForm}), Trend: ${awayTrend === 'improving' ? '📈 Rising' : awayTrend === 'declining' ? '📉 Falling' : '➡️ Stable'}. Form diff: ${formDiff > 0 ? '+' : ''}${formDiff} pts.`,
+    de: `${matchData.homeTeam}: ${homePoints}P (${homeForm}), Trend: ${homeTrend === 'improving' ? '📈 Steigend' : homeTrend === 'declining' ? '📉 Fallend' : '➡️ Stabil'}. ${matchData.awayTeam}: ${awayPoints}P (${awayForm}), Trend: ${awayTrend === 'improving' ? '📈 Steigend' : awayTrend === 'declining' ? '📉 Fallend' : '➡️ Stabil'}. Formdiff: ${formDiff > 0 ? '+' : ''}${formDiff} P.`
+  };
+
+  return {
+    home: homeScore,
+    away: awayScore,
+    homeTrend,
+    awayTrend,
+    homeFormGraph,
+    awayFormGraph,
+    reasoning: reasoningByLang[language] || reasoningByLang.en
+  };
+}
+
 // ==================== PROMPTS ====================
 
 const PROMPTS = {
@@ -1073,6 +1161,9 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
         // 🆕 Add Timing Patterns
         parsed.timingPatterns = timingPatterns;
         
+        // 🆕 Add Motivation Scores
+        parsed.motivationScores = calculateMotivationFromForm(matchData, homeForm, awayForm, homePoints, awayPoints, formDiff, language);
+        
         // 🆕 Add Clean Sheet Analysis
         parsed.cleanSheetAnalysis = cleanSheetAnalysis;
         
@@ -1214,6 +1305,8 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
       ...(xgAnalysis.awayPerformance === 'overperforming' ? ['Away regression risk'] : []),
     ],
     agentSummary: reasoning.agentSummary,
+    // 🆕 MOTİVASYON SKORLARI (Deep Analysis null olsa bile Stats'tan gelsin)
+    motivationScores: calculateMotivationFromForm(matchData, homeForm, awayForm, homePoints, awayPoints, formDiff, language),
     _calculatedStats: {
       expectedTotal: expectedTotal.toFixed(2),
       homeExpected: homeExpected.toFixed(2),
