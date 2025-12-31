@@ -1425,33 +1425,117 @@ export default function DashboardPage() {
               </motion.div>
             ) : analyzing ? (
               <motion.div 
-                className="glass-futuristic rounded-2xl p-12 flex flex-col items-center justify-center min-h-[400px] neon-border-cyan"
+                className="glass-futuristic rounded-2xl p-8 flex flex-col items-center justify-center min-h-[500px] neon-border-cyan relative overflow-hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <div className="relative">
-                  <motion.div 
-                    className="w-20 h-20 border-4 border-[#00f0ff] border-t-transparent rounded-full"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                {/* Background Animation */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <motion.div
+                    className="absolute w-96 h-96 bg-[#00f0ff]/5 rounded-full blur-3xl"
+                    animate={{ 
+                      x: ['-50%', '150%', '-50%'],
+                      y: ['-50%', '50%', '-50%']
+                    }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    style={{ left: '-10%', top: '-10%' }}
                   />
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="absolute w-96 h-96 bg-[#ff00ff]/5 rounded-full blur-3xl"
+                    animate={{ 
+                      x: ['150%', '-50%', '150%'],
+                      y: ['50%', '-50%', '50%']
+                    }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                    style={{ right: '-10%', bottom: '-10%' }}
+                  />
+                </div>
+
+                {/* Football Ball Animation */}
+                <div className="relative z-10 mb-8">
+                  <motion.div
+                    className="w-24 h-24 flex items-center justify-center"
+                    animate={{ 
+                      rotateY: [0, 360],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{ 
+                      rotateY: { duration: 2, repeat: Infinity, ease: "linear" },
+                      scale: { duration: 1.5, repeat: Infinity }
+                    }}
                   >
-                    <Zap className="w-10 h-10 text-[#00f0ff]" />
+                    <span className="text-6xl">⚽</span>
+                  </motion.div>
+                  
+                  {/* Orbit Effect */}
+                  <motion.div
+                    className="absolute inset-[-20px] border-2 border-[#00f0ff]/30 rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  >
+                    <motion.div
+                      className="absolute w-3 h-3 bg-[#00f0ff] rounded-full shadow-lg shadow-[#00f0ff]"
+                      style={{ top: '-6px', left: '50%', transform: 'translateX(-50%)' }}
+                    />
                   </motion.div>
                 </div>
-                <motion.p 
-                  className="mt-6 text-white font-bold text-xl neon-glow-cyan"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+
+                {/* Title */}
+                <motion.h3 
+                  className="relative z-10 text-2xl font-bold text-white mb-4"
+                  animate={{ opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                   style={{ fontFamily: 'var(--font-heading)' }}
                 >
                   {t.analyzing}
-                </motion.p>
-                <p className="mt-2 text-sm text-[#00f0ff] font-mono">{t.analyzeTime}</p>
+                </motion.h3>
+
+                {/* Agent Progress */}
+                <div className="relative z-10 w-full max-w-md space-y-3 mb-6">
+                  {[
+                    { name: '📊 Stats Agent', delay: 0 },
+                    { name: '💰 Odds Agent', delay: 0.3 },
+                    { name: '🔬 Deep Analysis', delay: 0.6 },
+                    { name: '🧠 Master Strategist', delay: 0.9 },
+                  ].map((agent, idx) => (
+                    <motion.div
+                      key={agent.name}
+                      className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/10"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: agent.delay }}
+                    >
+                      <motion.div
+                        className="w-5 h-5 border-2 border-[#00f0ff] border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span className="text-white/80 text-sm font-medium">{agent.name}</span>
+                      <motion.span
+                        className="ml-auto text-[#00f0ff] text-xs font-mono"
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: agent.delay }}
+                      >
+                        processing...
+                      </motion.span>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="relative z-10 w-full max-w-md">
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-[#00f0ff] to-[#ff00ff]"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 15, ease: "easeInOut" }}
+                    />
+                  </div>
+                  <p className="mt-3 text-center text-sm text-[#00f0ff]/70 font-mono">
+                    {t.analyzeTime}
+                  </p>
+                </div>
               </motion.div>
             ) : analysisError ? (
               <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-8 flex flex-col items-center justify-center min-h-[400px]">
