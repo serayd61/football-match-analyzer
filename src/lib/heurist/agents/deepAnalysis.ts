@@ -842,61 +842,62 @@ export async function runDeepAnalysisAgent(
     let response = null;
     
     // ============================================================
-    // STRATEJİ: Claude → DeepSeek → Intelligent Fallback
+    // STRATEJİ: DeepSeek (MCP) → Claude → Intelligent Fallback
+    // DeepSeek daha detaylı analiz yapıyor, MCP ile zenginleştirilmiş veri
     // ============================================================
     
-    // 1️⃣ ÖNCE CLAUDE DENE (daha stabil ve hızlı)
-    console.log('   🔵 [1/3] Trying Claude for deep analysis...');
-    try {
-      response = await aiClient.chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ], {
-        model: 'claude',
-        useMCP: false,
-        mcpFallback: false,
-        fixtureId: matchData.fixtureId,
-        temperature: 0.35,
-        maxTokens: 1500,
-        timeout: 8000 // 8 saniye - Vercel limit
-      });
-      
-      if (response) {
-        console.log('   ✅ Claude responded successfully');
+    const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+    
+    // 1️⃣ ÖNCE DEEPSEEK DENE (MCP ile daha zengin veri)
+    if (hasDeepSeek) {
+      console.log('   🟣 [1/3] Trying DeepSeek with MCP for deep analysis...');
+      try {
+        response = await aiClient.chat([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ], {
+          model: 'deepseek',
+          useMCP: true,
+          mcpTools: ['football_data', 'team_stats', 'head_to_head', 'match_context'],
+          mcpFallback: true,
+          fixtureId: matchData.fixtureId,
+          temperature: 0.25, // Daha deterministik
+          maxTokens: 2000,
+          timeout: 10000 // 10 saniye
+        });
+        
+        if (response) {
+          console.log('   ✅ DeepSeek + MCP responded successfully');
+        }
+      } catch (deepseekError: any) {
+        console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
       }
-    } catch (claudeError: any) {
-      console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
+    } else {
+      console.log('   ⚠️ DeepSeek API key not available, trying Claude...');
     }
 
-    // 2️⃣ CLAUDE BAŞARISIZ OLURSA DEEPSEEK DENE
+    // 2️⃣ DEEPSEEK BAŞARISIZ OLURSA CLAUDE DENE
     if (!response) {
-      const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
-      
-      if (hasDeepSeek) {
-        console.log('   🟣 [2/3] Trying DeepSeek with MCP...');
-        try {
-          response = await aiClient.chat([
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage }
-          ], {
-            model: 'deepseek',
-            useMCP: true,
-            mcpTools: ['football_data', 'team_stats', 'head_to_head'],
-            mcpFallback: true,
-            fixtureId: matchData.fixtureId,
-            temperature: 0.3,
-            maxTokens: 2000,
-            timeout: 10000 // 10 saniye - Vercel limit
-          });
-          
-          if (response) {
-            console.log('   ✅ DeepSeek responded successfully');
-          }
-        } catch (deepseekError: any) {
-          console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
+      console.log('   🔵 [2/3] Trying Claude for deep analysis...');
+      try {
+        response = await aiClient.chat([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ], {
+          model: 'claude',
+          useMCP: false,
+          mcpFallback: false,
+          fixtureId: matchData.fixtureId,
+          temperature: 0.35,
+          maxTokens: 1500,
+          timeout: 8000 // 8 saniye
+        });
+        
+        if (response) {
+          console.log('   ✅ Claude responded successfully');
         }
-      } else {
-        console.log('   ⚠️ DeepSeek API key not available, skipping...');
+      } catch (claudeError: any) {
+        console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
       }
     }
 
