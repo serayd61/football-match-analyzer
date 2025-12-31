@@ -394,6 +394,8 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
 
 export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summary: any; error?: string }> {
   try {
+    console.log('📊 getAccuracyStats called');
+    
     // Get all settled matches
     const { data, error } = await getSupabase()
       .from('analysis_performance')
@@ -401,11 +403,29 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
       .eq('match_settled', true);
     
     if (error) {
+      console.error('❌ getAccuracyStats error:', error.message);
       return { stats: [], summary: null, error: error.message };
     }
     
+    // Get pending count FIRST (before early return)
+    const { count: pendingCount } = await getSupabase()
+      .from('analysis_performance')
+      .select('*', { count: 'exact', head: true })
+      .eq('match_settled', false);
+    
+    console.log(`   Settled: ${data?.length || 0}, Pending: ${pendingCount || 0}`);
+    
     if (!data || data.length === 0) {
-      return { stats: [], summary: { totalMatches: 0, settledMatches: 0 } };
+      // Return with pending count even if no settled matches
+      return { 
+        stats: [], 
+        summary: { 
+          totalMatches: pendingCount || 0, 
+          settledMatches: 0,
+          pendingMatches: pendingCount || 0,
+          consensusAccuracy: 0
+        } 
+      };
     }
     
     const total = data.length;
@@ -439,11 +459,7 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
       calcAgentStats('consensus_mr_correct', 'consensus_ou_correct', 'consensus_btts_correct', 'KONSENSÜS')
     ];
     
-    // Get pending count
-    const { count: pendingCount } = await getSupabase()
-      .from('analysis_performance')
-      .select('*', { count: 'exact', head: true })
-      .eq('match_settled', false);
+    // pendingCount already fetched above
     
     const summary = {
       totalMatches: total + (pendingCount || 0),
