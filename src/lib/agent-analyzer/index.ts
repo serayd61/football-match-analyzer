@@ -1289,7 +1289,7 @@ export async function runAgentAnalysis(
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 15000, 'Deep Analysis Agent'), // 15 saniye
+      }), 20000, 'Deep Analysis Agent'), // 20 saniye - motivasyon analizi
     ]);
     
     // Genius Analyst devre dışı

@@ -5,118 +5,41 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
 
+// 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
+// Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
+
 const DEEP_ANALYSIS_PROMPT = {
-  tr: `Sen DÜNYA ÇAPINDA TANINMIŞ bir futbol analisti, taktik uzmanı ve bahis stratejistisin. 15+ yıllık deneyiminle maçları çok katmanlı, yaratıcı ve derinlemesine analiz ediyorsun.
+  tr: `Sen deneyimli bir futbol psikoloğu ve takım dinamikleri uzmanısın. 
+Görevin: Sportmonks verilerini analiz ederek her iki takımın MAÇA HAZIRLIK ve MOTİVASYON durumunu değerlendirmek.
 
-🎯 GÖREV: Verilen TÜM verileri kullanarak yaratıcı, derinlemesine ve kapsamlı analiz yap ve JSON formatında döndür.
+🎯 ODAK NOKTASI: MOTİVASYON VE DUYGU ANALİZİ
 
-🧠 YARATICI ANALİZ YAKLAŞIMIN:
+📊 ANALİZ KRİTERLERİ:
 
-1. TAKIM FORMU VE DİNAMİKLERİ (DERİNLEMESİNE)
-   - Son 10 maç performansı (form grafiği analizi) + Trend tespiti (yükselişte mi düşüşte mi?)
-   - İç saha / deplasman istatistikleri (ÇOK ÖNEMLİ! - ev sahibi EVDE, deplasman DEPLASMANDA)
-   - Gol beklentisi trendi (artıyor mu, azalıyor mu?) + Momentum analizi
-   - Takımın mental durumu ve motivasyon düzeyi + Psikolojik faktörler
-   - HAZIRLANMA SKORU (0-100): "MOTİVASYON & HAZIRLIK PUANLARI" bölümündeki skorları kullan. Yüksek skor (>70) = iyi hazırlanmış, yüksek motivasyon, pozitif tempo. Düşük skor (<40) = kötü form, düşük motivasyon, yorgunluk belirtileri. Trend (improving/declining/stable) mutlaka dikkate al.
-   - YARATICI İÇGÖRÜ: Takımın "kritik an" performansı nasıl? (Önemli maçlarda overperform/underperform?)
+1. FORM GRAFİĞİ ANALİZİ (Son 10 maç)
+   - W (Galibiyet) = 3 puan, D (Beraberlik) = 1 puan, L (Mağlubiyet) = 0 puan
+   - Son 3 maç vs Önceki 3 maç karşılaştırması → Trend tespiti
+   - Galibiyet serisi veya mağlubiyet serisi var mı?
 
-2. TAKTİKSEL YAPI (DERİNLEMESİNE)
-   - Güçlü ve zayıf yönler + Rakibin bu zaafları nasıl kullanabileceği
-   - Ev sahibi avantajı değerlendirmesi + Taraftar etkisi
-   - DİZİLİŞ ANALİZİ: Beklenen formasyon ve anahtar oyuncular
-   - YARATICI TAKTİK TAHMİNİ: Hangi takım hangi taktiği kullanacak? (Yüksek pres, kontra atak, pozisyon oyunu?)
-   - Matchup analizi: Hangi pozisyonlar kritik? (Örn: Ev sahibi kanatlar vs Deplasman fullback'leri)
-   - Taktiksel değişiklik potansiyeli: Maç gidişatına göre takımlar taktik değiştirir mi?
+2. TREND TESPİTİ
+   - "improving": Son 3 maç önceki 3 maçtan daha iyi → Takım yükselişte 🔼
+   - "declining": Son 3 maç önceki 3 maçtan daha kötü → Takım düşüşte 🔽
+   - "stable": Benzer performans → Takım stabil ➡️
 
-3. TARİHSEL VERİLER (YARATICI PATTERN TANIMA)
-   - H2H karşılaşma geçmişi + Pattern tespiti (Her zaman aynı skor mu? Pattern var mı?)
-   - Psikolojik üstünlük + "Mental block" var mı? (Bir takım diğerine karşı hiç kazanamıyor mu?)
-   - Geçmiş maçlardaki gol ortalaması + H2H'da normal maçlardan farklı mı?
-   - YARATICI İÇGÖRÜ: H2H'da takımlar birbirini iyi tanıyor mu? (Daha az gol, daha dengeli?)
+3. MOTİVASYON SKORU (0-100)
+   - 80-100: Mükemmel form, yüksek motivasyon, takım çok hazır 🔥
+   - 60-79: İyi form, normal motivasyon, takım hazır ✅
+   - 40-59: Orta form, düşük motivasyon, takım yarı hazır ⚠️
+   - 20-39: Kötü form, çok düşük motivasyon, takım hazır değil ❌
+   - 0-19: Felaket form, motivasyon yok, ciddi sorun 💀
 
-4. İSTATİSTİKSEL MODELLEME (YARATICI)
-   - Beklenen gol sayısı hesaplama + Regresyon analizi
-   - Over/Under 2.5 olasılığı + Confidence interval
-   - BTTS (İki Takım da Gol Atar) olasılığı + Pattern analizi
-   - Sonuç olasılıkları (1/X/2) + Senaryo analizi (best case, worst case, most likely)
+4. PSİKOLOJİK FAKTÖRLER
+   - Ev sahibi avantajı: Taraftar desteği, saha aşinalığı
+   - Deplasman dezavantajı: Seyahat yorgunluğu, yabancı ortam
+   - Baskı altında performans: Önemli maçlarda overperform/underperform
+   - "Nothing to lose" mentalitesi: Alt sıradaki takımın agresifliği
 
-5. KRİTİK FAKTÖRLER (DERİNLEMESİNE)
-   - Sakatlıklar ve cezalılar + Etki analizi (Anahtar oyuncu yok mu? Alternatif var mı?)
-   - Maçın lig sıralamasındaki önemi + Motivasyon farkları
-   - HAVA DURUMU: Yağmur, rüzgar, sıcaklık etkisi + Taktiksel değişiklik potansiyeli
-   - SAHA KOŞULLARI: Çim kalitesi, stadyum atmosferi + Taraftar etkisi
-   - YARATICI İÇGÖRÜ: Maçın "önem seviyesi" takımları nasıl etkiler? (Daha agresif mi, daha temkinli mi?)
-
-6. HAKEM ANALİZİ (YARATICI)
-   - Hakemın kart eğilimi (ortalama sarı/kırmızı) + Bu maçta nasıl davranır?
-   - Penaltı verme oranı + Kritik anlarda penaltı verme eğilimi
-   - Ev sahibi eğilimi var mı? + Bu maçta etkili olur mu?
-   - Bu hakemle takımların geçmiş maçları + Pattern var mı?
-   - YARATICI İÇGÖRÜ: Hakem bu maçta "kritik kararlar" verir mi? (Penaltı, kırmızı kart?)
-
-7. KORNER VE KART TAHMİNLERİ (YARATICI)
-   - Beklenen korner sayısı + Taktiksel yaklaşım etkisi
-   - Beklenen kart sayısı + Maç önemi ve hakem etkisi
-   - Her iki takımın agresiflik seviyesi + Derbi/rivalry etkisi
-   - YARATICI İÇGÖRÜ: Maçın gidişatına göre kart/korner sayısı değişir mi?
-
-8. HAZIRLANMA SKORU (YARATICI DEĞERLENDİRME) - ⚠️ KRİTİK BÖLÜM ⚠️
-   - Her iki takım için 0-100 arası hazırlanma skoru hesapla (MUTLAKA HESAPLA VE JSON'A EKLE!)
-   - Bu skor takımın maça ne kadar hazır olduğunu, motivasyonunu ve duygusal durumunu gösterir
-   - 70-100: Takım çok hazır, yüksek motivasyon, pozitif tempo, form yükselişte
-   - 50-69: Takım normal hazırlıkta, dengeli motivasyon, stabil form
-   - 30-49: Takım hazırlıksız, düşük motivasyon, form düşüşte, yorgunluk belirtileri
-   - 0-29: Takım çok kötü durumda, motivasyon çok düşük, ciddi form problemi
-   - Dikkate alınacaklar: 
-     * Son 10 maç form grafiği ve trend (improving/declining/stable)
-     * Son 3 maç vs önceki 3 maç karşılaştırması
-     * Motivasyon seviyesi (lig pozisyonu, maçın önemi)
-     * Sakatlık durumu (anahtar oyuncu eksikliği)
-     * Yorgunluk belirtileri (yoğun maç programı)
-     * Takım ruh hali (son maçlardaki dramatik sonuçlar)
-     * Ev sahibi için: EVDEKİ performans, taraftar desteği, ev sahibi avantajı
-     - Deplasman için: DEPLASMANDAKİ performans, seyahat yorgunluğu, "nothing to lose" mentalitesi
-   - Skor gerekçesini açıkça belirt + YARATICI FAKTÖRLER: 
-     * Takımın "kritik maç" performansı (önemli maçlarda overperform/underperform?)
-     * Taraftar desteği ve baskısı
-     * Teknik direktör baskısı ve güven durumu
-     * Takım kimyası ve uyum
-   - ⚠️ MUTLAKA "motivationScores" objesini JSON'a ekle: { "home": 0-100, "away": 0-100, "homeTrend": "improving/declining/stable", "awayTrend": "improving/declining/stable", "reasoning": "..." }
-
-9. PSİKOLOJİK VE DUYGUSAL FAKTÖRLER (YENİ - YARATICI)
-   - Ev sahibi taraftar baskısı: Takım overperform mi underperform mu yapar?
-   - Deplasman "nothing to lose" mentalitesi: Daha agresif mi oynar?
-   - Maçın önemi: Takımlar daha temkinli mi yoksa daha agresif mi oynar?
-   - Son maçlardaki dramatik sonuçlar: Takımların mental durumunu nasıl etkiler?
-   - YARATICI İÇGÖRÜ: Hangi takım "kritik anlarda" daha güçlü? (Geç goller, penaltılar, kırmızı kartlar sonrası)
-
-📊 VERİ KULLANIMI (KRİTİK):
-- "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri MUTLAKA kullan
-- Ev sahibi için EVDEKİ istatistikleri baz al
-- Deplasman için DEPLASMANDAKİ istatistikleri baz al
-- "MOTİVASYON & HAZIRLIK PUANLARI" bölümünü mutlaka dikkate al
-- H2H verilerini kullan
-- Hakem ve hava durumu verilerini değerlendir
-
-⚡ ÖNEMLİ KURALLAR (MUTLAKA UYGULA):
-- Ev sahibi için EVDEKİ maç istatistiklerini kullan (genel değil!)
-- Deplasman için DEPLASMANDAKİ maç istatistiklerini kullan (genel değil!)
-- "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri MUTLAKA kullan - bu sistem hesaplamasıdır
-- Beklenen toplam gol 2.5'ten fazlaysa OVER, azsa UNDER tahmin et
-- Form farkı büyükse (10+ puan) favori takımı seç
-- "MOTİVASYON & HAZIRLIK PUANLARI" bölümünü MUTLAKA dikkate al:
-  * Yüksek motivasyon puanı (>70) = takım daha hazır ve motivasyonlu → avantaj
-  * Düşük motivasyon puanı (<40) = takım form düşüklüğü yaşıyor → dezavantaj
-  * İyileşen trend (improving) = takım yükselişte, daha tehlikeli → +5-10 puan bonus
-  * Düşen trend (declining) = takım düşüşte, zayıf → -5-10 puan ceza
-  * Motivasyon farkı 20+ puan ise yüksek motivasyonlu takımı favori yap
-- Düşük gollü takımlar için Under'a eğilimli ol
-- H2H verisi yoksa form verilerine ağırlık ver
-- Hakem sert ise (avgYellowCards > 4.5) Over cards tahmin et
-- Hava durumu kötüyse (yağmur, rüzgar) Under'a eğilimli ol
-- Confidence %50-85 arasında olmalı (gerçekçi ol)
-
-MUTLAKA BU JSON FORMATINDA DÖNDÜR:
+⚡ KISA VE ÖZ YANIT VER - SADECE JSON DÖNDÜR:
 {
   "matchAnalysis": "Maçın genel analizi (2-3 cümle, taktiksel ve istatistiksel özet)",
   "criticalFactors": [
@@ -857,12 +780,12 @@ export async function runDeepAnalysisAgent(
       { role: 'user', content: userMessage }
     ], {
           model: 'deepseek',
-          useMCP: false, // MCP şimdilik devre dışı - direkt çalışsın
+          useMCP: false,
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
-          temperature: 0.25, // Daha deterministik
-          maxTokens: 1200, // Kısa yanıt
-          timeout: 10000 // 10 saniye
+          temperature: 0.3,
+          maxTokens: 800, // Kısa ve öz yanıt
+          timeout: 15000 // 15 saniye
         });
         
         if (response) {
@@ -887,9 +810,9 @@ export async function runDeepAnalysisAgent(
           useMCP: false,
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
-          temperature: 0.35,
-          maxTokens: 1200, // Kısa yanıt
-          timeout: 10000 // 10 saniye
+          temperature: 0.3,
+          maxTokens: 800, // Kısa ve öz yanıt
+          timeout: 12000 // 12 saniye
         });
         
         if (response) {
