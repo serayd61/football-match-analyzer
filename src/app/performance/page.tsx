@@ -85,8 +85,14 @@ export default function PerformancePage() {
       const analysesRes = await fetch('/api/performance/get-analyses?limit=50');
       const analysesData = await analysesRes.json();
       
+      console.log('📋 Analyses API response:', analysesData);
+      console.log('   Data count:', analysesData.data?.length || 0);
+      
       if (analysesData.success) {
         setAnalyses(analysesData.data || []);
+        console.log('   Set analyses:', analysesData.data?.length || 0, 'records');
+      } else {
+        console.error('   Analyses fetch failed:', analysesData.error);
       }
       
     } catch (err: any) {
@@ -127,6 +133,10 @@ export default function PerformancePage() {
   // Filter analyses
   const pendingAnalyses = analyses.filter(a => !a.match_settled);
   const settledAnalyses = analyses.filter(a => a.match_settled);
+  
+  console.log('🔍 Analyses state:', analyses.length, 'total');
+  console.log('   Pending:', pendingAnalyses.length);
+  console.log('   Settled:', settledAnalyses.length);
 
   // Get best agent
   const bestAgent = stats.reduce((best, curr) => 
