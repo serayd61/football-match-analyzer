@@ -555,33 +555,174 @@ function getDefaultMasterStrategist(
   },
   language: 'tr' | 'en' | 'de'
 ): MasterStrategistResult {
-  // Basit konsensüs hesapla
-  const statsMR = agentResults.stats?.matchResult || 'X';
-  const oddsMR = agentResults.odds?.recommendation || agentResults.odds?.matchWinnerValue || 'X';
-  const deepMR = agentResults.deepAnalysis?.matchResult?.prediction || 'X';
-
-  const matchResultVotes: { [key: string]: number } = {};
-  if (statsMR) matchResultVotes[statsMR] = (matchResultVotes[statsMR] || 0) + 1;
-  if (oddsMR) matchResultVotes[oddsMR] = (matchResultVotes[oddsMR] || 0) + 1;
-  if (deepMR) matchResultVotes[deepMR] = (matchResultVotes[deepMR] || 0) + 1;
-
-  const finalMR = Object.entries(matchResultVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
+  // Ağırlıklı konsensüs hesapla
+  const stats = agentResults.stats;
+  const odds = agentResults.odds;
+  const deep = agentResults.deepAnalysis;
+  
+  // Match Result - Ağırlıklı voting
+  const mrVotes: { [key: string]: number } = {};
+  if (stats?.matchResult) mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
+  if (odds?.recommendation) mrVotes[odds.recommendation] = (mrVotes[odds.recommendation] || 0) + 35;
+  if (odds?.matchWinnerValue) mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] = (mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] || 0) + 10;
+  if (deep?.matchResult?.prediction) mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
+  
+  const finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
+  const mrTotalVotes = Object.values(mrVotes).reduce((a, b) => a + b, 0);
+  const mrMaxVotes = Math.max(...Object.values(mrVotes), 0);
+  const mrConfidence = mrTotalVotes > 0 ? Math.round(55 + (mrMaxVotes / mrTotalVotes) * 25) : 55;
+  
+  // Over/Under - Ağırlıklı voting
+  const ouVotes: { [key: string]: number } = {};
+  if (stats?.overUnder) ouVotes[stats.overUnder] = (ouVotes[stats.overUnder] || 0) + 35;
+  if (odds?.recommendation && ['Over', 'Under'].includes(odds.recommendation)) ouVotes[odds.recommendation] = (ouVotes[odds.recommendation] || 0) + 30;
+  if (deep?.overUnder?.prediction) ouVotes[deep.overUnder.prediction] = (ouVotes[deep.overUnder.prediction] || 0) + 35;
+  
+  const finalOU = Object.entries(ouVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Over';
+  const ouTotalVotes = Object.values(ouVotes).reduce((a, b) => a + b, 0);
+  const ouMaxVotes = Math.max(...Object.values(ouVotes), 0);
+  const ouConfidence = ouTotalVotes > 0 ? Math.round(55 + (ouMaxVotes / ouTotalVotes) * 25) : 55;
+  
+  // BTTS - Ağırlıklı voting
+  const bttsVotes: { [key: string]: number } = {};
+  if (stats?.btts) bttsVotes[stats.btts] = (bttsVotes[stats.btts] || 0) + 35;
+  if (odds?.bttsValue) bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] = (bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] || 0) + 30;
+  if (deep?.btts?.prediction) bttsVotes[deep.btts.prediction] = (bttsVotes[deep.btts.prediction] || 0) + 35;
+  
+  const finalBTTS = Object.entries(bttsVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'No';
+  const bttsTotalVotes = Object.values(bttsVotes).reduce((a, b) => a + b, 0);
+  const bttsMaxVotes = Math.max(...Object.values(bttsVotes), 0);
+  const bttsConfidence = bttsTotalVotes > 0 ? Math.round(55 + (bttsMaxVotes / bttsTotalVotes) * 25) : 55;
+  
+  // Conflict detection
+  const conflicts: Array<{
+    agents: string[];
+    field: string;
+    description: string;
+    resolution: string;
+    severity: 'low' | 'medium' | 'high';
+  }> = [];
+  const strongSignals: Array<{
+    field: string;
+    agents: string[];
+    prediction: string;
+    confidence: number;
+    reasoning: string;
+  }> = [];
+  
+  if (stats?.matchResult && deep?.matchResult?.prediction && stats.matchResult !== deep.matchResult.prediction) {
+    conflicts.push({
+      agents: ['stats', 'deepAnalysis'],
+      field: 'matchResult',
+      description: `Stats (${stats.matchResult}) vs Deep (${deep.matchResult.prediction})`,
+      resolution: `Ağırlıklı oy ile ${finalMR} seçildi`,
+      severity: 'medium'
+    });
+  }
+  if (mrMaxVotes >= mrTotalVotes * 0.6 && mrTotalVotes > 0) {
+    strongSignals.push({
+      field: 'matchResult',
+      agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.matchResult, odds?.recommendation, deep?.matchResult?.prediction][i] === finalMR),
+      prediction: finalMR,
+      confidence: mrConfidence,
+      reasoning: `${Math.round(mrMaxVotes/mrTotalVotes*100)}% ağırlıklı oy`
+    });
+  }
+  if (ouMaxVotes >= ouTotalVotes * 0.6 && ouTotalVotes > 0) {
+    strongSignals.push({
+      field: 'overUnder',
+      agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.overUnder, odds?.recommendation, deep?.overUnder?.prediction][i] === finalOU),
+      prediction: finalOU,
+      confidence: ouConfidence,
+      reasoning: `${Math.round(ouMaxVotes/ouTotalVotes*100)}% ağırlıklı oy`
+    });
+  }
+  
+  // Best bet selection
+  type ValueType = 'low' | 'medium' | 'high';
+  type StakeType = 'low' | 'medium' | 'high' | 'low-medium' | 'medium-high';
+  
+  const bestBets: Array<{
+    rank: number;
+    market: string;
+    selection: string;
+    confidence: number;
+    value: ValueType;
+    reasoning: string;
+    recommendedStake: StakeType;
+  }> = [];
+  
+  // Value bet varsa öncelikli
+  if (odds?.valueBets && odds.valueBets.length > 0) {
+    const valueBet = odds.valueBets[0];
+    const valueMatch = valueBet.match(/MS (\d)|KG (Var|Yok)|(Over|Under)/);
+    if (valueMatch) {
+      bestBets.push({
+        rank: 1,
+        market: valueMatch[1] ? 'Match Result' : valueMatch[2] ? 'BTTS' : 'Over/Under 2.5',
+        selection: valueMatch[1] === '1' ? 'Home' : valueMatch[1] === '2' ? 'Away' : (valueMatch[2] || valueMatch[3] || 'N/A'),
+        confidence: odds.confidence || 65,
+        value: 'high' as ValueType,
+        reasoning: `Value bet: ${valueBet}`,
+        recommendedStake: 'medium' as StakeType
+      });
+    }
+  }
+  
+  // Eğer value bet yoksa veya eksikse, konsensüs bazlı best bet
+  if (bestBets.length === 0) {
+    const highestConf = Math.max(mrConfidence, ouConfidence, bttsConfidence);
+    if (highestConf === mrConfidence) {
+      bestBets.push({
+        rank: 1,
+        market: 'Match Result',
+        selection: finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw',
+        confidence: mrConfidence,
+        value: (mrConfidence > 65 ? 'medium' : 'low') as ValueType,
+        reasoning: `Konsensüs: ${mrMaxVotes}/${mrTotalVotes} ağırlıklı oy`,
+        recommendedStake: (mrConfidence > 65 ? 'medium' : 'low') as StakeType
+      });
+    } else if (highestConf === ouConfidence) {
+      bestBets.push({
+        rank: 1,
+        market: 'Over/Under 2.5',
+        selection: finalOU,
+        confidence: ouConfidence,
+        value: (ouConfidence > 65 ? 'medium' : 'low') as ValueType,
+        reasoning: `Konsensüs: ${ouMaxVotes}/${ouTotalVotes} ağırlıklı oy`,
+        recommendedStake: (ouConfidence > 65 ? 'medium' : 'low') as StakeType
+      });
+    } else {
+      bestBets.push({
+        rank: 1,
+        market: 'BTTS',
+        selection: finalBTTS,
+        confidence: bttsConfidence,
+        value: (bttsConfidence > 65 ? 'medium' : 'low') as ValueType,
+        reasoning: `Konsensüs: ${bttsMaxVotes}/${bttsTotalVotes} ağırlıklı oy`,
+        recommendedStake: (bttsConfidence > 65 ? 'medium' : 'low') as StakeType
+      });
+    }
+  }
+  
+  const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
+  const agentCount = [stats, odds, deep].filter(Boolean).length;
 
   return {
     agentEvaluation: {
       stats: {
-        reliability: agentResults.stats ? 80 : 0,
-        confidence: agentResults.stats?.confidence || 0,
-        strengths: agentResults.stats ? ['İstatistiksel veri'] : [],
+        reliability: stats ? 80 : 0,
+        confidence: stats?.confidence || 0,
+        strengths: stats ? ['İstatistiksel veri', 'Form analizi'] : [],
         weaknesses: [],
-        weight: agentResults.stats ? 30 : 0
+        weight: stats ? 30 : 0
       },
       odds: {
-        reliability: agentResults.odds ? 85 : 0,
-        confidence: agentResults.odds?.confidence || 0,
-        strengths: agentResults.odds ? ['Oran analizi'] : [],
+        reliability: odds ? 85 : 0,
+        confidence: odds?.confidence || 0,
+        strengths: odds ? ['Oran analizi', 'Value tespiti'] : [],
         weaknesses: [],
-        weight: agentResults.odds ? 35 : 0
+        weight: odds ? 35 : 0
       },
       sentiment: {
         reliability: agentResults.sentiment ? 70 : 0,
@@ -591,56 +732,56 @@ function getDefaultMasterStrategist(
         weight: agentResults.sentiment ? 15 : 0
       },
       deepAnalysis: {
-        reliability: agentResults.deepAnalysis ? 85 : 0,
-        confidence: agentResults.deepAnalysis?.matchResult?.confidence || 0,
-        strengths: agentResults.deepAnalysis ? ['Derin analiz'] : [],
+        reliability: deep ? 85 : 0,
+        confidence: deep?.matchResult?.confidence || 0,
+        strengths: deep ? ['Derin analiz', 'Motivasyon skorları'] : [],
         weaknesses: [],
-        weight: agentResults.deepAnalysis ? 20 : 0
+        weight: deep ? 20 : 0
       }
     },
     conflictAnalysis: {
-      conflicts: [],
-      strongSignals: []
+      conflicts,
+      strongSignals
     },
     finalConsensus: {
       matchResult: {
         prediction: finalMR,
-        confidence: 60,
-        reasoning: 'Fallback konsensüs',
+        confidence: mrConfidence,
+        reasoning: `${agentCount} agent konsensüsü (${mrMaxVotes}/${mrTotalVotes} oy)`,
         agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
       },
       overUnder: {
-        prediction: agentResults.stats?.overUnder || 'Over',
-        confidence: 60,
-        reasoning: 'Fallback konsensüs',
+        prediction: finalOU,
+        confidence: ouConfidence,
+        reasoning: `${agentCount} agent konsensüsü (${ouMaxVotes}/${ouTotalVotes} oy)`,
         agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
       },
       btts: {
-        prediction: agentResults.stats?.btts || 'No',
-        confidence: 60,
-        reasoning: 'Fallback konsensüs',
+        prediction: finalBTTS,
+        confidence: bttsConfidence,
+        reasoning: `${agentCount} agent konsensüsü (${bttsMaxVotes}/${bttsTotalVotes} oy)`,
         agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
       }
     },
-    bestBets: [{
-      rank: 1,
-      market: 'Over/Under 2.5',
-      selection: agentResults.stats?.overUnder || 'Over',
-      confidence: 60,
-      value: 'medium',
-      reasoning: 'Fallback tahmin',
-      recommendedStake: 'low-medium'
-    }],
+    bestBets,
     riskAssessment: {
-      overallRisk: 'medium',
-      factors: [],
-      warnings: ['Fallback mode - agent çıktıları analiz edilemedi']
+      overallRisk: overallConfidence > 65 ? 'low' : overallConfidence > 55 ? 'medium' : 'high',
+      factors: conflicts.length > 0 ? [`${conflicts.length} çatışma tespit edildi`] : [],
+      warnings: conflicts.map(c => c.description)
     },
     agentFeedback: {},
-    masterInsights: [],
-    overallConfidence: 60,
+    masterInsights: [
+      ...strongSignals.map(s => `${s.field}: ${s.prediction} (${s.confidence}%)`),
+      ...(conflicts.length > 0 ? [`⚠️ ${conflicts.length} agent çatışması var`] : []),
+      `Toplam ${agentCount} agent analiz edildi`
+    ],
+    overallConfidence,
     recommendation: language === 'tr' 
-      ? 'Fallback mode - Dikkatli ol'
-      : 'Fallback mode - Be careful'
+      ? strongSignals.length > 0 
+        ? `Güçlü sinyaller: ${strongSignals.join(', ')}` 
+        : `${agentCount} agent konsensüsü - Orta güven`
+      : strongSignals.length > 0 
+        ? `Strong signals: ${strongSignals.join(', ')}` 
+        : `${agentCount} agent consensus - Medium confidence`
   };
 }

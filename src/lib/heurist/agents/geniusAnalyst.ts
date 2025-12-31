@@ -520,13 +520,29 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
   const homeAvg = parseFloat(homeForm?.venueAvgScored || homeForm?.avgGoals || '1.2');
   const awayAvg = parseFloat(awayForm?.venueAvgScored || awayForm?.avgGoals || '1.1');
   const totalExpected = homeAvg + awayAvg;
+  
+  // Form puanlarını hesapla
+  const homeFormStr = homeForm?.form || '';
+  const awayFormStr = awayForm?.form || '';
+  const homeWins = (homeFormStr.match(/W/g) || []).length;
+  const awayWins = (awayFormStr.match(/W/g) || []).length;
+  const homePoints = homeWins * 3 + (homeFormStr.match(/D/g) || []).length;
+  const awayPoints = awayWins * 3 + (awayFormStr.match(/D/g) || []).length;
+  const formDiff = homePoints - awayPoints;
+  
+  // Akıllı tahmin
+  const matchResult = formDiff > 5 ? '1' : formDiff < -5 ? '2' : 'X';
+  const homeWinProb = Math.min(65, 35 + formDiff * 2);
+  const awayWinProb = Math.min(65, 35 - formDiff * 2);
+  const drawProb = 100 - homeWinProb - awayWinProb;
+  const confidence = Math.min(70, 50 + Math.abs(formDiff) * 1.5);
 
   return {
     matchAnalysis: {
-      summary: `${matchData.homeTeam} vs ${matchData.awayTeam} maçının analizi.`,
-      tacticalPreview: 'Taktiksel önizleme',
+      summary: `${matchData.homeTeam} vs ${matchData.awayTeam} maçı. Form farkı: ${formDiff > 0 ? '+' : ''}${formDiff} puan.`,
+      tacticalPreview: `Ev sahibi ${homeWins} galibiyet, deplasman ${awayWins} galibiyet`,
       keyBattles: ['Orta saha mücadelesi', 'Kanat oyunu'],
-      expectedFlow: 'Dengeli maç beklentisi'
+      expectedFlow: formDiff > 3 ? 'Ev sahibi baskısı bekleniyor' : formDiff < -3 ? 'Deplasman baskısı bekleniyor' : 'Dengeli maç beklentisi'
     },
     mathematicalModel: {
       homeExpectedGoals: homeAvg,
@@ -536,13 +552,13 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
         over25: totalExpected > 2.5 ? 55 : 45,
         under25: totalExpected > 2.5 ? 45 : 55,
         over35: totalExpected > 3.5 ? 35 : 25,
-        btts: 50,
+        btts: Math.round((homeAvg > 0.8 && awayAvg > 0.8) ? 55 : 45),
         exactScores: { '1-1': 15, '2-1': 12, '1-2': 11 }
       },
       resultProbabilities: {
-        homeWin: 40,
-        draw: 30,
-        awayWin: 30
+        homeWin: Math.round(homeWinProb),
+        draw: Math.round(drawProb),
+        awayWin: Math.round(awayWinProb)
       },
       confidenceInterval: {
         goals: [Math.max(1, Math.round(totalExpected - 1)), Math.round(totalExpected + 1)] as [number, number],
@@ -551,23 +567,23 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
     },
     predictions: {
       matchResult: {
-        prediction: 'X',
-        confidence: 55,
-        reasoning: 'Fallback analiz',
-        probability: 30,
-        value: 'low'
+        prediction: matchResult,
+        confidence: Math.round(confidence),
+        reasoning: `Form analizi: Ev ${homePoints}p vs Dep ${awayPoints}p (${formDiff > 0 ? '+' : ''}${formDiff})`,
+        probability: matchResult === '1' ? homeWinProb : matchResult === '2' ? awayWinProb : drawProb,
+        value: Math.abs(formDiff) > 5 ? 'medium' : 'low'
       },
       overUnder: {
         prediction: totalExpected > 2.5 ? 'Over' : 'Under',
-        confidence: 55,
-        reasoning: 'Fallback analiz',
+        confidence: Math.round(50 + Math.abs(totalExpected - 2.5) * 10),
+        reasoning: `Beklenen gol: ${totalExpected.toFixed(1)}`,
         probability: totalExpected > 2.5 ? 55 : 45,
         value: 'low'
       },
       btts: {
-        prediction: 'No',
+        prediction: (homeAvg > 0.8 && awayAvg > 0.8) ? 'Yes' : 'No',
         confidence: 55,
-        reasoning: 'Fallback analiz',
+        reasoning: `Ev ${homeAvg.toFixed(1)} gol, Dep ${awayAvg.toFixed(1)} gol ortalaması`,
         probability: 50,
         value: 'low'
       },
@@ -577,44 +593,44 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
         alternatives: ['2-1', '1-2']
       },
       halfTimeFullTime: {
-        prediction: 'X/X',
+        prediction: matchResult === '1' ? 'X/1' : matchResult === '2' ? 'X/2' : 'X/X',
         confidence: 50,
-        reasoning: 'Fallback'
+        reasoning: 'Form bazlı tahmin'
       }
     },
     valueBets: [],
     riskFactors: {
-      dataQuality: 60,
-      uncertainty: 'high',
-      factors: ['Fallback mode - agent çıktıları alınamadı'],
+      dataQuality: 70,
+      uncertainty: 'medium',
+      factors: [`Form analizi kullanıldı (AI yanıt vermedi)`],
       scenarios: {
-        bestCase: 'Ev sahibi kazanır',
-        worstCase: 'Deplasman kazanır',
-        mostLikely: 'Beraberlik'
+        bestCase: formDiff > 0 ? 'Ev sahibi kazanır' : 'Deplasman kazanır',
+        worstCase: formDiff > 0 ? 'Deplasman kazanır' : 'Ev sahibi kazanır',
+        mostLikely: matchResult === '1' ? 'Ev sahibi kazanır' : matchResult === '2' ? 'Deplasman kazanır' : 'Beraberlik'
       }
     },
     motivationAnalysis: {
-      home: { score: 50, factors: [], trend: 'stable' },
-      away: { score: 50, factors: [], trend: 'stable' }
+      home: { score: Math.min(80, 50 + formDiff * 2), factors: [`Son form: ${homePoints} puan`], trend: homePoints > 10 ? 'improving' : 'stable' },
+      away: { score: Math.min(80, 50 - formDiff * 2), factors: [`Son form: ${awayPoints} puan`], trend: awayPoints > 10 ? 'improving' : 'stable' }
     },
     tacticalInsights: {
-      homeStrength: 'N/A',
-      homeWeakness: 'N/A',
-      awayStrength: 'N/A',
-      awayWeakness: 'N/A',
-      keyMatchup: 'N/A'
+      homeStrength: `${homeWins} galibiyet`,
+      homeWeakness: homePoints < 10 ? 'Form düşük' : 'N/A',
+      awayStrength: `${awayWins} galibiyet`,
+      awayWeakness: awayPoints < 10 ? 'Form düşük' : 'N/A',
+      keyMatchup: 'Orta saha kontrolü'
     },
     finalRecommendation: {
       bestBet: {
-        market: 'Over/Under 2.5',
-        selection: totalExpected > 2.5 ? 'Over' : 'Under',
-        confidence: 55,
-        value: 'low',
-        stake: 'low'
+        market: Math.abs(formDiff) > 5 ? 'Match Result' : 'Over/Under 2.5',
+        selection: Math.abs(formDiff) > 5 ? (formDiff > 0 ? 'Home' : 'Away') : (totalExpected > 2.5 ? 'Over' : 'Under'),
+        confidence: Math.round(confidence),
+        value: Math.abs(formDiff) > 5 ? 'medium' : 'low',
+        stake: Math.abs(formDiff) > 5 ? 'medium' : 'low'
       },
       alternativeBets: [],
-      avoidBets: ['Fallback mode'],
-      overallConfidence: 55,
+      avoidBets: [],
+      overallConfidence: Math.round(confidence),
       summary: 'Fallback analiz - dikkatli ol'
     },
     geniusInsights: ['Fallback mode - agent çıktıları alınamadı']
