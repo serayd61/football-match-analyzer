@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runUnifiedConsensus, saveUnifiedAnalysis, UnifiedAnalysisInput } from '@/lib/unified-consensus';
 import { createClient } from '@supabase/supabase-js';
+import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -66,6 +67,46 @@ export async function POST(request: NextRequest) {
     
     // Veritabanına kaydet
     await saveUnifiedAnalysis(input, result);
+    
+    // 🆕 Performance Tracking'e kaydet
+    try {
+      const extractAgentPred = (agent: any) => {
+        if (!agent) return undefined;
+        return {
+          matchResult: agent.matchResult || agent.finalConsensus?.matchResult?.prediction || '',
+          overUnder: agent.overUnder || agent.finalConsensus?.overUnder?.prediction || '',
+          btts: agent.btts || agent.finalConsensus?.btts?.prediction || '',
+          confidence: agent.confidence || agent.overallConfidence || 50,
+          reasoning: agent.agentSummary || agent.recommendation || ''
+        };
+      };
+      
+      const performanceRecord: AnalysisRecord = {
+        fixtureId,
+        homeTeam,
+        awayTeam,
+        league: league || 'Unknown',
+        matchDate: matchDate || new Date().toISOString(),
+        
+        statsAgent: extractAgentPred(result.sources?.agents?.stats),
+        oddsAgent: extractAgentPred(result.sources?.agents?.odds),
+        deepAnalysisAgent: extractAgentPred(result.sources?.agents?.deepAnalysis),
+        geniusAnalyst: extractAgentPred(result.sources?.agents?.geniusAnalyst),
+        masterStrategist: extractAgentPred(result.sources?.agents?.masterStrategist),
+        aiSmart: extractAgentPred(result.sources?.ai?.smart),
+        
+        consensusMatchResult: result.predictions?.matchResult?.prediction || '',
+        consensusOverUnder: result.predictions?.overUnder?.prediction || '',
+        consensusBtts: result.predictions?.btts?.prediction || '',
+        consensusConfidence: result.systemPerformance?.overallConfidence || 50,
+        consensusScorePrediction: result.predictions?.matchResult?.scorePrediction || ''
+      };
+      
+      await saveAnalysisToPerformance(performanceRecord);
+      console.log(`   💾 Saved to performance tracking`);
+    } catch (perfError) {
+      console.error('⚠️ Performance tracking save failed (non-critical):', perfError);
+    }
     
     const totalTime = Date.now() - startTime;
     console.log(`✅ Unified Analysis complete in ${totalTime}ms`);

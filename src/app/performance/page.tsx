@@ -1,407 +1,641 @@
 'use client';
 
 // ============================================================================
-// PERFORMANCE TRACKING PAGE
-// Analiz edilen maçların sonuçlarını ve doğruluk oranlarını gösterir
+// PERFORMANCE TRACKING PAGE - FUTURISTIC DESIGN
+// Agent performanslarını ve tahmin doğruluğunu gösterir
 // ============================================================================
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { FootballBall3D } from '@/components/Football3D';
 import {
   BarChart3, TrendingUp, Target, CheckCircle, XCircle,
-  Calendar, Filter, Download, RefreshCw, Award, Activity,
-  ArrowLeft, Zap, Trophy, TrendingDown
+  RefreshCw, Award, Activity, Zap, Trophy, Clock,
+  ChevronDown, ChevronUp, Loader2, AlertCircle
 } from 'lucide-react';
 
-interface PerformanceStats {
-  overview: {
-    total: number;
-    settled: number;
-    pending: number;
-    periodDays: number;
-  };
-  accuracy: {
-    matchResult: { total: number; correct: number; rate: number };
-    overUnder: { total: number; correct: number; rate: number };
-    btts: { total: number; correct: number; rate: number };
-    score: { total: number; correct: number; rate: number };
-    overall: { total: number; correct: number; rate: number };
-  };
-  confidenceDistribution: {
-    high: { count: number; correct: number; rate: number };
-    medium: { count: number; correct: number; rate: number };
-    low: { count: number; correct: number; rate: number };
-  };
-  recentAnalyses: Array<{
-    fixtureId: number;
-    homeTeam: string;
-    awayTeam: string;
-    league: string;
-    matchDate: string;
-    predictions: {
-      matchResult: { prediction: string; confidence: number };
-      overUnder: { prediction: string; confidence: number };
-      btts: { prediction: string; confidence: number };
-    };
-    actualResults?: {
-      homeScore: number;
-      awayScore: number;
-      matchResult: string;
-      overUnder: string;
-      btts: boolean;
-    };
-    accuracy?: {
-      matchResult: boolean;
-      overUnder: boolean;
-      btts: boolean;
-      score: boolean;
-    };
-    overallConfidence: number;
-    agreement: number;
-    isSettled: boolean;
-    createdAt: string;
-  }>;
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface AccuracyStats {
+  agent: string;
+  totalMatches: number;
+  matchResultCorrect: number;
+  matchResultAccuracy: number;
+  overUnderCorrect: number;
+  overUnderAccuracy: number;
+  bttsCorrect: number;
+  bttsAccuracy: number;
+  overallAccuracy: number;
 }
 
+interface AnalysisRecord {
+  id: string;
+  fixture_id: number;
+  home_team: string;
+  away_team: string;
+  league: string;
+  match_date: string;
+  match_settled: boolean;
+  consensus_match_result: string;
+  consensus_over_under: string;
+  consensus_btts: string;
+  consensus_confidence: number;
+  actual_home_score: number | null;
+  actual_away_score: number | null;
+  actual_match_result: string | null;
+  actual_over_under: string | null;
+  actual_btts: string | null;
+  consensus_mr_correct: boolean | null;
+  consensus_ou_correct: boolean | null;
+  consensus_btts_correct: boolean | null;
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export default function PerformancePage() {
-  const router = useRouter();
+  const [stats, setStats] = useState<AccuracyStats[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [analyses, setAnalyses] = useState<AnalysisRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState<PerformanceStats | null>(null);
-  const [periodDays, setPeriodDays] = useState(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'analyses' | 'trends'>('overview');
+  const [settling, setSettling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPending, setShowPending] = useState(true);
+  const [showSettled, setShowSettled] = useState(true);
+
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch stats
+      const statsRes = await fetch('/api/performance/stats');
+      const statsData = await statsRes.json();
+      
+      if (statsData.success) {
+        setStats(statsData.stats || []);
+        setSummary(statsData.summary);
+      }
+      
+      // Fetch analyses
+      const analysesRes = await fetch('/api/performance/get-analyses?limit=50');
+      const analysesData = await analysesRes.json();
+      
+      if (analysesData.success) {
+        setAnalyses(analysesData.data || []);
+      }
+      
+    } catch (err: any) {
+      setError(err.message || 'Veri yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchStats();
-  }, [periodDays]);
+    fetchData();
+  }, [fetchData]);
 
-  const fetchStats = async () => {
+  // Settle matches
+  const handleSettleMatches = async () => {
+    setSettling(true);
+    
     try {
-      setLoading(true);
-      const res = await fetch(`/api/unified/performance?days=${periodDays}&_t=${Date.now()}`);
+      const res = await fetch('/api/performance/settle-matches', {
+        method: 'POST'
+      });
       const data = await res.json();
       
       if (data.success) {
-        setStats(data.stats);
+        // Refresh data
+        await fetchData();
+        alert(`${data.settled} maç sonuçlandırıldı, ${data.pending} maç bekliyor`);
+      } else {
+        alert('Hata: ' + data.error);
       }
-    } catch (error) {
-      console.error('Fetch error:', error);
+    } catch (err: any) {
+      alert('Hata: ' + err.message);
+    } finally {
+      setSettling(false);
     }
-    setLoading(false);
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchStats();
-    setRefreshing(false);
-  };
+  // Filter analyses
+  const pendingAnalyses = analyses.filter(a => !a.match_settled);
+  const settledAnalyses = analyses.filter(a => a.match_settled);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
-          <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center text-white">
-          <p className="text-gray-400 mb-4">Veri yüklenemedi</p>
-          <motion.button
-            onClick={handleRefresh}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-3 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold transition-all neon-glow-cyan"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            Yenile
-          </motion.button>
-        </div>
-      </div>
-    );
-  }
+  // Get best agent
+  const bestAgent = stats.reduce((best, curr) => 
+    curr.overallAccuracy > (best?.overallAccuracy || 0) ? curr : best
+  , stats[0]);
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.button
-                onClick={() => router.push('/dashboard')}
-                whileHover={{ scale: 1.1, x: -5 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
-              >
-                <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
-              </motion.button>
-              <div className="flex items-center gap-3">
-                <FootballBall3D size={40} autoRotate={true} />
-                <div>
-                  <h1 className="text-2xl font-bold text-white flex items-center gap-2 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                    <BarChart3 className="w-6 h-6 text-[#00f0ff]" />
-                    Performans Takibi
-                  </h1>
-                  <p className="text-gray-400 text-sm mt-1">Analiz doğruluk oranları ve istatistikler</p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0a0a0a] to-black" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#00f0ff]/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#ff00ff]/5 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
+      </div>
+
+      {/* Navigation */}
+      <nav className="relative z-50 border-b border-[#00f0ff]/20 bg-black/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00f0ff] to-[#ff00ff] flex items-center justify-center">
+              <span className="text-xl">⚽</span>
             </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={periodDays}
-                onChange={(e) => setPeriodDays(Number(e.target.value))}
-                className="glass-futuristic border border-[#00f0ff]/30 rounded-lg px-3 py-2 text-white text-sm hover:neon-border-cyan transition-all bg-black/50"
-                style={{ fontFamily: 'var(--font-body)' }}
-              >
-                <option value={7} className="bg-black">Son 7 gün</option>
-                <option value={30} className="bg-black">Son 30 gün</option>
-                <option value={90} className="bg-black">Son 90 gün</option>
-                <option value={365} className="bg-black">Son 1 yıl</option>
-              </select>
-              <motion.button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold transition-all disabled:opacity-50 flex items-center gap-2 neon-glow-cyan"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Yenile
-              </motion.button>
-            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-[#00f0ff] to-[#ff00ff] bg-clip-text text-transparent">
+              Performance
+            </span>
+          </Link>
+          
+          <div className="flex items-center gap-4">
+            <motion.button
+              onClick={fetchData}
+              disabled={loading}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#00f0ff]/50 flex items-center gap-2 transition-all"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Yenile
+            </motion.button>
+            
+            <motion.button
+              onClick={handleSettleMatches}
+              disabled={settling || loading}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 rounded-lg bg-gradient-to-r from-[#00f0ff] to-[#00f0ff]/80 text-black font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-[#00f0ff]/30 transition-all disabled:opacity-50"
+            >
+              {settling ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              Sonuçları Görüntüle
+            </motion.button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20 hover:neon-border-cyan transition-all"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-gray-400 text-sm font-medium">Toplam Analiz</h3>
-              <Activity className="w-5 h-5 text-[#00f0ff]" />
-            </div>
-            <p className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-              {stats.overview.total}
-            </p>
-            <p className="text-xs text-gray-400 mt-2">{stats.overview.settled} sonuçlanmış • {stats.overview.pending} beklemede</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20 hover:neon-border-cyan transition-all relative overflow-hidden"
-          >
-            <div className="absolute top-2 right-2 opacity-10">
-              <FootballBall3D size={50} autoRotate={true} />
-            </div>
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <h3 className="text-gray-400 text-sm font-medium">Genel Doğruluk</h3>
-              <Target className="w-5 h-5 text-[#00f0ff]" />
-            </div>
-            <p className="text-3xl font-bold text-white neon-glow-cyan relative z-10" style={{ fontFamily: 'var(--font-heading)' }}>
-              {stats.accuracy.overall.rate.toFixed(1)}%
-            </p>
-            <p className="text-xs text-gray-400 mt-2 relative z-10">{stats.accuracy.overall.correct}/{stats.accuracy.overall.total} doğru tahmin</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-gray-400 text-sm">Maç Sonucu</h3>
-              <Award className="w-5 h-5 text-[#00f0ff]" />
-            </div>
-            <p className="text-3xl font-bold text-white">{stats.accuracy.matchResult.rate.toFixed(1)}%</p>
-            <p className="text-xs text-gray-400 mt-2">{stats.accuracy.matchResult.correct}/{stats.accuracy.matchResult.total} doğru</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-gray-400 text-sm">Over/Under</h3>
-              <TrendingUp className="w-5 h-5 text-[#00f0ff]" />
-            </div>
-            <p className="text-3xl font-bold text-white">{stats.accuracy.overUnder.rate.toFixed(1)}%</p>
-            <p className="text-xs text-gray-400 mt-2">{stats.accuracy.overUnder.correct}/{stats.accuracy.overUnder.total} doğru</p>
-          </motion.div>
-        </div>
-
-        {/* Accuracy Breakdown */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-futuristic rounded-2xl p-6 mb-8 border border-[#00f0ff]/20"
-        >
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
-            Doğruluk Oranları
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Maç Sonucu</span>
-                <span className="text-white font-bold">{stats.accuracy.matchResult.rate.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-[#00f0ff] h-2 rounded-full transition-all"
-                  style={{ width: `${stats.accuracy.matchResult.rate}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Over/Under</span>
-                <span className="text-white font-bold">{stats.accuracy.overUnder.rate.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-[#00f0ff] h-2 rounded-full transition-all"
-                  style={{ width: `${stats.accuracy.overUnder.rate}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">BTTS</span>
-                <span className="text-white font-bold">{stats.accuracy.btts.rate.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-[#00f0ff] h-2 rounded-full transition-all"
-                  style={{ width: `${stats.accuracy.btts.rate}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Skor Tahmini</span>
-                <span className="text-white font-bold">{stats.accuracy.score.rate.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-[#00f0ff] h-2 rounded-full transition-all"
-                  style={{ width: `${stats.accuracy.score.rate}%` }}
-                />
-              </div>
-            </div>
+      {/* Main Content */}
+      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-12 h-12 text-[#00f0ff] animate-spin mb-4" />
+            <p className="text-white/60">Veriler yükleniyor...</p>
           </div>
-        </motion.div>
+        )}
 
-        {/* Recent Analyses */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20"
-        >
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#00f0ff]" />
-            Son Analizler
-          </h2>
-          <div className="space-y-4">
-            {stats.recentAnalyses.map((analysis, idx) => (
-              <div
-                key={analysis.fixtureId}
-                className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-white font-semibold">
-                      {analysis.homeTeam} vs {analysis.awayTeam}
-                    </h3>
-                    <p className="text-gray-400 text-sm">{analysis.league} • {new Date(analysis.matchDate).toLocaleDateString('tr-TR')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {analysis.isSettled ? (
-                      <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">
-                        Sonuçlandı
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
-                        Beklemede
-                      </span>
-                    )}
-                  </div>
+        {/* Error State */}
+        {error && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 flex items-center gap-4"
+          >
+            <AlertCircle className="w-8 h-8 text-red-400" />
+            <div>
+              <h3 className="text-red-400 font-semibold">Hata</h3>
+              <p className="text-white/60">{error}</p>
+            </div>
+            <button 
+              onClick={fetchData}
+              className="ml-auto px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
+            >
+              Tekrar Dene
+            </button>
+          </motion.div>
+        )}
+
+        {/* Content */}
+        {!loading && !error && (
+          <>
+            {/* Summary Cards */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+            >
+              {/* Total Analyses */}
+              <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <BarChart3 className="w-8 h-8 text-[#00f0ff]" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Toplam</span>
                 </div>
-                
-                {analysis.isSettled && analysis.accuracy && (
-                  <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-700/50">
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">Maç Sonucu</p>
-                      <div className="flex items-center justify-center gap-1">
-                        {analysis.accuracy.matchResult ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-400" />
-                        )}
-                        <span className="text-white text-sm font-medium">
-                          {analysis.predictions.matchResult.prediction}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">Over/Under</p>
-                      <div className="flex items-center justify-center gap-1">
-                        {analysis.accuracy.overUnder ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-400" />
-                        )}
-                        <span className="text-white text-sm font-medium">
-                          {analysis.predictions.overUnder.prediction}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">BTTS</p>
-                      <div className="flex items-center justify-center gap-1">
-                        {analysis.accuracy.btts ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-400" />
-                        )}
-                        <span className="text-white text-sm font-medium">
-                          {analysis.predictions.btts.prediction}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-gray-400 text-xs mb-1">Güven</p>
-                      <span className="text-white text-sm font-medium">
-                        {analysis.overallConfidence}%
-                      </span>
-                    </div>
+                <div className="text-4xl font-bold text-white mb-1">
+                  {summary?.totalMatches || 0}
+                </div>
+                <div className="text-sm text-white/40">Analiz</div>
+              </div>
+
+              {/* Settled */}
+              <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-400" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Sonuçlanan</span>
+                </div>
+                <div className="text-4xl font-bold text-emerald-400 mb-1">
+                  {summary?.settledMatches || 0}
+                </div>
+                <div className="text-sm text-white/40">Maç</div>
+              </div>
+
+              {/* Pending */}
+              <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <Clock className="w-8 h-8 text-amber-400" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Bekleyen</span>
+                </div>
+                <div className="text-4xl font-bold text-amber-400 mb-1">
+                  {summary?.pendingMatches || 0}
+                </div>
+                <div className="text-sm text-white/40">Maç</div>
+              </div>
+
+              {/* Consensus Accuracy */}
+              <div className="bg-gradient-to-br from-[#00f0ff]/10 to-[#ff00ff]/5 border border-[#00f0ff]/30 rounded-2xl p-6 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <Trophy className="w-8 h-8 text-[#00f0ff]" />
+                  <span className="text-xs text-[#00f0ff]/60 uppercase tracking-wider">Konsensüs</span>
+                </div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#00f0ff] to-[#ff00ff] bg-clip-text text-transparent mb-1">
+                  {summary?.consensusAccuracy || 0}%
+                </div>
+                <div className="text-sm text-white/40">Başarı Oranı</div>
+              </div>
+            </motion.div>
+
+            {/* Agent Performance Table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-2xl p-6 backdrop-blur-xl mb-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-[#00f0ff]" />
+                  Agent Performansı
+                </h2>
+                {bestAgent && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+                    <Award className="w-4 h-4 text-emerald-400" />
+                    <span className="text-sm text-emerald-400">
+                      En İyi: {bestAgent.agent} ({bestAgent.overallAccuracy}%)
+                    </span>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        </motion.div>
+
+              {stats.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Henüz sonuçlanan maç yok</p>
+                  <p className="text-sm mt-2">Maçlar sonuçlandığında agent performansları burada görünecek</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-4 px-4 text-white/60 font-medium">Agent</th>
+                        <th className="text-center py-4 px-4 text-white/60 font-medium">Maç Sayısı</th>
+                        <th className="text-center py-4 px-4 text-white/60 font-medium">MS Doğruluk</th>
+                        <th className="text-center py-4 px-4 text-white/60 font-medium">O/U Doğruluk</th>
+                        <th className="text-center py-4 px-4 text-white/60 font-medium">BTTS Doğruluk</th>
+                        <th className="text-center py-4 px-4 text-white/60 font-medium">Genel</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.map((stat, idx) => (
+                        <motion.tr 
+                          key={stat.agent}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className={`border-b border-white/5 hover:bg-white/5 transition-colors ${
+                            stat.agent === 'KONSENSÜS' ? 'bg-[#00f0ff]/5' : ''
+                          }`}
+                        >
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-2 h-2 rounded-full ${
+                                stat.agent === 'KONSENSÜS' ? 'bg-[#00f0ff]' :
+                                stat.agent === bestAgent?.agent ? 'bg-emerald-400' : 'bg-white/20'
+                              }`} />
+                              <span className={`font-medium ${
+                                stat.agent === 'KONSENSÜS' ? 'text-[#00f0ff]' : 'text-white'
+                              }`}>
+                                {stat.agent}
+                              </span>
+                              {stat.agent === bestAgent?.agent && stat.agent !== 'KONSENSÜS' && (
+                                <Trophy className="w-4 h-4 text-amber-400" />
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-center text-white/60">
+                            {stat.totalMatches}
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <AccuracyBadge value={stat.matchResultAccuracy} />
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <AccuracyBadge value={stat.overUnderAccuracy} />
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <AccuracyBadge value={stat.bttsAccuracy} />
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <AccuracyBadge value={stat.overallAccuracy} large />
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Recent Analyses */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Pending Matches */}
+              <CollapsibleSection
+                title="Bekleyen Maçlar"
+                count={pendingAnalyses.length}
+                icon={<Clock className="w-5 h-5 text-amber-400" />}
+                color="amber"
+                isOpen={showPending}
+                onToggle={() => setShowPending(!showPending)}
+              >
+                {pendingAnalyses.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">
+                    Bekleyen maç yok
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingAnalyses.map((analysis, idx) => (
+                      <AnalysisCard key={analysis.id} analysis={analysis} index={idx} />
+                    ))}
+                  </div>
+                )}
+              </CollapsibleSection>
+
+              {/* Settled Matches */}
+              <CollapsibleSection
+                title="Sonuçlanan Maçlar"
+                count={settledAnalyses.length}
+                icon={<CheckCircle className="w-5 h-5 text-emerald-400" />}
+                color="emerald"
+                isOpen={showSettled}
+                onToggle={() => setShowSettled(!showSettled)}
+              >
+                {settledAnalyses.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">
+                    Henüz sonuçlanan maç yok
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {settledAnalyses.map((analysis, idx) => (
+                      <AnalysisCard key={analysis.id} analysis={analysis} index={idx} />
+                    ))}
+                  </div>
+                )}
+              </CollapsibleSection>
+            </motion.div>
+          </>
+        )}
       </main>
     </div>
   );
 }
 
+// ============================================================================
+// HELPER COMPONENTS
+// ============================================================================
+
+function AccuracyBadge({ value, large = false }: { value: number; large?: boolean }) {
+  const color = value >= 70 ? 'emerald' : value >= 50 ? 'amber' : 'red';
+  const colorClasses = {
+    emerald: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    amber: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    red: 'bg-red-500/20 text-red-400 border-red-500/30'
+  };
+  
+  return (
+    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full border font-mono ${colorClasses[color]} ${large ? 'text-base font-bold' : 'text-sm'}`}>
+      {value.toFixed(1)}%
+    </span>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  count,
+  icon,
+  color,
+  isOpen,
+  onToggle,
+  children
+}: {
+  title: string;
+  count: number;
+  icon: React.ReactNode;
+  color: 'amber' | 'emerald';
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const borderColor = color === 'amber' ? 'border-amber-500/30' : 'border-emerald-500/30';
+  
+  return (
+    <div className={`bg-gradient-to-br from-white/5 to-white/0 border ${borderColor} rounded-2xl overflow-hidden backdrop-blur-xl`}>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          {icon}
+          <span className="text-lg font-semibold">{title}</span>
+          <span className={`px-3 py-1 rounded-full text-sm ${
+            color === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            {count}
+          </span>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="w-5 h-5 text-white/40" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-white/40" />
+        )}
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function AnalysisCard({ analysis, index }: { analysis: AnalysisRecord; index: number }) {
+  const isSettled = analysis.match_settled;
+  
+  // Format date
+  const matchDate = analysis.match_date 
+    ? new Date(analysis.match_date).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '-';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className={`p-4 rounded-xl border ${
+        isSettled ? 'bg-white/5 border-white/10' : 'bg-amber-500/5 border-amber-500/20'
+      }`}
+    >
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        {/* Match Info */}
+        <div className="flex-1 min-w-[200px]">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold">{analysis.home_team}</span>
+            <span className="text-white/40">vs</span>
+            <span className="font-semibold">{analysis.away_team}</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-white/40">
+            <span>{analysis.league}</span>
+            <span>•</span>
+            <span>{matchDate}</span>
+          </div>
+        </div>
+
+        {/* Predictions */}
+        <div className="flex items-center gap-4">
+          {/* MS */}
+          <div className="text-center">
+            <div className="text-xs text-white/40 mb-1">MS</div>
+            <PredictionBadge
+              prediction={analysis.consensus_match_result}
+              actual={analysis.actual_match_result}
+              correct={analysis.consensus_mr_correct}
+              isSettled={isSettled}
+            />
+          </div>
+
+          {/* O/U */}
+          <div className="text-center">
+            <div className="text-xs text-white/40 mb-1">O/U</div>
+            <PredictionBadge
+              prediction={analysis.consensus_over_under}
+              actual={analysis.actual_over_under}
+              correct={analysis.consensus_ou_correct}
+              isSettled={isSettled}
+            />
+          </div>
+
+          {/* BTTS */}
+          <div className="text-center">
+            <div className="text-xs text-white/40 mb-1">BTTS</div>
+            <PredictionBadge
+              prediction={analysis.consensus_btts}
+              actual={analysis.actual_btts}
+              correct={analysis.consensus_btts_correct}
+              isSettled={isSettled}
+            />
+          </div>
+
+          {/* Score */}
+          {isSettled && analysis.actual_home_score !== null && (
+            <div className="text-center pl-4 border-l border-white/10">
+              <div className="text-xs text-white/40 mb-1">Skor</div>
+              <div className="font-mono font-bold text-[#00f0ff]">
+                {analysis.actual_home_score}-{analysis.actual_away_score}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Confidence */}
+        <div className="text-center min-w-[80px]">
+          <div className="text-xs text-white/40 mb-1">Güven</div>
+          <div className={`font-mono font-bold ${
+            analysis.consensus_confidence >= 70 ? 'text-emerald-400' :
+            analysis.consensus_confidence >= 50 ? 'text-amber-400' : 'text-red-400'
+          }`}>
+            {analysis.consensus_confidence}%
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function PredictionBadge({
+  prediction,
+  actual,
+  correct,
+  isSettled
+}: {
+  prediction: string;
+  actual: string | null;
+  correct: boolean | null;
+  isSettled: boolean;
+}) {
+  const displayValue = prediction || '-';
+  
+  if (!isSettled) {
+    return (
+      <span className="inline-flex items-center justify-center w-12 h-7 rounded-md bg-white/10 text-sm font-mono">
+        {displayValue}
+      </span>
+    );
+  }
+  
+  const isCorrect = correct === true;
+  
+  return (
+    <span className={`inline-flex items-center justify-center w-12 h-7 rounded-md text-sm font-mono gap-1 ${
+      isCorrect 
+        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+    }`}>
+      {displayValue}
+      {isCorrect ? (
+        <CheckCircle className="w-3 h-3" />
+      ) : (
+        <XCircle className="w-3 h-3" />
+      )}
+    </span>
+  );
+}
