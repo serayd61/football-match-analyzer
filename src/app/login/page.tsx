@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 
@@ -150,7 +149,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-black relative flex">
-      <CustomCursor />
       
       {/* 3D Football Decorations */}
       <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">

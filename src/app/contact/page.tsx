@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 
@@ -203,7 +202,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-black relative">
-      <CustomCursor />
       <Navigation />
       
       {/* 3D Football Decorations */}

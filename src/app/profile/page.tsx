@@ -5,7 +5,6 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import CustomCursor from '@/components/CustomCursor';
 import Navigation from '@/components/Navigation';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
@@ -130,7 +129,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-black relative">
-      <CustomCursor />
       <Navigation />
       
       {/* 3D Football Decorations */}

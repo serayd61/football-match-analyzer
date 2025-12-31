@@ -63,12 +63,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom cursor only on desktop */
-@media (hover: hover) and (pointer: fine) {
-  body {
-    cursor: none;
-  }
-}
 
 /* Gradient Mesh Background */
 body::before {
@@ -100,50 +94,7 @@ body::after {
   opacity: 0.4;
 }
 
-/* Custom Cursor - Desktop Only */
-@media (hover: hover) and (pointer: fine) {
-  .cursor-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--neon-cyan);
-    border-radius: 50%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    z-index: 9999;
-    mix-blend-mode: difference;
-    transition: transform 0.1s ease;
-    box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
-  }
 
-  .cursor-outline {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--neon-cyan);
-    border-radius: 50%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    z-index: 9998;
-    mix-blend-mode: difference;
-    transition: all 0.15s ease;
-    opacity: 0.5;
-  }
-}
-
-/* Mobile - Restore default cursor */
-@media (hover: none) and (pointer: coarse) {
-  body {
-    cursor: auto;
-  }
-  
-  .cursor-dot,
-  .cursor-outline {
-    display: none;
-  }
-}
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {

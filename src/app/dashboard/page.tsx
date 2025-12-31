@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -989,8 +988,6 @@ export default function DashboardPage() {
   
   return (
     <div className="min-h-screen bg-black relative">
-      <CustomCursor />
-      
       {/* Header - Futuristic Design */}
       <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
         <motion.div
@@ -1194,8 +1191,11 @@ export default function DashboardPage() {
                   setSelectedFixture(null);
                   setAnalysis(null);
                 }}
-                className="w-full bg-black/40 border border-[#00f0ff]/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:neon-border-cyan transition-all"
-                style={{ fontFamily: 'var(--font-body)' }}
+                className="w-full bg-black/40 border border-[#00f0ff]/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00f0ff] transition-all cursor-pointer appearance-none"
+                style={{ 
+                  fontFamily: 'var(--font-body)',
+                  colorScheme: 'dark'
+                }}
               />
             </motion.div>
             

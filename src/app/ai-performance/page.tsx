@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Navigation from '@/components/Navigation';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -335,8 +334,8 @@ export default function AIPerformancePage() {
       } else {
         // Fallback to old endpoint
         const res = await fetch(`/api/public/ai-performance?period=${selectedPeriod}`);
-        const json = await res.json();
-        setData(json);
+      const json = await res.json();
+      setData(json);
       }
     } catch (err) {
       console.error('Error fetching performance data:', err);
@@ -389,7 +388,6 @@ export default function AIPerformancePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
-        <CustomCursor />
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[60vh]">
@@ -407,7 +405,6 @@ export default function AIPerformancePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <CustomCursor />
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -422,7 +419,7 @@ export default function AIPerformancePage() {
             <h1 className="text-4xl md:text-5xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
               {l.title}
             </h1>
-          </div>
+        </div>
           <p className="text-gray-400 text-lg" style={{ fontFamily: 'var(--font-body)' }}>{l.subtitle}</p>
         </motion.div>
 
@@ -465,7 +462,7 @@ export default function AIPerformancePage() {
               >
                 <div className="absolute top-2 right-2 opacity-10">
                   <FootballBall3D size={30} autoRotate={true} />
-                </div>
+            </div>
                 <p className="text-gray-400 text-sm mb-2 relative z-10" style={{ fontFamily: 'var(--font-body)' }}>{stat.label}</p>
                 <p className={`text-4xl font-bold ${stat.color} neon-glow-cyan relative z-10`} style={{ fontFamily: 'var(--font-heading)' }}>
                   {stat.value}

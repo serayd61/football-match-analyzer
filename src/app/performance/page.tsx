@@ -9,7 +9,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import {
   BarChart3, TrendingUp, Target, CheckCircle, XCircle,
@@ -103,7 +102,6 @@ export default function PerformancePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <CustomCursor />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
           <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
@@ -115,7 +113,6 @@ export default function PerformancePage() {
   if (!stats) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <CustomCursor />
         <div className="text-center text-white">
           <p className="text-gray-400 mb-4">Veri yüklenemedi</p>
           <motion.button
@@ -134,7 +131,6 @@ export default function PerformancePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <CustomCursor />
       {/* Header */}
       <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">

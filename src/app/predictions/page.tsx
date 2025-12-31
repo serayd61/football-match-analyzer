@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
@@ -207,7 +206,6 @@ export default function PredictionsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <CustomCursor />
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400 neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>{l.loading}</p>
@@ -218,7 +216,6 @@ export default function PredictionsPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <CustomCursor />
       <Navigation />
       {/* Header */}
       <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">

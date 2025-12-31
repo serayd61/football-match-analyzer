@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import CustomCursor from '@/components/CustomCursor';
 import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
@@ -233,7 +232,6 @@ export default function OddsAnalysisPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <CustomCursor />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
           <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
@@ -244,7 +242,6 @@ export default function OddsAnalysisPage() {
   
   return (
     <div className="min-h-screen bg-black">
-      <CustomCursor />
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
