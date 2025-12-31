@@ -1,4 +1,4 @@
-import { heurist, HeuristMessage } from '../client';
+import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 
@@ -985,13 +985,16 @@ CONFIDENCE TARGETS:
 
 Analyze ALL data including xG, timing patterns, and clean sheets. Return detailed JSON:`;
 
-  const messages: HeuristMessage[] = [
+  const messages: AIMessage[] = [
     { role: 'system', content: PROMPTS[language] || PROMPTS.en },
     { role: 'user', content: userPrompt },
   ];
 
   try {
-    const response = await heurist.chat(messages, { 
+    const response = await aiClient.chat(messages, {
+      model: 'claude',
+      useMCP: true,
+      mcpTools: ['football_data', 'odds_data'], 
       temperature: 0.4, 
       maxTokens: 1500,
       timeout: 12000 // 🆕 12 saniye timeout

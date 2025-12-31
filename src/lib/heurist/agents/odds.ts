@@ -1,4 +1,4 @@
-import { heurist, HeuristMessage } from '../client';
+import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, SharpMoneyResult, RealValueResult } from '../sportmonks-odds';
 
@@ -896,13 +896,16 @@ Detected Value Bets: ${reasoning.valueBets.length > 0 ? reasoning.valueBets.join
 REAL VALUE = Form Value + Sharp Money Confirmation
 BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
 
-  const messages: HeuristMessage[] = [
+  const messages: AIMessage[] = [
     { role: 'system', content: PROMPTS[language] || PROMPTS.en },
     { role: 'user', content: userPrompt },
   ];
 
   try {
-    const response = await heurist.chat(messages, { 
+    const response = await aiClient.chat(messages, {
+      model: 'claude',
+      useMCP: true,
+      mcpTools: ['odds_data', 'market_analysis'], 
       temperature: 0.4, 
       maxTokens: 1500,
       timeout: 12000 // 🆕 12 saniye timeout

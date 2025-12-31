@@ -2,7 +2,7 @@
 // 🧠 MASTER STRATEGIST AGENT - Diğer agent'ları yöneten, tutarsızlıkları tespit eden ve konsensüsü güçlendiren üst-akıl
 
 import { MatchData } from '../types';
-import { heurist } from '../client';
+import { aiClient, AIMessage } from '../../ai-client';
 import { AgentResult } from '../orchestrator';
 
 const MASTER_STRATEGIST_PROMPT = {
@@ -501,10 +501,13 @@ export async function runMasterStrategist(
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    const response = await heurist.chat([
+    const response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
+      model: 'claude',
+      useMCP: true,
+      mcpTools: ['consensus_analysis', 'risk_assessment'],
       temperature: 0.2, // Düşük temperature = daha tutarlı
       maxTokens: 2000, // 🆕 Daha da azaltıldı (2500 -> 2000) - daha hızlı response
       timeout: 8000 // 🆕 8 saniye timeout (daha agresif)

@@ -3,7 +3,7 @@
 // Mevcut AI analizi yerine kullanılabilecek, en yüksek kalitede tahminler üreten agent
 
 import { MatchData } from '../types';
-import { heurist } from '../client';
+import { aiClient, AIMessage } from '../../ai-client';
 
 const GENIUS_ANALYST_PROMPT = {
   tr: `Sen GENIUS ANALYST AGENT'sin - Futbol analizi konusunda dünya çapında tanınan, 20+ yıllık deneyime sahip bir dahisin. Matematiksel modelleme, taktiksel analiz ve yaratıcı içgörüler konusunda eşsizsin.
@@ -470,10 +470,13 @@ export async function runGeniusAnalyst(
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    const response = await heurist.chat([
+    const response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
+      model: 'gpt-4',
+      useMCP: true,
+      mcpTools: ['mathematical_modeling', 'statistical_analysis', 'monte_carlo'],
       temperature: 0.15, // Çok düşük = daha tutarlı ve matematiksel
       maxTokens: 2500, // 🆕 Daha da azaltıldı (3000 -> 2500) - daha hızlı response
       timeout: 10000 // 🆕 10 saniye timeout (daha agresif)

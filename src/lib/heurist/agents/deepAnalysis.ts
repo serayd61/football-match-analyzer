@@ -1,7 +1,7 @@
 // src/lib/heurist/agents/deepAnalysis.ts
 
 import { MatchData } from '../types';
-import { heurist } from '../client';
+import { aiClient, AIMessage } from '../../ai-client';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
 
@@ -839,17 +839,20 @@ export async function runDeepAnalysisAgent(
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    const response = await heurist.chat([
+    const response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ], {
+      model: 'claude',
+      useMCP: true,
+      mcpTools: ['football_data', 'team_stats', 'match_context'],
       temperature: 0.4, // Agresif analiz için artırıldı - farklı bakış açıları
       maxTokens: 2500, // 🆕 Azaltıldı (3000 -> 2500) - daha hızlı
       timeout: 12000 // 🆕 12 saniye timeout
     });
 
     if (!response) {
-      console.error('❌ No response from Heurist');
+      console.error('❌ No response from AI');
       return getDefaultDeepAnalysis(matchData);
     }
     
