@@ -669,6 +669,69 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             </div>
           )}
 
+          {/* 💪 MOTİVASYON & HAZIRLIK SKORLARI - BAĞIMSIZ BÖLÜM */}
+          {/* Stats Agent'tan veya Deep Analysis'ten alınır - Her zaman görünür! */}
+          {(() => {
+            // Motivasyon skorlarını bul (Deep Analysis > Stats Agent > null)
+            const motivationScores = (analysis.agents?.deepAnalysis as any)?.motivationScores || 
+                                    (analysis.agents?.stats as any)?.motivationScores || 
+                                    null;
+            
+            if (!motivationScores) return null;
+            
+            return (
+              <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-purple-500/50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">💪</span>
+                  <h5 className="text-white font-bold text-lg">MACA HAZIRLANMA & MOTİVASYON ANALİZİ (0-100)</h5>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Ev Sahibi */}
+                  <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
+                    <p className="text-xs text-gray-400 mb-2">🏠 EV SAHİBİ</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-3xl font-bold ${motivationScores.home >= 70 ? 'text-green-400' : motivationScores.home >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {motivationScores.home}
+                      </span>
+                      <span className="text-gray-400 text-sm">/100</span>
+                      {motivationScores.homeTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
+                      {motivationScores.homeTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
+                      {motivationScores.homeTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
+                    </div>
+                    {motivationScores.homeFormGraph && (
+                      <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.homeFormGraph}</span></p>
+                    )}
+                    <div className={`h-2 rounded-full mt-2 ${motivationScores.home >= 70 ? 'bg-green-500' : motivationScores.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.home}%` }}></div>
+                  </div>
+                  
+                  {/* Deplasman */}
+                  <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
+                    <p className="text-xs text-gray-400 mb-2">✈️ DEPLASMAN</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-3xl font-bold ${motivationScores.away >= 70 ? 'text-green-400' : motivationScores.away >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {motivationScores.away}
+                      </span>
+                      <span className="text-gray-400 text-sm">/100</span>
+                      {motivationScores.awayTrend === 'improving' && <span className="text-green-400 text-xl">📈</span>}
+                      {motivationScores.awayTrend === 'declining' && <span className="text-red-400 text-xl">📉</span>}
+                      {motivationScores.awayTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
+                    </div>
+                    {motivationScores.awayFormGraph && (
+                      <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.awayFormGraph}</span></p>
+                    )}
+                    <div className={`h-2 rounded-full mt-2 ${motivationScores.away >= 70 ? 'bg-green-500' : motivationScores.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.away}%` }}></div>
+                  </div>
+                </div>
+                {motivationScores.reasoning && (
+                  <p className="text-gray-300 text-xs mt-3 pt-3 border-t border-purple-500/30">{motivationScores.reasoning}</p>
+                )}
+                <div className="mt-3 text-xs text-gray-400">
+                  <p>💡 <strong>Skor Anlamı:</strong> 70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* SPORTMONKS VERİ BAZLI MAÇ SONUCU */}
           {analysis.matchResult && (
             <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-4">
