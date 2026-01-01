@@ -1297,7 +1297,7 @@ export default function DashboardPage() {
                 className="w-full bg-black/40 border border-[#00f0ff]/30 rounded-lg px-4 py-3 text-white appearance-none cursor-pointer focus:outline-none focus:neon-border-cyan transition-all"
                 style={{ fontFamily: 'var(--font-body)' }}
               >
-                <option value="all" className="bg-black">{t.allLeaguesFilter} ({totalCount})</option>
+                <option value="all" className="bg-black">{t.allLeagues} ({totalCount})</option>
                 {leagues.map(league => (
                   <option key={league.id} value={league.id} className="bg-black">
                     {league.name} ({league.count})
@@ -1354,7 +1354,7 @@ export default function DashboardPage() {
                 ) : filteredFixtures.length === 0 ? (
                   <div className="p-12 text-center">
                     <Shield className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500">{t.noMatchesFound}</p>
+                    <p className="text-gray-500">{t.noMatches}</p>
                   </div>
                 ) : (
                   <AnimatePresence>
@@ -2049,7 +2049,7 @@ export default function DashboardPage() {
                   <Shield className="w-20 h-20 text-[#00f0ff]/50" />
                 </motion.div>
                 <h3 className="mt-6 text-2xl font-black text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {t.selectMatchPrompt}
+                  {t.selectMatch}
                 </h3>
                 <p className="mt-4 text-gray-400 text-center max-w-md">
                   {t.selectMatchDesc}<br />

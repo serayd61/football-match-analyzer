@@ -393,7 +393,7 @@ export default function StatsPage() {
         {matches.length === 0 ? (
           <div className="text-center py-20 bg-gray-800/50 rounded-2xl">
             <div className="text-7xl mb-4">📭</div>
-            <p className="text-gray-400 text-xl">{l.noMatchesFound}</p>
+            <p className="text-gray-400 text-xl">{l.noMatches}</p>
             <p className="text-gray-500 mt-2">Başka bir tarih seçin</p>
           </div>
         ) : (
@@ -402,7 +402,7 @@ export default function StatsPage() {
             <div className="lg:col-span-1 space-y-4">
               <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-gray-700/50">
-                  <h2 className="text-lg font-bold text-white">📅 {l.selectMatchPrompt}</h2>
+                  <h2 className="text-lg font-bold text-white">📅 {l.selectMatch}</h2>
                 </div>
                 <div className="max-h-[700px] overflow-y-auto">
                   {Object.entries(matchesByLeague).map(([league, leagueMatches]) => (
@@ -1122,7 +1122,7 @@ export default function StatsPage() {
                 <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl flex items-center justify-center h-[600px]">
                   <div className="text-center">
                     <div className="text-7xl mb-4">📊</div>
-                    <p className="text-xl text-gray-400">{l.selectMatchPrompt}</p>
+                    <p className="text-xl text-gray-400">{l.selectMatch}</p>
                     <p className="text-sm text-gray-500 mt-2">Sol taraftan bir maç seçin</p>
                   </div>
                 </div>
