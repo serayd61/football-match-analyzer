@@ -208,7 +208,6 @@ export const translations = {
     
     // Analysis Buttons
     startAnalysis: 'Analiz Başlat',
-    analyzing: 'Analiz yapılıyor...',
     analyzeAgain: 'Tekrar Analiz Et',
     
     // Agent Names
@@ -346,11 +345,11 @@ export const translations = {
     admin: 'Admin Panel',
     selectDate: 'Tarih Seç',
     selectLeague: 'Lig Seç',
-    allLeagues: 'Tüm Ligler',
+    allLeaguesFilter: 'Tüm Ligler',
     searchPlaceholder: 'Takım veya lig ara...',
-    noMatches: 'Maç bulunamadı',
+    noMatchesFound: 'Maç bulunamadı',
     analyzeTime: '~10-15 saniye',
-    selectMatch: 'Maç Seçin',
+    selectMatchPrompt: 'Maç Seçin',
     selectMatchDesc: 'Sol taraftan bir maç seçerek analiz başlatın.',
     analyzeTimeShort: 'Analiz sadece 10-15 saniye sürer!',
     riskLow: 'Düşük',
@@ -362,7 +361,7 @@ export const translations = {
     analysis: 'Analiz',
     cached: 'Önbellek',
     analyzed: 'Analiz Edildi',
-    aiAnalysis: 'AI Analiz',
+    aiAnalysisLabel: 'AI Analiz',
     agentAnalysis: 'Agent Analiz',
     selectAnalysisType: 'Analiz Türü Seçin',
   },
@@ -576,7 +575,6 @@ export const translations = {
     
     // Analysis Buttons
     startAnalysis: 'Start Analysis',
-    analyzing: 'Analyzing...',
     analyzeAgain: 'Analyze Again',
     
     // Agent Names
@@ -714,11 +712,11 @@ export const translations = {
     admin: 'Admin Panel',
     selectDate: 'Select Date',
     selectLeague: 'Select League',
-    allLeagues: 'All Leagues',
+    allLeaguesFilter: 'All Leagues',
     searchPlaceholder: 'Search team or league...',
-    noMatches: 'No matches found',
+    noMatchesFound: 'No matches found',
     analyzeTime: '~10-15 seconds',
-    selectMatch: 'Select a Match',
+    selectMatchPrompt: 'Select a Match',
     selectMatchDesc: 'Select a match from the left to start analysis.',
     analyzeTimeShort: 'Analysis takes only 10-15 seconds!',
     riskLow: 'Low',
@@ -730,7 +728,7 @@ export const translations = {
     analysis: 'Analysis',
     cached: 'Cached',
     analyzed: 'Analyzed',
-    aiAnalysis: 'AI Analysis',
+    aiAnalysisLabel: 'AI Analysis',
     agentAnalysis: 'Agent Analysis',
     selectAnalysisType: 'Select Analysis Type',
   },
@@ -944,7 +942,6 @@ export const translations = {
     
     // Analysis Buttons
     startAnalysis: 'Analyse starten',
-    analyzing: 'Analysiert...',
     analyzeAgain: 'Erneut analysieren',
     
     // Agent Names
@@ -1082,11 +1079,11 @@ export const translations = {
     admin: 'Admin Panel',
     selectDate: 'Datum wählen',
     selectLeague: 'Liga wählen',
-    allLeagues: 'Alle Ligen',
+    allLeaguesFilter: 'Alle Ligen',
     searchPlaceholder: 'Team oder Liga suchen...',
-    noMatches: 'Keine Spiele gefunden',
+    noMatchesFound: 'Keine Spiele gefunden',
     analyzeTime: '~10-15 Sekunden',
-    selectMatch: 'Spiel auswählen',
+    selectMatchPrompt: 'Spiel auswählen',
     selectMatchDesc: 'Wählen Sie ein Spiel auf der linken Seite.',
     analyzeTimeShort: 'Die Analyse dauert nur 10-15 Sekunden!',
     riskLow: 'Niedrig',
@@ -1098,7 +1095,7 @@ export const translations = {
     analysis: 'Analyse',
     cached: 'Zwischengespeichert',
     analyzed: 'Analysiert',
-    aiAnalysis: 'KI-Analyse',
+    aiAnalysisLabel: 'KI-Analyse',
     agentAnalysis: 'Agent-Analyse',
     selectAnalysisType: 'Analysetyp wählen',
   },
