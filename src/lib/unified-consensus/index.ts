@@ -498,6 +498,18 @@ export async function saveUnifiedAnalysis(
   result: UnifiedConsensusResult
 ): Promise<boolean> {
   try {
+    console.log('💾 Saving unified analysis for fixture', input.fixtureId);
+    
+    // Normalize match_date to DATE format (YYYY-MM-DD)
+    const matchDate = input.matchDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+    
+    // Ensure predictions are valid enum values
+    const mrPrediction = result.predictions.matchResult.prediction;
+    const ouPrediction = result.predictions.overUnder.prediction;
+    const bttsPrediction = result.predictions.btts.prediction;
+    
+    console.log(`   📊 Predictions: MR=${mrPrediction}, OU=${ouPrediction}, BTTS=${bttsPrediction}`);
+    
     const { error } = await supabase
       .from('unified_analysis')
       .upsert({
@@ -505,13 +517,13 @@ export async function saveUnifiedAnalysis(
         home_team: input.homeTeam,
         away_team: input.awayTeam,
         league: input.league,
-        match_date: input.matchDate,
+        match_date: matchDate,
         analysis: result,
-        match_result_prediction: result.predictions.matchResult.prediction,
+        match_result_prediction: mrPrediction,
         match_result_confidence: result.predictions.matchResult.confidence,
-        over_under_prediction: result.predictions.overUnder.prediction,
+        over_under_prediction: ouPrediction,
         over_under_confidence: result.predictions.overUnder.confidence,
-        btts_prediction: result.predictions.btts.prediction,
+        btts_prediction: bttsPrediction,
         btts_confidence: result.predictions.btts.confidence,
         best_bet_market: result.bestBet.market,
         best_bet_selection: result.bestBet.selection,
@@ -527,14 +539,17 @@ export async function saveUnifiedAnalysis(
       }, { onConflict: 'fixture_id' });
     
     if (error) {
-      console.error('❌ Error saving unified analysis:', error);
+      console.error('❌ Error saving unified analysis:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   Details:', error.details);
+      console.error('   Hint:', error.hint);
       return false;
     }
     
-    console.log('💾 Unified analysis saved to database');
+    console.log('✅ Unified analysis saved to database');
     return true;
-  } catch (error) {
-    console.error('❌ Exception saving unified analysis:', error);
+  } catch (error: any) {
+    console.error('❌ Exception saving unified analysis:', error?.message || error);
     return false;
   }
 }
