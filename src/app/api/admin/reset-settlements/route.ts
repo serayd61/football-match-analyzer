@@ -8,20 +8,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-// Lazy-loaded Supabase client
-let supabaseInstance: SupabaseClient | null = null;
-
+// Fresh client to avoid stale data
 function getSupabase(): SupabaseClient {
-  if (!supabaseInstance) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials not configured');
-    }
-    supabaseInstance = createClient(supabaseUrl, supabaseKey);
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase credentials not configured');
   }
-  return supabaseInstance;
+  return createClient(supabaseUrl, supabaseKey);
 }
 
 // Sportmonks'tan skor çek (düzeltilmiş versiyon)
