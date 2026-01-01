@@ -11,16 +11,17 @@ let supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
   if (!supabase) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Use SERVICE_ROLE_KEY for server-side operations (bypasses RLS)
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       console.error('❌ Supabase credentials missing!');
       console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'set' : 'MISSING');
-      console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseKey ? 'set' : 'MISSING');
+      console.error('   SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'set' : 'MISSING');
       throw new Error('Supabase credentials not configured');
     }
     
-    console.log('🔗 Initializing Supabase client...');
+    console.log('🔗 Initializing Supabase client with service role...');
     supabase = createClient(supabaseUrl, supabaseKey);
   }
   return supabase;
@@ -121,13 +122,18 @@ export async function saveAnalysisToPerformance(analysis: AnalysisRecord): Promi
     };
     
     console.log(`   🔄 Attempting upsert to analysis_performance...`);
+    console.log(`   📊 Consensus: MR=${record.consensus_match_result}, OU=${record.consensus_over_under}, BTTS=${record.consensus_btts}, Conf=${record.consensus_confidence}`);
     
     // First try insert, if fails due to duplicate, update
-    const { data: existingData } = await getSupabase()
+    const { data: existingData, error: checkError } = await getSupabase()
       .from('analysis_performance')
       .select('id')
       .eq('fixture_id', analysis.fixtureId)
       .maybeSingle();
+    
+    if (checkError) {
+      console.error('❌ Error checking existing record:', checkError.message);
+    }
     
     let result;
     if (existingData) {
