@@ -5,12 +5,28 @@
 
 import { runAgentAnalysis, AgentAnalysisResult } from '../agent-analyzer';
 import { runSmartAnalysis, SmartAnalysisResult } from '../smart-analyzer';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Lazy-loaded Supabase client (initialized at runtime, not build time)
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Supabase credentials missing for unified-consensus!');
+      console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'set' : 'MISSING');
+      console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? 'set' : 'MISSING');
+      throw new Error('Supabase credentials not configured');
+    }
+
+    console.log('🔗 Initializing Supabase client for unified-consensus (service role)...');
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabaseClient;
+}
 
 export interface UnifiedAnalysisInput {
   fixtureId: number;
@@ -510,6 +526,7 @@ export async function saveUnifiedAnalysis(
     
     console.log(`   📊 Predictions: MR=${mrPrediction}, OU=${ouPrediction}, BTTS=${bttsPrediction}`);
     
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('unified_analysis')
       .upsert({
