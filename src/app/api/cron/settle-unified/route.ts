@@ -1,12 +1,13 @@
 // ============================================================================
-// API: Settle Matches - Fetch results from Sportmonks and update unified_analysis
-// POST /api/performance/settle-matches
+// CRON JOB - SETTLE UNIFIED ANALYSIS
+// unified_analysis tablosundaki bekleyen tahminleri Sportmonks sonuçlarıyla settle eder
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
 
 // Lazy-loaded Supabase client
 let supabaseInstance: SupabaseClient | null = null;
@@ -117,7 +118,7 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
 }
 
 // Tek bir analizi settle et
-async function settleAnalysis(
+async function settleUnifiedAnalysis(
   supabase: SupabaseClient,
   analysis: any,
   homeScore: number,
@@ -162,7 +163,7 @@ async function settleAnalysis(
       .eq('fixture_id', analysis.fixture_id);
 
     if (updateError) {
-      console.error(`   ❌ Update error:`, updateError.message);
+      console.error(`   ❌ Update error for ${analysis.fixture_id}:`, updateError.message);
       return false;
     }
 
@@ -178,118 +179,127 @@ async function settleAnalysis(
   }
 }
 
-export async function POST(request: NextRequest) {
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
+
+export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
-    console.log('🔄 Starting match settlement process...');
-    
+    console.log('\n' + '═'.repeat(70));
+    console.log('🔄 SETTLE UNIFIED ANALYSIS CRON JOB');
+    console.log('═'.repeat(70));
+
     const supabase = getSupabase();
-    
-    // Maç saatinden en az 2 saat geçmiş bekleyen analizleri al
+
+    // Maç saatinden en az 2.5 saat geçmiş bekleyen analizleri al
     const now = new Date();
-    const cutoffTime = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    const cutoffTime = new Date(now.getTime() - 2.5 * 60 * 60 * 1000);
     
-    // Get all unsettled analyses
-    const { data: unsettledAnalyses, error: fetchError } = await supabase
+    // 7 günden eski maçları atla
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const { data: pendingAnalyses, error: fetchError } = await supabase
       .from('unified_analysis')
-      .select('*')
+      .select('fixture_id, home_team, away_team, match_date, match_result_prediction, over_under_prediction, btts_prediction, analysis')
       .eq('is_settled', false)
+      .gte('match_date', sevenDaysAgo.toISOString().split('T')[0])
       .lte('match_date', cutoffTime.toISOString().split('T')[0])
       .order('match_date', { ascending: true })
       .limit(30);
-    
+
     if (fetchError) {
       console.error('❌ Fetch error:', fetchError);
-      return NextResponse.json(
-        { success: false, error: fetchError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ 
+        success: false, 
+        error: fetchError.message 
+      }, { status: 500 });
     }
-    
-    if (!unsettledAnalyses || unsettledAnalyses.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No unsettled matches to process',
-        settled: 0,
-        pending: 0
+
+    if (!pendingAnalyses || pendingAnalyses.length === 0) {
+      console.log('✅ No pending analyses to settle');
+      return NextResponse.json({ 
+        success: true, 
+        message: 'No pending analyses',
+        settled: 0 
       });
     }
-    
-    console.log(`📋 Found ${unsettledAnalyses.length} unsettled analyses\n`);
-    
+
+    console.log(`📋 Found ${pendingAnalyses.length} pending analyses\n`);
+
     let settledCount = 0;
-    let pendingCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
-    const results: any[] = [];
-    
-    // Process each analysis
-    for (const analysis of unsettledAnalyses) {
-      console.log(`\n📊 ${analysis.home_team} vs ${analysis.away_team}`);
+
+    for (const analysis of pendingAnalyses) {
+      console.log(`\n📊 ${analysis.home_team} vs ${analysis.away_team} (${analysis.match_date})`);
       
-      // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Fetch result from Sportmonks
-      const result = await fetchMatchResultFromSportmonks(analysis.fixture_id);
-      
-      if (!result) {
-        pendingCount++;
-        results.push({
-          fixtureId: analysis.fixture_id,
-          homeTeam: analysis.home_team,
-          awayTeam: analysis.away_team,
-          status: 'pending',
-          reason: 'Match not finished or result unavailable'
-        });
-        continue;
-      }
-      
-      // Settle the match
-      const success = await settleAnalysis(supabase, analysis, result.homeScore, result.awayScore);
-      
-      if (success) {
-        settledCount++;
-        results.push({
-          fixtureId: analysis.fixture_id,
-          homeTeam: analysis.home_team,
-          awayTeam: analysis.away_team,
-          status: 'settled',
-          score: `${result.homeScore}-${result.awayScore}`
-        });
-      } else {
+      try {
+        // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Sportmonks'tan sonuç al
+        const result = await fetchMatchResultFromSportmonks(analysis.fixture_id);
+
+        if (!result) {
+          skippedCount++;
+          continue;
+        }
+
+        // Settle et
+        const success = await settleUnifiedAnalysis(
+          supabase,
+          analysis,
+          result.homeScore,
+          result.awayScore
+        );
+
+        if (success) {
+          settledCount++;
+        } else {
+          errorCount++;
+        }
+
+      } catch (error: any) {
+        console.error(`   ❌ Error:`, error.message);
         errorCount++;
-        results.push({
-          fixtureId: analysis.fixture_id,
-          homeTeam: analysis.home_team,
-          awayTeam: analysis.away_team,
-          status: 'error'
-        });
       }
     }
-    
-    console.log(`\n✅ Settlement complete: ${settledCount} settled, ${pendingCount} pending, ${errorCount} errors`);
-    
+
+    const duration = Date.now() - startTime;
+
+    console.log('\n' + '═'.repeat(70));
+    console.log('✅ CRON JOB COMPLETED');
+    console.log(`   📊 Checked: ${pendingAnalyses.length}`);
+    console.log(`   ✅ Settled: ${settledCount}`);
+    console.log(`   ⏳ Skipped: ${skippedCount}`);
+    console.log(`   ❌ Errors: ${errorCount}`);
+    console.log(`   ⏱️ Duration: ${duration}ms`);
+    console.log('═'.repeat(70) + '\n');
+
     return NextResponse.json({
       success: true,
-      message: `Processed ${unsettledAnalyses.length} matches`,
-      settled: settledCount,
-      pending: pendingCount,
-      errors: errorCount,
-      results
+      stats: {
+        checked: pendingAnalyses.length,
+        settled: settledCount,
+        skipped: skippedCount,
+        errors: errorCount,
+        duration
+      }
     });
-    
+
   } catch (error: any) {
-    console.error('❌ Settle matches API error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    console.error('❌ CRON JOB ERROR:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message 
+    }, { status: 500 });
   }
 }
 
-// Also support GET for easy testing
-export async function GET() {
-  return NextResponse.json({
-    message: 'Use POST to settle matches',
-    endpoint: '/api/performance/settle-matches'
-  });
+// POST için de destekle (manuel trigger)
+export async function POST(request: NextRequest) {
+  return GET(request);
 }
+

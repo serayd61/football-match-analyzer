@@ -1,33 +1,156 @@
 // ============================================================================
-// API: Get Performance Statistics
+// API: Get Performance Stats from unified_analysis Table
 // GET /api/performance/stats
 // ============================================================================
 
-import { NextResponse } from 'next/server';
-import { getAccuracyStats } from '@/lib/performance';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+// Lazy-loaded Supabase client
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!supabaseInstance) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase credentials not configured');
+    }
+    supabaseInstance = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabaseInstance;
+}
+
+interface AccuracyStats {
+  agent: string;
+  totalMatches: number;
+  matchResultCorrect: number;
+  matchResultAccuracy: number;
+  overUnderCorrect: number;
+  overUnderAccuracy: number;
+  bttsCorrect: number;
+  bttsAccuracy: number;
+  overallAccuracy: number;
+}
+
+export async function GET(request: NextRequest) {
   try {
     console.log('📊 GET /api/performance/stats called');
     
-    const result = await getAccuracyStats();
+    const supabase = getSupabase();
     
-    console.log(`   Stats: ${result.stats?.length || 0} agents, summary: ${result.summary ? 'yes' : 'no'}, error: ${result.error || 'none'}`);
+    // Get total count
+    const { count: totalCount, error: totalError } = await supabase
+      .from('unified_analysis')
+      .select('*', { count: 'exact', head: true });
     
-    if (result.error) {
-      console.error('❌ getAccuracyStats error:', result.error);
+    if (totalError) {
+      console.error('❌ Total count error:', totalError);
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: totalError.message },
         { status: 500 }
       );
     }
     
+    // Get settled count
+    const { count: settledCount, error: settledError } = await supabase
+      .from('unified_analysis')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_settled', true);
+    
+    if (settledError) {
+      console.error('❌ Settled count error:', settledError);
+    }
+    
+    // Get pending count
+    const { count: pendingCount, error: pendingError } = await supabase
+      .from('unified_analysis')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_settled', false);
+    
+    if (pendingError) {
+      console.error('❌ Pending count error:', pendingError);
+    }
+    
+    // Get all settled matches for accuracy calculation
+    const { data: settledMatches, error: matchesError } = await supabase
+      .from('unified_analysis')
+      .select('*')
+      .eq('is_settled', true);
+    
+    if (matchesError) {
+      console.error('❌ Matches error:', matchesError);
+    }
+    
+    // Calculate consensus accuracy
+    let consensusAccuracy = 0;
+    let mrCorrect = 0;
+    let ouCorrect = 0;
+    let bttsCorrect = 0;
+    
+    if (settledMatches && settledMatches.length > 0) {
+      const total = settledMatches.length;
+      
+      for (const match of settledMatches) {
+        if (match.match_result_correct) mrCorrect++;
+        if (match.over_under_correct) ouCorrect++;
+        if (match.btts_correct) bttsCorrect++;
+      }
+      
+      // Overall accuracy is average of all three
+      const totalCorrect = mrCorrect + ouCorrect + bttsCorrect;
+      const totalPredictions = total * 3;
+      consensusAccuracy = totalPredictions > 0 
+        ? Math.round((totalCorrect / totalPredictions) * 100) 
+        : 0;
+    }
+    
+    // Create stats array (simplified - just consensus for unified analysis)
+    const stats: AccuracyStats[] = [];
+    
+    if (settledMatches && settledMatches.length > 0) {
+      const total = settledMatches.length;
+      
+      stats.push({
+        agent: 'KONSENSÜS',
+        totalMatches: total,
+        matchResultCorrect: mrCorrect,
+        matchResultAccuracy: Math.round((mrCorrect / total) * 100),
+        overUnderCorrect: ouCorrect,
+        overUnderAccuracy: Math.round((ouCorrect / total) * 100),
+        bttsCorrect: bttsCorrect,
+        bttsAccuracy: Math.round((bttsCorrect / total) * 100),
+        overallAccuracy: consensusAccuracy
+      });
+    }
+    
+    // Summary
+    const summary = {
+      totalMatches: totalCount || 0,
+      settledMatches: settledCount || 0,
+      pendingMatches: pendingCount || 0,
+      consensusAccuracy,
+      matchResultAccuracy: settledMatches && settledMatches.length > 0 
+        ? Math.round((mrCorrect / settledMatches.length) * 100) 
+        : 0,
+      overUnderAccuracy: settledMatches && settledMatches.length > 0 
+        ? Math.round((ouCorrect / settledMatches.length) * 100) 
+        : 0,
+      bttsAccuracy: settledMatches && settledMatches.length > 0 
+        ? Math.round((bttsCorrect / settledMatches.length) * 100) 
+        : 0
+    };
+    
+    console.log(`   Summary: total=${summary.totalMatches}, settled=${summary.settledMatches}, pending=${summary.pendingMatches}`);
+    console.log(`   Accuracy: MR=${summary.matchResultAccuracy}%, OU=${summary.overUnderAccuracy}%, BTTS=${summary.bttsAccuracy}%`);
+    
     return NextResponse.json({
       success: true,
-      stats: result.stats,
-      summary: result.summary
+      stats,
+      summary
     });
     
   } catch (error: any) {
@@ -38,4 +161,3 @@ export async function GET() {
     );
   }
 }
-
