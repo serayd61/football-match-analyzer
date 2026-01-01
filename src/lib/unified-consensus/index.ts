@@ -333,13 +333,14 @@ function calculateWeightedConsensus(
     return { prediction: 'X', confidence: 50, reasoning: 'Yetersiz veri' };
   }
   
-  // Oylama sistemi
-  const votes: Record<string, { count: number; totalConfidence: number; totalWeight: number }> = {};
+  // Oylama sistemi - orijinal değerleri saklayarak karşılaştırma yap
+  const votes: Record<string, { count: number; totalConfidence: number; totalWeight: number; originalValue: string }> = {};
   
   validSources.forEach(source => {
-    const key = String(source.value).toUpperCase();
+    const originalValue = String(source.value);
+    const key = originalValue.toUpperCase(); // Sadece karşılaştırma için
     if (!votes[key]) {
-      votes[key] = { count: 0, totalConfidence: 0, totalWeight: 0 };
+      votes[key] = { count: 0, totalConfidence: 0, totalWeight: 0, originalValue };
     }
     votes[key].count += 1;
     votes[key].totalConfidence += source.confidence * (source.weight / 100);
@@ -348,6 +349,7 @@ function calculateWeightedConsensus(
   
   // En yüksek ağırlıklı oy
   let bestPrediction = '';
+  let bestOriginal = '';
   let bestScore = 0;
   
   Object.entries(votes).forEach(([prediction, stats]) => {
@@ -355,6 +357,7 @@ function calculateWeightedConsensus(
     if (score > bestScore) {
       bestScore = score;
       bestPrediction = prediction;
+      bestOriginal = stats.originalValue; // Orijinal case'i sakla
     }
   });
   
@@ -364,10 +367,30 @@ function calculateWeightedConsensus(
     validSources.reduce((sum, s) => sum + s.weight / 100, 0)
   );
   
-  const reasoning = `${validSources.length} sistem analizi. ${bestPrediction} yönünde ${Math.round(bestScore)}% ağırlıklı oy.`;
+  const reasoning = `${validSources.length} sistem analizi. ${bestOriginal} yönünde ${Math.round(bestScore)}% ağırlıklı oy.`;
+  
+  // Normalize prediction values for database constraints
+  let normalizedPrediction = bestOriginal;
+  
+  // Match Result: 1, X, 2
+  if (['1', 'X', '2'].includes(bestOriginal.toUpperCase())) {
+    normalizedPrediction = bestOriginal.toUpperCase();
+  }
+  // Over/Under
+  else if (bestOriginal.toUpperCase() === 'OVER') {
+    normalizedPrediction = 'Over';
+  } else if (bestOriginal.toUpperCase() === 'UNDER') {
+    normalizedPrediction = 'Under';
+  }
+  // BTTS
+  else if (bestOriginal.toUpperCase() === 'YES') {
+    normalizedPrediction = 'Yes';
+  } else if (bestOriginal.toUpperCase() === 'NO') {
+    normalizedPrediction = 'No';
+  }
   
   return {
-    prediction: bestPrediction,
+    prediction: normalizedPrediction,
     confidence: Math.min(85, Math.max(50, avgConfidence)),
     reasoning
   };
