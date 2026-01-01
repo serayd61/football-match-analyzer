@@ -78,27 +78,32 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
       return null;
     }
 
-    // Skorları çek
+    // Skorları çek - Sportmonks v3 format: score.score.goals, score.score.participant
     const scores = fixture.scores || [];
     let homeScore = 0;
     let awayScore = 0;
 
-    // CURRENT veya FULLTIME skorlarını bul
-    for (const score of scores) {
-      if (score.description === 'CURRENT' || score.description === 'FULLTIME' || score.description === '2ND_HALF') {
-        if (score.participant === 'home') homeScore = score.goals || 0;
-        if (score.participant === 'away') awayScore = score.goals || 0;
+    // CURRENT skorlarını bul (nihai skor)
+    for (const scoreEntry of scores) {
+      // Sportmonks v3 format: nested score object
+      const participant = scoreEntry.score?.participant || scoreEntry.participant;
+      const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+      
+      if (scoreEntry.description === 'CURRENT') {
+        if (participant === 'home') homeScore = goals;
+        if (participant === 'away') awayScore = goals;
       }
     }
 
-    // Eğer skor bulunamadıysa, tüm skorları dene
+    // Eğer CURRENT bulunamadıysa, 2ND_HALF veya FULLTIME dene
     if (homeScore === 0 && awayScore === 0) {
-      for (const score of scores) {
-        if (score.participant === 'home' && score.goals > homeScore) {
-          homeScore = score.goals || 0;
-        }
-        if (score.participant === 'away' && score.goals > awayScore) {
-          awayScore = score.goals || 0;
+      for (const scoreEntry of scores) {
+        const participant = scoreEntry.score?.participant || scoreEntry.participant;
+        const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+        
+        if (scoreEntry.description === '2ND_HALF' || scoreEntry.description === 'FULLTIME') {
+          if (participant === 'home' && goals > homeScore) homeScore = goals;
+          if (participant === 'away' && goals > awayScore) awayScore = goals;
         }
       }
     }
