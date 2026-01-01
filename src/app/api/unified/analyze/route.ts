@@ -5,16 +5,30 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runUnifiedConsensus, saveUnifiedAnalysis, UnifiedAnalysisInput } from '@/lib/unified-consensus';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Lazy-loaded Supabase client
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Supabase credentials missing for unified/analyze API!');
+      throw new Error('Supabase credentials not configured');
+    }
+
+    console.log('🔗 Initializing Supabase client for unified/analyze API...');
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabaseClient;
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -32,6 +46,7 @@ export async function POST(request: NextRequest) {
     
     // Cache kontrolü
     if (!skipCache) {
+      const supabase = getSupabase();
       const { data: cached } = await supabase
         .from('unified_analysis')
         .select('analysis, overall_confidence, agreement, created_at')
@@ -66,8 +81,10 @@ export async function POST(request: NextRequest) {
     
     const result = await runUnifiedConsensus(input);
     
-    // Veritabanına kaydet
-    await saveUnifiedAnalysis(input, result);
+    // Veritabanına kaydet - unified_analysis tablosuna
+    console.log(`💾 Attempting to save to unified_analysis for fixture ${fixtureId}...`);
+    const unifiedSaveResult = await saveUnifiedAnalysis(input, result);
+    console.log(`💾 Unified analysis save result: ${unifiedSaveResult ? '✅ SUCCESS' : '❌ FAILED'}`);
     
     // 🆕 Performance Tracking'e kaydet
     try {
