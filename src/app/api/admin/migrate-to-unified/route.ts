@@ -147,6 +147,14 @@ export async function GET(request: NextRequest) {
         
         if (insertError) {
           console.error(`   ❌ Insert error for ${record.fixture_id}:`, insertError.message);
+          console.error(`      Details:`, JSON.stringify(insertError));
+          console.error(`      Record:`, JSON.stringify({
+            fixture_id: unifiedRecord.fixture_id,
+            match_date: unifiedRecord.match_date,
+            match_result_prediction: unifiedRecord.match_result_prediction,
+            over_under_prediction: unifiedRecord.over_under_prediction,
+            btts_prediction: unifiedRecord.btts_prediction
+          }));
           errorCount++;
           continue;
         }
