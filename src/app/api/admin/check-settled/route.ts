@@ -14,11 +14,10 @@ export async function GET(request: NextRequest) {
   
   const supabase = createClient(supabaseUrl, supabaseKey);
   
-  // Get sample of records with is_settled values
+  // Get ALL records with is_settled values
   const { data, error } = await supabase
     .from('unified_analysis')
-    .select('fixture_id, home_team, is_settled, actual_home_score, actual_away_score')
-    .limit(10);
+    .select('fixture_id, home_team, is_settled, actual_home_score, actual_away_score');
   
   // Count by is_settled
   const settledTrue = data?.filter(r => r.is_settled === true).length || 0;
