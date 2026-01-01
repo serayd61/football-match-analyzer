@@ -3,12 +3,26 @@
 // Tüm analizler unified_analysis tablosuna kaydedilir
 // ============================================================================
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Lazy-loaded Supabase client (initialized at runtime, not build time)
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Supabase credentials missing for auto-track!');
+      throw new Error('Supabase credentials not configured');
+    }
+
+    console.log('🔗 Initializing Supabase client for auto-track (service role)...');
+    supabaseClient = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabaseClient;
+}
 
 /**
  * Agent Analysis sonucunu unified_analysis'a kaydet
@@ -70,6 +84,12 @@ export async function trackAgentAnalysis(
       }
     };
 
+    const supabase = getSupabase();
+    const normalizedMatchDate = matchDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+    
+    console.log(`💾 Tracking agent analysis for fixture ${fixtureId}`);
+    console.log(`   📊 Predictions: MR=${unifiedFormat.predictions.matchResult.prediction}, OU=${unifiedFormat.predictions.overUnder.prediction}, BTTS=${unifiedFormat.predictions.btts.prediction}`);
+    
     const { error } = await supabase
       .from('unified_analysis')
       .upsert({
@@ -77,7 +97,7 @@ export async function trackAgentAnalysis(
         home_team: homeTeam,
         away_team: awayTeam,
         league: league,
-        match_date: matchDate,
+        match_date: normalizedMatchDate,
         analysis: unifiedFormat,
         match_result_prediction: unifiedFormat.predictions.matchResult.prediction,
         match_result_confidence: unifiedFormat.predictions.matchResult.confidence,
@@ -99,7 +119,9 @@ export async function trackAgentAnalysis(
       }, { onConflict: 'fixture_id' });
 
     if (error) {
-      console.error('❌ Error tracking agent analysis:', error);
+      console.error('❌ Error tracking agent analysis:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   Details:', error.details);
       return false;
     }
 
@@ -167,6 +189,12 @@ export async function trackSmartAnalysis(
       }
     };
 
+    const supabase = getSupabase();
+    const normalizedMatchDate = matchDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+    
+    console.log(`💾 Tracking smart analysis for fixture ${fixtureId}`);
+    console.log(`   📊 Predictions: MR=${unifiedFormat.predictions.matchResult.prediction}, OU=${unifiedFormat.predictions.overUnder.prediction}, BTTS=${unifiedFormat.predictions.btts.prediction}`);
+    
     const { error } = await supabase
       .from('unified_analysis')
       .upsert({
@@ -174,7 +202,7 @@ export async function trackSmartAnalysis(
         home_team: homeTeam,
         away_team: awayTeam,
         league: league,
-        match_date: matchDate,
+        match_date: normalizedMatchDate,
         analysis: unifiedFormat,
         match_result_prediction: unifiedFormat.predictions.matchResult.prediction,
         match_result_confidence: unifiedFormat.predictions.matchResult.confidence,
@@ -196,7 +224,9 @@ export async function trackSmartAnalysis(
       }, { onConflict: 'fixture_id' });
 
     if (error) {
-      console.error('❌ Error tracking smart analysis:', error);
+      console.error('❌ Error tracking smart analysis:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   Details:', error.details);
       return false;
     }
 
