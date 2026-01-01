@@ -37,48 +37,26 @@ export async function GET(request: NextRequest) {
     
     const supabase = getSupabase();
     
-    // Get total count
-    const { count: totalCount, error: totalError } = await supabase
+    // Get all data first (avoid head: true which has RLS issues)
+    const { data: allData, error: fetchError } = await supabase
       .from('unified_analysis')
-      .select('*', { count: 'exact', head: true });
+      .select('is_settled, match_result_correct, over_under_correct, btts_correct');
     
-    if (totalError) {
-      console.error('❌ Total count error:', totalError);
+    if (fetchError) {
+      console.error('❌ Fetch error:', fetchError);
       return NextResponse.json(
-        { success: false, error: totalError.message },
+        { success: false, error: fetchError.message },
         { status: 500 }
       );
     }
     
-    // Get settled count
-    const { count: settledCount, error: settledError } = await supabase
-      .from('unified_analysis')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_settled', true);
+    // Calculate counts from data
+    const totalCount = allData?.length || 0;
+    const settledCount = allData?.filter(r => r.is_settled === true).length || 0;
+    const pendingCount = allData?.filter(r => r.is_settled === false || r.is_settled === null).length || 0;
     
-    if (settledError) {
-      console.error('❌ Settled count error:', settledError);
-    }
-    
-    // Get pending count
-    const { count: pendingCount, error: pendingError } = await supabase
-      .from('unified_analysis')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_settled', false);
-    
-    if (pendingError) {
-      console.error('❌ Pending count error:', pendingError);
-    }
-    
-    // Get all settled matches for accuracy calculation
-    const { data: settledMatches, error: matchesError } = await supabase
-      .from('unified_analysis')
-      .select('*')
-      .eq('is_settled', true);
-    
-    if (matchesError) {
-      console.error('❌ Matches error:', matchesError);
-    }
+    // Get settled matches from allData
+    const settledMatches = allData?.filter(r => r.is_settled === true) || [];
     
     // Calculate consensus accuracy
     let consensusAccuracy = 0;
@@ -86,7 +64,7 @@ export async function GET(request: NextRequest) {
     let ouCorrect = 0;
     let bttsCorrect = 0;
     
-    if (settledMatches && settledMatches.length > 0) {
+    if (settledMatches.length > 0) {
       const total = settledMatches.length;
       
       for (const match of settledMatches) {
@@ -106,7 +84,7 @@ export async function GET(request: NextRequest) {
     // Create stats array (simplified - just consensus for unified analysis)
     const stats: AccuracyStats[] = [];
     
-    if (settledMatches && settledMatches.length > 0) {
+    if (settledMatches.length > 0) {
       const total = settledMatches.length;
       
       stats.push({
