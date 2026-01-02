@@ -69,19 +69,31 @@ export async function POST(request: NextRequest) {
     
     console.log(`⚽ Match: ${matchInfo.homeTeam} vs ${matchInfo.awayTeam}`);
     
-    // 2. MatchData formatına dönüştür
-    const defaultForm = {
-      form: 'DDDDD',
-      points: 5,
-      wins: 1,
-      draws: 2,
-      losses: 2,
-      avgGoals: '1.2',
-      avgConceded: '1.2',
-      over25Percentage: '50%',
-      bttsPercentage: '50%',
-      cleanSheetPercentage: '20%',
-      matches: []
+    // 2. TeamStats'tan FormData'ya dönüştürme helper
+    const convertTeamStatsToFormData = (stats: typeof matchData.homeForm) => {
+      // Record'dan wins/draws/losses çıkar (örn: "3W-1D-1L")
+      const record = stats?.record || '1W-2D-2L';
+      const wMatch = record.match(/(\d+)W/);
+      const dMatch = record.match(/(\d+)D/);
+      const lMatch = record.match(/(\d+)L/);
+      
+      return {
+        form: stats?.form || 'DDDDD',
+        points: stats?.points || 5,
+        wins: wMatch ? parseInt(wMatch[1]) : 1,
+        draws: dMatch ? parseInt(dMatch[1]) : 2,
+        losses: lMatch ? parseInt(lMatch[1]) : 2,
+        avgGoals: stats?.avgGoalsScored || '1.2',
+        avgConceded: stats?.avgGoalsConceded || '1.2',
+        over25Percentage: stats?.over25Percentage || '50%',
+        bttsPercentage: stats?.bttsPercentage || '50%',
+        cleanSheetPercentage: stats?.cleanSheetPercentage || '20%',
+        matches: stats?.matchDetails?.map(m => ({
+          opponent: m.opponent || 'Unknown',
+          score: m.score || '0-0',
+          result: m.result || 'D'
+        })) || []
+      };
     };
     
     const convertedMatchData: MatchData = {
@@ -90,32 +102,8 @@ export async function POST(request: NextRequest) {
       awayTeam: matchInfo.awayTeam,
       league: matchInfo.league,
       matchDate: matchInfo.matchDate,
-      homeForm: {
-        form: matchData.homeForm?.form || defaultForm.form,
-        points: matchData.homeForm?.points || defaultForm.points,
-        wins: matchData.homeForm?.wins || defaultForm.wins,
-        draws: matchData.homeForm?.draws || defaultForm.draws,
-        losses: matchData.homeForm?.losses || defaultForm.losses,
-        avgGoals: String(matchData.homeForm?.avgGoals || defaultForm.avgGoals),
-        avgConceded: String(matchData.homeForm?.avgConceded || defaultForm.avgConceded),
-        over25Percentage: matchData.homeForm?.over25Percentage || defaultForm.over25Percentage,
-        bttsPercentage: matchData.homeForm?.bttsPercentage || defaultForm.bttsPercentage,
-        cleanSheetPercentage: matchData.homeForm?.cleanSheetPercentage || defaultForm.cleanSheetPercentage,
-        matches: matchData.homeForm?.matches || []
-      },
-      awayForm: {
-        form: matchData.awayForm?.form || defaultForm.form,
-        points: matchData.awayForm?.points || defaultForm.points,
-        wins: matchData.awayForm?.wins || defaultForm.wins,
-        draws: matchData.awayForm?.draws || defaultForm.draws,
-        losses: matchData.awayForm?.losses || defaultForm.losses,
-        avgGoals: String(matchData.awayForm?.avgGoals || defaultForm.avgGoals),
-        avgConceded: String(matchData.awayForm?.avgConceded || defaultForm.avgConceded),
-        over25Percentage: matchData.awayForm?.over25Percentage || defaultForm.over25Percentage,
-        bttsPercentage: matchData.awayForm?.bttsPercentage || defaultForm.bttsPercentage,
-        cleanSheetPercentage: matchData.awayForm?.cleanSheetPercentage || defaultForm.cleanSheetPercentage,
-        matches: matchData.awayForm?.matches || []
-      },
+      homeForm: convertTeamStatsToFormData(matchData.homeForm),
+      awayForm: convertTeamStatsToFormData(matchData.awayForm),
       h2h: {
         totalMatches: matchData.h2h?.totalMatches || 0,
         homeWins: matchData.h2h?.homeWins || 0,
