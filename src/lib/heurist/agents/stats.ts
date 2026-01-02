@@ -1188,6 +1188,42 @@ Return detailed JSON:`;
           confidences,
         };
         
+        // 🆕 Add Probability Engine results
+        if (probabilityResult) {
+          parsed.probabilityEngine = {
+            poisson: {
+              homeWin: probabilityResult.poissonModel.homeWin,
+              draw: probabilityResult.poissonModel.draw,
+              awayWin: probabilityResult.poissonModel.awayWin,
+              over25: probabilityResult.poissonModel.over25,
+              btts: probabilityResult.poissonModel.btts,
+            },
+            monteCarlo: {
+              homeWin: probabilityResult.monteCarloModel.homeWinPct,
+              draw: probabilityResult.monteCarloModel.drawPct,
+              awayWin: probabilityResult.monteCarloModel.awayWinPct,
+              over25: probabilityResult.monteCarloModel.over25Pct,
+              btts: probabilityResult.monteCarloModel.bttsPct,
+              commonScores: probabilityResult.monteCarloModel.mostCommonScores,
+            },
+            motivation: {
+              home: probabilityResult.motivationAnalysis.home.score,
+              away: probabilityResult.motivationAnalysis.away.score,
+              edge: probabilityResult.motivationAnalysis.psychologicalEdge,
+            },
+            final: {
+              matchResult: probabilityResult.matchResult.prediction,
+              matchResultConfidence: probabilityResult.matchResult.confidence,
+              overUnder: probabilityResult.overUnder.prediction,
+              overUnderConfidence: probabilityResult.overUnder.confidence,
+              btts: probabilityResult.btts.prediction,
+              bttsConfidence: probabilityResult.btts.confidence,
+            },
+            modelAgreement: probabilityResult.modelAgreement,
+            dataQuality: probabilityResult.dataQuality,
+          };
+        }
+        
         // 🆕 Add xG Analysis
         parsed.xgAnalysis = xgAnalysis;
         
@@ -1355,6 +1391,39 @@ Return detailed JSON:`;
       dataQuality,
       confidences,
     },
+    // 🆕 PROBABILITY ENGINE sonuçları (varsa)
+    probabilityEngine: probabilityResult ? {
+      poisson: {
+        homeWin: probabilityResult.poissonModel.homeWin,
+        draw: probabilityResult.poissonModel.draw,
+        awayWin: probabilityResult.poissonModel.awayWin,
+        over25: probabilityResult.poissonModel.over25,
+        btts: probabilityResult.poissonModel.btts,
+      },
+      monteCarlo: {
+        homeWin: probabilityResult.monteCarloModel.homeWinPct,
+        draw: probabilityResult.monteCarloModel.drawPct,
+        awayWin: probabilityResult.monteCarloModel.awayWinPct,
+        over25: probabilityResult.monteCarloModel.over25Pct,
+        btts: probabilityResult.monteCarloModel.bttsPct,
+        commonScores: probabilityResult.monteCarloModel.mostCommonScores,
+      },
+      motivation: {
+        home: probabilityResult.motivationAnalysis.home.score,
+        away: probabilityResult.motivationAnalysis.away.score,
+        edge: probabilityResult.motivationAnalysis.psychologicalEdge,
+      },
+      final: {
+        matchResult: probabilityResult.matchResult.prediction,
+        matchResultConfidence: probabilityResult.matchResult.confidence,
+        overUnder: probabilityResult.overUnder.prediction,
+        overUnderConfidence: probabilityResult.overUnder.confidence,
+        btts: probabilityResult.btts.prediction,
+        bttsConfidence: probabilityResult.btts.confidence,
+      },
+      modelAgreement: probabilityResult.modelAgreement,
+      dataQuality: probabilityResult.dataQuality,
+    } : null,
   };
   
   console.log(`⚠️ Stats Agent Fallback: ${fallbackResult.matchResult} | ${fallbackResult.overUnder} | BTTS: ${fallbackResult.btts}`);
