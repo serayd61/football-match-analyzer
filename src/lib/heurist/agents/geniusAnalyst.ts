@@ -777,9 +777,27 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
     }
 
     console.log(`✅ Genius Analyst complete:`);
-    console.log(`   🎯 Overall Confidence: ${result.finalRecommendation.overallConfidence}%`);
-    console.log(`   📊 Best Bet: ${result.finalRecommendation.bestBet.market} - ${result.finalRecommendation.bestBet.selection}`);
-    console.log(`   🧮 Expected Goals: ${result.mathematicalModel.totalExpectedGoals.toFixed(2)}`);
+    
+    // Validate result structure
+    if (!result.finalRecommendation) {
+      console.warn('⚠️ Genius Analyst result missing finalRecommendation, using fallback');
+      result = getDefaultGeniusAnalysis(matchData, language);
+    }
+    
+    if (!result.boldBet) {
+      console.warn('⚠️ Genius Analyst result missing boldBet, generating fallback');
+      result.boldBet = generateSmartBoldBet(
+        matchData,
+        (result as any).formDiff || 0,
+        result.mathematicalModel?.totalExpectedGoals || 2.5,
+        parseFloat((matchData.homeForm as any)?.venueAvgScored || matchData.homeForm?.avgGoals || '1.2'),
+        parseFloat((matchData.awayForm as any)?.venueAvgScored || matchData.awayForm?.avgGoals || '1.1')
+      );
+    }
+    
+    console.log(`   🎯 Overall Confidence: ${result.finalRecommendation?.overallConfidence || 0}%`);
+    console.log(`   📊 Best Bet: ${result.finalRecommendation?.bestBet?.market || 'N/A'} - ${result.finalRecommendation?.bestBet?.selection || 'N/A'}`);
+    console.log(`   🧮 Expected Goals: ${result.mathematicalModel?.totalExpectedGoals?.toFixed(2) || '2.50'}`);
 
     return result;
   } catch (error: any) {

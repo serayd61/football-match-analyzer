@@ -209,8 +209,6 @@ export async function saveOddsAnalysisLog(data: OddsAnalysisLogData): Promise<bo
         full_analysis_data: data.fullAnalysisData,
         
         analyzed_at: new Date().toISOString()
-      }, {
-        onConflict: 'fixture_id'
       });
     
     if (error) {

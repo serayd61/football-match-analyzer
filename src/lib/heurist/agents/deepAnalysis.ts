@@ -919,18 +919,41 @@ ${probabilityContext}
       return fallbackResult;
     }
     
-    // JSON parse
+    // JSON parse - Daha güçlü extraction
     let result;
     try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
-      } else {
+      // Önce markdown code block'ları temizle
+      let cleaned = response
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .replace(/\*\*/g, '')
+        .trim();
+      
+      // JSON objesini bul
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
         throw new Error('No JSON found in response');
       }
-    } catch (parseError) {
+      
+      let jsonStr = jsonMatch[0];
+      
+      // JSON hatalarını düzelt
+      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1'); // Trailing commas
+      jsonStr = jsonStr.replace(/\n/g, ' '); // Newlines
+      jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' '); // Control characters
+      
+      // Eksik kapanış parantezlerini düzelt (kısaltılmış JSON için)
+      const openBraces = (jsonStr.match(/\{/g) || []).length;
+      const closeBraces = (jsonStr.match(/\}/g) || []).length;
+      if (openBraces > closeBraces) {
+        jsonStr += '}'.repeat(openBraces - closeBraces);
+      }
+      
+      result = JSON.parse(jsonStr);
+    } catch (parseError: any) {
       console.error('❌ Deep Analysis JSON parse error:', parseError);
-      console.log('Raw response:', response.substring(0, 500));
+      console.log('Raw response (first 1000 chars):', response.substring(0, 1000));
+      console.log('Parse error at position:', parseError.message?.match(/position (\d+)/)?.[1] || 'unknown');
       result = getDefaultDeepAnalysis(matchData, language);
     }
 
