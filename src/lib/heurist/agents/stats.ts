@@ -458,11 +458,37 @@ function calculateXGAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de')
   const homeForm = matchData.homeForm;
   const awayForm = matchData.awayForm;
   
-  // Gerçek gol ortalamaları (son 5-10 maç)
-  const homeActual = parseFloat(detailedHome?.avgGoalsScored || homeForm?.avgGoals || '1.2');
-  const awayActual = parseFloat(detailedAway?.avgGoalsScored || awayForm?.avgGoals || '1.0');
-  const homeConceded = parseFloat(detailedHome?.avgGoalsConceded || homeForm?.avgConceded || '1.0');
-  const awayConceded = parseFloat(detailedAway?.avgGoalsConceded || awayForm?.avgConceded || '1.2');
+  // Gerçek gol ortalamaları (VENUE BAZLI - ÖNEMLİ!)
+  // Ev sahibi için EVDEKİ gol ortalaması, deplasman için DEPLASMANDAKİ gol ortalaması
+  const homeActual = parseFloat(
+    detailedHome?.homeAvgGoalsScored || // Önce detaylı ev istatistiği
+    homeForm?.venueAvgScored || // Sonra venue bazlı (EVDEKİ)
+    detailedHome?.avgGoalsScored || // Sonra genel detaylı
+    homeForm?.avgGoals || // Son olarak genel
+    '1.2'
+  );
+  const awayActual = parseFloat(
+    detailedAway?.awayAvgGoalsScored || // Önce detaylı deplasman istatistiği
+    awayForm?.venueAvgScored || // Sonra venue bazlı (DEPLASMANDAKİ)
+    detailedAway?.avgGoalsScored || // Sonra genel detaylı
+    awayForm?.avgGoals || // Son olarak genel
+    '1.0'
+  );
+  // Yediği gol ortalamaları (VENUE BAZLI)
+  const homeConceded = parseFloat(
+    detailedHome?.homeAvgGoalsConceded || // Önce detaylı ev istatistiği
+    homeForm?.venueAvgConceded || // Sonra venue bazlı (EVDE yediği)
+    detailedHome?.avgGoalsConceded || // Sonra genel detaylı
+    homeForm?.avgConceded || // Son olarak genel
+    '1.0'
+  );
+  const awayConceded = parseFloat(
+    detailedAway?.awayAvgGoalsConceded || // Önce detaylı deplasman istatistiği
+    awayForm?.venueAvgConceded || // Sonra venue bazlı (DEPLASMANDA yediği)
+    detailedAway?.avgGoalsConceded || // Sonra genel detaylı
+    awayForm?.avgConceded || // Son olarak genel
+    '1.2'
+  );
   
   // xG TAHMİNİ: Gerçek gol ortalamalarına 0.9 çarpanı uygula (regresyon beklentisi)
   // xG genelde gerçek gollerden %5-15 düşük olur
@@ -886,8 +912,8 @@ function generateStatsReasoning(
   
   if (language === 'tr') {
     const overUnderReasoning = expectedTotal >= 2.5
-      ? `📊 Ev sahibi maç başı ${homeGoalsScored.toFixed(1)} gol atıyor, deplasman ${awayGoalsConceded.toFixed(1)} gol yiyor. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Son maçlarda Over 2.5 oranı %${avgOver25}. Güçlü Over sinyali.`
-      : `📊 Ev sahibi ${homeGoalsScored.toFixed(1)} gol/maç, deplasman ${awayGoalsScored.toFixed(1)} gol/maç. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Under 2.5 oranı %${100 - avgOver25}. Düşük skorlu maç bekleniyor.`;
+      ? `📊 Ev sahibi EVDE maç başı ${homeGoalsScored.toFixed(1)} gol atıyor, deplasman DEPLASMANDA ${awayGoalsConceded.toFixed(1)} gol yiyor. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Son maçlarda Over 2.5 oranı %${avgOver25}. Güçlü Over sinyali.`
+      : `📊 Ev sahibi EVDE ${homeGoalsScored.toFixed(1)} gol/maç, deplasman DEPLASMANDA ${awayGoalsScored.toFixed(1)} gol/maç. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Under 2.5 oranı %${100 - avgOver25}. Düşük skorlu maç bekleniyor.`;
     
     const matchResultReasoning = homePoints > awayPoints
       ? `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${homePoints - awayPoints} puan farkı + ev avantajı → MS 1`
@@ -897,7 +923,7 @@ function generateStatsReasoning(
     
     const bttsReasoning = avgBtts >= 55
       ? `⚽ Ev sahibi %${Math.round(100 - (homeLosses/5)*100)} maçta gol attı. Deplasman %${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)} maçta gol buldu. Birleşik KG Var oranı %${avgBtts}. Her iki takım da gol atar.`
-      : `🛡️ Ev sahibi ${homeGoalsConceded.toFixed(1)} gol/maç yiyor, deplasman ${awayGoalsScored.toFixed(1)} gol/maç atıyor. KG Var oranı %${avgBtts} düşük. Tek taraflı skor olasılığı yüksek.`;
+      : `🛡️ Ev sahibi EVDE ${homeGoalsConceded.toFixed(1)} gol/maç yiyor, deplasman DEPLASMANDA ${awayGoalsScored.toFixed(1)} gol/maç atıyor. KG Var oranı %${avgBtts} düşük. Tek taraflı skor olasılığı yüksek.`;
     
     const agentSummary = `📊 STATS: Form analizi ${homePoints > awayPoints ? 'ev sahibi' : awayPoints > homePoints ? 'deplasman' : 'dengeli'}. Gol beklentisi ${expectedTotal.toFixed(1)} (${expectedTotal >= 2.5 ? 'Over' : 'Under'}). KG ${avgBtts >= 55 ? 'Var' : 'Yok'} eğilimli.`;
     
@@ -907,8 +933,8 @@ function generateStatsReasoning(
   // German
   if (language === 'de') {
     const overUnderReasoning = expectedTotal >= 2.5
-      ? `📊 Heimteam erzielt ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts kassiert ${awayGoalsConceded.toFixed(1)}. Erwartete Summe: ${expectedTotal.toFixed(2)} Tore. Über 2.5 Rate: ${avgOver25}%. Starkes Over-Signal.`
-      : `📊 Heimteam ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts ${awayGoalsScored.toFixed(1)} Tore/Spiel. Erwartung: ${expectedTotal.toFixed(2)} Tore. Unter 2.5 Rate: ${100 - avgOver25}%. Torarmes Spiel erwartet.`;
+      ? `📊 Heimteam ZU HAUSE erzielt ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts AUSWÄRTS kassiert ${awayGoalsConceded.toFixed(1)}. Erwartete Summe: ${expectedTotal.toFixed(2)} Tore. Über 2.5 Rate: ${avgOver25}%. Starkes Over-Signal.`
+      : `📊 Heimteam ZU HAUSE ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts AUSWÄRTS ${awayGoalsScored.toFixed(1)} Tore/Spiel. Erwartung: ${expectedTotal.toFixed(2)} Tore. Unter 2.5 Rate: ${100 - avgOver25}%. Torarmes Spiel erwartet.`;
     
     const matchResultReasoning = homePoints > awayPoints
       ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
@@ -918,7 +944,7 @@ function generateStatsReasoning(
     
     const bttsReasoning = avgBtts >= 55
       ? `⚽ Heimteam traf in ${Math.round(100 - (homeLosses/5)*100)}% der Spiele. Auswärts traf in ${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)}%. Kombinierte BTTS-Rate: ${avgBtts}%. Beide Teams treffen wahrscheinlich.`
-      : `🛡️ Heimteam kassiert ${homeGoalsConceded.toFixed(1)} Tore/Spiel, Auswärts erzielt ${awayGoalsScored.toFixed(1)}. BTTS-Rate ${avgBtts}% ist niedrig. Einseitiges Ergebnis wahrscheinlich.`;
+      : `🛡️ Heimteam ZU HAUSE kassiert ${homeGoalsConceded.toFixed(1)} Tore/Spiel, Auswärts AUSWÄRTS erzielt ${awayGoalsScored.toFixed(1)}. BTTS-Rate ${avgBtts}% ist niedrig. Einseitiges Ergebnis wahrscheinlich.`;
     
     const agentSummary = `📊 STATS: Form favorisiert ${homePoints > awayPoints ? 'Heim' : awayPoints > homePoints ? 'Auswärts' : 'keinen'}. Torerwartung ${expectedTotal.toFixed(1)} (${expectedTotal >= 2.5 ? 'Über' : 'Unter'}). BTTS ${avgBtts >= 55 ? 'Ja' : 'Nein'} Trend.`;
     
@@ -927,8 +953,8 @@ function generateStatsReasoning(
   
   // English (default)
   const overUnderReasoning = expectedTotal >= 2.5
-    ? `📊 Home scores ${homeGoalsScored.toFixed(1)} goals/game, away concedes ${awayGoalsConceded.toFixed(1)}. Expected total: ${expectedTotal.toFixed(2)} goals. Over 2.5 rate: ${avgOver25}%. Strong Over signal.`
-    : `📊 Home ${homeGoalsScored.toFixed(1)} goals/game, away ${awayGoalsScored.toFixed(1)} goals/game. Expected: ${expectedTotal.toFixed(2)} goals. Under 2.5 rate: ${100 - avgOver25}%. Low-scoring match expected.`;
+    ? `📊 Home AT HOME scores ${homeGoalsScored.toFixed(1)} goals/game, away AWAY concedes ${awayGoalsConceded.toFixed(1)}. Expected total: ${expectedTotal.toFixed(2)} goals. Over 2.5 rate: ${avgOver25}%. Strong Over signal.`
+    : `📊 Home AT HOME ${homeGoalsScored.toFixed(1)} goals/game, away AWAY ${awayGoalsScored.toFixed(1)} goals/game. Expected: ${expectedTotal.toFixed(2)} goals. Under 2.5 rate: ${100 - avgOver25}%. Low-scoring match expected.`;
   
   const matchResultReasoning = homePoints > awayPoints
     ? `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${homePoints - awayPoints} pts gap + home advantage → Home win`
@@ -938,7 +964,7 @@ function generateStatsReasoning(
   
   const bttsReasoning = avgBtts >= 55
     ? `⚽ Home scored in ${Math.round(100 - (homeLosses/5)*100)}% of matches. Away scored in ${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)}%. Combined BTTS rate: ${avgBtts}%. Both teams likely to score.`
-    : `🛡️ Home concedes ${homeGoalsConceded.toFixed(1)} goals/game, away scores ${awayGoalsScored.toFixed(1)}. BTTS rate ${avgBtts}% is low. One-sided score likely.`;
+    : `🛡️ Home AT HOME concedes ${homeGoalsConceded.toFixed(1)} goals/game, away AWAY scores ${awayGoalsScored.toFixed(1)}. BTTS rate ${avgBtts}% is low. One-sided score likely.`;
   
   const agentSummary = `📊 STATS: Form favors ${homePoints > awayPoints ? 'home' : awayPoints > homePoints ? 'away' : 'neither'}. Goal expectancy ${expectedTotal.toFixed(1)} (${expectedTotal >= 2.5 ? 'Over' : 'Under'}). BTTS ${avgBtts >= 55 ? 'Yes' : 'No'} trend.`;
   
@@ -979,11 +1005,36 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   const detailedH2H = (matchData as any).detailedStats?.h2h;
   const injuries = (matchData as any).detailedStats?.injuries;
 
-  // Gol ortalamaları
-  const homeGoalsScored = parseFloat(detailedHome?.avgGoalsScored || matchData.homeForm?.avgGoals || '1.2');
-  const homeGoalsConceded = parseFloat(detailedHome?.avgGoalsConceded || matchData.homeForm?.avgConceded || '1.0');
-  const awayGoalsScored = parseFloat(detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0');
-  const awayGoalsConceded = parseFloat(detailedAway?.avgGoalsConceded || matchData.awayForm?.avgConceded || '1.2');
+  // Gol ortalamaları (VENUE BAZLI - ÖNEMLİ!)
+  // Ev sahibi için EVDEKİ gol ortalaması, deplasman için DEPLASMANDAKİ gol ortalaması
+  const homeGoalsScored = parseFloat(
+    detailedHome?.homeAvgGoalsScored || // Önce detaylı ev istatistiği
+    matchData.homeForm?.venueAvgScored || // Sonra venue bazlı (EVDEKİ)
+    detailedHome?.avgGoalsScored || // Sonra genel detaylı
+    matchData.homeForm?.avgGoals || // Son olarak genel
+    '1.2'
+  );
+  const homeGoalsConceded = parseFloat(
+    detailedHome?.homeAvgGoalsConceded || // Önce detaylı ev istatistiği
+    matchData.homeForm?.venueAvgConceded || // Sonra venue bazlı (EVDE yediği)
+    detailedHome?.avgGoalsConceded || // Sonra genel detaylı
+    matchData.homeForm?.avgConceded || // Son olarak genel
+    '1.0'
+  );
+  const awayGoalsScored = parseFloat(
+    detailedAway?.awayAvgGoalsScored || // Önce detaylı deplasman istatistiği
+    matchData.awayForm?.venueAvgScored || // Sonra venue bazlı (DEPLASMANDAKİ)
+    detailedAway?.avgGoalsScored || // Sonra genel detaylı
+    matchData.awayForm?.avgGoals || // Son olarak genel
+    '1.0'
+  );
+  const awayGoalsConceded = parseFloat(
+    detailedAway?.awayAvgGoalsConceded || // Önce detaylı deplasman istatistiği
+    matchData.awayForm?.venueAvgConceded || // Sonra venue bazlı (DEPLASMANDA yediği)
+    detailedAway?.avgGoalsConceded || // Sonra genel detaylı
+    matchData.awayForm?.avgConceded || // Son olarak genel
+    '1.2'
+  );
   
   // Beklenen goller (gol atma beklentisi)
   const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
