@@ -5,9 +5,12 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#22c55e",
+  "theme_color": "#10b981",
   "orientation": "portrait",
   "scope": "/",
+  "dir": "ltr",
+  "lang": "tr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
