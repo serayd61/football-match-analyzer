@@ -6,79 +6,100 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { AgentResult } from '../orchestrator';
 
 const MASTER_STRATEGIST_PROMPT = {
-  tr: `Sen bir çok-agent futbol maç analiz sisteminin ORCHESTRATOR'ısın.
+  tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
 
-GÖREV: Piyasada değeri biçilmemiş, istatistiksel olarak makul ve yüksek oranlı SÜRPRİZ SONUÇ adayı üretmek.
-
-═══════════════════════════════════════════════════════════════════════════════
-📊 MATCH INPUT (Yetkili Veri):
-═══════════════════════════════════════════════════════════════════════════════
-- Takımlar: {HOME} vs {AWAY}
-- Lig/Tarih: {LEAGUE}, {DATE_TIME}
-- Son form (10): {FORM_HOME} / {FORM_AWAY}
-- Temel istatistikler: xG/xGA, gol for/against, şutlar, büyük şanslar, set pieces, PPDA, ev/deplasman ayrımları
-- Piyasa oranları: 1X2, O/U 2.5, BTTS, Asian Handicap, Doğru Skor, Korner
-- Kadro/bağlam: sakatlıklar, cezalılar, rotasyon, fikstür yoğunluğu, motivasyon, hava, hakem
+GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) çıktılarını analiz edip:
+1. Birincil seçim (en sağlam)
+2. SÜRPRİZ seçim (yüksek oran + değer) - eğer kriterleri karşılıyorsa
+3. Hedge fikri (opsiyonel) - downside koruması
 
 ═══════════════════════════════════════════════════════════════════════════════
-⚠️ KISITLAMALAR:
+📊 SÜRPRİZ TANIMI:
 ═══════════════════════════════════════════════════════════════════════════════
-1) Her agent SADECE MATCH INPUT kullanmalı. Veri eksikse açıkça belirt, uydurma.
-2) Her agent STRICT JSON döndürmeli (verilen schema'ya göre).
-3) Genel tavsiye yok. Her iddia input'tan bir sinyale bağlı olmalı.
-4) "SÜRPRİZ" tanımı: piyasa oranı >= 3.20 VE model olasılığı >= 0.25 VE edge >= +0.05.
+"SÜRPRİZ" = Piyasa oranı >= 3.20 VE Model olasılığı >= 0.25 VE Edge >= +0.05
 
 ═══════════════════════════════════════════════════════════════════════════════
-🤖 ÇALIŞTIRILACAK AJANLAR (sırayla):
+🎯 ANALİZ ADIMLARI:
 ═══════════════════════════════════════════════════════════════════════════════
-A) STATS_AGENT: Sadece performans metriklerinden olasılık çıkar (ORAN konuşma).
-B) ODDS_AGENT: Piyasa implied probability vs model probability ile değer bahisleri bul (YENİ olasılık uydurma; sadece STATS_AGENT olasılıklarını kullan).
-C) CONTEXT_AGENT: Bağlam faktörleriyle risk/upside ayarla (kadro, motivasyon, fikstür, hava). Niteliksel ayarlama (+/-) ve ana risk bayrakları sağla.
-D) MASTER_STRATEGIST: Çıktıları uzlaştır, çelişkileri tespit et ve seç:
-   - 1 birincil seçim (en sağlam)
-   - 1 SÜRPRİZ seçim (yüksek oran + değer) eğer SÜRPRİZ tanımını karşılıyorsa
-   - 1 hedge fikri (opsiyonel) downside'ı korur
+1. Her agent'ı değerlendir (güvenilirlik, güven, güçlü/zayıf yönler)
+2. Çelişkileri tespit et (hangi agent'lar birbiriyle çelişiyor?)
+3. Güçlü sinyalleri belirle (hangi tahminlerde agent'lar hemfikir?)
+4. Model olasılıklarını hesapla (agent'ların ağırlıklı ortalaması)
+5. Piyasa oranlarıyla karşılaştır (edge hesapla)
+6. Birincil seçimi belirle (en yüksek güven + değer)
+7. SÜRPRİZ seçimi bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
+8. Hedge öner (birincil seçimin tersi veya koruyucu bahis)
 
 ═══════════════════════════════════════════════════════════════════════════════
-📋 JSON SCHEMA (Her agent için zorunlu):
+📋 ZORUNLU JSON FORMATI:
 ═══════════════════════════════════════════════════════════════════════════════
 {
-  "agent": "STATS_AGENT | ODDS_AGENT | CONTEXT_AGENT | MASTER_STRATEGIST",
-  "main_take": "bir cümle",
-  "signals": ["bullet", "bullet", "bullet"],
+  "agent": "MASTER_STRATEGIST",
+  "main_take": "Bir cümle özet - en önemli bulgu",
+  "signals": [
+    "Agent'ların hemfikir olduğu sinyaller",
+    "Güçlü istatistiksel pattern'ler",
+    "Piyasa değer fırsatları"
+  ],
   "model_probs": {
-     "home_win": 0.xx, "draw": 0.xx, "away_win": 0.xx,
-     "under_2_5": 0.xx, "over_2_5": 0.xx,
-     "btts_yes": 0.xx, "btts_no": 0.xx
+    "home_win": 0.xx,
+    "draw": 0.xx,
+    "away_win": 0.xx,
+    "under_2_5": 0.xx,
+    "over_2_5": 0.xx,
+    "btts_yes": 0.xx,
+    "btts_no": 0.xx
   },
   "recommended_bets": [
-     {
-       "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
-       "selection": "string",
-       "model_prob": 0.xx,
-       "fair_odds": 0.xx,
-       "market_odds": 0.xx,
-       "edge": 0.xx,
-       "rationale": ["sinyallere bağlı neden"]
-     }
+    {
+      "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "rationale": ["Sinyallere bağlı nedenler"]
+    }
   ],
-  "risks": ["seçimi bozabilecek şeyler"],
-  "confidence": 0-100
+  "risks": [
+    "Birincil seçimi bozabilecek faktörler",
+    "Belirsizlik kaynakları"
+  ],
+  "confidence": 0-100,
+  "final": {
+    "primary_pick": {
+      "market": "string",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "confidence": 0-100,
+      "rationale": ["Nedenler"]
+    },
+    "surprise_pick": {
+      "market": "string",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "confidence": 0-100,
+      "rationale": ["Nedenler"]
+    } veya null,
+    "hedge": {
+      "market": "string",
+      "selection": "string",
+      "rationale": "Neden hedge gerekli?"
+    } veya null,
+    "contradictions_found": [
+      "Agent çelişkileri açıklaması"
+    ],
+    "why_this_is_surprise": "Sürpriz seçim varsa, oran/prob/edge ile açıkla. Yoksa null."
+  }
 }
 
-═══════════════════════════════════════════════════════════════════════════════
-🎯 MASTER_STRATEGIST EK ÇIKTI:
-═══════════════════════════════════════════════════════════════════════════════
-Üst seviye field ekle:
-"final": {
-  "primary_pick": {...},
-  "surprise_pick": {... veya null eğer kriterler karşılanmıyorsa},
-  "hedge": {... veya null},
-  "contradictions_found": ["..."],
-  "why_this_is_surprise": "oran/prob/edge ile bir paragrafta açıkla"
-}
-
-Şimdi agent'ları çalıştır ve SADECE MASTER_STRATEGIST JSON'unu döndür.
+⚠️ ÖNEMLİ: SADECE bu JSON formatında döndür. Başka açıklama ekleme.
 
 🎯 KRİTİK GÖREV:
 HERHANGİ BİR BAHİS TÜRÜNE BAĞLI KALMA! Sadece MS 1X2, Over/Under 2.5, BTTS değil - TÜM İDDAA SEÇENEKLERİNİ değerlendir:
@@ -231,78 +252,100 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
   "recommendation": "Bu maçta 1.5 Üst ve Ev Sahibi Gol 0.5 Üst en güvenli bahisler. Handikap -1 Ev değerli ama riskli."
 }`,
 
-  en: `You are the Orchestrator for a multi-agent football match analysis system.
-Goal: produce a high-odds surprise outcome candidate that is statistically plausible and offers value vs the market.
+  en: `You are the MASTER STRATEGIST for a multi-agent football match analysis system.
+
+TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) and produce:
+1. Primary pick (most robust)
+2. SURPRISE pick (high odds + value) - if criteria met
+3. Hedge idea (optional) - protects downside
 
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH INPUT (authoritative):
+📊 SURPRISE DEFINITION:
 ═══════════════════════════════════════════════════════════════════════════════
-- Teams: {HOME} vs {AWAY}
-- League/Date: {LEAGUE}, {DATE_TIME}
-- Recent form (10): {FORM_HOME} / {FORM_AWAY}
-- Core stats: xG/xGA, goals for/against, shots, big chances, set pieces, PPDA, home/away splits: {STATS_BUNDLE}
-- Market odds (opening + current): 1X2, O/U 2.5, BTTS, Asian Handicap, Correct Score, Corners: {ODDS_BUNDLE}
-- Squad/context: injuries, suspensions, rotation, schedule congestion, motivation, weather, referee: {CONTEXT_BUNDLE}
+"SURPRISE" = Market odds >= 3.20 AND Model probability >= 0.25 AND Edge >= +0.05
 
 ═══════════════════════════════════════════════════════════════════════════════
-CONSTRAINTS:
+🎯 ANALYSIS STEPS:
 ═══════════════════════════════════════════════════════════════════════════════
-1) Each agent must ONLY use the MATCH INPUT. If data is missing, state it explicitly and do not hallucinate.
-2) Each agent must return STRICT JSON with the schema provided.
-3) No generic tips. Every claim must be tied to a signal from the input.
-4) Define "SURPRISE" as: market odds >= 3.20 AND model probability >= 0.25 AND edge >= +0.05.
+1. Evaluate each agent (reliability, confidence, strengths/weaknesses)
+2. Detect contradictions (which agents contradict each other?)
+3. Identify strong signals (where do agents agree?)
+4. Calculate model probabilities (weighted average of agents)
+5. Compare with market odds (calculate edge)
+6. Determine primary pick (highest confidence + value)
+7. Find SURPRISE pick (odds >= 3.20, prob >= 0.25, edge >= +0.05)
+8. Suggest hedge (opposite of primary or protective bet)
 
 ═══════════════════════════════════════════════════════════════════════════════
-AGENTS TO RUN (in order):
-═══════════════════════════════════════════════════════════════════════════════
-A) STATS_AGENT: infer probabilities from performance metrics only (NO odds talk).
-B) ODDS_AGENT: find value bets using market implied probability vs model probability (NO new probabilities invented; only use STATS_AGENT probs).
-C) CONTEXT_AGENT: adjust risk/upside using context factors (squad, motivation, schedule, weather). Provide a qualitative adjustment (+/-) and key risk flags.
-D) MASTER_STRATEGIST: reconcile outputs, detect contradictions, and pick:
-   - 1 primary pick (most robust)
-   - 1 SURPRISE pick (high odds + value) if it meets the SURPRISE definition
-   - 1 hedge idea (optional) that protects downside
-
-═══════════════════════════════════════════════════════════════════════════════
-JSON SCHEMA (required for each agent):
+📋 REQUIRED JSON FORMAT:
 ═══════════════════════════════════════════════════════════════════════════════
 {
-  "agent": "STATS_AGENT | ODDS_AGENT | CONTEXT_AGENT | MASTER_STRATEGIST",
-  "main_take": "one sentence",
-  "signals": ["bullet", "bullet", "bullet"],
+  "agent": "MASTER_STRATEGIST",
+  "main_take": "One sentence summary - most important finding",
+  "signals": [
+    "Signals where agents agree",
+    "Strong statistical patterns",
+    "Market value opportunities"
+  ],
   "model_probs": {
-     "home_win": 0.xx, "draw": 0.xx, "away_win": 0.xx,
-     "under_2_5": 0.xx, "over_2_5": 0.xx,
-     "btts_yes": 0.xx, "btts_no": 0.xx
+    "home_win": 0.xx,
+    "draw": 0.xx,
+    "away_win": 0.xx,
+    "under_2_5": 0.xx,
+    "over_2_5": 0.xx,
+    "btts_yes": 0.xx,
+    "btts_no": 0.xx
   },
   "recommended_bets": [
-     {
-       "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
-       "selection": "string",
-       "model_prob": 0.xx,
-       "fair_odds": 0.xx,
-       "market_odds": 0.xx,
-       "edge": 0.xx,
-       "rationale": ["reason tied to signals"]
-     }
+    {
+      "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "rationale": ["Reasons tied to signals"]
+    }
   ],
-  "risks": ["what could break the pick"],
-  "confidence": 0-100
+  "risks": [
+    "Factors that could break the primary pick",
+    "Sources of uncertainty"
+  ],
+  "confidence": 0-100,
+  "final": {
+    "primary_pick": {
+      "market": "string",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "confidence": 0-100,
+      "rationale": ["Reasons"]
+    },
+    "surprise_pick": {
+      "market": "string",
+      "selection": "string",
+      "model_prob": 0.xx,
+      "fair_odds": 0.xx,
+      "market_odds": 0.xx,
+      "edge": 0.xx,
+      "confidence": 0-100,
+      "rationale": ["Reasons"]
+    } or null,
+    "hedge": {
+      "market": "string",
+      "selection": "string",
+      "rationale": "Why hedge is needed?"
+    } or null,
+    "contradictions_found": [
+      "Description of agent contradictions"
+    ],
+    "why_this_is_surprise": "If surprise pick exists, explain with odds/prob/edge. Otherwise null."
+  }
 }
 
-═══════════════════════════════════════════════════════════════════════════════
-MASTER_STRATEGIST EXTRA OUTPUT:
-═══════════════════════════════════════════════════════════════════════════════
-Add a top-level field:
-"final": {
-  "primary_pick": {...},
-  "surprise_pick": {... or null if criteria not met},
-  "hedge": {... or null},
-  "contradictions_found": ["..."],
-  "why_this_is_surprise": "explain with odds/prob/edge in one paragraph"
-}
-
-Now run the agents and return ONLY the MASTER_STRATEGIST JSON.
+⚠️ IMPORTANT: Return ONLY this JSON format. No additional explanations.
 
 3. IDENTIFY STRONG SIGNALS:
    - Where do agents agree?
@@ -376,7 +419,60 @@ MUSS IN DIESEM JSON-FORMAT ZURÜCKGEBEN:
 };
 
 export interface MasterStrategistResult {
-  agentEvaluation: {
+  agent: 'MASTER_STRATEGIST';
+  main_take: string;
+  signals: string[];
+  model_probs: {
+    home_win: number;
+    draw: number;
+    away_win: number;
+    under_2_5: number;
+    over_2_5: number;
+    btts_yes: number;
+    btts_no: number;
+  };
+  recommended_bets: Array<{
+    market: string;
+    selection: string;
+    model_prob: number;
+    fair_odds: number;
+    market_odds: number;
+    edge: number;
+    rationale: string[];
+  }>;
+  risks: string[];
+  confidence: number;
+  final: {
+    primary_pick: {
+      market: string;
+      selection: string;
+      model_prob: number;
+      fair_odds: number;
+      market_odds: number;
+      edge: number;
+      confidence: number;
+      rationale: string[];
+    };
+    surprise_pick: {
+      market: string;
+      selection: string;
+      model_prob: number;
+      fair_odds: number;
+      market_odds: number;
+      edge: number;
+      confidence: number;
+      rationale: string[];
+    } | null;
+    hedge: {
+      market: string;
+      selection: string;
+      rationale: string;
+    } | null;
+    contradictions_found: string[];
+    why_this_is_surprise: string | null;
+  };
+  // Backward compatibility fields (optional)
+  agentEvaluation?: {
     [agent: string]: {
       reliability: number;
       confidence: number;
@@ -385,23 +481,7 @@ export interface MasterStrategistResult {
       weight: number;
     };
   };
-  conflictAnalysis: {
-    conflicts: Array<{
-      agents: string[];
-      field: string;
-      description: string;
-      resolution: string;
-      severity: 'low' | 'medium' | 'high';
-    }>;
-    strongSignals: Array<{
-      field: string;
-      agents: string[];
-      prediction: string;
-      confidence: number;
-      reasoning: string;
-    }>;
-  };
-  finalConsensus: {
+  finalConsensus?: {
     matchResult: {
       prediction: string;
       confidence: number;
@@ -421,7 +501,7 @@ export interface MasterStrategistResult {
       agentWeights: { [agent: string]: number };
     };
   };
-  bestBets: Array<{
+  bestBets?: Array<{
     rank: number;
     market: string;
     selection: string;
@@ -430,15 +510,8 @@ export interface MasterStrategistResult {
     reasoning: string;
     recommendedStake: 'low' | 'low-medium' | 'medium' | 'medium-high' | 'high';
   }>;
-  riskAssessment: {
-    overallRisk: 'low' | 'medium' | 'high';
-    factors: string[];
-    warnings: string[];
-  };
-  agentFeedback: { [agent: string]: string };
-  masterInsights: string[];
-  overallConfidence: number;
-  recommendation: string;
+  overallConfidence?: number;
+  recommendation?: string;
 }
 
 function buildAgentContext(
@@ -633,9 +706,14 @@ export async function runMasterStrategist(
     }
 
     console.log(`✅ Master Strategist complete:`);
-    console.log(`   🎯 Overall Confidence: ${result.overallConfidence}%`);
-    console.log(`   📊 Final: ${result.finalConsensus.matchResult.prediction} | ${result.finalConsensus.overUnder.prediction} | BTTS: ${result.finalConsensus.btts.prediction}`);
-    console.log(`   🏆 Best Bet: ${result.bestBets[0]?.market || 'N/A'} - ${result.bestBets[0]?.selection || 'N/A'}`);
+    console.log(`   🎯 Confidence: ${result.confidence}%`);
+    console.log(`   📊 Primary: ${result.final.primary_pick.market} - ${result.final.primary_pick.selection}`);
+    if (result.final.surprise_pick) {
+      console.log(`   🎲 Surprise: ${result.final.surprise_pick.market} - ${result.final.surprise_pick.selection} @ ${result.final.surprise_pick.market_odds}`);
+    }
+    if (result.final.hedge) {
+      console.log(`   🛡️ Hedge: ${result.final.hedge.market} - ${result.final.hedge.selection}`);
+    }
 
     return result;
   } catch (error: any) {
@@ -849,80 +927,144 @@ function getDefaultMasterStrategist(
   const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
   const agentCount = [stats, odds, deep].filter(Boolean).length;
 
+  // Model probabilities hesapla
+  const homeWinProb = finalMR === '1' ? mrConfidence / 100 : (finalMR === 'X' ? 0.25 : 0.20);
+  const drawProb = finalMR === 'X' ? mrConfidence / 100 : 0.25;
+  const awayWinProb = finalMR === '2' ? mrConfidence / 100 : (finalMR === 'X' ? 0.25 : 0.20);
+  const over25Prob = finalOU === 'Over' ? ouConfidence / 100 : 0.45;
+  const under25Prob = finalOU === 'Under' ? ouConfidence / 100 : 0.55;
+  const bttsYesProb = finalBTTS === 'Yes' ? bttsConfidence / 100 : 0.45;
+  const bttsNoProb = finalBTTS === 'No' ? bttsConfidence / 100 : 0.55;
+
+  // Market odds (fallback - gerçek odds yoksa)
+  const marketOdds1 = odds?.oddsAnalysis?.match(/Home: ([\d.]+)/)?.[1] || '2.5';
+  const marketOdds2 = odds?.oddsAnalysis?.match(/Away: ([\d.]+)/)?.[1] || '2.5';
+  const marketOddsX = odds?.oddsAnalysis?.match(/Draw: ([\d.]+)/)?.[1] || '3.0';
+  const marketOddsOver = odds?.oddsAnalysis?.match(/Over: ([\d.]+)/)?.[1] || '1.9';
+  const marketOddsUnder = odds?.oddsAnalysis?.match(/Under: ([\d.]+)/)?.[1] || '1.9';
+
+  // Primary pick
+  const primaryPick = bestBets[0] || {
+    market: 'Match Result',
+    selection: finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw',
+    confidence: mrConfidence,
+    value: 'medium' as const,
+    reasoning: `Konsensüs: ${mrMaxVotes}/${mrTotalVotes} ağırlıklı oy`,
+    recommendedStake: 'medium' as const
+  };
+
+  // Surprise pick bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
+  let surprisePick: MasterStrategistResult['final']['surprise_pick'] = null;
+  
+  // Draw kontrolü
+  if (drawProb >= 0.25) {
+    const drawFairOdds = 1 / drawProb;
+    const drawMarketOdds = parseFloat(marketOddsX);
+    const drawEdge = (drawFairOdds / drawMarketOdds) - 1;
+    if (drawMarketOdds >= 3.20 && drawEdge >= 0.05) {
+      surprisePick = {
+        market: '1X2',
+        selection: 'Draw',
+        model_prob: drawProb,
+        fair_odds: drawFairOdds,
+        market_odds: drawMarketOdds,
+        edge: drawEdge,
+        confidence: Math.round(drawProb * 100),
+        rationale: [`Beraberlik olasılığı ${Math.round(drawProb * 100)}%`, `Piyasa oranı ${drawMarketOdds}`, `Edge: +${Math.round(drawEdge * 100)}%`]
+      };
+    }
+  }
+
+  // Hedge öner (primary pick'in tersi veya koruyucu)
+  let hedge: MasterStrategistResult['final']['hedge'] = null;
+  if (primaryPick.market === 'Match Result') {
+    if (primaryPick.selection === 'Home') {
+      hedge = {
+        market: '1X2',
+        selection: 'Away or Draw',
+        rationale: 'Ev sahibi seçildi, deplasman veya beraberlik ile hedge'
+      };
+    } else if (primaryPick.selection === 'Away') {
+      hedge = {
+        market: '1X2',
+        selection: 'Home or Draw',
+        rationale: 'Deplasman seçildi, ev sahibi veya beraberlik ile hedge'
+      };
+    }
+  }
+
   return {
-    agentEvaluation: {
-      stats: {
-        reliability: stats ? 80 : 0,
-        confidence: stats?.confidence || 0,
-        strengths: stats ? ['İstatistiksel veri', 'Form analizi'] : [],
-        weaknesses: [],
-        weight: stats ? 30 : 0
-      },
-      odds: {
-        reliability: odds ? 85 : 0,
-        confidence: odds?.confidence || 0,
-        strengths: odds ? ['Oran analizi', 'Value tespiti'] : [],
-        weaknesses: [],
-        weight: odds ? 35 : 0
-      },
-      sentiment: {
-        reliability: agentResults.sentiment ? 70 : 0,
-        confidence: 0,
-        strengths: agentResults.sentiment ? ['Psikolojik faktörler'] : [],
-        weaknesses: [],
-        weight: agentResults.sentiment ? 15 : 0
-      },
-      deepAnalysis: {
-        reliability: deep ? 85 : 0,
-        confidence: deep?.matchResult?.confidence || 0,
-        strengths: deep ? ['Derin analiz', 'Motivasyon skorları'] : [],
-        weaknesses: [],
-        weight: deep ? 20 : 0
-      }
+    agent: 'MASTER_STRATEGIST',
+    main_take: language === 'tr' 
+      ? `${agentCount} agent analizi: ${finalMR === '1' ? 'Ev sahibi' : finalMR === '2' ? 'Deplasman' : 'Beraberlik'} favori (${mrConfidence}% güven)`
+      : `${agentCount} agent analysis: ${finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw'} favorite (${mrConfidence}% confidence)`,
+    signals: [
+      ...strongSignals.map(s => `${s.field}: ${s.prediction} (${s.confidence}%)`),
+      ...(bestValueAmount >= 15 ? [`Value bet: ${bestValueDirection} (+${bestValueAmount}%)`] : []),
+      `${agentCount} agent consensus`
+    ],
+    model_probs: {
+      home_win: homeWinProb,
+      draw: drawProb,
+      away_win: awayWinProb,
+      under_2_5: under25Prob,
+      over_2_5: over25Prob,
+      btts_yes: bttsYesProb,
+      btts_no: bttsNoProb
     },
-    conflictAnalysis: {
-      conflicts,
-      strongSignals
+    recommended_bets: bestBets.map(bet => ({
+      market: bet.market,
+      selection: bet.selection,
+      model_prob: bet.confidence / 100,
+      fair_odds: 1 / (bet.confidence / 100),
+      market_odds: bet.market === 'Match Result' 
+        ? (bet.selection === 'Home' ? parseFloat(marketOdds1) : bet.selection === 'Away' ? parseFloat(marketOdds2) : parseFloat(marketOddsX))
+        : parseFloat(marketOddsOver),
+      edge: 0.1, // Fallback edge
+      rationale: [bet.reasoning]
+    })),
+    risks: [
+      ...conflicts.map(c => c.description),
+      ...(overallConfidence < 60 ? ['Düşük güven seviyesi'] : []),
+      ...(agentCount < 2 ? ['Yetersiz agent verisi'] : [])
+    ],
+    confidence: overallConfidence,
+    final: {
+      primary_pick: {
+        market: primaryPick.market,
+        selection: primaryPick.selection,
+        model_prob: primaryPick.confidence / 100,
+        fair_odds: 1 / (primaryPick.confidence / 100),
+        market_odds: primaryPick.market === 'Match Result'
+          ? (primaryPick.selection === 'Home' ? parseFloat(marketOdds1) : primaryPick.selection === 'Away' ? parseFloat(marketOdds2) : parseFloat(marketOddsX))
+          : parseFloat(marketOddsOver),
+        edge: bestValueAmount / 100 || 0.1,
+        confidence: primaryPick.confidence,
+        rationale: [primaryPick.reasoning]
+      },
+      surprise_pick: surprisePick,
+      hedge: hedge,
+      contradictions_found: conflicts.map(c => `${c.agents.join(' vs ')}: ${c.description}`),
+      why_this_is_surprise: surprisePick 
+        ? `Piyasa oranı ${surprisePick.market_odds} (implied ${Math.round(1/surprisePick.market_odds*100)}%), model olasılığı ${Math.round(surprisePick.model_prob*100)}%, edge +${Math.round(surprisePick.edge*100)}%`
+        : null
+    },
+    // Backward compatibility
+    agentEvaluation: {
+      stats: { reliability: stats ? 80 : 0, confidence: stats?.confidence || 0, strengths: stats ? ['İstatistiksel veri'] : [], weaknesses: [], weight: stats ? 30 : 0 },
+      odds: { reliability: odds ? 85 : 0, confidence: odds?.confidence || 0, strengths: odds ? ['Oran analizi'] : [], weaknesses: [], weight: odds ? 35 : 0 },
+      sentiment: { reliability: agentResults.sentiment ? 70 : 0, confidence: 0, strengths: [], weaknesses: [], weight: agentResults.sentiment ? 15 : 0 },
+      deepAnalysis: { reliability: deep ? 85 : 0, confidence: deep?.matchResult?.confidence || 0, strengths: deep ? ['Derin analiz'] : [], weaknesses: [], weight: deep ? 20 : 0 }
     },
     finalConsensus: {
-      matchResult: {
-        prediction: finalMR,
-        confidence: mrConfidence,
-        reasoning: `${agentCount} agent konsensüsü (${mrMaxVotes}/${mrTotalVotes} oy)`,
-        agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
-      },
-      overUnder: {
-        prediction: finalOU,
-        confidence: ouConfidence,
-        reasoning: `${agentCount} agent konsensüsü (${ouMaxVotes}/${ouTotalVotes} oy)`,
-        agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
-      },
-      btts: {
-        prediction: finalBTTS,
-        confidence: bttsConfidence,
-        reasoning: `${agentCount} agent konsensüsü (${bttsMaxVotes}/${bttsTotalVotes} oy)`,
-        agentWeights: { stats: 30, odds: 35, sentiment: 15, deepAnalysis: 20 }
-      }
+      matchResult: { prediction: finalMR, confidence: mrConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} },
+      overUnder: { prediction: finalOU, confidence: ouConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} },
+      btts: { prediction: finalBTTS, confidence: bttsConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} }
     },
     bestBets,
-    riskAssessment: {
-      overallRisk: overallConfidence > 65 ? 'low' : overallConfidence > 55 ? 'medium' : 'high',
-      factors: conflicts.length > 0 ? [`${conflicts.length} çatışma tespit edildi`] : [],
-      warnings: conflicts.map(c => c.description)
-    },
-    agentFeedback: {},
-    masterInsights: [
-      ...strongSignals.map(s => `${s.field}: ${s.prediction} (${s.confidence}%)`),
-      ...(conflicts.length > 0 ? [`⚠️ ${conflicts.length} agent çatışması var`] : []),
-      `Toplam ${agentCount} agent analiz edildi`
-    ],
     overallConfidence,
     recommendation: language === 'tr' 
-      ? strongSignals.length > 0 
-        ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
-        : `${agentCount} agent konsensüsü - Orta güven`
-      : strongSignals.length > 0 
-        ? `Strong signals: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
-        : `${agentCount} agent consensus - Medium confidence`
+      ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
+      : `Strong signals: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}`
   };
 }
