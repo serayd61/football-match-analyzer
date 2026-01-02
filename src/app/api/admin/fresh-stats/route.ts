@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
   
   const total = settled.length;
   
-  // Show sample data with fixture_id
-  const sampleData = settled.slice(0, 5).map(r => ({
+  // Show ALL settled data
+  const allSettledData = settled.map(r => ({
     fixture_id: r.fixture_id,
     home_team: r.home_team,
     mr_correct: r.match_result_correct,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       ou: total > 0 ? Math.round((ouCorrect / total) * 100) : 0,
       btts: total > 0 ? Math.round((bttsCorrect / total) * 100) : 0
     },
-    sampleData
+    allSettledData
   });
 }
 
