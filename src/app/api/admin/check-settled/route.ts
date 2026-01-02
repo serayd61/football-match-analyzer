@@ -29,6 +29,15 @@ export async function GET(request: NextRequest) {
   const ouCorrect = settledMatches.filter(r => r.over_under_correct === true).length;
   const bttsCorrect = settledMatches.filter(r => r.btts_correct === true).length;
   
+  // Detailed correctness analysis
+  const mrTrue = settledMatches.filter(r => r.match_result_correct === true).length;
+  const mrFalse = settledMatches.filter(r => r.match_result_correct === false).length;
+  const mrNull = settledMatches.filter(r => r.match_result_correct === null).length;
+  
+  const ouTrue = settledMatches.filter(r => r.over_under_correct === true).length;
+  const ouFalse = settledMatches.filter(r => r.over_under_correct === false).length;
+  const ouNull = settledMatches.filter(r => r.over_under_correct === null).length;
+  
   return NextResponse.json({
     error: error?.message,
     settledSample: settledMatches.slice(0, 5),
@@ -39,6 +48,10 @@ export async function GET(request: NextRequest) {
       mrCorrect,
       ouCorrect,
       bttsCorrect
+    },
+    detailedCounts: {
+      mr: { true: mrTrue, false: mrFalse, null: mrNull },
+      ou: { true: ouTrue, false: ouFalse, null: ouNull }
     }
   });
 }
