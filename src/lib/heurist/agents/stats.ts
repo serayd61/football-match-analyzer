@@ -954,10 +954,10 @@ function generateStatsReasoning(
     } else {
       // Fallback - eski mantık
       matchResultReasoning = homePoints > awayPoints
-        ? `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${homePoints - awayPoints} puan farkı + ev avantajı → MS 1`
-        : awayPoints > homePoints
-        ? `🚌 Deplasman form: ${awayForm} (${awayPoints} puan, ${awayWins}G). Ev sahibi: ${homeForm} (${homePoints} puan). Deplasman ${awayPoints - homePoints} puan önde → MS 2`
-        : `⚖️ Ev: ${homeForm} (${homePoints}p) vs Dep: ${awayForm} (${awayPoints}p). Formlar dengeli, ev avantajı hafif üstünlük → MS 1X`;
+      ? `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${homePoints - awayPoints} puan farkı + ev avantajı → MS 1`
+      : awayPoints > homePoints
+      ? `🚌 Deplasman form: ${awayForm} (${awayPoints} puan, ${awayWins}G). Ev sahibi: ${homeForm} (${homePoints} puan). Deplasman ${awayPoints - homePoints} puan önde → MS 2`
+      : `⚖️ Ev: ${homeForm} (${homePoints}p) vs Dep: ${awayForm} (${awayPoints}p). Formlar dengeli, ev avantajı hafif üstünlük → MS 1X`;
     }
     
     const bttsReasoning = avgBtts >= 55
@@ -1012,10 +1012,10 @@ function generateStatsReasoning(
       }
     } else {
       matchResultReasoning = homePoints > awayPoints
-        ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
-        : awayPoints > homePoints
-        ? `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${awayPoints - homePoints} Pkt vorne → Auswärtssieg`
-        : `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
+      ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
+      : awayPoints > homePoints
+      ? `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${awayPoints - homePoints} Pkt vorne → Auswärtssieg`
+      : `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
     }
     
     const bttsReasoning = avgBtts >= 55
@@ -1069,10 +1069,10 @@ function generateStatsReasoning(
     }
   } else {
     matchResultReasoning = homePoints > awayPoints
-      ? `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${homePoints - awayPoints} pts gap + home advantage → Home win`
-      : awayPoints > homePoints
-      ? `🚌 Away form: ${awayForm} (${awayPoints} pts, ${awayWins}W). Home: ${homeForm} (${homePoints} pts). Away ${awayPoints - homePoints} pts ahead → Away win`
-      : `⚖️ Home: ${homeForm} (${homePoints}p) vs Away: ${awayForm} (${awayPoints}p). Balanced forms, slight home edge → Home or Draw`;
+    ? `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${homePoints - awayPoints} pts gap + home advantage → Home win`
+    : awayPoints > homePoints
+    ? `🚌 Away form: ${awayForm} (${awayPoints} pts, ${awayWins}W). Home: ${homeForm} (${homePoints} pts). Away ${awayPoints - homePoints} pts ahead → Away win`
+    : `⚖️ Home: ${homeForm} (${homePoints}p) vs Away: ${awayForm} (${awayPoints}p). Balanced forms, slight home edge → Home or Draw`;
   }
   
   const bttsReasoning = avgBtts >= 55
@@ -1379,7 +1379,7 @@ Return detailed JSON:`;
           } else if (formDiff < 0 && awayExpected < homeExpected) {
             // Deplasman formda ama gol beklentisi düşük → X (çelişki)
             dataDrivenMR = absFormDiff >= 5 ? '2' : 'X';
-          } else {
+        } else {
             // Fallback
             dataDrivenMR = absFormDiff >= 4 ? (formDiff > 0 ? '1' : '2') : 'X';
           }
@@ -1416,24 +1416,30 @@ Return detailed JSON:`;
         if (probabilityResult && probabilityResult.overUnder.prediction) {
           const probEngineOU = probabilityResult.overUnder.prediction;
           const probEngineConf = probabilityResult.overUnder.confidence;
+          const aiOU = parsed.overUnder;
           
           // Eğer probabilityEngine güçlü bir sinyal veriyorsa (>= 55%), onu kullan
           if (probEngineConf >= 55) {
             parsed.overUnder = probEngineOU;
-            console.log(`   🎯 Probability Engine Override: ${parsed.overUnder} → ${probEngineOU} (${probEngineConf}% confidence)`);
-          } else if (!['Over', 'Under'].includes(parsed.overUnder)) {
+            console.log(`   🎯 Probability Engine Override: ${aiOU} → ${probEngineOU} (${probEngineConf}% confidence)`);
+          } else if (!['Over', 'Under'].includes(aiOU)) {
             // AI değeri geçersizse, probabilityEngine'i kullan
             parsed.overUnder = probEngineOU;
-          } else if (Math.abs(probEngineConf - 50) > 5) {
-            // ProbabilityEngine'in güveni %50'den 5+ puan farklıysa, onu dikkate al
-            // Ama AI değeri de geçerliyse, ikisini karşılaştır
-            const aiOU = parsed.overUnder;
-            if (aiOU !== probEngineOU) {
-              // Çelişki var - daha yüksek güvene sahip olanı kullan
-              if (probEngineConf > confidences.overUnderConf) {
-                parsed.overUnder = probEngineOU;
-                console.log(`   ⚠️ Probability Engine çelişkisi: AI ${aiOU}, ProbEngine ${probEngineOU} - ProbEngine kullanıldı (${probEngineConf}% vs ${confidences.overUnderConf}%)`);
-              }
+          } else if (aiOU !== probEngineOU) {
+            // AI ile Probability Engine çelişiyor
+            // Veri bazlı kontrol: expectedTotal < 2.5 ise "Under" olmalı
+            if (expectedTotal < 2.5 && probEngineOU === 'Under') {
+              // Veri bazlı doğrulama: expectedTotal < 2.5 ve Probability Engine "Under" diyor
+              parsed.overUnder = probEngineOU;
+              console.log(`   ⚠️ Over/Under Override: AI ${aiOU}, Veri ${expectedTotal.toFixed(2)} < 2.5, ProbEngine ${probEngineOU} (${probEngineConf}%) → ${probEngineOU} kullanıldı`);
+            } else if (expectedTotal >= 2.65 && probEngineOU === 'Over') {
+              // Veri bazlı doğrulama: expectedTotal >= 2.65 ve Probability Engine "Over" diyor
+              parsed.overUnder = probEngineOU;
+              console.log(`   ⚠️ Over/Under Override: AI ${aiOU}, Veri ${expectedTotal.toFixed(2)} >= 2.65, ProbEngine ${probEngineOU} (${probEngineConf}%) → ${probEngineOU} kullanıldı`);
+            } else if (Math.abs(probEngineConf - 50) > 5 && probEngineConf > confidences.overUnderConf) {
+              // ProbabilityEngine'in güveni %50'den 5+ puan farklıysa ve Stats Agent'ın güveninden yüksekse, onu kullan
+              parsed.overUnder = probEngineOU;
+              console.log(`   ⚠️ Probability Engine çelişkisi: AI ${aiOU}, ProbEngine ${probEngineOU} - ProbEngine kullanıldı (${probEngineConf}% vs ${confidences.overUnderConf}%)`);
             }
           }
         } else if (!['Over', 'Under'].includes(parsed.overUnder)) {
@@ -1441,6 +1447,14 @@ Return detailed JSON:`;
           // Over için daha yüksek eşik: 2.5 → 2.65
           // avgOver25 eşiği: 55 → 60
           parsed.overUnder = (expectedTotal >= 2.65 || avgOver25 >= 60) ? 'Over' : 'Under';
+        } else if (expectedTotal < 2.5 && parsed.overUnder === 'Over') {
+          // Veri bazlı override: expectedTotal < 2.5 ise "Under" olmalı
+          parsed.overUnder = 'Under';
+          console.log(`   ⚠️ Over/Under Veri Override: AI "Over", ama expectedTotal ${expectedTotal.toFixed(2)} < 2.5 → "Under"`);
+        } else if (expectedTotal >= 2.65 && parsed.overUnder === 'Under') {
+          // Veri bazlı override: expectedTotal >= 2.65 ise "Over" olmalı
+          parsed.overUnder = 'Over';
+          console.log(`   ⚠️ Over/Under Veri Override: AI "Under", ama expectedTotal ${expectedTotal.toFixed(2)} >= 2.65 → "Over"`);
         }
         
         // BTTS validation
