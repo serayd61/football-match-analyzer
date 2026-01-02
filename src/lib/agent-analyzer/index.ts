@@ -1241,6 +1241,23 @@ export async function runAgentAnalysis(
     
     // Step 3: Convert to MatchData format with detailedStats
     console.log('🔄 Step 3: Converting to MatchData format with detailed stats...');
+    
+    // 🆕 DEBUG: homeTeamStats venue-spesifik değerlerini logla
+    if (homeTeamStats) {
+      console.log(`   📊 homeTeamStats.homeAvgGoalsScored: ${homeTeamStats.homeAvgGoalsScored}`);
+      console.log(`   📊 homeTeamStats.homeAvgGoalsConceded: ${homeTeamStats.homeAvgGoalsConceded}`);
+      console.log(`   📊 homeTeamStats.avgGoalsScored: ${homeTeamStats.avgGoalsScored}`);
+    } else {
+      console.log(`   ⚠️ homeTeamStats is null/undefined`);
+    }
+    if (awayTeamStats) {
+      console.log(`   📊 awayTeamStats.awayAvgGoalsScored: ${awayTeamStats.awayAvgGoalsScored}`);
+      console.log(`   📊 awayTeamStats.awayAvgGoalsConceded: ${awayTeamStats.awayAvgGoalsConceded}`);
+      console.log(`   📊 awayTeamStats.avgGoalsScored: ${awayTeamStats.avgGoalsScored}`);
+    } else {
+      console.log(`   ⚠️ awayTeamStats is null/undefined`);
+    }
+    
     const matchData = convertFullFixtureToMatchData(fullData, {
       homeTeamStats,
       awayTeamStats,
