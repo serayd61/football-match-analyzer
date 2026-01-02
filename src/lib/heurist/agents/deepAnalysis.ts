@@ -844,7 +844,7 @@ ${probabilityContext}
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
-          maxTokens: 400, // Çok kısa yanıt = çok hızlı
+          maxTokens: 800, // JSON tamamlanması için yeterli
           timeout: 12000 // 12 saniye (performans için düşürüldü)
         });
         

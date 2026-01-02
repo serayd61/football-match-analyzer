@@ -484,8 +484,8 @@ export async function runMasterStrategist(
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.2,
-      maxTokens: 1000, // Daha az token = daha hızlı
-      timeout: 8000 // 8 saniye
+      maxTokens: 1200, // JSON tamamlanması için yeterli
+      timeout: 10000 // 10 saniye
     });
 
     if (!response) {
