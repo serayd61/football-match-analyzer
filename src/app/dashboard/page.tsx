@@ -761,7 +761,11 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
               <div className="space-y-2 text-sm">
                 <p className="text-gray-300 mb-2"><strong>Sistem:</strong> Puan bazlı hesaplama (Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı)</p>
                 <div className="bg-black/20 rounded p-2">
-                  <p className="text-white font-semibold">Tahmin: <span className="text-yellow-400">{analysis.matchResult.prediction === 'home' ? 'Ev Sahibi' : analysis.matchResult.prediction === 'away' ? 'Deplasman' : 'Beraberlik'}</span> (%{analysis.matchResult.confidence} güven)</p>
+                  <p className="text-white font-semibold">Tahmin: <span className="text-yellow-400">{
+                    analysis.matchResult.prediction === 'home' || analysis.matchResult.prediction === '1' ? 'Ev Sahibi' : 
+                    analysis.matchResult.prediction === 'away' || analysis.matchResult.prediction === '2' ? 'Deplasman' : 
+                    'Beraberlik'
+                  }</span> (%{Math.round(analysis.matchResult.confidence)} güven)</p>
                   {analysis.matchResult.reasoning && (
                     <div className="text-gray-400 text-xs mt-2 whitespace-pre-line">{analysis.matchResult.reasoning}</div>
                   )}
