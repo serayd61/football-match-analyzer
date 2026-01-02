@@ -902,7 +902,8 @@ function generateStatsReasoning(
   awayForm: string,
   homePoints: number,
   awayPoints: number,
-  language: 'tr' | 'en' | 'de'
+  language: 'tr' | 'en' | 'de',
+  formDiff?: number // Form farkı (matchResultReasoning için)
 ): { overUnderReasoning: string; matchResultReasoning: string; bttsReasoning: string; agentSummary: string } {
   
   const homeWins = (homeForm.match(/W/g) || []).length;
@@ -915,11 +916,49 @@ function generateStatsReasoning(
       ? `📊 Ev sahibi EVDE maç başı ${homeGoalsScored.toFixed(1)} gol atıyor, deplasman DEPLASMANDA ${awayGoalsConceded.toFixed(1)} gol yiyor. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Son maçlarda Over 2.5 oranı %${avgOver25}. Güçlü Over sinyali.`
       : `📊 Ev sahibi EVDE ${homeGoalsScored.toFixed(1)} gol/maç, deplasman DEPLASMANDA ${awayGoalsScored.toFixed(1)} gol/maç. Toplam beklenti: ${expectedTotal.toFixed(2)} gol. Under 2.5 oranı %${100 - avgOver25}. Düşük skorlu maç bekleniyor.`;
     
-    const matchResultReasoning = homePoints > awayPoints
-      ? `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${homePoints - awayPoints} puan farkı + ev avantajı → MS 1`
-      : awayPoints > homePoints
-      ? `🚌 Deplasman form: ${awayForm} (${awayPoints} puan, ${awayWins}G). Ev sahibi: ${homeForm} (${homePoints} puan). Deplasman ${awayPoints - homePoints} puan önde → MS 2`
-      : `⚖️ Ev: ${homeForm} (${homePoints}p) vs Dep: ${awayForm} (${awayPoints}p). Formlar dengeli, ev avantajı hafif üstünlük → MS 1X`;
+    // matchResultReasoning - formDiff ve dataDrivenMR mantığını kullan
+    let matchResultReasoning: string;
+    if (formDiff !== undefined) {
+      const absFormDiff = Math.abs(formDiff);
+      let predictedMR: string;
+      
+      if (formDiff > 6) {
+        predictedMR = '1';
+      } else if (formDiff < -6) {
+        predictedMR = '2';
+      } else if (absFormDiff >= 3) {
+        if (formDiff > 0 && homeExpected >= awayExpected) {
+          predictedMR = '1';
+        } else if (formDiff < 0 && awayExpected >= homeExpected) {
+          predictedMR = '2';
+        } else {
+          predictedMR = absFormDiff >= 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+        }
+      } else {
+        if (homeExpected > awayExpected + 0.5) {
+          predictedMR = '1';
+        } else if (awayExpected > homeExpected + 0.5) {
+          predictedMR = '2';
+        } else {
+          predictedMR = 'X';
+        }
+      }
+      
+      if (predictedMR === '1') {
+        matchResultReasoning = `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${formDiff > 0 ? formDiff : Math.abs(formDiff)} puan farkı + ev avantajı → MS 1`;
+      } else if (predictedMR === '2') {
+        matchResultReasoning = `🚌 Deplasman form: ${awayForm} (${awayPoints} puan, ${awayWins}G). Ev sahibi: ${homeForm} (${homePoints} puan). Deplasman ${formDiff < 0 ? Math.abs(formDiff) : formDiff} puan önde → MS 2`;
+      } else {
+        matchResultReasoning = `⚖️ Ev: ${homeForm} (${homePoints}p) vs Dep: ${awayForm} (${awayPoints}p). Formlar dengeli, ev avantajı hafif üstünlük → MS 1X`;
+      }
+    } else {
+      // Fallback - eski mantık
+      matchResultReasoning = homePoints > awayPoints
+        ? `🏠 Ev sahibi form: ${homeForm} (${homePoints} puan, ${homeWins}G-${5-homeWins-homeLosses}B-${homeLosses}M). Deplasman: ${awayForm} (${awayPoints} puan). ${homePoints - awayPoints} puan farkı + ev avantajı → MS 1`
+        : awayPoints > homePoints
+        ? `🚌 Deplasman form: ${awayForm} (${awayPoints} puan, ${awayWins}G). Ev sahibi: ${homeForm} (${homePoints} puan). Deplasman ${awayPoints - homePoints} puan önde → MS 2`
+        : `⚖️ Ev: ${homeForm} (${homePoints}p) vs Dep: ${awayForm} (${awayPoints}p). Formlar dengeli, ev avantajı hafif üstünlük → MS 1X`;
+    }
     
     const bttsReasoning = avgBtts >= 55
       ? `⚽ Ev sahibi %${Math.round(100 - (homeLosses/5)*100)} maçta gol attı. Deplasman %${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)} maçta gol buldu. Birleşik KG Var oranı %${avgBtts}. Her iki takım da gol atar.`
@@ -936,11 +975,48 @@ function generateStatsReasoning(
       ? `📊 Heimteam ZU HAUSE erzielt ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts AUSWÄRTS kassiert ${awayGoalsConceded.toFixed(1)}. Erwartete Summe: ${expectedTotal.toFixed(2)} Tore. Über 2.5 Rate: ${avgOver25}%. Starkes Over-Signal.`
       : `📊 Heimteam ZU HAUSE ${homeGoalsScored.toFixed(1)} Tore/Spiel, Auswärts AUSWÄRTS ${awayGoalsScored.toFixed(1)} Tore/Spiel. Erwartung: ${expectedTotal.toFixed(2)} Tore. Unter 2.5 Rate: ${100 - avgOver25}%. Torarmes Spiel erwartet.`;
     
-    const matchResultReasoning = homePoints > awayPoints
-      ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
-      : awayPoints > homePoints
-      ? `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${awayPoints - homePoints} Pkt vorne → Auswärtssieg`
-      : `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
+    // matchResultReasoning - formDiff ve dataDrivenMR mantığını kullan (Almanca)
+    let matchResultReasoning: string;
+    if (formDiff !== undefined) {
+      const absFormDiff = Math.abs(formDiff);
+      let predictedMR: string;
+      
+      if (formDiff > 6) {
+        predictedMR = '1';
+      } else if (formDiff < -6) {
+        predictedMR = '2';
+      } else if (absFormDiff >= 3) {
+        if (formDiff > 0 && homeExpected >= awayExpected) {
+          predictedMR = '1';
+        } else if (formDiff < 0 && awayExpected >= homeExpected) {
+          predictedMR = '2';
+        } else {
+          predictedMR = absFormDiff >= 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+        }
+      } else {
+        if (homeExpected > awayExpected + 0.5) {
+          predictedMR = '1';
+        } else if (awayExpected > homeExpected + 0.5) {
+          predictedMR = '2';
+        } else {
+          predictedMR = 'X';
+        }
+      }
+      
+      if (predictedMR === '1') {
+        matchResultReasoning = `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${formDiff > 0 ? formDiff : Math.abs(formDiff)} Pkt Vorsprung + Heimvorteil → Heimsieg`;
+      } else if (predictedMR === '2') {
+        matchResultReasoning = `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${formDiff < 0 ? Math.abs(formDiff) : formDiff} Pkt vorne → Auswärtssieg`;
+      } else {
+        matchResultReasoning = `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
+      }
+    } else {
+      matchResultReasoning = homePoints > awayPoints
+        ? `🏠 Heimform: ${homeForm} (${homePoints} Pkt, ${homeWins}S-${5-homeWins-homeLosses}U-${homeLosses}N). Auswärts: ${awayForm} (${awayPoints} Pkt). ${homePoints - awayPoints} Pkt Vorsprung + Heimvorteil → Heimsieg`
+        : awayPoints > homePoints
+        ? `🚌 Auswärtsform: ${awayForm} (${awayPoints} Pkt, ${awayWins}S). Heim: ${homeForm} (${homePoints} Pkt). Auswärts ${awayPoints - homePoints} Pkt vorne → Auswärtssieg`
+        : `⚖️ Heim: ${homeForm} (${homePoints}P) vs Ausw: ${awayForm} (${awayPoints}P). Ausgeglichene Form, leichter Heimvorteil → Heim oder Unentschieden`;
+    }
     
     const bttsReasoning = avgBtts >= 55
       ? `⚽ Heimteam traf in ${Math.round(100 - (homeLosses/5)*100)}% der Spiele. Auswärts traf in ${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)}%. Kombinierte BTTS-Rate: ${avgBtts}%. Beide Teams treffen wahrscheinlich.`
@@ -956,11 +1032,48 @@ function generateStatsReasoning(
     ? `📊 Home AT HOME scores ${homeGoalsScored.toFixed(1)} goals/game, away AWAY concedes ${awayGoalsConceded.toFixed(1)}. Expected total: ${expectedTotal.toFixed(2)} goals. Over 2.5 rate: ${avgOver25}%. Strong Over signal.`
     : `📊 Home AT HOME ${homeGoalsScored.toFixed(1)} goals/game, away AWAY ${awayGoalsScored.toFixed(1)} goals/game. Expected: ${expectedTotal.toFixed(2)} goals. Under 2.5 rate: ${100 - avgOver25}%. Low-scoring match expected.`;
   
-  const matchResultReasoning = homePoints > awayPoints
-    ? `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${homePoints - awayPoints} pts gap + home advantage → Home win`
-    : awayPoints > homePoints
-    ? `🚌 Away form: ${awayForm} (${awayPoints} pts, ${awayWins}W). Home: ${homeForm} (${homePoints} pts). Away ${awayPoints - homePoints} pts ahead → Away win`
-    : `⚖️ Home: ${homeForm} (${homePoints}p) vs Away: ${awayForm} (${awayPoints}p). Balanced forms, slight home edge → Home or Draw`;
+  // matchResultReasoning - formDiff ve dataDrivenMR mantığını kullan (İngilizce)
+  let matchResultReasoning: string;
+  if (formDiff !== undefined) {
+    const absFormDiff = Math.abs(formDiff);
+    let predictedMR: string;
+    
+    if (formDiff > 6) {
+      predictedMR = '1';
+    } else if (formDiff < -6) {
+      predictedMR = '2';
+    } else if (absFormDiff >= 3) {
+      if (formDiff > 0 && homeExpected >= awayExpected) {
+        predictedMR = '1';
+      } else if (formDiff < 0 && awayExpected >= homeExpected) {
+        predictedMR = '2';
+      } else {
+        predictedMR = absFormDiff >= 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+      }
+    } else {
+      if (homeExpected > awayExpected + 0.5) {
+        predictedMR = '1';
+      } else if (awayExpected > homeExpected + 0.5) {
+        predictedMR = '2';
+      } else {
+        predictedMR = 'X';
+      }
+    }
+    
+    if (predictedMR === '1') {
+      matchResultReasoning = `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${formDiff > 0 ? formDiff : Math.abs(formDiff)} pts gap + home advantage → Home win`;
+    } else if (predictedMR === '2') {
+      matchResultReasoning = `🚌 Away form: ${awayForm} (${awayPoints} pts, ${awayWins}W). Home: ${homeForm} (${homePoints} pts). Away ${formDiff < 0 ? Math.abs(formDiff) : formDiff} pts ahead → Away win`;
+    } else {
+      matchResultReasoning = `⚖️ Home: ${homeForm} (${homePoints}p) vs Away: ${awayForm} (${awayPoints}p). Balanced forms, slight home edge → Home or Draw`;
+    }
+  } else {
+    matchResultReasoning = homePoints > awayPoints
+      ? `🏠 Home form: ${homeForm} (${homePoints} pts, ${homeWins}W-${5-homeWins-homeLosses}D-${homeLosses}L). Away: ${awayForm} (${awayPoints} pts). ${homePoints - awayPoints} pts gap + home advantage → Home win`
+      : awayPoints > homePoints
+      ? `🚌 Away form: ${awayForm} (${awayPoints} pts, ${awayWins}W). Home: ${homeForm} (${homePoints} pts). Away ${awayPoints - homePoints} pts ahead → Away win`
+      : `⚖️ Home: ${homeForm} (${homePoints}p) vs Away: ${awayForm} (${awayPoints}p). Balanced forms, slight home edge → Home or Draw`;
+  }
   
   const bttsReasoning = avgBtts >= 55
     ? `⚽ Home scored in ${Math.round(100 - (homeLosses/5)*100)}% of matches. Away scored in ${Math.round((awayWins + (5-awayWins-awayLosses))/5*100)}%. Combined BTTS rate: ${avgBtts}%. Both teams likely to score.`
@@ -1098,7 +1211,8 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
     avgOver25, avgBtts,
     homeForm, awayForm,
     homePoints, awayPoints,
-    language
+    language,
+    formDiff // Form farkı eklendi (matchResultReasoning için)
   );
 
   // Son maç detayları
@@ -1252,10 +1366,23 @@ Return detailed JSON:`;
           // Deplasman net favori
           dataDrivenMR = '2';
         } else if (absFormDiff >= 3) {
-          // Orta düzey fark - gol beklentisine de bak
-          if (formDiff > 0 && homeExpected > awayExpected) dataDrivenMR = '1';
-          else if (formDiff < 0 && awayExpected > homeExpected) dataDrivenMR = '2';
-          else dataDrivenMR = absFormDiff > 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+          // Orta düzey fark - gol beklentisine de bak, ama ev avantajını da dikkate al
+          if (formDiff > 0 && homeExpected >= awayExpected) {
+            // Ev sahibi formda + ev avantajı → MS 1 (gol beklentisi eşit olsa bile)
+            dataDrivenMR = '1';
+          } else if (formDiff < 0 && awayExpected >= homeExpected) {
+            // Deplasman formda + gol beklentisi eşit veya daha iyi → MS 2
+            dataDrivenMR = '2';
+          } else if (formDiff > 0 && homeExpected < awayExpected) {
+            // Ev sahibi formda ama gol beklentisi düşük → X (çelişki)
+            dataDrivenMR = absFormDiff >= 5 ? '1' : 'X';
+          } else if (formDiff < 0 && awayExpected < homeExpected) {
+            // Deplasman formda ama gol beklentisi düşük → X (çelişki)
+            dataDrivenMR = absFormDiff >= 5 ? '2' : 'X';
+          } else {
+            // Fallback
+            dataDrivenMR = absFormDiff >= 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+          }
         } else {
           // Form dengeli - beklenen gol farkına bak
           if (homeExpected > awayExpected + 0.5) dataDrivenMR = '1';
