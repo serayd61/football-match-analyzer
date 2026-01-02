@@ -127,7 +127,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       stats,
-      summary
+      summary,
+      debug: {
+        totalFromQuery: allData?.length || 0,
+        settledFiltered: settledMatches.length,
+        correctCounts: { mrCorrect, ouCorrect, bttsCorrect },
+        timestamp: new Date().toISOString()
+      }
     });
     
   } catch (error: any) {
