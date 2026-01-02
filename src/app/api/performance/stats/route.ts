@@ -58,6 +58,8 @@ export async function GET(request: NextRequest) {
     // Get settled matches from allData
     const settledMatches = allData?.filter(r => r.is_settled === true) || [];
     
+    console.log(`📊 All data: ${allData?.length}, Settled: ${settledMatches.length}`);
+    
     // Calculate consensus accuracy
     let consensusAccuracy = 0;
     let mrCorrect = 0;
@@ -68,10 +70,12 @@ export async function GET(request: NextRequest) {
       const total = settledMatches.length;
       
       for (const match of settledMatches) {
-        if (match.match_result_correct) mrCorrect++;
-        if (match.over_under_correct) ouCorrect++;
-        if (match.btts_correct) bttsCorrect++;
+        if (match.match_result_correct === true) mrCorrect++;
+        if (match.over_under_correct === true) ouCorrect++;
+        if (match.btts_correct === true) bttsCorrect++;
       }
+      
+      console.log(`📈 Correct counts: MR=${mrCorrect}, OU=${ouCorrect}, BTTS=${bttsCorrect}`);
       
       // Overall accuracy is average of all three
       const totalCorrect = mrCorrect + ouCorrect + bttsCorrect;
