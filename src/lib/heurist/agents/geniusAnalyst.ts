@@ -809,28 +809,80 @@ function generateSmartBoldBet(
         potentialReturn: '12x',
         historicalHit: '3-1 skorlar yüksek tempolu maçlarda %6-8 gerçekleşir'
       }
+    },
+    // SENARYO 7: Düşük gol maçı - defansif takımlar (Getafe, Atletico vb.)
+    {
+      condition: totalExpected < 2.2 && homeAvg < 1.3 && awayAvg < 1.2,
+      bet: {
+        type: '0-0',
+        odds: 10.00,
+        confidence: 10,
+        reasoning: `Düşük gol beklentisi (${totalExpected.toFixed(1)}). Her iki takım da defansif → Gol bulmak zor.`,
+        scenario: 'Defansif setup → İlk yarı 0-0 → İkinci yarı da kapalı → Golsüz beraberlik',
+        riskLevel: 'extreme' as const,
+        potentialReturn: '10x',
+        historicalHit: '0-0 maçlar defansif takımlarda %8-10 gerçekleşir'
+      }
+    },
+    // SENARYO 8: Tek gollük maç - düşük tempo
+    {
+      condition: totalExpected < 2.5 && totalExpected >= 1.5,
+      bet: {
+        type: formDiff > 0 ? '1-0' : formDiff < 0 ? '0-1' : 'İY X / MS 1',
+        odds: formDiff !== 0 ? 7.00 : 8.50,
+        confidence: 12,
+        reasoning: `Düşük gol beklentisi (${totalExpected.toFixed(1)}). Tek gol maçı belirleyecek.`,
+        scenario: formDiff > 0 
+          ? 'Ev sahibi tek golü bulur → Kapanır → Korur' 
+          : formDiff < 0 
+            ? 'Deplasman kontra atak gol bulur → Oyunu öldürür'
+            : 'İlk yarı temkinli → İkinci yarı ev sahibi riske girer → Tek gol kazandırır',
+        riskLevel: 'high' as const,
+        potentialReturn: formDiff !== 0 ? '7x' : '8.5x',
+        historicalHit: 'Tek gollük maçlar düşük tempolu liglerde %15-18 gerçekleşir'
+      }
     }
   ];
   
-  // En uygun senaryoyu seç
+  // En uygun senaryoyu seç - SIRALAMADAKİ İLK UYAN
   const matchedScenario = scenarios.find(s => s.condition);
   
   if (matchedScenario) {
+    console.log(`   🎯 Bold Bet Senaryo: ${matchedScenario.bet.type} (${matchedScenario.bet.odds}x)`);
     return matchedScenario.bet;
   }
   
-  // Hiçbir senaryo uymadıysa, genel cesur tahmin
+  // Hiçbir senaryo uymadıysa, veri bazlı akıllı fallback
+  console.log('   ⚠️ Bold Bet: No scenario matched, using smart fallback');
+  
+  // Düşük gol ortalaması = defansif maç
+  if (totalExpected < 2.3) {
+    return {
+      type: 'U2.5 + BTTS No',
+      odds: 3.50,
+      confidence: 15,
+      reasoning: `Düşük gol beklentisi (${totalExpected.toFixed(1)}). Defansif maç, az gol.`,
+      scenario: 'Her iki takım da defansif → Gol bulmak zor → 2.5 alt + iki takım da gol atmaz',
+      riskLevel: 'high' as const,
+      potentialReturn: '3.5x',
+      historicalHit: 'Defansif maçlarda bu kombin %20-25 gerçekleşir'
+    };
+  }
+  
+  // Orta gol ortalaması = en yaygın skor
   return {
-    type: totalExpected > 2.5 ? '3+ Gol' : 'İY X / MS 1',
-    odds: totalExpected > 2.5 ? 5.00 : 8.50,
-    confidence: 10,
-    reasoning: 'Form ve gol analizi bazlı cesur tahmin.',
-    scenario: totalExpected > 2.5 
-      ? 'Açık maç → En az 3 gol' 
-      : 'Temkinli başlangıç → Ev sahibi ikinci yarıda kazanır',
+    type: formDiff > 3 ? '2-1' : formDiff < -3 ? '1-2' : '1-1',
+    odds: 8.00,
+    confidence: 12,
+    reasoning: `Orta seviye maç. Form farkı: ${formDiff > 0 ? '+' : ''}${formDiff}. En olası skor.`,
+    scenario: formDiff > 3 
+      ? 'Ev sahibi önde başlar → Deplasman 1 gol bulur → Ev sahibi korur'
+      : formDiff < -3 
+        ? 'Deplasman önde başlar → Ev sahibi 1 gol bulur → Deplasman korur'
+        : 'Dengeli maç → Her iki takım 1 gol → Beraberlik',
     riskLevel: 'high' as const,
-    potentialReturn: totalExpected > 2.5 ? '5x' : '8.5x',
-    historicalHit: 'Bu tür maçlarda %10-15 gerçekleşir'
+    potentialReturn: '8x',
+    historicalHit: 'Bu tür maçlarda %10-12 gerçekleşir'
   };
 }
 
