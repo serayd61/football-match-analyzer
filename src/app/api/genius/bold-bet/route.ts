@@ -70,15 +70,60 @@ export async function POST(request: NextRequest) {
     console.log(`⚽ Match: ${matchInfo.homeTeam} vs ${matchInfo.awayTeam}`);
     
     // 2. MatchData formatına dönüştür
+    const defaultForm = {
+      form: 'DDDDD',
+      points: 5,
+      wins: 1,
+      draws: 2,
+      losses: 2,
+      avgGoals: '1.2',
+      avgConceded: '1.2',
+      over25Percentage: '50%',
+      bttsPercentage: '50%',
+      cleanSheetPercentage: '20%',
+      matches: []
+    };
+    
     const convertedMatchData: MatchData = {
       fixtureId: matchData.fixtureId,
       homeTeam: matchInfo.homeTeam,
       awayTeam: matchInfo.awayTeam,
       league: matchInfo.league,
       matchDate: matchInfo.matchDate,
-      homeForm: matchData.homeForm || { form: 'DDDDD', avgGoals: 1.2 },
-      awayForm: matchData.awayForm || { form: 'DDDDD', avgGoals: 1.0 },
-      h2h: matchData.h2h || { matches: [] },
+      homeForm: {
+        form: matchData.homeForm?.form || defaultForm.form,
+        points: matchData.homeForm?.points || defaultForm.points,
+        wins: matchData.homeForm?.wins || defaultForm.wins,
+        draws: matchData.homeForm?.draws || defaultForm.draws,
+        losses: matchData.homeForm?.losses || defaultForm.losses,
+        avgGoals: String(matchData.homeForm?.avgGoals || defaultForm.avgGoals),
+        avgConceded: String(matchData.homeForm?.avgConceded || defaultForm.avgConceded),
+        over25Percentage: matchData.homeForm?.over25Percentage || defaultForm.over25Percentage,
+        bttsPercentage: matchData.homeForm?.bttsPercentage || defaultForm.bttsPercentage,
+        cleanSheetPercentage: matchData.homeForm?.cleanSheetPercentage || defaultForm.cleanSheetPercentage,
+        matches: matchData.homeForm?.matches || []
+      },
+      awayForm: {
+        form: matchData.awayForm?.form || defaultForm.form,
+        points: matchData.awayForm?.points || defaultForm.points,
+        wins: matchData.awayForm?.wins || defaultForm.wins,
+        draws: matchData.awayForm?.draws || defaultForm.draws,
+        losses: matchData.awayForm?.losses || defaultForm.losses,
+        avgGoals: String(matchData.awayForm?.avgGoals || defaultForm.avgGoals),
+        avgConceded: String(matchData.awayForm?.avgConceded || defaultForm.avgConceded),
+        over25Percentage: matchData.awayForm?.over25Percentage || defaultForm.over25Percentage,
+        bttsPercentage: matchData.awayForm?.bttsPercentage || defaultForm.bttsPercentage,
+        cleanSheetPercentage: matchData.awayForm?.cleanSheetPercentage || defaultForm.cleanSheetPercentage,
+        matches: matchData.awayForm?.matches || []
+      },
+      h2h: {
+        totalMatches: matchData.h2h?.totalMatches || 0,
+        homeWins: matchData.h2h?.homeWins || 0,
+        awayWins: matchData.h2h?.awayWins || 0,
+        draws: matchData.h2h?.draws || 0,
+        avgGoals: matchData.h2h?.avgGoals || '2.5',
+        matches: matchData.h2h?.matches || []
+      },
       odds: matchData.odds || {},
     };
     
