@@ -7,6 +7,8 @@ import { fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
 import { MatchData } from '@/lib/heurist/types';
 
 export const maxDuration = 60; // 60 saniye timeout (Vercel Pro)
+export const dynamic = 'force-dynamic'; // Cache'i devre dışı bırak - her istekte yeni analiz
+export const revalidate = 0; // Revalidation yok
 
 interface BoldBetResponse {
   success: boolean;
@@ -161,7 +163,13 @@ export async function POST(request: NextRequest) {
       boldBet,
       matchInfo,
       processingTime: Date.now() - startTime
-    } as BoldBetResponse);
+    } as BoldBetResponse, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     
   } catch (error: any) {
     console.error('❌ Bold Bet Error:', error);
