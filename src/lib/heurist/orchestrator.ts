@@ -846,7 +846,8 @@ export async function runOrchestrator(
     if (oddsResult) console.log(`   Odds:  ${oddsResult.matchWinnerValue || oddsResult.matchResult} | ${oddsResult.recommendation || oddsResult.overUnder} | BTTS: ${oddsResult.bttsValue || oddsResult.btts}`);
     if (sentimentResult) console.log(`   Sentiment: Edge=${sentimentResult.psychologicalEdge?.team} | Conf=${sentimentResult.psychologicalEdge?.confidence}%`);
     if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'} | Risk: ${deepAnalysisResult.riskLevel || 'N/A'}`);
-    if (geniusAnalystResult) console.log(`   🧠 Genius Analyst: ${geniusAnalystResult.predictions.matchResult.prediction} | Conf: ${geniusAnalystResult.finalRecommendation.overallConfidence}%`);
+    // Genius Analyst geçici olarak devre dışı - performans optimizasyonu
+    // if (geniusAnalystResult) console.log(`   🧠 Genius Analyst: ${geniusAnalystResult.predictions.matchResult.prediction} | Conf: ${geniusAnalystResult.finalRecommendation.overallConfidence}%`);
     if (masterStrategistResult) console.log(`   🎯 Master Strategist: ${masterStrategistResult.finalConsensus.matchResult.prediction} | Conf: ${masterStrategistResult.overallConfidence}%`);
     
     // 5. Consensus oluştur - Master Strategist varsa onu kullan, yoksa klasik yöntem
