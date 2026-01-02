@@ -11,7 +11,7 @@ import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 
 // 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
-const YOUTUBE_VIDEO_ID = 'na5Cj-954sg';
+const YOUTUBE_VIDEO_ID = 'uL6L9QIRs94';
 
 export default function HomePage() {
   const { data: session, status } = useSession();

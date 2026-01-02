@@ -987,6 +987,20 @@ export default function DashboardPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
+  
+  // 🔥 Cesur Tahmin State'leri
+  const [boldBet, setBoldBet] = useState<{
+    type: string;
+    odds: number;
+    confidence: number;
+    reasoning: string;
+    scenario: string;
+    riskLevel: 'high' | 'very-high' | 'extreme';
+    potentialReturn: string;
+    historicalHit?: string;
+  } | null>(null);
+  const [loadingBoldBet, setLoadingBoldBet] = useState(false);
+  const [boldBetError, setBoldBetError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -1120,6 +1134,42 @@ export default function DashboardPage() {
     }
     
     setAnalyzing(false);
+  };
+  
+  // ============================================================================
+  // 🔥 CESUR TAHMİN (BOLD BET) - Ayrı Endpoint
+  // ============================================================================
+  
+  const fetchBoldBet = async () => {
+    if (!selectedFixture) return;
+    
+    setLoadingBoldBet(true);
+    setBoldBetError(null);
+    setBoldBet(null);
+    
+    try {
+      const res = await fetch('/api/genius/bold-bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: selectedFixture.id,
+          language: lang
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.boldBet) {
+        setBoldBet(data.boldBet);
+      } else {
+        setBoldBetError(data.error || 'Cesur tahmin alınamadı');
+      }
+    } catch (error) {
+      console.error('Bold Bet error:', error);
+      setBoldBetError('Bağlantı hatası');
+    }
+    
+    setLoadingBoldBet(false);
   };
   
   // ============================================================================
@@ -2105,6 +2155,108 @@ export default function DashboardPage() {
                     </div>
                     
                     <p className="mt-4 text-sm text-gray-300 relative z-10">{analysis.bestBet.reason}</p>
+                    
+                    {/* 🔥 CESUR TAHMİN BUTONU */}
+                    <div className="mt-6 pt-4 border-t border-gray-700/50 relative z-10">
+                      {!boldBet && !loadingBoldBet && (
+                        <motion.button
+                          onClick={fetchBoldBet}
+                          className="w-full py-4 px-6 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white font-bold rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-red-500/25"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className="text-2xl">🔥</span>
+                          <span className="text-lg">{t.boldBet} AL</span>
+                          <span className="text-xs opacity-75">({t.boldBetDesc})</span>
+                        </motion.button>
+                      )}
+                      
+                      {loadingBoldBet && (
+                        <div className="w-full py-4 px-6 bg-gradient-to-r from-red-900/50 to-orange-900/50 text-white font-bold rounded-xl flex items-center justify-center gap-3 border border-red-500/30">
+                          <motion.span 
+                            className="text-2xl"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          >
+                            🔄
+                          </motion.span>
+                          <span>Genius Analyst çalışıyor...</span>
+                        </div>
+                      )}
+                      
+                      {boldBetError && (
+                        <div className="w-full py-3 px-4 bg-red-500/20 border border-red-500/40 rounded-xl text-red-400 text-sm flex items-center gap-2">
+                          <span>❌</span>
+                          <span>{boldBetError}</span>
+                          <button onClick={fetchBoldBet} className="ml-auto text-xs underline">Tekrar Dene</button>
+                        </div>
+                      )}
+                      
+                      {boldBet && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-gradient-to-r from-red-900/60 to-orange-900/60 rounded-xl border-2 border-red-500/50 p-5 relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.15),transparent_70%)]"></div>
+                          
+                          <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-3xl">🔥</span>
+                                <h6 className="text-red-400 font-bold text-xl">{t.boldBet}</h6>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="bg-red-500/30 text-red-300 text-xs px-2 py-1 rounded-full border border-red-500/50">
+                                  {boldBet.riskLevel === 'extreme' ? '💀 EXTREM' : 
+                                   boldBet.riskLevel === 'very-high' ? '⚠️ ÇOK YÜKSEK' : '⚡ YÜKSEK'}
+                                </span>
+                                <span className="bg-green-500/30 text-green-300 text-sm px-3 py-1 rounded-full border border-green-500/50 font-bold">
+                                  {boldBet.potentialReturn}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-black/40 rounded-lg p-4 mb-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-white font-black text-2xl">{boldBet.type}</span>
+                                <span className="text-yellow-400 font-bold text-xl">@ {boldBet.odds?.toFixed(2) || '?'}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3 text-sm">
+                              <div>
+                                <p className="text-gray-400 text-xs mb-1">📋 {t.scenario}:</p>
+                                <p className="text-white">{boldBet.scenario}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 text-xs mb-1">💡 Neden?</p>
+                                <p className="text-gray-300">{boldBet.reasoning}</p>
+                              </div>
+                              {boldBet.historicalHit && (
+                                <div>
+                                  <p className="text-gray-400 text-xs mb-1">📊 Tarihsel:</p>
+                                  <p className="text-gray-300">{boldBet.historicalHit}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="mt-4 pt-3 border-t border-red-500/30 flex items-center justify-between">
+                              <p className="text-red-300 text-xs flex items-center gap-1">
+                                <span>⚠️</span>
+                                <span>Güven: %{boldBet.confidence} - Sadece kaybetmeyi göze alabileceğin miktarla oyna!</span>
+                              </p>
+                              <button 
+                                onClick={() => setBoldBet(null)} 
+                                className="text-xs text-gray-400 hover:text-white underline"
+                              >
+                                Kapat
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
                     
                     {/* 🆕 TÜM ÖNERİLER BÖLÜMÜ */}
                     {analysis.agents && (
