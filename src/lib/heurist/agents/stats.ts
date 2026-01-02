@@ -1391,17 +1391,23 @@ Return detailed JSON:`;
         }
         
         // 3. VERİ BAZLI KARAR HER ZAMAN ÖNCE! (AI tutarsız olabilir)
-        // Özellikle form farkı >6 ise AI'yı kesinlikle override et
+        // Form farkı >= 3 ise ve dataDrivenMR ile AI farklıysa, dataDrivenMR'ı kullan
         if (absFormDiff > 6) {
+          // Net favori durumu - kesinlikle override
           parsed.matchResult = dataDrivenMR;
           console.log(`   ⚠️ Form farkı ${formDiff} - VERİ OVERRIDE: ${aiMR} → ${dataDrivenMR}`);
+        } else if (absFormDiff >= 3 && aiMR !== dataDrivenMR) {
+          // Orta düzey fark (3-6) ve AI ile veri çelişiyor - veri bazlı kararı kullan
+          parsed.matchResult = dataDrivenMR;
+          console.log(`   ⚠️ Form farkı ${formDiff} - VERİ OVERRIDE: ${aiMR} → ${dataDrivenMR} (ev avantajı + form farkı)`);
         } else if (!['1', '2', 'X'].includes(aiMR)) {
+          // AI değeri geçersiz - veri bazlı kararı kullan
           parsed.matchResult = dataDrivenMR;
         } else {
-          // AI değeri geçerli ve form farkı düşük - AI'ya güven ama logla
+          // AI değeri geçerli ve form farkı düşük (< 3) veya AI ile veri aynı - AI'ya güven
           parsed.matchResult = aiMR;
           if (aiMR !== dataDrivenMR) {
-            console.log(`   📊 AI: ${aiMR}, Veri: ${dataDrivenMR} (form: ${formDiff}) - AI değeri kullanıldı`);
+            console.log(`   📊 AI: ${aiMR}, Veri: ${dataDrivenMR} (form: ${formDiff}) - AI değeri kullanıldı (form farkı düşük)`);
           }
         }
         

@@ -834,9 +834,23 @@ function generateSmartBoldBet(
         historicalHit: 'Dominant 2-0 galibiyetler %8-10 gerçekleşir'
       }
     },
-    // SENARYO 5: Dengeli maç + beraberlik senaryosu
+    // SENARYO 5: Ev sahibi hafif favori + ev avantajı (formDiff 3-6)
     {
-      condition: Math.abs(formDiff) <= 3 && totalExpected > 2.0,
+      condition: formDiff >= 3 && formDiff <= 6 && totalExpected >= 2.0,
+      bet: {
+        type: '2-1',
+        odds: 8.50,
+        confidence: 12,
+        reasoning: `Ev sahibi hafif favori (form: +${formDiff}) + ev avantajı. Ev sahibi önde başlar, deplasman 1 gol bulur, ev sahibi korur.`,
+        scenario: 'Ev sahibi erken gol bulur → Deplasman eşitler → Ev sahibi ikinci yarı kazandırır',
+        riskLevel: 'high' as const,
+        potentialReturn: '8.5x',
+        historicalHit: '2-1 skorlar ev sahibi favori maçlarda %10-12 gerçekleşir'
+      }
+    },
+    // SENARYO 6: Dengeli maç + beraberlik senaryosu (formDiff <= 2)
+    {
+      condition: Math.abs(formDiff) <= 2 && totalExpected > 2.0,
       bet: {
         type: '1-1',
         odds: 6.50,
@@ -848,7 +862,7 @@ function generateSmartBoldBet(
         historicalHit: '1-1 beraberlik dengeli maçlarda %12-15 gerçekleşir'
       }
     },
-    // SENARYO 6: H2H bazlı - çok gol
+    // SENARYO 7: H2H bazlı - çok gol
     {
       condition: totalExpected > 2.8,
       bet: {
@@ -862,7 +876,7 @@ function generateSmartBoldBet(
         historicalHit: '3-1 skorlar yüksek tempolu maçlarda %6-8 gerçekleşir'
       }
     },
-    // SENARYO 7: Düşük gol maçı - defansif takımlar (Getafe, Atletico vb.)
+    // SENARYO 8: Düşük gol maçı - defansif takımlar (Getafe, Atletico vb.)
     {
       condition: totalExpected < 2.2 && homeAvg < 1.3 && awayAvg < 1.2,
       bet: {
@@ -876,7 +890,7 @@ function generateSmartBoldBet(
         historicalHit: '0-0 maçlar defansif takımlarda %8-10 gerçekleşir'
       }
     },
-    // SENARYO 8: Tek gollük maç - düşük tempo
+    // SENARYO 9: Tek gollük maç - düşük tempo
     {
       condition: totalExpected < 2.5 && totalExpected >= 1.5,
       bet: {
