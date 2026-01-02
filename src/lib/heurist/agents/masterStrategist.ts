@@ -546,10 +546,23 @@ function getDefaultMasterStrategist(
   const mrMaxVotes = Math.max(...Object.values(mrVotes), 0);
   const mrAgreementRatio = mrTotalVotes > 0 ? mrMaxVotes / mrTotalVotes : 0;
   
-  // Eğer agent'lar arasında güçlü bir konsensüs yoksa (%50 altı) → X (beraberlik) tercih et
-  // Çünkü belirsizlik durumunda beraberlik daha güvenli bir tahmin
+  // Maç sonucu tahmini - daha akıllı mantık
   let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
-  if (mrAgreementRatio < 0.50) {
+  
+  // DÜZELTME: Value bet varsa ve güçlüyse, onu dikkate al
+  // Odds agent +15% üstü value bulmuşsa, o yönde git
+  const valueAnalysis = odds?._valueAnalysis;
+  const bestValueAmount = valueAnalysis?.bestValueAmount || 0;
+  const bestValueDirection = valueAnalysis?.bestValue;
+  
+  // Eğer güçlü value bet varsa (>15%) ve agent'lar tam hemfikir değilse
+  if (bestValueAmount >= 15 && mrAgreementRatio < 0.60) {
+    if (bestValueDirection === 'home') finalMR = '1';
+    else if (bestValueDirection === 'away') finalMR = '2';
+    // Value bet X için nadiren olur, o yüzden kontrol etmiyoruz
+  }
+  // Eğer hiç value yok ve konsensüs zayıfsa → X
+  else if (mrAgreementRatio < 0.45 && bestValueAmount < 10) {
     finalMR = 'X'; // Belirsizlik durumunda beraberlik
   }
   
