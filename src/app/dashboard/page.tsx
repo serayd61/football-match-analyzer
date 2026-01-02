@@ -791,7 +791,164 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Tüm agent'ların çıktılarını analiz eder, tutarsızlıkları tespit eder ve ağırlıklı konsensüs oluşturur.</p>
                 </div>
 
-                {masterStrategist.finalConsensus && (
+                {/* Main Take */}
+                {masterStrategist.main_take && (
+                  <div className="bg-purple-500/10 rounded-lg border border-purple-500/30 p-3">
+                    <p className="text-purple-400 font-semibold mb-2">📋 ANA GÖRÜŞ:</p>
+                    <p className="text-gray-300 text-sm">{masterStrategist.main_take}</p>
+                  </div>
+                )}
+
+                {/* Signals */}
+                {masterStrategist.signals && masterStrategist.signals.length > 0 && (
+                  <div className="bg-indigo-500/10 rounded-lg border border-indigo-500/30 p-3">
+                    <p className="text-indigo-400 font-semibold mb-2">📊 GÜÇLÜ SİNYALLER:</p>
+                    <ul className="text-gray-300 text-xs space-y-1">
+                      {masterStrategist.signals.map((signal: string, i: number) => (
+                        <li key={i}>• {signal}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommended Bets */}
+                {masterStrategist.recommended_bets && masterStrategist.recommended_bets.length > 0 && (
+                  <div className="bg-green-500/10 rounded-lg border border-green-500/30 p-3">
+                    <p className="text-green-400 font-semibold mb-2">💰 ÖNERİLEN BAHİSLER:</p>
+                    <div className="space-y-2">
+                      {masterStrategist.recommended_bets.map((bet: any, i: number) => (
+                        <div key={i} className="bg-black/20 rounded p-2">
+                          <p className="text-white font-semibold">
+                            {bet.market} → <span className="text-green-400">{bet.selection}</span>
+                          </p>
+                          <div className="flex items-center gap-4 mt-1 text-xs">
+                            <span className="text-gray-300">Olasılık: <span className="text-purple-400">%{Math.round((bet.model_prob || 0) * 100)}</span></span>
+                            <span className="text-gray-300">Oran: <span className="text-yellow-400">@{bet.market_odds}</span></span>
+                            <span className="text-gray-300">Edge: <span className="text-green-400">+{Math.round((bet.edge || 0) * 100)}%</span></span>
+                          </div>
+                          {bet.rationale && Array.isArray(bet.rationale) && (
+                            <ul className="text-gray-400 text-xs mt-1 space-y-0.5">
+                              {bet.rationale.map((r: string, j: number) => (
+                                <li key={j}>• {r}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Risks */}
+                {masterStrategist.risks && masterStrategist.risks.length > 0 && (
+                  <div className="bg-red-500/10 rounded-lg border border-red-500/30 p-3">
+                    <p className="text-red-400 font-semibold mb-2">⚠️ RİSKLER:</p>
+                    <ul className="text-gray-300 text-xs space-y-1">
+                      {masterStrategist.risks.map((risk: string, i: number) => (
+                        <li key={i}>• {risk}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Yeni format: final.primary_pick ve final.surprise_pick */}
+                {masterStrategist.final && (
+                  <div className="border-t border-purple-500/30 pt-3 mt-3">
+                    <p className="text-purple-400 font-semibold mb-2">FİNAL TAHMİNLER:</p>
+                    <div className="space-y-3">
+                      {/* Primary Pick */}
+                      {masterStrategist.final.primary_pick && (
+                        <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg border border-purple-500/40 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🎯</span>
+                            <p className="text-white font-bold">ANA TAHMİN (Primary Pick)</p>
+                          </div>
+                          <p className="text-white font-semibold">
+                            <span className="text-purple-400">{masterStrategist.final.primary_pick.market}</span> → 
+                            <span className="text-green-400 ml-2">{masterStrategist.final.primary_pick.selection}</span>
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-xs">
+                            <span className="text-gray-300">Güven: <span className="text-purple-400 font-bold">%{masterStrategist.final.primary_pick.confidence}</span></span>
+                            <span className="text-gray-300">Oran: <span className="text-yellow-400 font-bold">@{masterStrategist.final.primary_pick.market_odds}</span></span>
+                            <span className="text-gray-300">Edge: <span className="text-green-400 font-bold">+{Math.round((masterStrategist.final.primary_pick.edge || 0) * 100)}%</span></span>
+                          </div>
+                          {masterStrategist.final.primary_pick.rationale && Array.isArray(masterStrategist.final.primary_pick.rationale) && (
+                            <ul className="text-gray-400 text-xs mt-2 space-y-1">
+                              {masterStrategist.final.primary_pick.rationale.map((r: string, i: number) => (
+                                <li key={i}>• {r}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Surprise Pick */}
+                      {masterStrategist.final.surprise_pick && (
+                        <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-lg border border-orange-500/40 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🔥</span>
+                            <p className="text-white font-bold">SÜRPRİZ TAHMİN (Surprise Pick)</p>
+                          </div>
+                          <p className="text-white font-semibold">
+                            <span className="text-orange-400">{masterStrategist.final.surprise_pick.market}</span> → 
+                            <span className="text-red-400 ml-2">{masterStrategist.final.surprise_pick.selection}</span>
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-xs">
+                            <span className="text-gray-300">Güven: <span className="text-orange-400 font-bold">%{masterStrategist.final.surprise_pick.confidence}</span></span>
+                            <span className="text-gray-300">Oran: <span className="text-yellow-400 font-bold">@{masterStrategist.final.surprise_pick.market_odds}</span></span>
+                            <span className="text-gray-300">Edge: <span className="text-green-400 font-bold">+{Math.round((masterStrategist.final.surprise_pick.edge || 0) * 100)}%</span></span>
+                          </div>
+                          {masterStrategist.final.surprise_pick.rationale && Array.isArray(masterStrategist.final.surprise_pick.rationale) && (
+                            <ul className="text-gray-400 text-xs mt-2 space-y-1">
+                              {masterStrategist.final.surprise_pick.rationale.map((r: string, i: number) => (
+                                <li key={i}>• {r}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {masterStrategist.final.why_this_is_surprise && (
+                            <p className="text-orange-300 text-xs mt-2 italic">💡 {masterStrategist.final.why_this_is_surprise}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Hedge */}
+                      {masterStrategist.final.hedge && (
+                        <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg border border-blue-500/40 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🛡️</span>
+                            <p className="text-white font-bold">HEDGE (Koruma)</p>
+                          </div>
+                          <p className="text-white font-semibold">
+                            <span className="text-blue-400">{masterStrategist.final.hedge.market}</span> → 
+                            <span className="text-cyan-400 ml-2">{masterStrategist.final.hedge.selection}</span>
+                          </p>
+                          {masterStrategist.final.hedge.rationale && Array.isArray(masterStrategist.final.hedge.rationale) && (
+                            <ul className="text-gray-400 text-xs mt-2 space-y-1">
+                              {masterStrategist.final.hedge.rationale.map((r: string, i: number) => (
+                                <li key={i}>• {r}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Contradictions */}
+                      {masterStrategist.final.contradictions_found && masterStrategist.final.contradictions_found.length > 0 && (
+                        <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-3">
+                          <p className="text-yellow-400 font-semibold mb-2">⚠️ TESPİT EDİLEN TUTARSIZLIKLAR:</p>
+                          <ul className="text-gray-300 text-xs space-y-1">
+                            {masterStrategist.final.contradictions_found.map((c: string, i: number) => (
+                              <li key={i}>• {c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Eski format: finalConsensus (backward compatibility) */}
+                {!masterStrategist.final && masterStrategist.finalConsensus && (
                   <div className="border-t border-purple-500/30 pt-3 mt-3">
                     <p className="text-purple-400 font-semibold mb-2">FİNAL KONSENSÜS:</p>
                     <div className="space-y-2">
