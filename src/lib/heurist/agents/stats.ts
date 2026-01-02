@@ -1186,8 +1186,17 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   console.log(`      awayGoalsScored: ${awayGoalsScored} (venueAvgScored: ${matchData.awayForm?.venueAvgScored}, avgGoals: ${matchData.awayForm?.avgGoals})`);
   console.log(`      homeGoalsConceded: ${homeGoalsConceded} (venueAvgConceded: ${matchData.homeForm?.venueAvgConceded}, avgConceded: ${matchData.homeForm?.avgConceded})`);
   
-  // Beklenen goller (gol atma beklentisi)
+  // 🆕 xG Analysis - önce bunu hesapla ki gerçek değerleri kullanabilelim
+  const xgAnalysis = calculateXGAnalysis(matchData, language);
+  console.log(`   📈 xG Analysis: Home ${xgAnalysis.homeXG} vs Away ${xgAnalysis.awayXG} (Total: ${xgAnalysis.totalXG})`);
+  console.log(`   📈 Performance: Home ${xgAnalysis.homePerformance}, Away ${xgAnalysis.awayPerformance}`);
+  console.log(`   📈 Actual Goals: Home ${xgAnalysis.homeActual} vs Away ${xgAnalysis.awayActual}`);
+  
   // 🆕 xG Analysis'ten gelen gerçek değerleri kullan (daha doğru!)
+  const homeGoalsScoredFinal = xgAnalysis.homeActual > 0 ? xgAnalysis.homeActual : homeGoalsScored;
+  const awayGoalsScoredFinal = xgAnalysis.awayActual > 0 ? xgAnalysis.awayActual : awayGoalsScored;
+  
+  // Beklenen goller (gol atma beklentisi)
   const homeExpected = (homeGoalsScoredFinal + awayGoalsConceded) / 2;
   const awayExpected = (awayGoalsScoredFinal + homeGoalsConceded) / 2;
   const expectedTotal = homeExpected + awayExpected;
@@ -1217,8 +1226,8 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   const h2hBtts = parseFloat(detailedH2H?.bttsPercentage || matchData.h2h?.bttsPercentage || '50');
   const avgBtts = Math.round((homeBtts + awayBtts + h2hBtts) / 3);
 
-  // 🆕 xG Analysis
-  const xgAnalysis = calculateXGAnalysis(matchData, language);
+  // 🆕 xG Analysis - zaten yukarıda hesaplandı, tekrar hesaplamaya gerek yok
+  // const xgAnalysis = calculateXGAnalysis(matchData, language); // YUKARIDA HESAPLANDI
   console.log(`   📈 xG Analysis: Home ${xgAnalysis.homeXG} vs Away ${xgAnalysis.awayXG} (Total: ${xgAnalysis.totalXG})`);
   console.log(`   📈 Performance: Home ${xgAnalysis.homePerformance}, Away ${xgAnalysis.awayPerformance}`);
   console.log(`   📈 Actual Goals: Home ${xgAnalysis.homeActual} vs Away ${xgAnalysis.awayActual}`);
