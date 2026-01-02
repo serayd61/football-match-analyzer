@@ -825,7 +825,7 @@ ${probabilityContext}
     
     // 1️⃣ ÖNCE DEEPSEEK DENE (MCP ile daha zengin veri)
     if (hasDeepSeek) {
-      console.log('   🟣 [1/3] Trying DeepSeek with MCP for deep analysis...');
+      console.log('   🟣 [1/4] Trying DeepSeek for deep analysis...');
       try {
         response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
@@ -836,8 +836,8 @@ ${probabilityContext}
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
-          maxTokens: 800, // Kısa ve öz yanıt
-          timeout: 15000 // 15 saniye
+          maxTokens: 600, // Daha kısa yanıt = daha hızlı
+          timeout: 8000 // 8 saniye - Vercel uyumlu
         });
         
         if (response) {
@@ -865,8 +865,8 @@ ${probabilityContext}
             mcpFallback: false,
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
-            maxTokens: 800,
-            timeout: 15000 // 15 saniye
+            maxTokens: 600,
+            timeout: 8000 // 8 saniye - Vercel uyumlu
           });
           
           if (response) {
@@ -891,8 +891,8 @@ ${probabilityContext}
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
-          maxTokens: 800,
-          timeout: 12000 // 12 saniye
+          maxTokens: 600,
+          timeout: 8000 // 8 saniye - Vercel uyumlu
         });
         
         if (response) {
