@@ -100,8 +100,10 @@ export async function POST(request: NextRequest) {
       fixtureId: matchData.fixtureId,
       homeTeam: matchInfo.homeTeam,
       awayTeam: matchInfo.awayTeam,
+      homeTeamId: matchData.homeTeamId || 0,
+      awayTeamId: matchData.awayTeamId || 0,
       league: matchInfo.league,
-      matchDate: matchInfo.matchDate,
+      date: matchInfo.matchDate,
       homeForm: convertTeamStatsToFormData(matchData.homeForm),
       awayForm: convertTeamStatsToFormData(matchData.awayForm),
       h2h: {
