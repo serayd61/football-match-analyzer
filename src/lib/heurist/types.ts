@@ -36,6 +36,9 @@ export interface FormData {
   bttsPercentage: string;
   cleanSheetPercentage: string;
   matches: { opponent: string; score: string; result: string }[];
+  // Venue-specific stats (ÖNEMLİ: Ev sahibi için EVDEKİ, deplasman için DEPLASMANDAKİ)
+  venueAvgScored?: string;
+  venueAvgConceded?: string;
 }
 
 export interface H2HData {

@@ -92,7 +92,10 @@ export async function POST(request: NextRequest) {
           opponent: m.opponent || 'Unknown',
           score: m.score || '0-0',
           result: m.result || 'D'
-        })) || []
+        })) || [],
+        // Venue-specific veriler (ÖNEMLİ: Ev sahibi için EVDEKİ, deplasman için DEPLASMANDAKİ)
+        venueAvgScored: stats?.venueAvgScored || stats?.avgGoalsScored || '1.2',
+        venueAvgConceded: stats?.venueAvgConceded || stats?.avgGoalsConceded || '1.2'
       };
     };
     
