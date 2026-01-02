@@ -848,34 +848,61 @@ export async function runOrchestrator(
     if (deepAnalysisResult) console.log(`   DeepAnalysis: ${deepAnalysisResult.matchResult?.prediction || 'N/A'} | Risk: ${deepAnalysisResult.riskLevel || 'N/A'}`);
     // Genius Analyst geçici olarak devre dışı - performans optimizasyonu
     // if (geniusAnalystResult) console.log(`   🧠 Genius Analyst: ${geniusAnalystResult.predictions.matchResult.prediction} | Conf: ${geniusAnalystResult.finalRecommendation.overallConfidence}%`);
-    if (masterStrategistResult) console.log(`   🎯 Master Strategist: ${masterStrategistResult.finalConsensus.matchResult.prediction} | Conf: ${masterStrategistResult.overallConfidence}%`);
+    if (masterStrategistResult) {
+      const prediction = masterStrategistResult.final?.primary_pick?.selection || 
+                         masterStrategistResult.finalConsensus?.matchResult?.prediction || 
+                         'N/A';
+      const confidence = masterStrategistResult.confidence || 
+                         masterStrategistResult.overallConfidence || 
+                         0;
+      console.log(`   🎯 Master Strategist: ${prediction} | Conf: ${confidence}%`);
+    }
     
     // 5. Consensus oluştur - Master Strategist varsa onu kullan, yoksa klasik yöntem
     console.log('\n🗳️ Building consensus...');
     let consensus: ConsensusResult;
     
     if (masterStrategistResult) {
-      // Master Strategist'in final konsensüsünü kullan
+      // Yeni format varsa onu kullan, yoksa eski format (backward compatibility)
+      const matchResult = masterStrategistResult.final?.primary_pick?.selection || 
+                           masterStrategistResult.finalConsensus?.matchResult?.prediction || 
+                           'X';
+      const matchConfidence = masterStrategistResult.final?.primary_pick?.confidence || 
+                              masterStrategistResult.finalConsensus?.matchResult?.confidence || 
+                              masterStrategistResult.confidence || 
+                              0;
+      const matchReasoning = masterStrategistResult.final?.primary_pick?.rationale?.join(' ') || 
+                             masterStrategistResult.finalConsensus?.matchResult?.reasoning || 
+                             'Master Strategist consensus';
+      
+      const overUnder = masterStrategistResult.finalConsensus?.overUnder?.prediction || 'Over';
+      const overUnderConfidence = masterStrategistResult.finalConsensus?.overUnder?.confidence || 0;
+      const overUnderReasoning = masterStrategistResult.finalConsensus?.overUnder?.reasoning || '';
+      
+      const btts = masterStrategistResult.finalConsensus?.btts?.prediction || 'No';
+      const bttsConfidence = masterStrategistResult.finalConsensus?.btts?.confidence || 0;
+      const bttsReasoning = masterStrategistResult.finalConsensus?.btts?.reasoning || '';
+      
       consensus = {
         matchResult: {
-          prediction: masterStrategistResult.finalConsensus.matchResult.prediction,
-          confidence: masterStrategistResult.finalConsensus.matchResult.confidence,
+          prediction: matchResult,
+          confidence: matchConfidence,
           votes: {},
-          reasoning: masterStrategistResult.finalConsensus.matchResult.reasoning,
+          reasoning: matchReasoning,
           isConsensus: true
         },
         overUnder: {
-          prediction: masterStrategistResult.finalConsensus.overUnder.prediction,
-          confidence: masterStrategistResult.finalConsensus.overUnder.confidence,
+          prediction: overUnder,
+          confidence: overUnderConfidence,
           votes: {},
-          reasoning: masterStrategistResult.finalConsensus.overUnder.reasoning,
+          reasoning: overUnderReasoning,
           isConsensus: true
         },
         btts: {
-          prediction: masterStrategistResult.finalConsensus.btts.prediction,
-          confidence: masterStrategistResult.finalConsensus.btts.confidence,
+          prediction: btts,
+          confidence: bttsConfidence,
           votes: {},
-          reasoning: masterStrategistResult.finalConsensus.btts.reasoning,
+          reasoning: bttsReasoning,
           isConsensus: true
         }
       };
