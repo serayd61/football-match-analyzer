@@ -292,6 +292,11 @@ export class BrightDataMCPProvider implements DataProvider {
         goalsConceded: stats.goalsConceded || 0,
         avgGoalsScored: stats.avgGoalsScored || 1.2,
         avgGoalsConceded: stats.avgGoalsConceded || 1.2,
+        // 🆕 VENUE-SPESİFİK GOL ORTALAMALARI
+        homeAvgGoalsScored: stats.homeAvgGoalsScored || stats.avgGoalsScored || 1.4,
+        homeAvgGoalsConceded: stats.homeAvgGoalsConceded || stats.avgGoalsConceded || 1.0,
+        awayAvgGoalsScored: stats.awayAvgGoalsScored || stats.avgGoalsScored || 1.0,
+        awayAvgGoalsConceded: stats.awayAvgGoalsConceded || stats.avgGoalsConceded || 1.1,
         homeWins: stats.homeWins || 0,
         homeDraws: stats.homeDraws || 0,
         homeLosses: stats.homeLosses || 0,
