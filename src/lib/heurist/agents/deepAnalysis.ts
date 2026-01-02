@@ -837,7 +837,7 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 600, // Daha kısa yanıt = daha hızlı
-          timeout: 8000 // 8 saniye - Vercel uyumlu
+          timeout: 12000 // 12 saniye
         });
         
         if (response) {
@@ -866,7 +866,7 @@ ${probabilityContext}
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
             maxTokens: 600,
-            timeout: 8000 // 8 saniye - Vercel uyumlu
+            timeout: 12000 // 12 saniye
           });
           
           if (response) {
@@ -892,7 +892,7 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 600,
-          timeout: 8000 // 8 saniye - Vercel uyumlu
+          timeout: 12000 // 12 saniye
         });
         
         if (response) {
