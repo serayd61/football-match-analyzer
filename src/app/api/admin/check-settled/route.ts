@@ -14,20 +14,32 @@ export async function GET(request: NextRequest) {
   
   const supabase = createClient(supabaseUrl, supabaseKey);
   
-  // Get ALL records with is_settled values
+  // Get ALL records with correctness values
   const { data, error } = await supabase
     .from('unified_analysis')
-    .select('fixture_id, home_team, is_settled, actual_home_score, actual_away_score');
+    .select('fixture_id, home_team, is_settled, match_result_correct, over_under_correct, btts_correct');
   
   // Count by is_settled
   const settledTrue = data?.filter(r => r.is_settled === true).length || 0;
   const settledFalse = data?.filter(r => r.is_settled === false).length || 0;
-  const settledNull = data?.filter(r => r.is_settled === null).length || 0;
+  
+  // Count correct predictions for settled matches
+  const settledMatches = data?.filter(r => r.is_settled === true) || [];
+  const mrCorrect = settledMatches.filter(r => r.match_result_correct === true).length;
+  const ouCorrect = settledMatches.filter(r => r.over_under_correct === true).length;
+  const bttsCorrect = settledMatches.filter(r => r.btts_correct === true).length;
   
   return NextResponse.json({
     error: error?.message,
-    records: data,
-    counts: { settledTrue, settledFalse, settledNull }
+    settledSample: settledMatches.slice(0, 5),
+    counts: { 
+      total: data?.length || 0,
+      settledTrue, 
+      settledFalse,
+      mrCorrect,
+      ouCorrect,
+      bttsCorrect
+    }
   });
 }
 
