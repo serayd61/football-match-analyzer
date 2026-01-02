@@ -595,7 +595,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.15,
-          maxTokens: 600, // Daha kısa = daha hızlı
+          maxTokens: 400, // Çok kısa = çok hızlı
           timeout: 18000 // 18 saniye
         });
         

@@ -844,7 +844,7 @@ ${probabilityContext}
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
-          maxTokens: 600, // Daha kısa yanıt = daha hızlı
+          maxTokens: 400, // Çok kısa yanıt = çok hızlı
           timeout: 20000 // 20 saniye
         });
         
