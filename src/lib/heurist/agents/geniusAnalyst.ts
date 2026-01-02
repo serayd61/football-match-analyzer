@@ -615,16 +615,19 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.15,
-          maxTokens: 400, // Çok kısa = çok hızlı
-          timeout: 18000 // 18 saniye
+          maxTokens: 1500, // JSON çıktısı için yeterli
+          timeout: 25000 // 25 saniye
         });
         
         if (response) {
           console.log('   ✅ OpenAI GPT-4 responded successfully');
+          console.log(`   📏 Response length: ${response.length} chars`);
         }
       } catch (openaiError: any) {
         console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
       }
+    } else {
+      console.log('   ⚠️ OpenAI API key not found');
     }
     
     // 2️⃣ OPENAI BAŞARISIZ OLURSA DEEPSEEK DENE
@@ -642,41 +645,50 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
             mcpFallback: false,
             fixtureId: matchData.fixtureId,
             temperature: 0.15,
-            maxTokens: 400, // Çok kısa = çok hızlı
-            timeout: 18000 // 18 saniye
+            maxTokens: 1500, // JSON çıktısı için yeterli
+            timeout: 25000 // 25 saniye
           });
           
           if (response) {
             console.log('   ✅ DeepSeek responded successfully');
+            console.log(`   📏 Response length: ${response.length} chars`);
           }
         } catch (deepseekError: any) {
           console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
         }
+      } else {
+        console.log('   ⚠️ DeepSeek API key not found');
       }
     }
     
     // 3️⃣ DEEPSEEK BAŞARISIZ OLURSA CLAUDE DENE
     if (!response) {
-      console.log('   🔵 [3/4] Trying Claude...');
-      try {
-        response = await aiClient.chat([
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ], {
-          model: 'claude',
-          useMCP: false,
-          mcpFallback: false,
-          fixtureId: matchData.fixtureId,
-          temperature: 0.15,
-          maxTokens: 600,
-          timeout: 18000 // 18 saniye
-        });
-        
-        if (response) {
-          console.log('   ✅ Claude responded successfully');
+      const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+      if (hasAnthropic) {
+        console.log('   🔵 [3/4] Trying Claude...');
+        try {
+          response = await aiClient.chat([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ], {
+            model: 'claude',
+            useMCP: false,
+            mcpFallback: false,
+            fixtureId: matchData.fixtureId,
+            temperature: 0.15,
+            maxTokens: 1500, // JSON çıktısı için yeterli
+            timeout: 25000 // 25 saniye
+          });
+          
+          if (response) {
+            console.log('   ✅ Claude responded successfully');
+            console.log(`   📏 Response length: ${response.length} chars`);
+          }
+        } catch (claudeError: any) {
+          console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
         }
-      } catch (claudeError: any) {
-        console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
+      } else {
+        console.log('   ⚠️ Anthropic API key not found');
       }
     }
 
