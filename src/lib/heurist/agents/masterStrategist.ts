@@ -535,11 +535,25 @@ function getDefaultMasterStrategist(
   const deep = agentResults.deepAnalysis;
   
   // Match Result - Ağırlıklı voting (DÜZELTME: Belirsizlik durumunda X kuralı)
+  // BUG FIX: odds.recommendation Over/Under içindir, matchResult için matchWinnerValue kullan!
   const mrVotes: { [key: string]: number } = {};
-  if (stats?.matchResult) mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
-  if (odds?.recommendation) mrVotes[odds.recommendation] = (mrVotes[odds.recommendation] || 0) + 35;
-  if (odds?.matchWinnerValue) mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] = (mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] || 0) + 10;
-  if (deep?.matchResult?.prediction) mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
+  
+  // Stats Agent matchResult (sadece 1/X/2 geçerli)
+  if (stats?.matchResult && ['1', 'X', '2'].includes(stats.matchResult)) {
+    mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
+  }
+  
+  // Odds Agent matchWinnerValue (home/away/draw → 1/X/2)
+  // NOT: odds.recommendation Over/Under içindir, matchResult için KULLANILMAMALI!
+  if (odds?.matchWinnerValue) {
+    const mrFromOdds = odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X';
+    mrVotes[mrFromOdds] = (mrVotes[mrFromOdds] || 0) + 35;
+  }
+  
+  // Deep Analysis matchResult (sadece 1/X/2 geçerli)
+  if (deep?.matchResult?.prediction && ['1', 'X', '2'].includes(deep.matchResult.prediction)) {
+    mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
+  }
   
   // DÜZELTME: Belirsizlik kontrolü
   const mrTotalVotes = Object.values(mrVotes).reduce((a, b) => a + b, 0);
@@ -548,6 +562,12 @@ function getDefaultMasterStrategist(
   
   // Maç sonucu tahmini - daha akıllı mantık
   let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
+  
+  // BUG FIX: finalMR sadece 1, X, 2 olabilir - başka değer gelirse X yap
+  if (!['1', 'X', '2'].includes(finalMR)) {
+    console.warn(`⚠️ Invalid matchResult "${finalMR}" detected, defaulting to X`);
+    finalMR = 'X';
+  }
   
   // DÜZELTME: Value bet varsa ve güçlüyse, onu dikkate al
   // Odds agent +15% üstü value bulmuşsa, o yönde git
