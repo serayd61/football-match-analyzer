@@ -867,6 +867,65 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                     <p className="text-gray-300">Toplam xG: {geniusAnalyst.mathematicalModel.totalExpectedGoals?.toFixed(2) || 'N/A'}</p>
                   </div>
                 )}
+
+                {/* 🔥 CESUR TAHMİN (BOLD BET) */}
+                {geniusAnalyst.boldBet && (
+                  <div className="border-t border-amber-500/30 pt-3 mt-3">
+                    <div className="bg-gradient-to-r from-red-900/60 to-orange-900/60 rounded-lg border-2 border-red-500/50 p-4 relative overflow-hidden">
+                      {/* Arka plan efekti */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.1),transparent_70%)]"></div>
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">🔥</span>
+                            <h6 className="text-red-400 font-bold text-lg">CESUR TAHMİN</h6>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-red-500/30 text-red-300 text-xs px-2 py-1 rounded-full border border-red-500/50">
+                              {geniusAnalyst.boldBet.riskLevel === 'extreme' ? '💀 EXTREM RİSK' : 
+                               geniusAnalyst.boldBet.riskLevel === 'very-high' ? '⚠️ ÇOK YÜKSEK' : '⚡ YÜKSEK'}
+                            </span>
+                            <span className="bg-green-500/30 text-green-300 text-sm px-2 py-1 rounded-full border border-green-500/50 font-bold">
+                              {geniusAnalyst.boldBet.potentialReturn}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-black/40 rounded-lg p-3 mb-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-bold text-xl">{geniusAnalyst.boldBet.type}</span>
+                            <span className="text-yellow-400 font-bold text-lg">@ {geniusAnalyst.boldBet.odds?.toFixed(2) || '?'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <p className="text-gray-400 text-xs">📋 Senaryo:</p>
+                            <p className="text-white">{geniusAnalyst.boldBet.scenario}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 text-xs">💡 Neden?</p>
+                            <p className="text-gray-300">{geniusAnalyst.boldBet.reasoning}</p>
+                          </div>
+                          {geniusAnalyst.boldBet.historicalHit && (
+                            <div>
+                              <p className="text-gray-400 text-xs">📊 Tarihsel:</p>
+                              <p className="text-gray-300">{geniusAnalyst.boldBet.historicalHit}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-3 pt-3 border-t border-red-500/30">
+                          <p className="text-red-300 text-xs flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>Güven: %{geniusAnalyst.boldBet.confidence} - Yüksek risk! Sadece kaybetmeyi göze alabileceğin miktarla oyna.</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

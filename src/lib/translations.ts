@@ -102,6 +102,17 @@ export const translations = {
     statusPartial: 'Kısmi',
     statusCancelled: 'İptal',
     
+    // Bold Bet (Cesur Tahmin)
+    boldBet: '🔥 CESUR TAHMİN',
+    boldBetDesc: 'Yüksek Risk, Yüksek Kazanç',
+    expectedOdds: 'Beklenen Oran',
+    scenario: 'Senaryo',
+    riskLevel: 'Risk Seviyesi',
+    potentialReturn: 'Potansiyel Getiri',
+    riskExtreme: 'Ekstrem',
+    riskVeryHigh: 'Çok Yüksek',
+    riskHigh: 'Yüksek',
+    
     // Coupon Actions
     addToCoupon: 'Kupona Ekle',
     addedToCoupon: 'Kupona Eklendi',
@@ -465,6 +476,17 @@ export const translations = {
     statusPartial: 'Partial',
     statusCancelled: 'Cancelled',
     
+    // Bold Bet
+    boldBet: '🔥 BOLD BET',
+    boldBetDesc: 'High Risk, High Reward',
+    expectedOdds: 'Expected Odds',
+    scenario: 'Scenario',
+    riskLevel: 'Risk Level',
+    potentialReturn: 'Potential Return',
+    riskExtreme: 'Extreme',
+    riskVeryHigh: 'Very High',
+    riskHigh: 'High',
+    
     // Coupon Actions
     addToCoupon: 'Add to Coupon',
     addedToCoupon: 'Added to Coupon',
@@ -827,6 +849,17 @@ export const translations = {
     statusLost: 'Verloren',
     statusPartial: 'Teilweise',
     statusCancelled: 'Storniert',
+    
+    // Bold Bet
+    boldBet: '🔥 GEWAGTE WETTE',
+    boldBetDesc: 'Hohes Risiko, Hoher Gewinn',
+    expectedOdds: 'Erwartete Quote',
+    scenario: 'Szenario',
+    riskLevel: 'Risikolevel',
+    potentialReturn: 'Potenzielle Rendite',
+    riskExtreme: 'Extrem',
+    riskVeryHigh: 'Sehr Hoch',
+    riskHigh: 'Hoch',
     
     // Coupon Actions
     addToCoupon: 'Zum Wettschein',

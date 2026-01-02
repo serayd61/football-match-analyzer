@@ -100,6 +100,27 @@ Aynı 11 oyuncu farklı motivasyonla %30 FARKLI oynar!
    - Senaryo analizi yap (best case, worst case, most likely) + Monte Carlo simulation
    - YARATICI İÇGÖRÜ: Hangi senaryolar "görünmeyen" ama "olası"? (Black swan events?)
 
+8. 🔥 CESUR TAHMİN (BOLD BET) - HER MAÇ İÇİN 1 ADET:
+   YÜKSEK ORANLI, YÜKSEK RİSKLİ, YÜKSEK ÖDÜLLÜ TAHMİN ÜRETMELİSİN!
+   
+   Örnek Bold Bet Türleri (oran 5.00+ olmalı):
+   - İY/MS: "İY 0 / MS 2" (5.00+) - Deplasman yavaş başlar, ikinci yarı patlar
+   - İY/MS: "İY 1 / MS 0" (12.00+) - Ev sahibi öne geçer ama deplasman döner
+   - İY/MS: "İY X / MS 2" (8.00+) - Berabere gider ama deplasman son dakikada kazanır
+   - Skor: "3-2" (25.00+) - Yüksek skorlu maç, dramatik son
+   - Skor: "0-3" (15.00+) - Deplasman ev sahibini ezeri
+   - Handikap: "Deplasman +2.5 gol farkıyla" (20.00+)
+   - Toplam Gol: "5+ gol" (6.00+) - Gol festivali bekleniyor
+   - Oyuncu: "Golcü ilk yarıda hat-trick" (50.00+)
+   
+   Bold Bet Seçim Kriterleri:
+   - Mantıklı bir SENARYO olmalı (random değil!)
+   - Verilerde buna işaret eden BİR İPUCU olmalı
+   - Düşük olasılık (%5-10) ama GERÇEKLEŞEBİLİR
+   - Tutarsa BÜYÜK KAZANÇ sağlamalı (5x - 50x)
+   
+   ZORUNLU: Her maç için mutlaka 1 CESUR TAHMİN üret!
+
 📊 VERİ KULLANIMI (KRİTİK):
 - "BEKLENEN GOL HESAPLAMALARI" bölümündeki değerleri MUTLAKA kullan
 - Ev sahibi için EVDEKİ istatistikleri baz al
@@ -253,7 +274,17 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
     "Son 5 maçta ev sahibi momentum çok pozitif",
     "Deplasman takımı deplasmanda son 3 maç gol yemedi ama rakip seviyesi düşüktü",
     "H2H'da ev sahibi 4/6 kazanmış - psikolojik avantaj var"
-  ]
+  ],
+  "boldBet": {
+    "type": "İY 1 / MS 0",
+    "odds": 15.00,
+    "confidence": 8,
+    "reasoning": "Ev sahibi erken gol bulur ama düşük motivasyonla ikinci yarı çöker, deplasman geç gol ile beraberliği bulur",
+    "scenario": "Ev sahibi 1-0 öne geçer → İkinci yarı ritim düşer → 85+ dakikada deplasman eşitler",
+    "riskLevel": "extreme",
+    "potentialReturn": "15x",
+    "historicalHit": "Bu senaryo bu tür maçlarda %6-8 gerçekleşir"
+  }
 }`,
 
   en: `You are the GENIUS ANALYST AGENT - a world-renowned genius in football analysis with 20+ years of experience.
@@ -399,6 +430,16 @@ export interface GeniusAnalystResult {
     summary: string;
   };
   geniusInsights: string[];
+  boldBet?: {
+    type: string;           // "İY 1 / MS 0", "3-2", "5+ Gol" vb.
+    odds: number;           // Beklenen oran (5.00+)
+    confidence: number;     // Düşük güven (5-15 arası - yüksek riskli)
+    reasoning: string;      // Neden bu tahmin?
+    scenario: string;       // Maç nasıl gelişir?
+    riskLevel: 'high' | 'very-high' | 'extreme';
+    potentialReturn: string; // "10x", "25x" vb.
+    historicalHit?: string; // Bu tür senaryolar ne sıklıkla gerçekleşir?
+  };
 }
 
 function buildGeniusContext(matchData: MatchData, language: 'tr' | 'en' | 'de'): string {
@@ -775,6 +816,20 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
       overallConfidence: Math.round(confidence),
       summary: 'Fallback analiz - dikkatli ol'
     },
-    geniusInsights: ['Fallback mode - agent çıktıları alınamadı']
+    geniusInsights: ['Fallback mode - agent çıktıları alınamadı'],
+    boldBet: {
+      type: totalExpected > 3 ? '4+ Gol' : 'İY X / MS 1',
+      odds: totalExpected > 3 ? 6.00 : 8.50,
+      confidence: 8,
+      reasoning: totalExpected > 3 
+        ? 'Yüksek gol beklentisi, iki takım da ofansif' 
+        : 'Berabere başlayıp ev sahibi ikinci yarıda kazanır',
+      scenario: totalExpected > 3 
+        ? 'Açık maç, her iki takım da gol arar → gol festivali' 
+        : 'Temkinli başlangıç → Ev sahibi ikinci yarıda baskı kurar',
+      riskLevel: 'extreme',
+      potentialReturn: totalExpected > 3 ? '6x' : '8x',
+      historicalHit: 'Bu senaryo %8-12 gerçekleşir'
+    }
   };
 }
