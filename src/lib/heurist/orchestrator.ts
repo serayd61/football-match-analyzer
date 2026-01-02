@@ -768,29 +768,42 @@ export async function runOrchestrator(
     console.log('\n🤖 Running agents in parallel (Round 1)...');
     const agentsStart = Date.now();
     
+    // Her agent'ı ayrı ayrı izleyelim
+    console.log('   🔵 Starting Stats Agent...');
+    console.log('   🟢 Starting Odds Agent...');
+    console.log('   🟡 Starting Sentiment Agent...');
+    console.log('   🟣 Starting Deep Analysis Agent...');
+    console.log('   🧠 Starting Genius Analyst...');
+    
     const [statsResult, oddsResult, sentimentResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('Stats agent failed:', err);
+        console.error('❌ Stats agent failed:', err?.message || err);
         return null;
       }),
       runOddsAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('Odds agent failed:', err);
+        console.error('❌ Odds agent failed:', err?.message || err);
         return null;
       }),
       runSentimentAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('Sentiment agent failed:', err);
+        console.error('❌ Sentiment agent failed:', err?.message || err);
         return null;
       }),
       runDeepAnalysisAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('Deep Analysis agent failed:', err);
+        console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
       }),
-      // 🆕 Genius Analyst - Paralel çalıştır (mevcut AI analizi yerine kullanılabilir)
       runGeniusAnalyst(matchData as unknown as MatchData, language).catch(err => {
-        console.error('Genius Analyst failed:', err);
+        console.error('❌ Genius Analyst failed:', err?.message || err);
         return null;
       }),
     ]);
+    
+    // Hangi agent'lar başarılı/başarısız oldu?
+    console.log(`   📊 Stats: ${statsResult ? '✅' : '❌'}`);
+    console.log(`   💰 Odds: ${oddsResult ? '✅' : '❌'}`);
+    console.log(`   💬 Sentiment: ${sentimentResult ? '✅' : '❌'}`);
+    console.log(`   🔬 Deep Analysis: ${deepAnalysisResult ? '✅' : '❌'}`);
+    console.log(`   🧠 Genius Analyst: ${geniusAnalystResult ? '✅' : '❌'}`);
     agentsTime = Date.now() - agentsStart;
     
     const agentResults = {
