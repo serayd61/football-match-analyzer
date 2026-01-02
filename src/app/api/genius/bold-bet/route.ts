@@ -110,7 +110,13 @@ export async function POST(request: NextRequest) {
         awayWins: matchData.h2h?.awayWins || 0,
         draws: matchData.h2h?.draws || 0,
         avgGoals: matchData.h2h?.avgGoals || '2.5',
-        matches: matchData.h2h?.matches || []
+        over25Percentage: matchData.h2h?.over25Percentage || '50%',
+        bttsPercentage: matchData.h2h?.bttsPercentage || '50%',
+        matches: matchData.h2h?.matches?.map(m => ({
+          home: m.homeTeam || 'Home',
+          away: m.awayTeam || 'Away',
+          score: m.score || '0-0'
+        })) || []
       },
       odds: matchData.odds || {},
     };
