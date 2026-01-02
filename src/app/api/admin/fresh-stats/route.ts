@@ -36,6 +36,13 @@ export async function GET(request: NextRequest) {
   
   const total = settled.length;
   
+  // Show sample data
+  const sampleData = settled.slice(0, 5).map(r => ({
+    mr_correct: r.match_result_correct,
+    ou_correct: r.over_under_correct,
+    btts_correct: r.btts_correct
+  }));
+  
   return NextResponse.json({
     timestamp: new Date().toISOString(),
     total: data?.length || 0,
@@ -45,7 +52,8 @@ export async function GET(request: NextRequest) {
       mr: total > 0 ? Math.round((mrCorrect / total) * 100) : 0,
       ou: total > 0 ? Math.round((ouCorrect / total) * 100) : 0,
       btts: total > 0 ? Math.round((bttsCorrect / total) * 100) : 0
-    }
+    },
+    sampleData
   });
 }
 
