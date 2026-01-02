@@ -7,10 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('📊 GET /api/performance/stats called at', new Date().toISOString());
+    const timestamp = new Date().toISOString();
+    console.log('📊 GET /api/performance/stats called at', timestamp);
     
     // Create fresh client inline
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,33 +24,37 @@ export async function GET(request: NextRequest) {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get all data
-    const { data: allData, error: fetchError } = await supabase
+    // Get all data with ORDER BY to ensure consistent results
+    const { data, error } = await supabase
       .from('unified_analysis')
-      .select('*');
+      .select('fixture_id, home_team, is_settled, match_result_correct, over_under_correct, btts_correct')
+      .order('fixture_id', { ascending: true });
     
-    if (fetchError) {
-      console.error('❌ Fetch error:', fetchError);
-      return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 });
+    if (error) {
+      console.error('❌ Fetch error:', error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
     
-    // Calculate counts from data using JavaScript filter
-    const totalCount = allData?.length || 0;
-    const settledMatches = (allData || []).filter(r => r.is_settled === true);
-    const pendingCount = (allData || []).filter(r => r.is_settled === false || r.is_settled === null).length;
-    const settledCount = settledMatches.length;
+    // Filter in JavaScript (more reliable than Supabase .eq())
+    const allData = data || [];
+    const settled = allData.filter(r => r.is_settled === true);
+    const pending = allData.filter(r => r.is_settled === false || r.is_settled === null);
+    
+    const totalCount = allData.length;
+    const settledCount = settled.length;
+    const pendingCount = pending.length;
     
     console.log(`📊 Total: ${totalCount}, Settled: ${settledCount}, Pending: ${pendingCount}`);
     
-    // Calculate consensus accuracy
+    // Count correct predictions
     let mrCorrect = 0;
     let ouCorrect = 0;
     let bttsCorrect = 0;
     
-    for (const match of settledMatches) {
-      if (match.match_result_correct === true) mrCorrect++;
-      if (match.over_under_correct === true) ouCorrect++;
-      if (match.btts_correct === true) bttsCorrect++;
+    for (const m of settled) {
+      if (m.match_result_correct === true) mrCorrect++;
+      if (m.over_under_correct === true) ouCorrect++;
+      if (m.btts_correct === true) bttsCorrect++;
     }
     
     console.log(`📈 Correct: MR=${mrCorrect}, OU=${ouCorrect}, BTTS=${bttsCorrect}`);
@@ -89,12 +95,18 @@ export async function GET(request: NextRequest) {
     
     console.log(`   Summary: MR=${mrAccuracy}%, OU=${ouAccuracy}%, BTTS=${bttsAccuracy}%`);
     
-    return NextResponse.json({
+    // Set cache control headers to prevent caching
+    const response = NextResponse.json({
       success: true,
       stats,
       summary,
-      timestamp: new Date().toISOString()
+      timestamp
     });
+    
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    
+    return response;
     
   } catch (error: any) {
     console.error('❌ Stats API error:', error);
