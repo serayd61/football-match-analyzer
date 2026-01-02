@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
     }
     
     const matchInfo = {
-      homeTeam: matchData.homeTeam?.name || 'Unknown',
-      awayTeam: matchData.awayTeam?.name || 'Unknown',
-      league: matchData.league?.name || 'Unknown',
-      matchDate: matchData.matchDate || new Date().toISOString()
+      homeTeam: matchData.homeTeam || 'Unknown',
+      awayTeam: matchData.awayTeam || 'Unknown',
+      league: matchData.league || 'Unknown',
+      matchDate: matchData.kickOff || new Date().toISOString()
     };
     
     console.log(`⚽ Match: ${matchInfo.homeTeam} vs ${matchInfo.awayTeam}`);
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       awayTeam: matchInfo.awayTeam,
       league: matchInfo.league,
       matchDate: matchInfo.matchDate,
-      homeForm: matchData.homeForm || { form: 'DDDDD', avgGoals: '1.2' },
-      awayForm: matchData.awayForm || { form: 'DDDDD', avgGoals: '1.0' },
+      homeForm: matchData.homeForm || { form: 'DDDDD', avgGoals: 1.2 },
+      awayForm: matchData.awayForm || { form: 'DDDDD', avgGoals: 1.0 },
       h2h: matchData.h2h || { matches: [] },
       odds: matchData.odds || {},
     };
