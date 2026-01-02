@@ -458,22 +458,37 @@ function calculateXGAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de')
   const homeForm = matchData.homeForm;
   const awayForm = matchData.awayForm;
   
+  // Helper function: String veya number'ı parse et, NaN kontrolü yap
+  const safeParseFloat = (value: any, fallback: number): number => {
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return fallback;
+  };
+  
   // Gerçek gol ortalamaları (VENUE BAZLI - ÖNEMLİ!)
   // Ev sahibi için EVDEKİ gol ortalaması, deplasman için DEPLASMANDAKİ gol ortalaması
-  const homeActual = parseFloat(
-    detailedHome?.homeAvgGoalsScored || // Önce detaylı ev istatistiği
-    homeForm?.venueAvgScored || // Sonra venue bazlı (EVDEKİ)
-    detailedHome?.avgGoalsScored || // Sonra genel detaylı
-    homeForm?.avgGoals || // Son olarak genel
-    '1.2'
+  const homeActual = safeParseFloat(
+    detailedHome?.homeAvgGoalsScored || 
+    homeForm?.venueAvgScored || 
+    detailedHome?.avgGoalsScored || 
+    homeForm?.avgGoals,
+    1.2
   );
-  const awayActual = parseFloat(
-    detailedAway?.awayAvgGoalsScored || // Önce detaylı deplasman istatistiği
-    awayForm?.venueAvgScored || // Sonra venue bazlı (DEPLASMANDAKİ)
-    detailedAway?.avgGoalsScored || // Sonra genel detaylı
-    awayForm?.avgGoals || // Son olarak genel
-    '1.0'
+  
+  const awayActual = safeParseFloat(
+    detailedAway?.awayAvgGoalsScored || 
+    awayForm?.venueAvgScored || 
+    detailedAway?.avgGoalsScored || 
+    awayForm?.avgGoals,
+    1.0
   );
+  
+  // Debug logging
+  console.log(`   🔍 xG Debug - homeActual: ${homeActual} (venueAvgScored: ${homeForm?.venueAvgScored}, avgGoals: ${homeForm?.avgGoals})`);
+  console.log(`   🔍 xG Debug - awayActual: ${awayActual} (venueAvgScored: ${awayForm?.venueAvgScored}, avgGoals: ${awayForm?.avgGoals})`);
   // Yediği gol ortalamaları (VENUE BAZLI)
   const homeConceded = parseFloat(
     detailedHome?.homeAvgGoalsConceded || // Önce detaylı ev istatistiği
@@ -1120,39 +1135,64 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
 
   // Gol ortalamaları (VENUE BAZLI - ÖNEMLİ!)
   // Ev sahibi için EVDEKİ gol ortalaması, deplasman için DEPLASMANDAKİ gol ortalaması
-  const homeGoalsScored = parseFloat(
-    detailedHome?.homeAvgGoalsScored || // Önce detaylı ev istatistiği
-    matchData.homeForm?.venueAvgScored || // Sonra venue bazlı (EVDEKİ)
-    detailedHome?.avgGoalsScored || // Sonra genel detaylı
-    matchData.homeForm?.avgGoals || // Son olarak genel
-    '1.2'
+  // Gol atma ortalamaları (VENUE BAZLI - ÖNEMLİ!)
+  // Helper function: String veya number'ı parse et, NaN kontrolü yap
+  const safeParseFloat = (value: any, fallback: number): number => {
+    if (typeof value === 'number' && !isNaN(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return fallback;
+  };
+  
+  // Öncelik sırası: detailedHome > venueAvgScored > avgGoalsScored > avgGoals > fallback
+  const homeGoalsScored = safeParseFloat(
+    detailedHome?.homeAvgGoalsScored || 
+    matchData.homeForm?.venueAvgScored || 
+    detailedHome?.avgGoalsScored || 
+    matchData.homeForm?.avgGoals,
+    1.2
   );
-  const homeGoalsConceded = parseFloat(
-    detailedHome?.homeAvgGoalsConceded || // Önce detaylı ev istatistiği
-    matchData.homeForm?.venueAvgConceded || // Sonra venue bazlı (EVDE yediği)
-    detailedHome?.avgGoalsConceded || // Sonra genel detaylı
-    matchData.homeForm?.avgConceded || // Son olarak genel
-    '1.0'
+  
+  const homeGoalsConceded = safeParseFloat(
+    detailedHome?.homeAvgGoalsConceded || 
+    matchData.homeForm?.venueAvgConceded || 
+    detailedHome?.avgGoalsConceded || 
+    matchData.homeForm?.avgConceded,
+    1.0
   );
-  const awayGoalsScored = parseFloat(
-    detailedAway?.awayAvgGoalsScored || // Önce detaylı deplasman istatistiği
-    matchData.awayForm?.venueAvgScored || // Sonra venue bazlı (DEPLASMANDAKİ)
-    detailedAway?.avgGoalsScored || // Sonra genel detaylı
-    matchData.awayForm?.avgGoals || // Son olarak genel
-    '1.0'
+  
+  const awayGoalsScored = safeParseFloat(
+    detailedAway?.awayAvgGoalsScored || 
+    matchData.awayForm?.venueAvgScored || 
+    detailedAway?.avgGoalsScored || 
+    matchData.awayForm?.avgGoals,
+    1.0
   );
-  const awayGoalsConceded = parseFloat(
-    detailedAway?.awayAvgGoalsConceded || // Önce detaylı deplasman istatistiği
-    matchData.awayForm?.venueAvgConceded || // Sonra venue bazlı (DEPLASMANDA yediği)
-    detailedAway?.avgGoalsConceded || // Sonra genel detaylı
-    matchData.awayForm?.avgConceded || // Son olarak genel
-    '1.2'
+  
+  const awayGoalsConceded = safeParseFloat(
+    detailedAway?.awayAvgGoalsConceded || 
+    matchData.awayForm?.venueAvgConceded || 
+    detailedAway?.avgGoalsConceded || 
+    matchData.awayForm?.avgConceded,
+    1.2
   );
+  
+  // Debug logging
+  console.log(`   🔍 Expected Goals Debug:`);
+  console.log(`      homeGoalsScored: ${homeGoalsScored} (venueAvgScored: ${matchData.homeForm?.venueAvgScored}, avgGoals: ${matchData.homeForm?.avgGoals})`);
+  console.log(`      awayGoalsConceded: ${awayGoalsConceded} (venueAvgConceded: ${matchData.awayForm?.venueAvgConceded}, avgConceded: ${matchData.awayForm?.avgConceded})`);
+  console.log(`      awayGoalsScored: ${awayGoalsScored} (venueAvgScored: ${matchData.awayForm?.venueAvgScored}, avgGoals: ${matchData.awayForm?.avgGoals})`);
+  console.log(`      homeGoalsConceded: ${homeGoalsConceded} (venueAvgConceded: ${matchData.homeForm?.venueAvgConceded}, avgConceded: ${matchData.homeForm?.avgConceded})`);
   
   // Beklenen goller (gol atma beklentisi)
   const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
   const awayExpected = (awayGoalsScored + homeGoalsConceded) / 2;
   const expectedTotal = homeExpected + awayExpected;
+  
+  console.log(`      homeExpected: ${homeExpected.toFixed(2)} = (${homeGoalsScored} + ${awayGoalsConceded}) / 2`);
+  console.log(`      awayExpected: ${awayExpected.toFixed(2)} = (${awayGoalsScored} + ${homeGoalsConceded}) / 2`);
   
   // 🆕 Gol yeme beklentisi
   const homeConcededExpected = (homeGoalsConceded + awayGoalsScored) / 2;
