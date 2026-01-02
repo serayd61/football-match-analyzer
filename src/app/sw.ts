@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-declare const self: ServiceWorkerGlobalScope;
+declare const self: WorkerGlobalScope;
 
 // Custom runtime caching strategies
 const runtimeCaching: RuntimeCaching[] = [
