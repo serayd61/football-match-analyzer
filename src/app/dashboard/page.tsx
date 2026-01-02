@@ -129,6 +129,12 @@ const translations = {
     confidence: 'güven',
     agreement: 'Uyum',
     models: 'Modeller',
+    allRecommendations: 'Tüm Öneriler',
+    play: 'OYNA',
+    caution: 'DİKKAT',
+    skip: 'ATLA',
+    value: 'value',
+    sourcesAgree: 'kaynak uyumlu',
     analysis: 'Analiz',
     yes: 'EVET',
     no: 'HAYIR',
@@ -177,6 +183,12 @@ const translations = {
     confidence: 'confidence',
     agreement: 'Agreement',
     models: 'Models',
+    allRecommendations: 'All Recommendations',
+    play: 'PLAY',
+    caution: 'CAUTION',
+    skip: 'SKIP',
+    value: 'value',
+    sourcesAgree: 'sources agree',
     analysis: 'Analysis',
     yes: 'YES',
     no: 'NO',
@@ -225,6 +237,12 @@ const translations = {
     confidence: 'Vertrauen',
     agreement: 'Übereinstimmung',
     models: 'Modelle',
+    allRecommendations: 'Alle Empfehlungen',
+    play: 'SPIELEN',
+    caution: 'VORSICHT',
+    skip: 'ÜBERSPRINGEN',
+    value: 'Wert',
+    sourcesAgree: 'Quellen stimmen zu',
     analysis: 'Analyse',
     yes: 'JA',
     no: 'NEIN',
@@ -2020,6 +2038,195 @@ export default function DashboardPage() {
                     </div>
                     
                     <p className="mt-4 text-sm text-gray-300 relative z-10">{analysis.bestBet.reason}</p>
+                    
+                    {/* 🆕 TÜM ÖNERİLER BÖLÜMÜ */}
+                    {analysis.agents && (
+                      <div className="mt-6 pt-6 border-t border-gray-700/50 relative z-10">
+                        <h5 className="text-sm font-bold text-[#00f0ff] mb-4 flex items-center gap-2">
+                          <span>📊</span> {t.allRecommendations}
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {/* BTTS Öneri */}
+                          {(() => {
+                            const bttsValue = analysis.agents?.odds?._valueAnalysis?.bttsValue || 0;
+                            const bttsConf = analysis.agents?.stats?.bttsConfidence || 50;
+                            const bttsPred = analysis.agents?.stats?.btts || 'No';
+                            const allAgree = analysis.agents?.stats?.btts === (analysis.agents?.odds?.bttsValue === 'no' ? 'No' : 'Yes');
+                            const hasValue = Math.abs(bttsValue) > 10;
+                            const status = hasValue && allAgree ? 'play' : hasValue || allAgree ? 'caution' : 'skip';
+                            
+                            return (
+                              <div className={`p-3 rounded-xl border transition-all ${
+                                status === 'play' ? 'bg-green-500/10 border-green-500/40' :
+                                status === 'caution' ? 'bg-yellow-500/10 border-yellow-500/40' :
+                                'bg-red-500/10 border-red-500/40'
+                              }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-400">BTTS</span>
+                                  <span className={`text-lg ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
+                                  </span>
+                                </div>
+                                <p className="text-white font-bold">{bttsPred === 'No' ? 'Hayır' : 'Evet'}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs font-bold ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
+                                  </span>
+                                  <span className="text-xs text-gray-400">%{bttsConf}</span>
+                                </div>
+                                {hasValue && (
+                                  <p className="text-xs text-green-400 mt-1">+{Math.abs(bttsValue)}% {t.value}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          
+                          {/* Over/Under Öneri */}
+                          {(() => {
+                            const overValue = analysis.agents?.odds?._valueAnalysis?.overValue || 0;
+                            const overConf = analysis.agents?.stats?.overUnderConfidence || 50;
+                            const overPred = analysis.agents?.stats?.overUnder || 'Over';
+                            const oddsRec = analysis.agents?.odds?.recommendation || '';
+                            const allAgree = overPred?.toLowerCase() === oddsRec?.toLowerCase();
+                            const hasValue = overValue > 5;
+                            const status = hasValue && allAgree ? 'play' : allAgree ? 'caution' : 'skip';
+                            
+                            return (
+                              <div className={`p-3 rounded-xl border transition-all ${
+                                status === 'play' ? 'bg-green-500/10 border-green-500/40' :
+                                status === 'caution' ? 'bg-yellow-500/10 border-yellow-500/40' :
+                                'bg-red-500/10 border-red-500/40'
+                              }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-400">Over/Under</span>
+                                  <span className={`text-lg ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
+                                  </span>
+                                </div>
+                                <p className="text-white font-bold">{overPred}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs font-bold ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
+                                  </span>
+                                  <span className="text-xs text-gray-400">%{overConf}</span>
+                                </div>
+                                {hasValue && (
+                                  <p className="text-xs text-green-400 mt-1">+{overValue}% {t.value}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          
+                          {/* Match Result Öneri */}
+                          {(() => {
+                            const homeValue = analysis.agents?.odds?._valueAnalysis?.homeValue || 0;
+                            const mrConf = analysis.agents?.stats?.matchResultConfidence || 50;
+                            const mrPred = analysis.agents?.stats?.matchResult || 'X';
+                            const oddsRec = analysis.agents?.odds?.matchWinnerValue || '';
+                            const normalizedMr = mrPred === '1' ? 'home' : mrPred === '2' ? 'away' : 'draw';
+                            const allAgree = normalizedMr === oddsRec;
+                            const hasValue = homeValue > 10;
+                            const status = hasValue && allAgree ? 'play' : hasValue || mrConf > 60 ? 'caution' : 'skip';
+                            
+                            const displayPred = mrPred === '1' || mrPred?.toLowerCase() === 'home' ? 'MS 1' : 
+                                               mrPred === '2' || mrPred?.toLowerCase() === 'away' ? 'MS 2' : 'Beraberlik';
+                            
+                            return (
+                              <div className={`p-3 rounded-xl border transition-all ${
+                                status === 'play' ? 'bg-green-500/10 border-green-500/40' :
+                                status === 'caution' ? 'bg-yellow-500/10 border-yellow-500/40' :
+                                'bg-red-500/10 border-red-500/40'
+                              }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-400">Maç Sonucu</span>
+                                  <span className={`text-lg ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
+                                  </span>
+                                </div>
+                                <p className="text-white font-bold">{displayPred}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs font-bold ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
+                                  </span>
+                                  <span className="text-xs text-gray-400">%{mrConf}</span>
+                                </div>
+                                {hasValue && (
+                                  <p className="text-xs text-green-400 mt-1">+{homeValue}% {t.value}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                          
+                          {/* Under 2.5 Öneri (Alternatif) */}
+                          {(() => {
+                            const underValue = -(analysis.agents?.odds?._valueAnalysis?.overValue || 0);
+                            const overPred = analysis.agents?.stats?.overUnder || 'Over';
+                            const probUnder = analysis.agents?.stats?.probabilityEngine?.final?.overUnderConfidence || 50;
+                            const hasValue = underValue > 5;
+                            const isUnder = overPred === 'Under' || analysis.agents?.odds?.recommendation === 'Under';
+                            const status = hasValue && isUnder ? 'play' : isUnder ? 'caution' : 'skip';
+                            
+                            return (
+                              <div className={`p-3 rounded-xl border transition-all ${
+                                status === 'play' ? 'bg-green-500/10 border-green-500/40' :
+                                status === 'caution' ? 'bg-yellow-500/10 border-yellow-500/40' :
+                                'bg-red-500/10 border-red-500/40'
+                              }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-400">Under 2.5</span>
+                                  <span className={`text-lg ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
+                                  </span>
+                                </div>
+                                <p className="text-white font-bold">{isUnder ? 'Under' : 'Over tercih'}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs font-bold ${
+                                    status === 'play' ? 'text-green-400' :
+                                    status === 'caution' ? 'text-yellow-400' : 'text-red-400'
+                                  }`}>
+                                    {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
+                                  </span>
+                                  <span className="text-xs text-gray-400">%{probUnder}</span>
+                                </div>
+                                {hasValue && isUnder && (
+                                  <p className="text-xs text-green-400 mt-1">+{underValue}% {t.value}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        
+                        {/* Açıklama */}
+                        <div className="mt-4 p-3 bg-gray-800/30 rounded-lg">
+                          <p className="text-xs text-gray-400 text-center">
+                            <span className="text-green-400">✅ {t.play}</span> = Value + Konsensüs |
+                            <span className="text-yellow-400 ml-2">⚠️ {t.caution}</span> = Karışık sinyal |
+                            <span className="text-red-400 ml-2">❌ {t.skip}</span> = Value yok
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
                 
