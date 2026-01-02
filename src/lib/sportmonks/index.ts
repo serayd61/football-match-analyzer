@@ -21,6 +21,11 @@ export interface TeamStats {
   goalsConceded: number;
   avgGoalsScored: number;
   avgGoalsConceded: number;
+  // 🆕 VENUE-SPESİFİK GOL ORTALAMALARI (ÖNEMLİ!)
+  homeAvgGoalsScored: number;    // Ev maçlarında attığı gol ortalaması
+  homeAvgGoalsConceded: number;  // Ev maçlarında yediği gol ortalaması
+  awayAvgGoalsScored: number;    // Deplasman maçlarında attığı gol ortalaması
+  awayAvgGoalsConceded: number;  // Deplasman maçlarında yediği gol ortalaması
   // Home/Away specific
   homeWins: number;
   homeDraws: number;
@@ -261,6 +266,37 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     // Calculate averages with NaN protection
     const avgGoalsScored = matchesPlayed > 0 ? Math.round((goalsScored / matchesPlayed) * 100) / 100 : 1.2;
     const avgGoalsConceded = matchesPlayed > 0 ? Math.round((goalsConceded / matchesPlayed) * 100) / 100 : 1.0;
+    
+    // 🆕 VENUE-SPESIFIK GOL ORTALAMALARI (ÇOK ÖNEMLİ!)
+    // Ev maçlarından gol ortalaması hesapla
+    let homeGoalsScored = 0;
+    let homeGoalsConceded = 0;
+    let homeMatchCount = 0;
+    let awayGoalsScored = 0;
+    let awayGoalsConceded = 0;
+    let awayMatchCount = 0;
+    
+    recentMatches.slice(0, 10).forEach((match: any) => {
+      const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
+      const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
+      const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
+      
+      if (isHome) {
+        homeGoalsScored += homeScore;
+        homeGoalsConceded += awayScore;
+        homeMatchCount++;
+      } else {
+        awayGoalsScored += awayScore;
+        awayGoalsConceded += homeScore;
+        awayMatchCount++;
+      }
+    });
+    
+    // Venue bazlı ortalamalar
+    const homeAvgGoalsScored = homeMatchCount > 0 ? Math.round((homeGoalsScored / homeMatchCount) * 100) / 100 : avgGoalsScored;
+    const homeAvgGoalsConceded = homeMatchCount > 0 ? Math.round((homeGoalsConceded / homeMatchCount) * 100) / 100 : avgGoalsConceded;
+    const awayAvgGoalsScored = awayMatchCount > 0 ? Math.round((awayGoalsScored / awayMatchCount) * 100) / 100 : avgGoalsScored;
+    const awayAvgGoalsConceded = awayMatchCount > 0 ? Math.round((awayGoalsConceded / awayMatchCount) * 100) / 100 : avgGoalsConceded;
 
     // Corners - IMPORTANT: getStatValue(45) might return TOTAL corners, not average per match
     // Normal match has 5-12 corners per match, so values > 20 are likely totals, not averages
@@ -311,6 +347,11 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       goalsConceded: goalsConceded || 10,
       avgGoalsScored: isNaN(avgGoalsScored) ? 1.2 : avgGoalsScored,
       avgGoalsConceded: isNaN(avgGoalsConceded) ? 1.0 : avgGoalsConceded,
+      // 🆕 VENUE-SPESİFİK GOL ORTALAMALARI (ÖNEMLİ!)
+      homeAvgGoalsScored: isNaN(homeAvgGoalsScored) ? 1.4 : homeAvgGoalsScored,
+      homeAvgGoalsConceded: isNaN(homeAvgGoalsConceded) ? 1.0 : homeAvgGoalsConceded,
+      awayAvgGoalsScored: isNaN(awayAvgGoalsScored) ? 1.0 : awayAvgGoalsScored,
+      awayAvgGoalsConceded: isNaN(awayAvgGoalsConceded) ? 1.3 : awayAvgGoalsConceded,
       // Home/Away stats - Use API if available, otherwise from recent matches
       homeWins: getStatValue(130) || homeWinsCount,
       homeDraws: getStatValue(131) || homeDrawsCount,
