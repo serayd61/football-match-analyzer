@@ -1184,19 +1184,47 @@ Return detailed JSON:`;
           parsed.agentSummary = reasoning.agentSummary;
         }
         
-        // Match result validation - DÜZELTME: Daha konservatif eşikler
-        // Beraberlik olasılığı artırıldı (gerçek dünyada ~%25-28)
-        if (!['1', '2', 'X'].includes(parsed.matchResult?.toUpperCase())) {
-          // Form farkı eşikleri artırıldı: 3 → 6 (daha güvenilir sinyal)
-          if (formDiff > 6) parsed.matchResult = '1';
-          else if (formDiff < -6) parsed.matchResult = '2';
-          // Beklenen gol farkı eşiği artırıldı: 0.3 → 0.5
-          else if (homeExpected > awayExpected + 0.5) parsed.matchResult = '1';
-          else if (awayExpected > homeExpected + 0.5) parsed.matchResult = '2';
-          // Belirsizlik durumunda X (beraberlik bölgesi genişletildi)
-          else parsed.matchResult = 'X';
+        // Match result validation - DÜZELTME: VERİYE DAYALI ZORUNLU OVERRIDE
+        // AI bazen yanlış matchResult dönüyor - veri analizi her zaman öncelikli!
+        
+        // 1. Önce AI'dan gelen değeri normalize et
+        const aiMR = parsed.matchResult?.toUpperCase?.() || '';
+        
+        // 2. VERİ BAZLI KARAR - Bu HER ZAMAN geçerli (AI değerini override eder!)
+        let dataDrivenMR: string;
+        const absFormDiff = Math.abs(formDiff);
+        
+        if (formDiff > 6) {
+          // Ev sahibi net favori
+          dataDrivenMR = '1';
+        } else if (formDiff < -6) {
+          // Deplasman net favori
+          dataDrivenMR = '2';
+        } else if (absFormDiff >= 3) {
+          // Orta düzey fark - gol beklentisine de bak
+          if (formDiff > 0 && homeExpected > awayExpected) dataDrivenMR = '1';
+          else if (formDiff < 0 && awayExpected > homeExpected) dataDrivenMR = '2';
+          else dataDrivenMR = absFormDiff > 4 ? (formDiff > 0 ? '1' : '2') : 'X';
         } else {
-          parsed.matchResult = parsed.matchResult.toUpperCase();
+          // Form dengeli - beklenen gol farkına bak
+          if (homeExpected > awayExpected + 0.5) dataDrivenMR = '1';
+          else if (awayExpected > homeExpected + 0.5) dataDrivenMR = '2';
+          else dataDrivenMR = 'X';
+        }
+        
+        // 3. VERİ BAZLI KARAR HER ZAMAN ÖNCE! (AI tutarsız olabilir)
+        // Özellikle form farkı >6 ise AI'yı kesinlikle override et
+        if (absFormDiff > 6) {
+          parsed.matchResult = dataDrivenMR;
+          console.log(`   ⚠️ Form farkı ${formDiff} - VERİ OVERRIDE: ${aiMR} → ${dataDrivenMR}`);
+        } else if (!['1', '2', 'X'].includes(aiMR)) {
+          parsed.matchResult = dataDrivenMR;
+        } else {
+          // AI değeri geçerli ve form farkı düşük - AI'ya güven ama logla
+          parsed.matchResult = aiMR;
+          if (aiMR !== dataDrivenMR) {
+            console.log(`   📊 AI: ${aiMR}, Veri: ${dataDrivenMR} (form: ${formDiff}) - AI değeri kullanıldı`);
+          }
         }
         
         // Over/Under validation - DÜZELTME: Daha konservatif eşik
@@ -1332,12 +1360,25 @@ Return detailed JSON:`;
     console.error('❌ Stats agent error:', error);
   }
 
-  // Fallback with CONSERVATIVE values - DÜZELTME: Daha konservatif eşikler
-  // Over eşiği: 2.5 → 2.65 (regresyon düzeltmesi)
+  // Fallback with DATA-DRIVEN values
   let fallbackOverUnder = (expectedTotal >= 2.65 || avgOver25 >= 60 || xgAnalysis.totalXG >= 2.65) ? 'Over' : 'Under';
-  // Maç sonucu eşiği: 3 → 6 puan farkı (daha güvenilir sinyal)
-  // Belirsizlik durumunda X (beraberlik bölgesi genişletildi)
-  let fallbackMatchResult = formDiff > 6 ? '1' : formDiff < -6 ? '2' : (homeExpected > awayExpected + 0.5 ? '1' : 'X');
+  
+  // Maç sonucu - VERİ BAZLI KARAR (reasoning ile tutarlı!)
+  let fallbackMatchResult: string;
+  const absFormDiffFB = Math.abs(formDiff);
+  if (formDiff > 6) {
+    fallbackMatchResult = '1'; // Ev sahibi net favori
+  } else if (formDiff < -6) {
+    fallbackMatchResult = '2'; // Deplasman net favori
+  } else if (absFormDiffFB >= 3) {
+    if (formDiff > 0 && homeExpected > awayExpected) fallbackMatchResult = '1';
+    else if (formDiff < 0 && awayExpected > homeExpected) fallbackMatchResult = '2';
+    else fallbackMatchResult = absFormDiffFB > 4 ? (formDiff > 0 ? '1' : '2') : 'X';
+  } else {
+    if (homeExpected > awayExpected + 0.5) fallbackMatchResult = '1';
+    else if (awayExpected > homeExpected + 0.5) fallbackMatchResult = '2';
+    else fallbackMatchResult = 'X';
+  }
   let fallbackBtts = avgBtts >= 55 ? 'Yes' : 'No';
   let fallbackOverUnderConf = confidences.overUnderConf;
   let fallbackMatchResultConf = confidences.matchResultConf;
