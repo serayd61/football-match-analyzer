@@ -641,71 +641,71 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
     // STRATEJİ: OpenAI → DeepSeek → Claude → Fallback
     // ============================================================
     
-    // 1️⃣ ÖNCE OPENAI DENE (GPT-4 Turbo - en hızlı)
-    const hasOpenAI = !!process.env.OPENAI_API_KEY;
-    if (hasOpenAI) {
-      console.log('   🟢 [1/4] Trying OpenAI GPT-4 Turbo...');
+    // 1️⃣ ÖNCE DEEPSEEK DENE (En hızlı ve ucuz)
+    const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+    if (hasDeepSeek) {
+      console.log('   🟣 [1/3] Trying DeepSeek (fastest)...');
       try {
         response = await aiClient.chat([
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
         ], {
-          model: 'gpt-4-turbo',
+          model: 'deepseek',
           useMCP: false,
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.15,
-          maxTokens: 1500, // JSON çıktısı için yeterli
-          timeout: 25000 // 25 saniye
+          maxTokens: 1200, // Kısa ve öz JSON
+          timeout: 15000 // 15 saniye
         });
         
         if (response) {
-          console.log('   ✅ OpenAI GPT-4 responded successfully');
+          console.log('   ✅ DeepSeek responded successfully');
           console.log(`   📏 Response length: ${response.length} chars`);
         }
-      } catch (openaiError: any) {
-        console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
+      } catch (deepseekError: any) {
+        console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
       }
     } else {
-      console.log('   ⚠️ OpenAI API key not found');
+      console.log('   ⚠️ DeepSeek API key not found');
     }
     
-    // 2️⃣ OPENAI BAŞARISIZ OLURSA DEEPSEEK DENE
+    // 2️⃣ DEEPSEEK BAŞARISIZ OLURSA OPENAI DENE
     if (!response) {
-      const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
-      if (hasDeepSeek) {
-        console.log('   🟣 [2/4] Trying DeepSeek...');
+      const hasOpenAI = !!process.env.OPENAI_API_KEY;
+      if (hasOpenAI) {
+        console.log('   🟢 [2/3] Trying OpenAI GPT-4 Turbo...');
         try {
           response = await aiClient.chat([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage }
           ], {
-            model: 'deepseek',
+            model: 'gpt-4-turbo',
             useMCP: false,
             mcpFallback: false,
             fixtureId: matchData.fixtureId,
             temperature: 0.15,
-            maxTokens: 1500, // JSON çıktısı için yeterli
-            timeout: 25000 // 25 saniye
+            maxTokens: 1200, // Kısa ve öz JSON
+            timeout: 18000 // 18 saniye
           });
           
           if (response) {
-            console.log('   ✅ DeepSeek responded successfully');
+            console.log('   ✅ OpenAI GPT-4 responded successfully');
             console.log(`   📏 Response length: ${response.length} chars`);
           }
-        } catch (deepseekError: any) {
-          console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
+        } catch (openaiError: any) {
+          console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
         }
       } else {
-        console.log('   ⚠️ DeepSeek API key not found');
+        console.log('   ⚠️ OpenAI API key not found');
       }
     }
     
-    // 3️⃣ DEEPSEEK BAŞARISIZ OLURSA CLAUDE DENE
+    // 3️⃣ OPENAI BAŞARISIZ OLURSA CLAUDE DENE
     if (!response) {
       const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
       if (hasAnthropic) {
-        console.log('   🔵 [3/4] Trying Claude...');
+        console.log('   🔵 [3/3] Trying Claude...');
         try {
           response = await aiClient.chat([
             { role: 'system', content: systemPrompt },
@@ -716,8 +716,8 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
             mcpFallback: false,
             fixtureId: matchData.fixtureId,
             temperature: 0.15,
-            maxTokens: 1500, // JSON çıktısı için yeterli
-            timeout: 25000 // 25 saniye
+            maxTokens: 1200, // Kısa ve öz JSON
+            timeout: 18000 // 18 saniye
           });
           
           if (response) {

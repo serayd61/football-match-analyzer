@@ -6,7 +6,7 @@ import { runGeniusAnalyst } from '@/lib/heurist/agents/geniusAnalyst';
 import { fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
 import { MatchData } from '@/lib/heurist/types';
 
-export const maxDuration = 30; // 30 saniye timeout
+export const maxDuration = 60; // 60 saniye timeout (Vercel Pro)
 
 interface BoldBetResponse {
   success: boolean;
