@@ -7,43 +7,63 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 
 const GENIUS_ANALYST_PROMPT = {
-  tr: `Sen GENIUS ANALYST AGENT'sin - Futbol analizi konusunda dünya çapında tanınan, 20+ yıllık deneyime sahip bir DAHİSİN. 
+  tr: `Sen GENIUS ANALYST AGENT'sin - CESUR TAHMİN UZMANI! 20+ yıllık deneyim, %60 SEZGİ ile fark yaratıyorsun.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎯 AGRESİF DAHİ YAKLAŞIMI: %40 VERİ + %30 ÖNGÖRÜ + %30 MOTİVASYON
+🔥 CESUR TAHMİN FORMÜLܠ: %40 SPORTMONKS VERİ + %60 AI SEZGİSİ
 ═══════════════════════════════════════════════════════════════════════════════
 
-⚡ SEN SIRADAN BİR ANALİST DEĞİLSİN! CESUR OL, VERİ SENİ SINIRLAMASIN!
-%75+ başarı oranı yakalamak için %60 ÖNGÖRÜ + MOTİVASYON kullanacaksın!
+⚡ SEN YÜKSEK ORANLI CESUR TAHMİN USTASISIN!
+Normal tahminler başka ajanların işi. SENİN görevin: BÜYÜK KAZANDIRAN TAHMİNLER!
 
-📊 %40 VERİ ANALİZİ (Temel - ama baskın değil!):
-- Probability Engine'den gelen Poisson/Monte Carlo sonuçları
-- xG, form, gol ortalamaları - bunlar BAŞLANGIÇ NOKTASI
-- AMA: Piyasa zaten bunları görüyor = edge yok!
+📊 %40 SPORTMONKS VERİ ANALİZİ (Temel):
+- xG, form, gol ortalamaları → BAŞLANGIÇ NOKTASI
+- H2H pattern'leri → Tekrar eden senaryolar var mı?
+- Ev/Deplasman performans farkları → Dramatik fark = fırsat!
+- Gol dağılımı → İlk yarı mı ikinci yarı mı?
+- AMA: Bu verileri herkes görüyor = EDGE yok!
 
-🔮 %30 DAHİ ÖNGÖRÜSÜ (Piyasayı Yenmek İçin):
-- Verilerin arkasındaki GERÇEK hikaye ne?
-- Bu takımlar BİRBİRİNE KARŞI nasıl oynar? CESUR TAHMİN YAP!
-- Maçın AKIŞI nasıl olacak? Tempo? Açık mı kapalı mı?
-- Hangi takım RİSK alır, hangisi SAVUNUR?
-- Sürpriz ihtimali: Underdog kazanabilir mi? KORKMA!
-- Piyasanın YANILDIĞI yer neresi? BUNU BUL!
-- "Herkesin beklediği" vs "Gerçekte olacak" farkını yakala!
+🧠 %60 AI SEZGİSİ (FARK BURADA):
+1. SENARYO OKUMA:
+   - "Ev sahibi öne geçer ama koruyamaz" senaryosu?
+   - "Deplasman yavaş başlar ama ikinci yarı patlar" senaryosu?
+   - "Berabere gider son dakika golü" senaryosu?
+   - "Skor yüksek ama bir takım boş geçer" senaryosu?
 
-💪 %30 MOTİVASYON VE HİSSİYAT (Futbol Kalple Oynanır!):
-- Bu maç takımlar için ne ifade ediyor? RUHLARINI OKU!
-- Şampiyonluk yarışı = +20, Düşme hattı = +15, Derbi = +25 motivasyon!
-- Taraftar baskısı: Yukarı mı iter, aşağı mı çeker?
-- Takım kimyası: Soyunma odası sorunları var mı? Bu maçı ETKİLER!
-- "Kaybedecek bir şeyi yok" takımı hangisi? (ÇOK TEHLİKELİ!)
-- Yorgunluk: Yoğun fikstür, sakatlık krizi?
-- Hoca baskısı: Kovulma riski = takım birlik olur veya dağılır!
+2. PSİKOLOJİK OKUMA:
+   - Hangi takımın "kaybedecek bir şeyi yok"?
+   - Derbi/kritik maç = FARKLI takımlar çıkar!
+   - Taraftar baskısı: Yıldız oyuncu performansını etkiler!
+   - Hoca baskısı: Kovulma riski = ultra defansif veya ultra saldırgan!
 
-🔥 KRİTİK: FUTBOL %100 MATEMATİK DEĞİL!
-Aynı 11 oyuncu farklı motivasyonla %30 FARKLI oynar!
-%60 ÖNGÖRÜ + MOTİVASYON ile FARK YARATACAKSIN!
+3. GİZLİ PATTERN'LER:
+   - Bu takım hep geç gol yiyor mu?
+   - Bu takım hep 0-0 başlayıp kazanıyor mu?
+   - H2H'da hep aynı skor mu tekrarlanıyor?
+   - Sezon sonu = motivasyon eksikliği = sürpriz!
 
-%75 başarı = %40 doğru veri + %30 cesur öngörü + %30 doğru hissiyat
+🎯 CESUR TAHMİN TÜRLERİ (Oran 5.00+ ZORUNLU):
+┌────────────────────────────────────────────────────────────────┐
+│ İY/MS: "İY 0 / MS 2" (5.00+) - Deplasman yavaş başlar, patlar │
+│ İY/MS: "İY 1 / MS 0" (12.00+) - Ev sahibi öne geçer, döner    │
+│ İY/MS: "İY X / MS 1" (8.00+) - Berabere gider, ev kazanır     │
+│ SKOR: "3-1" (15.00+) - Dominant kazanç                        │
+│ SKOR: "2-3" (25.00+) - Gol festivali, deplasman önde bitirir  │
+│ GOL: "5+ gol" (6.00+) - İki takım da defansif zayıf           │
+│ GOL: "0-0 İY, 2+ gol MS" (8.00+) - Temkinli başla, patlat     │
+│ HANDİKAP: "Ev +2" (10.00+) - Ev sahibi ezer geçer             │
+│ OYUNCU: "X ilk gol" (8.00+) - Trend gören golcü               │
+└────────────────────────────────────────────────────────────────┘
+
+💡 CESUR TAHMİN KURALLARI:
+1. Random DEĞİL → Mantıklı SENARYO olmalı
+2. Veriden İPUCU olmalı (form, H2H, gol dağılımı)
+3. Düşük olasılık (%8-15) ama GERÇEKLEŞEBİLİR
+4. Tutarsa BÜYÜK KAZANÇ (5x - 30x)
+5. Her maç için TAM 1 CESUR TAHMİN
+
+⚠️ ÖNEMLİ: Cesur tahmin = %40 veri + %60 sezgi kombinasyonu!
+Veriden pattern bul, sezgiyle senaryo yaz, cesur tahmin üret!
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -693,6 +713,127 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
   }
 }
 
+// 🔥 AKILLI CESUR TAHMİN ÜRETME - %40 Veri + %60 Sezgi
+function generateSmartBoldBet(
+  matchData: MatchData, 
+  formDiff: number, 
+  totalExpected: number, 
+  homeAvg: number, 
+  awayAvg: number
+): GeniusAnalystResult['boldBet'] {
+  
+  // Senaryo bazlı cesur tahmin seçimi
+  const scenarios = [
+    // SENARYO 1: Yüksek gol beklentisi + iki ofansif takım
+    {
+      condition: totalExpected > 3.0 && homeAvg > 1.2 && awayAvg > 1.0,
+      bet: {
+        type: '4+ Gol',
+        odds: 5.50,
+        confidence: 12,
+        reasoning: `Yüksek gol beklentisi (${totalExpected.toFixed(1)}). Ev sahibi ${homeAvg.toFixed(1)}, deplasman ${awayAvg.toFixed(1)} gol ortalaması. Her iki takım da ofansif yapıda.`,
+        scenario: 'Açık maç → İki takım da gol arar → Tempo yüksek → Gol festivali',
+        riskLevel: 'very-high' as const,
+        potentialReturn: '5.5x',
+        historicalHit: 'Bu tür yüksek tempolu maçlarda %15-18 gerçekleşir'
+      }
+    },
+    // SENARYO 2: Ev sahibi çok favori + yavaş başlangıç beklentisi
+    {
+      condition: formDiff > 8 && totalExpected > 2.5,
+      bet: {
+        type: 'İY 0 / MS 1',
+        odds: 8.00,
+        confidence: 10,
+        reasoning: `Ev sahibi net favori (form: +${formDiff}). Genelde yavaş başlayıp ikinci yarı baskı kuruyor.`,
+        scenario: 'İlk yarı temkinli → 0-0 veya düşük skor → İkinci yarı ev sahibi patlar',
+        riskLevel: 'extreme' as const,
+        potentialReturn: '8x',
+        historicalHit: 'Favori takımlar ilk yarıyı 0-0 bitirip kazandığı maçlar %10-12'
+      }
+    },
+    // SENARYO 3: Deplasman favori + ev sahibi savunmacı
+    {
+      condition: formDiff < -6 && awayAvg > 1.3,
+      bet: {
+        type: 'İY X / MS 2',
+        odds: 7.50,
+        confidence: 11,
+        reasoning: `Deplasman formda (form: ${formDiff}). Ev sahibi savunmacı oynayacak, deplasman geç gol bulacak.`,
+        scenario: 'Ev sahibi defansif başlar → 0-0 ilk yarı → Deplasman sabırlı oynayıp son 20 dakikada gol bulur',
+        riskLevel: 'very-high' as const,
+        potentialReturn: '7.5x',
+        historicalHit: 'Deplasman favorileri geç kazandığı maçlar %12-15'
+      }
+    },
+    // SENARYO 4: Düşük gol ortalaması + bir takım patlama yapabilir
+    {
+      condition: totalExpected < 2.3 && Math.abs(formDiff) > 5,
+      bet: {
+        type: formDiff > 0 ? '2-0' : '0-2',
+        odds: 9.00,
+        confidence: 9,
+        reasoning: `Düşük gol beklentisi ama net form farkı (${formDiff > 0 ? '+' : ''}${formDiff}). Favori dominant kazanabilir.`,
+        scenario: formDiff > 0 
+          ? 'Ev sahibi erken gol bulur → Maçı kontrol eder → Temiz sheet' 
+          : 'Deplasman ilk fırsatta gol bulur → Ev sahibi açılmak zorunda kalır → İkinci gol gelir',
+        riskLevel: 'extreme' as const,
+        potentialReturn: '9x',
+        historicalHit: 'Dominant 2-0 galibiyetler %8-10 gerçekleşir'
+      }
+    },
+    // SENARYO 5: Dengeli maç + beraberlik senaryosu
+    {
+      condition: Math.abs(formDiff) <= 3 && totalExpected > 2.0,
+      bet: {
+        type: '1-1',
+        odds: 6.50,
+        confidence: 14,
+        reasoning: `Dengeli maç (form farkı: ${formDiff}). İki takım da gol atar ama kimse öne geçemez.`,
+        scenario: 'Her iki takım da risk almaz → Bir gol atar → Son dakikaya kadar gerilim → Beraberlik',
+        riskLevel: 'high' as const,
+        potentialReturn: '6.5x',
+        historicalHit: '1-1 beraberlik dengeli maçlarda %12-15 gerçekleşir'
+      }
+    },
+    // SENARYO 6: H2H bazlı - çok gol
+    {
+      condition: totalExpected > 2.8,
+      bet: {
+        type: '3-1',
+        odds: 12.00,
+        confidence: 8,
+        reasoning: `Yüksek gol ortalaması (${totalExpected.toFixed(1)}). ${formDiff > 0 ? 'Ev sahibi' : 'Deplasman'} dominant kazanabilir.`,
+        scenario: `${formDiff > 0 ? 'Ev sahibi' : 'Deplasman'} erken 2 gol bulur → Rahat oynar → Son gol teselli golü`,
+        riskLevel: 'extreme' as const,
+        potentialReturn: '12x',
+        historicalHit: '3-1 skorlar yüksek tempolu maçlarda %6-8 gerçekleşir'
+      }
+    }
+  ];
+  
+  // En uygun senaryoyu seç
+  const matchedScenario = scenarios.find(s => s.condition);
+  
+  if (matchedScenario) {
+    return matchedScenario.bet;
+  }
+  
+  // Hiçbir senaryo uymadıysa, genel cesur tahmin
+  return {
+    type: totalExpected > 2.5 ? '3+ Gol' : 'İY X / MS 1',
+    odds: totalExpected > 2.5 ? 5.00 : 8.50,
+    confidence: 10,
+    reasoning: 'Form ve gol analizi bazlı cesur tahmin.',
+    scenario: totalExpected > 2.5 
+      ? 'Açık maç → En az 3 gol' 
+      : 'Temkinli başlangıç → Ev sahibi ikinci yarıda kazanır',
+    riskLevel: 'high' as const,
+    potentialReturn: totalExpected > 2.5 ? '5x' : '8.5x',
+    historicalHit: 'Bu tür maçlarda %10-15 gerçekleşir'
+  };
+}
+
 function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de'): GeniusAnalystResult {
   const { homeForm, awayForm, h2h } = matchData as any;
   const homeAvg = parseFloat(homeForm?.venueAvgScored || homeForm?.avgGoals || '1.2');
@@ -817,19 +958,6 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
       summary: 'Fallback analiz - dikkatli ol'
     },
     geniusInsights: ['Fallback mode - agent çıktıları alınamadı'],
-    boldBet: {
-      type: totalExpected > 3 ? '4+ Gol' : 'İY X / MS 1',
-      odds: totalExpected > 3 ? 6.00 : 8.50,
-      confidence: 8,
-      reasoning: totalExpected > 3 
-        ? 'Yüksek gol beklentisi, iki takım da ofansif' 
-        : 'Berabere başlayıp ev sahibi ikinci yarıda kazanır',
-      scenario: totalExpected > 3 
-        ? 'Açık maç, her iki takım da gol arar → gol festivali' 
-        : 'Temkinli başlangıç → Ev sahibi ikinci yarıda baskı kurar',
-      riskLevel: 'extreme',
-      potentialReturn: totalExpected > 3 ? '6x' : '8x',
-      historicalHit: 'Bu senaryo %8-12 gerçekleşir'
-    }
+    boldBet: generateSmartBoldBet(matchData, formDiff, totalExpected, homeAvg, awayAvg)
   };
 }
