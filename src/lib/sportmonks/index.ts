@@ -693,6 +693,11 @@ export async function getCompleteMatchContext(
       goalsConceded: 0,
       avgGoalsScored: 1.2,
       avgGoalsConceded: 1.2,
+      // 🆕 Venue-spesifik gol ortalamaları (varsayılan değerler)
+      homeAvgGoalsScored: 1.4,
+      homeAvgGoalsConceded: 1.0,
+      awayAvgGoalsScored: 1.0,
+      awayAvgGoalsConceded: 1.3,
       homeWins: 0,
       homeDraws: 0,
       homeLosses: 0,

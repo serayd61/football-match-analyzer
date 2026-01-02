@@ -229,6 +229,11 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         goalsConceded: 0,
         avgGoalsScored: 1.5,
         avgGoalsConceded: 1.2,
+        // 🆕 Venue-spesifik gol ortalamaları
+        homeAvgGoalsScored: 1.6,
+        homeAvgGoalsConceded: 1.0,
+        awayAvgGoalsScored: 1.2,
+        awayAvgGoalsConceded: 1.4,
         homeWins: 0,
         homeDraws: 0,
         homeLosses: 0,
@@ -253,6 +258,11 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         goalsConceded: 0,
         avgGoalsScored: 1.3,
         avgGoalsConceded: 1.4,
+        // 🆕 Venue-spesifik gol ortalamaları
+        homeAvgGoalsScored: 1.4,
+        homeAvgGoalsConceded: 1.1,
+        awayAvgGoalsScored: 1.0,
+        awayAvgGoalsConceded: 1.5,
         homeWins: 0,
         homeDraws: 0,
         homeLosses: 0,
