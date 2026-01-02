@@ -973,7 +973,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { lang } = useLanguage();
-  const t = translations[lang as keyof typeof translations] || translations.en;
+  const t = (translations[lang as keyof typeof translations] || translations.en) as any;
   
   // States
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
