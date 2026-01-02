@@ -277,11 +277,9 @@ export const translations = {
     valueBet: 'Value Bet',
     recommendedStake: 'Önerilen Bahis',
     
-    // Risk
-    riskLevel: 'Risk Seviyesi',
+    // Risk (riskLevel, riskExtreme, riskVeryHigh, riskHigh zaten Bold Bet bölümünde tanımlı)
     lowRisk: 'Düşük Risk',
     mediumRisk: 'Orta Risk',
-    highRisk: 'Yüksek Risk',
     
     // Data Quality
     dataQuality: 'Veri Kalitesi',
@@ -652,10 +650,8 @@ export const translations = {
     recommendedStake: 'Recommended Stake',
     
     // Risk
-    riskLevel: 'Risk Level',
     lowRisk: 'Low Risk',
     mediumRisk: 'Medium Risk',
-    highRisk: 'High Risk',
     
     // Data Quality
     dataQuality: 'Data Quality',
@@ -1026,10 +1022,8 @@ export const translations = {
     recommendedStake: 'Empfohlener Einsatz',
     
     // Risk
-    riskLevel: 'Risikoniveau',
     lowRisk: 'Niedriges Risiko',
     mediumRisk: 'Mittleres Risiko',
-    highRisk: 'Hohes Risiko',
     
     // Data Quality
     dataQuality: 'Datenqualität',
