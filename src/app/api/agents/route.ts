@@ -1183,13 +1183,23 @@ export async function POST(request: NextRequest) {
       // 🆕 NEW: Master Strategist Agent results
       masterStrategist: result.reports?.masterStrategist ? {
         enabled: true,
+        // Yeni format
+        agent: result.reports.masterStrategist.agent,
+        main_take: result.reports.masterStrategist.main_take,
+        signals: result.reports.masterStrategist.signals,
+        model_probs: result.reports.masterStrategist.model_probs,
+        recommended_bets: result.reports.masterStrategist.recommended_bets,
+        risks: result.reports.masterStrategist.risks,
+        confidence: result.reports.masterStrategist.confidence,
+        final: result.reports.masterStrategist.final,
+        // Backward compatibility (optional)
         agentEvaluation: result.reports.masterStrategist.agentEvaluation,
-        conflictAnalysis: result.reports.masterStrategist.conflictAnalysis,
+        conflictAnalysis: (result.reports.masterStrategist as any).conflictAnalysis,
         finalConsensus: result.reports.masterStrategist.finalConsensus,
         bestBets: result.reports.masterStrategist.bestBets,
-        riskAssessment: result.reports.masterStrategist.riskAssessment,
-        agentFeedback: result.reports.masterStrategist.agentFeedback,
-        masterInsights: result.reports.masterStrategist.masterInsights,
+        riskAssessment: (result.reports.masterStrategist as any).riskAssessment,
+        agentFeedback: (result.reports.masterStrategist as any).agentFeedback,
+        masterInsights: (result.reports.masterStrategist as any).masterInsights,
         overallConfidence: result.reports.masterStrategist.overallConfidence,
         recommendation: result.reports.masterStrategist.recommendation,
       } : { enabled: false },
