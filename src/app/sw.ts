@@ -18,7 +18,7 @@ declare const self: WorkerGlobalScope;
 const runtimeCaching: RuntimeCaching[] = [
   ...defaultCache,
   {
-    urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+    matcher: ({ url }) => /\.(?:png|jpg|jpeg|svg|gif|webp)$/.test(url.pathname),
     handler: 'CacheFirst',
     options: {
       cacheName: 'images',
@@ -29,7 +29,7 @@ const runtimeCaching: RuntimeCaching[] = [
     },
   },
   {
-    urlPattern: /^https:\/\/api\./,
+    matcher: ({ url }) => url.hostname.includes('api.'),
     handler: 'NetworkFirst',
     options: {
       cacheName: 'api-cache',
@@ -41,7 +41,7 @@ const runtimeCaching: RuntimeCaching[] = [
     },
   },
   {
-    urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
+    matcher: ({ url }) => url.hostname.includes('supabase.co'),
     handler: 'NetworkFirst',
     options: {
       cacheName: 'supabase-cache',
