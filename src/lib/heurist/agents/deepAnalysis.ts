@@ -850,9 +850,37 @@ ${probabilityContext}
       console.log('   ⚠️ DeepSeek API key not available, trying Claude...');
     }
 
-    // 2️⃣ DEEPSEEK BAŞARISIZ OLURSA CLAUDE DENE
+    // 2️⃣ DEEPSEEK BAŞARISIZ OLURSA OPENAI DENE (GPT-4 Turbo)
     if (!response) {
-      console.log('   🔵 [2/3] Trying Claude for deep analysis...');
+      const hasOpenAI = !!process.env.OPENAI_API_KEY;
+      if (hasOpenAI) {
+        console.log('   🟢 [2/4] Trying OpenAI GPT-4 Turbo for deep analysis...');
+        try {
+          response = await aiClient.chat([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ], {
+            model: 'gpt-4-turbo',
+            useMCP: false,
+            mcpFallback: false,
+            fixtureId: matchData.fixtureId,
+            temperature: 0.3,
+            maxTokens: 800,
+            timeout: 15000 // 15 saniye
+          });
+          
+          if (response) {
+            console.log('   ✅ OpenAI GPT-4 responded successfully');
+          }
+        } catch (openaiError: any) {
+          console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
+        }
+      }
+    }
+
+    // 3️⃣ OPENAI BAŞARISIZ OLURSA CLAUDE DENE
+    if (!response) {
+      console.log('   🔵 [3/4] Trying Claude for deep analysis...');
       try {
         response = await aiClient.chat([
           { role: 'system', content: systemPrompt },
@@ -863,7 +891,7 @@ ${probabilityContext}
           mcpFallback: false,
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
-          maxTokens: 800, // Kısa ve öz yanıt
+          maxTokens: 800,
           timeout: 12000 // 12 saniye
         });
         
@@ -875,9 +903,9 @@ ${probabilityContext}
       }
     }
 
-    // 3️⃣ HER İKİSİ DE BAŞARISIZ OLURSA AKILLI FALLBACK
+    // 5️⃣ HER ÜÇÜ DE BAŞARISIZ OLURSA AKILLI FALLBACK
     if (!response) {
-      console.log('   🟠 [3/3] Using intelligent fallback analysis...');
+      console.log('   🟠 [4/4] Using intelligent fallback analysis...');
       const fallbackResult = getDefaultDeepAnalysis(matchData, language);
       console.log(`   ✅ Fallback generated: ${fallbackResult.matchResult?.prediction} (${fallbackResult.matchResult?.confidence}%)`);
       return fallbackResult;

@@ -532,21 +532,94 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
   try {
-    const response = await aiClient.chat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ], {
-      model: 'claude', // Claude daha hızlı ve güvenilir
-      useMCP: false, // MCP devre dışı - daha hızlı
-      mcpFallback: true,
-      fixtureId: matchData.fixtureId,
-      temperature: 0.15,
-      maxTokens: 1000, // Daha az token = daha hızlı
-      timeout: 8000 // 8 saniye - Vercel limit
-    });
+    let response = null;
+    
+    // ============================================================
+    // STRATEJİ: OpenAI → DeepSeek → Claude → Fallback
+    // ============================================================
+    
+    // 1️⃣ ÖNCE OPENAI DENE (GPT-4 Turbo - en hızlı)
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+    if (hasOpenAI) {
+      console.log('   🟢 [1/4] Trying OpenAI GPT-4 Turbo...');
+      try {
+        response = await aiClient.chat([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ], {
+          model: 'gpt-4-turbo',
+          useMCP: false,
+          mcpFallback: false,
+          fixtureId: matchData.fixtureId,
+          temperature: 0.15,
+          maxTokens: 1000,
+          timeout: 12000
+        });
+        
+        if (response) {
+          console.log('   ✅ OpenAI GPT-4 responded successfully');
+        }
+      } catch (openaiError: any) {
+        console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
+      }
+    }
+    
+    // 2️⃣ OPENAI BAŞARISIZ OLURSA DEEPSEEK DENE
+    if (!response) {
+      const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+      if (hasDeepSeek) {
+        console.log('   🟣 [2/4] Trying DeepSeek...');
+        try {
+          response = await aiClient.chat([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ], {
+            model: 'deepseek',
+            useMCP: false,
+            mcpFallback: false,
+            fixtureId: matchData.fixtureId,
+            temperature: 0.15,
+            maxTokens: 1000,
+            timeout: 12000
+          });
+          
+          if (response) {
+            console.log('   ✅ DeepSeek responded successfully');
+          }
+        } catch (deepseekError: any) {
+          console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
+        }
+      }
+    }
+    
+    // 3️⃣ DEEPSEEK BAŞARISIZ OLURSA CLAUDE DENE
+    if (!response) {
+      console.log('   🔵 [3/4] Trying Claude...');
+      try {
+        response = await aiClient.chat([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ], {
+          model: 'claude',
+          useMCP: false,
+          mcpFallback: false,
+          fixtureId: matchData.fixtureId,
+          temperature: 0.15,
+          maxTokens: 1000,
+          timeout: 10000
+        });
+        
+        if (response) {
+          console.log('   ✅ Claude responded successfully');
+        }
+      } catch (claudeError: any) {
+        console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
+      }
+    }
 
     if (!response) {
-      throw new Error('No response from AI');
+      console.log('   🟠 [4/4] All AI models failed, using fallback...');
+      throw new Error('No response from any AI model');
     }
 
     // Parse JSON
