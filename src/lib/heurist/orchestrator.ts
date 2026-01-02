@@ -773,9 +773,11 @@ export async function runOrchestrator(
     console.log('   🟢 Starting Odds Agent...');
     console.log('   🟡 Starting Sentiment Agent...');
     console.log('   🟣 Starting Deep Analysis Agent...');
-    console.log('   🧠 Starting Genius Analyst...');
+    console.log('   ⏸️ Genius Analyst: DISABLED (performance optimization)');
     
-    const [statsResult, oddsResult, sentimentResult, deepAnalysisResult, geniusAnalystResult] = await Promise.all([
+    // ⚡ PERFORMANCE: Genius Analyst geçici olarak devre dışı (timeout sorunları)
+    // TODO: Genius Analyst'ı ayrı bir endpoint'te çalıştır
+    const [statsResult, oddsResult, sentimentResult, deepAnalysisResult] = await Promise.all([
       runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
@@ -792,11 +794,10 @@ export async function runOrchestrator(
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
       }),
-      runGeniusAnalyst(matchData as unknown as MatchData, language).catch(err => {
-        console.error('❌ Genius Analyst failed:', err?.message || err);
-        return null;
-      }),
     ]);
+    
+    // Genius Analyst şimdilik null (performans optimizasyonu)
+    const geniusAnalystResult: GeniusAnalystResult | null = null;
     
     // Hangi agent'lar başarılı/başarısız oldu?
     console.log(`   📊 Stats: ${statsResult ? '✅' : '❌'}`);

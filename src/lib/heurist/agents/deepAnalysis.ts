@@ -845,7 +845,7 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 400, // Çok kısa yanıt = çok hızlı
-          timeout: 20000 // 20 saniye
+          timeout: 12000 // 12 saniye (performans için düşürüldü)
         });
         
         if (response) {
@@ -874,7 +874,7 @@ ${probabilityContext}
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
             maxTokens: 600,
-            timeout: 20000 // 20 saniye
+            timeout: 12000 // 12 saniye (performans için düşürüldü)
           });
           
           if (response) {
@@ -900,7 +900,7 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 600,
-          timeout: 20000 // 20 saniye
+          timeout: 12000 // 12 saniye (performans için düşürüldü)
         });
         
         if (response) {
