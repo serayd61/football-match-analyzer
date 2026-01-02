@@ -1147,30 +1147,35 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
     return fallback;
   };
   
-  // Öncelik sırası: detailedHome > venueAvgScored > avgGoalsScored > avgGoals > fallback
+  // Öncelik sırası: venueAvgScored > avgGoals > detailedStats > fallback
+  // matchData.homeForm'daki değerler daha doğru, detailedStats bazen yanlış değerler dönebiliyor
   // Raw değerleri al (debug için)
-  const homeGoalsScoredRaw = detailedHome?.homeAvgGoalsScored || 
+  const homeGoalsScoredRaw = 
     matchData.homeForm?.venueAvgScored || 
-    detailedHome?.avgGoalsScored || 
-    matchData.homeForm?.avgGoals;
+    matchData.homeForm?.avgGoals ||
+    detailedHome?.homeAvgGoalsScored || 
+    detailedHome?.avgGoalsScored;
   const homeGoalsScored = safeParseFloat(homeGoalsScoredRaw, 1.2);
   
-  const homeGoalsConcededRaw = detailedHome?.homeAvgGoalsConceded || 
+  const homeGoalsConcededRaw = 
     matchData.homeForm?.venueAvgConceded || 
-    detailedHome?.avgGoalsConceded || 
-    matchData.homeForm?.avgConceded;
+    matchData.homeForm?.avgConceded ||
+    detailedHome?.homeAvgGoalsConceded || 
+    detailedHome?.avgGoalsConceded;
   const homeGoalsConceded = safeParseFloat(homeGoalsConcededRaw, 1.0);
   
-  const awayGoalsScoredRaw = detailedAway?.awayAvgGoalsScored || 
+  const awayGoalsScoredRaw = 
     matchData.awayForm?.venueAvgScored || 
-    detailedAway?.avgGoalsScored || 
-    matchData.awayForm?.avgGoals;
+    matchData.awayForm?.avgGoals ||
+    detailedAway?.awayAvgGoalsScored || 
+    detailedAway?.avgGoalsScored;
   const awayGoalsScored = safeParseFloat(awayGoalsScoredRaw, 1.0);
   
-  const awayGoalsConcededRaw = detailedAway?.awayAvgGoalsConceded || 
+  const awayGoalsConcededRaw = 
     matchData.awayForm?.venueAvgConceded || 
-    detailedAway?.avgGoalsConceded || 
-    matchData.awayForm?.avgConceded;
+    matchData.awayForm?.avgConceded ||
+    detailedAway?.awayAvgGoalsConceded || 
+    detailedAway?.avgGoalsConceded;
   const awayGoalsConceded = safeParseFloat(awayGoalsConcededRaw, 1.2);
   
   // Debug logging - daha detaylı
