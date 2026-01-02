@@ -410,8 +410,14 @@ function extractJSON(text: string): any | null {
       const confMatch = jsonStr.match(/"confidence"\s*:\s*([\d.]+)/);
       result.confidence = confMatch ? parseInt(confMatch[1]) : 60;
       
-      const mrMatch = jsonStr.match(/"matchResult"\s*:\s*"?([12X])"?/i);
-      result.matchResult = mrMatch ? mrMatch[1].toUpperCase() : 'X';
+      // matchResult: "1", "2", "X", "home", "away", "draw" formatlarını yakala
+      const mrMatch = jsonStr.match(/"matchResult"\s*:\s*"?(1|2|X|home|away|draw)"?/i);
+      if (mrMatch) {
+        const val = mrMatch[1].toLowerCase();
+        result.matchResult = val === 'home' || val === '1' ? '1' : val === 'away' || val === '2' ? '2' : 'X';
+      } else {
+        result.matchResult = 'X'; // Bulunamazsa default
+      }
       
       const mrReasonMatch = jsonStr.match(/"matchResultReasoning"\s*:\s*"([^"]+)"/);
       result.matchResultReasoning = mrReasonMatch ? mrReasonMatch[1] : '';

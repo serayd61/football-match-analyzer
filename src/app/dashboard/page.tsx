@@ -402,7 +402,11 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                     )}
                     {stats.matchResult && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-blue-400">{stats.matchResult === '1' ? 'Ev Sahibi' : stats.matchResult === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{stats.matchResultConfidence || stats.confidence} güven)</p>
+                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-blue-400">{
+                          stats.matchResult === '1' || stats.matchResult === 'home' ? 'Ev Sahibi' : 
+                          stats.matchResult === '2' || stats.matchResult === 'away' ? 'Deplasman' : 
+                          'Beraberlik'
+                        }</span> (%{stats.matchResultConfidence || stats.confidence} güven)</p>
                         {stats.matchResultReasoning && <p className="text-gray-400 text-xs mt-1">{stats.matchResultReasoning}</p>}
                       </div>
                     )}
