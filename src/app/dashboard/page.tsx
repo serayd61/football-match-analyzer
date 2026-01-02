@@ -1140,6 +1140,12 @@ export default function DashboardPage() {
   // 🔥 CESUR TAHMİN (BOLD BET) - Ayrı Endpoint
   // ============================================================================
   
+  // selectedFixture değiştiğinde boldBet state'ini temizle (cache sorunu önleme)
+  useEffect(() => {
+    setBoldBet(null);
+    setBoldBetError(null);
+  }, [selectedFixture?.id]);
+  
   const fetchBoldBet = async () => {
     if (!selectedFixture) return;
     
@@ -1150,7 +1156,13 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/genius/bold-bet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        cache: 'no-store', // Cache'i devre dışı bırak
         body: JSON.stringify({
           fixtureId: selectedFixture.id,
           language: lang
