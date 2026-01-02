@@ -622,7 +622,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
             mcpFallback: false,
             fixtureId: matchData.fixtureId,
             temperature: 0.15,
-            maxTokens: 600,
+            maxTokens: 400, // Çok kısa = çok hızlı
             timeout: 18000 // 18 saniye
           });
           
@@ -662,7 +662,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
 
     if (!response) {
       console.log('   🟠 [4/4] All AI models failed, using fallback...');
-      throw new Error('No response from any AI model');
+      return getDefaultGeniusAnalysis(matchData, language);
     }
 
     // Parse JSON
