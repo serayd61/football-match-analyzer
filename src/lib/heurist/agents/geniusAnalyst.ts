@@ -596,7 +596,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
           fixtureId: matchData.fixtureId,
           temperature: 0.15,
           maxTokens: 600, // Daha kısa = daha hızlı
-          timeout: 12000 // 12 saniye
+          timeout: 18000 // 18 saniye
         });
         
         if (response) {
@@ -623,7 +623,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
             fixtureId: matchData.fixtureId,
             temperature: 0.15,
             maxTokens: 600,
-            timeout: 12000 // 12 saniye
+            timeout: 18000 // 18 saniye
           });
           
           if (response) {
@@ -649,7 +649,7 @@ Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli ve
           fixtureId: matchData.fixtureId,
           temperature: 0.15,
           maxTokens: 600,
-          timeout: 12000 // 12 saniye
+          timeout: 18000 // 18 saniye
         });
         
         if (response) {
