@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
         over25Percentage: matchData.h2h?.over25Percentage || '50%',
         bttsPercentage: matchData.h2h?.bttsPercentage || '50%',
         matches: matchData.h2h?.matchDetails?.map(m => ({
-          home: m.homeTeam || 'Home',
-          away: m.awayTeam || 'Away',
+          home: m.isHome ? matchInfo.homeTeam : m.opponent,
+          away: m.isHome ? m.opponent : matchInfo.awayTeam,
           score: m.score || '0-0'
         })) || []
       },
