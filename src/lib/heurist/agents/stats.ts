@@ -1228,18 +1228,7 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
 
   // 🆕 xG Analysis - zaten yukarıda hesaplandı, tekrar hesaplamaya gerek yok
   // const xgAnalysis = calculateXGAnalysis(matchData, language); // YUKARIDA HESAPLANDI
-  console.log(`   📈 xG Analysis: Home ${xgAnalysis.homeXG} vs Away ${xgAnalysis.awayXG} (Total: ${xgAnalysis.totalXG})`);
-  console.log(`   📈 Performance: Home ${xgAnalysis.homePerformance}, Away ${xgAnalysis.awayPerformance}`);
-  console.log(`   📈 Actual Goals: Home ${xgAnalysis.homeActual} vs Away ${xgAnalysis.awayActual}`);
-  
-  // 🆕 xG Analysis'ten gelen gerçek değerleri kullan (daha doğru!)
-  // Eğer xG Analysis'te gerçek değerler varsa, onları kullan
-  const homeGoalsScoredFinal = xgAnalysis.homeActual > 0 ? xgAnalysis.homeActual : homeGoalsScored;
-  const awayGoalsScoredFinal = xgAnalysis.awayActual > 0 ? xgAnalysis.awayActual : awayGoalsScored;
-  
-  // Gol yeme ortalamaları için de xG Analysis'ten gelen değerleri kullan
-  // (calculateXGAnalysis'te homeConceded ve awayConceded hesaplanıyor ama return edilmiyor)
-  // Bu yüzden mevcut hesaplamayı kullanıyoruz ama xG Analysis'teki değerlerle uyumlu hale getiriyoruz
+  // homeGoalsScoredFinal ve awayGoalsScoredFinal de yukarıda tanımlandı, tekrar tanımlamaya gerek yok
   
   // 🆕 Timing Patterns
   const timingPatterns = analyzeTimingPatterns(matchData, language);
