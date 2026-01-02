@@ -1,6 +1,6 @@
 import { defaultCache } from '@serwist/next/worker';
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
-import { Serwist, type RuntimeCaching } from 'serwist';
+import { Serwist } from 'serwist';
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -14,51 +14,12 @@ declare global {
 
 declare const self: WorkerGlobalScope;
 
-// Custom runtime caching strategies
-const runtimeCaching: RuntimeCaching[] = [
-  ...defaultCache,
-  {
-    matcher: ({ url }) => /\.(?:png|jpg|jpeg|svg|gif|webp)$/.test(url.pathname),
-    handler: 'CacheFirst',
-    options: {
-      cacheName: 'images',
-      expiration: {
-        maxEntries: 100,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-      },
-    },
-  },
-  {
-    matcher: ({ url }) => url.hostname.includes('api.'),
-    handler: 'NetworkFirst',
-    options: {
-      cacheName: 'api-cache',
-      expiration: {
-        maxEntries: 50,
-        maxAgeSeconds: 5 * 60, // 5 minutes
-      },
-      networkTimeoutSeconds: 10,
-    },
-  },
-  {
-    matcher: ({ url }) => url.hostname.includes('supabase.co'),
-    handler: 'NetworkFirst',
-    options: {
-      cacheName: 'supabase-cache',
-      expiration: {
-        maxEntries: 100,
-        maxAgeSeconds: 10 * 60, // 10 minutes
-      },
-    },
-  },
-];
-
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching,
+  runtimeCaching: defaultCache,
   fallbacks: {
     entries: [
       {
@@ -70,4 +31,3 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
-
