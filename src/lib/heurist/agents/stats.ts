@@ -1187,12 +1187,13 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   console.log(`      homeGoalsConceded: ${homeGoalsConceded} (venueAvgConceded: ${matchData.homeForm?.venueAvgConceded}, avgConceded: ${matchData.homeForm?.avgConceded})`);
   
   // Beklenen goller (gol atma beklentisi)
-  const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
-  const awayExpected = (awayGoalsScored + homeGoalsConceded) / 2;
+  // 🆕 xG Analysis'ten gelen gerçek değerleri kullan (daha doğru!)
+  const homeExpected = (homeGoalsScoredFinal + awayGoalsConceded) / 2;
+  const awayExpected = (awayGoalsScoredFinal + homeGoalsConceded) / 2;
   const expectedTotal = homeExpected + awayExpected;
   
-  console.log(`      homeExpected: ${homeExpected.toFixed(2)} = (${homeGoalsScored} + ${awayGoalsConceded}) / 2`);
-  console.log(`      awayExpected: ${awayExpected.toFixed(2)} = (${awayGoalsScored} + ${homeGoalsConceded}) / 2`);
+  console.log(`      homeExpected: ${homeExpected.toFixed(2)} = (${homeGoalsScoredFinal} [from xG: ${xgAnalysis.homeActual}] + ${awayGoalsConceded}) / 2`);
+  console.log(`      awayExpected: ${awayExpected.toFixed(2)} = (${awayGoalsScoredFinal} [from xG: ${xgAnalysis.awayActual}] + ${homeGoalsConceded}) / 2`);
   
   // 🆕 Gol yeme beklentisi
   const homeConcededExpected = (homeGoalsConceded + awayGoalsScored) / 2;
@@ -1220,6 +1221,16 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   const xgAnalysis = calculateXGAnalysis(matchData, language);
   console.log(`   📈 xG Analysis: Home ${xgAnalysis.homeXG} vs Away ${xgAnalysis.awayXG} (Total: ${xgAnalysis.totalXG})`);
   console.log(`   📈 Performance: Home ${xgAnalysis.homePerformance}, Away ${xgAnalysis.awayPerformance}`);
+  console.log(`   📈 Actual Goals: Home ${xgAnalysis.homeActual} vs Away ${xgAnalysis.awayActual}`);
+  
+  // 🆕 xG Analysis'ten gelen gerçek değerleri kullan (daha doğru!)
+  // Eğer xG Analysis'te gerçek değerler varsa, onları kullan
+  const homeGoalsScoredFinal = xgAnalysis.homeActual > 0 ? xgAnalysis.homeActual : homeGoalsScored;
+  const awayGoalsScoredFinal = xgAnalysis.awayActual > 0 ? xgAnalysis.awayActual : awayGoalsScored;
+  
+  // Gol yeme ortalamaları için de xG Analysis'ten gelen değerleri kullan
+  // (calculateXGAnalysis'te homeConceded ve awayConceded hesaplanıyor ama return edilmiyor)
+  // Bu yüzden mevcut hesaplamayı kullanıyoruz ama xG Analysis'teki değerlerle uyumlu hale getiriyoruz
   
   // 🆕 Timing Patterns
   const timingPatterns = analyzeTimingPatterns(matchData, language);
