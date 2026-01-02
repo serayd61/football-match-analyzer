@@ -56,6 +56,11 @@ export class SportmonksProvider implements DataProvider {
       goalsConceded: stats.goalsConceded,
       avgGoalsScored: stats.avgGoalsScored,
       avgGoalsConceded: stats.avgGoalsConceded,
+      // 🆕 VENUE-SPESİFİK GOL ORTALAMALARI (ÖNEMLİ!)
+      homeAvgGoalsScored: stats.homeAvgGoalsScored,
+      homeAvgGoalsConceded: stats.homeAvgGoalsConceded,
+      awayAvgGoalsScored: stats.awayAvgGoalsScored,
+      awayAvgGoalsConceded: stats.awayAvgGoalsConceded,
       homeWins: stats.homeWins,
       homeDraws: stats.homeDraws,
       homeLosses: stats.homeLosses,

@@ -52,6 +52,11 @@ export interface TeamStats {
   goalsConceded: number;
   avgGoalsScored: number;
   avgGoalsConceded: number;
+  // 🆕 VENUE-SPESİFİK GOL ORTALAMALARI (ÖNEMLİ!)
+  homeAvgGoalsScored: number;    // Ev maçlarında attığı gol ortalaması
+  homeAvgGoalsConceded: number;  // Ev maçlarında yediği gol ortalaması
+  awayAvgGoalsScored: number;    // Deplasman maçlarında attığı gol ortalaması
+  awayAvgGoalsConceded: number;  // Deplasman maçlarında yediği gol ortalaması
   homeWins: number;
   homeDraws: number;
   homeLosses: number;
