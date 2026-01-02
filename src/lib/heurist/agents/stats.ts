@@ -1227,9 +1227,33 @@ Return detailed JSON:`;
           }
         }
         
-        // Over/Under validation - DÜZELTME: Daha konservatif eşik
-        // 2.5 yerine 2.65 kullan (regresyon düzeltmesi - takımlar genelde xG'nin altında skor yapar)
-        if (!['Over', 'Under'].includes(parsed.overUnder)) {
+        // Over/Under validation - PROBABILITY ENGINE ile uyumlu
+        // Önce probabilityEngine'in final sonucunu kontrol et
+        if (probabilityResult && probabilityResult.overUnder.prediction) {
+          const probEngineOU = probabilityResult.overUnder.prediction;
+          const probEngineConf = probabilityResult.overUnder.confidence;
+          
+          // Eğer probabilityEngine güçlü bir sinyal veriyorsa (>= 55%), onu kullan
+          if (probEngineConf >= 55) {
+            parsed.overUnder = probEngineOU;
+            console.log(`   🎯 Probability Engine Override: ${parsed.overUnder} → ${probEngineOU} (${probEngineConf}% confidence)`);
+          } else if (!['Over', 'Under'].includes(parsed.overUnder)) {
+            // AI değeri geçersizse, probabilityEngine'i kullan
+            parsed.overUnder = probEngineOU;
+          } else if (Math.abs(probEngineConf - 50) > 5) {
+            // ProbabilityEngine'in güveni %50'den 5+ puan farklıysa, onu dikkate al
+            // Ama AI değeri de geçerliyse, ikisini karşılaştır
+            const aiOU = parsed.overUnder;
+            if (aiOU !== probEngineOU) {
+              // Çelişki var - daha yüksek güvene sahip olanı kullan
+              if (probEngineConf > confidences.overUnderConf) {
+                parsed.overUnder = probEngineOU;
+                console.log(`   ⚠️ Probability Engine çelişkisi: AI ${aiOU}, ProbEngine ${probEngineOU} - ProbEngine kullanıldı (${probEngineConf}% vs ${confidences.overUnderConf}%)`);
+              }
+            }
+          }
+        } else if (!['Over', 'Under'].includes(parsed.overUnder)) {
+          // ProbabilityEngine yoksa, veri bazlı karar
           // Over için daha yüksek eşik: 2.5 → 2.65
           // avgOver25 eşiği: 55 → 60
           parsed.overUnder = (expectedTotal >= 2.65 || avgOver25 >= 60) ? 'Over' : 'Under';

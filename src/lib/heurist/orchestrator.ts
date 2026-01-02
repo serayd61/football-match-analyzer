@@ -125,6 +125,13 @@ function calculateVotes(
   const votes: { [key: string]: string } = {};
   const count: { [key: string]: number } = {};
   const confidences: { [key: string]: number[] } = {};
+  // Agent ağırlıkları (Stats: 30%, Odds: 35%, Deep: 20%, Sentiment: 15%)
+  const agentWeights: { [key: string]: number } = {
+    stats: 30,
+    odds: 35,
+    deepAnalysis: 20,
+    sentiment: 15
+  };
   
   for (const [agent, result] of Object.entries(results)) {
     if (!result) continue;
@@ -166,9 +173,38 @@ function calculateVotes(
     }
   }
   
-  const avgConfidence = confidences[winner]
-    ? Math.round(confidences[winner].reduce((a, b) => a + b, 0) / confidences[winner].length)
-    : 50;
+  // Ağırlıklı ortalama confidence (agent weight'e göre)
+  const winnerAgents: Array<{ agent: string; conf: number; weight: number }> = [];
+  
+  for (const [agent, result] of Object.entries(results)) {
+    if (!result || votes[agent] !== winner) continue;
+    
+    let conf: number;
+    if (field === 'matchResult') {
+      conf = result.matchResultConfidence || result.confidence || 50;
+    } else if (field === 'overUnder') {
+      conf = result.overUnderConfidence || result.confidence || 50;
+    } else {
+      conf = result.bttsConfidence || result.confidence || 50;
+    }
+    
+    const weight = agentWeights[agent] || 25;
+    winnerAgents.push({ agent, conf, weight });
+  }
+  
+  let weightedConfSum = 0;
+  let totalWeight = 0;
+  
+  for (const { conf, weight } of winnerAgents) {
+    weightedConfSum += conf * weight;
+    totalWeight += weight;
+  }
+  
+  const avgConfidence = totalWeight > 0 
+    ? Math.round(weightedConfSum / totalWeight)
+    : confidences[winner]?.length > 0
+      ? Math.round(confidences[winner].reduce((a, b) => a + b, 0) / confidences[winner].length)
+      : 50;
   
   return { winner, votes, count, confidence: avgConfidence };
 }

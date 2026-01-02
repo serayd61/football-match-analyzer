@@ -956,21 +956,104 @@ function getDefaultMasterStrategist(
   // Surprise pick bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
   let surprisePick: MasterStrategistResult['final']['surprise_pick'] = null;
   
-  // Draw kontrolü
+  // Tüm yüksek oranlı seçenekleri kontrol et
+  const surpriseCandidates: Array<{
+    market: string;
+    selection: string;
+    model_prob: number;
+    market_odds: number;
+  }> = [];
+  
+  // 1. Draw kontrolü
   if (drawProb >= 0.25) {
-    const drawFairOdds = 1 / drawProb;
     const drawMarketOdds = parseFloat(marketOddsX);
-    const drawEdge = (drawFairOdds / drawMarketOdds) - 1;
-    if (drawMarketOdds >= 3.20 && drawEdge >= 0.05) {
-      surprisePick = {
+    if (drawMarketOdds >= 3.20) {
+      surpriseCandidates.push({
         market: '1X2',
         selection: 'Draw',
         model_prob: drawProb,
-        fair_odds: drawFairOdds,
-        market_odds: drawMarketOdds,
-        edge: drawEdge,
-        confidence: Math.round(drawProb * 100),
-        rationale: [`Beraberlik olasılığı ${Math.round(drawProb * 100)}%`, `Piyasa oranı ${drawMarketOdds}`, `Edge: +${Math.round(drawEdge * 100)}%`]
+        market_odds: drawMarketOdds
+      });
+    }
+  }
+  
+  // 2. Home Win kontrolü (eğer underdog ise)
+  if (homeWinProb >= 0.25 && finalMR !== '1') {
+    const homeMarketOdds = parseFloat(marketOdds1);
+    if (homeMarketOdds >= 3.20) {
+      surpriseCandidates.push({
+        market: '1X2',
+        selection: 'Home',
+        model_prob: homeWinProb,
+        market_odds: homeMarketOdds
+      });
+    }
+  }
+  
+  // 3. Away Win kontrolü (eğer underdog ise)
+  if (awayWinProb >= 0.25 && finalMR !== '2') {
+    const awayMarketOdds = parseFloat(marketOdds2);
+    if (awayMarketOdds >= 3.20) {
+      surpriseCandidates.push({
+        market: '1X2',
+        selection: 'Away',
+        model_prob: awayWinProb,
+        market_odds: awayMarketOdds
+      });
+    }
+  }
+  
+  // 4. Under 2.5 kontrolü (eğer Over beklentisi varsa)
+  if (under25Prob >= 0.25 && finalOU === 'Over') {
+    const underMarketOdds = parseFloat(marketOddsUnder);
+    if (underMarketOdds >= 3.20) {
+      surpriseCandidates.push({
+        market: 'Over/Under 2.5',
+        selection: 'Under',
+        model_prob: under25Prob,
+        market_odds: underMarketOdds
+      });
+    }
+  }
+  
+  // 5. BTTS No kontrolü (eğer Yes beklentisi varsa)
+  if (bttsNoProb >= 0.25 && finalBTTS === 'Yes') {
+    const bttsNoMarketOdds = odds?.realValueChecks?.btts?.marketOdds || 1.8;
+    if (bttsNoMarketOdds >= 3.20) {
+      surpriseCandidates.push({
+        market: 'BTTS',
+        selection: 'No',
+        model_prob: bttsNoProb,
+        market_odds: bttsNoMarketOdds
+      });
+    }
+  }
+  
+  // En yüksek edge'e sahip adayı seç
+  if (surpriseCandidates.length > 0) {
+    const bestSurprise = surpriseCandidates
+      .map(candidate => {
+        const fairOdds = 1 / candidate.model_prob;
+        const edge = (fairOdds / candidate.market_odds) - 1;
+        return { ...candidate, fair_odds: fairOdds, edge };
+      })
+      .filter(c => c.edge >= 0.05) // Edge >= +5% olmalı
+      .sort((a, b) => b.edge - a.edge)[0]; // En yüksek edge
+    
+    if (bestSurprise) {
+      surprisePick = {
+        market: bestSurprise.market,
+        selection: bestSurprise.selection,
+        model_prob: bestSurprise.model_prob,
+        fair_odds: bestSurprise.fair_odds,
+        market_odds: bestSurprise.market_odds,
+        edge: bestSurprise.edge,
+        confidence: Math.round(bestSurprise.model_prob * 100),
+        rationale: [
+          `${bestSurprise.selection} olasılığı ${Math.round(bestSurprise.model_prob * 100)}%`,
+          `Piyasa oranı ${bestSurprise.market_odds}`,
+          `Edge: +${Math.round(bestSurprise.edge * 100)}%`
+        ]
       };
     }
   }
