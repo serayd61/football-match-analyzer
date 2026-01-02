@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runGeniusAnalyst } from '@/lib/heurist/agents/geniusAnalyst';
-import { getFullFixtureData } from '@/lib/heurist/sportmonks-data';
+import { fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
 import { MatchData } from '@/lib/heurist/types';
 
 export const maxDuration = 30; // 30 saniye timeout
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     
     // 1. Maç verisini al
     console.log('📊 Step 1: Fetching match data...');
-    const matchData = await getFullFixtureData(fixtureId);
+    const matchData = await fetchMatchDataByFixtureId(fixtureId);
     
     if (!matchData) {
       return NextResponse.json({
