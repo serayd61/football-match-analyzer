@@ -37,10 +37,10 @@ export async function GET(request: NextRequest) {
     
     const supabase = getSupabase();
     
-    // Get all data first (avoid head: true which has RLS issues)
+    // Get all data (select * to avoid any column-specific RLS issues)
     const { data: allData, error: fetchError } = await supabase
       .from('unified_analysis')
-      .select('is_settled, match_result_correct, over_under_correct, btts_correct');
+      .select('*');
     
     if (fetchError) {
       console.error('❌ Fetch error:', fetchError);
