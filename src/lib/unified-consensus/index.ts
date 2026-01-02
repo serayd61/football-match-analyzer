@@ -389,9 +389,12 @@ function calculateWeightedConsensus(
     normalizedPrediction = 'No';
   }
   
+  // DÜZELTME: Güven skorları kalibre edildi
+  // Max %85 → %75 (gerçek dünya doğruluk oranlarıyla uyumlu)
+  // Çok yüksek güven vermek yanıltıcı - gerçek doğruluk %29-65 arası
   return {
     prediction: normalizedPrediction,
-    confidence: Math.min(85, Math.max(50, avgConfidence)),
+    confidence: Math.min(75, Math.max(50, avgConfidence * 0.9)), // %10 düşürüldü
     reasoning
   };
 }

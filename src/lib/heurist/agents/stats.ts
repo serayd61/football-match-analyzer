@@ -1,6 +1,7 @@
 import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
+import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 
 // ==================== MOTİVASYON SKORU HESAPLAMA ====================
 
@@ -911,6 +912,21 @@ function generateStatsReasoning(
 export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
   console.log('📊 Stats Agent starting DEEP analysis with xG, timing patterns, clean sheets...');
   
+  // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
+  let probabilityResult: ProbabilityResult | null = null;
+  let probabilityContext: string = '';
+  try {
+    probabilityResult = calculateComprehensiveProbabilities(matchData);
+    probabilityContext = generateProbabilityContext(matchData);
+    console.log('   🎯 Probability Engine Results:');
+    console.log(`      Poisson: Home ${probabilityResult.poissonModel.homeWin}% | Draw ${probabilityResult.poissonModel.draw}% | Away ${probabilityResult.poissonModel.awayWin}%`);
+    console.log(`      Monte Carlo: Home ${probabilityResult.monteCarloModel.homeWinPct}% | Draw ${probabilityResult.monteCarloModel.drawPct}% | Away ${probabilityResult.monteCarloModel.awayWinPct}%`);
+    console.log(`      Final: ${probabilityResult.matchResult.prediction} (${probabilityResult.matchResult.confidence}%) | ${probabilityResult.overUnder.prediction} (${probabilityResult.overUnder.confidence}%)`);
+    console.log(`      Motivation: Home ${probabilityResult.motivationAnalysis.home.score}/100 vs Away ${probabilityResult.motivationAnalysis.away.score}/100`);
+  } catch (e) {
+    console.log('   ⚠️ Probability Engine failed, using fallback calculations');
+  }
+  
   // 🆕 LİG PROFİLİ - Lig karakteristiklerini al
   const leagueProfile = getLeagueProfile(matchData.league || '');
   if (leagueProfile) {
@@ -1071,7 +1087,17 @@ CONFIDENCE TARGETS:
 - BTTS: ${confidences.bttsConf}%
 - First Half: ${confidences.firstHalfConf}%
 
-Analyze ALL data including xG, timing patterns, and clean sheets. Return detailed JSON:`;
+${probabilityContext ? `
+═══════════════════════════════════════════════════════════════
+🎯 PROBABILITY ENGINE (MATEMATİKSEL MODELLER)
+═══════════════════════════════════════════════════════════════
+${probabilityContext}
+` : ''}
+
+Analyze ALL data including xG, timing patterns, clean sheets, and PROBABILITY ENGINE results.
+USE the Poisson/Monte Carlo models as REFERENCE but form your OWN analysis.
+Consider: %60 data analysis, %20 mathematical prediction, %20 psychological factors.
+Return detailed JSON:`;
 
   const messages: AIMessage[] = [
     { role: 'system', content: PROMPTS[language] || PROMPTS.en },
@@ -1120,20 +1146,27 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
           parsed.agentSummary = reasoning.agentSummary;
         }
         
-        // Match result validation
+        // Match result validation - DÜZELTME: Daha konservatif eşikler
+        // Beraberlik olasılığı artırıldı (gerçek dünyada ~%25-28)
         if (!['1', '2', 'X'].includes(parsed.matchResult?.toUpperCase())) {
-          if (formDiff > 3) parsed.matchResult = '1';
-          else if (formDiff < -3) parsed.matchResult = '2';
-          else if (homeExpected > awayExpected + 0.3) parsed.matchResult = '1';
-          else if (awayExpected > homeExpected + 0.3) parsed.matchResult = '2';
+          // Form farkı eşikleri artırıldı: 3 → 6 (daha güvenilir sinyal)
+          if (formDiff > 6) parsed.matchResult = '1';
+          else if (formDiff < -6) parsed.matchResult = '2';
+          // Beklenen gol farkı eşiği artırıldı: 0.3 → 0.5
+          else if (homeExpected > awayExpected + 0.5) parsed.matchResult = '1';
+          else if (awayExpected > homeExpected + 0.5) parsed.matchResult = '2';
+          // Belirsizlik durumunda X (beraberlik bölgesi genişletildi)
           else parsed.matchResult = 'X';
         } else {
           parsed.matchResult = parsed.matchResult.toUpperCase();
         }
         
-        // Over/Under validation
+        // Over/Under validation - DÜZELTME: Daha konservatif eşik
+        // 2.5 yerine 2.65 kullan (regresyon düzeltmesi - takımlar genelde xG'nin altında skor yapar)
         if (!['Over', 'Under'].includes(parsed.overUnder)) {
-          parsed.overUnder = (expectedTotal >= 2.5 || avgOver25 >= 55) ? 'Over' : 'Under';
+          // Over için daha yüksek eşik: 2.5 → 2.65
+          // avgOver25 eşiği: 55 → 60
+          parsed.overUnder = (expectedTotal >= 2.65 || avgOver25 >= 60) ? 'Over' : 'Under';
         }
         
         // BTTS validation
@@ -1225,9 +1258,12 @@ Analyze ALL data including xG, timing patterns, and clean sheets. Return detaile
     console.error('❌ Stats agent error:', error);
   }
 
-  // Fallback with aggressive values
-  let fallbackOverUnder = (expectedTotal >= 2.5 || avgOver25 >= 55 || xgAnalysis.totalXG >= 2.5) ? 'Over' : 'Under';
-  let fallbackMatchResult = formDiff > 3 ? '1' : formDiff < -3 ? '2' : (homeExpected > awayExpected ? '1' : 'X');
+  // Fallback with CONSERVATIVE values - DÜZELTME: Daha konservatif eşikler
+  // Over eşiği: 2.5 → 2.65 (regresyon düzeltmesi)
+  let fallbackOverUnder = (expectedTotal >= 2.65 || avgOver25 >= 60 || xgAnalysis.totalXG >= 2.65) ? 'Over' : 'Under';
+  // Maç sonucu eşiği: 3 → 6 puan farkı (daha güvenilir sinyal)
+  // Belirsizlik durumunda X (beraberlik bölgesi genişletildi)
+  let fallbackMatchResult = formDiff > 6 ? '1' : formDiff < -6 ? '2' : (homeExpected > awayExpected + 0.5 ? '1' : 'X');
   let fallbackBtts = avgBtts >= 55 ? 'Yes' : 'No';
   let fallbackOverUnderConf = confidences.overUnderConf;
   let fallbackMatchResultConf = confidences.matchResultConf;

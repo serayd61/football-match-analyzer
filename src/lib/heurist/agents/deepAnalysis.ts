@@ -4,6 +4,7 @@ import { MatchData } from '../types';
 import { aiClient, AIMessage } from '../../ai-client';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
+import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 
 // 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
 // Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
@@ -723,6 +724,18 @@ export async function runDeepAnalysisAgent(
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`   🌍 Language: ${language}`);
   
+  // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
+  let probabilityResult: ProbabilityResult | null = null;
+  let probabilityContext: string = '';
+  try {
+    probabilityResult = calculateComprehensiveProbabilities(matchData);
+    probabilityContext = generateProbabilityContext(matchData);
+    console.log('   🎯 Probability Engine integrated');
+    console.log(`      Model Agreement: ${probabilityResult.modelAgreement}% | Data Quality: ${probabilityResult.dataQuality}`);
+  } catch (e) {
+    console.log('   ⚠️ Probability Engine failed, continuing without it');
+  }
+  
   // 🆕 LİG PROFİLİ
   const leagueProfile = getLeagueProfile(matchData.league || '');
   if (leagueProfile) {
@@ -753,11 +766,21 @@ export async function runDeepAnalysisAgent(
   const systemPrompt = DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
   const context = buildDeepAnalysisContext(matchData);
   
+  // Probability Engine context ekleme
+  const probabilitySection = probabilityContext ? `
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 PROBABILITY ENGINE - MATEMATİKSEL MODEL SONUÇLARI
+═══════════════════════════════════════════════════════════════════════════════
+${probabilityContext}
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
+  
   // Language-specific user message
   const userMessageByLang = {
-    tr: `${context}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
-    en: `${context}\n\nPerform multi-layered deep analysis using this data.\nReturn ONLY JSON format, no additional explanation.`,
-    de: `${context}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
+    tr: `${context}${probabilitySection}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
+    en: `${context}${probabilitySection}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
+    de: `${context}${probabilitySection}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
@@ -927,15 +950,18 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
   const awayPoints = awayWins * 3 + (awayFormStr.match(/D/g) || []).length;
   const formDiff = homePoints - awayPoints;
   
-  // 🆕 Maç sonucu tahmini - Form farkına göre!
-  // formDiff > 5: Ev sahibi favori
-  // formDiff < -5: Deplasman favori
-  // -5 <= formDiff <= 5: Dengeli
-  const matchResultPred = formDiff > 5 ? '1' : formDiff < -5 ? '2' : 'X';
-  const homeWinProb = Math.min(65, Math.max(20, 35 + formDiff * 2));
-  const awayWinProb = Math.min(65, Math.max(20, 35 - formDiff * 2));
-  const drawProb = 100 - homeWinProb - awayWinProb;
-  const matchResultConf = Math.min(70, 50 + Math.abs(formDiff) * 1.5);
+  // 🆕 Maç sonucu tahmini - Form farkına göre! (DÜZELTME: Eşikler artırıldı)
+  // formDiff > 6: Ev sahibi favori (eskiden 5)
+  // formDiff < -6: Deplasman favori (eskiden -5)
+  // -6 <= formDiff <= 6: Dengeli (beraberlik bölgesi genişletildi)
+  const matchResultPred = formDiff > 6 ? '1' : formDiff < -6 ? '2' : 'X';
+  // Olasılık hesaplaması - daha konservatif (2 → 1.5 çarpan)
+  const homeWinProb = Math.min(60, Math.max(25, 35 + formDiff * 1.5));
+  const awayWinProb = Math.min(60, Math.max(25, 35 - formDiff * 1.5));
+  // Beraberlik olasılığı en az %20 (gerçek dünyada ~%25-28)
+  const drawProb = Math.max(20, 100 - homeWinProb - awayWinProb);
+  // Güven skoru - daha konservatif (max %68)
+  const matchResultConf = Math.min(68, 50 + Math.abs(formDiff) * 1.2);
   
   // Basit hesaplama
   const homeOver = parseInt(homeForm?.venueOver25Pct || homeForm?.over25Percentage || '50');
@@ -943,8 +969,10 @@ function getDefaultDeepAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'd
   const h2hOver = parseInt(h2h?.over25Percentage || '50');
   const avgOver = (homeOver * 0.35 + awayOver * 0.35 + h2hOver * 0.30);
   
-  const overUnderPred = avgOver >= 50 ? 'Over' : 'Under';
-  const overUnderConf = Math.min(70, Math.max(50, Math.abs(avgOver - 50) + 50));
+  // DÜZELTME: Over eşiği 50 → 55 (regresyon düzeltmesi)
+  const overUnderPred = avgOver >= 55 ? 'Over' : 'Under';
+  // Güven skoru - daha konservatif (max %68)
+  const overUnderConf = Math.min(68, Math.max(50, Math.abs(avgOver - 52.5) * 0.8 + 50));
   
   // 🆕 Hakem varsayılan değerleri
   const referee = (matchData as any).referee;

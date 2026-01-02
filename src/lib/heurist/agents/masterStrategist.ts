@@ -534,17 +534,27 @@ function getDefaultMasterStrategist(
   const odds = agentResults.odds;
   const deep = agentResults.deepAnalysis;
   
-  // Match Result - Ağırlıklı voting
+  // Match Result - Ağırlıklı voting (DÜZELTME: Belirsizlik durumunda X kuralı)
   const mrVotes: { [key: string]: number } = {};
   if (stats?.matchResult) mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
   if (odds?.recommendation) mrVotes[odds.recommendation] = (mrVotes[odds.recommendation] || 0) + 35;
   if (odds?.matchWinnerValue) mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] = (mrVotes[odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X'] || 0) + 10;
   if (deep?.matchResult?.prediction) mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
   
-  const finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
+  // DÜZELTME: Belirsizlik kontrolü
   const mrTotalVotes = Object.values(mrVotes).reduce((a, b) => a + b, 0);
   const mrMaxVotes = Math.max(...Object.values(mrVotes), 0);
-  const mrConfidence = mrTotalVotes > 0 ? Math.round(55 + (mrMaxVotes / mrTotalVotes) * 25) : 55;
+  const mrAgreementRatio = mrTotalVotes > 0 ? mrMaxVotes / mrTotalVotes : 0;
+  
+  // Eğer agent'lar arasında güçlü bir konsensüs yoksa (%50 altı) → X (beraberlik) tercih et
+  // Çünkü belirsizlik durumunda beraberlik daha güvenli bir tahmin
+  let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
+  if (mrAgreementRatio < 0.50) {
+    finalMR = 'X'; // Belirsizlik durumunda beraberlik
+  }
+  
+  // Güven skoru - daha konservatif (max %70)
+  const mrConfidence = mrTotalVotes > 0 ? Math.round(50 + (mrAgreementRatio) * 20) : 50;
   
   // Over/Under - Ağırlıklı voting
   const ouVotes: { [key: string]: number } = {};

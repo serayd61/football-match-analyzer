@@ -4,6 +4,7 @@
 
 import { MatchData } from '../types';
 import { aiClient, AIMessage } from '../../ai-client';
+import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 
 const GENIUS_ANALYST_PROMPT = {
   tr: `Sen GENIUS ANALYST AGENT'sin - Futbol analizi konusunda dünya çapında tanınan, 20+ yıllık deneyime sahip bir dahisin. Matematiksel modelleme, taktiksel analiz ve yaratıcı içgörüler konusunda eşsizsin.
@@ -459,13 +460,40 @@ export async function runGeniusAnalyst(
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`   🌍 Language: ${language}`);
 
+  // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
+  let probabilityResult: ProbabilityResult | null = null;
+  let probabilityContext: string = '';
+  try {
+    probabilityResult = calculateComprehensiveProbabilities(matchData);
+    probabilityContext = generateProbabilityContext(matchData);
+    console.log('   🎯 Probability Engine Results:');
+    console.log(`      Poisson: Home ${probabilityResult.poissonModel.homeWin}% | Draw ${probabilityResult.poissonModel.draw}% | Away ${probabilityResult.poissonModel.awayWin}%`);
+    console.log(`      Monte Carlo: ${probabilityResult.monteCarloModel.mostCommonScores.slice(0, 3).join(', ')}`);
+    console.log(`      Motivation Edge: ${probabilityResult.motivationAnalysis.psychologicalEdge} (${probabilityResult.motivationAnalysis.edgeStrength}/20)`);
+  } catch (e) {
+    console.log('   ⚠️ Probability Engine failed, continuing without it');
+  }
+
   const systemPrompt = GENIUS_ANALYST_PROMPT[language] || GENIUS_ANALYST_PROMPT.en;
   const context = buildGeniusContext(matchData, language);
 
+  // Probability Engine section
+  const probabilitySection = probabilityContext ? `
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 PROBABILITY ENGINE - HAZIR MATEMATİKSEL MODELLER
+═══════════════════════════════════════════════════════════════════════════════
+${probabilityContext}
+
+Bu modelleri REFERANS olarak kullan, ama KENDİ yaratıcı analizini de ekle.
+Poisson ve Monte Carlo'nun göremediği faktörleri (psikoloji, taktik, gizli veriler) SEN değerlendir.
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
+
   const userMessageByLang = {
-    tr: `${context}\n\nYukarıdaki verileri kullanarak Genius Analyst olarak derin analiz yap. Matematiksel modeller, taktiksel içgörüler ve value bet fırsatları üret. SADECE JSON formatında döndür.`,
-    en: `${context}\n\nUse the data above to perform deep analysis as Genius Analyst. Produce mathematical models, tactical insights, and value bet opportunities. Return ONLY JSON format.`,
-    de: `${context}\n\nVerwende die Daten oben für tiefe Analyse als Genius Analyst. Erstelle mathematische Modelle, taktische Einblicke und Value-Bet-Möglichkeiten. Gib NUR JSON-Format zurück.`
+    tr: `${context}${probabilitySection}\n\nYukarıdaki verileri kullanarak Genius Analyst olarak derin analiz yap.\nPROBABILITY ENGINE sonuçlarını TEMEL al, ama KENDİ yaratıcı analizini ekle.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nMatematiksel modeller, taktiksel içgörüler ve value bet fırsatları üret. SADECE JSON formatında döndür.`,
+    en: `${context}${probabilitySection}\n\nUse the data above to perform deep analysis as Genius Analyst.\nUse PROBABILITY ENGINE results as FOUNDATION, but add your OWN creative analysis.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nProduce mathematical models, tactical insights, and value bet opportunities. Return ONLY JSON format.`,
+    de: `${context}${probabilitySection}\n\nVerwende die Daten oben für tiefe Analyse als Genius Analyst.\nVerwende PROBABILITY ENGINE als GRUNDLAGE, aber füge deine EIGENE kreative Analyse hinzu.\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nErstelle mathematische Modelle, taktische Einblicke und Value-Bet-Möglichkeiten. Gib NUR JSON-Format zurück.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
@@ -530,12 +558,17 @@ function getDefaultGeniusAnalysis(matchData: MatchData, language: 'tr' | 'en' | 
   const awayPoints = awayWins * 3 + (awayFormStr.match(/D/g) || []).length;
   const formDiff = homePoints - awayPoints;
   
-  // Akıllı tahmin
-  const matchResult = formDiff > 5 ? '1' : formDiff < -5 ? '2' : 'X';
-  const homeWinProb = Math.min(65, 35 + formDiff * 2);
-  const awayWinProb = Math.min(65, 35 - formDiff * 2);
-  const drawProb = 100 - homeWinProb - awayWinProb;
-  const confidence = Math.min(70, 50 + Math.abs(formDiff) * 1.5);
+  // Akıllı tahmin (DÜZELTME: Eşikler artırıldı, daha konservatif)
+  // formDiff > 6: Ev sahibi favori (eskiden 5)
+  // formDiff < -6: Deplasman favori (eskiden -5)
+  const matchResult = formDiff > 6 ? '1' : formDiff < -6 ? '2' : 'X';
+  // Olasılık hesaplaması - daha konservatif (2 → 1.5 çarpan)
+  const homeWinProb = Math.min(58, 35 + formDiff * 1.5);
+  const awayWinProb = Math.min(58, 35 - formDiff * 1.5);
+  // Beraberlik olasılığı en az %22 (gerçek dünyada ~%25-28)
+  const drawProb = Math.max(22, 100 - homeWinProb - awayWinProb);
+  // Güven skoru - daha konservatif (max %68)
+  const confidence = Math.min(68, 50 + Math.abs(formDiff) * 1.2);
 
   return {
     matchAnalysis: {
