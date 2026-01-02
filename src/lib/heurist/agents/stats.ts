@@ -1138,8 +1138,9 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   // Gol atma ortalamaları (VENUE BAZLI - ÖNEMLİ!)
   // Helper function: String veya number'ı parse et, NaN kontrolü yap
   const safeParseFloat = (value: any, fallback: number): number => {
-    if (typeof value === 'number' && !isNaN(value)) return value;
-    if (typeof value === 'string') {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'number' && !isNaN(value) && value > 0) return value;
+    if (typeof value === 'string' && value.trim() !== '') {
       const parsed = parseFloat(value);
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
@@ -1147,44 +1148,37 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   };
   
   // Öncelik sırası: detailedHome > venueAvgScored > avgGoalsScored > avgGoals > fallback
-  const homeGoalsScored = safeParseFloat(
-    detailedHome?.homeAvgGoalsScored || 
+  // Raw değerleri al (debug için)
+  const homeGoalsScoredRaw = detailedHome?.homeAvgGoalsScored || 
     matchData.homeForm?.venueAvgScored || 
     detailedHome?.avgGoalsScored || 
-    matchData.homeForm?.avgGoals,
-    1.2
-  );
+    matchData.homeForm?.avgGoals;
+  const homeGoalsScored = safeParseFloat(homeGoalsScoredRaw, 1.2);
   
-  const homeGoalsConceded = safeParseFloat(
-    detailedHome?.homeAvgGoalsConceded || 
+  const homeGoalsConcededRaw = detailedHome?.homeAvgGoalsConceded || 
     matchData.homeForm?.venueAvgConceded || 
     detailedHome?.avgGoalsConceded || 
-    matchData.homeForm?.avgConceded,
-    1.0
-  );
+    matchData.homeForm?.avgConceded;
+  const homeGoalsConceded = safeParseFloat(homeGoalsConcededRaw, 1.0);
   
-  const awayGoalsScored = safeParseFloat(
-    detailedAway?.awayAvgGoalsScored || 
+  const awayGoalsScoredRaw = detailedAway?.awayAvgGoalsScored || 
     matchData.awayForm?.venueAvgScored || 
     detailedAway?.avgGoalsScored || 
-    matchData.awayForm?.avgGoals,
-    1.0
-  );
+    matchData.awayForm?.avgGoals;
+  const awayGoalsScored = safeParseFloat(awayGoalsScoredRaw, 1.0);
   
-  const awayGoalsConceded = safeParseFloat(
-    detailedAway?.awayAvgGoalsConceded || 
+  const awayGoalsConcededRaw = detailedAway?.awayAvgGoalsConceded || 
     matchData.awayForm?.venueAvgConceded || 
     detailedAway?.avgGoalsConceded || 
-    matchData.awayForm?.avgConceded,
-    1.2
-  );
+    matchData.awayForm?.avgConceded;
+  const awayGoalsConceded = safeParseFloat(awayGoalsConcededRaw, 1.2);
   
-  // Debug logging
+  // Debug logging - daha detaylı
   console.log(`   🔍 Expected Goals Debug:`);
-  console.log(`      homeGoalsScored: ${homeGoalsScored} (venueAvgScored: ${matchData.homeForm?.venueAvgScored}, avgGoals: ${matchData.homeForm?.avgGoals})`);
-  console.log(`      awayGoalsConceded: ${awayGoalsConceded} (venueAvgConceded: ${matchData.awayForm?.venueAvgConceded}, avgConceded: ${matchData.awayForm?.avgConceded})`);
-  console.log(`      awayGoalsScored: ${awayGoalsScored} (venueAvgScored: ${matchData.awayForm?.venueAvgScored}, avgGoals: ${matchData.awayForm?.avgGoals})`);
-  console.log(`      homeGoalsConceded: ${homeGoalsConceded} (venueAvgConceded: ${matchData.homeForm?.venueAvgConceded}, avgConceded: ${matchData.homeForm?.avgConceded})`);
+  console.log(`      homeGoalsScored: ${homeGoalsScored} (raw: ${homeGoalsScoredRaw}, type: ${typeof homeGoalsScoredRaw}, venueAvgScored: ${matchData.homeForm?.venueAvgScored}, avgGoals: ${matchData.homeForm?.avgGoals})`);
+  console.log(`      awayGoalsConceded: ${awayGoalsConceded} (raw: ${awayGoalsConcededRaw}, type: ${typeof awayGoalsConcededRaw}, venueAvgConceded: ${matchData.awayForm?.venueAvgConceded}, avgConceded: ${matchData.awayForm?.avgConceded})`);
+  console.log(`      awayGoalsScored: ${awayGoalsScored} (raw: ${awayGoalsScoredRaw}, type: ${typeof awayGoalsScoredRaw}, venueAvgScored: ${matchData.awayForm?.venueAvgScored}, avgGoals: ${matchData.awayForm?.avgGoals})`);
+  console.log(`      homeGoalsConceded: ${homeGoalsConceded} (raw: ${homeGoalsConcededRaw}, type: ${typeof homeGoalsConcededRaw}, venueAvgConceded: ${matchData.homeForm?.venueAvgConceded}, avgConceded: ${matchData.homeForm?.avgConceded})`);
   
   // 🆕 xG Analysis - önce bunu hesapla ki gerçek değerleri kullanabilelim
   const xgAnalysis = calculateXGAnalysis(matchData, language);
