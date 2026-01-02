@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   
   const { data, error } = await supabase
     .from('unified_analysis')
-    .select('is_settled, match_result_correct, over_under_correct, btts_correct');
+    .select('fixture_id, home_team, is_settled, match_result_correct, over_under_correct, btts_correct')
+    .order('fixture_id', { ascending: true });
   
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -36,8 +37,10 @@ export async function GET(request: NextRequest) {
   
   const total = settled.length;
   
-  // Show sample data
+  // Show sample data with fixture_id
   const sampleData = settled.slice(0, 5).map(r => ({
+    fixture_id: r.fixture_id,
+    home_team: r.home_team,
     mr_correct: r.match_result_correct,
     ou_correct: r.over_under_correct,
     btts_correct: r.btts_correct
