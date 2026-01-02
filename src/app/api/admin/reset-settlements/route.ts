@@ -91,32 +91,26 @@ export async function GET(request: NextRequest) {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get all settled matches - no filter first to debug
-    const { data: allData, error: allError } = await supabase
+    // Get ALL matches and filter in JavaScript (Supabase .eq() has issues)
+    const { data: allData, error: fetchError } = await supabase
       .from('unified_analysis')
-      .select('fixture_id, is_settled');
-    
-    const totalRecords = allData?.length || 0;
-    const settledCount = allData?.filter(r => r.is_settled === true).length || 0;
-    
-    console.log(`📊 Total: ${totalRecords}, Settled: ${settledCount}`);
-    
-    // Now get settled matches
-    const { data: settledMatches, error: fetchError } = await supabase
-      .from('unified_analysis')
-      .select('*')
-      .eq('is_settled', true);
+      .select('*');
     
     if (fetchError) {
-      return NextResponse.json({ success: false, error: fetchError.message, debug: { totalRecords, settledCount } }, { status: 500 });
+      return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 });
     }
     
-    if (!settledMatches || settledMatches.length === 0) {
+    // Filter settled matches in JavaScript
+    const settledMatches = (allData || []).filter(r => r.is_settled === true);
+    
+    console.log(`📊 Total: ${allData?.length || 0}, Settled: ${settledMatches.length}`);
+    
+    if (settledMatches.length === 0) {
       return NextResponse.json({ 
         success: true, 
         message: 'No settled matches to reset', 
         count: 0,
-        debug: { totalRecords, settledCount, settledMatchesFromQuery: 0 }
+        debug: { totalRecords: allData?.length || 0 }
       });
     }
     
