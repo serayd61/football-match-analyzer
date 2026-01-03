@@ -668,6 +668,69 @@ function checkConsistency(
   };
 }
 
+// ==================== REASONING GENERATOR ====================
+
+function generateOddsReasoning(
+  matchData: MatchData,
+  homeOdds: number, drawOdds: number, awayOdds: number,
+  overOdds: number, underOdds: number,
+  bttsYesOdds: number, bttsNoOdds: number,
+  homeFormProb: number, awayFormProb: number,
+  overProb: number, bttsProb: number,
+  language: 'tr' | 'en' | 'de',
+  oddsHistory: MatchOddsHistory | null,
+  sharpMoney: SharpMoneyResult | null
+): string {
+  const homeName = matchData.homeTeam || 'Home';
+  const awayName = matchData.awayTeam || 'Away';
+  
+  // Calculate implied probabilities
+  const homeImplied = calculateImpliedProbability(homeOdds);
+  const overImplied = calculateImpliedProbability(overOdds);
+  const bttsImplied = calculateImpliedProbability(bttsYesOdds);
+  
+  // Calculate value edges
+  const homeValue = homeFormProb - homeImplied;
+  const overValue = overProb - overImplied;
+  const bttsValue = bttsProb - bttsImplied;
+  
+  let reasoning = '';
+  
+  if (language === 'tr') {
+    reasoning = `📊 ORAN ANALİZİ:\n`;
+    reasoning += `• ${homeName} Kazanır: ${homeOdds.toFixed(2)} (Piyasa: %${homeImplied.toFixed(0)}, Form: %${homeFormProb.toFixed(0)}, Value: ${homeValue >= 0 ? '+' : ''}${homeValue.toFixed(0)}%)\n`;
+    reasoning += `• 2.5 Üst: ${overOdds.toFixed(2)} (Piyasa: %${overImplied.toFixed(0)}, Form: %${overProb.toFixed(0)}, Value: ${overValue >= 0 ? '+' : ''}${overValue.toFixed(0)}%)\n`;
+    reasoning += `• KG Var: ${bttsYesOdds.toFixed(2)} (Piyasa: %${bttsImplied.toFixed(0)}, Form: %${bttsProb.toFixed(0)}, Value: ${bttsValue >= 0 ? '+' : ''}${bttsValue.toFixed(0)}%)\n`;
+    
+    if (sharpMoney) {
+      reasoning += `\n💹 SHARP MONEY: ${sharpMoney.direction} (${sharpMoney.confidence})\n`;
+      reasoning += `   ${sharpMoney.reasoning.tr}\n`;
+    }
+  } else if (language === 'de') {
+    reasoning = `📊 QUOTEN-ANALYSE:\n`;
+    reasoning += `• ${homeName} Sieg: ${homeOdds.toFixed(2)} (Markt: %${homeImplied.toFixed(0)}, Form: %${homeFormProb.toFixed(0)}, Wert: ${homeValue >= 0 ? '+' : ''}${homeValue.toFixed(0)}%)\n`;
+    reasoning += `• Über 2.5: ${overOdds.toFixed(2)} (Markt: %${overImplied.toFixed(0)}, Form: %${overProb.toFixed(0)}, Wert: ${overValue >= 0 ? '+' : ''}${overValue.toFixed(0)}%)\n`;
+    reasoning += `• Beide Treffen: ${bttsYesOdds.toFixed(2)} (Markt: %${bttsImplied.toFixed(0)}, Form: %${bttsProb.toFixed(0)}, Wert: ${bttsValue >= 0 ? '+' : ''}${bttsValue.toFixed(0)}%)\n`;
+    
+    if (sharpMoney) {
+      reasoning += `\n💹 SHARP MONEY: ${sharpMoney.direction} (${sharpMoney.confidence})\n`;
+      reasoning += `   ${sharpMoney.reasoning.en}\n`;
+    }
+  } else {
+    reasoning = `📊 ODDS ANALYSIS:\n`;
+    reasoning += `• ${homeName} Win: ${homeOdds.toFixed(2)} (Market: ${homeImplied.toFixed(0)}%, Form: ${homeFormProb.toFixed(0)}%, Value: ${homeValue >= 0 ? '+' : ''}${homeValue.toFixed(0)}%)\n`;
+    reasoning += `• Over 2.5: ${overOdds.toFixed(2)} (Market: ${overImplied.toFixed(0)}%, Form: ${overProb.toFixed(0)}%, Value: ${overValue >= 0 ? '+' : ''}${overValue.toFixed(0)}%)\n`;
+    reasoning += `• BTTS Yes: ${bttsYesOdds.toFixed(2)} (Market: ${bttsImplied.toFixed(0)}%, Form: ${bttsProb.toFixed(0)}%, Value: ${bttsValue >= 0 ? '+' : ''}${bttsValue.toFixed(0)}%)\n`;
+    
+    if (sharpMoney) {
+      reasoning += `\n💹 SHARP MONEY: ${sharpMoney.direction} (${sharpMoney.confidence})\n`;
+      reasoning += `   ${sharpMoney.reasoning.en}\n`;
+    }
+  }
+  
+  return reasoning;
+}
+
 // ==================== ODDS AGENT ====================
 
 export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
