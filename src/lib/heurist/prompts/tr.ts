@@ -133,7 +133,7 @@ Dep: ${match.awayForm?.form} | Puan: ${match.awayForm?.points}/30 | Ortalama Gol
 
 ⚠️ TUTARLILIK KONTROLLERİ:
 1. Toplam gol beklentisi: ${(parseFloat(match.homeForm?.avgGoals || '1.2') + parseFloat(match.awayForm?.avgGoals || '1.0')).toFixed(1)}
-2. Her iki takım gol atıyor mu? Ev: ${(match.homeForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length}/5, Dep: ${(match.awayForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length}/5
+2. Her iki takım gol atıyor mu? Ev: ${(match.homeForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length}/5, Dep: ${(match.awayForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length}/5
 
 JSON FORMAT:
 {
@@ -143,9 +143,9 @@ JSON FORMAT:
   "sharpMoney": [{"market": "", "side": "", "indicator": ""}],
   "consistencyCheck": {
     "totalGoalsExpected": ${(parseFloat(match.homeForm?.avgGoals || '1.2') + parseFloat(match.awayForm?.avgGoals || '1.0')).toFixed(1)},
-    "bothTeamsScoringPotential": ${(match.homeForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length >= 3 && (match.awayForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length >= 3 ? "high" : "low"},
+    "bothTeamsScoringPotential": ${(match.homeForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length >= 3 && (match.awayForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length >= 3 ? "high" : "low"},
     "overUnderRecommendation": "${(parseFloat(match.homeForm?.avgGoals || '1.2') + parseFloat(match.awayForm?.avgGoals || '1.0') > 2.8 ? "Over" : parseFloat(match.homeForm?.avgGoals || '1.2') + parseFloat(match.awayForm?.avgGoals || '1.0') < 2.2 ? "Under" : "Unclear")}",
-    "bttsRecommendation": "${(match.homeForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length >= 3 && (match.awayForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length >= 3 ? "Yes" : "No"}"
+    "bttsRecommendation": "${(match.homeForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length >= 3 && (match.awayForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length >= 3 ? "Yes" : "No"}"
   },
   "summary": "Türkçe özet - TUTARLILIK KURALLARINA UYDUĞUNDAN EMİN OL!"
 }`
@@ -247,8 +247,8 @@ ${JSON.stringify(allReports.strategy, null, 2)}
 
 ⚠️ TUTARLILIK KONTROLLERİ:
 - Toplam gol beklentisi: ${(parseFloat(match.homeForm?.avgGoals || '1.2') + parseFloat(match.awayForm?.avgGoals || '1.0')).toFixed(1)}
-- Ev son 5 maç pozitif: ${(match.homeForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length}/5
-- Dep son 5 maç pozitif: ${(match.awayForm?.form || '').split('').filter(c => c === 'W' || c === 'D').length}/5
+- Ev son 5 maç pozitif: ${(match.homeForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length}/5
+- Dep son 5 maç pozitif: ${(match.awayForm?.form || '').split('').filter((c: string) => c === 'W' || c === 'D').length}/5
 
 FİNAL RAPORU JSON:
 {
