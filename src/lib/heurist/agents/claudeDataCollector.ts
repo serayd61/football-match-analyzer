@@ -168,7 +168,7 @@ Maç Bilgileri:
 - Ev Sahibi: ${matchData.homeTeam} (ID: ${matchData.homeTeamId})
 - Deplasman: ${matchData.awayTeam} (ID: ${matchData.awayTeamId})
 - Fixture ID: ${matchData.fixtureId}
-- Lig: ${matchData.league?.name || 'N/A'}
+- Lig: ${matchData.league || 'N/A'}
 
 Mevcut Veriler (Eksik olabilir):
 - Home Form: ${matchData.homeForm?.form || 'N/A'}
