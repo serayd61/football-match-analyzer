@@ -1354,15 +1354,15 @@ export async function runAgentAnalysis(
       withTimeout(runStatsAgent(matchData, language).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 12000, 'Stats Agent'), // 12 saniye
+      }), 18000, 'Stats Agent'), // 18 saniye - AI yanıtı için artırıldı
       withTimeout(runOddsAgent(matchData, language).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 12000, 'Odds Agent'), // 12 saniye
+      }), 18000, 'Odds Agent'), // 18 saniye - AI yanıtı için artırıldı
       withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 25000, 'Deep Analysis Agent'), // 25 saniye - motivasyon analizi için artırıldı
+      }), 30000, 'Deep Analysis Agent'), // 30 saniye - DeepSeek için artırıldı
     ]);
     
     // Genius Analyst devre dışı

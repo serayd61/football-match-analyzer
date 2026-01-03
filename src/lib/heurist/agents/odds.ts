@@ -2,6 +2,69 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, SharpMoneyResult, RealValueResult } from '../sportmonks-odds';
 
+// ==================== JSON EXTRACTION ====================
+
+function extractJSON(text: string): any | null {
+  if (!text) return null;
+  
+  let cleaned = text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/\*\*/g, '')
+    .trim();
+  
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  
+  let jsonStr = jsonMatch[0];
+  
+  // Fix common JSON errors
+  jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1'); // trailing commas
+  jsonStr = jsonStr.replace(/(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":'); // unquoted keys
+  jsonStr = jsonStr.replace(/'/g, '"'); // single quotes to double
+  jsonStr = jsonStr.replace(/\n/g, ' '); // newlines to spaces
+  jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' '); // control characters
+  
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    // Manual extraction fallback for odds agent
+    try {
+      const result: any = {};
+      
+      const oddsMatch = jsonStr.match(/"oddsAnalysis"\s*:\s*"([^"]+)"/);
+      result.oddsAnalysis = oddsMatch ? oddsMatch[1] : 'Analysis unavailable';
+      
+      const recMatch = jsonStr.match(/"recommendation"\s*:\s*"?(Over|Under)"?/i);
+      result.recommendation = recMatch ? recMatch[1] : 'Under';
+      
+      const confMatch = jsonStr.match(/"confidence"\s*:\s*([\d.]+)/);
+      result.confidence = confMatch ? parseInt(confMatch[1]) : 65;
+      
+      const mwMatch = jsonStr.match(/"matchWinnerValue"\s*:\s*"?(home|away|draw)"?/i);
+      result.matchWinnerValue = mwMatch ? mwMatch[1].toLowerCase() : 'home';
+      
+      const bttsMatch = jsonStr.match(/"bttsValue"\s*:\s*"?(yes|no)"?/i);
+      result.bttsValue = bttsMatch ? bttsMatch[1].toLowerCase() : 'no';
+      
+      const recReasonMatch = jsonStr.match(/"recommendationReasoning"\s*:\s*"([^"]+)"/);
+      result.recommendationReasoning = recReasonMatch ? recReasonMatch[1] : '';
+      
+      const mwReasonMatch = jsonStr.match(/"matchWinnerReasoning"\s*:\s*"([^"]+)"/);
+      result.matchWinnerReasoning = mwReasonMatch ? mwReasonMatch[1] : '';
+      
+      const bttsReasonMatch = jsonStr.match(/"bttsReasoning"\s*:\s*"([^"]+)"/);
+      result.bttsReasoning = bttsReasonMatch ? bttsReasonMatch[1] : '';
+      
+      console.log('⚠️ Odds Agent: JSON parse failed, using manual extraction');
+      return result;
+    } catch (e2) {
+      console.error('❌ Odds Agent: Manual extraction also failed');
+      return null;
+    }
+  }
+}
+
 // ==================== PROMPTS ====================
 
 const PROMPTS = {
@@ -908,15 +971,14 @@ BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
       temperature: 0.4, 
-      maxTokens: 1000,
-      timeout: 8000 // 8 saniye
+      maxTokens: 1200, // JSON tamamlanması için artırıldı
+      timeout: 12000 // 12 saniye - artırıldı
     });
     
     if (response) {
-      const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/\*\*/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // Robust JSON extraction kullan
+      const parsed = extractJSON(response);
+      if (parsed) {
         
         // Enhance with calculated values
         if (!parsed.confidence || parsed.confidence < confidence - 10) {

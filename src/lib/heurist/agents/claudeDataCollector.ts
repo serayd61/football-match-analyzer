@@ -115,165 +115,116 @@ const MCP_TOOLS = [
 ];
 
 /**
- * Claude Data Collector Agent
- * Claude API'nin tool calling özelliğini kullanarak Sportmonks'tan akıllı veri toplama
+ * Data Collector Agent
+ * Sportmonks'tan paralel olarak tüm verileri toplar
+ * Artık Claude API kullanmıyor - doğrudan Sportmonks fonksiyonlarını çağırır (daha hızlı ve güvenilir)
  */
 export async function runClaudeDataCollector(
   matchData: MatchData,
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<CollectedData | null> {
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  
-  if (!anthropicApiKey) {
-    console.warn('⚠️ ANTHROPIC_API_KEY not found, skipping Claude Data Collector');
-    return null;
-  }
 
   try {
     console.log('🔍 Claude Data Collector: Starting intelligent data collection...');
     console.log(`   📍 Fixture: ${matchData.homeTeam} vs ${matchData.awayTeam} (ID: ${matchData.fixtureId})`);
 
-    const systemPrompt = `Sen bir FUTBOL VERİ TOPLAMA UZMANISIN. Görevin Sportmonks API'sinden en detaylı ve kritik verileri toplamak.
-
-ÖNEMLİ VERİLER:
-1. Venue-Spesifik Gol Ortalamaları: homeAvgGoalsScored, awayAvgGoalsScored
-2. Son 10 Maç İstatistikleri: Form, gol ortalamaları, BTTS, Over/Under yüzdeleri
-3. H2H Detayları: Son karşılaşmaların skorları
-4. Bahis Oranları: 1X2, Over/Under, BTTS
-
-STRATEJİ:
-- Önce football_data ile genel resmi al
-- Her iki takım için team_stats çağır
-- H2H verilerini al
-- Odds ve context için de çağrı yap`;
-
-    const userPrompt = `Fixture ${matchData.fixtureId} için kapsamlı veri toplama yapacağım.
-
-Maç Bilgileri:
-- Ev Sahibi: ${matchData.homeTeam} (ID: ${matchData.homeTeamId})
-- Deplasman: ${matchData.awayTeam} (ID: ${matchData.awayTeamId})
-- Fixture ID: ${matchData.fixtureId}
-- Lig: ${matchData.league || 'N/A'}
-
-Mevcut Veriler (Eksik olabilir):
-- Home Form: ${matchData.homeForm?.form || 'N/A'}
-- Away Form: ${matchData.awayForm?.form || 'N/A'}
-- H2H: ${matchData.h2h?.totalMatches || 0} maç
-
-GÖREV:
-1. MCP tool'larını kullanarak Sportmonks'tan EN DETAYLI verileri topla
-2. Özellikle venue-spesifik gol ortalamalarını al
-3. Her iki takım için team_stats çağır
-4. H2H maçlarının detaylı skorlarını al
-
-Tool'ları sırayla kullan.`;
-
-    // Claude API call with tools
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 4096,
-        tools: MCP_TOOLS,
-        tool_choice: { type: 'auto' },
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Claude API error: ${response.status}`, errorText);
-      return null;
-    }
-
-    const message = await response.json();
-
-    console.log(`✅ Claude Data Collector: Initial response received`);
-    console.log(`   📊 Tool calls detected: ${message.content?.filter((c: any) => c.type === 'tool_use')?.length || 0}`);
-
-    // Tool call'ları execute et
+    // 🆕 DIRECT TOOL EXECUTION - Claude'a bağımlı olmadan tüm verileri paralel topla
+    // Bu yaklaşım daha hızlı ve güvenilir
     const collectedData: CollectedData = {
       dataQuality: 0,
     };
     let toolCallCount = 0;
-    const toolResults: any[] = [];
+    const toolResults: string[] = [];
 
-    for (const content of message.content || []) {
-      if (content.type === 'tool_use') {
-        toolCallCount++;
-        const toolName = content.name;
-        const toolInput = content.input;
+    // Paralel olarak tüm verileri topla
+    console.log('   🔧 Executing all tools in parallel...');
+    
+    const toolPromises = [
+      // 1. Football Data (fixture details)
+      executeMCPTool('football_data', { fixtureId: matchData.fixtureId })
+        .then(result => {
+          collectedData.fixtureData = result?.data;
+          toolCallCount++;
+          toolResults.push('fixtureData');
+          console.log('   ✅ football_data: Complete');
+          return result;
+        })
+        .catch(err => {
+          console.log(`   ⚠️ football_data failed: ${err.message}`);
+          return null;
+        }),
+      
+      // 2. Home Team Stats
+      matchData.homeTeamId ? executeMCPTool('team_stats', { teamId: matchData.homeTeamId })
+        .then(result => {
+          collectedData.homeTeamStats = result?.data;
+          toolCallCount++;
+          toolResults.push('homeTeamStats');
+          console.log('   ✅ team_stats (home): Complete');
+          return result;
+        })
+        .catch(err => {
+          console.log(`   ⚠️ team_stats (home) failed: ${err.message}`);
+          return null;
+        }) : Promise.resolve(null),
+      
+      // 3. Away Team Stats
+      matchData.awayTeamId ? executeMCPTool('team_stats', { teamId: matchData.awayTeamId })
+        .then(result => {
+          collectedData.awayTeamStats = result?.data;
+          toolCallCount++;
+          toolResults.push('awayTeamStats');
+          console.log('   ✅ team_stats (away): Complete');
+          return result;
+        })
+        .catch(err => {
+          console.log(`   ⚠️ team_stats (away) failed: ${err.message}`);
+          return null;
+        }) : Promise.resolve(null),
+      
+      // 4. Head to Head
+      (matchData.homeTeamId && matchData.awayTeamId) ? executeMCPTool('head_to_head', { 
+        homeTeamId: matchData.homeTeamId, 
+        awayTeamId: matchData.awayTeamId 
+      })
+        .then(result => {
+          collectedData.h2hData = result?.data;
+          toolCallCount++;
+          toolResults.push('h2hData');
+          console.log('   ✅ head_to_head: Complete');
+          return result;
+        })
+        .catch(err => {
+          console.log(`   ⚠️ head_to_head failed: ${err.message}`);
+          return null;
+        }) : Promise.resolve(null),
+      
+      // 5. Odds Data
+      executeMCPTool('odds_data', { fixtureId: matchData.fixtureId })
+        .then(result => {
+          collectedData.oddsData = result?.data;
+          toolCallCount++;
+          toolResults.push('oddsData');
+          console.log('   ✅ odds_data: Complete');
+          return result;
+        })
+        .catch(err => {
+          console.log(`   ⚠️ odds_data failed: ${err.message}`);
+          return null;
+        }),
+    ];
 
-        console.log(`   🔧 [${toolCallCount}] Executing tool: ${toolName}`);
-
-        try {
-          const toolResult = await executeMCPTool(toolName, toolInput);
-          
-          // Tool sonuçlarını collectedData'ya ekle
-          if (toolName === 'football_data') {
-            collectedData.fixtureData = toolResult?.data;
-          } else if (toolName === 'team_stats') {
-            if (toolInput.teamId === matchData.homeTeamId) {
-              collectedData.homeTeamStats = toolResult?.data;
-            } else if (toolInput.teamId === matchData.awayTeamId) {
-              collectedData.awayTeamStats = toolResult?.data;
-            }
-          } else if (toolName === 'head_to_head') {
-            collectedData.h2hData = toolResult?.data;
-          } else if (toolName === 'odds_data') {
-            collectedData.oddsData = toolResult?.data;
-          } else if (toolName === 'match_context') {
-            collectedData.contextData = toolResult?.data;
-          }
-
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: content.id,
-            content: JSON.stringify({
-              success: true,
-              data: toolResult?.data || toolResult,
-            }),
-          });
-
-          console.log(`   ✅ [${toolCallCount}] ${toolName}: Data collected`);
-        } catch (error: any) {
-          console.error(`   ❌ [${toolCallCount}] ${toolName}: Error - ${error.message}`);
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: content.id,
-            content: JSON.stringify({
-              success: false,
-              error: error.message,
-            }),
-          });
-        }
-      }
-    }
+    // 10 saniye timeout ile tüm tool'ları bekle
+    await Promise.race([
+      Promise.all(toolPromises),
+      new Promise(resolve => setTimeout(resolve, 10000))
+    ]);
 
     // Veri kalitesini hesapla
     collectedData.dataQuality = Math.min(100, toolCallCount * 20);
     
     // Özet oluştur
-    const collectedFields = [];
-    if (collectedData.fixtureData) collectedFields.push('fixtureData');
-    if (collectedData.homeTeamStats) collectedFields.push('homeTeamStats');
-    if (collectedData.awayTeamStats) collectedFields.push('awayTeamStats');
-    if (collectedData.h2hData) collectedFields.push('h2hData');
-    if (collectedData.oddsData) collectedFields.push('oddsData');
-    if (collectedData.contextData) collectedFields.push('contextData');
-    
-    collectedData.summary = `${toolCallCount} tool çalıştırıldı. Toplanan: ${collectedFields.join(', ')}`;
+    collectedData.summary = `${toolCallCount} tool çalıştırıldı. Toplanan: ${toolResults.join(', ')}`;
 
     console.log(`   ✅ Claude Data Collector: Complete`);
     console.log(`   📊 Data Quality: ${collectedData.dataQuality}/100`);
