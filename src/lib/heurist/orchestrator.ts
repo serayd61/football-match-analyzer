@@ -8,6 +8,7 @@ import { runSentimentAgent, SentimentResult } from './agents/sentimentAgent';
 import { runDeepAnalysisAgent } from './agents/deepAnalysis';
 import { runMasterStrategist, MasterStrategistResult } from './agents/masterStrategist';
 import { runGeniusAnalyst, GeniusAnalystResult } from './agents/geniusAnalyst';
+import { runClaudeDataCollector, CollectedData } from './agents/claudeDataCollector';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -799,6 +800,80 @@ export async function runOrchestrator(
     // 2. Data quality assessment
     const dataQuality = assessDataQuality(matchData);
     console.log(`📊 Data Quality Score: ${dataQuality.score}/100`);
+    
+    // 2.5. 🆕 CLAUDE DATA COLLECTOR: Tüm agent'lardan önce en üst düzey verileri topla
+    console.log('\n🔍 Claude Data Collector: Collecting premium data from Sportmonks...');
+    const collectorStart = Date.now();
+    let collectedData: CollectedData | null = null;
+    
+    try {
+      collectedData = await runClaudeDataCollector(matchData as unknown as MatchData, language);
+      const collectorTime = Date.now() - collectorStart;
+      
+      if (collectedData) {
+        console.log(`✅ Claude Data Collector completed in ${collectorTime}ms`);
+        console.log(`   📊 Data Quality: ${collectedData.dataQuality}/100`);
+        console.log(`   📝 Summary: ${collectedData.summary?.substring(0, 150)}...`);
+        
+        // Toplanan verileri matchData'ya merge et
+        if (collectedData.homeTeamStats) {
+          // Home team stats'ı matchData'ya ekle
+          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
+          if (!matchData.detailedStats.home) matchData.detailedStats.home = {} as any;
+          
+          // Venue-spesifik verileri ekle
+          Object.assign(matchData.detailedStats.home, {
+            homeAvgGoalsScored: collectedData.homeTeamStats.homeAvgGoalsScored,
+            homeAvgGoalsConceded: collectedData.homeTeamStats.homeAvgGoalsConceded,
+            avgGoalsScored: collectedData.homeTeamStats.avgGoalsScored,
+            avgGoalsConceded: collectedData.homeTeamStats.avgGoalsConceded,
+            recentForm: collectedData.homeTeamStats.recentForm,
+            formPoints: collectedData.homeTeamStats.formPoints,
+          });
+        }
+        
+        if (collectedData.awayTeamStats) {
+          // Away team stats'ı matchData'ya ekle
+          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
+          if (!matchData.detailedStats.away) matchData.detailedStats.away = {} as any;
+          
+          // Venue-spesifik verileri ekle
+          Object.assign(matchData.detailedStats.away, {
+            awayAvgGoalsScored: collectedData.awayTeamStats.awayAvgGoalsScored,
+            awayAvgGoalsConceded: collectedData.awayTeamStats.awayAvgGoalsConceded,
+            avgGoalsScored: collectedData.awayTeamStats.avgGoalsScored,
+            avgGoalsConceded: collectedData.awayTeamStats.avgGoalsConceded,
+            recentForm: collectedData.awayTeamStats.recentForm,
+            formPoints: collectedData.awayTeamStats.formPoints,
+          });
+        }
+        
+        if (collectedData.h2hData) {
+          // H2H verilerini matchData'ya ekle
+          matchData.h2h = {
+            ...matchData.h2h,
+            ...collectedData.h2hData,
+          } as any;
+        }
+        
+        if (collectedData.fixtureData) {
+          // Fixture verilerini matchData'ya ekle
+          if (collectedData.fixtureData.homeTeam) {
+            matchData.homeTeam = collectedData.fixtureData.homeTeam.name || matchData.homeTeam;
+          }
+          if (collectedData.fixtureData.awayTeam) {
+            matchData.awayTeam = collectedData.fixtureData.awayTeam.name || matchData.awayTeam;
+          }
+        }
+        
+        console.log(`   ✅ Collected data merged into matchData`);
+      } else {
+        console.warn(`   ⚠️ Claude Data Collector returned null, continuing with existing data`);
+      }
+    } catch (error: any) {
+      console.error(`   ❌ Claude Data Collector error: ${error.message}`);
+      console.warn(`   ⚠️ Continuing with existing data`);
+    }
     
     // 3. Agent'ları paralel çalıştır (İlk tur: Stats, Odds, Sentiment, Deep Analysis, Genius Analyst)
     console.log('\n🤖 Running agents in parallel (Round 1)...');

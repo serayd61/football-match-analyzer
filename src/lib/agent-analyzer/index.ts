@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getFullFixtureData, getTeamStats, getHeadToHead, getTeamInjuries, type FullFixtureData } from '@/lib/sportmonks/index';
 import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
+import { runClaudeDataCollector, CollectedData } from '../heurist/agents/claudeDataCollector';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { runMasterStrategist } from '../heurist/agents/masterStrategist';
 import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
@@ -1289,6 +1290,60 @@ export async function runAgentAnalysis(
     
     if (!hasMinimalData) {
       console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
+    }
+    
+    // 🆕 CLAUDE DATA COLLECTOR: Tüm agent'lardan önce en üst düzey verileri topla
+    console.log('🔍 Claude Data Collector: Collecting premium data from Sportmonks...');
+    let collectedData: CollectedData | null = null;
+    
+    try {
+      collectedData = await runClaudeDataCollector(matchData, language);
+      
+      if (collectedData) {
+        console.log(`✅ Claude Data Collector completed`);
+        console.log(`   📊 Data Quality: ${collectedData.dataQuality}/100`);
+        
+        // Toplanan verileri matchData'ya merge et
+        if (collectedData.homeTeamStats) {
+          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
+          if (!matchData.detailedStats.home) matchData.detailedStats.home = {} as any;
+          
+          Object.assign(matchData.detailedStats.home, {
+            homeAvgGoalsScored: collectedData.homeTeamStats.homeAvgGoalsScored,
+            homeAvgGoalsConceded: collectedData.homeTeamStats.homeAvgGoalsConceded,
+            avgGoalsScored: collectedData.homeTeamStats.avgGoalsScored,
+            avgGoalsConceded: collectedData.homeTeamStats.avgGoalsConceded,
+            recentForm: collectedData.homeTeamStats.recentForm,
+            formPoints: collectedData.homeTeamStats.formPoints,
+          });
+        }
+        
+        if (collectedData.awayTeamStats) {
+          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
+          if (!matchData.detailedStats.away) matchData.detailedStats.away = {} as any;
+          
+          Object.assign(matchData.detailedStats.away, {
+            awayAvgGoalsScored: collectedData.awayTeamStats.awayAvgGoalsScored,
+            awayAvgGoalsConceded: collectedData.awayTeamStats.awayAvgGoalsConceded,
+            avgGoalsScored: collectedData.awayTeamStats.avgGoalsScored,
+            avgGoalsConceded: collectedData.awayTeamStats.avgGoalsConceded,
+            recentForm: collectedData.awayTeamStats.recentForm,
+            formPoints: collectedData.awayTeamStats.formPoints,
+          });
+        }
+        
+        if (collectedData.h2hData) {
+          matchData.h2h = {
+            ...matchData.h2h,
+            ...collectedData.h2hData,
+          } as any;
+        }
+        
+        console.log(`   ✅ Collected data merged into matchData`);
+      }
+    } catch (error: any) {
+      console.error(`   ❌ Claude Data Collector error: ${error.message}`);
+      console.warn(`   ⚠️ Continuing with existing data`);
     }
     
     // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Deep Analysis (PARALEL)
