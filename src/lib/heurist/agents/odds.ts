@@ -709,7 +709,7 @@ function generateOddsReasoning(
   const awayValue = awayFormProb - awayImplied;
   const overValue = overProb - overImplied;
   const underValue = (100 - overProb) - underImplied;
-  const bttsValue = bttsProb - bttsImplied;
+  const bttsValue = bttsProb - bttsYesImplied;
   const bttsNoValue = (100 - bttsProb) - bttsNoImplied;
   
   // Find best value
