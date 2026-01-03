@@ -180,7 +180,7 @@ Tool'ları sırayla kullan.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 4096,
         tools: MCP_TOOLS,
         tool_choice: { type: 'auto' },
