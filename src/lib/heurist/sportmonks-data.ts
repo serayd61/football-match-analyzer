@@ -81,6 +81,12 @@ export interface CompleteMatchData {
   
   oddsHistory?: any;
   
+  // 🆕 Detailed stats for agents (venue-specific, timing patterns, etc.)
+  detailedStats?: {
+    home?: any;
+    away?: any;
+  };
+  
   // Data quality indicator
   dataQuality?: {
     score: number;
