@@ -14,6 +14,11 @@ export interface MatchData {
   homeForm?: FormData;
   awayForm?: FormData;
   h2h?: H2HData;
+  // 🆕 Detailed stats for agents (venue-specific, timing patterns, etc.)
+  detailedStats?: {
+    home?: any;
+    away?: any;
+  };
 }
 
 export interface OddsData {
