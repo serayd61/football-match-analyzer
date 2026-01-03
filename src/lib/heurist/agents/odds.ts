@@ -613,7 +613,60 @@ function checkConsistency(
     
     // Son maçlarda her iki takım da gol atmışsa
     if (homeScoredRecent >= 3 && awayScoredRecent >= 3) {
-      adjustedBttsValue = language === 'tr' ? 'yes' : 'Yes
+      adjustedBttsValue = language === 'tr' ? 'yes' : 'Yes';
+      consistencyWarnings.push(language === 'tr'
+        ? `⚠️ TUTARLILIK: Son maçlarda her iki takım da gol atmış (Ev ${homeScoredRecent}/5, Dep ${awayScoredRecent}/5) ama "KG Yok" önerildi. "KG Var" olarak düzeltildi.`
+        : `⚠️ CONSISTENCY: Both teams scored recently (Home ${homeScoredRecent}/5, Away ${awayScoredRecent}/5) but "BTTS No" recommended. Changed to "BTTS Yes".`);
+    }
+  }
+  
+  // 2. "KG Var" ama düşük gol beklentisi varsa
+  if (adjustedBttsValue === 'yes' || adjustedBttsValue === 'Yes') {
+    if (homeGoals < 0.5 && awayGoals < 0.5) {
+      adjustedBttsValue = language === 'tr' ? 'no' : 'No';
+      consistencyWarnings.push(language === 'tr'
+        ? `⚠️ TUTARLILIK: Düşük gol beklentisi (Ev ${homeGoals.toFixed(1)}, Dep ${awayGoals.toFixed(1)}) ama "KG Var" önerildi. "KG Yok" olarak düzeltildi.`
+        : `⚠️ CONSISTENCY: Low expected goals (Home ${homeGoals.toFixed(1)}, Away ${awayGoals.toFixed(1)}) but "BTTS Yes" recommended. Changed to "BTTS No".`);
+    }
+  }
+  
+  // 3. "2.5 Under" ama yüksek gol beklentisi varsa
+  if (adjustedRecommendation === 'Under' || adjustedRecommendation === 'under') {
+    if (totalExpectedGoals > 2.8) {
+      adjustedRecommendation = 'Over';
+      consistencyWarnings.push(language === 'tr'
+        ? `⚠️ TUTARLILIK: Yüksek gol beklentisi (${totalExpectedGoals.toFixed(1)}) ama "2.5 Under" önerildi. "2.5 Over" olarak düzeltildi.`
+        : `⚠️ CONSISTENCY: High expected goals (${totalExpectedGoals.toFixed(1)}) but "Under 2.5" recommended. Changed to "Over 2.5".`);
+    }
+  }
+  
+  // 4. "2.5 Over" ama düşük gol beklentisi varsa
+  if (adjustedRecommendation === 'Over' || adjustedRecommendation === 'over') {
+    if (totalExpectedGoals < 2.2) {
+      adjustedRecommendation = 'Under';
+      consistencyWarnings.push(language === 'tr'
+        ? `⚠️ TUTARLILIK: Düşük gol beklentisi (${totalExpectedGoals.toFixed(1)}) ama "2.5 Over" önerildi. "2.5 Under" olarak düzeltildi.`
+        : `⚠️ CONSISTENCY: Low expected goals (${totalExpectedGoals.toFixed(1)}) but "Over 2.5" recommended. Changed to "Under 2.5".`);
+    }
+  }
+  
+  // 5. Maç sonucu tahmini ile gol beklentisi tutarlı mı?
+  if (adjustedMatchWinnerValue === 'home' || adjustedMatchWinnerValue === 'Home') {
+    if (homeGoals < 0.7 && awayGoals > 1.2) {
+      // Ev favori ama düşük gol atma, deplasman yüksek gol atma potansiyeli
+      consistencyWarnings.push(language === 'tr'
+        ? `⚠️ DİKKAT: Ev favori ama düşük gol atma potansiyeli (${homeGoals.toFixed(1)}), deplasman yüksek (${awayGoals.toFixed(1)}). Beraberlik veya deplasman düşünülmeli.`
+        : `⚠️ WARNING: Home favorite but low scoring potential (${homeGoals.toFixed(1)}), away high (${awayGoals.toFixed(1)}). Consider draw or away.`);
+    }
+  }
+  
+  return {
+    recommendation: adjustedRecommendation,
+    matchWinnerValue: adjustedMatchWinnerValue,
+    bttsValue: adjustedBttsValue,
+    consistencyWarnings
+  };
+}
 
 // ==================== ODDS AGENT ====================
 
