@@ -17,11 +17,8 @@ export interface CollectedData {
   dataQuality?: number;
 }
 
-const MCP_SERVER_URL = process.env.NEXT_PUBLIC_APP_URL 
-  ? `${process.env.NEXT_PUBLIC_APP_URL}/api/mcp`
-  : process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}/api/mcp`
-    : 'http://localhost:3000/api/mcp';
+// Direct Sportmonks imports - MCP server yerine doğrudan çağrı (daha güvenilir)
+import { getFullFixtureData, getTeamStats, getHeadToHead } from '@/lib/sportmonks/index';
 
 // MCP Tool Definitions
 const MCP_TOOLS = [
@@ -290,44 +287,71 @@ Tool'ları sırayla kullan.`;
 }
 
 /**
- * MCP Tool Execution Helper
+ * Direct Tool Execution (bypass MCP - daha güvenilir)
+ * MCP server yerine doğrudan Sportmonks fonksiyonlarını çağırır
  */
 async function executeMCPTool(toolName: string, args: any): Promise<any> {
   try {
-    const response = await fetch(MCP_SERVER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: {
-          name: toolName,
-          arguments: args,
-        },
-        id: Date.now(),
-      }),
-    });
+    console.log(`   🔧 Direct execution: ${toolName}`);
+    
+    switch (toolName) {
+      case 'football_data':
+        if (!args.fixtureId) throw new Error('fixtureId required');
+        const fixtureData = await getFullFixtureData(args.fixtureId);
+        return {
+          success: true,
+          data: fixtureData,
+          summary: `Match data for fixture ${args.fixtureId}`,
+        };
 
-    if (!response.ok) {
-      throw new Error(`MCP server error: ${response.status} ${response.statusText}`);
+      case 'team_stats':
+        if (!args.teamId) throw new Error('teamId required');
+        const teamStats = await getTeamStats(args.teamId, args.seasonId);
+        return {
+          success: true,
+          data: teamStats,
+          summary: `Stats for team ${args.teamId}`,
+        };
+
+      case 'head_to_head':
+        if (!args.homeTeamId || !args.awayTeamId) throw new Error('homeTeamId and awayTeamId required');
+        const h2h = await getHeadToHead(args.homeTeamId, args.awayTeamId);
+        return {
+          success: true,
+          data: h2h,
+          summary: `H2H: ${args.homeTeamId} vs ${args.awayTeamId}`,
+        };
+
+      case 'odds_data':
+        if (!args.fixtureId) throw new Error('fixtureId required');
+        const fullDataForOdds = await getFullFixtureData(args.fixtureId);
+        return {
+          success: true,
+          data: {
+            odds: fullDataForOdds?.odds || null,
+          },
+          summary: `Odds for fixture ${args.fixtureId}`,
+        };
+
+      case 'match_context':
+        if (!args.fixtureId) throw new Error('fixtureId required');
+        const contextData = await getFullFixtureData(args.fixtureId);
+        return {
+          success: true,
+          data: {
+            weather: contextData?.weather || null,
+            referee: contextData?.referee || null,
+            venue: contextData?.venue || null,
+            lineups: contextData?.lineups || null,
+          },
+          summary: `Context for fixture ${args.fixtureId}`,
+        };
+
+      default:
+        throw new Error(`Unknown tool: ${toolName}`);
     }
-
-    const result = await response.json();
-
-    if (result.error) {
-      throw new Error(result.error.message || 'MCP tool execution failed');
-    }
-
-    // MCP JSON-RPC response formatından veriyi çıkar
-    if (result.result?.content?.[0]?.text) {
-      return JSON.parse(result.result.content[0].text);
-    }
-
-    return result.result || result;
   } catch (error: any) {
-    console.error(`❌ MCP Tool execution error (${toolName}):`, error.message);
+    console.error(`❌ Tool execution error (${toolName}):`, error.message);
     throw error;
   }
 }

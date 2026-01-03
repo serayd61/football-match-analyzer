@@ -705,13 +705,24 @@ export async function runMasterStrategist(
       result = getDefaultMasterStrategist(agentResults, language);
     }
 
+    // Eğer AI final objesi döndürmediyse, fallback ile tamamla
+    if (!result.final || !result.final.primary_pick) {
+      console.warn('⚠️ AI final objesi eksik, fallback ile tamamlanıyor...');
+      const fallback = getDefaultMasterStrategist(agentResults, language);
+      result.final = fallback.final;
+      // Diğer eksik alanları da tamamla
+      if (!result.model_probs) result.model_probs = fallback.model_probs;
+      if (!result.recommended_bets) result.recommended_bets = fallback.recommended_bets;
+      if (!result.signals) result.signals = fallback.signals;
+    }
+
     console.log(`✅ Master Strategist complete:`);
-    console.log(`   🎯 Confidence: ${result.confidence}%`);
-    console.log(`   📊 Primary: ${result.final.primary_pick.market} - ${result.final.primary_pick.selection}`);
-    if (result.final.surprise_pick) {
+    console.log(`   🎯 Confidence: ${result.confidence || 0}%`);
+    console.log(`   📊 Primary: ${result.final?.primary_pick?.market || 'N/A'} - ${result.final?.primary_pick?.selection || 'N/A'}`);
+    if (result.final?.surprise_pick) {
       console.log(`   🎲 Surprise: ${result.final.surprise_pick.market} - ${result.final.surprise_pick.selection} @ ${result.final.surprise_pick.market_odds}`);
     }
-    if (result.final.hedge) {
+    if (result.final?.hedge) {
       console.log(`   🛡️ Hedge: ${result.final.hedge.market} - ${result.final.hedge.selection}`);
     }
 
