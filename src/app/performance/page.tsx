@@ -152,6 +152,11 @@ interface AnalysisRecord {
   consensus_over_under: string;
   consensus_btts: string;
   consensus_confidence: number;
+  // Best Bet (En İyi Bahis)
+  best_bet_market: string | null;
+  best_bet_selection: string | null;
+  best_bet_confidence: number | null;
+  // Actual results
   actual_home_score: number | null;
   actual_away_score: number | null;
   actual_match_result: string | null;
@@ -766,6 +771,31 @@ function AnalysisCard({ analysis, index }: { analysis: AnalysisRecord; index: nu
             </div>
           )}
         </div>
+
+        {/* Best Bet - En İyi Bahis */}
+        {analysis.best_bet_market && analysis.best_bet_selection && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00ff]/10 border border-[#00f0ff]/30">
+            <div className="text-xs text-[#00f0ff] font-medium">🔥 En İyi</div>
+            <div className="text-sm font-bold text-white">
+              {analysis.best_bet_market === 'Over/Under 2.5' ? 'O/U' : 
+               analysis.best_bet_market === 'Match Result' ? 'MS' :
+               analysis.best_bet_market === 'BTTS' ? 'BTTS' :
+               analysis.best_bet_market}
+            </div>
+            <div className="text-sm font-mono text-[#ff00ff]">
+              {analysis.best_bet_selection}
+            </div>
+            {analysis.best_bet_confidence && (
+              <div className={`text-xs font-bold px-2 py-0.5 rounded ${
+                analysis.best_bet_confidence >= 70 ? 'bg-emerald-500/20 text-emerald-400' :
+                analysis.best_bet_confidence >= 50 ? 'bg-amber-500/20 text-amber-400' : 
+                'bg-red-500/20 text-red-400'
+              }`}>
+                %{analysis.best_bet_confidence}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Confidence */}
         <div className="text-center min-w-[80px]">

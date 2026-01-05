@@ -81,6 +81,11 @@ export async function GET(request: NextRequest) {
       consensus_btts: row.btts_prediction,
       consensus_confidence: row.overall_confidence,
       
+      // Best Bet (En İyi Bahis)
+      best_bet_market: row.best_bet_market,
+      best_bet_selection: row.best_bet_selection,
+      best_bet_confidence: row.best_bet_confidence,
+      
       // Actual results
       actual_home_score: row.actual_home_score,
       actual_away_score: row.actual_away_score,
