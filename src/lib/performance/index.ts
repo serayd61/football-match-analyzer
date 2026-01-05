@@ -265,9 +265,10 @@ export function calculateMatchAccuracy(prediction: AgentPrediction | null, actua
   const predOU = normalizePrediction(prediction.overUnder);
   const predBTTS = normalizePrediction(prediction.btts);
   
-  const actMR = actual.matchResult.toLowerCase();
-  const actOU = actual.overUnder.toLowerCase();
-  const actBTTS = actual.btts.toLowerCase();
+  // Actual değerleri de normalize et - aynı formatta karşılaştırma için
+  const actMR = normalizePrediction(actual.matchResult);
+  const actOU = normalizePrediction(actual.overUnder);
+  const actBTTS = normalizePrediction(actual.btts);
   
   return {
     matchResult: predMR === actMR,
