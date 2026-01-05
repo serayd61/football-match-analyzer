@@ -121,6 +121,32 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
   }
 }
 
+// Normalizasyon fonksiyonları - tutarlı karşılaştırma için
+function normalizeMR(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v === '1' || v === 'home' || v === 'ev sahibi') return '1';
+  if (v === '2' || v === 'away' || v === 'deplasman') return '2';
+  if (v === 'x' || v === 'draw' || v === 'beraberlik') return 'X';
+  return v;
+}
+
+function normalizeOU(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v.includes('over') || v.includes('üst')) return 'over';
+  if (v.includes('under') || v.includes('alt')) return 'under';
+  return v;
+}
+
+function normalizeBTTS(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v === 'yes' || v === 'evet' || v === 'var') return 'yes';
+  if (v === 'no' || v === 'hayır' || v === 'yok') return 'no';
+  return v;
+}
+
 // Tek bir analizi settle et
 async function settleAnalysis(
   supabase: SupabaseClient,
@@ -132,14 +158,17 @@ async function settleAnalysis(
     // Gerçek sonuçları hesapla
     const totalGoals = homeScore + awayScore;
     const actualMatchResult = homeScore > awayScore ? '1' : homeScore < awayScore ? '2' : 'X';
-    const actualOverUnder = totalGoals > 2.5 ? 'Over' : 'Under';
+    const actualOverUnder = totalGoals > 2.5 ? 'over' : 'under';
     const actualBtts = homeScore > 0 && awayScore > 0;
 
-    // Tahmin doğruluğunu kontrol et
-    const matchResultCorrect = analysis.match_result_prediction === actualMatchResult;
-    const overUnderCorrect = analysis.over_under_prediction === actualOverUnder;
-    const bttsCorrect = (analysis.btts_prediction === 'Yes' && actualBtts) || 
-                        (analysis.btts_prediction === 'No' && !actualBtts);
+    // Tahmin doğruluğunu kontrol et - NORMALİZE EDİLMİŞ KARŞILAŞTIRMA
+    const predMR = normalizeMR(analysis.match_result_prediction);
+    const predOU = normalizeOU(analysis.over_under_prediction);
+    const predBTTS = normalizeBTTS(analysis.btts_prediction);
+    
+    const matchResultCorrect = predMR === actualMatchResult;
+    const overUnderCorrect = predOU === actualOverUnder;
+    const bttsCorrect = (predBTTS === 'yes' && actualBtts) || (predBTTS === 'no' && !actualBtts);
 
     // Skor tahmini kontrolü
     const predictedScore = analysis.analysis?.predictions?.matchResult?.scorePrediction ||
