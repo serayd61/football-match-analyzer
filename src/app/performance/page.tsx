@@ -178,11 +178,13 @@ export default function PerformancePage() {
   const [stats, setStats] = useState<AccuracyStats[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [analyses, setAnalyses] = useState<AnalysisRecord[]>([]);
+  const [insights, setInsights] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [settling, setSettling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPending, setShowPending] = useState(true);
   const [showSettled, setShowSettled] = useState(true);
+  const [showInsights, setShowInsights] = useState(true);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -211,6 +213,15 @@ export default function PerformancePage() {
         console.log('   Set analyses:', analysesData.data?.length || 0, 'records');
       } else {
         console.error('   Analyses fetch failed:', analysesData.error);
+      }
+      
+      // Fetch insights (statistical correlations)
+      const insightsRes = await fetch('/api/performance/insights');
+      const insightsData = await insightsRes.json();
+      
+      if (insightsData.success && insightsData.insights) {
+        setInsights(insightsData.insights);
+        console.log('📊 Insights loaded');
       }
       
     } catch (err: any) {
@@ -529,6 +540,146 @@ export default function PerformancePage() {
               )}
             </motion.div>
 
+            {/* Statistical Insights */}
+            {insights && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="bg-gradient-to-br from-[#ff00ff]/5 to-[#00f0ff]/5 border border-[#ff00ff]/20 rounded-2xl overflow-hidden backdrop-blur-xl mb-8"
+              >
+                <button
+                  onClick={() => setShowInsights(!showInsights)}
+                  className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="w-6 h-6 text-[#ff00ff]" />
+                    <span className="text-xl font-bold">📊 İstatistiksel Analizler</span>
+                    <span className="px-3 py-1 rounded-full text-sm bg-[#ff00ff]/20 text-[#ff00ff]">
+                      {insights.keyFindings?.length || 0} bulgu
+                    </span>
+                  </div>
+                  {showInsights ? (
+                    <ChevronUp className="w-5 h-5 text-white/40" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
+                
+                <AnimatePresence>
+                  {showInsights && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-6 space-y-6">
+                        {/* Key Findings */}
+                        {insights.keyFindings && insights.keyFindings.length > 0 && (
+                          <div className="bg-black/30 rounded-xl p-4">
+                            <h4 className="text-lg font-bold text-[#00f0ff] mb-3">🎯 Önemli Bulgular</h4>
+                            <div className="space-y-2">
+                              {insights.keyFindings.map((finding: string, idx: number) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm">
+                                  <span className="text-white/80">{finding}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Market Analysis Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Match Result */}
+                          <MarketInsightCard 
+                            title="Maç Sonucu" 
+                            icon="⚽" 
+                            data={insights.matchResult} 
+                          />
+                          
+                          {/* Over/Under */}
+                          <MarketInsightCard 
+                            title="Alt/Üst 2.5" 
+                            icon="📊" 
+                            data={insights.overUnder} 
+                          />
+                          
+                          {/* BTTS */}
+                          <MarketInsightCard 
+                            title="KG Var" 
+                            icon="🎯" 
+                            data={insights.btts} 
+                          />
+                        </div>
+                        
+                        {/* Confidence Calibration */}
+                        {insights.confidenceCalibration && (
+                          <div className="bg-black/30 rounded-xl p-4">
+                            <h4 className="text-lg font-bold text-amber-400 mb-3">📈 Güven Kalibrasyonu</h4>
+                            <p className="text-xs text-white/50 mb-3">AI güven seviyeleri gerçek sonuçlarla ne kadar uyumlu?</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              {insights.confidenceCalibration.map((cal: any) => (
+                                <div key={cal.level} className="bg-white/5 rounded-lg p-3 text-center">
+                                  <div className="text-sm font-bold text-white mb-1">{cal.level}</div>
+                                  <div className="text-xs text-white/50 mb-2">Beklenen: %{cal.expected}</div>
+                                  <div className={`text-lg font-bold ${
+                                    cal.actual >= cal.expected ? 'text-emerald-400' : 'text-amber-400'
+                                  }`}>
+                                    %{cal.actual}
+                                  </div>
+                                  <div className="text-xs mt-1">{cal.calibration}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Best Bet Performance */}
+                        {insights.bestBets && insights.bestBets.length > 0 && (
+                          <div className="bg-black/30 rounded-xl p-4">
+                            <h4 className="text-lg font-bold text-[#00f0ff] mb-3">🔥 En İyi Bahis Performansı</h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-white/10">
+                                    <th className="text-left py-2 text-white/60">Market</th>
+                                    <th className="text-left py-2 text-white/60">Seçim</th>
+                                    <th className="text-center py-2 text-white/60">Güven</th>
+                                    <th className="text-center py-2 text-white/60">Maç</th>
+                                    <th className="text-center py-2 text-white/60">Başarı</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {insights.bestBets.slice(0, 10).map((bet: any, idx: number) => (
+                                    <tr key={idx} className="border-b border-white/5">
+                                      <td className="py-2 text-white">{bet.market}</td>
+                                      <td className="py-2 text-[#ff00ff] font-medium">{bet.selection}</td>
+                                      <td className="py-2 text-center text-white/60">{bet.confidenceRange}</td>
+                                      <td className="py-2 text-center text-white/60">{bet.total}</td>
+                                      <td className="py-2 text-center">
+                                        <span className={`font-bold ${
+                                          bet.accuracy >= 70 ? 'text-emerald-400' :
+                                          bet.accuracy >= 50 ? 'text-amber-400' : 'text-red-400'
+                                        }`}>
+                                          %{bet.accuracy}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+
             {/* Recent Analyses */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -685,6 +836,93 @@ function CollapsibleSection({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function MarketInsightCard({ title, icon, data }: { title: string; icon: string; data: any }) {
+  if (!data) return null;
+  
+  return (
+    <div className="bg-black/30 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-bold text-white flex items-center gap-2">
+          <span>{icon}</span>
+          {title}
+        </h4>
+        <span className={`text-lg font-bold ${
+          data.overallAccuracy >= 60 ? 'text-emerald-400' :
+          data.overallAccuracy >= 45 ? 'text-amber-400' : 'text-red-400'
+        }`}>
+          %{data.overallAccuracy}
+        </span>
+      </div>
+      
+      {/* By Confidence */}
+      {data.byConfidence && data.byConfidence.length > 0 && (
+        <div className="mb-3">
+          <p className="text-xs text-white/50 mb-2">Güven seviyesine göre:</p>
+          <div className="space-y-1">
+            {data.byConfidence.map((bucket: any) => (
+              <div key={bucket.range} className="flex items-center justify-between text-xs">
+                <span className="text-white/60">{bucket.range}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white/40">{bucket.correct}/{bucket.total}</span>
+                  <span className={`font-bold ${
+                    bucket.accuracy >= 60 ? 'text-emerald-400' :
+                    bucket.accuracy >= 45 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    %{bucket.accuracy}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Correlations */}
+      {data.correlations && data.correlations.length > 0 && (
+        <div className="pt-3 border-t border-white/10">
+          <p className="text-xs text-white/50 mb-2">Tahmin → Gerçek:</p>
+          <div className="space-y-2">
+            {data.correlations.map((corr: any) => (
+              <div key={corr.prediction} className="bg-white/5 rounded p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-[#00f0ff] uppercase">{corr.prediction}</span>
+                  <span className="text-xs text-white/40">{corr.total} maç</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {corr.actualOutcomes.map((outcome: any) => (
+                    <span 
+                      key={outcome.outcome}
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        outcome.outcome === corr.prediction 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'bg-white/10 text-white/60'
+                      }`}
+                    >
+                      {outcome.outcome.toUpperCase()}: %{outcome.percentage}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Paradoxes */}
+      {data.paradoxes && data.paradoxes.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-red-500/20">
+          {data.paradoxes.map((paradox: string, idx: number) => (
+            <div key={idx} className="flex items-start gap-2 text-xs text-red-400">
+              <span>⚠️</span>
+              <span>{paradox}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
