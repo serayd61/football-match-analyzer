@@ -191,6 +191,7 @@ export default function PerformancePage() {
   const [filterSelection, setFilterSelection] = useState<string>('all'); // 'all', 'home', 'away', 'over', 'under', 'yes', 'no'
   const [filterMinConfidence, setFilterMinConfidence] = useState<number>(50); // Minimum güven yüzdesi
   const [filterMaxConfidence, setFilterMaxConfidence] = useState<number>(100); // Maximum güven yüzdesi
+  const [filterLeague, setFilterLeague] = useState<string>('all'); // Lig filtresi
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -269,8 +270,16 @@ export default function PerformancePage() {
   const pendingAnalyses = analyses.filter(a => !a.match_settled);
   let settledAnalyses = analyses.filter(a => a.match_settled);
   
+  // Lig listesini çıkar (filtreleme için)
+  const allLeagues = Array.from(new Set(settledAnalyses.map(a => a.league).filter(Boolean))).sort();
+  
+  // Lig filtresi
+  if (filterLeague !== 'all') {
+    settledAnalyses = settledAnalyses.filter(analysis => analysis.league === filterLeague);
+  }
+  
   // "En İyi Bahis" filtreleme
-  if (filterMarket !== 'all' || filterSelection !== 'all') {
+  if (filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) {
     settledAnalyses = settledAnalyses.filter(analysis => {
       if (!analysis.best_bet_market || !analysis.best_bet_selection) return false;
       
@@ -796,6 +805,20 @@ export default function PerformancePage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-white/60">🔍 Filtrele:</span>
                     
+                    {/* Lig Filtresi */}
+                    <select
+                      value={filterLeague}
+                      onChange={(e) => setFilterLeague(e.target.value)}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#00f0ff]/50 min-w-[180px]"
+                    >
+                      <option value="all">Tüm Ligler</option>
+                      {allLeagues.map((league) => (
+                        <option key={league} value={league}>
+                          {league}
+                        </option>
+                      ))}
+                    </select>
+                    
                     {/* Market Filtresi */}
                     <select
                       value={filterMarket}
@@ -867,9 +890,10 @@ export default function PerformancePage() {
                     </div>
                     
                     {/* Filtreleri Temizle */}
-                    {(filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) && (
+                    {(filterLeague !== 'all' || filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) && (
                       <button
                         onClick={() => {
+                          setFilterLeague('all');
                           setFilterMarket('all');
                           setFilterSelection('all');
                           setFilterMinConfidence(50);
