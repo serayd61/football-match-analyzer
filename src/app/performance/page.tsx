@@ -185,6 +185,10 @@ export default function PerformancePage() {
   const [showPending, setShowPending] = useState(true);
   const [showSettled, setShowSettled] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
+  
+  // Filtreleme state'leri
+  const [filterMarket, setFilterMarket] = useState<string>('all'); // 'all', 'MS', 'O/U', 'BTTS'
+  const [filterSelection, setFilterSelection] = useState<string>('all'); // 'all', 'home', 'away', 'over', 'under', 'yes', 'no'
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -261,7 +265,63 @@ export default function PerformancePage() {
 
   // Filter analyses
   const pendingAnalyses = analyses.filter(a => !a.match_settled);
-  const settledAnalyses = analyses.filter(a => a.match_settled);
+  let settledAnalyses = analyses.filter(a => a.match_settled);
+  
+  // "En İyi Bahis" filtreleme
+  if (filterMarket !== 'all' || filterSelection !== 'all') {
+    settledAnalyses = settledAnalyses.filter(analysis => {
+      if (!analysis.best_bet_market || !analysis.best_bet_selection) return false;
+      
+      const market = analysis.best_bet_market.toLowerCase();
+      const selection = analysis.best_bet_selection.toLowerCase();
+      
+      // Market filtresi
+      if (filterMarket !== 'all') {
+        let marketMatch = false;
+        
+        if (filterMarket === 'MS') {
+          marketMatch = market.includes('match result') || market.includes('maç sonucu') || 
+                       market.includes('1x2') || market === 'ms';
+        } else if (filterMarket === 'O/U') {
+          marketMatch = market.includes('over/under') || market.includes('alt/üst') || 
+                       market.includes('2.5') || market === 'o/u';
+        } else if (filterMarket === 'BTTS') {
+          marketMatch = market.includes('btts') || market.includes('both teams') || 
+                       market.includes('kg var') || market.includes('gol-gol');
+        }
+        
+        if (!marketMatch) return false;
+      }
+      
+      // Selection filtresi
+      if (filterSelection !== 'all') {
+        let selectionMatch = false;
+        
+        if (filterSelection === 'home') {
+          selectionMatch = selection.includes('home') || selection === '1' || 
+                          selection.includes('ev sahibi') || selection.includes('ev');
+        } else if (filterSelection === 'away') {
+          selectionMatch = selection.includes('away') || selection === '2' || 
+                          selection.includes('deplasman') || selection.includes('dep');
+        } else if (filterSelection === 'draw') {
+          selectionMatch = selection.includes('draw') || selection === 'x' || 
+                          selection.includes('beraberlik') || selection.includes('ber');
+        } else if (filterSelection === 'over') {
+          selectionMatch = selection.includes('over') || selection.includes('üst');
+        } else if (filterSelection === 'under') {
+          selectionMatch = selection.includes('under') || selection.includes('alt');
+        } else if (filterSelection === 'yes') {
+          selectionMatch = selection.includes('yes') || selection.includes('evet') || selection === 'var';
+        } else if (filterSelection === 'no') {
+          selectionMatch = selection.includes('no') || selection.includes('hayır') || selection === 'yok';
+        }
+        
+        if (!selectionMatch) return false;
+      }
+      
+      return true;
+    });
+  }
   
   console.log('🔍 Analyses state:', analyses.length, 'total');
   console.log('   Pending:', pendingAnalyses.length);
@@ -718,9 +778,81 @@ export default function PerformancePage() {
                 isOpen={showSettled}
                 onToggle={() => setShowSettled(!showSettled)}
               >
+                {/* Filtreleme UI */}
+                <div className="mb-4 pb-4 border-b border-white/10">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-white/60">🔍 Filtrele:</span>
+                    
+                    {/* Market Filtresi */}
+                    <select
+                      value={filterMarket}
+                      onChange={(e) => {
+                        setFilterMarket(e.target.value);
+                        setFilterSelection('all'); // Market değişince selection'ı sıfırla
+                      }}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
+                    >
+                      <option value="all">Tüm Marketler</option>
+                      <option value="MS">Maç Sonucu (MS)</option>
+                      <option value="O/U">Alt/Üst 2.5 (O/U)</option>
+                      <option value="BTTS">KG Var (BTTS)</option>
+                    </select>
+                    
+                    {/* Selection Filtresi */}
+                    {filterMarket !== 'all' && (
+                      <select
+                        value={filterSelection}
+                        onChange={(e) => setFilterSelection(e.target.value)}
+                        className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
+                      >
+                        <option value="all">Tüm Seçimler</option>
+                        {filterMarket === 'MS' && (
+                          <>
+                            <option value="home">Home / Ev Sahibi</option>
+                            <option value="away">Away / Deplasman</option>
+                            <option value="draw">Draw / Beraberlik</option>
+                          </>
+                        )}
+                        {filterMarket === 'O/U' && (
+                          <>
+                            <option value="over">Over / Üst</option>
+                            <option value="under">Under / Alt</option>
+                          </>
+                        )}
+                        {filterMarket === 'BTTS' && (
+                          <>
+                            <option value="yes">Yes / Evet</option>
+                            <option value="no">No / Hayır</option>
+                          </>
+                        )}
+                      </select>
+                    )}
+                    
+                    {/* Filtreleri Temizle */}
+                    {(filterMarket !== 'all' || filterSelection !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setFilterMarket('all');
+                          setFilterSelection('all');
+                        }}
+                        className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm hover:bg-red-500/30 transition-colors"
+                      >
+                        ✕ Temizle
+                      </button>
+                    )}
+                    
+                    {/* Sonuç Sayısı */}
+                    <span className="text-xs text-white/40 ml-auto">
+                      {settledAnalyses.length} sonuç
+                    </span>
+                  </div>
+                </div>
+                
                 {settledAnalyses.length === 0 ? (
                   <div className="text-center py-8 text-white/40">
-                    {t.noData}
+                    {filterMarket !== 'all' || filterSelection !== 'all' 
+                      ? 'Filtreye uygun sonuç bulunamadı' 
+                      : t.noData}
                   </div>
                 ) : (
                   <div className="space-y-3">
