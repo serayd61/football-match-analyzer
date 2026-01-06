@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -1130,6 +1130,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang } = useLanguage();
   const t = (translations[lang as keyof typeof translations] || translations.en) as any;
   
@@ -1201,6 +1202,106 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchFixtures();
   }, [fetchFixtures]);
+
+  // Query parametresinden fixture ID'yi oku ve maçı seç
+  useEffect(() => {
+    const fixtureIdParam = searchParams.get('fixture');
+    if (fixtureIdParam && fixtures.length > 0) {
+      const fixtureId = parseInt(fixtureIdParam);
+      const fixture = fixtures.find(f => f.id === fixtureId);
+      
+      if (fixture && (!selectedFixture || selectedFixture.id !== fixtureId)) {
+        console.log('Fixture from URL:', fixtureId, fixture);
+        setSelectedFixture(fixture);
+        
+        // Eğer analiz yoksa, analiz yap
+        if (!analysis || analysis.fixtureId !== fixtureId) {
+          // Favorilerden analiz verisini çek
+          fetchFavoriteAnalysis(fixtureId).then(favoriteAnalysis => {
+            if (favoriteAnalysis) {
+              console.log('Using favorite analysis');
+              setAnalysis(favoriteAnalysis);
+              setAnalysisType('agent');
+            } else {
+              // Favorilerde yoksa yeni analiz yap
+              console.log('No favorite analysis, running new analysis');
+              analyzeMatch(fixture, false);
+            }
+          });
+        }
+        
+        // URL'den query parametresini temizle
+        router.replace('/dashboard', { scroll: false });
+      }
+    }
+  }, [searchParams, fixtures, selectedFixture, analysis]);
+
+  // Favorilerden analiz verisini çek
+  const fetchFavoriteAnalysis = async (fixtureId: number): Promise<SmartAnalysis | null> => {
+    try {
+      const res = await fetch('/api/user/favorites');
+      const data = await res.json();
+      
+      if (data.success && data.favorites) {
+        const favorite = data.favorites.find((f: any) => f.fixture_id === fixtureId);
+        if (favorite && favorite.analysis_data) {
+          // Favorilerden gelen analiz verisini SmartAnalysis formatına dönüştür
+          const analysisData = favorite.analysis_data;
+          
+          // Eğer analysis_data bir SmartAnalysis objesi ise direkt kullan
+          if (analysisData.fixtureId && analysisData.homeTeam) {
+            return analysisData as SmartAnalysis;
+          }
+          
+          // Eğer unified analysis formatındaysa dönüştür
+          if (analysisData.predictions) {
+            return {
+              fixtureId: fixtureId,
+              homeTeam: favorite.home_team,
+              awayTeam: favorite.away_team,
+              league: favorite.league || '',
+              matchDate: favorite.match_date?.split('T')[0] || '',
+              matchResult: analysisData.predictions.matchResult ? {
+                prediction: analysisData.predictions.matchResult.prediction,
+                confidence: analysisData.predictions.matchResult.confidence,
+                reasoning: analysisData.predictions.matchResult.reasoning || ''
+              } : undefined,
+              overUnder: analysisData.predictions.overUnder ? {
+                prediction: analysisData.predictions.overUnder.prediction,
+                confidence: analysisData.predictions.overUnder.confidence,
+                reasoning: analysisData.predictions.overUnder.reasoning || ''
+              } : undefined,
+              btts: analysisData.predictions.btts ? {
+                prediction: analysisData.predictions.btts.prediction,
+                confidence: analysisData.predictions.btts.confidence,
+                reasoning: analysisData.predictions.btts.reasoning || ''
+              } : undefined,
+              bestBet: analysisData.bestBet ? {
+                market: analysisData.bestBet.market,
+                selection: analysisData.bestBet.selection,
+                confidence: analysisData.bestBet.confidence,
+                reason: analysisData.bestBet.reasoning || ''
+              } : {
+                market: favorite.best_bet_market || '',
+                selection: favorite.best_bet_selection || '',
+                confidence: favorite.best_bet_confidence || 50,
+                reason: ''
+              },
+              agreement: analysisData.systemPerformance?.agreement || 0,
+              riskLevel: analysisData.systemPerformance?.riskLevel || 'medium',
+              overallConfidence: analysisData.systemPerformance?.overallConfidence || favorite.overall_confidence || 50,
+              processingTime: analysisData.metadata?.processingTime || 0,
+              modelsUsed: analysisData.metadata?.systemsUsed || [],
+              analyzedAt: favorite.created_at
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Fetch favorite analysis error:', error);
+    }
+    return null;
+  };
   
   // ============================================================================
   // ANALYZE MATCH
