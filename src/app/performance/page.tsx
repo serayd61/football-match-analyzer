@@ -208,8 +208,8 @@ export default function PerformancePage() {
         setSummary(statsData.summary);
       }
       
-      // Fetch analyses
-      const analysesRes = await fetch('/api/performance/get-analyses?limit=50');
+      // Fetch analyses - Tüm sonuçlanmış maçları getir (limit yok)
+      const analysesRes = await fetch('/api/performance/get-analyses?limit=1000');
       const analysesData = await analysesRes.json();
       
       console.log('📋 Analyses API response:', analysesData);

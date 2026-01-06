@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     const settledParam = searchParams.get('settled');
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = parseInt(searchParams.get('limit') || '1000', 10); // Default 1000, tüm maçları getir
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const league = searchParams.get('league');
     
