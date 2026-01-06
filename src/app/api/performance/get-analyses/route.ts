@@ -229,25 +229,26 @@ export async function GET(request: NextRequest) {
         best_bet_confidence: row.best_bet_confidence,
         
         // Actual results
-      actual_home_score: row.actual_home_score,
-      actual_away_score: row.actual_away_score,
-      actual_match_result: row.actual_match_result,
-      actual_over_under: row.actual_total_goals !== null 
-        ? (row.actual_total_goals > 2.5 ? 'Over' : 'Under') 
-        : null,
-      actual_btts: row.actual_btts !== null 
-        ? (row.actual_btts ? 'Yes' : 'No') 
-        : null,
-      
-      // Correctness
-      consensus_mr_correct: row.match_result_correct,
-      consensus_ou_correct: row.over_under_correct,
-      consensus_btts_correct: row.btts_correct,
-      
-      // Metadata
-      created_at: row.created_at,
-      settled_at: row.settled_at,
-    }));
+        actual_home_score: row.actual_home_score,
+        actual_away_score: row.actual_away_score,
+        actual_match_result: row.actual_match_result,
+        actual_over_under: row.actual_total_goals !== null 
+          ? (row.actual_total_goals > 2.5 ? 'Over' : 'Under') 
+          : null,
+        actual_btts: row.actual_btts !== null 
+          ? (row.actual_btts ? 'Yes' : 'No') 
+          : null,
+        
+        // Correctness
+        consensus_mr_correct: row.match_result_correct,
+        consensus_ou_correct: row.over_under_correct,
+        consensus_btts_correct: row.btts_correct,
+        
+        // Metadata
+        created_at: row.created_at,
+        settled_at: row.settled_at,
+      };
+    });
     
     // Set cache control headers to prevent caching
     const response = NextResponse.json({
