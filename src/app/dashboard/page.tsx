@@ -1165,6 +1165,8 @@ export default function DashboardPage() {
   const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('agent'); // 🆕 Agent Analysis ana sistem
   const [showPaywall, setShowPaywall] = useState(false);
   const [accessStatus, setAccessStatus] = useState<any>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [savingFavorite, setSavingFavorite] = useState(false);
   
   // Auth check
   useEffect(() => {
@@ -1368,6 +1370,62 @@ export default function DashboardPage() {
     
     setLoadingBoldBet(false);
   };
+
+  // Favoriye ekle/kaldır
+  const toggleFavorite = async () => {
+    if (!selectedFixture || !analysis) return;
+    
+    setSavingFavorite(true);
+    const newFavoriteStatus = !isFavorite;
+    
+    try {
+      const res = await fetch('/api/user/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fixtureId: selectedFixture.id,
+          isFavorite: newFavoriteStatus,
+          analysis: analysis, // Unified analysis verisi
+          geniusAnalysis: boldBet ? { boldBet } : null, // Genius analizi varsa ekle
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setIsFavorite(newFavoriteStatus);
+        console.log(newFavoriteStatus ? '✅ Favoriye eklendi' : '❌ Favorilerden kaldırıldı');
+      } else {
+        console.error('Favorite error:', data.error);
+      }
+    } catch (error) {
+      console.error('Favorite toggle error:', error);
+    }
+    
+    setSavingFavorite(false);
+  };
+
+  // Favori durumunu kontrol et
+  useEffect(() => {
+    if (!selectedFixture?.id) {
+      setIsFavorite(false);
+      return;
+    }
+    
+    const checkFavorite = async () => {
+      try {
+        const res = await fetch(`/api/user/favorites?fixtureId=${selectedFixture.id}`);
+        const data = await res.json();
+        if (data.success) {
+          setIsFavorite(data.isFavorite || false);
+        }
+      } catch (error) {
+        console.error('Check favorite error:', error);
+      }
+    };
+    
+    checkFavorite();
+  }, [selectedFixture?.id]);
   
   // ============================================================================
   // FILTER FIXTURES
@@ -1455,6 +1513,16 @@ export default function DashboardPage() {
                 title="Performans Takibi"
               >
                 <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
+              </Link>
+            </motion.div>
+            
+            <motion.div whileHover={{ scale: 1.05 }}>
+              <Link
+                href="/favorites"
+                className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+                title="Favorilerim"
+              >
+                <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
               </Link>
             </motion.div>
             
@@ -2452,6 +2520,48 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </motion.div>
+                      )}
+                    </div>
+                    
+                    {/* ⭐ FAVORİYE EKLE BUTONU */}
+                    <div className="mt-6 pt-4 border-t border-gray-700/50 relative z-10">
+                      <motion.button
+                        onClick={toggleFavorite}
+                        disabled={savingFavorite}
+                        className={`w-full py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all font-bold ${
+                          isFavorite
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white'
+                            : 'bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white border border-gray-500/50'
+                        }`}
+                        whileHover={{ scale: savingFavorite ? 1 : 1.02 }}
+                        whileTap={{ scale: savingFavorite ? 1 : 0.98 }}
+                      >
+                        {savingFavorite ? (
+                          <>
+                            <motion.span
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              ⏳
+                            </motion.span>
+                            <span>Kaydediliyor...</span>
+                          </>
+                        ) : isFavorite ? (
+                          <>
+                            <Star className="w-5 h-5" fill="currentColor" />
+                            <span>Favorilerden Kaldır</span>
+                          </>
+                        ) : (
+                          <>
+                            <Star className="w-5 h-5" />
+                            <span>⭐ Favoriye Ekle</span>
+                          </>
+                        )}
+                      </motion.button>
+                      {isFavorite && (
+                        <p className="mt-2 text-xs text-center text-gray-400">
+                          Bu maç favorilerinize kaydedildi. Favoriler sayfasından görüntüleyebilirsiniz.
+                        </p>
                       )}
                     </div>
                     
