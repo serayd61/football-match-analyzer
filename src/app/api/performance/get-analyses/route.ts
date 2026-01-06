@@ -46,6 +46,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '1000', 10); // Default 1000, tüm maçları getir
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const league = searchParams.get('league');
+    const market = searchParams.get('market'); // 'MS', 'O/U', 'BTTS'
+    const selection = searchParams.get('selection'); // 'home', 'away', 'over', 'under', etc.
+    const minConfidence = parseInt(searchParams.get('minConfidence') || '50', 10);
+    const maxConfidence = parseInt(searchParams.get('maxConfidence') || '100', 10);
     
     console.log(`   Params: settled=${settledParam}, limit=${limit}, offset=${offset}, league=${league}`);
     
@@ -82,6 +86,55 @@ export async function GET(request: NextRequest) {
     // Filter by league
     if (league) {
       filteredData = filteredData.filter(r => r.league === league);
+    }
+    
+    // Filter by Best Bet market
+    if (market && market !== 'all') {
+      filteredData = filteredData.filter(r => {
+        if (!r.best_bet_market) return false;
+        const marketLower = r.best_bet_market.toLowerCase();
+        
+        if (market === 'MS') {
+          return marketLower.includes('match result') || marketLower.includes('maç sonucu') || 
+                 marketLower.includes('1x2') || marketLower === 'ms';
+        } else if (market === 'O/U') {
+          return marketLower.includes('over/under') || marketLower.includes('alt/üst') || 
+                 marketLower.includes('2.5') || marketLower === 'o/u';
+        } else if (market === 'BTTS') {
+          return marketLower.includes('btts') || marketLower.includes('both teams') || 
+                 marketLower.includes('kg var') || marketLower.includes('gol-gol');
+        }
+        return true;
+      });
+    }
+    
+    // Filter by Best Bet selection
+    if (selection && selection !== 'all' && market && market !== 'all') {
+      filteredData = filteredData.filter(r => {
+        if (!r.best_bet_selection) return false;
+        const sel = r.best_bet_selection.toLowerCase();
+        
+        if (market === 'MS') {
+          if (selection === 'home') return sel.includes('home') || sel === '1' || sel.includes('ev');
+          if (selection === 'away') return sel.includes('away') || sel === '2' || sel.includes('dep');
+          if (selection === 'draw') return sel.includes('draw') || sel === 'x' || sel.includes('ber');
+        } else if (market === 'O/U') {
+          if (selection === 'over') return sel.includes('over') || sel.includes('üst');
+          if (selection === 'under') return sel.includes('under') || sel.includes('alt');
+        } else if (market === 'BTTS') {
+          if (selection === 'yes') return sel.includes('yes') || sel.includes('evet');
+          if (selection === 'no') return sel.includes('no') || sel.includes('hayır');
+        }
+        return true;
+      });
+    }
+    
+    // Filter by confidence range
+    if (minConfidence !== 50 || maxConfidence !== 100) {
+      filteredData = filteredData.filter(r => {
+        if (r.best_bet_confidence === null || r.best_bet_confidence === undefined) return false;
+        return r.best_bet_confidence >= minConfidence && r.best_bet_confidence <= maxConfidence;
+      });
     }
     
     const totalCount = filteredData.length;
@@ -174,8 +227,8 @@ export async function GET(request: NextRequest) {
         best_bet_market: row.best_bet_market,
         best_bet_selection: row.best_bet_selection,
         best_bet_confidence: row.best_bet_confidence,
-      
-      // Actual results
+        
+        // Actual results
       actual_home_score: row.actual_home_score,
       actual_away_score: row.actual_away_score,
       actual_match_result: row.actual_match_result,

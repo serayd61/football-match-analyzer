@@ -213,7 +213,18 @@ export default function PerformancePage() {
       }
       
       // Fetch analyses - Tüm sonuçlanmış maçları getir (limit yok)
-      const analysesRes = await fetch('/api/performance/get-analyses?limit=1000');
+      // Filtreleme parametrelerini API'ye gönder
+      const filterParams = new URLSearchParams({
+        limit: '1000',
+        settled: 'true', // Sadece sonuçlanmış maçlar
+        ...(filterLeague !== 'all' && { league: filterLeague }),
+        ...(filterMarket !== 'all' && { market: filterMarket }),
+        ...(filterSelection !== 'all' && { selection: filterSelection }),
+        ...(filterMinConfidence !== 50 && { minConfidence: filterMinConfidence.toString() }),
+        ...(filterMaxConfidence !== 100 && { maxConfidence: filterMaxConfidence.toString() }),
+      });
+      
+      const analysesRes = await fetch(`/api/performance/get-analyses?${filterParams}`);
       const analysesData = await analysesRes.json();
       
       console.log('📋 Analyses API response:', analysesData);
@@ -272,82 +283,13 @@ export default function PerformancePage() {
 
   // Filter analyses
   const pendingAnalyses = analyses.filter(a => !a.match_settled);
-  let settledAnalyses = analyses.filter(a => a.match_settled);
+  const settledAnalyses = analyses.filter(a => a.match_settled);
   
-  // Lig listesini çıkar (filtreleme için)
-  const allLeagues = Array.from(new Set(settledAnalyses.map(a => a.league).filter(Boolean))).sort();
+  // Lig listesini çıkar (filtreleme için) - Tüm analizlerden (filtrelenmemiş)
+  const allAnalysesForLeagues = analyses.filter(a => a.match_settled);
+  const allLeagues = Array.from(new Set(allAnalysesForLeagues.map(a => a.league).filter(Boolean))).sort();
   
-  // Lig filtresi
-  if (filterLeague !== 'all') {
-    settledAnalyses = settledAnalyses.filter(analysis => analysis.league === filterLeague);
-  }
-  
-  // "En İyi Bahis" filtreleme
-  if (filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) {
-    settledAnalyses = settledAnalyses.filter(analysis => {
-      if (!analysis.best_bet_market || !analysis.best_bet_selection) return false;
-      
-      const market = analysis.best_bet_market.toLowerCase();
-      const selection = analysis.best_bet_selection.toLowerCase();
-      
-      // Market filtresi
-      if (filterMarket !== 'all') {
-        let marketMatch = false;
-        
-        if (filterMarket === 'MS') {
-          marketMatch = market.includes('match result') || market.includes('maç sonucu') || 
-                       market.includes('1x2') || market === 'ms';
-        } else if (filterMarket === 'O/U') {
-          marketMatch = market.includes('over/under') || market.includes('alt/üst') || 
-                       market.includes('2.5') || market === 'o/u';
-        } else if (filterMarket === 'BTTS') {
-          marketMatch = market.includes('btts') || market.includes('both teams') || 
-                       market.includes('kg var') || market.includes('gol-gol');
-        }
-        
-        if (!marketMatch) return false;
-      }
-      
-      // Selection filtresi
-      if (filterSelection !== 'all') {
-        let selectionMatch = false;
-        
-        if (filterSelection === 'home') {
-          selectionMatch = selection.includes('home') || selection === '1' || 
-                          selection.includes('ev sahibi') || selection.includes('ev');
-        } else if (filterSelection === 'away') {
-          selectionMatch = selection.includes('away') || selection === '2' || 
-                          selection.includes('deplasman') || selection.includes('dep');
-        } else if (filterSelection === 'draw') {
-          selectionMatch = selection.includes('draw') || selection === 'x' || 
-                          selection.includes('beraberlik') || selection.includes('ber');
-        } else if (filterSelection === 'over') {
-          selectionMatch = selection.includes('over') || selection.includes('üst');
-        } else if (filterSelection === 'under') {
-          selectionMatch = selection.includes('under') || selection.includes('alt');
-        } else if (filterSelection === 'yes') {
-          selectionMatch = selection.includes('yes') || selection.includes('evet') || selection === 'var';
-        } else if (filterSelection === 'no') {
-          selectionMatch = selection.includes('no') || selection.includes('hayır') || selection === 'yok';
-        }
-        
-        if (!selectionMatch) return false;
-      }
-      
-      // Güven yüzdesi filtresi
-      if (analysis.best_bet_confidence !== null && analysis.best_bet_confidence !== undefined) {
-        const confidence = analysis.best_bet_confidence;
-        if (confidence < filterMinConfidence || confidence > filterMaxConfidence) {
-          return false;
-        }
-      } else {
-        // Güven yüzdesi yoksa filtreleme dışında bırak (opsiyonel - istersen true döndür)
-        return false; // Güven yüzdesi olmayanları gösterme
-      }
-      
-      return true;
-    });
-  }
+  // Not: Filtreleme artık API'de yapılıyor, burada sadece gösterim için kullanıyoruz
   
   console.log('🔍 Analyses state:', analyses.length, 'total');
   console.log('   Pending:', pendingAnalyses.length);
