@@ -391,13 +391,13 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   <div className="space-y-2">
                     {stats.overUnder && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{stats.overUnderConfidence || stats.confidence} güven)</p>
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{Math.round(stats.overUnderConfidence || stats.confidence)} güven)</p>
                         {stats.overUnderReasoning && <p className="text-gray-400 text-xs mt-1">{stats.overUnderReasoning}</p>}
                       </div>
                     )}
                     {stats.btts && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{stats.bttsConfidence || stats.confidence} güven)</p>
+                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{Math.round(stats.bttsConfidence || stats.confidence)} güven)</p>
                         {stats.bttsReasoning && <p className="text-gray-400 text-xs mt-1">{stats.bttsReasoning}</p>}
                       </div>
                     )}
@@ -407,7 +407,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                           stats.matchResult === '1' || stats.matchResult === 'home' ? 'Ev Sahibi' : 
                           stats.matchResult === '2' || stats.matchResult === 'away' ? 'Deplasman' : 
                           'Beraberlik'
-                        }</span> (%{stats.matchResultConfidence || stats.confidence} güven)</p>
+                        }</span> (%{Math.round(stats.matchResultConfidence || stats.confidence)} güven)</p>
                         {stats.matchResultReasoning && <p className="text-gray-400 text-xs mt-1">{stats.matchResultReasoning}</p>}
                       </div>
                     )}
@@ -460,7 +460,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   <div className="space-y-2">
                     {odds.recommendation && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Ana Öneri: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{odds.confidence} güven)</p>
+                        <p className="text-white font-semibold">Ana Öneri: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{Math.round(odds.confidence)} güven)</p>
                         {odds.recommendationReasoning && <p className="text-gray-400 text-xs mt-1">{odds.recommendationReasoning}</p>}
                       </div>
                     )}
@@ -2093,7 +2093,7 @@ export default function DashboardPage() {
                             transition={{ duration: 1, delay: 0.5 }}
                         />
                       </div>
-                        <span className="text-sm text-[#00f0ff] font-mono font-bold">%{analysis.btts.confidence}</span>
+                        <span className="text-sm text-[#00f0ff] font-mono font-bold">%{Math.round(analysis.btts.confidence)}</span>
                     </div>
                       <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.btts.reasoning}</p>
                     </motion.div>
@@ -2127,7 +2127,7 @@ export default function DashboardPage() {
                           transition={{ duration: 1, delay: 0.6 }}
                         />
                       </div>
-                      <span className="text-sm text-[#ff00f0] font-mono font-bold">%{analysis.overUnder.confidence}</span>
+                      <span className="text-sm text-[#ff00f0] font-mono font-bold">%{Math.round(analysis.overUnder.confidence)}</span>
                     </div>
                     <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.overUnder.reasoning}</p>
                   </motion.div>
@@ -2160,7 +2160,7 @@ export default function DashboardPage() {
                           transition={{ duration: 1, delay: 0.7 }}
                         />
                       </div>
-                      <span className="text-sm text-[#ffff00] font-mono font-bold">%{analysis.matchResult.confidence}</span>
+                      <span className="text-sm text-[#ffff00] font-mono font-bold">%{Math.round(analysis.matchResult.confidence)}</span>
                     </div>
                     <p className="mt-3 text-xs text-gray-400 relative z-10">{analysis.matchResult.reasoning}</p>
                   </motion.div>
@@ -2345,7 +2345,7 @@ export default function DashboardPage() {
                           transition={{ delay: 1, type: "spring", stiffness: 200 }}
                           style={{ fontFamily: 'var(--font-heading)' }}
                         >
-                          %{analysis.bestBet.confidence}
+                          %{Math.round(analysis.bestBet.confidence)}
                         </motion.div>
                         <div className="text-xs text-[#00f0ff] font-mono mt-1">{t.confidence}</div>
                       </div>
@@ -2441,7 +2441,7 @@ export default function DashboardPage() {
                             <div className="mt-4 pt-3 border-t border-red-500/30 flex items-center justify-between">
                               <p className="text-red-300 text-xs flex items-center gap-1">
                                 <span>⚠️</span>
-                                <span>Güven: %{boldBet.confidence} - Sadece kaybetmeyi göze alabileceğin miktarla oyna!</span>
+                                <span>Güven: %{Math.round(boldBet.confidence)} - Sadece kaybetmeyi göze alabileceğin miktarla oyna!</span>
                               </p>
                               <button 
                                 onClick={() => setBoldBet(null)} 
@@ -2494,7 +2494,7 @@ export default function DashboardPage() {
                                   }`}>
                                     {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
                                   </span>
-                                  <span className="text-xs text-gray-400">%{bttsConf}</span>
+                                  <span className="text-xs text-gray-400">%{Math.round(bttsConf)}</span>
                                 </div>
                                 {hasValue && (
                                   <p className="text-xs text-green-400 mt-1">+{Math.abs(bttsValue)}% {t.value}</p>
@@ -2536,7 +2536,7 @@ export default function DashboardPage() {
                                   }`}>
                                     {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
                                   </span>
-                                  <span className="text-xs text-gray-400">%{overConf}</span>
+                                  <span className="text-xs text-gray-400">%{Math.round(overConf)}</span>
                                 </div>
                                 {hasValue && (
                                   <p className="text-xs text-green-400 mt-1">+{overValue}% {t.value}</p>
@@ -2582,7 +2582,7 @@ export default function DashboardPage() {
                                   }`}>
                                     {status === 'play' ? t.play : status === 'caution' ? t.caution : t.skip}
                                   </span>
-                                  <span className="text-xs text-gray-400">%{mrConf}</span>
+                                  <span className="text-xs text-gray-400">%{Math.round(mrConf)}</span>
                                 </div>
                                 {hasValue && (
                                   <p className="text-xs text-green-400 mt-1">+{homeValue}% {t.value}</p>
