@@ -1397,6 +1397,8 @@ export default function DashboardPage() {
         console.log(newFavoriteStatus ? '✅ Favoriye eklendi' : '❌ Favorilerden kaldırıldı');
       } else {
         console.error('Favorite error:', data.error);
+        console.error('Error details:', data.details);
+        alert(`Favoriye eklenirken hata: ${data.error || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
       console.error('Favorite toggle error:', error);

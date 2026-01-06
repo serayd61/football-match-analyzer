@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Toggle favorite:', { email: session.user.email, fixtureId, isFavorite });
+    console.log('Analysis data:', { hasAnalysis: !!analysis, hasGenius: !!geniusAnalysis });
 
-    // Unified analysis'den maç bilgilerini çek
+    // Unified analysis'den maç bilgilerini çek (opsiyonel - fallback için)
     const { data: unifiedAnalysis } = await supabaseAdmin
       .from('unified_analysis')
       .select('home_team, away_team, league, match_date, analysis, match_result_prediction, over_under_prediction, btts_prediction, best_bet_market, best_bet_selection, best_bet_confidence, overall_confidence')
@@ -36,48 +37,100 @@ export async function POST(request: NextRequest) {
         .eq('fixture_id', fixtureId)
         .maybeSingle();
 
+      // Analysis objesinden veri çek (öncelikli)
+      const homeTeam = analysis?.homeTeam || unifiedAnalysis?.home_team || '';
+      const awayTeam = analysis?.awayTeam || unifiedAnalysis?.away_team || '';
+      const league = analysis?.league || unifiedAnalysis?.league || '';
+      const matchDate = analysis?.matchDate || unifiedAnalysis?.match_date || new Date().toISOString();
+      
+      // Predictions - analysis objesinden çek
+      const matchResultPred = analysis?.matchResult?.prediction || unifiedAnalysis?.match_result_prediction || null;
+      const overUnderPred = analysis?.overUnder?.prediction || unifiedAnalysis?.over_under_prediction || null;
+      const bttsPred = analysis?.btts?.prediction || unifiedAnalysis?.btts_prediction || null;
+      const bestBetMarket = analysis?.bestBet?.market || unifiedAnalysis?.best_bet_market || null;
+      const bestBetSelection = analysis?.bestBet?.selection || unifiedAnalysis?.best_bet_selection || null;
+      const bestBetConfidence = analysis?.bestBet?.confidence || unifiedAnalysis?.best_bet_confidence || null;
+      const overallConf = analysis?.overallConfidence || unifiedAnalysis?.overall_confidence || null;
+
+      // Validation - home_team ve away_team boş olamaz
+      if (!homeTeam || !awayTeam) {
+        console.error('Missing required fields:', { homeTeam, awayTeam, fixtureId, analysis });
+        return NextResponse.json({ 
+          error: 'Maç bilgileri eksik. Lütfen önce analiz yapın.',
+          details: { homeTeam, awayTeam }
+        }, { status: 400 });
+      }
+
       const favoriteData = {
         user_email: session.user.email,
         fixture_id: fixtureId,
-        home_team: unifiedAnalysis?.home_team || analysis?.homeTeam || '',
-        away_team: unifiedAnalysis?.away_team || analysis?.awayTeam || '',
-        league: unifiedAnalysis?.league || analysis?.league || '',
-        match_date: unifiedAnalysis?.match_date || analysis?.matchDate || new Date().toISOString(),
+        home_team: homeTeam,
+        away_team: awayTeam,
+        league: league || null,
+        match_date: matchDate,
         analysis_data: analysis || unifiedAnalysis?.analysis || null,
         genius_analysis: geniusAnalysis || null,
-        match_result_prediction: unifiedAnalysis?.match_result_prediction || null,
-        over_under_prediction: unifiedAnalysis?.over_under_prediction || null,
-        btts_prediction: unifiedAnalysis?.btts_prediction || null,
-        best_bet_market: unifiedAnalysis?.best_bet_market || null,
-        best_bet_selection: unifiedAnalysis?.best_bet_selection || null,
-        best_bet_confidence: unifiedAnalysis?.best_bet_confidence || null,
-        overall_confidence: unifiedAnalysis?.overall_confidence || null,
+        match_result_prediction: matchResultPred,
+        over_under_prediction: overUnderPred,
+        btts_prediction: bttsPred,
+        best_bet_market: bestBetMarket,
+        best_bet_selection: bestBetSelection,
+        best_bet_confidence: bestBetConfidence ? Math.round(bestBetConfidence) : null,
+        overall_confidence: overallConf ? Math.round(overallConf) : null,
         updated_at: new Date().toISOString(),
       };
 
+      console.log('Favorite data to save:', { 
+        user_email: favoriteData.user_email,
+        fixture_id: favoriteData.fixture_id,
+        home_team: favoriteData.home_team,
+        away_team: favoriteData.away_team,
+        has_analysis: !!favoriteData.analysis_data,
+        has_genius: !!favoriteData.genius_analysis
+      });
+
       let error;
+      let result;
       if (existing) {
         // Güncelle
-        const { error: updateError } = await supabaseAdmin
+        const { data: updateData, error: updateError } = await supabaseAdmin
           .from('favorites')
           .update(favoriteData)
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .select();
         error = updateError;
+        result = updateData;
+        console.log('Update result:', { existing: !!existing, updateData, updateError });
       } else {
         // Yeni ekle
-        const { error: insertError } = await supabaseAdmin
+        const { data: insertData, error: insertError } = await supabaseAdmin
           .from('favorites')
-          .insert(favoriteData);
+          .insert(favoriteData)
+          .select();
         error = insertError;
+        result = insertData;
+        console.log('Insert result:', { insertData, insertError });
       }
 
       if (error) {
         console.error('Add favorite error:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        return NextResponse.json({ 
+          error: error.message || 'Favoriye eklenirken hata oluştu',
+          details: error.details,
+          code: error.code
+        }, { status: 500 });
       }
 
-      console.log('✅ Favorite added/updated:', { email: session.user.email, fixtureId });
+      console.log('✅ Favorite added/updated:', { 
+        email: session.user.email, 
+        fixtureId,
+        result: result?.length || 0,
+        existing: !!existing
+      });
     } else {
       // Favorilerden kaldır
       const { error } = await supabaseAdmin
