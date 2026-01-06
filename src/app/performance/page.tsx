@@ -189,6 +189,8 @@ export default function PerformancePage() {
   // Filtreleme state'leri
   const [filterMarket, setFilterMarket] = useState<string>('all'); // 'all', 'MS', 'O/U', 'BTTS'
   const [filterSelection, setFilterSelection] = useState<string>('all'); // 'all', 'home', 'away', 'over', 'under', 'yes', 'no'
+  const [filterMinConfidence, setFilterMinConfidence] = useState<number>(50); // Minimum güven yüzdesi
+  const [filterMaxConfidence, setFilterMaxConfidence] = useState<number>(100); // Maximum güven yüzdesi
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -317,6 +319,17 @@ export default function PerformancePage() {
         }
         
         if (!selectionMatch) return false;
+      }
+      
+      // Güven yüzdesi filtresi
+      if (analysis.best_bet_confidence !== null && analysis.best_bet_confidence !== undefined) {
+        const confidence = analysis.best_bet_confidence;
+        if (confidence < filterMinConfidence || confidence > filterMaxConfidence) {
+          return false;
+        }
+      } else {
+        // Güven yüzdesi yoksa filtreleme dışında bırak (opsiyonel - istersen true döndür)
+        return false; // Güven yüzdesi olmayanları gösterme
       }
       
       return true;
@@ -828,12 +841,39 @@ export default function PerformancePage() {
                       </select>
                     )}
                     
+                    {/* Güven Yüzdesi Filtresi */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-white/60">Güven:</span>
+                      <input
+                        type="number"
+                        min="50"
+                        max="100"
+                        value={filterMinConfidence}
+                        onChange={(e) => setFilterMinConfidence(Math.max(50, Math.min(100, parseInt(e.target.value) || 50)))}
+                        className="w-16 px-2 py-1 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
+                        placeholder="Min"
+                      />
+                      <span className="text-white/40">-</span>
+                      <input
+                        type="number"
+                        min="50"
+                        max="100"
+                        value={filterMaxConfidence}
+                        onChange={(e) => setFilterMaxConfidence(Math.max(50, Math.min(100, parseInt(e.target.value) || 100)))}
+                        className="w-16 px-2 py-1 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
+                        placeholder="Max"
+                      />
+                      <span className="text-xs text-white/40">%</span>
+                    </div>
+                    
                     {/* Filtreleri Temizle */}
-                    {(filterMarket !== 'all' || filterSelection !== 'all') && (
+                    {(filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) && (
                       <button
                         onClick={() => {
                           setFilterMarket('all');
                           setFilterSelection('all');
+                          setFilterMinConfidence(50);
+                          setFilterMaxConfidence(100);
                         }}
                         className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm hover:bg-red-500/30 transition-colors"
                       >
