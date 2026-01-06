@@ -9,6 +9,32 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// Normalize fonksiyonları - agent tahminlerini karşılaştırmak için
+function normalizeMR(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v === '1' || v === 'home' || v === 'ev sahibi') return '1';
+  if (v === '2' || v === 'away' || v === 'deplasman') return '2';
+  if (v === 'x' || v === 'draw' || v === 'beraberlik') return 'X';
+  return v;
+}
+
+function normalizeOU(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v.includes('over') || v.includes('üst')) return 'over';
+  if (v.includes('under') || v.includes('alt')) return 'under';
+  return v;
+}
+
+function normalizeBTTS(val: string | null | undefined): string {
+  if (!val) return '';
+  const v = val.toLowerCase().trim();
+  if (v === 'yes' || v === 'evet' || v === 'var') return 'yes';
+  if (v === 'no' || v === 'hayır' || v === 'yok') return 'no';
+  return v;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const timestamp = new Date().toISOString();
@@ -66,25 +92,88 @@ export async function GET(request: NextRequest) {
     console.log(`   Result: ${paginatedData.length} records (total filtered: ${totalCount})`);
     
     // Transform data to match the expected format for the performance page
-    const transformedData = paginatedData.map(row => ({
-      id: row.id,
-      fixture_id: row.fixture_id,
-      home_team: row.home_team,
-      away_team: row.away_team,
-      league: row.league,
-      match_date: row.match_date,
-      match_settled: row.is_settled,
+    const transformedData = paginatedData.map(row => {
+      // Parse analysis JSONB to extract agent predictions
+      const analysis = row.analysis || {};
+      const sources = analysis.sources || {};
+      const agents = sources.agents || {};
       
-      // Consensus predictions
-      consensus_match_result: row.match_result_prediction,
-      consensus_over_under: row.over_under_prediction,
-      consensus_btts: row.btts_prediction,
-      consensus_confidence: row.overall_confidence,
+      // Extract individual agent predictions
+      const statsAgent = agents.stats || {};
+      const oddsAgent = agents.odds || {};
+      const deepAnalysis = agents.deepAnalysis || {};
+      const geniusAnalyst = agents.geniusAnalyst || {};
+      const masterStrategist = agents.masterStrategist || {};
       
-      // Best Bet (En İyi Bahis)
-      best_bet_market: row.best_bet_market,
-      best_bet_selection: row.best_bet_selection,
-      best_bet_confidence: row.best_bet_confidence,
+      // Determine which agent's prediction matches consensus (for display)
+      const getAgentSource = (prediction: string, type: 'mr' | 'ou' | 'btts') => {
+        const normalizedPred = prediction?.toLowerCase() || '';
+        
+        if (type === 'mr') {
+          const statsMR = normalizeMR(statsAgent.matchResult || '');
+          const oddsMR = normalizeMR(oddsAgent.matchWinnerValue || '');
+          const deepMR = normalizeMR(deepAnalysis.matchResult?.prediction || '');
+          const geniusMR = normalizeMR(geniusAnalyst.predictions?.matchResult?.prediction || '');
+          const masterMR = normalizeMR(masterStrategist.finalConsensus?.matchResult?.prediction || '');
+          
+          if (normalizeMR(normalizedPred) === statsMR) return 'Stats Agent';
+          if (normalizeMR(normalizedPred) === oddsMR) return 'Odds Agent';
+          if (normalizeMR(normalizedPred) === deepMR) return 'Deep Analysis';
+          if (normalizeMR(normalizedPred) === geniusMR) return 'Genius Analyst';
+          if (normalizeMR(normalizedPred) === masterMR) return 'Master Strategist';
+        } else if (type === 'ou') {
+          const statsOU = normalizeOU(statsAgent.overUnder || '');
+          const oddsOU = normalizeOU(oddsAgent.recommendation || '');
+          const deepOU = normalizeOU(deepAnalysis.overUnder?.prediction || '');
+          const geniusOU = normalizeOU(geniusAnalyst.predictions?.overUnder?.prediction || '');
+          const masterOU = normalizeOU(masterStrategist.finalConsensus?.overUnder?.prediction || '');
+          
+          if (normalizeOU(normalizedPred) === statsOU) return 'Stats Agent';
+          if (normalizeOU(normalizedPred) === oddsOU) return 'Odds Agent';
+          if (normalizeOU(normalizedPred) === deepOU) return 'Deep Analysis';
+          if (normalizeOU(normalizedPred) === geniusOU) return 'Genius Analyst';
+          if (normalizeOU(normalizedPred) === masterOU) return 'Master Strategist';
+        } else if (type === 'btts') {
+          const statsBTTS = normalizeBTTS(statsAgent.btts || '');
+          const oddsBTTS = normalizeBTTS(oddsAgent.bttsValue || '');
+          const deepBTTS = normalizeBTTS(deepAnalysis.btts?.prediction || '');
+          const geniusBTTS = normalizeBTTS(geniusAnalyst.predictions?.btts?.prediction || '');
+          const masterBTTS = normalizeBTTS(masterStrategist.finalConsensus?.btts?.prediction || '');
+          
+          if (normalizeBTTS(normalizedPred) === statsBTTS) return 'Stats Agent';
+          if (normalizeBTTS(normalizedPred) === oddsBTTS) return 'Odds Agent';
+          if (normalizeBTTS(normalizedPred) === deepBTTS) return 'Deep Analysis';
+          if (normalizeBTTS(normalizedPred) === geniusBTTS) return 'Genius Analyst';
+          if (normalizeBTTS(normalizedPred) === masterBTTS) return 'Master Strategist';
+        }
+        
+        return 'Konsensüs'; // Default - birden fazla agent birleşimi
+      };
+      
+      return {
+        id: row.id,
+        fixture_id: row.fixture_id,
+        home_team: row.home_team,
+        away_team: row.away_team,
+        league: row.league,
+        match_date: row.match_date,
+        match_settled: row.is_settled,
+        
+        // Consensus predictions
+        consensus_match_result: row.match_result_prediction,
+        consensus_over_under: row.over_under_prediction,
+        consensus_btts: row.btts_prediction,
+        consensus_confidence: row.overall_confidence,
+        
+        // Agent sources (hangi agent'tan geldiği)
+        mr_source: getAgentSource(row.match_result_prediction || '', 'mr'),
+        ou_source: getAgentSource(row.over_under_prediction || '', 'ou'),
+        btts_source: getAgentSource(row.btts_prediction || '', 'btts'),
+        
+        // Best Bet (En İyi Bahis)
+        best_bet_market: row.best_bet_market,
+        best_bet_selection: row.best_bet_selection,
+        best_bet_confidence: row.best_bet_confidence,
       
       // Actual results
       actual_home_score: row.actual_home_score,

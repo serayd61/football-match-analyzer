@@ -165,6 +165,10 @@ interface AnalysisRecord {
   consensus_mr_correct: boolean | null;
   consensus_ou_correct: boolean | null;
   consensus_btts_correct: boolean | null;
+  // Agent sources (hangi agent'tan geldiği)
+  mr_source?: string;
+  ou_source?: string;
+  btts_source?: string;
 }
 
 // ============================================================================
@@ -1170,6 +1174,7 @@ function AnalysisCard({ analysis, index }: { analysis: AnalysisRecord; index: nu
               actual={analysis.actual_match_result}
               correct={analysis.consensus_mr_correct}
               isSettled={isSettled}
+              source={analysis.mr_source}
             />
           </div>
 
@@ -1181,6 +1186,7 @@ function AnalysisCard({ analysis, index }: { analysis: AnalysisRecord; index: nu
               actual={analysis.actual_over_under}
               correct={analysis.consensus_ou_correct}
               isSettled={isSettled}
+              source={analysis.ou_source}
             />
           </div>
 
@@ -1192,6 +1198,7 @@ function AnalysisCard({ analysis, index }: { analysis: AnalysisRecord; index: nu
               actual={analysis.actual_btts}
               correct={analysis.consensus_btts_correct}
               isSettled={isSettled}
+              source={analysis.btts_source}
             />
           </div>
 
@@ -1250,12 +1257,14 @@ function PredictionBadge({
   prediction,
   actual,
   correct,
-  isSettled
+  isSettled,
+  source
 }: {
   prediction: string;
   actual: string | null;
   correct: boolean | null;
   isSettled: boolean;
+  source?: string;
 }) {
   const displayValue = prediction || '-';
   
@@ -1269,18 +1278,37 @@ function PredictionBadge({
   
   const isCorrect = correct === true;
   
+  // Agent source kısaltmaları
+  const getSourceShort = (src?: string) => {
+    if (!src) return '';
+    if (src.includes('Stats')) return 'Stats';
+    if (src.includes('Odds')) return 'Odds';
+    if (src.includes('Deep')) return 'Deep';
+    if (src.includes('Genius')) return 'Genius';
+    if (src.includes('Master')) return 'Master';
+    if (src.includes('Konsensüs')) return 'Kons';
+    return src;
+  };
+  
   return (
-    <span className={`inline-flex items-center justify-center w-12 h-7 rounded-md text-sm font-mono gap-1 ${
-      isCorrect 
-        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-        : 'bg-red-500/20 text-red-400 border border-red-500/30'
-    }`}>
-      {displayValue}
-      {isCorrect ? (
-        <CheckCircle className="w-3 h-3" />
-      ) : (
-        <XCircle className="w-3 h-3" />
+    <div className="flex flex-col items-center gap-0.5">
+      <span className={`inline-flex items-center justify-center w-12 h-7 rounded-md text-sm font-mono gap-1 ${
+        isCorrect 
+          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+      }`}>
+        {displayValue}
+        {isCorrect ? (
+          <CheckCircle className="w-3 h-3" />
+        ) : (
+          <XCircle className="w-3 h-3" />
+        )}
+      </span>
+      {source && (
+        <span className="text-[10px] text-white/30 font-mono" title={source}>
+          {getSourceShort(source)}
+        </span>
       )}
-    </span>
+    </div>
   );
 }
