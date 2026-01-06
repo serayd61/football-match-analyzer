@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
+import { Paywall } from '@/components/Paywall';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
@@ -1162,6 +1163,8 @@ export default function DashboardPage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [analysisType, setAnalysisType] = useState<'ai' | 'agent'>('agent'); // 🆕 Agent Analysis ana sistem
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<any>(null);
   
   // Auth check
   useEffect(() => {
@@ -1201,8 +1204,33 @@ export default function DashboardPage() {
   // ANALYZE MATCH
   // ============================================================================
   
+  // Access kontrolü - kullanıcı erişim durumunu kontrol et
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!session?.user?.email) return;
+      
+      try {
+        const res = await fetch('/api/user/access-status');
+        const data = await res.json();
+        if (data.success) {
+          setAccessStatus(data.access);
+        }
+      } catch (error) {
+        console.error('Access check error:', error);
+      }
+    };
+    
+    checkAccess();
+  }, [session]);
+  
   // 🆕 Unified Analysis - Tek analiz butonu, Agent + AI birleşik sistem
   const analyzeMatch = async (fixture: Fixture, forceRefresh: boolean = false) => {
+    // Access kontrolü
+    if (accessStatus && !accessStatus.canAnalyze) {
+      setShowPaywall(true);
+      return;
+    }
+    
     setSelectedFixture(fixture);
     setAnalyzing(true);
     setAnalysis(null);
@@ -2655,6 +2683,15 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </main>
+      
+      {/* Paywall Modal */}
+      <Paywall
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        reason={accessStatus?.canAnalyze === false ? 'limit_reached' : 'premium_feature'}
+        currentUsage={accessStatus?.analysesUsed || 0}
+        limit={accessStatus?.analysesLimit || 1}
+      />
     </div>
   );
 }

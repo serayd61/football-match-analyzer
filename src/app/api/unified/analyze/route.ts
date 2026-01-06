@@ -4,9 +4,12 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { runUnifiedConsensus, saveUnifiedAnalysis, UnifiedAnalysisInput } from '@/lib/unified-consensus';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
+import { checkUserAccess, incrementAnalysisCount } from '@/lib/accessControl';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -34,6 +37,36 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized', code: 'AUTH_REQUIRED' },
+        { status: 401 }
+      );
+    }
+    
+    // Access control - limit kontrolü
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
+    const access = await checkUserAccess(session.user.email, ip);
+    
+    if (!access.canAnalyze) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Daily analysis limit reached',
+          code: 'LIMIT_REACHED',
+          access: {
+            analysesUsed: access.analysesUsed,
+            analysesLimit: access.analysesLimit,
+            isPro: access.isPro
+          }
+        },
+        { status: 403 }
+      );
+    }
+    
     const body = await request.json();
     const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en' } = body;
     
@@ -124,6 +157,11 @@ export async function POST(request: NextRequest) {
       console.log(`   💾 Saved to performance tracking`);
     } catch (perfError) {
       console.error('⚠️ Performance tracking save failed (non-critical):', perfError);
+    }
+    
+    // Analiz sayacını artır (limit kontrolü için)
+    if (!skipCache) {
+      await incrementAnalysisCount(session.user.email);
     }
     
     const totalTime = Date.now() - startTime;

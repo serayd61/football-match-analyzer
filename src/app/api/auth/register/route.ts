@@ -41,29 +41,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kullanıcı oluşturulamadı' }, { status: 500 });
     }
 
-    // Subscription kaydı oluştur (pending olarak)
+    // Free tier subscription kaydı oluştur
     await supabaseAdmin.from('subscriptions').insert({
       user_id: newUser.id,
-      status: 'incomplete',
-      plan: 'pro',
+      status: 'free',
+      plan: 'free',
     });
 
-    // Stripe checkout session oluştur
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    // Free tier profile oluştur
+    const trialEnds = new Date();
+    trialEnds.setDate(trialEnds.getDate() + 7); // 7 gün sonra upgrade teşviki
     
-    const checkoutSession = await createCheckoutSession({
-      userId: newUser.id,
-      userEmail: email.toLowerCase(),
-      priceId: PLANS.PRO.stripePriceId,
-      successUrl: `${baseUrl}/dashboard?payment=success&newuser=true`,
-      cancelUrl: `${baseUrl}/login?payment=cancelled`,
-      isUpgrade: false, // Yeni kullanıcı, 7 gün trial ver
+    await supabaseAdmin.from('profiles').insert({
+      email: email.toLowerCase(),
+      subscription_status: 'free',
+      trial_start_date: new Date().toISOString(),
+      trial_ends_at: trialEnds.toISOString(), // Upgrade reminder için
+      analyses_today: 0,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Hesap oluşturuldu!',
-      checkoutUrl: checkoutSession.url,
+      message: 'Hesap oluşturuldu! Ücretsiz plan ile başlıyorsun.',
+      redirectTo: '/dashboard',
     });
 
   } catch (error: any) {

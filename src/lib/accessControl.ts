@@ -128,13 +128,47 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
       trialDaysLeft: 0,
       trialExpired: false,
       analysesUsed: profile.analyses_today || 0,
-      analysesLimit: 1000,
+      analysesLimit: 1000, // Premium: sınırsız
       canAnalyze: true,
       canUseAgents: true,
     };
   }
 
-  // Trial kontrolü
+  // Free tier kontrolü
+  const isFree = profile.subscription_status === 'free' || !profile.subscription_status;
+  
+  if (isFree) {
+    let analysesUsed = profile.analyses_today || 0;
+
+    // Gün değiştiyse sıfırla
+    if (profile.last_analysis_date !== today) {
+      analysesUsed = 0;
+      await db
+        .from('profiles')
+        .update({ analyses_today: 0, last_analysis_date: today })
+        .eq('email', email);
+    }
+
+    // FREE TIER: Günlük sadece 1 analiz!
+    const analysesLimit = 1;
+    const canAnalyze = analysesUsed < analysesLimit;
+
+    return {
+      hasAccess: canAnalyze, // Limit dolduysa erişim yok
+      isPro: false,
+      isTrial: false,
+      trialDaysLeft: 0,
+      trialExpired: false,
+      analysesUsed,
+      analysesLimit,
+      canAnalyze,
+      canUseAgents: false, // Free tier'da agent YOK
+      message: canAnalyze ? undefined : 'Günlük analiz limitiniz doldu. Premium\'a geçin!',
+      redirectTo: canAnalyze ? undefined : '/pricing',
+    };
+  }
+
+  // Eski trial sistemi (backward compatibility)
   const trialEnds = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
   const isTrial = trialEnds && trialEnds > now;
   const trialExpired = trialEnds && trialEnds <= now;
@@ -157,11 +191,10 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Trial aktif
+  // Trial aktif (eski kullanıcılar için)
   if (isTrial) {
     let analysesUsed = profile.analyses_today || 0;
 
-    // Gün değiştiyse sıfırla
     if (profile.last_analysis_date !== today) {
       analysesUsed = 0;
       await db
@@ -182,7 +215,7 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
       analysesUsed,
       analysesLimit,
       canAnalyze,
-      canUseAgents: false, // Trial'da agent YOK
+      canUseAgents: false,
     };
   }
 
