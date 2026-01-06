@@ -251,7 +251,7 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterLeague, filterMarket, filterSelection, filterMinConfidence, filterMaxConfidence, t]);
 
   useEffect(() => {
     fetchData();
