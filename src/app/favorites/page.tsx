@@ -116,8 +116,13 @@ export default function FavoritesPage() {
       const res = await fetch('/api/user/favorites');
       const data = await res.json();
       
+      console.log('Favorites API response:', data);
+      
       if (data.success) {
         setFavorites(data.favorites || []);
+        console.log('Favorites loaded:', data.favorites?.length || 0);
+      } else {
+        console.error('Fetch favorites error:', data.error);
       }
     } catch (error) {
       console.error('Fetch favorites error:', error);

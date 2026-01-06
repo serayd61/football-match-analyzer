@@ -28,7 +28,14 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (isFavorite) {
-      // Favoriye ekle
+      // Önce mevcut kaydı kontrol et
+      const { data: existing } = await supabaseAdmin
+        .from('favorites')
+        .select('id')
+        .eq('user_email', session.user.email)
+        .eq('fixture_id', fixtureId)
+        .maybeSingle();
+
       const favoriteData = {
         user_email: session.user.email,
         fixture_id: fixtureId,
@@ -48,16 +55,29 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabaseAdmin
-        .from('favorites')
-        .upsert(favoriteData, { onConflict: 'user_email,fixture_id' });
+      let error;
+      if (existing) {
+        // Güncelle
+        const { error: updateError } = await supabaseAdmin
+          .from('favorites')
+          .update(favoriteData)
+          .eq('id', existing.id);
+        error = updateError;
+      } else {
+        // Yeni ekle
+        const { error: insertError } = await supabaseAdmin
+          .from('favorites')
+          .insert(favoriteData);
+        error = insertError;
+      }
 
       if (error) {
         console.error('Add favorite error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      console.log('✅ Favorite added');
+      console.log('✅ Favorite added/updated:', { email: session.user.email, fixtureId });
     } else {
       // Favorilerden kaldır
       const { error } = await supabaseAdmin
