@@ -1,6 +1,6 @@
 import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
-import { fetchHistoricalOdds, analyzeSharpMoney, isRealValue, MatchOddsHistory, SharpMoneyResult, RealValueResult } from '../sportmonks-odds';
+import { fetchHistoricalOdds, analyzeSharpMoney, analyzeBettingVolume, isRealValue, MatchOddsHistory, SharpMoneyResult, BettingVolumeResult, RealValueResult } from '../sportmonks-odds';
 
 // ==================== JSON EXTRACTION ====================
 
@@ -690,7 +690,8 @@ function generateOddsReasoning(
   overProb: number, bttsProb: number,
   language: 'tr' | 'en' | 'de',
   oddsHistory: MatchOddsHistory | null,
-  sharpMoney: SharpMoneyResult | null
+  sharpMoney: SharpMoneyResult | null,
+  bettingVolume: BettingVolumeResult | null
 ): OddsReasoning {
   const homeName = matchData.homeTeam || 'Home';
   const awayName = matchData.awayTeam || 'Away';
@@ -753,7 +754,16 @@ function generateOddsReasoning(
                      
     agentSummary = `En iyi fırsat: ${best.name} (+%${best.value.toFixed(0)}). `;
     if (sharpMoney && sharpMoney.confidence === 'high') {
-      agentSummary += `Sharp money ${sharpMoney.direction} yönünde onaylıyor.`;
+      agentSummary += `Sharp money ${sharpMoney.direction} yönünde onaylıyor. `;
+    }
+    if (bettingVolume && bettingVolume.volumeIncrease > 7 && bettingVolume.confidence !== 'low') {
+      const marketLabel = bettingVolume.market === 'home' ? 'Ev Galibiyeti' : 
+                         bettingVolume.market === 'away' ? 'Deplasman' :
+                         bettingVolume.market === 'over' ? 'Üst 2.5' :
+                         bettingVolume.market === 'under' ? 'Alt 2.5' :
+                         bettingVolume.market === 'btts_yes' ? 'BTTS Evet' :
+                         bettingVolume.market === 'btts_no' ? 'BTTS Hayır' : bettingVolume.market;
+      agentSummary += `${marketLabel} market'ine normalden %${bettingVolume.volumeIncrease} fazla bahis yapılmış.`;
     }
   } else {
     matchWinnerReasoning = `${homeName} (${homeFormProb.toFixed(0)}%) vs ${awayName} (${awayFormProb.toFixed(0)}%). `;
@@ -773,7 +783,16 @@ function generateOddsReasoning(
                      
     agentSummary = `Best opportunity: ${best.name} (+${best.value.toFixed(0)}%). `;
     if (sharpMoney && sharpMoney.confidence === 'high') {
-      agentSummary += `Sharp money confirms ${sharpMoney.direction} direction.`;
+      agentSummary += `Sharp money confirms ${sharpMoney.direction} direction. `;
+    }
+    if (bettingVolume && bettingVolume.volumeIncrease > 7 && bettingVolume.confidence !== 'low') {
+      const marketLabel = bettingVolume.market === 'home' ? 'Home Win' : 
+                         bettingVolume.market === 'away' ? 'Away Win' :
+                         bettingVolume.market === 'over' ? 'Over 2.5' :
+                         bettingVolume.market === 'under' ? 'Under 2.5' :
+                         bettingVolume.market === 'btts_yes' ? 'BTTS Yes' :
+                         bettingVolume.market === 'btts_no' ? 'BTTS No' : bettingVolume.market;
+      agentSummary += `${marketLabel} market has ${bettingVolume.volumeIncrease > 0 ? '+' : ''}${bettingVolume.volumeIncrease}% unusual betting volume.`;
     }
   }
   
@@ -793,6 +812,14 @@ function generateOddsReasoning(
   if (sharpMoney) {
     fullAnalysis += `\n💹 SHARP MONEY: ${sharpMoney.direction.toUpperCase()} (${sharpMoney.confidence})\n`;
     fullAnalysis += `   ${sharpMoney.reasoning[language] || sharpMoney.reasoning.en}\n`;
+  }
+  
+  if (bettingVolume && bettingVolume.volumeIncrease !== 0) {
+    fullAnalysis += `\n🔥 BETTING VOLUME: ${bettingVolume.market.toUpperCase()} market\n`;
+    fullAnalysis += `   ${bettingVolume.reasoning[language] || bettingVolume.reasoning.en}\n`;
+    if (bettingVolume.indicators.isUnusual) {
+      fullAnalysis += `   ⚠️ Unusual activity detected! Movement strength: ${bettingVolume.indicators.movementStrength}/100\n`;
+    }
   }
   
   return {
@@ -816,14 +843,18 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   // 🆕 Historical odds çek
   let oddsHistory: MatchOddsHistory | null = null;
   let sharpMoney: SharpMoneyResult | null = null;
+  let bettingVolume: BettingVolumeResult | null = null;
   
   if (matchData.fixtureId) {
     oddsHistory = await fetchHistoricalOdds(matchData.fixtureId);
     
     if (oddsHistory) {
       sharpMoney = analyzeSharpMoney(oddsHistory);
+      bettingVolume = analyzeBettingVolume(oddsHistory);
       console.log(`📊 Sharp Money: ${sharpMoney.direction} (${sharpMoney.confidence})`);
       console.log(`   ${sharpMoney.reasoning[language]}`);
+      console.log(`📊 Betting Volume: ${bettingVolume.market} market has ${bettingVolume.volumeIncrease > 0 ? '+' : ''}${bettingVolume.volumeIncrease}% volume (${bettingVolume.confidence} confidence)`);
+      console.log(`   ${bettingVolume.reasoning[language]}`);
     }
   }
   
@@ -922,7 +953,8 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
     overProb, bttsProb,
     language,
     oddsHistory,
-    sharpMoney
+    sharpMoney,
+    bettingVolume
   );
   
   // Calculate implied probabilities
@@ -983,6 +1015,11 @@ BTTS Yes: ${oddsHistory.bttsYes.opening} → ${oddsHistory.bttsYes.current} (${o
 
 SHARP MONEY: ${sharpMoney?.direction.toUpperCase() || 'NONE'} (${sharpMoney?.confidence || 'low'})
 ${sharpMoney?.reasoning[language] || ''}
+
+${bettingVolume && bettingVolume.volumeIncrease !== 0 ? `🔥 BETTING VOLUME: ${bettingVolume.market.toUpperCase()} market has ${bettingVolume.volumeIncrease > 0 ? '+' : ''}${bettingVolume.volumeIncrease}% volume increase (${bettingVolume.confidence} confidence)
+${bettingVolume.reasoning[language]}
+Movement Strength: ${bettingVolume.indicators.movementStrength}/100 | Unusual: ${bettingVolume.indicators.isUnusual ? 'YES' : 'NO'}
+` : ''}
 ` : '';
 
   const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}

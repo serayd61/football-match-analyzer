@@ -32,6 +32,22 @@ export interface SharpMoneyResult {
   };
 }
 
+export interface BettingVolumeResult {
+  market: 'home' | 'away' | 'draw' | 'over' | 'under' | 'btts_yes' | 'btts_no' | 'none';
+  volumeIncrease: number; // Normalden % kaç fazla bahis yapılmış
+  confidence: 'high' | 'medium' | 'low';
+  reasoning: {
+    tr: string;
+    en: string;
+    de: string;
+  };
+  indicators: {
+    oddsDropSpeed: number; // Oran düşüş hızı (%/saat tahmini)
+    movementStrength: number; // Hareket gücü (0-100)
+    isUnusual: boolean; // Normalden farklı mı?
+  };
+}
+
 // ==================== HELPERS ====================
 
 function calculateMovement(opening: number, current: number): 'dropping' | 'rising' | 'stable' {
@@ -288,5 +304,161 @@ export function isRealValue(
       de: '❌ Keine Value. Markt korrekt bepreist.',
     },
     emoji: '❌',
+  };
+}
+
+// ==================== BETTING VOLUME ANALYSIS ====================
+// Oran hareketlerinden bahis hacmini tahmin eder
+// Örnek: "Normalden %7 fazla bahis yapılmış" gibi bilgi verir
+
+export function analyzeBettingVolume(oddsHistory: MatchOddsHistory): BettingVolumeResult {
+  const allMarkets = [
+    { 
+      key: 'home' as const, 
+      data: oddsHistory.homeWin, 
+      label: { tr: 'Ev Galibiyeti', en: 'Home Win', de: 'Heimsieg' } 
+    },
+    { 
+      key: 'away' as const, 
+      data: oddsHistory.awayWin, 
+      label: { tr: 'Deplasman', en: 'Away Win', de: 'Auswärtssieg' } 
+    },
+    { 
+      key: 'draw' as const, 
+      data: oddsHistory.draw, 
+      label: { tr: 'Beraberlik', en: 'Draw', de: 'Unentschieden' } 
+    },
+    { 
+      key: 'over' as const, 
+      data: oddsHistory.over25, 
+      label: { tr: 'Üst 2.5', en: 'Over 2.5', de: 'Über 2.5' } 
+    },
+    { 
+      key: 'under' as const, 
+      data: oddsHistory.under25, 
+      label: { tr: 'Alt 2.5', en: 'Under 2.5', de: 'Unter 2.5' } 
+    },
+    { 
+      key: 'btts_yes' as const, 
+      data: oddsHistory.bttsYes, 
+      label: { tr: 'BTTS Evet', en: 'BTTS Yes', de: 'BTTS Ja' } 
+    },
+    { 
+      key: 'btts_no' as const, 
+      data: oddsHistory.bttsNo, 
+      label: { tr: 'BTTS Hayır', en: 'BTTS No', de: 'BTTS Nein' } 
+    },
+  ];
+
+  // Her market için bahis hacmi skoru hesapla
+  const volumeScores = allMarkets.map(market => {
+    const { data } = market;
+    
+    // Oran düşüş yüzdesi = bahis hacmi göstergesi
+    // %10 düşüş ≈ %20-30 fazla bahis hacmi (tahmini)
+    // %5 düşüş ≈ %10-15 fazla bahis hacmi (tahmini)
+    let volumeIncrease = 0;
+    let oddsDropSpeed = 0;
+    let movementStrength = 0;
+    let isUnusual = false;
+
+    if (data.movement === 'dropping') {
+      // Oran düşüşü ne kadar büyükse, bahis hacmi o kadar fazla
+      const dropPercent = Math.abs(data.changePercent);
+      
+      // Oran düşüş hızı tahmini (saatlik % düşüş)
+      // Genellikle oranlar 24-48 saat içinde açılır ve değişir
+      // %10 düşüş 24 saatte = %0.42/saat
+      oddsDropSpeed = dropPercent / 24; // Basit tahmin
+      
+      // Bahis hacmi artışı tahmini
+      // Oran düşüşü ile bahis hacmi arasında doğrusal olmayan ilişki var
+      // %5 düşüş ≈ %10-15 fazla bahis
+      // %10 düşüş ≈ %25-35 fazla bahis
+      // %15+ düşüş ≈ %50+ fazla bahis (çok yüksek hacim)
+      if (dropPercent >= 15) {
+        volumeIncrease = 50 + (dropPercent - 15) * 2; // %15+ için ekstra
+      } else if (dropPercent >= 10) {
+        volumeIncrease = 25 + (dropPercent - 10) * 2.5; // %10-15 arası
+      } else if (dropPercent >= 5) {
+        volumeIncrease = 10 + (dropPercent - 5) * 3; // %5-10 arası
+      } else {
+        volumeIncrease = dropPercent * 2; // %0-5 arası
+      }
+
+      // Hareket gücü (0-100)
+      movementStrength = Math.min(100, dropPercent * 5);
+      
+      // Normalden farklı mı? (%7+ düşüş = unusual)
+      isUnusual = dropPercent >= 7;
+    } else if (data.movement === 'rising') {
+      // Oran yükseliyorsa, o tarafa az bahis yapılıyor demektir
+      volumeIncrease = -Math.abs(data.changePercent) * 1.5; // Negatif = az bahis
+      movementStrength = Math.abs(data.changePercent) * 3;
+      isUnusual = Math.abs(data.changePercent) >= 7;
+    }
+
+    return {
+      market: market.key,
+      volumeIncrease: Math.round(volumeIncrease),
+      oddsDropSpeed: Math.round(oddsDropSpeed * 100) / 100,
+      movementStrength: Math.round(movementStrength),
+      isUnusual,
+      label: market.label,
+      changePercent: data.changePercent,
+    };
+  });
+
+  // En yüksek bahis hacmi olan market'i bul
+  const topVolume = volumeScores.reduce((max, current) => 
+    current.volumeIncrease > max.volumeIncrease ? current : max
+  );
+
+  // Eğer hiçbir market'te anlamlı hacim yoksa
+  if (topVolume.volumeIncrease < 5) {
+    return {
+      market: 'none',
+      volumeIncrease: 0,
+      confidence: 'low',
+      reasoning: {
+        tr: '📊 Bahis hacmi normal seviyede. Belirgin bir artış yok.',
+        en: '📊 Betting volume is normal. No significant increase.',
+        de: '📊 Wettvolumen ist normal. Kein signifikanter Anstieg.',
+      },
+      indicators: {
+        oddsDropSpeed: 0,
+        movementStrength: 0,
+        isUnusual: false,
+      },
+    };
+  }
+
+  // Confidence belirleme
+  let confidence: 'high' | 'medium' | 'low' = 'low';
+  if (topVolume.volumeIncrease >= 20 && topVolume.isUnusual) {
+    confidence = 'high';
+  } else if (topVolume.volumeIncrease >= 10) {
+    confidence = 'medium';
+  }
+
+  // Reasoning oluştur
+  const volumeText = topVolume.volumeIncrease > 0 
+    ? `normalden %${topVolume.volumeIncrease} fazla` 
+    : `normalden %${Math.abs(topVolume.volumeIncrease)} az`;
+
+  return {
+    market: topVolume.market,
+    volumeIncrease: topVolume.volumeIncrease,
+    confidence,
+    reasoning: {
+      tr: `🔥 ${topVolume.label.tr} market'ine ${volumeText} bahis yapılmış! Oran %${Math.abs(topVolume.changePercent)} ${topVolume.changePercent < 0 ? 'düştü' : 'yükseldi'}. Bu, profesyonel bahisçilerin veya büyük bahis hacminin işareti olabilir.`,
+      en: `🔥 ${topVolume.label.en} market has ${volumeText} betting volume! Odds ${topVolume.changePercent < 0 ? 'dropped' : 'rose'} ${Math.abs(topVolume.changePercent)}%. This could indicate professional bettors or large betting volume.`,
+      de: `🔥 ${topVolume.label.de} Markt hat ${volumeText} Wettvolumen! Quote ${topVolume.changePercent < 0 ? 'fiel' : 'stieg'} um ${Math.abs(topVolume.changePercent)}%. Dies könnte auf professionelle Wettende oder großes Wettvolumen hindeuten.`,
+    },
+    indicators: {
+      oddsDropSpeed: topVolume.oddsDropSpeed,
+      movementStrength: topVolume.movementStrength,
+      isUnusual: topVolume.isUnusual,
+    },
   };
 }
