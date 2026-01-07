@@ -176,6 +176,12 @@ Nur JSON-Format zurückgeben:
   };
 
   try {
+    console.log(`   🔍 Gemini API çağrısı başlatılıyor: ${teamName} (${league})`);
+    
+    // Timeout ile fetch (10 saniye)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -187,29 +193,48 @@ Nur JSON-Format zurückgeben:
             maxOutputTokens: 1500,
             temperature: 0.7
           }
-        })
+        }),
+        signal: controller.signal
       }
     );
+    
+    clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error(`❌ Gemini API error: ${response.status}`);
+        const errorText = await response.text().catch(() => '');
+        console.error(`❌ Gemini API error: ${response.status} - ${errorText.substring(0, 200)}`);
         return {
           injuries: [],
           squadIssues: [],
           newsImpact: '',
           motivationFactors: [],
           motivationScore: 50,
-          reasoning: 'Gemini API hatası, fallback kullanıldı'
+          reasoning: `Gemini API hatası (${response.status}), fallback kullanıldı`
         };
       }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!text) {
+      console.warn('⚠️ Gemini API boş response döndü');
+      return {
+        injuries: [],
+        squadIssues: [],
+        newsImpact: '',
+        motivationFactors: [],
+        motivationScore: 50,
+        reasoning: 'Gemini API boş response, fallback kullanıldı'
+      };
+    }
+
+    console.log(`   ✅ Gemini API response alındı (${text.length} karakter)`);
 
     // JSON extract
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         console.warn('⚠️ Gemini response is not JSON, using fallback');
+        console.warn(`   Response preview: ${text.substring(0, 200)}...`);
         return {
           injuries: [],
           squadIssues: [],
@@ -222,34 +247,49 @@ Nur JSON-Format zurückgeben:
 
     try {
       const parsed = JSON.parse(jsonMatch[0]);
+      const motivationScore = Math.min(100, Math.max(0, parsed.motivationScore || 50));
+      console.log(`   ✅ Gemini Agent skor: ${motivationScore}/100 - ${parsed.reasoning?.substring(0, 100) || 'N/A'}...`);
+      
       return {
         injuries: parsed.injuries || [],
         squadIssues: parsed.squadIssues || [],
         newsImpact: parsed.newsImpact || '',
         motivationFactors: parsed.motivationFactors || [],
-        motivationScore: Math.min(100, Math.max(0, parsed.motivationScore || 50)),
-        reasoning: parsed.reasoning || `Agent analizi: ${parsed.motivationScore || 50}/100`
+        motivationScore,
+        reasoning: parsed.reasoning || `Agent analizi: ${motivationScore}/100`
       };
     } catch (e) {
       console.error('❌ Failed to parse Gemini JSON:', e);
+      console.error(`   JSON preview: ${jsonMatch[0].substring(0, 300)}...`);
       return {
         injuries: [],
         squadIssues: [],
         newsImpact: '',
         motivationFactors: [],
         motivationScore: 50,
-        reasoning: 'Agent analizi başarısız, fallback kullanıldı'
+        reasoning: 'Agent analizi başarısız (JSON parse hatası), fallback kullanıldı'
       };
     }
-  } catch (error) {
-    console.error('❌ Gemini API error:', error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('⏱️ Gemini API timeout (10 saniye)');
+      return {
+        injuries: [],
+        squadIssues: [],
+        newsImpact: '',
+        motivationFactors: [],
+        motivationScore: 50,
+        reasoning: 'Gemini API timeout, fallback kullanıldı'
+      };
+    }
+    console.error('❌ Gemini API error:', error?.message || error);
     return {
       injuries: [],
       squadIssues: [],
       newsImpact: '',
       motivationFactors: [],
       motivationScore: 50,
-      reasoning: 'Gemini API exception, fallback kullanıldı'
+      reasoning: `Gemini API exception: ${error?.message || 'Bilinmeyen hata'}, fallback kullanıldı`
     };
   }
 }
