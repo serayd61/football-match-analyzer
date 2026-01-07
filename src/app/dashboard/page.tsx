@@ -637,11 +637,120 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                           ) : null}
                         </div>
                       </div>
+                      {/* 🆕 Detaylı Skor Ayrımı (%50 Performans + %50 Takım İçi) */}
+                      {(motivationScores as any)?.homePerformanceScore !== undefined && (
+                        <div className="mt-4 pt-3 border-t border-purple-500/30 space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Ev Sahibi Detay */}
+                            <div className="bg-black/20 rounded-lg p-2">
+                              <p className="text-xs text-gray-400 mb-1">🏠 {analysis.homeTeam}</p>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">Performans:</span>
+                                  <span className="text-blue-400 font-bold">{(motivationScores as any).homePerformanceScore}/100</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">Takım İçi:</span>
+                                  <span className="text-purple-400 font-bold">{(motivationScores as any).homeTeamMotivationScore}/100</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-700">
+                                  <span className="text-gray-300 font-semibold">Final:</span>
+                                  <span className="text-white font-bold">{motivationScores.home}/100</span>
+                                </div>
+                              </div>
+                              {/* Sakatlıklar */}
+                              {(motivationScores as any).homeInjuries?.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-700">
+                                  <p className="text-xs text-red-400 mb-1">⚠️ Sakatlıklar:</p>
+                                  <ul className="text-xs text-gray-400 space-y-0.5">
+                                    {(motivationScores as any).homeInjuries.slice(0, 2).map((inj: string, idx: number) => (
+                                      <li key={idx}>• {inj}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {/* Kadro Sorunları */}
+                              {(motivationScores as any).homeSquadIssues?.length > 0 && (
+                                <div className="mt-1">
+                                  <p className="text-xs text-yellow-400 mb-1">📋 Kadro:</p>
+                                  <ul className="text-xs text-gray-400 space-y-0.5">
+                                    {(motivationScores as any).homeSquadIssues.slice(0, 1).map((issue: string, idx: number) => (
+                                      <li key={idx}>• {issue}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Deplasman Detay */}
+                            <div className="bg-black/20 rounded-lg p-2">
+                              <p className="text-xs text-gray-400 mb-1">✈️ {analysis.awayTeam}</p>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">Performans:</span>
+                                  <span className="text-blue-400 font-bold">{(motivationScores as any).awayPerformanceScore}/100</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">Takım İçi:</span>
+                                  <span className="text-purple-400 font-bold">{(motivationScores as any).awayTeamMotivationScore}/100</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-700">
+                                  <span className="text-gray-300 font-semibold">Final:</span>
+                                  <span className="text-white font-bold">{motivationScores.away}/100</span>
+                                </div>
+                              </div>
+                              {/* Sakatlıklar */}
+                              {(motivationScores as any).awayInjuries?.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-700">
+                                  <p className="text-xs text-red-400 mb-1">⚠️ Sakatlıklar:</p>
+                                  <ul className="text-xs text-gray-400 space-y-0.5">
+                                    {(motivationScores as any).awayInjuries.slice(0, 2).map((inj: string, idx: number) => (
+                                      <li key={idx}>• {inj}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {/* Kadro Sorunları */}
+                              {(motivationScores as any).awaySquadIssues?.length > 0 && (
+                                <div className="mt-1">
+                                  <p className="text-xs text-yellow-400 mb-1">📋 Kadro:</p>
+                                  <ul className="text-xs text-gray-400 space-y-0.5">
+                                    {(motivationScores as any).awaySquadIssues.slice(0, 1).map((issue: string, idx: number) => (
+                                      <li key={idx}>• {issue}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Haberler */}
+                          {((motivationScores as any).homeNewsImpact || (motivationScores as any).awayNewsImpact) && (
+                            <div className="mt-2 pt-2 border-t border-gray-700">
+                              <p className="text-xs text-cyan-400 mb-1">📰 Son Haberler:</p>
+                              {(motivationScores as any).homeNewsImpact && (
+                                <p className="text-xs text-gray-400 mb-1">
+                                  <span className="text-white font-semibold">{analysis.homeTeam}:</span> {(motivationScores as any).homeNewsImpact.substring(0, 100)}...
+                                </p>
+                              )}
+                              {(motivationScores as any).awayNewsImpact && (
+                                <p className="text-xs text-gray-400">
+                                  <span className="text-white font-semibold">{analysis.awayTeam}:</span> {(motivationScores as any).awayNewsImpact.substring(0, 100)}...
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {motivationScores?.reasoning && (
                         <p className="text-gray-300 text-xs mt-3 pt-3 border-t border-purple-500/30">{motivationScores.reasoning}</p>
                       )}
                       <div className="mt-3 text-xs text-gray-400">
                         <p>💡 <strong>Skor Anlamı:</strong> 70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum</p>
+                        {(motivationScores as any)?.homePerformanceScore !== undefined && (
+                          <p className="mt-1">📊 <strong>Hesaplama:</strong> Final Skor = (%50 Performans + %50 Takım İçi Motivasyon) - Gemini API ile sakatlıklar, haberler ve kadro durumu analiz edilir</p>
+                        )}
                       </div>
                     </div>
                   );
