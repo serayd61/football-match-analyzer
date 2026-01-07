@@ -6,11 +6,11 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY;
 
 export interface TeamMotivationAnalysis {
-  performanceScore: number; // 0-100 (Form bazlı)
-  teamMotivationScore: number; // 0-100 (Haberler, sakatlıklar, kadro bazlı)
-  finalScore: number; // 0-100 (%50 performans + %50 motivasyon)
+  performanceScore: number; // 0-100 (Form bazlı - referans için)
+  teamMotivationScore: number; // 0-100 (Agent'ın oluşturduğu skor)
+  finalScore: number; // 0-100 (Agent'ın oluşturduğu final skor - aynı değer)
   trend: 'improving' | 'declining' | 'stable';
-  reasoning: string;
+  reasoning: string; // Agent'ın açıklaması
   formGraph: string;
   injuries: string[];
   squadIssues: string[];
@@ -20,17 +20,22 @@ export interface TeamMotivationAnalysis {
 
 /**
  * Gemini API ile takım hakkında sakatlıklar, kadro dışı oyuncular, haberler analiz eder
+ * 3 VERİYİ DEĞERLENDİRİP TEK MOTİVASYON SKORU oluşturur
  */
 async function analyzeTeamContextWithGemini(
   teamName: string,
   league: string,
-  language: 'tr' | 'en' | 'de' = 'tr'
+  language: 'tr' | 'en' | 'de' = 'tr',
+  formString: string = '',
+  points: number = 0,
+  trend: 'improving' | 'declining' | 'stable' = 'stable'
 ): Promise<{
   injuries: string[];
   squadIssues: string[];
   newsImpact: string;
   motivationFactors: string[];
-  motivationScore: number; // 0-100
+  motivationScore: number; // 0-100 (Agent'ın oluşturduğu final skor)
+  reasoning: string;
 }> {
   if (!GEMINI_API_KEY) {
     console.warn('⚠️ Gemini API key not found, using fallback');
@@ -39,75 +44,134 @@ async function analyzeTeamContextWithGemini(
       squadIssues: [],
       newsImpact: '',
       motivationFactors: [],
-      motivationScore: 50
+      motivationScore: 50,
+      reasoning: 'Gemini API key bulunamadı, fallback kullanıldı'
     };
   }
 
   const prompts = {
-    tr: `Sen bir futbol analisti ve takım motivasyon uzmanısın. ${teamName} takımı hakkında şu bilgileri analiz et:
+    tr: `Sen bir futbol analisti ve takım motivasyon uzmanısın. ${teamName} takımı için 3 VERİYİ DEĞERLENDİR ve TEK BİR MOTİVASYON SKORU (0-100) oluştur:
 
-1. SAKATLIKLAR: Hangi önemli oyuncular sakat? (Yıldız oyuncular, golcüler, defans liderleri)
-2. KADRO DURUMU: Kadro dışı oyuncular, cezalı oyuncular, transfer durumları
-3. HABERLER: Son 1-2 haftadaki önemli haberler (hoca baskısı, transfer dedikoduları, takım içi sorunlar, başarı/hayal kırıklığı)
-4. MOTİVASYON FAKTÖRLERİ: Takımın motivasyonunu artıran/azaltan faktörler
+═══════════════════════════════════════════════════════════════════════════════
+📊 VERİ 1: PERFORMANS (Form Analizi)
+═══════════════════════════════════════════════════════════════════════════════
+Son 10 maç formu: ${formString || 'N/A'}
+Form puanı: ${points || 0}/30
+Trend: ${trend || 'stable'}
+
+═══════════════════════════════════════════════════════════════════════════════
+🏥 VERİ 2: SAKATLIKLAR & KADRO DURUMU
+═══════════════════════════════════════════════════════════════════════════════
+Takım hakkında güncel sakatlık, kadro dışı oyuncu, cezalı oyuncu ve transfer durumlarını araştır.
+
+═══════════════════════════════════════════════════════════════════════════════
+📰 VERİ 3: HABERLER & TAKIM İÇİ DURUM
+═══════════════════════════════════════════════════════════════════════════════
+Son 1-2 haftadaki önemli haberler: Hoca baskısı, takım içi sorunlar, başarı/hayal kırıklığı, transfer dedikoduları, taraftar tepkisi.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 GÖREV: Bu 3 VERİYİ DEĞERLENDİR ve TEK BİR MOTİVASYON SKORU (0-100) oluştur
+═══════════════════════════════════════════════════════════════════════════════
+
+Hesaplama Mantığı:
+- Performans (Form): 0-100 arası (form puanına göre)
+- Sakatlıklar & Kadro: -20 (kritik oyuncu sakat) ile +10 (kadro tam) arası
+- Haberler & Durum: -20 (çok olumsuz) ile +20 (çok olumlu) arası
+
+FİNAL SKOR = Performans + Sakatlık/Kadro Etkisi + Haber Etkisi
+(0-100 arası normalize et)
 
 SADECE JSON formatında döndür:
 {
-  "injuries": ["Oyuncu 1 (pozisyon) - sakatlık tipi", "Oyuncu 2..."],
-  "squadIssues": ["Kadro sorunu 1", "Kadro sorunu 2..."],
-  "newsImpact": "Son haberlerin takım motivasyonuna etkisi (2-3 cümle)",
-  "motivationFactors": ["Faktör 1", "Faktör 2", "Faktör 3"],
-  "motivationScore": 65
+  "motivationScore": 65,
+  "reasoning": "Kısa açıklama: Performans X, sakatlıklar Y, haberler Z → Final skor 65",
+  "injuries": ["Önemli sakatlıklar (max 3)"],
+  "squadIssues": ["Kadro sorunları (max 2)"],
+  "newsImpact": "Haberlerin kısa özeti (1 cümle)"
 }
 
-motivationScore: 0-100 arası (0=çok kötü, 100=mükemmel motivasyon)
-- Yıldız oyuncu sakatlığı: -15 puan
-- Kadro sorunları: -10 puan
-- Olumsuz haberler: -10 puan
-- Olumlu haberler: +10 puan
-- Transfer dedikoduları: -5 puan
-- Hoca baskısı: -10 puan
-- Başarı haberi: +15 puan`,
+ÖNEMLİ: Sadece motivationScore ve reasoning'e odaklan. Detaylar opsiyonel.`,
 
-    en: `You are a football analyst and team motivation expert. Analyze ${teamName} team:
+    en: `You are a football analyst and team motivation expert. Evaluate 3 DATA POINTS for ${teamName} and create a SINGLE MOTIVATION SCORE (0-100):
 
-1. INJURIES: Which key players are injured? (Star players, scorers, defensive leaders)
-2. SQUAD STATUS: Suspended players, transfer situations, squad issues
-3. NEWS: Important news from last 1-2 weeks (coach pressure, transfer rumors, team issues, success/disappointment)
-4. MOTIVATION FACTORS: Factors increasing/decreasing team motivation
+═══════════════════════════════════════════════════════════════════════════════
+📊 DATA 1: PERFORMANCE (Form Analysis)
+═══════════════════════════════════════════════════════════════════════════════
+Last 10 matches form: ${formString || 'N/A'}
+Form points: ${points || 0}/30
+Trend: ${trend || 'stable'}
+
+═══════════════════════════════════════════════════════════════════════════════
+🏥 DATA 2: INJURIES & SQUAD STATUS
+═══════════════════════════════════════════════════════════════════════════════
+Research current injuries, suspended players, transfer situations for this team.
+
+═══════════════════════════════════════════════════════════════════════════════
+📰 DATA 3: NEWS & TEAM SITUATION
+═══════════════════════════════════════════════════════════════════════════════
+Important news from last 1-2 weeks: Coach pressure, team issues, success/disappointment, transfer rumors, fan reactions.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 TASK: Evaluate these 3 DATA POINTS and create a SINGLE MOTIVATION SCORE (0-100)
+═══════════════════════════════════════════════════════════════════════════════
+
+Calculation Logic:
+- Performance (Form): 0-100 based on form points
+- Injuries & Squad: -20 (critical player injured) to +10 (full squad)
+- News & Situation: -20 (very negative) to +20 (very positive)
+
+FINAL SCORE = Performance + Injury/Squad Impact + News Impact
+(Normalize to 0-100)
 
 Return ONLY JSON format:
 {
-  "injuries": ["Player 1 (position) - injury type", "Player 2..."],
-  "squadIssues": ["Squad issue 1", "Squad issue 2..."],
-  "newsImpact": "Impact of recent news on team motivation (2-3 sentences)",
-  "motivationFactors": ["Factor 1", "Factor 2", "Factor 3"],
-  "motivationScore": 65
+  "motivationScore": 65,
+  "reasoning": "Brief explanation: Performance X, injuries Y, news Z → Final score 65",
+  "injuries": ["Important injuries (max 3)"],
+  "squadIssues": ["Squad issues (max 2)"],
+  "newsImpact": "Brief news summary (1 sentence)"
 }
 
-motivationScore: 0-100 (0=very bad, 100=excellent motivation)
-- Star player injury: -15 points
-- Squad issues: -10 points
-- Negative news: -10 points
-- Positive news: +10 points
-- Transfer rumors: -5 points
-- Coach pressure: -10 points
-- Success news: +15 points`,
+IMPORTANT: Focus on motivationScore and reasoning. Details are optional.`,
 
-    de: `Du bist ein Fußballanalyst und Team-Motivationsexperte. Analysiere ${teamName} Team:
+    de: `Du bist ein Fußballanalyst und Team-Motivationsexperte. Bewerte 3 DATENPUNKTE für ${teamName} und erstelle einen EINZIGEN MOTIVATIONSSKOR (0-100):
 
-1. VERLETZUNGEN: Welche Schlüsselspieler sind verletzt?
-2. KADERSTATUS: Gesperrte Spieler, Transfer-Situationen
-3. NACHRICHTEN: Wichtige Nachrichten der letzten 1-2 Wochen
-4. MOTIVATIONSFAKTOREN: Faktoren, die die Team-Motivation beeinflussen
+═══════════════════════════════════════════════════════════════════════════════
+📊 DATEN 1: LEISTUNG (Form-Analyse)
+═══════════════════════════════════════════════════════════════════════════════
+Letzte 10 Spiele Form: ${formString || 'N/A'}
+Form-Punkte: ${points || 0}/30
+Trend: ${trend || 'stable'}
+
+═══════════════════════════════════════════════════════════════════════════════
+🏥 DATEN 2: VERLETZUNGEN & KADERSTATUS
+═══════════════════════════════════════════════════════════════════════════════
+Recherchiere aktuelle Verletzungen, gesperrte Spieler, Transfer-Situationen.
+
+═══════════════════════════════════════════════════════════════════════════════
+📰 DATEN 3: NACHRICHTEN & TEAM-SITUATION
+═══════════════════════════════════════════════════════════════════════════════
+Wichtige Nachrichten der letzten 1-2 Wochen: Trainer-Druck, Team-Probleme, Erfolg/Enttäuschung, Transfer-Gerüchte.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 AUFGABE: Bewerte diese 3 DATENPUNKTE und erstelle einen EINZIGEN MOTIVATIONSSKOR (0-100)
+═══════════════════════════════════════════════════════════════════════════════
+
+Berechnungslogik:
+- Leistung (Form): 0-100 basierend auf Form-Punkten
+- Verletzungen & Kader: -20 (kritischer Spieler verletzt) bis +10 (voller Kader)
+- Nachrichten & Situation: -20 (sehr negativ) bis +20 (sehr positiv)
+
+FINALER SKOR = Leistung + Verletzung/Kader-Auswirkung + Nachrichten-Auswirkung
+(Normalisiere auf 0-100)
 
 Nur JSON-Format zurückgeben:
 {
-  "injuries": ["Spieler 1 (Position) - Verletzungstyp"],
-  "squadIssues": ["Kaderproblem 1"],
-  "newsImpact": "Auswirkung der Nachrichten auf Team-Motivation",
-  "motivationFactors": ["Faktor 1", "Faktor 2"],
-  "motivationScore": 65
+  "motivationScore": 65,
+  "reasoning": "Kurze Erklärung: Leistung X, Verletzungen Y, Nachrichten Z → Finaler Skor 65",
+  "injuries": ["Wichtige Verletzungen (max 3)"],
+  "squadIssues": ["Kaderprobleme (max 2)"],
+  "newsImpact": "Kurze Nachrichtenzusammenfassung (1 Satz)"
 }`
   };
 
@@ -127,32 +191,34 @@ Nur JSON-Format zurückgeben:
       }
     );
 
-    if (!response.ok) {
-      console.error(`❌ Gemini API error: ${response.status}`);
-      return {
-        injuries: [],
-        squadIssues: [],
-        newsImpact: '',
-        motivationFactors: [],
-        motivationScore: 50
-      };
-    }
+      if (!response.ok) {
+        console.error(`❌ Gemini API error: ${response.status}`);
+        return {
+          injuries: [],
+          squadIssues: [],
+          newsImpact: '',
+          motivationFactors: [],
+          motivationScore: 50,
+          reasoning: 'Gemini API hatası, fallback kullanıldı'
+        };
+      }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // JSON extract
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.warn('⚠️ Gemini response is not JSON, using fallback');
-      return {
-        injuries: [],
-        squadIssues: [],
-        newsImpact: '',
-        motivationFactors: [],
-        motivationScore: 50
-      };
-    }
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.warn('⚠️ Gemini response is not JSON, using fallback');
+        return {
+          injuries: [],
+          squadIssues: [],
+          newsImpact: '',
+          motivationFactors: [],
+          motivationScore: 50,
+          reasoning: 'Gemini response JSON değil, fallback kullanıldı'
+        };
+      }
 
     try {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -161,7 +227,8 @@ Nur JSON-Format zurückgeben:
         squadIssues: parsed.squadIssues || [],
         newsImpact: parsed.newsImpact || '',
         motivationFactors: parsed.motivationFactors || [],
-        motivationScore: Math.min(100, Math.max(0, parsed.motivationScore || 50))
+        motivationScore: Math.min(100, Math.max(0, parsed.motivationScore || 50)),
+        reasoning: parsed.reasoning || `Agent analizi: ${parsed.motivationScore || 50}/100`
       };
     } catch (e) {
       console.error('❌ Failed to parse Gemini JSON:', e);
@@ -170,7 +237,8 @@ Nur JSON-Format zurückgeben:
         squadIssues: [],
         newsImpact: '',
         motivationFactors: [],
-        motivationScore: 50
+        motivationScore: 50,
+        reasoning: 'Agent analizi başarısız, fallback kullanıldı'
       };
     }
   } catch (error) {
@@ -180,7 +248,8 @@ Nur JSON-Format zurückgeben:
       squadIssues: [],
       newsImpact: '',
       motivationFactors: [],
-      motivationScore: 50
+      motivationScore: 50,
+      reasoning: 'Gemini API exception, fallback kullanıldı'
     };
   }
 }
@@ -262,7 +331,7 @@ function calculatePerformanceScore(
 }
 
 /**
- * Ana fonksiyon: %50 Performans + %50 Takım İçi Motivasyon
+ * Ana fonksiyon: Agent 3 veriyi değerlendirip tek motivasyon skoru oluşturur
  */
 export async function analyzeTeamMotivation(
   teamName: string,
@@ -271,40 +340,36 @@ export async function analyzeTeamMotivation(
   league: string,
   language: 'tr' | 'en' | 'de' = 'tr'
 ): Promise<TeamMotivationAnalysis> {
-  // %50: Performans skoru (Form bazlı)
+  // Performans skoru hesapla (form bazlı)
   const performance = calculatePerformanceScore(formString, points);
 
-  // %50: Takım içi motivasyon skoru (Gemini API ile)
-  const teamContext = await analyzeTeamContextWithGemini(teamName, league, language);
-
-  // Final skor: %50 performans + %50 motivasyon
-  const finalScore = Math.round(
-    (performance.score * 0.5) + (teamContext.motivationScore * 0.5)
+  // Agent'a 3 veriyi gönder ve tek motivasyon skoru al
+  const agentResult = await analyzeTeamContextWithGemini(
+    teamName,
+    league,
+    language,
+    formString,
+    points,
+    performance.trend
   );
 
-  // Reasoning birleştir
-  let reasoning = `${performance.reasoning}. `;
-  if (teamContext.injuries.length > 0) {
-    reasoning += `Sakatlıklar: ${teamContext.injuries.join(', ')}. `;
-  }
-  if (teamContext.squadIssues.length > 0) {
-    reasoning += `Kadro sorunları: ${teamContext.squadIssues.join(', ')}. `;
-  }
-  if (teamContext.newsImpact) {
-    reasoning += `Haberler: ${teamContext.newsImpact}`;
-  }
+  // Agent'ın verdiği skor final skor (Agent 3 veriyi değerlendirip tek skor oluşturdu)
+  const finalScore = agentResult.motivationScore;
+
+  // Agent'ın reasoning'i kullan (3 veriyi nasıl değerlendirdiğini açıklar)
+  const reasoning = agentResult.reasoning || `${performance.reasoning}. Agent analizi: ${finalScore}/100`;
 
   return {
-    performanceScore: performance.score,
-    teamMotivationScore: teamContext.motivationScore,
-    finalScore,
+    performanceScore: performance.score, // Referans için (form bazlı)
+    teamMotivationScore: agentResult.motivationScore, // Agent'ın oluşturduğu skor (3 veriyi değerlendirerek)
+    finalScore, // Agent'ın oluşturduğu final skor (aynı değer)
     trend: performance.trend,
-    reasoning,
+    reasoning, // Agent'ın açıklaması: "Performans X, sakatlıklar Y, haberler Z → Final skor 65"
     formGraph: performance.formGraph,
-    injuries: teamContext.injuries,
-    squadIssues: teamContext.squadIssues,
-    newsImpact: teamContext.newsImpact,
-    motivationFactors: teamContext.motivationFactors
+    injuries: agentResult.injuries || [],
+    squadIssues: agentResult.squadIssues || [],
+    newsImpact: agentResult.newsImpact || '',
+    motivationFactors: agentResult.motivationFactors || []
   };
 }
 
