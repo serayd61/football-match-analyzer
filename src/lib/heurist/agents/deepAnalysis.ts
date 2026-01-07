@@ -5,6 +5,7 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
+import { analyzeTeamMotivation, TeamMotivationAnalysis } from './team-motivation-analyzer';
 
 // 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
 // Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
@@ -799,9 +800,96 @@ export async function runDeepAnalysisAgent(
       console.log('   ⚠️ Referee data not available');
     }
   }
+
+  // 🆕 GELİŞMİŞ MOTİVASYON ANALİZİ - Gemini API ile
+  let homeMotivationAnalysis: TeamMotivationAnalysis | null = null;
+  let awayMotivationAnalysis: TeamMotivationAnalysis | null = null;
+  
+  try {
+    console.log('   🧠 Analyzing team motivation with Gemini API...');
+    const { homeTeam, awayTeam, league, homeForm, awayForm } = matchData as any;
+    
+    [homeMotivationAnalysis, awayMotivationAnalysis] = await Promise.all([
+      analyzeTeamMotivation(
+        homeTeam || '',
+        homeForm?.form || '',
+        homeForm?.points || 0,
+        league || '',
+        language
+      ),
+      analyzeTeamMotivation(
+        awayTeam || '',
+        awayForm?.form || '',
+        awayForm?.points || 0,
+        league || '',
+        language
+      )
+    ]);
+    
+    console.log(`   ✅ Home Motivation: ${homeMotivationAnalysis.finalScore}/100 (Performance: ${homeMotivationAnalysis.performanceScore}, Team: ${homeMotivationAnalysis.teamMotivationScore})`);
+    console.log(`   ✅ Away Motivation: ${awayMotivationAnalysis.finalScore}/100 (Performance: ${awayMotivationAnalysis.performanceScore}, Team: ${awayMotivationAnalysis.teamMotivationScore})`);
+  } catch (e) {
+    console.log('   ⚠️ Motivation analysis failed, using fallback');
+    // Fallback: Eski yöntem
+    const { homeForm, awayForm } = matchData as any;
+    homeMotivationAnalysis = {
+      performanceScore: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).score,
+      teamMotivationScore: 50,
+      finalScore: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).score,
+      trend: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).trend,
+      reasoning: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).reasoning,
+      formGraph: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).formGraph,
+      injuries: [],
+      squadIssues: [],
+      newsImpact: '',
+      motivationFactors: []
+    };
+    awayMotivationAnalysis = {
+      performanceScore: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).score,
+      teamMotivationScore: 50,
+      finalScore: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).score,
+      trend: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).trend,
+      reasoning: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).reasoning,
+      formGraph: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).formGraph,
+      injuries: [],
+      squadIssues: [],
+      newsImpact: '',
+      motivationFactors: []
+    };
+  }
   
   const systemPrompt = DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
   const context = buildDeepAnalysisContext(matchData);
+  
+  // Motivasyon analizi context'ine ekle
+  const motivationContext = homeMotivationAnalysis && awayMotivationAnalysis ? `
+
+═══════════════════════════════════════════════════════════════════════════════
+💪 GELİŞMİŞ MOTİVASYON ANALİZİ (Gemini API ile)
+═══════════════════════════════════════════════════════════════════════════════
+
+🏠 ${matchData.homeTeam}:
+   • Final Skor: ${homeMotivationAnalysis.finalScore}/100 (%50 Performans: ${homeMotivationAnalysis.performanceScore} + %50 Takım İçi: ${homeMotivationAnalysis.teamMotivationScore})
+   • Trend: ${homeMotivationAnalysis.trend === 'improving' ? 'Yükselişte 📈' : homeMotivationAnalysis.trend === 'declining' ? 'Düşüşte 📉' : 'Stabil ➡️'}
+   • Form: ${homeMotivationAnalysis.formGraph}
+   ${homeMotivationAnalysis.injuries.length > 0 ? `   • Sakatlıklar: ${homeMotivationAnalysis.injuries.join(', ')}` : ''}
+   ${homeMotivationAnalysis.squadIssues.length > 0 ? `   • Kadro Sorunları: ${homeMotivationAnalysis.squadIssues.join(', ')}` : ''}
+   ${homeMotivationAnalysis.newsImpact ? `   • Haberler: ${homeMotivationAnalysis.newsImpact}` : ''}
+   ${homeMotivationAnalysis.motivationFactors.length > 0 ? `   • Motivasyon Faktörleri: ${homeMotivationAnalysis.motivationFactors.join(', ')}` : ''}
+   • Detay: ${homeMotivationAnalysis.reasoning}
+
+🚌 ${matchData.awayTeam}:
+   • Final Skor: ${awayMotivationAnalysis.finalScore}/100 (%50 Performans: ${awayMotivationAnalysis.performanceScore} + %50 Takım İçi: ${awayMotivationAnalysis.teamMotivationScore})
+   • Trend: ${awayMotivationAnalysis.trend === 'improving' ? 'Yükselişte 📈' : awayMotivationAnalysis.trend === 'declining' ? 'Düşüşte 📉' : 'Stabil ➡️'}
+   • Form: ${awayMotivationAnalysis.formGraph}
+   ${awayMotivationAnalysis.injuries.length > 0 ? `   • Sakatlıklar: ${awayMotivationAnalysis.injuries.join(', ')}` : ''}
+   ${awayMotivationAnalysis.squadIssues.length > 0 ? `   • Kadro Sorunları: ${awayMotivationAnalysis.squadIssues.join(', ')}` : ''}
+   ${awayMotivationAnalysis.newsImpact ? `   • Haberler: ${awayMotivationAnalysis.newsImpact}` : ''}
+   ${awayMotivationAnalysis.motivationFactors.length > 0 ? `   • Motivasyon Faktörleri: ${awayMotivationAnalysis.motivationFactors.join(', ')}` : ''}
+   • Detay: ${awayMotivationAnalysis.reasoning}
+
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
   
   // Probability Engine context ekleme
   const probabilitySection = probabilityContext ? `
@@ -815,9 +903,9 @@ ${probabilityContext}
   
   // Language-specific user message
   const userMessageByLang = {
-    tr: `${context}${probabilitySection}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
-    en: `${context}${probabilitySection}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
-    de: `${context}${probabilitySection}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
+    tr: `${context}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
+    en: `${context}${probabilitySection}${motivationContext}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nALWAYS use ADVANCED MOTIVATION ANALYSIS results - this is based on 50% performance + 50% team motivation (injuries, news, squad).\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
+    de: `${context}${probabilitySection}${motivationContext}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nVerwende IMMER ADVANCED MOTIVATION ANALYSIS Ergebnisse - basierend auf 50% Leistung + 50% Team-Motivation (Verletzungen, Nachrichten, Kader).\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
@@ -971,22 +1059,45 @@ ${probabilityContext}
       result.bestBet.confidence = Math.min(85, Math.max(50, result.bestBet.confidence));
     }
 
-    // 🆕 Motivasyon puanlarını ekle (eğer response'da yoksa veya eksikse)
-    const { homeForm, awayForm } = matchData as any;
-    const homeMotivation = calculateTeamMotivationScore(
-      homeForm?.form || '',
-      homeForm?.matches || [],
-      homeForm?.points || 0
-    );
-    
-    const awayMotivation = calculateTeamMotivationScore(
-      awayForm?.form || '',
-      awayForm?.matches || [],
-      awayForm?.points || 0
-    );
+    // 🆕 Gelişmiş Motivasyon puanlarını ekle (Gemini API ile)
+    if (homeMotivationAnalysis && awayMotivationAnalysis) {
+      result.motivationScores = {
+        home: homeMotivationAnalysis.finalScore, // %50 performans + %50 takım içi
+        away: awayMotivationAnalysis.finalScore,
+        homeTrend: homeMotivationAnalysis.trend,
+        awayTrend: awayMotivationAnalysis.trend,
+        homeFormGraph: homeMotivationAnalysis.formGraph,
+        awayFormGraph: awayMotivationAnalysis.formGraph,
+        reasoning: `${matchData.homeTeam}: ${homeMotivationAnalysis.reasoning}. ${matchData.awayTeam}: ${awayMotivationAnalysis.reasoning}. Puan farkı: ${Math.abs(homeMotivationAnalysis.finalScore - awayMotivationAnalysis.finalScore)} puan.`,
+        // Yeni alanlar
+        homePerformanceScore: homeMotivationAnalysis.performanceScore,
+        homeTeamMotivationScore: homeMotivationAnalysis.teamMotivationScore,
+        awayPerformanceScore: awayMotivationAnalysis.performanceScore,
+        awayTeamMotivationScore: awayMotivationAnalysis.teamMotivationScore,
+        homeInjuries: homeMotivationAnalysis.injuries,
+        awayInjuries: awayMotivationAnalysis.injuries,
+        homeSquadIssues: homeMotivationAnalysis.squadIssues,
+        awaySquadIssues: awayMotivationAnalysis.squadIssues,
+        homeNewsImpact: homeMotivationAnalysis.newsImpact,
+        awayNewsImpact: awayMotivationAnalysis.newsImpact,
+        homeMotivationFactors: homeMotivationAnalysis.motivationFactors,
+        awayMotivationFactors: awayMotivationAnalysis.motivationFactors
+      };
+    } else {
+      // Fallback: Eski yöntem
+      const { homeForm, awayForm } = matchData as any;
+      const homeMotivation = calculateTeamMotivationScore(
+        homeForm?.form || '',
+        homeForm?.matches || [],
+        homeForm?.points || 0
+      );
+      
+      const awayMotivation = calculateTeamMotivationScore(
+        awayForm?.form || '',
+        awayForm?.matches || [],
+        awayForm?.points || 0
+      );
 
-    // Response'daki motivationScores'u güncelle veya ekle
-    if (!result.motivationScores || !result.motivationScores.home || !result.motivationScores.away) {
       result.motivationScores = {
         home: homeMotivation.score,
         away: awayMotivation.score,
@@ -1004,7 +1115,14 @@ ${probabilityContext}
     console.log(`   📊 Over/Under: ${result.overUnder?.prediction} (${result.overUnder?.confidence}%)`);
     console.log(`   🎲 BTTS: ${result.btts?.prediction} (${result.btts?.confidence}%)`);
     console.log(`   🏆 Match: ${result.matchResult?.prediction} (${result.matchResult?.confidence}%)`);
-    console.log(`   💪 Motivation: Home ${homeMotivation.score}/100 (${homeMotivation.trend}), Away ${awayMotivation.score}/100 (${awayMotivation.trend})`);
+    if (homeMotivationAnalysis && awayMotivationAnalysis) {
+      console.log(`   💪 Motivation: Home ${homeMotivationAnalysis.finalScore}/100 (Perf: ${homeMotivationAnalysis.performanceScore}, Team: ${homeMotivationAnalysis.teamMotivationScore}), Away ${awayMotivationAnalysis.finalScore}/100 (Perf: ${awayMotivationAnalysis.performanceScore}, Team: ${awayMotivationAnalysis.teamMotivationScore})`);
+    } else {
+      const { homeForm, awayForm } = matchData as any;
+      const homeMotivation = calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0);
+      const awayMotivation = calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0);
+      console.log(`   💪 Motivation: Home ${homeMotivation.score}/100 (${homeMotivation.trend}), Away ${awayMotivation.score}/100 (${awayMotivation.trend})`);
+    }
     
     return result;
   } catch (error: any) {
