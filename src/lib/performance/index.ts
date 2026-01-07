@@ -236,18 +236,18 @@ function normalizePrediction(pred: string | undefined): string {
   if (!pred) return '';
   const p = pred.toLowerCase().trim();
   
-  // Match Result
-  if (p === '1' || p === 'home' || p === 'ev sahibi') return '1';
-  if (p === '2' || p === 'away' || p === 'deplasman') return '2';
-  if (p === 'x' || p === 'draw' || p === 'beraberlik') return 'X';
+  // Match Result - daha kapsamlı normalizasyon
+  if (p === '1' || p === 'home' || p === 'ev sahibi' || p === 'home_win' || p === 'homewin' || p.includes('home') && p.includes('win')) return '1';
+  if (p === '2' || p === 'away' || p === 'deplasman' || p === 'away_win' || p === 'awaywin' || p.includes('away') && p.includes('win')) return '2';
+  if (p === 'x' || p === 'draw' || p === 'beraberlik' || p === 'tie' || p === 'd') return 'X';
   
-  // Over/Under
-  if (p === 'over' || p === 'üst' || p === 'alt') return p.includes('alt') ? 'under' : 'over';
-  if (p === 'under' || p === 'alt') return 'under';
+  // Over/Under - daha kapsamlı
+  if (p.includes('over') || p.includes('üst') || p === 'o') return 'over';
+  if (p.includes('under') || p.includes('alt') || p === 'u') return 'under';
   
-  // BTTS
-  if (p === 'yes' || p === 'evet' || p === 'var') return 'yes';
-  if (p === 'no' || p === 'hayır' || p === 'yok') return 'no';
+  // BTTS - daha kapsamlı
+  if (p === 'yes' || p === 'evet' || p === 'var' || p === 'y' || p === 'true') return 'yes';
+  if (p === 'no' || p === 'hayır' || p === 'yok' || p === 'n' || p === 'false') return 'no';
   
   return p;
 }
