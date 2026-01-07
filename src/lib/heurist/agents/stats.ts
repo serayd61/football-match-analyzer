@@ -367,7 +367,7 @@ NUR JSON ZURÜCKGEBEN mit xgAnalysis, timingPatterns, cleanSheetAnalysis Feldern
 
 // ==================== JSON EXTRACTION ====================
 
-function extractJSON(text: string): any | null {
+function extractJSON(text: string, matchData?: MatchData, detailedHome?: any, detailedAway?: any): any | null {
   if (!text) return null;
   
   let cleaned = text
@@ -389,14 +389,40 @@ function extractJSON(text: string): any | null {
   jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' ');
   
   try {
-    return JSON.parse(jsonStr);
+    const parsed = JSON.parse(jsonStr);
+    // Form analysis fallback kontrolü
+    if ((!parsed.formAnalysis || parsed.formAnalysis === 'Analysis unavailable') && matchData) {
+      const homeForm = detailedHome?.form || matchData.homeForm?.form || 'DDDDD';
+      const awayForm = detailedAway?.form || matchData.awayForm?.form || 'DDDDD';
+      const homePoints = detailedHome?.points || matchData.homeForm?.points || 5;
+      const awayPoints = detailedAway?.points || matchData.awayForm?.points || 5;
+      const homeGoalsScored = parseFloat(String(detailedHome?.homeAvgGoalsScored || detailedHome?.avgGoalsScored || matchData.homeForm?.avgGoals || '1.2'));
+      const awayGoalsScored = parseFloat(String(detailedAway?.awayAvgGoalsScored || detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0'));
+      parsed.formAnalysis = `${matchData.homeTeam}: ${homeForm} (${homePoints}pts, ${homeGoalsScored.toFixed(1)} gol/maç) vs ${matchData.awayTeam}: ${awayForm} (${awayPoints}pts, ${awayGoalsScored.toFixed(1)} gol/maç)`;
+    }
+    return parsed;
   } catch (e) {
     // Manual extraction fallback
     try {
       const result: any = {};
       
       const formMatch = jsonStr.match(/"formAnalysis"\s*:\s*"([^"]+)"/);
-      result.formAnalysis = formMatch ? formMatch[1] : 'Analysis unavailable';
+      // Fallback: Eğer AI'dan gelmediyse, hesaplanmış form analizini kullan
+      if (!formMatch || formMatch[1] === 'Analysis unavailable') {
+        if (matchData) {
+          const homeForm = detailedHome?.form || matchData.homeForm?.form || 'DDDDD';
+          const awayForm = detailedAway?.form || matchData.awayForm?.form || 'DDDDD';
+          const homePoints = detailedHome?.points || matchData.homeForm?.points || 5;
+          const awayPoints = detailedAway?.points || matchData.awayForm?.points || 5;
+          const homeGoalsScored = parseFloat(String(detailedHome?.homeAvgGoalsScored || detailedHome?.avgGoalsScored || matchData.homeForm?.avgGoals || '1.2'));
+          const awayGoalsScored = parseFloat(String(detailedAway?.awayAvgGoalsScored || detailedAway?.avgGoalsScored || matchData.awayForm?.avgGoals || '1.0'));
+          result.formAnalysis = `${matchData.homeTeam}: ${homeForm} (${homePoints}pts, ${homeGoalsScored.toFixed(1)} gol/maç) vs ${matchData.awayTeam}: ${awayForm} (${awayPoints}pts, ${awayGoalsScored.toFixed(1)} gol/maç)`;
+        } else {
+          result.formAnalysis = 'Analysis unavailable';
+        }
+      } else {
+        result.formAnalysis = formMatch[1];
+      }
       
       const goalMatch = jsonStr.match(/"goalExpectancy"\s*:\s*([\d.]+)/);
       result.goalExpectancy = goalMatch ? parseFloat(goalMatch[1]) : 2.5;
@@ -507,11 +533,12 @@ function calculateXGAnalysis(matchData: MatchData, language: 'tr' | 'en' | 'de')
     '1.2'
   );
   
-  // xG TAHMİNİ: Gerçek gol ortalamalarına 0.9 çarpanı uygula (regresyon beklentisi)
-  // xG genelde gerçek gollerden %5-15 düşük olur
-  const xgMultiplier = 0.92; // Slight regression towards mean
-  const homeXG = Math.max(0.5, Math.min(3.0, homeActual * xgMultiplier));
-  const awayXG = Math.max(0.4, Math.min(2.5, awayActual * xgMultiplier));
+  // xG TAHMİNİ: Gerçek gol ortalamalarına hafif regresyon uygula
+  // xG genelde gerçek gollerden %5-10 düşük olur (ama çok düşük olmamalı)
+  // Eğer actual çok düşükse (1.0 altı), xG'yi actual'e yakın tut
+  const xgMultiplier = homeActual < 1.0 ? 0.95 : (awayActual < 1.0 ? 0.95 : 0.92);
+  const homeXG = Math.max(0.7, Math.min(3.0, homeActual * xgMultiplier)); // Minimum 0.7
+  const awayXG = Math.max(0.7, Math.min(2.5, awayActual * xgMultiplier)); // Minimum 0.7
   
   // Performance analizi - gerçek vs xG karşılaştırması
   const homeDiff = homeActual - homeXG;
@@ -1378,7 +1405,7 @@ Return detailed JSON:`;
     });
     
     if (response) {
-      const parsed = extractJSON(response);
+      const parsed = extractJSON(response, matchData, detailedHome, detailedAway);
       if (parsed) {
         // Validate and enhance with calculated values
         if (typeof parsed.goalExpectancy === 'string') {
@@ -1394,9 +1421,22 @@ Return detailed JSON:`;
         }
         parsed.confidence = Math.min(85, Math.max(50, parsed.confidence));
         
-        // Add reasoning if missing
+        // Add reasoning if missing - VE TUTARLILIK KONTROLÜ
         if (!parsed.overUnderReasoning || parsed.overUnderReasoning.length < 20) {
           parsed.overUnderReasoning = reasoning.overUnderReasoning;
+        } else {
+          // Reasoning ile tahmin tutarlı mı kontrol et
+          const reasoningLower = parsed.overUnderReasoning.toLowerCase();
+          const isOverInReasoning = reasoningLower.includes('over') || reasoningLower.includes('üst') || reasoningLower.includes('yüksek') || reasoningLower.includes('fazla');
+          const isUnderInReasoning = reasoningLower.includes('under') || reasoningLower.includes('alt') || reasoningLower.includes('düşük') || reasoningLower.includes('az');
+          
+          // Eğer reasoning "Over" diyor ama tahmin "Under" ise (veya tersi), reasoning'i güncelle
+          if ((parsed.overUnder === 'Over' && isUnderInReasoning && !isOverInReasoning) ||
+              (parsed.overUnder === 'Under' && isOverInReasoning && !isUnderInReasoning)) {
+            // Tutarsızlık var - reasoning'i veri bazlı güncelle
+            parsed.overUnderReasoning = reasoning.overUnderReasoning;
+            console.log(`   ⚠️ Over/Under reasoning tutarsızlığı düzeltildi: "${parsed.overUnderReasoning.substring(0, 50)}..."`);
+          }
         }
         if (!parsed.matchResultReasoning || parsed.matchResultReasoning.length < 20) {
           parsed.matchResultReasoning = reasoning.matchResultReasoning;
@@ -1516,9 +1556,30 @@ Return detailed JSON:`;
           console.log(`   ⚠️ Over/Under Veri Override: AI "Under", ama expectedTotal ${expectedTotal.toFixed(2)} >= 2.65 → "Over"`);
         }
         
-        // BTTS validation
+        // BTTS validation - %50-55 arası belirsiz, daha dikkatli
         if (!['Yes', 'No'].includes(parsed.btts)) {
-          parsed.btts = avgBtts >= 55 ? 'Yes' : 'No';
+          // %55+ = Yes, %45- = No, %45-55 arası = beklenen gollere bak
+          if (avgBtts >= 55) {
+            parsed.btts = 'Yes';
+          } else if (avgBtts <= 45) {
+            parsed.btts = 'No';
+          } else {
+            // Belirsiz bölge: beklenen gollere bak
+            // Eğer her iki takım da 1.0+ gol bekleniyorsa Yes, değilse No
+            parsed.btts = (homeExpected >= 1.0 && awayExpected >= 1.0) ? 'Yes' : 'No';
+            console.log(`   ⚠️ BTTS belirsiz (%${avgBtts}) - beklenen gollere göre: ${parsed.btts}`);
+          }
+        } else {
+          // AI'dan geldi ama %50-55 arası belirsiz bölgede - kontrol et
+          if (avgBtts >= 50 && avgBtts <= 55) {
+            // Belirsiz bölge: beklenen gollere bak
+            const shouldBeYes = (homeExpected >= 1.0 && awayExpected >= 1.0);
+            if ((parsed.btts === 'Yes' && !shouldBeYes) || (parsed.btts === 'No' && shouldBeYes)) {
+              // AI ile veri çelişiyor - veri bazlı kararı kullan
+              parsed.btts = shouldBeYes ? 'Yes' : 'No';
+              console.log(`   ⚠️ BTTS belirsiz bölge (%${avgBtts}) - veri override: ${shouldBeYes ? 'Yes' : 'No'}`);
+            }
+          }
         }
         
         // Add all calculated stats
