@@ -9,29 +9,30 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Normalize fonksiyonları - agent tahminlerini karşılaştırmak için
+// Normalize fonksiyonları - agent tahminlerini karşılaştırmak için (DÜZELTME: Daha kapsamlı)
 function normalizeMR(val: string | null | undefined): string {
   if (!val) return '';
   const v = val.toLowerCase().trim();
-  if (v === '1' || v === 'home' || v === 'ev sahibi') return '1';
-  if (v === '2' || v === 'away' || v === 'deplasman') return '2';
-  if (v === 'x' || v === 'draw' || v === 'beraberlik') return 'X';
+  // Daha kapsamlı kontrol - 'away', 'home', 'away_win', 'home_win' gibi formatları da yakala
+  if (v === '1' || v === 'home' || v === 'ev sahibi' || v === 'home_win' || v === 'homewin' || (v.includes('home') && v.includes('win'))) return '1';
+  if (v === '2' || v === 'away' || v === 'deplasman' || v === 'away_win' || v === 'awaywin' || (v.includes('away') && v.includes('win'))) return '2';
+  if (v === 'x' || v === 'draw' || v === 'beraberlik' || v === 'tie' || v === 'd') return 'X';
   return v;
 }
 
 function normalizeOU(val: string | null | undefined): string {
   if (!val) return '';
   const v = val.toLowerCase().trim();
-  if (v.includes('over') || v.includes('üst')) return 'over';
-  if (v.includes('under') || v.includes('alt')) return 'under';
+  if (v.includes('over') || v.includes('üst') || v === 'o') return 'over';
+  if (v.includes('under') || v.includes('alt') || v === 'u') return 'under';
   return v;
 }
 
 function normalizeBTTS(val: string | null | undefined): string {
   if (!val) return '';
   const v = val.toLowerCase().trim();
-  if (v === 'yes' || v === 'evet' || v === 'var') return 'yes';
-  if (v === 'no' || v === 'hayır' || v === 'yok') return 'no';
+  if (v === 'yes' || v === 'evet' || v === 'var' || v === 'y' || v === 'true') return 'yes';
+  if (v === 'no' || v === 'hayır' || v === 'yok' || v === 'n' || v === 'false') return 'no';
   return v;
 }
 
