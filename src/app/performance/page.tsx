@@ -810,28 +810,32 @@ export default function PerformancePage() {
                       </select>
                     )}
                     
-                    {/* Güven Yüzdesi Filtresi */}
+                    {/* Güven Yüzdesi Filtresi - Dropdown Menü */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-white/60">Güven:</span>
-                      <input
-                        type="number"
-                        min="50"
-                        max="100"
+                      <select
+                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50 cursor-pointer"
                         value={filterMinConfidence}
-                        onChange={(e) => setFilterMinConfidence(Math.max(50, Math.min(100, parseInt(e.target.value) || 50)))}
-                        className="w-16 px-2 py-1 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
-                        placeholder="Min"
-                      />
+                        onChange={(e) => setFilterMinConfidence(parseInt(e.target.value))}
+                      >
+                        {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                          <option key={num} value={num} className="bg-black text-white">
+                            {num}
+                          </option>
+                        ))}
+                      </select>
                       <span className="text-white/40">-</span>
-                      <input
-                        type="number"
-                        min="50"
-                        max="100"
+                      <select
+                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50 cursor-pointer"
                         value={filterMaxConfidence}
-                        onChange={(e) => setFilterMaxConfidence(Math.max(50, Math.min(100, parseInt(e.target.value) || 100)))}
-                        className="w-16 px-2 py-1 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
-                        placeholder="Max"
-                      />
+                        onChange={(e) => setFilterMaxConfidence(parseInt(e.target.value))}
+                      >
+                        {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                          <option key={num} value={num} className="bg-black text-white">
+                            {num}
+                          </option>
+                        ))}
+                      </select>
                       <span className="text-xs text-white/40">%</span>
                     </div>
                     
