@@ -69,7 +69,7 @@ Away Form: ${matchData.awayForm?.form} (${matchData.awayForm?.points} pts)
 Home Goals (Scored/Conceded): ${matchData.homeForm?.avgGoals} / ${matchData.homeForm?.avgConceded}
 Away Goals (Scored/Conceded): ${matchData.awayForm?.avgGoals} / ${matchData.awayForm?.avgConceded}
 
-H2H: ${matchData.h2h?.summary || 'No recent H2H'}
+H2H: ${matchData.h2h ? `${matchData.h2h.totalMatches} matches (H: ${matchData.h2h.homeWins}, A: ${matchData.h2h.awayWins}, D: ${matchData.h2h.draws}), Avg Goals: ${matchData.h2h.avgGoals}` : 'No recent H2H'}
 
 Odds:
 Home: ${matchData.odds?.matchWinner?.home}
@@ -77,15 +77,15 @@ Draw: ${matchData.odds?.matchWinner?.draw}
 Away: ${matchData.odds?.matchWinner?.away}
     `;
 
-        const response = await aiClient.generateMessage(
-            prompt,
-            `Analyze this match as a Devil's Advocate:\n${context}`
-        );
+        const response = await aiClient.chat([
+            { role: 'system', content: prompt },
+            { role: 'user', content: `Analyze this match as a Devil's Advocate:\n${context}` }
+        ]);
 
-        if (!response || !response.content) return null;
+        if (!response) return null;
 
         // Extract JSON
-        const jsonStr = response.content.match(/\{[\s\S]*\}/)?.[0];
+        const jsonStr = response.match(/\{[\s\S]*\}/)?.[0];
         if (!jsonStr) return null;
 
         return JSON.parse(jsonStr) as DevilsAdvocateResult;
