@@ -60,13 +60,15 @@ export async function POST(req: NextRequest) {
         console.log(`🔍 Fixture Status Check: state=${currentState}, status=${currentStatus}, resultInfo=${resultInfo}`);
 
         const isFinished =
-            currentState === 'FT' ||
-            currentState === 'AET' ||
-            currentState === 'FT_PEN' ||
-            currentState === 'FINISHED' ||
-            currentStatus === 'FT' ||
-            currentStatus === 'FINISHED' ||
-            (resultInfo && resultInfo.includes('FT'));
+            ['FT', 'AET', 'FT_PEN', 'FINISHED'].includes(currentState) ||
+            ['FT', 'FINISHED'].includes(currentStatus) ||
+            (resultInfo && (
+                resultInfo.toLowerCase().includes('won') ||
+                resultInfo.toLowerCase().includes('ended') ||
+                resultInfo.toLowerCase().includes('draw') ||
+                resultInfo.toLowerCase().includes('full-time') ||
+                resultInfo.toLowerCase().includes('ft')
+            ));
 
         if (isFinished) {
             const scores = fullData.rawData?.scores || [];

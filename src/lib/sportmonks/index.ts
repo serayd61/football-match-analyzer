@@ -87,7 +87,7 @@ export interface MatchContext {
 // ============================================================================
 
 async function fetchSportmonks(
-  endpoint: string, 
+  endpoint: string,
   params: Record<string, string> = {},
   retries: number = 2,
   timeout: number = 15000 // 15 saniye timeout
@@ -102,14 +102,14 @@ async function fetchSportmonks(
       // Timeout için AbortController kullan
       const controller = new AbortController();
       timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const res = await fetch(url.toString(), { 
+
+      const res = await fetch(url.toString(), {
         next: { revalidate: 300 }, // Cache for 5 minutes
         signal: controller.signal as any
       });
-      
+
       if (timeoutId) clearTimeout(timeoutId);
-      
+
       if (!res.ok) {
         // 404 is normal for some teams/data, don't log as error
         if (res.status === 404) {
@@ -125,11 +125,11 @@ async function fetchSportmonks(
           return null;
         }
       }
-      
+
       return await res.json();
     } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         console.error(`⏱️ Sportmonks timeout (${timeout}ms): ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
         if (attempt < retries) {
@@ -147,7 +147,7 @@ async function fetchSportmonks(
       return null;
     }
   }
-  
+
   return null;
 }
 
@@ -167,10 +167,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
 
     const team = teamData.data;
     const stats = team.statistics || [];
-    
+
     // Find current season stats
     const seasonStats = stats[0]?.details || [];
-    
+
     // Extract stats
     const getStatValue = (typeId: number): number => {
       const stat = seasonStats.find((s: any) => s.type_id === typeId);
@@ -181,7 +181,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     const recentMatches = team.latest || [];
     let totalCornersFromMatches = 0;
     let cornersMatchCount = 0;
-    
+
     // Calculate goals, wins/draws/losses from recent matches
     let totalGoalsScored = 0;
     let totalGoalsConceded = 0;
@@ -194,25 +194,25 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     let bttsCount = 0;
     let over25Count = 0;
     let validMatchesCount = 0;
-    
+
     const form = recentMatches.slice(0, 10).map((match: any) => {
       const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
-      
+
       const teamScore = isHome ? homeScore : awayScore;
       const opponentScore = isHome ? awayScore : homeScore;
-      
+
       // Only count matches with valid scores
       if (teamScore >= 0 && opponentScore >= 0) {
         totalGoalsScored += teamScore;
         totalGoalsConceded += opponentScore;
         validMatchesCount++;
-        
+
         // Count BTTS and Over 2.5
         if (teamScore > 0 && opponentScore > 0) bttsCount++;
         if ((teamScore + opponentScore) > 2.5) over25Count++;
-        
+
         // Count home/away results
         if (isHome) {
           if (teamScore > opponentScore) homeWinsCount++;
@@ -224,10 +224,10 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
           else awayDrawsCount++;
         }
       }
-      
+
       // Calculate corners from match statistics (type_id 45 = corners, location based)
       if (match.statistics) {
-        const teamCorners = match.statistics.find((s: any) => 
+        const teamCorners = match.statistics.find((s: any) =>
           s.type_id === 45 && s.location === (isHome ? 'home' : 'away')
         )?.data?.value || 0;
         if (teamCorners > 0) {
@@ -235,15 +235,15 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
           cornersMatchCount++;
         }
       }
-      
+
       if (teamScore > opponentScore) return 'W';
       if (teamScore < opponentScore) return 'L';
       return 'D';
     }).join('');
-    
+
     // Calculate average corners from recent matches
-    const avgCornersFromMatches = cornersMatchCount > 0 
-      ? Math.round((totalCornersFromMatches / cornersMatchCount) * 10) / 10 
+    const avgCornersFromMatches = cornersMatchCount > 0
+      ? Math.round((totalCornersFromMatches / cornersMatchCount) * 10) / 10
       : 0;
 
     // Calculate form points
@@ -257,7 +257,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     const goalsScoredFromAPI = getStatValue(52) || getStatValue(88) || 0;
     const goalsConcededFromAPI = getStatValue(53) || getStatValue(89) || 0;
     const matchesPlayedFromAPI = getStatValue(129) || 0;
-    
+
     // If API data available, use it; otherwise use calculated from recent matches
     const goalsScored = goalsScoredFromAPI > 0 ? goalsScoredFromAPI : totalGoalsScored;
     const goalsConceded = goalsConcededFromAPI > 0 ? goalsConcededFromAPI : totalGoalsConceded;
@@ -266,7 +266,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     // Calculate averages with NaN protection
     const avgGoalsScored = matchesPlayed > 0 ? Math.round((goalsScored / matchesPlayed) * 100) / 100 : 1.2;
     const avgGoalsConceded = matchesPlayed > 0 ? Math.round((goalsConceded / matchesPlayed) * 100) / 100 : 1.0;
-    
+
     // 🆕 VENUE-SPESIFIK GOL ORTALAMALARI (ÇOK ÖNEMLİ!)
     // Ev maçlarından gol ortalaması hesapla
     let homeGoalsScored = 0;
@@ -275,12 +275,12 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     let awayGoalsScored = 0;
     let awayGoalsConceded = 0;
     let awayMatchCount = 0;
-    
+
     recentMatches.slice(0, 10).forEach((match: any) => {
       const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
       const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
       const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
-      
+
       if (isHome) {
         homeGoalsScored += homeScore;
         homeGoalsConceded += awayScore;
@@ -291,7 +291,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
         awayMatchCount++;
       }
     });
-    
+
     // Venue bazlı ortalamalar
     const homeAvgGoalsScored = homeMatchCount > 0 ? Math.round((homeGoalsScored / homeMatchCount) * 100) / 100 : avgGoalsScored;
     const homeAvgGoalsConceded = homeMatchCount > 0 ? Math.round((homeGoalsConceded / homeMatchCount) * 100) / 100 : avgGoalsConceded;
@@ -301,13 +301,13 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     // Corners - IMPORTANT: getStatValue(45) might return TOTAL corners, not average per match
     // Normal match has 5-12 corners per match, so values > 20 are likely totals, not averages
     const cornersStatValue = getStatValue(45);
-    
+
     // Validate avgCornersFromMatches - should be between 0-20 (realistic range)
     // If it's > 20, it's invalid data (could be total instead of average, or parsing error)
-    const validatedAvgCornersFromMatches = (avgCornersFromMatches > 0 && avgCornersFromMatches <= 20) 
-      ? avgCornersFromMatches 
+    const validatedAvgCornersFromMatches = (avgCornersFromMatches > 0 && avgCornersFromMatches <= 20)
+      ? avgCornersFromMatches
       : 0;
-    
+
     // If stat value is > 20, it's likely a total, not average - don't use it
     // Only use if it's in reasonable range (5-12 per match is normal, max 20 for very high)
     let validAvgCornersFor = 0;
@@ -321,7 +321,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
       // No valid data - use default
       validAvgCornersFor = 5;
     }
-    
+
     const cornersAgainstValue = getStatValue(46);
     let validAvgCornersAgainst = 0;
     if (cornersAgainstValue > 0 && cornersAgainstValue <= 20) {
@@ -329,7 +329,7 @@ export async function getTeamStats(teamId: number, seasonId?: number): Promise<T
     } else {
       validAvgCornersAgainst = 4.5; // Default
     }
-    
+
     // Log for debugging
     if (cornersStatValue > 20) {
       console.warn(`⚠️ Invalid corner stat value ${cornersStatValue} for team ${teamId} - using calculated ${validatedAvgCornersFromMatches} or default`);
@@ -416,11 +416,11 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
     const recentMatches = matches.slice(0, 10).map((match: any) => {
       const home = match.participants?.find((p: any) => p.meta?.location === 'home');
       const away = match.participants?.find((p: any) => p.meta?.location === 'away');
-      
+
       // Get scores
       let homeScore = 0;
       let awayScore = 0;
-      
+
       if (match.scores) {
         const currentScore = match.scores.find((s: any) => s.description === 'CURRENT');
         if (currentScore) {
@@ -432,7 +432,7 @@ export async function getHeadToHead(team1Id: number, team2Id: number): Promise<H
       // Calculate stats
       const matchGoals = homeScore + awayScore;
       totalGoals += matchGoals;
-      
+
       if (homeScore > 0 && awayScore > 0) bttsCount++;
       if (matchGoals > 2.5) over25Count++;
 
@@ -510,22 +510,22 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
   const recentMatches = matches.slice(0, 10).map((match: any) => {
     const home = match.participants?.find((p: any) => p.meta?.location === 'home');
     const away = match.participants?.find((p: any) => p.meta?.location === 'away');
-    
+
     let homeScore = 0;
     let awayScore = 0;
     let matchCorners = 0;
-    
+
     if (match.scores) {
       homeScore = match.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0;
       awayScore = match.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
     }
-    
+
     // Get corners from statistics if available (type_id 45 = corners)
     if (match.statistics) {
       const homeCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'home')?.data?.value || 0;
       const awayCorners = match.statistics.find((s: any) => s.type_id === 45 && s.location === 'away')?.data?.value || 0;
       matchCorners = homeCorners + awayCorners;
-      
+
       // Validate: Normal maçta 0-25 korner olur, 25'ten fazlası veri hatası
       if (matchCorners > 0 && matchCorners <= 25) {
         totalCorners += matchCorners;
@@ -539,7 +539,7 @@ function processH2HData(matches: any[], team1Id: number, team2Id: number): HeadT
 
     const matchGoals = homeScore + awayScore;
     totalGoals += matchGoals;
-    
+
     if (homeScore > 0 && awayScore > 0) bttsCount++;
     if (matchGoals > 2.5) over25Count++;
 
@@ -634,10 +634,10 @@ export async function getTeamRecentMatches(teamId: number, limit: number = 5): P
     return data.data.map((match: any) => {
       const home = match.participants?.find((p: any) => p.meta?.location === 'home');
       const away = match.participants?.find((p: any) => p.meta?.location === 'away');
-      
+
       let homeScore = 0;
       let awayScore = 0;
-      
+
       if (match.scores) {
         homeScore = match.scores.find((s: any) => s.score?.participant === 'home')?.score?.goals || 0;
         awayScore = match.scores.find((s: any) => s.score?.participant === 'away')?.score?.goals || 0;
@@ -646,7 +646,7 @@ export async function getTeamRecentMatches(teamId: number, limit: number = 5): P
       const isHome = home?.id === teamId;
       const teamScore = isHome ? homeScore : awayScore;
       const opponentScore = isHome ? awayScore : homeScore;
-      
+
       return {
         date: match.starting_at,
         opponent: isHome ? away?.name : home?.name,
@@ -669,12 +669,12 @@ export async function getTeamRecentMatches(teamId: number, limit: number = 5): P
 // ============================================================================
 
 export async function getCompleteMatchContext(
-  homeTeamId: number, 
+  homeTeamId: number,
   awayTeamId: number
 ): Promise<MatchContext | null> {
   try {
     console.log(`📊 Fetching complete match context for ${homeTeamId} vs ${awayTeamId}`);
-    
+
     const [homeStats, awayStats, h2h, homeInjuries, awayInjuries] = await Promise.all([
       getTeamStats(homeTeamId),
       getTeamStats(awayTeamId),
@@ -780,7 +780,7 @@ export interface FullFixtureData {
     recentMatches: any[];
     coach: string;
   };
-  
+
   // Lig & Turnuva
   league: {
     id: number;
@@ -790,7 +790,7 @@ export interface FullFixtureData {
   };
   round: string;
   stage: string;
-  
+
   // Maç Detayları
   venue: {
     name: string;
@@ -809,7 +809,7 @@ export interface FullFixtureData {
     humidity: number;
     wind: number;
   };
-  
+
   // İstatistikler
   matchStatistics: any[];
   events: any[];
@@ -819,7 +819,7 @@ export interface FullFixtureData {
     homeFormation: string;
     awayFormation: string;
   };
-  
+
   // Bahis & Tahminler
   odds: {
     matchResult: { home: number; draw: number; away: number };
@@ -831,16 +831,16 @@ export interface FullFixtureData {
     sportmonks: any;
     probability: { home: number; draw: number; away: number };
   };
-  
+
   // H2H
   h2h: HeadToHead;
-  
+
   // Sakatlar
   injuries: {
     home: Injury[];
     away: Injury[];
   };
-  
+
   // Veri Kalitesi
   dataQuality: {
     hasOdds: boolean;
@@ -852,7 +852,7 @@ export interface FullFixtureData {
     hasWeather: boolean;
     score: number; // 0-100
   };
-  
+
   // Raw Data (AI için)
   rawData: any;
 }
@@ -860,41 +860,41 @@ export interface FullFixtureData {
 export async function getFullFixtureData(fixtureId: number): Promise<FullFixtureData | null> {
   console.log(`\n🚀 ========== getFullFixtureData START ==========`);
   console.log(`📍 Fixture ID: ${fixtureId}`);
-  
+
   try {
     console.log(`🔄 Step 1: Fetching fixture base data...`);
-    
+
     // Sportmonks API - Sadece temel include'lar (çok fazla include API'yi kırabiliyor)
     const fixtureData = await fetchSportmonks(`/fixtures/${fixtureId}`, {
-      include: 'participants;scores;league;venue'
+      include: 'participants;scores;league;venue;state'
     });
 
     if (!fixtureData?.data) {
       console.error('❌ No fixture data returned for fixture', fixtureId);
       return null;
     }
-    
+
     console.log(`✅ Fixture base data received`);
-    
+
     const fixture = fixtureData.data;
-    
+
     // Takımları ayır
     const homeParticipant = fixture.participants?.find((p: any) => p.meta?.location === 'home');
     const awayParticipant = fixture.participants?.find((p: any) => p.meta?.location === 'away');
-    
+
     if (!homeParticipant || !awayParticipant) {
       console.error('❌ Could not identify teams from participants');
       return null;
     }
-    
+
     console.log(`✅ Teams identified: ${homeParticipant.name} vs ${awayParticipant.name}`);
-    
+
     // Takım detaylarını ayrı çek (paralel)
     const homeTeamId = homeParticipant.id;
     const awayTeamId = awayParticipant.id;
-    
+
     console.log(`🔄 Fetching team details for ${homeTeamId} and ${awayTeamId}...`);
-    
+
     // 20 saniye timeout - kritik veriler için daha uzun süre
     // Use same include format as getTeamStats for consistency
     const [homeTeamRes, awayTeamRes, h2hData] = await Promise.all([
@@ -909,49 +909,49 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         per_page: '10'
       }, 2, 20000) // 2 retries, 20s timeout
     ]);
-    
+
     // Extract data from response objects
     console.log(`🔍 homeTeamRes exists: ${!!homeTeamRes}, has data: ${!!homeTeamRes?.data}`);
     console.log(`🔍 awayTeamRes exists: ${!!awayTeamRes}, has data: ${!!awayTeamRes?.data}`);
     console.log(`🔍 h2hData exists: ${!!h2hData}, has data: ${!!h2hData?.data}`);
-    
+
     const homeTeam = homeTeamRes?.data || homeParticipant;
     const awayTeam = awayTeamRes?.data || awayParticipant;
-    
+
     console.log(`✅ Step 2: Team details loaded: ${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`);
-    
+
     // Form hesapla
     const calculateForm = (latestMatches: any[], teamId: number) => {
       if (!latestMatches?.length) return { form: 'DDDDD', points: 5 };
-      
+
       let form = '';
       let points = 0;
-      
+
       latestMatches.slice(0, 10).forEach((match: any) => {
         const isHome = match.participants?.find((p: any) => p.id === teamId)?.meta?.location === 'home';
         const homeScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals || 0;
         const awayScore = match.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals || 0;
-        
+
         const teamScore = isHome ? homeScore : awayScore;
         const oppScore = isHome ? awayScore : homeScore;
-        
+
         if (teamScore > oppScore) { form += 'W'; points += 3; }
         else if (teamScore < oppScore) { form += 'L'; }
         else { form += 'D'; points += 1; }
       });
-      
+
       return { form: form || 'DDDDD', points: points || 5 };
     };
-    
+
     console.log(`🔍 Step 3: Calculating form...`);
     console.log(`   homeTeam.latest exists: ${!!homeTeam?.latest}, count: ${homeTeam?.latest?.length || 0}`);
     console.log(`   awayTeam.latest exists: ${!!awayTeam?.latest}, count: ${awayTeam?.latest?.length || 0}`);
-    
+
     const homeForm = calculateForm(homeTeam?.latest || [], homeTeam?.id || homeTeamId);
     const awayForm = calculateForm(awayTeam?.latest || [], awayTeam?.id || awayTeamId);
-    
+
     console.log(`✅ Step 3: Form calculated - Home: ${homeForm.form}, Away: ${awayForm.form}`);
-    
+
     // Get detailed team stats using getTeamStats for consistency
     // This ensures same calculation logic as getCompleteMatchContext
     console.log(`🔍 Step 3.5: Getting detailed team stats...`);
@@ -959,25 +959,25 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       getTeamStats(homeTeamId),
       getTeamStats(awayTeamId)
     ]);
-    
+
     // Use stats from getTeamStats if available, otherwise use calculated form
     const finalHomeForm = homeTeamStats ? {
       form: homeTeamStats.recentForm,
       points: homeTeamStats.formPoints
     } : homeForm;
-    
+
     const finalAwayForm = awayTeamStats ? {
       form: awayTeamStats.recentForm,
       points: awayTeamStats.formPoints
     } : awayForm;
-    
+
     console.log(`✅ Step 3.5: Team stats loaded - Home: ${finalHomeForm.form} (${finalHomeForm.points}), Away: ${finalAwayForm.form} (${finalAwayForm.points})`);
-    
+
     // H2H verilerini işle
     console.log(`🔍 Step 4: Processing H2H data...`);
     const h2h = processH2HData(h2hData?.data || [], homeTeamId, awayTeamId);
     console.log(`✅ Step 4: H2H processed - ${h2h.totalMatches} matches`);
-    
+
     // Sakatları işle
     const processInjuries = (sidelined: any[]): Injury[] => {
       if (!sidelined?.length) return [];
@@ -992,7 +992,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
           isOut: !inj.end_date || new Date(inj.end_date) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         }));
     };
-    
+
     // Bahis oranlarını işle
     const processOdds = (odds: any[]) => {
       const defaultOdds = {
@@ -1001,16 +1001,16 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         overUnder25: { over: 0, under: 0 },
         asianHandicap: null
       };
-      
+
       if (!odds?.length) return defaultOdds;
-      
+
       // En popüler bookmaker'ı bul (Bet365, 1xBet, etc.)
       const preferredBookmakers = [2, 8, 1, 6]; // Bet365, 1xBet, etc.
-      
+
       odds.forEach((odd: any) => {
         const marketId = odd.market_id;
         const value = parseFloat(odd.value) || 0;
-        
+
         // 1X2 Market
         if (marketId === 1) {
           if (odd.label === 'Home' || odd.label === '1') defaultOdds.matchResult.home = value;
@@ -1028,10 +1028,10 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
           if (odd.label === 'Under') defaultOdds.overUnder25.under = value;
         }
       });
-      
+
       return defaultOdds;
     };
-    
+
     // Lineups işle
     const processLineups = (lineups: any[]) => {
       const result = {
@@ -1040,9 +1040,9 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
         homeFormation: '',
         awayFormation: ''
       };
-      
+
       if (!lineups?.length) return result;
-      
+
       lineups.forEach((lineup: any) => {
         const player = {
           name: lineup.player?.display_name || lineup.player?.name || 'Unknown',
@@ -1050,7 +1050,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
           number: lineup.jersey_number || 0,
           isCaptain: lineup.captain || false
         };
-        
+
         if (lineup.team_id === homeTeam.id) {
           result.home.push(player);
           if (lineup.formation) result.homeFormation = lineup.formation;
@@ -1059,10 +1059,10 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
           if (lineup.formation) result.awayFormation = lineup.formation;
         }
       });
-      
+
       return result;
     };
-    
+
     // Veri kalitesi hesapla
     const dataQuality = {
       hasOdds: !!fixture.odds?.length,
@@ -1074,7 +1074,7 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       hasWeather: !!fixture.weatherReport,
       score: 0
     };
-    
+
     // Kalite skoru hesapla (100 üzerinden)
     const qualityScore = [
       dataQuality.hasOdds ? 15 : 0,
@@ -1085,9 +1085,9 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       dataQuality.hasPredictions ? 5 : 0,
       dataQuality.hasWeather ? 5 : 0
     ].reduce((a, b) => a + b, 0);
-    
+
     dataQuality.score = qualityScore;
-    
+
     const result: FullFixtureData = {
       fixtureId,
       homeTeam: {
@@ -1171,16 +1171,16 @@ export async function getFullFixtureData(fixtureId: number): Promise<FullFixture
       dataQuality,
       rawData: fixture
     };
-    
+
     console.log(`✅ Step FINAL: Full fixture data assembled!`);
     console.log(`   📊 Quality: ${dataQuality.score}/100`);
     console.log(`   📊 Stats: ${dataQuality.hasStatistics}, H2H: ${dataQuality.hasH2H}, Odds: ${dataQuality.hasOdds}`);
     console.log(`   👥 Lineups: ${dataQuality.hasLineups}, 🏥 Injuries: ${dataQuality.hasInjuries}`);
     console.log(`   🏠 Home: ${result.homeTeam.name}, Form: ${result.homeTeam.form}`);
     console.log(`   ✈️ Away: ${result.awayTeam.name}, Form: ${result.awayTeam.form}`);
-    
+
     return result;
-    
+
   } catch (error: any) {
     console.error(`\n❌ ========== getFullFixtureData FAILED ==========`);
     console.error(`📍 Fixture ID: ${fixtureId}`);
