@@ -35,7 +35,7 @@ function getSupabase(): SupabaseClient {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -45,16 +45,16 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     // Access control - limit kontrolü
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
     const access = await checkUserAccess(session.user.email, ip);
-    
+
     if (!access.canAnalyze) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Daily analysis limit reached',
           code: 'LIMIT_REACHED',
           access: {
@@ -66,17 +66,17 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    
+
     const body = await request.json();
     const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en' } = body;
-    
+
     if (!fixtureId || !homeTeam || !awayTeam || !homeTeamId || !awayTeamId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     // Cache kontrolü
     if (!skipCache) {
       const supabase = getSupabase();
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         .select('analysis, overall_confidence, agreement, created_at')
         .eq('fixture_id', fixtureId)
         .maybeSingle();
-      
+
       if (cached?.analysis) {
         console.log(`📦 Returning cached unified analysis for fixture ${fixtureId}`);
         return NextResponse.json({
@@ -97,9 +97,9 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    
+
     console.log(`🎯 Starting Unified Analysis: ${homeTeam} vs ${awayTeam}`);
-    
+
     // Unified consensus çalıştır
     const input: UnifiedAnalysisInput = {
       fixtureId,
@@ -111,14 +111,14 @@ export async function POST(request: NextRequest) {
       matchDate: matchDate || new Date().toISOString().split('T')[0],
       lang: lang as 'tr' | 'en' | 'de'
     };
-    
+
     const result = await runUnifiedConsensus(input);
-    
+
     // Veritabanına kaydet - unified_analysis tablosuna
     console.log(`💾 Attempting to save to unified_analysis for fixture ${fixtureId}...`);
     const unifiedSaveResult = await saveUnifiedAnalysis(input, result);
     console.log(`💾 Unified analysis save result: ${unifiedSaveResult ? '✅ SUCCESS' : '❌ FAILED'}`);
-    
+
     // 🆕 Performance Tracking'e kaydet
     try {
       const extractAgentPred = (agent: any) => {
@@ -131,57 +131,58 @@ export async function POST(request: NextRequest) {
           reasoning: agent.agentSummary || agent.recommendation || ''
         };
       };
-      
+
       const performanceRecord: AnalysisRecord = {
         fixtureId,
         homeTeam,
         awayTeam,
         league: league || 'Unknown',
         matchDate: matchDate || new Date().toISOString(),
-        
+
         statsAgent: extractAgentPred(result.sources?.agents?.stats),
         oddsAgent: extractAgentPred(result.sources?.agents?.odds),
         deepAnalysisAgent: extractAgentPred(result.sources?.agents?.deepAnalysis),
         geniusAnalyst: extractAgentPred(result.sources?.agents?.geniusAnalyst),
         masterStrategist: extractAgentPred(result.sources?.agents?.masterStrategist),
+        devilsAdvocate: extractAgentPred(result.sources?.agents?.devilsAdvocate),
         aiSmart: extractAgentPred(result.sources?.ai?.smart),
-        
+
         consensusMatchResult: result.predictions?.matchResult?.prediction || '',
         consensusOverUnder: result.predictions?.overUnder?.prediction || '',
         consensusBtts: result.predictions?.btts?.prediction || '',
         consensusConfidence: result.systemPerformance?.overallConfidence || 50,
         consensusScorePrediction: result.predictions?.matchResult?.scorePrediction || ''
       };
-      
+
       await saveAnalysisToPerformance(performanceRecord);
       console.log(`   💾 Saved to performance tracking`);
     } catch (perfError) {
       console.error('⚠️ Performance tracking save failed (non-critical):', perfError);
     }
-    
+
     // Analiz sayacını artır (limit kontrolü için)
     if (!skipCache) {
       await incrementAnalysisCount(session.user.email);
     }
-    
+
     const totalTime = Date.now() - startTime;
     console.log(`✅ Unified Analysis complete in ${totalTime}ms`);
     console.log(`   🎯 Overall confidence: ${result.systemPerformance.overallConfidence}%`);
     console.log(`   🤝 Agreement: ${result.systemPerformance.agreement}%`);
     console.log(`   📊 Best bet: ${result.bestBet.market} - ${result.bestBet.selection} (${result.bestBet.confidence}%)`);
-    
+
     return NextResponse.json({
       success: true,
       analysis: result,
       processingTime: totalTime,
       cached: false
     });
-    
+
   } catch (error: any) {
     console.error('❌ Unified Analysis error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: error?.message || 'Analysis failed',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },

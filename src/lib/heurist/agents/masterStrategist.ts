@@ -9,10 +9,11 @@ import { getLearningContext } from '../../ai-brain/learning-context';
 const MASTER_STRATEGIST_PROMPT = {
   tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
 
-GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) çıktılarını analiz edip:
+GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) çıktılarını analiz edip:
 1. Birincil seçim (en sağlam)
 2. SÜRPRİZ seçim (yüksek oran + değer) - eğer kriterleri karşılıyorsa
 3. Hedge fikri (opsiyonel) - downside koruması
+4. 👹 ŞEYTANIN AVUKATI RİSK ANALİZİ - Konsensüsü çürütmeye çalışan aykırı fikirler
 
 ═══════════════════════════════════════════════════════════════════════════════
 📊 SÜRPRİZ TANIMI:
@@ -151,6 +152,12 @@ MUTLAKA BU JSON FORMATINDA DÖNDÜR:
       "confidence": 82,
       "keyData": ["Value: BTTS Yok +12%", "Sharp: Ev tarafı"],
       "weight": 50
+    },
+    "devilsAdvocate": {
+      "reliability": 85,
+      "confidence": 70,
+      "keyData": ["Trap Match: Yes", "Contrarian: Draw"],
+      "weight": 20
     }
   },
   "dataAnalysis": {
@@ -522,6 +529,7 @@ function buildAgentContext(
     sentiment: any | null;
     deepAnalysis: any | null;
     geniusAnalyst?: any | null;
+    devilsAdvocate?: any | null;
   },
   matchData: MatchData,
   language: 'tr' | 'en' | 'de'
@@ -631,6 +639,25 @@ function buildAgentContext(
 
   context += `└─────────────────────────────────────────────────────────────────────────────┘
 
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 👹 DEVIL'S ADVOCATE RAPORU (Risk & Tuzak Analizi)
+├─────────────────────────────────────────────────────────────────────────────┤
+`;
+
+  if (agentResults.devilsAdvocate) {
+    const da = agentResults.devilsAdvocate;
+    context += `│ Contrarian View: ${da.contrarianView || 'N/A'}\n`;
+    context += `│ Primary Risks: ${Array.isArray(da.risks) ? da.risks.join(', ') : 'N/A'}\n`;
+    context += `│ Why Favori Might Fail: ${da.whyFavoriteMightFail || 'N/A'}\n`;
+    context += `│ Trap Match Indicators: ${Array.isArray(da.trapMatchIndicators) ? da.trapMatchIndicators.join(', ') : 'N/A'}\n`;
+    context += `│ Contrarian Pick: ${da.matchResult || 'N/A'} (Confidence: ${da.confidence || 0}%)\n`;
+    context += `│ Agent Summary: ${da.agentSummary || 'N/A'}\n`;
+  } else {
+    context += `│ ⚠️ Devil's Advocate Agent sonuç bulunamadı\n`;
+  }
+
+  context += `└─────────────────────────────────────────────────────────────────────────────┘
+
 ═══════════════════════════════════════════════════════════════════════════════
                          MASTER ANALİZ TALİMATI
 ═══════════════════════════════════════════════════════════════════════════════
@@ -656,6 +683,7 @@ export async function runMasterStrategist(
     sentiment: any | null;
     deepAnalysis: any | null;
     geniusAnalyst?: any | null;
+    devilsAdvocate?: any | null;
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<MasterStrategistResult> {
@@ -741,12 +769,14 @@ function getDefaultMasterStrategist(
     odds: AgentResult | null;
     sentiment: any | null;
     deepAnalysis: any | null;
+    devilsAdvocate?: any | null;
   },
   language: 'tr' | 'en' | 'de'
 ): MasterStrategistResult {
   // Ağırlıklı konsensüs hesapla
   const stats = agentResults.stats;
   const odds = agentResults.odds;
+  const devils = agentResults.devilsAdvocate;
   const deep = agentResults.deepAnalysis;
 
   // Match Result - Ağırlıklı voting (DÜZELTME: Belirsizlik durumunda X kuralı)
@@ -768,6 +798,11 @@ function getDefaultMasterStrategist(
   // Deep Analysis matchResult (sadece 1/X/2 geçerli)
   if (deep?.matchResult?.prediction && ['1', 'X', '2'].includes(deep.matchResult.prediction)) {
     mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
+  }
+
+  // Devil's Advocate matchResult (sadece 1/X/2 geçerli) - NEW
+  if (devils?.matchResult && ['1', 'X', '2'].includes(devils.matchResult)) {
+    mrVotes[devils.matchResult] = (mrVotes[devils.matchResult] || 0) + 15;
   }
 
   // DÜZELTME: Belirsizlik kontrolü

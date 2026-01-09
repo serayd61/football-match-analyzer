@@ -13,14 +13,14 @@ function getSupabase(): SupabaseClient {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     // Use SERVICE_ROLE_KEY for server-side operations (bypasses RLS)
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
+
     if (!supabaseUrl || !supabaseKey) {
       console.error('❌ Supabase credentials missing!');
       console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'set' : 'MISSING');
       console.error('   SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'set' : 'MISSING');
       throw new Error('Supabase credentials not configured');
     }
-    
+
     console.log('🔗 Initializing Supabase client with service role...');
     supabase = createClient(supabaseUrl, supabaseKey);
   }
@@ -45,7 +45,7 @@ export interface AnalysisRecord {
   awayTeam: string;
   league: string;
   matchDate: string;
-  
+
   // Agent predictions
   statsAgent?: AgentPrediction;
   oddsAgent?: AgentPrediction;
@@ -53,7 +53,8 @@ export interface AnalysisRecord {
   geniusAnalyst?: AgentPrediction;
   masterStrategist?: AgentPrediction;
   aiSmart?: AgentPrediction;
-  
+  devilsAdvocate?: AgentPrediction;
+
   // Consensus
   consensusMatchResult: string;
   consensusOverUnder: string;
@@ -92,14 +93,14 @@ export async function saveAnalysisToPerformance(analysis: AnalysisRecord): Promi
   try {
     console.log(`💾 Saving analysis for fixture ${analysis.fixtureId}...`);
     console.log(`   📋 Match: ${analysis.homeTeam} vs ${analysis.awayTeam}`);
-    
+
     const record = {
       fixture_id: analysis.fixtureId,
       home_team: analysis.homeTeam,
       away_team: analysis.awayTeam,
       league: analysis.league || 'Unknown',
       match_date: analysis.matchDate || new Date().toISOString(),
-      
+
       // Agent predictions as JSONB
       stats_agent: analysis.statsAgent || {},
       odds_agent: analysis.oddsAgent || {},
@@ -107,34 +108,35 @@ export async function saveAnalysisToPerformance(analysis: AnalysisRecord): Promi
       genius_analyst: analysis.geniusAnalyst || {},
       master_strategist: analysis.masterStrategist || {},
       ai_smart: analysis.aiSmart || {},
-      
+      devils_advocate: analysis.devilsAdvocate || {},
+
       // Consensus
       consensus_match_result: analysis.consensusMatchResult || '',
       consensus_over_under: analysis.consensusOverUnder || '',
       consensus_btts: analysis.consensusBtts || '',
       consensus_confidence: analysis.consensusConfidence || 50,
       consensus_score_prediction: analysis.consensusScorePrediction || '',
-      
+
       // Not settled yet
       match_settled: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
+
     console.log(`   🔄 Attempting upsert to analysis_performance...`);
     console.log(`   📊 Consensus: MR=${record.consensus_match_result}, OU=${record.consensus_over_under}, BTTS=${record.consensus_btts}, Conf=${record.consensus_confidence}`);
-    
+
     // First try insert, if fails due to duplicate, update
     const { data: existingData, error: checkError } = await getSupabase()
       .from('analysis_performance')
       .select('id')
       .eq('fixture_id', analysis.fixtureId)
       .maybeSingle();
-    
+
     if (checkError) {
       console.error('❌ Error checking existing record:', checkError.message);
     }
-    
+
     let result;
     if (existingData) {
       // Update existing
@@ -152,16 +154,16 @@ export async function saveAnalysisToPerformance(analysis: AnalysisRecord): Promi
         .insert(record)
         .select();
     }
-    
+
     if (result.error) {
       console.error('❌ Supabase error:', result.error.message);
       console.error('   Details:', JSON.stringify(result.error, null, 2));
       return { success: false, error: result.error.message };
     }
-    
+
     console.log(`✅ Analysis saved for ${analysis.homeTeam} vs ${analysis.awayTeam}`);
     return { success: true };
-    
+
   } catch (error: any) {
     console.error('❌ Save analysis error:', error?.message || error);
     return { success: false, error: error?.message || 'Unknown error' };
@@ -180,32 +182,32 @@ export async function getAnalyses(options: {
 } = {}): Promise<{ data: any[]; count: number; error?: string }> {
   try {
     console.log('📋 getAnalyses called with options:', JSON.stringify(options));
-    
+
     // Use created_at for ordering (more reliable than match_date)
     let query = getSupabase()
       .from('analysis_performance')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false, nullsFirst: false });
-    
+
     if (options.settled !== undefined) {
       query = query.eq('match_settled', options.settled);
     }
-    
+
     if (options.league) {
       query = query.eq('league', options.league);
     }
-    
+
     if (options.limit) {
       query = query.limit(options.limit);
     }
-    
+
     if (options.offset) {
       query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
     }
-    
+
     console.log('   Executing Supabase query...');
     const { data, count, error } = await query;
-    
+
     if (error) {
       console.error('❌ Supabase query error:', error.message);
       console.error('   Code:', error.code);
@@ -213,14 +215,14 @@ export async function getAnalyses(options: {
       console.error('   Hint:', error.hint);
       return { data: [], count: 0, error: error.message };
     }
-    
+
     console.log(`✅ getAnalyses returned ${data?.length || 0} records (total: ${count})`);
     if (data && data.length > 0) {
       console.log('   First record:', data[0].fixture_id, data[0].home_team, 'vs', data[0].away_team);
     }
-    
+
     return { data: data || [], count: count || 0 };
-    
+
   } catch (error: any) {
     console.error('❌ Get analyses exception:', error?.message || error);
     console.error('   Stack:', error?.stack);
@@ -235,20 +237,20 @@ export async function getAnalyses(options: {
 function normalizePrediction(pred: string | undefined): string {
   if (!pred) return '';
   const p = pred.toLowerCase().trim();
-  
+
   // Match Result - daha kapsamlı normalizasyon
   if (p === '1' || p === 'home' || p === 'ev sahibi' || p === 'home_win' || p === 'homewin' || p.includes('home') && p.includes('win')) return '1';
   if (p === '2' || p === 'away' || p === 'deplasman' || p === 'away_win' || p === 'awaywin' || p.includes('away') && p.includes('win')) return '2';
   if (p === 'x' || p === 'draw' || p === 'beraberlik' || p === 'tie' || p === 'd') return 'X';
-  
+
   // Over/Under - daha kapsamlı
   if (p.includes('over') || p.includes('üst') || p === 'o') return 'over';
   if (p.includes('under') || p.includes('alt') || p === 'u') return 'under';
-  
+
   // BTTS - daha kapsamlı
   if (p === 'yes' || p === 'evet' || p === 'var' || p === 'y' || p === 'true') return 'yes';
   if (p === 'no' || p === 'hayır' || p === 'yok' || p === 'n' || p === 'false') return 'no';
-  
+
   return p;
 }
 
@@ -260,16 +262,16 @@ export function calculateMatchAccuracy(prediction: AgentPrediction | null, actua
   if (!prediction) {
     return { matchResult: false, overUnder: false, btts: false };
   }
-  
+
   const predMR = normalizePrediction(prediction.matchResult);
   const predOU = normalizePrediction(prediction.overUnder);
   const predBTTS = normalizePrediction(prediction.btts);
-  
+
   // Actual değerleri de normalize et - aynı formatta karşılaştırma için
   const actMR = normalizePrediction(actual.matchResult);
   const actOU = normalizePrediction(actual.overUnder);
   const actBTTS = normalizePrediction(actual.btts);
-  
+
   return {
     matchResult: predMR === actMR,
     overUnder: predOU === actOU,
@@ -284,24 +286,24 @@ export function calculateMatchAccuracy(prediction: AgentPrediction | null, actua
 export async function settleMatch(fixtureId: number, result: SettledMatch): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`⚖️ Settling match ${fixtureId}: ${result.homeScore}-${result.awayScore}`);
-    
+
     // First get the analysis record
     const { data: record, error: fetchError } = await getSupabase()
       .from('analysis_performance')
       .select('*')
       .eq('fixture_id', fixtureId)
       .single();
-    
+
     if (fetchError || !record) {
       console.log(`⚠️ No analysis found for fixture ${fixtureId}`);
       return { success: false, error: 'Analysis not found' };
     }
-    
+
     if (record.match_settled) {
       console.log(`⚠️ Match ${fixtureId} already settled`);
       return { success: true }; // Already done
     }
-    
+
     // Parse agent predictions
     const parseAgent = (json: any): AgentPrediction | null => {
       if (!json) return null;
@@ -311,14 +313,15 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
         return null;
       }
     };
-    
+
     const statsAgent = parseAgent(record.stats_agent);
     const oddsAgent = parseAgent(record.odds_agent);
     const deepAnalysis = parseAgent(record.deep_analysis_agent);
     const geniusAnalyst = parseAgent(record.genius_analyst);
     const masterStrategist = parseAgent(record.master_strategist);
     const aiSmart = parseAgent(record.ai_smart);
-    
+    const devilsAdvocate = parseAgent(record.devils_advocate);
+
     // Calculate accuracy for each agent
     const statsAcc = calculateMatchAccuracy(statsAgent, result);
     const oddsAcc = calculateMatchAccuracy(oddsAgent, result);
@@ -326,7 +329,8 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
     const geniusAcc = calculateMatchAccuracy(geniusAnalyst, result);
     const masterAcc = calculateMatchAccuracy(masterStrategist, result);
     const aiSmartAcc = calculateMatchAccuracy(aiSmart, result);
-    
+    const devilsAcc = calculateMatchAccuracy(devilsAdvocate, result);
+
     // Consensus accuracy
     const consensusPred: AgentPrediction = {
       matchResult: record.consensus_match_result || '',
@@ -335,7 +339,7 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
       confidence: record.consensus_confidence || 50
     };
     const consensusAcc = calculateMatchAccuracy(consensusPred, result);
-    
+
     // Update the record
     const updateData = {
       actual_home_score: result.homeScore,
@@ -346,56 +350,58 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
       actual_total_goals: result.totalGoals,
       match_settled: true,
       settled_at: new Date().toISOString(),
-      
+
       // Stats Agent
       stats_agent_mr_correct: statsAcc.matchResult,
       stats_agent_ou_correct: statsAcc.overUnder,
       stats_agent_btts_correct: statsAcc.btts,
-      
+
       // Odds Agent
       odds_agent_mr_correct: oddsAcc.matchResult,
       odds_agent_ou_correct: oddsAcc.overUnder,
       odds_agent_btts_correct: oddsAcc.btts,
-      
+
       // Deep Analysis
       deep_analysis_mr_correct: deepAcc.matchResult,
       deep_analysis_ou_correct: deepAcc.overUnder,
       deep_analysis_btts_correct: deepAcc.btts,
-      
+
       // Genius Analyst
       genius_analyst_mr_correct: geniusAcc.matchResult,
       genius_analyst_ou_correct: geniusAcc.overUnder,
       genius_analyst_btts_correct: geniusAcc.btts,
-      
+
       // Master Strategist
       master_strategist_mr_correct: masterAcc.matchResult,
       master_strategist_ou_correct: masterAcc.overUnder,
       master_strategist_btts_correct: masterAcc.btts,
-      
+
       // AI Smart
       ai_smart_mr_correct: aiSmartAcc.matchResult,
       ai_smart_ou_correct: aiSmartAcc.overUnder,
       ai_smart_btts_correct: aiSmartAcc.btts,
-      
+
+      devils_advocate_mr_correct: devilsAcc.matchResult,
+
       // Consensus
       consensus_mr_correct: consensusAcc.matchResult,
       consensus_ou_correct: consensusAcc.overUnder,
       consensus_btts_correct: consensusAcc.btts
     };
-    
+
     const { error: updateError } = await getSupabase()
       .from('analysis_performance')
       .update(updateData)
       .eq('fixture_id', fixtureId);
-    
+
     if (updateError) {
       console.error('❌ Error settling match:', updateError);
       return { success: false, error: updateError.message };
     }
-    
+
     console.log(`✅ Match ${fixtureId} settled: Consensus ${consensusAcc.matchResult ? '✅' : '❌'} MR, ${consensusAcc.overUnder ? '✅' : '❌'} O/U, ${consensusAcc.btts ? '✅' : '❌'} BTTS`);
     return { success: true };
-    
+
   } catch (error: any) {
     console.error('❌ Settle match error:', error);
     return { success: false, error: error.message };
@@ -409,47 +415,47 @@ export async function settleMatch(fixtureId: number, result: SettledMatch): Prom
 export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summary: any; error?: string }> {
   try {
     console.log('📊 getAccuracyStats called');
-    
+
     // Get all settled matches
     const { data, error } = await getSupabase()
       .from('analysis_performance')
       .select('*')
       .eq('match_settled', true);
-    
+
     if (error) {
       console.error('❌ getAccuracyStats error:', error.message);
       return { stats: [], summary: null, error: error.message };
     }
-    
+
     // Get pending count FIRST (before early return)
     const { count: pendingCount } = await getSupabase()
       .from('analysis_performance')
       .select('*', { count: 'exact', head: true })
       .eq('match_settled', false);
-    
+
     console.log(`   Settled: ${data?.length || 0}, Pending: ${pendingCount || 0}`);
-    
+
     if (!data || data.length === 0) {
       // Return with pending count even if no settled matches
-      return { 
-        stats: [], 
-        summary: { 
-          totalMatches: pendingCount || 0, 
+      return {
+        stats: [],
+        summary: {
+          totalMatches: pendingCount || 0,
           settledMatches: 0,
           pendingMatches: pendingCount || 0,
           consensusAccuracy: 0
-        } 
+        }
       };
     }
-    
+
     const total = data.length;
-    
+
     // Calculate stats for each agent
     const calcAgentStats = (mrField: string, ouField: string, bttsField: string, name: string): AccuracyStats => {
       const mrCorrect = data.filter(r => r[mrField] === true).length;
       const ouCorrect = data.filter(r => r[ouField] === true).length;
       const bttsCorrect = data.filter(r => r[bttsField] === true).length;
-      
+
       return {
         agent: name,
         totalMatches: total,
@@ -462,7 +468,7 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
         overallAccuracy: total > 0 ? Math.round(((mrCorrect + ouCorrect + bttsCorrect) / (total * 3)) * 100 * 10) / 10 : 0
       };
     };
-    
+
     const stats: AccuracyStats[] = [
       calcAgentStats('stats_agent_mr_correct', 'stats_agent_ou_correct', 'stats_agent_btts_correct', 'Stats Agent'),
       calcAgentStats('odds_agent_mr_correct', 'odds_agent_ou_correct', 'odds_agent_btts_correct', 'Odds Agent'),
@@ -472,9 +478,9 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
       calcAgentStats('ai_smart_mr_correct', 'ai_smart_ou_correct', 'ai_smart_btts_correct', 'AI Smart'),
       calcAgentStats('consensus_mr_correct', 'consensus_ou_correct', 'consensus_btts_correct', 'KONSENSÜS')
     ];
-    
+
     // pendingCount already fetched above
-    
+
     const summary = {
       totalMatches: total + (pendingCount || 0),
       settledMatches: total,
@@ -482,9 +488,9 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
       bestAgent: stats.reduce((best, curr) => curr.overallAccuracy > best.overallAccuracy ? curr : best, stats[0]),
       consensusAccuracy: stats.find(s => s.agent === 'KONSENSÜS')?.overallAccuracy || 0
     };
-    
+
     return { stats, summary };
-    
+
   } catch (error: any) {
     console.error('❌ Get accuracy stats error:', error);
     return { stats: [], summary: null, error: error.message };
