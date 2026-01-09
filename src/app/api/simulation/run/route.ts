@@ -106,7 +106,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             data: result,
-            verification: accuracyReport
+            verification: accuracyReport,
+            debug: {
+                matchState: fullData.rawData?.state?.state || fullData.rawData?.status,
+                rawState: fullData.rawData?.state,
+                scores: fullData.rawData?.scores
+            }
         });
 
     } catch (error: any) {
