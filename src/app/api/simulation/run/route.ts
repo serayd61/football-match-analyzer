@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAgentAnalysis } from '@/lib/agent-analyzer';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { getFullFixtureData } from '@/lib/sportmonks';
+import { getFullFixtureData } from '@/lib/sportmonks/index';
 import { savePrediction, updatePredictionResult } from '@/lib/predictions';
 
 // Set timeout to 5 minutes for simulation
@@ -43,16 +43,26 @@ export async function POST(req: NextRequest) {
 
         const result = await runAgentAnalysis(fixtureId, fullData.homeTeam.id, fullData.awayTeam.id, 'en');
 
+        if (!result) {
+            return NextResponse.json({ error: 'Agent analysis failed to produce a result' }, { status: 500 });
+        }
+
         let accuracyReport = null;
 
         // 4. If match is actually finished, calculate accuracy immediately
-        if (fullData.status === 'FT' || fullData.status === 'AET' || fullData.status === 'FT_PEN') {
-            const homeScore = fullData.scores?.find((s: any) => s.description === 'FT')?.score?.goals || 0;
-            const awayScore = fullData.scores?.find((s: any) => s.description === 'FT')?.score?.goals || 0; // Fixed: away score index
-            // NOTE: Checking raw sportmonks structure for consistency
+        // 4. If match is actually finished, calculate accuracy immediately
+        // Check rawData state/status
+        const matchState = fullData.rawData?.state?.state || fullData.rawData?.status;
+        if (matchState === 'FT' || matchState === 'AET' || matchState === 'FT_PEN' || matchState === 'FINISHED') {
+            const scores = fullData.rawData?.scores || [];
+            // Try to find FT score, otherwise fall back to CURRENT or defaults
+            const homeScoreObj = scores.find((s: any) => s.description === 'FT' && s.score?.participant === 'home')
+                || scores.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home');
+            const awayScoreObj = scores.find((s: any) => s.description === 'FT' && s.score?.participant === 'away')
+                || scores.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away');
 
-            const homeGoals = fullData.homeTeam.score || 0;
-            const awayGoals = fullData.awayTeam.score || 0;
+            const homeGoals = homeScoreObj?.score?.goals || 0;
+            const awayGoals = awayScoreObj?.score?.goals || 0;
 
             // Calculate Verification
             const prediction = result.matchResult?.prediction; // 1, X, 2
@@ -81,7 +91,7 @@ export async function POST(req: NextRequest) {
                 // Let's assume we update the existing prediction record for this fixture
                 await savePrediction({
                     fixtureId,
-                    matchDate: fullData.startingAt,
+                    matchDate: fullData.rawData?.starting_at,
                     homeTeam: fullData.homeTeam.name,
                     awayTeam: fullData.awayTeam.name,
                     league: fullData.league.name,

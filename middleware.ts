@@ -9,12 +9,12 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
-        
+
         // Public routes
-        if (path === '/' || path === '/login' || path === '/pricing' || path.startsWith('/api/auth') || path.startsWith('/api/stripe/webhook')) {
+        if (path === '/' || path === '/login' || path === '/pricing' || path.startsWith('/api/auth') || path.startsWith('/api/stripe/webhook') || path.startsWith('/api/simulation')) {
           return true;
         }
-        
+
         // Protected routes need token
         return !!token;
       },
