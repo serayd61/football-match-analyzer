@@ -52,8 +52,23 @@ export async function POST(req: NextRequest) {
         // 4. If match is actually finished, calculate accuracy immediately
         // 4. If match is actually finished, calculate accuracy immediately
         // Check rawData state/status
-        const matchState = fullData.rawData?.state?.state || fullData.rawData?.status;
-        if (matchState === 'FT' || matchState === 'AET' || matchState === 'FT_PEN' || matchState === 'FINISHED') {
+        const currentState = fullData.rawData?.state?.state;
+        const currentStatus = fullData.rawData?.status;
+        const resultInfo = fullData.rawData?.result_info;
+
+        // Log for debugging
+        console.log(`🔍 Fixture Status Check: state=${currentState}, status=${currentStatus}, resultInfo=${resultInfo}`);
+
+        const isFinished =
+            currentState === 'FT' ||
+            currentState === 'AET' ||
+            currentState === 'FT_PEN' ||
+            currentState === 'FINISHED' ||
+            currentStatus === 'FT' ||
+            currentStatus === 'FINISHED' ||
+            (resultInfo && resultInfo.includes('FT'));
+
+        if (isFinished) {
             const scores = fullData.rawData?.scores || [];
             // Prioritize score with description "FT" (Full Time), fallback to "CURRENT"
             const homeScoreObj = scores.find((s: any) => s.description === 'FT' && s.score?.participant === 'home')
@@ -113,8 +128,9 @@ export async function POST(req: NextRequest) {
             data: result,
             verification: accuracyReport,
             debug: {
-                matchState: fullData.rawData?.state?.state || fullData.rawData?.status,
+                matchState: currentState || currentStatus,
                 rawState: fullData.rawData?.state,
+                resultInfo: resultInfo,
                 scores: fullData.rawData?.scores
             }
         });

@@ -79,7 +79,7 @@
         },
         {
             "parameters": {
-                "functionCode": "// Calculate Report Metrics\nconst results = $input.all().map(item => item.json.verification);\n\nconst total = results.length;\nconst correct = results.filter(r => r.isCorrect).length;\nconst accuracy = Math.round((correct / total) * 100);\n\nreturn {\n  totalMatches: total,\n  accuracy: accuracy,\n  summary: `Backtest Report: System predicted ${correct}/${total} matches correctly (${accuracy}% accuracy).`\n};"
+                "functionCode": "// Calculate Report Metrics\nconst allItems = items || $input.all();\nconst results = allItems\n    .map(item => item.json.verification || item.verification)\n    .filter(v => v !== null && v !== undefined && typeof v === 'object' && 'isCorrect' in v);\n\nconst total = results.length;\nif (total === 0) {\n    return { summary: \"No valid simulation results available per filters.\" };\n}\n\nconst correct = results.filter(r => r.isCorrect).length;\nconst accuracy = Math.round((correct / total) * 100);\n\nreturn {\n  totalMatches: total,\n  accuracy: accuracy,\n  summary: `Backtest Raporu: Sistem ${total} maçtan ${correct} tanesini doğru tahmin etti (${accuracy}% başarı).` \n};"
             },
             "id": "generate-report",
             "name": "Generate Accuracy Report",
