@@ -4,6 +4,7 @@
 import { MatchData } from '../types';
 import { aiClient, AIMessage } from '../../ai-client';
 import { AgentResult } from '../orchestrator';
+import { getLearningContext } from '../../ai-brain/learning-context';
 
 const MASTER_STRATEGIST_PROMPT = {
   tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
@@ -526,7 +527,7 @@ function buildAgentContext(
   language: 'tr' | 'en' | 'de'
 ): string {
   const { homeTeam, awayTeam, league } = matchData;
-  
+
   let context = `
 ═══════════════════════════════════════════════════════════════════════════════
                     MASTER STRATEGIST ANALİZİ
@@ -663,11 +664,12 @@ export async function runMasterStrategist(
 
   const systemPrompt = MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
   const context = buildAgentContext(agentResults, matchData, language);
+  const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 
   const userMessageByLang = {
-    tr: `${context}\n\nYukarıdaki agent çıktılarını analiz et ve Master Strategist olarak final kararı ver. SADECE JSON formatında döndür.`,
-    en: `${context}\n\nAnalyze the agent outputs above and make final decision as Master Strategist. Return ONLY JSON format.`,
-    de: `${context}\n\nAnalysiere die Agenten-Ausgaben oben und treffe finale Entscheidung als Master Strategist. Gib NUR JSON-Format zurück.`
+    tr: `${learningContext}\n${context}\n\nYukarıdaki agent çıktılarını analiz et ve Master Strategist olarak final kararı ver. SADECE JSON formatında döndür.`,
+    en: `${learningContext}\n${context}\n\nAnalyze the agent outputs above and make final decision as Master Strategist. Return ONLY JSON format.`,
+    de: `${learningContext}\n${context}\n\nAnalysiere die Agenten-Ausgaben oben und treffe finale Entscheidung als Master Strategist. Gib NUR JSON-Format zurück.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
@@ -746,48 +748,48 @@ function getDefaultMasterStrategist(
   const stats = agentResults.stats;
   const odds = agentResults.odds;
   const deep = agentResults.deepAnalysis;
-  
+
   // Match Result - Ağırlıklı voting (DÜZELTME: Belirsizlik durumunda X kuralı)
   // BUG FIX: odds.recommendation Over/Under içindir, matchResult için matchWinnerValue kullan!
   const mrVotes: { [key: string]: number } = {};
-  
+
   // Stats Agent matchResult (sadece 1/X/2 geçerli)
   if (stats?.matchResult && ['1', 'X', '2'].includes(stats.matchResult)) {
     mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
   }
-  
+
   // Odds Agent matchWinnerValue (home/away/draw → 1/X/2)
   // NOT: odds.recommendation Over/Under içindir, matchResult için KULLANILMAMALI!
   if (odds?.matchWinnerValue) {
     const mrFromOdds = odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X';
     mrVotes[mrFromOdds] = (mrVotes[mrFromOdds] || 0) + 35;
   }
-  
+
   // Deep Analysis matchResult (sadece 1/X/2 geçerli)
   if (deep?.matchResult?.prediction && ['1', 'X', '2'].includes(deep.matchResult.prediction)) {
     mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
   }
-  
+
   // DÜZELTME: Belirsizlik kontrolü
   const mrTotalVotes = Object.values(mrVotes).reduce((a, b) => a + b, 0);
   const mrMaxVotes = Math.max(...Object.values(mrVotes), 0);
   const mrAgreementRatio = mrTotalVotes > 0 ? mrMaxVotes / mrTotalVotes : 0;
-  
+
   // Maç sonucu tahmini - daha akıllı mantık
   let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
-  
+
   // BUG FIX: finalMR sadece 1, X, 2 olabilir - başka değer gelirse X yap
   if (!['1', 'X', '2'].includes(finalMR)) {
     console.warn(`⚠️ Invalid matchResult "${finalMR}" detected, defaulting to X`);
     finalMR = 'X';
   }
-  
+
   // DÜZELTME: Value bet varsa ve güçlüyse, onu dikkate al
   // Odds agent +15% üstü value bulmuşsa, o yönde git
   const valueAnalysis = odds?._valueAnalysis;
   const bestValueAmount = valueAnalysis?.bestValueAmount || 0;
   const bestValueDirection = valueAnalysis?.bestValue;
-  
+
   // Eğer güçlü value bet varsa (>15%) ve agent'lar tam hemfikir değilse
   if (bestValueAmount >= 15 && mrAgreementRatio < 0.60) {
     if (bestValueDirection === 'home') finalMR = '1';
@@ -798,32 +800,32 @@ function getDefaultMasterStrategist(
   else if (mrAgreementRatio < 0.45 && bestValueAmount < 10) {
     finalMR = 'X'; // Belirsizlik durumunda beraberlik
   }
-  
+
   // Güven skoru - daha konservatif (max %70)
   const mrConfidence = mrTotalVotes > 0 ? Math.round(50 + (mrAgreementRatio) * 20) : 50;
-  
+
   // Over/Under - Ağırlıklı voting
   const ouVotes: { [key: string]: number } = {};
   if (stats?.overUnder) ouVotes[stats.overUnder] = (ouVotes[stats.overUnder] || 0) + 35;
   if (odds?.recommendation && ['Over', 'Under'].includes(odds.recommendation)) ouVotes[odds.recommendation] = (ouVotes[odds.recommendation] || 0) + 30;
   if (deep?.overUnder?.prediction) ouVotes[deep.overUnder.prediction] = (ouVotes[deep.overUnder.prediction] || 0) + 35;
-  
+
   const finalOU = Object.entries(ouVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Over';
   const ouTotalVotes = Object.values(ouVotes).reduce((a, b) => a + b, 0);
   const ouMaxVotes = Math.max(...Object.values(ouVotes), 0);
   const ouConfidence = ouTotalVotes > 0 ? Math.round(55 + (ouMaxVotes / ouTotalVotes) * 25) : 55;
-  
+
   // BTTS - Ağırlıklı voting
   const bttsVotes: { [key: string]: number } = {};
   if (stats?.btts) bttsVotes[stats.btts] = (bttsVotes[stats.btts] || 0) + 35;
   if (odds?.bttsValue) bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] = (bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] || 0) + 30;
   if (deep?.btts?.prediction) bttsVotes[deep.btts.prediction] = (bttsVotes[deep.btts.prediction] || 0) + 35;
-  
+
   const finalBTTS = Object.entries(bttsVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'No';
   const bttsTotalVotes = Object.values(bttsVotes).reduce((a, b) => a + b, 0);
   const bttsMaxVotes = Math.max(...Object.values(bttsVotes), 0);
   const bttsConfidence = bttsTotalVotes > 0 ? Math.round(55 + (bttsMaxVotes / bttsTotalVotes) * 25) : 55;
-  
+
   // Conflict detection
   const conflicts: Array<{
     agents: string[];
@@ -839,7 +841,7 @@ function getDefaultMasterStrategist(
     confidence: number;
     reasoning: string;
   }> = [];
-  
+
   if (stats?.matchResult && deep?.matchResult?.prediction && stats.matchResult !== deep.matchResult.prediction) {
     conflicts.push({
       agents: ['stats', 'deepAnalysis'],
@@ -855,7 +857,7 @@ function getDefaultMasterStrategist(
       agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.matchResult, odds?.recommendation, deep?.matchResult?.prediction][i] === finalMR),
       prediction: finalMR,
       confidence: mrConfidence,
-      reasoning: `${Math.round(mrMaxVotes/mrTotalVotes*100)}% ağırlıklı oy`
+      reasoning: `${Math.round(mrMaxVotes / mrTotalVotes * 100)}% ağırlıklı oy`
     });
   }
   if (ouMaxVotes >= ouTotalVotes * 0.6 && ouTotalVotes > 0) {
@@ -864,14 +866,14 @@ function getDefaultMasterStrategist(
       agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.overUnder, odds?.recommendation, deep?.overUnder?.prediction][i] === finalOU),
       prediction: finalOU,
       confidence: ouConfidence,
-      reasoning: `${Math.round(ouMaxVotes/ouTotalVotes*100)}% ağırlıklı oy`
+      reasoning: `${Math.round(ouMaxVotes / ouTotalVotes * 100)}% ağırlıklı oy`
     });
   }
-  
+
   // Best bet selection
   type ValueType = 'low' | 'medium' | 'high';
   type StakeType = 'low' | 'medium' | 'high' | 'low-medium' | 'medium-high';
-  
+
   const bestBets: Array<{
     rank: number;
     market: string;
@@ -881,7 +883,7 @@ function getDefaultMasterStrategist(
     reasoning: string;
     recommendedStake: StakeType;
   }> = [];
-  
+
   // Value bet varsa öncelikli
   if (odds?.valueBets && odds.valueBets.length > 0) {
     const valueBet = odds.valueBets[0];
@@ -898,7 +900,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // Eğer value bet yoksa veya eksikse, konsensüs bazlı best bet
   if (bestBets.length === 0) {
     const highestConf = Math.max(mrConfidence, ouConfidence, bttsConfidence);
@@ -934,7 +936,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
   const agentCount = [stats, odds, deep].filter(Boolean).length;
 
@@ -966,7 +968,7 @@ function getDefaultMasterStrategist(
 
   // Surprise pick bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
   let surprisePick: MasterStrategistResult['final']['surprise_pick'] = null;
-  
+
   // Tüm yüksek oranlı seçenekleri kontrol et
   const surpriseCandidates: Array<{
     market: string;
@@ -974,7 +976,7 @@ function getDefaultMasterStrategist(
     model_prob: number;
     market_odds: number;
   }> = [];
-  
+
   // 1. Draw kontrolü
   if (drawProb >= 0.25) {
     const drawMarketOdds = parseFloat(marketOddsX);
@@ -987,7 +989,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // 2. Home Win kontrolü (eğer underdog ise)
   if (homeWinProb >= 0.25 && finalMR !== '1') {
     const homeMarketOdds = parseFloat(marketOdds1);
@@ -1000,7 +1002,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // 3. Away Win kontrolü (eğer underdog ise)
   if (awayWinProb >= 0.25 && finalMR !== '2') {
     const awayMarketOdds = parseFloat(marketOdds2);
@@ -1013,7 +1015,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // 4. Under 2.5 kontrolü (eğer Over beklentisi varsa)
   if (under25Prob >= 0.25 && finalOU === 'Over') {
     const underMarketOdds = parseFloat(marketOddsUnder);
@@ -1026,7 +1028,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // 5. BTTS No kontrolü (eğer Yes beklentisi varsa)
   if (bttsNoProb >= 0.25 && finalBTTS === 'Yes') {
     const bttsNoMarketOdds = odds?.realValueChecks?.btts?.marketOdds || 1.8;
@@ -1039,7 +1041,7 @@ function getDefaultMasterStrategist(
       });
     }
   }
-  
+
   // En yüksek edge'e sahip adayı seç
   if (surpriseCandidates.length > 0) {
     const bestSurprise = surpriseCandidates
@@ -1050,7 +1052,7 @@ function getDefaultMasterStrategist(
       })
       .filter(c => c.edge >= 0.05) // Edge >= +5% olmalı
       .sort((a, b) => b.edge - a.edge)[0]; // En yüksek edge
-    
+
     if (bestSurprise) {
       surprisePick = {
         market: bestSurprise.market,
@@ -1089,7 +1091,7 @@ function getDefaultMasterStrategist(
 
   return {
     agent: 'MASTER_STRATEGIST',
-    main_take: language === 'tr' 
+    main_take: language === 'tr'
       ? `${agentCount} agent analizi: ${finalMR === '1' ? 'Ev sahibi' : finalMR === '2' ? 'Deplasman' : 'Beraberlik'} favori (${mrConfidence}% güven)`
       : `${agentCount} agent analysis: ${finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw'} favorite (${mrConfidence}% confidence)`,
     signals: [
@@ -1111,7 +1113,7 @@ function getDefaultMasterStrategist(
       selection: bet.selection,
       model_prob: bet.confidence / 100,
       fair_odds: 1 / (bet.confidence / 100),
-      market_odds: bet.market === 'Match Result' 
+      market_odds: bet.market === 'Match Result'
         ? (bet.selection === 'Home' ? parseFloat(marketOdds1) : bet.selection === 'Away' ? parseFloat(marketOdds2) : parseFloat(marketOddsX))
         : parseFloat(marketOddsOver),
       edge: 0.1, // Fallback edge
@@ -1139,8 +1141,8 @@ function getDefaultMasterStrategist(
       surprise_pick: surprisePick,
       hedge: hedge,
       contradictions_found: conflicts.map(c => `${c.agents.join(' vs ')}: ${c.description}`),
-      why_this_is_surprise: surprisePick 
-        ? `Piyasa oranı ${surprisePick.market_odds} (implied ${Math.round(1/surprisePick.market_odds*100)}%), model olasılığı ${Math.round(surprisePick.model_prob*100)}%, edge +${Math.round(surprisePick.edge*100)}%`
+      why_this_is_surprise: surprisePick
+        ? `Piyasa oranı ${surprisePick.market_odds} (implied ${Math.round(1 / surprisePick.market_odds * 100)}%), model olasılığı ${Math.round(surprisePick.model_prob * 100)}%, edge +${Math.round(surprisePick.edge * 100)}%`
         : null
     },
     // Backward compatibility
@@ -1157,8 +1159,8 @@ function getDefaultMasterStrategist(
     },
     bestBets,
     overallConfidence,
-    recommendation: language === 'tr' 
-      ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}` 
+    recommendation: language === 'tr'
+      ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}`
       : `Strong signals: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}`
   };
 }
