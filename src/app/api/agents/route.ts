@@ -616,10 +616,24 @@ export async function POST(request: NextRequest) {
         // ✅ NEW: Additional market predictions
         newMarkets: newMarkets,
         
-        // Arrays are OK
-        recommendedBets: strategyResult.recommendedBets || [],
+        // Arrays are OK - 🆕 Ensure confidence is always a valid number
+        recommendedBets: (strategyResult.recommendedBets || []).map((bet: any) => ({
+          ...bet,
+          confidence: typeof bet.confidence === 'number' ? Math.max(50, Math.min(95, bet.confidence)) : 60
+        })),
         avoidBets: strategyResult.avoidBets || [],
         specialAlerts: strategyResult.specialAlerts || [],
+
+        // 🆕 DEBUG: Log recommendedBets to confirm confidence is present
+        ...(() => {
+          if (strategyResult.recommendedBets && strategyResult.recommendedBets.length > 0) {
+            console.log('📊 DEBUG: recommendedBets confidence check:');
+            strategyResult.recommendedBets.forEach((bet: any, idx: number) => {
+              console.log(`   Bet ${idx + 1}: ${bet.type} - confidence=${bet.confidence}`);
+            });
+          }
+          return {};
+        })(),
         
         // Strings are OK
         agentSummary: strategyResult.agentSummary || '',
