@@ -506,6 +506,12 @@ export async function POST(request: NextRequest) {
         const mmStart = Date.now();
         multiModelResult = await runMultiModelAnalysis(matchData);
         console.log(`   ✅ Multi-Model completed in ${Date.now() - mmStart}ms`);
+
+        // 🆕 CHECK FOR FALLBACK PREDICTIONS (no model responses)
+        if (multiModelResult?.conflictingDecisions?.includes('No model responses')) {
+          console.warn('   ⚠️ WARNING: Multi-Model returned FALLBACK prediction (no AI models responded)');
+          console.warn('   📉 Prediction quality is LOW - based on statistics only');
+        }
       } catch (mmError) {
         console.error('⚠️ Multi-Model Analysis failed:', mmError);
       }
@@ -541,6 +547,8 @@ export async function POST(request: NextRequest) {
           stats: result.reports?.stats,
           odds: result.reports?.odds,
           sentiment: result.reports?.sentiment,
+          masterStrategist: result.reports?.masterStrategist,  // 🆕 Pass Master Strategist results
+          geniusAnalyst: result.reports?.geniusAnalyst,        // 🆕 Pass Genius Analyst results
         },
         multiModelResult,
         { overUnder: overUnderCalc },

@@ -284,14 +284,43 @@ function assessDataQuality(matchData: CompleteMatchData): {
   const h2hMatches = matchData.h2h?.totalMatches || 0;
   const hasOdds = !!(matchData.odds?.matchWinner?.home && matchData.odds.matchWinner.home > 1);
   const hasOddsHistory = !!(matchData.oddsHistory?.homeWin?.opening);
-  
+
+  // 🆕 IMPROVED SCORING - More gradual, less permissive
   let score = 0;
-  score += Math.min(25, homeFormMatches * 5);
-  score += Math.min(25, awayFormMatches * 5);
-  score += Math.min(20, h2hMatches * 4);
+
+  // Home form scoring (max 25): 10+ matches = full score
+  if (homeFormMatches >= 10) score += 25;
+  else if (homeFormMatches >= 7) score += 20;
+  else if (homeFormMatches >= 5) score += 15;
+  else if (homeFormMatches >= 3) score += 10;
+  else score += homeFormMatches * 3; // 1-2 matches
+
+  // Away form scoring (max 25): 10+ matches = full score
+  if (awayFormMatches >= 10) score += 25;
+  else if (awayFormMatches >= 7) score += 20;
+  else if (awayFormMatches >= 5) score += 15;
+  else if (awayFormMatches >= 3) score += 10;
+  else score += awayFormMatches * 3; // 1-2 matches
+
+  // H2H scoring (max 20): 5+ matches = full score
+  if (h2hMatches >= 5) score += 20;
+  else if (h2hMatches >= 3) score += 15;
+  else score += h2hMatches * 5; // 1-2 matches
+
+  // Odds data (max 30 total)
   score += hasOdds ? 15 : 0;
   score += hasOddsHistory ? 15 : 0;
-  
+
+  // 🆕 PENALTY for missing critical data
+  const detailedStats = (matchData as any).detailedStats;
+  const hasVenueStats = !!(matchData.homeForm as any)?.venueAvgScored || !!(matchData.awayForm as any)?.venueAvgScored;
+  const hasInjuries = !!(matchData as any).injuries?.home || !!(matchData as any).injuries?.away;
+
+  // Small bonus for having detailed stats
+  if (detailedStats?.home && detailedStats?.away) score += 5;
+  if (hasVenueStats) score += 3;
+  if (hasInjuries) score += 2;
+
   return {
     homeFormMatches,
     awayFormMatches,

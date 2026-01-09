@@ -159,7 +159,9 @@ function calculateComprehensiveConsensus(
   sentiment: any,
   multiModel: any,
   professionalCalc: any,
-  language: 'tr' | 'en' | 'de'
+  language: 'tr' | 'en' | 'de',
+  masterStrategist?: any,  // 🆕 Master Strategist results
+  geniusAnalyst?: any      // 🆕 Genius Analyst results
 ): ComprehensiveConsensus {
   
   // ═══════════════════════════════════════════════════════════════
@@ -221,7 +223,31 @@ function calculateComprehensiveConsensus(
       }
     }
   }
-  
+
+  // 🆕 8. Master Strategist
+  if (masterStrategist?.predictions?.overUnder) {
+    const msOU = masterStrategist.predictions.overUnder.prediction?.toLowerCase() || '';
+    if (msOU) {
+      overUnderVotes.push({
+        agent: 'MasterStrategist',
+        prediction: msOU.includes('over') ? 'Over' : 'Under',
+        confidence: masterStrategist.predictions.overUnder.confidence || 65
+      });
+    }
+  }
+
+  // 🆕 9. Genius Analyst
+  if (geniusAnalyst?.predictions?.overUnder) {
+    const gaOU = geniusAnalyst.predictions.overUnder.prediction?.toLowerCase() || '';
+    if (gaOU) {
+      overUnderVotes.push({
+        agent: 'GeniusAnalyst',
+        prediction: gaOU.includes('over') ? 'Over' : 'Under',
+        confidence: geniusAnalyst.predictions.overUnder.confidence || 60
+      });
+    }
+  }
+
   // Calculate Over/Under winner
   const overCount = overUnderVotes.filter(v => v.prediction === 'Over').length;
   const underCount = overUnderVotes.filter(v => v.prediction === 'Under').length;
@@ -284,7 +310,34 @@ function calculateComprehensiveConsensus(
       }
     }
   }
-  
+
+  // 🆕 Master Strategist
+  if (masterStrategist?.predictions?.matchResult) {
+    const msMR = masterStrategist.predictions.matchResult.prediction?.toUpperCase() || '';
+    if (msMR && ['1', 'X', '2'].includes(msMR)) {
+      matchResultVotes.push({
+        agent: 'MasterStrategist',
+        prediction: msMR,
+        confidence: masterStrategist.predictions.matchResult.confidence || 65
+      });
+    }
+  }
+
+  // 🆕 Genius Analyst
+  if (geniusAnalyst?.predictions?.matchResult) {
+    const gaMR = geniusAnalyst.predictions.matchResult.prediction?.toUpperCase() || '';
+    if (gaMR) {
+      let p = 'X';
+      if (gaMR.includes('1') || gaMR.includes('HOME')) p = '1';
+      else if (gaMR.includes('2') || gaMR.includes('AWAY')) p = '2';
+      matchResultVotes.push({
+        agent: 'GeniusAnalyst',
+        prediction: p,
+        confidence: geniusAnalyst.predictions.matchResult.confidence || 60
+      });
+    }
+  }
+
   // Calculate Match Result winner
   const mrCounts: Record<string, number> = { '1': 0, 'X': 0, '2': 0 };
   matchResultVotes.forEach(v => mrCounts[v.prediction]++);
@@ -340,7 +393,31 @@ function calculateComprehensiveConsensus(
       }
     }
   }
-  
+
+  // 🆕 Master Strategist
+  if (masterStrategist?.predictions?.btts) {
+    const msBtts = masterStrategist.predictions.btts.prediction?.toLowerCase() || '';
+    if (msBtts) {
+      bttsVotes.push({
+        agent: 'MasterStrategist',
+        prediction: msBtts.includes('yes') || msBtts.includes('var') ? 'Yes' : 'No',
+        confidence: masterStrategist.predictions.btts.confidence || 65
+      });
+    }
+  }
+
+  // 🆕 Genius Analyst
+  if (geniusAnalyst?.predictions?.btts) {
+    const gaBtts = geniusAnalyst.predictions.btts.prediction?.toLowerCase() || '';
+    if (gaBtts) {
+      bttsVotes.push({
+        agent: 'GeniusAnalyst',
+        prediction: gaBtts.includes('yes') || gaBtts.includes('var') ? 'Yes' : 'No',
+        confidence: geniusAnalyst.predictions.btts.confidence || 60
+      });
+    }
+  }
+
   // Calculate BTTS winner
   const bttsYes = bttsVotes.filter(v => v.prediction === 'Yes').length;
   const bttsNo = bttsVotes.filter(v => v.prediction === 'No').length;
@@ -777,11 +854,13 @@ function calculateStakeSuggestion(
 
 export async function runStrategyAgent(
   matchData: MatchData,
-  previousReports: { 
-    deepAnalysis?: any; 
-    stats?: any; 
-    odds?: any; 
+  previousReports: {
+    deepAnalysis?: any;
+    stats?: any;
+    odds?: any;
     sentiment?: any;
+    masterStrategist?: any;  // 🆕 Master Strategist results
+    geniusAnalyst?: any;     // 🆕 Genius Analyst results
   },
   multiModel?: any,
   professionalCalc?: any,
@@ -789,12 +868,13 @@ export async function runStrategyAgent(
 ): Promise<any> {
   console.log('\n🧠 STRATEGY AGENT v2.0 - Comprehensive Analysis');
   console.log('═'.repeat(50));
-  
-  const { deepAnalysis, stats, odds, sentiment } = previousReports;
+
+  const { deepAnalysis, stats, odds, sentiment, masterStrategist, geniusAnalyst } = previousReports;
   
   // Calculate comprehensive consensus
   const consensus = calculateComprehensiveConsensus(
-    deepAnalysis, stats, odds, sentiment, multiModel, professionalCalc, language
+    deepAnalysis, stats, odds, sentiment, multiModel, professionalCalc, language,
+    masterStrategist, geniusAnalyst  // 🆕 Include Master Strategist and Genius Analyst in consensus
   );
   
   console.log(`   📊 Over/Under: ${consensus.overUnder.prediction} (${consensus.overUnder.totalAgree}/${consensus.overUnder.totalSources} agree)`);
