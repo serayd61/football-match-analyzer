@@ -1,0 +1,172 @@
+{
+    "name": "Backtest Automation Pipeline (Time-Travel)",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "weeksInterval": 1
+                        }
+                    ]
+                }
+            },
+            "id": "weekly-schedule",
+            "name": "Weekly Trigger (Mon 4AM)",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                220,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Calculate last week's date range\nconst now = new Date();\nconst lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n\n// Format as YYYY-MM-DD\nconst formatDate = (date) => date.toISOString().split('T')[0];\n\nreturn {\n  startDate: formatDate(lastWeek),\n  endDate: formatDate(now)\n};"
+            },
+            "id": "date-calculator",
+            "name": "Calculate Date Range",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT fixture_id, match_date FROM unified_analysis WHERE match_date BETWEEN $1 AND $2 AND is_settled = true LIMIT 10;",
+                "additionalFields": {
+                    "queryParams": "={{ $json.startDate }},{{ $json.endDate }}"
+                }
+            },
+            "id": "fetch-finished-matches",
+            "name": "Fetch Finished Matches",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.3,
+            "position": [
+                660,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "YOUR_SUPABASE_CREDENTIALS_ID",
+                    "name": "Supabase DB"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://footballanalytics.pro/api/simulation/run",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ fixtureId: $json.fixture_id, saveToLearning: true }) }}",
+                "options": {
+                    "timeout": 300000
+                }
+            },
+            "id": "run-simulation",
+            "name": "Run Simulation (Time-Travel)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                880,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Calculate Report Metrics\nconst results = $input.all().map(item => item.json.verification);\n\nconst total = results.length;\nconst correct = results.filter(r => r.isCorrect).length;\nconst accuracy = Math.round((correct / total) * 100);\n\nreturn {\n  totalMatches: total,\n  accuracy: accuracy,\n  summary: `Backtest Report: System predicted ${correct}/${total} matches correctly (${accuracy}% accuracy).`\n};"
+            },
+            "id": "generate-report",
+            "name": "Generate Accuracy Report",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                1100,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_TELEGRAM_CHAT_ID",
+                "text": "={{ $json.summary }}",
+                "additionalFields": {}
+            },
+            "id": "notify-telegram",
+            "name": "Notify Admin",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.1,
+            "position": [
+                1320,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_CREDENTIALS_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Weekly Trigger (Mon 4AM)": {
+            "main": [
+                [
+                    {
+                        "node": "Calculate Date Range",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Calculate Date Range": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Finished Matches",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Finished Matches": {
+            "main": [
+                [
+                    {
+                        "node": "Run Simulation (Time-Travel)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Run Simulation (Time-Travel)": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Accuracy Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Accuracy Report": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Admin",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
