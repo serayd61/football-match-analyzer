@@ -86,6 +86,8 @@ export interface AgentAnalysisResult {
   };
 
   agreement: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  overallConfidence: number;
   dataQuality: string;
   processingTime: number;
   analyzedAt: string;
