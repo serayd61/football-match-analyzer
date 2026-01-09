@@ -55,22 +55,27 @@ export async function POST(req: NextRequest) {
         const matchState = fullData.rawData?.state?.state || fullData.rawData?.status;
         if (matchState === 'FT' || matchState === 'AET' || matchState === 'FT_PEN' || matchState === 'FINISHED') {
             const scores = fullData.rawData?.scores || [];
-            // Try to find FT score, otherwise fall back to CURRENT or defaults
+            // Prioritize score with description "FT" (Full Time), fallback to "CURRENT"
             const homeScoreObj = scores.find((s: any) => s.description === 'FT' && s.score?.participant === 'home')
                 || scores.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home');
             const awayScoreObj = scores.find((s: any) => s.description === 'FT' && s.score?.participant === 'away')
                 || scores.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away');
 
-            const homeGoals = homeScoreObj?.score?.goals || 0;
-            const awayGoals = awayScoreObj?.score?.goals || 0;
+            const homeGoals = homeScoreObj?.score?.goals ?? 0;
+            const awayGoals = awayScoreObj?.score?.goals ?? 0;
 
             // Calculate Verification
-            const prediction = result.matchResult?.prediction; // 1, X, 2
+            const prediction = result.matchResult?.prediction; // 1, X, 2 (or matchResult: 2 for away win)
+            // Normalize prediction for comparison
+            let normalizedPred = prediction?.toLowerCase() === 'away' ? '2' : prediction?.toLowerCase() === 'home' ? '1' : prediction;
+            if (normalizedPred === '1' || normalizedPred === 'home') normalizedPred = '1';
+            if (normalizedPred === '2' || normalizedPred === 'away') normalizedPred = '2';
+
             let actual = 'X';
             if (homeGoals > awayGoals) actual = '1';
             else if (awayGoals > homeGoals) actual = '2';
 
-            const isCorrect = prediction === actual;
+            const isCorrect = normalizedPred === actual;
 
             accuracyReport = {
                 fixtureId,
