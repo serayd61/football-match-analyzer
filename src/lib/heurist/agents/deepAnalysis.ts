@@ -923,6 +923,7 @@ ${probabilityContext}
     if (hasDeepSeek) {
       console.log('   🟣 [1/4] Trying DeepSeek for deep analysis...');
       try {
+        const deepseekStart = Date.now();
         response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
@@ -933,14 +934,19 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 800, // JSON tamamlanması için yeterli
-          timeout: 12000 // 12 saniye (performans için düşürüldü)
+          timeout: 20000 // 🆕 20 saniye (12 saniye yetersiz - artırıldı)
         });
-        
+
         if (response) {
-          console.log('   ✅ DeepSeek + MCP responded successfully');
+          const elapsed = Date.now() - deepseekStart;
+          console.log(`   ✅ DeepSeek responded successfully in ${elapsed}ms`);
         }
       } catch (deepseekError: any) {
-        console.log(`   ⚠️ DeepSeek failed: ${deepseekError?.message || 'Unknown error'}`);
+        const elapsed = Date.now() - deepseekStart;
+        console.log(`   ⚠️ DeepSeek failed after ${elapsed}ms: ${deepseekError?.message || 'Unknown error'}`);
+        if (deepseekError?.message?.includes('timeout')) {
+          console.log('   ⏱️ DeepSeek timeout - falling back to next AI model...');
+        }
       }
     } else {
       console.log('   ⚠️ DeepSeek API key not available, trying Claude...');
@@ -952,6 +958,7 @@ ${probabilityContext}
       if (hasOpenAI) {
         console.log('   🟢 [2/4] Trying OpenAI GPT-4 Turbo for deep analysis...');
         try {
+          const openaiStart = Date.now();
           response = await aiClient.chat([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage }
@@ -962,14 +969,16 @@ ${probabilityContext}
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
             maxTokens: 600,
-            timeout: 12000 // 12 saniye (performans için düşürüldü)
+            timeout: 18000 // 🆕 18 saniye (12 saniye yetersiz - artırıldı)
           });
-          
+
           if (response) {
-            console.log('   ✅ OpenAI GPT-4 responded successfully');
+            const elapsed = Date.now() - openaiStart;
+            console.log(`   ✅ OpenAI GPT-4 responded successfully in ${elapsed}ms`);
           }
         } catch (openaiError: any) {
-          console.log(`   ⚠️ OpenAI failed: ${openaiError?.message || 'Unknown error'}`);
+          const elapsed = Date.now() - openaiStart;
+          console.log(`   ⚠️ OpenAI failed after ${elapsed}ms: ${openaiError?.message || 'Unknown error'}`);
         }
       }
     }
@@ -978,6 +987,7 @@ ${probabilityContext}
     if (!response) {
       console.log('   🔵 [3/4] Trying Claude for deep analysis...');
       try {
+        const claudeStart = Date.now();
         response = await aiClient.chat([
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -988,22 +998,25 @@ ${probabilityContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 600,
-          timeout: 12000 // 12 saniye (performans için düşürüldü)
+          timeout: 18000 // 🆕 18 saniye (12 saniye yetersiz - artırıldı)
         });
-        
+
         if (response) {
-          console.log('   ✅ Claude responded successfully');
+          const elapsed = Date.now() - claudeStart;
+          console.log(`   ✅ Claude responded successfully in ${elapsed}ms`);
         }
       } catch (claudeError: any) {
-        console.log(`   ⚠️ Claude failed: ${claudeError?.message || 'Unknown error'}`);
+        const elapsed = Date.now() - claudeStart;
+        console.log(`   ⚠️ Claude failed after ${elapsed}ms: ${claudeError?.message || 'Unknown error'}`);
       }
     }
 
     // 5️⃣ HER ÜÇÜ DE BAŞARISIZ OLURSA AKILLI FALLBACK
     if (!response) {
-      console.log('   🟠 [4/4] Using intelligent fallback analysis...');
+      console.log('   🟠 [4/4] All AI models failed - using intelligent fallback analysis...');
+      console.log('   ⚠️ Fallback uses statistical calculations instead of AI predictions');
       const fallbackResult = getDefaultDeepAnalysis(matchData, language);
-      console.log(`   ✅ Fallback generated: ${fallbackResult.matchResult?.prediction} (${fallbackResult.matchResult?.confidence}%)`);
+      console.log(`   ✅ Fallback generated: ${fallbackResult.matchResult?.prediction} (${fallbackResult.matchResult?.confidence}%) | Over/Under: ${fallbackResult.overUnder?.prediction}`);
       return fallbackResult;
     }
     

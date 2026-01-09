@@ -917,23 +917,24 @@ export async function runOrchestrator(
     
     // ⚡ PERFORMANCE: Genius Analyst geçici olarak devre dışı (timeout sorunları)
     // TODO: Genius Analyst'ı ayrı bir endpoint'te çalıştır
+    // 🆕 Helper function: Timeout wrapper for agents
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, agentName: string): Promise<T | null> => {
+      return Promise.race([
+        promise,
+        new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error(`${agentName} timeout after ${timeoutMs}ms`)), timeoutMs)
+        )
+      ]).catch(err => {
+        console.error(`❌ ${agentName} failed:`, err?.message || err);
+        return null;
+      });
+    };
+
     const [statsResult, oddsResult, sentimentResult, deepAnalysisResult] = await Promise.all([
-      runStatsAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('❌ Stats agent failed:', err?.message || err);
-        return null;
-      }),
-      runOddsAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('❌ Odds agent failed:', err?.message || err);
-        return null;
-      }),
-      runSentimentAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('❌ Sentiment agent failed:', err?.message || err);
-        return null;
-      }),
-      runDeepAnalysisAgent(matchData as unknown as MatchData, language).catch(err => {
-        console.error('❌ Deep Analysis agent failed:', err?.message || err);
-        return null;
-      }),
+      withTimeout(runStatsAgent(matchData as unknown as MatchData, language), 15000, 'Stats agent'),
+      withTimeout(runOddsAgent(matchData as unknown as MatchData, language), 20000, 'Odds agent'),
+      withTimeout(runSentimentAgent(matchData as unknown as MatchData, language), 25000, 'Sentiment agent'),
+      withTimeout(runDeepAnalysisAgent(matchData as unknown as MatchData, language), 35000, 'Deep Analysis agent'), // 🆕 35s max timeout
     ]);
     
     // Genius Analyst şimdilik null (performans optimizasyonu)
