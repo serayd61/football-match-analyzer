@@ -253,7 +253,7 @@ function calculateComprehensiveConsensus(
   const underCount = overUnderVotes.filter(v => v.prediction === 'Under').length;
   const ouWinner = overCount >= underCount ? 'Over' : 'Under';
   const ouAgree = Math.max(overCount, underCount);
-  const ouAvgConf = overUnderVotes.length > 0 
+  const ouAvgConf = overUnderVotes.length > 0 && ouAgree > 0
     ? Math.round(overUnderVotes.filter(v => v.prediction === ouWinner).reduce((a, b) => a + b.confidence, 0) / ouAgree)
     : 55;
   
@@ -343,7 +343,7 @@ function calculateComprehensiveConsensus(
   matchResultVotes.forEach(v => mrCounts[v.prediction]++);
   const mrWinner = Object.entries(mrCounts).sort((a, b) => b[1] - a[1])[0][0];
   const mrAgree = mrCounts[mrWinner];
-  const mrAvgConf = matchResultVotes.length > 0
+  const mrAvgConf = matchResultVotes.length > 0 && mrAgree > 0
     ? Math.round(matchResultVotes.filter(v => v.prediction === mrWinner).reduce((a, b) => a + b.confidence, 0) / mrAgree)
     : 50;
   
@@ -423,7 +423,7 @@ function calculateComprehensiveConsensus(
   const bttsNo = bttsVotes.filter(v => v.prediction === 'No').length;
   const bttsWinner = bttsYes >= bttsNo ? 'Yes' : 'No';
   const bttsAgree = Math.max(bttsYes, bttsNo);
-  const bttsAvgConf = bttsVotes.length > 0
+  const bttsAvgConf = bttsVotes.length > 0 && bttsAgree > 0
     ? Math.round(bttsVotes.filter(v => v.prediction === bttsWinner).reduce((a, b) => a + b.confidence, 0) / bttsAgree)
     : 55;
   
@@ -461,11 +461,19 @@ function calculateComprehensiveConsensus(
   const t = reasoningTemplates[language];
   
   const generateReasoning = (
-    agree: number, 
-    total: number, 
+    agree: number,
+    total: number,
     votes: { agent: string; prediction: string; confidence: number }[],
     winner: string
   ): string => {
+    if (total === 0 || agree === 0) {
+      const noDataText = language === 'tr'
+        ? '⚠️ Veri yok - agentler zaman aşımına uğradı'
+        : language === 'de'
+        ? '⚠️ Keine Daten - Agenten-Timeout'
+        : '⚠️ No data - agents timed out';
+      return noDataText;
+    }
     const supporters = votes.filter(v => v.prediction === winner).map(v => v.agent);
     if (agree >= 4) return t.strong(agree, total, supporters);
     if (agree >= 3) return t.medium(agree, total, supporters);
