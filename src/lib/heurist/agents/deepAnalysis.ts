@@ -922,8 +922,8 @@ ${probabilityContext}
     // 1️⃣ ÖNCE DEEPSEEK DENE (MCP ile daha zengin veri)
     if (hasDeepSeek) {
       console.log('   🟣 [1/4] Trying DeepSeek for deep analysis...');
+      const deepseekStart = Date.now();
       try {
-        const deepseekStart = Date.now();
         response = await aiClient.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
@@ -957,8 +957,8 @@ ${probabilityContext}
       const hasOpenAI = !!process.env.OPENAI_API_KEY;
       if (hasOpenAI) {
         console.log('   🟢 [2/4] Trying OpenAI GPT-4 Turbo for deep analysis...');
+        const openaiStart = Date.now();
         try {
-          const openaiStart = Date.now();
           response = await aiClient.chat([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage }
@@ -986,8 +986,8 @@ ${probabilityContext}
     // 3️⃣ OPENAI BAŞARISIZ OLURSA CLAUDE DENE
     if (!response) {
       console.log('   🔵 [3/4] Trying Claude for deep analysis...');
+      const claudeStart = Date.now();
       try {
-        const claudeStart = Date.now();
         response = await aiClient.chat([
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
