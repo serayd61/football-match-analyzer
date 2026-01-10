@@ -6,6 +6,7 @@
 import { runAgentAnalysis, AgentAnalysisResult } from '../agent-analyzer';
 import { runSmartAnalysis, SmartAnalysisResult } from '../smart-analyzer';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getLeagueAccuracyStats } from '../performance';
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
@@ -77,6 +78,12 @@ export interface UnifiedConsensusResult {
     agreement: number; // 0-100, sistemlerin ne kadar hemfikir olduğu
     riskLevel: 'low' | 'medium' | 'high';
     dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+    expertAgents?: string[]; // IDs of agents with accuracy > 65% in this league
+    conflicts?: Array<{
+      field: string;
+      description: string;
+      resolution: string;
+    }>;
   };
 
   // Kaynak analizleri (detay için)
@@ -107,7 +114,8 @@ export interface UnifiedConsensusResult {
  * Unified Consensus System - Tüm sistemleri birleştirir
  */
 export async function runUnifiedConsensus(
-  input: UnifiedAnalysisInput
+  input: UnifiedAnalysisInput,
+  onProgress?: (data: { stage: string; message: string; data?: any }) => void
 ): Promise<UnifiedConsensusResult> {
   const startTime = Date.now();
   console.log('\n' + '═'.repeat(70));
@@ -122,12 +130,14 @@ export async function runUnifiedConsensus(
     let agentResult: AgentAnalysisResult | null = null;
     const lang = input.lang || 'en';
     try {
+      if (onProgress) onProgress({ stage: 'agents', message: 'Agentlar analiz için hazırlanıyor...' });
       console.log('\n🤖 Running Agent Analysis...');
       agentResult = await runAgentAnalysis(
         input.fixtureId,
         input.homeTeamId,
         input.awayTeamId,
-        lang
+        lang,
+        onProgress
       );
       if (agentResult) {
         systemsUsed.push('agents');
@@ -140,6 +150,7 @@ export async function runUnifiedConsensus(
     // 2. Smart Analysis çalıştır (yedek/ek sistem)
     let smartResult: SmartAnalysisResult | null = null;
     try {
+      if (onProgress) onProgress({ stage: 'smart', message: 'Smart-Analyzer veri kontrollerini yapıyor...' });
       console.log('\n📊 Running Smart Analysis...');
       smartResult = await runSmartAnalysis({
         fixtureId: input.fixtureId,
@@ -158,11 +169,21 @@ export async function runUnifiedConsensus(
       console.error('❌ Smart Analysis failed:', err);
     }
 
-    // 3. Konsensüs oluştur
-    console.log('\n🎯 Creating unified consensus...');
-    const consensus = createUnifiedConsensus(agentResult, smartResult);
+    // 3. Lig bazlı doğruluk verilerini çek
+    let leagueStats = null;
+    try {
+      leagueStats = await getLeagueAccuracyStats(input.league);
+    } catch (err) {
+      console.warn('⚠️ Could not fetch league stats for weighting (non-critical)');
+    }
+
+    // 4. Konsensüs oluştur
+    if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
+    console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
+    const consensus = createUnifiedConsensus(agentResult, smartResult, leagueStats);
 
     const processingTime = Date.now() - startTime;
+    if (onProgress) onProgress({ stage: 'complete', message: 'Analiz başarıyla tamamlandı.' });
     console.log(`\n✅ Unified Consensus complete in ${processingTime}ms`);
     console.log(`   📊 Systems used: ${systemsUsed.join(', ')}`);
     console.log(`   🎯 Overall confidence: ${consensus.systemPerformance.overallConfidence}%`);
@@ -193,8 +214,28 @@ export async function runUnifiedConsensus(
  */
 function createUnifiedConsensus(
   agentResult: AgentAnalysisResult | null,
-  smartResult: SmartAnalysisResult | null
+  smartResult: SmartAnalysisResult | null,
+  leagueStats: any[] | null = null
 ): Omit<UnifiedConsensusResult, 'sources' | 'metadata'> {
+  // Dinamik ağırlık multiplier'ları hesapla (Default: 1.0)
+  const multipliers: Record<string, number> = {
+    stats: 1.0,
+    odds: 1.0,
+    deepAnalysis: 1.0,
+    masterStrategist: 1.0,
+    devilsAdvocate: 1.0
+  };
+
+  if (leagueStats && leagueStats.length > 0) {
+    leagueStats.forEach(stat => {
+      // Eğer ajanın doğruluğu %65 üstündeyse ödüllendir, %45 altındaysa cezalandır
+      if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
+      else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
+      else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
+      else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
+    });
+    console.log(`   ⚖️ Dynamic Multipliers for ${agentResult?.agents?.stats?.league || 'league'}:`, JSON.stringify(multipliers));
+  }
 
   // Helper to normalize predictions
   const normalize = (val: any) => {
@@ -263,41 +304,56 @@ function createUnifiedConsensus(
   // Master Strategist: %40, Genius Analyst: %25, Stats Agent: %15, Deep Analysis: %10, Smart Analysis: %10
   const matchResultConsensus = calculateWeightedConsensus(
     [
-      { value: masterMR, confidence: masterMRConf, weight: 35 },
+      { value: masterMR, confidence: masterMRConf, weight: 35 * multipliers.masterStrategist },
       { value: geniusMR, confidence: geniusMRConf, weight: 20 },
-      { value: agentMR, confidence: agentMRConf, weight: 15 },
-      { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 },
+      { value: agentMR, confidence: agentMRConf, weight: 15 * multipliers.stats },
+      { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 * multipliers.deepAnalysis },
       { value: smartMR, confidence: smartMRConf, weight: 10 },
-      { value: devilsMR, confidence: devilsMRConf, weight: 10 }
+      { value: devilsMR, confidence: devilsMRConf, weight: 10 * multipliers.devilsAdvocate }
     ]
   );
 
   const overUnderConsensus = calculateWeightedConsensus(
     [
-      { value: masterOU, confidence: masterOUConf, weight: 45 },
+      { value: masterOU, confidence: masterOUConf, weight: 45 * multipliers.masterStrategist },
       { value: geniusOU, confidence: geniusOUConf, weight: 20 },
-      { value: agentOU, confidence: agentOUConf, weight: 15 },
-      { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 },
+      { value: agentOU, confidence: agentOUConf, weight: 15 * multipliers.stats },
+      { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 * multipliers.deepAnalysis },
       { value: smartOU, confidence: smartOUConf, weight: 10 }
     ]
   );
 
   const bttsConsensus = calculateWeightedConsensus(
     [
-      { value: masterBTTS, confidence: masterBTTSConf, weight: 40 },
-      { value: agentBTTS, confidence: agentBTTSConf, weight: 30 },
+      { value: masterBTTS, confidence: masterBTTSConf, weight: 40 * multipliers.masterStrategist },
+      { value: agentBTTS, confidence: agentBTTSConf, weight: 30 * multipliers.stats },
       { value: smartBTTS, confidence: smartBTTSConf, weight: 20 },
-      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 }
+      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * multipliers.deepAnalysis }
     ]
   );
 
-  // Agreement hesapla (sistemlerin ne kadar hemfikir olduğu)
+  // Agreement hesapla
   const agreement = calculateAgreement([
     { matchResult: masterMR || agentMR || smartMR },
     { matchResult: geniusMR || agentMR },
     { matchResult: agentMR },
     { matchResult: smartMR }
   ]);
+
+  // Conflict detection
+  const systemConflicts: Array<{ field: string; description: string; resolution: string }> = [];
+  const sAgent = agentResult?.agents?.stats;
+  const oAgent = agentResult?.agents?.odds;
+  if (sAgent?.matchResult && oAgent?.matchWinnerValue) {
+    const oddsMR = oAgent.matchWinnerValue === 'home' ? '1' : oAgent.matchWinnerValue === 'away' ? '2' : 'X';
+    if (sAgent.matchResult !== oddsMR) {
+      systemConflicts.push({
+        field: 'Match Result',
+        description: `Stats (${sAgent.matchResult}) vs Odds (${oddsMR})`,
+        resolution: `Ağırlıklı konsensüs ile ${matchResultConsensus.prediction} seçildi.`
+      });
+    }
+  }
 
   // Best bet belirle
   const bestBet = determineBestBet(agentResult, smartResult, matchResultConsensus, overUnderConsensus, bttsConsensus);
@@ -353,7 +409,11 @@ function createUnifiedConsensus(
       overallConfidence,
       agreement,
       riskLevel,
-      dataQuality: dataQuality as 'excellent' | 'good' | 'fair' | 'poor'
+      dataQuality: dataQuality as 'excellent' | 'good' | 'fair' | 'poor',
+      expertAgents: Object.entries(multipliers)
+        .filter(([_, mult]) => mult > 1.1)
+        .map(([name, _]) => name),
+      conflicts: systemConflicts
     }
   };
 }

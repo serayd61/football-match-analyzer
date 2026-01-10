@@ -732,13 +732,13 @@ export async function runMasterStrategist(
       console.error('❌ Master Strategist JSON parse error:', parseError);
       console.log('Raw response:', response.substring(0, 500));
       // Fallback
-      result = getDefaultMasterStrategist(agentResults, language);
+      result = getDefaultMasterStrategist(agentResults, matchData, language);
     }
 
     // Eğer AI final objesi döndürmediyse, fallback ile tamamla
     if (!result.final || !result.final.primary_pick) {
       console.warn('⚠️ AI final objesi eksik, fallback ile tamamlanıyor...');
-      const fallback = getDefaultMasterStrategist(agentResults, language);
+      const fallback = getDefaultMasterStrategist(agentResults, matchData, language);
       result.final = fallback.final;
       // Diğer eksik alanları da tamamla
       if (!result.model_probs) result.model_probs = fallback.model_probs;
@@ -759,7 +759,7 @@ export async function runMasterStrategist(
     return result;
   } catch (error: any) {
     console.error('❌ Master Strategist Agent error:', error);
-    return getDefaultMasterStrategist(agentResults, language);
+    return getDefaultMasterStrategist(agentResults, matchData, language);
   }
 }
 
@@ -771,6 +771,7 @@ function getDefaultMasterStrategist(
     deepAnalysis: any | null;
     devilsAdvocate?: any | null;
   },
+  matchData: MatchData,
   language: 'tr' | 'en' | 'de'
 ): MasterStrategistResult {
   // Ağırlıklı konsensüs hesapla
@@ -800,9 +801,10 @@ function getDefaultMasterStrategist(
     mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
   }
 
-  // Devil's Advocate matchResult (sadece 1/X/2 geçerli) - NEW
+  // Devil's Advocate matchResult (sadece 1/X/2 geçerli) - Weight increased for trap detection
   if (devils?.matchResult && ['1', 'X', '2'].includes(devils.matchResult)) {
-    mrVotes[devils.matchResult] = (mrVotes[devils.matchResult] || 0) + 15;
+    const daWeight = (devils.trapMatchIndicators && devils.trapMatchIndicators.length > 0) ? 25 : 15;
+    mrVotes[devils.matchResult] = (mrVotes[devils.matchResult] || 0) + daWeight;
   }
 
   // DÜZELTME: Belirsizlik kontrolü
@@ -813,27 +815,35 @@ function getDefaultMasterStrategist(
   // Maç sonucu tahmini - daha akıllı mantık
   let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
 
-  // BUG FIX: finalMR sadece 1, X, 2 olabilir - başka değer gelirse X yap
+  // BUG FIX: finalMR sadece 1, X, 2 olabilir
   if (!['1', 'X', '2'].includes(finalMR)) {
-    console.warn(`⚠️ Invalid matchResult "${finalMR}" detected, defaulting to X`);
     finalMR = 'X';
   }
 
+  // 🛡️ SENTINEL TRAP DETECTION (Devil's Advocate Protection)
+  const isFavoriteTrap = devils?.trapMatchIndicators && devils.trapMatchIndicators.length > 0;
+  const favoriteSide = (matchData?.odds?.matchWinner?.home || 2) < (matchData?.odds?.matchWinner?.away || 2) ? '1' : '2';
+
+  // If favorite is predicted by consensus but DA smells a trap
+  if (isFavoriteTrap && finalMR === favoriteSide && mrAgreementRatio < 0.65) {
+    console.log(`👹 Devil's Advocate detected a trap for the favorite (${favoriteSide}). Consensüs zayıf, risk artırılıyor.`);
+    // If DA also provided a contrarian prediction, consider it
+    if (devils.matchResult && devils.matchResult !== favoriteSide) {
+      finalMR = 'X'; // Default to Draw for trap matches if consensus is weak
+    }
+  }
+
   // DÜZELTME: Value bet varsa ve güçlüyse, onu dikkate al
-  // Odds agent +15% üstü value bulmuşsa, o yönde git
   const valueAnalysis = odds?._valueAnalysis;
   const bestValueAmount = valueAnalysis?.bestValueAmount || 0;
   const bestValueDirection = valueAnalysis?.bestValue;
 
-  // Eğer güçlü value bet varsa (>15%) ve agent'lar tam hemfikir değilse
-  if (bestValueAmount >= 15 && mrAgreementRatio < 0.60) {
+  if (bestValueAmount >= 20 && mrAgreementRatio < 0.70) {
     if (bestValueDirection === 'home') finalMR = '1';
     else if (bestValueDirection === 'away') finalMR = '2';
-    // Value bet X için nadiren olur, o yüzden kontrol etmiyoruz
   }
-  // Eğer hiç value yok ve konsensüs zayıfsa → X
   else if (mrAgreementRatio < 0.45 && bestValueAmount < 10) {
-    finalMR = 'X'; // Belirsizlik durumunda beraberlik
+    finalMR = 'X';
   }
 
   // Güven skoru - daha konservatif (max %70)
@@ -973,7 +983,7 @@ function getDefaultMasterStrategist(
   }
 
   const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
-  const agentCount = [stats, odds, deep].filter(Boolean).length;
+  const agentCount = [stats, odds, deep, devils].filter(Boolean).length;
 
   // Model probabilities hesapla
   const homeWinProb = finalMR === '1' ? mrConfidence / 100 : (finalMR === 'X' ? 0.25 : 0.20);

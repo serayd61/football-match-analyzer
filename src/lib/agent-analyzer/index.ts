@@ -1174,7 +1174,8 @@ export async function runAgentAnalysis(
   fixtureId: number,
   homeTeamId: number,
   awayTeamId: number,
-  lang: 'tr' | 'en' | 'de' = 'en'
+  lang: 'tr' | 'en' | 'de' = 'en',
+  onProgress?: (data: { stage: string; message: string; data?: any }) => void
 ): Promise<AgentAnalysisResult | null> {
 
   console.log(`\n🤖 ========================================`);
@@ -1185,6 +1186,7 @@ export async function runAgentAnalysis(
 
   try {
     // Step 1: Fetch full fixture data from Provider Manager (Bright Data veya Sportmonks)
+    if (onProgress) onProgress({ stage: 'data_fetching', message: 'Maç verileri toplanıyor...' });
     console.log('📊 Step 1: Fetching full match data from Provider Manager...');
 
     // Önce provider manager'dan dene (Bright Data öncelikli)
@@ -1206,8 +1208,7 @@ export async function runAgentAnalysis(
     console.log(`✅ Data loaded from ${dataSource}! Quality: ${fullData.dataQuality.score}/100`);
 
     // Step 2: Fetch detailed stats for agents
-    // Provider manager kullanıyorsak, adapter zaten bu verileri içeriyor
-    // Ama agent'lar için ayrıca detaylı stats gerekebilir
+    if (onProgress) onProgress({ stage: 'data_fetching', message: 'Detaylı takım istatistikleri ve H2H verileri çekiliyor...' });
     console.log('🔄 Step 2: Fetching detailed team stats and H2H data...');
 
     let homeTeamStats: any = null;
@@ -1296,6 +1297,7 @@ export async function runAgentAnalysis(
     }
 
     // 🆕 CLAUDE DATA COLLECTOR: Tüm agent'lardan önce en üst düzey verileri topla
+    if (onProgress) onProgress({ stage: 'data_collector', message: 'Premium veri toplayıcı (Claude) çalıştırılıyor...' });
     console.log('🔍 Claude Data Collector: Collecting premium data from Sportmonks...');
     let collectedData: CollectedData | null = null;
 
@@ -1350,23 +1352,35 @@ export async function runAgentAnalysis(
     }
 
     // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Deep Analysis (PARALEL)
-    // Tüm agent'lar aynı anda çalışır - toplam süre ~15 saniye
+    if (onProgress) onProgress({ stage: 'core_agents', message: 'Uzman agentlar (Stats, Odds, Deep Analysis) paralel analiz yapıyor...' });
     console.log('🎯 3-Agent System: Stats, Odds, Deep Analysis (PARALLEL)');
 
     const [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult] = await Promise.all([
-      withTimeout(runStatsAgent(matchData, language).catch(err => {
+      withTimeout(runStatsAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Stats Agent analizini tamamladı.' });
+        return res;
+      }).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 18000, 'Stats Agent'), // 18 saniye - AI yanıtı için artırıldı
-      withTimeout(runOddsAgent(matchData, language).catch(err => {
+      }), 18000, 'Stats Agent'),
+      withTimeout(runOddsAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Odds Agent analizini tamamladı.' });
+        return res;
+      }).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 18000, 'Odds Agent'), // 18 saniye - AI yanıtı için artırıldı
-      withTimeout(runDeepAnalysisAgent(matchData, language).catch(err => {
+      }), 18000, 'Odds Agent'),
+      withTimeout(runDeepAnalysisAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Deep Analysis Agent analizini tamamladı.' });
+        return res;
+      }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 30000, 'Deep Analysis Agent'), // 30 saniye - DeepSeek için artırıldı
-      withTimeout(runDevilsAdvocateAgent(matchData, language).catch(err => {
+      }), 30000, 'Deep Analysis Agent'),
+      withTimeout(runDevilsAdvocateAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Devil\'s Advocate Agent analizini tamamladı.' });
+        return res;
+      }).catch(err => {
         console.error('❌ Devil\'s Advocate agent failed:', err?.message || err);
         return null;
       }), 25000, 'Devil\'s Advocate Agent'),
@@ -1381,22 +1395,26 @@ export async function runAgentAnalysis(
     const geniusAnalystResult = null;
 
     // 🆕 Minimum agent başarı kontrolü - en az 1 agent başarılı olmalı
-    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult].filter(r => r !== null).length;
+    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult].filter(r => r !== null).length;
 
     if (successfulAgents < 1) {
       console.error(`❌ No agents completed. Cannot proceed.`);
       return null;
     }
 
-    console.log(`✅ Core Agents completed: ${successfulAgents}/2 successful`);
+    console.log(`✅ Core Agents completed: ${successfulAgents}/4 successful`);
     if (statsResult) {
       console.log(`   📊 Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts} | Conf: ${statsResult.confidence || statsResult.overUnderConfidence || 'N/A'}%`);
     }
     if (oddsResult) {
       console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
     }
+    if (devilsAdvocateResult) {
+      console.log(`   👹 Devil's Advocate: ${devilsAdvocateResult.matchResult || 'N/A'} | Conf: ${devilsAdvocateResult.confidence || 'N/A'}%`);
+    }
 
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
+    if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
     console.log('🧠 Step 4.1: Running Master Strategist Agent (8s timeout)...');
     let masterStrategistResult = null;
     try {
@@ -1560,11 +1578,26 @@ export async function runAgentAnalysis(
     console.log(`   ✅ Sportmonks Prediction: ${sportmonksMatchResult.prediction} (${sportmonksMatchResult.confidence}%)`);
     console.log(`   📊 Scores: Home ${sportmonksMatchResult.homeScore}p vs Away ${sportmonksMatchResult.awayScore}p`);
 
-    // Maç Sonucu Tahmini (Sportmonks verilerine göre)
+    // Maç Sonucu Tahmini - ÖNCELİK: Master Strategist Konsensüsü
+    // Eğer Master Strategist başarılıysa onun sonucunu kullan, değilse Sportmonks puan bazlı fallback yap
+    let finalPrediction = 'draw';
+    const msMR = masterStrategistResult?.finalConsensus?.matchResult?.prediction; // "1", "X", "2"
+
+    if (msMR) {
+      finalPrediction = msMR === '1' ? 'home' : msMR === '2' ? 'away' : 'draw';
+    } else {
+      // Fallback to point-based
+      finalPrediction = sportmonksMatchResult.prediction === '1' ? 'home' :
+        sportmonksMatchResult.prediction === '2' ? 'away' : 'draw';
+    }
+
+    const finalConfidence = masterStrategistResult?.confidence || sportmonksMatchResult.confidence;
+    const finalReasoning = masterStrategistResult?.main_take || sportmonksMatchResult.reasoning;
+
     const matchResult = {
-      prediction: sportmonksMatchResult.prediction === '1' ? 'home' : sportmonksMatchResult.prediction === '2' ? 'away' : 'draw',
-      confidence: sportmonksMatchResult.confidence,
-      reasoning: sportmonksMatchResult.reasoning
+      prediction: finalPrediction,
+      confidence: finalConfidence,
+      reasoning: finalReasoning
     };
 
     // Step 8: 🆕 AGENT'LARDAN EN İYİ 3 İDDA TAHMİNİ

@@ -497,3 +497,49 @@ export async function getAccuracyStats(): Promise<{ stats: AccuracyStats[]; summ
   }
 }
 
+
+export async function getLeagueAccuracyStats(league: string): Promise<AccuracyStats[] | null> {
+  try {
+    console.log(`📊 getLeagueAccuracyStats called for league: ${league}`);
+
+    const { data, error } = await getSupabase()
+      .from('analysis_performance')
+      .select('*')
+      .eq('match_settled', true)
+      .eq('league', league);
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    const total = data.length;
+    const calcAgentStats = (mrField: string, ouField: string, bttsField: string, name: string): AccuracyStats => {
+      const mrCorrect = data.filter(r => r[mrField] === true).length;
+      const ouCorrect = data.filter(r => r[ouField] === true).length;
+      const bttsCorrect = data.filter(r => r[bttsField] === true).length;
+
+      return {
+        agent: name,
+        totalMatches: total,
+        matchResultCorrect: mrCorrect,
+        matchResultAccuracy: Math.round((mrCorrect / total) * 100),
+        overUnderCorrect: ouCorrect,
+        overUnderAccuracy: Math.round((ouCorrect / total) * 100),
+        bttsCorrect: bttsCorrect,
+        bttsAccuracy: Math.round((bttsCorrect / total) * 100),
+        overallAccuracy: Math.round(((mrCorrect + ouCorrect + bttsCorrect) / (total * 3)) * 100)
+      };
+    };
+
+    return [
+      calcAgentStats('stats_agent_mr_correct', 'stats_agent_ou_correct', 'stats_agent_btts_correct', 'stats'),
+      calcAgentStats('odds_agent_mr_correct', 'odds_agent_ou_correct', 'odds_agent_btts_correct', 'odds'),
+      calcAgentStats('deep_analysis_mr_correct', 'deep_analysis_ou_correct', 'deep_analysis_btts_correct', 'deepAnalysis'),
+      calcAgentStats('master_strategist_mr_correct', 'master_strategist_ou_correct', 'master_strategist_btts_correct', 'masterStrategist'),
+      calcAgentStats('devils_advocate_mr_correct', 'devils_advocate_mr_correct', 'devils_advocate_mr_correct', 'devilsAdvocate')
+    ];
+  } catch (error) {
+    console.error(`❌ getLeagueAccuracyStats error for ${league}:`, error);
+    return null;
+  }
+}

@@ -6,6 +6,8 @@
 const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
 const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
 
+import { getCachedAnalysis, setCachedAnalysis } from '../analysisCache';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -92,6 +94,15 @@ async function fetchSportmonks(
   retries: number = 2,
   timeout: number = 15000 // 15 saniye timeout
 ): Promise<any> {
+  // L3 Cache Key - includes endpoint and params
+  const cacheKey = `${endpoint}?${new URLSearchParams(params).toString()}`;
+
+  // Check L3 Cache first
+  const cached = getCachedAnalysis(cacheKey, 'en', 'raw-sportmonks');
+  if (cached) {
+    return cached.data;
+  }
+
   const url = new URL(`${SPORTMONKS_API}${endpoint}`);
   url.searchParams.append('api_token', SPORTMONKS_KEY);
   Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
@@ -99,41 +110,44 @@ async function fetchSportmonks(
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutId: NodeJS.Timeout | null = null;
     try {
-      // Timeout için AbortController kullan
       const controller = new AbortController();
       timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const res = await fetch(url.toString(), {
-        next: { revalidate: 300 }, // Cache for 5 minutes
+        next: { revalidate: 3600 }, // Increase Next.js revalidate to 1 hour
         signal: controller.signal as any
       });
 
       if (timeoutId) clearTimeout(timeoutId);
 
       if (!res.ok) {
-        // 404 is normal for some teams/data, don't log as error
         if (res.status === 404) {
           console.log(`⚠️ Sportmonks 404 (expected for some teams): ${endpoint}`);
           return null;
         } else {
           console.error(`❌ Sportmonks API error ${res.status}: ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
           if (attempt < retries && res.status >= 500) {
-            // Server errors için retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
             continue;
           }
           return null;
         }
       }
 
-      return await res.json();
+      const data = await res.json();
+
+      // Save to L3 Cache if data is valid
+      if (data) {
+        setCachedAnalysis(cacheKey, 'en', 'raw-sportmonks', data);
+      }
+
+      return data;
     } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
 
       if (error.name === 'AbortError') {
         console.error(`⏱️ Sportmonks timeout (${timeout}ms): ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
         if (attempt < retries) {
-          // Timeout için retry
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }

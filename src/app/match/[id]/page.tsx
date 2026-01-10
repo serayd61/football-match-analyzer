@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Target } from 'lucide-react';
+import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award } from 'lucide-react';
 import { FootballBall3D } from '@/components/Football3D';
 
 // ============================================================================
@@ -16,10 +16,12 @@ export default function MatchAnalysisPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params?.id as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
+  const [progress, setProgress] = useState<Array<{ stage: string; message: string }>>([]);
 
   useEffect(() => {
     if (matchId) {
@@ -30,36 +32,99 @@ export default function MatchAnalysisPage() {
   const fetchAnalysis = async () => {
     try {
       setLoading(true);
-      // Unified analysis endpoint'inden veri çek
+      setProgress([]);
+
       const res = await fetch(`/api/unified/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fixtureId: parseInt(matchId),
-          skipCache: false
+          skipCache: false,
+          stream: true
         })
       });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setAnalysis(data.analysis);
-      } else {
-        setError(data.error || 'Analiz bulunamadı');
+
+      if (!res.body) throw new Error('Streaming not supported');
+
+      const reader = res.body.getReader();
+      const decoder = new TextEncoder(); // Aslında TextDecoder olacak ama API encoder kullanıyor, browser'da decoder lazım
+      const browserDecoder = new TextDecoder();
+
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = browserDecoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (data.stage && data.message) {
+                  setProgress(prev => [...prev, { stage: data.stage, message: data.message }]);
+                }
+
+                if (data.success && data.analysis) {
+                  setAnalysis(data.analysis);
+                  setIsCached(!!data.cached);
+                  setLoading(false);
+                }
+
+                if (data.success === false) {
+                  setError(data.error || 'Analiz başarısız');
+                  setLoading(false);
+                }
+              } catch (e) {
+                console.error('Error parsing stream chunk:', e);
+              }
+            }
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Analiz yüklenemedi');
-    } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
-          <p className="mt-4 text-white">Analiz yükleniyor...</p>
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="relative mb-8 flex justify-center">
+            <div className="absolute inset-0 bg-[#00f0ff]/20 blur-xl rounded-full scale-150 animate-pulse" />
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#00f0ff] border-t-transparent relative z-10" />
+          </div>
+          <h2 className="text-xl font-bold text-[#00f0ff] mb-2 uppercase tracking-widest">
+            {progress.length > 0 ? progress[progress.length - 1].message : 'Analiz Hazırlanıyor...'}
+          </h2>
+          <p className="text-gray-400 text-sm mb-8 italic">AI sistemleri verileri işleyip konsensüs oluşturuyor.</p>
+
+          <div className="bg-[#111] border border-[#00f0ff]/20 rounded-xl p-4 text-left h-48 overflow-y-auto custom-scrollbar">
+            <div className="space-y-3">
+              {progress.map((p, i) => (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={i}
+                  className="flex gap-3 items-start"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00f0ff] mt-1.5 shrink-0" />
+                  <p className="text-xs text-gray-300 font-mono leading-relaxed">
+                    <span className="text-[#00f0ff]/60 uppercase text-[10px] mr-2">[{p.stage}]</span>
+                    {p.message}
+                  </p>
+                </motion.div>
+              ))}
+              {progress.length === 0 && (
+                <p className="text-xs text-gray-500 italic animate-pulse">Sistemler uyandırılıyor...</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -87,9 +152,17 @@ export default function MatchAnalysisPage() {
             <ArrowLeft className="w-5 h-5" />
             <span>Dashboard</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <FootballBall3D size={30} autoRotate={true} />
-            <span className="text-white font-bold">Unified Analysis</span>
+          <div className="flex items-center gap-4">
+            {isCached && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] text-xs font-medium">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Cached</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <FootballBall3D size={30} autoRotate={true} />
+              <span className="text-white font-bold">Unified Analysis</span>
+            </div>
           </div>
         </div>
       </header>
@@ -184,21 +257,61 @@ export default function MatchAnalysisPage() {
             transition={{ delay: 0.4 }}
             className="glass-futuristic rounded-2xl p-6 mt-6 neon-border-cyan bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00f0]/10"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="w-6 h-6 text-[#00f0ff]" />
-              <h3 className="text-xl font-bold text-white">En İyi Bahis</h3>
-            </div>
-            <div className="text-2xl font-bold text-white mb-2">
-              {analysis.bestBet.market} - {analysis.bestBet.selection}
-            </div>
-            <div className="text-sm text-gray-400">
-              Güven: {analysis.bestBet.confidence}% • Value: {analysis.bestBet.value}
-            </div>
             <div className="text-xs text-gray-500 mt-2">
               {analysis.bestBet.reasoning}
             </div>
           </motion.div>
         )}
+
+        {/* System Insights (Expert Agents & Conflicts) */}
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          {/* Expert Agents */}
+          {analysis.systemPerformance?.expertAgents && analysis.systemPerformance.expertAgents.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Award className="w-5 h-5 text-yellow-400" />
+                <h3 className="font-bold text-white">Lig Uzmanı Agentlar</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {analysis.systemPerformance.expertAgents.map((agent: string) => (
+                  <span key={agent} className="px-3 py-1 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs rounded-full uppercase tracking-wider font-bold">
+                    {agent}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-3">Bu agentlar bu ligdeki yüksek tarihsel başarıları nedeniyle daha fazla ağırlığa sahiptir.</p>
+            </motion.div>
+          )}
+
+          {/* Conflict Resolution */}
+          {analysis.systemPerformance?.conflicts && analysis.systemPerformance.conflicts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass-futuristic rounded-2xl p-6 border border-red-500/20"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldAlert className="w-5 h-5 text-red-400" />
+                <h3 className="font-bold text-white">Çelişki Çözümü</h3>
+              </div>
+              <div className="space-y-3">
+                {analysis.systemPerformance.conflicts.map((conflict: any, idx: number) => (
+                  <div key={idx} className="bg-red-500/5 rounded-lg p-3 border border-red-500/10">
+                    <p className="text-xs font-bold text-red-400 uppercase">{conflict.field}</p>
+                    <p className="text-sm text-gray-300 mt-1">{conflict.description}</p>
+                    <p className="text-xs text-gray-400 mt-2 border-t border-red-500/10 pt-2">
+                      <span className="text-[#00f0ff]">Karar:</span> {conflict.resolution}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </main>
     </div>
   );

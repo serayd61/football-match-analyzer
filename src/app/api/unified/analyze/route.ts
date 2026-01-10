@@ -33,6 +33,51 @@ function getSupabase(): SupabaseClient {
   return supabaseClient;
 }
 
+/**
+ * Performance tracking helper
+ */
+async function trackPerformance(result: any, input: UnifiedAnalysisInput) {
+  try {
+    const extractAgentPred = (agent: any) => {
+      if (!agent) return undefined;
+      return {
+        matchResult: agent.matchResult || agent.finalConsensus?.matchResult?.prediction || '',
+        overUnder: agent.overUnder || agent.finalConsensus?.overUnder?.prediction || '',
+        btts: agent.btts || agent.finalConsensus?.btts?.prediction || '',
+        confidence: agent.confidence || agent.overallConfidence || 50,
+        reasoning: agent.agentSummary || agent.recommendation || ''
+      };
+    };
+
+    const performanceRecord: AnalysisRecord = {
+      fixtureId: input.fixtureId,
+      homeTeam: input.homeTeam,
+      awayTeam: input.awayTeam,
+      league: input.league || 'Unknown',
+      matchDate: input.matchDate || new Date().toISOString(),
+
+      statsAgent: extractAgentPred(result.sources?.agents?.stats),
+      oddsAgent: extractAgentPred(result.sources?.agents?.odds),
+      deepAnalysisAgent: extractAgentPred(result.sources?.agents?.deepAnalysis),
+      geniusAnalyst: extractAgentPred(result.sources?.agents?.geniusAnalyst),
+      masterStrategist: extractAgentPred(result.sources?.agents?.masterStrategist),
+      devilsAdvocate: extractAgentPred(result.sources?.agents?.devilsAdvocate),
+      aiSmart: extractAgentPred(result.sources?.ai?.smart),
+
+      consensusMatchResult: result.predictions?.matchResult?.prediction || '',
+      consensusOverUnder: result.predictions?.overUnder?.prediction || '',
+      consensusBtts: result.predictions?.btts?.prediction || '',
+      consensusConfidence: result.systemPerformance?.overallConfidence || 50,
+      consensusScorePrediction: result.predictions?.matchResult?.scorePrediction || ''
+    };
+
+    await saveAnalysisToPerformance(performanceRecord);
+    console.log(`   💾 Saved to performance tracking`);
+  } catch (perfError) {
+    console.error('⚠️ Performance tracking save failed (non-critical):', perfError);
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
@@ -68,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en' } = body;
+    const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en', stream = false } = body;
 
     if (!fixtureId || !homeTeam || !awayTeam || !homeTeamId || !awayTeamId) {
       return NextResponse.json(
@@ -87,20 +132,43 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (cached?.analysis) {
-        console.log(`📦 Returning cached unified analysis for fixture ${fixtureId}`);
-        return NextResponse.json({
-          success: true,
-          analysis: cached.analysis,
-          processingTime: Date.now() - startTime,
-          cached: true,
-          cachedAt: cached.created_at
-        });
+        // Enforce 2-hour TTL for L2 Cache
+        const cachedAt = new Date(cached.created_at).getTime();
+        const now = Date.now();
+        const twoHours = 2 * 60 * 60 * 1000;
+
+        if (now - cachedAt < twoHours) {
+          console.log(`📦 Returning valid cached unified analysis for fixture ${fixtureId} (${Math.round((now - cachedAt) / 60000)} min old)`);
+
+          if (stream) {
+            // Stream mode'da bile cache sonucunu gönder ama stream olarak
+            const encoder = new TextEncoder();
+            const customStream = new ReadableStream({
+              start(controller) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ stage: 'cache', message: 'Önbellekten yükleniyor...' })}\n\n`));
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ success: true, analysis: cached.analysis, cached: true })}\n\n`));
+                controller.close();
+              }
+            });
+            return new Response(customStream, {
+              headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
+            });
+          }
+
+          return NextResponse.json({
+            success: true,
+            analysis: cached.analysis,
+            processingTime: Date.now() - startTime,
+            cached: true,
+            cachedAt: cached.created_at
+          });
+        }
       }
     }
 
     console.log(`🎯 Starting Unified Analysis: ${homeTeam} vs ${awayTeam}`);
 
-    // Unified consensus çalıştır
+    // Unified consensus datası
     const input: UnifiedAnalysisInput = {
       fixtureId,
       homeTeam,
@@ -112,80 +180,73 @@ export async function POST(request: NextRequest) {
       lang: lang as 'tr' | 'en' | 'de'
     };
 
+    if (stream) {
+      const encoder = new TextEncoder();
+      const customStream = new ReadableStream({
+        async start(controller) {
+          const send = (data: any) => {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          };
+
+          try {
+            // Progress callback
+            const onProgress = (data: { stage: string; message: string; data?: any }) => {
+              send(data);
+            };
+
+            const result = await runUnifiedConsensus(input, onProgress);
+
+            // DB'ye kaydet (arka planda)
+            saveUnifiedAnalysis(input, result).catch(e => console.error('Error saving in stream:', e));
+
+            // Performance tracking (arka planda)
+            if (session?.user?.email) {
+              trackPerformance(result, input).catch(e => console.error('Error tracking performance:', e));
+              incrementAnalysisCount(session.user.email).catch(e => console.error('Error incrementing count:', e));
+            }
+
+            // Sonucu gönder
+            send({ success: true, analysis: result, cached: false });
+            controller.close();
+          } catch (error: any) {
+            send({ success: false, error: error?.message || 'Analysis failed' });
+            controller.close();
+          }
+        }
+      });
+
+      return new Response(customStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    }
+
+    // normal flow
     const result = await runUnifiedConsensus(input);
 
-    // Veritabanına kaydet - unified_analysis tablosuna
-    console.log(`💾 Attempting to save to unified_analysis for fixture ${fixtureId}...`);
-    const unifiedSaveResult = await saveUnifiedAnalysis(input, result);
-    console.log(`💾 Unified analysis save result: ${unifiedSaveResult ? '✅ SUCCESS' : '❌ FAILED'}`);
+    // Veritabanına kaydet
+    await saveUnifiedAnalysis(input, result);
 
-    // 🆕 Performance Tracking'e kaydet
-    try {
-      const extractAgentPred = (agent: any) => {
-        if (!agent) return undefined;
-        return {
-          matchResult: agent.matchResult || agent.finalConsensus?.matchResult?.prediction || '',
-          overUnder: agent.overUnder || agent.finalConsensus?.overUnder?.prediction || '',
-          btts: agent.btts || agent.finalConsensus?.btts?.prediction || '',
-          confidence: agent.confidence || agent.overallConfidence || 50,
-          reasoning: agent.agentSummary || agent.recommendation || ''
-        };
-      };
-
-      const performanceRecord: AnalysisRecord = {
-        fixtureId,
-        homeTeam,
-        awayTeam,
-        league: league || 'Unknown',
-        matchDate: matchDate || new Date().toISOString(),
-
-        statsAgent: extractAgentPred(result.sources?.agents?.stats),
-        oddsAgent: extractAgentPred(result.sources?.agents?.odds),
-        deepAnalysisAgent: extractAgentPred(result.sources?.agents?.deepAnalysis),
-        geniusAnalyst: extractAgentPred(result.sources?.agents?.geniusAnalyst),
-        masterStrategist: extractAgentPred(result.sources?.agents?.masterStrategist),
-        devilsAdvocate: extractAgentPred(result.sources?.agents?.devilsAdvocate),
-        aiSmart: extractAgentPred(result.sources?.ai?.smart),
-
-        consensusMatchResult: result.predictions?.matchResult?.prediction || '',
-        consensusOverUnder: result.predictions?.overUnder?.prediction || '',
-        consensusBtts: result.predictions?.btts?.prediction || '',
-        consensusConfidence: result.systemPerformance?.overallConfidence || 50,
-        consensusScorePrediction: result.predictions?.matchResult?.scorePrediction || ''
-      };
-
-      await saveAnalysisToPerformance(performanceRecord);
-      console.log(`   💾 Saved to performance tracking`);
-    } catch (perfError) {
-      console.error('⚠️ Performance tracking save failed (non-critical):', perfError);
-    }
-
-    // Analiz sayacını artır (limit kontrolü için)
-    if (!skipCache) {
+    // Performance tracking
+    if (session?.user?.email) {
+      trackPerformance(result, input).catch(e => console.error('Error tracking performance:', e));
       await incrementAnalysisCount(session.user.email);
     }
-
-    const totalTime = Date.now() - startTime;
-    console.log(`✅ Unified Analysis complete in ${totalTime}ms`);
-    console.log(`   🎯 Overall confidence: ${result.systemPerformance.overallConfidence}%`);
-    console.log(`   🤝 Agreement: ${result.systemPerformance.agreement}%`);
-    console.log(`   📊 Best bet: ${result.bestBet.market} - ${result.bestBet.selection} (${result.bestBet.confidence}%)`);
 
     return NextResponse.json({
       success: true,
       analysis: result,
-      processingTime: totalTime,
+      processingTime: Date.now() - startTime,
       cached: false
     });
 
   } catch (error: any) {
     console.error('❌ Unified Analysis error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error?.message || 'Analysis failed',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
-      },
+      { success: false, error: error?.message || 'Analysis failed' },
       { status: 500 }
     );
   }

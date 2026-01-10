@@ -16,8 +16,8 @@ const PROMPTS = {
 
 Sana bir futbol maçıyla ilgili veriler verilecek. Senin görevi:
 1.  **Favoriyi Sorgula**: Eğer bir takım istatistiksel olarak favori görünüyorsa, onun neden kaybedebileceğine dair en az 3 gerçekçi senaryo üret.
-2.  **Tuzak Tespiti**: Oranlar ve veriler arasındaki tutarsızlıkları (Trap Match) yakala.
-3.  **Kör Noktaları Bul**: Diğer analistlerin (Stats, Odds agents) görmezden gelebileceği riskleri (yorgunluk, motivasyon düşüklüğü, aşırı güven, regresyon riski) vurgula.
+2.  **Tuzak Tespiti**: Oranlar ve veriler arasındaki tutarsızlıkları (Trap Match) yakala. "Value" görünümlü tuzaklara dikkat çek.
+3.  **Kör Noktaları Bul**: Diğer analistlerin (Stats, Odds agents) görmezden gelebileceği riskleri (yorgunluk, motivasyon düşüklüğü, aşırı güven, regresyon riski, eksik oyuncu etkisi) vurgula.
 4.  **Kontrarian Tahmin**: Eğer favori çok barizse ama risk yüksekse, "Beraberlik" veya "Sürpriz" tarafına odaklanan bir analiz yap.
 
 SADECE JSON DÖNDÜR:
@@ -26,7 +26,7 @@ SADECE JSON DÖNDÜR:
   "risks": ["Risk 1", "Risk 2", "Risk 3"],
   "trapMatchIndicators": ["Tuzak belirtisi 1", "Tuzak belirtisi 2"],
   "whyFavoriteMightFail": "Favorinin tökezleme sebebi",
-  "matchResult": "1/X/2 (Kontrarian seçim)",
+  "matchResult": "1/X/2 (Kontrarian seçim - Beraberlik veya sürpriz taraf)",
   "confidence": 50-80 arası bir sayı,
   "agentSummary": "👹 ŞEYTANIN AVUKATI: [Kısa özet]"
 }`,
@@ -34,8 +34,8 @@ SADECE JSON DÖNDÜR:
 
 You will be given match data. Your task:
 1.  **Challenge the Favorite**: If one team looks like a clear favorite, generate at least 3 realistic scenarios where they fail.
-2.  **Trap Detection**: Identify inconsistencies between odds and data (Trap Match indicators).
-3.  **Find Blind Spots**: Highlight risks that other analysts (Stats, Odds agents) might ignore (fatigue, complacency, over-performance regression, etc.).
+2.  **Trap Detection**: Identify inconsistencies between odds and data (Trap Match indicators). Highlight "Value Traps".
+3.  **Find Blind Spots**: Highlight risks that other analysts (Stats, Odds agents) might ignore (fatigue, complacency, over-performance regression, key injuries, tactical mismatches).
 4.  **Contrarian Prediction**: Focus on the Draw or the Underdog if the risk is high.
 
 RETURN ONLY JSON:
@@ -44,7 +44,7 @@ RETURN ONLY JSON:
   "risks": ["Risk 1", "Risk 2", "Risk 3"],
   "trapMatchIndicators": ["Indicator 1", "Indicator 2"],
   "whyFavoriteMightFail": "Main reason for the favorite to stumble",
-  "matchResult": "1/X/2 (Contrarian pick)",
+  "matchResult": "1/X/2 (Contrarian pick - usually Draw or Underdog)",
   "confidence": number between 50-80,
   "agentSummary": "👹 DEVIL'S ADVOCATE: [Short summary]"
 }`

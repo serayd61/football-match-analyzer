@@ -2,6 +2,8 @@
 export const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 export const SPORTMONKS_BASE_URL = 'https://api.sportmonks.com/v3/football';
 
+import { getCachedAnalysis, setCachedAnalysis } from './analysisCache';
+
 // Top European Leagues with Season IDs (2024-25 Season) - 27 Lig Paketi
 export const LEAGUES = {
   // England
@@ -9,45 +11,45 @@ export const LEAGUES = {
   championship: { id: 9, seasonId: 23783, name: 'Championship', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', color: '#1C2C5B' },
   fa_cup: { id: 24, seasonId: 23820, name: 'FA Cup', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', color: '#E90052' },
   league_cup: { id: 27, seasonId: 23821, name: 'League Cup', country: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', color: '#00FF87' },
-  
+
   // Spain
   la_liga: { id: 564, seasonId: 23686, name: 'La Liga', country: '🇪🇸', color: '#EE8707' },
   la_liga_2: { id: 501, seasonId: 23687, name: 'La Liga 2', country: '🇪🇸', color: '#1C2C5B' },
   copa_del_rey: { id: 567, seasonId: 23830, name: 'Copa del Rey', country: '🇪🇸', color: '#E30A17' },
-  
+
   // Italy
   serie_a: { id: 384, seasonId: 23690, name: 'Serie A', country: '🇮🇹', color: '#024494' },
   serie_b: { id: 387, seasonId: 23691, name: 'Serie B', country: '🇮🇹', color: '#009246' },
   coppa_italia: { id: 390, seasonId: 23831, name: 'Coppa Italia', country: '🇮🇹', color: '#CE2B37' },
-  
+
   // Germany
   bundesliga: { id: 82, seasonId: 23688, name: 'Bundesliga', country: '🇩🇪', color: '#D20515' },
-  
+
   // France
   ligue_1: { id: 301, seasonId: 23684, name: 'Ligue 1', country: '🇫🇷', color: '#091C3E' },
-  
+
   // Netherlands
   eredivisie: { id: 72, seasonId: 23680, name: 'Eredivisie', country: '🇳🇱', color: '#FF6B00' },
-  
+
   // Portugal
   liga_portugal: { id: 462, seasonId: 23679, name: 'Liga Portugal', country: '🇵🇹', color: '#00A651' },
   primeira_liga: { id: 244, seasonId: 23678, name: 'Primeira Liga', country: '🇵🇹', color: '#006600' },
-  
+
   // Belgium
   pro_league: { id: 208, seasonId: 23597, name: 'Pro League', country: '🇧🇪', color: '#000000' },
   jupiler_league: { id: 181, seasonId: 23596, name: 'Jupiler Pro League', country: '🇧🇪', color: '#FFD700' },
-  
+
   // Turkey
   super_lig: { id: 600, seasonId: 24636, name: 'Süper Lig', country: '🇹🇷', color: '#E30A17' },
   super_lig_alt: { id: 570, seasonId: 24635, name: 'Süper Lig', country: '🇹🇷', color: '#E30A17' },
   turkish_cup: { id: 573, seasonId: 24640, name: 'Türkiye Kupası', country: '🇹🇷', color: '#C8102E' },
-  
+
   // Other
   scotland_premiership: { id: 486, seasonId: 23700, name: 'Scottish Premiership', country: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', color: '#1A237E' },
   ekstraklasa: { id: 453, seasonId: 23695, name: 'Ekstraklasa', country: '🇵🇱', color: '#DC143C' },
   allsvenskan: { id: 591, seasonId: 24630, name: 'Allsvenskan', country: '🇸🇪', color: '#006AA7' },
   superliga_dk: { id: 271, seasonId: 23660, name: 'Superliga', country: '🇩🇰', color: '#C60C30' },
-  
+
   // European
   champions_league: { id: 1371, seasonId: 24200, name: 'Champions League', country: '🇪🇺', color: '#1D428A' },
 } as const;
@@ -117,6 +119,15 @@ export interface MatchAnalysisData {
 
 // API Helper Functions with better error handling
 export async function fetchFromSportmonks(endpoint: string, params: Record<string, string> = {}) {
+  // L3 Cache Key
+  const cacheKey = `${endpoint}?${new URLSearchParams(params).toString()}`;
+
+  // Check L3 Cache first
+  const cached = getCachedAnalysis(cacheKey, 'en', 'raw-sportmonks');
+  if (cached) {
+    return cached.data;
+  }
+
   const url = new URL(`${SPORTMONKS_BASE_URL}${endpoint}`);
   url.searchParams.append('api_token', SPORTMONKS_API_KEY || '');
 
@@ -126,7 +137,7 @@ export async function fetchFromSportmonks(endpoint: string, params: Record<strin
 
   try {
     const response = await fetch(url.toString(), {
-      next: { revalidate: 300 } // 5 min cache
+      next: { revalidate: 3600 } // 1 hour cache
     });
 
     if (!response.ok) {
@@ -135,6 +146,12 @@ export async function fetchFromSportmonks(endpoint: string, params: Record<strin
     }
 
     const data = await response.json();
+
+    // Save to L3 Cache
+    if (data) {
+      setCachedAnalysis(cacheKey, 'en', 'raw-sportmonks', data);
+    }
+
     return data;
   } catch (error) {
     console.error(`Sportmonks fetch error: ${endpoint}`, error);
@@ -296,7 +313,7 @@ export interface SidelinedPlayer {
 
 export function parseSidelinedData(sidelinedData: any): SidelinedPlayer[] {
   if (!sidelinedData?.data) return [];
-  
+
   return sidelinedData.data.map((s: any) => ({
     playerId: s.player_id,
     playerName: s.player?.display_name || s.player?.name || 'Unknown',
@@ -310,7 +327,7 @@ export function parseSidelinedData(sidelinedData: any): SidelinedPlayer[] {
 
 // Get comprehensive match context including injuries
 export async function getMatchContextWithInjuries(
-  homeTeamId: number, 
+  homeTeamId: number,
   awayTeamId: number,
   fixtureId?: number
 ) {
@@ -332,11 +349,11 @@ export async function getMatchContextWithInjuries(
   if (fixtureData?.data) {
     const lineups = fixtureData.data.lineups || [];
     const formations = fixtureData.data.formations || [];
-    
+
     homeLineup = lineups
       .filter((l: any) => l.team_id === homeTeamId && l.type_id === 11) // 11 = starting XI
       .map((l: any) => l.player?.display_name || 'Unknown');
-    
+
     awayLineup = lineups
       .filter((l: any) => l.team_id === awayTeamId && l.type_id === 11)
       .map((l: any) => l.player?.display_name || 'Unknown');
