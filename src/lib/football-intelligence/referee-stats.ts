@@ -12,36 +12,36 @@ export interface RefereeProfile {
   name: string;
   nationality: string;
   age: number;
-  
+
   // Genel İstatistikler (Sezon)
   matchesRefereed: number;
-  
+
   // Kart İstatistikleri
   yellowCardsPerMatch: number;
   redCardsPerMatch: number;
   cardsPerMatch: number;  // Toplam kart/maç
   strictness: 'very_strict' | 'strict' | 'average' | 'lenient' | 'very_lenient';
-  
+
   // Penaltı İstatistikleri
   penaltiesPerMatch: number;
   penaltyTendency: 'high' | 'average' | 'low';
-  
+
   // Ev Sahibi Eğilimi
   homeWinPercentage: number;
   drawPercentage: number;
   awayWinPercentage: number;
   homeBias: 'pro_home' | 'neutral' | 'pro_away';
   homeBiasStrength: number;  // -100 to +100
-  
+
   // Gol ve Oyun Tarzı
   avgGoalsPerMatch: number;
   over25Percentage: number;
   freeKicksPerMatch: number;
-  
+
   // VAR İstatistikleri
   varReviewsPerMatch: number;
   varOverturnedDecisions: number;
-  
+
   // Takım Bazlı Geçmiş
   teamHistory: {
     teamId: number;
@@ -58,38 +58,38 @@ export interface RefereeProfile {
 
 export interface RefereeMatchImpact {
   referee: RefereeProfile;
-  
+
   // Tahmin Ayarlamaları
   cardsPrediction: {
     over: string;  // "Over 3.5", "Over 4.5", etc.
     confidence: number;
     reasoning: string;
   };
-  
+
   penaltyRisk: {
     level: 'high' | 'medium' | 'low';
     reasoning: string;
   };
-  
+
   matchResultBias: {
     direction: 'home' | 'away' | 'neutral';
     strength: number;  // 0-20 points
     reasoning: string;
   };
-  
+
   // Takımlara Özel
   homeTeamHistory: {
     teamId: number;
     favorability: 'positive' | 'neutral' | 'negative';
     note: string;
   } | null;
-  
+
   awayTeamHistory: {
     teamId: number;
     favorability: 'positive' | 'neutral' | 'negative';
     note: string;
   } | null;
-  
+
   // Genel Özet
   overallNote: string;
 }
@@ -109,45 +109,50 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
     console.warn('SPORTMONKS_API_KEY not set for referee fetch');
     return null;
   }
-  
+
   try {
     // Maç bilgisinden hakemi al
     const fixtureResponse = await fetch(
       `${SPORTMONKS_BASE_URL}/fixtures/${fixtureId}?api_token=${SPORTMONKS_API_KEY}&include=referees`,
       { next: { revalidate: 3600 } }
     );
-    
+
     if (!fixtureResponse.ok) {
-      console.error(`SportMonks Fixture API error: ${fixtureResponse.status}`);
+      // 404 is expected for future matches without assigned referee
+      if (fixtureResponse.status === 404) {
+        console.log(`ℹ️ No referee assigned yet for fixture ${fixtureId}`);
+      } else {
+        console.warn(`⚠️ SportMonks Referee API: ${fixtureResponse.status} for fixture ${fixtureId}`);
+      }
       return null;
     }
-    
+
     const fixtureData = await fixtureResponse.json();
     const referees = fixtureData.data?.referees || [];
-    
+
     // Ana hakemi bul (type_id = 1)
     const mainReferee = referees.find((r: any) => r.type_id === 1);
     if (!mainReferee) {
-      console.log('No main referee found for fixture', fixtureId);
+      // This is normal for matches that haven't had a referee assigned yet
       return null;
     }
-    
+
     const refereeId = mainReferee.referee_id;
-    
+
     // Hakem detaylarını çek
     const refereeResponse = await fetch(
       `${SPORTMONKS_BASE_URL}/referees/${refereeId}?api_token=${SPORTMONKS_API_KEY}&include=statistics`,
       { next: { revalidate: 86400 } }  // 1 gün cache
     );
-    
+
     if (!refereeResponse.ok) {
       return createBasicRefereeProfile(mainReferee);
     }
-    
+
     const refereeData = await refereeResponse.json();
     const referee = refereeData.data;
     const stats = referee.statistics || [];
-    
+
     // İstatistikleri hesapla
     let totalMatches = 0;
     let totalYellowCards = 0;
@@ -157,7 +162,7 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
     let homeWins = 0;
     let draws = 0;
     let awayWins = 0;
-    
+
     for (const stat of stats) {
       if (stat.season_id) {  // Sezon bazlı istatistikler
         totalMatches += stat.data?.matches || 0;
@@ -170,7 +175,7 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
         awayWins += stat.data?.away_wins || 0;
       }
     }
-    
+
     // Ortalamalar
     const matchCount = totalMatches || 1;
     const yellowPerMatch = totalYellowCards / matchCount;
@@ -178,7 +183,7 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
     const cardsPerMatch = yellowPerMatch + redPerMatch;
     const penaltiesPerMatch = totalPenalties / matchCount;
     const goalsPerMatch = totalGoals / matchCount;
-    
+
     // Sertlik kategorisi
     let strictness: RefereeProfile['strictness'];
     if (cardsPerMatch >= 6) strictness = 'very_strict';
@@ -186,15 +191,15 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
     else if (cardsPerMatch >= 3.5) strictness = 'average';
     else if (cardsPerMatch >= 2.5) strictness = 'lenient';
     else strictness = 'very_lenient';
-    
+
     // Ev sahibi eğilimi
     const totalResults = homeWins + draws + awayWins || 1;
     const homeWinPct = (homeWins / totalResults) * 100;
     const awayWinPct = (awayWins / totalResults) * 100;
-    
+
     let homeBias: RefereeProfile['homeBias'];
     let homeBiasStrength: number;
-    
+
     if (homeWinPct > awayWinPct + 15) {
       homeBias = 'pro_home';
       homeBiasStrength = Math.min(50, (homeWinPct - awayWinPct) * 2);
@@ -205,7 +210,7 @@ export async function fetchRefereeFromSportMonks(fixtureId: number): Promise<Ref
       homeBias = 'neutral';
       homeBiasStrength = 0;
     }
-    
+
     return {
       id: referee.id,
       name: referee.display_name || referee.name || 'Unknown',
@@ -285,9 +290,9 @@ export function analyzeRefereeImpact(
   let cardsLine: string;
   let cardsConfidence: number;
   let cardsReasoning: string;
-  
+
   const cardsDiff = referee.cardsPerMatch - leagueAvgCards;
-  
+
   if (referee.strictness === 'very_strict') {
     cardsLine = 'Over 5.5';
     cardsConfidence = 70;
@@ -309,10 +314,10 @@ export function analyzeRefereeImpact(
     cardsConfidence = 55;
     cardsReasoning = `${referee.name} ortalama sertlikte (${referee.cardsPerMatch} kart/maç).`;
   }
-  
+
   // Penaltı riski
   let penaltyRisk: RefereeMatchImpact['penaltyRisk'];
-  
+
   if (referee.penaltyTendency === 'high') {
     penaltyRisk = {
       level: 'high',
@@ -329,10 +334,10 @@ export function analyzeRefereeImpact(
       reasoning: `${referee.name} penaltı kararlarında ortalama (${referee.penaltiesPerMatch}/maç).`,
     };
   }
-  
+
   // Maç sonucu eğilimi
   let matchResultBias: RefereeMatchImpact['matchResultBias'];
-  
+
   if (referee.homeBias === 'pro_home' && referee.homeBiasStrength > 20) {
     matchResultBias = {
       direction: 'home',
@@ -352,14 +357,14 @@ export function analyzeRefereeImpact(
       reasoning: `${referee.name} tarafsız bir hakem. Belirgin ev/deplasman eğilimi yok.`,
     };
   }
-  
+
   // Takım geçmişi (varsa)
   const homeHistory = referee.teamHistory.find(t => t.teamId === homeTeamId);
   const awayHistory = referee.teamHistory.find(t => t.teamId === awayTeamId);
-  
+
   let homeTeamHistory: RefereeMatchImpact['homeTeamHistory'] = null;
   let awayTeamHistory: RefereeMatchImpact['awayTeamHistory'] = null;
-  
+
   if (homeHistory && homeHistory.matches >= 3) {
     const winRate = homeHistory.wins / homeHistory.matches;
     homeTeamHistory = {
@@ -368,7 +373,7 @@ export function analyzeRefereeImpact(
       note: `${homeTeamName} bu hakemle ${homeHistory.matches} maçta ${homeHistory.wins}G-${homeHistory.draws}B-${homeHistory.losses}M.`,
     };
   }
-  
+
   if (awayHistory && awayHistory.matches >= 3) {
     const winRate = awayHistory.wins / awayHistory.matches;
     awayTeamHistory = {
@@ -377,15 +382,15 @@ export function analyzeRefereeImpact(
       note: `${awayTeamName} bu hakemle ${awayHistory.matches} maçta ${awayHistory.wins}G-${awayHistory.draws}B-${awayHistory.losses}M.`,
     };
   }
-  
+
   // Genel özet
   let overallNote = `🧑‍⚖️ HAKEM: ${referee.name} | `;
   overallNote += `Sertlik: ${referee.strictness} (${referee.cardsPerMatch} kart/maç) | `;
   overallNote += `Penaltı: ${referee.penaltyTendency} | `;
-  overallNote += matchResultBias.direction !== 'neutral' 
+  overallNote += matchResultBias.direction !== 'neutral'
     ? `Eğilim: ${matchResultBias.direction === 'home' ? 'Ev sahibi' : 'Deplasman'}`
     : 'Tarafsız';
-  
+
   return {
     referee,
     cardsPrediction: {
@@ -420,7 +425,7 @@ export function applyRefereeAdjustments(
   refereeNote: string;
 } {
   const adjusted = { ...prediction };
-  
+
   // Maç sonucu ayarlaması
   if (refereeImpact.matchResultBias.direction === 'home' && adjusted.matchResult === '1') {
     adjusted.matchResultConfidence += refereeImpact.matchResultBias.strength;
@@ -430,12 +435,12 @@ export function applyRefereeAdjustments(
     // Eğilim tahminin tersine
     adjusted.matchResultConfidence -= refereeImpact.matchResultBias.strength / 2;
   }
-  
+
   // Sınırla
   adjusted.matchResultConfidence = Math.max(45, Math.min(85, adjusted.matchResultConfidence));
   adjusted.overUnderConfidence = Math.max(45, Math.min(85, adjusted.overUnderConfidence));
   adjusted.bttsConfidence = Math.max(45, Math.min(85, adjusted.bttsConfidence));
-  
+
   return {
     ...adjusted,
     cardsLine: refereeImpact.cardsPrediction.over,

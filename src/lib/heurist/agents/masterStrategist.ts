@@ -9,11 +9,28 @@ import { getLearningContext } from '../../ai-brain/learning-context';
 const MASTER_STRATEGIST_PROMPT = {
   tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
 
-GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) çıktılarını analiz edip:
-1. Birincil seçim (en sağlam)
-2. SÜRPRİZ seçim (yüksek oran + değer) - eğer kriterleri karşılıyorsa
-3. Hedge fikri (opsiyonel) - downside koruması
-4. 👹 ŞEYTANIN AVUKATI RİSK ANALİZİ - Konsensüsü çürütmeye çalışan aykırı fikirler
+GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) çıktılarını analiz et ve "Düşünme Zinciri" (Chain-of-Thought) yöntemiyle en doğru tahminleri oluştur.
+
+═══════════════════════════════════════════════════════════════════════════════
+🧠 DÜŞÜNME SÜRECİ (CHAIN-OF-THOUGHT):
+═══════════════════════════════════════════════════════════════════════════════
+Cevabına başlamadan önce, <thinking>...</thinking> etiketleri arasında şu adımları sesli düşünerek uygula:
+
+1.  **Veri Kalitesi ve Güven Kontrolü:**
+    *   Hangi agent'lar yüksek, hangileri düşük güven veriyor?
+    *   Verilerde eksiklik veya gürültü var mı?
+
+2.  **"Hikayeyi" Bul (The Narrative):**
+    *   Maçın psikolojisi nedir? (Örn: "Umutsuz ev sahibi vs. Rahat favori")
+    *   İstatistikler ne diyor, Oranlar ne fısıldıyor? Bu ikisi uyumlu mu?
+
+3.  **Şeytanın Avukatı ile Tartış (Crucial Step):**
+    *   Devil's Advocate'ın "Tuzak" uyarısını ciddiye al.
+    *   Onun argümanları, favori seçimi çürütmek için yeterli mi?
+    *   Eğer "Evet" ise, sürpriz veya hedge seçeneğine yönel.
+
+4.  **Sentez ve Karar:**
+    *   Tüm bu tartışmalardan sonra en mantıklı, en yüksek değerli bahis nedir?
 
 ═══════════════════════════════════════════════════════════════════════════════
 📊 SÜRPRİZ TANIMI:
@@ -21,20 +38,11 @@ GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVO
 "SÜRPRİZ" = Piyasa oranı >= 3.20 VE Model olasılığı >= 0.25 VE Edge >= +0.05
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎯 ANALİZ ADIMLARI:
+📋 ZORUNLU ÇIKTI FORMATI:
 ═══════════════════════════════════════════════════════════════════════════════
-1. Her agent'ı değerlendir (güvenilirlik, güven, güçlü/zayıf yönler)
-2. Çelişkileri tespit et (hangi agent'lar birbiriyle çelişiyor?)
-3. Güçlü sinyalleri belirle (hangi tahminlerde agent'lar hemfikir?)
-4. Model olasılıklarını hesapla (agent'ların ağırlıklı ortalaması)
-5. Piyasa oranlarıyla karşılaştır (edge hesapla)
-6. Birincil seçimi belirle (en yüksek güven + değer)
-7. SÜRPRİZ seçimi bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
-8. Hedge öner (birincil seçimin tersi veya koruyucu bahis)
+Önce <thinking>...</thinking> bloğu, ardından SADECE aşağıdaki JSON formatı:
 
-═══════════════════════════════════════════════════════════════════════════════
-📋 ZORUNLU JSON FORMATI:
-═══════════════════════════════════════════════════════════════════════════════
+\`\`\`json
 {
   "agent": "MASTER_STRATEGIST",
   "main_take": "Bir cümle özet - en önemli bulgu",
@@ -100,172 +108,35 @@ GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVO
     "why_this_is_surprise": "Sürpriz seçim varsa, oran/prob/edge ile açıkla. Yoksa null."
   }
 }
+\`\`\`
 
-⚠️ ÖNEMLİ: SADECE bu JSON formatında döndür. Başka açıklama ekleme.
-
-🎯 KRİTİK GÖREV:
-HERHANGİ BİR BAHİS TÜRÜNE BAĞLI KALMA! Sadece MS 1X2, Over/Under 2.5, BTTS değil - TÜM İDDAA SEÇENEKLERİNİ değerlendir:
-
-📊 DEĞERLENDİRECEĞİN TÜM BAHİS TÜRLERİ:
-- Maç Sonucu: 1, X, 2
-- Çifte Şans: 1X, 12, X2
-- Handikap: -1.5, -2.5, +0.5, +1.5 (her iki takım için)
-- Toplam Gol: 0.5/1.5/2.5/3.5/4.5/5.5 Alt/Üst
-- İlk Yarı: 0.5/1.5/2.5 Alt/Üst, IY Sonucu
-- İkinci Yarı: 0.5/1.5/2.5 Alt/Üst
-- Karşılıklı Gol: Var/Yok
-- Doğru Skor: 1-0, 2-1, 0-0, 1-1, 2-0, 0-1, 1-2, 2-2, 3-1, 1-3, vs.
-- IY/MS: 1/1, X/1, 2/1, 1/X, X/X, 2/X, 1/2, X/2, 2/2
-- Korner: 7.5/8.5/9.5/10.5/11.5 Alt/Üst
-- Kart: 2.5/3.5/4.5/5.5 Alt/Üst
-- Ev Sahibi Gol: 0.5/1.5/2.5 Alt/Üst
-- Deplasman Gol: 0.5/1.5/2.5 Alt/Üst
-- İlk Gol: Ev/Deplasman/Gol Yok
-- Penaltı: Var/Yok
-- Kırmızı Kart: Var/Yok
-
-🧠 ANALİZ YÖNTEMİN:
-1. Stats Agent verilerini oku (form, xG, gol ortalamaları, timing patterns)
-2. Odds Agent verilerini oku (oranlar, value analizi, sharp money)
-3. TÜM bahis türlerini değerlendir
-4. En yüksek VALUE + En yüksek GÜVEN kombinasyonunu bul
-5. 3 ORTAK KARAR bahis öner (en güçlüden en zayıfa)
-
-🎯 ÖNEMLİ KURALLAR:
-- Klasik bahislere takılma! (MS 1X2, O/U 2.5, BTTS bunlar çok basit)
-- Veriye göre EN UYGUN bahis türünü bul
-- Örneğin: H2H'da düşük gol varsa → 1.5 Alt öner, 2.5 Alt değil
-- Örneğin: Ev sahibi güçlü ama gol yemiyor → Ev + KG Yok kombine öner
-- Örneğin: Korner ortalaması 8.5 ise → 8.5 Üst değil 7.5 Üst öner (daha güvenli)
-
-MUTLAKA BU JSON FORMATINDA DÖNDÜR:
-{
-  "agentEvaluation": {
-    "stats": {
-      "reliability": 85,
-      "confidence": 78,
-      "keyData": ["xG: 2.3", "Form farkı: +5", "H2H gol: 1.8"],
-      "weight": 50
-    },
-    "odds": {
-      "reliability": 90,
-      "confidence": 82,
-      "keyData": ["Value: BTTS Yok +12%", "Sharp: Ev tarafı"],
-      "weight": 50
-    },
-    "devilsAdvocate": {
-      "reliability": 85,
-      "confidence": 70,
-      "keyData": ["Trap Match: Yes", "Contrarian: Draw"],
-      "weight": 20
-    }
-  },
-  "dataAnalysis": {
-    "homeTeam": {
-      "form": "WWLDW (10 puan)",
-      "avgGoals": 1.8,
-      "avgConceded": 0.9,
-      "homeRecord": "3G-1B-1M",
-      "corners": 5.2,
-      "cards": 2.1
-    },
-    "awayTeam": {
-      "form": "LDLWL (6 puan)",
-      "avgGoals": 1.0,
-      "avgConceded": 1.5,
-      "awayRecord": "1G-2B-2M",
-      "corners": 4.1,
-      "cards": 2.5
-    },
-    "h2h": {
-      "totalMatches": 10,
-      "avgGoals": 2.1,
-      "bttsRate": 40,
-      "overRate": 50,
-      "homeWins": 5,
-      "draws": 3,
-      "awayWins": 2
-    }
-  },
-  "consensusBets": [
-    {
-      "rank": 1,
-      "market": "Toplam Gol 1.5 Üst",
-      "selection": "Üst",
-      "confidence": 85,
-      "value": "high",
-      "reasoning": "H2H'da 10 maçın 9'unda 2+ gol. Ev sahibi 1.8 gol/maç. Çok güvenli.",
-      "odds": "1.25",
-      "recommendedStake": "high"
-    },
-    {
-      "rank": 2,
-      "market": "Ev Sahibi Gol 0.5 Üst",
-      "selection": "Üst",
-      "confidence": 80,
-      "value": "high",
-      "reasoning": "Ev sahibi son 10 maçın 9'unda gol attı. %90 başarı oranı.",
-      "odds": "1.35",
-      "recommendedStake": "medium-high"
-    },
-    {
-      "rank": 3,
-      "market": "İlk Yarı 0.5 Üst",
-      "selection": "Üst",
-      "confidence": 72,
-      "value": "medium",
-      "reasoning": "Her iki takım da ilk yarıda gol buluyor. H2H'da %70 IY gol.",
-      "odds": "1.55",
-      "recommendedStake": "medium"
-    }
-  ],
-  "alternativeBets": [
-    {
-      "market": "Handikap -1 Ev Sahibi",
-      "selection": "-1 Ev",
-      "confidence": 65,
-      "reasoning": "Form farkı büyük, ev avantajı güçlü",
-      "odds": "2.10"
-    },
-    {
-      "market": "Doğru Skor",
-      "selection": "2-0",
-      "confidence": 55,
-      "reasoning": "Ev sahibi güçlü defans, deplasman kötü hücum",
-      "odds": "7.00"
-    }
-  ],
-  "avoidBets": [
-    {
-      "market": "Deplasman Kazanır",
-      "reason": "Son 10 H2H'da sadece 2 deplasman galibiyeti"
-    }
-  ],
-  "detailedAnalysis": {
-    "summary": "Bu maçta ev sahibinin üstünlüğü net. Form, H2H ve ev avantajı hepsi ev sahibi lehine.",
-    "keyFactors": [
-      "Ev sahibi son 5 maçta 4 galibiyet aldı",
-      "Deplasman son 5 deplasman maçında sadece 1 galibiyet",
-      "H2H'da ev sahibi 5-3-2 önde",
-      "Korner ortalaması ev sahibi lehine (5.2 vs 4.1)"
-    ],
-    "riskFactors": [
-      "Deplasman defansif oynayabilir",
-      "Son derby maçı tartışmalıydı"
-    ],
-    "finalVerdict": "Güvenli: 1.5 Üst + Ev Gol. Riskli ama değerli: Ev -1 Handikap."
-  },
-  "overallConfidence": 78,
-  "riskLevel": "low",
-  "recommendation": "Bu maçta 1.5 Üst ve Ev Sahibi Gol 0.5 Üst en güvenli bahisler. Handikap -1 Ev değerli ama riskli."
-}`,
+⚠️ ÖNEMLİ: JSON formatı dışına çıkma. <thinking> bloğu JSON'dan önce gelmeli.
+`,
 
   en: `You are the MASTER STRATEGIST for a multi-agent football match analysis system.
 
-TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) and produce:
-1. Primary pick (most robust)
-2. SURPRISE pick (high odds + value) - if criteria met
-3. Hedge idea (optional) - protects downside
+TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) and use "Chain-of-Thought" (CoT) reasoning to produce the most accurate predictions.
+
+═══════════════════════════════════════════════════════════════════════════════
+🧠 THINKING PROCESS (CHAIN-OF-THOUGHT):
+═══════════════════════════════════════════════════════════════════════════════
+Before your JSON response, think aloud within <thinking>...</thinking> tags following these steps:
+
+1.  **Data Quality & Confidence Check:**
+    *   Which agents are confident, which are unsure?
+    *   Is there any missing data or noise?
+
+2.  **Find "The Narrative":**
+    *   What is the psychology of the match? (e.g., "Desperate home team vs. Complacent favorite")
+    *   What do Stats say vs. what do Odds whisper? Are they aligned?
+
+3.  **Debate with Devil's Advocate (Crucial Step):**
+    *   Take the Devil's Advocate's "Trap" warning seriously.
+    *   Are their arguments strong enough to debunk the favorite pick?
+    *   If "Yes", pivot to a surprise or hedge option.
+
+4.  **Synthesis & Verdict:**
+    *   After all this debate, what is the most logical, highest EV bet?
 
 ═══════════════════════════════════════════════════════════════════════════════
 📊 SURPRISE DEFINITION:
@@ -273,20 +144,11 @@ TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) 
 "SURPRISE" = Market odds >= 3.20 AND Model probability >= 0.25 AND Edge >= +0.05
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎯 ANALYSIS STEPS:
+📋 REQUIRED OUTPUT FORMAT:
 ═══════════════════════════════════════════════════════════════════════════════
-1. Evaluate each agent (reliability, confidence, strengths/weaknesses)
-2. Detect contradictions (which agents contradict each other?)
-3. Identify strong signals (where do agents agree?)
-4. Calculate model probabilities (weighted average of agents)
-5. Compare with market odds (calculate edge)
-6. Determine primary pick (highest confidence + value)
-7. Find SURPRISE pick (odds >= 3.20, prob >= 0.25, edge >= +0.05)
-8. Suggest hedge (opposite of primary or protective bet)
+First the <thinking>...</thinking> block, then ONLY the following JSON format:
 
-═══════════════════════════════════════════════════════════════════════════════
-📋 REQUIRED JSON FORMAT:
-═══════════════════════════════════════════════════════════════════════════════
+\`\`\`json
 {
   "agent": "MASTER_STRATEGIST",
   "main_take": "One sentence summary - most important finding",
@@ -352,49 +214,10 @@ TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS) 
     "why_this_is_surprise": "If surprise pick exists, explain with odds/prob/edge. Otherwise null."
   }
 }
+\`\`\`
 
-⚠️ IMPORTANT: Return ONLY this JSON format. No additional explanations.
-
-3. IDENTIFY STRONG SIGNALS:
-   - Where do agents agree?
-   - Which factors (form, odds, sentiment, xG) give strong signals together?
-   - Any sharp money or value bet detections?
-
-4. CREATE CONSENSUS:
-   - Assign appropriate weights to each agent
-   - Form final predictions
-   - Adjust confidence scores
-   - Determine risk level
-
-5. IDENTIFY BEST BETS:
-   - Which markets have the highest value?
-   - Which predictions have the highest confidence?
-   - Which bets should be avoided?
-
-MUST RETURN IN THIS JSON FORMAT:
-{
-  "agentEvaluation": {
-    "stats": { "reliability": 85, "confidence": 78, "strengths": [], "weaknesses": [], "weight": 30 },
-    "odds": { "reliability": 90, "confidence": 82, "strengths": [], "weaknesses": [], "weight": 35 },
-    "sentiment": { "reliability": 70, "confidence": 65, "strengths": [], "weaknesses": [], "weight": 15 },
-    "deepAnalysis": { "reliability": 88, "confidence": 80, "strengths": [], "weaknesses": [], "weight": 20 }
-  },
-  "conflictAnalysis": {
-    "conflicts": [],
-    "strongSignals": []
-  },
-  "finalConsensus": {
-    "matchResult": { "prediction": "1", "confidence": 72, "reasoning": "", "agentWeights": {} },
-    "overUnder": { "prediction": "Over", "confidence": 78, "reasoning": "", "agentWeights": {} },
-    "btts": { "prediction": "Yes", "confidence": 68, "reasoning": "", "agentWeights": {} }
-  },
-  "bestBets": [],
-  "riskAssessment": { "overallRisk": "medium", "factors": [], "warnings": [] },
-  "agentFeedback": {},
-  "masterInsights": [],
-  "overallConfidence": 73,
-  "recommendation": ""
-}`,
+⚠️ IMPORTANT: <thinking> block MUST come before JSON.
+`,
 
   de: `Du bist der MASTER STRATEGIST AGENT - ein weltbekanntes Genie der Fußballanalyse.
 
@@ -479,6 +302,7 @@ export interface MasterStrategistResult {
     contradictions_found: string[];
     why_this_is_surprise: string | null;
   };
+  thinkingProcess?: string; // 🆕 Added to capture CoT output
   // Backward compatibility fields (optional)
   agentEvaluation?: {
     [agent: string]: {
@@ -657,19 +481,33 @@ function buildAgentContext(
   }
 
   context += `└─────────────────────────────────────────────────────────────────────────────┘
+  
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📈 ADVANCED METRICS (Deeper Insights)
+├─────────────────────────────────────────────────────────────────────────────┤
+`;
+
+  if (matchData.advancedMetrics) {
+    const am = matchData.advancedMetrics;
+    context += `│ Home Instability Index: ${am.homeInstability} / 100 (High = Erratic)\n`;
+    context += `│ Away Instability Index: ${am.awayInstability} / 100\n`;
+    context += `│ Home Dominance Ratio: ${am.homeDominance.toFixed(2)} (>1.0 = Dominant)\n`;
+    context += `│ Away Dominance Ratio: ${am.awayDominance.toFixed(2)}\n`;
+    context += `│ Home Fatigue Factor: ${am.homeFatigue !== undefined ? am.homeFatigue : 'N/A'} / 100 (High = Tired)\n`;
+    context += `│ Away Fatigue Factor: ${am.awayFatigue !== undefined ? am.awayFatigue : 'N/A'} / 100\n`;
+  } else {
+    context += `│ ⚠️ Advanced Metrics not available\n`;
+  }
+
+  context += `└─────────────────────────────────────────────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════════════
                          MASTER ANALİZ TALİMATI
 ═══════════════════════════════════════════════════════════════════════════════
 
-Yukarıdaki agent'ların çıktılarını analiz et:
-1. Her agent'ı değerlendir (güvenilirlik, güçlü/zayıf yönler)
-2. Tutarsızlıkları tespit et ve çöz
-3. Güçlü sinyalleri belirle
-4. Ağırlıklı konsensüs oluştur
-5. En iyi bahisleri belirle
-
-SADECE JSON formatında döndür, başka açıklama ekleme.
+Yukarıdaki agent'ların çıktılarını analiz et.
+ÖNCE <thinking>...</thinking> blok içinde sesli düşün, stratejini belirle.
+SONRA sadece JSON formatını döndür.
 `;
 
   return context;
@@ -688,16 +526,16 @@ export async function runMasterStrategist(
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<MasterStrategistResult> {
   console.log('🧠 Master Strategist Agent starting...');
-  console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
+  console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam} `);
 
   const systemPrompt = MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
   const context = buildAgentContext(agentResults, matchData, language);
   const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 
   const userMessageByLang = {
-    tr: `${learningContext}\n${context}\n\nYukarıdaki agent çıktılarını analiz et ve Master Strategist olarak final kararı ver. SADECE JSON formatında döndür.`,
-    en: `${learningContext}\n${context}\n\nAnalyze the agent outputs above and make final decision as Master Strategist. Return ONLY JSON format.`,
-    de: `${learningContext}\n${context}\n\nAnalysiere die Agenten-Ausgaben oben und treffe finale Entscheidung als Master Strategist. Gib NUR JSON-Format zurück.`
+    tr: `${learningContext} \n${context} \n\nYukarıdaki agent çıktılarını analiz et ve Master Strategist olarak final kararı ver.SADECE JSON formatında döndür.`,
+    en: `${learningContext} \n${context} \n\nAnalyze the agent outputs above and make final decision as Master Strategist.Return ONLY JSON format.`,
+    de: `${learningContext} \n${context} \n\nAnalysiere die Agenten - Ausgaben oben und treffe finale Entscheidung als Master Strategist.Gib NUR JSON - Format zurück.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
@@ -710,29 +548,46 @@ export async function runMasterStrategist(
       useMCP: false, // MCP devre dışı - daha hızlı
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
-      temperature: 0.2,
-      maxTokens: 1200, // JSON tamamlanması için yeterli
-      timeout: 10000 // 10 saniye
+      temperature: 0.2, // Slightly increased for creative reasoning
+      maxTokens: 2000, // Increased for CoT + JSON
+      timeout: 15000 // 15 seconds
     });
 
     if (!response) {
       throw new Error('No response from AI');
     }
 
+    // Capture thinking process
+    let thinkingProcess = '';
+    const thinkingMatch = response.match(/<thinking>([\s\S]*?)<\/thinking>/);
+    if (thinkingMatch) {
+      thinkingProcess = thinkingMatch[1].trim();
+      console.log('🤔 Master Strategist Thinking Process:\n', thinkingProcess);
+    }
+
     // Parse JSON
     let result: MasterStrategistResult;
     try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
+      // Find the first '{' and the last '}' to extract JSON
+      const jsonStart = response.indexOf('{');
+      const jsonEnd = response.lastIndexOf('}');
+
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        const jsonStr = response.substring(jsonStart, jsonEnd + 1);
+        result = JSON.parse(jsonStr);
       } else {
-        throw new Error('No JSON found in response');
+        throw new Error('No JSON object found in response');
       }
     } catch (parseError) {
       console.error('❌ Master Strategist JSON parse error:', parseError);
       console.log('Raw response:', response.substring(0, 500));
       // Fallback
       result = getDefaultMasterStrategist(agentResults, matchData, language);
+    }
+
+    // Add thinking process to result
+    if (thinkingProcess) {
+      result.thinkingProcess = thinkingProcess;
     }
 
     // Eğer AI final objesi döndürmediyse, fallback ile tamamla
@@ -746,14 +601,14 @@ export async function runMasterStrategist(
       if (!result.signals) result.signals = fallback.signals;
     }
 
-    console.log(`✅ Master Strategist complete:`);
-    console.log(`   🎯 Confidence: ${result.confidence || 0}%`);
-    console.log(`   📊 Primary: ${result.final?.primary_pick?.market || 'N/A'} - ${result.final?.primary_pick?.selection || 'N/A'}`);
+    console.log(`✅ Master Strategist complete: `);
+    console.log(`   🎯 Confidence: ${result.confidence || 0}% `);
+    console.log(`   📊 Primary: ${result.final?.primary_pick?.market || 'N/A'} - ${result.final?.primary_pick?.selection || 'N/A'} `);
     if (result.final?.surprise_pick) {
-      console.log(`   🎲 Surprise: ${result.final.surprise_pick.market} - ${result.final.surprise_pick.selection} @ ${result.final.surprise_pick.market_odds}`);
+      console.log(`   🎲 Surprise: ${result.final.surprise_pick.market} - ${result.final.surprise_pick.selection} @${result.final.surprise_pick.market_odds} `);
     }
     if (result.final?.hedge) {
-      console.log(`   🛡️ Hedge: ${result.final.hedge.market} - ${result.final.hedge.selection}`);
+      console.log(`   🛡️ Hedge: ${result.final.hedge.market} - ${result.final.hedge.selection} `);
     }
 
     return result;

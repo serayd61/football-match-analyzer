@@ -155,8 +155,8 @@ function convertFullFixtureToMatchData(
       wins: (homeForm.match(/W/g) || []).length,
       draws: (homeForm.match(/D/g) || []).length,
       losses: (homeForm.match(/L/g) || []).length,
-      avgGoals: calculateAvgGoals(homeMatches, true).toFixed(2),
-      avgConceded: calculateAvgGoals(homeMatches, false).toFixed(2),
+      avgGoals: calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, true).toFixed(2),
+      avgConceded: calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, false).toFixed(2),
       over25Percentage: calculateOver25(homeMatches).toFixed(0),
       bttsPercentage: calculateBTTS(homeMatches).toFixed(0),
       cleanSheetPercentage: calculateCleanSheets(homeMatches).toFixed(0),
@@ -173,8 +173,8 @@ function convertFullFixtureToMatchData(
       wins: (awayForm.match(/W/g) || []).length,
       draws: (awayForm.match(/D/g) || []).length,
       losses: (awayForm.match(/L/g) || []).length,
-      avgGoals: calculateAvgGoals(awayMatches, true).toFixed(2),
-      avgConceded: calculateAvgGoals(awayMatches, false).toFixed(2),
+      avgGoals: calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, true).toFixed(2),
+      avgConceded: calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, false).toFixed(2),
       over25Percentage: calculateOver25(awayMatches).toFixed(0),
       bttsPercentage: calculateBTTS(awayMatches).toFixed(0),
       cleanSheetPercentage: calculateCleanSheets(awayMatches).toFixed(0),
@@ -222,9 +222,9 @@ function convertFullFixtureToMatchData(
     detailedStats: additionalData ? {
       home: additionalData.homeTeamStats ? {
         form: additionalData.homeTeamStats.recentForm || homeForm,
-        avgGoalsScored: additionalData.homeTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(homeMatches, true).toFixed(2)),
-        avgGoalsConceded: additionalData.homeTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(homeMatches, false).toFixed(2)),
-        // 🆕 Ev sahibi için evdeki maçları filtrele ve hesapla - homeTeamStats'tan direkt al veya hesapla
+        avgGoalsScored: additionalData.homeTeamStats.avgGoalsScored || parseFloat(calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, true).toFixed(2)),
+        avgGoalsConceded: additionalData.homeTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, false).toFixed(2)),
+        // 🆕 Ev sahibi için evdeki maçları filtrele ve hesapla
         homeAvgGoalsScored: additionalData.homeTeamStats?.homeAvgGoalsScored || parseFloat(calculateAvgGoalsForTeam(homeMatches.filter((m: any) => m.isHome === true), fullData.homeTeam.id, true).toFixed(2)) || additionalData.homeTeamStats?.avgGoalsScored || 1.2,
         homeAvgGoalsConceded: additionalData.homeTeamStats?.homeAvgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(homeMatches.filter((m: any) => m.isHome === true), fullData.homeTeam.id, false).toFixed(2)) || additionalData.homeTeamStats?.avgGoalsConceded || 1.0,
         bttsPercentage: additionalData.homeTeamStats.bttsPercentage || parseFloat(calculateBTTS(homeMatches).toFixed(0)),
@@ -249,11 +249,11 @@ function convertFullFixtureToMatchData(
       } : undefined,
       away: additionalData.awayTeamStats ? {
         form: additionalData.awayTeamStats.recentForm || awayForm,
-        avgGoalsScored: additionalData.awayTeamStats.avgGoalsScored || parseFloat(calculateAvgGoals(awayMatches, true).toFixed(2)),
-        avgGoalsConceded: additionalData.awayTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoals(awayMatches, false).toFixed(2)),
-        // 🆕 Deplasman takımı için deplasmandaki maçları filtrele ve hesapla - awayTeamStats'tan direkt al veya hesapla
-        awayAvgGoalsScored: additionalData.awayTeamStats?.awayAvgGoalsScored || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, true).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsScored || 1.1,
-        awayAvgGoalsConceded: additionalData.awayTeamStats?.awayAvgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, false).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsConceded || 1.1,
+        avgGoalsScored: additionalData.awayTeamStats.avgGoalsScored || parseFloat(calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, true).toFixed(2)),
+        avgGoalsConceded: additionalData.awayTeamStats.avgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, false).toFixed(2)),
+        // 🆕 Deplasman için DEPLASMANDAKİ değerler
+        awayAvgGoalsScored: additionalData.awayTeamStats?.awayAvgGoalsScored || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, true).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsScored || 1.0,
+        awayAvgGoalsConceded: additionalData.awayTeamStats?.awayAvgGoalsConceded || parseFloat(calculateAvgGoalsForTeam(awayMatches.filter((m: any) => m.isHome === false), fullData.awayTeam.id, false).toFixed(2)) || additionalData.awayTeamStats?.avgGoalsConceded || 1.2,
         bttsPercentage: additionalData.awayTeamStats.bttsPercentage || parseFloat(calculateBTTS(awayMatches).toFixed(0)),
         over25Percentage: additionalData.awayTeamStats.over25Percentage || parseFloat(calculateOver25(awayMatches).toFixed(0)),
         awayOver25Percentage: parseFloat(calculateOver25(awayMatches.filter((m: any) => m.isHome === false)).toFixed(0)),
@@ -290,23 +290,29 @@ function convertFullFixtureToMatchData(
         }))
       } : undefined,
       injuries: [...(additionalData.homeInjuries || []), ...(additionalData.awayInjuries || [])]
-    } : undefined
+    } : undefined,
+
+    // 🆕 Calculate Advanced Metrics for Master Strategist
+    advancedMetrics: {
+      homeInstability: calculateInstabilityIndex(homeForm),
+      awayInstability: calculateInstabilityIndex(awayForm),
+      homeDominance: calculateDominanceRatio(
+        parseFloat(calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, true).toFixed(2)),
+        parseFloat(calculateAvgGoalsForTeam(homeMatches, fullData.homeTeam.id, false).toFixed(2))
+      ),
+      awayDominance: calculateDominanceRatio(
+        parseFloat(calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, true).toFixed(2)),
+        parseFloat(calculateAvgGoalsForTeam(awayMatches, fullData.awayTeam.id, false).toFixed(2))
+      ),
+      homeFatigue: calculateFatigueFactor(homeMatches),
+      awayFatigue: calculateFatigueFactor(awayMatches)
+    }
   } as MatchData & { detailedStats?: any };
 }
 
+
 // Helper functions
-function calculateAvgGoals(matches: any[], forGoals: boolean): number {
-  if (!matches || matches.length === 0) return 1.2;
 
-  let total = 0;
-  matches.forEach((m: any) => {
-    const score = m.score || '0-0';
-    const [home, away] = score.split('-').map((s: string) => parseInt(s) || 0);
-    total += forGoals ? home : away;
-  });
-
-  return total / matches.length;
-}
 
 // 🆕 Takım bazlı gol ortalaması hesapla (ev/deplasman ayrımı ile)
 function calculateAvgGoalsForTeam(matches: any[], teamId: number, forGoalsScored: boolean): number {
@@ -1017,6 +1023,63 @@ function extractTop3PredictionsFromAgents(
 
   return top3;
 }
+
+// ============================================================================
+// HELPER FUNCTIONS FOR STATS
+// ============================================================================
+
+// 🆕 Advanced Metrics Calculations
+function calculateInstabilityIndex(form: string): number {
+  if (!form) return 50;
+  // W=3, D=1, L=0
+  const pointsMap: { [key: string]: number } = { 'W': 3, 'D': 1, 'L': 0 };
+  const points = form.split('').map(c => pointsMap[c] ?? 1);
+  if (points.length < 2) return 50;
+
+  // Calculate variance
+  const mean = points.reduce((a, b) => a + b, 0) / points.length;
+  const variance = points.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / points.length;
+
+  // Max variance for 0,3 (range 3) is approx 2.25. Normalize to 0-100.
+  // Using 2.0 as strict baseline for unstable
+  return Math.min(100, (variance / 2.0) * 100);
+}
+
+function calculateDominanceRatio(avgScored: number, avgConceded: number): number {
+  if (avgConceded < 0.1) return avgScored > 0 ? 5.0 : 1.0; // Avoid division by zero
+  return parseFloat((avgScored / avgConceded).toFixed(2));
+}
+
+function calculateFatigueFactor(matches: any[]): number {
+  if (!matches || matches.length < 3) return 50;
+
+  // Sort by date desc
+  const sorted = [...matches]
+    .filter(m => m.date)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const recent = sorted.slice(0, 3);
+  if (recent.length < 2) return 50;
+
+  const lastMatch = new Date(recent[0].date);
+  const thirdMatch = new Date(recent[recent.length - 1].date);
+
+  // check validation
+  if (isNaN(lastMatch.getTime()) || isNaN(thirdMatch.getTime())) return 50;
+
+  const diffDays = (lastMatch.getTime() - thirdMatch.getTime()) / (1000 * 60 * 60 * 24);
+
+  // If 3 matches in <= 8 days -> High fatigue (80-100)
+  // If 3 matches in >= 21 days -> Low fatigue (0-20)
+
+  if (diffDays <= 7) return 95; // Extreme fatigue
+  if (diffDays <= 10) return 80; // High
+  if (diffDays <= 14) return 60; // Moderate
+  if (diffDays <= 21) return 30; // Low
+  return 10; // Fresh
+}
+
+
 
 // ============================================================================
 // CONSENSUS BUILDER

@@ -14,10 +14,18 @@ export interface MatchData {
   homeForm?: FormData;
   awayForm?: FormData;
   h2h?: H2HData;
-  // 🆕 Detailed stats for agents (venue-specific, timing patterns, etc.)
   detailedStats?: {
     home?: any;
     away?: any;
+  };
+  // 🆕 Advanced metrics for Master Strategist
+  advancedMetrics?: {
+    homeInstability: number; // 0-100 (High = erratic team)
+    awayInstability: number;
+    homeDominance: number; // > 1.0 means dominant
+    awayDominance: number;
+    homeFatigue?: number; // 0-100 (High = tired)
+    awayFatigue?: number;
   };
 }
 

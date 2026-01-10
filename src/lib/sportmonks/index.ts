@@ -122,7 +122,12 @@ async function fetchSportmonks(
 
       if (!res.ok) {
         if (res.status === 404) {
-          console.log(`⚠️ Sportmonks 404 (expected for some teams): ${endpoint}`);
+          console.log(`ℹ️ Sportmonks 404 (expected for some resources): ${endpoint}`);
+          return null;
+        } else if (res.status === 400) {
+          // 400 usually means invalid parameters - log for debugging
+          const paramKeys = Object.keys(params).join(',');
+          console.warn(`⚠️ Sportmonks 400 Bad Request: ${endpoint} (params: ${paramKeys || 'none'})`);
           return null;
         } else {
           console.error(`❌ Sportmonks API error ${res.status}: ${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
