@@ -639,8 +639,8 @@ export async function saveUnifiedAnalysis(
   try {
     console.log('💾 Saving unified analysis for fixture', input.fixtureId);
 
-    // Normalize match_date to DATE format (YYYY-MM-DD)
-    const matchDate = input.matchDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+    // Use full match_date timestamp if available
+    const matchDate = input.matchDate || new Date().toISOString();
 
     // Ensure predictions are valid enum values
     const mrPrediction = result.predictions.matchResult.prediction;

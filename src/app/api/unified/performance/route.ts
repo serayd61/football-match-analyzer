@@ -19,45 +19,45 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30');
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     // Settled analyses
     const { data: settled, error: settledError } = await supabase
       .from('unified_analysis')
       .select('*')
       .eq('is_settled', true)
       .gte('created_at', startDate.toISOString());
-    
+
     if (settledError) throw settledError;
-    
+
     // All analyses
     const { data: all, error: allError } = await supabase
       .from('unified_analysis')
       .select('*')
       .gte('created_at', startDate.toISOString());
-    
+
     if (allError) throw allError;
-    
+
     // Calculate stats
     const total = all?.length || 0;
     const settledCount = settled?.length || 0;
     const pending = total - settledCount;
-    
+
     // Accuracy calculations
     const matchResultCorrect = settled?.filter(s => s.match_result_correct === true).length || 0;
     const overUnderCorrect = settled?.filter(s => s.over_under_correct === true).length || 0;
     const bttsCorrect = settled?.filter(s => s.btts_correct === true).length || 0;
     const scoreCorrect = settled?.filter(s => s.score_prediction_correct === true).length || 0;
-    
+
     const matchResultRate = settledCount > 0 ? (matchResultCorrect / settledCount) * 100 : 0;
     const overUnderRate = settledCount > 0 ? (overUnderCorrect / settledCount) * 100 : 0;
     const bttsRate = settledCount > 0 ? (bttsCorrect / settledCount) * 100 : 0;
     const scoreRate = settledCount > 0 ? (scoreCorrect / settledCount) * 100 : 0;
-    
+
     // Overall accuracy (average of all markets)
     const overallCorrect = matchResultCorrect + overUnderCorrect + bttsCorrect + scoreCorrect;
     const overallTotal = settledCount * 4;
     const overallRate = overallTotal > 0 ? (overallCorrect / overallTotal) * 100 : 0;
-    
+
     // Confidence distribution
     const highConf = settled?.filter(s => s.overall_confidence >= 75).length || 0;
     const highConfCorrect = settled?.filter(s => s.overall_confidence >= 75 && s.match_result_correct === true).length || 0;
@@ -65,16 +65,15 @@ export async function GET(request: NextRequest) {
     const mediumConfCorrect = settled?.filter(s => s.overall_confidence >= 60 && s.overall_confidence < 75 && s.match_result_correct === true).length || 0;
     const lowConf = settled?.filter(s => s.overall_confidence < 60).length || 0;
     const lowConfCorrect = settled?.filter(s => s.overall_confidence < 60 && s.match_result_correct === true).length || 0;
-    
-    // Recent analyses (last 20)
+
     const { data: recent, error: recentError } = await supabase
       .from('unified_analysis')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('match_date', { ascending: false })
       .limit(20);
-    
+
     if (recentError) throw recentError;
-    
+
     const recentAnalyses = (recent || []).map(a => ({
       fixtureId: a.fixture_id,
       homeTeam: a.home_team,
@@ -113,7 +112,7 @@ export async function GET(request: NextRequest) {
       isSettled: a.is_settled,
       createdAt: a.created_at
     }));
-    
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -170,7 +169,7 @@ export async function GET(request: NextRequest) {
         recentAnalyses
       }
     });
-    
+
   } catch (error: any) {
     console.error('Performance API error:', error);
     return NextResponse.json(
