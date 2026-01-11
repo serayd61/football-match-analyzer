@@ -33,12 +33,17 @@ Workflow'u açtıktan sonra, aşağıdaki node'lar için credentials ayarlamanı
 3. Aşağıdaki bilgileri girin:
 
 ```
-Host: db.[your-project-ref].supabase.co
+Host: db.njrpxhmdqadejjarizmj.supabase.co
 Database: postgres
 User: postgres
 Password: [your-db-password]
 Port: 5432
 SSL: Enabled
+```
+
+**Örnek (Project ID: njrpxhmdqadejjarizmj):**
+```
+Host: db.njrpxhmdqadejjarizmj.supabase.co
 ```
 
 **Supabase şifresini bulmak için:**
