@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
+import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -120,59 +121,60 @@ function extractLeagues(fixtures: any[]): { id: number; name: string; logo?: str
 // GET HANDLER
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+async function getFixturesHandler(request: NextRequest) {
   const startTime = Date.now();
   
-  try {
-    const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
-    const leagueId = searchParams.get('league_id');
-    
-    // Cache key
-    const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
-    
-    // Get from cache or fetch
-    const allFixtures = await getOrSet(
-      cacheKey,
-      async () => {
-        const rawFixtures = await fetchFixturesFromAPI(date);
-        return transformFixtures(rawFixtures);
-      },
-      CACHE_TTL.FIXTURES
-    );
-    
-    // Ligleri çıkar
-    const leagues = extractLeagues(allFixtures);
-    
-    // Lig filtresi uygula
-    const fixtures = leagueId 
-      ? allFixtures.filter(f => f.leagueId === parseInt(leagueId))
-      : allFixtures;
-    
-    const processingTime = Date.now() - startTime;
-    
-    return NextResponse.json({
-      success: true,
+  const { searchParams } = new URL(request.url);
+  const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const leagueId = searchParams.get('league_id');
+  
+  // Tarih validasyonu
+  if (date && isNaN(Date.parse(date))) {
+    throw Errors.validation('Invalid date format. Use YYYY-MM-DD format.');
+  }
+  
+  // Cache key
+  const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
+  
+  // Get from cache or fetch
+  const allFixtures = await getOrSet(
+    cacheKey,
+    async () => {
+      const rawFixtures = await fetchFixturesFromAPI(date);
+      return transformFixtures(rawFixtures);
+    },
+    CACHE_TTL.FIXTURES
+  );
+  
+  // Ligleri çıkar
+  const leagues = extractLeagues(allFixtures);
+  
+  // Lig filtresi uygula
+  const fixtures = leagueId 
+    ? allFixtures.filter(f => f.leagueId === parseInt(leagueId))
+    : allFixtures;
+  
+  const processingTime = Date.now() - startTime;
+  
+  return successResponse(
+    {
       date,
       count: fixtures.length,
       totalCount: allFixtures.length,
       fixtures,
       leagues,
+    },
+    undefined,
+    {
       cached: processingTime < 50,
-      processingTime
-    }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-        'X-Processing-Time': `${processingTime}ms`
-      }
-    });
-    
-  } catch (error) {
-    console.error('Fixtures API error:', error);
-    return NextResponse.json(
-      { success: false, error: String(error) },
-      { status: 500 }
-    );
-  }
+      processingTime,
+    }
+  );
 }
+
+// Middleware ile sarılmış handler (Rate Limit + Error Handler)
+export const GET = withApiMiddleware(
+  getFixturesHandler,
+  RATE_LIMIT_PRESETS.PUBLIC // Public endpoint - IP bazlı rate limit
+);
 
