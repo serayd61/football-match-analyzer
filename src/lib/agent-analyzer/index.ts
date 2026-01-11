@@ -7,7 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 import { getFullFixtureData, getTeamStats, getHeadToHead, getTeamInjuries, type FullFixtureData } from '@/lib/sportmonks/index';
 import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
-import { runClaudeDataCollector, CollectedData } from '../heurist/agents/claudeDataCollector';
+// 🚫 Claude Data Collector kaldırıldı - gereksiz veri toplama
+// import { runClaudeDataCollector, CollectedData } from '../heurist/agents/claudeDataCollector';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { runMasterStrategist } from '../heurist/agents/masterStrategist';
 import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
@@ -1359,66 +1360,16 @@ export async function runAgentAnalysis(
       console.warn(`⚠️ Low data quality (${dataQualityScore}%), some agents may produce less reliable results`);
     }
 
-    // 🆕 CLAUDE DATA COLLECTOR: Tüm agent'lardan önce en üst düzey verileri topla
-    if (onProgress) onProgress({ stage: 'data_collector', message: 'Premium veri toplayıcı (Claude) çalıştırılıyor...' });
-    console.log('🔍 Claude Data Collector: Collecting premium data from Sportmonks...');
-    let collectedData: CollectedData | null = null;
-
-    try {
-      collectedData = await runClaudeDataCollector(matchData, language);
-
-      if (collectedData) {
-        console.log(`✅ Claude Data Collector completed`);
-        console.log(`   📊 Data Quality: ${collectedData.dataQuality}/100`);
-
-        // Toplanan verileri matchData'ya merge et
-        if (collectedData.homeTeamStats) {
-          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
-          if (!matchData.detailedStats.home) matchData.detailedStats.home = {} as any;
-
-          Object.assign(matchData.detailedStats.home, {
-            homeAvgGoalsScored: collectedData.homeTeamStats.homeAvgGoalsScored,
-            homeAvgGoalsConceded: collectedData.homeTeamStats.homeAvgGoalsConceded,
-            avgGoalsScored: collectedData.homeTeamStats.avgGoalsScored,
-            avgGoalsConceded: collectedData.homeTeamStats.avgGoalsConceded,
-            recentForm: collectedData.homeTeamStats.recentForm,
-            formPoints: collectedData.homeTeamStats.formPoints,
-          });
-        }
-
-        if (collectedData.awayTeamStats) {
-          if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
-          if (!matchData.detailedStats.away) matchData.detailedStats.away = {} as any;
-
-          Object.assign(matchData.detailedStats.away, {
-            awayAvgGoalsScored: collectedData.awayTeamStats.awayAvgGoalsScored,
-            awayAvgGoalsConceded: collectedData.awayTeamStats.awayAvgGoalsConceded,
-            avgGoalsScored: collectedData.awayTeamStats.avgGoalsScored,
-            avgGoalsConceded: collectedData.awayTeamStats.avgGoalsConceded,
-            recentForm: collectedData.awayTeamStats.recentForm,
-            formPoints: collectedData.awayTeamStats.formPoints,
-          });
-        }
-
-        if (collectedData.h2hData) {
-          matchData.h2h = {
-            ...matchData.h2h,
-            ...collectedData.h2hData,
-          } as any;
-        }
-
-        console.log(`   ✅ Collected data merged into matchData`);
-      }
-    } catch (error: any) {
-      console.error(`   ❌ Claude Data Collector error: ${error.message}`);
-      console.warn(`   ⚠️ Continuing with existing data`);
-    }
+    // 🚫 CLAUDE DATA COLLECTOR KALDIRILDI - Zaten getFullFixtureData ve getTeamStats çağrıları yapılmış
+    // Bu agent tekrar aynı verileri topluyordu, gereksiz zaman kaybı yaratıyordu (~10-15 saniye)
+    // Veriler zaten matchData'da mevcut, agent'lar bunu kullanabilir
 
     // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Deep Analysis (PARALEL)
     if (onProgress) onProgress({ stage: 'core_agents', message: 'Uzman agentlar (Stats, Odds, Deep Analysis) paralel analiz yapıyor...' });
     console.log('🎯 3-Agent System: Stats, Odds, Deep Analysis (PARALLEL)');
 
-    const [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult] = await Promise.all([
+    // 🚫 DEVIL'S ADVOCATE KALDIRILDI - Ana tahmin için kritik değil, ~15-20 saniye tasarruf
+    const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Stats Agent analizini tamamladı.' });
         return res;
@@ -1439,15 +1390,11 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 30000, 'Deep Analysis Agent'),
-      withTimeout(runDevilsAdvocateAgent(matchData, language).then(res => {
-        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Devil\'s Advocate Agent analizini tamamladı.' });
-        return res;
-      }).catch(err => {
-        console.error('❌ Devil\'s Advocate agent failed:', err?.message || err);
-        return null;
-      }), 25000, 'Devil\'s Advocate Agent'),
+      }), 20000, 'Deep Analysis Agent'), // ⚡ Timeout 30s → 20s (10s tasarruf)
     ]);
+    
+    // Devil's Advocate devre dışı
+    const devilsAdvocateResult = null;
 
     console.log('🔍 DEBUG: DevilsAdvocateResult:', JSON.stringify(devilsAdvocateResult, null, 2));
     console.log('🔍 DEBUG: StatsResult:', !!statsResult);
@@ -1458,14 +1405,14 @@ export async function runAgentAnalysis(
     const geniusAnalystResult = null;
 
     // 🆕 Minimum agent başarı kontrolü - en az 1 agent başarılı olmalı
-    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult].filter(r => r !== null).length;
+    const successfulAgents = [statsResult, oddsResult, deepAnalysisResult].filter(r => r !== null).length;
 
     if (successfulAgents < 1) {
       console.error(`❌ No agents completed. Cannot proceed.`);
       return null;
     }
 
-    console.log(`✅ Core Agents completed: ${successfulAgents}/4 successful`);
+    console.log(`✅ Core Agents completed: ${successfulAgents}/3 successful`);
     if (statsResult) {
       console.log(`   📊 Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts} | Conf: ${statsResult.confidence || statsResult.overUnderConfidence || 'N/A'}%`);
     }
@@ -1481,7 +1428,7 @@ export async function runAgentAnalysis(
     console.log('🧠 Step 4.1: Running Master Strategist Agent (8s timeout)...');
     let masterStrategistResult = null;
     try {
-      // 8 saniye timeout - Vercel limit için agresif
+      // ⚡ 8 saniye timeout - Vercel limit için optimize edildi (12s → 8s, 4s tasarruf)
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
@@ -1497,9 +1444,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 12s');
+            console.warn('   ⏱️ Master Strategist timeout after 8s');
             resolve(null);
-          }, 12000);
+          }, 8000); // ⚡ 12s → 8s
         })
       ]);
 
