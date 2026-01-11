@@ -9,14 +9,17 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-// Normalizasyon fonksiyonları (DÜZELTME: Daha kapsamlı)
+// Normalizasyon fonksiyonları (DÜZELTME: Daha kapsamlı ve sağlam)
 function normalizeMR(val: string | null | undefined): string {
   if (!val) return '';
   const v = val.toLowerCase().trim();
-  // Daha kapsamlı kontrol - 'away', 'home', 'away_win', 'home_win' gibi formatları da yakala
-  if (v === '1' || v === 'home' || v === 'ev sahibi' || v === 'home_win' || v === 'homewin' || (v.includes('home') && v.includes('win'))) return '1';
-  if (v === '2' || v === 'away' || v === 'deplasman' || v === 'away_win' || v === 'awaywin' || (v.includes('away') && v.includes('win'))) return '2';
+  // Önce tam eşleşmeleri kontrol et (en yaygın formatlar)
+  if (v === '1' || v === 'home' || v === 'ev sahibi' || v === 'home_win' || v === 'homewin') return '1';
+  if (v === '2' || v === 'away' || v === 'deplasman' || v === 'away_win' || v === 'awaywin') return '2';
   if (v === 'x' || v === 'draw' || v === 'beraberlik' || v === 'tie' || v === 'd') return 'X';
+  // Sonra içerik kontrolü (kelime sınırları ile daha güvenli)
+  if (v.includes('home') && !v.includes('away')) return '1';
+  if (v.includes('away') && !v.includes('home')) return '2';
   return v;
 }
 

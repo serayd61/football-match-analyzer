@@ -130,20 +130,29 @@ async function settleUnifiedAnalysis(
   awayScore: number
 ): Promise<boolean> {
   // Normalize prediction helper - maps 'home'→'1', 'away'→'2', 'draw/x'→'X'
+  // Daha sağlam: Sadece 'home' veya 'away' string'lerini yakala (kelime sınırları olmadan)
   const normalizeMR = (pred: string | undefined): string => {
     if (!pred) return '';
     const p = pred.toLowerCase().trim();
-    if (p === '1' || p === 'home' || p === 'ev sahibi' || p === 'home_win' || p.includes('home')) return '1';
-    if (p === '2' || p === 'away' || p === 'deplasman' || p === 'away_win' || p.includes('away')) return '2';
+    // Önce tam eşleşmeleri kontrol et
+    if (p === '1' || p === 'home' || p === 'ev sahibi' || p === 'home_win' || p === 'homewin') return '1';
+    if (p === '2' || p === 'away' || p === 'deplasman' || p === 'away_win' || p === 'awaywin') return '2';
     if (p === 'x' || p === 'draw' || p === 'beraberlik' || p === 'tie' || p === 'd') return 'X';
+    // Sonra içerik kontrolü (kelime sınırları ile daha güvenli)
+    if (p.includes('home') && !p.includes('away')) return '1';
+    if (p.includes('away') && !p.includes('home')) return '2';
     return p.toUpperCase();
   };
 
   const normalizeOU = (pred: string | undefined): string => {
     if (!pred) return '';
     const p = pred.toLowerCase().trim();
+    // Case-insensitive karşılaştırma için normalize et
     if (p.includes('over') || p.includes('üst') || p === 'o') return 'Over';
     if (p.includes('under') || p.includes('alt') || p === 'u') return 'Under';
+    // Eğer zaten doğru formattaysa (büyük/küçük harf fark etmez)
+    if (p === 'over') return 'Over';
+    if (p === 'under') return 'Under';
     return pred;
   };
 
