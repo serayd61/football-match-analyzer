@@ -28,7 +28,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.CRON_SECRET || $env.tipster-league-secret-2025 }}"
+              "value": "Bearer YOUR_CRON_SECRET_HERE"
             }
           ]
         },

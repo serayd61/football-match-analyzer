@@ -62,16 +62,19 @@ Host: db.njrpxhmdqadejjarizmj.supabase.co
 3. **"Send Headers"** → **Aktif** olmalı
 4. **"Header Parameters"** bölümünde:
    - **Name:** `Authorization`
-   - **Value:** `Bearer {{ $env.CRON_SECRET || $env.tipster-league-secret-2025 }}`
+   - **Value:** `Bearer YOUR_CRON_SECRET_HERE` (Vercel'deki CRON_SECRET değerini buraya yazın)
 
-**Environment Variable ayarlamak için:**
-- n8n → **Settings** → **Environment Variables**
-- `CRON_SECRET` veya `tipster-league-secret-2025` değişkenini ekleyin
-- Vercel'deki CRON_SECRET değerini kopyalayın
+**CRON_SECRET'i bulmak için:**
+- Vercel Dashboard → Project Settings → Environment Variables
+- `CRON_SECRET` değişkenini kopyalayın
+- n8n'de Header Value'ya yapıştırın: `Bearer [secret-değeri]`
 
-**Alternatif (Manuel):**
-- Header Value'yu direkt yazabilirsiniz: `Bearer your-secret-here`
-- Ama environment variable kullanmak daha güvenli
+**Örnek:**
+```
+Bearer abc123xyz789secret
+```
+
+**Not:** n8n'de environment variable kullanmak istiyorsanız, n8n cloud'da Settings → Environment Variables'dan ekleyebilirsiniz. Ama self-hosted n8n'de izin vermeniz gerekebilir.
 
 5. **"URL"** alanı zaten doğru:
 ```
