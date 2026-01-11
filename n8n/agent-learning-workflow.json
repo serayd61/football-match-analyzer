@@ -21,7 +21,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.VERCEL_URL || 'https://footballanalytics.pro' }}/api/cron/settle-unified",
+        "url": "https://footballanalytics.pro/api/cron/settle-unified",
         "authentication": "none",
         "sendHeaders": true,
         "headerParameters": {

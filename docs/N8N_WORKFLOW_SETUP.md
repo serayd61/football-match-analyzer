@@ -76,10 +76,12 @@ Bearer abc123xyz789secret
 
 **Not:** n8n'de environment variable kullanmak istiyorsanız, n8n cloud'da Settings → Environment Variables'dan ekleyebilirsiniz. Ama self-hosted n8n'de izin vermeniz gerekebilir.
 
-5. **"URL"** alanı zaten doğru:
+5. **"URL"** alanını kontrol edin:
 ```
-{{ $env.VERCEL_URL || 'https://footballanalytics.pro' }}/api/cron/settle-unified
+https://footballanalytics.pro/api/cron/settle-unified
 ```
+
+**Not:** Environment variable kullanmak istemiyorsanız, URL'yi direkt yazın. `{{ $env.VERCEL_URL }}` kullanmak "access to env vars denied" hatasına neden olabilir.
 
 #### C. Slack Webhook (Opsiyonel - Bildirimler için)
 
