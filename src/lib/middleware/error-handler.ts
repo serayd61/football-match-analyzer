@@ -14,31 +14,31 @@ export enum ErrorCode {
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
   INVALID_INPUT = 'INVALID_INPUT',
-  
+
   // 401 - Unauthorized
   UNAUTHORIZED = 'UNAUTHORIZED',
   AUTH_REQUIRED = 'AUTH_REQUIRED',
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   SESSION_EXPIRED = 'SESSION_EXPIRED',
-  
+
   // 403 - Forbidden
   FORBIDDEN = 'FORBIDDEN',
   ACCESS_DENIED = 'ACCESS_DENIED',
   SUBSCRIPTION_REQUIRED = 'SUBSCRIPTION_REQUIRED',
   LIMIT_REACHED = 'LIMIT_REACHED',
-  
+
   // 404 - Not Found
   NOT_FOUND = 'NOT_FOUND',
   RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
-  
+
   // 429 - Rate Limited
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  
+
   // 500 - Internal Server Error
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   DATABASE_ERROR = 'DATABASE_ERROR',
   EXTERNAL_API_ERROR = 'EXTERNAL_API_ERROR',
-  
+
   // 503 - Service Unavailable
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   MAINTENANCE_MODE = 'MAINTENANCE_MODE',
@@ -100,36 +100,36 @@ export function createError(
 
 // Common error creators
 export const Errors = {
-  validation: (message: string, details?: any) => 
+  validation: (message: string, details?: any) =>
     createError(ErrorCode.VALIDATION_ERROR, message, 400, details),
-  
-  missingField: (field: string) => 
+
+  missingField: (field: string) =>
     createError(ErrorCode.MISSING_REQUIRED_FIELD, `Missing required field: ${field}`, 400),
-  
-  unauthorized: (message: string = 'Unauthorized') => 
+
+  unauthorized: (message: string = 'Unauthorized') =>
     createError(ErrorCode.UNAUTHORIZED, message, 401),
-  
-  forbidden: (message: string = 'Access denied') => 
+
+  forbidden: (message: string = 'Access denied') =>
     createError(ErrorCode.FORBIDDEN, message, 403),
-  
-  notFound: (resource: string = 'Resource') => 
+
+  notFound: (resource: string = 'Resource') =>
     createError(ErrorCode.NOT_FOUND, `${resource} not found`, 404),
-  
-  rateLimited: (retryAfter?: number) => 
+
+  rateLimited: (retryAfter?: number) =>
     createError(
       ErrorCode.RATE_LIMIT_EXCEEDED,
       'Rate limit exceeded',
       429,
       { retryAfter }
     ),
-  
-  internal: (message: string = 'Internal server error', details?: any) => 
+
+  internal: (message: string = 'Internal server error', details?: any) =>
     createError(ErrorCode.INTERNAL_ERROR, message, 500, details),
-  
-  database: (message: string = 'Database error', details?: any) => 
+
+  database: (message: string = 'Database error', details?: any) =>
     createError(ErrorCode.DATABASE_ERROR, message, 500, details),
-  
-  externalApi: (service: string, details?: any) => 
+
+  externalApi: (service: string, details?: any) =>
     createError(
       ErrorCode.EXTERNAL_API_ERROR,
       `External API error: ${service}`,
@@ -149,9 +149,9 @@ export function handleError(
   error: unknown,
   request: NextRequest
 ): NextResponse<ApiError> {
-  const requestId = request.headers.get('x-request-id') || 
-                    `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+  const requestId = request.headers.get('x-request-id') ||
+    `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
   // AppError ise direkt kullan
   if (error instanceof AppError) {
     return NextResponse.json<ApiError>(
@@ -167,7 +167,7 @@ export function handleError(
       { status: error.statusCode }
     );
   }
-  
+
   // Zod validation error
   if (error && typeof error === 'object' && 'issues' in error) {
     return NextResponse.json<ApiError>(
@@ -183,15 +183,15 @@ export function handleError(
       { status: 400 }
     );
   }
-  
+
   // Standart Error
   if (error instanceof Error) {
     // Production'da internal error detaylarını gizle
     const isProduction = process.env.NODE_ENV === 'production';
-    const message = isProduction && error.message.includes('internal') 
-      ? 'An internal error occurred' 
+    const message = isProduction && error.message.includes('internal')
+      ? 'An internal error occurred'
       : error.message;
-    
+
     return NextResponse.json<ApiError>(
       {
         success: false,
@@ -205,7 +205,7 @@ export function handleError(
       { status: 500 }
     );
   }
-  
+
   // Unknown error
   return NextResponse.json<ApiError>(
     {
@@ -272,7 +272,7 @@ export function withErrorHandler(
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
-      
+
       return handleError(error, request);
     }
   };
@@ -295,10 +295,10 @@ export function withApiMiddleware(
   rateLimitConfig?: RateLimitConfig
 ) {
   let wrappedHandler = handler;
-  
+
   // Error handler ekle
   wrappedHandler = withErrorHandler(wrappedHandler);
-  
+
   // Rate limit ekle (eğer config verilmişse)
   if (rateLimitConfig) {
     wrappedHandler = withRateLimit(
@@ -307,6 +307,6 @@ export function withApiMiddleware(
       getUserIdFromRequest
     );
   }
-  
+
   return wrappedHandler;
 }
