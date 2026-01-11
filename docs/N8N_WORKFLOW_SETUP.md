@@ -32,44 +32,40 @@ Workflow'u açtıktan sonra, aşağıdaki node'lar için credentials ayarlamanı
 2. **"Credentials"** → **"Create New Credential"** → **"Postgres"**
 3. Aşağıdaki bilgileri girin:
 
+**⚠️ ÖNEMLİ: n8n cloud'dan Supabase'e bağlanırken Connection Pooler kullanın!**
+
+**Connection Pooler Ayarları (Önerilen):**
 ```
-Host: db.njrpxhmdqadejjarizmj.supabase.co
+Connection/Host: db.njrpxhmdqadejjarizmj.supabase.co
+Port: 6543 (Connection Pooler - ÖNEMLİ!)
 Database: postgres
-User: postgres
+User: postgres.njrpxhmdqadejjarizmj (pooler formatı)
 Password: [your-db-password]
-Port: 5432
-SSL: Enabled
+SSL: Allow (veya Enabled)
+Ignore SSL Issues: OFF
+Maximum Connections: 100
 ```
 
-**Örnek (Project ID: njrpxhmdqadejjarizmj):**
-```
-Host: db.njrpxhmdqadejjarizmj.supabase.co
-Port: 5432
-```
+**n8n'de Port Nerede?**
+- n8n'de PostgreSQL credential'ında **"Port"** alanı ayrı bir field olmalı
+- Eğer görmüyorsanız, credential'ı yeniden oluşturun
+- **Port: 6543** (Connection Pooler için) yazın
 
-**ÖNEMLİ - Connection Pooler Kullan (n8n cloud için):**
-n8n cloud'dan Supabase'e bağlanırken connection pooler kullanmanız gerekebilir:
-
+**Direct Connection (Pooler çalışmazsa):**
 ```
-Host: db.njrpxhmdqadejjarizmj.supabase.co
-Port: 6543 (Connection Pooler port)
-Database: postgres
-User: postgres.[project-ref] (pooler için)
-Password: [your-db-password]
-SSL: Enabled
-```
-
-**Alternatif - Direct Connection:**
-Eğer pooler çalışmazsa, direct connection dene:
-```
-Host: db.njrpxhmdqadejjarizmj.supabase.co
+Connection/Host: db.njrpxhmdqadejjarizmj.supabase.co
 Port: 5432 (Direct connection)
 Database: postgres
-User: postgres
+User: postgres (direct connection için)
 Password: [your-db-password]
-SSL: Enabled
-SSL Mode: require
+SSL: Allow
+Ignore SSL Issues: OFF
 ```
+
+**Hata: "ENETUNREACH" veya "connect ENETUNREACH"**
+- Port'u **6543** (Connection Pooler) olarak değiştirin
+- User'ı **postgres.njrpxhmdqadejjarizmj** formatında yazın
+- SSL: **Allow** veya **Enabled** olmalı
 
 **Supabase şifresini bulmak için:**
 - Supabase Dashboard → Project Settings → Database
