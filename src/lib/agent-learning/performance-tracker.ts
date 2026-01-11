@@ -53,8 +53,8 @@ export async function recordAgentPrediction(
     const supabase = getSupabase();
     const normalizedAgent = normalizeAgentName(agentName);
 
-    const { error } = await supabase
-      .from('agent_predictions')
+    const { error } = await (supabase
+      .from('agent_predictions') as any)
       .upsert({
         fixture_id: fixtureId,
         agent_name: normalizedAgent,
@@ -98,8 +98,8 @@ export async function settleAgentPredictions(
     const supabase = getSupabase();
 
     // Bu fixture için tüm agent tahminlerini bul
-    const { data: predictions, error: fetchError } = await supabase
-      .from('agent_predictions')
+    const { data: predictions, error: fetchError } = await (supabase
+      .from('agent_predictions') as any)
       .select('*')
       .eq('fixture_id', fixtureId)
       .is('settled_at', null);
@@ -134,8 +134,8 @@ export async function settleAgentPredictions(
         : null;
 
       // Güncelle
-      const { error: updateError } = await supabase
-        .from('agent_predictions')
+      const { error: updateError } = await (supabase
+        .from('agent_predictions') as any)
         .update({
           match_result_correct: matchResultCorrect,
           over_under_correct: overUnderCorrect,
@@ -228,8 +228,8 @@ export async function getAgentPerformanceSummary(league?: string): Promise<any[]
   try {
     const supabase = getSupabase();
 
-    let query = supabase
-      .from('agent_performance')
+    let query = (supabase
+      .from('agent_performance') as any)
       .select('*')
       .order('current_weight', { ascending: false });
 
