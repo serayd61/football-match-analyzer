@@ -62,10 +62,44 @@ SSL: Allow
 Ignore SSL Issues: OFF
 ```
 
-**Hata: "ENETUNREACH" veya "connect ENETUNREACH"**
-- Port'u **6543** (Connection Pooler) olarak değiştirin
-- User'ı **postgres.njrpxhmdqadejjarizmj** formatında yazın
-- SSL: **Allow** veya **Enabled** olmalı
+**Hata: "ENETUNREACH" veya "connect ENETUNREACH" (IPv6 sorunu)**
+
+Bu hata, n8n cloud'dan Supabase'e IPv6 üzerinden bağlanmaya çalıştığında oluşur. Çözümler:
+
+**Çözüm 1: Connection String Kullan (Önerilen)**
+
+n8n'de PostgreSQL credential'ında **"Connection String"** seçeneğini kullan:
+
+1. Credential'ı aç
+2. **"Connection"** alanı yerine **"Connection String"** kullan (varsa)
+3. Connection string formatı:
+   ```
+   postgresql://postgres.njrpxhmdqadejjarizmj:[PASSWORD]@db.njrpxhmdqadejjarizmj.supabase.co:6543/postgres?sslmode=require
+   ```
+   `[PASSWORD]` yerine gerçek şifreyi yazın
+
+**Çözüm 2: Supabase IP Whitelist Kontrolü**
+
+Supabase Dashboard'da:
+- Project Settings → Database → Connection Pooling
+- **"Allowed IP addresses"** kontrol edin
+- n8n cloud IP'lerini ekleyin (veya "Allow all" yapın - güvenlik riski var)
+
+**Çözüm 3: Direct Connection Dene (IPv4)**
+
+Port'u **5432** (direct connection) yapın:
+```
+Port: 5432
+User: postgres (pooler formatı olmadan)
+```
+
+**Çözüm 4: n8n Self-Hosted Kullan**
+
+n8n cloud yerine self-hosted n8n kullanırsanız IPv6 sorunu olmayabilir.
+
+**Çözüm 5: Supabase REST API Kullan (Alternatif)**
+
+PostgreSQL yerine Supabase REST API kullanabilirsiniz (HTTP Request node ile).
 
 **Supabase şifresini bulmak için:**
 - Supabase Dashboard → Project Settings → Database
@@ -152,17 +186,31 @@ Her node'un çıktısını kontrol edebilirsiniz:
 
 ## 🔧 Yaygın Sorunlar ve Çözümleri
 
-### Sorun 1: "Connection refused" veya "ENETUNREACH" hatası
+### Sorun 1: "Connection refused" veya "ENETUNREACH" hatası (IPv6 sorunu)
 
-**Çözüm:**
-- Supabase PostgreSQL credentials'ı kontrol edin
-- Host adresinin doğru olduğundan emin olun: `db.njrpxhmdqadejjarizmj.supabase.co`
-- **Port'u kontrol edin:**
-  - Connection Pooler için: `6543`
-  - Direct connection için: `5432`
-- SSL'in aktif olduğundan emin olun
-- **IPv6 sorunu varsa:** Connection Pooler kullanın (port 6543)
-- **n8n cloud'dan bağlanırken:** Connection Pooler önerilir
+**Hata:** `connect ENETUNREACH 2a05:d018:...:6543` (IPv6 adresi görünüyor)
+
+**Neden:** n8n cloud IPv6'yı desteklemiyor veya Supabase IPv6 bağlantısını engelliyor.
+
+**Çözümler (sırayla deneyin):**
+
+1. **Connection String Kullan:**
+   - Credential'da "Connection String" seçeneğini kullan
+   - Format: `postgresql://postgres.njrpxhmdqadejjarizmj:[PASSWORD]@db.njrpxhmdqadejjarizmj.supabase.co:6543/postgres?sslmode=require`
+
+2. **Direct Connection (Port 5432):**
+   - Port: `5432`
+   - User: `postgres` (pooler formatı olmadan)
+   - IPv4 üzerinden bağlanmayı dener
+
+3. **Supabase IP Whitelist:**
+   - Supabase Dashboard → Database → Connection Pooling
+   - "Allowed IP addresses" → n8n cloud IP'lerini ekle
+   - Veya geçici olarak "Allow all" yap (güvenlik riski!)
+
+4. **Supabase REST API Kullan (Alternatif):**
+   - PostgreSQL yerine HTTP Request node ile Supabase REST API kullan
+   - Daha güvenilir ama SQL query yazamazsınız
 
 ### Sorun 2: "401 Unauthorized" hatası
 
