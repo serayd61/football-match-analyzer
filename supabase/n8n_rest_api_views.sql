@@ -2,6 +2,10 @@
 -- n8n REST API İÇİN VIEW'LAR VE FUNCTIONS
 -- PostgreSQL bağlantı sorunu olan n8n cloud için REST API alternatifi
 -- ============================================================================
+--
+-- ⚠️ ÖNEMLİ: Bu script'i çalıştırmadan ÖNCE şu script'i çalıştırın:
+-- supabase/agent_performance_tracking.sql
+-- ============================================================================
 
 -- 1. Agent Performance Özeti (Son 10 kayıt)
 -- REST API: GET /rest/v1/agent_performance?select=*&order=last_updated.desc&limit=10
