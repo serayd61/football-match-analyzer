@@ -44,6 +44,31 @@ SSL: Enabled
 **Örnek (Project ID: njrpxhmdqadejjarizmj):**
 ```
 Host: db.njrpxhmdqadejjarizmj.supabase.co
+Port: 5432
+```
+
+**ÖNEMLİ - Connection Pooler Kullan (n8n cloud için):**
+n8n cloud'dan Supabase'e bağlanırken connection pooler kullanmanız gerekebilir:
+
+```
+Host: db.njrpxhmdqadejjarizmj.supabase.co
+Port: 6543 (Connection Pooler port)
+Database: postgres
+User: postgres.[project-ref] (pooler için)
+Password: [your-db-password]
+SSL: Enabled
+```
+
+**Alternatif - Direct Connection:**
+Eğer pooler çalışmazsa, direct connection dene:
+```
+Host: db.njrpxhmdqadejjarizmj.supabase.co
+Port: 5432 (Direct connection)
+Database: postgres
+User: postgres
+Password: [your-db-password]
+SSL: Enabled
+SSL Mode: require
 ```
 
 **Supabase şifresini bulmak için:**
@@ -131,12 +156,17 @@ Her node'un çıktısını kontrol edebilirsiniz:
 
 ## 🔧 Yaygın Sorunlar ve Çözümleri
 
-### Sorun 1: "Connection refused" hatası
+### Sorun 1: "Connection refused" veya "ENETUNREACH" hatası
 
 **Çözüm:**
 - Supabase PostgreSQL credentials'ı kontrol edin
-- Host adresinin doğru olduğundan emin olun
+- Host adresinin doğru olduğundan emin olun: `db.njrpxhmdqadejjarizmj.supabase.co`
+- **Port'u kontrol edin:**
+  - Connection Pooler için: `6543`
+  - Direct connection için: `5432`
 - SSL'in aktif olduğundan emin olun
+- **IPv6 sorunu varsa:** Connection Pooler kullanın (port 6543)
+- **n8n cloud'dan bağlanırken:** Connection Pooler önerilir
 
 ### Sorun 2: "401 Unauthorized" hatası
 
