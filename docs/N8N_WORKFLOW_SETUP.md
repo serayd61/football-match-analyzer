@@ -58,25 +58,24 @@ Host: db.njrpxhmdqadejjarizmj.supabase.co
 #### B. Vercel API (Opsiyonel - Settle Endpoint için)
 
 1. **"Settle Unified Analysis"** node'una tıklayın
-2. **"Authentication"** → **"Generic Credential Type"** → **"HTTP Header Auth"**
-3. Header'ı ayarlayın:
+2. **"Authentication"** → **"None"** seçin (credential gereksiz)
+3. **"Send Headers"** → **Aktif** olmalı
+4. **"Header Parameters"** bölümünde:
+   - **Name:** `Authorization`
+   - **Value:** `Bearer {{ $env.CRON_SECRET || $env.tipster-league-secret-2025 }}`
 
-```
-Name: Authorization
-Value: Bearer [your-cron-secret]
-```
+**Environment Variable ayarlamak için:**
+- n8n → **Settings** → **Environment Variables**
+- `CRON_SECRET` veya `tipster-league-secret-2025` değişkenini ekleyin
+- Vercel'deki CRON_SECRET değerini kopyalayın
 
-**CRON_SECRET'i bulmak için:**
-- Vercel Dashboard → Project Settings → Environment Variables
-- `CRON_SECRET` değişkenini kontrol edin (yoksa oluşturun)
+**Alternatif (Manuel):**
+- Header Value'yu direkt yazabilirsiniz: `Bearer your-secret-here`
+- Ama environment variable kullanmak daha güvenli
 
-4. **"URL"** alanını güncelleyin:
+5. **"URL"** alanı zaten doğru:
 ```
-https://footballanalytics.pro/api/cron/settle-unified
-```
-veya
-```
-{{ $env.VERCEL_URL }}/api/cron/settle-unified
+{{ $env.VERCEL_URL || 'https://footballanalytics.pro' }}/api/cron/settle-unified
 ```
 
 #### C. Slack Webhook (Opsiyonel - Bildirimler için)
