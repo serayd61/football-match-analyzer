@@ -178,7 +178,7 @@ export async function getAgentWeights(league?: string): Promise<Record<string, n
     const supabase = getSupabase();
 
     // Supabase function'ı çağır
-    const { data, error } = await supabase.rpc('get_agent_weights', {
+    const { data, error } = await (supabase.rpc as any)('get_agent_weights', {
       p_league: league || null
     });
 
