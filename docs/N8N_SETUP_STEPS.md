@@ -2,25 +2,37 @@
 
 ## ⚠️ ÖNEMLİ: Script'leri Sırayla Çalıştırın!
 
+### Adım 0: Mevcut Tabloları Kontrol Et (ÖNEMLİ!)
+
+Eğer daha önce `admin_panel_schema.sql` script'ini çalıştırdıysanız, eski bir `agent_performance` tablosu olabilir.
+
+1. **Supabase Dashboard** → **SQL Editor**
+2. `supabase/check_agent_tables.sql` dosyasını açın ve çalıştırın
+3. Sonuçları kontrol edin:
+   - ✅ `agent_name` kolonu VAR → Devam edin
+   - ❌ `agent_name` kolonu YOK ama `agent_type` VAR → Eski tablo var, Adım 1'i çalıştırın (tablolar drop edilecek)
+
 ### Adım 1: Agent Performance Tracking Tablolarını Oluştur
 
 1. **Supabase Dashboard** → **SQL Editor**
 2. `supabase/agent_performance_tracking.sql` dosyasını açın
-3. **Tüm SQL'i kopyalayın** ve SQL Editor'de çalıştırın
-4. Bu script şunları oluşturur:
-   - `agent_performance` tablosu
+3. **⚠️ DİKKAT:** Bu script mevcut `agent_performance` ve `agent_predictions` tablolarını **DROP** edecek!
+4. **Tüm SQL'i kopyalayın** ve SQL Editor'de çalıştırın
+5. Bu script şunları oluşturur:
+   - `agent_performance` tablosu (yeni yapı ile)
    - `agent_predictions` tablosu
    - `update_agent_performance()` function
    - Trigger'lar ve index'ler
 
 **Kontrol:** SQL Editor'de şu sorguyu çalıştırın:
 ```sql
-SELECT table_name FROM information_schema.tables 
+SELECT column_name FROM information_schema.columns 
 WHERE table_schema = 'public' 
-AND table_name IN ('agent_performance', 'agent_predictions');
+AND table_name = 'agent_performance'
+AND column_name = 'agent_name';
 ```
 
-Her iki tablo da görünmeli.
+`agent_name` kolonu görünmeli.
 
 ### Adım 2: n8n REST API View'larını Oluştur
 

@@ -3,8 +3,15 @@
 -- Öğrenen ve otomatik ağırlık ayarlayan agent sistemi
 -- ============================================================================
 
+-- ⚠️ ÖNEMLİ: Eğer eski agent_performance tablosu varsa (admin_panel_schema.sql'den),
+-- önce onu drop edin veya bu script'i çalıştırmadan önce kontrol edin.
+
+-- Mevcut eski tabloyu drop et (eğer varsa ve yanlış yapıdaysa)
+DROP TABLE IF EXISTS agent_performance CASCADE;
+DROP TABLE IF EXISTS agent_predictions CASCADE;
+
 -- Agent performans tablosu - her agent için detaylı performans takibi
-CREATE TABLE IF NOT EXISTS agent_performance (
+CREATE TABLE agent_performance (
   id BIGSERIAL PRIMARY KEY,
   
   -- Agent bilgisi
@@ -42,7 +49,7 @@ CREATE TABLE IF NOT EXISTS agent_performance (
 );
 
 -- Agent tahmin kayıtları - her maç için agent tahminlerini sakla
-CREATE TABLE IF NOT EXISTS agent_predictions (
+CREATE TABLE agent_predictions (
   id BIGSERIAL PRIMARY KEY,
   
   -- Maç bilgisi
