@@ -1388,6 +1388,13 @@ CONFIDENCE TARGETS:
 - BTTS: ${confidences.bttsConf}%
 - First Half: ${confidences.firstHalfConf}%
 
+${learningContext ? `
+═══════════════════════════════════════════════════════════════
+🧠 ÖĞRENME CONTEXT (Geçmiş Performans)
+═══════════════════════════════════════════════════════════════
+${learningContext}
+` : ''}
+
 ${probabilityContext ? `
 ═══════════════════════════════════════════════════════════════
 🎯 PROBABILITY ENGINE (MATEMATİKSEL MODELLER)
@@ -1397,6 +1404,7 @@ ${probabilityContext}
 
 Analyze ALL data including xG, timing patterns, clean sheets, and PROBABILITY ENGINE results.
 USE the Poisson/Monte Carlo models as REFERENCE but form your OWN analysis.
+USE LEARNING CONTEXT to consider past performance and improve accuracy.
 Consider: %60 data analysis, %20 mathematical prediction, %20 psychological factors.
 Return detailed JSON:`;
 
