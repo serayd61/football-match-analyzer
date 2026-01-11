@@ -282,7 +282,10 @@ export function withErrorHandler(
 // COMBINED MIDDLEWARE (Rate Limit + Error Handler)
 // ============================================================================
 
-import { withRateLimit, RateLimitConfig, getUserIdFromRequest } from './rate-limit';
+import { withRateLimit, RateLimitConfig, getUserIdFromRequest, RATE_LIMIT_PRESETS } from './rate-limit';
+
+// Re-export RATE_LIMIT_PRESETS for convenience
+export { RATE_LIMIT_PRESETS };
 
 /**
  * Hem rate limiting hem de error handling içeren middleware
