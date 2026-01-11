@@ -1191,13 +1191,20 @@ export default function DashboardPage() {
       const data = await res.json();
       
       if (data.success) {
-        setFixtures(data.fixtures);
-        setLeagues(data.leagues || []);
-        setTotalCount(data.totalCount || data.count);
-        setCached(data.cached);
+        // Yeni API formatı: { success: true, data: { fixtures, leagues, ... }, meta: { ... } }
+        const fixtures = data.data?.fixtures || data.fixtures || [];
+        const leagues = data.data?.leagues || data.leagues || [];
+        const totalCount = data.data?.totalCount || data.data?.count || data.totalCount || data.count || 0;
+        const cached = data.meta?.cached || data.cached || false;
+        
+        setFixtures(fixtures);
+        setLeagues(leagues);
+        setTotalCount(totalCount);
+        setCached(cached);
       }
     } catch (error) {
       console.error('Fetch fixtures error:', error);
+      setFixtures([]); // Hata durumunda boş array set et
     }
     setLoading(false);
   }, [selectedDate, selectedLeague]);
@@ -1537,12 +1544,12 @@ export default function DashboardPage() {
   // FILTER FIXTURES
   // ============================================================================
   
-  const filteredFixtures = fixtures.filter(f => {
+  const filteredFixtures = (fixtures || []).filter(f => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    return f.homeTeam.toLowerCase().includes(query) ||
-           f.awayTeam.toLowerCase().includes(query) ||
-           f.league.toLowerCase().includes(query);
+    return f.homeTeam?.toLowerCase().includes(query) ||
+           f.awayTeam?.toLowerCase().includes(query) ||
+           f.league?.toLowerCase().includes(query);
   });
   
   // ============================================================================
