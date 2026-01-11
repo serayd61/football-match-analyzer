@@ -32,7 +32,7 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
   status: string;
 } | null> {
   const apiKey = process.env.SPORTMONKS_API_KEY;
-  
+
   if (!apiKey) {
     console.log('❌ SPORTMONKS_API_KEY not configured');
     return null;
@@ -40,9 +40,9 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
 
   try {
     const url = `https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${apiKey}&include=state;scores`;
-    
+
     console.log(`   📡 Fetching fixture ${fixtureId}...`);
-    
+
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' },
     });
@@ -64,13 +64,13 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
     const stateInfo = fixture.state;
     const stateName = stateInfo?.state || stateInfo?.developer_name || stateInfo?.short_name || '';
     const stateId = fixture.state_id;
-    
+
     // Finished state IDs: 5 = FT, 11 = AET, 12 = PEN
     const finishedStateIds = [5, 11, 12];
     const finishedStates = ['FT', 'AET', 'PEN', 'FINISHED', 'ended'];
-    
-    const isFinished = 
-      finishedStates.includes(stateName) || 
+
+    const isFinished =
+      finishedStates.includes(stateName) ||
       finishedStateIds.includes(stateId) ||
       stateInfo?.short_name === 'FT';
 
@@ -89,7 +89,7 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
       // Sportmonks v3 format: nested score object
       const participant = scoreEntry.score?.participant || scoreEntry.participant;
       const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
-      
+
       if (scoreEntry.description === 'CURRENT') {
         if (participant === 'home') homeScore = goals;
         if (participant === 'away') awayScore = goals;
@@ -101,7 +101,7 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
       for (const scoreEntry of scores) {
         const participant = scoreEntry.score?.participant || scoreEntry.participant;
         const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
-        
+
         if (scoreEntry.description === '2ND_HALF' || scoreEntry.description === 'FULLTIME') {
           if (participant === 'home' && goals > homeScore) homeScore = goals;
           if (participant === 'away' && goals > awayScore) awayScore = goals;
@@ -129,6 +129,24 @@ async function settleUnifiedAnalysis(
   homeScore: number,
   awayScore: number
 ): Promise<boolean> {
+  // Normalize prediction helper - maps 'home'→'1', 'away'→'2', 'draw/x'→'X'
+  const normalizeMR = (pred: string | undefined): string => {
+    if (!pred) return '';
+    const p = pred.toLowerCase().trim();
+    if (p === '1' || p === 'home' || p === 'ev sahibi' || p === 'home_win' || p.includes('home')) return '1';
+    if (p === '2' || p === 'away' || p === 'deplasman' || p === 'away_win' || p.includes('away')) return '2';
+    if (p === 'x' || p === 'draw' || p === 'beraberlik' || p === 'tie' || p === 'd') return 'X';
+    return p.toUpperCase();
+  };
+
+  const normalizeOU = (pred: string | undefined): string => {
+    if (!pred) return '';
+    const p = pred.toLowerCase().trim();
+    if (p.includes('over') || p.includes('üst') || p === 'o') return 'Over';
+    if (p.includes('under') || p.includes('alt') || p === 'u') return 'Under';
+    return pred;
+  };
+
   try {
     // Gerçek sonuçları hesapla
     const totalGoals = homeScore + awayScore;
@@ -136,16 +154,20 @@ async function settleUnifiedAnalysis(
     const actualOverUnder = totalGoals > 2.5 ? 'Over' : 'Under';
     const actualBtts = homeScore > 0 && awayScore > 0;
 
-    // Tahmin doğruluğunu kontrol et
-    const matchResultCorrect = analysis.match_result_prediction === actualMatchResult;
-    const overUnderCorrect = analysis.over_under_prediction === actualOverUnder;
-    const bttsCorrect = (analysis.btts_prediction === 'Yes' && actualBtts) || 
-                        (analysis.btts_prediction === 'No' && !actualBtts);
+    // Normalize predictions before comparison
+    const normalizedMRPred = normalizeMR(analysis.match_result_prediction);
+    const normalizedOUPred = normalizeOU(analysis.over_under_prediction);
+
+    // Tahmin doğruluğunu kontrol et - NORMALIZED karşılaştırma
+    const matchResultCorrect = normalizedMRPred === actualMatchResult;
+    const overUnderCorrect = normalizedOUPred === actualOverUnder;
+    const bttsCorrect = (analysis.btts_prediction === 'Yes' && actualBtts) ||
+      (analysis.btts_prediction === 'No' && !actualBtts);
 
     // Skor tahmini kontrolü
     const predictedScore = analysis.analysis?.predictions?.matchResult?.scorePrediction ||
-                          analysis.analysis?.matchResult?.scorePrediction;
-    const scorePredictionCorrect = predictedScore ? 
+      analysis.analysis?.matchResult?.scorePrediction;
+    const scorePredictionCorrect = predictedScore ?
       predictedScore === `${homeScore}-${awayScore}` : false;
 
     // Güncelle
@@ -190,7 +212,7 @@ async function settleUnifiedAnalysis(
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     console.log('\n' + '═'.repeat(70));
     console.log('🔄 SETTLE UNIFIED ANALYSIS CRON JOB');
@@ -201,7 +223,7 @@ export async function GET(request: NextRequest) {
     // Maç saatinden en az 2.5 saat geçmiş bekleyen analizleri al
     const now = new Date();
     const cutoffTime = new Date(now.getTime() - 2.5 * 60 * 60 * 1000);
-    
+
     // 7 günden eski maçları atla
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -216,18 +238,18 @@ export async function GET(request: NextRequest) {
 
     if (fetchError) {
       console.error('❌ Fetch error:', fetchError);
-      return NextResponse.json({ 
-        success: false, 
-        error: fetchError.message 
+      return NextResponse.json({
+        success: false,
+        error: fetchError.message
       }, { status: 500 });
     }
 
     if (!pendingAnalyses || pendingAnalyses.length === 0) {
       console.log('✅ No pending analyses to settle');
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'No pending analyses',
-        settled: 0 
+        settled: 0
       });
     }
 
@@ -239,7 +261,7 @@ export async function GET(request: NextRequest) {
 
     for (const analysis of pendingAnalyses) {
       console.log(`\n📊 ${analysis.home_team} vs ${analysis.away_team} (${analysis.match_date})`);
-      
+
       try {
         // Rate limiting
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -296,9 +318,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ CRON JOB ERROR:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
+    return NextResponse.json({
+      success: false,
+      error: error.message
     }, { status: 500 });
   }
 }
