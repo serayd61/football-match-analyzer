@@ -12,7 +12,8 @@ import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { runMasterStrategist } from '../heurist/agents/masterStrategist';
 import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
-import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
+// 🚫 Devil's Advocate kaldırıldı - ana tahmin için kritik değil
+// import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
 import { MatchData } from '../heurist/types';
 import { saveOddsAnalysisLog } from '../odds-logger';
 import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
@@ -1393,10 +1394,7 @@ export async function runAgentAnalysis(
       }), 20000, 'Deep Analysis Agent'), // ⚡ Timeout 30s → 20s (10s tasarruf)
     ]);
     
-    // Devil's Advocate devre dışı
-    const devilsAdvocateResult = null;
-
-    console.log('🔍 DEBUG: DevilsAdvocateResult:', JSON.stringify(devilsAdvocateResult, null, 2));
+    // Devil's Advocate kaldırıldı
     console.log('🔍 DEBUG: StatsResult:', !!statsResult);
     console.log('🔍 DEBUG: OddsResult:', !!oddsResult);
     console.log('🔍 DEBUG: DeepAnalysisResult:', !!deepAnalysisResult);
@@ -1419,9 +1417,7 @@ export async function runAgentAnalysis(
     if (oddsResult) {
       console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
     }
-    if (devilsAdvocateResult) {
-      console.log(`   👹 Devil's Advocate: ${devilsAdvocateResult.matchResult || 'N/A'} | Conf: ${devilsAdvocateResult.confidence || 'N/A'}%`);
-    }
+    // Devil's Advocate kaldırıldı
 
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
@@ -1438,7 +1434,7 @@ export async function runAgentAnalysis(
             sentiment: null,
             deepAnalysis: deepAnalysisResult,
             geniusAnalyst: geniusAnalystResult,
-            devilsAdvocate: devilsAdvocateResult,
+            devilsAdvocate: null,
           },
           language
         ),
@@ -1636,12 +1632,12 @@ export async function runAgentAnalysis(
         deepAnalysis: deepAnalysisResult,
         geniusAnalyst: geniusAnalystResult,
         masterStrategist: masterStrategistResult,
-        devilsAdvocate: devilsAdvocateResult
+        devilsAdvocate: null
       },
 
       // Verification log
       _debug: {
-        devilsAdvocatePresent: !!devilsAdvocateResult,
+        devilsAdvocatePresent: false,
         masterStrategistPresent: !!masterStrategistResult
       },
 
