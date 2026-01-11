@@ -143,27 +143,26 @@ BEGIN
   WHERE id = agent_perf.id;
   
   -- Son 30 maç performansını hesapla (rolling window)
+  -- Önce son 30 maçı bul, sonra onların üzerinde COUNT yap
+  WITH recent_matches AS (
+    SELECT 
+      match_result_correct,
+      over_under_correct,
+      btts_correct
+    FROM agent_predictions
+    WHERE agent_name = NEW.agent_name
+      AND (league = NEW.league OR (league IS NULL AND NEW.league IS NULL))
+      AND settled_at IS NOT NULL
+      AND settled_at >= NOW() - INTERVAL '90 days'
+    ORDER BY settled_at DESC
+    LIMIT 30
+  )
   SELECT 
-    COUNT(*) INTO recent_count
-  FROM agent_predictions
-  WHERE agent_name = NEW.agent_name
-    AND (league = NEW.league OR (league IS NULL AND NEW.league IS NULL))
-    AND settled_at IS NOT NULL
-    AND settled_at >= NOW() - INTERVAL '90 days' -- Son 90 gün (yaklaşık 30 maç)
-  ORDER BY settled_at DESC
-  LIMIT 30;
-  
-  SELECT 
+    COUNT(*) INTO recent_count,
     COUNT(*) FILTER (WHERE match_result_correct = TRUE) INTO recent_correct_mr,
     COUNT(*) FILTER (WHERE over_under_correct = TRUE) INTO recent_correct_ou,
     COUNT(*) FILTER (WHERE btts_correct = TRUE) INTO recent_correct_btts
-  FROM agent_predictions
-  WHERE agent_name = NEW.agent_name
-    AND (league = NEW.league OR (league IS NULL AND NEW.league IS NULL))
-    AND settled_at IS NOT NULL
-    AND settled_at >= NOW() - INTERVAL '90 days'
-  ORDER BY settled_at DESC
-  LIMIT 30;
+  FROM recent_matches;
   
   -- Dinamik ağırlık hesapla (performansa göre)
   -- Formül: Base weight * (accuracy_multiplier + trend_bonus)
