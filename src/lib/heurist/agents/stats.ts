@@ -2,6 +2,7 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
+import { getLearningContext } from '../../ai-brain/learning-context';
 
 // ==================== MOTİVASYON SKORU HESAPLAMA ====================
 
@@ -1132,6 +1133,17 @@ function generateStatsReasoning(
 
 export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' | 'de' = 'en'): Promise<any> {
   console.log('📊 Stats Agent starting DEEP analysis with xG, timing patterns, clean sheets...');
+  
+  // 🧠 ÖĞRENME CONTEXT'İ - Geçmiş performansı kullan
+  let learningContext = '';
+  try {
+    learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
+    if (learningContext) {
+      console.log('   🧠 Learning Context loaded - using past performance data');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Learning Context failed, continuing without it');
+  }
   
   // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
   let probabilityResult: ProbabilityResult | null = null;

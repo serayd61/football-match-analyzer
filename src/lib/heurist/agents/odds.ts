@@ -1,6 +1,7 @@
 import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { fetchHistoricalOdds, analyzeSharpMoney, analyzeBettingVolume, isRealValue, MatchOddsHistory, SharpMoneyResult, BettingVolumeResult, RealValueResult } from '../sportmonks-odds';
+import { getLearningContext } from '../../ai-brain/learning-context';
 
 // ==================== JSON EXTRACTION ====================
 
@@ -840,6 +841,17 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   console.log('💰 Odds Agent starting COMPREHENSIVE market analysis...');
   console.log('   📊 Markets: 1X2, Over/Under, BTTS, Asian Handicap, Correct Score, HT/FT, Corners, Cards');
   
+  // 🧠 ÖĞRENME CONTEXT'İ - Geçmiş performansı kullan
+  let learningContext = '';
+  try {
+    learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
+    if (learningContext) {
+      console.log('   🧠 Learning Context loaded - using past performance data');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Learning Context failed, continuing without it');
+  }
+  
   // 🆕 Historical odds çek
   let oddsHistory: MatchOddsHistory | null = null;
   let sharpMoney: SharpMoneyResult | null = null;
@@ -1023,6 +1035,8 @@ Movement Strength: ${bettingVolume.indicators.movementStrength}/100 | Unusual: $
 ` : '';
 
   const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
+
+${learningContext ? `\n🧠 ÖĞRENME CONTEXT (Geçmiş Performans):\n${learningContext}\n` : ''}
 
 ═══════════════════════════════════════════════════════════════
 💰 ODDS DATA

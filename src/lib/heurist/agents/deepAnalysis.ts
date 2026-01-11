@@ -6,6 +6,7 @@ import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../..
 import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 import { analyzeTeamMotivation, TeamMotivationAnalysis } from './team-motivation-analyzer';
+import { getLearningContext } from '../../ai-brain/learning-context';
 
 // 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
 // Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
@@ -761,6 +762,17 @@ export async function runDeepAnalysisAgent(
   console.log('🔬 Deep Analysis Agent starting...');
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`   🌍 Language: ${language}`);
+  
+  // 🧠 ÖĞRENME CONTEXT'İ - Geçmiş performansı kullan
+  let learningContext = '';
+  try {
+    learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
+    if (learningContext) {
+      console.log('   🧠 Learning Context loaded - using past performance data');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Learning Context failed, continuing without it');
+  }
   
   // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
   let probabilityResult: ProbabilityResult | null = null;
