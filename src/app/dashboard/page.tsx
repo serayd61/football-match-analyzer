@@ -1380,8 +1380,30 @@ export default function DashboardPage() {
           matchDate: fixture.date.split('T')[0],
           skipCache: forceRefresh,
           lang: lang // Dil parametresini API'ye gönder
-        })
+        }),
+        signal: AbortSignal.timeout(55000) // 55 saniye timeout (API 60 saniye limit)
       });
+      
+      // Response status kontrolü
+      if (!res.ok) {
+        // 504 Gateway Timeout veya diğer hatalar
+        if (res.status === 504) {
+          throw new Error('Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.');
+        }
+        if (res.status === 429) {
+          throw new Error('Çok fazla istek. Lütfen birkaç saniye bekleyin.');
+        }
+        if (res.status >= 500) {
+          throw new Error('Sunucu hatası. Lütfen daha sonra tekrar deneyin.');
+        }
+        throw new Error(`API hatası: ${res.status}`);
+      }
+      
+      // Content-Type kontrolü - JSON değilse hata
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Geçersiz yanıt formatı. Lütfen tekrar deneyin.');
+      }
       
       const data = await res.json();
       
@@ -1441,9 +1463,25 @@ export default function DashboardPage() {
       } else {
         setAnalysisError(data.error || 'Analiz başarısız');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Analysis error:', error);
-      setAnalysisError('Bağlantı hatası');
+      
+      // Timeout hatası
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        setAnalysisError('Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.');
+      }
+      // Network hatası
+      else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        setAnalysisError('Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+      }
+      // JSON parse hatası
+      else if (error.message?.includes('JSON') || error.message?.includes('Unexpected token')) {
+        setAnalysisError('Sunucu yanıt hatası. Lütfen tekrar deneyin.');
+      }
+      // Diğer hatalar
+      else {
+        setAnalysisError(error.message || 'Bağlantı hatası');
+      }
     }
     
     setAnalyzing(false);
