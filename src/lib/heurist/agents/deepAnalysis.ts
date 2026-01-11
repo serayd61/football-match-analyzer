@@ -913,9 +913,18 @@ ${probabilityContext}
 ═══════════════════════════════════════════════════════════════════════════════
 ` : '';
   
+  // Learning context section
+  const learningSection = learningContext ? `
+═══════════════════════════════════════════════════════════════════════════════
+🧠 ÖĞRENME CONTEXT (Geçmiş Performans)
+═══════════════════════════════════════════════════════════════════════════════
+${learningContext}
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
+  
   // Language-specific user message
   const userMessageByLang = {
-    tr: `${context}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
+    tr: `${context}${learningSection}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nÖĞRENME CONTEXT'i kullanarak geçmiş performansı dikkate al.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
     en: `${context}${probabilitySection}${motivationContext}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nALWAYS use ADVANCED MOTIVATION ANALYSIS results - this is based on 50% performance + 50% team motivation (injuries, news, squad).\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
     de: `${context}${probabilitySection}${motivationContext}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nVerwende IMMER ADVANCED MOTIVATION ANALYSIS Ergebnisse - basierend auf 50% Leistung + 50% Team-Motivation (Verletzungen, Nachrichten, Kader).\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
   };
