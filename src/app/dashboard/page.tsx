@@ -1149,6 +1149,7 @@ export default function DashboardPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
+  const [fixturesError, setFixturesError] = useState<string | null>(null);
   
   // 🔥 Cesur Tahmin State'leri
   const [boldBet, setBoldBet] = useState<{
@@ -1185,9 +1186,15 @@ export default function DashboardPage() {
   
   const fetchFixtures = useCallback(async () => {
     setLoading(true);
+    setFixturesError(null); // Hata state'ini temizle
     try {
       const leagueParam = selectedLeague !== 'all' ? `&league_id=${selectedLeague}` : '';
       const res = await fetch(`/api/v2/fixtures?date=${selectedDate}${leagueParam}`);
+      
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       
       if (data.success) {
@@ -1201,10 +1208,18 @@ export default function DashboardPage() {
         setLeagues(leagues);
         setTotalCount(totalCount);
         setCached(cached);
+        setFixturesError(null); // Başarılı ise hata yok
+      } else {
+        // API başarısız response döndü
+        const errorMsg = data.error || 'Maç listesi alınamadı';
+        setFixturesError(errorMsg);
+        setFixtures([]);
+        console.error('API returned error:', data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fetch fixtures error:', error);
-      setFixtures([]); // Hata durumunda boş array set et
+      setFixtures([]);
+      setFixturesError('Bağlantı hatası');
     }
     setLoading(false);
   }, [selectedDate, selectedLeague]);
@@ -1863,6 +1878,19 @@ export default function DashboardPage() {
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
                     <p className="mt-4 text-[#00f0ff] text-sm">Loading...</p>
+                  </div>
+                ) : fixturesError ? (
+                  <div className="p-12 flex flex-col items-center justify-center">
+                    <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-8 flex flex-col items-center justify-center">
+                      <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+                      <p className="text-red-400 font-medium mb-4">{fixturesError}</p>
+                      <button
+                        onClick={fetchFixtures}
+                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 text-sm transition-colors"
+                      >
+                        {t.tryAgain}
+                      </button>
+                    </div>
                   </div>
                 ) : filteredFixtures.length === 0 ? (
                   <div className="p-12 text-center">
