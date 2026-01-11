@@ -291,6 +291,32 @@ export async function GET(request: NextRequest) {
           result.awayScore
         );
 
+        // 🧠 ÖĞRENEN SİSTEM: Agent tahminlerini settle et
+        if (success) {
+          try {
+            const { settleAgentPredictions } = await import('@/lib/agent-learning/performance-tracker');
+            
+            // Match result hesapla
+            let matchResult: '1' | 'X' | '2';
+            if (result.homeScore > result.awayScore) matchResult = '1';
+            else if (result.awayScore > result.homeScore) matchResult = '2';
+            else matchResult = 'X';
+            
+            await settleAgentPredictions(analysis.fixture_id, {
+              homeGoals: result.homeScore,
+              awayGoals: result.awayScore,
+              matchResult,
+              totalGoals: result.homeScore + result.awayScore,
+              btts: result.homeScore > 0 && result.awayScore > 0
+            });
+            
+            console.log(`   🧠 Agent predictions settled for fixture ${analysis.fixture_id}`);
+          } catch (agentError) {
+            console.warn(`   ⚠️ Failed to settle agent predictions:`, agentError);
+            // Non-blocking - devam et
+          }
+        }
+
         if (success) {
           settledCount++;
         } else {

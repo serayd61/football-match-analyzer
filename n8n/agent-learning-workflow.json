@@ -1,0 +1,247 @@
+{
+  "name": "Agent Learning System - Otomatik Ağırlık Güncelleme",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cron Trigger (Her 1 saat)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.VERCEL_URL || 'https://footballanalytics.pro' }}/api/cron/settle-unified",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.CRON_SECRET }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "settle-unified",
+      "name": "Settle Unified Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-settled",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM agent_performance ORDER BY last_updated DESC LIMIT 10",
+        "options": {}
+      },
+      "id": "get-performance",
+      "name": "Get Agent Performance",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [850, 200],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agent performans özeti oluştur\nconst performance = $input.all();\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  agents: performance.map(p => ({\n    name: p.json.agent_name,\n    accuracy: parseFloat(p.json.recent_match_result_accuracy) || 0,\n    weight: parseFloat(p.json.current_weight) || 1.0,\n    totalMatches: p.json.total_matches || 0,\n    trend: p.json.trend_direction || 'stable'\n  })),\n  totalAgents: performance.length\n};\n\nreturn {\n  json: summary\n};"
+      },
+      "id": "format-summary",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  agent_name,\n  COUNT(*) as total_predictions,\n  COUNT(*) FILTER (WHERE match_result_correct = TRUE) as correct_mr,\n  COUNT(*) FILTER (WHERE over_under_correct = TRUE) as correct_ou,\n  COUNT(*) FILTER (WHERE btts_correct = TRUE) as correct_btts,\n  AVG(CASE WHEN match_result_correct IS NOT NULL THEN CASE WHEN match_result_correct THEN 100 ELSE 0 END END) as mr_accuracy,\n  AVG(CASE WHEN over_under_correct IS NOT NULL THEN CASE WHEN over_under_correct THEN 100 ELSE 0 END END) as ou_accuracy,\n  AVG(CASE WHEN btts_correct IS NOT NULL THEN CASE WHEN btts_correct THEN 100 ELSE 0 END END) as btts_accuracy\nFROM agent_predictions\nWHERE settled_at IS NOT NULL\n  AND settled_at >= NOW() - INTERVAL '7 days'\nGROUP BY agent_name\nORDER BY mr_accuracy DESC",
+        "options": {}
+      },
+      "id": "get-weekly-stats",
+      "name": "Get Weekly Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [850, 400],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=🧠 Agent Learning System Update\n\n*Agent Performance (Last 7 Days):*\n{{ $json.map(item => `• ${item.agent_name}: ${item.mr_accuracy.toFixed(1)}% MR accuracy (${item.correct_mr}/${item.total_predictions})`).join('\\n') }}\n\n*Current Weights:*\n{{ $('Format Summary').item.json.agents.map(a => `• ${a.name}: ${a.weight.toFixed(2)}x (${a.accuracy.toFixed(1)}% accuracy)`).join('\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify Slack (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  agent_name,\n  league,\n  recent_match_result_accuracy,\n  current_weight,\n  trend_direction,\n  total_matches\nFROM agent_performance\nWHERE total_matches >= 5\nORDER BY current_weight DESC",
+        "options": {}
+      },
+      "id": "get-all-weights",
+      "name": "Get All Agent Weights",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [850, 500],
+      "credentials": {
+        "postgres": {
+          "id": "supabase-postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Trigger (Her 1 saat)": {
+      "main": [
+        [
+          {
+            "node": "Settle Unified Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settle Unified Analysis": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Get Agent Performance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Weekly Stats",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get All Agent Weights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Agent Performance": {
+      "main": [
+        [
+          {
+            "node": "Format Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekly Stats": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-11T12:00:00.000Z",
+  "versionId": "1"
+}

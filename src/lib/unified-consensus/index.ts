@@ -217,8 +217,9 @@ function createUnifiedConsensus(
   smartResult: SmartAnalysisResult | null,
   leagueStats: any[] | null = null
 ): Omit<UnifiedConsensusResult, 'sources' | 'metadata'> {
-  // Dinamik ağırlık multiplier'ları hesapla (Default: 1.0)
-  const multipliers: Record<string, number> = {
+  // 🧠 ÖĞRENEN SİSTEM: Agent performansına göre dinamik ağırlıklar
+  // Supabase'den gerçek zamanlı performans verilerini çek
+  let multipliers: Record<string, number> = {
     stats: 1.0,
     odds: 1.0,
     deepAnalysis: 1.0,
@@ -226,16 +227,35 @@ function createUnifiedConsensus(
     devilsAdvocate: 1.0
   };
 
-  if (leagueStats && leagueStats.length > 0) {
-    leagueStats.forEach(stat => {
-      // Eğer ajanın doğruluğu %65 üstündeyse ödüllendir, %45 altındaysa cezalandır
-      if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
-      else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
-      else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
-      else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
-    });
-    console.log(`   ⚖️ Dynamic Multipliers for ${agentResult?.agents?.stats?.league || 'league'}:`, JSON.stringify(multipliers));
+  try {
+    const { getAgentWeights } = await import('../agent-learning/performance-tracker');
+    const learnedWeights = await getAgentWeights(agentResult?.agents?.stats?.league || agentResult?.league);
+    
+    // Öğrenilen ağırlıkları kullan
+    multipliers = {
+      stats: learnedWeights.stats || 1.0,
+      odds: learnedWeights.odds || 1.0,
+      deepAnalysis: learnedWeights.deepAnalysis || 1.0,
+      masterStrategist: learnedWeights.masterStrategist || 1.0,
+      devilsAdvocate: learnedWeights.devilsAdvocate || 1.0,
+    };
+    
+    console.log(`   🧠 Learned Agent Weights:`, JSON.stringify(multipliers));
+  } catch (error) {
+    console.warn('   ⚠️ Could not load learned weights, using defaults:', error);
+    
+    // Fallback: Eski sistem (leagueStats)
+    if (leagueStats && leagueStats.length > 0) {
+      leagueStats.forEach(stat => {
+        if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
+        else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
+        else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
+        else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
+      });
+    }
   }
+  
+  console.log(`   ⚖️ Final Multipliers for ${agentResult?.agents?.stats?.league || agentResult?.league || 'league'}:`, JSON.stringify(multipliers));
 
   // Helper to normalize predictions
   const normalize = (val: any) => {
