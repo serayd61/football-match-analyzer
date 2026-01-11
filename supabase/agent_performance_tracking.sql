@@ -145,10 +145,15 @@ BEGIN
   -- Son 30 maç performansını hesapla (rolling window)
   -- Önce son 30 maçı bul, sonra onların üzerinde COUNT yap
   SELECT 
-    COUNT(*) INTO recent_count,
-    COUNT(*) FILTER (WHERE match_result_correct = TRUE) INTO recent_correct_mr,
-    COUNT(*) FILTER (WHERE over_under_correct = TRUE) INTO recent_correct_ou,
-    COUNT(*) FILTER (WHERE btts_correct = TRUE) INTO recent_correct_btts
+    COUNT(*),
+    COUNT(*) FILTER (WHERE match_result_correct = TRUE),
+    COUNT(*) FILTER (WHERE over_under_correct = TRUE),
+    COUNT(*) FILTER (WHERE btts_correct = TRUE)
+  INTO 
+    recent_count,
+    recent_correct_mr,
+    recent_correct_ou,
+    recent_correct_btts
   FROM (
     SELECT 
       match_result_correct,
