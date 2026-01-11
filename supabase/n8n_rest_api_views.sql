@@ -7,6 +7,40 @@
 -- supabase/agent_performance_tracking.sql
 -- ============================================================================
 
+-- Önce tabloların var olduğunu kontrol et
+DO $$
+BEGIN
+  -- agent_performance tablosu kontrolü
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'agent_performance'
+  ) THEN
+    RAISE EXCEPTION '❌ agent_performance tablosu bulunamadı! Önce supabase/agent_performance_tracking.sql script''ini çalıştırın.';
+  END IF;
+
+  -- agent_predictions tablosu kontrolü
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'agent_predictions'
+  ) THEN
+    RAISE EXCEPTION '❌ agent_predictions tablosu bulunamadı! Önce supabase/agent_performance_tracking.sql script''ini çalıştırın.';
+  END IF;
+
+  -- agent_name kolonu kontrolü
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'agent_performance' 
+    AND column_name = 'agent_name'
+  ) THEN
+    RAISE EXCEPTION '❌ agent_performance tablosunda agent_name kolonu yok! Tablo yanlış yapıda. Önce supabase/agent_performance_tracking.sql script''ini çalıştırın (tabloları drop edip yeniden oluşturacak).';
+  END IF;
+
+  RAISE NOTICE '✅ Tablolar kontrol edildi, view''lar oluşturuluyor...';
+END $$;
+
 -- 1. Agent Performance Özeti (Son 10 kayıt)
 -- REST API: GET /rest/v1/agent_performance?select=*&order=last_updated.desc&limit=10
 -- Zaten mevcut tablo, view gerekmez
