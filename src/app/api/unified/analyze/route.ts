@@ -180,6 +180,12 @@ export async function POST(request: NextRequest) {
       lang: lang as 'tr' | 'en' | 'de'
     };
 
+    // Timeout handling: 50 saniye timeout (Vercel limiti 60 saniye, 10 saniye buffer)
+    const UNIFIED_TIMEOUT_MS = 50000;
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Unified Analysis timeout after 50 seconds')), UNIFIED_TIMEOUT_MS)
+    );
+
     if (stream) {
       const encoder = new TextEncoder();
       const customStream = new ReadableStream({
@@ -194,7 +200,15 @@ export async function POST(request: NextRequest) {
               send(data);
             };
 
-            const result = await runUnifiedConsensus(input, onProgress);
+            // Timeout handling for stream mode too
+            const streamTimeoutPromise = new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Unified Analysis timeout after 50 seconds')), UNIFIED_TIMEOUT_MS)
+            );
+
+            const result = await Promise.race([
+              runUnifiedConsensus(input, onProgress),
+              streamTimeoutPromise
+            ]);
 
             // DB'ye kaydet (arka planda)
             saveUnifiedAnalysis(input, result).catch(e => console.error('Error saving in stream:', e));
@@ -224,8 +238,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // normal flow
-    const result = await runUnifiedConsensus(input);
+    // normal flow - Timeout handling ile
+    let result;
+    try {
+      result = await Promise.race([
+        runUnifiedConsensus(input),
+        timeoutPromise
+      ]);
+    } catch (timeoutError: any) {
+      if (timeoutError?.message?.includes('timeout')) {
+        console.warn('⏱️ Unified Analysis timeout after 50s');
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Analiz zaman aşımına uğradı. Lütfen tekrar deneyin veya daha sonra tekrar deneyin.',
+            code: 'TIMEOUT',
+            timeout: true
+          },
+          { status: 504 }
+        );
+      }
+      throw timeoutError; // Diğer hataları yukarı fırlat
+    }
 
     // Veritabanına kaydet
     await saveUnifiedAnalysis(input, result);
@@ -245,6 +279,20 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Unified Analysis error:', error);
+    
+    // Timeout hatası için özel mesaj
+    if (error?.message?.includes('timeout') || error?.code === 'TIMEOUT') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.',
+          code: 'TIMEOUT',
+          timeout: true
+        },
+        { status: 504 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: error?.message || 'Analysis failed' },
       { status: 500 }
