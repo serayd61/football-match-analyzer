@@ -180,7 +180,7 @@ export async function runUnifiedConsensus(
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = createUnifiedConsensus(agentResult, smartResult, leagueStats);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats);
 
     const processingTime = Date.now() - startTime;
     if (onProgress) onProgress({ stage: 'complete', message: 'Analiz başarıyla tamamlandı.' });
@@ -212,11 +212,11 @@ export async function runUnifiedConsensus(
 /**
  * Konsensüs oluşturma fonksiyonu
  */
-function createUnifiedConsensus(
+async function createUnifiedConsensus(
   agentResult: AgentAnalysisResult | null,
   smartResult: SmartAnalysisResult | null,
   leagueStats: any[] | null = null
-): Omit<UnifiedConsensusResult, 'sources' | 'metadata'> {
+): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 ÖĞRENEN SİSTEM: Agent performansına göre dinamik ağırlıklar
   // Supabase'den gerçek zamanlı performans verilerini çek
   let multipliers: Record<string, number> = {
