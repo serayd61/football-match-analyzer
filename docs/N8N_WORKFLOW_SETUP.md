@@ -9,7 +9,21 @@
 
 ### 2. Workflow'u İçe Aktar
 
-#### Yöntem 1: JSON Dosyasından İçe Aktar (Önerilen)
+**⚠️ ÖNEMLİ: IPv6 Bağlantı Sorunu Varsa REST API Versiyonunu Kullanın!**
+
+Eğer PostgreSQL bağlantısında `connect ENETUNREACH` hatası alıyorsanız, **REST API versiyonunu** kullanın:
+
+#### Seçenek A: REST API Versiyonu (Önerilen - IPv6 Sorunu İçin)
+
+1. **Önce Supabase'de view'ları oluşturun:**
+   - Supabase Dashboard → SQL Editor
+   - `supabase/n8n_rest_api_views.sql` dosyasını çalıştırın
+   
+2. n8n'de **"Add workflow"** → **"Import from File"** seçin
+3. `n8n/agent-learning-workflow-rest-api.json` dosyasını seçin
+4. **"Import"** butonuna tıklayın
+
+#### Seçenek B: PostgreSQL Versiyonu (Normal Bağlantı İçin)
 
 1. n8n'de **"Add workflow"** → **"Import from File"** seçin
 2. `n8n/agent-learning-workflow.json` dosyasını seçin
@@ -17,7 +31,7 @@
 
 #### Yöntem 2: JSON İçeriğini Kopyala-Yapıştır
 
-1. `n8n/agent-learning-workflow.json` dosyasını açın
+1. İlgili JSON dosyasını açın (`agent-learning-workflow-rest-api.json` veya `agent-learning-workflow.json`)
 2. Tüm içeriği kopyalayın (Ctrl+A, Ctrl+C)
 3. n8n'de **"Add workflow"** → **"Import from URL or File"** → **"Paste JSON"**
 4. JSON'u yapıştırın ve **"Import"** butonuna tıklayın
@@ -26,7 +40,36 @@
 
 Workflow'u açtıktan sonra, aşağıdaki node'lar için credentials ayarlamanız gerekiyor:
 
-#### A. Supabase PostgreSQL Connection
+#### A. Supabase REST API Credential (REST API Versiyonu İçin)
+
+**Eğer REST API versiyonunu kullanıyorsanız:**
+
+1. n8n'de **"Credentials"** → **"Add Credential"** → **"HTTP Header Auth"**
+2. Aşağıdaki bilgileri girin:
+
+```
+Name: Supabase REST API
+Header Name: apikey
+Header Value: [your-supabase-anon-key]
+```
+
+3. **"Add Header"** butonuna tıklayın ve ikinci header ekleyin:
+```
+Header Name: Authorization
+Header Value: Bearer [your-supabase-anon-key]
+```
+
+**Supabase anon key'i bulmak için:**
+- Supabase Dashboard → Project Settings → API
+- **"anon"** key'i kopyalayın (public key)
+
+4. **"Save"** butonuna tıklayın
+5. Bu credential'ı tüm REST API node'larına atayın:
+   - **"Get Agent Performance (REST API)"**
+   - **"Get Weekly Stats (REST API)"**
+   - **"Get All Agent Weights (REST API)"**
+
+#### B. Supabase PostgreSQL Connection (PostgreSQL Versiyonu İçin)
 
 1. **"Get Agent Performance"** node'una tıklayın
 2. **"Credentials"** → **"Create New Credential"** → **"Postgres"**
@@ -110,7 +153,7 @@ PostgreSQL yerine Supabase REST API kullanabilirsiniz (HTTP Request node ile).
    - **"Get Weekly Stats"**
    - **"Get All Agent Weights"**
 
-#### B. Vercel API (Opsiyonel - Settle Endpoint için)
+#### C. Vercel API (Opsiyonel - Settle Endpoint için)
 
 1. **"Settle Unified Analysis"** node'una tıklayın
 2. **"Authentication"** → **"None"** seçin (credential gereksiz)
@@ -138,7 +181,7 @@ https://footballanalytics.pro/api/cron/settle-unified
 
 **Not:** Environment variable kullanmak istemiyorsanız, URL'yi direkt yazın. `{{ $env.VERCEL_URL }}` kullanmak "access to env vars denied" hatasına neden olabilir.
 
-#### C. Slack Webhook (Opsiyonel - Bildirimler için)
+#### D. Slack Webhook (Opsiyonel - Bildirimler için)
 
 1. **"Notify Slack (Optional)"** node'una tıklayın
 2. Node'u **aktif** hale getirin (şu anda disabled)
