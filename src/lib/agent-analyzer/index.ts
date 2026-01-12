@@ -1391,21 +1391,21 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 28000, 'Stats Agent'), // 22s → 28s (loglardan görünen: ~18s'de tamamlanıyor)
+      }), 35000, 'Stats Agent'), // 28s → 35s (gerçek: ~9s, Promise.race sorunu için marj)
       withTimeout(runOddsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Odds Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 28000, 'Odds Agent'), // 22s → 28s (loglardan görünen: ~18s'de tamamlanıyor)
+      }), 35000, 'Odds Agent'), // 28s → 35s (gerçek: ~9s, Promise.race sorunu için marj)
       withTimeout(runDeepAnalysisAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Deep Analysis Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 38000, 'Deep Analysis Agent'), // 35s → 38s (loglardan görünen: ~31s'de tamamlanıyor, daha güvenli marj)
+      }), 42000, 'Deep Analysis Agent'), // 38s → 42s (gerçek: ~30s, daha güvenli marj)
     ]);
     
     // Devil's Advocate kaldırıldı
