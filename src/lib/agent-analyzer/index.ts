@@ -1405,7 +1405,7 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 42000, 'Deep Analysis Agent'), // 38s → 42s (gerçek: ~30s, daha güvenli marj)
+      }), 55000, 'Deep Analysis Agent'), // 42s → 55s (iç timeout 25s + marj)
     ]);
     
     // Devil's Advocate kaldırıldı
@@ -1435,7 +1435,7 @@ export async function runAgentAnalysis(
 
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (15s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (30s timeout)...');
     let masterStrategistResult = null;
     try {
       // ⚡ 15 saniye timeout - Loglardan görünen: ~8.5s'de tamamlanıyor ama Promise.race sorunu için marj
@@ -1454,9 +1454,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 15s');
+            console.warn('   ⏱️ Master Strategist timeout after 30s');
             resolve(null);
-          }, 15000); // ⚡ 10s → 15s (gerçek: ~8.5s, Promise.race sorunu için marj)
+          }, 30000); // 15s → 30s (iç timeout 25s + marj)
         })
       ]);
 

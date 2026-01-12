@@ -969,7 +969,7 @@ ${learningContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 800, // JSON tamamlanması için yeterli
-          timeout: 12000 // 12 saniye (performans için düşürüldü)
+          timeout: 25000 // 25 saniye (timeout hataları için artırıldı)
         });
         
         if (response) {
@@ -998,9 +998,9 @@ ${learningContext}
             fixtureId: matchData.fixtureId,
             temperature: 0.3,
             maxTokens: 600,
-            timeout: 12000 // 12 saniye (performans için düşürüldü)
+            timeout: 25000 // 25 saniye (timeout hataları için artırıldı)
           });
-          
+
           if (response) {
             console.log('   ✅ OpenAI GPT-4 responded successfully');
           }
@@ -1024,9 +1024,9 @@ ${learningContext}
           fixtureId: matchData.fixtureId,
           temperature: 0.3,
           maxTokens: 600,
-          timeout: 12000 // 12 saniye (performans için düşürüldü)
+          timeout: 25000 // 25 saniye (timeout hataları için artırıldı)
         });
-        
+
         if (response) {
           console.log('   ✅ Claude responded successfully');
         }
