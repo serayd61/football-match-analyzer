@@ -1432,10 +1432,12 @@ Return detailed JSON:`;
       model: 'claude',
       useMCP: false, // MCP devre dışı - daha hızlı
       mcpFallback: true,
+      mcpTools: ['football_data', 'team_stats'], // MCP fallback için gerekli tools
       fixtureId: matchData.fixtureId,
       temperature: 0.4, 
       maxTokens: 1000,
-      timeout: 8000 // 8 saniye
+      timeout: 12000, // 8s → 12s (daha fazla süre)
+      retries: 1 // Overloaded hatalarında 1 retry
     });
     
     if (response) {

@@ -340,10 +340,14 @@ export class AIClient {
     try {
       console.log(`🔧 MCP Fallback: Fetching data for fixture ${fixtureId}`);
       
+      // Eğer tools belirtilmemişse, default tools kullan
+      const toolsToUse = tools.length > 0 ? tools : ['football_data', 'team_stats', 'odds_data'];
+      console.log(`   📋 Using MCP tools: ${toolsToUse.join(', ')}`);
+      
       // Fetch multiple data sources from MCP
       const mcpResults: Record<string, any> = {};
       
-      for (const tool of tools) {
+      for (const tool of toolsToUse) {
         try {
           const response = await fetch(this.mcpServerUrl, {
             method: 'POST',
