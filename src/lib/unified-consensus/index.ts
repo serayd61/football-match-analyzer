@@ -147,12 +147,15 @@ export async function runUnifiedConsensus(
       console.error('❌ Agent Analysis failed:', err);
     }
 
-    // 2. Smart Analysis çalıştır (yedek/ek sistem)
+    // 2. Smart Analysis çalıştır (yedek/ek sistem) - Timeout ile
     let smartResult: SmartAnalysisResult | null = null;
     try {
       if (onProgress) onProgress({ stage: 'smart', message: 'Smart-Analyzer veri kontrollerini yapıyor...' });
-      console.log('\n📊 Running Smart Analysis...');
-      smartResult = await runSmartAnalysis({
+      console.log('\n📊 Running Smart Analysis (12s timeout)...');
+      
+      // Smart Analysis timeout: 12 saniye (Agent Analysis ~40s + Smart Analysis ~12s = ~52s toplam)
+      const SMART_ANALYSIS_TIMEOUT_MS = 12000;
+      const smartAnalysisPromise = runSmartAnalysis({
         fixtureId: input.fixtureId,
         homeTeam: input.homeTeam,
         awayTeam: input.awayTeam,
@@ -161,9 +164,21 @@ export async function runUnifiedConsensus(
         league: input.league,
         matchDate: input.matchDate
       });
+      
+      const smartTimeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('⏱️ Smart Analysis timeout after 12s, skipping...');
+          resolve(null);
+        }, SMART_ANALYSIS_TIMEOUT_MS);
+      });
+      
+      smartResult = await Promise.race([smartAnalysisPromise, smartTimeoutPromise]);
+      
       if (smartResult) {
         systemsUsed.push('smart');
         console.log('✅ Smart Analysis completed');
+      } else {
+        console.warn('⚠️ Smart Analysis timeout or failed, using Agent Analysis only');
       }
     } catch (err) {
       console.error('❌ Smart Analysis failed:', err);
@@ -245,13 +260,13 @@ async function createUnifiedConsensus(
     console.warn('   ⚠️ Could not load learned weights, using defaults:', error);
     
     // Fallback: Eski sistem (leagueStats)
-    if (leagueStats && leagueStats.length > 0) {
-      leagueStats.forEach(stat => {
-        if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
-        else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
-        else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
-        else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
-      });
+  if (leagueStats && leagueStats.length > 0) {
+    leagueStats.forEach(stat => {
+      if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
+      else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
+      else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
+      else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
+    });
     }
   }
   
