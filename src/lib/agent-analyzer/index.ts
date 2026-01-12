@@ -1674,7 +1674,7 @@ export async function runAgentAnalysis(
         geniusAnalyst: geniusAnalystResult,
         masterStrategist: masterStrategistResult,
         devilsAdvocate: devilsAdvocateResult, // ✅ Devil's Advocate aktif
-        sentiment: sentimentResult // ✅ Sentiment aktif
+        sentiment: sentimentResult ?? undefined // ✅ Sentiment aktif (null → undefined)
       },
 
       // Verification log
