@@ -65,14 +65,16 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
     const stateName = stateInfo?.state || stateInfo?.developer_name || stateInfo?.short_name || '';
     const stateId = fixture.state_id;
 
-    // Finished state IDs: 5 = FT, 11 = AET, 12 = PEN
-    const finishedStateIds = [5, 11, 12];
-    const finishedStates = ['FT', 'AET', 'PEN', 'FINISHED', 'ended'];
+    // Finished state IDs: 5 = FT, 8 = FT_PEN, 11 = AET, 12 = PEN
+    const finishedStateIds = [5, 8, 11, 12];
+    const finishedStates = ['FT', 'FT_PEN', 'AET', 'PEN', 'FINISHED', 'ended'];
 
     const isFinished =
       finishedStates.includes(stateName) ||
       finishedStateIds.includes(stateId) ||
-      stateInfo?.short_name === 'FT';
+      stateInfo?.short_name === 'FT' ||
+      stateName.includes('FT') ||
+      stateName.includes('FINISHED');
 
     if (!isFinished) {
       console.log(`   ⏳ Not finished yet. State: ${stateName}, ID: ${stateId}`);
@@ -84,7 +86,7 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
     let homeScore = 0;
     let awayScore = 0;
 
-    // CURRENT skorlarını bul (nihai skor)
+    // Önce CURRENT skorlarını bul (nihai skor)
     for (const scoreEntry of scores) {
       // Sportmonks v3 format: nested score object
       const participant = scoreEntry.score?.participant || scoreEntry.participant;
@@ -96,15 +98,39 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
       }
     }
 
-    // Eğer CURRENT bulunamadıysa, 2ND_HALF veya FULLTIME dene
+    // Eğer CURRENT bulunamadıysa, FULLTIME, FT, 2ND_HALF veya en yüksek skorları dene
     if (homeScore === 0 && awayScore === 0) {
       for (const scoreEntry of scores) {
         const participant = scoreEntry.score?.participant || scoreEntry.participant;
         const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+        const description = scoreEntry.description || '';
 
-        if (scoreEntry.description === '2ND_HALF' || scoreEntry.description === 'FULLTIME') {
+        if (description === 'FULLTIME' || description === 'FT' || description === '2ND_HALF' || description.includes('FT')) {
           if (participant === 'home' && goals > homeScore) homeScore = goals;
           if (participant === 'away' && goals > awayScore) awayScore = goals;
+        }
+      }
+    }
+
+    // Eğer hala skor yoksa, tüm skorlardan en yüksek değerleri al
+    if (homeScore === 0 && awayScore === 0 && scores.length > 0) {
+      for (const scoreEntry of scores) {
+        const participant = scoreEntry.score?.participant || scoreEntry.participant;
+        const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+
+        if (participant === 'home' && goals > homeScore) homeScore = goals;
+        if (participant === 'away' && goals > awayScore) awayScore = goals;
+      }
+    }
+
+    // Eğer hala skor yoksa, result_score'u kontrol et (alternatif format)
+    if (homeScore === 0 && awayScore === 0 && fixture.result_score) {
+      const resultScore = fixture.result_score;
+      if (typeof resultScore === 'string') {
+        const parts = resultScore.split('-');
+        if (parts.length === 2) {
+          homeScore = parseInt(parts[0]) || 0;
+          awayScore = parseInt(parts[1]) || 0;
         }
       }
     }
@@ -232,18 +258,25 @@ export async function GET(request: NextRequest) {
     // Maç saatinden en az 2.5 saat geçmiş bekleyen analizleri al
     const now = new Date();
     const cutoffTime = new Date(now.getTime() - 2.5 * 60 * 60 * 1000);
+    const cutoffDate = cutoffTime.toISOString().split('T')[0]; // YYYY-MM-DD formatı
 
     // 7 günden eski maçları atla
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgoDate = sevenDaysAgo.toISOString().split('T')[0];
 
+    // Dünkü ve bugünkü (2.5 saat öncesine kadar) maçları al
+    // match_date sadece tarih (YYYY-MM-DD), saat bilgisi yok
+    // Bu yüzden dünkü maçlar için match_date < bugün, bugünkü maçlar için match_date <= bugün
+    const today = new Date().toISOString().split('T')[0];
+    
     const { data: pendingAnalyses, error: fetchError } = await supabase
       .from('unified_analysis')
       .select('fixture_id, home_team, away_team, match_date, match_result_prediction, over_under_prediction, btts_prediction, analysis')
       .eq('is_settled', false)
-      .gte('match_date', sevenDaysAgo.toISOString().split('T')[0])
-      .lte('match_date', cutoffTime.toISOString().split('T')[0])
+      .gte('match_date', sevenDaysAgoDate)
+      .lte('match_date', cutoffDate) // Dünkü ve bugünkü (2.5 saat öncesine kadar) maçlar
       .order('match_date', { ascending: true })
-      .limit(30);
+      .limit(50); // Limit artırıldı: 30 → 50
 
     if (fetchError) {
       console.error('❌ Fetch error:', fetchError);

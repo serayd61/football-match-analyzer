@@ -59,21 +59,23 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
     const stateName = stateInfo?.state || stateInfo?.developer_name || stateInfo?.short_name || '';
     const stateId = fixture.state_id;
 
-    // Finished state IDs: 5 = FT, 11 = AET, 12 = PEN
-    const finishedStateIds = [5, 11, 12];
-    const finishedStates = ['FT', 'AET', 'PEN', 'FINISHED', 'ended'];
+    // Finished state IDs: 5 = FT, 8 = FT_PEN, 11 = AET, 12 = PEN
+    const finishedStateIds = [5, 8, 11, 12];
+    const finishedStates = ['FT', 'FT_PEN', 'AET', 'PEN', 'FINISHED', 'ended'];
 
     const isFinished =
       finishedStates.includes(stateName) ||
       finishedStateIds.includes(stateId) ||
-      stateInfo?.short_name === 'FT';
+      stateInfo?.short_name === 'FT' ||
+      stateName.includes('FT') ||
+      stateName.includes('FINISHED');
 
-    // Skorları çek
+    // Skorları çek - Sportmonks v3 format
     const scores = fixture.scores || [];
     let homeScore = 0;
     let awayScore = 0;
 
-    // CURRENT skorlarını bul (nihai skor)
+    // Önce CURRENT skorlarını bul (nihai skor)
     for (const scoreEntry of scores) {
       const participant = scoreEntry.score?.participant || scoreEntry.participant;
       const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
@@ -84,15 +86,39 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
       }
     }
 
-    // Eğer CURRENT bulunamadıysa, 2ND_HALF veya FULLTIME dene
+    // Eğer CURRENT bulunamadıysa, FULLTIME, FT, 2ND_HALF veya en yüksek skorları dene
     if (homeScore === 0 && awayScore === 0) {
       for (const scoreEntry of scores) {
         const participant = scoreEntry.score?.participant || scoreEntry.participant;
         const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+        const description = scoreEntry.description || '';
 
-        if (scoreEntry.description === '2ND_HALF' || scoreEntry.description === 'FULLTIME') {
+        if (description === 'FULLTIME' || description === 'FT' || description === '2ND_HALF' || description.includes('FT')) {
           if (participant === 'home' && goals > homeScore) homeScore = goals;
           if (participant === 'away' && goals > awayScore) awayScore = goals;
+        }
+      }
+    }
+
+    // Eğer hala skor yoksa, tüm skorlardan en yüksek değerleri al
+    if (homeScore === 0 && awayScore === 0 && scores.length > 0) {
+      for (const scoreEntry of scores) {
+        const participant = scoreEntry.score?.participant || scoreEntry.participant;
+        const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
+
+        if (participant === 'home' && goals > homeScore) homeScore = goals;
+        if (participant === 'away' && goals > awayScore) awayScore = goals;
+      }
+    }
+
+    // Eğer hala skor yoksa, result_score'u kontrol et (alternatif format)
+    if (homeScore === 0 && awayScore === 0 && fixture.result_score) {
+      const resultScore = fixture.result_score;
+      if (typeof resultScore === 'string') {
+        const parts = resultScore.split('-');
+        if (parts.length === 2) {
+          homeScore = parseInt(parts[0]) || 0;
+          awayScore = parseInt(parts[1]) || 0;
         }
       }
     }
