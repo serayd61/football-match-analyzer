@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDynamicPromptGuidance } from '@/lib/agent-learning/dynamic-prompts';
-import { getLearningContext } from '@/lib/agent-learning/performance-tracker';
+import { getLearningContext } from '@/lib/ai-brain/learning-context';
 import { getAgentWeights } from '@/lib/agent-learning/performance-tracker';
 
 export const dynamic = 'force-dynamic';
