@@ -936,7 +936,6 @@ ${learningContext}
 
   // Dynamic prompt guidance section
   const dynamicPromptSection = dynamicPromptGuidance || '';
-` : '';
   
   // Language-specific user message
   const userMessageByLang = {
