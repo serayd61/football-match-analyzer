@@ -550,7 +550,8 @@ export async function runMasterStrategist(
       fixtureId: matchData.fixtureId,
       temperature: 0.2, // Slightly increased for creative reasoning
       maxTokens: 2000, // Increased for CoT + JSON
-      timeout: 15000 // 15 seconds
+      timeout: 15000, // 15 seconds
+      retries: 2 // Retry 2 times for overloaded errors
     });
 
     if (!response) {

@@ -19,6 +19,7 @@ export interface AIOptions {
   mcpTools?: string[]; // MCP tools to use
   mcpFallback?: boolean; // Use MCP as fallback if AI fails
   fixtureId?: number; // For MCP data fetching
+  retries?: number; // Number of retries for overloaded/rate limit errors (default: 0)
 }
 
 export interface MCPTool {
@@ -133,6 +134,15 @@ export class AIClient {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ Claude API error: ${response.status}`, errorText);
+        
+        // Retry for overloaded errors (529) or rate limit errors (429)
+        if ((response.status === 529 || response.status === 429) && options.retries !== undefined && options.retries > 0) {
+          const retryDelay = 2000; // 2 seconds
+          console.log(`🔄 Claude API overloaded, retrying in ${retryDelay}ms... (${options.retries} retries left)`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return this.callClaude(messages, { ...options, retries: options.retries - 1 });
+        }
+        
         return null;
       }
 

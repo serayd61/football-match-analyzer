@@ -1394,7 +1394,7 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 32000, 'Deep Analysis Agent'), // 25s → 32s (loglardan görünen: ~30s'de tamamlanıyor)
+      }), 35000, 'Deep Analysis Agent'), // 32s → 35s (loglardan görünen: ~31s'de tamamlanıyor, güvenli marj)
     ]);
     
     // Devil's Advocate kaldırıldı
