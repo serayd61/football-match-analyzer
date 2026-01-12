@@ -179,7 +179,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Unique fixture_id'leri al
-    const fixtureIds: number[] = [...new Set(uniqueFixtures.map((f: any) => Number(f.fixture_id)))].slice(0, limit).filter(id => !isNaN(id));
+    const fixtureIds: number[] = Array.from(
+      new Set(uniqueFixtures.map((f: any) => Number(f.fixture_id)))
+    )
+      .filter((id): id is number => typeof id === 'number' && !isNaN(id))
+      .slice(0, limit);
     console.log(`📋 Found ${fixtureIds.length} unique fixtures to process\n`);
 
     let settledCount = 0;
