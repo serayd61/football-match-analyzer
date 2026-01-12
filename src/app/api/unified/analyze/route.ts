@@ -12,7 +12,7 @@ import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
 import { checkUserAccess, incrementAnalysisCount } from '@/lib/accessControl';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120; // 120 saniye (Vercel Pro - 5 ajan paralel çalışacak)
 
 // Lazy-loaded Supabase client
 let supabaseClient: SupabaseClient | null = null;

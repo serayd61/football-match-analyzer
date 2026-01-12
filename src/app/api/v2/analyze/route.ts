@@ -10,7 +10,7 @@ import { runAgentAnalysis, saveAgentAnalysis } from '@/lib/agent-analyzer';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // 60 saniye max (Vercel Pro plan limiti) - Agent Analysis timeout handling ile yönetiliyor
+export const maxDuration = 120; // 120 saniye (Vercel Pro - Devil's Advocate + Sentiment aktif)
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',

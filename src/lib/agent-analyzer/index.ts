@@ -12,8 +12,9 @@ import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { runMasterStrategist } from '../heurist/agents/masterStrategist';
 import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
-// 🚫 Devil's Advocate kaldırıldı - ana tahmin için kritik değil
-// import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
+// ✅ Devil's Advocate ve Sentiment ajanları aktif edildi
+import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
+import { runSentimentAgent, SentimentResult } from '../heurist/agents/sentimentAgent';
 import { MatchData } from '../heurist/types';
 import { saveOddsAnalysisLog } from '../odds-logger';
 import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
@@ -43,6 +44,7 @@ export interface AgentAnalysisResult {
     masterStrategist?: any;
     geniusAnalyst?: any;
     devilsAdvocate?: any;
+    sentiment?: SentimentResult;
   };
 
   // Birleştirilmiş tahminler (Agent analizinde kullanılmıyor - sadece yeni özel tahminler kullanılıyor)
@@ -1376,42 +1378,59 @@ export async function runAgentAnalysis(
     // Bu agent tekrar aynı verileri topluyordu, gereksiz zaman kaybı yaratıyordu (~10-15 saniye)
     // Veriler zaten matchData'da mevcut, agent'lar bunu kullanabilir
 
-    // 🆕 3 AGENT SİSTEMİ: Stats + Odds + Deep Analysis (PARALEL)
-    if (onProgress) onProgress({ stage: 'core_agents', message: 'Uzman agentlar (Stats, Odds, Deep Analysis) paralel analiz yapıyor...' });
-    console.log('🎯 3-Agent System: Stats, Odds, Deep Analysis (PARALLEL)');
+    // 🆕 5 AGENT SİSTEMİ: Stats + Odds + Deep Analysis + Devil's Advocate + Sentiment (PARALEL)
+    if (onProgress) onProgress({ stage: 'core_agents', message: 'Uzman agentlar (Stats, Odds, Deep, Devil\'s Advocate, Sentiment) paralel analiz yapıyor...' });
+    console.log('🎯 5-Agent System: Stats, Odds, Deep Analysis, Devil\'s Advocate, Sentiment (PARALLEL)');
 
-    // 🚫 DEVIL'S ADVOCATE KALDIRILDI - Ana tahmin için kritik değil, ~15-20 saniye tasarruf
-    // ⚡ Timeout'lar artırıldı - Agent'ların tamamlanması için daha fazla süre
-    // Loglardan görünen: Agent'lar 22-25s'de timeout oluyor ama sonuçlar 30s'de geliyor
-    // Timeout'ları daha fazla artırıyoruz ki agent'lar tamamlanabilsin
-    const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
+    // ✅ Tüm ajanlar paralel çalışıyor - Vercel Pro 120s timeout ile
+    const [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult, sentimentResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Stats Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 35000, 'Stats Agent'), // 28s → 35s (gerçek: ~9s, Promise.race sorunu için marj)
+      }), 35000, 'Stats Agent'),
       withTimeout(runOddsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Odds Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 35000, 'Odds Agent'), // 28s → 35s (gerçek: ~9s, Promise.race sorunu için marj)
+      }), 35000, 'Odds Agent'),
       withTimeout(runDeepAnalysisAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Deep Analysis Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 55000, 'Deep Analysis Agent'), // 42s → 55s (iç timeout 25s + marj)
+      }), 55000, 'Deep Analysis Agent'),
+      // ✅ Devil's Advocate - Tuzak maçları ve riskleri tespit eder
+      withTimeout(runDevilsAdvocateAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Devil\'s Advocate analizini tamamladı.' });
+        console.log('👹 Devil\'s Advocate completed:', res?.matchResult || 'N/A');
+        return res;
+      }).catch(err => {
+        console.error('❌ Devil\'s Advocate agent failed:', err?.message || err);
+        return null;
+      }), 30000, 'Devil\'s Advocate Agent'), // 30s timeout
+      // ✅ Sentiment Agent - Haber ve duygu analizi yapar
+      withTimeout(runSentimentAgent(matchData, language).then(res => {
+        if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Sentiment Agent analizini tamamladı.' });
+        console.log('📰 Sentiment Agent completed:', res?.psychologicalEdge?.team || 'N/A');
+        return res;
+      }).catch(err => {
+        console.error('❌ Sentiment agent failed:', err?.message || err);
+        return null;
+      }), 35000, 'Sentiment Agent'), // 35s timeout (Perplexity API çağrıları için)
     ]);
-    
-    // Devil's Advocate kaldırıldı
+
+    // Debug logs
     console.log('🔍 DEBUG: StatsResult:', !!statsResult);
     console.log('🔍 DEBUG: OddsResult:', !!oddsResult);
     console.log('🔍 DEBUG: DeepAnalysisResult:', !!deepAnalysisResult);
+    console.log('🔍 DEBUG: DevilsAdvocateResult:', !!devilsAdvocateResult);
+    console.log('🔍 DEBUG: SentimentResult:', !!sentimentResult);
 
     // Genius Analyst devre dışı
     const geniusAnalystResult = null;
@@ -1424,31 +1443,39 @@ export async function runAgentAnalysis(
       return null;
     }
 
-    console.log(`✅ Core Agents completed: ${successfulAgents}/3 successful`);
+    // Tüm ajanların başarı sayısı (5 ajan)
+    const allSuccessfulAgents = [statsResult, oddsResult, deepAnalysisResult, devilsAdvocateResult, sentimentResult].filter(r => r !== null).length;
+    console.log(`✅ All Agents completed: ${allSuccessfulAgents}/5 successful`);
+
     if (statsResult) {
       console.log(`   📊 Stats: ${statsResult.matchResult} | ${statsResult.overUnder} | BTTS: ${statsResult.btts} | Conf: ${statsResult.confidence || statsResult.overUnderConfidence || 'N/A'}%`);
     }
     if (oddsResult) {
       console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
     }
-    // Devil's Advocate kaldırıldı
+    if (devilsAdvocateResult) {
+      console.log(`   👹 Devil's Advocate: ${devilsAdvocateResult.matchResult} | Risks: ${devilsAdvocateResult.risks?.length || 0} | Conf: ${devilsAdvocateResult.confidence || 'N/A'}%`);
+    }
+    if (sentimentResult) {
+      console.log(`   📰 Sentiment: Edge: ${sentimentResult.psychologicalEdge?.team || 'neutral'} | Conf: ${sentimentResult.psychologicalEdge?.confidence || 'N/A'}%`);
+    }
 
-    // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
-    if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
+    // 🆕 Step 4.1: Run Master Strategist (tüm agent'ların çıktılarını analiz eder)
+    if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları (5 ajan) birleştirip son kararı veriyor...' });
     console.log('🧠 Step 4.1: Running Master Strategist Agent (30s timeout)...');
     let masterStrategistResult = null;
     try {
-      // ⚡ 15 saniye timeout - Loglardan görünen: ~8.5s'de tamamlanıyor ama Promise.race sorunu için marj
+      // ⚡ 30 saniye timeout - Tüm ajan verilerini analiz etmesi gerekiyor
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
           {
             stats: statsResult,
             odds: oddsResult,
-            sentiment: null,
+            sentiment: sentimentResult, // ✅ Sentiment eklendi
             deepAnalysis: deepAnalysisResult,
             geniusAnalyst: geniusAnalystResult,
-            devilsAdvocate: null,
+            devilsAdvocate: devilsAdvocateResult, // ✅ Devil's Advocate eklendi
           },
           language
         ),
@@ -1456,7 +1483,7 @@ export async function runAgentAnalysis(
           setTimeout(() => {
             console.warn('   ⏱️ Master Strategist timeout after 30s');
             resolve(null);
-          }, 30000); // 15s → 30s (iç timeout 25s + marj)
+          }, 30000);
         })
       ]);
 
@@ -1646,13 +1673,16 @@ export async function runAgentAnalysis(
         deepAnalysis: deepAnalysisResult,
         geniusAnalyst: geniusAnalystResult,
         masterStrategist: masterStrategistResult,
-        devilsAdvocate: null
+        devilsAdvocate: devilsAdvocateResult, // ✅ Devil's Advocate aktif
+        sentiment: sentimentResult // ✅ Sentiment aktif
       },
 
       // Verification log
       _debug: {
-        devilsAdvocatePresent: false,
-        masterStrategistPresent: !!masterStrategistResult
+        devilsAdvocatePresent: !!devilsAdvocateResult,
+        sentimentPresent: !!sentimentResult,
+        masterStrategistPresent: !!masterStrategistResult,
+        totalAgentsSuccessful: allSuccessfulAgents
       },
 
       // Agent analizinde standart tahminler - Sportmonks verilerine göre puan bazlı
