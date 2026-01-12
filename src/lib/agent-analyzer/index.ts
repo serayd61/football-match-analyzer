@@ -1341,12 +1341,23 @@ export async function runAgentAnalysis(
     const language: 'tr' | 'en' | 'de' = lang; // API'den gelen dil
 
     // 🆕 Optimized timeout wrapper - agent'ları verimli çalıştır
+    // Promise.race kullanarak timeout kontrolü yapıyoruz
+    // Eğer agent timeout'tan önce tamamlanırsa sonucu döndürüyoruz
+    // Eğer timeout olursa null döndürüyoruz (agent arka planda çalışmaya devam edebilir)
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, agentName: string): Promise<T | null> => {
+      const startTime = Date.now();
       return Promise.race([
-        promise,
+        promise.then(result => {
+          const elapsed = Date.now() - startTime;
+          if (elapsed > timeoutMs * 0.9) { // %90'ından fazla süre geçtiyse uyar
+            console.warn(`⚠️ ${agentName} completed in ${elapsed}ms (close to ${timeoutMs}ms timeout)`);
+          }
+          return result;
+        }),
         new Promise<T | null>((resolve) => {
           setTimeout(() => {
-            console.warn(`⏱️ ${agentName} timeout after ${timeoutMs}ms, skipping...`);
+            const elapsed = Date.now() - startTime;
+            console.warn(`⏱️ ${agentName} timeout after ${timeoutMs}ms (elapsed: ${elapsed}ms), skipping...`);
             resolve(null);
           }, timeoutMs);
         })
@@ -1394,7 +1405,7 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 35000, 'Deep Analysis Agent'), // 32s → 35s (loglardan görünen: ~31s'de tamamlanıyor, güvenli marj)
+      }), 38000, 'Deep Analysis Agent'), // 35s → 38s (loglardan görünen: ~31s'de tamamlanıyor, daha güvenli marj)
     ]);
     
     // Devil's Advocate kaldırıldı
