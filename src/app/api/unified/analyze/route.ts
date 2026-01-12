@@ -97,6 +97,25 @@ export async function POST(request: NextRequest) {
     const access = await checkUserAccess(session.user.email, ip);
 
     if (!access.canAnalyze) {
+      // Pro kontrolü - sadece Pro aboneler analiz yapabilir
+      if (!access.isPro) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: access.message || 'Maç analizi için Pro abonelik gereklidir',
+            code: 'PRO_REQUIRED',
+            access: {
+              isPro: false,
+              canAnalyze: false,
+              message: access.message || 'Pro abonelik gereklidir',
+              redirectTo: access.redirectTo || '/pricing'
+            }
+          },
+          { status: 403 }
+        );
+      }
+      
+      // Pro kullanıcı ama limit dolmuş (nadir durum)
       return NextResponse.json(
         {
           success: false,

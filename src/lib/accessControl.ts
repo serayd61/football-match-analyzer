@@ -134,37 +134,22 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Free tier kontrolü
+  // Free tier kontrolü - ARTIK ANALİZ YAPAMAZ (SADECE PRO)
   const isFree = profile.subscription_status === 'free' || !profile.subscription_status;
   
   if (isFree) {
-    let analysesUsed = profile.analyses_today || 0;
-
-    // Gün değiştiyse sıfırla
-    if (profile.last_analysis_date !== today) {
-      analysesUsed = 0;
-      await db
-        .from('profiles')
-        .update({ analyses_today: 0, last_analysis_date: today })
-        .eq('email', email);
-    }
-
-    // FREE TIER: Günlük sadece 1 analiz!
-    const analysesLimit = 1;
-    const canAnalyze = analysesUsed < analysesLimit;
-
     return {
-      hasAccess: canAnalyze, // Limit dolduysa erişim yok
+      hasAccess: false,
       isPro: false,
       isTrial: false,
       trialDaysLeft: 0,
       trialExpired: false,
-      analysesUsed,
-      analysesLimit,
-      canAnalyze,
-      canUseAgents: false, // Free tier'da agent YOK
-      message: canAnalyze ? undefined : 'Günlük analiz limitiniz doldu. Premium\'a geçin!',
-      redirectTo: canAnalyze ? undefined : '/pricing',
+      analysesUsed: 0,
+      analysesLimit: 0,
+      canAnalyze: false, // FREE TIER: Analiz yapamaz, sadece PRO
+      canUseAgents: false,
+      message: 'Maç analizi için Pro abonelik gereklidir',
+      redirectTo: '/pricing',
     };
   }
 
@@ -191,31 +176,20 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Trial aktif (eski kullanıcılar için)
+  // Trial aktif (eski kullanıcılar için) - ARTIK ANALİZ YAPAMAZ (SADECE PRO)
   if (isTrial) {
-    let analysesUsed = profile.analyses_today || 0;
-
-    if (profile.last_analysis_date !== today) {
-      analysesUsed = 0;
-      await db
-        .from('profiles')
-        .update({ analyses_today: 0, last_analysis_date: today })
-        .eq('email', email);
-    }
-
-    const analysesLimit = 3;
-    const canAnalyze = analysesUsed < analysesLimit;
-
     return {
-      hasAccess: true,
+      hasAccess: false,
       isPro: false,
       isTrial: true,
       trialDaysLeft,
       trialExpired: false,
-      analysesUsed,
-      analysesLimit,
-      canAnalyze,
+      analysesUsed: 0,
+      analysesLimit: 0,
+      canAnalyze: false, // TRIAL: Analiz yapamaz, sadece PRO
       canUseAgents: false,
+      message: 'Maç analizi için Pro abonelik gereklidir',
+      redirectTo: '/pricing',
     };
   }
 
