@@ -1386,6 +1386,20 @@ export default function DashboardPage() {
       
       // Response status kontrolü
       if (!res.ok) {
+        // 403 Forbidden - Pro abonelik gerekli veya limit dolmuş
+        if (res.status === 403) {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await res.json();
+            // Pro abonelik gerekli
+            if (errorData.code === 'PRO_REQUIRED' || errorData.code === 'LIMIT_REACHED') {
+              setShowPaywall(true);
+              setAnalysisError(errorData.error || 'Maç analizi için Pro abonelik gereklidir');
+              setAnalyzing(false);
+              return;
+            }
+          }
+        }
         // 504 Gateway Timeout veya diğer hatalar
         if (res.status === 504) {
           throw new Error('Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.');
