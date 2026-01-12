@@ -1371,6 +1371,8 @@ export async function runAgentAnalysis(
 
     // 🚫 DEVIL'S ADVOCATE KALDIRILDI - Ana tahmin için kritik değil, ~15-20 saniye tasarruf
     // ⚡ Timeout'lar artırıldı - Agent'ların tamamlanması için daha fazla süre
+    // Loglardan görünen: Agent'lar 22-25s'de timeout oluyor ama sonuçlar 30s'de geliyor
+    // Timeout'ları daha fazla artırıyoruz ki agent'lar tamamlanabilsin
     const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Stats Agent analizini tamamladı.' });
@@ -1378,21 +1380,21 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 22000, 'Stats Agent'), // 18s → 22s
+      }), 28000, 'Stats Agent'), // 22s → 28s (loglardan görünen: ~18s'de tamamlanıyor)
       withTimeout(runOddsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Odds Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 22000, 'Odds Agent'), // 18s → 22s
+      }), 28000, 'Odds Agent'), // 22s → 28s (loglardan görünen: ~18s'de tamamlanıyor)
       withTimeout(runDeepAnalysisAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Deep Analysis Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 25000, 'Deep Analysis Agent'), // 20s → 25s
+      }), 32000, 'Deep Analysis Agent'), // 25s → 32s (loglardan görünen: ~30s'de tamamlanıyor)
     ]);
     
     // Devil's Advocate kaldırıldı
