@@ -1370,6 +1370,7 @@ export async function runAgentAnalysis(
     console.log('🎯 3-Agent System: Stats, Odds, Deep Analysis (PARALLEL)');
 
     // 🚫 DEVIL'S ADVOCATE KALDIRILDI - Ana tahmin için kritik değil, ~15-20 saniye tasarruf
+    // ⚡ Timeout'lar artırıldı - Agent'ların tamamlanması için daha fazla süre
     const [statsResult, oddsResult, deepAnalysisResult] = await Promise.all([
       withTimeout(runStatsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Stats Agent analizini tamamladı.' });
@@ -1377,21 +1378,21 @@ export async function runAgentAnalysis(
       }).catch(err => {
         console.error('❌ Stats agent failed:', err?.message || err);
         return null;
-      }), 18000, 'Stats Agent'),
+      }), 22000, 'Stats Agent'), // 18s → 22s
       withTimeout(runOddsAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Odds Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Odds agent failed:', err?.message || err);
         return null;
-      }), 18000, 'Odds Agent'),
+      }), 22000, 'Odds Agent'), // 18s → 22s
       withTimeout(runDeepAnalysisAgent(matchData, language).then(res => {
         if (onProgress && res) onProgress({ stage: 'core_agents', message: 'Deep Analysis Agent analizini tamamladı.' });
         return res;
       }).catch(err => {
         console.error('❌ Deep Analysis agent failed:', err?.message || err);
         return null;
-      }), 20000, 'Deep Analysis Agent'), // ⚡ Timeout 30s → 20s (10s tasarruf)
+      }), 25000, 'Deep Analysis Agent'), // 20s → 25s
     ]);
     
     // Devil's Advocate kaldırıldı
@@ -1421,10 +1422,10 @@ export async function runAgentAnalysis(
 
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (8s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (10s timeout)...');
     let masterStrategistResult = null;
     try {
-      // ⚡ 8 saniye timeout - Vercel limit için optimize edildi (12s → 8s, 4s tasarruf)
+      // ⚡ 10 saniye timeout - Agent'ların tamamlanması için yeterli süre (8s → 10s)
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
@@ -1440,9 +1441,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 8s');
+            console.warn('   ⏱️ Master Strategist timeout after 10s');
             resolve(null);
-          }, 8000); // ⚡ 12s → 8s
+          }, 10000); // ⚡ 8s → 10s
         })
       ]);
 
@@ -1706,9 +1707,14 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
     // 🧠 ÖĞRENEN SİSTEM: Agent tahminlerini kaydet (performans takibi için)
     const { recordAgentPrediction } = await import('../agent-learning/performance-tracker');
     
+    // Match date'i normalize et (ISO string'den sadece tarih kısmını al)
+    const normalizedMatchDate = result.matchDate 
+      ? (result.matchDate.includes('T') ? result.matchDate.split('T')[0] : result.matchDate)
+      : new Date().toISOString().split('T')[0];
+    
     // Stats Agent tahmini
     if (result.agents?.stats) {
-      await recordAgentPrediction(
+      const statsSuccess = await recordAgentPrediction(
         result.fixtureId,
         'stats',
         {
@@ -1726,13 +1732,19 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
           } : undefined,
         },
         result.league,
-        result.matchDate
-      ).catch(err => console.warn('⚠️ Failed to record stats prediction:', err));
+        normalizedMatchDate
+      ).catch(err => {
+        console.error('❌ Failed to record stats prediction:', err);
+        return false;
+      });
+      if (!statsSuccess) {
+        console.warn(`⚠️ Stats agent prediction not recorded for fixture ${result.fixtureId}`);
+      }
     }
 
     // Odds Agent tahmini
     if (result.agents?.odds) {
-      await recordAgentPrediction(
+      const oddsSuccess = await recordAgentPrediction(
         result.fixtureId,
         'odds',
         {
@@ -1750,13 +1762,19 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
           } : undefined,
         },
         result.league,
-        result.matchDate
-      ).catch(err => console.warn('⚠️ Failed to record odds prediction:', err));
+        normalizedMatchDate
+      ).catch(err => {
+        console.error('❌ Failed to record odds prediction:', err);
+        return false;
+      });
+      if (!oddsSuccess) {
+        console.warn(`⚠️ Odds agent prediction not recorded for fixture ${result.fixtureId}`);
+      }
     }
 
     // Deep Analysis Agent tahmini
     if (result.agents?.deepAnalysis) {
-      await recordAgentPrediction(
+      const deepAnalysisSuccess = await recordAgentPrediction(
         result.fixtureId,
         'deepAnalysis',
         {
@@ -1774,13 +1792,19 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
           } : undefined,
         },
         result.league,
-        result.matchDate
-      ).catch(err => console.warn('⚠️ Failed to record deepAnalysis prediction:', err));
+        normalizedMatchDate
+      ).catch(err => {
+        console.error('❌ Failed to record deepAnalysis prediction:', err);
+        return false;
+      });
+      if (!deepAnalysisSuccess) {
+        console.warn(`⚠️ Deep Analysis agent prediction not recorded for fixture ${result.fixtureId}`);
+      }
     }
 
     // Master Strategist tahmini
     if (result.agents?.masterStrategist?.finalConsensus) {
-      await recordAgentPrediction(
+      const masterStrategistSuccess = await recordAgentPrediction(
         result.fixtureId,
         'masterStrategist',
         {
@@ -1798,8 +1822,14 @@ export async function saveAgentAnalysis(result: AgentAnalysisResult): Promise<bo
           } : undefined,
         },
         result.league,
-        result.matchDate
-      ).catch(err => console.warn('⚠️ Failed to record masterStrategist prediction:', err));
+        normalizedMatchDate
+      ).catch(err => {
+        console.error('❌ Failed to record masterStrategist prediction:', err);
+        return false;
+      });
+      if (!masterStrategistSuccess) {
+        console.warn(`⚠️ Master Strategist prediction not recorded for fixture ${result.fixtureId}`);
+      }
     }
 
     const { error } = await supabase
