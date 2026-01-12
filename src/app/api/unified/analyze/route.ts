@@ -199,10 +199,11 @@ export async function POST(request: NextRequest) {
       lang: lang as 'tr' | 'en' | 'de'
     };
 
-    // Timeout handling: 50 saniye timeout (Vercel limiti 60 saniye, 10 saniye buffer)
-    const UNIFIED_TIMEOUT_MS = 50000;
+    // Timeout handling: 55 saniye timeout (Vercel limiti 60 saniye, 5 saniye buffer)
+    // Loglardan görünen: Agent Analysis ~40s, Smart Analysis ~10-15s = toplam ~55s
+    const UNIFIED_TIMEOUT_MS = 55000;
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Unified Analysis timeout after 50 seconds')), UNIFIED_TIMEOUT_MS)
+      setTimeout(() => reject(new Error('Unified Analysis timeout after 55 seconds')), UNIFIED_TIMEOUT_MS)
     );
 
     if (stream) {
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
 
             // Timeout handling for stream mode too
             const streamTimeoutPromise = new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Unified Analysis timeout after 50 seconds')), UNIFIED_TIMEOUT_MS)
+              setTimeout(() => reject(new Error('Unified Analysis timeout after 55 seconds')), UNIFIED_TIMEOUT_MS)
             );
 
             const result = await Promise.race([
@@ -266,7 +267,7 @@ export async function POST(request: NextRequest) {
       ]);
     } catch (timeoutError: any) {
       if (timeoutError?.message?.includes('timeout')) {
-        console.warn('⏱️ Unified Analysis timeout after 50s');
+        console.warn('⏱️ Unified Analysis timeout after 55s');
         return NextResponse.json(
           { 
             success: false, 

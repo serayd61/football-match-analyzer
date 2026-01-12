@@ -1435,10 +1435,10 @@ export async function runAgentAnalysis(
 
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
-    console.log('🧠 Step 4.1: Running Master Strategist Agent (10s timeout)...');
+    console.log('🧠 Step 4.1: Running Master Strategist Agent (15s timeout)...');
     let masterStrategistResult = null;
     try {
-      // ⚡ 10 saniye timeout - Agent'ların tamamlanması için yeterli süre (8s → 10s)
+      // ⚡ 15 saniye timeout - Loglardan görünen: ~8.5s'de tamamlanıyor ama Promise.race sorunu için marj
       masterStrategistResult = await Promise.race([
         runMasterStrategist(
           matchData,
@@ -1454,9 +1454,9 @@ export async function runAgentAnalysis(
         ),
         new Promise<null>((resolve) => {
           setTimeout(() => {
-            console.warn('   ⏱️ Master Strategist timeout after 10s');
+            console.warn('   ⏱️ Master Strategist timeout after 15s');
             resolve(null);
-          }, 10000); // ⚡ 8s → 10s
+          }, 15000); // ⚡ 10s → 15s (gerçek: ~8.5s, Promise.race sorunu için marj)
         })
       ]);
 
