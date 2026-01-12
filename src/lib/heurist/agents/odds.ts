@@ -2,6 +2,7 @@ import { aiClient, AIMessage } from '../../ai-client';
 import { MatchData } from '../types';
 import { fetchHistoricalOdds, analyzeSharpMoney, analyzeBettingVolume, isRealValue, MatchOddsHistory, SharpMoneyResult, BettingVolumeResult, RealValueResult } from '../sportmonks-odds';
 import { getLearningContext } from '../../ai-brain/learning-context';
+import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
 
 // ==================== JSON EXTRACTION ====================
 
@@ -851,6 +852,17 @@ export async function runOddsAgent(matchData: MatchData, language: 'tr' | 'en' |
   } catch (e) {
     console.warn('   ⚠️ Learning Context failed, continuing without it');
   }
+
+  // 🎯 DİNAMİK PROMPT GÜNCELLEMESİ - Performansa göre prompt'u güncelle
+  let dynamicPromptGuidance = '';
+  try {
+    dynamicPromptGuidance = await generateDynamicPromptGuidance('odds', matchData.league || null, language);
+    if (dynamicPromptGuidance) {
+      console.log('   🎯 Dynamic Prompt Guidance loaded - prompt updated based on performance');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Dynamic Prompt Guidance failed, continuing without it');
+  }
   
   // 🆕 Historical odds çek
   let oddsHistory: MatchOddsHistory | null = null;
@@ -1037,6 +1049,7 @@ Movement Strength: ${bettingVolume.indicators.movementStrength}/100 | Unusual: $
   const userPrompt = `MATCH: ${matchData.homeTeam} vs ${matchData.awayTeam}
 
 ${learningContext ? `\n🧠 ÖĞRENME CONTEXT (Geçmiş Performans):\n${learningContext}\n` : ''}
+${dynamicPromptGuidance ? dynamicPromptGuidance : ''}
 
 ═══════════════════════════════════════════════════════════════
 💰 ODDS DATA

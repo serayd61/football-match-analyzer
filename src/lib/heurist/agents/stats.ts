@@ -3,6 +3,7 @@ import { MatchData } from '../types';
 import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 import { getLearningContext } from '../../ai-brain/learning-context';
+import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
 
 // ==================== MOTİVASYON SKORU HESAPLAMA ====================
 
@@ -1144,6 +1145,17 @@ export async function runStatsAgent(matchData: MatchData, language: 'tr' | 'en' 
   } catch (e) {
     console.warn('   ⚠️ Learning Context failed, continuing without it');
   }
+
+  // 🎯 DİNAMİK PROMPT GÜNCELLEMESİ - Performansa göre prompt'u güncelle
+  let dynamicPromptGuidance = '';
+  try {
+    dynamicPromptGuidance = await generateDynamicPromptGuidance('stats', matchData.league || null, language);
+    if (dynamicPromptGuidance) {
+      console.log('   🎯 Dynamic Prompt Guidance loaded - prompt updated based on performance');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Dynamic Prompt Guidance failed, continuing without it');
+  }
   
   // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
   let probabilityResult: ProbabilityResult | null = null;
@@ -1394,6 +1406,8 @@ ${learningContext ? `
 ═══════════════════════════════════════════════════════════════
 ${learningContext}
 ` : ''}
+
+${dynamicPromptGuidance ? dynamicPromptGuidance : ''}
 
 ${probabilityContext ? `
 ═══════════════════════════════════════════════════════════════

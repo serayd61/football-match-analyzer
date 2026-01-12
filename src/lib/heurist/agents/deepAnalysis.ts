@@ -7,6 +7,7 @@ import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } 
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 import { analyzeTeamMotivation, TeamMotivationAnalysis } from './team-motivation-analyzer';
 import { getLearningContext } from '../../ai-brain/learning-context';
+import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
 
 // 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
 // Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
@@ -773,6 +774,17 @@ export async function runDeepAnalysisAgent(
   } catch (e) {
     console.warn('   ⚠️ Learning Context failed, continuing without it');
   }
+
+  // 🎯 DİNAMİK PROMPT GÜNCELLEMESİ - Performansa göre prompt'u güncelle
+  let dynamicPromptGuidance = '';
+  try {
+    dynamicPromptGuidance = await generateDynamicPromptGuidance('deepAnalysis', matchData.league || null, language);
+    if (dynamicPromptGuidance) {
+      console.log('   🎯 Dynamic Prompt Guidance loaded - prompt updated based on performance');
+    }
+  } catch (e) {
+    console.warn('   ⚠️ Dynamic Prompt Guidance failed, continuing without it');
+  }
   
   // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
   let probabilityResult: ProbabilityResult | null = null;
@@ -921,12 +933,15 @@ ${probabilityContext}
 ${learningContext}
 ═══════════════════════════════════════════════════════════════════════════════
 ` : '';
+
+  const dynamicPromptSection = dynamicPromptGuidance ? dynamicPromptGuidance : '';
+` : '';
   
   // Language-specific user message
   const userMessageByLang = {
-    tr: `${context}${learningSection}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nÖĞRENME CONTEXT'i kullanarak geçmiş performansı dikkate al.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
-    en: `${context}${learningSection}${probabilitySection}${motivationContext}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nALWAYS use ADVANCED MOTIVATION ANALYSIS results - this is based on 50% performance + 50% team motivation (injuries, news, squad).\nUse LEARNING CONTEXT to consider past performance.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
-    de: `${context}${probabilitySection}${motivationContext}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nVerwende IMMER ADVANCED MOTIVATION ANALYSIS Ergebnisse - basierend auf 50% Leistung + 50% Team-Motivation (Verletzungen, Nachrichten, Kader).\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
+    tr: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nÖĞRENME CONTEXT'i kullanarak geçmiş performansı dikkate al.\nDİNAMİK PROMPT GÜNCELLEMESİ'ni dikkate alarak yaklaşımını optimize et.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
+    en: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nALWAYS use ADVANCED MOTIVATION ANALYSIS results - this is based on 50% performance + 50% team motivation (injuries, news, squad).\nUse LEARNING CONTEXT to consider past performance.\nOptimize your approach by considering DYNAMIC PROMPT UPDATE.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
+    de: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nVerwende IMMER ADVANCED MOTIVATION ANALYSIS Ergebnisse - basierend auf 50% Leistung + 50% Team-Motivation (Verletzungen, Nachrichten, Kader).\nBerücksichtige DYNAMISCHE PROMPT-AKTUALISIERUNG.\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 
