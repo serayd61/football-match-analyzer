@@ -934,7 +934,8 @@ ${learningContext}
 ═══════════════════════════════════════════════════════════════════════════════
 ` : '';
 
-  const dynamicPromptSection = dynamicPromptGuidance ? dynamicPromptGuidance : '';
+  // Dynamic prompt guidance section
+  const dynamicPromptSection = dynamicPromptGuidance || '';
 ` : '';
   
   // Language-specific user message
