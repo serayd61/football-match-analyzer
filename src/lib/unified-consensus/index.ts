@@ -375,20 +375,110 @@ async function createUnifiedConsensus(
     { matchResult: smartMR }
   ]);
 
-  // Conflict detection
-  const systemConflicts: Array<{ field: string; description: string; resolution: string }> = [];
-  const sAgent = agentResult?.agents?.stats;
-  const oAgent = agentResult?.agents?.odds;
-  if (sAgent?.matchResult && oAgent?.matchWinnerValue) {
-    const oddsMR = oAgent.matchWinnerValue === 'home' ? '1' : oAgent.matchWinnerValue === 'away' ? '2' : 'X';
-    if (sAgent.matchResult !== oddsMR) {
-      systemConflicts.push({
-        field: 'Match Result',
-        description: `Stats (${sAgent.matchResult}) vs Odds (${oddsMR})`,
-        resolution: `Ağırlıklı konsensüs ile ${matchResultConsensus.prediction} seçildi.`
-      });
-    }
+  // 🆕 GELİŞMİŞ CONFLICT DETECTION - Tüm agent'lar için tutarlılık kontrolü
+  const agentPredictions: AgentPrediction[] = [];
+  
+  // Stats Agent
+  if (agentResult?.agents?.stats) {
+    const stats = agentResult.agents.stats;
+    agentPredictions.push({
+      agentName: 'stats',
+      matchResult: normalize(stats.matchResult) as '1' | 'X' | '2',
+      overUnder: normalize(stats.overUnder) as 'Over' | 'Under',
+      btts: normalize(stats.btts) as 'Yes' | 'No',
+      confidence: stats.confidence || stats.matchResultConfidence || 50,
+      weight: 15 * multipliers.stats,
+      reasoning: stats.agentSummary
+    });
   }
+  
+  // Odds Agent
+  if (agentResult?.agents?.odds) {
+    const odds = agentResult.agents.odds;
+    const oddsMR = odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : odds.matchWinnerValue === 'draw' ? 'X' : undefined;
+    agentPredictions.push({
+      agentName: 'odds',
+      matchResult: oddsMR,
+      overUnder: normalize(odds.recommendation) as 'Over' | 'Under',
+      btts: normalize(odds.bttsValue) as 'Yes' | 'No',
+      confidence: odds.confidence || 50,
+      weight: 20 * multipliers.odds,
+      reasoning: odds.agentSummary
+    });
+  }
+  
+  // Deep Analysis Agent
+  if (agentResult?.agents?.deepAnalysis) {
+    const deep = agentResult.agents.deepAnalysis;
+    agentPredictions.push({
+      agentName: 'deepAnalysis',
+      matchResult: normalize(deep.matchResult?.prediction) as '1' | 'X' | '2',
+      overUnder: normalize(deep.overUnder?.prediction) as 'Over' | 'Under',
+      btts: normalize(deep.btts?.prediction) as 'Yes' | 'No',
+      confidence: deep.matchResult?.confidence || deep.overallConfidence || 50,
+      weight: 10 * multipliers.deepAnalysis,
+      reasoning: deep.agentSummary
+    });
+  }
+  
+  // Master Strategist
+  if (masterMR || masterOU || masterBTTS) {
+    agentPredictions.push({
+      agentName: 'masterStrategist',
+      matchResult: masterMR as '1' | 'X' | '2',
+      overUnder: masterOU as 'Over' | 'Under',
+      btts: masterBTTS as 'Yes' | 'No',
+      confidence: Math.max(masterMRConf, masterOUConf, masterBTTSConf),
+      weight: 35 * multipliers.masterStrategist,
+      reasoning: msData?.finalConsensus?.reasoning
+    });
+  }
+  
+  // Smart Analysis
+  if (smartResult) {
+    agentPredictions.push({
+      agentName: 'smart',
+      matchResult: smartMR as '1' | 'X' | '2',
+      overUnder: smartOU as 'Over' | 'Under',
+      btts: smartBTTS as 'Yes' | 'No',
+      confidence: Math.max(smartMRConf, smartOUConf, smartBTTSConf),
+      weight: 10,
+      reasoning: smartResult.bestBet?.reason
+    });
+  }
+  
+  // Agent tutarlılık validasyonu
+  const consensusValidation = validateAgentConsensus(agentPredictions);
+  console.log(`   🔍 Agent Consensus Validation: Agreement ${consensusValidation.agreement}%, Conflicts: ${consensusValidation.conflicts.length}`);
+  
+  if (consensusValidation.conflicts.length > 0) {
+    console.log(`   ⚠️ Detected ${consensusValidation.conflicts.length} conflicts:`);
+    consensusValidation.conflicts.forEach(conflict => {
+      console.log(`      - ${conflict.field}: ${conflict.agents.join(', ')} (${conflict.severity} severity)`);
+    });
+  }
+  
+  // Conflict resolution - Confidence düşürme
+  const { adjustedPredictions, confidenceReduction } = resolveConflicts(agentPredictions, consensusValidation);
+  
+  if (confidenceReduction > 0) {
+    console.log(`   📉 Confidence reduction due to conflicts: ${confidenceReduction.toFixed(1)}%`);
+    // Consensus confidence'lerini düşür
+    matchResultConsensus.confidence = Math.max(30, matchResultConsensus.confidence - confidenceReduction);
+    overUnderConsensus.confidence = Math.max(30, overUnderConsensus.confidence - confidenceReduction);
+    bttsConsensus.confidence = Math.max(30, bttsConsensus.confidence - confidenceReduction);
+  }
+  
+  // Conflict detection (eski format - backward compatibility)
+  const systemConflicts: Array<{ field: string; description: string; resolution: string }> = [];
+  consensusValidation.conflicts.forEach(conflict => {
+    systemConflicts.push({
+      field: conflict.field,
+      description: `${conflict.agents.join(', ')} agent'ları farklı sonuçlar öneriyor: ${conflict.predictions.join(' vs ')}`,
+      resolution: consensusValidation.recommendations.find(r => r.field === conflict.field)?.reasoning || 
+                  `Ağırlıklı konsensüs ile çözüldü. Güven seviyesi ${confidenceReduction > 0 ? Math.round(confidenceReduction) + '% düşürüldü' : 'korundu'}.`
+    });
+  });
 
   // Best bet belirle
   const bestBet = determineBestBet(agentResult, smartResult, matchResultConsensus, overUnderConsensus, bttsConsensus);
