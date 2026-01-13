@@ -19,7 +19,9 @@ import {
   TrendingUp, CheckCircle, AlertCircle, Clock,
   ChevronRight, Star, Target, Shield, User,
   Settings, LogOut, Crown, BarChart3, Menu, X,
-  ChevronDown, FileText
+  ChevronDown, FileText, Brain, DollarSign, 
+  Activity, AlertTriangle, TrendingDown, TrendingUp as TrendingUpIcon,
+  Award, Timer, Info, CheckCircle2, XCircle
 } from 'lucide-react';
 
 // ============================================================================
@@ -298,7 +300,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-5 h-5 text-blue-400" />
-                <h5 className="text-white font-bold text-lg">📊 STATS AGENT (İstatistik Analiz Ajanı)</h5>
+                <h5 className="text-white font-bold text-lg flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-400" />
+                  STATS AGENT (İstatistik Analiz Ajanı)
+                </h5>
               </div>
               
               <div className="space-y-3 text-sm">
@@ -322,7 +327,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       <p className="text-gray-300">Toplam xG: <span className="text-blue-400">{stats.xgAnalysis.totalXG}</span></p>
                       <p className="text-gray-300">Performans: <span className="text-blue-400">{stats.xgAnalysis.homePerformance} / {stats.xgAnalysis.awayPerformance}</span></p>
                       {stats.xgAnalysis.regressionRisk && (
-                        <p className="text-yellow-400">⚠️ {stats.xgAnalysis.regressionRisk}</p>
+                        <p className="text-yellow-400 flex items-center gap-1">
+                          <AlertTriangle className="w-4 h-4" />
+                          {stats.xgAnalysis.regressionRisk}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -380,7 +388,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       <p className="text-gray-300">Dep Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.awayCleanSheetStreak}</span></p>
                       <p className="text-gray-300">Clean Sheet %: Ev %{stats.cleanSheetAnalysis.homeCleanSheetPct}, Dep %{stats.cleanSheetAnalysis.awayCleanSheetPct}</p>
                       {stats.cleanSheetAnalysis.defensiveRating && (
-                        <p className="text-yellow-400 mt-1">🛡️ {stats.cleanSheetAnalysis.defensiveRating}</p>
+                        <p className="text-yellow-400 mt-1 flex items-center gap-1">
+                          <Shield className="w-4 h-4" />
+                          {stats.cleanSheetAnalysis.defensiveRating}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1654,7 +1665,7 @@ export default function DashboardPage() {
                 </div>
                 <Zap className="w-5 h-5 text-white relative z-10" />
               </div>
-              <div className="absolute inset-0 rounded-lg bg-[#00f0ff] opacity-20 blur-xl animate-pulse" />
+              <div className="absolute inset-0 rounded-lg bg-[#00f0ff] opacity-10 blur-lg" />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -1666,6 +1677,19 @@ export default function DashboardPage() {
           
           {/* Right Controls - Futuristic */}
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* Mobile Menu Button */}
+            <motion.button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="sm:hidden p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
+              whileTap={{ scale: 0.9 }}
+            >
+              {showMobileMenu ? (
+                <X className="w-5 h-5 text-[#00f0ff]" />
+              ) : (
+                <Menu className="w-5 h-5 text-[#00f0ff]" />
+              )}
+            </motion.button>
+
             {cached && (
               <motion.span 
                 initial={{ opacity: 0, x: 20 }}
@@ -1680,33 +1704,35 @@ export default function DashboardPage() {
               onClick={fetchFixtures}
               whileHover={{ scale: 1.1, rotate: 180 }}
               whileTap={{ scale: 0.9 }}
-              className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+              className="hidden sm:flex p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
               title="Refresh"
             >
               <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
             </motion.button>
             
-            <motion.div whileHover={{ scale: 1.05 }}>
+            <motion.div whileHover={{ scale: 1.05 }} className="hidden sm:block">
               <Link
                 href="/performance"
-                className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+                className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
                 title="Performans Takibi"
               >
                 <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
               </Link>
             </motion.div>
             
-            <motion.div whileHover={{ scale: 1.05 }}>
+            <motion.div whileHover={{ scale: 1.05 }} className="hidden sm:block">
               <Link
                 href="/favorites"
-                className="p-2.5 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+                className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
                 title="Favorilerim"
               >
                 <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
               </Link>
             </motion.div>
             
-            <LanguageSelector />
+            <div className="hidden sm:block">
+              <LanguageSelector />
+            </div>
             
             {/* Profile Menu */}
             <div className="relative">
@@ -1813,6 +1839,97 @@ export default function DashboardPage() {
         </div>
         </motion.div>
       </header>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {showMobileMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 sm:hidden"
+              onClick={() => setShowMobileMenu(false)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 h-full w-80 bg-black/95 backdrop-blur-xl border-l border-[#00f0ff]/20 z-50 sm:hidden overflow-y-auto"
+            >
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-white">Menü</h2>
+                  <button
+                    onClick={() => setShowMobileMenu(false)}
+                    className="p-2 rounded-lg hover:bg-white/10 transition"
+                  >
+                    <X className="w-5 h-5 text-[#00f0ff]" />
+                  </button>
+                </div>
+
+                <motion.button
+                  onClick={() => { fetchFixtures(); setShowMobileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
+                  <span className="text-white font-medium">Yenile</span>
+                </motion.button>
+
+                <Link
+                  href="/performance"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                >
+                  <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
+                  <span className="text-white font-medium">Performans Takibi</span>
+                </Link>
+
+                <Link
+                  href="/favorites"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                >
+                  <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
+                  <span className="text-white font-medium">Favorilerim</span>
+                </Link>
+
+                <div className="pt-4 border-t border-[#00f0ff]/20">
+                  <LanguageSelector />
+                </div>
+
+                <div className="pt-4 border-t border-[#00f0ff]/20">
+                  <Link
+                    href="/profile"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                  >
+                    <User className="w-5 h-5 text-[#00f0ff]" />
+                    <span className="text-white font-medium">{t.profile}</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                  >
+                    <Settings className="w-5 h-5 text-[#00f0ff]" />
+                    <span className="text-white font-medium">{t.settings}</span>
+                  </Link>
+                  <button
+                    onClick={() => { signOut({ callbackUrl: '/login' }); setShowMobileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-[#ff00f0]/10 transition-all text-[#ff00f0]"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-medium">{t.logout}</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">

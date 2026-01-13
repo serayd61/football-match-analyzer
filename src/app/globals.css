@@ -103,51 +103,48 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.05em;
 }
 
-/* Neon Glow Effects */
+/* Neon Glow Effects - Reduced */
 .neon-glow-cyan {
   text-shadow: 
-    0 0 10px var(--neon-cyan),
-    0 0 20px var(--neon-cyan),
-    0 0 30px var(--neon-cyan);
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan);
 }
 
 .neon-glow-magenta {
   text-shadow: 
-    0 0 10px var(--neon-magenta),
-    0 0 20px var(--neon-magenta),
-    0 0 30px var(--neon-magenta);
+    0 0 5px var(--neon-magenta),
+    0 0 10px var(--neon-magenta);
 }
 
 .neon-glow-yellow {
   text-shadow: 
-    0 0 10px var(--neon-yellow),
-    0 0 20px var(--neon-yellow),
-    0 0 30px var(--neon-yellow);
+    0 0 5px var(--neon-yellow),
+    0 0 10px var(--neon-yellow);
 }
 
-/* Neon Border Glow */
+/* Neon Border Glow - Reduced */
 .neon-border-cyan {
   border: 1px solid var(--neon-cyan);
   box-shadow: 
-    0 0 10px rgba(0, 240, 255, 0.5),
-    inset 0 0 10px rgba(0, 240, 255, 0.1);
+    0 0 5px rgba(0, 240, 255, 0.3),
+    inset 0 0 5px rgba(0, 240, 255, 0.05);
 }
 
 .neon-border-magenta {
   border: 1px solid var(--neon-magenta);
   box-shadow: 
-    0 0 10px rgba(255, 0, 240, 0.5),
-    inset 0 0 10px rgba(255, 0, 240, 0.1);
+    0 0 5px rgba(255, 0, 240, 0.3),
+    inset 0 0 5px rgba(255, 0, 240, 0.05);
 }
 
-/* Glassmorphism Enhanced */
+/* Glassmorphism Enhanced - Reduced Glow */
 .glass-futuristic {
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.15);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    inset 0 0 20px rgba(0, 240, 255, 0.05);
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 10px rgba(0, 240, 255, 0.02);
 }
 
 /* Light theme specific overrides */
