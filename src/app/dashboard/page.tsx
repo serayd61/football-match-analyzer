@@ -442,7 +442,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   <TrendingUp className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
-                  <h5 className="text-white font-bold text-lg">💰 ODDS AGENT</h5>
+                  <h5 className="text-white font-bold text-lg flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                    ODDS AGENT
+                  </h5>
                   <p className="text-green-300 text-xs">Bahis Oranları & Value Bet Analiz Ajanı</p>
                 </div>
               </div>
@@ -460,7 +463,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       <p className="text-gray-300">Deplasman: Oran %{odds._valueAnalysis.awayImplied} implied, Form %{odds._valueAnalysis.awayFormProb} → Value: <span className={odds._valueAnalysis.awayValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.awayValue > 0 ? '+' : ''}{odds._valueAnalysis.awayValue}%</span></p>
                       <p className="text-gray-300">Over 2.5: Oran %{odds._valueAnalysis.overImplied} implied, Form %{odds._valueAnalysis.overProb} → Value: <span className={odds._valueAnalysis.overValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.overValue > 0 ? '+' : ''}{odds._valueAnalysis.overValue}%</span></p>
                       {odds._valueAnalysis.bestValue && (
-                        <p className="text-green-400 font-semibold mt-2">🏆 En İyi Value: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)</p>
+                        <p className="text-green-400 font-semibold mt-2 flex items-center gap-1">
+                          <Award className="w-4 h-4" />
+                          En İyi Value: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)
+                        </p>
                       )}
                     </div>
                   </div>
@@ -501,7 +507,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                     )}
                     {odds.valueBets && odds.valueBets.length > 0 && (
                       <div className="bg-green-500/20 rounded p-2">
-                        <p className="text-green-400 font-semibold">💰 Value Bets: {odds.valueBets.join(', ')}</p>
+                        <p className="text-green-400 font-semibold flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          Value Bets: {odds.valueBets.join(', ')}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -512,7 +521,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-5 h-5 text-gray-500" />
-                <h5 className="text-gray-400 font-bold text-lg">💰 ODDS AGENT</h5>
+                <h5 className="text-gray-400 font-bold text-lg flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-gray-500" />
+                  ODDS AGENT
+                </h5>
               </div>
               <p className="text-gray-500 text-sm">Odds agent analizi henüz mevcut değil. Analiz yapıldığında burada görünecek.</p>
             </div>
