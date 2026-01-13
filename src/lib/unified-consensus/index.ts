@@ -7,6 +7,7 @@ import { runAgentAnalysis, AgentAnalysisResult } from '../agent-analyzer';
 import { runSmartAnalysis, SmartAnalysisResult } from '../smart-analyzer';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getLeagueAccuracyStats } from '../performance';
+import { validateAgentConsensus, resolveConflicts, AgentPrediction } from './agent-consensus-validator';
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
