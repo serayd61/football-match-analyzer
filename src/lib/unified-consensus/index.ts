@@ -246,15 +246,43 @@ async function createUnifiedConsensus(
   try {
     const { getAgentWeights } = await import('../agent-learning/performance-tracker');
     const learnedWeights = await getAgentWeights(agentResult?.agents?.stats?.league || agentResult?.league);
+    const league = agentResult?.agents?.stats?.league || agentResult?.league;
     
     // Öğrenilen ağırlıkları kullan
-    multipliers = {
+    let baseMultipliers = {
       stats: learnedWeights.stats || 1.0,
       odds: learnedWeights.odds || 1.0,
       deepAnalysis: learnedWeights.deepAnalysis || 1.0,
       masterStrategist: learnedWeights.masterStrategist || 1.0,
       devilsAdvocate: learnedWeights.devilsAdvocate || 1.0,
     };
+    
+    // 🆕 Consensus alignment'a göre ağırlıkları ayarla
+    // Consensus'a yakın agent'lar daha yüksek ağırlık alır
+    try {
+      const statsAlignment = await getAgentConsensusAlignment('stats', league);
+      const oddsAlignment = await getAgentConsensusAlignment('odds', league);
+      const deepAlignment = await getAgentConsensusAlignment('deepAnalysis', league);
+      const masterAlignment = await getAgentConsensusAlignment('masterStrategist', league);
+      
+      multipliers = {
+        stats: adjustWeightByConsensusAlignment(baseMultipliers.stats, statsAlignment),
+        odds: adjustWeightByConsensusAlignment(baseMultipliers.odds, oddsAlignment),
+        deepAnalysis: adjustWeightByConsensusAlignment(baseMultipliers.deepAnalysis, deepAlignment),
+        masterStrategist: adjustWeightByConsensusAlignment(baseMultipliers.masterStrategist, masterAlignment),
+        devilsAdvocate: baseMultipliers.devilsAdvocate,
+      };
+      
+      console.log(`   🎯 Consensus Alignment Adjusted Weights:`, {
+        stats: `${baseMultipliers.stats.toFixed(2)} → ${multipliers.stats.toFixed(2)} (alignment: ${statsAlignment}%)`,
+        odds: `${baseMultipliers.odds.toFixed(2)} → ${multipliers.odds.toFixed(2)} (alignment: ${oddsAlignment}%)`,
+        deepAnalysis: `${baseMultipliers.deepAnalysis.toFixed(2)} → ${multipliers.deepAnalysis.toFixed(2)} (alignment: ${deepAlignment}%)`,
+        masterStrategist: `${baseMultipliers.masterStrategist.toFixed(2)} → ${multipliers.masterStrategist.toFixed(2)} (alignment: ${masterAlignment}%)`,
+      });
+    } catch (alignmentError) {
+      console.warn('   ⚠️ Could not adjust weights by consensus alignment, using base weights:', alignmentError);
+      multipliers = baseMultipliers;
+    }
     
     console.log(`   🧠 Learned Agent Weights:`, JSON.stringify(multipliers));
   } catch (error) {
@@ -507,6 +535,39 @@ async function createUnifiedConsensus(
 
   // Data quality
   const dataQuality = agentResult?.dataQuality || smartResult?.dataQuality || 'fair';
+
+  // 🆕 Consensus alignment'ı kaydet (gelecekteki ağırlık hesaplamaları için)
+  // Agent'ların consensus'a ne kadar yakın olduğunu takip et
+  try {
+    const finalConsensus = {
+      matchResult: matchResultConsensus.prediction,
+      overUnder: overUnderConsensus.prediction,
+      btts: bttsConsensus.prediction
+    };
+
+    // Her agent için consensus alignment'ı hesapla ve kaydet
+    for (const agentPred of agentPredictions) {
+      const alignment = calculateConsensusAlignment(
+        {
+          matchResult: agentPred.matchResult,
+          overUnder: agentPred.overUnder,
+          btts: agentPred.btts
+        },
+        finalConsensus
+      );
+      
+      // Background'da kaydet (await etme, hata olursa devam et)
+      recordConsensusAlignment(
+        agentResult?.fixtureId || 0,
+        agentPred.agentName,
+        { ...alignment, agentName: agentPred.agentName, fixtureId: agentResult?.fixtureId || 0 }
+      ).catch(err => {
+        console.warn(`⚠️ Could not record consensus alignment for ${agentPred.agentName}:`, err);
+      });
+    }
+  } catch (alignmentError) {
+    console.warn('⚠️ Could not calculate consensus alignment:', alignmentError);
+  }
 
   return {
     predictions: {
