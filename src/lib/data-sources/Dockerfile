@@ -30,11 +30,18 @@ RUN echo "=== PWD ===" && pwd && \
 
 # Python bağımlılıklarını kur
 RUN echo "=== Pip install başlıyor ===" && \
-    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel && \
     echo "=== Pip güncellendi ===" && \
-    pip install --no-cache-dir -r requirements.txt 2>&1 | tee /tmp/pip-install.log && \
+    echo "=== requirements.txt içeriği tekrar kontrol ===" && \
+    cat requirements.txt && \
+    echo "=== Pip install başlıyor ===" && \
+    pip install --no-cache-dir -r requirements.txt && \
     echo "=== Pip install tamamlandı ===" && \
-    pip list
+    echo "=== Kurulu paketler ===" && \
+    pip list && \
+    echo "=== Flask kontrol ===" && \
+    python -c "import flask; print(f'Flask version: {flask.__version__}')" && \
+    echo "=== Tüm paketler kuruldu ==="
 
 # Port
 EXPOSE 5000
