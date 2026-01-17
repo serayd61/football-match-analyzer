@@ -19,7 +19,7 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const pythonServiceUrl = searchParams.get('url') || 'http://localhost:5000';
+    const pythonServiceUrl = searchParams.get('url') || 'http://localhost:5001';
 
     const results: any = {
       timestamp: new Date().toISOString(),
