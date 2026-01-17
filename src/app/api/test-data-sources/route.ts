@@ -121,11 +121,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Environment Check
+    const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5002';
+    const isLocalhost = pythonServiceUrl.includes('localhost') || pythonServiceUrl.includes('127.0.0.1');
+    
     results.environment = {
       sportmonksToken: !!process.env.SPORTMONKS_API_KEY,
       sportmonksTokenLength: process.env.SPORTMONKS_API_KEY?.length || 0,
-      pythonAvailable: 'N/A (Python script not integrated yet)',
-      note: 'SoccerData integration requires Python script to be running as a separate service'
+      pythonServiceUrl: pythonServiceUrl,
+      isLocalhost: isLocalhost,
+      pythonAvailable: isLocalhost 
+        ? '⚠️ Localhost URL detected - will not work on Vercel. Use a public URL (Railway, Render, etc.)'
+        : '✅ Public URL configured',
+      note: isLocalhost
+        ? 'Python service must be on a public URL (not localhost) to work on Vercel. Deploy to Railway, Render, or similar.'
+        : 'SoccerData integration requires Python script to be running as a separate service'
     };
 
     // Summary

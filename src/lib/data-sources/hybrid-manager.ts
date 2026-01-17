@@ -84,6 +84,8 @@ export class HybridDataManager {
     if (this.preferSoccerData) {
       try {
         const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5002';
+        console.log(`🔄 Attempting to fetch from Python service: ${pythonServiceUrl}/api/fixtures/${league}/${season}`);
+        
         const response = await fetch(
           `${pythonServiceUrl}/api/fixtures/${league}/${season}?prefer=soccerdata`,
           {
@@ -93,8 +95,12 @@ export class HybridDataManager {
           }
         );
 
+        console.log(`📡 Python service response status: ${response.status}`);
+
         if (response.ok) {
           const data = await response.json();
+          console.log(`📦 Python service response:`, { success: data.success, count: data.count });
+          
           if (data.success && data.data && data.data.length > 0) {
             console.log(`✅ SoccerData: ${data.count} fixtures found for ${league}`);
             return data.data.map((f: any) => ({
@@ -108,10 +114,15 @@ export class HybridDataManager {
               source: 'soccerdata' as const
             }));
           }
+        } else {
+          const errorText = await response.text().catch(() => '');
+          console.log(`❌ Python service error: ${response.status} - ${errorText.substring(0, 100)}`);
         }
       } catch (error: any) {
         // Python servisi çalışmıyor veya erişilemiyor
-        console.log(`⚠️ SoccerData service not available: ${error.message}, falling back to Sportmonks`);
+        console.log(`⚠️ SoccerData service not available: ${error.message}`);
+        console.log(`   Error type: ${error.name}, Code: ${error.code}`);
+        console.log(`   Note: If running on Vercel, Python service must be on a public URL, not localhost`);
       }
     }
 
