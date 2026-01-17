@@ -18,15 +18,14 @@ COPY api_server.py .
 # Debug: requirements.txt içeriğini göster ve dosya varlığını kontrol et
 RUN echo "=== PWD ===" && pwd && \
     echo "=== LS ===" && ls -la && \
+    echo "=== requirements.txt varlık kontrolü ===" && \
+    ls -lh requirements.txt 2>&1 || echo "❌ requirements.txt BULUNAMADI!" && \
     echo "=== requirements.txt içeriği ===" && \
-    if [ -f requirements.txt ]; then \
-        cat requirements.txt && \
-        echo "=== Dosya boyutu ===" && \
-        wc -l requirements.txt; \
-    else \
-        echo "❌ requirements.txt BULUNAMADI!" && \
-        exit 1; \
-    fi && \
+    cat requirements.txt && \
+    echo "=== Dosya boyutu (satır sayısı) ===" && \
+    wc -l requirements.txt && \
+    echo "=== Dosya boyutu (byte) ===" && \
+    wc -c requirements.txt && \
     echo "=== Son ==="
 
 # Python bağımlılıklarını kur
