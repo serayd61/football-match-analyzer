@@ -21,13 +21,9 @@ Bu, Railway'ın root directory'yi doğru ayarlamadığı anlamına geliyor.
    - **Root Directory:** `/` yerine `src/lib/data-sources` yaz
    - **"Update"** butonuna tıkla
 
-### Adım 2: Build Cache'i Temizle
+### Adım 2: Redeploy (Build Cache Otomatik Temizlenir)
 
-1. **Settings** sekmesinde
-2. **"Clear Build Cache"** butonuna tıkla
-3. Onayla
-
-### Adım 3: Redeploy
+**Not:** Railway'ın yeni arayüzünde "Clear Build Cache" butonu olmayabilir. Redeploy yapınca build cache otomatik temizlenir.
 
 1. **Deployments** sekmesine git
 2. **"Redeploy"** butonuna tıkla
