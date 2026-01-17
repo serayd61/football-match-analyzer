@@ -1724,6 +1724,16 @@ export default function DashboardPage() {
             
             <motion.div whileHover={{ scale: 1.05 }} className="hidden sm:block">
               <Link
+                href="/league-stats"
+                className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
+                title="Lig İstatistikleri"
+              >
+                <Trophy className="w-5 h-5 text-[#00f0ff]" />
+              </Link>
+            </motion.div>
+            
+            <motion.div whileHover={{ scale: 1.05 }} className="hidden sm:block">
+              <Link
                 href="/performance"
                 className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
                 title="Performans Takibi"
@@ -1889,6 +1899,15 @@ export default function DashboardPage() {
                   <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
                   <span className="text-white font-medium">Yenile</span>
                 </motion.button>
+
+                <Link
+                  href="/league-stats"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
+                >
+                  <Trophy className="w-5 h-5 text-[#00f0ff]" />
+                  <span className="text-white font-medium">Lig İstatistikleri</span>
+                </Link>
 
                 <Link
                   href="/performance"
