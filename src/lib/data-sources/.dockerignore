@@ -9,3 +9,20 @@ data_cache/
 .env
 .git
 .gitignore
+
+# Next.js dosyalarını ignore et (Python servisi için gerekli değil)
+package.json
+package-lock.json
+node_modules/
+.next/
+tsconfig.json
+next.config.js
+tailwind.config.js
+postcss.config.js
+src/
+public/
+docs/
+supabase/
+n8n/
+*.md
+!README.md

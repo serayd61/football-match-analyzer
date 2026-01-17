@@ -10,15 +10,16 @@ RUN apt-get update && apt-get install -y \
     libxslt1-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Python bağımlılıklarını kopyala ve kur
+# Sadece Python dosyalarını kopyala (Next.js dosyalarını ignore et)
 COPY requirements.txt .
-# Debug: requirements.txt içeriğini göster
-RUN echo "=== requirements.txt içeriği ===" && cat requirements.txt && echo "=== Son ==="
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Uygulama dosyalarını kopyala
 COPY hybrid_pipeline.py .
 COPY api_server.py .
+
+# Debug: requirements.txt içeriğini göster
+RUN echo "=== requirements.txt içeriği ===" && cat requirements.txt && echo "=== Son ==="
+
+# Python bağımlılıklarını kur
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Port
 EXPOSE 5000
