@@ -34,8 +34,8 @@ RUN echo "=== Pip install başlıyor ===" && \
     echo "=== Pip güncellendi ===" && \
     echo "=== requirements.txt içeriği ===" && \
     cat requirements.txt && \
-    echo "=== Pip install başlıyor (verbose mode) ===" && \
-    pip install --no-cache-dir -v -r requirements.txt 2>&1 || (echo "❌ Pip install BAŞARISIZ!" && cat /tmp/pip-error.log 2>/dev/null || true && exit 1) && \
+    echo "=== Pip install başlıyor ===" && \
+    pip install --no-cache-dir -r requirements.txt || (echo "❌ Pip install BAŞARISIZ! Hata detayları:" && pip install --no-cache-dir -r requirements.txt 2>&1 | tail -50 && exit 1) && \
     echo "=== Pip install tamamlandı ===" && \
     echo "=== Kurulu paketler ===" && \
     pip list && \
