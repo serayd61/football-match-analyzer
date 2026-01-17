@@ -73,15 +73,49 @@ export class HybridDataManager {
 
   /**
    * Maç verileri al (hibrit)
-   * Şu an sadece Sportmonks kullanıyor, gelecekte SoccerData fallback eklenebilir
+   * Önce SoccerData'yı dener, başarısız olursa Sportmonks'a fallback yapar
    */
   async getFixtures(
     league: string,
     season: string,
     date?: string
   ): Promise<HybridFixture[]> {
-    // Şu an sadece Sportmonks kullanıyoruz
-    // Gelecekte SoccerData fallback eklenebilir
+    // Önce Python servisinden SoccerData'yı dene
+    if (this.preferSoccerData) {
+      try {
+        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+        const response = await fetch(
+          `${pythonServiceUrl}/api/fixtures/${league}/${season}?prefer=soccerdata`,
+          {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000) // 10 saniye timeout
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.length > 0) {
+            console.log(`✅ SoccerData: ${data.count} fixtures found for ${league}`);
+            return data.data.map((f: any) => ({
+              fixtureId: f.fixtureId || 0,
+              date: f.date,
+              homeTeam: f.homeTeam,
+              awayTeam: f.awayTeam,
+              homeScore: f.homeScore,
+              awayScore: f.awayScore,
+              venue: f.venue,
+              source: 'soccerdata' as const
+            }));
+          }
+        }
+      } catch (error: any) {
+        // Python servisi çalışmıyor veya erişilemiyor
+        console.log(`⚠️ SoccerData service not available: ${error.message}, falling back to Sportmonks`);
+      }
+    }
+
+    // Fallback: Sportmonks
     return this.getFixturesFromSportmonks(league, date);
   }
 
@@ -260,25 +294,77 @@ export class HybridDataManager {
 
   /**
    * Elo ratings - SADECE SoccerData (Python script ile)
-   * Şu an placeholder, gelecekte Python script'i çağrılabilir
    */
   async getEloRatings(): Promise<HybridEloRating[]> {
-    // Python script'i çağrılabilir veya API endpoint olarak kullanılabilir
-    // Şu an placeholder
+    try {
+      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+      const response = await fetch(
+        `${pythonServiceUrl}/api/elo`,
+        {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(10000)
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data && data.data.length > 0) {
+          console.log(`✅ SoccerData Elo ratings: ${data.count} teams`);
+          return data.data.map((e: any) => ({
+            teamName: e.team_name || e.teamName || '',
+            elo: e.elo || 1500,
+            date: e.date || new Date().toISOString(),
+            source: 'soccerdata' as const
+          }));
+        }
+      }
+    } catch (error: any) {
+      console.log(`⚠️ SoccerData Elo service not available: ${error.message}`);
+    }
+
     return [];
   }
 
   /**
    * Şut koordinatları - SADECE SoccerData (Python script ile)
-   * Şu an placeholder, gelecekte Python script'i çağrılabilir
    */
   async getShotMapData(
     league: string,
     season: string,
     fixtureId?: number
   ): Promise<any[]> {
-    // Python script'i çağrılabilir veya API endpoint olarak kullanılabilir
-    // Şu an placeholder
+    try {
+      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+      const response = await fetch(
+        `${pythonServiceUrl}/api/shots/${league}/${season}`,
+        {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(15000) // 15 saniye (şut verisi büyük olabilir)
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data && data.data.length > 0) {
+          let shots = data.data;
+          
+          // Fixture ID varsa filtrele
+          if (fixtureId) {
+            shots = shots.filter((s: any) => 
+              s.fixture_id === fixtureId || s.fixtureId === fixtureId
+            );
+          }
+
+          console.log(`✅ SoccerData shot map: ${shots.length} shots for ${league}`);
+          return shots;
+        }
+      }
+    } catch (error: any) {
+      console.log(`⚠️ SoccerData shot map service not available: ${error.message}`);
+    }
+
     return [];
   }
 
