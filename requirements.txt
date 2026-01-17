@@ -1,0 +1,25 @@
+# FootballAnalytics.pro - Railway Production
+# ==========================================
+# soccerdata ÇIKARILDI - TLS kütüphanesi Railway'de çalışmıyor
+# Sportmonks API kullanılıyor
+
+# Core Web Framework
+flask==3.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
+Werkzeug>=3.0.0
+
+# Data Processing
+numpy==1.26.4
+pandas==2.1.4
+
+# HTTP
+requests==2.31.0
+urllib3==2.1.0
+
+# Environment
+python-dotenv==1.0.0
+
+# Caching (opsiyonel - Redis kullanırsan)
+# redis==5.0.1
+cachetools==5.3.2
