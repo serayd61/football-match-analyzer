@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from hybrid_pipeline import HybridDataManager
 import os
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)  # CORS hatası önlemek için

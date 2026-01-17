@@ -248,11 +248,52 @@ export class HybridDataManager {
 
   /**
    * xG verileri
-   * Şu an sadece Sportmonks kullanıyoruz
+   * Önce SoccerData'yı dener, başarısız olursa Sportmonks'a fallback yapar
    */
   async getXGData(
-    fixtureId: number
+    fixtureId: number,
+    league?: string,
+    season?: string
   ): Promise<HybridXGData | null> {
+    // Önce Python servisinden SoccerData xG'yi dene
+    if (this.preferSoccerData && league && season) {
+      try {
+        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+        const response = await fetch(
+          `${pythonServiceUrl}/api/xg/${league}/${season}`,
+          {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000)
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.length > 0) {
+            // Fixture ID'ye göre filtrele
+            const xgMatch = data.data.find((x: any) => 
+              x.fixture_id === fixtureId || x.fixtureId === fixtureId
+            );
+            if (xgMatch) {
+              console.log(`✅ SoccerData xG found for fixture ${fixtureId}`);
+              return {
+                fixtureId,
+                homeXG: xgMatch.home_xg || xgMatch.homeXG || 0,
+                awayXG: xgMatch.away_xg || xgMatch.awayXG || 0,
+                homeScore: xgMatch.home_score || xgMatch.homeScore,
+                awayScore: xgMatch.away_score || xgMatch.awayScore,
+                source: 'soccerdata'
+              };
+            }
+          }
+        }
+      } catch (error: any) {
+        console.log(`⚠️ SoccerData xG service not available: ${error.message}, falling back to Sportmonks`);
+      }
+    }
+
+    // Fallback: Sportmonks
     if (!this.sportmonksToken) {
       return null;
     }
