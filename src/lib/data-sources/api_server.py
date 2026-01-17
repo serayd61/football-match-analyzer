@@ -150,8 +150,29 @@ def get_elo():
 
 if __name__ == '__main__':
     import pandas as pd  # Import here to avoid issues
-    port = int(os.getenv('PORT', 5000))
+    import socket
+    
+    # Port 5000 kullanımda ise 5001'e geç
+    def find_free_port(start_port=5000):
+        port = start_port
+        while port < start_port + 10:  # Max 10 port dene
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('', port))
+                    return port
+            except OSError:
+                port += 1
+        return start_port  # Fallback
+    
+    default_port = int(os.getenv('PORT', 5000))
+    port = find_free_port(default_port)
+    
+    if port != default_port:
+        print(f"⚠️  Port {default_port} kullanımda, port {port} kullanılıyor")
+    
     print(f"🚀 Starting SoccerData API server on port {port}")
     print(f"📊 SoccerData: {'✅ Available' if manager.sd_available else '❌ Not available'}")
     print(f"📊 Sportmonks: {'✅ Available' if manager.sm_available else '❌ Not available'}")
+    print(f"🌐 URL: http://localhost:{port}")
+    print(f"💚 Health check: http://localhost:{port}/health")
     app.run(host='0.0.0.0', port=port, debug=True)

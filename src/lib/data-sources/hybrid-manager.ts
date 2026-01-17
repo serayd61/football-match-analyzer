@@ -83,7 +83,7 @@ export class HybridDataManager {
     // Önce Python servisinden SoccerData'yı dene
     if (this.preferSoccerData) {
       try {
-        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5001';
         const response = await fetch(
           `${pythonServiceUrl}/api/fixtures/${league}/${season}?prefer=soccerdata`,
           {
@@ -258,7 +258,7 @@ export class HybridDataManager {
     // Önce Python servisinden SoccerData xG'yi dene
     if (this.preferSoccerData && league && season) {
       try {
-        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+        const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5001';
         const response = await fetch(
           `${pythonServiceUrl}/api/xg/${league}/${season}`,
           {
@@ -338,7 +338,7 @@ export class HybridDataManager {
    */
   async getEloRatings(): Promise<HybridEloRating[]> {
     try {
-      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5001';
       const response = await fetch(
         `${pythonServiceUrl}/api/elo`,
         {
@@ -376,7 +376,7 @@ export class HybridDataManager {
     fixtureId?: number
   ): Promise<any[]> {
     try {
-      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5000';
+      const pythonServiceUrl = process.env.PYTHON_DATA_SERVICE_URL || 'http://localhost:5001';
       const response = await fetch(
         `${pythonServiceUrl}/api/shots/${league}/${season}`,
         {

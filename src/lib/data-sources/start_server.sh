@@ -27,8 +27,7 @@ fi
 
 # Servisi başlat
 echo "🚀 Python servisi başlatılıyor..."
-echo "   URL: http://localhost:5000"
-echo "   Health check: http://localhost:5000/health"
+echo "   Not: Port 5000 kullanımda ise otomatik olarak 5001 kullanılacak"
 echo ""
 echo "   Durdurmak için: Ctrl+C"
 echo ""
