@@ -15,8 +15,19 @@ COPY requirements.txt .
 COPY hybrid_pipeline.py .
 COPY api_server.py .
 
-# Debug: requirements.txt içeriğini göster
-RUN echo "=== requirements.txt içeriği ===" && cat requirements.txt && echo "=== Son ==="
+# Debug: requirements.txt içeriğini göster ve dosya varlığını kontrol et
+RUN echo "=== PWD ===" && pwd && \
+    echo "=== LS ===" && ls -la && \
+    echo "=== requirements.txt içeriği ===" && \
+    if [ -f requirements.txt ]; then \
+        cat requirements.txt && \
+        echo "=== Dosya boyutu ===" && \
+        wc -l requirements.txt; \
+    else \
+        echo "❌ requirements.txt BULUNAMADI!" && \
+        exit 1; \
+    fi && \
+    echo "=== Son ==="
 
 # Python bağımlılıklarını kur
 RUN pip install --no-cache-dir -r requirements.txt
