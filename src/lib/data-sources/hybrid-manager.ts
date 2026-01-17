@@ -458,14 +458,22 @@ export class HybridDataManager {
     // 1. Maç verileri
     const fixtures = await this.getFixtures(league, season);
     if (fixtures.length > 0) {
-      analysis.dataSources.push('sportmonks');
+      // Hangi kaynak kullanıldığını kontrol et
+      const sources = Array.from(new Set(fixtures.map(f => f.source)));
+      sources.forEach(source => {
+        if (source === 'soccerdata') {
+          analysis.dataSources.push('soccerdata');
+        } else if (source === 'sportmonks') {
+          analysis.dataSources.push('sportmonks');
+        }
+      });
     }
 
     // 2. xG verileri (fixture ID varsa)
     if (fixtureId) {
-      const xgData = await this.getXGData(fixtureId);
+      const xgData = await this.getXGData(fixtureId, league, season);
       if (xgData) {
-        analysis.dataSources.push('sportmonks_xg');
+        analysis.dataSources.push(xgData.source === 'soccerdata' ? 'soccerdata_xg' : 'sportmonks_xg');
       }
     }
 
@@ -482,7 +490,7 @@ export class HybridDataManager {
     return {
       ...analysis,
       fixtures: fixtures.slice(0, 10), // Son 10 maç
-      xgData: fixtureId ? await this.getXGData(fixtureId) : null,
+      xgData: fixtureId ? await this.getXGData(fixtureId, league, season) : null,
       liveData: liveMatch || null
     };
   }
