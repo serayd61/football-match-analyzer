@@ -1,7 +1,20 @@
+# FootballAnalytics - Railway Production
+# ======================================
+# soccerdata ÇIKARILDI - Railway'de çalışmıyor!
+
+# Core Web Framework
 flask==3.0.0
 flask-cors==4.0.0
+gunicorn==21.2.0
+
+# Data Processing
 numpy==1.26.4
 pandas==2.1.4
 pyarrow==14.0.1
-requests==2.31.0
-soccerdata==1.8.8
+
+# HTTP Requests
+requests==2.32.3
+
+# Environment & Utils
+python-dotenv==1.0.0
+cachetools==5.3.2
