@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 # Python bağımlılıklarını kopyala ve kur
 COPY requirements.txt .
+# Debug: requirements.txt içeriğini göster
+RUN echo "=== requirements.txt içeriği ===" && cat requirements.txt && echo "=== Son ==="
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Uygulama dosyalarını kopyala
