@@ -29,7 +29,12 @@ RUN echo "=== PWD ===" && pwd && \
     echo "=== Son ==="
 
 # Python bağımlılıklarını kur
-RUN pip install --no-cache-dir -r requirements.txt
+RUN echo "=== Pip install başlıyor ===" && \
+    pip install --no-cache-dir --upgrade pip && \
+    echo "=== Pip güncellendi ===" && \
+    pip install --no-cache-dir -r requirements.txt 2>&1 | tee /tmp/pip-install.log && \
+    echo "=== Pip install tamamlandı ===" && \
+    pip list
 
 # Port
 EXPOSE 5000
