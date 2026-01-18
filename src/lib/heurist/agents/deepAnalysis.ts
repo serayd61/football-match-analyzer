@@ -8,6 +8,7 @@ import { calculateComprehensiveProbabilities, generateProbabilityContext, Probab
 import { analyzeTeamMotivation, TeamMotivationAnalysis } from './team-motivation-analyzer';
 import { getLearningContext } from '../../ai-brain/learning-context';
 import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
+import { ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT } from './enhanced-prompts';
 
 // 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
 // Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
@@ -897,7 +898,8 @@ export async function runDeepAnalysisAgent(
     };
   }
   
-  const systemPrompt = DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
+  // Use enhanced prompts if available, fallback to legacy prompts
+  const systemPrompt = ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT[language] || ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT.en || DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
   const context = buildDeepAnalysisContext(matchData);
   
   // Motivasyon analizi context'ine ekle

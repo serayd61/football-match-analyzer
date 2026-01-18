@@ -4,6 +4,7 @@ import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../..
 import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
 import { getLearningContext } from '../../ai-brain/learning-context';
 import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
+import { ENHANCED_STATS_AGENT_PROMPT } from './enhanced-prompts';
 
 // ==================== MOTİVASYON SKORU HESAPLAMA ====================
 
@@ -94,8 +95,14 @@ function calculateMotivationFromForm(
 }
 
 // ==================== PROMPTS ====================
+// Enhanced prompts from enhanced-prompts.ts are used
 
 const PROMPTS = {
+  // Enhanced Stats Agent Prompt (from enhanced-prompts.ts)
+  ...ENHANCED_STATS_AGENT_PROMPT,
+  
+  // Legacy prompts kept for backward compatibility (fallback)
+  de: ENHANCED_STATS_AGENT_PROMPT.en, // Use English as fallback for German
   tr: `Sen DÜNYA ÇAPINDA TANINMIŞ bir futbol istatistik analisti ve TAHMİN UZMANISINSSIN. 15+ yıllık deneyiminle sadece veri değil, FUTBOLUN RUHUNU anlıyorsun.
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -1443,8 +1450,11 @@ USE LEARNING CONTEXT to consider past performance and improve accuracy.
 Consider: %60 data analysis, %20 mathematical prediction, %20 psychological factors.
 Return detailed JSON:`;
 
+  // Use enhanced prompts if available, fallback to legacy prompts
+  const systemPrompt = ENHANCED_STATS_AGENT_PROMPT[language] || ENHANCED_STATS_AGENT_PROMPT.en || PROMPTS[language] || PROMPTS.en;
+  
   const messages: AIMessage[] = [
-    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ];
 

@@ -1,0 +1,281 @@
+{
+  "name": "Agent Learning System - Otomatik Ağırlık Güncelleme (REST API)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cron Trigger (Her 1 saat)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://footballanalytics.pro/api/cron/settle-unified",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CRON_SECRET_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "settle-unified",
+      "name": "Settle Unified Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-settled",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://njrpxhmdqadejjarizmj.supabase.co/rest/v1/agent_performance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "order",
+              "value": "last_updated.desc"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-performance",
+      "name": "Get Agent Performance (REST API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-rest-api",
+          "name": "Supabase REST API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agent performans özeti oluştur\nconst performance = Array.isArray($input.all()[0].json) ? $input.all()[0].json : $input.all();\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  agents: performance.map(p => ({\n    name: p.json?.agent_name || p.agent_name,\n    accuracy: parseFloat(p.json?.recent_match_result_accuracy || p.recent_match_result_accuracy) || 0,\n    weight: parseFloat(p.json?.current_weight || p.current_weight) || 1.0,\n    totalMatches: p.json?.total_matches || p.total_matches || 0,\n    trend: p.json?.trend_direction || p.trend_direction || 'stable'\n  })),\n  totalAgents: performance.length\n};\n\nreturn {\n  json: summary\n};"
+      },
+      "id": "format-summary",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://njrpxhmdqadejjarizmj.supabase.co/rest/v1/rpc/get_agent_weekly_stats",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={}",
+        "options": {}
+      },
+      "id": "get-weekly-stats",
+      "name": "Get Weekly Stats (REST API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-rest-api",
+          "name": "Supabase REST API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://njrpxhmdqadejjarizmj.supabase.co/rest/v1/agent_weights_summary",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-all-weights",
+      "name": "Get All Agent Weights (REST API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-rest-api",
+          "name": "Supabase REST API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=🧠 Agent Learning System Update\n\n*Agent Performance (Last 7 Days):*\n{{ $json.map(item => `• ${item.agent_name}: ${item.mr_accuracy.toFixed(1)}% MR accuracy (${item.correct_mr}/${item.total_predictions})`).join('\\n') }}\n\n*Current Weights:*\n{{ $('Format Summary').item.json.agents.map(a => `• ${a.name}: ${a.weight.toFixed(2)}x (${a.accuracy.toFixed(1)}% accuracy)`).join('\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-slack",
+      "name": "Notify Slack (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300],
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Cron Trigger (Her 1 saat)": {
+      "main": [
+        [
+          {
+            "node": "Settle Unified Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settle Unified Analysis": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Get Agent Performance (REST API)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Weekly Stats (REST API)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get All Agent Weights (REST API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Agent Performance (REST API)": {
+      "main": [
+        [
+          {
+            "node": "Format Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekly Stats (REST API)": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-01-11T17:00:00.000Z",
+  "versionId": "2"
+}

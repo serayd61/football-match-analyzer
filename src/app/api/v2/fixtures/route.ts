@@ -124,38 +124,38 @@ function extractLeagues(fixtures: any[]): { id: number; name: string; logo?: str
 async function getFixturesHandler(request: NextRequest) {
   const startTime = Date.now();
   
-  const { searchParams } = new URL(request.url);
-  const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
-  const leagueId = searchParams.get('league_id');
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const leagueId = searchParams.get('league_id');
   
   // Tarih validasyonu
   if (date && isNaN(Date.parse(date))) {
     throw Errors.validation('Invalid date format. Use YYYY-MM-DD format.');
   }
-  
-  // Cache key
-  const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
-  
-  // Get from cache or fetch
-  const allFixtures = await getOrSet(
-    cacheKey,
-    async () => {
-      const rawFixtures = await fetchFixturesFromAPI(date);
-      return transformFixtures(rawFixtures);
-    },
-    CACHE_TTL.FIXTURES
-  );
-  
-  // Ligleri çıkar
-  const leagues = extractLeagues(allFixtures);
-  
-  // Lig filtresi uygula
-  const fixtures = leagueId 
-    ? allFixtures.filter(f => f.leagueId === parseInt(leagueId))
-    : allFixtures;
-  
-  const processingTime = Date.now() - startTime;
-  
+    
+    // Cache key
+    const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
+    
+    // Get from cache or fetch
+    const allFixtures = await getOrSet(
+      cacheKey,
+      async () => {
+        const rawFixtures = await fetchFixturesFromAPI(date);
+        return transformFixtures(rawFixtures);
+      },
+      CACHE_TTL.FIXTURES
+    );
+    
+    // Ligleri çıkar
+    const leagues = extractLeagues(allFixtures);
+    
+    // Lig filtresi uygula
+    const fixtures = leagueId 
+      ? allFixtures.filter(f => f.leagueId === parseInt(leagueId))
+      : allFixtures;
+    
+    const processingTime = Date.now() - startTime;
+    
   return successResponse(
     {
       date,

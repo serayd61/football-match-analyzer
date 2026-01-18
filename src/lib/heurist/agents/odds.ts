@@ -3,6 +3,7 @@ import { MatchData } from '../types';
 import { fetchHistoricalOdds, analyzeSharpMoney, analyzeBettingVolume, isRealValue, MatchOddsHistory, SharpMoneyResult, BettingVolumeResult, RealValueResult } from '../sportmonks-odds';
 import { getLearningContext } from '../../ai-brain/learning-context';
 import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
+import { ENHANCED_ODDS_AGENT_PROMPT } from './enhanced-prompts';
 
 // ==================== JSON EXTRACTION ====================
 
@@ -1105,8 +1106,11 @@ Detected Value Bets: ${reasoning.valueBets.length > 0 ? reasoning.valueBets.join
 REAL VALUE = Form Value + Sharp Money Confirmation
 BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
 
+  // Use enhanced prompts if available, fallback to legacy prompts
+  const systemPrompt = ENHANCED_ODDS_AGENT_PROMPT[language] || ENHANCED_ODDS_AGENT_PROMPT.en || PROMPTS[language] || PROMPTS.en;
+  
   const messages: AIMessage[] = [
-    { role: 'system', content: PROMPTS[language] || PROMPTS.en },
+    { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ];
 

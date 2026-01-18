@@ -5,6 +5,7 @@ import { MatchData } from '../types';
 import { aiClient, AIMessage } from '../../ai-client';
 import { AgentResult } from '../orchestrator';
 import { getLearningContext } from '../../ai-brain/learning-context';
+import { ENHANCED_MASTER_STRATEGIST_PROMPT } from './enhanced-prompts';
 
 const MASTER_STRATEGIST_PROMPT = {
   tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
@@ -541,7 +542,8 @@ export async function runMasterStrategist(
   console.log('🧠 Master Strategist Agent starting...');
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam} `);
 
-  const systemPrompt = MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
+  // Use enhanced prompts if available, fallback to legacy prompts
+  const systemPrompt = ENHANCED_MASTER_STRATEGIST_PROMPT[language] || ENHANCED_MASTER_STRATEGIST_PROMPT.en || MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
   const context = buildAgentContext(agentResults, matchData, language);
   const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 
