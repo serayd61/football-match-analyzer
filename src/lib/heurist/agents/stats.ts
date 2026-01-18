@@ -1451,7 +1451,7 @@ Consider: %60 data analysis, %20 mathematical prediction, %20 psychological fact
 Return detailed JSON:`;
 
   // Use enhanced prompts if available, fallback to legacy prompts
-  const systemPrompt = ENHANCED_STATS_AGENT_PROMPT[language] || ENHANCED_STATS_AGENT_PROMPT.en || PROMPTS[language] || PROMPTS.en;
+  const systemPrompt = (ENHANCED_STATS_AGENT_PROMPT[language as keyof typeof ENHANCED_STATS_AGENT_PROMPT] || ENHANCED_STATS_AGENT_PROMPT.en) || (PROMPTS[language] || PROMPTS.en);
   
   const messages: AIMessage[] = [
     { role: 'system', content: systemPrompt },

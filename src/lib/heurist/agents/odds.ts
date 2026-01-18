@@ -1107,7 +1107,7 @@ REAL VALUE = Form Value + Sharp Money Confirmation
 BE AGGRESSIVE but RESPECT the odds movement! Return JSON:`;
 
   // Use enhanced prompts if available, fallback to legacy prompts
-  const systemPrompt = ENHANCED_ODDS_AGENT_PROMPT[language] || ENHANCED_ODDS_AGENT_PROMPT.en || PROMPTS[language] || PROMPTS.en;
+  const systemPrompt = (ENHANCED_ODDS_AGENT_PROMPT[language as keyof typeof ENHANCED_ODDS_AGENT_PROMPT] || ENHANCED_ODDS_AGENT_PROMPT.en) || (PROMPTS[language] || PROMPTS.en);
   
   const messages: AIMessage[] = [
     { role: 'system', content: systemPrompt },

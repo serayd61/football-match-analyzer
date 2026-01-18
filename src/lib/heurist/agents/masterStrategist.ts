@@ -543,7 +543,7 @@ export async function runMasterStrategist(
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam} `);
 
   // Use enhanced prompts if available, fallback to legacy prompts
-  const systemPrompt = ENHANCED_MASTER_STRATEGIST_PROMPT[language] || ENHANCED_MASTER_STRATEGIST_PROMPT.en || MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
+  const systemPrompt = (ENHANCED_MASTER_STRATEGIST_PROMPT[language as keyof typeof ENHANCED_MASTER_STRATEGIST_PROMPT] || ENHANCED_MASTER_STRATEGIST_PROMPT.en) || (MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en);
   const context = buildAgentContext(agentResults, matchData, language);
   const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 

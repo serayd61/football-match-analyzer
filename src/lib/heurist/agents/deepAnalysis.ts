@@ -899,7 +899,7 @@ export async function runDeepAnalysisAgent(
   }
   
   // Use enhanced prompts if available, fallback to legacy prompts
-  const systemPrompt = ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT[language] || ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT.en || DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en;
+  const systemPrompt = (ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT[language as keyof typeof ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT] || ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT.en) || (DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en);
   const context = buildDeepAnalysisContext(matchData);
   
   // Motivasyon analizi context'ine ekle
