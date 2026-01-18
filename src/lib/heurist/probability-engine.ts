@@ -429,11 +429,23 @@ export function calculateComprehensiveProbabilities(matchData: MatchData): Proba
   const awayWin = Math.round((awayWinRaw / total) * 100);
   const draw = Math.max(20, 100 - homeWin - awayWin); // Beraberlik en az %20
   
-  // Over/Under - DÜZELTME: Daha net eşik değerleri
+  // Over/Under - DÜZELTME: expectedTotal'ı dikkate al
+  const totalExpectedGoals = homeExpected + awayExpected;
   const over25Raw = 
     poissonModel.over25 * 0.50 +
     monteCarloModel.over25Pct * 0.50;
-  const over25 = Math.round(over25Raw);
+  
+  // expectedTotal bazlı düzeltme: 2.5 eşiği kullan
+  let over25Adjusted = over25Raw;
+  if (totalExpectedGoals >= 2.5 && over25Raw < 50) {
+    // Beklenen gol 2.5+, ama modeller Under diyor - Over'a yönlendir
+    over25Adjusted = Math.max(over25Raw, 52); // En az %52 Over yap
+  } else if (totalExpectedGoals < 2.5 && over25Raw > 50) {
+    // Beklenen gol < 2.5, ama modeller Over diyor - Under'a yönlendir
+    over25Adjusted = Math.min(over25Raw, 48); // En fazla %48 Over yap
+  }
+  
+  const over25 = Math.round(over25Adjusted);
   
   // BTTS
   const bttsRaw = 
@@ -449,20 +461,37 @@ export function calculateComprehensiveProbabilities(matchData: MatchData): Proba
   const maxProb = Math.max(homeWin, awayWin, draw);
   const matchResultConfidence = Math.min(75, 50 + (maxProb - 33) * 0.5);
   
-  // DÜZELTME: 2.5 alt/üst kararında net eşik değerleri
+  // DÜZELTME: 2.5 alt/üst kararında net eşik değerleri (expectedTotal'ı dikkate al)
   let overUnderPrediction: 'Over' | 'Under';
   let overUnderConfidence: number;
   
-  if (over25 >= 60) {
-    overUnderPrediction = 'Over';
-    overUnderConfidence = Math.min(80, 50 + (over25 - 50) * 1.5); // Daha güçlü confidence
-  } else if (over25 <= 40) {
-    overUnderPrediction = 'Under';
-    overUnderConfidence = Math.min(80, 50 + ((100 - over25) - 50) * 1.5);
+  // ÖNCELİK: expectedTotal >= 2.5 ise Over, < 2.5 ise Under
+  if (totalExpectedGoals >= 2.5) {
+    if (over25 >= 55) {
+      overUnderPrediction = 'Over';
+      overUnderConfidence = Math.min(80, 50 + (over25 - 50) * 1.5);
+    } else if (over25 < 45) {
+      // Çelişki: expectedTotal >= 2.5 ama modeller Under diyor - expectedTotal'a güven
+      overUnderPrediction = 'Over';
+      overUnderConfidence = Math.min(70, 50 + (totalExpectedGoals - 2.5) * 15);
+    } else {
+      // 45-55 arası - expectedTotal öncelikli
+      overUnderPrediction = 'Over';
+      overUnderConfidence = Math.min(65, 50 + (totalExpectedGoals - 2.5) * 10);
+    }
   } else {
-    // 40-60 arası gri bölge
-    overUnderPrediction = over25 >= 50 ? 'Over' : 'Under';
-    overUnderConfidence = Math.min(65, 50 + Math.abs(over25 - 50) * 0.8);
+    if (over25 <= 45) {
+      overUnderPrediction = 'Under';
+      overUnderConfidence = Math.min(80, 50 + ((100 - over25) - 50) * 1.5);
+    } else if (over25 > 55) {
+      // Çelişki: expectedTotal < 2.5 ama modeller Over diyor - expectedTotal'a güven
+      overUnderPrediction = 'Under';
+      overUnderConfidence = Math.min(70, 50 + (2.5 - totalExpectedGoals) * 15);
+    } else {
+      // 45-55 arası - expectedTotal öncelikli
+      overUnderPrediction = 'Under';
+      overUnderConfidence = Math.min(65, 50 + (2.5 - totalExpectedGoals) * 10);
+    }
   }
   
   const bttsPrediction: 'Yes' | 'No' = bttsYes >= 55 ? 'Yes' : 'No';
@@ -487,21 +516,21 @@ export function calculateComprehensiveProbabilities(matchData: MatchData): Proba
   ];
   
   // TUTARLILIK KONTROLÜ: Gol beklentisi ile 2.5 alt/üst önerisi uyumlu mu?
-  const totalExpectedGoals = homeExpected + awayExpected;
+  // DÜZELTME: 2.8 yerine 2.5 eşiği kullan (2.8 çok yüksek - bias yaratıyor)
   const overUnderBet = bets.find(b => b.market === 'Over/Under 2.5');
   if (overUnderBet) {
-    if (totalExpectedGoals > 2.8 && overUnderBet.selection === 'Under') {
-      // Çelişki: Yüksek gol beklentisi ama Under önerisi
+    if (totalExpectedGoals >= 2.5 && overUnderBet.selection === 'Under') {
+      // Çelişki: Beklenen gol >= 2.5 ama Under önerisi - Over'a çevir
       overUnderBet.selection = 'Over';
-      overUnderBet.confidence = Math.max(overUnderBet.confidence, 65);
+      overUnderBet.confidence = Math.max(overUnderBet.confidence, 60);
       overUnderBet.prob = over25;
-      console.log(`⚠️  TUTARLILIK DÜZELTME: Beklenen gol ${totalExpectedGoals.toFixed(1)} > 2.8 ama Under önerildi. Over olarak düzeltildi.`);
-    } else if (totalExpectedGoals < 2.2 && overUnderBet.selection === 'Over') {
-      // Çelişki: Düşük gol beklentisi ama Over önerisi
+      console.log(`⚠️  TUTARLILIK DÜZELTME: Beklenen gol ${totalExpectedGoals.toFixed(2)} >= 2.5 ama Under önerildi. Over olarak düzeltildi.`);
+    } else if (totalExpectedGoals < 2.5 && overUnderBet.selection === 'Over') {
+      // Çelişki: Beklenen gol < 2.5 ama Over önerisi - Under'a çevir
       overUnderBet.selection = 'Under';
-      overUnderBet.confidence = Math.max(overUnderBet.confidence, 65);
+      overUnderBet.confidence = Math.max(overUnderBet.confidence, 60);
       overUnderBet.prob = 100 - over25;
-      console.log(`⚠️  TUTARLILIK DÜZELTME: Beklenen gol ${totalExpectedGoals.toFixed(1)} < 2.2 ama Over önerildi. Under olarak düzeltildi.`);
+      console.log(`⚠️  TUTARLILIK DÜZELTME: Beklenen gol ${totalExpectedGoals.toFixed(2)} < 2.5 ama Over önerildi. Under olarak düzeltildi.`);
     }
   }
   
