@@ -1574,14 +1574,26 @@ Return detailed JSON:`;
         }
         
         // Over/Under validation - PROBABILITY ENGINE ile uyumlu
+        // ÖNCELİK: expectedTotal >= 2.5 ise Over, < 2.5 ise Under
         // Önce probabilityEngine'in final sonucunu kontrol et
         if (probabilityResult && probabilityResult.overUnder.prediction) {
           const probEngineOU = probabilityResult.overUnder.prediction;
           const probEngineConf = probabilityResult.overUnder.confidence;
           const aiOU = parsed.overUnder;
           
-          // Eğer probabilityEngine güçlü bir sinyal veriyorsa (>= 55%), onu kullan
-          if (probEngineConf >= 55) {
+          // KRİTİK DÜZELTME: expectedTotal >= 2.5 ise Over ÖNCELİKLİ (Probability Engine'e bakmadan)
+          if (expectedTotal >= 2.5 && probEngineOU === 'Under') {
+            // Çelişki: expectedTotal >= 2.5 ama Probability Engine Under diyor
+            // expectedTotal'a güven, Over ver
+            parsed.overUnder = 'Over';
+            console.log(`   ⚠️ Over/Under CRITICAL Override: expectedTotal ${expectedTotal.toFixed(2)} >= 2.5 ama ProbEngine "Under" → "Over" kullanıldı`);
+          } else if (expectedTotal < 2.5 && probEngineOU === 'Over') {
+            // Çelişki: expectedTotal < 2.5 ama Probability Engine Over diyor
+            // expectedTotal'a güven, Under ver
+            parsed.overUnder = 'Under';
+            console.log(`   ⚠️ Over/Under CRITICAL Override: expectedTotal ${expectedTotal.toFixed(2)} < 2.5 ama ProbEngine "Over" → "Under" kullanıldı`);
+          } else if (probEngineConf >= 55) {
+            // ProbabilityEngine güçlü bir sinyal veriyorsa (>= 55%) VE expectedTotal ile uyumluysa, onu kullan
             parsed.overUnder = probEngineOU;
             console.log(`   🎯 Probability Engine Override: ${aiOU} → ${probEngineOU} (${probEngineConf}% confidence)`);
           } else if (!['Over', 'Under'].includes(aiOU)) {
