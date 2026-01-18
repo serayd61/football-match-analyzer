@@ -658,7 +658,7 @@ export async function runMasterStrategist(
       });
     }
 
-    // Eğer AI final objesi döndürmediyse, fallback ile tamamla
+    // Eğer AI final objesi döndürmediyse veya recommended_bets boşsa, fallback ile tamamla
     if (!result.final || !result.final.primary_pick) {
       console.warn('⚠️ AI final objesi eksik, fallback ile tamamlanıyor...');
       const fallback = getDefaultMasterStrategist(agentResults, matchData, language);
@@ -666,9 +666,15 @@ export async function runMasterStrategist(
       // Diğer eksik alanları da tamamla
       if (!result.model_probs) result.model_probs = fallback.model_probs;
       if (!result.recommended_bets || result.recommended_bets.length === 0) {
+        console.warn('⚠️ recommended_bets boş veya eksik, fallback kullanılıyor...');
         result.recommended_bets = fallback.recommended_bets;
       }
       if (!result.signals) result.signals = fallback.signals;
+    } else if (!result.recommended_bets || result.recommended_bets.length === 0) {
+      // Final var ama recommended_bets yok/boş - fallback'ten al
+      console.warn('⚠️ recommended_bets boş, fallback kullanılıyor...');
+      const fallback = getDefaultMasterStrategist(agentResults, matchData, language);
+      result.recommended_bets = fallback.recommended_bets;
     }
 
     console.log(`✅ Master Strategist complete: `);
