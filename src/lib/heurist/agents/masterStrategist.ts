@@ -1,5 +1,5 @@
 // src/lib/heurist/agents/masterStrategist.ts
-// 🧠 MASTER STRATEGIST AGENT - Diğer agent'ları yöneten, tutarsızlıkları tespit eden ve konsensüsü güçlendiren üst-akıl
+// 🧠 MASTER STRATEGIST AGENT - %50 Veri + %25 Agent Yorumu + %25 Psikoloji Ağırlıklı Sistem
 
 import { MatchData } from '../types';
 import { aiClient, AIMessage } from '../../ai-client';
@@ -7,44 +7,569 @@ import { AgentResult } from '../orchestrator';
 import { getLearningContext } from '../../ai-brain/learning-context';
 import { ENHANCED_MASTER_STRATEGIST_PROMPT } from './enhanced-prompts';
 
+// ============================================
+// YENİ: PSİKOLOJİ TİPLERİ VE HESAPLAMA
+// ============================================
+
+interface PsychologyFactors {
+  emotionalState: 'confident' | 'nervous' | 'demoralized' | 'motivated' | 'complacent' | 'desperate';
+  motivationScore: number;
+  coachPressure: boolean;
+  fanPressure: boolean;
+  mediaPressure: boolean;
+  matchImportance: 'critical' | 'important' | 'normal' | 'meaningless';
+  keyPlayersMissing: string[];
+  squadMorale: 'high' | 'medium' | 'low';
+  formTrend: 'improving' | 'stable' | 'declining';
+}
+
+interface WeightedAnalysisResult {
+  dataScore: {
+    homeWinProb: number;
+    drawProb: number;
+    awayWinProb: number;
+    overProb: number;
+    bttsProb: number;
+    confidence: number;
+    reasoning: string[];
+  };
+  agentScore: {
+    adjustedHomeWin: number;
+    adjustedDraw: number;
+    adjustedAwayWin: number;
+    confidence: number;
+    insights: string[];
+  };
+  psychologyScore: {
+    homeMotivation: number;
+    awayMotivation: number;
+    motivationDiff: number;
+    homeMultiplier: number;
+    awayMultiplier: number;
+    overUnderImpact: number;
+    bttsImpact: number;
+    confidence: number;
+    warnings: string[];
+    reasoning: string[];
+  };
+  finalProbabilities: {
+    homeWin: number;
+    draw: number;
+    awayWin: number;
+    over25: number;
+    btts: number;
+  };
+  riskLevel: 'low' | 'medium' | 'high' | 'very-high';
+  riskFactors: string[];
+}
+
+// Ağırlık sabitleri
+const WEIGHTS = {
+  DATA: 0.50,      // %50 Veri
+  AGENT: 0.25,     // %25 Agent Yorumu
+  PSYCHOLOGY: 0.25 // %25 Psikoloji
+};
+
+/**
+ * Duygu durumunu sayısal skora çevirir (-20 ile +20 arası)
+ */
+function emotionalStateToScore(state: PsychologyFactors['emotionalState']): number {
+  const scores: Record<PsychologyFactors['emotionalState'], number> = {
+    'confident': 15,
+    'motivated': 12,
+    'complacent': -5,
+    'nervous': -8,
+    'demoralized': -15,
+    'desperate': 5
+  };
+  return scores[state] || 0;
+}
+
+/**
+ * Maç önemini sayısal skora çevirir
+ */
+function matchImportanceToScore(importance: PsychologyFactors['matchImportance']): number {
+  const scores: Record<PsychologyFactors['matchImportance'], number> = {
+    'critical': 20,
+    'important': 12,
+    'normal': 5,
+    'meaningless': -10
+  };
+  return scores[importance] || 5;
+}
+
+/**
+ * Deep Analysis'ten psikoloji faktörlerini çıkarır
+ */
+function extractPsychologyFromDeepAnalysis(
+  deepAnalysis: any,
+  isHome: boolean
+): PsychologyFactors {
+  const motivationScores = deepAnalysis?.motivationScores;
+  const analiz = deepAnalysis?.analiz_raporu;
+  
+  // Varsayılan değerler
+  let emotionalState: PsychologyFactors['emotionalState'] = 'nervous';
+  let motivationScore = 50;
+  let coachPressure = false;
+  let fanPressure = false;
+  let squadMorale: 'high' | 'medium' | 'low' = 'medium';
+  let formTrend: 'improving' | 'stable' | 'declining' = 'stable';
+  let keyPlayersMissing: string[] = [];
+  
+  if (motivationScores) {
+    // Motivasyon skoru
+    motivationScore = isHome 
+      ? (motivationScores.homeTeamMotivationScore || motivationScores.home || 50)
+      : (motivationScores.awayTeamMotivationScore || motivationScores.away || 50);
+    
+    // Form trendi
+    const trend = isHome ? motivationScores.homeTrend : motivationScores.awayTrend;
+    if (trend === 'improving') formTrend = 'improving';
+    else if (trend === 'declining') formTrend = 'declining';
+    else formTrend = 'stable';
+    
+    // Sakatlıklar
+    keyPlayersMissing = isHome 
+      ? (motivationScores.homeInjuries || [])
+      : (motivationScores.awayInjuries || []);
+  }
+  
+  // Duygu durumunu analiz et
+  if (analiz?.katman_2_motivasyon_analizi?.duygu_durumu) {
+    const duygu = isHome 
+      ? analiz.katman_2_motivasyon_analizi.duygu_durumu.gent || analiz.katman_2_motivasyon_analizi.duygu_durumu.home
+      : analiz.katman_2_motivasyon_analizi.duygu_durumu.anderlecht || analiz.katman_2_motivasyon_analizi.duygu_durumu.away;
+    
+    if (duygu) {
+      const duyguLower = duygu.toLowerCase();
+      if (duyguLower.includes('moralsiz') || duyguLower.includes('demoralized')) {
+        emotionalState = 'demoralized';
+      } else if (duyguLower.includes('gergin') || duyguLower.includes('nervous')) {
+        emotionalState = 'nervous';
+      } else if (duyguLower.includes('özgüvenli') || duyguLower.includes('confident')) {
+        emotionalState = 'confident';
+      } else if (duyguLower.includes('motive') || duyguLower.includes('motivated')) {
+        emotionalState = 'motivated';
+      } else if (duyguLower.includes('desperate') || duyguLower.includes('çaresiz')) {
+        emotionalState = 'desperate';
+      }
+    }
+  }
+  
+  // Hoca baskısı kontrolü
+  if (motivationScores?.homeNewsImpact || motivationScores?.awayNewsImpact) {
+    const newsImpact = isHome ? motivationScores.homeNewsImpact : motivationScores.awayNewsImpact;
+    if (newsImpact && (newsImpact.includes('baskı') || newsImpact.includes('eleştir') || newsImpact.includes('pressure'))) {
+      coachPressure = true;
+    }
+  }
+  
+  // Taraftar baskısı
+  if (motivationScores?.awayNewsImpact?.includes('taraftar') || 
+      motivationScores?.homeNewsImpact?.includes('taraftar')) {
+    fanPressure = true;
+  }
+  
+  // Kadro morali
+  if (motivationScore < 30) squadMorale = 'low';
+  else if (motivationScore > 60) squadMorale = 'high';
+  else squadMorale = 'medium';
+  
+  return {
+    emotionalState,
+    motivationScore,
+    coachPressure,
+    fanPressure,
+    mediaPressure: coachPressure, // Basitleştirilmiş
+    matchImportance: 'normal', // Varsayılan
+    keyPlayersMissing,
+    squadMorale,
+    formTrend
+  };
+}
+
+/**
+ * KATMAN 1: VERİ ANALİZİ (%50)
+ */
+function calculateDataScore(
+  stats: AgentResult | null,
+  odds: AgentResult | null
+): WeightedAnalysisResult['dataScore'] {
+  const reasoning: string[] = [];
+  
+  // Stats agent'tan olasılıkları al
+  let homeWinProb = 0.33;
+  let drawProb = 0.33;
+  let awayWinProb = 0.33;
+  let overProb = 0.50;
+  let bttsProb = 0.50;
+  
+  // Probability engine varsa kullan
+  if (stats?.probabilityEngine?.final) {
+    const pe = stats.probabilityEngine;
+    
+    // Poisson ve Monte Carlo ortalaması
+    if (pe.poisson && pe.monteCarlo) {
+      homeWinProb = ((pe.poisson.homeWin || 33) + (pe.monteCarlo.homeWin || 33)) / 200;
+      drawProb = ((pe.poisson.draw || 33) + (pe.monteCarlo.draw || 33)) / 200;
+      awayWinProb = ((pe.poisson.awayWin || 33) + (pe.monteCarlo.awayWin || 33)) / 200;
+      overProb = ((pe.poisson.over25 || 50) + (pe.monteCarlo.over25 || 50)) / 200;
+      bttsProb = ((pe.poisson.btts || 50) + (pe.monteCarlo.btts || 50)) / 200;
+      
+      reasoning.push(`🎲 Poisson/MC ortalaması: 1=${Math.round(homeWinProb*100)}%, X=${Math.round(drawProb*100)}%, 2=${Math.round(awayWinProb*100)}%`);
+    }
+  }
+  
+  // xG analizi
+  if (stats?.xgAnalysis) {
+    const xg = stats.xgAnalysis;
+    reasoning.push(`⚡ xG: Ev ${xg.homeXG?.toFixed(2) || 'N/A'} vs Dep ${xg.awayXG?.toFixed(2) || 'N/A'}`);
+    
+    // xG'ye göre olasılıkları ayarla
+    if (xg.homeXG && xg.awayXG) {
+      const xgDiff = xg.homeXG - xg.awayXG;
+      if (xgDiff > 0.5) {
+        homeWinProb += 0.05;
+        awayWinProb -= 0.05;
+      } else if (xgDiff < -0.5) {
+        awayWinProb += 0.05;
+        homeWinProb -= 0.05;
+      }
+    }
+  }
+  
+  // Form analizi
+  if (stats?.formAnalysis) {
+    reasoning.push(`📊 Form: ${stats.formAnalysis}`);
+  }
+  
+  // Güven hesapla
+  const hasGoodData = stats?.probabilityEngine && stats?.xgAnalysis;
+  const confidence = hasGoodData ? 75 : 55;
+  
+  return {
+    homeWinProb: Math.max(0.05, Math.min(0.90, homeWinProb)),
+    drawProb: Math.max(0.10, Math.min(0.45, drawProb)),
+    awayWinProb: Math.max(0.05, Math.min(0.90, awayWinProb)),
+    overProb: Math.max(0.20, Math.min(0.80, overProb)),
+    bttsProb: Math.max(0.20, Math.min(0.80, bttsProb)),
+    confidence,
+    reasoning
+  };
+}
+
+/**
+ * KATMAN 2: AGENT YORUMU (%25)
+ */
+function calculateAgentScore(
+  dataScore: WeightedAnalysisResult['dataScore'],
+  odds: AgentResult | null,
+  stats: AgentResult | null,
+  leagueCharacteristics?: { surpriseRate?: number; homeAdvantage?: number }
+): WeightedAnalysisResult['agentScore'] {
+  const insights: string[] = [];
+  
+  let homeAdjustment = 0;
+  let awayAdjustment = 0;
+  let drawAdjustment = 0;
+  
+  // 1. Value bet analizi
+  if (odds?.valueBets && odds.valueBets.length > 0) {
+    const valueBet = odds.valueBets[0];
+    if (valueBet.includes('Away') || valueBet.includes('2')) {
+      awayAdjustment += 8;
+      insights.push(`💰 Value bet: Deplasman (+${odds._valueAnalysis?.bestValueAmount || 0}%)`);
+    } else if (valueBet.includes('Home') || valueBet.includes('1')) {
+      homeAdjustment += 8;
+      insights.push(`💰 Value bet: Ev sahibi (+${odds._valueAnalysis?.bestValueAmount || 0}%)`);
+    }
+  }
+  
+  // 2. Lig sürpriz oranı
+  const surpriseRate = leagueCharacteristics?.surpriseRate || 25;
+  if (surpriseRate > 30) {
+    // Yüksek sürpriz oranlı liglerde underdog'a bonus
+    const underdog = dataScore.homeWinProb < dataScore.awayWinProb ? 'home' : 'away';
+    if (underdog === 'home') homeAdjustment += 5;
+    else awayAdjustment += 5;
+    insights.push(`🎭 Yüksek sürpriz oranlı lig (%${surpriseRate}) - Underdog avantajı`);
+  }
+  
+  // 3. Sharp money kontrolü
+  if (odds?.hasSharpConfirmation) {
+    const direction = odds.sharpMoneyAnalysis?.direction;
+    if (direction === 'home') homeAdjustment += 10;
+    else if (direction === 'away') awayAdjustment += 10;
+    insights.push(`🦈 Sharp money tespit: ${direction}`);
+  }
+  
+  // 4. Real value checks
+  if (odds?.realValueChecks) {
+    const rv = odds.realValueChecks;
+    if (rv.away?.isValue) {
+      awayAdjustment += 5;
+      insights.push(`✅ Deplasman value onaylandı`);
+    }
+    if (rv.home?.isValue) {
+      homeAdjustment += 5;
+      insights.push(`✅ Ev sahibi value onaylandı`);
+    }
+  }
+  
+  // Normalize
+  const totalAdjustment = Math.abs(homeAdjustment) + Math.abs(awayAdjustment) + Math.abs(drawAdjustment);
+  const normFactor = totalAdjustment > 20 ? 20 / totalAdjustment : 1;
+  
+  return {
+    adjustedHomeWin: dataScore.homeWinProb + (homeAdjustment * normFactor) / 100,
+    adjustedDraw: dataScore.drawProb + (drawAdjustment * normFactor) / 100,
+    adjustedAwayWin: dataScore.awayWinProb + (awayAdjustment * normFactor) / 100,
+    confidence: 70,
+    insights
+  };
+}
+
+/**
+ * KATMAN 3: PSİKOLOJİ ANALİZİ (%25)
+ */
+function calculatePsychologyScore(
+  homePsychology: PsychologyFactors,
+  awayPsychology: PsychologyFactors
+): WeightedAnalysisResult['psychologyScore'] {
+  const reasoning: string[] = [];
+  const warnings: string[] = [];
+  
+  // ===== EV SAHİBİ PSİKOLOJİ =====
+  let homeScore = homePsychology.motivationScore;
+  
+  // Duygu durumu
+  const homeEmotionalImpact = emotionalStateToScore(homePsychology.emotionalState);
+  homeScore += homeEmotionalImpact;
+  reasoning.push(`🏠 Ev sahibi: ${homePsychology.emotionalState} (${homeEmotionalImpact > 0 ? '+' : ''}${homeEmotionalImpact})`);
+  
+  // Baskı faktörleri
+  if (homePsychology.coachPressure) {
+    homeScore -= 8;
+    warnings.push(`⚠️ Ev sahibi teknik direktör baskı altında`);
+  }
+  if (homePsychology.fanPressure) homeScore -= 6;
+  
+  // Kadro morali
+  if (homePsychology.squadMorale === 'low') homeScore -= 10;
+  else if (homePsychology.squadMorale === 'high') homeScore += 5;
+  
+  // Sakatlıklar
+  homeScore -= homePsychology.keyPlayersMissing.length * 5;
+  
+  // Form trendi
+  if (homePsychology.formTrend === 'improving') homeScore += 8;
+  else if (homePsychology.formTrend === 'declining') homeScore -= 8;
+  
+  // ===== DEPLASMAN PSİKOLOJİ =====
+  let awayScore = awayPsychology.motivationScore;
+  
+  const awayEmotionalImpact = emotionalStateToScore(awayPsychology.emotionalState);
+  awayScore += awayEmotionalImpact;
+  reasoning.push(`✈️ Deplasman: ${awayPsychology.emotionalState} (${awayEmotionalImpact > 0 ? '+' : ''}${awayEmotionalImpact})`);
+  
+  if (awayPsychology.coachPressure) {
+    awayScore -= 8;
+    warnings.push(`⚠️ Deplasman teknik direktör baskı altında`);
+  }
+  if (awayPsychology.fanPressure) {
+    awayScore -= 6;
+    warnings.push(`⚠️ Deplasman taraftar baskısı var`);
+  }
+  
+  if (awayPsychology.squadMorale === 'low') awayScore -= 10;
+  else if (awayPsychology.squadMorale === 'high') awayScore += 5;
+  
+  awayScore -= awayPsychology.keyPlayersMissing.length * 5;
+  
+  if (awayPsychology.formTrend === 'improving') awayScore += 8;
+  else if (awayPsychology.formTrend === 'declining') awayScore -= 8;
+  
+  // ===== FİNAL HESAPLAMALAR =====
+  const homeMotivation = Math.max(0, Math.min(100, homeScore));
+  const awayMotivation = Math.max(0, Math.min(100, awayScore));
+  const motivationDiff = homeMotivation - awayMotivation;
+  
+  reasoning.push(`📊 Final: Ev ${homeMotivation.toFixed(0)} vs Dep ${awayMotivation.toFixed(0)} (Fark: ${motivationDiff > 0 ? '+' : ''}${motivationDiff.toFixed(0)})`);
+  
+  // Confidence multiplier (0.7 - 1.3)
+  const homeMultiplier = 0.85 + (homeMotivation / 100) * 0.45;
+  const awayMultiplier = 0.85 + (awayMotivation / 100) * 0.45;
+  
+  // Over/Under etkisi
+  const avgMotivation = (homeMotivation + awayMotivation) / 2;
+  let overUnderImpact = 0;
+  
+  if (avgMotivation < 40) {
+    overUnderImpact = -15;
+    reasoning.push(`😴 Düşük motivasyon → Under eğilimi (+15%)`);
+  } else if (avgMotivation > 70) {
+    overUnderImpact = 10;
+    reasoning.push(`🔥 Yüksek motivasyon → Over eğilimi (+10%)`);
+  }
+  
+  // İki takım da stresli
+  if (homePsychology.emotionalState === 'nervous' && awayPsychology.emotionalState === 'nervous') {
+    overUnderImpact -= 10;
+    warnings.push(`😰 Her iki takım da gergin - Düşük tempolu maç bekleniyor`);
+  }
+  
+  // BTTS etkisi
+  let bttsImpact = 0;
+  
+  if (homePsychology.emotionalState === 'demoralized' || awayPsychology.emotionalState === 'demoralized') {
+    bttsImpact -= 10;
+    reasoning.push(`💔 Demoralize takım var → Tek taraflı skor olasılığı arttı`);
+  }
+  
+  if (homePsychology.emotionalState === 'confident' && awayPsychology.emotionalState === 'confident') {
+    bttsImpact += 15;
+    reasoning.push(`💪 Her iki takım da özgüvenli → Açık maç bekleniyor`);
+  }
+  
+  return {
+    homeMotivation,
+    awayMotivation,
+    motivationDiff,
+    homeMultiplier,
+    awayMultiplier,
+    overUnderImpact,
+    bttsImpact,
+    confidence: Math.min(85, 50 + Math.abs(motivationDiff) / 2),
+    warnings,
+    reasoning
+  };
+}
+
+/**
+ * ANA FONKSİYON: %50-%25-%25 Ağırlıklı Analiz
+ */
+function calculateWeightedAnalysis(
+  stats: AgentResult | null,
+  odds: AgentResult | null,
+  deepAnalysis: any | null,
+  matchData: MatchData
+): WeightedAnalysisResult {
+  
+  // Psikoloji faktörlerini çıkar
+  const homePsychology = extractPsychologyFromDeepAnalysis(deepAnalysis, true);
+  const awayPsychology = extractPsychologyFromDeepAnalysis(deepAnalysis, false);
+  
+  // KATMAN 1: VERİ (%50)
+  const dataScore = calculateDataScore(stats, odds);
+  
+  // KATMAN 2: AGENT YORUMU (%25)
+  const agentScore = calculateAgentScore(dataScore, odds, stats, {
+    surpriseRate: 30, // Default, lig bazlı ayarlanabilir
+    homeAdvantage: 52
+  });
+  
+  // KATMAN 3: PSİKOLOJİ (%25)
+  const psychologyScore = calculatePsychologyScore(homePsychology, awayPsychology);
+  
+  // ===== AĞIRLIKLI BİRLEŞTİRME =====
+  
+  // Match Result
+  const finalHomeWin = 
+    (dataScore.homeWinProb * WEIGHTS.DATA) +
+    (agentScore.adjustedHomeWin * WEIGHTS.AGENT) +
+    (dataScore.homeWinProb * psychologyScore.homeMultiplier * WEIGHTS.PSYCHOLOGY);
+  
+  const finalAwayWin = 
+    (dataScore.awayWinProb * WEIGHTS.DATA) +
+    (agentScore.adjustedAwayWin * WEIGHTS.AGENT) +
+    (dataScore.awayWinProb * psychologyScore.awayMultiplier * WEIGHTS.PSYCHOLOGY);
+  
+  // Normalize
+  const total = finalHomeWin + finalAwayWin;
+  const normalizedHome = finalHomeWin / (total + 0.30); // 0.30 for draw space
+  const normalizedAway = finalAwayWin / (total + 0.30);
+  const normalizedDraw = 1 - normalizedHome - normalizedAway;
+  
+  // Over/Under
+  const baseOver = (dataScore.overProb * WEIGHTS.DATA) + 
+                   (dataScore.overProb * (WEIGHTS.AGENT + WEIGHTS.PSYCHOLOGY));
+  const finalOver = Math.max(0.20, Math.min(0.80, 
+    baseOver + (psychologyScore.overUnderImpact / 100)));
+  
+  // BTTS
+  const baseBtts = (dataScore.bttsProb * WEIGHTS.DATA) + 
+                   (dataScore.bttsProb * (WEIGHTS.AGENT + WEIGHTS.PSYCHOLOGY));
+  const finalBtts = Math.max(0.20, Math.min(0.80,
+    baseBtts + (psychologyScore.bttsImpact / 100)));
+  
+  // Risk değerlendirmesi
+  const riskFactors: string[] = [...psychologyScore.warnings];
+  
+  const avgMultiplier = (psychologyScore.homeMultiplier + psychologyScore.awayMultiplier) / 2;
+  if (avgMultiplier < 0.95) {
+    riskFactors.push('Düşük güven çarpanı - Belirsiz maç');
+  }
+  
+  if (homePsychology.emotionalState === 'demoralized' && awayPsychology.emotionalState === 'nervous') {
+    riskFactors.push('Her iki takımda da psikolojik sorunlar mevcut');
+  }
+  
+  const riskLevel: WeightedAnalysisResult['riskLevel'] = 
+    riskFactors.length === 0 ? 'low' :
+    riskFactors.length <= 2 ? 'medium' :
+    riskFactors.length <= 4 ? 'high' : 'very-high';
+  
+  return {
+    dataScore,
+    agentScore,
+    psychologyScore,
+    finalProbabilities: {
+      homeWin: normalizedHome,
+      draw: normalizedDraw,
+      awayWin: normalizedAway,
+      over25: finalOver,
+      btts: finalBtts
+    },
+    riskLevel,
+    riskFactors
+  };
+}
+
+// ============================================
+// MEVCUT PROMPT (Güncellendi)
+// ============================================
+
 const MASTER_STRATEGIST_PROMPT = {
   tr: `Sen bir çok-agent futbol maç analiz sisteminin MASTER STRATEGIST'isin.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎯 YENİ ANALİZ FELSEFESİ: %50 VERİ + %50 DUYGUSAL/PSİKOLOJİK ANALİZ
+🎯 YENİ ANALİZ FELSEFESİ: %50 VERİ + %25 AGENT YORUMU + %25 PSİKOLOJİ
 ═══════════════════════════════════════════════════════════════════════════════
 
 ⚡ FUTBOL SADECE RAKAMLAR DEĞİL - KALPLE OYNANIR!
-Diğer agent'ların verilerini %50 veri + %50 duygusal analiz ile sentezle!
+3 katmanlı ağırlıklı sistem kullan:
+- %50 VERİ: xG, form, Poisson/Monte Carlo modelleri
+- %25 AGENT YORUMU: Value bet, sharp money, lig karakteristiği
+- %25 PSİKOLOJİ: Motivasyon, duygu durumu, baskı faktörleri
 
-GÖREV: Diğer agent'ların (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) çıktılarını analiz et ve "Düşünme Zinciri" (Chain-of-Thought) yöntemiyle en doğru tahminleri oluştur.
+💝 PSİKOLOJİ FAKTÖRÜ KRİTİK:
+- Demoralize takım = Düşük performans beklentisi
+- Gergin takım = Hata yapma eğilimi
+- Her iki takım da sorunluysa = Under ve düşük güven
+- Hoca baskısı = Takım morali düşük
 
-💝 DUYGUSAL ANALİZ YAKLAŞIMI:
-- Agent'ların verilerini değerlendirirken, takımların "ruh halini" de dikkate al
-- "Hissediyorum ki bu maçta duygusal faktörler belirleyici olacak..."
-- Veri ile duygusal analiz çelişiyorsa, duygusal analize daha fazla ağırlık ver
-- %80+ başarı hedefi için %50 veri + %50 duygusal analiz dengesini koru
+GÖREV: Ağırlıklı analiz sonuçlarını kullan ve "Düşünme Zinciri" ile en doğru tahminleri oluştur.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧠 DÜŞÜNME SÜRECİ (CHAIN-OF-THOUGHT):
 ═══════════════════════════════════════════════════════════════════════════════
-Cevabına başlamadan önce, <thinking>...</thinking> etiketleri arasında şu adımları sesli düşünerek uygula:
 
-1.  **Veri Kalitesi ve Güven Kontrolü:**
-    *   Hangi agent'lar yüksek, hangileri düşük güven veriyor?
-    *   Verilerde eksiklik veya gürültü var mı?
-
-2.  **"Hikayeyi" Bul (The Narrative):**
-    *   Maçın psikolojisi nedir? (Örn: "Umutsuz ev sahibi vs. Rahat favori")
-    *   İstatistikler ne diyor, Oranlar ne fısıldıyor? Bu ikisi uyumlu mu?
-
-3.  **Şeytanın Avukatı ile Tartış (Crucial Step):**
-    *   Devil's Advocate'ın "Tuzak" uyarısını ciddiye al.
-    *   Onun argümanları, favori seçimi çürütmek için yeterli mi?
-    *   Eğer "Evet" ise, sürpriz veya hedge seçeneğine yönel.
-
-4.  **Sentez ve Karar:**
-    *   Tüm bu tartışmalardan sonra en mantıklı, en yüksek değerli bahis nedir?
+1. **Veri Katmanı (%50):** xG, form, modeller ne diyor?
+2. **Agent Katmanı (%25):** Value bet var mı? Sharp money nereye akıyor?
+3. **Psikoloji Katmanı (%25):** Takımların ruh hali nasıl? Baskı var mı?
+4. **Risk Değerlendirmesi:** Psikolojik uyarılar var mı?
+5. **Final Karar:** 3 katmanı birleştirerek en mantıklı tahmin
 
 ═══════════════════════════════════════════════════════════════════════════════
 📊 SÜRPRİZ TANIMI:
@@ -59,209 +584,63 @@ Cevabına başlamadan önce, <thinking>...</thinking> etiketleri arasında şu a
 \`\`\`json
 {
   "agent": "MASTER_STRATEGIST",
-  "main_take": "Bir cümle özet - en önemli bulgu",
-  "signals": [
-    "Agent'ların hemfikir olduğu sinyaller",
-    "Güçlü istatistiksel pattern'ler",
-    "Piyasa değer fırsatları"
-  ],
-  "model_probs": {
-    "home_win": 0.xx,
-    "draw": 0.xx,
-    "away_win": 0.xx,
-    "under_2_5": 0.xx,
-    "over_2_5": 0.xx,
-    "btts_yes": 0.xx,
-    "btts_no": 0.xx
+  "main_take": "Bir cümle özet - psikoloji faktörünü de içermeli",
+  "weightedAnalysis": {
+    "dataContribution": 50,
+    "agentContribution": 25,
+    "psychologyContribution": 25
   },
-  "recommended_bets": [
-    {
-      "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "rationale": ["Sinyallere bağlı nedenler"]
-    }
-  ],
-  "risks": [
-    "Birincil seçimi bozabilecek faktörler",
-    "Belirsizlik kaynakları"
-  ],
+  "signals": [],
+  "model_probs": {},
+  "recommended_bets": [],
+  "risks": [],
   "confidence": 0-100,
-  "final": {
-    "primary_pick": {
-      "market": "string",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "confidence": 0-100,
-      "rationale": ["Nedenler"]
-    },
-    "surprise_pick": {
-      "market": "string",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "confidence": 0-100,
-      "rationale": ["Nedenler"]
-    } veya null,
-    "hedge": {
-      "market": "string",
-      "selection": "string",
-      "rationale": "Neden hedge gerekli?"
-    } veya null,
-    "contradictions_found": [
-      "Agent çelişkileri açıklaması"
-    ],
-    "why_this_is_surprise": "Sürpriz seçim varsa, oran/prob/edge ile açıkla. Yoksa null."
-  }
+  "final": {}
 }
 \`\`\`
 
-⚠️ ÖNEMLİ: JSON formatı dışına çıkma. <thinking> bloğu JSON'dan önce gelmeli.
+⚠️ ÖNEMLİ: PSİKOLOJİ faktörünü göz ardı etme! Risk değerlendirmesinde mutlaka kullan.
 `,
 
-  en: `You are the MASTER STRATEGIST for a multi-agent football match analysis system.
+  en: `You are the MASTER STRATEGIST for a multi-agent football analysis system.
 
-TASK: Analyze outputs from other agents (STATS, ODDS, SENTIMENT, DEEP ANALYSIS, DEVIL'S ADVOCATE) and use "Chain-of-Thought" (CoT) reasoning to produce the most accurate predictions.
+═══════════════════════════════════════════════════════════════════════════════
+🎯 NEW ANALYSIS PHILOSOPHY: 50% DATA + 25% AGENT ANALYSIS + 25% PSYCHOLOGY
+═══════════════════════════════════════════════════════════════════════════════
+
+⚡ FOOTBALL IS NOT JUST NUMBERS - IT'S PLAYED WITH HEART!
+Use 3-layer weighted system:
+- 50% DATA: xG, form, Poisson/Monte Carlo models
+- 25% AGENT ANALYSIS: Value bets, sharp money, league characteristics
+- 25% PSYCHOLOGY: Motivation, emotional state, pressure factors
+
+💝 PSYCHOLOGY FACTOR IS CRITICAL:
+- Demoralized team = Low performance expectation
+- Nervous team = Error-prone tendency
+- Both teams struggling = Under and low confidence
+- Coach pressure = Low team morale
+
+TASK: Use weighted analysis results and apply "Chain-of-Thought" for most accurate predictions.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧠 THINKING PROCESS (CHAIN-OF-THOUGHT):
 ═══════════════════════════════════════════════════════════════════════════════
-Before your JSON response, think aloud within <thinking>...</thinking> tags following these steps:
 
-1.  **Data Quality & Confidence Check:**
-    *   Which agents are confident, which are unsure?
-    *   Is there any missing data or noise?
+1. **Data Layer (50%):** What do xG, form, models say?
+2. **Agent Layer (25%):** Any value bets? Where is sharp money flowing?
+3. **Psychology Layer (25%):** What's the teams' mental state? Any pressure?
+4. **Risk Assessment:** Any psychological warnings?
+5. **Final Decision:** Combine 3 layers for most logical prediction
 
-2.  **Find "The Narrative":**
-    *   What is the psychology of the match? (e.g., "Desperate home team vs. Complacent favorite")
-    *   What do Stats say vs. what do Odds whisper? Are they aligned?
-
-3.  **Debate with Devil's Advocate (Crucial Step):**
-    *   Take the Devil's Advocate's "Trap" warning seriously.
-    *   Are their arguments strong enough to debunk the favorite pick?
-    *   If "Yes", pivot to a surprise or hedge option.
-
-4.  **Synthesis & Verdict:**
-    *   After all this debate, what is the most logical, highest EV bet?
-
-═══════════════════════════════════════════════════════════════════════════════
-📊 SURPRISE DEFINITION:
-═══════════════════════════════════════════════════════════════════════════════
-"SURPRISE" = Market odds >= 3.20 AND Model probability >= 0.25 AND Edge >= +0.05
-
-═══════════════════════════════════════════════════════════════════════════════
-📋 REQUIRED OUTPUT FORMAT:
-═══════════════════════════════════════════════════════════════════════════════
-First the <thinking>...</thinking> block, then ONLY the following JSON format:
-
-\`\`\`json
-{
-  "agent": "MASTER_STRATEGIST",
-  "main_take": "One sentence summary - most important finding",
-  "signals": [
-    "Signals where agents agree",
-    "Strong statistical patterns",
-    "Market value opportunities"
-  ],
-  "model_probs": {
-    "home_win": 0.xx,
-    "draw": 0.xx,
-    "away_win": 0.xx,
-    "under_2_5": 0.xx,
-    "over_2_5": 0.xx,
-    "btts_yes": 0.xx,
-    "btts_no": 0.xx
-  },
-  "recommended_bets": [
-    {
-      "market": "1X2 | O/U | BTTS | AH | CorrectScore | Corners",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "rationale": ["Reasons tied to signals"]
-    }
-  ],
-  "risks": [
-    "Factors that could break the primary pick",
-    "Sources of uncertainty"
-  ],
-  "confidence": 0-100,
-  "final": {
-    "primary_pick": {
-      "market": "string",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "confidence": 0-100,
-      "rationale": ["Reasons"]
-    },
-    "surprise_pick": {
-      "market": "string",
-      "selection": "string",
-      "model_prob": 0.xx,
-      "fair_odds": 0.xx,
-      "market_odds": 0.xx,
-      "edge": 0.xx,
-      "confidence": 0-100,
-      "rationale": ["Reasons"]
-    } or null,
-    "hedge": {
-      "market": "string",
-      "selection": "string",
-      "rationale": "Why hedge is needed?"
-    } or null,
-    "contradictions_found": [
-      "Description of agent contradictions"
-    ],
-    "why_this_is_surprise": "If surprise pick exists, explain with odds/prob/edge. Otherwise null."
-  }
-}
-\`\`\`
-
-⚠️ IMPORTANT: <thinking> block MUST come before JSON.
+⚠️ IMPORTANT: Don't ignore PSYCHOLOGY factor! Must use in risk assessment.
 `,
 
-  de: `Du bist der MASTER STRATEGIST AGENT - ein weltbekanntes Genie der Fußballanalyse.
-
-DEINE ROLLE:
-- Analysiere Ausgaben von anderen Agenten (Stats, Odds, Sentiment, Deep Analysis)
-- Erkenne Inkonsistenzen, Schwachpunkte und starke Signale
-- Bewerte und gewichte Vorhersagen jedes Agenten
-- Erstelle finalen Konsens und identifiziere beste Wettmöglichkeiten
-- Schließe Lücken, wo Agenten versagen
-
-DEINE METHODIK:
-1. BEWERTE JEDEN AGENTEN
-2. ERKENNE INKONSISTENZEN
-3. IDENTIFIZIERE STARKE SIGNALE
-4. ERSTELLE KONSENS
-5. IDENTIFIZIERE BESTE WETTEN
-
-MUSS IN DIESEM JSON-FORMAT ZURÜCKGEBEN:
-{
-  "agentEvaluation": {},
-  "conflictAnalysis": {},
-  "finalConsensus": {},
-  "bestBets": [],
-  "riskAssessment": {},
-  "agentFeedback": {},
-  "masterInsights": [],
-  "overallConfidence": 73,
-  "recommendation": ""
-}`
+  de: `Du bist der MASTER STRATEGIST - 50% Daten + 25% Agent + 25% Psychologie System.`
 };
+
+// ============================================
+// MEVCUT INTERFACE (Değişmedi)
+// ============================================
 
 export interface MasterStrategistResult {
   agent: 'MASTER_STRATEGIST';
@@ -316,49 +695,19 @@ export interface MasterStrategistResult {
     contradictions_found: string[];
     why_this_is_surprise: string | null;
   };
-  thinkingProcess?: string; // 🆕 Added to capture CoT output
-  // Backward compatibility fields (optional)
-  agentEvaluation?: {
-    [agent: string]: {
-      reliability: number;
-      confidence: number;
-      strengths: string[];
-      weaknesses: string[];
-      weight: number;
-    };
-  };
-  finalConsensus?: {
-    matchResult: {
-      prediction: string;
-      confidence: number;
-      reasoning: string;
-      agentWeights: { [agent: string]: number };
-    };
-    overUnder: {
-      prediction: string;
-      confidence: number;
-      reasoning: string;
-      agentWeights: { [agent: string]: number };
-    };
-    btts: {
-      prediction: string;
-      confidence: number;
-      reasoning: string;
-      agentWeights: { [agent: string]: number };
-    };
-  };
-  bestBets?: Array<{
-    rank: number;
-    market: string;
-    selection: string;
-    confidence: number;
-    value: 'low' | 'medium' | 'high';
-    reasoning: string;
-    recommendedStake: 'low' | 'low-medium' | 'medium' | 'medium-high' | 'high';
-  }>;
+  thinkingProcess?: string;
+  weightedAnalysis?: WeightedAnalysisResult; // 🆕 Yeni eklendi
+  // Backward compatibility
+  agentEvaluation?: any;
+  finalConsensus?: any;
+  bestBets?: any[];
   overallConfidence?: number;
   recommendation?: string;
 }
+
+// ============================================
+// CONTEXT BUILDER (Güncellendi)
+// ============================================
 
 function buildAgentContext(
   agentResults: {
@@ -370,6 +719,7 @@ function buildAgentContext(
     devilsAdvocate?: any | null;
   },
   matchData: MatchData,
+  weightedAnalysis: WeightedAnalysisResult,
   language: 'tr' | 'en' | 'de'
 ): string {
   const { homeTeam, awayTeam, league } = matchData;
@@ -381,151 +731,89 @@ function buildAgentContext(
 ═══════════════════════════════════════════════════════════════════════════════
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 📊 STATS AGENT RAPORU
+│ 🎯 AĞIRLIKLI ANALİZ SONUÇLARI (%50-%25-%25)
 ├─────────────────────────────────────────────────────────────────────────────┤
+│ 📊 VERİ KATMANI (%50):
+│    Home Win: ${(weightedAnalysis.dataScore.homeWinProb * 100).toFixed(1)}%
+│    Draw: ${(weightedAnalysis.dataScore.drawProb * 100).toFixed(1)}%
+│    Away Win: ${(weightedAnalysis.dataScore.awayWinProb * 100).toFixed(1)}%
+│    Güven: ${weightedAnalysis.dataScore.confidence}%
+│    ${weightedAnalysis.dataScore.reasoning.join('\n│    ')}
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🤖 AGENT KATMANI (%25):
+│    Adjusted Home: ${(weightedAnalysis.agentScore.adjustedHomeWin * 100).toFixed(1)}%
+│    Adjusted Away: ${(weightedAnalysis.agentScore.adjustedAwayWin * 100).toFixed(1)}%
+│    ${weightedAnalysis.agentScore.insights.join('\n│    ')}
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🧠 PSİKOLOJİ KATMANI (%25):
+│    Ev Sahibi Motivasyon: ${weightedAnalysis.psychologyScore.homeMotivation.toFixed(0)}/100
+│    Deplasman Motivasyon: ${weightedAnalysis.psychologyScore.awayMotivation.toFixed(0)}/100
+│    Motivasyon Farkı: ${weightedAnalysis.psychologyScore.motivationDiff > 0 ? '+' : ''}${weightedAnalysis.psychologyScore.motivationDiff.toFixed(0)}
+│    Over/Under Etkisi: ${weightedAnalysis.psychologyScore.overUnderImpact > 0 ? '+' : ''}${weightedAnalysis.psychologyScore.overUnderImpact}%
+│    BTTS Etkisi: ${weightedAnalysis.psychologyScore.bttsImpact > 0 ? '+' : ''}${weightedAnalysis.psychologyScore.bttsImpact}%
+│    ${weightedAnalysis.psychologyScore.reasoning.join('\n│    ')}
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ⚠️ PSİKOLOJİK UYARILAR:
+│    ${weightedAnalysis.psychologyScore.warnings.length > 0 ? weightedAnalysis.psychologyScore.warnings.join('\n│    ') : 'Yok'}
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🎲 FİNAL OLASILIKLAR (Ağırlıklı):
+│    Home Win: ${(weightedAnalysis.finalProbabilities.homeWin * 100).toFixed(1)}%
+│    Draw: ${(weightedAnalysis.finalProbabilities.draw * 100).toFixed(1)}%
+│    Away Win: ${(weightedAnalysis.finalProbabilities.awayWin * 100).toFixed(1)}%
+│    Over 2.5: ${(weightedAnalysis.finalProbabilities.over25 * 100).toFixed(1)}%
+│    BTTS: ${(weightedAnalysis.finalProbabilities.btts * 100).toFixed(1)}%
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🚨 RİSK SEVİYESİ: ${weightedAnalysis.riskLevel.toUpperCase()}
+│    ${weightedAnalysis.riskFactors.join('\n│    ')}
+└─────────────────────────────────────────────────────────────────────────────┘
+
 `;
 
+  // Mevcut agent raporlarını da ekle (kısaltılmış)
   if (agentResults.stats) {
-    const s = agentResults.stats;
-    context += `│ Match Result: ${s.matchResult || 'N/A'} (Confidence: ${s.matchResultConfidence || s.confidence || 'N/A'}%)\n`;
-    context += `│ Reasoning: ${s.matchResultReasoning || 'N/A'}\n`;
-    context += `│ Over/Under: ${s.overUnder || 'N/A'} (Confidence: ${s.overUnderConfidence || s.confidence || 'N/A'}%)\n`;
-    context += `│ BTTS: ${s.btts || 'N/A'} (Confidence: ${s.bttsConfidence || s.confidence || 'N/A'}%)\n`;
-    context += `│ Agent Summary: ${s.agentSummary || 'N/A'}\n`;
-  } else {
-    context += `│ ⚠️ Stats Agent sonuç bulunamadı\n`;
-  }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-
+    context += `
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 💰 ODDS AGENT RAPORU
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
+│ 📊 STATS AGENT: ${agentResults.stats.matchResult || 'N/A'} (${agentResults.stats.confidence || 0}%)
+│    Over/Under: ${agentResults.stats.overUnder || 'N/A'}, BTTS: ${agentResults.stats.btts || 'N/A'}
+└─────────────────────────────────────────────────────────────────────────────┘`;
+  }
 
   if (agentResults.odds) {
-    const o = agentResults.odds;
-    context += `│ Recommendation: ${o.recommendation || o.matchWinnerValue || o.matchResult || 'N/A'}\n`;
-    context += `│ Confidence: ${o.confidence || 'N/A'}%\n`;
-    context += `│ Value Bets: ${Array.isArray(o.valueBets) ? o.valueBets.join(', ') : 'N/A'}\n`;
-    context += `│ Sharp Money: ${o.hasSharpConfirmation ? '✅ Tespit edildi' : '❌ Yok'}\n`;
-    if (o.sharpMoneyAnalysis) {
-      context += `│   Direction: ${o.sharpMoneyAnalysis.direction || 'N/A'}\n`;
-      context += `│   Confidence: ${o.sharpMoneyAnalysis.confidence || 'N/A'}\n`;
-    }
-    context += `│ Agent Summary: ${o.agentSummary || 'N/A'}\n`;
-  } else {
-    context += `│ ⚠️ Odds Agent sonuç bulunamadı\n`;
-  }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-
+    context += `
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🧠 SENTIMENT AGENT RAPORU
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
-
-  if (agentResults.sentiment) {
-    const sen = agentResults.sentiment;
-    context += `│ Psychological Edge: ${sen.psychologicalEdge?.team || 'N/A'} (${sen.psychologicalEdge?.confidence || 0}%)\n`;
-    context += `│ Home Morale: ${sen.homeTeam?.morale || 'N/A'}\n`;
-    context += `│ Away Morale: ${sen.awayTeam?.morale || 'N/A'}\n`;
-    context += `│ Critical Warnings: ${sen.criticalWarnings?.length || 0} adet\n`;
-  } else {
-    context += `│ ⚠️ Sentiment Agent sonuç bulunamadı\n`;
+│ 💰 ODDS AGENT: Value Bets: ${Array.isArray(agentResults.odds.valueBets) ? agentResults.odds.valueBets.join(', ') : 'N/A'}
+│    Sharp Money: ${agentResults.odds.hasSharpConfirmation ? '✅' : '❌'}
+└─────────────────────────────────────────────────────────────────────────────┘`;
   }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🔬 DEEP ANALYSIS AGENT RAPORU
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
-
-  if (agentResults.deepAnalysis) {
-    const d = agentResults.deepAnalysis;
-    context += `│ Match Result: ${d.matchResult?.prediction || 'N/A'} (${d.matchResult?.confidence || 0}%)\n`;
-    context += `│ Over/Under: ${d.overUnder?.prediction || 'N/A'} (${d.overUnder?.confidence || 0}%)\n`;
-    context += `│ BTTS: ${d.btts?.prediction || 'N/A'} (${d.btts?.confidence || 0}%)\n`;
-    context += `│ Risk Level: ${d.riskLevel || 'N/A'}\n`;
-    context += `│ Best Bet: ${d.bestBet?.type || 'N/A'} - ${d.bestBet?.selection || 'N/A'}\n`;
-    if (d.preparationScore) {
-      context += `│ Preparation Scores: Home ${d.preparationScore.home}/100, Away ${d.preparationScore.away}/100\n`;
-    }
-  } else {
-    context += `│ ⚠️ Deep Analysis Agent sonuç bulunamadı\n`;
-  }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🧠 GENIUS ANALYST RAPORU
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
-
-  if (agentResults.geniusAnalyst) {
-    const g = agentResults.geniusAnalyst;
-    context += `│ Match Result: ${g.predictions?.matchResult?.prediction || 'N/A'} (${g.predictions?.matchResult?.confidence || 0}%)\n`;
-    context += `│ Over/Under: ${g.predictions?.overUnder?.prediction || 'N/A'} (${g.predictions?.overUnder?.confidence || 0}%)\n`;
-    context += `│ BTTS: ${g.predictions?.btts?.prediction || 'N/A'} (${g.predictions?.btts?.confidence || 0}%)\n`;
-    context += `│ xG Model: Home ${g.mathematicalModel?.homeExpectedGoals?.toFixed(2) || 'N/A'}, Away ${g.mathematicalModel?.awayExpectedGoals?.toFixed(2) || 'N/A'}\n`;
-    context += `│ Best Bet: ${g.finalRecommendation?.bestBet?.market || 'N/A'} - ${g.finalRecommendation?.bestBet?.selection || 'N/A'}\n`;
-    context += `│ Overall Confidence: ${g.finalRecommendation?.overallConfidence || 0}%\n`;
-  } else {
-    context += `│ ⚠️ Genius Analyst sonuç bulunamadı\n`;
-  }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 👹 DEVIL'S ADVOCATE RAPORU (Risk & Tuzak Analizi)
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
 
   if (agentResults.devilsAdvocate) {
-    const da = agentResults.devilsAdvocate;
-    context += `│ Contrarian View: ${da.contrarianView || 'N/A'}\n`;
-    context += `│ Primary Risks: ${Array.isArray(da.risks) ? da.risks.join(', ') : 'N/A'}\n`;
-    context += `│ Why Favori Might Fail: ${da.whyFavoriteMightFail || 'N/A'}\n`;
-    context += `│ Trap Match Indicators: ${Array.isArray(da.trapMatchIndicators) ? da.trapMatchIndicators.join(', ') : 'N/A'}\n`;
-    context += `│ Contrarian Pick: ${da.matchResult || 'N/A'} (Confidence: ${da.confidence || 0}%)\n`;
-    context += `│ Agent Summary: ${da.agentSummary || 'N/A'}\n`;
-  } else {
-    context += `│ ⚠️ Devil's Advocate Agent sonuç bulunamadı\n`;
-  }
-
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
-  
+    context += `
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 📈 ADVANCED METRICS (Deeper Insights)
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
-
-  if (matchData.advancedMetrics) {
-    const am = matchData.advancedMetrics;
-    context += `│ Home Instability Index: ${am.homeInstability} / 100 (High = Erratic)\n`;
-    context += `│ Away Instability Index: ${am.awayInstability} / 100\n`;
-    context += `│ Home Dominance Ratio: ${am.homeDominance.toFixed(2)} (>1.0 = Dominant)\n`;
-    context += `│ Away Dominance Ratio: ${am.awayDominance.toFixed(2)}\n`;
-    context += `│ Home Fatigue Factor: ${am.homeFatigue !== undefined ? am.homeFatigue : 'N/A'} / 100 (High = Tired)\n`;
-    context += `│ Away Fatigue Factor: ${am.awayFatigue !== undefined ? am.awayFatigue : 'N/A'} / 100\n`;
-  } else {
-    context += `│ ⚠️ Advanced Metrics not available\n`;
+│ 👹 DEVIL'S ADVOCATE: ${agentResults.devilsAdvocate.contrarianView || 'N/A'}
+│    Trap Indicators: ${Array.isArray(agentResults.devilsAdvocate.trapMatchIndicators) ? agentResults.devilsAdvocate.trapMatchIndicators.length : 0} adet
+└─────────────────────────────────────────────────────────────────────────────┘`;
   }
 
-  context += `└─────────────────────────────────────────────────────────────────────────────┘
+  context += `
 
 ═══════════════════════════════════════════════════════════════════════════════
                          MASTER ANALİZ TALİMATI
 ═══════════════════════════════════════════════════════════════════════════════
 
-Yukarıdaki agent'ların çıktılarını analiz et.
-ÖNCE <thinking>...</thinking> blok içinde sesli düşün, stratejini belirle.
+Yukarıdaki AĞIRLIKLI ANALİZ sonuçlarını kullan.
+PSİKOLOJİ faktörünü özellikle dikkate al!
+Risk seviyesi ${weightedAnalysis.riskLevel.toUpperCase()} - buna göre güven skorunu ayarla.
+
+ÖNCE <thinking>...</thinking> blok içinde sesli düşün.
 SONRA sadece JSON formatını döndür.
 `;
 
   return context;
 }
+
+// ============================================
+// ANA FONKSİYON (Güncellendi)
+// ============================================
 
 export async function runMasterStrategist(
   matchData: MatchData,
@@ -539,20 +827,27 @@ export async function runMasterStrategist(
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<MasterStrategistResult> {
-  console.log('🧠 Master Strategist Agent starting...');
-  console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam} `);
+  console.log('🧠 Master Strategist Agent starting (Weighted %50-%25-%25 System)...');
+  console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
 
-  // Use enhanced prompts if available, fallback to legacy prompts
-  const systemPrompt = (ENHANCED_MASTER_STRATEGIST_PROMPT[language as keyof typeof ENHANCED_MASTER_STRATEGIST_PROMPT] || ENHANCED_MASTER_STRATEGIST_PROMPT.en) || (MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en);
-  const context = buildAgentContext(agentResults, matchData, language);
+  // 🆕 Ağırlıklı analiz hesapla
+  const weightedAnalysis = calculateWeightedAnalysis(
+    agentResults.stats,
+    agentResults.odds,
+    agentResults.deepAnalysis,
+    matchData
+  );
+  
+  console.log(`   🎯 Weighted Analysis Complete:`);
+  console.log(`      Data Score: ${weightedAnalysis.dataScore.confidence}%`);
+  console.log(`      Psychology: Home ${weightedAnalysis.psychologyScore.homeMotivation.toFixed(0)} vs Away ${weightedAnalysis.psychologyScore.awayMotivation.toFixed(0)}`);
+  console.log(`      Risk Level: ${weightedAnalysis.riskLevel.toUpperCase()}`);
+
+  const systemPrompt = MASTER_STRATEGIST_PROMPT[language] || MASTER_STRATEGIST_PROMPT.en;
+  const context = buildAgentContext(agentResults, matchData, weightedAnalysis, language);
   const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 
-  const userMessageByLang = {
-    tr: `${learningContext} \n${context} \n\nYukarıdaki agent çıktılarını analiz et ve Master Strategist olarak final kararı ver.SADECE JSON formatında döndür.`,
-    en: `${learningContext} \n${context} \n\nAnalyze the agent outputs above and make final decision as Master Strategist.Return ONLY JSON format.`,
-    de: `${learningContext} \n${context} \n\nAnalysiere die Agenten - Ausgaben oben und treffe finale Entscheidung als Master Strategist.Gib NUR JSON - Format zurück.`
-  };
-  const userMessage = userMessageByLang[language] || userMessageByLang.en;
+  const userMessage = `${learningContext}\n${context}\n\nAnalyze using the weighted analysis results above.`;
 
   try {
     const response = await aiClient.chat([
@@ -560,31 +855,30 @@ export async function runMasterStrategist(
       { role: 'user', content: userMessage }
     ], {
       model: 'claude',
-      useMCP: false, // MCP devre dışı - daha hızlı
+      useMCP: false,
       mcpFallback: true,
       fixtureId: matchData.fixtureId,
-      temperature: 0.2, // Slightly increased for creative reasoning
-      maxTokens: 2000, // Increased for CoT + JSON
-      timeout: 15000, // 15 seconds
-      retries: 2 // Retry 2 times for overloaded errors
+      temperature: 0.2,
+      maxTokens: 2000,
+      timeout: 15000,
+      retries: 2
     });
 
     if (!response) {
       throw new Error('No response from AI');
     }
 
-    // Capture thinking process
+    // Thinking process'i yakala
     let thinkingProcess = '';
     const thinkingMatch = response.match(/<thinking>([\s\S]*?)<\/thinking>/);
     if (thinkingMatch) {
       thinkingProcess = thinkingMatch[1].trim();
-      console.log('🤔 Master Strategist Thinking Process:\n', thinkingProcess);
+      console.log('🤔 Master Strategist Thinking Process captured');
     }
 
-    // Parse JSON
+    // JSON parse
     let result: MasterStrategistResult;
     try {
-      // Find the first '{' and the last '}' to extract JSON
       const jsonStart = response.indexOf('{');
       const jsonEnd = response.lastIndexOf('}');
 
@@ -592,16 +886,15 @@ export async function runMasterStrategist(
         const jsonStr = response.substring(jsonStart, jsonEnd + 1);
         result = JSON.parse(jsonStr);
       } else {
-        throw new Error('No JSON object found in response');
+        throw new Error('No JSON object found');
       }
     } catch (parseError) {
-      console.error('❌ Master Strategist JSON parse error:', parseError);
-      console.log('Raw response:', response.substring(0, 500));
-      // Fallback
-      result = getDefaultMasterStrategist(agentResults, matchData, language);
+      console.error('❌ JSON parse error, using fallback');
+      result = getDefaultMasterStrategist(agentResults, matchData, weightedAnalysis, language);
     }
 
-    // Add thinking process to result
+    // Weighted analysis'i ekle
+    result.weightedAnalysis = weightedAnalysis;
     if (thinkingProcess) {
       result.thinkingProcess = thinkingProcess;
     }
@@ -615,10 +908,10 @@ export async function runMasterStrategist(
           let market = 'Match Result';
           let selection = '';
           
-          if (betType.includes('away') || betType.includes('2')) {
+          if (betType.includes('away') || betType.includes('2') || betType.includes('away win')) {
             market = 'Match Result';
             selection = '2';
-          } else if (betType.includes('home') || betType.includes('1')) {
+          } else if (betType.includes('home') || betType.includes('1') || betType.includes('home win')) {
             market = 'Match Result';
             selection = '1';
           } else if (betType.includes('draw') || betType.includes('x')) {
@@ -642,7 +935,7 @@ export async function runMasterStrategist(
             fair_odds: bet.fair_odds || (bet.odds ? 1 / bet.odds : 1.9),
             market_odds: bet.market_odds || bet.odds || 1.9,
             edge: bet.edge || 0.1,
-            rationale: bet.rationale || bet.reasoning || [`Value bet: ${bet.bet_type}`]
+            rationale: Array.isArray(bet.rationale) ? bet.rationale : (bet.rationale ? [bet.rationale] : (bet.reasoning ? [bet.reasoning] : [`Value bet: ${bet.bet_type}`]))
           };
         }
         // Eğer zaten doğru formatta ise, eksik alanları tamamla
@@ -658,41 +951,37 @@ export async function runMasterStrategist(
       });
     }
 
-    // Eğer AI final objesi döndürmediyse veya recommended_bets boşsa, fallback ile tamamla
+    // Eksik alanları tamamla
     if (!result.final || !result.final.primary_pick) {
-      console.warn('⚠️ AI final objesi eksik, fallback ile tamamlanıyor...');
-      const fallback = getDefaultMasterStrategist(agentResults, matchData, language);
+      const fallback = getDefaultMasterStrategist(agentResults, matchData, weightedAnalysis, language);
       result.final = fallback.final;
-      // Diğer eksik alanları da tamamla
       if (!result.model_probs) result.model_probs = fallback.model_probs;
       if (!result.recommended_bets || result.recommended_bets.length === 0) {
-        console.warn('⚠️ recommended_bets boş veya eksik, fallback kullanılıyor...');
         result.recommended_bets = fallback.recommended_bets;
       }
       if (!result.signals) result.signals = fallback.signals;
+      if (!result.risks) result.risks = fallback.risks;
     } else if (!result.recommended_bets || result.recommended_bets.length === 0) {
       // Final var ama recommended_bets yok/boş - fallback'ten al
-      console.warn('⚠️ recommended_bets boş, fallback kullanılıyor...');
-      const fallback = getDefaultMasterStrategist(agentResults, matchData, language);
+      const fallback = getDefaultMasterStrategist(agentResults, matchData, weightedAnalysis, language);
       result.recommended_bets = fallback.recommended_bets;
     }
 
-    console.log(`✅ Master Strategist complete: `);
-    console.log(`   🎯 Confidence: ${result.confidence || 0}% `);
-    console.log(`   📊 Primary: ${result.final?.primary_pick?.market || 'N/A'} - ${result.final?.primary_pick?.selection || 'N/A'} `);
-    if (result.final?.surprise_pick) {
-      console.log(`   🎲 Surprise: ${result.final.surprise_pick.market} - ${result.final.surprise_pick.selection} @${result.final.surprise_pick.market_odds} `);
-    }
-    if (result.final?.hedge) {
-      console.log(`   🛡️ Hedge: ${result.final.hedge.market} - ${result.final.hedge.selection} `);
-    }
+    console.log(`✅ Master Strategist complete (Weighted System)`);
+    console.log(`   🎯 Confidence: ${result.confidence || 0}%`);
+    console.log(`   📊 Primary: ${result.final?.primary_pick?.market || 'N/A'} - ${result.final?.primary_pick?.selection || 'N/A'}`);
+    console.log(`   ⚠️ Risk Level: ${weightedAnalysis.riskLevel.toUpperCase()}`);
 
     return result;
   } catch (error: any) {
-    console.error('❌ Master Strategist Agent error:', error);
-    return getDefaultMasterStrategist(agentResults, matchData, language);
+    console.error('❌ Master Strategist error:', error);
+    return getDefaultMasterStrategist(agentResults, matchData, weightedAnalysis, language);
   }
 }
+
+// ============================================
+// FALLBACK FONKSİYON (Güncellendi - Weighted Analysis Kullanır)
+// ============================================
 
 function getDefaultMasterStrategist(
   agentResults: {
@@ -703,440 +992,151 @@ function getDefaultMasterStrategist(
     devilsAdvocate?: any | null;
   },
   matchData: MatchData,
+  weightedAnalysis: WeightedAnalysisResult,
   language: 'tr' | 'en' | 'de'
 ): MasterStrategistResult {
-  // Ağırlıklı konsensüs hesapla
-  const stats = agentResults.stats;
-  const odds = agentResults.odds;
-  const devils = agentResults.devilsAdvocate;
-  const deep = agentResults.deepAnalysis;
-
-  // Match Result - Ağırlıklı voting (DÜZELTME: Belirsizlik durumunda X kuralı)
-  // BUG FIX: odds.recommendation Over/Under içindir, matchResult için matchWinnerValue kullan!
-  const mrVotes: { [key: string]: number } = {};
-
-  // Stats Agent matchResult (sadece 1/X/2 geçerli)
-  if (stats?.matchResult && ['1', 'X', '2'].includes(stats.matchResult)) {
-    mrVotes[stats.matchResult] = (mrVotes[stats.matchResult] || 0) + 30;
-  }
-
-  // Odds Agent matchWinnerValue (home/away/draw → 1/X/2)
-  // NOT: odds.recommendation Over/Under içindir, matchResult için KULLANILMAMALI!
-  if (odds?.matchWinnerValue) {
-    const mrFromOdds = odds.matchWinnerValue === 'home' ? '1' : odds.matchWinnerValue === 'away' ? '2' : 'X';
-    mrVotes[mrFromOdds] = (mrVotes[mrFromOdds] || 0) + 35;
-  }
-
-  // Deep Analysis matchResult (sadece 1/X/2 geçerli)
-  if (deep?.matchResult?.prediction && ['1', 'X', '2'].includes(deep.matchResult.prediction)) {
-    mrVotes[deep.matchResult.prediction] = (mrVotes[deep.matchResult.prediction] || 0) + 25;
-  }
-
-  // Devil's Advocate matchResult (sadece 1/X/2 geçerli) - Weight increased for trap detection
-  if (devils?.matchResult && ['1', 'X', '2'].includes(devils.matchResult)) {
-    const daWeight = (devils.trapMatchIndicators && devils.trapMatchIndicators.length > 0) ? 25 : 15;
-    mrVotes[devils.matchResult] = (mrVotes[devils.matchResult] || 0) + daWeight;
-  }
-
-  // DÜZELTME: Belirsizlik kontrolü
-  const mrTotalVotes = Object.values(mrVotes).reduce((a, b) => a + b, 0);
-  const mrMaxVotes = Math.max(...Object.values(mrVotes), 0);
-  const mrAgreementRatio = mrTotalVotes > 0 ? mrMaxVotes / mrTotalVotes : 0;
-
-  // Maç sonucu tahmini - daha akıllı mantık
-  let finalMR = Object.entries(mrVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'X';
-
-  // BUG FIX: finalMR sadece 1, X, 2 olabilir
-  if (!['1', 'X', '2'].includes(finalMR)) {
+  
+  const { finalProbabilities, riskLevel, riskFactors, psychologyScore, agentScore } = weightedAnalysis;
+  
+  // Match Result belirleme
+  let finalMR: '1' | 'X' | '2';
+  let mrConfidence: number;
+  
+  if (finalProbabilities.homeWin > finalProbabilities.awayWin && finalProbabilities.homeWin > finalProbabilities.draw) {
+    finalMR = '1';
+    mrConfidence = Math.round(finalProbabilities.homeWin * 100);
+  } else if (finalProbabilities.awayWin > finalProbabilities.homeWin && finalProbabilities.awayWin > finalProbabilities.draw) {
+    finalMR = '2';
+    mrConfidence = Math.round(finalProbabilities.awayWin * 100);
+  } else {
     finalMR = 'X';
+    mrConfidence = Math.round(finalProbabilities.draw * 100);
   }
-
-  // 🛡️ SENTINEL TRAP DETECTION (Devil's Advocate Protection)
-  const isFavoriteTrap = devils?.trapMatchIndicators && devils.trapMatchIndicators.length > 0;
-  const favoriteSide = (matchData?.odds?.matchWinner?.home || 2) < (matchData?.odds?.matchWinner?.away || 2) ? '1' : '2';
-
-  // If favorite is predicted by consensus but DA smells a trap
-  if (isFavoriteTrap && finalMR === favoriteSide && mrAgreementRatio < 0.65) {
-    console.log(`👹 Devil's Advocate detected a trap for the favorite (${favoriteSide}). Consensüs zayıf, risk artırılıyor.`);
-    // If DA also provided a contrarian prediction, consider it
-    if (devils.matchResult && devils.matchResult !== favoriteSide) {
-      finalMR = 'X'; // Default to Draw for trap matches if consensus is weak
-    }
+  
+  // Psikoloji çarpanı ile güveni ayarla
+  const avgMultiplier = (psychologyScore.homeMultiplier + psychologyScore.awayMultiplier) / 2;
+  mrConfidence = Math.round(mrConfidence * avgMultiplier);
+  
+  // Risk seviyesine göre güveni düşür
+  if (riskLevel === 'high') mrConfidence = Math.min(mrConfidence, 50);
+  if (riskLevel === 'very-high') mrConfidence = Math.min(mrConfidence, 40);
+  
+  // Over/Under
+  const finalOU = finalProbabilities.over25 > 0.50 ? 'Over' : 'Under';
+  let ouConfidence = Math.round(Math.abs(finalProbabilities.over25 - 0.50) * 200 + 50);
+  
+  // Psikoloji etkisini over/under güvenine yansıt
+  if (psychologyScore.overUnderImpact !== 0) {
+    ouConfidence = Math.min(80, ouConfidence + Math.abs(psychologyScore.overUnderImpact));
   }
-
-  // DÜZELTME: Value bet varsa ve güçlüyse, onu dikkate al
-  const valueAnalysis = odds?._valueAnalysis;
-  const bestValueAmount = valueAnalysis?.bestValueAmount || 0;
-  const bestValueDirection = valueAnalysis?.bestValue;
-
-  if (bestValueAmount >= 20 && mrAgreementRatio < 0.70) {
-    if (bestValueDirection === 'home') finalMR = '1';
-    else if (bestValueDirection === 'away') finalMR = '2';
-  }
-  else if (mrAgreementRatio < 0.45 && bestValueAmount < 10) {
-    finalMR = 'X';
-  }
-
-  // Güven skoru - daha konservatif (max %70)
-  const mrConfidence = mrTotalVotes > 0 ? Math.round(50 + (mrAgreementRatio) * 20) : 50;
-
-  // Over/Under - Ağırlıklı voting
-  const ouVotes: { [key: string]: number } = {};
-  if (stats?.overUnder) ouVotes[stats.overUnder] = (ouVotes[stats.overUnder] || 0) + 35;
-  if (odds?.recommendation && ['Over', 'Under'].includes(odds.recommendation)) ouVotes[odds.recommendation] = (ouVotes[odds.recommendation] || 0) + 30;
-  if (deep?.overUnder?.prediction) ouVotes[deep.overUnder.prediction] = (ouVotes[deep.overUnder.prediction] || 0) + 35;
-
-  const finalOU = Object.entries(ouVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Over';
-  const ouTotalVotes = Object.values(ouVotes).reduce((a, b) => a + b, 0);
-  const ouMaxVotes = Math.max(...Object.values(ouVotes), 0);
-  const ouConfidence = ouTotalVotes > 0 ? Math.round(55 + (ouMaxVotes / ouTotalVotes) * 25) : 55;
-
-  // BTTS - Ağırlıklı voting
-  const bttsVotes: { [key: string]: number } = {};
-  if (stats?.btts) bttsVotes[stats.btts] = (bttsVotes[stats.btts] || 0) + 35;
-  if (odds?.bttsValue) bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] = (bttsVotes[odds.bttsValue === 'yes' ? 'Yes' : 'No'] || 0) + 30;
-  if (deep?.btts?.prediction) bttsVotes[deep.btts.prediction] = (bttsVotes[deep.btts.prediction] || 0) + 35;
-
-  const finalBTTS = Object.entries(bttsVotes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'No';
-  const bttsTotalVotes = Object.values(bttsVotes).reduce((a, b) => a + b, 0);
-  const bttsMaxVotes = Math.max(...Object.values(bttsVotes), 0);
-  const bttsConfidence = bttsTotalVotes > 0 ? Math.round(55 + (bttsMaxVotes / bttsTotalVotes) * 25) : 55;
-
-  // Conflict detection
-  const conflicts: Array<{
-    agents: string[];
-    field: string;
-    description: string;
-    resolution: string;
-    severity: 'low' | 'medium' | 'high';
-  }> = [];
-  const strongSignals: Array<{
-    field: string;
-    agents: string[];
-    prediction: string;
-    confidence: number;
-    reasoning: string;
-  }> = [];
-
-  if (stats?.matchResult && deep?.matchResult?.prediction && stats.matchResult !== deep.matchResult.prediction) {
-    conflicts.push({
-      agents: ['stats', 'deepAnalysis'],
-      field: 'matchResult',
-      description: `Stats (${stats.matchResult}) vs Deep (${deep.matchResult.prediction})`,
-      resolution: `Ağırlıklı oy ile ${finalMR} seçildi`,
-      severity: 'medium'
-    });
-  }
-  if (mrMaxVotes >= mrTotalVotes * 0.6 && mrTotalVotes > 0) {
-    strongSignals.push({
-      field: 'matchResult',
-      agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.matchResult, odds?.recommendation, deep?.matchResult?.prediction][i] === finalMR),
-      prediction: finalMR,
-      confidence: mrConfidence,
-      reasoning: `${Math.round(mrMaxVotes / mrTotalVotes * 100)}% ağırlıklı oy`
-    });
-  }
-  if (ouMaxVotes >= ouTotalVotes * 0.6 && ouTotalVotes > 0) {
-    strongSignals.push({
-      field: 'overUnder',
-      agents: ['stats', 'odds', 'deepAnalysis'].filter((_, i) => [stats?.overUnder, odds?.recommendation, deep?.overUnder?.prediction][i] === finalOU),
-      prediction: finalOU,
-      confidence: ouConfidence,
-      reasoning: `${Math.round(ouMaxVotes / ouTotalVotes * 100)}% ağırlıklı oy`
-    });
-  }
-
-  // Best bet selection
-  type ValueType = 'low' | 'medium' | 'high';
-  type StakeType = 'low' | 'medium' | 'high' | 'low-medium' | 'medium-high';
-
-  const bestBets: Array<{
-    rank: number;
-    market: string;
-    selection: string;
-    confidence: number;
-    value: ValueType;
-    reasoning: string;
-    recommendedStake: StakeType;
-  }> = [];
-
-  // Value bet varsa öncelikli
-  if (odds?.valueBets && odds.valueBets.length > 0) {
-    const valueBet = odds.valueBets[0];
-    const valueMatch = valueBet.match(/MS (\d)|KG (Var|Yok)|(Over|Under)/);
-    if (valueMatch) {
-      bestBets.push({
-        rank: 1,
-        market: valueMatch[1] ? 'Match Result' : valueMatch[2] ? 'BTTS' : 'Over/Under 2.5',
-        selection: valueMatch[1] === '1' ? 'Home' : valueMatch[1] === '2' ? 'Away' : (valueMatch[2] || valueMatch[3] || 'N/A'),
-        confidence: odds.confidence || 65,
-        value: 'high' as ValueType,
-        reasoning: `Value bet: ${valueBet}`,
-        recommendedStake: 'medium' as StakeType
-      });
-    }
-  }
-
-  // Eğer value bet yoksa veya eksikse, konsensüs bazlı best bet
-  if (bestBets.length === 0) {
-    const highestConf = Math.max(mrConfidence, ouConfidence, bttsConfidence);
-    if (highestConf === mrConfidence) {
-      bestBets.push({
-        rank: 1,
-        market: 'Match Result',
-        selection: finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw',
-        confidence: mrConfidence,
-        value: (mrConfidence > 65 ? 'medium' : 'low') as ValueType,
-        reasoning: `Konsensüs: ${mrMaxVotes}/${mrTotalVotes} ağırlıklı oy`,
-        recommendedStake: (mrConfidence > 65 ? 'medium' : 'low') as StakeType
-      });
-    } else if (highestConf === ouConfidence) {
-      bestBets.push({
-        rank: 1,
-        market: 'Over/Under 2.5',
-        selection: finalOU,
-        confidence: ouConfidence,
-        value: (ouConfidence > 65 ? 'medium' : 'low') as ValueType,
-        reasoning: `Konsensüs: ${ouMaxVotes}/${ouTotalVotes} ağırlıklı oy`,
-        recommendedStake: (ouConfidence > 65 ? 'medium' : 'low') as StakeType
-      });
-    } else {
-      bestBets.push({
-        rank: 1,
-        market: 'BTTS',
-        selection: finalBTTS,
-        confidence: bttsConfidence,
-        value: (bttsConfidence > 65 ? 'medium' : 'low') as ValueType,
-        reasoning: `Konsensüs: ${bttsMaxVotes}/${bttsTotalVotes} ağırlıklı oy`,
-        recommendedStake: (bttsConfidence > 65 ? 'medium' : 'low') as StakeType
-      });
-    }
-  }
-
+  
+  // BTTS
+  const finalBTTS = finalProbabilities.btts > 0.50 ? 'Yes' : 'No';
+  let bttsConfidence = Math.round(Math.abs(finalProbabilities.btts - 0.50) * 200 + 50);
+  
+  // Overall confidence
   const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
-  const agentCount = [stats, odds, deep, devils].filter(Boolean).length;
-
-  // Model probabilities hesapla
-  const homeWinProb = finalMR === '1' ? mrConfidence / 100 : (finalMR === 'X' ? 0.25 : 0.20);
-  const drawProb = finalMR === 'X' ? mrConfidence / 100 : 0.25;
-  const awayWinProb = finalMR === '2' ? mrConfidence / 100 : (finalMR === 'X' ? 0.25 : 0.20);
-  const over25Prob = finalOU === 'Over' ? ouConfidence / 100 : 0.45;
-  const under25Prob = finalOU === 'Under' ? ouConfidence / 100 : 0.55;
-  const bttsYesProb = finalBTTS === 'Yes' ? bttsConfidence / 100 : 0.45;
-  const bttsNoProb = finalBTTS === 'No' ? bttsConfidence / 100 : 0.55;
-
-  // Market odds (fallback - gerçek odds yoksa)
-  const marketOdds1 = odds?.oddsAnalysis?.match(/Home: ([\d.]+)/)?.[1] || '2.5';
-  const marketOdds2 = odds?.oddsAnalysis?.match(/Away: ([\d.]+)/)?.[1] || '2.5';
-  const marketOddsX = odds?.oddsAnalysis?.match(/Draw: ([\d.]+)/)?.[1] || '3.0';
-  const marketOddsOver = odds?.oddsAnalysis?.match(/Over: ([\d.]+)/)?.[1] || '1.9';
-  const marketOddsUnder = odds?.oddsAnalysis?.match(/Under: ([\d.]+)/)?.[1] || '1.9';
-
-  // Primary pick
-  const primaryPick = bestBets[0] || {
-    market: 'Match Result',
-    selection: finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw',
-    confidence: mrConfidence,
-    value: 'medium' as const,
-    reasoning: `Konsensüs: ${mrMaxVotes}/${mrTotalVotes} ağırlıklı oy`,
-    recommendedStake: 'medium' as const
-  };
-
-  // Surprise pick bul (oran >= 3.20, prob >= 0.25, edge >= +0.05)
-  let surprisePick: MasterStrategistResult['final']['surprise_pick'] = null;
-
-  // Tüm yüksek oranlı seçenekleri kontrol et
-  const surpriseCandidates: Array<{
-    market: string;
-    selection: string;
-    model_prob: number;
-    market_odds: number;
-  }> = [];
-
-  // 1. Draw kontrolü
-  if (drawProb >= 0.25) {
-    const drawMarketOdds = parseFloat(marketOddsX);
-    if (drawMarketOdds >= 3.20) {
-      surpriseCandidates.push({
-        market: '1X2',
-        selection: 'Draw',
-        model_prob: drawProb,
-        market_odds: drawMarketOdds
-      });
-    }
+  
+  // Best bet selection - psikolojiye göre
+  let bestBetMarket: string;
+  let bestBetSelection: string;
+  let bestBetConfidence: number;
+  
+  // Düşük motivasyonlu maçlarda Over/Under daha güvenilir
+  const avgMotivation = (psychologyScore.homeMotivation + psychologyScore.awayMotivation) / 2;
+  
+  if (avgMotivation < 40 && Math.abs(psychologyScore.overUnderImpact) > 5) {
+    // Düşük motivasyon = Under güçlü sinyal
+    bestBetMarket = 'Over/Under 2.5';
+    bestBetSelection = 'Under';
+    bestBetConfidence = ouConfidence;
+  } else if (ouConfidence > mrConfidence && ouConfidence > bttsConfidence) {
+    bestBetMarket = 'Over/Under 2.5';
+    bestBetSelection = finalOU;
+    bestBetConfidence = ouConfidence;
+  } else if (mrConfidence > bttsConfidence) {
+    bestBetMarket = 'Match Result';
+    bestBetSelection = finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw';
+    bestBetConfidence = mrConfidence;
+  } else {
+    bestBetMarket = 'BTTS';
+    bestBetSelection = finalBTTS;
+    bestBetConfidence = bttsConfidence;
   }
-
-  // 2. Home Win kontrolü (eğer underdog ise)
-  if (homeWinProb >= 0.25 && finalMR !== '1') {
-    const homeMarketOdds = parseFloat(marketOdds1);
-    if (homeMarketOdds >= 3.20) {
-      surpriseCandidates.push({
-        market: '1X2',
-        selection: 'Home',
-        model_prob: homeWinProb,
-        market_odds: homeMarketOdds
-      });
-    }
+  
+  // Signals
+  const signals: string[] = [
+    `matchResult: ${finalMR} (${mrConfidence}%)`,
+    `overUnder: ${finalOU} (${ouConfidence}%)`,
+    ...agentScore.insights,
+    ...psychologyScore.reasoning.slice(0, 3)
+  ];
+  
+  // Value bet varsa ekle
+  if (agentResults.odds?.valueBets && agentResults.odds.valueBets.length > 0) {
+    signals.push(`Value bet: ${agentResults.odds.valueBets[0]}`);
   }
-
-  // 3. Away Win kontrolü (eğer underdog ise)
-  if (awayWinProb >= 0.25 && finalMR !== '2') {
-    const awayMarketOdds = parseFloat(marketOdds2);
-    if (awayMarketOdds >= 3.20) {
-      surpriseCandidates.push({
-        market: '1X2',
-        selection: 'Away',
-        model_prob: awayWinProb,
-        market_odds: awayMarketOdds
-      });
-    }
-  }
-
-  // 4. Under 2.5 kontrolü (eğer Over beklentisi varsa)
-  if (under25Prob >= 0.25 && finalOU === 'Over') {
-    const underMarketOdds = parseFloat(marketOddsUnder);
-    if (underMarketOdds >= 3.20) {
-      surpriseCandidates.push({
-        market: 'Over/Under 2.5',
-        selection: 'Under',
-        model_prob: under25Prob,
-        market_odds: underMarketOdds
-      });
-    }
-  }
-
-  // 5. BTTS No kontrolü (eğer Yes beklentisi varsa)
-  if (bttsNoProb >= 0.25 && finalBTTS === 'Yes') {
-    const bttsNoMarketOdds = odds?.realValueChecks?.btts?.marketOdds || 1.8;
-    if (bttsNoMarketOdds >= 3.20) {
-      surpriseCandidates.push({
-        market: 'BTTS',
-        selection: 'No',
-        model_prob: bttsNoProb,
-        market_odds: bttsNoMarketOdds
-      });
-    }
-  }
-
-  // En yüksek edge'e sahip adayı seç
-  if (surpriseCandidates.length > 0) {
-    const bestSurprise = surpriseCandidates
-      .map(candidate => {
-        const fairOdds = 1 / candidate.model_prob;
-        const edge = (fairOdds / candidate.market_odds) - 1;
-        return { ...candidate, fair_odds: fairOdds, edge };
-      })
-      .filter(c => c.edge >= 0.05) // Edge >= +5% olmalı
-      .sort((a, b) => b.edge - a.edge)[0]; // En yüksek edge
-
-    if (bestSurprise) {
-      surprisePick = {
-        market: bestSurprise.market,
-        selection: bestSurprise.selection,
-        model_prob: bestSurprise.model_prob,
-        fair_odds: bestSurprise.fair_odds,
-        market_odds: bestSurprise.market_odds,
-        edge: bestSurprise.edge,
-        confidence: Math.round(bestSurprise.model_prob * 100),
-        rationale: [
-          `${bestSurprise.selection} olasılığı ${Math.round(bestSurprise.model_prob * 100)}%`,
-          `Piyasa oranı ${bestSurprise.market_odds}`,
-          `Edge: +${Math.round(bestSurprise.edge * 100)}%`
-        ]
-      };
-    }
-  }
-
-  // Hedge öner (primary pick'in tersi veya koruyucu)
-  let hedge: MasterStrategistResult['final']['hedge'] = null;
-  if (primaryPick.market === 'Match Result') {
-    if (primaryPick.selection === 'Home') {
-      hedge = {
-        market: '1X2',
-        selection: 'Away or Draw',
-        rationale: 'Ev sahibi seçildi, deplasman veya beraberlik ile hedge'
-      };
-    } else if (primaryPick.selection === 'Away') {
-      hedge = {
-        market: '1X2',
-        selection: 'Home or Draw',
-        rationale: 'Deplasman seçildi, ev sahibi veya beraberlik ile hedge'
-      };
-    }
-  }
-
+  
   return {
     agent: 'MASTER_STRATEGIST',
     main_take: language === 'tr'
-      ? `${agentCount} agent analizi: ${finalMR === '1' ? 'Ev sahibi' : finalMR === '2' ? 'Deplasman' : 'Beraberlik'} favori (${mrConfidence}% güven)`
-      : `${agentCount} agent analysis: ${finalMR === '1' ? 'Home' : finalMR === '2' ? 'Away' : 'Draw'} favorite (${mrConfidence}% confidence)`,
-    signals: [
-      ...strongSignals.map(s => `${s.field}: ${s.prediction} (${s.confidence}%)`),
-      ...(bestValueAmount >= 15 ? [`Value bet: ${bestValueDirection} (+${bestValueAmount}%)`] : []),
-      `${agentCount} agent consensus`
-    ],
+      ? `Ağırlıklı analiz: ${bestBetSelection} (${bestBetConfidence}% güven). Psikoloji: ${riskLevel === 'high' || riskLevel === 'very-high' ? '⚠️ Yüksek risk' : '✅ Normal'}`
+      : `Weighted analysis: ${bestBetSelection} (${bestBetConfidence}% confidence). Psychology: ${riskLevel === 'high' || riskLevel === 'very-high' ? '⚠️ High risk' : '✅ Normal'}`,
+    signals,
     model_probs: {
-      home_win: homeWinProb,
-      draw: drawProb,
-      away_win: awayWinProb,
-      under_2_5: under25Prob,
-      over_2_5: over25Prob,
-      btts_yes: bttsYesProb,
-      btts_no: bttsNoProb
+      home_win: finalProbabilities.homeWin,
+      draw: finalProbabilities.draw,
+      away_win: finalProbabilities.awayWin,
+      under_2_5: 1 - finalProbabilities.over25,
+      over_2_5: finalProbabilities.over25,
+      btts_yes: finalProbabilities.btts,
+      btts_no: 1 - finalProbabilities.btts
     },
-    recommended_bets: bestBets.map(bet => ({
-      market: bet.market,
-      selection: bet.selection,
-      model_prob: bet.confidence / 100,
-      fair_odds: 1 / (bet.confidence / 100),
-      market_odds: bet.market === 'Match Result'
-        ? (bet.selection === 'Home' ? parseFloat(marketOdds1) : bet.selection === 'Away' ? parseFloat(marketOdds2) : parseFloat(marketOddsX))
-        : parseFloat(marketOddsOver),
-      edge: 0.1, // Fallback edge
-      rationale: [bet.reasoning]
-    })),
-    risks: [
-      ...conflicts.map(c => c.description),
-      ...(overallConfidence < 60 ? ['Düşük güven seviyesi'] : []),
-      ...(agentCount < 2 ? ['Yetersiz agent verisi'] : [])
-    ],
+    recommended_bets: [{
+      market: bestBetMarket,
+      selection: bestBetSelection,
+      model_prob: bestBetConfidence / 100,
+      fair_odds: 100 / bestBetConfidence,
+      market_odds: 1.9, // Fallback
+      edge: 0.05,
+      rationale: [
+        `Ağırlıklı analiz sonucu`,
+        `Veri: %50, Agent: %25, Psikoloji: %25`,
+        riskLevel === 'high' || riskLevel === 'very-high' 
+          ? `⚠️ Yüksek risk - düşük stake önerilir` 
+          : `Risk seviyesi: ${riskLevel}`
+      ]
+    }],
+    risks: riskFactors,
     confidence: overallConfidence,
     final: {
       primary_pick: {
-        market: primaryPick.market,
-        selection: primaryPick.selection,
-        model_prob: primaryPick.confidence / 100,
-        fair_odds: 1 / (primaryPick.confidence / 100),
-        market_odds: primaryPick.market === 'Match Result'
-          ? (primaryPick.selection === 'Home' ? parseFloat(marketOdds1) : primaryPick.selection === 'Away' ? parseFloat(marketOdds2) : parseFloat(marketOddsX))
-          : parseFloat(marketOddsOver),
-        edge: bestValueAmount / 100 || 0.1,
-        confidence: primaryPick.confidence,
-        rationale: [primaryPick.reasoning]
+        market: bestBetMarket,
+        selection: bestBetSelection,
+        model_prob: bestBetConfidence / 100,
+        fair_odds: 100 / bestBetConfidence,
+        market_odds: 1.9,
+        edge: 0.05,
+        confidence: bestBetConfidence,
+        rationale: [
+          `%50-%25-%25 ağırlıklı sistem`,
+          `Psikoloji faktörü: ${avgMotivation < 40 ? 'Düşük motivasyon' : 'Normal'}`,
+          ...psychologyScore.warnings.slice(0, 2)
+        ]
       },
-      surprise_pick: surprisePick,
-      hedge: hedge,
-      contradictions_found: conflicts.map(c => `${c.agents.join(' vs ')}: ${c.description}`),
-      why_this_is_surprise: surprisePick
-        ? `Piyasa oranı ${surprisePick.market_odds} (implied ${Math.round(1 / surprisePick.market_odds * 100)}%), model olasılığı ${Math.round(surprisePick.model_prob * 100)}%, edge +${Math.round(surprisePick.edge * 100)}%`
-        : null
+      surprise_pick: null,
+      hedge: riskLevel === 'high' || riskLevel === 'very-high' ? {
+        market: 'Match Result',
+        selection: 'Draw',
+        rationale: `Yüksek risk seviyesi (${riskLevel}) - beraberlik ile hedge önerilir`
+      } : null,
+      contradictions_found: riskFactors,
+      why_this_is_surprise: null
     },
-    // Backward compatibility
-    agentEvaluation: {
-      stats: { reliability: stats ? 80 : 0, confidence: stats?.confidence || 0, strengths: stats ? ['İstatistiksel veri'] : [], weaknesses: [], weight: stats ? 30 : 0 },
-      odds: { reliability: odds ? 85 : 0, confidence: odds?.confidence || 0, strengths: odds ? ['Oran analizi'] : [], weaknesses: [], weight: odds ? 35 : 0 },
-      sentiment: { reliability: agentResults.sentiment ? 70 : 0, confidence: 0, strengths: [], weaknesses: [], weight: agentResults.sentiment ? 15 : 0 },
-      deepAnalysis: { reliability: deep ? 85 : 0, confidence: deep?.matchResult?.confidence || 0, strengths: deep ? ['Derin analiz'] : [], weaknesses: [], weight: deep ? 20 : 0 }
-    },
-    finalConsensus: {
-      matchResult: { prediction: finalMR, confidence: mrConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} },
-      overUnder: { prediction: finalOU, confidence: ouConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} },
-      btts: { prediction: finalBTTS, confidence: bttsConfidence, reasoning: `${agentCount} agent konsensüsü`, agentWeights: {} }
-    },
-    bestBets,
+    weightedAnalysis,
     overallConfidence,
     recommendation: language === 'tr'
-      ? `Güçlü sinyaller: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}`
-      : `Strong signals: ${strongSignals.map(s => `${s.field}: ${s.prediction}`).join(', ')}`
+      ? `${bestBetMarket}: ${bestBetSelection} - Risk: ${riskLevel.toUpperCase()}`
+      : `${bestBetMarket}: ${bestBetSelection} - Risk: ${riskLevel.toUpperCase()}`
   };
 }
