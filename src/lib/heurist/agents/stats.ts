@@ -95,14 +95,10 @@ function calculateMotivationFromForm(
 }
 
 // ==================== PROMPTS ====================
-// Enhanced prompts from enhanced-prompts.ts are used
+// Enhanced prompts from enhanced-prompts.ts are used in runStatsAgent function
+// Legacy prompts kept for backward compatibility (fallback)
 
 const PROMPTS = {
-  // Enhanced Stats Agent Prompt (from enhanced-prompts.ts)
-  ...ENHANCED_STATS_AGENT_PROMPT,
-  
-  // Legacy prompts kept for backward compatibility (fallback)
-  de: ENHANCED_STATS_AGENT_PROMPT.en, // Use English as fallback for German
   tr: `Sen DÜNYA ÇAPINDA TANINMIŞ bir futbol istatistik analisti ve TAHMİN UZMANISINSSIN. 15+ yıllık deneyiminle sadece veri değil, FUTBOLUN RUHUNU anlıyorsun.
 
 ═══════════════════════════════════════════════════════════════════════════════
