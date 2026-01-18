@@ -1594,10 +1594,10 @@ Return detailed JSON:`;
               // Veri bazlı doğrulama: expectedTotal < 2.5 ve Probability Engine "Under" diyor
               parsed.overUnder = probEngineOU;
               console.log(`   ⚠️ Over/Under Override: AI ${aiOU}, Veri ${expectedTotal.toFixed(2)} < 2.5, ProbEngine ${probEngineOU} (${probEngineConf}%) → ${probEngineOU} kullanıldı`);
-            } else if (expectedTotal >= 2.65 && probEngineOU === 'Over') {
-              // Veri bazlı doğrulama: expectedTotal >= 2.65 ve Probability Engine "Over" diyor
+            } else if (expectedTotal >= 2.5 && probEngineOU === 'Over') {
+              // Veri bazlı doğrulama: expectedTotal >= 2.5 ve Probability Engine "Over" diyor (2.65 yerine 2.5)
               parsed.overUnder = probEngineOU;
-              console.log(`   ⚠️ Over/Under Override: AI ${aiOU}, Veri ${expectedTotal.toFixed(2)} >= 2.65, ProbEngine ${probEngineOU} (${probEngineConf}%) → ${probEngineOU} kullanıldı`);
+              console.log(`   ⚠️ Over/Under Override: AI ${aiOU}, Veri ${expectedTotal.toFixed(2)} >= 2.5, ProbEngine ${probEngineOU} (${probEngineConf}%) → ${probEngineOU} kullanıldı`);
             } else if (Math.abs(probEngineConf - 50) > 5 && probEngineConf > confidences.overUnderConf) {
               // ProbabilityEngine'in güveni %50'den 5+ puan farklıysa ve Stats Agent'ın güveninden yüksekse, onu kullan
               parsed.overUnder = probEngineOU;
@@ -1606,17 +1606,16 @@ Return detailed JSON:`;
           }
         } else if (!['Over', 'Under'].includes(parsed.overUnder)) {
           // ProbabilityEngine yoksa, veri bazlı karar
-          // Over için daha yüksek eşik: 2.5 → 2.65
-          // avgOver25 eşiği: 55 → 60
-          parsed.overUnder = (expectedTotal >= 2.65 || avgOver25 >= 60) ? 'Over' : 'Under';
+          // DÜZELTME: 2.5 eşiği kullan (2.65 çok yüksek - bias yaratıyor)
+          parsed.overUnder = (expectedTotal >= 2.5 || avgOver25 >= 55) ? 'Over' : 'Under';
         } else if (expectedTotal < 2.5 && parsed.overUnder === 'Over') {
           // Veri bazlı override: expectedTotal < 2.5 ise "Under" olmalı
           parsed.overUnder = 'Under';
           console.log(`   ⚠️ Over/Under Veri Override: AI "Over", ama expectedTotal ${expectedTotal.toFixed(2)} < 2.5 → "Under"`);
-        } else if (expectedTotal >= 2.65 && parsed.overUnder === 'Under') {
-          // Veri bazlı override: expectedTotal >= 2.65 ise "Over" olmalı
+        } else if (expectedTotal >= 2.5 && parsed.overUnder === 'Under') {
+          // Veri bazlı override: expectedTotal >= 2.5 ise "Over" olmalı (2.65 yerine 2.5)
           parsed.overUnder = 'Over';
-          console.log(`   ⚠️ Over/Under Veri Override: AI "Under", ama expectedTotal ${expectedTotal.toFixed(2)} >= 2.65 → "Over"`);
+          console.log(`   ⚠️ Over/Under Veri Override: AI "Under", ama expectedTotal ${expectedTotal.toFixed(2)} >= 2.5 → "Over"`);
         }
         
         // BTTS validation - %50-55 arası belirsiz, daha dikkatli
@@ -1766,7 +1765,8 @@ Return detailed JSON:`;
   }
 
   // Fallback with DATA-DRIVEN values
-  let fallbackOverUnder = (expectedTotal >= 2.65 || avgOver25 >= 60 || xgAnalysis.totalXG >= 2.65) ? 'Over' : 'Under';
+  // DÜZELTME: 2.5 eşiği kullan (2.65 çok yüksek - bias yaratıyor)
+  let fallbackOverUnder = (expectedTotal >= 2.5 || avgOver25 >= 55 || xgAnalysis.totalXG >= 2.5) ? 'Over' : 'Under';
   
   // Maç sonucu - VERİ BAZLI KARAR (reasoning ile tutarlı!)
   let fallbackMatchResult: string;
