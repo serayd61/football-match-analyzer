@@ -606,6 +606,58 @@ export async function runMasterStrategist(
       result.thinkingProcess = thinkingProcess;
     }
 
+    // 🆕 DÜZELTME: recommended_bets formatını normalize et
+    if (result.recommended_bets && Array.isArray(result.recommended_bets)) {
+      result.recommended_bets = result.recommended_bets.map((bet: any) => {
+        // Eğer bet_type formatında ise, market/selection formatına çevir
+        if (bet.bet_type && !bet.market) {
+          const betType = bet.bet_type.toLowerCase();
+          let market = 'Match Result';
+          let selection = '';
+          
+          if (betType.includes('away') || betType.includes('2')) {
+            market = 'Match Result';
+            selection = '2';
+          } else if (betType.includes('home') || betType.includes('1')) {
+            market = 'Match Result';
+            selection = '1';
+          } else if (betType.includes('draw') || betType.includes('x')) {
+            market = 'Match Result';
+            selection = 'X';
+          } else if (betType.includes('over')) {
+            market = 'Over/Under 2.5';
+            selection = 'Over';
+          } else if (betType.includes('under')) {
+            market = 'Over/Under 2.5';
+            selection = 'Under';
+          } else if (betType.includes('btts')) {
+            market = 'BTTS';
+            selection = betType.includes('no') ? 'No' : 'Yes';
+          }
+          
+          return {
+            market,
+            selection,
+            model_prob: bet.model_prob || (bet.value_bet ? 0.6 : 0.5),
+            fair_odds: bet.fair_odds || (bet.odds ? 1 / bet.odds : 1.9),
+            market_odds: bet.market_odds || bet.odds || 1.9,
+            edge: bet.edge || 0.1,
+            rationale: bet.rationale || bet.reasoning || [`Value bet: ${bet.bet_type}`]
+          };
+        }
+        // Eğer zaten doğru formatta ise, eksik alanları tamamla
+        return {
+          market: bet.market || 'Match Result',
+          selection: bet.selection || '',
+          model_prob: bet.model_prob || 0.5,
+          fair_odds: bet.fair_odds || 1.9,
+          market_odds: bet.market_odds || 1.9,
+          edge: bet.edge || 0.1,
+          rationale: Array.isArray(bet.rationale) ? bet.rationale : (bet.rationale ? [bet.rationale] : ['Master Strategist önerisi'])
+        };
+      });
+    }
+
     // Eğer AI final objesi döndürmediyse, fallback ile tamamla
     if (!result.final || !result.final.primary_pick) {
       console.warn('⚠️ AI final objesi eksik, fallback ile tamamlanıyor...');
@@ -613,7 +665,9 @@ export async function runMasterStrategist(
       result.final = fallback.final;
       // Diğer eksik alanları da tamamla
       if (!result.model_probs) result.model_probs = fallback.model_probs;
-      if (!result.recommended_bets) result.recommended_bets = fallback.recommended_bets;
+      if (!result.recommended_bets || result.recommended_bets.length === 0) {
+        result.recommended_bets = fallback.recommended_bets;
+      }
       if (!result.signals) result.signals = fallback.signals;
     }
 
