@@ -53,7 +53,11 @@ export async function recordAgentPrediction(
     const supabase = getSupabase();
     const normalizedAgent = normalizeAgentName(agentName);
 
-    const { error } = await (supabase
+    // Debug log
+    console.log(`🧠 Recording prediction: ${normalizedAgent} for fixture ${fixtureId}, league: ${league}, date: ${matchDate}`);
+    console.log(`   MR: ${predictions.matchResult?.prediction}, OU: ${predictions.overUnder?.prediction}, BTTS: ${predictions.btts?.prediction}`);
+
+    const { data, error } = await (supabase
       .from('agent_predictions') as any)
       .upsert({
         fixture_id: fixtureId,
@@ -67,15 +71,17 @@ export async function recordAgentPrediction(
         btts_prediction: predictions.btts?.prediction || null,
         btts_confidence: predictions.btts?.confidence || null,
       }, {
-        onConflict: 'agent_name,fixture_id'
-      });
+        onConflict: 'unique_agent_fixture',
+        ignoreDuplicates: false
+      })
+      .select();
 
     if (error) {
-      console.error(`❌ Error recording agent prediction (${normalizedAgent}):`, error);
+      console.error(`❌ Error recording agent prediction (${normalizedAgent}):`, error.message, error.code, error.details);
       return false;
     }
 
-    console.log(`✅ Agent prediction recorded: ${normalizedAgent} for fixture ${fixtureId}`);
+    console.log(`✅ Agent prediction recorded: ${normalizedAgent} for fixture ${fixtureId}`, data ? `(id: ${data[0]?.id})` : '');
     return true;
   } catch (error) {
     console.error(`❌ Exception recording agent prediction:`, error);
