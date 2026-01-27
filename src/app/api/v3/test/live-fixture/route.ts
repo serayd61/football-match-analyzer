@@ -68,13 +68,17 @@ export async function GET(request: NextRequest) {
       
       try {
         // Fetch all necessary data in parallel
-        const [homeStats, awayStats, h2h, homeXG, awayXG] = await Promise.all([
+        const [homeStats, awayStats, h2h, homeXGRaw, awayXGRaw] = await Promise.all([
           getTeamStatsForAnalysis(fixture.homeTeamId),
           getTeamStatsForAnalysis(fixture.awayTeamId),
           getH2HDataForMatch(fixture.homeTeamId, fixture.awayTeamId),
           getTeamXGData(fixture.homeTeamId),
           getTeamXGData(fixture.awayTeamId)
         ]);
+        
+        // Type-safe xG data
+        const homeXG = homeXGRaw as { xGFor?: number; xGAgainst?: number } | null;
+        const awayXG = awayXGRaw as { xGFor?: number; xGAgainst?: number } | null;
         
         if (!homeStats || !awayStats || !h2h) {
           console.log(`⏭️  Skipping: incomplete data for ${fixture.homeTeam} vs ${fixture.awayTeam}`);

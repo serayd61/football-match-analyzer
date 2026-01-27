@@ -108,10 +108,27 @@ export async function getTeamStatsForAnalysis(teamId: number) {
     const result = await dataProviderManager.getTeamStats(teamId);
     if (!result?.data) return null;
     
-    const stats = result.data;
+    const stats = result.data as {
+      teamName?: string;
+      recentForm?: string;
+      avgGoalsScored?: number;
+      avgGoalsConceded?: number;
+      homeWins?: number;
+      homeDraws?: number;
+      homeLosses?: number;
+      awayWins?: number;
+      awayDraws?: number;
+      awayLosses?: number;
+      homeAvgGoalsScored?: number;
+      homeAvgGoalsConceded?: number;
+      awayAvgGoalsScored?: number;
+      awayAvgGoalsConceded?: number;
+      bttsPercentage?: number;
+      over25Percentage?: number;
+    };
     return {
       teamId,
-      name: stats.teamName,
+      name: stats.teamName || 'Unknown',
       form: stats.recentForm || 'N/A',
       avgGF: stats.avgGoalsScored || 0,
       avgGA: stats.avgGoalsConceded || 0,
@@ -138,7 +155,16 @@ export async function getH2HDataForMatch(homeTeamId: number, awayTeamId: number)
     const result = await dataProviderManager.getHeadToHead(homeTeamId, awayTeamId);
     if (!result?.data) return null;
     
-    const h2h = result.data;
+    const h2h = result.data as {
+      totalMatches?: number;
+      homeWins?: number;
+      draws?: number;
+      awayWins?: number;
+      avgGoals?: number;
+      bttsPercentage?: number;
+      over25Percentage?: number;
+      recentMatches?: any[];
+    };
     return {
       matches: h2h.totalMatches || 0,
       homeWins: h2h.homeWins || 0,
