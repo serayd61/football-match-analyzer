@@ -231,7 +231,10 @@ export async function POST(request: NextRequest) {
             ]);
 
             // DB'ye kaydet (arka planda)
-            saveUnifiedAnalysis(input, result).catch(e => console.error('Error saving in stream:', e));
+            console.log('💾 [STREAM] Calling saveUnifiedAnalysis for fixture:', input.fixtureId);
+            saveUnifiedAnalysis(input, result)
+              .then(success => console.log('💾 [STREAM] saveUnifiedAnalysis result:', success))
+              .catch(e => console.error('❌ [STREAM] Error saving in stream:', e));
 
             // Performance tracking (arka planda)
             if (session?.user?.email) {
