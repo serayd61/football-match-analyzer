@@ -12,7 +12,7 @@ import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
 import { checkUserAccess, incrementAnalysisCount } from '@/lib/accessControl';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120; // Vercel Pro: 300s limit, 120s yeterli
 
 // Lazy-loaded Supabase client
 let supabaseClient: SupabaseClient | null = null;
@@ -201,11 +201,10 @@ export async function POST(request: NextRequest) {
       lang: lang as 'tr' | 'en' | 'de'
     };
 
-    // Timeout handling: 55 saniye timeout (Vercel limiti 60 saniye, 5 saniye buffer)
-    // Loglardan görünen: Agent Analysis ~40s, Smart Analysis ~10-15s = toplam ~55s
-    const UNIFIED_TIMEOUT_MS = 55000;
+    // Timeout handling: 110 saniye timeout (Vercel Pro 300s limit, 120s maxDuration)
+    const UNIFIED_TIMEOUT_MS = 110000;
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Unified Analysis timeout after 55 seconds')), UNIFIED_TIMEOUT_MS)
+      setTimeout(() => reject(new Error('Unified Analysis timeout after 110 seconds')), UNIFIED_TIMEOUT_MS)
     );
 
     if (stream) {
@@ -224,7 +223,7 @@ export async function POST(request: NextRequest) {
 
             // Timeout handling for stream mode too
             const streamTimeoutPromise = new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Unified Analysis timeout after 55 seconds')), UNIFIED_TIMEOUT_MS)
+              setTimeout(() => reject(new Error('Unified Analysis timeout after 110 seconds')), UNIFIED_TIMEOUT_MS)
             );
 
             const result = await Promise.race([

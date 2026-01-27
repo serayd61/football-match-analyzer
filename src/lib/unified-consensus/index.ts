@@ -153,10 +153,10 @@ export async function runUnifiedConsensus(
     let smartResult: SmartAnalysisResult | null = null;
     try {
       if (onProgress) onProgress({ stage: 'smart', message: 'Smart-Analyzer veri kontrollerini yapıyor...' });
-      console.log('\n📊 Running Smart Analysis (12s timeout)...');
+      console.log('\n📊 Running Smart Analysis (20s timeout)...');
       
-      // Smart Analysis timeout: 12 saniye (Agent Analysis ~40s + Smart Analysis ~12s = ~52s toplam)
-      const SMART_ANALYSIS_TIMEOUT_MS = 12000;
+      // Smart Analysis timeout: 20 saniye (Vercel Pro ile rahat süre var)
+      const SMART_ANALYSIS_TIMEOUT_MS = 20000;
       const smartAnalysisPromise = runSmartAnalysis({
         fixtureId: input.fixtureId,
         homeTeam: input.homeTeam,
@@ -169,7 +169,7 @@ export async function runUnifiedConsensus(
       
       const smartTimeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          console.warn('⏱️ Smart Analysis timeout after 12s, skipping...');
+          console.warn('⏱️ Smart Analysis timeout after 20s, skipping...');
           resolve(null);
         }, SMART_ANALYSIS_TIMEOUT_MS);
       });
