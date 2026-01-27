@@ -135,7 +135,21 @@ async function callOptimizedAgent(
     const systemPrompt = getSystemPromptByAgent(agentName);
     const userPromptWithAddendum = userPrompt + (getMatchTypePromptAddendum(matchType || '') || '');
 
-    if (provider === 'openai') {
+    // Fallback: If no API keys, return mock response (for testing)
+    if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY && !GEMINI_API_KEY) {
+      console.warn(`⚠️ No API keys found. Using mock response for ${agentName}`);
+      return {
+        prediction: '1',
+        confidence: Math.random() * 30 + 55, // 55-85%
+        expectedGoals: Math.random() * 2 + 2.2,
+        overUnder: Math.random() > 0.5 ? 'Over' : 'Under',
+        btts: Math.random() > 0.5 ? 'Yes' : 'No',
+        mockResponse: true,
+        mockAgent: agentName
+      };
+    }
+
+    if (provider === 'openai' && OPENAI_API_KEY) {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -148,7 +162,7 @@ async function callOptimizedAgent(
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPromptWithAddendum },
           ],
-          temperature: 0.3, // Low temperature for consistency
+          temperature: 0.3,
           response_format: { type: 'json_object' },
         }),
       });
@@ -156,7 +170,7 @@ async function callOptimizedAgent(
       return JSON.parse(data.choices[0]?.message?.content || '{}');
     }
 
-    if (provider === 'anthropic') {
+    if (provider === 'anthropic' && ANTHROPIC_API_KEY) {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -175,7 +189,7 @@ async function callOptimizedAgent(
       return JSON.parse(data.content[0]?.text || '{}');
     }
 
-    if (provider === 'gemini') {
+    if (provider === 'gemini' && GEMINI_API_KEY) {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
