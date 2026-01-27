@@ -875,6 +875,123 @@ export async function saveUnifiedAnalysis(
     }
 
     console.log('✅ Unified analysis saved to database');
+
+    // 🧠 ÖĞRENEN SİSTEM: Agent tahminlerini agent_predictions tablosuna kaydet
+    // Bu sayede settlement sırasında agent performansları güncellenebilir
+    try {
+      const { recordAgentPrediction } = await import('../agent-learning/performance-tracker');
+      
+      // Match date'i normalize et (sadece tarih kısmı)
+      const normalizedMatchDate = matchDate.includes('T') 
+        ? matchDate.split('T')[0] 
+        : matchDate;
+
+      // Kaynak agent verilerini al
+      const agents = result.sources?.agents || {};
+
+      // Stats Agent tahmini
+      if (agents.stats) {
+        await recordAgentPrediction(
+          input.fixtureId,
+          'stats',
+          {
+            matchResult: agents.stats.matchResult ? {
+              prediction: agents.stats.matchResult,
+              confidence: agents.stats.matchResultConfidence || 50
+            } : undefined,
+            overUnder: agents.stats.overUnder ? {
+              prediction: agents.stats.overUnder,
+              confidence: agents.stats.overUnderConfidence || 50
+            } : undefined,
+            btts: agents.stats.btts ? {
+              prediction: agents.stats.btts,
+              confidence: agents.stats.bttsConfidence || 50
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record stats prediction:', err));
+      }
+
+      // Odds Agent tahmini
+      if (agents.odds) {
+        await recordAgentPrediction(
+          input.fixtureId,
+          'odds',
+          {
+            matchResult: agents.odds.matchWinnerValue ? {
+              prediction: agents.odds.matchWinnerValue,
+              confidence: agents.odds.confidence || 50
+            } : undefined,
+            overUnder: agents.odds.recommendation ? {
+              prediction: agents.odds.recommendation,
+              confidence: agents.odds.confidence || 50
+            } : undefined,
+            btts: agents.odds.bttsValue ? {
+              prediction: agents.odds.bttsValue,
+              confidence: agents.odds.confidence || 50
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record odds prediction:', err));
+      }
+
+      // Deep Analysis Agent tahmini
+      if (agents.deepAnalysis) {
+        await recordAgentPrediction(
+          input.fixtureId,
+          'deepAnalysis',
+          {
+            matchResult: agents.deepAnalysis.matchResult ? {
+              prediction: agents.deepAnalysis.matchResult.prediction || agents.deepAnalysis.matchResult,
+              confidence: agents.deepAnalysis.matchResult.confidence || 50
+            } : undefined,
+            overUnder: agents.deepAnalysis.overUnder ? {
+              prediction: agents.deepAnalysis.overUnder.prediction || agents.deepAnalysis.overUnder,
+              confidence: agents.deepAnalysis.overUnder.confidence || 50
+            } : undefined,
+            btts: agents.deepAnalysis.btts ? {
+              prediction: agents.deepAnalysis.btts.prediction || agents.deepAnalysis.btts,
+              confidence: agents.deepAnalysis.btts.confidence || 50
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record deepAnalysis prediction:', err));
+      }
+
+      // Master Strategist tahmini
+      if (agents.masterStrategist?.finalConsensus) {
+        const ms = agents.masterStrategist.finalConsensus;
+        await recordAgentPrediction(
+          input.fixtureId,
+          'masterStrategist',
+          {
+            matchResult: ms.matchResult ? {
+              prediction: ms.matchResult.prediction || ms.matchResult,
+              confidence: ms.matchResult.confidence || 50
+            } : undefined,
+            overUnder: ms.overUnder ? {
+              prediction: ms.overUnder.prediction || ms.overUnder,
+              confidence: ms.overUnder.confidence || 50
+            } : undefined,
+            btts: ms.btts ? {
+              prediction: ms.btts.prediction || ms.btts,
+              confidence: ms.btts.confidence || 50
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record masterStrategist prediction:', err));
+      }
+
+      console.log('✅ Agent predictions recorded for learning system');
+    } catch (agentError) {
+      console.warn('⚠️ Failed to record agent predictions (non-blocking):', agentError);
+      // Non-blocking - ana kayıt başarılı olduğu için true döndür
+    }
+
     return true;
   } catch (error: any) {
     console.error('❌ Exception saving unified analysis:', error?.message || error);
