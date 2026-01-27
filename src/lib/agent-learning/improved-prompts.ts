@@ -340,7 +340,7 @@ export function getSystemPromptByAgent(agentName: string): string {
     masterStrategist: 'You are a master football strategist synthesizing all insights. Make final predictions with high accuracy focus. Return valid JSON.',
     deepAnalysis: 'You are a deep analysis expert using advanced metrics. Provide comprehensive tactical analysis in JSON format.',
     geniusAnalyst: 'You are a contrarian genius finding value. Identify unconventional winning predictions. Return valid JSON.',
-    devilsAdvocate: 'You are a critical devil\\'s advocate. Challenge assumptions and find market inefficiencies. Provide valid JSON response.',
+    devilsAdvocate: "You are a critical devil's advocate. Challenge assumptions and find market inefficiencies. Provide valid JSON response.",
   };
   
   return systemPrompts[agentName] || 'You are a football analysis expert. Provide valid JSON response only.';
