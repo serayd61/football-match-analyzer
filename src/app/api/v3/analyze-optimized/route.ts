@@ -350,7 +350,7 @@ H2H RECORD (${h2h.matches} meetings):
 RECENT H2H (last 5):
 ${h2h.recent
   ?.slice(0, 5)
-  .map((m) => `- ${m.date}: ${m.home} ${m.homeGoals}-${m.awayGoals} ${m.away}`)
+  .map((m: any) => `- ${m.date}: ${m.home} ${m.homeGoals}-${m.awayGoals} ${m.away}`)
   .join('\n') || '- No recent data'}
 
 INSTRUCTIONS:
