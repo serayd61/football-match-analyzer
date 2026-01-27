@@ -68,9 +68,9 @@ async function callAgent(provider: 'openai' | 'anthropic' | 'gemini', systemProm
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY || ''}`,
           'Content-Type': 'application/json'
-        },
+        } as HeadersInit,
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -89,10 +89,10 @@ async function callAgent(provider: 'openai' | 'anthropic' | 'gemini', systemProm
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
+          'x-api-key': ANTHROPIC_API_KEY || '',
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01'
-        },
+        } as HeadersInit,
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1024,
@@ -105,9 +105,9 @@ async function callAgent(provider: 'openai' | 'anthropic' | 'gemini', systemProm
     }
 
     if (provider === 'gemini') {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY || ''}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' } as HeadersInit,
         body: JSON.stringify({
           contents: [{
             parts: [

@@ -155,7 +155,7 @@ async function callOptimizedAgent(
         headers: {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
-        },
+        } as HeadersInit,
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -177,7 +177,7 @@ async function callOptimizedAgent(
           'x-api-key': ANTHROPIC_API_KEY,
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
-        },
+        } as HeadersInit,
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1024,
@@ -194,7 +194,7 @@ async function callOptimizedAgent(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' } as HeadersInit,
           body: JSON.stringify({
             contents: [
               {
