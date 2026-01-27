@@ -234,73 +234,92 @@ async function createUnifiedConsensus(
   smartResult: SmartAnalysisResult | null,
   leagueStats: any[] | null = null
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
-  // 🧠 ÖĞRENEN SİSTEM: Agent performansına göre dinamik ağırlıklar
-  // Supabase'den gerçek zamanlı performans verilerini çek
-  let multipliers: Record<string, number> = {
+  // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
+  // Gelişmiş performans bazlı dinamik ağırlıklar
+  const league = agentResult?.agents?.stats?.league || agentResult?.league;
+  
+  // Market bazlı ağırlıklar (her market için ayrı hesaplama)
+  let matchResultMultipliers: Record<string, number> = {
     stats: 1.0,
     odds: 1.0,
     deepAnalysis: 1.0,
     masterStrategist: 1.0,
     devilsAdvocate: 1.0
   };
+  
+  let overUnderMultipliers: Record<string, number> = { ...matchResultMultipliers };
+  let bttsMultipliers: Record<string, number> = { ...matchResultMultipliers };
 
   try {
-    const { getAgentWeights } = await import('../agent-learning/performance-tracker');
-    const learnedWeights = await getAgentWeights(agentResult?.agents?.stats?.league || agentResult?.league);
-    const league = agentResult?.agents?.stats?.league || agentResult?.league;
+    // MDAW sistemini kullan
+    const { getMarketSpecificWeights, getAdvancedAgentWeights } = await import('../agent-learning/advanced-weighting');
     
-    // Öğrenilen ağırlıkları kullan
-    let baseMultipliers = {
-      stats: learnedWeights.stats || 1.0,
-      odds: learnedWeights.odds || 1.0,
-      deepAnalysis: learnedWeights.deepAnalysis || 1.0,
-      masterStrategist: learnedWeights.masterStrategist || 1.0,
-      devilsAdvocate: learnedWeights.devilsAdvocate || 1.0,
-    };
+    // Market bazlı ağırlıkları al
+    const marketWeights = await getMarketSpecificWeights(league);
     
-    // 🆕 Consensus alignment'a göre ağırlıkları ayarla
-    // Consensus'a yakın agent'lar daha yüksek ağırlık alır
-    try {
-      const statsAlignment = await getAgentConsensusAlignment('stats', league);
-      const oddsAlignment = await getAgentConsensusAlignment('odds', league);
-      const deepAlignment = await getAgentConsensusAlignment('deepAnalysis', league);
-      const masterAlignment = await getAgentConsensusAlignment('masterStrategist', league);
-      
-      multipliers = {
-        stats: adjustWeightByConsensusAlignment(baseMultipliers.stats, statsAlignment),
-        odds: adjustWeightByConsensusAlignment(baseMultipliers.odds, oddsAlignment),
-        deepAnalysis: adjustWeightByConsensusAlignment(baseMultipliers.deepAnalysis, deepAlignment),
-        masterStrategist: adjustWeightByConsensusAlignment(baseMultipliers.masterStrategist, masterAlignment),
-        devilsAdvocate: baseMultipliers.devilsAdvocate,
-      };
-      
-      console.log(`   🎯 Consensus Alignment Adjusted Weights:`, {
-        stats: `${baseMultipliers.stats.toFixed(2)} → ${multipliers.stats.toFixed(2)} (alignment: ${statsAlignment}%)`,
-        odds: `${baseMultipliers.odds.toFixed(2)} → ${multipliers.odds.toFixed(2)} (alignment: ${oddsAlignment}%)`,
-        deepAnalysis: `${baseMultipliers.deepAnalysis.toFixed(2)} → ${multipliers.deepAnalysis.toFixed(2)} (alignment: ${deepAlignment}%)`,
-        masterStrategist: `${baseMultipliers.masterStrategist.toFixed(2)} → ${multipliers.masterStrategist.toFixed(2)} (alignment: ${masterAlignment}%)`,
-      });
-    } catch (alignmentError) {
-      console.warn('   ⚠️ Could not adjust weights by consensus alignment, using base weights:', alignmentError);
-      multipliers = baseMultipliers;
-    }
+    matchResultMultipliers = marketWeights.matchResult;
+    overUnderMultipliers = marketWeights.overUnder;
+    bttsMultipliers = marketWeights.btts;
     
-    console.log(`   🧠 Learned Agent Weights:`, JSON.stringify(multipliers));
-  } catch (error) {
-    console.warn('   ⚠️ Could not load learned weights, using defaults:', error);
+    // Detaylı log için advanced weights al
+    const advancedWeights = await getAdvancedAgentWeights(league, 'matchResult');
     
-    // Fallback: Eski sistem (leagueStats)
-  if (leagueStats && leagueStats.length > 0) {
-    leagueStats.forEach(stat => {
-      if (stat.matchResultAccuracy > 65) multipliers[stat.agent] = 1.25;
-      else if (stat.matchResultAccuracy > 55) multipliers[stat.agent] = 1.1;
-      else if (stat.matchResultAccuracy < 40) multipliers[stat.agent] = 0.75;
-      else if (stat.matchResultAccuracy < 50) multipliers[stat.agent] = 0.9;
+    console.log(`\n   🧠 MDAW (Multi-Dimensional Adaptive Weighting) System Active`);
+    console.log(`   📊 League: ${league || 'global'}`);
+    
+    // Her agent için detaylı bilgi
+    Object.entries(advancedWeights).forEach(([agent, data]) => {
+      if (data.matchCount > 0) {
+        console.log(`   📈 ${agent}: ${data.weight.toFixed(2)}x (PS: ${data.performanceScore.toFixed(0)}, M: ${data.momentumFactor.toFixed(2)}, C: ${data.calibrationFactor.toFixed(2)}, matches: ${data.matchCount})`);
+      }
     });
+    
+    console.log(`   ⚽ Match Result Weights:`, JSON.stringify(matchResultMultipliers));
+    console.log(`   📊 Over/Under Weights:`, JSON.stringify(overUnderMultipliers));
+    console.log(`   🎯 BTTS Weights:`, JSON.stringify(bttsMultipliers));
+    
+  } catch (mdawError) {
+    console.warn('   ⚠️ MDAW system failed, falling back to basic weights:', mdawError);
+    
+    // Fallback: Eski sistem
+    try {
+      const { getAgentWeights } = await import('../agent-learning/performance-tracker');
+      const learnedWeights = await getAgentWeights(league);
+      
+      matchResultMultipliers = {
+        stats: learnedWeights.stats || 1.0,
+        odds: learnedWeights.odds || 1.0,
+        deepAnalysis: learnedWeights.deepAnalysis || 1.0,
+        masterStrategist: learnedWeights.masterStrategist || 1.0,
+        devilsAdvocate: learnedWeights.devilsAdvocate || 1.0,
+      };
+      overUnderMultipliers = { ...matchResultMultipliers };
+      bttsMultipliers = { ...matchResultMultipliers };
+      
+      console.log(`   🧠 Basic Learned Weights:`, JSON.stringify(matchResultMultipliers));
+    } catch (basicError) {
+      console.warn('   ⚠️ Basic weight system also failed, using defaults');
+      
+      // Son fallback: leagueStats
+      if (leagueStats && leagueStats.length > 0) {
+        leagueStats.forEach(stat => {
+          const mult = stat.matchResultAccuracy > 65 ? 1.25
+            : stat.matchResultAccuracy > 55 ? 1.1
+            : stat.matchResultAccuracy < 40 ? 0.75
+            : stat.matchResultAccuracy < 50 ? 0.9
+            : 1.0;
+          matchResultMultipliers[stat.agent] = mult;
+          overUnderMultipliers[stat.agent] = mult;
+          bttsMultipliers[stat.agent] = mult;
+        });
+      }
     }
   }
   
-  console.log(`   ⚖️ Final Multipliers for ${agentResult?.agents?.stats?.league || agentResult?.league || 'league'}:`, JSON.stringify(multipliers));
+  // Eski kod uyumluluğu için multipliers değişkenini ayarla
+  const multipliers = matchResultMultipliers;
+  
+  console.log(`   ⚖️ Final Multipliers for ${league || 'league'}:`, JSON.stringify(multipliers));
 
   // Helper to normalize predictions
   const normalize = (val: any) => {
@@ -366,34 +385,38 @@ async function createUnifiedConsensus(
   // Devil's Advocate sonucu (varsa) - NEW
   const devilsMR = normalize(agentResult?.agents?.devilsAdvocate?.matchResult);
   const devilsMRConf = agentResult?.agents?.devilsAdvocate?.confidence || 0;
-  // Master Strategist: %40, Genius Analyst: %25, Stats Agent: %15, Deep Analysis: %10, Smart Analysis: %10
+  
+  // 🧠 MDAW: Market bazlı ağırlıklar kullan
+  // Match Result için matchResultMultipliers kullan
   const matchResultConsensus = calculateWeightedConsensus(
     [
-      { value: masterMR, confidence: masterMRConf, weight: 35 * multipliers.masterStrategist },
+      { value: masterMR, confidence: masterMRConf, weight: 35 * matchResultMultipliers.masterStrategist },
       { value: geniusMR, confidence: geniusMRConf, weight: 20 },
-      { value: agentMR, confidence: agentMRConf, weight: 15 * multipliers.stats },
-      { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 * multipliers.deepAnalysis },
+      { value: agentMR, confidence: agentMRConf, weight: 15 * matchResultMultipliers.stats },
+      { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 * matchResultMultipliers.deepAnalysis },
       { value: smartMR, confidence: smartMRConf, weight: 10 },
-      { value: devilsMR, confidence: devilsMRConf, weight: 10 * multipliers.devilsAdvocate }
+      { value: devilsMR, confidence: devilsMRConf, weight: 10 * matchResultMultipliers.devilsAdvocate }
     ]
   );
 
+  // Over/Under için overUnderMultipliers kullan
   const overUnderConsensus = calculateWeightedConsensus(
     [
-      { value: masterOU, confidence: masterOUConf, weight: 45 * multipliers.masterStrategist },
+      { value: masterOU, confidence: masterOUConf, weight: 45 * overUnderMultipliers.masterStrategist },
       { value: geniusOU, confidence: geniusOUConf, weight: 20 },
-      { value: agentOU, confidence: agentOUConf, weight: 15 * multipliers.stats },
-      { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 * multipliers.deepAnalysis },
+      { value: agentOU, confidence: agentOUConf, weight: 15 * overUnderMultipliers.stats },
+      { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 * overUnderMultipliers.deepAnalysis },
       { value: smartOU, confidence: smartOUConf, weight: 10 }
     ]
   );
 
+  // BTTS için bttsMultipliers kullan
   const bttsConsensus = calculateWeightedConsensus(
     [
-      { value: masterBTTS, confidence: masterBTTSConf, weight: 40 * multipliers.masterStrategist },
-      { value: agentBTTS, confidence: agentBTTSConf, weight: 30 * multipliers.stats },
+      { value: masterBTTS, confidence: masterBTTSConf, weight: 40 * bttsMultipliers.masterStrategist },
+      { value: agentBTTS, confidence: agentBTTSConf, weight: 30 * bttsMultipliers.stats },
       { value: smartBTTS, confidence: smartBTTSConf, weight: 20 },
-      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * multipliers.deepAnalysis }
+      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * bttsMultipliers.deepAnalysis }
     ]
   );
 

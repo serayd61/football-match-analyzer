@@ -1,0 +1,288 @@
+{
+  "name": "Advanced Agent Learning System - MDAW (5dk Polling)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger-5min",
+      "name": "Cron Trigger (Her 5 dk)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://footballanalytics.pro/api/webhooks/match-ended",
+        "authentication": "none",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "check-finished-matches",
+      "name": "Check Finished Matches",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-settled-count",
+              "leftValue": "={{ $json.settled }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-settlements",
+      "name": "Has Settlements?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://footballanalytics.pro/api/admin/check-agent-system",
+        "authentication": "none",
+        "options": {}
+      },
+      "id": "get-agent-status",
+      "name": "Get Agent System Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// MDAW performans özeti oluştur\nconst input = $input.first().json;\nconst settlements = $('Check Finished Matches').item.json;\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  settlements: {\n    checked: settlements.checked || 0,\n    settled: settlements.settled || 0,\n    skipped: settlements.skipped || 0,\n    errors: settlements.errors || 0,\n    details: settlements.details || []\n  },\n  agentSystem: {\n    totalPredictions: input.summary?.total_predictions || 0,\n    settledCount: input.summary?.settled_count || 0,\n    pendingCount: input.summary?.pending_count || 0,\n    settledLast24h: input.summary?.settled_last_24h || 0,\n    settlementRate: input.summary?.settlement_rate || '0%'\n  },\n  comparison: input.comparison || {},\n  systemStatus: input.system_status || {}\n};\n\n// En iyi performans gösteren agent'ları bul\nconst agentPerf = input.agent_performance || [];\nconst topAgents = agentPerf\n  .filter(a => a.total_matches >= 5)\n  .sort((a, b) => b.current_weight - a.current_weight)\n  .slice(0, 5)\n  .map(a => ({\n    name: a.agent_name,\n    league: a.league,\n    weight: a.current_weight,\n    accuracy: a.recent_match_result_accuracy,\n    matches: a.total_matches,\n    performanceScore: a.performance_score || 'N/A',\n    momentum: a.momentum_factor || 1.0\n  }));\n\nsummary.topAgents = topAgents;\n\nreturn { json: summary };"
+      },
+      "id": "format-mdaw-summary",
+      "name": "Format MDAW Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=🧠 *MDAW Agent Learning Update*\n\n📊 *Settlement Results:*\n• Checked: {{ $json.settlements.checked }}\n• Settled: {{ $json.settlements.settled }}\n• Skipped: {{ $json.settlements.skipped }}\n\n🎯 *Top Performing Agents:*\n{{ $json.topAgents.map(a => `• ${a.name} (${a.league || 'global'}): ${a.weight.toFixed(2)}x weight, ${a.accuracy?.toFixed(1) || 'N/A'}% accuracy`).join('\\n') }}\n\n📈 *System Status:*\n• Total Predictions: {{ $json.agentSystem.totalPredictions }}\n• Settlement Rate: {{ $json.agentSystem.settlementRate }}\n• Pending: {{ $json.agentSystem.pendingCount }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-slack-mdaw",
+      "name": "Notify Slack (MDAW)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 200],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Settlement detaylarını logla\nconst settlements = $input.first().json;\n\nconsole.log('🔔 Settlement completed:', JSON.stringify(settlements, null, 2));\n\nreturn { json: { logged: true, ...settlements } };"
+      },
+      "id": "log-settlements",
+      "name": "Log Settlements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "daily-report-trigger",
+      "name": "Daily Report (Her 6 saat)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 600]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://footballanalytics.pro/api/admin/check-agent-system",
+        "authentication": "none",
+        "options": {}
+      },
+      "id": "get-full-report",
+      "name": "Get Full Agent Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Günlük performans raporu oluştur\nconst input = $input.first().json;\n\nconst report = {\n  timestamp: new Date().toISOString(),\n  reportType: 'daily',\n  summary: input.summary || {},\n  agentStats: input.agent_stats || [],\n  topPerformers: [],\n  underperformers: [],\n  recommendations: []\n};\n\n// Agent performanslarını analiz et\nconst agentPerf = input.agent_performance || [];\n\n// Top performers (weight >= 1.5)\nreport.topPerformers = agentPerf\n  .filter(a => a.current_weight >= 1.5 && a.total_matches >= 10)\n  .map(a => ({\n    agent: a.agent_name,\n    league: a.league,\n    weight: a.current_weight,\n    accuracy: a.recent_match_result_accuracy,\n    momentum: a.momentum_factor || 1.0\n  }));\n\n// Underperformers (weight <= 0.7)\nreport.underperformers = agentPerf\n  .filter(a => a.current_weight <= 0.7 && a.total_matches >= 10)\n  .map(a => ({\n    agent: a.agent_name,\n    league: a.league,\n    weight: a.current_weight,\n    accuracy: a.recent_match_result_accuracy\n  }));\n\n// Öneriler\nif (report.topPerformers.length > 0) {\n  report.recommendations.push(`🌟 ${report.topPerformers.length} agent(s) performing well - consider increasing their base weights`);\n}\nif (report.underperformers.length > 0) {\n  report.recommendations.push(`⚠️ ${report.underperformers.length} agent(s) underperforming - review their predictions`);\n}\n\nconst pendingCount = input.comparison?.agent_pending || 0;\nif (pendingCount > 20) {\n  report.recommendations.push(`📋 ${pendingCount} predictions pending - consider running settlement more frequently`);\n}\n\nreturn { json: report };"
+      },
+      "id": "generate-daily-report",
+      "name": "Generate Daily Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=📊 *Daily MDAW Performance Report*\n\n*Summary:*\n• Total Predictions: {{ $json.summary.total_predictions || 0 }}\n• Settlement Rate: {{ $json.summary.settlement_rate || 'N/A' }}\n• Settled Last 24h: {{ $json.summary.settled_last_24h || 0 }}\n\n🌟 *Top Performers:*\n{{ $json.topPerformers.length > 0 ? $json.topPerformers.map(a => `• ${a.agent} (${a.league || 'global'}): ${a.weight.toFixed(2)}x`).join('\\n') : 'None yet' }}\n\n⚠️ *Underperformers:*\n{{ $json.underperformers.length > 0 ? $json.underperformers.map(a => `• ${a.agent} (${a.league || 'global'}): ${a.weight.toFixed(2)}x`).join('\\n') : 'None' }}\n\n💡 *Recommendations:*\n{{ $json.recommendations.join('\\n') || 'No recommendations' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-daily-report",
+      "name": "Send Daily Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 600],
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Cron Trigger (Her 5 dk)": {
+      "main": [
+        [
+          {
+            "node": "Check Finished Matches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Finished Matches": {
+      "main": [
+        [
+          {
+            "node": "Has Settlements?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Settlements?": {
+      "main": [
+        [
+          {
+            "node": "Get Agent System Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Settlements",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Agent System Status": {
+      "main": [
+        [
+          {
+            "node": "Format MDAW Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format MDAW Summary": {
+      "main": [
+        [
+          {
+            "node": "Notify Slack (MDAW)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Report (Her 6 saat)": {
+      "main": [
+        [
+          {
+            "node": "Get Full Agent Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Agent Report": {
+      "main": [
+        [
+          {
+            "node": "Generate Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Daily Report": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["mdaw", "agent-learning", "advanced"],
+  "triggerCount": 2,
+  "updatedAt": "2026-01-27T10:00:00.000Z",
+  "versionId": "1"
+}
