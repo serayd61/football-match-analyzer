@@ -888,9 +888,18 @@ export async function saveUnifiedAnalysis(
 
       // Kaynak agent verilerini al
       const agents = result.sources?.agents || {};
+      
+      // DEBUG: Agent verilerini logla
+      console.log('🧠 Agent Learning - Recording predictions for fixture:', input.fixtureId);
+      console.log('   Available agents:', Object.keys(agents));
+      console.log('   Stats agent data:', agents.stats ? 'present' : 'missing');
+      console.log('   Odds agent data:', agents.odds ? 'present' : 'missing');
+      console.log('   DeepAnalysis data:', agents.deepAnalysis ? 'present' : 'missing');
+      console.log('   MasterStrategist data:', agents.masterStrategist ? 'present' : 'missing');
 
       // Stats Agent tahmini
       if (agents.stats) {
+        console.log('   📊 Recording stats prediction:', agents.stats.matchResult);
         await recordAgentPrediction(
           input.fixtureId,
           'stats',
@@ -911,10 +920,14 @@ export async function saveUnifiedAnalysis(
           input.league,
           normalizedMatchDate
         ).catch(err => console.warn('⚠️ Failed to record stats prediction:', err));
+        console.log('   ✅ Stats prediction recorded');
+      } else {
+        console.log('   ⚠️ No stats agent data to record');
       }
 
       // Odds Agent tahmini
       if (agents.odds) {
+        console.log('   📊 Recording odds prediction:', agents.odds.matchWinnerValue);
         await recordAgentPrediction(
           input.fixtureId,
           'odds',
@@ -935,10 +948,14 @@ export async function saveUnifiedAnalysis(
           input.league,
           normalizedMatchDate
         ).catch(err => console.warn('⚠️ Failed to record odds prediction:', err));
+        console.log('   ✅ Odds prediction recorded');
+      } else {
+        console.log('   ⚠️ No odds agent data to record');
       }
 
       // Deep Analysis Agent tahmini
       if (agents.deepAnalysis) {
+        console.log('   📊 Recording deepAnalysis prediction');
         await recordAgentPrediction(
           input.fixtureId,
           'deepAnalysis',
@@ -959,10 +976,14 @@ export async function saveUnifiedAnalysis(
           input.league,
           normalizedMatchDate
         ).catch(err => console.warn('⚠️ Failed to record deepAnalysis prediction:', err));
+        console.log('   ✅ DeepAnalysis prediction recorded');
+      } else {
+        console.log('   ⚠️ No deepAnalysis agent data to record');
       }
 
       // Master Strategist tahmini
       if (agents.masterStrategist?.finalConsensus) {
+        console.log('   📊 Recording masterStrategist prediction');
         const ms = agents.masterStrategist.finalConsensus;
         await recordAgentPrediction(
           input.fixtureId,
@@ -984,9 +1005,12 @@ export async function saveUnifiedAnalysis(
           input.league,
           normalizedMatchDate
         ).catch(err => console.warn('⚠️ Failed to record masterStrategist prediction:', err));
+        console.log('   ✅ MasterStrategist prediction recorded');
+      } else {
+        console.log('   ⚠️ No masterStrategist finalConsensus data to record');
       }
 
-      console.log('✅ Agent predictions recorded for learning system');
+      console.log('✅ Agent predictions recording completed for learning system');
     } catch (agentError) {
       console.warn('⚠️ Failed to record agent predictions (non-blocking):', agentError);
       // Non-blocking - ana kayıt başarılı olduğu için true döndür
