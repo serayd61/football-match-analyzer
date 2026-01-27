@@ -134,6 +134,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { fixtureId, homeTeam, awayTeam, homeTeamId, awayTeamId, league, matchDate, skipCache = false, lang = 'en', stream = false } = body;
 
+    console.log(`🔍 [ANALYZE] Mode: ${stream ? 'STREAM' : 'NORMAL'}, Fixture: ${fixtureId}, skipCache: ${skipCache}`);
+
     if (!fixtureId || !homeTeam || !awayTeam || !homeTeamId || !awayTeamId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
@@ -285,7 +287,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Veritabanına kaydet
-    await saveUnifiedAnalysis(input, result);
+    console.log('💾 [NORMAL] Calling saveUnifiedAnalysis for fixture:', input.fixtureId);
+    const saveResult = await saveUnifiedAnalysis(input, result);
+    console.log('💾 [NORMAL] saveUnifiedAnalysis result:', saveResult);
 
     // Performance tracking
     if (session?.user?.email) {
