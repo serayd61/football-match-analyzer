@@ -57,31 +57,51 @@ export async function recordAgentPrediction(
     console.log(`🧠 Recording prediction: ${normalizedAgent} for fixture ${fixtureId}, league: ${league}, date: ${matchDate}`);
     console.log(`   MR: ${predictions.matchResult?.prediction}, OU: ${predictions.overUnder?.prediction}, BTTS: ${predictions.btts?.prediction}`);
 
-    const { data, error } = await (supabase
+    // Önce mevcut kaydı kontrol et
+    const { data: existing } = await (supabase
       .from('agent_predictions') as any)
-      .upsert({
-        fixture_id: fixtureId,
-        agent_name: normalizedAgent,
-        league: league || null,
-        match_date: matchDate || new Date().toISOString().split('T')[0],
-        match_result_prediction: predictions.matchResult?.prediction || null,
-        match_result_confidence: predictions.matchResult?.confidence || null,
-        over_under_prediction: predictions.overUnder?.prediction || null,
-        over_under_confidence: predictions.overUnder?.confidence || null,
-        btts_prediction: predictions.btts?.prediction || null,
-        btts_confidence: predictions.btts?.confidence || null,
-      }, {
-        onConflict: 'unique_agent_fixture',
-        ignoreDuplicates: false
-      })
-      .select();
+      .select('id')
+      .eq('fixture_id', fixtureId)
+      .eq('agent_name', normalizedAgent)
+      .maybeSingle();
 
-    if (error) {
-      console.error(`❌ Error recording agent prediction (${normalizedAgent}):`, error.message, error.code, error.details);
+    const recordData = {
+      fixture_id: fixtureId,
+      agent_name: normalizedAgent,
+      league: league || null,
+      match_date: matchDate || new Date().toISOString().split('T')[0],
+      match_result_prediction: predictions.matchResult?.prediction || null,
+      match_result_confidence: predictions.matchResult?.confidence || null,
+      over_under_prediction: predictions.overUnder?.prediction || null,
+      over_under_confidence: predictions.overUnder?.confidence || null,
+      btts_prediction: predictions.btts?.prediction || null,
+      btts_confidence: predictions.btts?.confidence || null,
+    };
+
+    let result;
+    if (existing?.id) {
+      // Güncelle
+      console.log(`   📝 Updating existing record (id: ${existing.id})`);
+      result = await (supabase
+        .from('agent_predictions') as any)
+        .update(recordData)
+        .eq('id', existing.id)
+        .select();
+    } else {
+      // Yeni kayıt oluştur
+      console.log(`   📝 Creating new record`);
+      result = await (supabase
+        .from('agent_predictions') as any)
+        .insert(recordData)
+        .select();
+    }
+
+    if (result.error) {
+      console.error(`❌ Error recording agent prediction (${normalizedAgent}):`, result.error.message, result.error.code, result.error.details);
       return false;
     }
 
-    console.log(`✅ Agent prediction recorded: ${normalizedAgent} for fixture ${fixtureId}`, data ? `(id: ${data[0]?.id})` : '');
+    console.log(`✅ Agent prediction recorded: ${normalizedAgent} for fixture ${fixtureId}`, result.data ? `(id: ${result.data[0]?.id})` : '');
     return true;
   } catch (error) {
     console.error(`❌ Exception recording agent prediction:`, error);
