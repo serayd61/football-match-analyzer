@@ -62,7 +62,13 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .gte('settled_at', yesterday.toISOString());
 
-    // Son 7 günde settle edilenler (detaylı)
+    // Tüm settle edilmiş tahminler (all-time stats)
+    const { data: allSettled, error: allSettledError } = await (supabase
+      .from('agent_predictions') as any)
+      .select('agent_name, match_result_correct, over_under_correct, btts_correct')
+      .not('settled_at', 'is', null);
+    
+    // Son 7 günde settle edilenler (recent stats)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: recentSettled, error: recentError } = await (supabase
@@ -71,10 +77,10 @@ export async function GET(request: NextRequest) {
       .gte('settled_at', sevenDaysAgo.toISOString())
       .not('settled_at', 'is', null);
 
-    // Agent bazında istatistikler
+    // Agent bazında istatistikler (TÜM ZAMANLAR)
     const agentStats: Record<string, any> = {};
-    if (recentSettled) {
-      recentSettled.forEach((pred: any) => {
+    if (allSettled) {
+      allSettled.forEach((pred: any) => {
         if (!agentStats[pred.agent_name]) {
           agentStats[pred.agent_name] = {
             total: 0,
@@ -98,6 +104,37 @@ export async function GET(request: NextRequest) {
         if (pred.btts_correct !== null) {
           agentStats[pred.agent_name].btts_total++;
           if (pred.btts_correct) agentStats[pred.agent_name].btts_correct++;
+        }
+      });
+    }
+    
+    // Son 7 gün istatistikleri (ayrı)
+    const recentAgentStats: Record<string, any> = {};
+    if (recentSettled) {
+      recentSettled.forEach((pred: any) => {
+        if (!recentAgentStats[pred.agent_name]) {
+          recentAgentStats[pred.agent_name] = {
+            total: 0,
+            mr_correct: 0,
+            ou_correct: 0,
+            btts_correct: 0,
+            mr_total: 0,
+            ou_total: 0,
+            btts_total: 0
+          };
+        }
+        recentAgentStats[pred.agent_name].total++;
+        if (pred.match_result_correct !== null) {
+          recentAgentStats[pred.agent_name].mr_total++;
+          if (pred.match_result_correct) recentAgentStats[pred.agent_name].mr_correct++;
+        }
+        if (pred.over_under_correct !== null) {
+          recentAgentStats[pred.agent_name].ou_total++;
+          if (pred.over_under_correct) recentAgentStats[pred.agent_name].ou_correct++;
+        }
+        if (pred.btts_correct !== null) {
+          recentAgentStats[pred.agent_name].btts_total++;
+          if (pred.btts_correct) recentAgentStats[pred.agent_name].btts_correct++;
         }
       });
     }
@@ -152,7 +189,34 @@ export async function GET(request: NextRequest) {
           ? ((settledCount || 0) / totalPredictions * 100).toFixed(2) + '%'
           : '0%'
       },
+      // TÜM ZAMANLAR - Agent istatistikleri
       agent_stats: Object.entries(agentStats).map(([agent, stats]: [string, any]) => ({
+        agent_name: agent,
+        total: stats.total,
+        match_result: {
+          correct: stats.mr_correct,
+          total: stats.mr_total,
+          accuracy: stats.mr_total 
+            ? ((stats.mr_correct / stats.mr_total) * 100).toFixed(2) + '%'
+            : 'N/A'
+        },
+        over_under: {
+          correct: stats.ou_correct,
+          total: stats.ou_total,
+          accuracy: stats.ou_total
+            ? ((stats.ou_correct / stats.ou_total) * 100).toFixed(2) + '%'
+            : 'N/A'
+        },
+        btts: {
+          correct: stats.btts_correct,
+          total: stats.btts_total,
+          accuracy: stats.btts_total
+            ? ((stats.btts_correct / stats.btts_total) * 100).toFixed(2) + '%'
+            : 'N/A'
+        }
+      })),
+      // SON 7 GÜN - Agent istatistikleri
+      agent_stats_recent: Object.entries(recentAgentStats).map(([agent, stats]: [string, any]) => ({
         agent_name: agent,
         total: stats.total,
         match_result: {
