@@ -32,8 +32,9 @@ export default function PricingPage() {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error(error);
-    }
+    console.error(error);
+    alert('Checkout failed. Please try again.');
+  }
     setLoading(false);
   };
 
