@@ -54,6 +54,9 @@ export const CACHE_KEYS = {
   AGENT_ANALYSIS: (fixtureId: number) => `agent_analysis:${fixtureId}`,
   ANALYSIS_STATUS: (fixtureId: number) => `analysis:status:${fixtureId}`,
   
+  // 🆕 Research Agent cache
+  RESEARCH: (fixtureId: number) => `research:${fixtureId}`,
+  
   // Queue status
   QUEUE_PENDING: 'queue:pending',
   QUEUE_PROCESSING: 'queue:processing',
@@ -72,6 +75,7 @@ export const CACHE_TTL = {
   ANALYSIS: 60 * 60,       // 1 saat - analiz sonuçları
   ANALYSIS_STATUS: 30,     // 30 saniye - analiz durumu
   RATE_LIMIT: 60,          // 1 dakika
+  RESEARCH: 2 * 60 * 60,   // 🆕 2 saat - research sonuçları (haberler hızlı değişmez)
 };
 
 // ============================================================================

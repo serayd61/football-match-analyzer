@@ -321,7 +321,8 @@ export async function POST(request: NextRequest) {
       league = '', 
       language = 'en', 
       useMultiModel = true,
-      skipCache = false // 🆕 Cache'i bypass etmek için
+      skipCache = false, // 🆕 Cache'i bypass etmek için
+      skipResearch = false // 🆕 Research Agent'ı bypass etmek için (maliyet kontrolü)
     } = body;
 
     if (!fixtureId) {
@@ -519,7 +520,7 @@ export async function POST(request: NextRequest) {
     const agentStart = Date.now();
     
     const result = await runFullAnalysis(
-      { matchData }, 
+      { matchData, skipResearch }, 
       language as 'tr' | 'en' | 'de'
     );
     

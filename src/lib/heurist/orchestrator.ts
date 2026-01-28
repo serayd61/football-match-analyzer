@@ -9,6 +9,7 @@ import { runDeepAnalysisAgent } from './agents/deepAnalysis';
 import { runMasterStrategist, MasterStrategistResult } from './agents/masterStrategist';
 import { runGeniusAnalyst, GeniusAnalystResult } from './agents/geniusAnalyst';
 import { runClaudeDataCollector, CollectedData } from './agents/claudeDataCollector';
+import { runResearchAgent, ResearchData } from './agents/researchAgent';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
 
@@ -78,6 +79,7 @@ export interface OrchestratorResult {
     deepAnalysis: any | null;
     masterStrategist?: MasterStrategistResult | null;
     geniusAnalyst?: GeniusAnalystResult | null;
+    research?: ResearchData | null;
   };
   consensus: ConsensusResult;
   finalPrediction: {
@@ -739,6 +741,7 @@ export async function runOrchestrator(
     league?: string;
     leagueId?: number;
     matchData?: any;
+    skipResearch?: boolean; // 🆕 Research Agent'ı bypass etmek için
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<OrchestratorResult> {
@@ -875,6 +878,53 @@ export async function runOrchestrator(
       console.warn(`   ⚠️ Continuing with existing data`);
     }
     
+    // 2.6. 🆕 RESEARCH AGENT: Web araması ile güncel bilgileri topla
+    let researchData: ResearchData | null = null;
+    
+    if (input.skipResearch) {
+      console.log('\n🔬 Research Agent: SKIPPED (skipResearch=true)');
+    } else {
+      console.log('\n🔬 Research Agent: Gathering real-time match intelligence...');
+      const researchStart = Date.now();
+      
+      try {
+        researchData = await runResearchAgent(matchData as unknown as MatchData, language);
+        const researchTime = Date.now() - researchStart;
+        
+        if (researchData && researchData.dataQuality.score > 0) {
+          console.log(`✅ Research Agent completed in ${researchTime}ms`);
+          console.log(`   📊 Data Quality: ${researchData.dataQuality.score}%`);
+          console.log(`   🏥 Home Injuries: ${researchData.injuries.home.length}`);
+          console.log(`   🏥 Away Injuries: ${researchData.injuries.away.length}`);
+          console.log(`   📰 Sources: ${researchData.sources.length}`);
+          
+          // Research verilerini matchData'ya merge et (sakatlık bilgileri özellikle önemli)
+          if (researchData.injuries.home.length > 0 || researchData.injuries.away.length > 0) {
+            if (!matchData.detailedStats) matchData.detailedStats = { home: undefined, away: undefined };
+            
+            // Home injuries
+            if (!matchData.detailedStats.home) matchData.detailedStats.home = {} as any;
+            (matchData.detailedStats.home as any).researchInjuries = researchData.injuries.home;
+            (matchData.detailedStats.home as any).researchMorale = researchData.teamMorale.home;
+            (matchData.detailedStats.home as any).researchTactics = researchData.tacticalInsights.home;
+            
+            // Away injuries
+            if (!matchData.detailedStats.away) matchData.detailedStats.away = {} as any;
+            (matchData.detailedStats.away as any).researchInjuries = researchData.injuries.away;
+            (matchData.detailedStats.away as any).researchMorale = researchData.teamMorale.away;
+            (matchData.detailedStats.away as any).researchTactics = researchData.tacticalInsights.away;
+            
+            console.log(`   ✅ Research data merged into matchData`);
+          }
+        } else {
+          console.warn(`   ⚠️ Research Agent returned no data, continuing without web research`);
+        }
+      } catch (error: any) {
+        console.error(`   ❌ Research Agent error: ${error.message}`);
+        console.warn(`   ⚠️ Continuing without web research data`);
+      }
+    }
+    
     // 3. Agent'ları paralel çalıştır (İlk tur: Stats, Odds, Sentiment, Deep Analysis, Genius Analyst)
     console.log('\n🤖 Running agents in parallel (Round 1)...');
     const agentsStart = Date.now();
@@ -925,6 +975,7 @@ export async function runOrchestrator(
       deepAnalysis: deepAnalysisResult,
       geniusAnalyst: geniusAnalystResult,
       masterStrategist: null as MasterStrategistResult | null, // Başlangıçta null, sonra güncellenecek
+      research: researchData, // 🆕 Research Agent sonuçları
     };
     
     // 🆕 4. Master Strategist çalıştır (diğer agent'ların çıktılarını analiz eder)
@@ -1118,7 +1169,7 @@ export async function runOrchestrator(
         hasOddsHistory: false,
         score: 0,
       },
-      agentResults: { stats: null, odds: null, sentiment: null, deepAnalysis: null, masterStrategist: null, geniusAnalyst: null },
+      agentResults: { stats: null, odds: null, sentiment: null, deepAnalysis: null, masterStrategist: null, geniusAnalyst: null, research: null },
       consensus: {
         matchResult: { prediction: 'X', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
         overUnder: { prediction: 'Over', confidence: 50, votes: {}, reasoning: 'Error', isConsensus: false },
