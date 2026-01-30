@@ -2,7 +2,8 @@
 
 // ============================================================================
 // AI CHATBOT COMPONENT
-// Sidebar style - Gemini powered football predictions
+// Sidebar style - OpenAI powered football predictions
+// Multi-language support: TR, EN, DE
 // ============================================================================
 
 import { useState, useRef, useEffect } from 'react';
@@ -10,8 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, Send, X, Bot, User, 
   Loader2, Sparkles, ChevronLeft, ChevronRight,
-  Zap
+  Zap, Globe
 } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
 
 interface Message {
   id: string;
@@ -25,12 +27,46 @@ interface AIChatbotProps {
   onToggle: () => void;
 }
 
+// Translations
+const translations = {
+  tr: {
+    welcome: '⚽ Merhaba! Ben Football Analytics AI asistanıyım.\n\nBana herhangi bir maç hakkında sorabilirsin:\n• "Galatasaray - Fenerbahçe ne olur?"\n• "Barcelona Real Madrid tahmini"\n• "Premier Lig şampiyonu kim olur?"\n\nHemen tahminimi söyleyeyim! 🎯',
+    placeholder: 'Maç sorusu sor...',
+    analyzing: 'Analiz ediyorum...',
+    error: '❌ Üzgünüm, bir hata oluştu. Lütfen tekrar dene.',
+    powered: 'Powered by GPT-4o • Tahminler bilgilendirme amaçlıdır',
+    aiPrediction: 'AI Tahmin',
+    quickQuestions: ['Bugünkü maçlar?', 'En iyi bahis?', 'Derbi tahmini'],
+  },
+  en: {
+    welcome: '⚽ Hello! I\'m the Football Analytics AI assistant.\n\nAsk me about any match:\n• "What will happen in Man City vs Arsenal?"\n• "Barcelona Real Madrid prediction"\n• "Who will win the Premier League?"\n\nLet me give you my prediction! 🎯',
+    placeholder: 'Ask about a match...',
+    analyzing: 'Analyzing...',
+    error: '❌ Sorry, an error occurred. Please try again.',
+    powered: 'Powered by GPT-4o • Predictions are for informational purposes',
+    aiPrediction: 'AI Prediction',
+    quickQuestions: ['Today\'s matches?', 'Best bet?', 'Derby prediction'],
+  },
+  de: {
+    welcome: '⚽ Hallo! Ich bin der Football Analytics KI-Assistent.\n\nFrag mich zu jedem Spiel:\n• "Was passiert bei Bayern vs Dortmund?"\n• "Barcelona Real Madrid Vorhersage"\n• "Wer gewinnt die Bundesliga?"\n\nLass mich dir meine Vorhersage geben! 🎯',
+    placeholder: 'Frag nach einem Spiel...',
+    analyzing: 'Analysiere...',
+    error: '❌ Entschuldigung, ein Fehler ist aufgetreten. Bitte versuche es erneut.',
+    powered: 'Powered by GPT-4o • Vorhersagen dienen nur zur Information',
+    aiPrediction: 'KI-Vorhersage',
+    quickQuestions: ['Heutige Spiele?', 'Beste Wette?', 'Derby-Vorhersage'],
+  }
+};
+
 export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
+  const { lang } = useLanguage();
+  const t = translations[lang as keyof typeof translations] || translations.en;
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: '⚽ Merhaba! Ben Football Analytics AI asistanıyım.\n\nBana herhangi bir maç hakkında sorabilirsin:\n• "Galatasaray - Fenerbahçe ne olur?"\n• "Barcelona Real Madrid tahmini"\n• "Premier Lig şampiyonu kim olur?"\n\nHemen tahminimi söyleyeyim! 🎯',
+      content: t.welcome,
       timestamp: new Date()
     }
   ]);
@@ -38,6 +74,16 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Update welcome message when language changes
+  useEffect(() => {
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: t.welcome,
+      timestamp: new Date()
+    }]);
+  }, [lang, t.welcome]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -71,6 +117,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: input.trim(),
+          language: lang, // Dil parametresi eklendi
           history: messages.slice(-10).map(m => ({
             role: m.role,
             content: m.content
@@ -95,7 +142,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '❌ Üzgünüm, bir hata oluştu. Lütfen tekrar dene.',
+        content: t.error,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -110,12 +157,6 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       sendMessage();
     }
   };
-
-  const quickQuestions = [
-    "Bugünkü maçlar?",
-    "En iyi bahis?",
-    "Derbi tahmini"
-  ];
 
   return (
     <>
@@ -170,7 +211,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                   <div>
                     <h3 className="text-white font-bold text-sm">Football AI</h3>
                     <p className="text-emerald-400 text-xs flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Gemini Powered
+                      <Sparkles className="w-3 h-3" /> GPT-4o Powered
                     </p>
                   </div>
                 </div>
@@ -200,7 +241,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                     {message.role === 'assistant' && (
                       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-700/50">
                         <Bot className="w-4 h-4 text-emerald-400" />
-                        <span className="text-emerald-400 text-xs font-medium">AI Tahmin</span>
+                        <span className="text-emerald-400 text-xs font-medium">{t.aiPrediction}</span>
                       </div>
                     )}
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -228,7 +269,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                   <div className="bg-gray-800/80 rounded-2xl px-4 py-3 border border-gray-700/50">
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                      <span className="text-gray-400 text-sm">Analiz ediyorum...</span>
+                      <span className="text-gray-400 text-sm">{t.analyzing}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -240,7 +281,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
             {/* Quick Questions */}
             <div className="px-4 py-2 border-t border-gray-800/50">
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {quickQuestions.map((q, i) => (
+                {t.quickQuestions.map((q, i) => (
                   <button
                     key={i}
                     onClick={() => setInput(q)}
@@ -264,7 +305,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Maç sorusu sor..."
+                  placeholder={t.placeholder}
                   disabled={isLoading}
                   className="flex-1 bg-gray-800/50 border border-gray-700/50 rounded-xl
                     px-4 py-3 text-white text-sm placeholder-gray-500
@@ -290,7 +331,7 @@ export default function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                 </motion.button>
               </div>
               <p className="text-gray-600 text-xs mt-2 text-center">
-                Powered by Gemini AI • Tahminler bilgilendirme amaçlıdır
+                {t.powered}
               </p>
             </div>
           </motion.div>
