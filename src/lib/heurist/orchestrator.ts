@@ -12,6 +12,12 @@ import { runClaudeDataCollector, CollectedData } from './agents/claudeDataCollec
 import { runResearchAgent, ResearchData } from './agents/researchAgent';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId, CompleteMatchData } from './sportmonks-data';
 import { MatchData } from './types';
+import { 
+  generateAgentLearningContext, 
+  AgentLearningContext,
+  getDominantAgents,
+  selectDominantAgentForMarket
+} from '../agent-learning/dominant-agent';
 
 // ==================== TYPES ====================
 
@@ -110,6 +116,14 @@ export interface OrchestratorResult {
     weightedConsensus: any;
     masterStrategist?: MasterStrategistResult | null;
     geniusAnalyst?: GeniusAnalystResult | null;
+  };
+  // 🆕 Learning Context - Dominant agent ve takım hafızası
+  learningContext?: AgentLearningContext | null;
+  dominantPrediction?: {
+    source: string;
+    matchResult: { agent: string; prediction: string; accuracy: number };
+    overUnder: { agent: string; prediction: string; accuracy: number };
+    btts: { agent: string; prediction: string; accuracy: number };
   };
   timing?: {
     total: number;
@@ -1117,6 +1131,77 @@ export async function runOrchestrator(
     );
     
     const elapsed = Date.now() - startTime;
+    
+    // 🆕 LEARNING CONTEXT: Dominant agent ve takım hafızası
+    let learningContext: AgentLearningContext | null = null;
+    let dominantPrediction: any = null;
+    
+    try {
+      console.log('\n🧠 Generating Learning Context...');
+      learningContext = await generateAgentLearningContext(
+        matchData.homeTeamId || 0,
+        matchData.awayTeamId || 0,
+        matchData.homeTeam,
+        matchData.awayTeam,
+        matchData.league
+      );
+      
+      if (learningContext) {
+        console.log(`   📊 Dominant Agents:`);
+        console.log(`      Match Result: ${learningContext.dominantAgents.matchResult.agent} (${learningContext.dominantAgents.matchResult.accuracy}%)`);
+        console.log(`      Over/Under: ${learningContext.dominantAgents.overUnder.agent} (${learningContext.dominantAgents.overUnder.accuracy}%)`);
+        console.log(`      BTTS: ${learningContext.dominantAgents.btts.agent} (${learningContext.dominantAgents.btts.accuracy}%)`);
+        
+        if (learningContext.recommendations.length > 0) {
+          console.log(`   💡 Recommendations:`);
+          learningContext.recommendations.forEach(r => console.log(`      ${r}`));
+        }
+        
+        // Dominant agent'ların tahminlerini al
+        const getAgentPrediction = (agentName: string, market: 'matchResult' | 'overUnder' | 'btts') => {
+          const agentMap: Record<string, any> = {
+            stats: agentResults.stats,
+            odds: agentResults.odds,
+            deepAnalysis: agentResults.deepAnalysis,
+            masterStrategist: agentResults.masterStrategist,
+          };
+          const agent = agentMap[agentName];
+          if (!agent) return finalPrediction[market === 'matchResult' ? 'matchResult' : market];
+          
+          if (market === 'matchResult') return agent.matchResult || agent.final?.primary_pick?.selection;
+          if (market === 'overUnder') return agent.overUnder || agent.final?.primary_pick?.selection;
+          if (market === 'btts') return agent.btts || agent.final?.primary_pick?.selection;
+          return null;
+        };
+        
+        dominantPrediction = {
+          source: 'dominant_agent_selection',
+          matchResult: {
+            agent: learningContext.dominantAgents.matchResult.agent,
+            prediction: getAgentPrediction(learningContext.dominantAgents.matchResult.agent, 'matchResult') || finalPrediction.matchResult,
+            accuracy: learningContext.dominantAgents.matchResult.accuracy,
+          },
+          overUnder: {
+            agent: learningContext.dominantAgents.overUnder.agent,
+            prediction: getAgentPrediction(learningContext.dominantAgents.overUnder.agent, 'overUnder') || finalPrediction.overUnder,
+            accuracy: learningContext.dominantAgents.overUnder.accuracy,
+          },
+          btts: {
+            agent: learningContext.dominantAgents.btts.agent,
+            prediction: getAgentPrediction(learningContext.dominantAgents.btts.agent, 'btts') || finalPrediction.btts,
+            accuracy: learningContext.dominantAgents.btts.accuracy,
+          },
+        };
+        
+        console.log(`   🎯 Dominant Predictions:`);
+        console.log(`      Match Result: ${dominantPrediction.matchResult.prediction} (by ${dominantPrediction.matchResult.agent})`);
+        console.log(`      Over/Under: ${dominantPrediction.overUnder.prediction} (by ${dominantPrediction.overUnder.agent})`);
+        console.log(`      BTTS: ${dominantPrediction.btts.prediction} (by ${dominantPrediction.btts.agent})`);
+      }
+    } catch (error: any) {
+      console.warn(`   ⚠️ Learning context error: ${error.message}`);
+    }
+    
     console.log('\n' + '═'.repeat(60));
     console.log(`✅ ORCHESTRATOR COMPLETE (${elapsed}ms)`);
     console.log(`   Final: ${finalPrediction.matchResult} | ${finalPrediction.overUnder} | BTTS: ${finalPrediction.btts}`);
@@ -1147,6 +1232,9 @@ export async function runOrchestrator(
         agents: agentsTime,
       },
       errors: [],
+      // 🆕 Learning Context
+      learningContext,
+      dominantPrediction,
     };
     
   } catch (error) {

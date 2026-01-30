@@ -179,6 +179,66 @@ export async function settleAgentPredictions(
         console.error(`❌ Error settling prediction ${pred.id}:`, updateError);
       } else {
         console.log(`✅ Settled prediction for ${pred.agent_name} (MR: ${matchResultCorrect}, OU: ${overUnderCorrect}, BTTS: ${bttsCorrect})`);
+        
+        // 🆕 LEARNING LOG: Ajan öğrenme kaydı oluştur
+        try {
+          // Match Result log
+          if (pred.match_result_prediction) {
+            await (supabase.from('agent_learning_log') as any).insert({
+              fixture_id: fixtureId,
+              agent_name: pred.agent_name,
+              prediction_type: 'matchResult',
+              prediction: pred.match_result_prediction,
+              confidence: pred.match_result_confidence,
+              actual_result: actualResult.matchResult,
+              was_correct: matchResultCorrect,
+              learning_context: {
+                league: pred.league,
+                homeGoals: actualResult.homeGoals,
+                awayGoals: actualResult.awayGoals,
+              },
+            });
+          }
+          
+          // Over/Under log
+          if (pred.over_under_prediction) {
+            await (supabase.from('agent_learning_log') as any).insert({
+              fixture_id: fixtureId,
+              agent_name: pred.agent_name,
+              prediction_type: 'overUnder',
+              prediction: pred.over_under_prediction,
+              confidence: pred.over_under_confidence,
+              actual_result: actualResult.totalGoals > 2.5 ? 'Over' : 'Under',
+              was_correct: overUnderCorrect,
+              learning_context: {
+                league: pred.league,
+                totalGoals: actualResult.totalGoals,
+              },
+            });
+          }
+          
+          // BTTS log
+          if (pred.btts_prediction) {
+            await (supabase.from('agent_learning_log') as any).insert({
+              fixture_id: fixtureId,
+              agent_name: pred.agent_name,
+              prediction_type: 'btts',
+              prediction: pred.btts_prediction,
+              confidence: pred.btts_confidence,
+              actual_result: actualResult.btts ? 'Yes' : 'No',
+              was_correct: bttsCorrect,
+              learning_context: {
+                league: pred.league,
+                homeGoals: actualResult.homeGoals,
+                awayGoals: actualResult.awayGoals,
+              },
+            });
+          }
+          
+          console.log(`   📝 Learning logs created for ${pred.agent_name}`);
+        } catch (logError) {
+          console.warn(`   ⚠️ Could not create learning log: ${logError}`);
+        }
       }
     }
 
