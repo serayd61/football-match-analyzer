@@ -13,6 +13,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { Paywall } from '@/components/Paywall';
+import AIChatbot from '@/components/AIChatbot';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
@@ -1134,6 +1135,7 @@ export default function DashboardPage() {
   const [accessStatus, setAccessStatus] = useState<any>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const [chatbotOpen, setChatbotOpen] = useState(false);
   
   // Auth check
   useEffect(() => {
@@ -3081,6 +3083,12 @@ export default function DashboardPage() {
         reason={accessStatus?.canAnalyze === false ? 'limit_reached' : 'premium_feature'}
         currentUsage={accessStatus?.analysesUsed || 0}
         limit={accessStatus?.analysesLimit || 1}
+      />
+      
+      {/* AI Chatbot Sidebar */}
+      <AIChatbot 
+        isOpen={chatbotOpen} 
+        onToggle={() => setChatbotOpen(!chatbotOpen)} 
       />
     </div>
   );
