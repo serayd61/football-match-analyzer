@@ -34,17 +34,17 @@ SELECT
   ABS(hashtext(ua.home_team)) as home_team_id,
   ABS(hashtext(ua.away_team)) as away_team_id,
   COUNT(*) as total_matches,
-  SUM(CASE WHEN ua.actual_home_goals > ua.actual_away_goals THEN 1 ELSE 0 END) as home_wins,
-  SUM(CASE WHEN ua.actual_home_goals = ua.actual_away_goals THEN 1 ELSE 0 END) as draws,
-  SUM(CASE WHEN ua.actual_home_goals < ua.actual_away_goals THEN 1 ELSE 0 END) as away_wins,
-  AVG(COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) as avg_total_goals,
-  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / COUNT(*) as btts_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / COUNT(*) as over_25_rate,
+  SUM(CASE WHEN ua.actual_home_score > ua.actual_away_score THEN 1 ELSE 0 END) as home_wins,
+  SUM(CASE WHEN ua.actual_home_score = ua.actual_away_score THEN 1 ELSE 0 END) as draws,
+  SUM(CASE WHEN ua.actual_home_score < ua.actual_away_score THEN 1 ELSE 0 END) as away_wins,
+  AVG(COALESCE(ua.actual_home_score, 0) + COALESCE(ua.actual_away_score, 0)) as avg_total_goals,
+  100.0 * SUM(CASE WHEN ua.actual_home_score > 0 AND ua.actual_away_score > 0 THEN 1 ELSE 0 END) / COUNT(*) as btts_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_score, 0) + COALESCE(ua.actual_away_score, 0)) > 2 THEN 1 ELSE 0 END) / COUNT(*) as over_25_rate,
   -- Son maç bilgisi
   (SELECT 
     CASE 
-      WHEN u2.actual_home_goals > u2.actual_away_goals THEN '1'
-      WHEN u2.actual_home_goals < u2.actual_away_goals THEN '2'
+      WHEN u2.actual_home_score > u2.actual_away_score THEN '1'
+      WHEN u2.actual_home_score < u2.actual_away_score THEN '2'
       ELSE 'X'
     END
    FROM unified_analysis u2 
@@ -53,7 +53,7 @@ SELECT
      AND u2.settled_at IS NOT NULL
    ORDER BY u2.match_date DESC LIMIT 1
   ) as last_match_result,
-  (SELECT u2.actual_home_goals || '-' || u2.actual_away_goals
+  (SELECT u2.actual_home_score || '-' || u2.actual_away_score
    FROM unified_analysis u2 
    WHERE u2.home_team = ua.home_team 
      AND u2.away_team = ua.away_team
@@ -69,8 +69,8 @@ FROM unified_analysis ua
 WHERE ua.settled_at IS NOT NULL
   AND ua.home_team IS NOT NULL
   AND ua.away_team IS NOT NULL
-  AND ua.actual_home_goals IS NOT NULL
-  AND ua.actual_away_goals IS NOT NULL
+  AND ua.actual_home_score IS NOT NULL
+  AND ua.actual_away_score IS NOT NULL
 GROUP BY ua.home_team, ua.away_team
 ON CONFLICT (home_team_id, away_team_id) 
 DO UPDATE SET
@@ -117,22 +117,22 @@ SELECT DISTINCT ON (ua.home_team)
   ABS(hashtext(ua.home_team)) as team_id,
   ua.home_team as team_name,
   ua.league,
-  (SELECT jsonb_agg(COALESCE(actual_home_goals, 0) ORDER BY match_date DESC)
-   FROM (SELECT actual_home_goals, match_date FROM unified_analysis u2 
+  (SELECT jsonb_agg(COALESCE(actual_home_score, 0) ORDER BY match_date DESC)
+   FROM (SELECT actual_home_score, match_date FROM unified_analysis u2 
          WHERE u2.home_team = ua.home_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_goals,
-  (SELECT jsonb_agg(COALESCE(actual_away_goals, 0) ORDER BY match_date DESC)
-   FROM (SELECT actual_away_goals, match_date FROM unified_analysis u2 
+  (SELECT jsonb_agg(COALESCE(actual_away_score, 0) ORDER BY match_date DESC)
+   FROM (SELECT actual_away_score, match_date FROM unified_analysis u2 
          WHERE u2.home_team = ua.home_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_conceded,
-  AVG(COALESCE(ua.actual_home_goals, 0)) as avg_goals_scored,
-  AVG(COALESCE(ua.actual_away_goals, 0)) as avg_goals_conceded,
-  100.0 * SUM(CASE WHEN ua.actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
-  100.0 * SUM(CASE WHEN ua.actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
-  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
+  AVG(COALESCE(ua.actual_home_score, 0)) as avg_goals_scored,
+  AVG(COALESCE(ua.actual_away_score, 0)) as avg_goals_conceded,
+  100.0 * SUM(CASE WHEN ua.actual_away_score = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_score = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_score, 0) + COALESCE(ua.actual_away_score, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_score > 0 AND ua.actual_away_score > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
   NULL as home_form,
   NULL as away_form,
   '[]'::jsonb as patterns,
@@ -141,7 +141,7 @@ SELECT DISTINCT ON (ua.home_team)
 FROM unified_analysis ua
 WHERE ua.settled_at IS NOT NULL
   AND ua.home_team IS NOT NULL
-  AND ua.actual_home_goals IS NOT NULL
+  AND ua.actual_home_score IS NOT NULL
 GROUP BY ua.home_team, ua.league
 ON CONFLICT (team_id) 
 DO UPDATE SET
@@ -180,22 +180,22 @@ SELECT DISTINCT ON (ua.away_team)
   ABS(hashtext(ua.away_team)) as team_id,
   ua.away_team as team_name,
   ua.league,
-  (SELECT jsonb_agg(COALESCE(actual_away_goals, 0) ORDER BY match_date DESC)
-   FROM (SELECT actual_away_goals, match_date FROM unified_analysis u2 
+  (SELECT jsonb_agg(COALESCE(actual_away_score, 0) ORDER BY match_date DESC)
+   FROM (SELECT actual_away_score, match_date FROM unified_analysis u2 
          WHERE u2.away_team = ua.away_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_goals,
-  (SELECT jsonb_agg(COALESCE(actual_home_goals, 0) ORDER BY match_date DESC)
-   FROM (SELECT actual_home_goals, match_date FROM unified_analysis u2 
+  (SELECT jsonb_agg(COALESCE(actual_home_score, 0) ORDER BY match_date DESC)
+   FROM (SELECT actual_home_score, match_date FROM unified_analysis u2 
          WHERE u2.away_team = ua.away_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_conceded,
-  AVG(COALESCE(ua.actual_away_goals, 0)) as avg_goals_scored,
-  AVG(COALESCE(ua.actual_home_goals, 0)) as avg_goals_conceded,
-  100.0 * SUM(CASE WHEN ua.actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
-  100.0 * SUM(CASE WHEN ua.actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
-  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
+  AVG(COALESCE(ua.actual_away_score, 0)) as avg_goals_scored,
+  AVG(COALESCE(ua.actual_home_score, 0)) as avg_goals_conceded,
+  100.0 * SUM(CASE WHEN ua.actual_home_score = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
+  100.0 * SUM(CASE WHEN ua.actual_away_score = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_score, 0) + COALESCE(ua.actual_away_score, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_score > 0 AND ua.actual_away_score > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
   NULL as home_form,
   NULL as away_form,
   '[]'::jsonb as patterns,
@@ -204,7 +204,7 @@ SELECT DISTINCT ON (ua.away_team)
 FROM unified_analysis ua
 WHERE ua.settled_at IS NOT NULL
   AND ua.away_team IS NOT NULL
-  AND ua.actual_away_goals IS NOT NULL
+  AND ua.actual_away_score IS NOT NULL
 GROUP BY ua.away_team, ua.league
 ON CONFLICT (team_id) 
 DO UPDATE SET
