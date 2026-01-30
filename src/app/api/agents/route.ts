@@ -1269,6 +1269,24 @@ export async function POST(request: NextRequest) {
         odds: completeMatchData.odds,
       },
       analyzedAt: new Date().toISOString(),
+      
+      // 🧠 LEARNING CONTEXT - Geçmiş performans ve takım hafızası
+      learningContext: result.learningContext ? {
+        dominantAgents: result.learningContext.dominantAgents,
+        teamMatchup: result.learningContext.teamMatchup ? {
+          totalMatches: result.learningContext.teamMatchup.totalMatches,
+          avgTotalGoals: result.learningContext.teamMatchup.avgTotalGoals,
+          bttsRate: result.learningContext.teamMatchup.bttsRate,
+          over25Rate: result.learningContext.teamMatchup.over25Rate,
+          patterns: result.learningContext.teamMatchup.patterns,
+        } : null,
+        homeTeamPatterns: result.learningContext.homeTeamPatterns,
+        awayTeamPatterns: result.learningContext.awayTeamPatterns,
+        recommendations: result.learningContext.recommendations,
+      } : null,
+      
+      // 🎯 DOMINANT PREDICTION - En başarılı ajanların tahminleri
+      dominantPrediction: result.dominantPrediction || null,
     };
 
     // 📦 CACHE'E KAYDET

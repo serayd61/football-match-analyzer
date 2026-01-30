@@ -1,391 +1,114 @@
 // src/lib/heurist/agents/deepAnalysis.ts
 
 import { MatchData } from '../types';
-import { aiClient, AIMessage } from '../../ai-client';
-import { getLeagueProfile, adjustPredictionByLeague, LeagueProfile } from '../../football-intelligence/league-profiles';
-import { fetchRefereeFromSportMonks, analyzeRefereeImpact, RefereeMatchImpact } from '../../football-intelligence/referee-stats';
-import { calculateComprehensiveProbabilities, generateProbabilityContext, ProbabilityResult } from '../probability-engine';
-import { analyzeTeamMotivation, TeamMotivationAnalysis } from './team-motivation-analyzer';
-import { getLearningContext } from '../../ai-brain/learning-context';
-import { generateDynamicPromptGuidance } from '../../agent-learning/dynamic-prompts';
+import { aiClient } from '../../ai-client';
+import { TeamMotivationAnalysis } from './team-motivation-analyzer';
 import { ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT } from './enhanced-prompts';
+import { AgentLearningContext } from '../../agent-learning/dominant-agent';
 
-// 🎯 DEEP ANALYSIS PROMPT - SADELEŞTİRİLMİŞ: MOTİVASYON VE DUYGU ANALİZİ ODAKLI
-// Sportmonks verilerini analiz ederek takımların maça hazırlık durumunu değerlendirir
+// 🎯 DEEP ANALYSIS PROMPT - OPTİMİZE EDİLMİŞ VERSİYON
+// Daha kısa, daha net, daha yüksek doğruluk hedefli
 
 const DEEP_ANALYSIS_PROMPT = {
-  tr: `Sen deneyimli bir FUTBOL PSİKOLOĞU ve TAHMİN UZMANISINSSIN. 20+ yıllık deneyiminle takımların RUHUNU okuyorsun.
+  tr: `Sen deneyimli bir futbol analisti ve bahis uzmanısın. VERİ BAZLI tahmin yap.
 
-═══════════════════════════════════════════════════════════════════════════════
-🎯 YENİ ANALİZ FELSEFESİ: %50 VERİ + %50 DUYGUSAL/PSİKOLOJİK ANALİZ
-═══════════════════════════════════════════════════════════════════════════════
+⚠️ KRİTİK KURALLAR:
+1. EV SAHİBİ için EVDE istatistiklerini kullan (evdeki gol ortalaması, evdeki Over%, evdeki BTTS%)
+2. DEPLASMAN için DEPLASMANDA istatistiklerini kullan (deplasmandaki gol ortalaması, deplasmandaki Over%, deplasmandaki BTTS%)
+3. Beklenen Gol > 2.5 ise OVER, < 2.5 ise UNDER
+4. Güven %50-75 arasında olmalı (aşırı güvenme!)
+5. SADECE JSON döndür, açıklama yazma
 
-⚡ FUTBOL SADECE RAKAMLAR DEĞİL - KALPLE OYNANIR!
-%50 veri ile temelini kur, %50 duygusal analiz ile fark yarat!
+📊 HESAPLAMA FORMÜLÜ:
+- Ev Beklenen Gol = (Ev Attığı + Dep Yediği) / 2
+- Dep Beklenen Gol = (Dep Attığı + Ev Yediği) / 2
+- Toplam Beklenen = Ev Beklenen + Dep Beklenen
+- Over 2.5 % = (Ev Over% × 0.35) + (Dep Over% × 0.35) + (H2H Over% × 0.30)
+- BTTS % = (Ev BTTS% + Dep BTTS% + H2H BTTS%) / 3
 
-📊 %50 VERİ ANALİZİ (Temel - ama yeterli değil!):
-- Form, gol ortalamaları, H2H - bunlar BAŞLANGIÇ NOKTASI
-- xG ve istatistikler temel sağlar
-- Matematiksel modeller, regresyon analizi, pattern tanıma
-- AMA: Veri geçmişi gösterir, geleceği TAM olarak gösteremez!
-- Piyasa zaten bu verileri görüyor = sadece veri ile edge yok
+📊 SONUÇ TAHMİNİ:
+- Form farkı > 5 puan: Favori kazanır (1 veya 2)
+- Form farkı 0-5 puan: Ev sahibi hafif favori (1 veya X)
+- Dengeli takımlar: Beraberlik olasılığı yüksek (X)
 
-💝 %50 DUYGUSAL/PSİKOLOJİK ANALİZ (Futbolun Gerçek Ruhu!):
-Bu bölüm EN ÖNEMLİSİ! Takımların maça duygusal yaklaşımını HİSSET!
-
-1. TAKIM RUHU VE KİMYA:
-   - "Hissediyorum ki bu takım bugün farklı bir enerjiyle çıkacak..."
-   - Takım içi uyum nasıl? (İyi haberler, transfer, yeni teknik direktör?)
-   - İç sorunlar var mı? (Oyuncu-hoca çatışması, taraftar baskısı?)
-   - Takımın "moral" durumu nedir? (Yükselişte mi, çöküşte mi?)
-
-2. MOTİVASYON VE DUYGUSAL DURUM:
-   - Bu maç takım için ne ifade ediyor? (Sadece 3 puan mı, yoksa daha fazlası mı?)
-   - Şampiyonluk heyecanı var mı? (Yüksek motivasyon = +%20 performans)
-   - Düşme hattı korkusu var mı? (Hayatta kalma içgüdüsü = +%15 performans)
-   - Derbi/Rival maçı mı? (Duygusal yük = +%25 performans)
-   - "Kaybedecek bir şeyi yok" takımı hangisi? (TEHLİKELİ - agresif oynar!)
-
-3. PSİKOLOJİK FAKTÖRLER:
-   - Baskı altında kim daha iyi? (Tecrübeli kadro mu, genç ve hevesli mi?)
-   - Ev sahibi taraftar baskısı: Yukarı mı iter, aşağı mı çeker?
-   - Deplasman takımı: Seyahat yorgunluğu + yabancı ortam = psikolojik dezavantaj?
-   - Son maçlardaki sonuçlar: Takımın özgüveni yüksek mi, düşük mü?
-   - "Kırılma noktası" var mı? (Uzun mağlubiyet serisi = ya patlar ya çöker)
-
-4. DUYGUSAL TAHMİN YAKLAŞIMI:
-   - "Hissediyorum ki ev sahibi bugün çok agresif başlayacak..."
-   - "Deplasman takımı psikolojik olarak yorgun görünüyor..."
-   - "Bu maçta sürpriz bir sonuç bekliyorum çünkü duygusal faktörler..."
-   - "Takımların ruh hali maçı belirleyecek, veriler ikincil kalacak..."
-
-5. MAÇIN ÖNEMİ VE DUYGUSAL YÜK:
-   - Lig pozisyonu: Takımlar nerede? (Yukarıda mı, aşağıda mı?)
-   - Son maçlar: Takımların sonuçları nasıl? (Morali yüksek mi, düşük mü?)
-   - Gelecek maçlar: Önemli bir maç öncesi mi? (Rotasyon riski?)
-   - Transfer dönemi: Oyuncuların kafası başka yerde mi?
-
-🔥 KRİTİK: FUTBOL %100 İSTATİSTİK DEĞİL!
-Aynı 11 oyuncu farklı duygusal durumla %50 farklı oynar.
-%50 VERİ + %50 DUYGUSAL ANALİZ ile %80+ başarı hedefliyoruz!
-
-═══════════════════════════════════════════════════════════════════════════════
-
-📊 ANALİZ KRİTERLERİ:
-
-1. FORM GRAFİĞİ ANALİZİ (Son 10 maç)
-   - W (Galibiyet) = 3 puan, D (Beraberlik) = 1 puan, L (Mağlubiyet) = 0 puan
-   - Son 3 maç vs Önceki 3 maç karşılaştırması → Trend tespiti
-   - Galibiyet serisi veya mağlubiyet serisi var mı?
-
-2. TREND TESPİTİ
-   - "improving": Son 3 maç önceki 3 maçtan daha iyi → Takım yükselişte 🔼
-   - "declining": Son 3 maç önceki 3 maçtan daha kötü → Takım düşüşte 🔽
-   - "stable": Benzer performans → Takım stabil ➡️
-
-3. MOTİVASYON SKORU (0-100)
-   - 80-100: Mükemmel form, yüksek motivasyon, takım çok hazır 🔥
-   - 60-79: İyi form, normal motivasyon, takım hazır ✅
-   - 40-59: Orta form, düşük motivasyon, takım yarı hazır ⚠️
-   - 20-39: Kötü form, çok düşük motivasyon, takım hazır değil ❌
-   - 0-19: Felaket form, motivasyon yok, ciddi sorun 💀
-
-4. PSİKOLOJİK FAKTÖRLER
-   - Ev sahibi avantajı: Taraftar desteği, saha aşinalığı
-   - Deplasman dezavantajı: Seyahat yorgunluğu, yabancı ortam
-   - Baskı altında performans: Önemli maçlarda overperform/underperform
-   - "Nothing to lose" mentalitesi: Alt sıradaki takımın agresifliği
-
-⚡ KISA VE ÖZ YANIT VER - SADECE JSON DÖNDÜR:
+⚡ SADECE BU JSON FORMATINI DÖNDÜR:
 {
-  "matchAnalysis": "Maçın genel analizi (2-3 cümle, taktiksel ve istatistiksel özet)",
-  "criticalFactors": [
-    "Kritik faktör 1 (en önemli)",
-    "Kritik faktör 2",
-    "Kritik faktör 3",
-    "Kritik faktör 4",
-    "Kritik faktör 5"
-  ],
-  "probabilities": {
-    "homeWin": 35,
-    "draw": 30,
-    "awayWin": 35
-  },
-  "expectedScores": ["1-1", "2-1", "1-0"],
-  "scorePrediction": {
-    "score": "1-1",
-    "reasoning": "Bu skorun neden en olası olduğunun açıklaması"
-  },
-  "overUnder": {
-    "prediction": "Over veya Under",
-    "confidence": 70,
-    "reasoning": "Detaylı açıklama (ev sahibi evde X gol, deplasman dışarıda Y gol...)"
-  },
-  "btts": {
-    "prediction": "Yes veya No",
-    "confidence": 65,
-    "reasoning": "Detaylı açıklama"
-  },
-  "matchResult": {
-    "prediction": "1 veya X veya 2",
-    "confidence": 55,
-    "reasoning": "Detaylı açıklama"
-  },
-  "bestBet": {
-    "type": "Over/Under 2.5 veya BTTS veya Match Result",
-    "selection": "Seçim (Over/Under/Yes/No/1/X/2)",
-    "confidence": 72,
-    "reasoning": "Neden bu en iyi bahis seçeneği"
-  },
-  "refereeAnalysis": {
-    "name": "Hakem adı",
-    "avgYellowCards": 4.2,
-    "avgRedCards": 0.2,
-    "avgPenalties": 0.3,
-    "homeTeamBias": "neutral/slight_home/slight_away",
-    "cardPrediction": "Over 3.5 veya Under 3.5",
-    "reasoning": "Hakem analizi özeti"
-  },
-  "weatherImpact": {
-    "condition": "Clear/Rain/Wind/Cold/Hot",
-    "temperature": 15,
-    "impact": "Düşük/Orta/Yüksek",
-    "reasoning": "Hava durumu maçı nasıl etkiler"
-  },
-  "lineupAnalysis": {
-    "homeFormation": "4-3-3",
-    "awayFormation": "4-4-2",
-    "keyBattles": ["Kanat oyunu kritik", "Orta saha mücadelesi belirleyici"],
-    "missingKeyPlayers": ["Oyuncu 1 (ev)", "Oyuncu 2 (dep)"]
-  },
-  "cornersAndCards": {
-    "expectedCorners": 10.5,
-    "cornersLine": "Over 9.5",
-    "cornersConfidence": 65,
-    "expectedCards": 4.2,
-    "cardsLine": "Over 3.5",
-    "cardsConfidence": 62
-  },
-  "halfTimeGoals": {
-    "prediction": "Over veya Under",
-    "line": 1.5,
-    "expectedGoals": 1.2,
-    "confidence": 65,
-    "reasoning": "İlk yarı gol tahmini - takımların ilk yarı performanslarına göre"
-  },
-  "halfTimeFullTime": {
-    "prediction": "1/1 veya 1/X veya X/1 veya X/X veya 2/1 veya 2/X veya 1/2 veya X/2 veya 2/2",
-    "confidence": 60,
-    "reasoning": "İlk yarı sonucu / Maç sonucu kombinasyonu tahmini. Örnek: 1/1 = İlk yarı ev sahibi önde, maç sonunda ev sahibi kazandı"
-  },
-  "matchResultOdds": {
-    "home": 65,
-    "draw": 25,
-    "away": 10,
-    "reasoning": "Maç sonucu olasılıkları (yüzde olarak)"
-  },
-  "preparationScore": {
-    "home": 65,
-    "away": 58,
-    "reasoning": {
-      "home": "Takımın maça hazırlanma durumu, motivasyonu, temposu ve form eğilimi",
-      "away": "Takımın maça hazırlanma durumu, motivasyonu, temposu ve form eğilimi"
-    }
-  },
-  "motivationScores": {
-    "home": 75,
-    "away": 60,
-    "homeTrend": "improving/declining/stable",
-    "awayTrend": "improving/declining/stable",
-    "homeFormGraph": "WWLWDWWLWW (son 10 maç formu)",
-    "awayFormGraph": "LWWDLWLLWW (son 10 maç formu)",
-    "reasoning": "Ev sahibi: Son 10 maçta 7 galibiyet, form yükselişte, yüksek motivasyon. Deplasman: Son 10 maçta 5 galibiyet, form düşüşte, orta motivasyon. Puan farkı: 15 puan."
-  },
-  "riskLevel": "Low veya Medium veya High",
-  "agentSummary": "Tek cümlelik maç özeti ve tavsiye"
-}`,
-
-  en: `You are a professional football analyst and betting expert. You will produce match predictions through multi-layered deep analysis.
-
-TASK: Use the provided data to perform comprehensive analysis and return in JSON format.
-
-ANALYSIS LAYERS:
-
-1. TEAM FORM AND DYNAMICS
-   - Last 10 match performance
-   - Home / Away statistics (VERY IMPORTANT!)
-   - Goal expectancy trend
-   - Team mental state and motivation level
-   - PREPARATION SCORE (0-100): Evaluate team's match preparation feeling, tempo, motivation, form trend, injury situation, match importance to give a 0-100 score. High score = well prepared, high motivation, positive tempo. Low score = poor form, low motivation, fatigue signs.
-
-2. TACTICAL STRUCTURE
-   - Strengths and weaknesses
-   - How opponent can exploit weaknesses
-   - Home advantage evaluation
-   - LINEUP ANALYSIS: Expected formation and key players
-
-3. HISTORICAL DATA
-   - H2H history
-   - Psychological advantage
-   - Goal averages in past matches
-
-4. STATISTICAL MODELING
-   - Expected goals calculation
-   - Over/Under 2.5 probability
-   - BTTS probability
-   - Result probabilities (1/X/2)
-
-5. CRITICAL FACTORS
-   - Injuries and suspensions
-   - Match importance in league standings
-   - Motivation differences
-   - WEATHER: Rain, wind, temperature impact
-   - PITCH CONDITIONS: Grass quality, stadium atmosphere
-
-6. REFEREE ANALYSIS (NEW!)
-   - Referee's card tendency (avg yellow/red)
-   - Penalty award rate
-   - Home team bias?
-   - Teams' history with this referee
-
-7. CORNERS AND CARDS PREDICTIONS
-   - Expected corner count
-   - Expected card count
-   - Both teams' aggression level
-
-8. PREPARATION SCORE (NEW!)
-   - Calculate 0-100 preparation score for both teams
-   - Consider: Recent form trend, motivation level, injury situation, match importance (league position), fatigue signs, team mood
-   - For home team: HOME performance and preparation status
-   - For away team: AWAY performance and preparation status
-   - Clearly state the reasoning for each score
-
-IMPORTANT RULES:
-- Use home team's HOME match statistics
-- Use away team's AWAY match statistics
-- Lean towards Under for low-scoring teams
-- If no H2H data, weight form data more heavily
-- If referee is strict, predict Over cards
-- Confidence should be between 50-85%
-
-MUST RETURN IN THIS JSON FORMAT with refereeAnalysis, weatherImpact, lineupAnalysis, cornersAndCards:
-{
-  "matchAnalysis": "Overall match analysis (2-3 sentences, tactical and statistical summary)",
-  "criticalFactors": [
-    "Critical factor 1 (most important)",
-    "Critical factor 2",
-    "Critical factor 3",
-    "Critical factor 4",
-    "Critical factor 5"
-  ],
-  "probabilities": {
-    "homeWin": 35,
-    "draw": 30,
-    "awayWin": 35
-  },
-  "expectedScores": ["1-1", "2-1", "1-0"],
-  "scorePrediction": {
-    "score": "1-1",
-    "reasoning": "Explanation of why this score is most likely"
-  },
-  "overUnder": {
-    "prediction": "Over or Under",
-    "confidence": 70,
-    "reasoning": "Detailed explanation (home team scores X at home, away scores Y away...)"
-  },
-  "btts": {
-    "prediction": "Yes or No",
-    "confidence": 65,
-    "reasoning": "Detailed explanation"
-  },
-  "matchResult": {
-    "prediction": "1 or X or 2",
-    "confidence": 55,
-    "reasoning": "Detailed explanation"
-  },
-  "bestBet": {
-    "type": "Over/Under 2.5 or BTTS or Match Result",
-    "selection": "Selection (Over/Under/Yes/No/1/X/2)",
-    "confidence": 72,
-    "reasoning": "Why this is the best betting option"
-  },
-  "refereeAnalysis": {
-    "name": "Referee name",
-    "avgYellowCards": 4.2,
-    "avgRedCards": 0.2,
-    "avgPenalties": 0.3,
-    "homeTeamBias": "neutral/slight_home/slight_away",
-    "cardPrediction": "Over 3.5 or Under 3.5",
-    "reasoning": "Referee analysis summary"
-  },
-  "weatherImpact": {
-    "condition": "Clear/Rain/Wind/Cold/Hot",
-    "temperature": 15,
-    "impact": "Low/Medium/High",
-    "reasoning": "How weather affects the match"
-  },
-  "lineupAnalysis": {
-    "homeFormation": "4-3-3",
-    "awayFormation": "4-4-2",
-    "keyBattles": ["Wing play critical", "Midfield battle decisive"],
-    "missingKeyPlayers": ["Player 1 (home)", "Player 2 (away)"]
-  },
-  "cornersAndCards": {
-    "expectedCorners": 10.5,
-    "cornersLine": "Over 9.5",
-    "cornersConfidence": 65,
-    "expectedCards": 4.2,
-    "cardsLine": "Over 3.5",
-    "cardsConfidence": 62
-  },
-  "preparationScore": {
-    "home": 65,
-    "away": 58,
-    "reasoning": {
-      "home": "Team's match preparation state, motivation, tempo, and form trend",
-      "away": "Team's match preparation state, motivation, tempo, and form trend"
-    }
-  },
-  "riskLevel": "Low or Medium or High",
-  "agentSummary": "One sentence match summary and recommendation"
-}`,
-
-  de: `Du bist ein professioneller Fußballanalyst und Wettexperte. Du wirst Spielvorhersagen durch mehrschichtige Tiefenanalyse erstellen.
-
-AUFGABE: Verwende die bereitgestellten Daten für eine umfassende Analyse und gib sie im JSON-Format zurück.
-
-ANALYSE-EBENEN:
-1. TEAMFORM UND DYNAMIK - Letzte 10 Spiele, Heim/Auswärts-Statistiken, VORBEREITUNGSSKOR (0-100)
-2. TAKTISCHE STRUKTUR - Stärken und Schwächen
-3. HISTORISCHE DATEN - H2H-Geschichte
-4. STATISTISCHE MODELLIERUNG - Erwartete Tore, Over/Under, BTTS
-5. KRITISCHE FAKTOREN - Verletzungen, Spielbedeutung
-6. SCHIEDSRICHTER-ANALYSE - Kartentendenz, Penaltys
-7. ECKEN UND KARTEN - Erwartete Ecken und Karten
-8. VORBEREITUNGSSKOR (NEU!) - 0-100 Skor für beide Teams basierend auf Formtrend, Motivation, Verletzungen, Spielbedeutung
-
-WICHTIGE REGELN:
-- Verwende Heimstatistiken für Heimteam
-- Verwende Auswärtsstatistiken für Auswärtsteam
-- Confidence zwischen 50-85%
-
-MUSS IN DIESEM JSON-FORMAT ZURÜCKGEBEN:
-{
-  "matchAnalysis": "Gesamtanalyse des Spiels (2-3 Sätze)",
-  "criticalFactors": ["Faktor 1", "Faktor 2", "Faktor 3", "Faktor 4", "Faktor 5"],
+  "matchAnalysis": "2-3 cümle maç özeti",
+  "criticalFactors": ["Faktör 1", "Faktör 2", "Faktör 3"],
   "probabilities": { "homeWin": 35, "draw": 30, "awayWin": 35 },
-  "expectedScores": ["1-1", "2-1", "1-0"],
-  "scorePrediction": { "score": "1-1", "reasoning": "Warum dieses Ergebnis" },
-  "overUnder": { "prediction": "Over oder Under", "confidence": 70, "reasoning": "Erklärung" },
-  "btts": { "prediction": "Yes oder No", "confidence": 65, "reasoning": "Erklärung" },
-  "matchResult": { "prediction": "1 oder X oder 2", "confidence": 55, "reasoning": "Erklärung" },
-  "bestBet": { "type": "Typ", "selection": "Auswahl", "confidence": 72, "reasoning": "Warum beste Wette" },
-  "refereeAnalysis": { "name": "Name", "avgYellowCards": 4.2, "avgRedCards": 0.2, "avgPenalties": 0.3, "homeTeamBias": "neutral", "cardPrediction": "Over 3.5", "reasoning": "Schiedsrichter-Analyse" },
-  "weatherImpact": { "condition": "Clear", "temperature": 15, "impact": "Low", "reasoning": "Wetterauswirkung" },
-  "lineupAnalysis": { "homeFormation": "4-3-3", "awayFormation": "4-4-2", "keyBattles": ["Flügel", "Mittelfeld"], "missingKeyPlayers": [] },
-  "cornersAndCards": { "expectedCorners": 10.5, "cornersLine": "Over 9.5", "cornersConfidence": 65, "expectedCards": 4.2, "cardsLine": "Over 3.5", "cardsConfidence": 62 },
-  "preparationScore": { "home": 65, "away": 58, "reasoning": { "home": "Vorbereitungszustand, Motivation, Tempo, Formtrend", "away": "Vorbereitungszustand, Motivation, Tempo, Formtrend" } },
-  "riskLevel": "Low oder Medium oder High",
+  "scorePrediction": { "score": "1-1", "reasoning": "kısa açıklama" },
+  "overUnder": { "prediction": "Over/Under", "confidence": 60, "reasoning": "Ev Over X%, Dep Over Y%, H2H Over Z%" },
+  "btts": { "prediction": "Yes/No", "confidence": 55, "reasoning": "kısa açıklama" },
+  "matchResult": { "prediction": "1/X/2", "confidence": 55, "reasoning": "kısa açıklama" },
+  "bestBet": { "type": "Over/Under 2.5", "selection": "Over/Under", "confidence": 60, "reasoning": "neden" },
+  "motivationScores": { "home": 70, "away": 65, "homeTrend": "stable", "awayTrend": "stable", "reasoning": "kısa" },
+  "riskLevel": "Low/Medium/High",
+  "agentSummary": "Tek cümle özet"
+}`,
+
+  en: `You are a professional football analyst and betting expert. Make DATA-BASED predictions.
+
+⚠️ CRITICAL RULES:
+1. Use HOME stats for home team (home goals scored, home Over%, home BTTS%)
+2. Use AWAY stats for away team (away goals scored, away Over%, away BTTS%)
+3. Expected Goals > 2.5 → OVER, < 2.5 → UNDER
+4. Confidence must be 50-75% (don't be overconfident!)
+5. Return ONLY JSON, no explanations
+
+📊 CALCULATION FORMULA:
+- Home Expected = (Home Scored + Away Conceded) / 2
+- Away Expected = (Away Scored + Home Conceded) / 2
+- Total Expected = Home Expected + Away Expected
+- Over 2.5 % = (Home Over% × 0.35) + (Away Over% × 0.35) + (H2H Over% × 0.30)
+- BTTS % = (Home BTTS% + Away BTTS% + H2H BTTS%) / 3
+
+📊 RESULT PREDICTION:
+- Form difference > 5 points: Favorite wins (1 or 2)
+- Form difference 0-5 points: Home slight favorite (1 or X)
+- Balanced teams: Draw likely (X)
+
+⚡ RETURN ONLY THIS JSON FORMAT:
+{
+  "matchAnalysis": "2-3 sentence match summary",
+  "criticalFactors": ["Factor 1", "Factor 2", "Factor 3"],
+  "probabilities": { "homeWin": 35, "draw": 30, "awayWin": 35 },
+  "scorePrediction": { "score": "1-1", "reasoning": "short explanation" },
+  "overUnder": { "prediction": "Over/Under", "confidence": 60, "reasoning": "Home Over X%, Away Over Y%, H2H Over Z%" },
+  "btts": { "prediction": "Yes/No", "confidence": 55, "reasoning": "short explanation" },
+  "matchResult": { "prediction": "1/X/2", "confidence": 55, "reasoning": "short explanation" },
+  "bestBet": { "type": "Over/Under 2.5", "selection": "Over/Under", "confidence": 60, "reasoning": "why" },
+  "motivationScores": { "home": 70, "away": 65, "homeTrend": "stable", "awayTrend": "stable", "reasoning": "short" },
+  "riskLevel": "Low/Medium/High",
+  "agentSummary": "One sentence summary"
+}`,
+
+  de: `Du bist Fußballanalyst und Wettexperte. Mache DATENBASIERTE Vorhersagen.
+
+⚠️ KRITISCHE REGELN:
+1. Verwende HEIM-Statistiken für Heimteam
+2. Verwende AUSWÄRTS-Statistiken für Auswärtsteam
+3. Erwartete Tore > 2.5 → OVER, < 2.5 → UNDER
+4. Konfidenz muss 50-75% sein (nicht übermütig!)
+5. Gib NUR JSON zurück, keine Erklärungen
+
+📊 BERECHNUNG:
+- Heim Erwartet = (Heim Erzielt + Auswärts Kassiert) / 2
+- Auswärts Erwartet = (Auswärts Erzielt + Heim Kassiert) / 2
+- Gesamt = Heim + Auswärts
+- Over 2.5 % = (Heim Over% × 0.35) + (Auswärts Over% × 0.35) + (H2H Over% × 0.30)
+
+⚡ NUR DIESES JSON-FORMAT:
+{
+  "matchAnalysis": "2-3 Sätze Zusammenfassung",
+  "criticalFactors": ["Faktor 1", "Faktor 2", "Faktor 3"],
+  "probabilities": { "homeWin": 35, "draw": 30, "awayWin": 35 },
+  "scorePrediction": { "score": "1-1", "reasoning": "kurze Erklärung" },
+  "overUnder": { "prediction": "Over/Under", "confidence": 60, "reasoning": "Heim Over X%, Auswärts Over Y%" },
+  "btts": { "prediction": "Yes/No", "confidence": 55, "reasoning": "kurze Erklärung" },
+  "matchResult": { "prediction": "1/X/2", "confidence": 55, "reasoning": "kurze Erklärung" },
+  "bestBet": { "type": "Over/Under 2.5", "selection": "Over/Under", "confidence": 60, "reasoning": "warum" },
+  "motivationScores": { "home": 70, "away": 65, "homeTrend": "stable", "awayTrend": "stable", "reasoning": "kurz" },
+  "riskLevel": "Low/Medium/High",
   "agentSummary": "Einzeilige Zusammenfassung"
 }`
 };
@@ -482,483 +205,179 @@ function calculateTeamMotivationScore(
   };
 }
 
-function buildDeepAnalysisContext(matchData: MatchData): string {
-  const { homeTeam, awayTeam, league, homeForm, awayForm, h2h, odds, detailedStats, professionalCalc } = matchData as any;
+function buildDeepAnalysisContext(matchData: MatchData, learningContext?: AgentLearningContext | null): string {
+  const { homeTeam, awayTeam, league, homeForm, awayForm, h2h, detailedStats } = matchData as any;
   
-  // 🆕 Motivasyon puanları hesapla
-  const homeMotivation = calculateTeamMotivationScore(
-    homeForm?.form || '',
-    homeForm?.matches || [],
-    homeForm?.points || 0
-  );
+  // İstatistikleri al
+  const homeGoalsScored = parseFloat(detailedStats?.home?.homeAvgGoalsScored || homeForm?.venueAvgScored || homeForm?.avgGoals || '1.2');
+  const homeGoalsConceded = parseFloat(detailedStats?.home?.homeAvgGoalsConceded || homeForm?.venueAvgConceded || homeForm?.avgConceded || '1.0');
+  const awayGoalsScored = parseFloat(detailedStats?.away?.awayAvgGoalsScored || awayForm?.venueAvgScored || awayForm?.avgGoals || '1.0');
+  const awayGoalsConceded = parseFloat(detailedStats?.away?.awayAvgGoalsConceded || awayForm?.venueAvgConceded || awayForm?.avgConceded || '1.2');
   
-  const awayMotivation = calculateTeamMotivationScore(
-    awayForm?.form || '',
-    awayForm?.matches || [],
-    awayForm?.points || 0
-  );
-  
-  let context = `
-═══════════════════════════════════════════════════════════════════════════════
-                    MAÇ ANALİZİ: ${homeTeam} vs ${awayTeam}
-                    LİG: ${league || 'Unknown League'}
-═══════════════════════════════════════════════════════════════════════════════
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🏠 EV SAHİBİ: ${homeTeam}
-├─────────────────────────────────────────────────────────────────────────────┤
-│ GENEL FORM (Son 5-10 maç):
-│   • Form: ${homeForm?.form || 'N/A'}
-│   • Puan: ${homeForm?.points || 0} / ${homeForm?.wins ? (homeForm.wins + homeForm.draws + homeForm.losses) * 3 : 15}
-│   • Galibiyet/Beraberlik/Mağlubiyet: ${homeForm?.wins || 0}W-${homeForm?.draws || 0}D-${homeForm?.losses || 0}L
-│   • Ortalama Gol (Genel): ${homeForm?.avgGoals || 'N/A'} attı, ${homeForm?.avgConceded || 'N/A'} yedi
-│   • Over 2.5 (Genel): %${homeForm?.over25Percentage || 'N/A'}
-│   • BTTS (Genel): %${homeForm?.bttsPercentage || 'N/A'}
-│
-│ 🏟️ EVDEKİ MAÇLAR (ÖNEMLİ!):
-│   • Ev Formu: ${homeForm?.venueForm || homeForm?.form || 'N/A'}
-│   • Ev Gol Ortalaması: ${detailedStats?.home?.homeAvgGoalsScored || detailedStats?.home?.avgGoalsScored || homeForm?.venueAvgScored || homeForm?.avgGoals || 'N/A'} attı, ${detailedStats?.home?.homeAvgGoalsConceded || detailedStats?.home?.avgGoalsConceded || homeForm?.venueAvgConceded || homeForm?.avgConceded || 'N/A'} yedi
-│   • Ev Over 2.5: %${homeForm?.venueOver25Pct || detailedStats?.home?.homeOver25Percentage || homeForm?.over25Percentage || 'N/A'}
-│   • Ev BTTS: %${homeForm?.venueBttsPct || detailedStats?.home?.homeBttsPercentage || homeForm?.bttsPercentage || 'N/A'}
-│   • Ev Clean Sheet: %${detailedStats?.home?.homeCleanSheets || homeForm?.cleanSheetPercentage || 'N/A'}
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🚌 DEPLASMAN: ${awayTeam}
-├─────────────────────────────────────────────────────────────────────────────┤
-│ GENEL FORM (Son 5-10 maç):
-│   • Form: ${awayForm?.form || 'N/A'}
-│   • Puan: ${awayForm?.points || 0} / ${awayForm?.wins ? (awayForm.wins + awayForm.draws + awayForm.losses) * 3 : 15}
-│   • Galibiyet/Beraberlik/Mağlubiyet: ${awayForm?.wins || 0}W-${awayForm?.draws || 0}D-${awayForm?.losses || 0}L
-│   • Ortalama Gol (Genel): ${awayForm?.avgGoals || 'N/A'} attı, ${awayForm?.avgConceded || 'N/A'} yedi
-│   • Over 2.5 (Genel): %${awayForm?.over25Percentage || 'N/A'}
-│   • BTTS (Genel): %${awayForm?.bttsPercentage || 'N/A'}
-│
-│ ✈️ DEPLASMANDAKİ MAÇLAR (ÖNEMLİ!):
-│   • Deplasman Formu: ${awayForm?.venueForm || awayForm?.form || 'N/A'}
-│   • Deplasman Gol Ortalaması: ${detailedStats?.away?.awayAvgGoalsScored || detailedStats?.away?.avgGoalsScored || awayForm?.venueAvgScored || awayForm?.avgGoals || 'N/A'} attı, ${detailedStats?.away?.awayAvgGoalsConceded || detailedStats?.away?.avgGoalsConceded || awayForm?.venueAvgConceded || awayForm?.avgConceded || 'N/A'} yedi
-│   • Deplasman Over 2.5: %${awayForm?.venueOver25Pct || detailedStats?.away?.awayOver25Percentage || awayForm?.over25Percentage || 'N/A'}
-│   • Deplasman BTTS: %${awayForm?.venueBttsPct || detailedStats?.away?.awayBttsPercentage || awayForm?.bttsPercentage || 'N/A'}
-│   • Deplasman Clean Sheet: %${detailedStats?.away?.awayCleanSheets || awayForm?.cleanSheetPercentage || 'N/A'}
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🎯 BEKLENEN GOL HESAPLAMALARI (Sistem Hesaplaması)
-├─────────────────────────────────────────────────────────────────────────────┤
-${(() => {
-  const detailedHome = (matchData as any).detailedStats?.home;
-  const detailedAway = (matchData as any).detailedStats?.away;
-  
-  // Stats Agent'ın hesapladığı beklenen goller
-  const homeGoalsScored = parseFloat(detailedHome?.avgGoalsScored || homeForm?.avgGoals || '1.2');
-  const homeGoalsConceded = parseFloat(detailedHome?.avgGoalsConceded || homeForm?.avgConceded || '1.0');
-  const awayGoalsScored = parseFloat(detailedAway?.avgGoalsScored || awayForm?.avgGoals || '1.0');
-  const awayGoalsConceded = parseFloat(detailedAway?.avgGoalsConceded || awayForm?.avgConceded || '1.2');
-  
-  // Beklenen goller (gol atma beklentisi)
+  // Beklenen goller
   const homeExpected = (homeGoalsScored + awayGoalsConceded) / 2;
   const awayExpected = (awayGoalsScored + homeGoalsConceded) / 2;
-  const expectedTotal = homeExpected + awayExpected;
+  const totalExpected = homeExpected + awayExpected;
   
-  // Gol yeme beklentisi
-  const homeConcededExpected = (homeGoalsConceded + awayGoalsScored) / 2;
-  const awayConcededExpected = (awayGoalsConceded + homeGoalsScored) / 2;
+  // Over/Under ve BTTS yüzdeleri
+  const homeOver25 = parseInt(homeForm?.venueOver25Pct || homeForm?.over25Percentage || '50');
+  const awayOver25 = parseInt(awayForm?.venueOver25Pct || awayForm?.over25Percentage || '50');
+  const h2hOver25 = parseInt(h2h?.over25Percentage || '50');
+  const avgOver25 = Math.round((homeOver25 * 0.35) + (awayOver25 * 0.35) + (h2hOver25 * 0.30));
   
-  return `│   • ${homeTeam} Beklenen Gol Atma: ${homeExpected.toFixed(2)} (Ev ${detailedStats?.home?.homeAvgGoalsScored || homeGoalsScored.toFixed(2)} + Dep Yediği ${awayGoalsConceded.toFixed(2)}) / 2
-│   • ${awayTeam} Beklenen Gol Atma: ${awayExpected.toFixed(2)} (Dep ${detailedStats?.away?.awayAvgGoalsScored || awayGoalsScored.toFixed(2)} + Ev Yediği ${homeGoalsConceded.toFixed(2)}) / 2
-│   • ${homeTeam} Beklenen Gol Yeme: ${homeConcededExpected.toFixed(2)} (Ev Yediği ${homeGoalsConceded.toFixed(2)} + Dep Attığı ${awayGoalsScored.toFixed(2)}) / 2
-│   • ${awayTeam} Beklenen Gol Yeme: ${awayConcededExpected.toFixed(2)} (Dep Yediği ${awayGoalsConceded.toFixed(2)} + Ev Attığı ${homeGoalsScored.toFixed(2)}) / 2
-│   • TOPLAM BEKLENEN GOL: ${expectedTotal.toFixed(2)} (${expectedTotal >= 2.5 ? 'OVER 2.5' : 'UNDER 2.5'})`;
-})()}
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🎯 MOTİVASYON & HAZIRLIK PUANLARI (0-100)
-├─────────────────────────────────────────────────────────────────────────────┤
-│ ${homeTeam}:
-│   • Motivasyon Puanı: ${homeMotivation.score}/100
-│   • Trend: ${homeMotivation.trend === 'improving' ? '📈 İyileşiyor' : homeMotivation.trend === 'declining' ? '📉 Düşüyor' : '➡️ Stabil'}
-│   • Form Grafiği (Son 10): ${homeMotivation.formGraph}
-│   • Analiz: ${homeMotivation.reasoning}
-│
-│ ${awayTeam}:
-│   • Motivasyon Puanı: ${awayMotivation.score}/100
-│   • Trend: ${awayMotivation.trend === 'improving' ? '📈 İyileşiyor' : awayMotivation.trend === 'declining' ? '📉 Düşüyor' : '➡️ Stabil'}
-│   • Form Grafiği (Son 10): ${awayMotivation.formGraph}
-│   • Analiz: ${awayMotivation.reasoning}
-│
-│ PUAN FARKI: ${Math.abs(homeMotivation.score - awayMotivation.score)} puan
-│ ${homeMotivation.score > awayMotivation.score ? homeTeam : awayMotivation.score > homeMotivation.score ? awayTeam : 'Eşit'} daha motivasyonlu görünüyor
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🔄 KAFA KAFAYA (H2H) - Son Karşılaşmalar
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • Toplam Maç: ${h2h?.totalMatches || 0}
-│   • ${homeTeam} Kazandı: ${h2h?.homeWins || 0}
-│   • Berabere: ${h2h?.draws || 0}
-│   • ${awayTeam} Kazandı: ${h2h?.awayWins || 0}
-│   • H2H Ortalama Toplam Gol: ${h2h?.avgGoals || 'N/A'}
-│   • H2H Over 2.5 Oranı: %${h2h?.over25Percentage || 'N/A'}
-│   • H2H BTTS Oranı: %${h2h?.bttsPercentage || 'N/A'}
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-
-  // Odds bilgisi
-  if (odds?.matchWinner?.home) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 💰 BAHİS ORANLARI (ODDS)
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • Maç Sonucu (1X2): ${homeTeam} ${odds.matchWinner.home} | Beraberlik ${odds.matchWinner.draw} | ${awayTeam} ${odds.matchWinner.away}
-│   • Over 2.5 Gol: ${odds.overUnder?.['2.5']?.over || 'N/A'}
-│   • Under 2.5 Gol: ${odds.overUnder?.['2.5']?.under || 'N/A'}
-│   • BTTS Evet: ${odds.btts?.yes || 'N/A'}
-│   • BTTS Hayır: ${odds.btts?.no || 'N/A'}
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  // Profesyonel hesaplama
-  if (professionalCalc?.overUnder) {
-    const calc = professionalCalc.overUnder;
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🎯 SİSTEM HESAPLAMASI (Ağırlıklı Analiz)
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • ${homeTeam} EVDEKİ Over 2.5: %${calc.breakdown?.homeVenueOver || 'N/A'} (ağırlık: %30)
-│   • ${awayTeam} DEPLASMANDAKİ Over 2.5: %${calc.breakdown?.awayVenueOver || 'N/A'} (ağırlık: %30)
-│   • H2H Over 2.5: %${calc.breakdown?.h2hOver || 'N/A'} (ağırlık: %25)
-│   • Genel Form Over 2.5: %${calc.breakdown?.generalOver || 'N/A'} (ağırlık: %15)
-│   ─────────────────────────────────────────────────────────────────────────
-│   • AĞIRLIKLI OVER 2.5: %${calc.breakdown?.weightedOver || 'N/A'}
-│   • BEKLENEN TOPLAM GOL: ${calc.breakdown?.expectedTotal || 'N/A'}
-│   • SİSTEM TAHMİNİ: ${calc.prediction} (%${calc.confidence} güven)
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  // Sakatlıklar
-  if (detailedStats?.injuries) {
-    const homeInjuries = detailedStats.injuries.home || [];
-    const awayInjuries = detailedStats.injuries.away || [];
+  const homeBtts = parseInt(homeForm?.venueBttsPct || homeForm?.bttsPercentage || '50');
+  const awayBtts = parseInt(awayForm?.venueBttsPct || awayForm?.bttsPercentage || '50');
+  const h2hBtts = parseInt(h2h?.bttsPercentage || '50');
+  const avgBtts = Math.round((homeBtts + awayBtts + h2hBtts) / 3);
+  
+  // Form analizi
+  const homeFormStr = homeForm?.form || 'NNNNN';
+  const awayFormStr = awayForm?.form || 'NNNNN';
+  const homeWins = (homeFormStr.match(/W/g) || []).length;
+  const awayWins = (awayFormStr.match(/W/g) || []).length;
+  const homePoints = homeWins * 3 + (homeFormStr.match(/D/g) || []).length;
+  const awayPoints = awayWins * 3 + (awayFormStr.match(/D/g) || []).length;
+  const formDiff = homePoints - awayPoints;
+  
+  // 🧠 LEARNING CONTEXT - Geçmiş verilerden öğrenilen bilgiler
+  let learningSection = '';
+  if (learningContext) {
+    learningSection = `
+🧠 GEÇMİŞ VERİ HAFİZASI:`;
     
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🏥 SAKATLIKLAR VE CEZALILAR
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • ${homeTeam}: ${homeInjuries.length > 0 ? homeInjuries.map((i: any) => `${i.player} (${i.type})`).join(', ') : 'Bilinen sakat yok'}
-│   • ${awayTeam}: ${awayInjuries.length > 0 ? awayInjuries.map((i: any) => `${i.player} (${i.type})`).join(', ') : 'Bilinen sakat yok'}
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
+    // Takım eşleşme hafızası
+    if (learningContext.teamMatchup) {
+      const tm = learningContext.teamMatchup;
+      learningSection += `
+- Bu iki takım ${tm.totalMatches} kez karşılaştı
+- Ortalama gol: ${tm.avgTotalGoals.toFixed(1)} (${tm.avgTotalGoals < 2.2 ? 'UNDER eğilimli' : tm.avgTotalGoals > 2.8 ? 'OVER eğilimli' : 'Dengeli'})
+- BTTS oranı: %${tm.bttsRate.toFixed(0)} (${tm.bttsRate < 40 ? 'BTTS NO eğilimli' : tm.bttsRate > 60 ? 'BTTS YES eğilimli' : 'Dengeli'})
+- Over 2.5 oranı: %${tm.over25Rate.toFixed(0)}
+- Son maç: ${tm.lastMatchScore} (${tm.lastMatchResult === '1' ? homeTeam : tm.lastMatchResult === '2' ? awayTeam : 'Berabere'})`;
+      
+      if (tm.patterns && tm.patterns.length > 0) {
+        learningSection += `
+- Pattern'ler: ${tm.patterns.join(', ')}`;
+      }
+    }
+    
+    // Takım pattern'leri
+    if (learningContext.homeTeamPatterns.length > 0 || learningContext.awayTeamPatterns.length > 0) {
+      learningSection += `
+- ${homeTeam} pattern: ${learningContext.homeTeamPatterns.length > 0 ? learningContext.homeTeamPatterns.join(', ') : 'Yok'}
+- ${awayTeam} pattern: ${learningContext.awayTeamPatterns.length > 0 ? learningContext.awayTeamPatterns.join(', ') : 'Yok'}`;
+    }
+    
+    // Öneriler
+    if (learningContext.recommendations.length > 0) {
+      learningSection += `
+
+⚠️ SİSTEM ÖNERİLERİ (Geçmiş verilerden):`;
+      learningContext.recommendations.forEach(r => {
+        learningSection += `
+${r}`;
+      });
+    }
+    
+    // Dominant agent bilgisi
+    learningSection += `
+
+🎯 EN BAŞARILI AJANLAR:
+- Maç Sonucu: ${learningContext.dominantAgents.matchResult.agent} (%${learningContext.dominantAgents.matchResult.accuracy.toFixed(0)} doğruluk)
+- Over/Under: ${learningContext.dominantAgents.overUnder.agent} (%${learningContext.dominantAgents.overUnder.accuracy.toFixed(0)} doğruluk)
+- BTTS: ${learningContext.dominantAgents.btts.agent} (%${learningContext.dominantAgents.btts.accuracy.toFixed(0)} doğruluk)`;
   }
+  
+  // KISA VE ÖZ CONTEXT - AI'ın hızlı işlemesi için
+  return `
+MAÇ: ${homeTeam} vs ${awayTeam} (${league})
 
-  // Son maçlar
-  if (homeForm?.matches && homeForm.matches.length > 0) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 📋 ${homeTeam} SON MAÇLARI
-├─────────────────────────────────────────────────────────────────────────────┤
+📊 EV SAHİBİ (${homeTeam}) - EVDE:
+- Gol: ${homeGoalsScored.toFixed(2)} attı, ${homeGoalsConceded.toFixed(2)} yedi
+- Over 2.5: %${homeOver25}
+- BTTS: %${homeBtts}
+- Form: ${homeFormStr} (${homePoints} puan)
+
+📊 DEPLASMAN (${awayTeam}) - DEPLASMANDA:
+- Gol: ${awayGoalsScored.toFixed(2)} attı, ${awayGoalsConceded.toFixed(2)} yedi
+- Over 2.5: %${awayOver25}
+- BTTS: %${awayBtts}
+- Form: ${awayFormStr} (${awayPoints} puan)
+
+📊 H2H (${h2h?.totalMatches || 0} maç):
+- ${homeTeam}: ${h2h?.homeWins || 0} galibiyet
+- Berabere: ${h2h?.draws || 0}
+- ${awayTeam}: ${h2h?.awayWins || 0} galibiyet
+- Ort. Gol: ${h2h?.avgGoals || '2.5'}
+- Over 2.5: %${h2hOver25}
+- BTTS: %${h2hBtts}
+
+📊 HESAPLANAN DEĞERLER:
+- Beklenen Gol: ${totalExpected.toFixed(2)} (${totalExpected > 2.5 ? 'OVER' : 'UNDER'} eğilimli)
+- Over 2.5 Ort: %${avgOver25} (Ev %${homeOver25} × 0.35 + Dep %${awayOver25} × 0.35 + H2H %${h2hOver25} × 0.30)
+- BTTS Ort: %${avgBtts}
+- Form Farkı: ${formDiff > 0 ? '+' : ''}${formDiff} puan (${formDiff > 5 ? homeTeam + ' favori' : formDiff < -5 ? awayTeam + ' favori' : 'Dengeli'})
+${learningSection}
+
+⚡ TAHMİN YAP VE SADECE JSON DÖNDÜR!
 `;
-    homeForm.matches.slice(0, 5).forEach((m: any, i: number) => {
-      const venue = m.isHome ? '🏠 Ev' : '🚌 Dep';
-      const totalGoals = m.totalGoals || 0;
-      context += `│   ${i + 1}. ${venue} vs ${m.opponent}: ${m.score} (${m.result}) - ${totalGoals} gol\n`;
-    });
-    context += `└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  if (awayForm?.matches && awayForm.matches.length > 0) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 📋 ${awayTeam} SON MAÇLARI
-├─────────────────────────────────────────────────────────────────────────────┤
-`;
-    awayForm.matches.slice(0, 5).forEach((m: any, i: number) => {
-      const venue = m.isHome ? '🏠 Ev' : '🚌 Dep';
-      const totalGoals = m.totalGoals || 0;
-      context += `│   ${i + 1}. ${venue} vs ${m.opponent}: ${m.score} (${m.result}) - ${totalGoals} gol\n`;
-    });
-    context += `└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  // 🆕 Hakem bilgisi ekle (varsa)
-  const referee = (matchData as any).referee;
-  if (referee) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🧑‍⚖️ HAKEM BİLGİSİ
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • Hakem: ${referee.name || 'Bilinmiyor'}
-│   • Ortalama Sarı Kart: ${referee.avgYellowCards || 'N/A'} / maç
-│   • Ortalama Kırmızı Kart: ${referee.avgRedCards || 'N/A'} / maç
-│   • Penaltı Oranı: ${referee.penaltyRate || 'N/A'}%
-│   • Ev Sahibi Eğilimi: ${referee.homeBias || 'Nötr'}
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  } else {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🧑‍⚖️ HAKEM BİLGİSİ
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • Hakem: Henüz açıklanmadı
-│   • NOT: Hakem verisi yoksa ortalama değerleri kullan (4.2 sarı/maç)
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  // 🆕 Hava durumu bilgisi ekle (varsa)
-  const weather = (matchData as any).weather;
-  if (weather) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🌤️ HAVA DURUMU
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • Durum: ${weather.condition || 'Açık'}
-│   • Sıcaklık: ${weather.temperature || '15'}°C
-│   • Rüzgar: ${weather.wind || 'Hafif'} km/s
-│   • Yağış: ${weather.precipitation || 'Yok'}
-│   • Etki: ${weather.impact || 'Düşük'}
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  // 🆕 Formasyon bilgisi ekle (varsa)
-  const formations = (matchData as any).formations;
-  if (formations) {
-    context += `
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 📋 FORMASYON TAHMİNİ
-├─────────────────────────────────────────────────────────────────────────────┤
-│   • ${homeTeam}: ${formations.home || '4-3-3'} (Tipik diziliş)
-│   • ${awayTeam}: ${formations.away || '4-4-2'} (Tipik diziliş)
-│   • Not: Son 5 maçtaki en sık kullanılan dizilişler
-└─────────────────────────────────────────────────────────────────────────────┘
-`;
-  }
-
-  context += `
-═══════════════════════════════════════════════════════════════════════════════
-                         ANALİZ TALİMATLARI
-═══════════════════════════════════════════════════════════════════════════════
-
-1. EV/DEPLASMAN VERİLERİNİ KULLAN:
-   - ${homeTeam} için EVDEKİ istatistikleri baz al
-   - ${awayTeam} için DEPLASMANDAKİ istatistikleri baz al
-
-2. OVER/UNDER HESAPLAMA:
-   - Ev sahibi evde kaç gol atıyor/yiyor?
-   - Deplasman dışarıda kaç gol atıyor/yiyor?
-   - H2H'da kaç gol atılıyor?
-
-3. HAKEM ANALİZİ:
-   - Hakemın kart eğilimini değerlendir
-   - Sert hakem ise Over cards tahmini yap
-   - Ev sahibi eğilimi varsa sonuç tahmininde dikkate al
-
-4. HAVA DURUMU ETKİSİ:
-   - Yağmurlu/rüzgarlı = düşük skor potansiyeli
-   - Çok sıcak/soğuk = yorgunluk faktörü
-
-5. RİSK DEĞERLENDİRMESİ:
-   - Veriler tutarlı mı?
-   - Güçlü sinyal var mı?
-
-Yukarıdaki TÜM verileri (hakem, hava, formasyon dahil) analiz ederek JSON formatında tahmin üret.
-`;
-
-  return context;
 }
 
 export async function runDeepAnalysisAgent(
   matchData: MatchData,
-  language: 'tr' | 'en' | 'de' = 'en'
+  language: 'tr' | 'en' | 'de' = 'en',
+  learningContext?: AgentLearningContext | null
 ): Promise<any> {
   console.log('🔬 Deep Analysis Agent starting...');
   console.log(`   📊 Match: ${matchData.homeTeam} vs ${matchData.awayTeam}`);
   console.log(`   🌍 Language: ${language}`);
-  
-  // 🧠 ÖĞRENME CONTEXT'İ - Geçmiş performansı kullan
-  let learningContext = '';
-  try {
-    learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
-    if (learningContext) {
-      console.log('   🧠 Learning Context loaded - using past performance data');
-    }
-  } catch (e) {
-    console.warn('   ⚠️ Learning Context failed, continuing without it');
-  }
-
-  // 🎯 DİNAMİK PROMPT GÜNCELLEMESİ - Performansa göre prompt'u güncelle
-  let dynamicPromptGuidance = '';
-  try {
-    dynamicPromptGuidance = await generateDynamicPromptGuidance('deepAnalysis', matchData.league || null, language);
-    if (dynamicPromptGuidance) {
-      console.log('   🎯 Dynamic Prompt Guidance loaded - prompt updated based on performance');
-    }
-  } catch (e) {
-    console.warn('   ⚠️ Dynamic Prompt Guidance failed, continuing without it');
+  if (learningContext) {
+    console.log(`   🧠 Learning Context: Active (${learningContext.recommendations.length} recommendations)`);
   }
   
-  // 🆕 PROBABILITY ENGINE - Matematiksel modelleri çalıştır
-  let probabilityResult: ProbabilityResult | null = null;
-  let probabilityContext: string = '';
-  try {
-    probabilityResult = calculateComprehensiveProbabilities(matchData);
-    probabilityContext = generateProbabilityContext(matchData);
-    console.log('   🎯 Probability Engine integrated');
-    console.log(`      Model Agreement: ${probabilityResult.modelAgreement}% | Data Quality: ${probabilityResult.dataQuality}`);
-  } catch (e) {
-    console.log('   ⚠️ Probability Engine failed, continuing without it');
-  }
+  // 🎯 Motivasyon skorları hesapla (basit ve hızlı)
+  const { homeForm, awayForm } = matchData as any;
+  const homeMotivation = calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0);
+  const awayMotivation = calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0);
+  console.log(`   💪 Motivation: Home ${homeMotivation.score}/100 (${homeMotivation.trend}), Away ${awayMotivation.score}/100 (${awayMotivation.trend})`);
   
-  // 🆕 LİG PROFİLİ
-  const leagueProfile = getLeagueProfile(matchData.league || '');
-  if (leagueProfile) {
-    console.log(`   🏆 League Profile: ${leagueProfile.name} | Avg Goals: ${leagueProfile.avgGoalsPerMatch} | Home Win: ${leagueProfile.homeWinPercentage}%`);
-  }
-  
-  // 🆕 HAKEM VERİSİ (varsa)
-  let refereeData: RefereeMatchImpact | null = null;
-  if (matchData.fixtureId) {
-    try {
-      const referee = await fetchRefereeFromSportMonks(matchData.fixtureId);
-      if (referee) {
-        refereeData = analyzeRefereeImpact(
-          referee,
-          matchData.homeTeamId || 0,
-          matchData.homeTeam,
-          matchData.awayTeamId || 0,
-          matchData.awayTeam,
-          leagueProfile?.avgYellowCardsPerMatch
-        );
-        console.log(`   🧑‍⚖️ Referee: ${referee.name} | Strictness: ${referee.strictness} | Cards/Match: ${referee.cardsPerMatch}`);
-      }
-    } catch (e) {
-      console.log('   ⚠️ Referee data not available');
-    }
-  }
-
-  // 🆕 GELİŞMİŞ MOTİVASYON ANALİZİ - Gemini API ile
-  let homeMotivationAnalysis: TeamMotivationAnalysis | null = null;
-  let awayMotivationAnalysis: TeamMotivationAnalysis | null = null;
-  
-  try {
-    console.log('   🧠 Analyzing team motivation with Gemini API...');
-    const { homeTeam, awayTeam, league, homeForm, awayForm } = matchData as any;
-    
-    [homeMotivationAnalysis, awayMotivationAnalysis] = await Promise.all([
-      analyzeTeamMotivation(
-        homeTeam || '',
-        homeForm?.form || '',
-        homeForm?.points || 0,
-        league || '',
-        language
-      ),
-      analyzeTeamMotivation(
-        awayTeam || '',
-        awayForm?.form || '',
-        awayForm?.points || 0,
-        league || '',
-        language
-      )
-    ]);
-    
-    console.log(`   ✅ Home Motivation: ${homeMotivationAnalysis.finalScore}/100 (Performance: ${homeMotivationAnalysis.performanceScore}, Team: ${homeMotivationAnalysis.teamMotivationScore})`);
-    console.log(`   ✅ Away Motivation: ${awayMotivationAnalysis.finalScore}/100 (Performance: ${awayMotivationAnalysis.performanceScore}, Team: ${awayMotivationAnalysis.teamMotivationScore})`);
-  } catch (e) {
-    console.log('   ⚠️ Motivation analysis failed, using fallback');
-    // Fallback: Eski yöntem
-    const { homeForm, awayForm } = matchData as any;
-    homeMotivationAnalysis = {
-      performanceScore: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).score,
-      teamMotivationScore: 50,
-      finalScore: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).score,
-      trend: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).trend,
-      reasoning: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).reasoning,
-      formGraph: calculateTeamMotivationScore(homeForm?.form || '', [], homeForm?.points || 0).formGraph,
-      injuries: [],
-      squadIssues: [],
-      newsImpact: '',
-      motivationFactors: []
-    };
-    awayMotivationAnalysis = {
-      performanceScore: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).score,
-      teamMotivationScore: 50,
-      finalScore: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).score,
-      trend: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).trend,
-      reasoning: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).reasoning,
-      formGraph: calculateTeamMotivationScore(awayForm?.form || '', [], awayForm?.points || 0).formGraph,
-      injuries: [],
-      squadIssues: [],
-      newsImpact: '',
-      motivationFactors: []
-    };
-  }
+  // Motivasyon analizi objelerini oluştur (sonuç için)
+  const homeMotivationAnalysis: TeamMotivationAnalysis = {
+    performanceScore: homeMotivation.score,
+    teamMotivationScore: 50,
+    finalScore: homeMotivation.score,
+    trend: homeMotivation.trend,
+    reasoning: homeMotivation.reasoning,
+    formGraph: homeMotivation.formGraph,
+    injuries: [],
+    squadIssues: [],
+    newsImpact: '',
+    motivationFactors: []
+  };
+  const awayMotivationAnalysis: TeamMotivationAnalysis = {
+    performanceScore: awayMotivation.score,
+    teamMotivationScore: 50,
+    finalScore: awayMotivation.score,
+    trend: awayMotivation.trend,
+    reasoning: awayMotivation.reasoning,
+    formGraph: awayMotivation.formGraph,
+    injuries: [],
+    squadIssues: [],
+    newsImpact: '',
+    motivationFactors: []
+  };
   
   // Use enhanced prompts if available, fallback to legacy prompts
   const systemPrompt = (ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT[language as keyof typeof ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT] || ENHANCED_DEEP_ANALYSIS_AGENT_PROMPT.en) || (DEEP_ANALYSIS_PROMPT[language] || DEEP_ANALYSIS_PROMPT.en);
-  const context = buildDeepAnalysisContext(matchData);
   
-  // Motivasyon analizi context'ine ekle
-  const motivationContext = homeMotivationAnalysis && awayMotivationAnalysis ? `
-
-═══════════════════════════════════════════════════════════════════════════════
-💪 GELİŞMİŞ MOTİVASYON ANALİZİ (Gemini API ile)
-═══════════════════════════════════════════════════════════════════════════════
-
-🏠 ${matchData.homeTeam}:
-   • Final Skor: ${homeMotivationAnalysis.finalScore}/100 (%50 Performans: ${homeMotivationAnalysis.performanceScore} + %50 Takım İçi: ${homeMotivationAnalysis.teamMotivationScore})
-   • Trend: ${homeMotivationAnalysis.trend === 'improving' ? 'Yükselişte 📈' : homeMotivationAnalysis.trend === 'declining' ? 'Düşüşte 📉' : 'Stabil ➡️'}
-   • Form: ${homeMotivationAnalysis.formGraph}
-   ${homeMotivationAnalysis.injuries.length > 0 ? `   • Sakatlıklar: ${homeMotivationAnalysis.injuries.join(', ')}` : ''}
-   ${homeMotivationAnalysis.squadIssues.length > 0 ? `   • Kadro Sorunları: ${homeMotivationAnalysis.squadIssues.join(', ')}` : ''}
-   ${homeMotivationAnalysis.newsImpact ? `   • Haberler: ${homeMotivationAnalysis.newsImpact}` : ''}
-   ${homeMotivationAnalysis.motivationFactors.length > 0 ? `   • Motivasyon Faktörleri: ${homeMotivationAnalysis.motivationFactors.join(', ')}` : ''}
-   • Detay: ${homeMotivationAnalysis.reasoning}
-
-🚌 ${matchData.awayTeam}:
-   • Final Skor: ${awayMotivationAnalysis.finalScore}/100 (%50 Performans: ${awayMotivationAnalysis.performanceScore} + %50 Takım İçi: ${awayMotivationAnalysis.teamMotivationScore})
-   • Trend: ${awayMotivationAnalysis.trend === 'improving' ? 'Yükselişte 📈' : awayMotivationAnalysis.trend === 'declining' ? 'Düşüşte 📉' : 'Stabil ➡️'}
-   • Form: ${awayMotivationAnalysis.formGraph}
-   ${awayMotivationAnalysis.injuries.length > 0 ? `   • Sakatlıklar: ${awayMotivationAnalysis.injuries.join(', ')}` : ''}
-   ${awayMotivationAnalysis.squadIssues.length > 0 ? `   • Kadro Sorunları: ${awayMotivationAnalysis.squadIssues.join(', ')}` : ''}
-   ${awayMotivationAnalysis.newsImpact ? `   • Haberler: ${awayMotivationAnalysis.newsImpact}` : ''}
-   ${awayMotivationAnalysis.motivationFactors.length > 0 ? `   • Motivasyon Faktörleri: ${awayMotivationAnalysis.motivationFactors.join(', ')}` : ''}
-   • Detay: ${awayMotivationAnalysis.reasoning}
-
-═══════════════════════════════════════════════════════════════════════════════
-` : '';
+  // 🧠 Learning Context'i context'e ekle
+  const context = buildDeepAnalysisContext(matchData, learningContext);
   
-  // Probability Engine context ekleme
-  const probabilitySection = probabilityContext ? `
-
-═══════════════════════════════════════════════════════════════════════════════
-🎯 PROBABILITY ENGINE - MATEMATİKSEL MODEL SONUÇLARI
-═══════════════════════════════════════════════════════════════════════════════
-${probabilityContext}
-═══════════════════════════════════════════════════════════════════════════════
-` : '';
-  
-  // Learning context section
-  const learningSection = learningContext ? `
-═══════════════════════════════════════════════════════════════════════════════
-🧠 ÖĞRENME CONTEXT (Geçmiş Performans)
-═══════════════════════════════════════════════════════════════════════════════
-${learningContext}
-═══════════════════════════════════════════════════════════════════════════════
-` : '';
-
-  // Dynamic prompt guidance section
-  const dynamicPromptSection = dynamicPromptGuidance || '';
-  
-  // Language-specific user message
+  // Language-specific user message - KISALTILMIŞ VERSİYON
   const userMessageByLang = {
-    tr: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nBu verileri kullanarak çok katmanlı derin analiz yap.\nPROBABILITY ENGINE sonuçlarını REFERANS al ama KENDİ ANALİZİNİ yap.\nGELİŞMİŞ MOTİVASYON ANALİZİ sonuçlarını MUTLAKA kullan - bu %50 performans + %50 takım içi motivasyon (sakatlıklar, haberler, kadro) bazlı.\nÖĞRENME CONTEXT'i kullanarak geçmiş performansı dikkate al.\nDİNAMİK PROMPT GÜNCELLEMESİ'ni dikkate alarak yaklaşımını optimize et.\nANALİZ AĞIRLIĞI: %60 veri analizi, %20 matematiksel tahmin, %20 psikolojik faktörler.\nSADECE JSON formatında döndür, başka açıklama ekleme.`,
-    en: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nPerform multi-layered deep analysis using this data.\nUse PROBABILITY ENGINE results as REFERENCE but form your OWN analysis.\nALWAYS use ADVANCED MOTIVATION ANALYSIS results - this is based on 50% performance + 50% team motivation (injuries, news, squad).\nUse LEARNING CONTEXT to consider past performance.\nOptimize your approach by considering DYNAMIC PROMPT UPDATE.\nANALYSIS WEIGHT: 60% data analysis, 20% mathematical prediction, 20% psychological factors.\nReturn ONLY JSON format, no additional explanation.`,
-    de: `${context}${learningSection}${dynamicPromptSection}${probabilitySection}${motivationContext}\n\nFühre eine mehrschichtige Tiefenanalyse mit diesen Daten durch.\nVerwende PROBABILITY ENGINE Ergebnisse als REFERENZ, aber bilde deine EIGENE Analyse.\nVerwende IMMER ADVANCED MOTIVATION ANALYSIS Ergebnisse - basierend auf 50% Leistung + 50% Team-Motivation (Verletzungen, Nachrichten, Kader).\nBerücksichtige DYNAMISCHE PROMPT-AKTUALISIERUNG.\nANALYSE-GEWICHTUNG: 60% Datenanalyse, 20% mathematische Vorhersage, 20% psychologische Faktoren.\nGib NUR im JSON-Format zurück, keine zusätzliche Erklärung.`
+    tr: `${context}\n\nYukarıdaki verileri analiz et. SADECE JSON döndür, açıklama yazma.`,
+    en: `${context}\n\nAnalyze the data above. Return ONLY JSON, no explanations.`,
+    de: `${context}\n\nAnalysiere die obigen Daten. Gib NUR JSON zurück, keine Erklärungen.`
   };
   const userMessage = userMessageByLang[language] || userMessageByLang.en;
 

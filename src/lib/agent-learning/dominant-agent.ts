@@ -77,21 +77,29 @@ export async function getDominantAgents(
 ): Promise<Record<string, AgentPerformance>> {
   try {
     // agent_performance tablosundan en başarılı ajanları çek
-    let query = supabase
+    // NOT: Minimum 3 maç yeterli (başlangıç için)
+    
+    // Önce genel performansı al (league IS NULL)
+    // Bu, tüm liglerdeki toplam performansı gösterir
+    const { data, error } = await supabase
       .from('agent_performance')
       .select('*')
-      .gte('total_matches', 10); // En az 10 maç oynamış olmalı
+      .is('league', null) // Genel performans (tüm ligler)
+      .gte('total_matches', 3); // En az 3 maç oynamış olmalı
     
-    if (league) {
-      query = query.eq('league', league);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error || !data || data.length === 0) {
-      console.warn('⚠️ No agent performance data found, using defaults');
+    if (error) {
+      console.warn('⚠️ Agent performance query error:', error.message);
+      console.warn('   Tablo mevcut mu? agent_performance tablosunu kontrol edin.');
       return getDefaultAgentPerformance();
     }
+    
+    if (!data || data.length === 0) {
+      console.warn('⚠️ No agent performance data found (min 3 matches required)');
+      console.warn('   Henüz yeterli maç analizi yapılmamış. Default değerler kullanılıyor.');
+      return getDefaultAgentPerformance();
+    }
+    
+    console.log(`✅ Agent performance data found: ${data.length} agents with sufficient matches`);
     
     // Her ajan için performans hesapla
     const agentPerformance: Record<string, AgentPerformance> = {};
@@ -100,18 +108,18 @@ export async function getDominantAgents(
       const agentName = row.agent_name;
       
       // Overall score hesapla
-      const matchResultAcc = row.recent_match_result_accuracy || 0;
-      const overUnderAcc = row.recent_over_under_accuracy || 0;
-      const bttsAcc = row.recent_btts_accuracy || 0;
-      const calibration = row.calibration_score || 50;
-      const momentum = row.recent_5_accuracy || 0;
+      // NOT: Tablo kolonları: recent_match_result_accuracy, recent_over_under_accuracy, recent_btts_accuracy
+      const matchResultAcc = parseFloat(row.recent_match_result_accuracy) || parseFloat(row.match_result_accuracy) || 0;
+      const overUnderAcc = parseFloat(row.recent_over_under_accuracy) || parseFloat(row.over_under_accuracy) || 0;
+      const bttsAcc = parseFloat(row.recent_btts_accuracy) || parseFloat(row.btts_accuracy) || 0;
       
-      // Ağırlıklı skor: %40 accuracy + %30 calibration + %30 momentum
-      const overallScore = (
-        ((matchResultAcc + overUnderAcc + bttsAcc) / 3) * 0.4 +
-        calibration * 0.3 +
-        momentum * 0.3
-      );
+      // Calibration ve momentum için varsayılan değerler (tablo yapısında yok)
+      const avgAccuracy = (matchResultAcc + overUnderAcc + bttsAcc) / 3;
+      const calibration = 50; // Varsayılan
+      const momentum = avgAccuracy; // Son accuracy'yi momentum olarak kullan
+      
+      // Ağırlıklı skor: %60 accuracy + %20 calibration + %20 momentum
+      const overallScore = avgAccuracy * 0.6 + calibration * 0.2 + momentum * 0.2;
       
       agentPerformance[agentName] = {
         agentName,
@@ -123,6 +131,8 @@ export async function getDominantAgents(
         calibrationScore: calibration,
         overallScore
       };
+      
+      console.log(`   📊 ${agentName}: MR=${matchResultAcc.toFixed(1)}%, OU=${overUnderAcc.toFixed(1)}%, BTTS=${bttsAcc.toFixed(1)}% (${row.total_matches} matches)`);
     }
     
     return agentPerformance;
@@ -228,6 +238,8 @@ export async function getTeamMatchupMemory(
   awayTeamId: number
 ): Promise<TeamMatchupMemory | null> {
   try {
+    console.log(`   🔍 Looking for team matchup: ${homeTeamId} vs ${awayTeamId}`);
+    
     // team_matchup_memory tablosundan veri çek
     const { data, error } = await supabase
       .from('team_matchup_memory')
@@ -237,9 +249,17 @@ export async function getTeamMatchupMemory(
       .limit(1)
       .single();
     
-    if (error || !data) {
+    if (error) {
+      console.log(`   ⚠️ Team matchup query error: ${error.message}`);
       return null;
     }
+    
+    if (!data) {
+      console.log(`   ℹ️ No previous matchup found for these teams`);
+      return null;
+    }
+    
+    console.log(`   ✅ Found matchup history: ${data.total_matches} matches, avg ${data.avg_total_goals?.toFixed(1)} goals`);
     
     return {
       homeTeamId: data.home_team_id,
