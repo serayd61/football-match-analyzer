@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 500,
@@ -103,7 +103,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     description: 'AI Football Chatbot API',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-1.5-flash',
     features: ['match_predictions', 'score_predictions', 'quick_analysis']
   });
 }
