@@ -30,15 +30,15 @@ INSERT INTO team_matchup_memory (
   updated_at
 )
 SELECT 
-  home_team_id,
-  away_team_id,
+  ua.home_team_id,
+  ua.away_team_id,
   COUNT(*) as total_matches,
-  SUM(CASE WHEN actual_home_goals > actual_away_goals THEN 1 ELSE 0 END) as home_wins,
-  SUM(CASE WHEN actual_home_goals = actual_away_goals THEN 1 ELSE 0 END) as draws,
-  SUM(CASE WHEN actual_home_goals < actual_away_goals THEN 1 ELSE 0 END) as away_wins,
-  AVG(COALESCE(actual_home_goals, 0) + COALESCE(actual_away_goals, 0)) as avg_total_goals,
-  100.0 * SUM(CASE WHEN actual_home_goals > 0 AND actual_away_goals > 0 THEN 1 ELSE 0 END) / COUNT(*) as btts_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(actual_home_goals, 0) + COALESCE(actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / COUNT(*) as over_25_rate,
+  SUM(CASE WHEN ua.actual_home_goals > ua.actual_away_goals THEN 1 ELSE 0 END) as home_wins,
+  SUM(CASE WHEN ua.actual_home_goals = ua.actual_away_goals THEN 1 ELSE 0 END) as draws,
+  SUM(CASE WHEN ua.actual_home_goals < ua.actual_away_goals THEN 1 ELSE 0 END) as away_wins,
+  AVG(COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) as avg_total_goals,
+  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / COUNT(*) as btts_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / COUNT(*) as over_25_rate,
   -- Son maç bilgisi (subquery ile)
   (SELECT 
     CASE 
@@ -47,30 +47,30 @@ SELECT
       ELSE 'X'
     END
    FROM unified_analysis u2 
-   WHERE u2.home_team_id = unified_analysis.home_team_id 
-     AND u2.away_team_id = unified_analysis.away_team_id
+   WHERE u2.home_team_id = ua.home_team_id 
+     AND u2.away_team_id = ua.away_team_id
      AND u2.settled_at IS NOT NULL
    ORDER BY u2.match_date DESC LIMIT 1
   ) as last_match_result,
   (SELECT u2.actual_home_goals || '-' || u2.actual_away_goals
    FROM unified_analysis u2 
-   WHERE u2.home_team_id = unified_analysis.home_team_id 
-     AND u2.away_team_id = unified_analysis.away_team_id
+   WHERE u2.home_team_id = ua.home_team_id 
+     AND u2.away_team_id = ua.away_team_id
      AND u2.settled_at IS NOT NULL
    ORDER BY u2.match_date DESC LIMIT 1
   ) as last_match_score,
-  MAX(match_date) as last_match_date,
+  MAX(ua.match_date) as last_match_date,
   '[]'::jsonb as patterns,
   '{}'::jsonb as agent_accuracy,
   NOW() as created_at,
   NOW() as updated_at
-FROM unified_analysis
-WHERE settled_at IS NOT NULL
-  AND home_team_id IS NOT NULL
-  AND away_team_id IS NOT NULL
-  AND actual_home_goals IS NOT NULL
-  AND actual_away_goals IS NOT NULL
-GROUP BY home_team_id, away_team_id
+FROM unified_analysis ua
+WHERE ua.settled_at IS NOT NULL
+  AND ua.home_team_id IS NOT NULL
+  AND ua.away_team_id IS NOT NULL
+  AND ua.actual_home_goals IS NOT NULL
+  AND ua.actual_away_goals IS NOT NULL
+GROUP BY ua.home_team_id, ua.away_team_id
 ON CONFLICT (home_team_id, away_team_id) 
 DO UPDATE SET
   total_matches = EXCLUDED.total_matches,
