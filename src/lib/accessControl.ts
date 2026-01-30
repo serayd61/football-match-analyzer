@@ -34,10 +34,10 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
   console.log('📊 Profile query result:', JSON.stringify({ profile, error }));
   console.log('📊 subscription_status:', profile?.subscription_status);
 
-  // Profil yoksa oluştur (7 gün trial)
+  // Profil yoksa oluştur (1 gün trial, 3 analiz limiti)
   if (!profile) {
     const trialEnds = new Date();
-    trialEnds.setDate(trialEnds.getDate() + 7);
+    trialEnds.setDate(trialEnds.getDate() + 1); // 1 gün trial
 
     const { data: newProfile } = await db
       .from('profiles')
@@ -134,7 +134,7 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Free tier kontrolü - ARTIK ANALİZ YAPAMAZ (SADECE PRO)
+  // Free tier kontrolü - Kayıt ol ve 1 günlük trial başlat
   const isFree = profile.subscription_status === 'free' || !profile.subscription_status;
   
   if (isFree) {
@@ -146,10 +146,10 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
       trialExpired: false,
       analysesUsed: 0,
       analysesLimit: 0,
-      canAnalyze: false, // FREE TIER: Analiz yapamaz, sadece PRO
+      canAnalyze: false,
       canUseAgents: false,
-      message: 'Maç analizi için Pro abonelik gereklidir',
-      redirectTo: '/pricing',
+      message: 'Ücretsiz kayıt ol ve 3 maç analizi hakkı kazan!',
+      redirectTo: '/register',
     };
   }
 
@@ -176,20 +176,27 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Trial aktif (eski kullanıcılar için) - ARTIK ANALİZ YAPAMAZ (SADECE PRO)
+  // Trial aktif - 3 analiz limiti
   if (isTrial) {
+    const today = now.toISOString().split('T')[0];
+    const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
+    const TRIAL_DAILY_LIMIT = 3;
+    const canAnalyze = analysesToday < TRIAL_DAILY_LIMIT;
+    
     return {
-      hasAccess: false,
+      hasAccess: true,
       isPro: false,
       isTrial: true,
       trialDaysLeft,
       trialExpired: false,
-      analysesUsed: 0,
-      analysesLimit: 0,
-      canAnalyze: false, // TRIAL: Analiz yapamaz, sadece PRO
-      canUseAgents: false,
-      message: 'Maç analizi için Pro abonelik gereklidir',
-      redirectTo: '/pricing',
+      analysesUsed: analysesToday,
+      analysesLimit: TRIAL_DAILY_LIMIT,
+      canAnalyze, // Trial: Günlük 3 analiz limiti
+      canUseAgents: canAnalyze, // Agent'lar da aynı limite tabi
+      message: canAnalyze 
+        ? `Trial: ${TRIAL_DAILY_LIMIT - analysesToday} analiz hakkınız kaldı` 
+        : 'Günlük analiz limitinize ulaştınız. Pro\'ya yükseltin!',
+      redirectTo: canAnalyze ? undefined : '/pricing',
     };
   }
 
