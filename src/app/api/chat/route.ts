@@ -1,13 +1,15 @@
 // src/app/api/chat/route.ts
-// AI Football Chatbot - Gemini API
+// AI Football Chatbot - OpenAI GPT-4o-mini
 // Hızlı ve öz maç tahminleri
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 
 export const dynamic = 'force-dynamic';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 const SYSTEM_PROMPT = `Sen profesyonel bir futbol analisti ve bahis uzmanısın. Kullanıcılar sana maç soruları soracak.
 
@@ -53,36 +55,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Mesaj gerekli' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-pro',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 500,
-      }
+    // Chat history'yi OpenAI formatına çevir
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...history.map((msg: { role: string; content: string }) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      })),
+      { role: 'user', content: message }
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages,
+      temperature: 0.7,
+      max_tokens: 500,
     });
 
-    // Chat history'yi Gemini formatına çevir
-    const chatHistory = history.map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: 'Sen bir futbol analisti olarak davranacaksın. İşte kuralların:' }]
-        },
-        {
-          role: 'model',
-          parts: [{ text: SYSTEM_PROMPT }]
-        },
-        ...chatHistory
-      ]
-    });
-
-    const result = await chat.sendMessage(message);
-    const response = result.response.text();
+    const response = completion.choices[0]?.message?.content || 'Üzgünüm, bir hata oluştu.';
 
     return NextResponse.json({
       success: true,
@@ -103,7 +93,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     description: 'AI Football Chatbot API',
-    model: 'gemini-pro',
+    model: 'gpt-4o-mini',
     features: ['match_predictions', 'score_predictions', 'quick_analysis']
   });
 }
