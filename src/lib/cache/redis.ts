@@ -167,3 +167,59 @@ export async function getAnalysisStatus(fixtureId: number): Promise<{
   return result as any;
 }
 
+/**
+ * 🆕 Belirli bir maç için tüm cache'i temizle
+ */
+export async function clearMatchCache(fixtureId: number): Promise<{ cleared: string[] }> {
+  const redis = getRedisClient();
+  const keysToDelete = [
+    CACHE_KEYS.ANALYSIS(fixtureId),
+    CACHE_KEYS.AGENT_ANALYSIS(fixtureId),
+    CACHE_KEYS.ANALYSIS_STATUS(fixtureId),
+    CACHE_KEYS.RESEARCH(fixtureId),
+  ];
+  
+  const cleared: string[] = [];
+  
+  for (const key of keysToDelete) {
+    try {
+      const exists = await redis.exists(key);
+      if (exists) {
+        await redis.del(key);
+        cleared.push(key);
+      }
+    } catch (error) {
+      console.error(`Error deleting ${key}:`, error);
+    }
+  }
+  
+  console.log(`🗑️ Cleared ${cleared.length} cache keys for fixture ${fixtureId}`);
+  return { cleared };
+}
+
+/**
+ * 🆕 Tüm analiz cache'lerini temizle
+ */
+export async function clearAllAnalysisCache(): Promise<{ cleared: number }> {
+  const redis = getRedisClient();
+  
+  try {
+    const patterns = ['analysis:*', 'agent_analysis:*', 'research:*'];
+    let totalCleared = 0;
+    
+    for (const pattern of patterns) {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await Promise.all(keys.map(key => redis.del(key)));
+        totalCleared += keys.length;
+      }
+    }
+    
+    console.log(`🗑️ Cleared ${totalCleared} analysis cache keys`);
+    return { cleared: totalCleared };
+  } catch (error) {
+    console.error('Error clearing all analysis cache:', error);
+    return { cleared: 0 };
+  }
+}
+
