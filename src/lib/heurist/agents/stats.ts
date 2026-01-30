@@ -1471,12 +1471,9 @@ Return detailed JSON:`;
       const parsed = extractJSON(response, matchData, detailedHome, detailedAway);
       if (parsed) {
         // Validate and enhance with calculated values
-        if (typeof parsed.goalExpectancy === 'string') {
-          parsed.goalExpectancy = parseFloat(parsed.goalExpectancy);
-        }
-        if (!parsed.goalExpectancy || isNaN(parsed.goalExpectancy)) {
-          parsed.goalExpectancy = expectedTotal;
-        }
+        // 🔧 FIX: Her zaman hesaplanan expectedTotal'ı kullan (AI'ın değeri güvenilmez)
+        // AI bazen 2.5 gibi varsayılan değer veriyor, gerçek hesaplama daha doğru
+        parsed.goalExpectancy = expectedTotal;
         
         // Use aggressive confidence if AI gave lower
         if (!parsed.confidence || parsed.confidence < confidences.overUnderConf - 10) {
