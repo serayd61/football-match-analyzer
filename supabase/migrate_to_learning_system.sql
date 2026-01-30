@@ -3,12 +3,12 @@
 -- Mevcut verileri yeni öğrenme sistemine aktar
 -- ============================================================================
 
--- 1. Önce tabloların var olduğundan emin ol
--- (team_matchup_memory.sql dosyasını önce çalıştırın)
+-- NOT: unified_analysis'te home_team_id yok, sadece home_team (string) var
+-- Bu yüzden takım adlarının hash'ini ID olarak kullanacağız
 
 -- ============================================================================
 -- STEP 1: team_matchup_memory tablosunu doldur
--- unified_analysis'teki settled maçlardan takım eşleşme verilerini çıkar
+-- Takım adlarını hashleyerek ID olarak kullan
 -- ============================================================================
 
 INSERT INTO team_matchup_memory (
@@ -30,8 +30,9 @@ INSERT INTO team_matchup_memory (
   updated_at
 )
 SELECT 
-  ua.home_team_id,
-  ua.away_team_id,
+  -- Takım adını hash'leyerek ID oluştur (abs ile pozitif yap)
+  ABS(hashtext(ua.home_team)) as home_team_id,
+  ABS(hashtext(ua.away_team)) as away_team_id,
   COUNT(*) as total_matches,
   SUM(CASE WHEN ua.actual_home_goals > ua.actual_away_goals THEN 1 ELSE 0 END) as home_wins,
   SUM(CASE WHEN ua.actual_home_goals = ua.actual_away_goals THEN 1 ELSE 0 END) as draws,
@@ -39,7 +40,7 @@ SELECT
   AVG(COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) as avg_total_goals,
   100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / COUNT(*) as btts_rate,
   100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / COUNT(*) as over_25_rate,
-  -- Son maç bilgisi (subquery ile)
+  -- Son maç bilgisi
   (SELECT 
     CASE 
       WHEN u2.actual_home_goals > u2.actual_away_goals THEN '1'
@@ -47,15 +48,15 @@ SELECT
       ELSE 'X'
     END
    FROM unified_analysis u2 
-   WHERE u2.home_team_id = ua.home_team_id 
-     AND u2.away_team_id = ua.away_team_id
+   WHERE u2.home_team = ua.home_team 
+     AND u2.away_team = ua.away_team
      AND u2.settled_at IS NOT NULL
    ORDER BY u2.match_date DESC LIMIT 1
   ) as last_match_result,
   (SELECT u2.actual_home_goals || '-' || u2.actual_away_goals
    FROM unified_analysis u2 
-   WHERE u2.home_team_id = ua.home_team_id 
-     AND u2.away_team_id = ua.away_team_id
+   WHERE u2.home_team = ua.home_team 
+     AND u2.away_team = ua.away_team
      AND u2.settled_at IS NOT NULL
    ORDER BY u2.match_date DESC LIMIT 1
   ) as last_match_score,
@@ -66,11 +67,11 @@ SELECT
   NOW() as updated_at
 FROM unified_analysis ua
 WHERE ua.settled_at IS NOT NULL
-  AND ua.home_team_id IS NOT NULL
-  AND ua.away_team_id IS NOT NULL
+  AND ua.home_team IS NOT NULL
+  AND ua.away_team IS NOT NULL
   AND ua.actual_home_goals IS NOT NULL
   AND ua.actual_away_goals IS NOT NULL
-GROUP BY ua.home_team_id, ua.away_team_id
+GROUP BY ua.home_team, ua.away_team
 ON CONFLICT (home_team_id, away_team_id) 
 DO UPDATE SET
   total_matches = EXCLUDED.total_matches,
@@ -112,36 +113,36 @@ INSERT INTO team_performance_memory (
   created_at,
   updated_at
 )
-SELECT DISTINCT ON (home_team_id)
-  home_team_id as team_id,
-  home_team as team_name,
-  league,
+SELECT DISTINCT ON (ua.home_team)
+  ABS(hashtext(ua.home_team)) as team_id,
+  ua.home_team as team_name,
+  ua.league,
   (SELECT jsonb_agg(COALESCE(actual_home_goals, 0) ORDER BY match_date DESC)
    FROM (SELECT actual_home_goals, match_date FROM unified_analysis u2 
-         WHERE u2.home_team_id = ua.home_team_id AND u2.settled_at IS NOT NULL 
+         WHERE u2.home_team = ua.home_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_goals,
   (SELECT jsonb_agg(COALESCE(actual_away_goals, 0) ORDER BY match_date DESC)
    FROM (SELECT actual_away_goals, match_date FROM unified_analysis u2 
-         WHERE u2.home_team_id = ua.home_team_id AND u2.settled_at IS NOT NULL 
+         WHERE u2.home_team = ua.home_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_conceded,
-  AVG(COALESCE(actual_home_goals, 0)) as avg_goals_scored,
-  AVG(COALESCE(actual_away_goals, 0)) as avg_goals_conceded,
-  100.0 * SUM(CASE WHEN actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
-  100.0 * SUM(CASE WHEN actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(actual_home_goals, 0) + COALESCE(actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
-  100.0 * SUM(CASE WHEN actual_home_goals > 0 AND actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
+  AVG(COALESCE(ua.actual_home_goals, 0)) as avg_goals_scored,
+  AVG(COALESCE(ua.actual_away_goals, 0)) as avg_goals_conceded,
+  100.0 * SUM(CASE WHEN ua.actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
   NULL as home_form,
   NULL as away_form,
   '[]'::jsonb as patterns,
   NOW() as created_at,
   NOW() as updated_at
 FROM unified_analysis ua
-WHERE settled_at IS NOT NULL
-  AND home_team_id IS NOT NULL
-  AND actual_home_goals IS NOT NULL
-GROUP BY home_team_id, home_team, league
+WHERE ua.settled_at IS NOT NULL
+  AND ua.home_team IS NOT NULL
+  AND ua.actual_home_goals IS NOT NULL
+GROUP BY ua.home_team, ua.league
 ON CONFLICT (team_id) 
 DO UPDATE SET
   team_name = EXCLUDED.team_name,
@@ -175,36 +176,36 @@ INSERT INTO team_performance_memory (
   created_at,
   updated_at
 )
-SELECT DISTINCT ON (away_team_id)
-  away_team_id as team_id,
-  away_team as team_name,
-  league,
+SELECT DISTINCT ON (ua.away_team)
+  ABS(hashtext(ua.away_team)) as team_id,
+  ua.away_team as team_name,
+  ua.league,
   (SELECT jsonb_agg(COALESCE(actual_away_goals, 0) ORDER BY match_date DESC)
    FROM (SELECT actual_away_goals, match_date FROM unified_analysis u2 
-         WHERE u2.away_team_id = ua.away_team_id AND u2.settled_at IS NOT NULL 
+         WHERE u2.away_team = ua.away_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_goals,
   (SELECT jsonb_agg(COALESCE(actual_home_goals, 0) ORDER BY match_date DESC)
    FROM (SELECT actual_home_goals, match_date FROM unified_analysis u2 
-         WHERE u2.away_team_id = ua.away_team_id AND u2.settled_at IS NOT NULL 
+         WHERE u2.away_team = ua.away_team AND u2.settled_at IS NOT NULL 
          ORDER BY match_date DESC LIMIT 5) sub
   ) as last_5_conceded,
-  AVG(COALESCE(actual_away_goals, 0)) as avg_goals_scored,
-  AVG(COALESCE(actual_home_goals, 0)) as avg_goals_conceded,
-  100.0 * SUM(CASE WHEN actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
-  100.0 * SUM(CASE WHEN actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
-  100.0 * SUM(CASE WHEN (COALESCE(actual_home_goals, 0) + COALESCE(actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
-  100.0 * SUM(CASE WHEN actual_home_goals > 0 AND actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
+  AVG(COALESCE(ua.actual_away_goals, 0)) as avg_goals_scored,
+  AVG(COALESCE(ua.actual_home_goals, 0)) as avg_goals_conceded,
+  100.0 * SUM(CASE WHEN ua.actual_home_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as clean_sheet_rate,
+  100.0 * SUM(CASE WHEN ua.actual_away_goals = 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as failed_to_score_rate,
+  100.0 * SUM(CASE WHEN (COALESCE(ua.actual_home_goals, 0) + COALESCE(ua.actual_away_goals, 0)) > 2 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as over_25_rate,
+  100.0 * SUM(CASE WHEN ua.actual_home_goals > 0 AND ua.actual_away_goals > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) as btts_rate,
   NULL as home_form,
   NULL as away_form,
   '[]'::jsonb as patterns,
   NOW() as created_at,
   NOW() as updated_at
 FROM unified_analysis ua
-WHERE settled_at IS NOT NULL
-  AND away_team_id IS NOT NULL
-  AND actual_away_goals IS NOT NULL
-GROUP BY away_team_id, away_team, league
+WHERE ua.settled_at IS NOT NULL
+  AND ua.away_team IS NOT NULL
+  AND ua.actual_away_goals IS NOT NULL
+GROUP BY ua.away_team, ua.league
 ON CONFLICT (team_id) 
 DO UPDATE SET
   team_name = COALESCE(EXCLUDED.team_name, team_performance_memory.team_name),
@@ -334,39 +335,39 @@ SELECT 'agent_learning_log' as table_name, COUNT(*) as record_count FROM agent_l
 -- team_matchup_memory için pattern'leri hesapla
 UPDATE team_matchup_memory SET
   patterns = (
-    SELECT jsonb_agg(pattern)
+    SELECT COALESCE(jsonb_agg(pattern), '[]'::jsonb)
     FROM (
       SELECT DISTINCT pattern FROM (
         SELECT 
           CASE 
-            WHEN avg_total_goals < 2.0 THEN 'LOW_SCORING_MATCHUP'
-            WHEN avg_total_goals > 3.0 THEN 'HIGH_SCORING_MATCHUP'
+            WHEN tmm.avg_total_goals < 2.0 THEN 'LOW_SCORING_MATCHUP'
+            WHEN tmm.avg_total_goals > 3.0 THEN 'HIGH_SCORING_MATCHUP'
             ELSE NULL
           END as pattern
-        FROM team_matchup_memory tmm2 WHERE tmm2.id = team_matchup_memory.id
+        FROM team_matchup_memory tmm WHERE tmm.id = team_matchup_memory.id
         UNION ALL
         SELECT 
           CASE 
-            WHEN btts_rate < 30 THEN 'BTTS_UNLIKELY'
-            WHEN btts_rate > 70 THEN 'BTTS_LIKELY'
+            WHEN tmm.btts_rate < 30 THEN 'BTTS_UNLIKELY'
+            WHEN tmm.btts_rate > 70 THEN 'BTTS_LIKELY'
             ELSE NULL
           END
-        FROM team_matchup_memory tmm2 WHERE tmm2.id = team_matchup_memory.id
+        FROM team_matchup_memory tmm WHERE tmm.id = team_matchup_memory.id
         UNION ALL
         SELECT 
           CASE 
-            WHEN over_25_rate < 30 THEN 'UNDER_PRONE'
-            WHEN over_25_rate > 70 THEN 'OVER_PRONE'
+            WHEN tmm.over_25_rate < 30 THEN 'UNDER_PRONE'
+            WHEN tmm.over_25_rate > 70 THEN 'OVER_PRONE'
             ELSE NULL
           END
-        FROM team_matchup_memory tmm2 WHERE tmm2.id = team_matchup_memory.id
+        FROM team_matchup_memory tmm WHERE tmm.id = team_matchup_memory.id
         UNION ALL
         SELECT 
           CASE 
-            WHEN draws::float / NULLIF(total_matches, 0) > 0.4 THEN 'DRAW_PRONE'
+            WHEN tmm.draws::float / NULLIF(tmm.total_matches, 0) > 0.4 THEN 'DRAW_PRONE'
             ELSE NULL
           END
-        FROM team_matchup_memory tmm2 WHERE tmm2.id = team_matchup_memory.id
+        FROM team_matchup_memory tmm WHERE tmm.id = team_matchup_memory.id
       ) patterns
       WHERE pattern IS NOT NULL
     ) filtered
