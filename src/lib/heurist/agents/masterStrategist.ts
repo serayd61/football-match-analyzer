@@ -221,6 +221,23 @@ function calculateDataScore(
     }
   }
   
+  // 🔧 FIX: goalExpectancy'yi Over/Under hesaplamasına dahil et
+  // Bu kritik! Poisson/MC düşük değer verse bile gerçek gol beklentisi yüksekse Over olmalı
+  if (stats?.goalExpectancy) {
+    const goalExp = stats.goalExpectancy;
+    reasoning.push(`⚽ Gol beklentisi: ${goalExp.toFixed(2)}`);
+    
+    // Gol beklentisine göre overProb'u düzelt
+    // 2.5 gol = %50, her 0.5 gol farkı için ±15%
+    const goalBasedOver = 0.50 + ((goalExp - 2.5) * 0.30);
+    
+    // Poisson/MC ve gol beklentisinin ağırlıklı ortalaması
+    // Gol beklentisi daha güvenilir çünkü gerçek veriye dayanıyor
+    overProb = (overProb * 0.4) + (goalBasedOver * 0.6);
+    
+    reasoning.push(`📈 Gol bazlı Over: ${Math.round(goalBasedOver * 100)}%`);
+  }
+  
   // xG analizi
   if (stats?.xgAnalysis) {
     const xg = stats.xgAnalysis;
