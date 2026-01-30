@@ -401,22 +401,23 @@ function calculatePsychologyScore(
   const homeMultiplier = 0.85 + (homeMotivation / 100) * 0.45;
   const awayMultiplier = 0.85 + (awayMotivation / 100) * 0.45;
   
-  // Over/Under etkisi
+  // Over/Under etkisi - 🔧 FIX: Daha dengeli hesaplama
   const avgMotivation = (homeMotivation + awayMotivation) / 2;
   let overUnderImpact = 0;
   
-  if (avgMotivation < 40) {
-    overUnderImpact = -15;
-    reasoning.push(`😴 Düşük motivasyon → Under eğilimi (+15%)`);
-  } else if (avgMotivation > 70) {
-    overUnderImpact = 10;
-    reasoning.push(`🔥 Yüksek motivasyon → Over eğilimi (+10%)`);
+  // Sadece çok düşük veya çok yüksek motivasyonda etki
+  if (avgMotivation < 25) {
+    overUnderImpact = -8; // Eskiden -15 idi, çok agresifti
+    reasoning.push(`😴 Çok düşük motivasyon → Hafif Under eğilimi`);
+  } else if (avgMotivation > 75) {
+    overUnderImpact = 8;
+    reasoning.push(`🔥 Yüksek motivasyon → Hafif Over eğilimi`);
   }
   
-  // İki takım da stresli
+  // İki takım da stresli - sadece uyarı, artık over/under'ı etkilemiyor
   if (homePsychology.emotionalState === 'nervous' && awayPsychology.emotionalState === 'nervous') {
-    overUnderImpact -= 10;
-    warnings.push(`😰 Her iki takım da gergin - Düşük tempolu maç bekleniyor`);
+    // overUnderImpact -= 10; // 🔧 KALDIRILDI - Bu çok fazla Under bias'ı yaratıyordu
+    warnings.push(`😰 Her iki takım da gergin - Dikkatli olun`);
   }
   
   // BTTS etkisi
@@ -491,11 +492,12 @@ function calculateWeightedAnalysis(
   const normalizedAway = finalAwayWin / (total + 0.30);
   const normalizedDraw = 1 - normalizedHome - normalizedAway;
   
-  // Over/Under
+  // Over/Under - 🔧 FIX: Veri ağırlığı artırıldı, psikoloji etkisi azaltıldı
   const baseOver = (dataScore.overProb * WEIGHTS.DATA) + 
                    (dataScore.overProb * (WEIGHTS.AGENT + WEIGHTS.PSYCHOLOGY));
-  const finalOver = Math.max(0.20, Math.min(0.80, 
-    baseOver + (psychologyScore.overUnderImpact / 100)));
+  // Psikoloji etkisi artık daha az (eskiden /100, şimdi /200)
+  const finalOver = Math.max(0.25, Math.min(0.75, 
+    baseOver + (psychologyScore.overUnderImpact / 200)));
   
   // BTTS
   const baseBtts = (dataScore.bttsProb * WEIGHTS.DATA) + 
@@ -1037,22 +1039,18 @@ function getDefaultMasterStrategist(
   // Overall confidence
   const overallConfidence = Math.round((mrConfidence + ouConfidence + bttsConfidence) / 3);
   
-  // Best bet selection - psikolojiye göre
+  // Best bet selection - VERİ BAZLI (psikoloji bias'ı kaldırıldı)
   let bestBetMarket: string;
   let bestBetSelection: string;
   let bestBetConfidence: number;
   
-  // Düşük motivasyonlu maçlarda Over/Under daha güvenilir
-  const avgMotivation = (psychologyScore.homeMotivation + psychologyScore.awayMotivation) / 2;
+  // 🔧 FIX: Artık sadece güven skorlarına göre seçim yapılıyor
+  // Psikoloji faktörü zaten finalProbabilities'e yansımış durumda
+  // Ek bias eklemeye gerek yok
   
-  if (avgMotivation < 40 && Math.abs(psychologyScore.overUnderImpact) > 5) {
-    // Düşük motivasyon = Under güçlü sinyal
+  if (ouConfidence > mrConfidence && ouConfidence > bttsConfidence) {
     bestBetMarket = 'Over/Under 2.5';
-    bestBetSelection = 'Under';
-    bestBetConfidence = ouConfidence;
-  } else if (ouConfidence > mrConfidence && ouConfidence > bttsConfidence) {
-    bestBetMarket = 'Over/Under 2.5';
-    bestBetSelection = finalOU;
+    bestBetSelection = finalOU; // Veri ne diyorsa o (Under veya Over)
     bestBetConfidence = ouConfidence;
   } else if (mrConfidence > bttsConfidence) {
     bestBetMarket = 'Match Result';
@@ -1120,7 +1118,7 @@ function getDefaultMasterStrategist(
         confidence: bestBetConfidence,
         rationale: [
           `%50-%25-%25 ağırlıklı sistem`,
-          `Psikoloji faktörü: ${avgMotivation < 40 ? 'Düşük motivasyon' : 'Normal'}`,
+          `Veri bazlı tahmin`,
           ...psychologyScore.warnings.slice(0, 2)
         ]
       },
