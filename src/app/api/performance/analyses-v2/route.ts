@@ -1,9 +1,9 @@
 // ============================================================================
 // API: Optimized Analyses v2 with Server-Side Filtering & Pagination
 // GET /api/performance/analyses-v2
+// - Uses unified_analysis table (main data source)
 // - Server-side filtering (DB level)
 // - Cursor-based pagination
-// - Lightweight payload (no full JSONB)
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,31 +11,6 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-interface AnalysisRecord {
-  id: string;
-  fixture_id: number;
-  home_team: string;
-  away_team: string;
-  league: string;
-  match_date: string;
-  match_settled: boolean;
-  // Consensus predictions
-  consensus_match_result: string;
-  consensus_over_under: string;
-  consensus_btts: string;
-  consensus_confidence: number;
-  // Actual results
-  actual_home_score: number | null;
-  actual_away_score: number | null;
-  actual_match_result: string | null;
-  actual_over_under: string | null;
-  actual_btts: string | null;
-  // Correctness
-  consensus_mr_correct: boolean | null;
-  consensus_ou_correct: boolean | null;
-  consensus_btts_correct: boolean | null;
-}
 
 // Normalize prediction values
 function normalizeMR(val: string | null | undefined): string {
@@ -84,10 +59,13 @@ export async function GET(request: NextRequest) {
     const bttsSelection = searchParams.get('bttsSelection');
     const bttsMinConf = parseInt(searchParams.get('bttsMinConf') || '0');
 
-    console.log('📋 GET /api/performance/analyses-v2', { page, pageSize, settled, league });
+    console.log('📋 GET /api/performance/analyses-v2', { 
+      page, pageSize, settled, league,
+      msSelection, msMinConf, ouSelection, ouMinConf, bttsSelection, bttsMinConf 
+    });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json({ success: false, error: 'Missing credentials' }, { status: 500 });
@@ -95,32 +73,34 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Build query with server-side filtering
+    // Build query from unified_analysis table
     let query = supabase
-      .from('analysis_performance')
+      .from('unified_analysis')
       .select(`
-        id, fixture_id, home_team, away_team, league, match_date, match_settled,
-        consensus_match_result, consensus_over_under, consensus_btts, consensus_confidence,
-        actual_home_score, actual_away_score, actual_match_result, actual_over_under, actual_btts,
-        consensus_mr_correct, consensus_ou_correct, consensus_btts_correct
+        id, fixture_id, home_team, away_team, league, match_date, is_settled,
+        match_result_prediction, match_result_confidence, match_result_correct,
+        over_under_prediction, over_under_confidence, over_under_correct,
+        btts_prediction, btts_confidence, btts_correct,
+        actual_home_score, actual_away_score, overall_confidence
       `, { count: 'exact' });
 
     // Apply server-side filters
     if (settled === 'true') {
-      query = query.eq('match_settled', true);
+      query = query.eq('is_settled', true);
     } else if (settled === 'false') {
-      query = query.or('match_settled.eq.false,match_settled.is.null');
+      query = query.or('is_settled.eq.false,is_settled.is.null');
     }
 
     if (league && league !== 'all') {
       query = query.eq('league', league);
     }
 
-    // Order and paginate
+    // Order and paginate - get more records for client-side filtering
+    const fetchSize = pageSize * 3; // Fetch more to account for client-side filtering
     query = query
       .order('match_date', { ascending: false })
       .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1);
+      .range(0, fetchSize - 1);
 
     const { data, error, count } = await query;
 
@@ -129,12 +109,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // Client-side filtering for complex criteria (MS/OU/BTTS selection + confidence)
+    // Client-side filtering for complex criteria
     let filteredData = data || [];
 
+    // MS (Match Result) filtering
     if (msSelection && msSelection !== 'all') {
-      filteredData = filteredData.filter(row => {
-        const mr = normalizeMR(row.consensus_match_result);
+      filteredData = filteredData.filter((row: any) => {
+        const mr = normalizeMR(row.match_result_prediction);
         if (msSelection === 'home') return mr === '1';
         if (msSelection === 'away') return mr === '2';
         if (msSelection === 'draw') return mr === 'X' || mr === 'x';
@@ -143,15 +124,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (msMinConf > 0) {
-      filteredData = filteredData.filter(row => {
-        const conf = row.consensus_confidence || 0;
+      filteredData = filteredData.filter((row: any) => {
+        const conf = row.match_result_confidence || 0;
         return Math.round(conf) === msMinConf;
       });
     }
 
+    // OU (Over/Under) filtering
     if (ouSelection && ouSelection !== 'all') {
-      filteredData = filteredData.filter(row => {
-        const ou = normalizeOU(row.consensus_over_under);
+      filteredData = filteredData.filter((row: any) => {
+        const ou = normalizeOU(row.over_under_prediction);
         if (ouSelection === 'over') return ou === 'over';
         if (ouSelection === 'under') return ou === 'under';
         return true;
@@ -159,15 +141,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (ouMinConf > 0) {
-      filteredData = filteredData.filter(row => {
-        const conf = row.consensus_confidence || 0;
+      filteredData = filteredData.filter((row: any) => {
+        const conf = row.over_under_confidence || 0;
         return Math.round(conf) === ouMinConf;
       });
     }
 
+    // BTTS filtering
     if (bttsSelection && bttsSelection !== 'all') {
-      filteredData = filteredData.filter(row => {
-        const btts = normalizeBTTS(row.consensus_btts);
+      filteredData = filteredData.filter((row: any) => {
+        const btts = normalizeBTTS(row.btts_prediction);
         if (bttsSelection === 'yes') return btts === 'yes';
         if (bttsSelection === 'no') return btts === 'no';
         return true;
@@ -175,39 +158,50 @@ export async function GET(request: NextRequest) {
     }
 
     if (bttsMinConf > 0) {
-      filteredData = filteredData.filter(row => {
-        const conf = row.consensus_confidence || 0;
+      filteredData = filteredData.filter((row: any) => {
+        const conf = row.btts_confidence || 0;
         return Math.round(conf) === bttsMinConf;
       });
     }
 
-    // Transform data
-    const analyses: AnalysisRecord[] = filteredData.map(row => ({
+    // Apply pagination after filtering
+    const totalFiltered = filteredData.length;
+    const paginatedData = filteredData.slice(offset, offset + pageSize);
+
+    // Transform data to expected format
+    const analyses = paginatedData.map((row: any) => ({
       id: row.id,
       fixture_id: row.fixture_id,
-      home_team: row.home_team,
-      away_team: row.away_team,
+      home_team: row.home_team || '',
+      away_team: row.away_team || '',
       league: row.league || '',
       match_date: row.match_date,
-      match_settled: row.match_settled || false,
-      consensus_match_result: row.consensus_match_result || '',
-      consensus_over_under: row.consensus_over_under || '',
-      consensus_btts: row.consensus_btts || '',
-      consensus_confidence: row.consensus_confidence || 0,
+      match_settled: row.is_settled || false,
+      // Predictions
+      consensus_match_result: row.match_result_prediction || '',
+      consensus_over_under: row.over_under_prediction || '',
+      consensus_btts: row.btts_prediction || '',
+      consensus_confidence: row.overall_confidence || 0,
+      // Individual confidences
+      mr_confidence: row.match_result_confidence || 0,
+      ou_confidence: row.over_under_confidence || 0,
+      btts_confidence: row.btts_confidence || 0,
+      // Actual results
       actual_home_score: row.actual_home_score,
       actual_away_score: row.actual_away_score,
-      actual_match_result: row.actual_match_result,
-      actual_over_under: row.actual_over_under,
-      actual_btts: row.actual_btts,
-      consensus_mr_correct: row.consensus_mr_correct,
-      consensus_ou_correct: row.consensus_ou_correct,
-      consensus_btts_correct: row.consensus_btts_correct
+      actual_match_result: null,
+      actual_over_under: null,
+      actual_btts: null,
+      // Correctness
+      consensus_mr_correct: row.match_result_correct,
+      consensus_ou_correct: row.over_under_correct,
+      consensus_btts_correct: row.btts_correct
     }));
 
-    const totalPages = count ? Math.ceil(count / pageSize) : 1;
+    const totalPages = Math.ceil(totalFiltered / pageSize) || 1;
     const processingTime = Date.now() - startTime;
 
-    console.log(`📋 Analyses-v2 returned ${analyses.length} records in ${processingTime}ms`);
+    console.log(`📋 Analyses-v2 returned ${analyses.length} records (filtered from ${data?.length || 0}) in ${processingTime}ms`);
 
     const response = NextResponse.json({
       success: true,
@@ -215,7 +209,7 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         pageSize,
-        totalRecords: count || 0,
+        totalRecords: totalFiltered,
         totalPages,
         hasMore: page < totalPages
       },
@@ -223,7 +217,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-    // Cache for 30 seconds, stale-while-revalidate for 5 minutes
+    // Cache for 30 seconds
     response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
 
     return response;
