@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       const mr = normalizeMR(row.match_result_prediction || row.consensus_match_result || '');
       if (sel === 'home') return mr === '1';
       if (sel === 'away') return mr === '2';
-      if (sel === 'draw') return mr === 'x';
+      if (sel === 'draw') return mr === 'X' || mr === 'x' || mr.toLowerCase() === 'draw';
       return true;
     };
     
@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
             const agentMR = getAgentPrediction(r, agent, 'mr');
             if (msSelection === 'home') pass = pass && agentMR === '1';
             else if (msSelection === 'away') pass = pass && agentMR === '2';
-            else if (msSelection === 'draw') pass = pass && agentMR === 'x';
+            else if (msSelection === 'draw') pass = pass && (agentMR === 'X' || agentMR === 'x' || agentMR.toLowerCase() === 'draw');
             // MS exact confidence kontrolü
             pass = pass && checkExactConfidence(r, 'mr', msMinConf);
           }
