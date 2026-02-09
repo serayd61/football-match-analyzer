@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Navigation from '@/components/Navigation';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import QueryProvider from '@/components/QueryProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -63,15 +64,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <LanguageProvider>
-            <Navigation />
-            {children}
-            <FloatingBackButton />
-            <PWAInstallPrompt />
-            <ServiceWorkerRegister />
-          </LanguageProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <Navigation />
+              {children}
+              <FloatingBackButton />
+              <PWAInstallPrompt />
+              <ServiceWorkerRegister />
+            </LanguageProvider>
+          </AuthProvider>
+        </QueryProvider>
         <Analytics />
       </body>
     </html>

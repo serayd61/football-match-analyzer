@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award } from 'lucide-react';
+import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History } from 'lucide-react';
 import { FootballBall3D } from '@/components/Football3D';
+import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components/HistoricalAccuracyBadge';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -213,6 +214,15 @@ export default function MatchAnalysisPage() {
             <div className="text-xs text-gray-500 mt-2">
               {analysis.predictions?.matchResult?.reasoning || ''}
             </div>
+            {/* Tarihsel Doğruluk Badge */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <HistoricalAccuracyBadge
+                market="mr"
+                prediction={analysis.predictions?.matchResult?.prediction || ''}
+                confidence={analysis.predictions?.matchResult?.confidence || 0}
+                compact={true}
+              />
+            </div>
           </motion.div>
 
           <motion.div
@@ -231,6 +241,15 @@ export default function MatchAnalysisPage() {
             <div className="text-xs text-gray-500 mt-2">
               Beklenen: {analysis.predictions?.overUnder?.expectedGoals?.toFixed(1) || '2.5'} gol
             </div>
+            {/* Tarihsel Doğruluk Badge */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <HistoricalAccuracyBadge
+                market="ou"
+                prediction={analysis.predictions?.overUnder?.prediction || ''}
+                confidence={analysis.predictions?.overUnder?.confidence || 0}
+                compact={true}
+              />
+            </div>
           </motion.div>
 
           <motion.div
@@ -246,8 +265,34 @@ export default function MatchAnalysisPage() {
             <div className="text-sm text-gray-400">
               Güven: {analysis.predictions?.btts?.confidence || 0}%
             </div>
+            {/* Tarihsel Doğruluk Badge */}
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <HistoricalAccuracyBadge
+                market="btts"
+                prediction={analysis.predictions?.btts?.prediction || ''}
+                confidence={analysis.predictions?.btts?.confidence || 0}
+                compact={true}
+              />
+            </div>
           </motion.div>
         </div>
+
+        {/* Tarihsel Doğruluk Özeti */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mt-6"
+        >
+          <HistoricalAccuracySummary
+            mrPrediction={analysis.predictions?.matchResult?.prediction}
+            mrConfidence={analysis.predictions?.matchResult?.confidence}
+            ouPrediction={analysis.predictions?.overUnder?.prediction}
+            ouConfidence={analysis.predictions?.overUnder?.confidence}
+            bttsPrediction={analysis.predictions?.btts?.prediction}
+            bttsConfidence={analysis.predictions?.btts?.confidence}
+          />
+        </motion.div>
 
         {/* Best Bet */}
         {analysis.bestBet && (
