@@ -120,12 +120,8 @@ export async function GET(request: NextRequest) {
     // Fallback: Query unified_analysis directly
     console.log('⚠️ Using fallback query from unified_analysis');
     
-    // Select only needed columns for performance
-    const selectColumns = market === 'mr' 
-      ? 'match_result_prediction, match_result_confidence, match_result_correct'
-      : market === 'ou'
-      ? 'over_under_prediction, over_under_confidence, over_under_correct'
-      : 'btts_prediction, btts_confidence, btts_correct';
+    // Select relevant columns based on market
+    const selectColumns = 'match_result_prediction, match_result_confidence, match_result_correct, over_under_prediction, over_under_confidence, over_under_correct, btts_prediction, btts_confidence, btts_correct';
 
     let query = supabase
       .from('unified_analysis')
@@ -136,7 +132,7 @@ export async function GET(request: NextRequest) {
     if (market === 'mr') {
       query = query
         .gte('match_result_confidence', confStart)
-        .lte('match_result_confidence', confEnd + 0.99) // Include decimals
+        .lte('match_result_confidence', confEnd + 0.99)
         .not('match_result_prediction', 'is', null);
     } else if (market === 'ou') {
       query = query
@@ -154,8 +150,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 Fallback query result:', { 
       count: fallbackData?.length || 0, 
-      error: fallbackError?.message,
-      sample: fallbackData?.slice(0, 3)
+      error: fallbackError?.message
     });
 
     if (fallbackError) {
@@ -163,7 +158,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by prediction and calculate accuracy
-    const filtered = (fallbackData || []).filter(row => {
+    const filtered = (fallbackData || []).filter((row: any) => {
       let rowPrediction = '';
       if (market === 'mr') rowPrediction = normalizePrediction('mr', row.match_result_prediction);
       else if (market === 'ou') rowPrediction = normalizePrediction('ou', row.over_under_prediction);
@@ -286,31 +281,33 @@ export async function POST(request: NextRequest) {
       }
 
       // Fallback for this prediction
+      const selectColumns = 'match_result_prediction, match_result_confidence, match_result_correct, over_under_prediction, over_under_confidence, over_under_correct, btts_prediction, btts_confidence, btts_correct';
+      
       let query = supabase
         .from('unified_analysis')
-        .select('*')
+        .select(selectColumns)
         .eq('is_settled', true);
 
       if (market === 'mr') {
         query = query
           .gte('match_result_confidence', confStart)
-          .lte('match_result_confidence', confEnd)
+          .lte('match_result_confidence', confEnd + 0.99)
           .not('match_result_prediction', 'is', null);
       } else if (market === 'ou') {
         query = query
           .gte('over_under_confidence', confStart)
-          .lte('over_under_confidence', confEnd)
+          .lte('over_under_confidence', confEnd + 0.99)
           .not('over_under_prediction', 'is', null);
       } else if (market === 'btts') {
         query = query
           .gte('btts_confidence', confStart)
-          .lte('btts_confidence', confEnd)
+          .lte('btts_confidence', confEnd + 0.99)
           .not('btts_prediction', 'is', null);
       }
 
       const { data: fallbackData } = await query;
 
-      const filtered = (fallbackData || []).filter(row => {
+      const filtered = (fallbackData || []).filter((row: any) => {
         let rowPrediction = '';
         if (market === 'mr') rowPrediction = normalizePrediction('mr', row.match_result_prediction);
         else if (market === 'ou') rowPrediction = normalizePrediction('ou', row.over_under_prediction);
@@ -323,9 +320,9 @@ export async function POST(request: NextRequest) {
       let correct = 0;
 
       for (const row of filtered) {
-        if (market === 'mr' && row.match_result_correct === true) correct++;
-        else if (market === 'ou' && row.over_under_correct === true) correct++;
-        else if (market === 'btts' && row.btts_correct === true) correct++;
+        if (market === 'mr' && (row as any).match_result_correct === true) correct++;
+        else if (market === 'ou' && (row as any).over_under_correct === true) correct++;
+        else if (market === 'btts' && (row as any).btts_correct === true) correct++;
       }
 
       const accuracy = total > 0 ? Math.round((correct / total) * 1000) / 10 : 0;
