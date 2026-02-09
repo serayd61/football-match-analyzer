@@ -838,7 +838,7 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.ms.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">Min %</span>
+                          <span className="text-[10px] text-white/50">%</span>
                           <select
                             value={multiFilter.ms.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
@@ -891,7 +891,7 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.ou.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">Min %</span>
+                          <span className="text-[10px] text-white/50">%</span>
                           <select
                             value={multiFilter.ou.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
@@ -944,7 +944,7 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.btts.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">Min %</span>
+                          <span className="text-[10px] text-white/50">%</span>
                           <select
                             value={multiFilter.btts.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
@@ -991,17 +991,17 @@ export default function PerformancePage() {
                       )}
                       {multiFilter.ms.enabled && (
                         <span className="px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-300 text-xs">
-                          MS{multiFilter.ms.selection !== 'all' ? `=${multiFilter.ms.selection === 'home' ? '1' : multiFilter.ms.selection === 'away' ? '2' : 'X'}` : ''}{multiFilter.ms.minConf > 0 ? ` (≥${multiFilter.ms.minConf}%)` : ''}
+                          MS{multiFilter.ms.selection !== 'all' ? `=${multiFilter.ms.selection === 'home' ? '1' : multiFilter.ms.selection === 'away' ? '2' : 'X'}` : ''}{multiFilter.ms.minConf > 0 ? ` (${multiFilter.ms.minConf}%)` : ''}
                         </span>
                       )}
                       {multiFilter.ou.enabled && (
                         <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded text-amber-300 text-xs">
-                          O/U{multiFilter.ou.selection !== 'all' ? `=${multiFilter.ou.selection === 'over' ? 'Üst' : 'Alt'}` : ''}{multiFilter.ou.minConf > 0 ? ` (≥${multiFilter.ou.minConf}%)` : ''}
+                          O/U{multiFilter.ou.selection !== 'all' ? `=${multiFilter.ou.selection === 'over' ? 'Üst' : 'Alt'}` : ''}{multiFilter.ou.minConf > 0 ? ` (${multiFilter.ou.minConf}%)` : ''}
                         </span>
                       )}
                       {multiFilter.btts.enabled && (
                         <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-300 text-xs">
-                          BTTS{multiFilter.btts.selection !== 'all' ? `=${multiFilter.btts.selection === 'yes' ? 'Var' : 'Yok'}` : ''}{multiFilter.btts.minConf > 0 ? ` (≥${multiFilter.btts.minConf}%)` : ''}
+                          BTTS{multiFilter.btts.selection !== 'all' ? `=${multiFilter.btts.selection === 'yes' ? 'Var' : 'Yok'}` : ''}{multiFilter.btts.minConf > 0 ? ` (${multiFilter.btts.minConf}%)` : ''}
                         </span>
                       )}
                     </div>
