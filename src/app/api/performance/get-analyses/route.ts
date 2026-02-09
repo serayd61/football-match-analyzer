@@ -47,12 +47,29 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '1000', 10); // Default 1000, tüm maçları getir
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const league = searchParams.get('league');
+    const agent = searchParams.get('agent'); // 'all', 'stats', 'odds', 'deepAnalysis', 'masterStrategist', 'smart'
+    
+    // Çoklu kriter filtreleri (aynı anda MS + O/U + BTTS seçilebilir, her biri için ayrı confidence range)
+    const msSelection = searchParams.get('msSelection'); // 'all', 'home', 'away', 'draw'
+    const msMinConf = parseInt(searchParams.get('msMinConf') || '50', 10);
+    const msMaxConf = parseInt(searchParams.get('msMaxConf') || '100', 10);
+    
+    const ouSelection = searchParams.get('ouSelection'); // 'all', 'over', 'under'
+    const ouMinConf = parseInt(searchParams.get('ouMinConf') || '50', 10);
+    const ouMaxConf = parseInt(searchParams.get('ouMaxConf') || '100', 10);
+    
+    const bttsSelection = searchParams.get('bttsSelection'); // 'all', 'yes', 'no'
+    const bttsMinConf = parseInt(searchParams.get('bttsMinConf') || '50', 10);
+    const bttsMaxConf = parseInt(searchParams.get('bttsMaxConf') || '100', 10);
+    
+    // Eski tek market/selection parametreleri (geriye uyumluluk)
     const market = searchParams.get('market'); // 'MS', 'O/U', 'BTTS'
     const selection = searchParams.get('selection'); // 'home', 'away', 'over', 'under', etc.
     const minConfidence = parseInt(searchParams.get('minConfidence') || '50', 10);
     const maxConfidence = parseInt(searchParams.get('maxConfidence') || '100', 10);
 
-    console.log(`   Params: settled=${settledParam}, limit=${limit}, offset=${offset}, league=${league}`);
+    console.log(`   Params: settled=${settledParam}, limit=${limit}, offset=${offset}, league=${league}, agent=${agent}`);
+    console.log(`   Multi-filters: ms=${msSelection}(${msMinConf}-${msMaxConf}%), ou=${ouSelection}(${ouMinConf}-${ouMaxConf}%), btts=${bttsSelection}(${bttsMinConf}-${bttsMaxConf}%)`);
 
     // Create fresh client inline
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -90,8 +107,176 @@ export async function GET(request: NextRequest) {
       filteredData = filteredData.filter(r => r.league === league);
     }
 
-    // Filter by Best Bet market
-    if (market && market !== 'all') {
+    // ============================================================================
+    // ÇOKLU KRİTER FİLTRELEME (AND mantığı - MS + O/U + BTTS aynı anda)
+    // ============================================================================
+    
+    // Helper: Consensus tahminlerini normalize et
+    const matchesMSSelection = (row: any, sel: string): boolean => {
+      const mr = normalizeMR(row.match_result_prediction || row.consensus_match_result || '');
+      if (sel === 'home') return mr === '1';
+      if (sel === 'away') return mr === '2';
+      if (sel === 'draw') return mr === 'x';
+      return true;
+    };
+    
+    const matchesOUSelection = (row: any, sel: string): boolean => {
+      const ou = normalizeOU(row.over_under_prediction || row.consensus_over_under || '');
+      if (sel === 'over') return ou === 'over';
+      if (sel === 'under') return ou === 'under';
+      return true;
+    };
+    
+    const matchesBTTSSelection = (row: any, sel: string): boolean => {
+      const btts = normalizeBTTS(row.btts_prediction || row.consensus_btts || '');
+      if (sel === 'yes') return btts === 'yes';
+      if (sel === 'no') return btts === 'no';
+      return true;
+    };
+    
+    // Helper: Confidence kontrolü (her market için ayrı)
+    const getConfidence = (row: any, market: 'mr' | 'ou' | 'btts'): number => {
+      const analysis = row.analysis || {};
+      const predictions = analysis.predictions || {};
+      
+      if (market === 'mr') {
+        return predictions.matchResult?.confidence || row.match_result_confidence || 50;
+      } else if (market === 'ou') {
+        return predictions.overUnder?.confidence || row.over_under_confidence || 50;
+      } else if (market === 'btts') {
+        return predictions.btts?.confidence || row.btts_confidence || 50;
+      }
+      return 50;
+    };
+    
+    const checkConfidenceRange = (row: any, market: 'mr' | 'ou' | 'btts', minConf: number, maxConf: number): boolean => {
+      const conf = getConfidence(row, market);
+      return conf >= minConf && conf <= maxConf;
+    };
+    
+    // Agent bazlı tahmin eşleştirme
+    const getAgentPrediction = (row: any, agentName: string, predType: 'mr' | 'ou' | 'btts'): string => {
+      const analysis = row.analysis || {};
+      const sources = analysis.sources || {};
+      const agents = sources.agents || {};
+      const ai = sources.ai || {};
+      
+      let agentData: any = null;
+      
+      switch (agentName) {
+        case 'stats':
+          agentData = agents.stats || {};
+          break;
+        case 'odds':
+          agentData = agents.odds || {};
+          break;
+        case 'deepAnalysis':
+          agentData = agents.deepAnalysis || {};
+          break;
+        case 'masterStrategist':
+          agentData = agents.masterStrategist || {};
+          break;
+        case 'smart':
+          agentData = ai.smart || {};
+          break;
+        default:
+          return '';
+      }
+      
+      if (predType === 'mr') {
+        return normalizeMR(
+          agentData.matchResult?.prediction || 
+          agentData.matchResult || 
+          agentData.final?.primary_pick?.selection ||
+          agentData.predictions?.matchResult?.prediction ||
+          ''
+        );
+      } else if (predType === 'ou') {
+        return normalizeOU(
+          agentData.overUnder?.prediction || 
+          agentData.overUnder || 
+          agentData.final?.primary_pick?.selection ||
+          agentData.predictions?.overUnder?.prediction ||
+          ''
+        );
+      } else if (predType === 'btts') {
+        return normalizeBTTS(
+          agentData.btts?.prediction || 
+          agentData.btts || 
+          agentData.predictions?.btts?.prediction ||
+          ''
+        );
+      }
+      return '';
+    };
+    
+    // Çoklu kriter filtreleme (AND mantığı + her market için ayrı confidence range)
+    if (msSelection || ouSelection || bttsSelection) {
+      filteredData = filteredData.filter(r => {
+        let pass = true;
+        
+        // Agent seçilmişse o agent'ın tahminlerine göre filtrele
+        if (agent && agent !== 'all') {
+          if (msSelection) {
+            const agentMR = getAgentPrediction(r, agent, 'mr');
+            if (msSelection === 'home') pass = pass && agentMR === '1';
+            else if (msSelection === 'away') pass = pass && agentMR === '2';
+            else if (msSelection === 'draw') pass = pass && agentMR === 'x';
+            // MS confidence range kontrolü
+            if (msSelection !== 'all') {
+              pass = pass && checkConfidenceRange(r, 'mr', msMinConf, msMaxConf);
+            }
+          }
+          if (ouSelection) {
+            const agentOU = getAgentPrediction(r, agent, 'ou');
+            if (ouSelection === 'over') pass = pass && agentOU === 'over';
+            else if (ouSelection === 'under') pass = pass && agentOU === 'under';
+            // O/U confidence range kontrolü
+            if (ouSelection !== 'all') {
+              pass = pass && checkConfidenceRange(r, 'ou', ouMinConf, ouMaxConf);
+            }
+          }
+          if (bttsSelection) {
+            const agentBTTS = getAgentPrediction(r, agent, 'btts');
+            if (bttsSelection === 'yes') pass = pass && agentBTTS === 'yes';
+            else if (bttsSelection === 'no') pass = pass && agentBTTS === 'no';
+            // BTTS confidence range kontrolü
+            if (bttsSelection !== 'all') {
+              pass = pass && checkConfidenceRange(r, 'btts', bttsMinConf, bttsMaxConf);
+            }
+          }
+        } else {
+          // Agent seçilmemişse consensus tahminlerine göre filtrele
+          if (msSelection) {
+            if (msSelection !== 'all') {
+              pass = pass && matchesMSSelection(r, msSelection);
+              pass = pass && checkConfidenceRange(r, 'mr', msMinConf, msMaxConf);
+            }
+          }
+          if (ouSelection) {
+            if (ouSelection !== 'all') {
+              pass = pass && matchesOUSelection(r, ouSelection);
+              pass = pass && checkConfidenceRange(r, 'ou', ouMinConf, ouMaxConf);
+            }
+          }
+          if (bttsSelection) {
+            if (bttsSelection !== 'all') {
+              pass = pass && matchesBTTSSelection(r, bttsSelection);
+              pass = pass && checkConfidenceRange(r, 'btts', bttsMinConf, bttsMaxConf);
+            }
+          }
+        }
+        
+        return pass;
+      });
+    }
+    
+    // ============================================================================
+    // ESKİ TEK MARKET/SELECTION FİLTRESİ (geriye uyumluluk)
+    // ============================================================================
+    
+    // Filter by Best Bet market (eski sistem - geriye uyumluluk)
+    if (market && market !== 'all' && !msSelection && !ouSelection && !bttsSelection) {
       filteredData = filteredData.filter(r => {
         if (!r.best_bet_market) return false;
         const marketLower = r.best_bet_market.toLowerCase();
@@ -110,8 +295,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Filter by Best Bet selection
-    if (selection && selection !== 'all' && market && market !== 'all') {
+    // Filter by Best Bet selection (eski sistem - geriye uyumluluk)
+    if (selection && selection !== 'all' && market && market !== 'all' && !msSelection && !ouSelection && !bttsSelection) {
       filteredData = filteredData.filter(r => {
         if (!r.best_bet_selection) return false;
         const sel = r.best_bet_selection.toLowerCase();

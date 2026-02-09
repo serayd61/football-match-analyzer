@@ -171,6 +171,13 @@ interface AnalysisRecord {
   btts_source?: string;
 }
 
+// Çoklu Filtreleme için interface (her market için ayrı confidence range)
+interface MultiFilter {
+  ms: { enabled: boolean; selection: 'all' | 'home' | 'away' | 'draw'; minConf: number; maxConf: number };
+  ou: { enabled: boolean; selection: 'all' | 'over' | 'under'; minConf: number; maxConf: number };
+  btts: { enabled: boolean; selection: 'all' | 'yes' | 'no'; minConf: number; maxConf: number };
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -190,12 +197,14 @@ export default function PerformancePage() {
   const [showSettled, setShowSettled] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
   
-  // Filtreleme state'leri
-  const [filterMarket, setFilterMarket] = useState<string>('all'); // 'all', 'MS', 'O/U', 'BTTS'
-  const [filterSelection, setFilterSelection] = useState<string>('all'); // 'all', 'home', 'away', 'over', 'under', 'yes', 'no'
-  const [filterMinConfidence, setFilterMinConfidence] = useState<number>(50); // Minimum güven yüzdesi
-  const [filterMaxConfidence, setFilterMaxConfidence] = useState<number>(100); // Maximum güven yüzdesi
+  // Çoklu Filtreleme state'leri (MS, O/U, BTTS aynı anda seçilebilir, her biri için ayrı % dilim)
+  const [multiFilter, setMultiFilter] = useState<MultiFilter>({
+    ms: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
+    ou: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
+    btts: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 }
+  });
   const [filterLeague, setFilterLeague] = useState<string>('all'); // Lig filtresi
+  const [filterAgent, setFilterAgent] = useState<string>('all'); // Agent filtresi: 'all', 'stats', 'odds', 'deepAnalysis', 'masterStrategist', 'smart'
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -213,15 +222,28 @@ export default function PerformancePage() {
       }
       
       // Fetch analyses - Tüm sonuçlanmış maçları getir (limit yok)
-      // Filtreleme parametrelerini API'ye gönder
+      // Çoklu filtreleme parametrelerini API'ye gönder
       const filterParams = new URLSearchParams({
         limit: '1000',
         settled: 'true', // Sadece sonuçlanmış maçlar
         ...(filterLeague !== 'all' && { league: filterLeague }),
-        ...(filterMarket !== 'all' && { market: filterMarket }),
-        ...(filterSelection !== 'all' && { selection: filterSelection }),
-        ...(filterMinConfidence !== 50 && { minConfidence: filterMinConfidence.toString() }),
-        ...(filterMaxConfidence !== 100 && { maxConfidence: filterMaxConfidence.toString() }),
+        ...(filterAgent !== 'all' && { agent: filterAgent }),
+        // Çoklu kriter filtreleri (her biri için ayrı selection ve confidence range)
+        ...(multiFilter.ms.enabled && { msSelection: multiFilter.ms.selection }),
+        ...(multiFilter.ms.enabled && (multiFilter.ms.minConf !== 50 || multiFilter.ms.maxConf !== 100) && { 
+          msMinConf: multiFilter.ms.minConf.toString(),
+          msMaxConf: multiFilter.ms.maxConf.toString()
+        }),
+        ...(multiFilter.ou.enabled && { ouSelection: multiFilter.ou.selection }),
+        ...(multiFilter.ou.enabled && (multiFilter.ou.minConf !== 50 || multiFilter.ou.maxConf !== 100) && { 
+          ouMinConf: multiFilter.ou.minConf.toString(),
+          ouMaxConf: multiFilter.ou.maxConf.toString()
+        }),
+        ...(multiFilter.btts.enabled && { bttsSelection: multiFilter.btts.selection }),
+        ...(multiFilter.btts.enabled && (multiFilter.btts.minConf !== 50 || multiFilter.btts.maxConf !== 100) && { 
+          bttsMinConf: multiFilter.btts.minConf.toString(),
+          bttsMaxConf: multiFilter.btts.maxConf.toString()
+        }),
       });
       
       const analysesRes = await fetch(`/api/performance/get-analyses?${filterParams}`);
@@ -251,7 +273,7 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, [filterLeague, filterMarket, filterSelection, filterMinConfidence, filterMaxConfidence, t]);
+  }, [filterLeague, filterAgent, multiFilter, t]);
 
   useEffect(() => {
     fetchData();
@@ -746,8 +768,9 @@ export default function PerformancePage() {
                 isOpen={showSettled}
                 onToggle={() => setShowSettled(!showSettled)}
               >
-                {/* Filtreleme UI */}
-                <div className="mb-4 pb-4 border-b border-white/10">
+                {/* Çoklu Filtreleme UI */}
+                <div className="mb-4 pb-4 border-b border-white/10 space-y-4">
+                  {/* Üst Satır: Lig, Agent, Güven */}
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-white/60">🔍 Filtrele:</span>
                     
@@ -765,106 +788,277 @@ export default function PerformancePage() {
                       ))}
                     </select>
                     
-                    {/* Market Filtresi */}
+                    {/* Agent Filtresi */}
                     <select
-                      value={filterMarket}
-                      onChange={(e) => {
-                        setFilterMarket(e.target.value);
-                        setFilterSelection('all'); // Market değişince selection'ı sıfırla
-                      }}
+                      value={filterAgent}
+                      onChange={(e) => setFilterAgent(e.target.value)}
                       className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
                     >
-                      <option value="all">Tüm Marketler</option>
-                      <option value="MS">Maç Sonucu (MS)</option>
-                      <option value="O/U">Alt/Üst 2.5 (O/U)</option>
-                      <option value="BTTS">KG Var (BTTS)</option>
+                      <option value="all">Tüm Agent'lar</option>
+                      <option value="stats">📊 Stats Agent</option>
+                      <option value="odds">💰 Odds Agent</option>
+                      <option value="deepAnalysis">🔬 Deep Analysis</option>
+                      <option value="masterStrategist">🧠 Master Strategist</option>
+                      <option value="smart">🤖 AI Smart (Claude+DeepSeek)</option>
                     </select>
-                    
-                    {/* Selection Filtresi */}
-                    {filterMarket !== 'all' && (
-                      <select
-                        value={filterSelection}
-                        onChange={(e) => setFilterSelection(e.target.value)}
-                        className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#00f0ff]/50"
-                      >
-                        <option value="all">Tüm Seçimler</option>
-                        {filterMarket === 'MS' && (
-                          <>
-                            <option value="home">Home / Ev Sahibi</option>
-                            <option value="away">Away / Deplasman</option>
-                            <option value="draw">Draw / Beraberlik</option>
-                          </>
-                        )}
-                        {filterMarket === 'O/U' && (
-                          <>
-                            <option value="over">Over / Üst</option>
-                            <option value="under">Under / Alt</option>
-                          </>
-                        )}
-                        {filterMarket === 'BTTS' && (
-                          <>
-                            <option value="yes">Yes / Evet</option>
-                            <option value="no">No / Hayır</option>
-                          </>
-                        )}
-                      </select>
-                    )}
-                    
-                    {/* Güven Yüzdesi Filtresi - Dropdown Menü */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-white/60">Güven:</span>
-                      <select
-                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50 cursor-pointer"
-                        value={filterMinConfidence}
-                        onChange={(e) => setFilterMinConfidence(parseInt(e.target.value))}
-                      >
-                        {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
-                          <option key={num} value={num} className="bg-black text-white">
-                            {num}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-white/40">-</span>
-                      <select
-                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#00f0ff]/50 cursor-pointer"
-                        value={filterMaxConfidence}
-                        onChange={(e) => setFilterMaxConfidence(parseInt(e.target.value))}
-                      >
-                        {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
-                          <option key={num} value={num} className="bg-black text-white">
-                            {num}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-xs text-white/40">%</span>
-                    </div>
-                    
-                    {/* Filtreleri Temizle */}
-                    {(filterLeague !== 'all' || filterMarket !== 'all' || filterSelection !== 'all' || filterMinConfidence !== 50 || filterMaxConfidence !== 100) && (
-                      <button
-                        onClick={() => {
-                          setFilterLeague('all');
-                          setFilterMarket('all');
-                          setFilterSelection('all');
-                          setFilterMinConfidence(50);
-                          setFilterMaxConfidence(100);
-                        }}
-                        className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm hover:bg-red-500/30 transition-colors"
-                      >
-                        ✕ Temizle
-                      </button>
-                    )}
                     
                     {/* Sonuç Sayısı */}
                     <span className="text-xs text-white/40 ml-auto">
                       {settledAnalyses.length} sonuç
                     </span>
                   </div>
+                  
+                  {/* Alt Satır: Çoklu Market Filtreleri (MS, O/U, BTTS) */}
+                  <div className="flex flex-wrap items-start gap-4">
+                    {/* MS Filtresi */}
+                    <div className={`flex flex-col gap-2 px-3 py-2 rounded-lg border transition-all ${
+                      multiFilter.ms.enabled 
+                        ? 'bg-cyan-500/20 border-cyan-500/50' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={multiFilter.ms.enabled}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ms: { ...prev.ms, enabled: e.target.checked }
+                            }))}
+                            className="w-4 h-4 rounded border-white/30 bg-white/10 text-cyan-500 focus:ring-cyan-500/50"
+                          />
+                          <span className="text-sm text-white font-medium">MS</span>
+                        </label>
+                        {multiFilter.ms.enabled && (
+                          <select
+                            value={multiFilter.ms.selection}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ms: { ...prev.ms, selection: e.target.value as 'all' | 'home' | 'away' | 'draw' }
+                            }))}
+                            className="px-2 py-1 bg-black/30 border border-white/20 rounded text-white text-xs focus:outline-none focus:border-cyan-500/50"
+                          >
+                            <option value="all">Tümü</option>
+                            <option value="home">1 (Ev)</option>
+                            <option value="away">2 (Dep)</option>
+                            <option value="draw">X (Ber)</option>
+                          </select>
+                        )}
+                      </div>
+                      {multiFilter.ms.enabled && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-white/50">%</span>
+                          <select
+                            value={multiFilter.ms.minConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ms: { ...prev.ms, minConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-cyan-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                          <span className="text-white/30">-</span>
+                          <select
+                            value={multiFilter.ms.maxConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ms: { ...prev.ms, maxConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-cyan-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* O/U Filtresi */}
+                    <div className={`flex flex-col gap-2 px-3 py-2 rounded-lg border transition-all ${
+                      multiFilter.ou.enabled 
+                        ? 'bg-amber-500/20 border-amber-500/50' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={multiFilter.ou.enabled}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ou: { ...prev.ou, enabled: e.target.checked }
+                            }))}
+                            className="w-4 h-4 rounded border-white/30 bg-white/10 text-amber-500 focus:ring-amber-500/50"
+                          />
+                          <span className="text-sm text-white font-medium">O/U</span>
+                        </label>
+                        {multiFilter.ou.enabled && (
+                          <select
+                            value={multiFilter.ou.selection}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ou: { ...prev.ou, selection: e.target.value as 'all' | 'over' | 'under' }
+                            }))}
+                            className="px-2 py-1 bg-black/30 border border-white/20 rounded text-white text-xs focus:outline-none focus:border-amber-500/50"
+                          >
+                            <option value="all">Tümü</option>
+                            <option value="over">Over (Üst)</option>
+                            <option value="under">Under (Alt)</option>
+                          </select>
+                        )}
+                      </div>
+                      {multiFilter.ou.enabled && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-white/50">%</span>
+                          <select
+                            value={multiFilter.ou.minConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ou: { ...prev.ou, minConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-amber-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                          <span className="text-white/30">-</span>
+                          <select
+                            value={multiFilter.ou.maxConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              ou: { ...prev.ou, maxConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-amber-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* BTTS Filtresi */}
+                    <div className={`flex flex-col gap-2 px-3 py-2 rounded-lg border transition-all ${
+                      multiFilter.btts.enabled 
+                        ? 'bg-emerald-500/20 border-emerald-500/50' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={multiFilter.btts.enabled}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              btts: { ...prev.btts, enabled: e.target.checked }
+                            }))}
+                            className="w-4 h-4 rounded border-white/30 bg-white/10 text-emerald-500 focus:ring-emerald-500/50"
+                          />
+                          <span className="text-sm text-white font-medium">BTTS</span>
+                        </label>
+                        {multiFilter.btts.enabled && (
+                          <select
+                            value={multiFilter.btts.selection}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              btts: { ...prev.btts, selection: e.target.value as 'all' | 'yes' | 'no' }
+                            }))}
+                            className="px-2 py-1 bg-black/30 border border-white/20 rounded text-white text-xs focus:outline-none focus:border-emerald-500/50"
+                          >
+                            <option value="all">Tümü</option>
+                            <option value="yes">Yes (Var)</option>
+                            <option value="no">No (Yok)</option>
+                          </select>
+                        )}
+                      </div>
+                      {multiFilter.btts.enabled && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-white/50">%</span>
+                          <select
+                            value={multiFilter.btts.minConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              btts: { ...prev.btts, minConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-emerald-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                          <span className="text-white/30">-</span>
+                          <select
+                            value={multiFilter.btts.maxConf}
+                            onChange={(e) => setMultiFilter(prev => ({
+                              ...prev,
+                              btts: { ...prev.btts, maxConf: parseInt(e.target.value) }
+                            }))}
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-emerald-500/50"
+                          >
+                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                              <option key={num} value={num}>{num}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Filtreleri Temizle */}
+                    {(filterLeague !== 'all' || filterAgent !== 'all' || multiFilter.ms.enabled || multiFilter.ou.enabled || multiFilter.btts.enabled) && (
+                      <button
+                        onClick={() => {
+                          setFilterLeague('all');
+                          setFilterAgent('all');
+                          setMultiFilter({
+                            ms: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
+                            ou: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
+                            btts: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 }
+                          });
+                        }}
+                        className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm hover:bg-red-500/30 transition-colors self-start"
+                      >
+                        ✕ Temizle
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Aktif Filtreler Badge'leri */}
+                  {(multiFilter.ms.enabled || multiFilter.ou.enabled || multiFilter.btts.enabled || filterAgent !== 'all') && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                      <span className="text-xs text-white/40">Aktif:</span>
+                      {filterAgent !== 'all' && (
+                        <span className="px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded text-purple-300 text-xs">
+                          🤖 {filterAgent === 'stats' ? 'Stats' : filterAgent === 'odds' ? 'Odds' : filterAgent === 'deepAnalysis' ? 'Deep' : filterAgent === 'masterStrategist' ? 'Master' : 'Smart'}
+                        </span>
+                      )}
+                      {multiFilter.ms.enabled && (
+                        <span className="px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-300 text-xs">
+                          MS{multiFilter.ms.selection !== 'all' ? `=${multiFilter.ms.selection === 'home' ? '1' : multiFilter.ms.selection === 'away' ? '2' : 'X'}` : ''} ({multiFilter.ms.minConf}-{multiFilter.ms.maxConf}%)
+                        </span>
+                      )}
+                      {multiFilter.ou.enabled && (
+                        <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded text-amber-300 text-xs">
+                          O/U{multiFilter.ou.selection !== 'all' ? `=${multiFilter.ou.selection === 'over' ? 'Üst' : 'Alt'}` : ''} ({multiFilter.ou.minConf}-{multiFilter.ou.maxConf}%)
+                        </span>
+                      )}
+                      {multiFilter.btts.enabled && (
+                        <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-300 text-xs">
+                          BTTS{multiFilter.btts.selection !== 'all' ? `=${multiFilter.btts.selection === 'yes' ? 'Var' : 'Yok'}` : ''} ({multiFilter.btts.minConf}-{multiFilter.btts.maxConf}%)
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 {settledAnalyses.length === 0 ? (
                   <div className="text-center py-8 text-white/40">
-                    {filterMarket !== 'all' || filterSelection !== 'all' 
+                    {multiFilter.ms.enabled || multiFilter.ou.enabled || multiFilter.btts.enabled || filterAgent !== 'all'
                       ? 'Filtreye uygun sonuç bulunamadı' 
                       : t.noData}
                   </div>
