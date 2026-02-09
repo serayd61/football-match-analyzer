@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import {
-  RefreshCw, Loader2, AlertCircle, BarChart3, Award, TrendingUp, Trophy
+  RefreshCw, Loader2, AlertCircle, BarChart3, Award, TrendingUp, Trophy, ArrowLeft, Home
 } from 'lucide-react';
 
 import {
@@ -207,6 +207,18 @@ export default function PerformancePage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
+          {/* Back Navigation */}
+          <div className="mb-4">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center gap-2 text-white/60 hover:text-cyan-400 transition-colors group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <Home className="w-4 h-4" />
+              <span className="text-sm">Ana Sayfa</span>
+            </Link>
+          </div>
+
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
