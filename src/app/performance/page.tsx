@@ -171,11 +171,11 @@ interface AnalysisRecord {
   btts_source?: string;
 }
 
-// Çoklu Filtreleme için interface (her market için ayrı confidence range)
+// Çoklu Filtreleme için interface (her market için tek minimum confidence)
 interface MultiFilter {
-  ms: { enabled: boolean; selection: 'all' | 'home' | 'away' | 'draw'; minConf: number; maxConf: number };
-  ou: { enabled: boolean; selection: 'all' | 'over' | 'under'; minConf: number; maxConf: number };
-  btts: { enabled: boolean; selection: 'all' | 'yes' | 'no'; minConf: number; maxConf: number };
+  ms: { enabled: boolean; selection: 'all' | 'home' | 'away' | 'draw'; minConf: number };
+  ou: { enabled: boolean; selection: 'all' | 'over' | 'under'; minConf: number };
+  btts: { enabled: boolean; selection: 'all' | 'yes' | 'no'; minConf: number };
 }
 
 // ============================================================================
@@ -197,11 +197,11 @@ export default function PerformancePage() {
   const [showSettled, setShowSettled] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
   
-  // Çoklu Filtreleme state'leri (MS, O/U, BTTS aynı anda seçilebilir, her biri için ayrı % dilim)
+  // Çoklu Filtreleme state'leri (MS, O/U, BTTS aynı anda seçilebilir, her biri için minimum % güven)
   const [multiFilter, setMultiFilter] = useState<MultiFilter>({
-    ms: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
-    ou: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
-    btts: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 }
+    ms: { enabled: false, selection: 'all', minConf: 0 },
+    ou: { enabled: false, selection: 'all', minConf: 0 },
+    btts: { enabled: false, selection: 'all', minConf: 0 }
   });
   const [filterLeague, setFilterLeague] = useState<string>('all'); // Lig filtresi
   const [filterAgent, setFilterAgent] = useState<string>('all'); // Agent filtresi: 'all', 'stats', 'odds', 'deepAnalysis', 'masterStrategist', 'smart'
@@ -228,22 +228,13 @@ export default function PerformancePage() {
         settled: 'true', // Sadece sonuçlanmış maçlar
         ...(filterLeague !== 'all' && { league: filterLeague }),
         ...(filterAgent !== 'all' && { agent: filterAgent }),
-        // Çoklu kriter filtreleri (her biri için ayrı selection ve confidence range)
+        // Çoklu kriter filtreleri (her biri için selection ve minimum confidence)
         ...(multiFilter.ms.enabled && { msSelection: multiFilter.ms.selection }),
-        ...(multiFilter.ms.enabled && (multiFilter.ms.minConf !== 50 || multiFilter.ms.maxConf !== 100) && { 
-          msMinConf: multiFilter.ms.minConf.toString(),
-          msMaxConf: multiFilter.ms.maxConf.toString()
-        }),
+        ...(multiFilter.ms.enabled && multiFilter.ms.minConf > 0 && { msMinConf: multiFilter.ms.minConf.toString() }),
         ...(multiFilter.ou.enabled && { ouSelection: multiFilter.ou.selection }),
-        ...(multiFilter.ou.enabled && (multiFilter.ou.minConf !== 50 || multiFilter.ou.maxConf !== 100) && { 
-          ouMinConf: multiFilter.ou.minConf.toString(),
-          ouMaxConf: multiFilter.ou.maxConf.toString()
-        }),
+        ...(multiFilter.ou.enabled && multiFilter.ou.minConf > 0 && { ouMinConf: multiFilter.ou.minConf.toString() }),
         ...(multiFilter.btts.enabled && { bttsSelection: multiFilter.btts.selection }),
-        ...(multiFilter.btts.enabled && (multiFilter.btts.minConf !== 50 || multiFilter.btts.maxConf !== 100) && { 
-          bttsMinConf: multiFilter.btts.minConf.toString(),
-          bttsMaxConf: multiFilter.btts.maxConf.toString()
-        }),
+        ...(multiFilter.btts.enabled && multiFilter.btts.minConf > 0 && { bttsMinConf: multiFilter.btts.minConf.toString() }),
       });
       
       const analysesRes = await fetch(`/api/performance/get-analyses?${filterParams}`);
@@ -847,29 +838,16 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.ms.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">%</span>
+                          <span className="text-[10px] text-white/50">Min %</span>
                           <select
                             value={multiFilter.ms.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
                               ...prev,
                               ms: { ...prev.ms, minConf: parseInt(e.target.value) }
                             }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-cyan-500/50"
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-14 focus:outline-none focus:border-cyan-500/50"
                           >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
-                              <option key={num} value={num}>{num}</option>
-                            ))}
-                          </select>
-                          <span className="text-white/30">-</span>
-                          <select
-                            value={multiFilter.ms.maxConf}
-                            onChange={(e) => setMultiFilter(prev => ({
-                              ...prev,
-                              ms: { ...prev.ms, maxConf: parseInt(e.target.value) }
-                            }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-cyan-500/50"
-                          >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                            {Array.from({ length: 101 }, (_, i) => i).map(num => (
                               <option key={num} value={num}>{num}</option>
                             ))}
                           </select>
@@ -913,29 +891,16 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.ou.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">%</span>
+                          <span className="text-[10px] text-white/50">Min %</span>
                           <select
                             value={multiFilter.ou.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
                               ...prev,
                               ou: { ...prev.ou, minConf: parseInt(e.target.value) }
                             }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-amber-500/50"
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-14 focus:outline-none focus:border-amber-500/50"
                           >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
-                              <option key={num} value={num}>{num}</option>
-                            ))}
-                          </select>
-                          <span className="text-white/30">-</span>
-                          <select
-                            value={multiFilter.ou.maxConf}
-                            onChange={(e) => setMultiFilter(prev => ({
-                              ...prev,
-                              ou: { ...prev.ou, maxConf: parseInt(e.target.value) }
-                            }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-amber-500/50"
-                          >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                            {Array.from({ length: 101 }, (_, i) => i).map(num => (
                               <option key={num} value={num}>{num}</option>
                             ))}
                           </select>
@@ -979,29 +944,16 @@ export default function PerformancePage() {
                       </div>
                       {multiFilter.btts.enabled && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-white/50">%</span>
+                          <span className="text-[10px] text-white/50">Min %</span>
                           <select
                             value={multiFilter.btts.minConf}
                             onChange={(e) => setMultiFilter(prev => ({
                               ...prev,
                               btts: { ...prev.btts, minConf: parseInt(e.target.value) }
                             }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-emerald-500/50"
+                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-14 focus:outline-none focus:border-emerald-500/50"
                           >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
-                              <option key={num} value={num}>{num}</option>
-                            ))}
-                          </select>
-                          <span className="text-white/30">-</span>
-                          <select
-                            value={multiFilter.btts.maxConf}
-                            onChange={(e) => setMultiFilter(prev => ({
-                              ...prev,
-                              btts: { ...prev.btts, maxConf: parseInt(e.target.value) }
-                            }))}
-                            className="px-1 py-0.5 bg-black/30 border border-white/20 rounded text-white text-[10px] w-12 focus:outline-none focus:border-emerald-500/50"
-                          >
-                            {Array.from({ length: 51 }, (_, i) => 50 + i).map(num => (
+                            {Array.from({ length: 101 }, (_, i) => i).map(num => (
                               <option key={num} value={num}>{num}</option>
                             ))}
                           </select>
@@ -1016,9 +968,9 @@ export default function PerformancePage() {
                           setFilterLeague('all');
                           setFilterAgent('all');
                           setMultiFilter({
-                            ms: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
-                            ou: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 },
-                            btts: { enabled: false, selection: 'all', minConf: 50, maxConf: 100 }
+                            ms: { enabled: false, selection: 'all', minConf: 0 },
+                            ou: { enabled: false, selection: 'all', minConf: 0 },
+                            btts: { enabled: false, selection: 'all', minConf: 0 }
                           });
                         }}
                         className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm hover:bg-red-500/30 transition-colors self-start"
@@ -1039,17 +991,17 @@ export default function PerformancePage() {
                       )}
                       {multiFilter.ms.enabled && (
                         <span className="px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-300 text-xs">
-                          MS{multiFilter.ms.selection !== 'all' ? `=${multiFilter.ms.selection === 'home' ? '1' : multiFilter.ms.selection === 'away' ? '2' : 'X'}` : ''} ({multiFilter.ms.minConf}-{multiFilter.ms.maxConf}%)
+                          MS{multiFilter.ms.selection !== 'all' ? `=${multiFilter.ms.selection === 'home' ? '1' : multiFilter.ms.selection === 'away' ? '2' : 'X'}` : ''}{multiFilter.ms.minConf > 0 ? ` (≥${multiFilter.ms.minConf}%)` : ''}
                         </span>
                       )}
                       {multiFilter.ou.enabled && (
                         <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded text-amber-300 text-xs">
-                          O/U{multiFilter.ou.selection !== 'all' ? `=${multiFilter.ou.selection === 'over' ? 'Üst' : 'Alt'}` : ''} ({multiFilter.ou.minConf}-{multiFilter.ou.maxConf}%)
+                          O/U{multiFilter.ou.selection !== 'all' ? `=${multiFilter.ou.selection === 'over' ? 'Üst' : 'Alt'}` : ''}{multiFilter.ou.minConf > 0 ? ` (≥${multiFilter.ou.minConf}%)` : ''}
                         </span>
                       )}
                       {multiFilter.btts.enabled && (
                         <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded text-emerald-300 text-xs">
-                          BTTS{multiFilter.btts.selection !== 'all' ? `=${multiFilter.btts.selection === 'yes' ? 'Var' : 'Yok'}` : ''} ({multiFilter.btts.minConf}-{multiFilter.btts.maxConf}%)
+                          BTTS{multiFilter.btts.selection !== 'all' ? `=${multiFilter.btts.selection === 'yes' ? 'Var' : 'Yok'}` : ''}{multiFilter.btts.minConf > 0 ? ` (≥${multiFilter.btts.minConf}%)` : ''}
                         </span>
                       )}
                     </div>

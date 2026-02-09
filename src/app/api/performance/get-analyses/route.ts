@@ -49,27 +49,24 @@ export async function GET(request: NextRequest) {
     const league = searchParams.get('league');
     const agent = searchParams.get('agent'); // 'all', 'stats', 'odds', 'deepAnalysis', 'masterStrategist', 'smart'
     
-    // Çoklu kriter filtreleri (aynı anda MS + O/U + BTTS seçilebilir, her biri için ayrı confidence range)
+    // Çoklu kriter filtreleri (aynı anda MS + O/U + BTTS seçilebilir, her biri için minimum confidence 0-100)
     const msSelection = searchParams.get('msSelection'); // 'all', 'home', 'away', 'draw'
-    const msMinConf = parseInt(searchParams.get('msMinConf') || '50', 10);
-    const msMaxConf = parseInt(searchParams.get('msMaxConf') || '100', 10);
+    const msMinConf = parseInt(searchParams.get('msMinConf') || '0', 10);
     
     const ouSelection = searchParams.get('ouSelection'); // 'all', 'over', 'under'
-    const ouMinConf = parseInt(searchParams.get('ouMinConf') || '50', 10);
-    const ouMaxConf = parseInt(searchParams.get('ouMaxConf') || '100', 10);
+    const ouMinConf = parseInt(searchParams.get('ouMinConf') || '0', 10);
     
     const bttsSelection = searchParams.get('bttsSelection'); // 'all', 'yes', 'no'
-    const bttsMinConf = parseInt(searchParams.get('bttsMinConf') || '50', 10);
-    const bttsMaxConf = parseInt(searchParams.get('bttsMaxConf') || '100', 10);
+    const bttsMinConf = parseInt(searchParams.get('bttsMinConf') || '0', 10);
     
     // Eski tek market/selection parametreleri (geriye uyumluluk)
     const market = searchParams.get('market'); // 'MS', 'O/U', 'BTTS'
     const selection = searchParams.get('selection'); // 'home', 'away', 'over', 'under', etc.
-    const minConfidence = parseInt(searchParams.get('minConfidence') || '50', 10);
+    const minConfidence = parseInt(searchParams.get('minConfidence') || '0', 10);
     const maxConfidence = parseInt(searchParams.get('maxConfidence') || '100', 10);
 
     console.log(`   Params: settled=${settledParam}, limit=${limit}, offset=${offset}, league=${league}, agent=${agent}`);
-    console.log(`   Multi-filters: ms=${msSelection}(${msMinConf}-${msMaxConf}%), ou=${ouSelection}(${ouMinConf}-${ouMaxConf}%), btts=${bttsSelection}(${bttsMinConf}-${bttsMaxConf}%)`);
+    console.log(`   Multi-filters: ms=${msSelection}(≥${msMinConf}%), ou=${ouSelection}(≥${ouMinConf}%), btts=${bttsSelection}(≥${bttsMinConf}%)`);
 
     // Create fresh client inline
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -149,9 +146,10 @@ export async function GET(request: NextRequest) {
       return 50;
     };
     
-    const checkConfidenceRange = (row: any, market: 'mr' | 'ou' | 'btts', minConf: number, maxConf: number): boolean => {
+    const checkMinConfidence = (row: any, market: 'mr' | 'ou' | 'btts', minConf: number): boolean => {
+      if (minConf <= 0) return true; // 0 ise filtre yok
       const conf = getConfidence(row, market);
-      return conf >= minConf && conf <= maxConf;
+      return conf >= minConf;
     };
     
     // Agent bazlı tahmin eşleştirme
@@ -222,48 +220,42 @@ export async function GET(request: NextRequest) {
             if (msSelection === 'home') pass = pass && agentMR === '1';
             else if (msSelection === 'away') pass = pass && agentMR === '2';
             else if (msSelection === 'draw') pass = pass && agentMR === 'x';
-            // MS confidence range kontrolü
-            if (msSelection !== 'all') {
-              pass = pass && checkConfidenceRange(r, 'mr', msMinConf, msMaxConf);
-            }
+            // MS minimum confidence kontrolü
+            pass = pass && checkMinConfidence(r, 'mr', msMinConf);
           }
           if (ouSelection) {
             const agentOU = getAgentPrediction(r, agent, 'ou');
             if (ouSelection === 'over') pass = pass && agentOU === 'over';
             else if (ouSelection === 'under') pass = pass && agentOU === 'under';
-            // O/U confidence range kontrolü
-            if (ouSelection !== 'all') {
-              pass = pass && checkConfidenceRange(r, 'ou', ouMinConf, ouMaxConf);
-            }
+            // O/U minimum confidence kontrolü
+            pass = pass && checkMinConfidence(r, 'ou', ouMinConf);
           }
           if (bttsSelection) {
             const agentBTTS = getAgentPrediction(r, agent, 'btts');
             if (bttsSelection === 'yes') pass = pass && agentBTTS === 'yes';
             else if (bttsSelection === 'no') pass = pass && agentBTTS === 'no';
-            // BTTS confidence range kontrolü
-            if (bttsSelection !== 'all') {
-              pass = pass && checkConfidenceRange(r, 'btts', bttsMinConf, bttsMaxConf);
-            }
+            // BTTS minimum confidence kontrolü
+            pass = pass && checkMinConfidence(r, 'btts', bttsMinConf);
           }
         } else {
           // Agent seçilmemişse consensus tahminlerine göre filtrele
           if (msSelection) {
             if (msSelection !== 'all') {
               pass = pass && matchesMSSelection(r, msSelection);
-              pass = pass && checkConfidenceRange(r, 'mr', msMinConf, msMaxConf);
             }
+            pass = pass && checkMinConfidence(r, 'mr', msMinConf);
           }
           if (ouSelection) {
             if (ouSelection !== 'all') {
               pass = pass && matchesOUSelection(r, ouSelection);
-              pass = pass && checkConfidenceRange(r, 'ou', ouMinConf, ouMaxConf);
             }
+            pass = pass && checkMinConfidence(r, 'ou', ouMinConf);
           }
           if (bttsSelection) {
             if (bttsSelection !== 'all') {
               pass = pass && matchesBTTSSelection(r, bttsSelection);
-              pass = pass && checkConfidenceRange(r, 'btts', bttsMinConf, bttsMaxConf);
             }
+            pass = pass && checkMinConfidence(r, 'btts', bttsMinConf);
           }
         }
         
