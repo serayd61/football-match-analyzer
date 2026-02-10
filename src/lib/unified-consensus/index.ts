@@ -204,11 +204,19 @@ export async function runUnifiedConsensus(
       console.log('\n🧠 Running AutoLearn Agent...');
 
       // Geçici consensus oluştur (henüz final değil ama AutoLearn'in inputuna lazım)
+      // Agent-seviye fallback: üst-düzey prediction boşsa stats/deepAnalysis'ten al
+      const tempMRPred = agentResult?.matchResult?.prediction || agentResult?.agents?.stats?.matchResult || agentResult?.agents?.deepAnalysis?.matchResult?.prediction || '';
+      const tempMRConf = agentResult?.matchResult?.confidence || agentResult?.agents?.stats?.matchResultConfidence || agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 50;
+      const tempOUPred = agentResult?.overUnder?.prediction || agentResult?.agents?.stats?.overUnder || agentResult?.agents?.deepAnalysis?.overUnder?.prediction || '';
+      const tempOUConf = agentResult?.overUnder?.confidence || agentResult?.agents?.stats?.overUnderConfidence || agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 50;
+      const tempBTTSPred = agentResult?.btts?.prediction || agentResult?.agents?.stats?.btts || agentResult?.agents?.deepAnalysis?.btts?.prediction || '';
+      const tempBTTSConf = agentResult?.btts?.confidence || agentResult?.agents?.stats?.bttsConfidence || agentResult?.agents?.deepAnalysis?.btts?.confidence || 50;
+
       const tempAnalysis = {
         predictions: {
-          matchResult: { prediction: agentResult?.matchResult?.prediction || '', confidence: agentResult?.matchResult?.confidence || 50 },
-          overUnder: { prediction: agentResult?.overUnder?.prediction || '', confidence: agentResult?.overUnder?.confidence || 50 },
-          btts: { prediction: agentResult?.btts?.prediction || '', confidence: agentResult?.btts?.confidence || 50 }
+          matchResult: { prediction: tempMRPred, confidence: tempMRConf },
+          overUnder: { prediction: tempOUPred, confidence: tempOUConf },
+          btts: { prediction: tempBTTSPred, confidence: tempBTTSConf }
         },
         sources: { agents: agentResult?.agents || {} },
         systemPerformance: {
