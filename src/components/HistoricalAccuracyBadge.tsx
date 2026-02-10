@@ -43,7 +43,14 @@ export default function HistoricalAccuracyBadge({
 
   useEffect(() => {
     const fetchHistoricalAccuracy = async () => {
-      if (!market || !prediction || !confidence) {
+      // confidence 0 olabilir, sadece market ve prediction gerekli
+      if (!market || !prediction || confidence === undefined || confidence === null) {
+        setLoading(false);
+        return;
+      }
+      
+      // Confidence 0 veya çok düşükse skip
+      if (confidence < 1) {
         setLoading(false);
         return;
       }
@@ -54,19 +61,24 @@ export default function HistoricalAccuracyBadge({
         
         const params = new URLSearchParams({
           market,
-          prediction,
-          confidence: confidence.toString()
+          prediction: prediction.toString(),
+          confidence: Math.round(confidence).toString()
         });
+        
+        console.log('🔍 Fetching historical accuracy:', { market, prediction, confidence, url: `/api/performance/historical-accuracy?${params}` });
         
         const res = await fetch(`/api/performance/historical-accuracy?${params}`);
         const result = await res.json();
         
+        console.log('📊 Historical accuracy result:', result);
+        
         if (result.success) {
           setData(result.data);
         } else {
-          setError(result.error);
+          setError(result.error || 'Unknown error');
         }
       } catch (err: any) {
+        console.error('❌ Historical accuracy fetch error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
