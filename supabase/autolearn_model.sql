@@ -59,8 +59,16 @@ CREATE INDEX IF NOT EXISTS idx_autolearn_pred_settled
 ON autolearn_predictions(is_correct) WHERE is_correct IS NOT NULL;
 
 -- ============================================================================
--- 4. PERMISSIONS
+-- 4. RLS POLICIES & PERMISSIONS
 -- ============================================================================
+
+-- RLS'yi devre disi birak (service_role zaten bypass eder, ama anon icin de gerekli)
+ALTER TABLE autolearn_model ENABLE ROW LEVEL SECURITY;
+ALTER TABLE autolearn_predictions ENABLE ROW LEVEL SECURITY;
+
+-- Tum roller icin tam erisim policy'leri
+CREATE POLICY "autolearn_model_all" ON autolearn_model FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "autolearn_predictions_all" ON autolearn_predictions FOR ALL USING (true) WITH CHECK (true);
 
 GRANT ALL ON autolearn_model TO anon, authenticated, service_role;
 GRANT ALL ON autolearn_predictions TO anon, authenticated, service_role;

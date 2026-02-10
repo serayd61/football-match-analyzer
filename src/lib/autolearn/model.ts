@@ -317,10 +317,25 @@ export async function trainModel(): Promise<TrainResult> {
   const entries = Array.from(modelEntries.values());
   
   // Onceki modeli temizle
-  await supabase.from('autolearn_model').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  console.log(`🧠 AutoLearn: Clearing old model data...`);
+  const { error: deleteError, count: deleteCount } = await supabase
+    .from('autolearn_model')
+    .delete()
+    .gte('created_at', '1970-01-01T00:00:00Z')
+    .select('id', { count: 'exact', head: true });
+  
+  if (deleteError) {
+    console.error('❌ AutoLearn: Delete error:', deleteError.message, deleteError);
+  } else {
+    console.log(`🧠 AutoLearn: Deleted old entries`);
+  }
 
   // Batch insert
+  console.log(`🧠 AutoLearn: Inserting ${entries.length} patterns...`);
   const batchSize = 100;
+  let insertedCount = 0;
+  let insertErrors = 0;
+  
   for (let i = 0; i < entries.length; i += batchSize) {
     const batch = entries.slice(i, i + batchSize).map(e => ({
       model_type: e.model_type,
@@ -331,17 +346,30 @@ export async function trainModel(): Promise<TrainResult> {
       accuracy: e.accuracy,
       weight: e.weight,
       metadata: e.metadata,
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
+      created_at: new Date().toISOString()
     }));
 
-    const { error: insertError } = await supabase
+    const { data: insertData, error: insertError } = await supabase
       .from('autolearn_model')
-      .upsert(batch, { onConflict: 'model_type,market,feature_key' });
+      .upsert(batch, { onConflict: 'model_type,market,feature_key' })
+      .select('id');
 
     if (insertError) {
-      console.error('❌ AutoLearn: Insert error:', insertError.message);
+      console.error(`❌ AutoLearn: Insert error (batch ${Math.floor(i / batchSize) + 1}):`, insertError.message, insertError.details, insertError.hint);
+      insertErrors++;
+    } else {
+      insertedCount += insertData?.length || batch.length;
     }
   }
+  
+  console.log(`🧠 AutoLearn: Inserted ${insertedCount} patterns, ${insertErrors} batch errors`);
+
+  // Dogrulama: gercekten kaydedildi mi?
+  const { count: verifyCount } = await supabase
+    .from('autolearn_model')
+    .select('id', { count: 'exact', head: true });
+  console.log(`🧠 AutoLearn: Verification - ${verifyCount} rows in autolearn_model table`);
 
   const result: TrainResult = {
     totalPatterns: entries.length,
@@ -424,12 +452,21 @@ export async function updateModel(fixtureIds?: number[]): Promise<{ updated: num
 export async function getModelStats(): Promise<any> {
   const supabase = getSupabase();
 
-  const { data: stats } = await supabase
+  // Debug: count first
+  const { count: totalCount, error: countError } = await supabase
+    .from('autolearn_model')
+    .select('id', { count: 'exact', head: true });
+  
+  console.log(`🧠 AutoLearn Stats: totalCount=${totalCount}, countError=${countError?.message || 'none'}`);
+
+  const { data: stats, error: statsError } = await supabase
     .from('autolearn_model')
     .select('model_type, market, total_matches, correct_matches, accuracy');
 
+  console.log(`🧠 AutoLearn Stats: stats rows=${stats?.length || 0}, error=${statsError?.message || 'none'}`);
+
   if (!stats || stats.length === 0) {
-    return { trained: false, patterns: 0, message: 'Model henuz egitilmedi' };
+    return { trained: false, patterns: 0, message: 'Model henuz egitilmedi', _debug: { totalCount, countError: countError?.message, statsError: statsError?.message } };
   }
 
   const byType: Record<string, { count: number; avgAccuracy: number; totalMatches: number }> = {};
