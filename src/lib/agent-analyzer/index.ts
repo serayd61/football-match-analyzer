@@ -3,7 +3,7 @@
 // Sportmonks verilerini kullanarak 3 agent'ı çalıştırır
 // ============================================================================
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getFullFixtureData, getTeamStats, getHeadToHead, getTeamInjuries, type FullFixtureData } from '@/lib/sportmonks/index';
 import { runStatsAgent } from '../heurist/agents/stats';
 import { runOddsAgent } from '../heurist/agents/odds';
@@ -19,10 +19,12 @@ import { saveOddsAnalysisLog } from '../odds-logger';
 import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
 import { dataProviderManager } from '../data-providers';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+let _sb: SupabaseClient | null = null;
+function getSupabase() {
+  if (!_sb) _sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  return _sb;
+}
+const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupabase() as any)[p]; } });
 
 // ============================================================================
 // TYPES

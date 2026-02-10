@@ -262,10 +262,21 @@ export async function POST(request: NextRequest) {
       btts: actualBtts,
     });
 
+    // 3. AutoLearn model güncelle (background, non-blocking)
+    let autoLearnUpdated = false;
+    try {
+      const { updateModel } = await import('@/lib/autolearn/model');
+      const alResult = await updateModel([fixtureId]);
+      autoLearnUpdated = true;
+      console.log(`🧠 AutoLearn model updated: ${alResult.updated} matches processed`);
+    } catch (alError) {
+      console.warn('⚠️ AutoLearn model update failed (non-critical):', alError);
+    }
+
     const duration = Date.now() - startTime;
 
     console.log(`✅ Settlement complete in ${duration}ms`);
-    console.log(`   Unified: ${unifiedSettled ? '✓' : '✗'}, Agents: ${agentsSettled ? '✓' : '✗'}`);
+    console.log(`   Unified: ${unifiedSettled ? '✓' : '✗'}, Agents: ${agentsSettled ? '✓' : '✗'}, AutoLearn: ${autoLearnUpdated ? '✓' : '✗'}`);
 
     return NextResponse.json({
       success: true,
@@ -280,6 +291,7 @@ export async function POST(request: NextRequest) {
       settled: {
         unified: unifiedSettled,
         agents: agentsSettled,
+        autoLearn: autoLearnUpdated,
       },
       duration,
       timestamp: new Date().toISOString(),
@@ -392,6 +404,17 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         console.error(`❌ Error settling fixture ${analysis.fixture_id}:`, error);
         results.errors++;
+      }
+    }
+
+    // Settlement sonrası AutoLearn model güncelle
+    if (results.settled > 0) {
+      try {
+        const { updateModel } = await import('@/lib/autolearn/model');
+        await updateModel();
+        console.log(`🧠 AutoLearn model updated after settling ${results.settled} matches`);
+      } catch (alError) {
+        console.warn('⚠️ AutoLearn model update failed (non-critical):', alError);
       }
     }
 

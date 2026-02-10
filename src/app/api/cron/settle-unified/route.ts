@@ -362,6 +362,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 🧠 Settlement sonrası AutoLearn model güncelle
+    if (settledCount > 0) {
+      try {
+        const { updateModel } = await import('@/lib/autolearn/model');
+        const alResult = await updateModel();
+        console.log(`🧠 AutoLearn model updated after settling ${settledCount} matches (${alResult.updated} total processed)`);
+      } catch (alError) {
+        console.warn('⚠️ AutoLearn model update failed (non-critical):', alError);
+      }
+    }
+
     const duration = Date.now() - startTime;
 
     console.log('\n' + '═'.repeat(70));

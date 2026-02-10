@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History } from 'lucide-react';
 import { FootballBall3D } from '@/components/Football3D';
 import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components/HistoricalAccuracyBadge';
+import AutoLearnBadge, { AutoLearnPanel } from '@/components/AutoLearnBadge';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -215,11 +216,16 @@ export default function MatchAnalysisPage() {
               {analysis.predictions?.matchResult?.reasoning || ''}
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
               <HistoricalAccuracyBadge
                 market="mr"
                 prediction={analysis.predictions?.matchResult?.prediction || ''}
                 confidence={analysis.predictions?.matchResult?.confidence || 0}
+                compact={true}
+              />
+              <AutoLearnBadge
+                market="mr"
+                autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
             </div>
@@ -242,11 +248,16 @@ export default function MatchAnalysisPage() {
               Beklenen: {analysis.predictions?.overUnder?.expectedGoals?.toFixed(1) || '2.5'} gol
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
               <HistoricalAccuracyBadge
                 market="ou"
                 prediction={analysis.predictions?.overUnder?.prediction || ''}
                 confidence={analysis.predictions?.overUnder?.confidence || 0}
+                compact={true}
+              />
+              <AutoLearnBadge
+                market="ou"
+                autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
             </div>
@@ -266,11 +277,16 @@ export default function MatchAnalysisPage() {
               Güven: {analysis.predictions?.btts?.confidence || 0}%
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
               <HistoricalAccuracyBadge
                 market="btts"
                 prediction={analysis.predictions?.btts?.prediction || ''}
                 confidence={analysis.predictions?.btts?.confidence || 0}
+                compact={true}
+              />
+              <AutoLearnBadge
+                market="btts"
+                autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
             </div>
@@ -293,6 +309,18 @@ export default function MatchAnalysisPage() {
             bttsConfidence={analysis.predictions?.btts?.confidence}
           />
         </motion.div>
+
+        {/* AutoLearn Agent Panel */}
+        {analysis.sources?.agents?.autoLearn && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+            className="mt-6"
+          >
+            <AutoLearnPanel autoLearnData={analysis.sources.agents.autoLearn} />
+          </motion.div>
+        )}
 
         {/* Best Bet */}
         {analysis.bestBet && (

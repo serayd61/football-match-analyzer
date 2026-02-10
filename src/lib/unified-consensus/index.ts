@@ -9,6 +9,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getLeagueAccuracyStats } from '../performance';
 import { validateAgentConsensus, resolveConflicts, AgentPrediction } from './agent-consensus-validator';
 import { calculateConsensusAlignment, recordConsensusAlignment, getAgentConsensusAlignment, adjustWeightByConsensusAlignment } from '../agent-learning/consensus-alignment';
+import { predict as autolearnPredict } from '../autolearn/model';
+import { extractAgentPredictionsFromAnalysis, extractMatchContextFromAnalysis, type AgentPredictions as AutoLearnAgentPredictions } from '../autolearn/features';
+import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model';
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
@@ -194,10 +197,55 @@ export async function runUnifiedConsensus(
       console.warn('⚠️ Could not fetch league stats for weighting (non-critical)');
     }
 
+    // 3.5 AutoLearn Agent - Geçmiş pattern'lardan öğrenilmiş skorları al
+    let autoLearnResults: AutoLearnPredictResult[] = [];
+    try {
+      if (onProgress) onProgress({ stage: 'autolearn', message: 'AutoLearn Agent geçmiş pattern\'ları analiz ediyor...' });
+      console.log('\n🧠 Running AutoLearn Agent...');
+
+      // Geçici consensus oluştur (henüz final değil ama AutoLearn'in inputuna lazım)
+      const tempAnalysis = {
+        predictions: {
+          matchResult: { prediction: agentResult?.matchResult?.prediction || '', confidence: agentResult?.matchResult?.confidence || 50 },
+          overUnder: { prediction: agentResult?.overUnder?.prediction || '', confidence: agentResult?.overUnder?.confidence || 50 },
+          btts: { prediction: agentResult?.btts?.prediction || '', confidence: agentResult?.btts?.confidence || 50 }
+        },
+        sources: { agents: agentResult?.agents || {} },
+        systemPerformance: {
+          agreement: 50,
+          riskLevel: agentResult?.riskLevel || 'medium',
+          dataQuality: agentResult?.dataQuality || 'minimal',
+          overallConfidence: 50
+        }
+      };
+
+      const alAgentPreds = extractAgentPredictionsFromAnalysis(tempAnalysis);
+      const alContext = extractMatchContextFromAnalysis(tempAnalysis, {
+        league: input.league,
+        home_team: input.homeTeam,
+        away_team: input.awayTeam
+      });
+
+      autoLearnResults = await autolearnPredict(alAgentPreds, alContext);
+
+      if (autoLearnResults.length > 0) {
+        systemsUsed.push('autolearn');
+        console.log('✅ AutoLearn Agent completed:');
+        autoLearnResults.forEach(r => {
+          console.log(`   ${r.market}: ${r.prediction} ${r.autoLearnScore}% (${r.reliability}, ${r.patternsUsed} patterns)`);
+          r.insights.forEach(i => console.log(`      💡 ${i}`));
+        });
+      } else {
+        console.log('⚠️ AutoLearn Agent: Yetersiz model verisi, atlanıyor');
+      }
+    } catch (err) {
+      console.warn('⚠️ AutoLearn Agent failed (non-critical):', err);
+    }
+
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults);
 
     const processingTime = Date.now() - startTime;
     if (onProgress) onProgress({ stage: 'complete', message: 'Analiz başarıyla tamamlandı.' });
@@ -209,7 +257,24 @@ export async function runUnifiedConsensus(
     return {
       ...consensus,
       sources: {
-        agents: agentResult?.agents || {},
+        agents: {
+          ...(agentResult?.agents || {}),
+          // 🧠 AutoLearn Agent sonuçları
+          ...(autoLearnResults.length > 0 ? {
+            autoLearn: {
+              agent: 'AUTOLEARN_AGENT',
+              results: autoLearnResults,
+              insights: autoLearnResults.flatMap(r => r.insights),
+              reliability: autoLearnResults.length > 0
+                ? autoLearnResults.reduce((best, r) => {
+                    const order = { high: 3, medium: 2, low: 1, insufficient: 0 };
+                    return order[r.reliability] > order[best] ? r.reliability : best;
+                  }, 'insufficient' as 'high' | 'medium' | 'low' | 'insufficient')
+                : 'insufficient',
+              patternsUsed: autoLearnResults.reduce((sum, r) => sum + r.patternsUsed, 0)
+            }
+          } : {})
+        },
         ai: smartResult ? { smart: smartResult } : undefined
       },
       metadata: {
@@ -232,7 +297,8 @@ export async function runUnifiedConsensus(
 async function createUnifiedConsensus(
   agentResult: AgentAnalysisResult | null,
   smartResult: SmartAnalysisResult | null,
-  leagueStats: any[] | null = null
+  leagueStats: any[] | null = null,
+  autoLearnResults: AutoLearnPredictResult[] = []
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
   // Gelişmiş performans bazlı dinamik ağırlıklar
@@ -385,38 +451,69 @@ async function createUnifiedConsensus(
   // Devil's Advocate sonucu (varsa) - NEW
   const devilsMR = normalize(agentResult?.agents?.devilsAdvocate?.matchResult);
   const devilsMRConf = agentResult?.agents?.devilsAdvocate?.confidence || 0;
+
+  // 🧠 AutoLearn Agent sonuçları (varsa)
+  const alMRResult = autoLearnResults.find(r => r.market === 'mr');
+  const alOUResult = autoLearnResults.find(r => r.market === 'ou');
+  const alBTTSResult = autoLearnResults.find(r => r.market === 'btts');
+
+  // AutoLearn ağırlığı: reliability'ye göre dinamik (5-25 arası)
+  const getAutoLearnWeight = (result?: AutoLearnPredictResult): number => {
+    if (!result) return 0;
+    switch (result.reliability) {
+      case 'high': return 20;
+      case 'medium': return 15;
+      case 'low': return 8;
+      case 'insufficient': return 0;
+      default: return 0;
+    }
+  };
+
+  const alMRWeight = getAutoLearnWeight(alMRResult);
+  const alOUWeight = getAutoLearnWeight(alOUResult);
+  const alBTTSWeight = getAutoLearnWeight(alBTTSResult);
+
+  if (alMRWeight > 0 || alOUWeight > 0 || alBTTSWeight > 0) {
+    console.log(`   🧠 AutoLearn Agent weights: MR=${alMRWeight}, OU=${alOUWeight}, BTTS=${alBTTSWeight}`);
+  }
   
   // 🧠 MDAW: Market bazlı ağırlıklar kullan
-  // Match Result için matchResultMultipliers kullan
+  // Match Result için matchResultMultipliers kullan (+ AutoLearn Agent)
   const matchResultConsensus = calculateWeightedConsensus(
     [
-      { value: masterMR, confidence: masterMRConf, weight: 35 * matchResultMultipliers.masterStrategist },
-      { value: geniusMR, confidence: geniusMRConf, weight: 20 },
+      { value: masterMR, confidence: masterMRConf, weight: 30 * matchResultMultipliers.masterStrategist },
+      { value: geniusMR, confidence: geniusMRConf, weight: 15 },
       { value: agentMR, confidence: agentMRConf, weight: 15 * matchResultMultipliers.stats },
       { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 * matchResultMultipliers.deepAnalysis },
       { value: smartMR, confidence: smartMRConf, weight: 10 },
-      { value: devilsMR, confidence: devilsMRConf, weight: 10 * matchResultMultipliers.devilsAdvocate }
+      { value: devilsMR, confidence: devilsMRConf, weight: 5 * matchResultMultipliers.devilsAdvocate },
+      // 🧠 AutoLearn Agent
+      ...(alMRResult && alMRWeight > 0 ? [{ value: alMRResult.prediction, confidence: alMRResult.autoLearnScore, weight: alMRWeight }] : [])
     ]
   );
 
-  // Over/Under için overUnderMultipliers kullan
+  // Over/Under için overUnderMultipliers kullan (+ AutoLearn Agent)
   const overUnderConsensus = calculateWeightedConsensus(
     [
-      { value: masterOU, confidence: masterOUConf, weight: 45 * overUnderMultipliers.masterStrategist },
-      { value: geniusOU, confidence: geniusOUConf, weight: 20 },
+      { value: masterOU, confidence: masterOUConf, weight: 40 * overUnderMultipliers.masterStrategist },
+      { value: geniusOU, confidence: geniusOUConf, weight: 15 },
       { value: agentOU, confidence: agentOUConf, weight: 15 * overUnderMultipliers.stats },
       { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 * overUnderMultipliers.deepAnalysis },
-      { value: smartOU, confidence: smartOUConf, weight: 10 }
+      { value: smartOU, confidence: smartOUConf, weight: 10 },
+      // 🧠 AutoLearn Agent
+      ...(alOUResult && alOUWeight > 0 ? [{ value: alOUResult.prediction, confidence: alOUResult.autoLearnScore, weight: alOUWeight }] : [])
     ]
   );
 
-  // BTTS için bttsMultipliers kullan
+  // BTTS için bttsMultipliers kullan (+ AutoLearn Agent)
   const bttsConsensus = calculateWeightedConsensus(
     [
-      { value: masterBTTS, confidence: masterBTTSConf, weight: 40 * bttsMultipliers.masterStrategist },
-      { value: agentBTTS, confidence: agentBTTSConf, weight: 30 * bttsMultipliers.stats },
-      { value: smartBTTS, confidence: smartBTTSConf, weight: 20 },
-      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * bttsMultipliers.deepAnalysis }
+      { value: masterBTTS, confidence: masterBTTSConf, weight: 35 * bttsMultipliers.masterStrategist },
+      { value: agentBTTS, confidence: agentBTTSConf, weight: 25 * bttsMultipliers.stats },
+      { value: smartBTTS, confidence: smartBTTSConf, weight: 15 },
+      { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * bttsMultipliers.deepAnalysis },
+      // 🧠 AutoLearn Agent
+      ...(alBTTSResult && alBTTSWeight > 0 ? [{ value: alBTTSResult.prediction, confidence: alBTTSResult.autoLearnScore, weight: alBTTSWeight }] : [])
     ]
   );
 
@@ -500,6 +597,23 @@ async function createUnifiedConsensus(
     });
   }
   
+  // 🧠 AutoLearn Agent (varsa)
+  if (alMRResult && alMRWeight > 0) {
+    agentPredictions.push({
+      agentName: 'autoLearn',
+      matchResult: alMRResult ? normalize(alMRResult.prediction) as '1' | 'X' | '2' : undefined,
+      overUnder: alOUResult ? normalize(alOUResult.prediction) as 'Over' | 'Under' : undefined,
+      btts: alBTTSResult ? normalize(alBTTSResult.prediction) as 'Yes' | 'No' : undefined,
+      confidence: Math.max(
+        alMRResult?.autoLearnScore || 0,
+        alOUResult?.autoLearnScore || 0,
+        alBTTSResult?.autoLearnScore || 0
+      ),
+      weight: Math.max(alMRWeight, alOUWeight, alBTTSWeight),
+      reasoning: alMRResult?.insights?.join('; ') || 'AutoLearn pattern-based prediction'
+    });
+  }
+
   // Agent tutarlılık validasyonu
   const consensusValidation = validateAgentConsensus(agentPredictions);
   console.log(`   🔍 Agent Consensus Validation: Agreement ${consensusValidation.agreement}%, Conflicts: ${consensusValidation.conflicts.length}`);
