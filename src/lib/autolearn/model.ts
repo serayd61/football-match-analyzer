@@ -318,11 +318,10 @@ export async function trainModel(): Promise<TrainResult> {
   
   // Onceki modeli temizle
   console.log(`🧠 AutoLearn: Clearing old model data...`);
-  const { error: deleteError, count: deleteCount } = await supabase
+  const { error: deleteError } = await supabase
     .from('autolearn_model')
     .delete()
-    .gte('created_at', '1970-01-01T00:00:00Z')
-    .select('id', { count: 'exact', head: true });
+    .gte('created_at', '1970-01-01T00:00:00Z');
   
   if (deleteError) {
     console.error('❌ AutoLearn: Delete error:', deleteError.message, deleteError);
@@ -366,10 +365,11 @@ export async function trainModel(): Promise<TrainResult> {
   console.log(`🧠 AutoLearn: Inserted ${insertedCount} patterns, ${insertErrors} batch errors`);
 
   // Dogrulama: gercekten kaydedildi mi?
-  const { count: verifyCount } = await supabase
+  const { data: verifyData, error: verifyError } = await supabase
     .from('autolearn_model')
-    .select('id', { count: 'exact', head: true });
-  console.log(`🧠 AutoLearn: Verification - ${verifyCount} rows in autolearn_model table`);
+    .select('id')
+    .limit(5);
+  console.log(`🧠 AutoLearn: Verification - ${verifyData?.length || 0} sample rows found, error=${verifyError?.message || 'none'}`);
 
   const result: TrainResult = {
     totalPatterns: entries.length,
@@ -453,9 +453,11 @@ export async function getModelStats(): Promise<any> {
   const supabase = getSupabase();
 
   // Debug: count first
-  const { count: totalCount, error: countError } = await supabase
+  const { data: countData, error: countError } = await supabase
     .from('autolearn_model')
-    .select('id', { count: 'exact', head: true });
+    .select('id')
+    .limit(1);
+  const totalCount = countData?.length || 0;
   
   console.log(`🧠 AutoLearn Stats: totalCount=${totalCount}, countError=${countError?.message || 'none'}`);
 
