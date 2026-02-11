@@ -14,6 +14,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { Paywall } from '@/components/Paywall';
 import AIChatbot from '@/components/AIChatbot';
+import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
@@ -92,6 +93,19 @@ interface SmartAnalysis {
   league?: string;
   matchDate?: string;
   dataQuality?: string;
+  survivalVerdict?: {
+    market: string;
+    marketLabel: string;
+    selection: string;
+    selectionLabel: string;
+    confidence: number;
+    reasoning: string;
+    agentAgreement: string;
+    historicalBacking: string;
+    riskLevel: 'dusuk' | 'orta' | 'yuksek';
+    certaintyScore: number;
+    totalAgentsConsulted: number;
+  };
 }
 
 // ============================================================================
@@ -1281,7 +1295,8 @@ export default function DashboardPage() {
               overallConfidence: analysisData.systemPerformance?.overallConfidence || favorite.overall_confidence || 50,
               processingTime: analysisData.metadata?.processingTime || 0,
               modelsUsed: analysisData.metadata?.systemsUsed || [],
-              analyzedAt: favorite.created_at
+              analyzedAt: favorite.created_at,
+              survivalVerdict: analysisData.survivalVerdict || undefined
             };
           }
         }
@@ -1428,7 +1443,8 @@ export default function DashboardPage() {
           dataQuality: unifiedAnalysis.systemPerformance.dataQuality,
           processingTime: unifiedAnalysis.metadata.processingTime,
           modelsUsed: unifiedAnalysis.metadata.systemsUsed || ['unified-consensus'],
-          analyzedAt: unifiedAnalysis.metadata.analyzedAt
+          analyzedAt: unifiedAnalysis.metadata.analyzedAt,
+          survivalVerdict: unifiedAnalysis.survivalVerdict || undefined
         };
         
         setAnalysis(convertedAnalysis);
@@ -2646,6 +2662,13 @@ export default function DashboardPage() {
                   </div>
                 )}
                 
+                {/* 🎯 HAYATTA KAL AJANI - TEK SONUÇ */}
+                {analysis.survivalVerdict && (
+                  <div className="mb-6">
+                    <SurvivalVerdictCard verdict={analysis.survivalVerdict as any} />
+                  </div>
+                )}
+
                 {/* Best Bet - Futuristic Highlight */}
                 {analysis.bestBet && (
                   <motion.div 
