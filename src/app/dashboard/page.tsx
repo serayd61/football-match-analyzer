@@ -102,9 +102,11 @@ interface SmartAnalysis {
     reasoning: string;
     agentAgreement: string;
     historicalBacking: string;
-    riskLevel: 'dusuk' | 'orta' | 'yuksek';
+    riskLevel: 'dusuk' | 'orta' | 'yuksek' | string;
     certaintyScore: number;
     totalAgentsConsulted: number;
+    isDead?: boolean;
+    deathReason?: string;
   };
 }
 
