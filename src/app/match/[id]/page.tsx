@@ -10,6 +10,7 @@ import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components
 import AutoLearnBadge, { AutoLearnPanel } from '@/components/AutoLearnBadge';
 import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
 import DevilsAdvocatePanel from '@/components/DevilsAdvocatePanel';
+import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -220,6 +221,18 @@ export default function MatchAnalysisPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Survival Verdict - TEK SONUÇ */}
+        {analysis.survivalVerdict && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-8"
+          >
+            <SurvivalVerdictCard verdict={analysis.survivalVerdict} />
+          </motion.div>
+        )}
 
         {/* Predictions */}
         <div className="grid md:grid-cols-3 gap-6">

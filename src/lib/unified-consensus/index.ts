@@ -14,6 +14,7 @@ import { getMatchTypeMultiplier, getPsychologyMultiplier, type MatchTypeMultipli
 import { predict as autolearnPredict } from '../autolearn/model';
 import { extractAgentPredictionsFromAnalysis, extractMatchContextFromAnalysis, type AgentPredictions as AutoLearnAgentPredictions } from '../autolearn/features';
 import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model';
+import { predict as survivalPredict, verdict as survivalVerdict, type SurvivalPrediction, type SurvivalVerdict } from '../survival-agent';
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
@@ -98,10 +99,13 @@ export interface UnifiedConsensusResult {
 
   // Maç tipi bilgisi (bağlam-duyarlı ağırlıklar)
   matchContext?: {
-    type: string; // 'derby' | 'title_race' | 'relegation_battle' | 'european_qualification' | 'regular'
-    label: string; // UI'da gösterilecek label
+    type: string;
+    label: string;
     psychologyMultiplier: number;
   };
+
+  // Survival Agent TEK SONUÇ (tüm ajanların istişaresi)
+  survivalVerdict?: SurvivalVerdict;
 
   // Kaynak analizleri (detay için)
   sources: {
@@ -275,10 +279,52 @@ export async function runUnifiedConsensus(
       console.warn('⚠️ AutoLearn Agent failed (non-critical):', err);
     }
 
+    // 3.6 Survival Agent - Tarihsel verilerden otonom tahmin
+    let survivalPrediction: SurvivalPrediction | null = null;
+    let survivalVerdictResult: SurvivalVerdict | null = null;
+    try {
+      if (onProgress) onProgress({ stage: 'survival', message: 'Hayatta Kal Ajanı tarihsel verileri analiz ediyor...' });
+      console.log('\n🔫 Running Survival Agent...');
+
+      // Odds bilgisini çek
+      const statsOdds = agentResult?.agents?.stats?.odds || agentResult?.agents?.odds;
+      const homeOdds = statsOdds?.matchWinner?.home || undefined;
+
+      survivalPrediction = await survivalPredict({
+        league: input.league,
+        homeTeam: input.homeTeam,
+        awayTeam: input.awayTeam,
+        homeOdds: typeof homeOdds === 'number' ? homeOdds : undefined,
+      });
+
+      if (survivalPrediction) {
+        systemsUsed.push('survival');
+        console.log('✅ Survival Agent completed');
+      }
+    } catch (err) {
+      console.warn('⚠️ Survival Agent failed (non-critical):', err);
+    }
+
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
     const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type);
+
+    // 4.5 Survival Verdict - Tüm ajanları istişare edip TEK SONUÇ
+    if (survivalPrediction) {
+      try {
+        console.log('\n🔫 Survival Verdict: İstişare başlıyor...');
+        survivalVerdictResult = survivalVerdict({
+          ownPrediction: survivalPrediction,
+          agentResult,
+          smartResult,
+          autoLearnResults,
+          consensusPredictions: consensus.predictions,
+        });
+      } catch (err) {
+        console.warn('⚠️ Survival Verdict failed (non-critical):', err);
+      }
+    }
 
     const processingTime = Date.now() - startTime;
     if (onProgress) onProgress({ stage: 'complete', message: 'Analiz başarıyla tamamlandı.' });
@@ -293,6 +339,8 @@ export async function runUnifiedConsensus(
       agentProfiles: Object.keys(agentProfiles).length > 0 ? agentProfiles : undefined,
       // 🏟️ Maç tipi bilgisi
       matchContext: detectedMatchType.type !== 'regular' ? detectedMatchType : undefined,
+      // 🔫 Survival Agent TEK SONUÇ
+      survivalVerdict: survivalVerdictResult || undefined,
       sources: {
         agents: {
           ...(agentResult?.agents || {}),
