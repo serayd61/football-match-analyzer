@@ -77,7 +77,7 @@ export interface VerdictInput {
   consensusPredictions: any;  // Consensus predictions
 }
 
-export function verdict(input: VerdictInput): SurvivalVerdict {
+export function verdict(input: VerdictInput): SurvivalVerdict | null {
   console.log(`\n🔫 SURVIVAL VERDICT: İstişare başlıyor...`);
 
   const result = generateVerdict(
@@ -87,6 +87,12 @@ export function verdict(input: VerdictInput): SurvivalVerdict {
     input.autoLearnResults,
     input.consensusPredictions
   );
+
+  // Ajan karar veremedi → sessiz kal, tutarsız sonuç verme
+  if (!result) {
+    console.log(`   💀 AJAN ÖLÜ: Yeterli sinyal yok. Tahmin verilmedi. PAS.`);
+    return null;
+  }
 
   console.log(`   ⚡ TEK SONUÇ: ${result.market} → ${result.selection} (${result.selectionLabel})`);
   console.log(`   📊 Güven: %${result.confidence} | ${result.agentAgreement} | Risk: ${result.riskLevel}`);

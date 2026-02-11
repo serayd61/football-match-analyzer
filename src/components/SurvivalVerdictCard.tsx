@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Crosshair, Shield, Users, Database, Skull, Zap } from 'lucide-react';
+import { Crosshair, Shield, Users, Database, Zap } from 'lucide-react';
 
 // ============================================================================
 // SURVIVAL VERDICT CARD v2
@@ -36,59 +36,8 @@ const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; bo
 };
 
 export default function SurvivalVerdictCard({ verdict }: Props) {
-  if (!verdict) return null;
-
-  // ÖLÜ DURUMU
-  if (verdict.isDead) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative rounded-2xl overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, rgba(127,29,29,0.15) 0%, rgba(50,50,50,0.1) 100%)',
-          border: '1px solid rgba(220,38,38,0.25)',
-        }}
-      >
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-red-600/60" />
-
-        <div className="p-6 md:p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center">
-                <Skull className="w-5 h-5 text-red-500" />
-              </div>
-              <div>
-                <div className="text-xs font-bold tracking-widest uppercase text-red-400">
-                  Hayatta Kal Ajanı
-                </div>
-                <div className="text-[10px] text-red-500/70 tracking-wide">
-                  ÖLÜ - TAHMİN VERİLMEDİ
-                </div>
-              </div>
-            </div>
-            <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">
-              PAS GEÇ
-            </span>
-          </div>
-
-          {/* Death reason */}
-          <div className="text-sm text-red-300/80 leading-relaxed bg-red-500/[0.05] rounded-lg px-4 py-3 border border-red-500/10">
-            {verdict.deathReason || verdict.reasoning}
-          </div>
-
-          {/* Stats */}
-          <div className="mt-3 flex items-center gap-4 text-[10px] text-gray-500">
-            <span>{verdict.agentAgreement}</span>
-            <span>Kesinlik: {verdict.certaintyScore}</span>
-            <span>{verdict.totalAgentsConsulted} ajan istişare edildi</span>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
+  // Ajan karar veremedi veya veri yok → hiçbir şey gösterme
+  if (!verdict || verdict.isDead || verdict.confidence === 0) return null;
 
   const risk = RISK_CONFIG[verdict.riskLevel] || RISK_CONFIG.orta;
 

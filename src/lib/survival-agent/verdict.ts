@@ -63,9 +63,10 @@ const AGENT_WEIGHTS: Record<string, number> = {
 // MİNİMUM EŞİKLER
 // ============================================================================
 
-const MIN_CONFIDENCE = 55;        // Altında → ÖLÜ
-const MIN_AGENT_AGREEMENT = 0.50; // En az %50 ajan aynı fikirde olmalı
-const MIN_CERTAINTY_SCORE = 40;   // Ham kesinlik minimum
+const MIN_CONFIDENCE = 60;        // Altında → ÖLÜ (tutarsız sonuç vermektense sus)
+const MIN_AGENT_AGREEMENT = 0.55; // En az %55 ajan aynı fikirde olmalı
+const MIN_CERTAINTY_SCORE = 45;   // Ham kesinlik minimum
+const MAX_CONFLICT_TOLERANCE = 10; // Çelişki cezası bu değeri aşarsa → ÖLÜ
 
 // ============================================================================
 // VERDICT ENGINE v2
@@ -106,28 +107,15 @@ export function generateVerdict(
 
   const best = candidates[0];
 
-  // 5. ÖLÜ MÜ KONTROL ET
+  // 5. ÖLÜ MÜ KONTROL ET - Tutarsız sonuç vermektense hiç verme
   const isDead = best.score.finalScore < MIN_CERTAINTY_SCORE || 
                  best.score.confidence < MIN_CONFIDENCE ||
-                 best.score.agreementRatio < MIN_AGENT_AGREEMENT;
+                 best.score.agreementRatio < MIN_AGENT_AGREEMENT ||
+                 best.score.conflictPenalty > MAX_CONFLICT_TOLERANCE;
 
   if (isDead) {
-    const deathReason = buildDeathReason(best.score);
-    return {
-      market: best.market,
-      marketLabel: best.label,
-      selection: best.score.winningPrediction || '?',
-      selectionLabel: getSelectionLabel(best.market, best.score.winningPrediction || '?'),
-      confidence: 0,
-      reasoning: deathReason,
-      agentAgreement: `${best.score.agreeCount}/${best.score.totalVoters} ajan`,
-      historicalBacking: 'Yetersiz veri',
-      riskLevel: 'yuksek',
-      certaintyScore: Math.round(best.score.finalScore),
-      totalAgentsConsulted: new Set(votes.map(v => v.agentName)).size,
-      isDead: true,
-      deathReason,
-    };
+    // Ajan ÖLÜ → null döndür, UI'da hiçbir şey gösterme
+    return null as any;
   }
 
   // 6. HAYATTA - Güçlü tahmin üret
