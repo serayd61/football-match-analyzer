@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const SPORTMONKS_API_KEY = 'LVhKgzwe2bZEyzoPQa5Sgz9oFpr9wN8Nvu4lpOJU65iwvOdKRoQ3shhvUPF5';
 
 const TRACKED_LEAGUES = [
