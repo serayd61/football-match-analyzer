@@ -309,6 +309,135 @@ function getDefaultWeights(): Record<string, number> {
   };
 }
 
+// ============================================================================
+// AGENT SELF-PROFILE (Ajan Öz-Farkındalık)
+// Her ajanın kendi performans profilini bilmesi için
+// ============================================================================
+
+export interface AgentSelfProfile {
+  agentName: string;
+  league: string;
+  mrAccuracy: number;
+  ouAccuracy: number;
+  bttsAccuracy: number;
+  overallAccuracy: number;
+  totalMatches: number;
+  trend: 'improving' | 'declining' | 'stable';
+  strongMarket: 'mr' | 'ou' | 'btts' | 'none';
+  weakMarket: 'mr' | 'ou' | 'btts' | 'none';
+  currentWeight: number;
+  recentForm: number; // Son 5 maç başarı oranı
+}
+
+export async function getAgentSelfProfile(agentName: string, league?: string): Promise<AgentSelfProfile | null> {
+  try {
+    const supabase = getSupabase();
+    const normalizedAgent = normalizeAgentName(agentName);
+
+    let query = (supabase
+      .from('agent_performance') as any)
+      .select('*')
+      .eq('agent_name', normalizedAgent);
+
+    if (league) {
+      query = query.eq('league', league);
+    } else {
+      query = query.is('league', null);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const mrAcc = parseFloat(data.recent_match_result_accuracy || data.match_result_accuracy) || 0;
+    const ouAcc = parseFloat(data.recent_over_under_accuracy || data.over_under_accuracy) || 0;
+    const bttsAcc = parseFloat(data.recent_btts_accuracy || data.btts_accuracy) || 0;
+
+    // Güçlü/zayıf market
+    const accuracies = { mr: mrAcc, ou: ouAcc, btts: bttsAcc };
+    const sorted = Object.entries(accuracies).sort((a, b) => b[1] - a[1]);
+    const strongMarket = sorted[0][1] > 0 ? sorted[0][0] as 'mr' | 'ou' | 'btts' : 'none';
+    const weakMarket = sorted[2][1] > 0 ? sorted[2][0] as 'mr' | 'ou' | 'btts' : 'none';
+
+    return {
+      agentName: normalizedAgent,
+      league: league || 'genel',
+      mrAccuracy: Math.round(mrAcc * 10) / 10,
+      ouAccuracy: Math.round(ouAcc * 10) / 10,
+      bttsAccuracy: Math.round(bttsAcc * 10) / 10,
+      overallAccuracy: Math.round(((mrAcc + ouAcc + bttsAcc) / 3) * 10) / 10,
+      totalMatches: data.total_matches || 0,
+      trend: data.trend_direction || 'stable',
+      strongMarket,
+      weakMarket,
+      currentWeight: parseFloat(data.current_weight) || 1.0,
+      recentForm: parseFloat(data.recent_5_accuracy) || 0,
+    };
+  } catch (error) {
+    console.warn(`⚠️ Could not get self-profile for ${agentName}:`, error);
+    return null;
+  }
+}
+
+// Tüm ajanların profillerini tek seferde al
+export async function getAllAgentProfiles(league?: string): Promise<Record<string, AgentSelfProfile>> {
+  const agents = ['stats', 'odds', 'deepAnalysis', 'masterStrategist', 'geniusAnalyst'];
+  const profiles: Record<string, AgentSelfProfile> = {};
+
+  try {
+    const supabase = getSupabase();
+    
+    let query = (supabase
+      .from('agent_performance') as any)
+      .select('*')
+      .in('agent_name', agents);
+
+    if (league) {
+      query = query.eq('league', league);
+    } else {
+      query = query.is('league', null);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data) {
+      console.warn('⚠️ Could not fetch agent profiles:', error?.message);
+      return profiles;
+    }
+
+    for (const row of data) {
+      const mrAcc = parseFloat(row.recent_match_result_accuracy || row.match_result_accuracy) || 0;
+      const ouAcc = parseFloat(row.recent_over_under_accuracy || row.over_under_accuracy) || 0;
+      const bttsAcc = parseFloat(row.recent_btts_accuracy || row.btts_accuracy) || 0;
+
+      const accuracies = { mr: mrAcc, ou: ouAcc, btts: bttsAcc };
+      const sorted = Object.entries(accuracies).sort((a, b) => b[1] - a[1]);
+
+      profiles[row.agent_name] = {
+        agentName: row.agent_name,
+        league: league || 'genel',
+        mrAccuracy: Math.round(mrAcc * 10) / 10,
+        ouAccuracy: Math.round(ouAcc * 10) / 10,
+        bttsAccuracy: Math.round(bttsAcc * 10) / 10,
+        overallAccuracy: Math.round(((mrAcc + ouAcc + bttsAcc) / 3) * 10) / 10,
+        totalMatches: row.total_matches || 0,
+        trend: row.trend_direction || 'stable',
+        strongMarket: sorted[0][1] > 0 ? sorted[0][0] as 'mr' | 'ou' | 'btts' : 'none',
+        weakMarket: sorted[2][1] > 0 ? sorted[2][0] as 'mr' | 'ou' | 'btts' : 'none',
+        currentWeight: parseFloat(row.current_weight) || 1.0,
+        recentForm: parseFloat(row.recent_5_accuracy) || 0,
+      };
+    }
+
+    return profiles;
+  } catch (error) {
+    console.warn('⚠️ Could not fetch agent profiles:', error);
+    return profiles;
+  }
+}
+
 // Agent performans özetini getir
 export async function getAgentPerformanceSummary(league?: string): Promise<any[]> {
   try {

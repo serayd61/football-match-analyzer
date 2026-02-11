@@ -12,8 +12,8 @@ import { runOddsAgent } from '../heurist/agents/odds';
 import { runDeepAnalysisAgent } from '../heurist/agents/deepAnalysis';
 import { runMasterStrategist } from '../heurist/agents/masterStrategist';
 import { runGeniusAnalyst } from '../heurist/agents/geniusAnalyst';
-// 🚫 Devil's Advocate kaldırıldı - ana tahmin için kritik değil
-// import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
+// 🔄 Devil's Advocate - koşullu aktivasyon (çelişki/yüksek confidence/düşük agreement durumlarında)
+import { runDevilsAdvocateAgent } from '../heurist/agents/devils-advocate';
 import { MatchData } from '../heurist/types';
 import { saveOddsAnalysisLog } from '../odds-logger';
 import { fetchFullFixtureDataFromProvider } from '../data-providers/adapter';
@@ -1410,7 +1410,6 @@ export async function runAgentAnalysis(
       }), 42000, 'Deep Analysis Agent'), // 38s → 42s (gerçek: ~30s, daha güvenli marj)
     ]);
     
-    // Devil's Advocate kaldırıldı
     console.log('🔍 DEBUG: StatsResult:', !!statsResult);
     console.log('🔍 DEBUG: OddsResult:', !!oddsResult);
     console.log('🔍 DEBUG: DeepAnalysisResult:', !!deepAnalysisResult);
@@ -1433,8 +1432,6 @@ export async function runAgentAnalysis(
     if (oddsResult) {
       console.log(`   💰 Odds: ${oddsResult.matchWinnerValue || 'N/A'} | Value: ${oddsResult.valueRating || 'N/A'} | Conf: ${oddsResult.confidence || 'N/A'}%`);
     }
-    // Devil's Advocate kaldırıldı
-
     // 🆕 Step 4.1: Run Master Strategist (diğer agent'ların çıktılarını analiz eder)
     if (onProgress) onProgress({ stage: 'master_strategist', message: 'Master Strategist tüm raporları birleştirip son kararı veriyor...' });
     console.log('🧠 Step 4.1: Running Master Strategist Agent (15s timeout)...');
@@ -1467,6 +1464,78 @@ export async function runAgentAnalysis(
       }
     } catch (err) {
       console.error('   ❌ Master Strategist failed:', err);
+    }
+
+    // 🆕 Step 4.2: Devil's Advocate - KOŞULLU AKTİVASYON
+    // Sadece şu durumlarda çalışır:
+    // 1) Agent'lar arasında çelişki var (MR'de 2+ farklı tahmin)
+    // 2) Ana confidence çok yüksek (>75%) → aşırı güven riski
+    // 3) Genel agreement <%60
+    let devilsAdvocateResult = null;
+    let daActivated = false;
+    try {
+      // Normalize helper for conflict detection
+      const normDA = (v: any) => {
+        if (!v) return null;
+        const s = String(v).toLowerCase().trim();
+        if (s === 'home' || s === '1') return '1';
+        if (s === 'away' || s === '2') return '2';
+        if (s === 'draw' || s === 'x') return 'X';
+        return null;
+      };
+
+      const mrPredictions = [
+        normDA(statsResult?.matchResult),
+        normDA(oddsResult?.matchWinnerValue),
+        normDA(deepAnalysisResult?.matchResult?.prediction),
+        normDA(masterStrategistResult?.finalConsensus?.matchResult?.prediction),
+      ].filter(Boolean);
+
+      const uniqueMRPredictions = new Set(mrPredictions);
+      const hasConflict = uniqueMRPredictions.size >= 2;
+
+      // Confidence kontrolü
+      const avgConf = mrPredictions.length > 0
+        ? [
+            statsResult?.matchResultConfidence || 0,
+            oddsResult?.confidence || 0,
+            deepAnalysisResult?.matchResult?.confidence || 0,
+            masterStrategistResult?.confidence || 0,
+          ].filter(c => c > 0).reduce((a, b) => a + b, 0) /
+          [statsResult?.matchResultConfidence, oddsResult?.confidence, deepAnalysisResult?.matchResult?.confidence, masterStrategistResult?.confidence].filter(c => c && c > 0).length
+        : 50;
+      const highConfidence = avgConf > 75;
+
+      // Agreement kontrolü (basit: unique predictions / total)
+      const lowAgreement = uniqueMRPredictions.size >= 3; // 3+ farklı tahmin = düşük agreement
+
+      const shouldActivateDA = hasConflict || highConfidence || lowAgreement;
+
+      if (shouldActivateDA) {
+        const reasons = [];
+        if (hasConflict) reasons.push(`çelişki (${[...uniqueMRPredictions].join(' vs ')})`);
+        if (highConfidence) reasons.push(`yüksek güven (%${avgConf.toFixed(0)})`);
+        if (lowAgreement) reasons.push('düşük agreement');
+
+        console.log(`👹 Step 4.2: Devil's Advocate AKTİF - Sebepler: ${reasons.join(', ')}`);
+        if (onProgress) onProgress({ stage: 'devils_advocate', message: `Şeytanın Avukatı aktif: ${reasons.join(', ')}` });
+
+        devilsAdvocateResult = await withTimeout(
+          runDevilsAdvocateAgent(matchData, language),
+          10000,
+          "Devil's Advocate"
+        );
+        daActivated = true;
+
+        if (devilsAdvocateResult) {
+          console.log(`   👹 DA: ${devilsAdvocateResult.matchResult} | Conf: ${devilsAdvocateResult.confidence}%`);
+          console.log(`   👹 Risks: ${devilsAdvocateResult.risks?.slice(0, 2).join(', ')}`);
+        }
+      } else {
+        console.log(`👹 Step 4.2: Devil's Advocate PASIF - Çelişki yok, güven normal`);
+      }
+    } catch (err) {
+      console.error("   ❌ Devil's Advocate failed:", err);
     }
 
     // 🆕 Step 4.5: Save Odds Analysis Log
@@ -1648,12 +1717,13 @@ export async function runAgentAnalysis(
         deepAnalysis: deepAnalysisResult,
         geniusAnalyst: geniusAnalystResult,
         masterStrategist: masterStrategistResult,
-        devilsAdvocate: null
+        devilsAdvocate: devilsAdvocateResult
       },
 
       // Verification log
       _debug: {
-        devilsAdvocatePresent: false,
+        devilsAdvocatePresent: !!devilsAdvocateResult,
+        devilsAdvocateActivated: daActivated,
         masterStrategistPresent: !!masterStrategistResult
       },
 

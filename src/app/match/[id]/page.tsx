@@ -8,6 +8,8 @@ import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History } from 'luci
 import { FootballBall3D } from '@/components/Football3D';
 import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components/HistoricalAccuracyBadge';
 import AutoLearnBadge, { AutoLearnPanel } from '@/components/AutoLearnBadge';
+import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
+import DevilsAdvocatePanel from '@/components/DevilsAdvocatePanel';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -177,6 +179,28 @@ export default function MatchAnalysisPage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-futuristic rounded-2xl p-8 mb-8 neon-border-cyan"
         >
+          {/* Maç Tipi Etiketi */}
+          {analysis.matchContext && (
+            <div className="flex justify-center mb-4">
+              <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${
+                analysis.matchContext.type === 'derby'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : analysis.matchContext.type === 'relegation_battle'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : analysis.matchContext.type === 'title_race'
+                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                  : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+              }`}>
+                {analysis.matchContext.label}
+                {analysis.matchContext.psychologyMultiplier > 1.0 && (
+                  <span className="ml-1.5 opacity-60">
+                    (Psikoloji {analysis.matchContext.psychologyMultiplier}x)
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <h2 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -228,6 +252,11 @@ export default function MatchAnalysisPage() {
                 autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
+              <AgentPerformanceBadge
+                market="mr"
+                agentProfiles={analysis.agentProfiles}
+                compact={true}
+              />
             </div>
           </motion.div>
 
@@ -260,6 +289,11 @@ export default function MatchAnalysisPage() {
                 autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
+              <AgentPerformanceBadge
+                market="ou"
+                agentProfiles={analysis.agentProfiles}
+                compact={true}
+              />
             </div>
           </motion.div>
 
@@ -289,9 +323,30 @@ export default function MatchAnalysisPage() {
                 autoLearnData={analysis.sources?.agents?.autoLearn}
                 compact={true}
               />
+              <AgentPerformanceBadge
+                market="btts"
+                agentProfiles={analysis.agentProfiles}
+                compact={true}
+              />
             </div>
           </motion.div>
         </div>
+
+        {/* Devil's Advocate Uyarı Paneli */}
+        {(analysis.sources?.agents?.devilsAdvocate || (analysis.systemPerformance?.conflicts && analysis.systemPerformance.conflicts.length > 0)) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.33 }}
+            className="mt-6"
+          >
+            <DevilsAdvocatePanel
+              data={analysis.sources?.agents?.devilsAdvocate}
+              conflicts={analysis.systemPerformance?.conflicts}
+              isActivated={analysis.metadata?._debug?.devilsAdvocateActivated}
+            />
+          </motion.div>
+        )}
 
         {/* Tarihsel Doğruluk Özeti */}
         <motion.div

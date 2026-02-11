@@ -357,6 +357,96 @@ export function getRecommendedWeightsForMatch(matchContext: {
 }
 
 // ============================================================================
+// CONTEXT-AWARE MATCH TYPE MULTIPLIERS (Bağlam-Duyarlı Ağırlıklar)
+// ============================================================================
+// sentimentAgent.ts'den gelen maç tipi tespitine göre ajan ağırlık çarpanları
+// Bu çarpanlar mevcut ağırlıklara ek olarak uygulanır (multiply, replace değil)
+
+export interface MatchTypeMultipliers {
+  deepAnalysis: number;
+  stats: number;
+  odds: number;
+  masterStrategist: number;
+  geniusAnalyst: number;
+  devilsAdvocate: number;
+  psychologyMultiplier: number; // Psikoloji/motivasyon verilerine verilen ekstra ağırlık
+}
+
+export const CONTEXT_AWARE_MULTIPLIERS: Record<string, MatchTypeMultipliers> = {
+  derby: {
+    deepAnalysis: 1.5,
+    stats: 0.8,
+    odds: 1.0,
+    masterStrategist: 1.3,
+    geniusAnalyst: 1.2,
+    devilsAdvocate: 1.4, // Derbilerde kontrarian görüş çok değerli
+    psychologyMultiplier: 2.0,
+  },
+  relegation_battle: {
+    deepAnalysis: 1.3,
+    stats: 1.0,
+    odds: 0.9,
+    masterStrategist: 1.2,
+    geniusAnalyst: 1.1,
+    devilsAdvocate: 1.3,
+    psychologyMultiplier: 1.8,
+  },
+  title_race: {
+    deepAnalysis: 1.2,
+    stats: 1.1,
+    odds: 1.1,
+    masterStrategist: 1.3,
+    geniusAnalyst: 1.15,
+    devilsAdvocate: 1.1,
+    psychologyMultiplier: 1.5,
+  },
+  european_qualification: {
+    deepAnalysis: 1.15,
+    stats: 1.05,
+    odds: 1.05,
+    masterStrategist: 1.2,
+    geniusAnalyst: 1.1,
+    devilsAdvocate: 1.1,
+    psychologyMultiplier: 1.3,
+  },
+  regular: {
+    deepAnalysis: 1.0,
+    stats: 1.0,
+    odds: 1.0,
+    masterStrategist: 1.0,
+    geniusAnalyst: 1.0,
+    devilsAdvocate: 1.0,
+    psychologyMultiplier: 1.0,
+  },
+};
+
+/**
+ * Maç tipine göre ajan ağırlık çarpanını al
+ * @param matchType sentimentAgent'tan gelen maç tipi
+ * @param agentName Ajan adı
+ * @returns Çarpan değeri (1.0 = değişiklik yok)
+ */
+export function getMatchTypeMultiplier(matchType: string, agentName: string): number {
+  const multipliers = CONTEXT_AWARE_MULTIPLIERS[matchType] || CONTEXT_AWARE_MULTIPLIERS.regular;
+  return (multipliers as any)[agentName] || 1.0;
+}
+
+/**
+ * Maç tipine göre psikoloji çarpanını al
+ */
+export function getPsychologyMultiplier(matchType: string): number {
+  const multipliers = CONTEXT_AWARE_MULTIPLIERS[matchType] || CONTEXT_AWARE_MULTIPLIERS.regular;
+  return multipliers.psychologyMultiplier;
+}
+
+/**
+ * Tüm ajanlar için maç tipi çarpanlarını döndür
+ */
+export function getAllMatchTypeMultipliers(matchType: string): MatchTypeMultipliers {
+  return CONTEXT_AWARE_MULTIPLIERS[matchType] || CONTEXT_AWARE_MULTIPLIERS.regular;
+}
+
+// ============================================================================
 // ACCURACY IMPROVEMENT TARGETS
 // ============================================================================
 

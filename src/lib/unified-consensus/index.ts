@@ -9,6 +9,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getLeagueAccuracyStats } from '../performance';
 import { validateAgentConsensus, resolveConflicts, AgentPrediction } from './agent-consensus-validator';
 import { calculateConsensusAlignment, recordConsensusAlignment, getAgentConsensusAlignment, adjustWeightByConsensusAlignment } from '../agent-learning/consensus-alignment';
+import { getAllAgentProfiles, type AgentSelfProfile } from '../agent-learning/performance-tracker';
+import { getMatchTypeMultiplier, getPsychologyMultiplier, type MatchTypeMultipliers } from '../agent-learning/optimized-weights';
 import { predict as autolearnPredict } from '../autolearn/model';
 import { extractAgentPredictionsFromAnalysis, extractMatchContextFromAnalysis, type AgentPredictions as AutoLearnAgentPredictions } from '../autolearn/features';
 import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model';
@@ -89,6 +91,16 @@ export interface UnifiedConsensusResult {
       description: string;
       resolution: string;
     }>;
+  };
+
+  // Ajan performans profilleri (öz-farkındalık)
+  agentProfiles?: Record<string, AgentSelfProfile>;
+
+  // Maç tipi bilgisi (bağlam-duyarlı ağırlıklar)
+  matchContext?: {
+    type: string; // 'derby' | 'title_race' | 'relegation_battle' | 'european_qualification' | 'regular'
+    label: string; // UI'da gösterilecek label
+    psychologyMultiplier: number;
   };
 
   // Kaynak analizleri (detay için)
@@ -189,13 +201,26 @@ export async function runUnifiedConsensus(
       console.error('❌ Smart Analysis failed:', err);
     }
 
-    // 3. Lig bazlı doğruluk verilerini çek
+    // 3. Lig bazlı doğruluk verilerini çek + Agent profilleri
     let leagueStats = null;
+    let agentProfiles: Record<string, AgentSelfProfile> = {};
     try {
-      leagueStats = await getLeagueAccuracyStats(input.league);
+      const [stats, profiles] = await Promise.all([
+        getLeagueAccuracyStats(input.league).catch(() => null),
+        getAllAgentProfiles(input.league).catch(() => ({}))
+      ]);
+      leagueStats = stats;
+      agentProfiles = profiles;
+      if (Object.keys(agentProfiles).length > 0) {
+        console.log(`📊 Agent profiles loaded for ${input.league}: ${Object.keys(agentProfiles).join(', ')}`);
+      }
     } catch (err) {
-      console.warn('⚠️ Could not fetch league stats for weighting (non-critical)');
+      console.warn('⚠️ Could not fetch league stats/profiles for weighting (non-critical)');
     }
+
+    // 3.5a Maç tipi tespit et (bağlam-duyarlı ağırlıklar için)
+    const detectedMatchType = detectMatchTypeFromData(agentResult, input.homeTeam, input.awayTeam);
+    console.log(`🏟️ Match type: ${detectedMatchType.type} (${detectedMatchType.label}), psychology: ${detectedMatchType.psychologyMultiplier}x`);
 
     // 3.5 AutoLearn Agent - Geçmiş pattern'lardan öğrenilmiş skorları al
     let autoLearnResults: AutoLearnPredictResult[] = [];
@@ -253,7 +278,7 @@ export async function runUnifiedConsensus(
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type);
 
     const processingTime = Date.now() - startTime;
     if (onProgress) onProgress({ stage: 'complete', message: 'Analiz başarıyla tamamlandı.' });
@@ -264,6 +289,10 @@ export async function runUnifiedConsensus(
 
     return {
       ...consensus,
+      // 📊 Ajan Öz-Farkındalık Profilleri
+      agentProfiles: Object.keys(agentProfiles).length > 0 ? agentProfiles : undefined,
+      // 🏟️ Maç tipi bilgisi
+      matchContext: detectedMatchType.type !== 'regular' ? detectedMatchType : undefined,
       sources: {
         agents: {
           ...(agentResult?.agents || {}),
@@ -289,7 +318,10 @@ export async function runUnifiedConsensus(
         processingTime,
         analyzedAt: new Date().toISOString(),
         systemsUsed,
-        _debug: agentResult?._debug
+        _debug: {
+          ...agentResult?._debug,
+          agentProfilesLoaded: Object.keys(agentProfiles).length
+        }
       }
     };
 
@@ -306,7 +338,8 @@ async function createUnifiedConsensus(
   agentResult: AgentAnalysisResult | null,
   smartResult: SmartAnalysisResult | null,
   leagueStats: any[] | null = null,
-  autoLearnResults: AutoLearnPredictResult[] = []
+  autoLearnResults: AutoLearnPredictResult[] = [],
+  matchType: string = 'regular'
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
   // Gelişmiş performans bazlı dinamik ağırlıklar
@@ -394,6 +427,22 @@ async function createUnifiedConsensus(
   const multipliers = matchResultMultipliers;
   
   console.log(`   ⚖️ Final Multipliers for ${league || 'league'}:`, JSON.stringify(multipliers));
+
+  // 🏟️ Maç tipi çarpanlarını uygula (MDAW üzerine ek katman)
+  if (matchType && matchType !== 'regular') {
+    const agentNames = ['stats', 'odds', 'deepAnalysis', 'masterStrategist', 'devilsAdvocate'];
+    for (const agent of agentNames) {
+      const mtMult = getMatchTypeMultiplier(matchType, agent);
+      if (mtMult !== 1.0) {
+        matchResultMultipliers[agent] = (matchResultMultipliers[agent] || 1.0) * mtMult;
+        overUnderMultipliers[agent] = (overUnderMultipliers[agent] || 1.0) * mtMult;
+        bttsMultipliers[agent] = (bttsMultipliers[agent] || 1.0) * mtMult;
+      }
+    }
+    const psychMult = getPsychologyMultiplier(matchType);
+    console.log(`   🏟️ Match type "${matchType}" multipliers applied (psychology: ${psychMult}x)`);
+    console.log(`   ⚖️ Post-matchType MR weights:`, JSON.stringify(matchResultMultipliers));
+  }
 
   // Helper to normalize predictions
   const normalize = (val: any) => {
@@ -1166,5 +1215,92 @@ export async function saveUnifiedAnalysis(
     console.error('❌ Exception saving unified analysis:', error?.message || error);
     return false;
   }
+}
+
+// ============================================================================
+// MATCH TYPE DETECTION (Lightweight - AI çağrısı yapmaz)
+// ============================================================================
+
+const MATCH_TYPE_LABELS: Record<string, string> = {
+  derby: 'DERBİ MAÇI',
+  title_race: 'ŞAMPİYONLUK YARIŞI',
+  relegation_battle: 'KÜME DÜŞME MÜCADELESİ',
+  european_qualification: 'AVRUPA KUPASI YARIŞI',
+  regular: 'LİG MAÇI',
+};
+
+// Bilinen derbi çiftleri
+const KNOWN_DERBIES: Array<[string, string]> = [
+  ['Galatasaray', 'Fenerbahçe'], ['Galatasaray', 'Beşiktaş'], ['Fenerbahçe', 'Beşiktaş'],
+  ['Barcelona', 'Real Madrid'], ['Atletico Madrid', 'Real Madrid'],
+  ['Manchester United', 'Manchester City'], ['Liverpool', 'Everton'], ['Arsenal', 'Tottenham'],
+  ['AC Milan', 'Inter'], ['Juventus', 'Inter'], ['Roma', 'Lazio'],
+  ['Borussia Dortmund', 'Bayern Munich'], ['Bayern München', 'Borussia Dortmund'],
+  ['PSG', 'Marseille'], ['Lyon', 'Saint-Etienne'],
+  ['Ajax', 'Feyenoord'], ['Porto', 'Benfica'], ['Sporting', 'Benfica'],
+  ['Celtic', 'Rangers'], ['Boca Juniors', 'River Plate'],
+];
+
+function detectMatchTypeFromData(
+  agentResult: AgentAnalysisResult | null,
+  homeTeam: string,
+  awayTeam: string
+): { type: string; label: string; psychologyMultiplier: number } {
+  const defaultResult = { type: 'regular', label: MATCH_TYPE_LABELS.regular, psychologyMultiplier: 1.0 };
+
+  // 1. Bilinen derbi kontrolü
+  const homeNorm = homeTeam.toLowerCase();
+  const awayNorm = awayTeam.toLowerCase();
+  const isDerby = KNOWN_DERBIES.some(([a, b]) => {
+    const an = a.toLowerCase();
+    const bn = b.toLowerCase();
+    return (homeNorm.includes(an) && awayNorm.includes(bn)) ||
+           (homeNorm.includes(bn) && awayNorm.includes(an));
+  });
+
+  if (isDerby) {
+    return { type: 'derby', label: MATCH_TYPE_LABELS.derby, psychologyMultiplier: getPsychologyMultiplier('derby') };
+  }
+
+  // 2. Deep Analysis / Master Strategist metninden tespit
+  const deepText = JSON.stringify(agentResult?.agents?.deepAnalysis?.analiz || '').toLowerCase();
+  const masterText = JSON.stringify(agentResult?.agents?.masterStrategist?.main_take || '').toLowerCase();
+  const allText = deepText + ' ' + masterText;
+
+  const derbyKeywords = ['derby', 'derbi', 'rivalry', 'rekabet', 'klasik', 'classic', 'rival'];
+  const titleKeywords = ['title', 'championship', 'şampiyonluk', 'lider', 'title race', 'top of the table'];
+  const relegationKeywords = ['relegation', 'küme düşme', 'survival', 'bottom', 'abstieg'];
+  const europeKeywords = ['champions league', 'europa league', 'conference league', 'avrupa kupası'];
+
+  if (derbyKeywords.some(k => allText.includes(k))) {
+    return { type: 'derby', label: MATCH_TYPE_LABELS.derby, psychologyMultiplier: getPsychologyMultiplier('derby') };
+  }
+  if (relegationKeywords.some(k => allText.includes(k))) {
+    return { type: 'relegation_battle', label: MATCH_TYPE_LABELS.relegation_battle, psychologyMultiplier: getPsychologyMultiplier('relegation_battle') };
+  }
+  if (titleKeywords.some(k => allText.includes(k))) {
+    return { type: 'title_race', label: MATCH_TYPE_LABELS.title_race, psychologyMultiplier: getPsychologyMultiplier('title_race') };
+  }
+  if (europeKeywords.some(k => allText.includes(k))) {
+    return { type: 'european_qualification', label: MATCH_TYPE_LABELS.european_qualification, psychologyMultiplier: getPsychologyMultiplier('european_qualification') };
+  }
+
+  // 3. Motivasyon skorlarından çıkarım
+  const homeMotiv = agentResult?.agents?.deepAnalysis?.motivationScores?.home || 
+                     agentResult?.agents?.masterStrategist?.weightedAnalysis?.psychologyScore?.homeMotivation || 50;
+  const awayMotiv = agentResult?.agents?.deepAnalysis?.motivationScores?.away || 
+                     agentResult?.agents?.masterStrategist?.weightedAnalysis?.psychologyScore?.awayMotivation || 50;
+
+  // İki takım da yüksek motivasyonlu = muhtemelen önemli maç
+  if (homeMotiv > 70 && awayMotiv > 70) {
+    return { type: 'title_race', label: MATCH_TYPE_LABELS.title_race, psychologyMultiplier: getPsychologyMultiplier('title_race') };
+  }
+
+  // İki takım da düşük motivasyonlu = muhtemelen küme düşme mücadelesi veya sezon sonu
+  if (homeMotiv < 30 && awayMotiv < 30) {
+    return { type: 'relegation_battle', label: MATCH_TYPE_LABELS.relegation_battle, psychologyMultiplier: getPsychologyMultiplier('relegation_battle') };
+  }
+
+  return defaultResult;
 }
 
