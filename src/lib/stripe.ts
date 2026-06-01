@@ -7,8 +7,8 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const PLANS = {
   PRO: {
     name: 'Pro Plan',
-    price: 9.99,
-    currency: 'CHF',
+    price: 19.99,
+    currency: 'USD',
     interval: 'month' as const,
     features: [
       'Tüm liglere erişim',

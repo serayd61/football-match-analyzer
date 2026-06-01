@@ -37,7 +37,7 @@ export const translations = {
     registerButton: 'Kayıt Ol ve Devam Et',
     invalidCredentials: 'Geçersiz email veya şifre',
     backToHome: '← Ana Sayfaya Dön',
-    trialInfo: 'Kredi kartı bilgilerinizi girin, 7 gün ücretsiz kullanın. İptal etmezseniz ayda CHF 9.99 çekilir.',
+    trialInfo: 'Kredi kartı bilgilerinizi girin, 7 gün ücretsiz kullanın. İptal etmezseniz ayda $19.99 USD çekilir.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -48,7 +48,7 @@ export const translations = {
     cardRequired: 'Kredi kartı gerekli',
     cancelAnytime: 'İstediğiniz zaman iptal',
     noCancelCharge: '7 gün içinde iptal ederseniz hiçbir ücret alınmaz.',
-    autoCharge: 'İptal etmezseniz ayda CHF 9.99 otomatik çekilir.',
+    autoCharge: 'İptal etmezseniz ayda $19.99 USD otomatik çekilir.',
     
     // Features List
     allLeagues: 'Tüm liglere erişim',
@@ -409,7 +409,7 @@ export const translations = {
     registerButton: 'Register and Continue',
     invalidCredentials: 'Invalid email or password',
     backToHome: '← Back to Home',
-    trialInfo: 'Enter your card details, use free for 7 days. CHF 9.99/month if not cancelled.',
+    trialInfo: 'Enter your card details, use free for 7 days. $19.99 USD/month if not cancelled.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -420,7 +420,7 @@ export const translations = {
     cardRequired: 'Credit card required',
     cancelAnytime: 'Cancel anytime',
     noCancelCharge: 'Cancel within 7 days and pay nothing.',
-    autoCharge: 'CHF 9.99 charged monthly if not cancelled.',
+    autoCharge: '$19.99 USD charged monthly if not cancelled.',
     
     // Features List
     allLeagues: 'Access to all leagues',
@@ -781,7 +781,7 @@ export const translations = {
     registerButton: 'Registrieren und fortfahren',
     invalidCredentials: 'Ungültige E-Mail oder Passwort',
     backToHome: '← Zurück zur Startseite',
-    trialInfo: 'Geben Sie Ihre Kartendaten ein, 7 Tage kostenlos nutzen. CHF 9.99/Monat wenn nicht gekündigt.',
+    trialInfo: 'Geben Sie Ihre Kartendaten ein, 7 Tage kostenlos nutzen. $19.99 USD/Monat wenn nicht gekündigt.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -792,7 +792,7 @@ export const translations = {
     cardRequired: 'Kreditkarte erforderlich',
     cancelAnytime: 'Jederzeit kündbar',
     noCancelCharge: 'Innerhalb von 7 Tagen kündigen und nichts zahlen.',
-    autoCharge: 'CHF 9.99 monatlich, wenn nicht gekündigt.',
+    autoCharge: '$19.99 USD monatlich, wenn nicht gekündigt.',
     
     // Features List
     allLeagues: 'Zugang zu allen Ligen',

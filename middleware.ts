@@ -1,8 +1,38 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { isAdminEmail } from '@/lib/admin/emails';
+
+function isAdminPath(path: string): boolean {
+  return path.startsWith('/api/admin') || path === '/admin' || path.startsWith('/admin/');
+}
+
+// Machine-to-machine callers (cron / QStash) authenticate with a shared secret
+// via `Authorization: Bearer <secret>` instead of a NextAuth session.
+function hasValidServiceSecret(req: { headers: { get(name: string): string | null } }): boolean {
+  const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
+  if (!secret) return false;
+  return req.headers.get('authorization') === `Bearer ${secret}`;
+}
 
 export default withAuth(
   function middleware(req) {
+    const path = req.nextUrl.pathname;
+
+    if (isAdminPath(path)) {
+      // Allow trusted service callers (cron/QStash) that present the secret.
+      if (hasValidServiceSecret(req)) {
+        return NextResponse.next();
+      }
+      // Otherwise require an allowlisted admin email.
+      const email = req.nextauth?.token?.email as string | undefined;
+      if (!isAdminEmail(email)) {
+        if (path.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+
     return NextResponse.next();
   },
   {
@@ -15,7 +45,13 @@ export default withAuth(
           return true;
         }
 
-        // Protected routes need token
+        // Admin routes: let the middleware function above run the precise
+        // check (service-secret OR admin email) and return a proper 403/redirect.
+        if (isAdminPath(path)) {
+          return true;
+        }
+
+        // All other protected routes need a token.
         return !!token;
       },
     },
