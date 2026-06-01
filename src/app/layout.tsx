@@ -9,8 +9,30 @@ import Navigation from '@/components/Navigation';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import QueryProvider from '@/components/QueryProvider';
+import { SITE_URL } from '@/lib/seo';
 
 const inter = Inter({ subsets: ['latin'] });
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Football Analytics Pro',
+  url: SITE_URL,
+  logo: `${SITE_URL}/icons/icon-512x512.png`,
+  description: 'AI-powered football match predictions and analysis.',
+};
+
+const siteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Football Analytics Pro',
+  url: SITE_URL,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE_URL}/analysis?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 export const viewport: Viewport = {
   themeColor: '#10b981',
@@ -22,7 +44,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Football Analytics Pro - AI-Powered Match Predictions',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Football Analytics Pro - AI-Powered Match Predictions',
+    template: '%s | Football Analytics Pro',
+  },
   description: 'AI-powered football match prediction and analysis system with Claude, GPT-4, Gemini consensus',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -64,6 +90,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
         <QueryProvider>
           <AuthProvider>
             <LanguageProvider>

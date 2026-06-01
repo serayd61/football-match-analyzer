@@ -14,6 +14,32 @@ function hasValidServiceSecret(req: { headers: { get(name: string): string | nul
   return req.headers.get('authorization') === `Bearer ${secret}`;
 }
 
+// Public, crawlable routes — must NOT require auth (SEO).
+function isPublicPath(path: string): boolean {
+  if (
+    path === '/' ||
+    path === '/login' ||
+    path === '/pricing' ||
+    path === '/ai-performance' ||
+    path === '/leaderboard' ||
+    path === '/sitemap.xml' ||
+    path === '/robots.txt' ||
+    path === '/manifest.json'
+  ) {
+    return true;
+  }
+  if (path === '/analysis' || path.startsWith('/analysis/')) return true;
+  if (
+    path.startsWith('/api/auth') ||
+    path.startsWith('/api/stripe/webhook') ||
+    path.startsWith('/api/simulation') ||
+    path.startsWith('/api/public')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export default withAuth(
   function middleware(req) {
     const path = req.nextUrl.pathname;
@@ -40,16 +66,12 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
 
-        // Public routes
-        if (path === '/' || path === '/login' || path === '/pricing' || path.startsWith('/api/auth') || path.startsWith('/api/stripe/webhook') || path.startsWith('/api/simulation')) {
-          return true;
-        }
+        // Public, crawlable routes.
+        if (isPublicPath(path)) return true;
 
         // Admin routes: let the middleware function above run the precise
         // check (service-secret OR admin email) and return a proper 403/redirect.
-        if (isAdminPath(path)) {
-          return true;
-        }
+        if (isAdminPath(path)) return true;
 
         // All other protected routes need a token.
         return !!token;
