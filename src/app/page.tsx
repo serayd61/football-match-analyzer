@@ -501,7 +501,7 @@ export default function HomePage() {
       pro: {
         badge: 'AM BELIEBTESTEN',
         name: 'Pro',
-        price: '€19,99',
+        price: '$19.99',
         period: '/Monat',
         features: ['Unbegrenzte Spielanalysen', 'Alle KI + Agent-Systeme', 'Value Bet Erkennung', 'Wettschein-Erstellung', 'Prioritäts-Support', 'API-Zugang'],
         cta: 'Pro werden',
