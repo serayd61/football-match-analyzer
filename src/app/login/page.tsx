@@ -329,7 +329,7 @@ export default function LoginPage() {
 
               {isLogin && (
                 <div className="flex justify-end">
-                  <button type="button" className="text-sm text-green-400 hover:text-green-300 transition-colors">
+                  <button type="button" onClick={() => router.push('/forgot-password')} className="text-sm text-green-400 hover:text-green-300 transition-colors">
                     {l.forgotPassword}
                   </button>
                 </div>
