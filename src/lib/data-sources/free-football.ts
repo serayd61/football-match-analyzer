@@ -44,26 +44,39 @@ export function toDateParam(d: string | Date): string {
   return iso.split('T')[0].replace(/-/g, '');
 }
 
-// ---- Lig allowlist (popular-leagues'ten dinamik, env ile genişletilebilir) ----
+// ---- Lig isim/logo haritası (popular + all-leagues birleşik, cache'li) ----
 export interface LeagueMeta { id: number; name: string; ccode: string; logo: string }
 let _leagueCache: { at: number; map: Map<number, LeagueMeta> } | null = null;
 const LEAGUE_TTL = 6 * 60 * 60 * 1000; // 6 saat
 
-export async function getPopularLeagues(): Promise<Map<number, LeagueMeta>> {
+export async function getLeagueMap(): Promise<Map<number, LeagueMeta>> {
   if (_leagueCache && Date.now() - _leagueCache.at < LEAGUE_TTL) return _leagueCache.map;
-  const resp = await ffFetch('/football-popular-leagues');
+  const [popular, all] = await Promise.all([
+    ffFetch('/football-popular-leagues'),
+    ffFetch('/football-get-all-leagues'),
+  ]);
   const map = new Map<number, LeagueMeta>();
-  for (const l of resp?.popular || []) {
-    map.set(l.id, { id: l.id, name: l.localizedName || l.name, ccode: l.ccode || '', logo: l.logo || FOTMOB_LEAGUE_LOGO(l.id) });
-  }
-  // env ile ekstra lig ID'leri (isim bilinmiyorsa generic)
-  const extra = (process.env.FOOTBALL_LEAGUE_IDS || '')
-    .split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isFinite);
-  for (const id of extra) {
-    if (!map.has(id)) map.set(id, { id, name: `League ${id}`, ccode: '', logo: FOTMOB_LEAGUE_LOGO(id) });
-  }
+  const add = (l: any) => {
+    if (!l?.id || map.has(l.id)) return;
+    map.set(l.id, {
+      id: l.id,
+      name: l.localizedName || l.name || `League ${l.id}`,
+      ccode: l.ccode || '',
+      logo: l.logo || FOTMOB_LEAGUE_LOGO(l.id),
+    });
+  };
+  for (const l of popular?.popular || []) add(l);
+  for (const l of all?.leagues || []) add(l);
   if (map.size) _leagueCache = { at: Date.now(), map };
   return map;
+}
+
+// Opsiyonel kısıtlama: FOOTBALL_LEAGUE_IDS set ise yalnızca o ligler; değilse TÜM ligler.
+function getAllowedIds(): Set<number> | null {
+  const raw = process.env.FOOTBALL_LEAGUE_IDS;
+  if (!raw) return null; // null = filtre yok (tüm ligler)
+  const ids = raw.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isFinite);
+  return ids.length ? new Set(ids) : null;
 }
 
 // ---- Normalize edilmiş maç ----
@@ -120,11 +133,12 @@ export async function getMatchesByDate(date: string | Date): Promise<FFMatch[]> 
   const param = /^\d{8}$/.test(String(date)) ? String(date) : toDateParam(date);
   const [resp, leagues] = await Promise.all([
     ffFetch(`/football-get-matches-by-date?date=${param}`),
-    getPopularLeagues(),
+    getLeagueMap(),
   ]);
   const matches = resp?.matches || [];
+  const allowed = getAllowedIds();
   return matches
-    .filter((m: any) => leagues.has(m.leagueId))
+    .filter((m: any) => (allowed ? allowed.has(m.leagueId) : true))
     .map((m: any) => normalize(m, leagues));
 }
 
@@ -138,10 +152,11 @@ export async function getMatchById(fixtureId: number, matchDate: string | Date):
 export async function getLiveMatches(): Promise<FFMatch[]> {
   const [resp, leagues] = await Promise.all([
     ffFetch('/football-current-live'),
-    getPopularLeagues(),
+    getLeagueMap(),
   ]);
   const live = resp?.live || [];
+  const allowed = getAllowedIds();
   return live
-    .filter((m: any) => leagues.has(m.leagueId))
+    .filter((m: any) => (allowed ? allowed.has(m.leagueId) : true))
     .map((m: any) => normalize(m, leagues));
 }
