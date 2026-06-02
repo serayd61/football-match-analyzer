@@ -55,17 +55,17 @@ const STR = {
     over: 'Üst 2.5', btts: 'KG Var', why: 'Neden?', matches: 'maç', avgConf: 'Ort. güven',
     leagues: 'lig', refresh: 'Yenile', sortConf: 'En güvenli', sortTime: 'Saate göre',
     empty: 'Şu an gösterilecek tahmin yok. Yeni maçlar yaklaştıkça otomatik eklenir.',
-    loading: 'Tahminler yükleniyor...' },
+    loading: 'Tahminler yükleniyor...', locale: 'tr-TR' },
   en: { home: 'Home', draw: 'Draw', away: 'Away', conf: 'Confidence',
     over: 'Over 2.5', btts: 'BTTS', why: 'Why?', matches: 'matches', avgConf: 'Avg. conf.',
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
     empty: 'No predictions to show right now. They appear automatically as matches approach.',
-    loading: 'Loading predictions...' },
+    loading: 'Loading predictions...', locale: 'en-US' },
   de: { home: 'Heim', draw: 'Unent.', away: 'Auswärts', conf: 'Konfidenz',
     over: 'Über 2.5', btts: 'BTTS', why: 'Warum?', matches: 'Spiele', avgConf: 'Ø Konfidenz',
     leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
     empty: 'Derzeit keine Vorhersagen. Sie erscheinen automatisch, sobald Spiele näher rücken.',
-    loading: 'Vorhersagen werden geladen...' },
+    loading: 'Vorhersagen werden geladen...', locale: 'de-DE' },
 };
 
 export default function EnginePredictions({
@@ -214,7 +214,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
   const pickTag = p.pick === '1' ? t.home : p.pick === '2' ? t.away : t.draw;
   const conf = Math.round((p.confidence || 0) * 100);
   const ko = p.kickoff ? new Date(p.kickoff) : null;
-  const koStr = ko ? ko.toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const koStr = ko ? ko.toLocaleString(t.locale || undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
