@@ -20,6 +20,8 @@ const T = {
     disclaimer: 'Bilgilendirme amaçlıdır, bahis tavsiyesi değildir.' },
   en: { title: 'League Predictions', sub: 'Upcoming matches by league — Dixon-Coles engine', back: 'Dashboard',
     disclaimer: 'For information only, not betting advice.' },
+  de: { title: 'Liga-Vorhersagen', sub: 'Kommende Spiele nach Liga — Dixon-Coles-Engine', back: 'Dashboard',
+    disclaimer: 'Nur zur Information, keine Wettberatung.' },
 };
 
 export default function LeagueStatsPage() {

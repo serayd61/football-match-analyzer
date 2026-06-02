@@ -169,7 +169,169 @@ const translations = {
     analyzed: 'Analiz Edildi',
     aiAnalysis: 'AI Analiz',
     agentAnalysis: 'Agent Analiz',
-    selectAnalysisType: 'Analiz Türü Seçin'
+    selectAnalysisType: 'Analiz Türü Seçin',
+    // i18n additions
+    resHome: 'Ev Sahibi',
+    resAway: 'Deplasman',
+    resDraw: 'Beraberlik',
+    now: 'Şimdi',
+    leagueStats: 'Lig İstatistikleri',
+    boldBet: 'Cesur Tahmin',
+    boldBetDesc: 'Cesur tahmin',
+    scenario: 'Senaryo',
+    refresh: 'Yenile',
+    performanceTracking: 'Performans Takibi',
+    oddsAnalysisRecords: 'Odds Analiz Kayıtları',
+    patternAnalysis: 'Pattern Analizi',
+    favorites: 'Favorilerim',
+    menu: 'Menü',
+    loading: 'Yükleniyor...',
+    unifiedConsensusAnalysis: 'Unified Consensus Analysis',
+    unifiedAnalysisDesc: "Agent'lar ve AI sistemlerini birleştiren en gelişmiş analiz",
+    startAnalysis: 'Analiz Başlat',
+    secondsRange: '~15-20 saniye',
+    agentAiCombined: 'Agent + AI Systems Combined',
+    cornerNoData: 'Korner verisi mevcut değil',
+    cornerNoDataDesc: 'Bu maç için korner istatistikleri bulunamadı',
+    expected: 'Beklenen',
+    goal: 'gol',
+    combination: 'Kombinasyon',
+    htft_1_1: 'İY Ev - Maç Ev',
+    htft_1_X: 'İY Ev - Maç Beraberlik',
+    htft_1_2: 'İY Ev - Maç Deplasman',
+    htft_X_1: 'İY Beraberlik - Maç Ev',
+    htft_X_X: 'İY Beraberlik - Maç Beraberlik',
+    htft_X_2: 'İY Beraberlik - Maç Deplasman',
+    htft_2_1: 'İY Deplasman - Maç Ev',
+    htft_2_X: 'İY Deplasman - Maç Beraberlik',
+    htft_2_2: 'İY Deplasman - Maç Deplasman',
+    geniusRunning: 'Genius Analyst çalışıyor...',
+    extreme: 'EXTREM',
+    veryHigh: 'ÇOK YÜKSEK',
+    high: 'YÜKSEK',
+    why: 'Neden?',
+    historical: 'Tarihsel',
+    boldBetWarning: 'Sadece kaybetmeyi göze alabileceğin miktarla oyna!',
+    close: 'Kapat',
+    saving: 'Kaydediliyor...',
+    removeFromFavorites: 'Favorilerden Kaldır',
+    addToFavorites: 'Favoriye Ekle',
+    favoriteSaved: 'Bu maç favorilerinize kaydedildi. Favoriler sayfasından görüntüleyebilirsiniz.',
+    valueConsensus: 'Value + Konsensüs',
+    mixedSignal: 'Karışık sinyal',
+    noValue: 'Value yok',
+    overPreference: 'Over tercih',
+    // Stats agent / details
+    analysisDetail: 'Analiz Detayı',
+    detailedAgentAnalyses: 'Detaylı agent analizleri',
+    statsAgentTitle: 'STATS AGENT (İstatistik Analiz Ajanı)',
+    task: 'Görevi',
+    statsTask: 'Form, gol istatistikleri, xG (Expected Goals), timing patterns ve clean sheet analizi yapar.',
+    formAnalysis: 'Form Analizi',
+    xgAnalysisTitle: 'xG (Expected Goals) Analizi',
+    homeXG: 'Ev Sahibi xG',
+    awayXG: 'Deplasman xG',
+    totalXG: 'Toplam xG',
+    performance: 'Performans',
+    goalExpectancy: 'Gol Beklentisi',
+    last5Over25: 'Son 5 Maç Over 2.5',
+    last5Btts: 'Son 5 Maç BTTS',
+    scoringExpectancy: 'Gol Atma Beklentisi',
+    concedingExpectancy: 'Gol Yeme Beklentisi',
+    timingPatterns: 'Timing Patterns (Zamanlama Paternleri)',
+    firstHalf: 'İlk yarı',
+    secondHalf: 'İkinci yarı',
+    cleanSheetAnalysis: 'Clean Sheet Analizi',
+    homeCleanSheetStreak: 'Ev Clean Sheet Serisi',
+    awayCleanSheetStreak: 'Dep Clean Sheet Serisi',
+    statsAgentPredictions: 'STATS AGENT TAHMİNLERİ',
+    matchResultLabel: 'Maç Sonucu',
+    firstHalfLabel: 'İlk Yarı',
+    oddsAgentSubtitle: 'Bahis Oranları & Value Bet Analiz Ajanı',
+    oddsTask: 'Bahis oranlarını form verileriyle karşılaştırarak VALUE BET (değerli bahis) tespit eder.',
+    oddsAnalysisTitle: 'Oran Analizi',
+    bestValue: 'En İyi Value',
+    oddsAgentPredictions: 'ODDS AGENT TAHMİNLERİ',
+    mainRecommendation: 'Ana Öneri',
+    matchResultValue: 'Maç Sonucu Value',
+    corner: 'Korner',
+    oddsNotAvailable: 'Odds agent analizi henüz mevcut değil. Analiz yapıldığında burada görünecek.',
+    deepAgentTask: 'Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu, diziliş analizi.',
+    matchAnalysis: 'Maç Analizi',
+    criticalFactors: 'Kritik Faktörler',
+    probabilities: 'Olasılıklar',
+    homeWin: 'Ev Kazanır',
+    awayWin: 'Deplasman Kazanır',
+    matchReadinessTitle: 'MACA HAZIRLANMA & MOTİVASYON ANALİZİ (0-100)',
+    homeUpper: 'EV SAHİBİ',
+    awayUpper: 'DEPLASMAN',
+    form: 'Form',
+    agentAnalysisLabel: 'Agent Analizi',
+    scoreMeaning: 'Skor Anlamı',
+    scoreMeaningText: '70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum',
+    calculation: 'Hesaplama',
+    calculationText: 'Gemini AI Agent 3 veriyi değerlendirir: Performans (Form), Sakatlıklar & Kadro, Haberler → Tek motivasyon skoru oluşturur',
+    deepAgentPredictions: 'DEEP ANALYSIS AGENT TAHMİNLERİ',
+    scorePrediction: 'Skor Tahmini',
+    cards: 'Kart',
+    geniusPredictions: 'TAHMİNLER',
+    boldBetLabel: 'CESUR TAHMİN',
+    extremeRisk: 'EXTREM RİSK',
+    veryHighLong: 'ÇOK YÜKSEK',
+    highLong: 'YÜKSEK',
+    boldBetWarningFull: 'Yüksek risk! Sadece kaybetmeyi göze alabileceğin miktarla oyna.',
+    top3Predictions: 'TOP 3 TAHMİN',
+    agentSupport: 'Agent Desteği',
+    errMatchListFailed: 'Maç listesi alınamadı',
+    errConnection: 'Bağlantı hatası',
+    errProRequired: 'Maç analizi için Pro abonelik gereklidir',
+    errAnalysisTimeout: 'Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.',
+    errTooManyRequests: 'Çok fazla istek. Lütfen birkaç saniye bekleyin.',
+    errServer: 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
+    errApi: 'API hatası',
+    errInvalidFormat: 'Geçersiz yanıt formatı. Lütfen tekrar deneyin.',
+    errAnalysisFailed: 'Analiz başarısız',
+    errConnectionCheck: 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.',
+    errServerResponse: 'Sunucu yanıt hatası. Lütfen tekrar deneyin.',
+    errBoldBetFailed: 'Cesur tahmin alınamadı',
+    likely: 'Olası',
+    sportmonksTitle: '📊 SPORTMONKS VERİ BAZLI MAÇ SONUCU TAHMİNİ',
+    system: 'Sistem',
+    sportmonksSystemDesc: "Puan bazlı hesaplama (Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı)",
+    prediction: 'Tahmin',
+    masterStrategistTitle: '🎯 MASTER STRATEGIST AGENT (Üst-Akıl Konsensüs)',
+    masterStrategistTask: "Tüm agent'ların çıktılarını analiz eder, tutarsızlıkları tespit eder ve ağırlıklı konsensüs oluşturur.",
+    mainTake: 'ANA GÖRÜŞ',
+    strongSignals: 'GÜÇLÜ SİNYALLER',
+    recommendedBets: 'ÖNERİLEN BAHİSLER',
+    probability: 'Olasılık',
+    odds: 'Oran',
+    risks: 'RİSKLER',
+    finalPredictions: 'FİNAL TAHMİNLER',
+    primaryPick: 'ANA TAHMİN (Primary Pick)',
+    surprisePick: 'SÜRPRİZ TAHMİN (Surprise Pick)',
+    hedgeLabel: 'HEDGE (Koruma)',
+    contradictionsFound: 'TESPİT EDİLEN TUTARSIZLIKLAR',
+    finalConsensus: 'FİNAL KONSENSÜS',
+    totalConfidence: 'Toplam Güven',
+    geniusAnalystTitle: '🧠 GENIUS ANALYST AGENT (Matematiksel & Taktiksel Analiz)',
+    geniusTask: 'Matematiksel modelleme (xG, Poisson), taktiksel analiz, value betting ve risk senaryoları.',
+    mathematicalModel: 'Matematiksel Model',
+    deepAnalysisAgentTitle: '🎯 DEEP ANALYSIS AGENT (Derin Analiz Ajanı)',
+    boldBetScenario: 'Senaryo',
+    top3PredictionsTitle: '🏆 TOP 3 TAHMİN (Agent\'ların Birleşik Analizi)',
+    top3Desc: 'Sistem, tüm agent\'ların tahminlerini toplayıp en yüksek güven ve agent desteğine göre sıralar:',
+    addToFavoritesBtn: 'Favoriye Ekle',
+    favoriteAddError: 'Favoriye eklenirken hata',
+    unknownError: 'Bilinmeyen hata',
+    getBoldBet: 'Cesur Tahmin Al',
+    yesText: 'Evet',
+    noText: 'Hayır',
+    engineTitle: 'Motor Tahminleri',
+    engineSubtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles modeli — kalibre olasılıklar',
+    viewAll: 'Tümünü gör →',
+    detailedAnalysis: 'Detaylı Maç Analizi',
+    detailedAnalysisSub: 'Bir maç seçin ve yapay zeka destekli derin analizi görün'
   },
   en: {
     title: 'Football Analytics',
@@ -223,7 +385,169 @@ const translations = {
     analyzed: 'Analyzed',
     aiAnalysis: 'AI Analysis',
     agentAnalysis: 'Agent Analysis',
-    selectAnalysisType: 'Select Analysis Type'
+    selectAnalysisType: 'Select Analysis Type',
+    // i18n additions
+    resHome: 'Home',
+    resAway: 'Away',
+    resDraw: 'Draw',
+    now: 'Now',
+    leagueStats: 'League Stats',
+    boldBet: 'Bold Bet',
+    boldBetDesc: 'Bold bet',
+    scenario: 'Scenario',
+    refresh: 'Refresh',
+    performanceTracking: 'Performance Tracking',
+    oddsAnalysisRecords: 'Odds Analysis Records',
+    patternAnalysis: 'Pattern Analysis',
+    favorites: 'My Favorites',
+    menu: 'Menu',
+    loading: 'Loading...',
+    unifiedConsensusAnalysis: 'Unified Consensus Analysis',
+    unifiedAnalysisDesc: 'Advanced analysis combining agents and AI systems',
+    startAnalysis: 'Start Analysis',
+    secondsRange: '~15-20 seconds',
+    agentAiCombined: 'Agent + AI Systems Combined',
+    cornerNoData: 'Corner data not available',
+    cornerNoDataDesc: 'No corner statistics found for this match',
+    expected: 'Expected',
+    goal: 'goals',
+    combination: 'Combination',
+    htft_1_1: 'HT Home - FT Home',
+    htft_1_X: 'HT Home - FT Draw',
+    htft_1_2: 'HT Home - FT Away',
+    htft_X_1: 'HT Draw - FT Home',
+    htft_X_X: 'HT Draw - FT Draw',
+    htft_X_2: 'HT Draw - FT Away',
+    htft_2_1: 'HT Away - FT Home',
+    htft_2_X: 'HT Away - FT Draw',
+    htft_2_2: 'HT Away - FT Away',
+    geniusRunning: 'Genius Analyst running...',
+    extreme: 'EXTREME',
+    veryHigh: 'VERY HIGH',
+    high: 'HIGH',
+    why: 'Why?',
+    historical: 'Historical',
+    boldBetWarning: 'Only bet what you can afford to lose!',
+    close: 'Close',
+    saving: 'Saving...',
+    removeFromFavorites: 'Remove from Favorites',
+    addToFavorites: 'Add to Favorites',
+    favoriteSaved: 'This match has been saved to your favorites. You can view it on the Favorites page.',
+    valueConsensus: 'Value + Consensus',
+    mixedSignal: 'Mixed signal',
+    noValue: 'No value',
+    overPreference: 'Over preference',
+    // Stats agent / details
+    analysisDetail: 'Analysis Detail',
+    detailedAgentAnalyses: 'Detailed agent analyses',
+    statsAgentTitle: 'STATS AGENT (Statistics Analysis Agent)',
+    task: 'Task',
+    statsTask: 'Analyzes form, goal statistics, xG (Expected Goals), timing patterns and clean sheet.',
+    formAnalysis: 'Form Analysis',
+    xgAnalysisTitle: 'xG (Expected Goals) Analysis',
+    homeXG: 'Home xG',
+    awayXG: 'Away xG',
+    totalXG: 'Total xG',
+    performance: 'Performance',
+    goalExpectancy: 'Goal Expectancy',
+    last5Over25: 'Last 5 Matches Over 2.5',
+    last5Btts: 'Last 5 Matches BTTS',
+    scoringExpectancy: 'Scoring Expectancy',
+    concedingExpectancy: 'Conceding Expectancy',
+    timingPatterns: 'Timing Patterns',
+    firstHalf: 'First half',
+    secondHalf: 'Second half',
+    cleanSheetAnalysis: 'Clean Sheet Analysis',
+    homeCleanSheetStreak: 'Home Clean Sheet Streak',
+    awayCleanSheetStreak: 'Away Clean Sheet Streak',
+    statsAgentPredictions: 'STATS AGENT PREDICTIONS',
+    matchResultLabel: 'Match Result',
+    firstHalfLabel: 'First Half',
+    oddsAgentSubtitle: 'Betting Odds & Value Bet Analysis Agent',
+    oddsTask: 'Detects VALUE BET by comparing betting odds with form data.',
+    oddsAnalysisTitle: 'Odds Analysis',
+    bestValue: 'Best Value',
+    oddsAgentPredictions: 'ODDS AGENT PREDICTIONS',
+    mainRecommendation: 'Main Recommendation',
+    matchResultValue: 'Match Result Value',
+    corner: 'Corners',
+    oddsNotAvailable: 'Odds agent analysis not available yet. It will appear here after analysis.',
+    deepAgentTask: 'Performs multi-layered analysis - team form, tactical structure, H2H, referee, weather, lineup analysis.',
+    matchAnalysis: 'Match Analysis',
+    criticalFactors: 'Critical Factors',
+    probabilities: 'Probabilities',
+    homeWin: 'Home Win',
+    awayWin: 'Away Win',
+    matchReadinessTitle: 'MATCH READINESS & MOTIVATION ANALYSIS (0-100)',
+    homeUpper: 'HOME',
+    awayUpper: 'AWAY',
+    form: 'Form',
+    agentAnalysisLabel: 'Agent Analysis',
+    scoreMeaning: 'Score Meaning',
+    scoreMeaningText: '70-100 = Very ready, 50-69 = Normal, 30-49 = Unprepared, 0-29 = Very poor condition',
+    calculation: 'Calculation',
+    calculationText: 'Gemini AI Agent evaluates 3 data points: Performance (Form), Injuries & Squad, News → Produces a single motivation score',
+    deepAgentPredictions: 'DEEP ANALYSIS AGENT PREDICTIONS',
+    scorePrediction: 'Score Prediction',
+    cards: 'Cards',
+    geniusPredictions: 'PREDICTIONS',
+    boldBetLabel: 'BOLD BET',
+    extremeRisk: 'EXTREME RISK',
+    veryHighLong: 'VERY HIGH',
+    highLong: 'HIGH',
+    boldBetWarningFull: 'High risk! Only bet what you can afford to lose.',
+    top3Predictions: 'TOP 3 PREDICTIONS',
+    agentSupport: 'Agent Support',
+    errMatchListFailed: 'Could not load match list',
+    errConnection: 'Connection error',
+    errProRequired: 'A Pro subscription is required for match analysis',
+    errAnalysisTimeout: 'Analysis timed out. Please try again.',
+    errTooManyRequests: 'Too many requests. Please wait a few seconds.',
+    errServer: 'Server error. Please try again later.',
+    errApi: 'API error',
+    errInvalidFormat: 'Invalid response format. Please try again.',
+    errAnalysisFailed: 'Analysis failed',
+    errConnectionCheck: 'Connection error. Check your internet connection.',
+    errServerResponse: 'Server response error. Please try again.',
+    errBoldBetFailed: 'Could not get bold bet',
+    likely: 'Likely',
+    sportmonksTitle: '📊 SPORTMONKS DATA-BASED MATCH RESULT PREDICTION',
+    system: 'System',
+    sportmonksSystemDesc: 'Score-based calculation (Agents have no own prediction options, data-based only)',
+    prediction: 'Prediction',
+    masterStrategistTitle: '🎯 MASTER STRATEGIST AGENT (Meta-Mind Consensus)',
+    masterStrategistTask: 'Analyzes all agent outputs, detects inconsistencies and builds a weighted consensus.',
+    mainTake: 'MAIN TAKE',
+    strongSignals: 'STRONG SIGNALS',
+    recommendedBets: 'RECOMMENDED BETS',
+    probability: 'Probability',
+    odds: 'Odds',
+    risks: 'RISKS',
+    finalPredictions: 'FINAL PREDICTIONS',
+    primaryPick: 'PRIMARY PICK',
+    surprisePick: 'SURPRISE PICK',
+    hedgeLabel: 'HEDGE',
+    contradictionsFound: 'CONTRADICTIONS FOUND',
+    finalConsensus: 'FINAL CONSENSUS',
+    totalConfidence: 'Total Confidence',
+    geniusAnalystTitle: '🧠 GENIUS ANALYST AGENT (Mathematical & Tactical Analysis)',
+    geniusTask: 'Mathematical modeling (xG, Poisson), tactical analysis, value betting and risk scenarios.',
+    mathematicalModel: 'Mathematical Model',
+    deepAnalysisAgentTitle: '🎯 DEEP ANALYSIS AGENT (Deep Analysis Agent)',
+    boldBetScenario: 'Scenario',
+    top3PredictionsTitle: '🏆 TOP 3 PREDICTIONS (Combined Agent Analysis)',
+    top3Desc: 'The system collects all agent predictions and ranks them by highest confidence and agent support:',
+    addToFavoritesBtn: 'Add to Favorites',
+    favoriteAddError: 'Error adding to favorites',
+    unknownError: 'Unknown error',
+    getBoldBet: 'Get Bold Bet',
+    yesText: 'Yes',
+    noText: 'No',
+    engineTitle: 'Engine Predictions',
+    engineSubtitle: 'Dixon-Coles model trained on real match data — calibrated probabilities',
+    viewAll: 'View all →',
+    detailedAnalysis: 'Detailed Match Analysis',
+    detailedAnalysisSub: 'Select a match to see the AI-powered deep analysis'
   },
   de: {
     title: 'Football Analytics',
@@ -277,7 +601,169 @@ const translations = {
     analyzed: 'Analysiert',
     aiAnalysis: 'KI-Analyse',
     agentAnalysis: 'Agent-Analyse',
-    selectAnalysisType: 'Analysetyp auswählen'
+    selectAnalysisType: 'Analysetyp auswählen',
+    // i18n additions
+    resHome: 'Heim',
+    resAway: 'Auswärts',
+    resDraw: 'Unentschieden',
+    now: 'Jetzt',
+    leagueStats: 'Liga-Statistiken',
+    boldBet: 'Mutiger Tipp',
+    boldBetDesc: 'Mutiger Tipp',
+    scenario: 'Szenario',
+    refresh: 'Aktualisieren',
+    performanceTracking: 'Leistungsverfolgung',
+    oddsAnalysisRecords: 'Odds-Analyse-Aufzeichnungen',
+    patternAnalysis: 'Muster-Analyse',
+    favorites: 'Meine Favoriten',
+    menu: 'Menü',
+    loading: 'Lädt...',
+    unifiedConsensusAnalysis: 'Unified Consensus Analysis',
+    unifiedAnalysisDesc: 'Fortschrittliche Analyse aus Agenten und KI-Systemen',
+    startAnalysis: 'Analyse starten',
+    secondsRange: '~15-20 Sekunden',
+    agentAiCombined: 'Agent + KI-Systeme kombiniert',
+    cornerNoData: 'Ecken-Daten nicht verfügbar',
+    cornerNoDataDesc: 'Keine Ecken-Statistiken für dieses Spiel gefunden',
+    expected: 'Erwartet',
+    goal: 'Tore',
+    combination: 'Kombination',
+    htft_1_1: 'HZ Heim - EZ Heim',
+    htft_1_X: 'HZ Heim - EZ Unent.',
+    htft_1_2: 'HZ Heim - EZ Auswärts',
+    htft_X_1: 'HZ Unent. - EZ Heim',
+    htft_X_X: 'HZ Unent. - EZ Unent.',
+    htft_X_2: 'HZ Unent. - EZ Auswärts',
+    htft_2_1: 'HZ Auswärts - EZ Heim',
+    htft_2_X: 'HZ Auswärts - EZ Unent.',
+    htft_2_2: 'HZ Auswärts - EZ Auswärts',
+    geniusRunning: 'Genius Analyst läuft...',
+    extreme: 'EXTREM',
+    veryHigh: 'SEHR HOCH',
+    high: 'HOCH',
+    why: 'Warum?',
+    historical: 'Historisch',
+    boldBetWarning: 'Setze nur, was du verlieren kannst!',
+    close: 'Schließen',
+    saving: 'Wird gespeichert...',
+    removeFromFavorites: 'Aus Favoriten entfernen',
+    addToFavorites: 'Zu Favoriten hinzufügen',
+    favoriteSaved: 'Dieses Spiel wurde zu deinen Favoriten hinzugefügt. Du kannst es auf der Favoriten-Seite ansehen.',
+    valueConsensus: 'Value + Konsens',
+    mixedSignal: 'Gemischtes Signal',
+    noValue: 'Kein Value',
+    overPreference: 'Über bevorzugt',
+    // Stats agent / details
+    analysisDetail: 'Analyse-Detail',
+    detailedAgentAnalyses: 'Detaillierte Agent-Analysen',
+    statsAgentTitle: 'STATS AGENT (Statistik-Analyse-Agent)',
+    task: 'Aufgabe',
+    statsTask: 'Analysiert Form, Tor-Statistiken, xG (Expected Goals), Timing-Muster und Zu-Null.',
+    formAnalysis: 'Formanalyse',
+    xgAnalysisTitle: 'xG (Expected Goals) Analyse',
+    homeXG: 'Heim xG',
+    awayXG: 'Auswärts xG',
+    totalXG: 'Gesamt xG',
+    performance: 'Leistung',
+    goalExpectancy: 'Tor-Erwartung',
+    last5Over25: 'Letzte 5 Spiele Über 2.5',
+    last5Btts: 'Letzte 5 Spiele BTTS',
+    scoringExpectancy: 'Erwartete erzielte Tore',
+    concedingExpectancy: 'Erwartete Gegentore',
+    timingPatterns: 'Timing-Muster',
+    firstHalf: 'Erste Halbzeit',
+    secondHalf: 'Zweite Halbzeit',
+    cleanSheetAnalysis: 'Zu-Null-Analyse',
+    homeCleanSheetStreak: 'Heim Zu-Null-Serie',
+    awayCleanSheetStreak: 'Auswärts Zu-Null-Serie',
+    statsAgentPredictions: 'STATS-AGENT-VORHERSAGEN',
+    matchResultLabel: 'Spielergebnis',
+    firstHalfLabel: 'Erste Halbzeit',
+    oddsAgentSubtitle: 'Wettquoten- & Value-Bet-Analyse-Agent',
+    oddsTask: 'Erkennt VALUE BET durch Vergleich von Wettquoten mit Formdaten.',
+    oddsAnalysisTitle: 'Quotenanalyse',
+    bestValue: 'Bester Value',
+    oddsAgentPredictions: 'ODDS-AGENT-VORHERSAGEN',
+    mainRecommendation: 'Hauptempfehlung',
+    matchResultValue: 'Spielergebnis Value',
+    corner: 'Ecken',
+    oddsNotAvailable: 'Odds-Agent-Analyse noch nicht verfügbar. Sie erscheint hier nach der Analyse.',
+    deepAgentTask: 'Führt mehrschichtige Analyse durch - Teamform, taktische Struktur, H2H, Schiedsrichter, Wetter, Aufstellung.',
+    matchAnalysis: 'Spielanalyse',
+    criticalFactors: 'Kritische Faktoren',
+    probabilities: 'Wahrscheinlichkeiten',
+    homeWin: 'Heimsieg',
+    awayWin: 'Auswärtssieg',
+    matchReadinessTitle: 'SPIELBEREITSCHAFT & MOTIVATIONSANALYSE (0-100)',
+    homeUpper: 'HEIM',
+    awayUpper: 'AUSWÄRTS',
+    form: 'Form',
+    agentAnalysisLabel: 'Agent-Analyse',
+    scoreMeaning: 'Punkte-Bedeutung',
+    scoreMeaningText: '70-100 = Sehr bereit, 50-69 = Normal, 30-49 = Unvorbereitet, 0-29 = Sehr schlechter Zustand',
+    calculation: 'Berechnung',
+    calculationText: 'Gemini KI-Agent bewertet 3 Datenpunkte: Leistung (Form), Verletzungen & Kader, Nachrichten → Erstellt einen einzigen Motivationswert',
+    deepAgentPredictions: 'DEEP-ANALYSIS-AGENT-VORHERSAGEN',
+    scorePrediction: 'Ergebnis-Tipp',
+    cards: 'Karten',
+    geniusPredictions: 'VORHERSAGEN',
+    boldBetLabel: 'MUTIGER TIPP',
+    extremeRisk: 'EXTREMES RISIKO',
+    veryHighLong: 'SEHR HOCH',
+    highLong: 'HOCH',
+    boldBetWarningFull: 'Hohes Risiko! Setze nur, was du verlieren kannst.',
+    top3Predictions: 'TOP-3-VORHERSAGEN',
+    agentSupport: 'Agent-Unterstützung',
+    errMatchListFailed: 'Spielliste konnte nicht geladen werden',
+    errConnection: 'Verbindungsfehler',
+    errProRequired: 'Für die Spielanalyse ist ein Pro-Abonnement erforderlich',
+    errAnalysisTimeout: 'Analyse-Zeitüberschreitung. Bitte erneut versuchen.',
+    errTooManyRequests: 'Zu viele Anfragen. Bitte einige Sekunden warten.',
+    errServer: 'Serverfehler. Bitte später erneut versuchen.',
+    errApi: 'API-Fehler',
+    errInvalidFormat: 'Ungültiges Antwortformat. Bitte erneut versuchen.',
+    errAnalysisFailed: 'Analyse fehlgeschlagen',
+    errConnectionCheck: 'Verbindungsfehler. Überprüfen Sie Ihre Internetverbindung.',
+    errServerResponse: 'Server-Antwortfehler. Bitte erneut versuchen.',
+    errBoldBetFailed: 'Mutiger Tipp konnte nicht geladen werden',
+    likely: 'Wahrscheinlich',
+    sportmonksTitle: '📊 SPORTMONKS DATENBASIERTE SPIELERGEBNIS-VORHERSAGE',
+    system: 'System',
+    sportmonksSystemDesc: 'Punktebasierte Berechnung (Agenten haben keine eigenen Vorhersageoptionen, nur datenbasiert)',
+    prediction: 'Vorhersage',
+    masterStrategistTitle: '🎯 MASTER STRATEGIST AGENT (Meta-Geist-Konsens)',
+    masterStrategistTask: 'Analysiert alle Agenten-Ausgaben, erkennt Unstimmigkeiten und bildet einen gewichteten Konsens.',
+    mainTake: 'HAUPTAUSSAGE',
+    strongSignals: 'STARKE SIGNALE',
+    recommendedBets: 'EMPFOHLENE WETTEN',
+    probability: 'Wahrscheinlichkeit',
+    odds: 'Quote',
+    risks: 'RISIKEN',
+    finalPredictions: 'FINALE VORHERSAGEN',
+    primaryPick: 'PRIMÄRE WAHL (Primary Pick)',
+    surprisePick: 'ÜBERRASCHUNGS-WAHL (Surprise Pick)',
+    hedgeLabel: 'HEDGE (Absicherung)',
+    contradictionsFound: 'GEFUNDENE WIDERSPRÜCHE',
+    finalConsensus: 'FINALER KONSENS',
+    totalConfidence: 'Gesamt-Vertrauen',
+    geniusAnalystTitle: '🧠 GENIUS ANALYST AGENT (Mathematische & Taktische Analyse)',
+    geniusTask: 'Mathematische Modellierung (xG, Poisson), taktische Analyse, Value Betting und Risikoszenarien.',
+    mathematicalModel: 'Mathematisches Modell',
+    deepAnalysisAgentTitle: '🎯 DEEP ANALYSIS AGENT (Tiefen-Analyse-Agent)',
+    boldBetScenario: 'Szenario',
+    top3PredictionsTitle: '🏆 TOP-3-VORHERSAGEN (Kombinierte Agent-Analyse)',
+    top3Desc: 'Das System sammelt alle Agent-Vorhersagen und sortiert sie nach höchstem Vertrauen und Agent-Unterstützung:',
+    addToFavoritesBtn: 'Zu Favoriten hinzufügen',
+    favoriteAddError: 'Fehler beim Hinzufügen zu Favoriten',
+    unknownError: 'Unbekannter Fehler',
+    getBoldBet: 'Mutigen Tipp holen',
+    yesText: 'Ja',
+    noText: 'Nein',
+    engineTitle: 'Engine-Vorhersagen',
+    engineSubtitle: 'Dixon-Coles-Modell mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten',
+    viewAll: 'Alle ansehen →',
+    detailedAnalysis: 'Detaillierte Spielanalyse',
+    detailedAnalysisSub: 'Wählen Sie ein Spiel für die KI-gestützte Tiefenanalyse'
   }
 };
 
@@ -302,8 +788,8 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
       >
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-blue-400" />
-          <h4 className="text-white font-bold">Analiz Detayı</h4>
-          <span className="text-xs text-gray-400">(Detaylı agent analizleri)</span>
+          <h4 className="text-white font-bold">{t.analysisDetail}</h4>
+          <span className="text-xs text-gray-400">({t.detailedAgentAnalyses})</span>
         </div>
         {isOpen ? (
           <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -321,30 +807,30 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 <BarChart3 className="w-5 h-5 text-blue-400" />
                 <h5 className="text-white font-bold text-lg flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-blue-400" />
-                  STATS AGENT (İstatistik Analiz Ajanı)
+                  {t.statsAgentTitle}
                 </h5>
               </div>
               
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Form, gol istatistikleri, xG (Expected Goals), timing patterns ve clean sheet analizi yapar.</p>
+                  <p className="text-gray-300 mb-2"><strong>{t.task}:</strong> {t.statsTask}</p>
                 </div>
 
                 {stats.formAnalysis && (
                   <div>
-                    <p className="text-blue-400 font-semibold mb-1">Form Analizi:</p>
+                    <p className="text-blue-400 font-semibold mb-1">{t.formAnalysis}:</p>
                     <p className="text-gray-300">{stats.formAnalysis}</p>
                   </div>
                 )}
 
                 {stats.xgAnalysis && (
                   <div>
-                    <p className="text-blue-400 font-semibold mb-1">xG (Expected Goals) Analizi:</p>
+                    <p className="text-blue-400 font-semibold mb-1">{t.xgAnalysisTitle}:</p>
                     <div className="bg-black/20 rounded p-2 space-y-1 text-xs">
-                      <p className="text-gray-300">Ev Sahibi xG: <span className="text-blue-400">{stats.xgAnalysis.homeXG}</span></p>
-                      <p className="text-gray-300">Deplasman xG: <span className="text-blue-400">{stats.xgAnalysis.awayXG}</span></p>
-                      <p className="text-gray-300">Toplam xG: <span className="text-blue-400">{stats.xgAnalysis.totalXG}</span></p>
-                      <p className="text-gray-300">Performans: <span className="text-blue-400">{stats.xgAnalysis.homePerformance} / {stats.xgAnalysis.awayPerformance}</span></p>
+                      <p className="text-gray-300">{t.homeXG}: <span className="text-blue-400">{stats.xgAnalysis.homeXG}</span></p>
+                      <p className="text-gray-300">{t.awayXG}: <span className="text-blue-400">{stats.xgAnalysis.awayXG}</span></p>
+                      <p className="text-gray-300">{t.totalXG}: <span className="text-blue-400">{stats.xgAnalysis.totalXG}</span></p>
+                      <p className="text-gray-300">{t.performance}: <span className="text-blue-400">{stats.xgAnalysis.homePerformance} / {stats.xgAnalysis.awayPerformance}</span></p>
                       {stats.xgAnalysis.regressionRisk && (
                         <p className="text-yellow-400 flex items-center gap-1">
                           <AlertTriangle className="w-4 h-4" />
@@ -357,28 +843,28 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {stats.goalExpectancy && (
                   <div>
-                    <p className="text-blue-400 font-semibold mb-1">Gol Beklentisi:</p>
-                    <p className="text-gray-300">Goal Expectancy: <span className="text-blue-400 font-bold">{stats.goalExpectancy}</span> gol</p>
+                    <p className="text-blue-400 font-semibold mb-1">{t.goalExpectancy}:</p>
+                    <p className="text-gray-300">{t.goalExpectancy}: <span className="text-blue-400 font-bold">{stats.goalExpectancy}</span> {t.goal}</p>
                     {stats._calculatedStats && (
                       <div className="bg-black/20 rounded p-2 mt-1 text-xs space-y-1">
-                        <p className="text-gray-300">Son 5 Maç Over 2.5: <span className="text-blue-400">%{stats._calculatedStats.avgOver25}</span></p>
-                        <p className="text-gray-300">Son 5 Maç BTTS: <span className="text-blue-400">%{stats._calculatedStats.avgBtts}</span></p>
+                        <p className="text-gray-300">{t.last5Over25}: <span className="text-blue-400">%{stats._calculatedStats.avgOver25}</span></p>
+                        <p className="text-gray-300">{t.last5Btts}: <span className="text-blue-400">%{stats._calculatedStats.avgBtts}</span></p>
                         {stats._calculatedStats.homeExpected && stats._calculatedStats.awayExpected && (
                           <>
                             <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
-                              <span className="text-blue-400 font-semibold">Gol Atma Beklentisi:</span>
+                              <span className="text-blue-400 font-semibold">{t.scoringExpectancy}:</span>
                             </p>
-                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeExpected}</span> gol</p>
-                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayExpected}</span> gol</p>
+                            <p className="text-gray-300">{t.resHome}: <span className="text-blue-400">{stats._calculatedStats.homeExpected}</span> {t.goal}</p>
+                            <p className="text-gray-300">{t.resAway}: <span className="text-blue-400">{stats._calculatedStats.awayExpected}</span> {t.goal}</p>
                           </>
                         )}
                         {stats._calculatedStats.homeConcededExpected && stats._calculatedStats.awayConcededExpected && (
                           <>
                             <p className="text-gray-300 mt-2 pt-2 border-t border-white/10">
-                              <span className="text-blue-400 font-semibold">Gol Yeme Beklentisi:</span>
+                              <span className="text-blue-400 font-semibold">{t.concedingExpectancy}:</span>
                             </p>
-                            <p className="text-gray-300">Ev Sahibi: <span className="text-blue-400">{stats._calculatedStats.homeConcededExpected}</span> gol</p>
-                            <p className="text-gray-300">Deplasman: <span className="text-blue-400">{stats._calculatedStats.awayConcededExpected}</span> gol</p>
+                            <p className="text-gray-300">{t.resHome}: <span className="text-blue-400">{stats._calculatedStats.homeConcededExpected}</span> {t.goal}</p>
+                            <p className="text-gray-300">{t.resAway}: <span className="text-blue-400">{stats._calculatedStats.awayConcededExpected}</span> {t.goal}</p>
                           </>
                         )}
                       </div>
@@ -388,10 +874,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {stats.timingPatterns && (
                   <div>
-                    <p className="text-blue-400 font-semibold mb-1">Timing Patterns (Zamanlama Paternleri):</p>
+                    <p className="text-blue-400 font-semibold mb-1">{t.timingPatterns}:</p>
                     <div className="bg-black/20 rounded p-2 text-xs space-y-1">
-                      <p className="text-gray-300">Ev Sahibi: İlk yarı %{stats.timingPatterns.homeFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.homeSecondHalfGoals}</p>
-                      <p className="text-gray-300">Deplasman: İlk yarı %{stats.timingPatterns.awayFirstHalfGoals}, İkinci yarı %{stats.timingPatterns.awaySecondHalfGoals}</p>
+                      <p className="text-gray-300">{t.resHome}: {t.firstHalf} %{stats.timingPatterns.homeFirstHalfGoals}, {t.secondHalf} %{stats.timingPatterns.homeSecondHalfGoals}</p>
+                      <p className="text-gray-300">{t.resAway}: {t.firstHalf} %{stats.timingPatterns.awayFirstHalfGoals}, {t.secondHalf} %{stats.timingPatterns.awaySecondHalfGoals}</p>
                       {stats.timingPatterns.htftPattern && (
                         <p className="text-yellow-400 mt-1">📌 {stats.timingPatterns.htftPattern}</p>
                       )}
@@ -401,11 +887,11 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {stats.cleanSheetAnalysis && (
                   <div>
-                    <p className="text-blue-400 font-semibold mb-1">Clean Sheet Analizi:</p>
+                    <p className="text-blue-400 font-semibold mb-1">{t.cleanSheetAnalysis}:</p>
                     <div className="bg-black/20 rounded p-2 text-xs space-y-1">
-                      <p className="text-gray-300">Ev Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.homeCleanSheetStreak}</span></p>
-                      <p className="text-gray-300">Dep Clean Sheet Serisi: <span className="text-blue-400">{stats.cleanSheetAnalysis.awayCleanSheetStreak}</span></p>
-                      <p className="text-gray-300">Clean Sheet %: Ev %{stats.cleanSheetAnalysis.homeCleanSheetPct}, Dep %{stats.cleanSheetAnalysis.awayCleanSheetPct}</p>
+                      <p className="text-gray-300">{t.homeCleanSheetStreak}: <span className="text-blue-400">{stats.cleanSheetAnalysis.homeCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">{t.awayCleanSheetStreak}: <span className="text-blue-400">{stats.cleanSheetAnalysis.awayCleanSheetStreak}</span></p>
+                      <p className="text-gray-300">Clean Sheet %: {t.resHome} %{stats.cleanSheetAnalysis.homeCleanSheetPct}, {t.resAway} %{stats.cleanSheetAnalysis.awayCleanSheetPct}</p>
                       {stats.cleanSheetAnalysis.defensiveRating && (
                         <p className="text-yellow-400 mt-1 flex items-center gap-1">
                           <Shield className="w-4 h-4" />
@@ -417,33 +903,33 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 )}
 
                 <div className="border-t border-blue-500/30 pt-3 mt-3">
-                  <p className="text-blue-400 font-semibold mb-2">STATS AGENT TAHMİNLERİ:</p>
+                  <p className="text-blue-400 font-semibold mb-2">{t.statsAgentPredictions}:</p>
                   <div className="space-y-2">
                     {stats.overUnder && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{Math.round(stats.overUnderConfidence || stats.confidence)} güven)</p>
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-blue-400">{stats.overUnder}</span> (%{Math.round(stats.overUnderConfidence || stats.confidence)} {t.confidence})</p>
                         {stats.overUnderReasoning && <p className="text-gray-400 text-xs mt-1">{stats.overUnderReasoning}</p>}
                       </div>
                     )}
                     {stats.btts && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{Math.round(stats.bttsConfidence || stats.confidence)} güven)</p>
+                        <p className="text-white font-semibold">BTTS: <span className="text-blue-400">{stats.btts}</span> (%{Math.round(stats.bttsConfidence || stats.confidence)} {t.confidence})</p>
                         {stats.bttsReasoning && <p className="text-gray-400 text-xs mt-1">{stats.bttsReasoning}</p>}
                       </div>
                     )}
                     {stats.matchResult && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-blue-400">{
-                          stats.matchResult === '1' || stats.matchResult === 'home' ? 'Ev Sahibi' : 
-                          stats.matchResult === '2' || stats.matchResult === 'away' ? 'Deplasman' : 
-                          'Beraberlik'
-                        }</span> (%{Math.round(stats.matchResultConfidence || stats.confidence)} güven)</p>
+                        <p className="text-white font-semibold">{t.matchResultLabel}: <span className="text-blue-400">{
+                          stats.matchResult === '1' || stats.matchResult === 'home' ? t.resHome :
+                          stats.matchResult === '2' || stats.matchResult === 'away' ? t.resAway :
+                          t.resDraw
+                        }</span> (%{Math.round(stats.matchResultConfidence || stats.confidence)} {t.confidence})</p>
                         {stats.matchResultReasoning && <p className="text-gray-400 text-xs mt-1">{stats.matchResultReasoning}</p>}
                       </div>
                     )}
                     {stats.firstHalfPrediction && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">İlk Yarı: <span className="text-blue-400">{stats.firstHalfPrediction.goals}</span> (%{stats.firstHalfConfidence || stats.confidence} güven)</p>
+                        <p className="text-white font-semibold">{t.firstHalfLabel}: <span className="text-blue-400">{stats.firstHalfPrediction.goals}</span> (%{stats.firstHalfConfidence || stats.confidence} {t.confidence})</p>
                         {stats.firstHalfPrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{stats.firstHalfPrediction.reasoning}</p>}
                       </div>
                     )}
@@ -465,26 +951,26 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                     <DollarSign className="w-5 h-5 text-green-400" />
                     ODDS AGENT
                   </h5>
-                  <p className="text-green-300 text-xs">Bahis Oranları & Value Bet Analiz Ajanı</p>
+                  <p className="text-green-300 text-xs">{t.oddsAgentSubtitle}</p>
                 </div>
               </div>
               
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Bahis oranlarını form verileriyle karşılaştırarak VALUE BET (değerli bahis) tespit eder.</p>
+                  <p className="text-gray-300 mb-2"><strong>{t.task}:</strong> {t.oddsTask}</p>
                 </div>
 
                 {odds._valueAnalysis && (
                   <div>
-                    <p className="text-green-400 font-semibold mb-1">Oran Analizi:</p>
+                    <p className="text-green-400 font-semibold mb-1">{t.oddsAnalysisTitle}:</p>
                     <div className="bg-black/20 rounded p-2 text-xs space-y-1">
-                      <p className="text-gray-300">Ev Sahibi: Oran %{odds._valueAnalysis.homeImplied} implied, Form %{odds._valueAnalysis.homeFormProb} → Value: <span className={odds._valueAnalysis.homeValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.homeValue > 0 ? '+' : ''}{odds._valueAnalysis.homeValue}%</span></p>
-                      <p className="text-gray-300">Deplasman: Oran %{odds._valueAnalysis.awayImplied} implied, Form %{odds._valueAnalysis.awayFormProb} → Value: <span className={odds._valueAnalysis.awayValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.awayValue > 0 ? '+' : ''}{odds._valueAnalysis.awayValue}%</span></p>
+                      <p className="text-gray-300">{t.resHome}: Oran %{odds._valueAnalysis.homeImplied} implied, Form %{odds._valueAnalysis.homeFormProb} → Value: <span className={odds._valueAnalysis.homeValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.homeValue > 0 ? '+' : ''}{odds._valueAnalysis.homeValue}%</span></p>
+                      <p className="text-gray-300">{t.resAway}: Oran %{odds._valueAnalysis.awayImplied} implied, Form %{odds._valueAnalysis.awayFormProb} → Value: <span className={odds._valueAnalysis.awayValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.awayValue > 0 ? '+' : ''}{odds._valueAnalysis.awayValue}%</span></p>
                       <p className="text-gray-300">Over 2.5: Oran %{odds._valueAnalysis.overImplied} implied, Form %{odds._valueAnalysis.overProb} → Value: <span className={odds._valueAnalysis.overValue > 0 ? 'text-green-400' : 'text-red-400'}>{odds._valueAnalysis.overValue > 0 ? '+' : ''}{odds._valueAnalysis.overValue}%</span></p>
                       {odds._valueAnalysis.bestValue && (
                         <p className="text-green-400 font-semibold mt-2 flex items-center gap-1">
                           <Award className="w-4 h-4" />
-                          En İyi Value: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)
+                          {t.bestValue}: {odds._valueAnalysis.bestValue} (+{odds._valueAnalysis.bestValueAmount}%)
                         </p>
                       )}
                     </div>
@@ -492,35 +978,35 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 )}
 
                 <div className="border-t border-green-500/30 pt-3 mt-3">
-                  <p className="text-green-400 font-semibold mb-2">ODDS AGENT TAHMİNLERİ:</p>
+                  <p className="text-green-400 font-semibold mb-2">{t.oddsAgentPredictions}:</p>
                   <div className="space-y-2">
                     {odds.recommendation && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Ana Öneri: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{Math.round(odds.confidence)} güven)</p>
+                        <p className="text-white font-semibold">{t.mainRecommendation}: <span className="text-green-400">{odds.recommendation === 'Over' ? 'Over 2.5' : odds.recommendation === 'Under' ? 'Under 2.5' : odds.recommendation}</span> (%{Math.round(odds.confidence)} {t.confidence})</p>
                         {odds.recommendationReasoning && <p className="text-gray-400 text-xs mt-1">{odds.recommendationReasoning}</p>}
                       </div>
                     )}
                     {odds.matchWinnerValue && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Maç Sonucu Value: <span className="text-green-400">{odds.matchWinnerValue === 'home' ? 'Ev Sahibi' : odds.matchWinnerValue === 'away' ? 'Deplasman' : 'Beraberlik'}</span></p>
+                        <p className="text-white font-semibold">{t.matchResultValue}: <span className="text-green-400">{odds.matchWinnerValue === 'home' ? t.resHome : odds.matchWinnerValue === 'away' ? t.resAway : t.resDraw}</span></p>
                         {odds.matchWinnerReasoning && <p className="text-gray-400 text-xs mt-1">{odds.matchWinnerReasoning}</p>}
                       </div>
                     )}
                     {odds.asianHandicap && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Asian Handicap: <span className="text-green-400">{odds.asianHandicap.recommendation}</span> (%{odds.asianHandicap.confidence} güven)</p>
+                        <p className="text-white font-semibold">Asian Handicap: <span className="text-green-400">{odds.asianHandicap.recommendation}</span> (%{odds.asianHandicap.confidence} {t.confidence})</p>
                         {odds.asianHandicap.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.asianHandicap.reasoning}</p>}
                       </div>
                     )}
                     {odds.correctScore && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Correct Score: <span className="text-green-400">{odds.correctScore.mostLikely}</span> (%{odds.correctScore.confidence} güven)</p>
-                        <p className="text-gray-400 text-xs mt-1">2. Olası: {odds.correctScore.second}, 3. Olası: {odds.correctScore.third}</p>
+                        <p className="text-white font-semibold">Correct Score: <span className="text-green-400">{odds.correctScore.mostLikely}</span> (%{odds.correctScore.confidence} {t.confidence})</p>
+                        <p className="text-gray-400 text-xs mt-1">2. {t.likely}: {odds.correctScore.second}, 3. {t.likely}: {odds.correctScore.third}</p>
                       </div>
                     )}
                     {odds.cornersAnalysis && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Korner: <span className="text-green-400">{odds.cornersAnalysis.totalCorners}</span> (%{odds.cornersAnalysis.confidence} güven)</p>
+                        <p className="text-white font-semibold">{t.corner}: <span className="text-green-400">{odds.cornersAnalysis.totalCorners}</span> (%{odds.cornersAnalysis.confidence} {t.confidence})</p>
                         {odds.cornersAnalysis.reasoning && <p className="text-gray-400 text-xs mt-1">{odds.cornersAnalysis.reasoning}</p>}
                       </div>
                     )}
@@ -545,7 +1031,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                   ODDS AGENT
                 </h5>
               </div>
-              <p className="text-gray-500 text-sm">Odds agent analizi henüz mevcut değil. Analiz yapıldığında burada görünecek.</p>
+              <p className="text-gray-500 text-sm">{t.oddsNotAvailable}</p>
             </div>
           )}
 
@@ -554,24 +1040,24 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-purple-500/10 rounded-lg border border-purple-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Target className="w-5 h-5 text-purple-400" />
-                <h5 className="text-white font-bold text-lg">🎯 DEEP ANALYSIS AGENT (Derin Analiz Ajanı)</h5>
+                <h5 className="text-white font-bold text-lg">{t.deepAnalysisAgentTitle}</h5>
               </div>
               
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Çok katmanlı analiz yapar - takım formu, taktiksel yapı, H2H, hakem, hava durumu, diziliş analizi.</p>
+                  <p className="text-gray-300 mb-2"><strong>{t.task}:</strong> {t.deepAgentTask}</p>
                 </div>
 
                 {deepAnalysis.matchAnalysis && (
                   <div>
-                    <p className="text-purple-400 font-semibold mb-1">Maç Analizi:</p>
+                    <p className="text-purple-400 font-semibold mb-1">{t.matchAnalysis}:</p>
                     <p className="text-gray-300">{deepAnalysis.matchAnalysis}</p>
                   </div>
                 )}
 
                 {deepAnalysis.criticalFactors && deepAnalysis.criticalFactors.length > 0 && (
                   <div>
-                    <p className="text-purple-400 font-semibold mb-1">Kritik Faktörler:</p>
+                    <p className="text-purple-400 font-semibold mb-1">{t.criticalFactors}:</p>
                     <ul className="bg-black/20 rounded p-2 space-y-1">
                       {deepAnalysis.criticalFactors.map((factor: string, idx: number) => (
                         <li key={idx} className="text-gray-300 text-xs">• {factor}</li>
@@ -582,11 +1068,11 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {deepAnalysis.probabilities && (
                   <div>
-                    <p className="text-purple-400 font-semibold mb-1">Olasılıklar:</p>
+                    <p className="text-purple-400 font-semibold mb-1">{t.probabilities}:</p>
                     <div className="bg-black/20 rounded p-2 text-xs space-y-1">
-                      <p className="text-gray-300">Ev Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.homeWin}</span></p>
-                      <p className="text-gray-300">Beraberlik: <span className="text-purple-400">%{deepAnalysis.probabilities.draw}</span></p>
-                      <p className="text-gray-300">Deplasman Kazanır: <span className="text-purple-400">%{deepAnalysis.probabilities.awayWin}</span></p>
+                      <p className="text-gray-300">{t.homeWin}: <span className="text-purple-400">%{deepAnalysis.probabilities.homeWin}</span></p>
+                      <p className="text-gray-300">{t.resDraw}: <span className="text-purple-400">%{deepAnalysis.probabilities.draw}</span></p>
+                      <p className="text-gray-300">{t.awayWin}: <span className="text-purple-400">%{deepAnalysis.probabilities.awayWin}</span></p>
                     </div>
                   </div>
                 )}
@@ -606,12 +1092,12 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                     <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-purple-500/50 p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-2xl">💪</span>
-                        <h6 className="text-purple-300 font-bold text-base">MACA HAZIRLANMA & MOTİVASYON ANALİZİ (0-100)</h6>
+                        <h6 className="text-purple-300 font-bold text-base">{t.matchReadinessTitle}</h6>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         {/* Ev Sahibi */}
                         <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
-                          <p className="text-xs text-gray-400 mb-2">🏠 EV SAHİBİ</p>
+                          <p className="text-xs text-gray-400 mb-2">🏠 {t.homeUpper}</p>
                           {motivationScores ? (
                             <>
                               <div className="flex items-center gap-2 mb-2">
@@ -624,7 +1110,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                                 {motivationScores.homeTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
                               </div>
                               {motivationScores.homeFormGraph && (
-                                <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.homeFormGraph}</span></p>
+                                <p className="text-gray-300 text-xs mb-1">{t.form}: <span className="font-mono">{motivationScores.homeFormGraph}</span></p>
                               )}
                               <div className={`h-2 rounded-full mt-2 ${motivationScores.home >= 70 ? 'bg-green-500' : motivationScores.home >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.home}%` }}></div>
                             </>
@@ -646,7 +1132,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         
                         {/* Deplasman */}
                         <div className="bg-black/30 rounded-lg p-3 border border-purple-500/30">
-                          <p className="text-xs text-gray-400 mb-2">✈️ DEPLASMAN</p>
+                          <p className="text-xs text-gray-400 mb-2">✈️ {t.awayUpper}</p>
                           {motivationScores ? (
                             <>
                               <div className="flex items-center gap-2 mb-2">
@@ -659,7 +1145,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                                 {motivationScores.awayTrend === 'stable' && <span className="text-gray-400 text-xl">➡️</span>}
                               </div>
                               {motivationScores.awayFormGraph && (
-                                <p className="text-gray-300 text-xs mb-1">Form: <span className="font-mono">{motivationScores.awayFormGraph}</span></p>
+                                <p className="text-gray-300 text-xs mb-1">{t.form}: <span className="font-mono">{motivationScores.awayFormGraph}</span></p>
                               )}
                               <div className={`h-2 rounded-full mt-2 ${motivationScores.away >= 70 ? 'bg-green-500' : motivationScores.away >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${motivationScores.away}%` }}></div>
                             </>
@@ -681,54 +1167,54 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       </div>
                       {motivationScores?.reasoning && (
                         <p className="text-gray-300 text-xs mt-3 pt-3 border-t border-purple-500/30">
-                          <span className="text-purple-400 font-semibold">🧠 Agent Analizi:</span> {motivationScores.reasoning}
+                          <span className="text-purple-400 font-semibold">🧠 {t.agentAnalysisLabel}:</span> {motivationScores.reasoning}
                         </p>
                       )}
                       <div className="mt-3 text-xs text-gray-400">
-                        <p>💡 <strong>Skor Anlamı:</strong> 70-100 = Çok hazır, 50-69 = Normal, 30-49 = Hazırlıksız, 0-29 = Çok kötü durum</p>
-                        <p className="mt-1">📊 <strong>Hesaplama:</strong> Gemini AI Agent 3 veriyi değerlendirir: Performans (Form), Sakatlıklar & Kadro, Haberler → Tek motivasyon skoru oluşturur</p>
+                        <p>💡 <strong>{t.scoreMeaning}:</strong> {t.scoreMeaningText}</p>
+                        <p className="mt-1">📊 <strong>{t.calculation}:</strong> {t.calculationText}</p>
                       </div>
                     </div>
                   );
                 })()}
 
                 <div className="border-t border-purple-500/30 pt-3 mt-3">
-                  <p className="text-purple-400 font-semibold mb-2">DEEP ANALYSIS AGENT TAHMİNLERİ:</p>
+                  <p className="text-purple-400 font-semibold mb-2">{t.deepAgentPredictions}:</p>
                   <div className="space-y-2">
                     {deepAnalysis.overUnder && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{deepAnalysis.overUnder.prediction}</span> (%{deepAnalysis.overUnder.confidence} güven)</p>
+                        <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{deepAnalysis.overUnder.prediction}</span> (%{deepAnalysis.overUnder.confidence} {t.confidence})</p>
                         {deepAnalysis.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.overUnder.reasoning}</p>}
                       </div>
                     )}
                     {deepAnalysis.btts && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{deepAnalysis.btts.prediction}</span> (%{deepAnalysis.btts.confidence} güven)</p>
+                        <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{deepAnalysis.btts.prediction}</span> (%{deepAnalysis.btts.confidence} {t.confidence})</p>
                         {deepAnalysis.btts.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.btts.reasoning}</p>}
                       </div>
                     )}
                     {deepAnalysis.matchResult && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Maç Sonucu: <span className="text-purple-400">{deepAnalysis.matchResult.prediction === '1' ? 'Ev Sahibi' : deepAnalysis.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{deepAnalysis.matchResult.confidence} güven)</p>
+                        <p className="text-white font-semibold">{t.matchResultLabel}: <span className="text-purple-400">{deepAnalysis.matchResult.prediction === '1' ? t.resHome : deepAnalysis.matchResult.prediction === '2' ? t.resAway : t.resDraw}</span> (%{deepAnalysis.matchResult.confidence} {t.confidence})</p>
                         {deepAnalysis.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.matchResult.reasoning}</p>}
                       </div>
                     )}
                     {deepAnalysis.scorePrediction && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Skor Tahmini: <span className="text-purple-400">{deepAnalysis.scorePrediction.score}</span></p>
+                        <p className="text-white font-semibold">{t.scorePrediction}: <span className="text-purple-400">{deepAnalysis.scorePrediction.score}</span></p>
                         {deepAnalysis.scorePrediction.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.scorePrediction.reasoning}</p>}
                       </div>
                     )}
                     {deepAnalysis.halfTimeGoals && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">İlk Yarı: <span className="text-purple-400">{deepAnalysis.halfTimeGoals.prediction} {deepAnalysis.halfTimeGoals.line}</span> (%{deepAnalysis.halfTimeGoals.confidence} güven)</p>
+                        <p className="text-white font-semibold">{t.firstHalfLabel}: <span className="text-purple-400">{deepAnalysis.halfTimeGoals.prediction} {deepAnalysis.halfTimeGoals.line}</span> (%{deepAnalysis.halfTimeGoals.confidence} {t.confidence})</p>
                         {deepAnalysis.halfTimeGoals.reasoning && <p className="text-gray-400 text-xs mt-1">{deepAnalysis.halfTimeGoals.reasoning}</p>}
                       </div>
                     )}
                     {deepAnalysis.cornersAndCards && (
                       <div className="bg-black/20 rounded p-2">
-                        <p className="text-white font-semibold">Korner: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cornersLine}</span> (%{deepAnalysis.cornersAndCards.cornersConfidence} güven)</p>
-                        <p className="text-white font-semibold mt-1">Kart: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cardsLine}</span> (%{deepAnalysis.cornersAndCards.cardsConfidence} güven)</p>
+                        <p className="text-white font-semibold">{t.corner}: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cornersLine}</span> (%{deepAnalysis.cornersAndCards.cornersConfidence} {t.confidence})</p>
+                        <p className="text-white font-semibold mt-1">{t.cards}: <span className="text-purple-400">{deepAnalysis.cornersAndCards.cardsLine}</span> (%{deepAnalysis.cornersAndCards.cardsConfidence} {t.confidence})</p>
                       </div>
                     )}
                   </div>
@@ -744,17 +1230,17 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="w-5 h-5 text-yellow-400" />
-                <h5 className="text-white font-bold text-lg">📊 SPORTMONKS VERİ BAZLI MAÇ SONUCU TAHMİNİ</h5>
+                <h5 className="text-white font-bold text-lg">{t.sportmonksTitle}</h5>
               </div>
-              
+
               <div className="space-y-2 text-sm">
-                <p className="text-gray-300 mb-2"><strong>Sistem:</strong> Puan bazlı hesaplama (Agent'ların kendi tahmin seçenekleri yok, sadece veri bazlı)</p>
+                <p className="text-gray-300 mb-2"><strong>{t.system}:</strong> {t.sportmonksSystemDesc}</p>
                 <div className="bg-black/20 rounded p-2">
-                  <p className="text-white font-semibold">Tahmin: <span className="text-yellow-400">{
-                    analysis.matchResult.prediction === 'home' || analysis.matchResult.prediction === '1' ? 'Ev Sahibi' : 
-                    analysis.matchResult.prediction === 'away' || analysis.matchResult.prediction === '2' ? 'Deplasman' : 
-                    'Beraberlik'
-                  }</span> (%{Math.round(analysis.matchResult.confidence)} güven)</p>
+                  <p className="text-white font-semibold">{t.prediction}: <span className="text-yellow-400">{
+                    analysis.matchResult.prediction === 'home' || analysis.matchResult.prediction === '1' ? t.resHome :
+                    analysis.matchResult.prediction === 'away' || analysis.matchResult.prediction === '2' ? t.resAway :
+                    t.resDraw
+                  }</span> (%{Math.round(analysis.matchResult.confidence)} {t.confidence})</p>
                   {analysis.matchResult.reasoning && (
                     <div className="text-gray-400 text-xs mt-2 whitespace-pre-line">{analysis.matchResult.reasoning}</div>
                   )}
@@ -768,18 +1254,18 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-lg border border-purple-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Target className="w-5 h-5 text-purple-400" />
-                <h5 className="text-white font-bold text-lg">🎯 MASTER STRATEGIST AGENT (Üst-Akıl Konsensüs)</h5>
+                <h5 className="text-white font-bold text-lg">{t.masterStrategistTitle}</h5>
               </div>
-              
+
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Tüm agent'ların çıktılarını analiz eder, tutarsızlıkları tespit eder ve ağırlıklı konsensüs oluşturur.</p>
+                  <p className="text-gray-300 mb-2"><strong>{t.task}:</strong> {t.masterStrategistTask}</p>
                 </div>
 
                 {/* Main Take */}
                 {masterStrategist.main_take && (
                   <div className="bg-purple-500/10 rounded-lg border border-purple-500/30 p-3">
-                    <p className="text-purple-400 font-semibold mb-2">📋 ANA GÖRÜŞ:</p>
+                    <p className="text-purple-400 font-semibold mb-2">📋 {t.mainTake}:</p>
                     <p className="text-gray-300 text-sm">{masterStrategist.main_take}</p>
                   </div>
                 )}
@@ -787,7 +1273,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 {/* Signals */}
                 {masterStrategist.signals && masterStrategist.signals.length > 0 && (
                   <div className="bg-indigo-500/10 rounded-lg border border-indigo-500/30 p-3">
-                    <p className="text-indigo-400 font-semibold mb-2">📊 GÜÇLÜ SİNYALLER:</p>
+                    <p className="text-indigo-400 font-semibold mb-2">📊 {t.strongSignals}:</p>
                     <ul className="text-gray-300 text-xs space-y-1">
                       {masterStrategist.signals.map((signal: string, i: number) => (
                         <li key={i}>• {signal}</li>
@@ -799,7 +1285,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 {/* Recommended Bets */}
                 {masterStrategist.recommended_bets && masterStrategist.recommended_bets.length > 0 && (
                   <div className="bg-green-500/10 rounded-lg border border-green-500/30 p-3">
-                    <p className="text-green-400 font-semibold mb-2">💰 ÖNERİLEN BAHİSLER:</p>
+                    <p className="text-green-400 font-semibold mb-2">💰 {t.recommendedBets}:</p>
                     <div className="space-y-2">
                       {masterStrategist.recommended_bets.map((bet: any, i: number) => (
                         <div key={i} className="bg-black/20 rounded p-2">
@@ -807,8 +1293,8 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                             {bet.market} → <span className="text-green-400">{bet.selection}</span>
                           </p>
                           <div className="flex items-center gap-4 mt-1 text-xs">
-                            <span className="text-gray-300">Olasılık: <span className="text-purple-400">%{Math.round((bet.model_prob || 0) * 100)}</span></span>
-                            <span className="text-gray-300">Oran: <span className="text-yellow-400">@{bet.market_odds}</span></span>
+                            <span className="text-gray-300">{t.probability}: <span className="text-purple-400">%{Math.round((bet.model_prob || 0) * 100)}</span></span>
+                            <span className="text-gray-300">{t.odds}: <span className="text-yellow-400">@{bet.market_odds}</span></span>
                             <span className="text-gray-300">Edge: <span className="text-green-400">+{Math.round((bet.edge || 0) * 100)}%</span></span>
                           </div>
                           {bet.rationale && Array.isArray(bet.rationale) && (
@@ -827,7 +1313,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 {/* Risks */}
                 {masterStrategist.risks && masterStrategist.risks.length > 0 && (
                   <div className="bg-red-500/10 rounded-lg border border-red-500/30 p-3">
-                    <p className="text-red-400 font-semibold mb-2">⚠️ RİSKLER:</p>
+                    <p className="text-red-400 font-semibold mb-2">⚠️ {t.risks}:</p>
                     <ul className="text-gray-300 text-xs space-y-1">
                       {masterStrategist.risks.map((risk: string, i: number) => (
                         <li key={i}>• {risk}</li>
@@ -839,22 +1325,22 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 {/* Yeni format: final.primary_pick ve final.surprise_pick */}
                 {masterStrategist.final && (
                   <div className="border-t border-purple-500/30 pt-3 mt-3">
-                    <p className="text-purple-400 font-semibold mb-2">FİNAL TAHMİNLER:</p>
+                    <p className="text-purple-400 font-semibold mb-2">{t.finalPredictions}:</p>
                     <div className="space-y-3">
                       {/* Primary Pick */}
                       {masterStrategist.final.primary_pick && (
                         <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg border border-purple-500/40 p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🎯</span>
-                            <p className="text-white font-bold">ANA TAHMİN (Primary Pick)</p>
+                            <p className="text-white font-bold">{t.primaryPick}</p>
                           </div>
                           <p className="text-white font-semibold">
                             <span className="text-purple-400">{masterStrategist.final.primary_pick.market}</span> → 
                             <span className="text-green-400 ml-2">{masterStrategist.final.primary_pick.selection}</span>
                           </p>
                           <div className="flex items-center gap-4 mt-2 text-xs">
-                            <span className="text-gray-300">Güven: <span className="text-purple-400 font-bold">%{masterStrategist.final.primary_pick.confidence}</span></span>
-                            <span className="text-gray-300">Oran: <span className="text-yellow-400 font-bold">@{masterStrategist.final.primary_pick.market_odds}</span></span>
+                            <span className="text-gray-300">{t.confidence}: <span className="text-purple-400 font-bold">%{masterStrategist.final.primary_pick.confidence}</span></span>
+                            <span className="text-gray-300">{t.odds}: <span className="text-yellow-400 font-bold">@{masterStrategist.final.primary_pick.market_odds}</span></span>
                             <span className="text-gray-300">Edge: <span className="text-green-400 font-bold">+{Math.round((masterStrategist.final.primary_pick.edge || 0) * 100)}%</span></span>
                           </div>
                           {masterStrategist.final.primary_pick.rationale && Array.isArray(masterStrategist.final.primary_pick.rationale) && (
@@ -872,15 +1358,15 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-lg border border-orange-500/40 p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🔥</span>
-                            <p className="text-white font-bold">SÜRPRİZ TAHMİN (Surprise Pick)</p>
+                            <p className="text-white font-bold">{t.surprisePick}</p>
                           </div>
                           <p className="text-white font-semibold">
                             <span className="text-orange-400">{masterStrategist.final.surprise_pick.market}</span> → 
                             <span className="text-red-400 ml-2">{masterStrategist.final.surprise_pick.selection}</span>
                           </p>
                           <div className="flex items-center gap-4 mt-2 text-xs">
-                            <span className="text-gray-300">Güven: <span className="text-orange-400 font-bold">%{masterStrategist.final.surprise_pick.confidence}</span></span>
-                            <span className="text-gray-300">Oran: <span className="text-yellow-400 font-bold">@{masterStrategist.final.surprise_pick.market_odds}</span></span>
+                            <span className="text-gray-300">{t.confidence}: <span className="text-orange-400 font-bold">%{masterStrategist.final.surprise_pick.confidence}</span></span>
+                            <span className="text-gray-300">{t.odds}: <span className="text-yellow-400 font-bold">@{masterStrategist.final.surprise_pick.market_odds}</span></span>
                             <span className="text-gray-300">Edge: <span className="text-green-400 font-bold">+{Math.round((masterStrategist.final.surprise_pick.edge || 0) * 100)}%</span></span>
                           </div>
                           {masterStrategist.final.surprise_pick.rationale && Array.isArray(masterStrategist.final.surprise_pick.rationale) && (
@@ -901,7 +1387,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg border border-blue-500/40 p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-lg">🛡️</span>
-                            <p className="text-white font-bold">HEDGE (Koruma)</p>
+                            <p className="text-white font-bold">{t.hedgeLabel}</p>
                           </div>
                           <p className="text-white font-semibold">
                             <span className="text-blue-400">{masterStrategist.final.hedge.market}</span> → 
@@ -920,7 +1406,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                       {/* Contradictions */}
                       {masterStrategist.final.contradictions_found && masterStrategist.final.contradictions_found.length > 0 && (
                         <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-3">
-                          <p className="text-yellow-400 font-semibold mb-2">⚠️ TESPİT EDİLEN TUTARSIZLIKLAR:</p>
+                          <p className="text-yellow-400 font-semibold mb-2">⚠️ {t.contradictionsFound}:</p>
                           <ul className="text-gray-300 text-xs space-y-1">
                             {masterStrategist.final.contradictions_found.map((c: string, i: number) => (
                               <li key={i}>• {c}</li>
@@ -935,23 +1421,23 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                 {/* Eski format: finalConsensus (backward compatibility) */}
                 {!masterStrategist.final && masterStrategist.finalConsensus && (
                   <div className="border-t border-purple-500/30 pt-3 mt-3">
-                    <p className="text-purple-400 font-semibold mb-2">FİNAL KONSENSÜS:</p>
+                    <p className="text-purple-400 font-semibold mb-2">{t.finalConsensus}:</p>
                     <div className="space-y-2">
                       {masterStrategist.finalConsensus.matchResult && (
                         <div className="bg-black/20 rounded p-2">
-                          <p className="text-white font-semibold">Maç Sonucu: <span className="text-purple-400">{masterStrategist.finalConsensus.matchResult.prediction === '1' ? 'Ev Sahibi' : masterStrategist.finalConsensus.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{masterStrategist.finalConsensus.matchResult.confidence} güven)</p>
+                          <p className="text-white font-semibold">{t.matchResultLabel}: <span className="text-purple-400">{masterStrategist.finalConsensus.matchResult.prediction === '1' ? t.resHome : masterStrategist.finalConsensus.matchResult.prediction === '2' ? t.resAway : t.resDraw}</span> (%{masterStrategist.finalConsensus.matchResult.confidence} {t.confidence})</p>
                           {masterStrategist.finalConsensus.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.matchResult.reasoning}</p>}
                         </div>
                       )}
                       {masterStrategist.finalConsensus.overUnder && (
                         <div className="bg-black/20 rounded p-2">
-                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{masterStrategist.finalConsensus.overUnder.prediction}</span> (%{masterStrategist.finalConsensus.overUnder.confidence} güven)</p>
+                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-purple-400">{masterStrategist.finalConsensus.overUnder.prediction}</span> (%{masterStrategist.finalConsensus.overUnder.confidence} {t.confidence})</p>
                           {masterStrategist.finalConsensus.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.overUnder.reasoning}</p>}
                         </div>
                       )}
                       {masterStrategist.finalConsensus.btts && (
                         <div className="bg-black/20 rounded p-2">
-                          <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{masterStrategist.finalConsensus.btts.prediction}</span> (%{masterStrategist.finalConsensus.btts.confidence} güven)</p>
+                          <p className="text-white font-semibold">BTTS: <span className="text-purple-400">{masterStrategist.finalConsensus.btts.prediction}</span> (%{masterStrategist.finalConsensus.btts.confidence} {t.confidence})</p>
                           {masterStrategist.finalConsensus.btts.reasoning && <p className="text-gray-400 text-xs mt-1">{masterStrategist.finalConsensus.btts.reasoning}</p>}
                         </div>
                       )}
@@ -961,7 +1447,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {masterStrategist.overallConfidence && (
                   <div className="bg-purple-500/20 rounded p-2">
-                    <p className="text-purple-400 font-semibold">Toplam Güven: %{masterStrategist.overallConfidence}</p>
+                    <p className="text-purple-400 font-semibold">{t.totalConfidence}: %{masterStrategist.overallConfidence}</p>
                   </div>
                 )}
               </div>
@@ -973,27 +1459,27 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-lg border border-amber-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Star className="w-5 h-5 text-amber-400" />
-                <h5 className="text-white font-bold text-lg">🧠 GENIUS ANALYST AGENT (Matematiksel & Taktiksel Analiz)</h5>
+                <h5 className="text-white font-bold text-lg">{t.geniusAnalystTitle}</h5>
               </div>
-              
+
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-300 mb-2"><strong>Görevi:</strong> Matematiksel modelleme (xG, Poisson), taktiksel analiz, value betting ve risk senaryoları.</p>
+                  <p className="text-gray-300 mb-2"><strong>{t.task}:</strong> {t.geniusTask}</p>
                 </div>
 
                 {geniusAnalyst.predictions && (
                   <div className="border-t border-amber-500/30 pt-3 mt-3">
-                    <p className="text-amber-400 font-semibold mb-2">TAHMİNLER:</p>
+                    <p className="text-amber-400 font-semibold mb-2">{t.geniusPredictions}:</p>
                     <div className="space-y-2">
                       {geniusAnalyst.predictions.matchResult && (
                         <div className="bg-black/20 rounded p-2">
-                          <p className="text-white font-semibold">Maç Sonucu: <span className="text-amber-400">{geniusAnalyst.predictions.matchResult.prediction === '1' ? 'Ev Sahibi' : geniusAnalyst.predictions.matchResult.prediction === '2' ? 'Deplasman' : 'Beraberlik'}</span> (%{geniusAnalyst.predictions.matchResult.confidence} güven)</p>
+                          <p className="text-white font-semibold">{t.matchResultLabel}: <span className="text-amber-400">{geniusAnalyst.predictions.matchResult.prediction === '1' ? t.resHome : geniusAnalyst.predictions.matchResult.prediction === '2' ? t.resAway : t.resDraw}</span> (%{geniusAnalyst.predictions.matchResult.confidence} {t.confidence})</p>
                           {geniusAnalyst.predictions.matchResult.reasoning && <p className="text-gray-400 text-xs mt-1">{geniusAnalyst.predictions.matchResult.reasoning}</p>}
                         </div>
                       )}
                       {geniusAnalyst.predictions.overUnder && (
                         <div className="bg-black/20 rounded p-2">
-                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-amber-400">{geniusAnalyst.predictions.overUnder.prediction}</span> (%{geniusAnalyst.predictions.overUnder.confidence} güven)</p>
+                          <p className="text-white font-semibold">Over/Under 2.5: <span className="text-amber-400">{geniusAnalyst.predictions.overUnder.prediction}</span> (%{geniusAnalyst.predictions.overUnder.confidence} {t.confidence})</p>
                           {geniusAnalyst.predictions.overUnder.reasoning && <p className="text-gray-400 text-xs mt-1">{geniusAnalyst.predictions.overUnder.reasoning}</p>}
                         </div>
                       )}
@@ -1003,10 +1489,10 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
 
                 {geniusAnalyst.mathematicalModel && (
                   <div className="bg-black/20 rounded p-2 text-xs">
-                    <p className="text-amber-400 font-semibold mb-1">Matematiksel Model:</p>
-                    <p className="text-gray-300">Ev xG: {geniusAnalyst.mathematicalModel.homeExpectedGoals?.toFixed(2) || 'N/A'}</p>
-                    <p className="text-gray-300">Dep xG: {geniusAnalyst.mathematicalModel.awayExpectedGoals?.toFixed(2) || 'N/A'}</p>
-                    <p className="text-gray-300">Toplam xG: {geniusAnalyst.mathematicalModel.totalExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-amber-400 font-semibold mb-1">{t.mathematicalModel}:</p>
+                    <p className="text-gray-300">{t.homeXG}: {geniusAnalyst.mathematicalModel.homeExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-gray-300">{t.awayXG}: {geniusAnalyst.mathematicalModel.awayExpectedGoals?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-gray-300">{t.totalXG}: {geniusAnalyst.mathematicalModel.totalExpectedGoals?.toFixed(2) || 'N/A'}</p>
                   </div>
                 )}
 
@@ -1021,12 +1507,12 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-2xl">🔥</span>
-                            <h6 className="text-red-400 font-bold text-lg">CESUR TAHMİN</h6>
+                            <h6 className="text-red-400 font-bold text-lg">{t.boldBetLabel}</h6>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="bg-red-500/30 text-red-300 text-xs px-2 py-1 rounded-full border border-red-500/50">
-                              {geniusAnalyst.boldBet.riskLevel === 'extreme' ? '💀 EXTREM RİSK' : 
-                               geniusAnalyst.boldBet.riskLevel === 'very-high' ? '⚠️ ÇOK YÜKSEK' : '⚡ YÜKSEK'}
+                              {geniusAnalyst.boldBet.riskLevel === 'extreme' ? `💀 ${t.extremeRisk}` :
+                               geniusAnalyst.boldBet.riskLevel === 'very-high' ? `⚠️ ${t.veryHighLong}` : `⚡ ${t.highLong}`}
                             </span>
                             <span className="bg-green-500/30 text-green-300 text-sm px-2 py-1 rounded-full border border-green-500/50 font-bold">
                               {geniusAnalyst.boldBet.potentialReturn}
@@ -1043,16 +1529,16 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         
                         <div className="space-y-2 text-sm">
                           <div>
-                            <p className="text-gray-400 text-xs">📋 Senaryo:</p>
+                            <p className="text-gray-400 text-xs">📋 {t.scenario}:</p>
                             <p className="text-white">{geniusAnalyst.boldBet.scenario}</p>
                           </div>
                           <div>
-                            <p className="text-gray-400 text-xs">💡 Neden?</p>
+                            <p className="text-gray-400 text-xs">💡 {t.why}</p>
                             <p className="text-gray-300">{geniusAnalyst.boldBet.reasoning}</p>
                           </div>
                           {geniusAnalyst.boldBet.historicalHit && (
                             <div>
-                              <p className="text-gray-400 text-xs">📊 Tarihsel:</p>
+                              <p className="text-gray-400 text-xs">📊 {t.historical}:</p>
                               <p className="text-gray-300">{geniusAnalyst.boldBet.historicalHit}</p>
                             </div>
                           )}
@@ -1061,7 +1547,7 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
                         <div className="mt-3 pt-3 border-t border-red-500/30">
                           <p className="text-red-300 text-xs flex items-center gap-1">
                             <span>⚠️</span>
-                            <span>Güven: %{geniusAnalyst.boldBet.confidence} - Yüksek risk! Sadece kaybetmeyi göze alabileceğin miktarla oyna.</span>
+                            <span>{t.confidence}: %{geniusAnalyst.boldBet.confidence} - {t.boldBetWarningFull}</span>
                           </p>
                         </div>
                       </div>
@@ -1077,21 +1563,21 @@ function AnalysisDetailsSection({ analysis }: { analysis: SmartAnalysis }) {
             <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/30 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Star className="w-5 h-5 text-cyan-400" />
-                <h5 className="text-white font-bold text-lg">🏆 TOP 3 TAHMİN (Agent'ların Birleşik Analizi)</h5>
+                <h5 className="text-white font-bold text-lg">{t.top3PredictionsTitle}</h5>
               </div>
-              
+
               <div className="space-y-2 text-sm">
-                <p className="text-gray-300 mb-3">Sistem, tüm agent'ların tahminlerini toplayıp en yüksek güven ve agent desteğine göre sıralar:</p>
+                <p className="text-gray-300 mb-3">{t.top3Desc}</p>
                 {analysis.top3Predictions.map((pred, idx) => (
                   <div key={idx} className="bg-black/20 rounded p-3">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-cyan-400 font-bold">#{pred.rank} {pred.market}</span>
-                      <span className="text-white font-semibold">%{pred.confidence} güven</span>
+                      <span className="text-white font-semibold">%{pred.confidence} {t.confidence}</span>
                     </div>
                     <p className="text-white font-semibold mb-1">{pred.selection}</p>
                     <p className="text-gray-400 text-xs mb-1">{pred.reasoning}</p>
                     <div className="flex items-center gap-1 mt-2">
-                      <span className="text-gray-500 text-xs">Agent Desteği:</span>
+                      <span className="text-gray-500 text-xs">{t.agentSupport}:</span>
                       {pred.agentSupport.map((agent, i) => (
                         <span key={i} className="text-cyan-400 text-xs bg-cyan-500/10 px-2 py-0.5 rounded">{agent}</span>
                       ))}
@@ -1203,7 +1689,7 @@ export default function DashboardPage() {
         setFixturesError(null); // Başarılı ise hata yok
       } else {
         // API başarısız response döndü
-        const errorMsg = data.error || 'Maç listesi alınamadı';
+        const errorMsg = data.error || t.errMatchListFailed;
         setFixturesError(errorMsg);
         setFixtures([]);
         console.error('API returned error:', data);
@@ -1211,7 +1697,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Fetch fixtures error:', error);
       setFixtures([]);
-      setFixturesError('Bağlantı hatası');
+      setFixturesError(t.errConnection);
     }
     setLoading(false);
   }, [selectedDate, selectedLeague]);
@@ -1388,7 +1874,7 @@ export default function DashboardPage() {
             // Pro abonelik gerekli
             if (errorData.code === 'PRO_REQUIRED' || errorData.code === 'LIMIT_REACHED') {
               setShowPaywall(true);
-              setAnalysisError(errorData.error || 'Maç analizi için Pro abonelik gereklidir');
+              setAnalysisError(errorData.error || t.errProRequired);
               setAnalyzing(false);
               return;
             }
@@ -1396,21 +1882,21 @@ export default function DashboardPage() {
         }
         // 504 Gateway Timeout veya diğer hatalar
         if (res.status === 504) {
-          throw new Error('Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.');
+          throw new Error(t.errAnalysisTimeout);
         }
         if (res.status === 429) {
-          throw new Error('Çok fazla istek. Lütfen birkaç saniye bekleyin.');
+          throw new Error(t.errTooManyRequests);
         }
         if (res.status >= 500) {
-          throw new Error('Sunucu hatası. Lütfen daha sonra tekrar deneyin.');
+          throw new Error(t.errServer);
         }
-        throw new Error(`API hatası: ${res.status}`);
+        throw new Error(`${t.errApi}: ${res.status}`);
       }
       
       // Content-Type kontrolü - JSON değilse hata
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Geçersiz yanıt formatı. Lütfen tekrar deneyin.');
+        throw new Error(t.errInvalidFormat);
       }
       
       const data = await res.json();
@@ -1470,26 +1956,26 @@ export default function DashboardPage() {
           f.id === fixture.id ? { ...f, hasAnalysis: true } : f
         ));
       } else {
-        setAnalysisError(data.error || 'Analiz başarısız');
+        setAnalysisError(data.error || t.errAnalysisFailed);
       }
     } catch (error: any) {
       console.error('Analysis error:', error);
       
       // Timeout hatası
       if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-        setAnalysisError('Analiz zaman aşımına uğradı. Lütfen tekrar deneyin.');
+        setAnalysisError(t.errAnalysisTimeout);
       }
       // Network hatası
       else if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        setAnalysisError('Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+        setAnalysisError(t.errConnectionCheck);
       }
       // JSON parse hatası
       else if (error.message?.includes('JSON') || error.message?.includes('Unexpected token')) {
-        setAnalysisError('Sunucu yanıt hatası. Lütfen tekrar deneyin.');
+        setAnalysisError(t.errServerResponse);
       }
       // Diğer hatalar
       else {
-        setAnalysisError(error.message || 'Bağlantı hatası');
+        setAnalysisError(error.message || t.errConnection);
       }
     }
     
@@ -1534,11 +2020,11 @@ export default function DashboardPage() {
       if (data.success && data.boldBet) {
         setBoldBet(data.boldBet);
       } else {
-        setBoldBetError(data.error || 'Cesur tahmin alınamadı');
+        setBoldBetError(data.error || t.errBoldBetFailed);
       }
     } catch (error) {
       console.error('Bold Bet error:', error);
-      setBoldBetError('Bağlantı hatası');
+      setBoldBetError(t.errConnection);
     }
     
     setLoadingBoldBet(false);
@@ -1571,7 +2057,7 @@ export default function DashboardPage() {
       } else {
         console.error('Favorite error:', data.error);
         console.error('Error details:', data.details);
-        alert(`Favoriye eklenirken hata: ${data.error || 'Bilinmeyen hata'}`);
+        alert(`${t.favoriteAddError}: ${data.error || t.unknownError}`);
       }
     } catch (error) {
       console.error('Favorite toggle error:', error);
@@ -1698,7 +2184,7 @@ export default function DashboardPage() {
               <Link
                 href="/league-stats"
                 className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
-                title="Lig İstatistikleri"
+                title={t.leagueStats}
               >
                 <Trophy className="w-5 h-5 text-[#00f0ff]" />
               </Link>
@@ -1708,7 +2194,7 @@ export default function DashboardPage() {
               <Link
                 href="/performance"
                 className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
-                title="Performans Takibi"
+                title={t.performanceTracking}
               >
                 <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
               </Link>
@@ -1718,7 +2204,7 @@ export default function DashboardPage() {
               <Link
                 href="/favorites"
                 className="p-2.5 rounded-lg glass-futuristic hover:bg-white/20 transition-all"
-                title="Favorilerim"
+                title={t.favorites}
               >
                 <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
               </Link>
@@ -1790,7 +2276,7 @@ export default function DashboardPage() {
                         onClick={() => setShowProfileMenu(false)}
                       >
                           <BarChart3 className="w-5 h-5 text-[#00ff88] group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Performans Takibi</span>
+                          <span className="font-medium">{t.performanceTracking}</span>
                       </Link>
                       </motion.div>
                       <motion.div whileHover={{ x: 5 }}>
@@ -1800,7 +2286,7 @@ export default function DashboardPage() {
                           onClick={() => setShowProfileMenu(false)}
                         >
                           <TrendingUp className="w-5 h-5 text-[#00ff88] group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Odds Analiz Kayıtları</span>
+                          <span className="font-medium">{t.oddsAnalysisRecords}</span>
                         </Link>
                       </motion.div>
                       <motion.div whileHover={{ x: 5 }}>
@@ -1810,7 +2296,7 @@ export default function DashboardPage() {
                           onClick={() => setShowProfileMenu(false)}
                         >
                           <BarChart3 className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Pattern Analizi</span>
+                          <span className="font-medium">{t.patternAnalysis}</span>
                         </Link>
                       </motion.div>
                     </div>
@@ -1854,7 +2340,7 @@ export default function DashboardPage() {
             >
               <div className="p-6 space-y-4">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white">Menü</h2>
+                  <h2 className="text-xl font-bold text-white">{t.menu}</h2>
                   <button
                     onClick={() => setShowMobileMenu(false)}
                     className="p-2 rounded-lg hover:bg-white/10 transition"
@@ -1869,7 +2355,7 @@ export default function DashboardPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <RefreshCw className={`w-5 h-5 text-[#00f0ff] ${loading ? 'animate-spin' : ''}`} />
-                  <span className="text-white font-medium">Yenile</span>
+                  <span className="text-white font-medium">{t.refresh}</span>
                 </motion.button>
 
                 <Link
@@ -1878,7 +2364,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
                 >
                   <Trophy className="w-5 h-5 text-[#00f0ff]" />
-                  <span className="text-white font-medium">Lig İstatistikleri</span>
+                  <span className="text-white font-medium">{t.leagueStats}</span>
                 </Link>
 
                 <Link
@@ -1887,7 +2373,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
                 >
                   <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
-                  <span className="text-white font-medium">Performans Takibi</span>
+                  <span className="text-white font-medium">{t.performanceTracking}</span>
                 </Link>
 
                 <Link
@@ -1896,7 +2382,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 px-4 py-3 rounded-lg glass-futuristic hover:bg-white/10 transition-all"
                 >
                   <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
-                  <span className="text-white font-medium">Favorilerim</span>
+                  <span className="text-white font-medium">{t.favorites}</span>
                 </Link>
 
                 <div className="pt-4 border-t border-[#00f0ff]/20">
@@ -1946,21 +2432,31 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <span className="text-cyan-400">🎯</span>
-                {lang === 'tr' ? 'Motor Tahminleri' : lang === 'de' ? 'Engine-Vorhersagen' : 'Engine Predictions'}
+                {t.engineTitle}
               </h2>
               <p className="text-xs text-white/40 mt-0.5">
-                {lang === 'tr'
-                  ? 'Gerçek maç verisiyle eğitilmiş Dixon-Coles modeli — kalibre olasılıklar'
-                  : 'Dixon-Coles model trained on real match data — calibrated probabilities'}
+                {t.engineSubtitle}
               </p>
             </div>
             <Link href="/tahminler"
               className="text-xs px-3 py-1.5 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 transition-colors">
-              {lang === 'tr' ? 'Tümünü gör →' : 'View all →'}
+              {t.viewAll}
             </Link>
           </div>
           <EnginePredictions lang={lang} showStats={true} showControls={false} limit={6} />
         </motion.section>
+
+        {/* Bölüm ayırıcı: Detaylı manuel maç analizi alanı */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-shrink-0">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-fuchsia-400">🔍</span>
+              {t.detailedAnalysis}
+            </h2>
+            <p className="text-xs text-white/40 mt-0.5">{t.detailedAnalysisSub}</p>
+          </div>
+          <div className="flex-1 h-px bg-gradient-to-r from-fuchsia-400/30 to-transparent" />
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left: Fixtures List - Futuristic Cards */}
@@ -2190,7 +2686,7 @@ export default function DashboardPage() {
                     Unified Consensus Analysis
                   </h3>
                   <p className="text-gray-400 text-sm">
-                    Agent'lar ve AI sistemlerini birleştiren en gelişmiş analiz
+                    {t.unifiedAnalysisDesc}
                   </p>
                     </div>
                 
@@ -2225,7 +2721,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-white font-bold text-xl block mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                        Analiz Başlat
+                        {t.startAnalysis}
                       </span>
                       <p className="text-xs text-gray-400 text-center">
                         Stats • Odds • Deep Analysis • Master Strategist • Genius Analyst • AI Systems
@@ -2233,7 +2729,7 @@ export default function DashboardPage() {
                 </div>
                     <div className="flex items-center gap-2 mt-2">
                       <Zap className="w-4 h-4 text-[#00f0ff]" />
-                      <span className="text-[#00f0ff] text-sm font-mono">~15-20 saniye</span>
+                      <span className="text-[#00f0ff] text-sm font-mono">{t.secondsRange}</span>
               </div>
                   </div>
                 </motion.button>
@@ -2378,7 +2874,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-white font-bold text-sm block">Unified Consensus Analysis</span>
-                      <span className="text-xs text-gray-400">Agent + AI Systems Combined</span>
+                      <span className="text-xs text-gray-400">{t.agentAiCombined}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2388,7 +2884,7 @@ export default function DashboardPage() {
                   <button
                       onClick={() => selectedFixture && analyzeMatch(selectedFixture, true)}
                       className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-                      title="Yenile"
+                      title={t.refresh}
                     >
                       <RefreshCw className="w-4 h-4 text-gray-400 hover:text-[#00f0ff]" />
                   </button>
@@ -2587,7 +3083,7 @@ export default function DashboardPage() {
                     {analysis.corners.dataAvailable ? (
                       <>
                         <div className="text-2xl font-bold text-orange-400">
-                          {analysis.corners.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.corners.line}
+                          {analysis.corners.prediction === 'over' ? t.over : t.under} {analysis.corners.line}
                         </div>
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
@@ -2602,8 +3098,8 @@ export default function DashboardPage() {
                       </>
                     ) : (
                       <div className="text-center py-2">
-                        <div className="text-gray-500 text-sm">⚠️ Korner verisi mevcut değil</div>
-                        <p className="text-xs text-gray-600 mt-1">Bu maç için korner istatistikleri bulunamadı</p>
+                        <div className="text-gray-500 text-sm">⚠️ {t.cornerNoData}</div>
+                        <p className="text-xs text-gray-600 mt-1">{t.cornerNoDataDesc}</p>
                       </div>
                     )}
                   </div>
@@ -2622,11 +3118,11 @@ export default function DashboardPage() {
                           <h4 className="text-white font-medium">{t.halfTimeGoals}</h4>
                         </div>
                         <div className="text-2xl font-bold text-blue-400">
-                          {analysis.halfTimeGoals.prediction === 'over' ? 'ÜST' : 'ALT'} {analysis.halfTimeGoals.line}
+                          {analysis.halfTimeGoals.prediction === 'over' ? t.over : t.under} {analysis.halfTimeGoals.line}
                         </div>
                         {analysis.halfTimeGoals.expectedGoals !== undefined && (
                           <div className="text-sm text-gray-400 mt-1">
-                            Beklenen: {analysis.halfTimeGoals.expectedGoals.toFixed(1)} gol
+                            {t.expected}: {analysis.halfTimeGoals.expectedGoals.toFixed(1)} {t.goal}
                           </div>
                         )}
                         <div className="mt-2 flex items-center gap-2">
@@ -2653,16 +3149,16 @@ export default function DashboardPage() {
                           {analysis.halfTimeFullTime.prediction}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          {analysis.halfTimeFullTime.prediction === '1/1' ? 'İY Ev - Maç Ev' :
-                           analysis.halfTimeFullTime.prediction === '1/X' ? 'İY Ev - Maç Beraberlik' :
-                           analysis.halfTimeFullTime.prediction === '1/2' ? 'İY Ev - Maç Deplasman' :
-                           analysis.halfTimeFullTime.prediction === 'X/1' ? 'İY Beraberlik - Maç Ev' :
-                           analysis.halfTimeFullTime.prediction === 'X/X' ? 'İY Beraberlik - Maç Beraberlik' :
-                           analysis.halfTimeFullTime.prediction === 'X/2' ? 'İY Beraberlik - Maç Deplasman' :
-                           analysis.halfTimeFullTime.prediction === '2/1' ? 'İY Deplasman - Maç Ev' :
-                           analysis.halfTimeFullTime.prediction === '2/X' ? 'İY Deplasman - Maç Beraberlik' :
-                           analysis.halfTimeFullTime.prediction === '2/2' ? 'İY Deplasman - Maç Deplasman' :
-                           'Kombinasyon'}
+                          {analysis.halfTimeFullTime.prediction === '1/1' ? t.htft_1_1 :
+                           analysis.halfTimeFullTime.prediction === '1/X' ? t.htft_1_X :
+                           analysis.halfTimeFullTime.prediction === '1/2' ? t.htft_1_2 :
+                           analysis.halfTimeFullTime.prediction === 'X/1' ? t.htft_X_1 :
+                           analysis.halfTimeFullTime.prediction === 'X/X' ? t.htft_X_X :
+                           analysis.halfTimeFullTime.prediction === 'X/2' ? t.htft_X_2 :
+                           analysis.halfTimeFullTime.prediction === '2/1' ? t.htft_2_1 :
+                           analysis.halfTimeFullTime.prediction === '2/X' ? t.htft_2_X :
+                           analysis.halfTimeFullTime.prediction === '2/2' ? t.htft_2_2 :
+                           t.combination}
                         </div>
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
@@ -2778,7 +3274,7 @@ export default function DashboardPage() {
                           whileTap={{ scale: 0.98 }}
                         >
                           <span className="text-2xl">🔥</span>
-                          <span className="text-lg">{t.boldBet} AL</span>
+                          <span className="text-lg">{t.getBoldBet}</span>
                           <span className="text-xs opacity-75">({t.boldBetDesc})</span>
                         </motion.button>
                       )}
@@ -2792,7 +3288,7 @@ export default function DashboardPage() {
                           >
                             🔄
                           </motion.span>
-                          <span>Genius Analyst çalışıyor...</span>
+                          <span>{t.geniusRunning}</span>
                         </div>
                       )}
                       
@@ -2800,7 +3296,7 @@ export default function DashboardPage() {
                         <div className="w-full py-3 px-4 bg-red-500/20 border border-red-500/40 rounded-xl text-red-400 text-sm flex items-center gap-2">
                           <span>❌</span>
                           <span>{boldBetError}</span>
-                          <button onClick={fetchBoldBet} className="ml-auto text-xs underline">Tekrar Dene</button>
+                          <button onClick={fetchBoldBet} className="ml-auto text-xs underline">{t.tryAgain}</button>
                         </div>
                       )}
                       
@@ -2820,8 +3316,8 @@ export default function DashboardPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="bg-red-500/30 text-red-300 text-xs px-2 py-1 rounded-full border border-red-500/50">
-                                  {boldBet.riskLevel === 'extreme' ? '💀 EXTREM' : 
-                                   boldBet.riskLevel === 'very-high' ? '⚠️ ÇOK YÜKSEK' : '⚡ YÜKSEK'}
+                                  {boldBet.riskLevel === 'extreme' ? `💀 ${t.extreme}` :
+                                   boldBet.riskLevel === 'very-high' ? `⚠️ ${t.veryHigh}` : `⚡ ${t.high}`}
                                 </span>
                                 <span className="bg-green-500/30 text-green-300 text-sm px-3 py-1 rounded-full border border-green-500/50 font-bold">
                                   {boldBet.potentialReturn}
@@ -2842,12 +3338,12 @@ export default function DashboardPage() {
                                 <p className="text-white">{boldBet.scenario}</p>
                               </div>
                               <div>
-                                <p className="text-gray-400 text-xs mb-1">💡 Neden?</p>
+                                <p className="text-gray-400 text-xs mb-1">💡 {t.why}</p>
                                 <p className="text-gray-300">{boldBet.reasoning}</p>
                               </div>
                               {boldBet.historicalHit && (
                                 <div>
-                                  <p className="text-gray-400 text-xs mb-1">📊 Tarihsel:</p>
+                                  <p className="text-gray-400 text-xs mb-1">📊 {t.historical}:</p>
                                   <p className="text-gray-300">{boldBet.historicalHit}</p>
                                 </div>
                               )}
@@ -2856,13 +3352,13 @@ export default function DashboardPage() {
                             <div className="mt-4 pt-3 border-t border-red-500/30 flex items-center justify-between">
                               <p className="text-red-300 text-xs flex items-center gap-1">
                                 <span>⚠️</span>
-                                <span>Güven: %{Math.round(boldBet.confidence)} - Sadece kaybetmeyi göze alabileceğin miktarla oyna!</span>
+                                <span>{t.confidence}: %{Math.round(boldBet.confidence)} - {t.boldBetWarning}</span>
                               </p>
-                              <button 
-                                onClick={() => setBoldBet(null)} 
+                              <button
+                                onClick={() => setBoldBet(null)}
                                 className="text-xs text-gray-400 hover:text-white underline"
                               >
-                                Kapat
+                                {t.close}
                               </button>
                             </div>
                           </div>
@@ -2891,23 +3387,23 @@ export default function DashboardPage() {
                             >
                               ⏳
                             </motion.span>
-                            <span>Kaydediliyor...</span>
+                            <span>{t.saving}</span>
                           </>
                         ) : isFavorite ? (
                           <>
                             <Star className="w-5 h-5" fill="currentColor" />
-                            <span>Favorilerden Kaldır</span>
+                            <span>{t.removeFromFavorites}</span>
                           </>
                         ) : (
                           <>
                             <Star className="w-5 h-5" />
-                            <span>⭐ Favoriye Ekle</span>
+                            <span>⭐ {t.addToFavorites}</span>
                           </>
                         )}
                       </motion.button>
                       {isFavorite && (
                         <p className="mt-2 text-xs text-center text-gray-400">
-                          Bu maç favorilerinize kaydedildi. Favoriler sayfasından görüntüleyebilirsiniz.
+                          {t.favoriteSaved}
                         </p>
                       )}
                     </div>
@@ -2943,7 +3439,7 @@ export default function DashboardPage() {
                                     {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
                                   </span>
                                 </div>
-                                <p className="text-white font-bold">{bttsPred === 'No' ? 'Hayır' : 'Evet'}</p>
+                                <p className="text-white font-bold">{bttsPred === 'No' ? t.noText : t.yesText}</p>
                                 <div className="flex items-center justify-between mt-2">
                                   <span className={`text-xs font-bold ${
                                     status === 'play' ? 'text-green-400' :
@@ -3013,8 +3509,8 @@ export default function DashboardPage() {
                             const hasValue = homeValue > 10;
                             const status = hasValue && allAgree ? 'play' : hasValue || mrConf > 60 ? 'caution' : 'skip';
                             
-                            const displayPred = mrPred === '1' || mrPred?.toLowerCase() === 'home' ? 'MS 1' : 
-                                               mrPred === '2' || mrPred?.toLowerCase() === 'away' ? 'MS 2' : 'Beraberlik';
+                            const displayPred = mrPred === '1' || mrPred?.toLowerCase() === 'home' ? 'MS 1' :
+                                               mrPred === '2' || mrPred?.toLowerCase() === 'away' ? 'MS 2' : t.resDraw;
                             
                             return (
                               <div className={`p-3 rounded-xl border transition-all ${
@@ -3023,7 +3519,7 @@ export default function DashboardPage() {
                                 'bg-red-500/10 border-red-500/40'
                               }`}>
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs text-gray-400">Maç Sonucu</span>
+                                  <span className="text-xs text-gray-400">{t.matchResultLabel}</span>
                                   <span className={`text-lg ${
                                     status === 'play' ? 'text-green-400' :
                                     status === 'caution' ? 'text-yellow-400' : 'text-red-400'
@@ -3072,7 +3568,7 @@ export default function DashboardPage() {
                                     {status === 'play' ? '✅' : status === 'caution' ? '⚠️' : '❌'}
                                   </span>
                                 </div>
-                                <p className="text-white font-bold">{isUnder ? 'Under' : 'Over tercih'}</p>
+                                <p className="text-white font-bold">{isUnder ? 'Under' : t.overPreference}</p>
                                 <div className="flex items-center justify-between mt-2">
                                   <span className={`text-xs font-bold ${
                                     status === 'play' ? 'text-green-400' :
@@ -3093,9 +3589,9 @@ export default function DashboardPage() {
                         {/* Açıklama */}
                         <div className="mt-4 p-3 bg-gray-800/30 rounded-lg">
                           <p className="text-xs text-gray-400 text-center">
-                            <span className="text-green-400">✅ {t.play}</span> = Value + Konsensüs |
-                            <span className="text-yellow-400 ml-2">⚠️ {t.caution}</span> = Karışık sinyal |
-                            <span className="text-red-400 ml-2">❌ {t.skip}</span> = Value yok
+                            <span className="text-green-400">✅ {t.play}</span> = {t.valueConsensus} |
+                            <span className="text-yellow-400 ml-2">⚠️ {t.caution}</span> = {t.mixedSignal} |
+                            <span className="text-red-400 ml-2">❌ {t.skip}</span> = {t.noValue}
                           </p>
                         </div>
                       </div>
@@ -3112,7 +3608,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-500 flex-wrap">
                   <span>{t.models}: {analysis.modelsUsed?.join(', ') || 'Claude, DeepSeek'}</span>
                   <span>•</span>
-                  <span>{t.analysis}: {analysis.analyzedAt ? new Date(analysis.analyzedAt).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : 'en-US') : 'Şimdi'}</span>
+                  <span>{t.analysis}: {analysis.analyzedAt ? new Date(analysis.analyzedAt).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US') : t.now}</span>
                 </div>
               </div>
             ) : (
