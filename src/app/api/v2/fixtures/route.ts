@@ -6,94 +6,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
+import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
-const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
-
 // ============================================================================
-// SPORTMONKS FETCH
+// FETCH (Free API Live Football Data)
 // ============================================================================
 
-async function fetchFixturesFromAPI(date: string): Promise<any[]> {
+async function fetchFixturesFromAPI(date: string): Promise<FFMatch[]> {
   try {
-    // Tüm sayfaları çek
-    let allFixtures: any[] = [];
-    let page = 1;
-    let hasMore = true;
-    
-    while (hasMore && page <= 5) { // Max 5 sayfa (500 maç)
-      const url = new URL(`${SPORTMONKS_API}/fixtures/date/${date}`);
-      url.searchParams.append('api_token', SPORTMONKS_KEY);
-      url.searchParams.append('include', 'participants;league;scores');
-      url.searchParams.append('per_page', '100');
-      url.searchParams.append('page', String(page));
-      
-      const res = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
-        next: { revalidate: 300 }
-      });
-      
-      if (!res.ok) {
-        console.error(`SportMonks API error: ${res.status}`);
-        break;
-      }
-      
-      const data = await res.json();
-      const fixtures = data.data || [];
-      
-      if (fixtures.length === 0) {
-        hasMore = false;
-      } else {
-        allFixtures = [...allFixtures, ...fixtures];
-        page++;
-        
-        // Pagination bilgisi varsa kontrol et
-        if (data.pagination && page > data.pagination.last_page) {
-          hasMore = false;
-        }
-      }
-    }
-    
-    console.log(`📊 Fetched ${allFixtures.length} fixtures for ${date}`);
-    return allFixtures;
+    const matches = await getMatchesByDate(date);
+    console.log(`📊 Fetched ${matches.length} fixtures for ${date}`);
+    return matches;
   } catch (error) {
-    console.error('SportMonks fetch error:', error);
+    console.error('Free-football fetch error:', error);
     return [];
   }
 }
 
 // ============================================================================
-// TRANSFORM FIXTURES
+// TRANSFORM FIXTURES (çıktı şekli korunur)
 // ============================================================================
 
-function transformFixtures(fixtures: any[]): any[] {
+function ffStatusShort(m: FFMatch): string {
+  if (m.cancelled) return 'CANC';
+  if (m.finished) return 'FT';
+  if (m.started) return 'LIVE';
+  return 'NS';
+}
+
+function transformFixtures(fixtures: FFMatch[]): any[] {
   return fixtures
-    .filter(f => f.participants && f.participants.length >= 2)
-    .map(f => {
-      const home = f.participants.find((p: any) => p.meta?.location === 'home');
-      const away = f.participants.find((p: any) => p.meta?.location === 'away');
-      
-      return {
-        id: f.id,
-        homeTeam: home?.name || 'Unknown',
-        awayTeam: away?.name || 'Unknown',
-        homeTeamId: home?.id,
-        awayTeamId: away?.id,
-        homeTeamLogo: home?.image_path,
-        awayTeamLogo: away?.image_path,
-        league: f.league?.name || 'Unknown League',
-        leagueId: f.league?.id,
-        leagueLogo: f.league?.image_path,
-        leagueCountry: f.league?.country?.name || '',
-        date: f.starting_at,
-        status: f.state?.short || 'NS',
-        homeScore: f.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals,
-        awayScore: f.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals,
-      };
-    })
+    .map(f => ({
+      id: f.id,
+      homeTeam: f.homeName || 'Unknown',
+      awayTeam: f.awayName || 'Unknown',
+      homeTeamId: f.homeId,
+      awayTeamId: f.awayId,
+      homeTeamLogo: f.homeLogo,
+      awayTeamLogo: f.awayLogo,
+      league: f.leagueName || 'Unknown League',
+      leagueId: f.leagueId,
+      leagueLogo: f.leagueLogo,
+      leagueCountry: f.leagueCountry || '',
+      date: f.utcTime,
+      status: ffStatusShort(f),
+      homeScore: f.homeScore ?? undefined,
+      awayScore: f.awayScore ?? undefined,
+    }))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
