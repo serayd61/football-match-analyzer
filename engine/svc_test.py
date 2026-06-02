@@ -40,6 +40,7 @@ def main():
     with urllib.request.urlopen(req, timeout=120) as r:
         resp = json.load(r)
     print(f"SERVIS -> predicted: {resp.get('predicted')}  skipped: {resp.get('skipped')}  version: {resp.get('version')}")
+    print(f"skip_reasons: {resp.get('skip_reasons')}")
     for p in resp.get("predictions", [])[:6]:
         print(f"  {p['homeName']} vs {p['awayName']}: {p['pick']} (%{p['confidence']*100:.0f}) "
               f"1/X/2 = %{p['p_home']*100:.0f}/%{p['p_draw']*100:.0f}/%{p['p_away']*100:.0f}")
