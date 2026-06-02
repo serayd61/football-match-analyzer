@@ -70,8 +70,9 @@ export async function POST(request: NextRequest) {
       ? body.predictions
       : [];
 
+  // Boş gün/kapsama yok → hata değil, sessizce başarı (workflow patlamasın)
   if (!list.length) {
-    return NextResponse.json({ error: 'No predictions provided' }, { status: 400 });
+    return NextResponse.json({ success: true, received: 0, upserted: 0, note: 'no predictions' });
   }
 
   const rows = list
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
     }));
 
   if (!rows.length) {
-    return NextResponse.json({ error: 'No valid rows (fixtureId required)' }, { status: 400 });
+    return NextResponse.json({ success: true, received: list.length, upserted: 0, note: 'no valid rows' });
   }
 
   const { error, count } = await sb()
