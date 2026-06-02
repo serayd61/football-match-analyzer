@@ -18,7 +18,7 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 import model as M
-from store import ResultStore, backfill, update_recent, _parse_dt
+from store import ResultStore, backfill, update_recent, _parse_dt, league_name
 
 MODEL_VERSION = os.environ.get("MODEL_VERSION", "dc-1.0")
 SERVICE_TOKEN = os.environ.get("PREDICT_SERVICE_TOKEN", "")  # opsiyonel: /predict & admin koruması
@@ -100,7 +100,10 @@ def status():
         "version": MODEL_VERSION,
         "store_total_matches": store.total(),
         "league_count": len(leagues),
-        "top_leagues": [{"leagueId": l, "matches": store.league_count(l)} for l in leagues[:15]],
+        "top_leagues": [
+            {"leagueId": l, "name": league_name(l), "matches": store.league_count(l)}
+            for l in leagues[:15]
+        ],
         "min_league_matches": MIN_LEAGUE_MATCHES,
     }
 
@@ -124,7 +127,7 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
         away_id = _f(fx, "awayTeamId", "awayId")
         home_name = _f(fx, "homeTeam", "homeName") or "Ev"
         away_name = _f(fx, "awayTeam", "awayName") or "Deplasman"
-        league_name = _f(fx, "league", "leagueName")
+        lname = _f(fx, "league", "leagueName") or league_name(lid)
         kickoff = _f(fx, "date", "utcTime", "kickoff")
 
         if fid is None or lid is None or home_id is None or away_id is None:
@@ -151,7 +154,7 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
         out.append({
             "fixtureId": int(fid),
             "leagueId": int(lid),
-            "leagueName": league_name,
+            "leagueName": lname,
             "homeId": int(home_id),
             "homeName": home_name,
             "awayId": int(away_id),

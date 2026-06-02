@@ -19,6 +19,10 @@ HOST = "free-api-live-football-data.p.rapidapi.com"
 BASE = f"https://{HOST}"
 KEY = os.environ.get("FOOTBALL_API_KEY", "")
 STORE_PATH = os.environ.get("STORE_PATH", os.path.expanduser("~/.footy/results.jsonl"))
+LEAGUE_MAP_PATH = os.environ.get(
+    "LEAGUE_MAP_PATH",
+    os.path.join(os.path.dirname(STORE_PATH) or ".", "leagues.json"),
+)
 REQ_SLEEP = float(os.environ.get("REQ_SLEEP", "1.5"))      # istekler arası bekleme (sn)
 REQ_BACKOFF = float(os.environ.get("REQ_BACKOFF", "10"))   # 429'da temel geri çekilme (sn)
 
@@ -97,6 +101,74 @@ def _norm(m: dict):
         "fthg": hs,
         "ftag": as_,
     }
+
+
+# ---- Lig isim haritası (id -> {name, ccode}) ----
+_league_cache = None
+
+
+def fetch_league_map() -> dict:
+    """/football-get-all-leagues + popular -> {id: {name, ccode}} indirip kaydeder."""
+    _check_key()
+    out = {}
+    for path, key in (("/football-popular-leagues", "popular"),
+                      ("/football-get-all-leagues", "leagues")):
+        try:
+            j = _fetch(path)
+        except Exception as e:
+            print(f"  [leagues] {path} atlandı: {e}")
+            continue
+        resp = (j or {}).get("response") or {}
+        items = resp.get(key) or []
+        # bazı yanıtlar ülke->ligler şeklinde gruplanmış olabilir
+        for it in items:
+            if isinstance(it, dict) and "leagues" in it and isinstance(it["leagues"], list):
+                for l in it["leagues"]:
+                    _add_league(out, l, it.get("ccode") or it.get("name"))
+            else:
+                _add_league(out, it, None)
+        time.sleep(REQ_SLEEP)
+    if out:
+        os.makedirs(os.path.dirname(LEAGUE_MAP_PATH) or ".", exist_ok=True)
+        with open(LEAGUE_MAP_PATH, "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False)
+    print(f"[leagues] {len(out)} lig kaydedildi -> {LEAGUE_MAP_PATH}")
+    return out
+
+
+def _add_league(out: dict, l: dict, fallback_cc):
+    if not isinstance(l, dict):
+        return
+    lid = l.get("id")
+    if lid is None or lid in out:
+        return
+    name = l.get("localizedName") or l.get("name")
+    if not name:
+        return
+    out[lid] = {"name": name, "ccode": l.get("ccode") or fallback_cc or ""}
+
+
+def load_league_map() -> dict:
+    global _league_cache
+    if _league_cache is not None:
+        return _league_cache
+    m = {}
+    if os.path.exists(LEAGUE_MAP_PATH):
+        try:
+            with open(LEAGUE_MAP_PATH, encoding="utf-8") as f:
+                raw = json.load(f)
+            m = {int(k): v for k, v in raw.items()}
+        except Exception:
+            m = {}
+    _league_cache = m
+    return m
+
+
+def league_name(lid) -> str:
+    if lid is None:
+        return ""
+    info = load_league_map().get(int(lid))
+    return info["name"] if info else f"Lig {lid}"
 
 
 def _existing_ids() -> set:
@@ -260,6 +332,9 @@ if __name__ == "__main__":
         if cmd == "test":
             test_one()
             sys.exit(0)
+        elif cmd == "leagues":
+            fetch_league_map()
+            sys.exit(0)
         elif cmd == "backfill":
             n = backfill(arg or 540)
             print(f"[store] backfill bitti: +{n} maç")
@@ -275,8 +350,11 @@ if __name__ == "__main__":
         s = ResultStore()
         print(f"[store] dosya: {STORE_PATH}")
         print(f"[store] toplam maç: {s.total()}")
-        top = s.leagues()[:15]
+        lm = load_league_map()
+        if not lm:
+            print("   (lig isimleri yok — önce: store.py leagues)")
+        top = s.leagues()[:20]
         for lid in top:
-            print(f"   lig {lid}: {s.league_count(lid)} maç")
+            print(f"   {league_name(lid):28s} (id {lid}): {s.league_count(lid)} maç")
     else:
-        print("kullanım: store.py [test | backfill N | update N | stats]")
+        print("kullanım: store.py [test | leagues | backfill N | update N | stats]")
