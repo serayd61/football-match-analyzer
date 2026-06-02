@@ -327,15 +327,30 @@ class ResultStore:
         self._load()
         return sorted(self._by_league.keys(), key=lambda k: -len(self._by_league[k]))
 
-    # ---- Bağlı bileşenler (union-find): gerçek rekabet havuzları ----
+    # ---- Havuzlar: aynı ligin parçalanmış leagueId'lerini birleştir ----
+    # İki leagueId yalnızca YETERİNCE ORTAK TAKIM paylaşıyorsa (aslında aynı lig)
+    # birleşir. Farklı ligler (ortak takımı yok) ayrı kalır -> dev blob olmaz.
     def _build_components(self):
         self._load()
         if self._components is not None and self._comp_mtime == self._mtime:
             return
-        parent = {}
+        from collections import defaultdict
+
+        overlap_min = int(os.environ.get("POOL_OVERLAP", "5"))
+
+        league_teams = {}
+        for lid, rows in self._by_league.items():
+            ts = set()
+            for r in rows:
+                if r.get("homeId") is not None:
+                    ts.add(str(r["homeId"]))
+                if r.get("awayId") is not None:
+                    ts.add(str(r["awayId"]))
+            league_teams[lid] = ts
+
+        parent = {lid: lid for lid in league_teams}
 
         def find(x):
-            parent.setdefault(x, x)
             root = x
             while parent[root] != root:
                 root = parent[root]
@@ -348,27 +363,37 @@ class ResultStore:
             if ra != rb:
                 parent[ra] = rb
 
-        for rows in self._by_league.values():
-            for r in rows:
-                hid, aid = r.get("homeId"), r.get("awayId")
-                if hid is None or aid is None:
-                    continue
-                union(str(hid), str(aid))
+        # ortak takım sayısını verimli say (team -> [ligler])
+        team_leagues = defaultdict(list)
+        for lid, ts in league_teams.items():
+            for t in ts:
+                team_leagues[t].append(lid)
+        pair = defaultdict(int)
+        for t, lids in team_leagues.items():
+            u = sorted(set(lids))
+            for i in range(len(u)):
+                for j in range(i + 1, len(u)):
+                    pair[(u[i], u[j])] += 1
+        for (a, b), c in pair.items():
+            if c >= overlap_min:
+                union(a, b)
 
-        comp_of = {t: find(t) for t in list(parent.keys())}
-        comp_matches = {}
-        for rows in self._by_league.values():
-            for r in rows:
-                hid = r.get("homeId")
-                if hid is None:
-                    continue
-                c = comp_of.get(str(hid))
-                if c is None:
-                    continue
-                comp_matches.setdefault(c, []).append(r)
+        pool_of_league = {lid: find(lid) for lid in league_teams}
 
-        self._components = comp_of
-        self._comp_matches = comp_matches
+        # takımı en çok maçı olduğu havuza ata; havuz -> maçlar
+        team_pool_cnt = defaultdict(lambda: defaultdict(int))
+        comp_matches = defaultdict(list)
+        for lid, rows in self._by_league.items():
+            p = pool_of_league[lid]
+            comp_matches[p].extend(rows)
+            for r in rows:
+                for tid in (r.get("homeId"), r.get("awayId")):
+                    if tid is not None:
+                        team_pool_cnt[str(tid)][p] += 1
+        team_pool = {t: max(pc, key=pc.get) for t, pc in team_pool_cnt.items()}
+
+        self._components = team_pool
+        self._comp_matches = dict(comp_matches)
         self._comp_mtime = self._mtime
 
     def component_id(self, team_id):
