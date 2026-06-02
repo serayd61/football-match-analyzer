@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 export default function ShareButtons({ url, title }: { url: string; title: string }) {
   const [copied, setCopied] = useState(false);
@@ -17,6 +18,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
+      track.shareClick('copy');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -33,6 +35,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
           href={l.href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track.shareClick(l.name)}
           className={`${l.color} text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors`}
         >
           {l.name}

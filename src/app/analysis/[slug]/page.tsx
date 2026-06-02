@@ -13,6 +13,8 @@ import {
   type PublicAnalysis,
 } from '@/lib/seo';
 import ShareButtons from './ShareButtons';
+import MountEvent from '@/components/analytics/MountEvent';
+import TrackedLink from '@/components/analytics/TrackedLink';
 
 // On-demand ISR: pages render on first request, cached & revalidated hourly.
 export const revalidate = 3600;
@@ -108,6 +110,7 @@ export default async function AnalysisPage({ params }: Params) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <MountEvent name="view_analysis" params={{ fixture_id: String(a.fixture_id) }} />
       <div className="mx-auto max-w-3xl">
         <nav className="mb-6 text-sm text-gray-400">
           <Link href="/analysis" className="hover:text-white">
@@ -202,12 +205,14 @@ export default async function AnalysisPage({ params }: Params) {
           <p className="mx-auto mt-2 max-w-md text-sm text-gray-300">
             4 elite AI modeli + uzman agent&apos;lar her maçı senin için analiz etsin. İlk 7 gün ücretsiz.
           </p>
-          <Link
+          <TrackedLink
             href="/login"
+            event="cta_click"
+            params={{ location: 'analysis_page', fixture_id: String(a.fixture_id) }}
             className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-400"
           >
             Ücretsiz Başla →
-          </Link>
+          </TrackedLink>
         </section>
 
         <p className="mt-8 text-center text-xs text-gray-600">

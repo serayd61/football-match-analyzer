@@ -15,6 +15,7 @@ import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { Paywall } from '@/components/Paywall';
 import AIChatbot from '@/components/AIChatbot';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
+import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, Search, RefreshCw, Zap, 
@@ -1115,7 +1116,17 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const { lang } = useLanguage();
   const t = (translations[lang as keyof typeof translations] || translations.en) as any;
-  
+
+  // Fire GA4 purchase once after a successful Stripe checkout redirect.
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      if (typeof window !== 'undefined' && !sessionStorage.getItem('purchase_tracked')) {
+        sessionStorage.setItem('purchase_tracked', '1');
+        track.purchase();
+      }
+    }
+  }, [searchParams]);
+
   // States
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -1341,6 +1352,7 @@ export default function DashboardPage() {
     }
     
     setSelectedFixture(fixture);
+    track.runAnalysis(fixture.league);
     setAnalyzing(true);
     setAnalysis(null);
     setAnalysisError(null);
