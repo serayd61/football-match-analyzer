@@ -50,6 +50,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: '/', label: l.home, icon: '🏠' },
+    { href: '/tahminler', label: l.predictions, icon: '🎯' },
     { href: '/dashboard', label: l.dashboard, icon: '📊' },
     { href: '/contact', label: l.contact, icon: '📬' },
   ];
