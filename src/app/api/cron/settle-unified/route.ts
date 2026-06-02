@@ -1,6 +1,6 @@
 // ============================================================================
 // CRON JOB - SETTLE UNIFIED ANALYSIS
-// unified_analysis tablosundaki bekleyen tahminleri Sportmonks sonuçlarıyla settle eder
+// unified_analysis tablosundaki bekleyen tahminleri API-Football sonuçlarıyla settle eder
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,6 +8,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
+
+const FOOTBALL_API_HOST = 'api-football-v1.p.rapidapi.com';
 
 // Lazy-loaded Supabase client
 let supabaseInstance: SupabaseClient | null = null;
@@ -25,27 +27,32 @@ function getSupabase(): SupabaseClient {
   return supabaseInstance;
 }
 
-// Sportmonks API'den maç sonucu çek
-async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
+// API-Football'dan maç sonucu çek (fixture ID'leri API-Football ID'sidir)
+async function fetchMatchResult(fixtureId: number): Promise<{
   homeScore: number;
   awayScore: number;
   status: string;
 } | null> {
-  const apiKey = process.env.SPORTMONKS_API_KEY;
+  const apiKey = process.env.FOOTBALL_API_KEY;
 
   if (!apiKey) {
-    console.log('❌ SPORTMONKS_API_KEY not configured');
+    console.log('❌ FOOTBALL_API_KEY not configured');
     return null;
   }
 
   try {
-    const url = `https://api.sportmonks.com/v3/football/fixtures/${fixtureId}?api_token=${apiKey}&include=state;scores`;
-
     console.log(`   📡 Fetching fixture ${fixtureId}...`);
 
-    const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-    });
+    const response = await fetch(
+      `https://${FOOTBALL_API_HOST}/v3/fixtures?id=${fixtureId}`,
+      {
+        headers: {
+          'X-RapidAPI-Key': apiKey,
+          'X-RapidAPI-Host': FOOTBALL_API_HOST,
+        },
+        next: { revalidate: 0 },
+      }
+    );
 
     if (!response.ok) {
       console.log(`   ❌ API error: ${response.status}`);
@@ -53,97 +60,29 @@ async function fetchMatchResultFromSportmonks(fixtureId: number): Promise<{
     }
 
     const data = await response.json();
-    const fixture = data.data;
+    const fixture = data.response?.[0];
 
     if (!fixture) {
       console.log(`   ❌ No fixture data`);
       return null;
     }
 
-    // State kontrolü
-    const stateInfo = fixture.state;
-    const stateName = stateInfo?.state || stateInfo?.developer_name || stateInfo?.short_name || '';
-    const stateId = fixture.state_id;
+    const status = fixture.fixture?.status?.short || '';
 
-    // Finished state IDs: 5 = FT, 8 = FT_PEN, 11 = AET, 12 = PEN
-    const finishedStateIds = [5, 8, 11, 12];
-    const finishedStates = ['FT', 'FT_PEN', 'AET', 'PEN', 'FINISHED', 'ended'];
-
-    const isFinished =
-      finishedStates.includes(stateName) ||
-      finishedStateIds.includes(stateId) ||
-      stateInfo?.short_name === 'FT' ||
-      stateName.includes('FT') ||
-      stateName.includes('FINISHED');
-
-    if (!isFinished) {
-      console.log(`   ⏳ Not finished yet. State: ${stateName}, ID: ${stateId}`);
+    // Sadece bitmiş maçları işle
+    if (!['FT', 'AET', 'PEN'].includes(status)) {
+      console.log(`   ⏳ Not finished yet. Status: ${status}`);
       return null;
     }
 
-    // Skorları çek - Sportmonks v3 format: score.score.goals, score.score.participant
-    const scores = fixture.scores || [];
-    let homeScore = 0;
-    let awayScore = 0;
-
-    // Önce CURRENT skorlarını bul (nihai skor)
-    for (const scoreEntry of scores) {
-      // Sportmonks v3 format: nested score object
-      const participant = scoreEntry.score?.participant || scoreEntry.participant;
-      const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
-
-      if (scoreEntry.description === 'CURRENT') {
-        if (participant === 'home') homeScore = goals;
-        if (participant === 'away') awayScore = goals;
-      }
-    }
-
-    // Eğer CURRENT bulunamadıysa, FULLTIME, FT, 2ND_HALF veya en yüksek skorları dene
-    if (homeScore === 0 && awayScore === 0) {
-      for (const scoreEntry of scores) {
-        const participant = scoreEntry.score?.participant || scoreEntry.participant;
-        const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
-        const description = scoreEntry.description || '';
-
-        if (description === 'FULLTIME' || description === 'FT' || description === '2ND_HALF' || description.includes('FT')) {
-          if (participant === 'home' && goals > homeScore) homeScore = goals;
-          if (participant === 'away' && goals > awayScore) awayScore = goals;
-        }
-      }
-    }
-
-    // Eğer hala skor yoksa, tüm skorlardan en yüksek değerleri al
-    if (homeScore === 0 && awayScore === 0 && scores.length > 0) {
-      for (const scoreEntry of scores) {
-        const participant = scoreEntry.score?.participant || scoreEntry.participant;
-        const goals = scoreEntry.score?.goals ?? scoreEntry.goals ?? 0;
-
-        if (participant === 'home' && goals > homeScore) homeScore = goals;
-        if (participant === 'away' && goals > awayScore) awayScore = goals;
-      }
-    }
-
-    // Eğer hala skor yoksa, result_score'u kontrol et (alternatif format)
-    if (homeScore === 0 && awayScore === 0 && fixture.result_score) {
-      const resultScore = fixture.result_score;
-      if (typeof resultScore === 'string') {
-        const parts = resultScore.split('-');
-        if (parts.length === 2) {
-          homeScore = parseInt(parts[0]) || 0;
-          awayScore = parseInt(parts[1]) || 0;
-        }
-      }
-    }
+    const homeScore = fixture.goals?.home ?? 0;
+    const awayScore = fixture.goals?.away ?? 0;
 
     console.log(`   ✅ Score: ${homeScore}-${awayScore}`);
 
-    return {
-      homeScore,
-      awayScore,
-      status: 'FT'
-    };
+    return { homeScore, awayScore, status };
   } catch (error: any) {
-    console.error(`   ❌ Sportmonks error:`, error.message);
+    console.error(`   ❌ API-Football error:`, error.message);
     return null;
   }
 }
@@ -308,8 +247,8 @@ export async function GET(request: NextRequest) {
         // Rate limiting
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Sportmonks'tan sonuç al
-        const result = await fetchMatchResultFromSportmonks(analysis.fixture_id);
+        // API-Football'dan sonuç al
+        const result = await fetchMatchResult(analysis.fixture_id);
 
         if (!result) {
           skippedCount++;

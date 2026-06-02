@@ -6,94 +6,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
+import { getEnabledLeagueIds } from '@/lib/data-providers/api-football-provider';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
-const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
+const FOOTBALL_API_HOST = 'api-football-v1.p.rapidapi.com';
+const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY || '';
 
 // ============================================================================
-// SPORTMONKS FETCH
+// API-FOOTBALL FETCH (tek çağrı: o güne ait tüm maçlar, lokal filtre)
 // ============================================================================
 
 async function fetchFixturesFromAPI(date: string): Promise<any[]> {
+  if (!FOOTBALL_API_KEY) {
+    console.error('FOOTBALL_API_KEY missing');
+    return [];
+  }
   try {
-    // Tüm sayfaları çek
-    let allFixtures: any[] = [];
-    let page = 1;
-    let hasMore = true;
-    
-    while (hasMore && page <= 5) { // Max 5 sayfa (500 maç)
-      const url = new URL(`${SPORTMONKS_API}/fixtures/date/${date}`);
-      url.searchParams.append('api_token', SPORTMONKS_KEY);
-      url.searchParams.append('include', 'participants;league;scores');
-      url.searchParams.append('per_page', '100');
-      url.searchParams.append('page', String(page));
-      
-      const res = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
-        next: { revalidate: 300 }
-      });
-      
-      if (!res.ok) {
-        console.error(`SportMonks API error: ${res.status}`);
-        break;
+    const res = await fetch(
+      `https://${FOOTBALL_API_HOST}/v3/fixtures?date=${date}&timezone=UTC`,
+      {
+        headers: { 'X-RapidAPI-Key': FOOTBALL_API_KEY, 'X-RapidAPI-Host': FOOTBALL_API_HOST },
+        next: { revalidate: 300 },
       }
-      
-      const data = await res.json();
-      const fixtures = data.data || [];
-      
-      if (fixtures.length === 0) {
-        hasMore = false;
-      } else {
-        allFixtures = [...allFixtures, ...fixtures];
-        page++;
-        
-        // Pagination bilgisi varsa kontrol et
-        if (data.pagination && page > data.pagination.last_page) {
-          hasMore = false;
-        }
-      }
+    );
+    if (!res.ok) {
+      console.error(`API-Football error: ${res.status}`);
+      return [];
     }
-    
-    console.log(`📊 Fetched ${allFixtures.length} fixtures for ${date}`);
-    return allFixtures;
+    const data = await res.json();
+    const fixtures = Array.isArray(data?.response) ? data.response : [];
+    const allowed = new Set(getEnabledLeagueIds());
+    const filtered = fixtures.filter((f: any) => allowed.has(f.league?.id));
+    console.log(`📊 Fetched ${filtered.length}/${fixtures.length} fixtures for ${date}`);
+    return filtered;
   } catch (error) {
-    console.error('SportMonks fetch error:', error);
+    console.error('API-Football fetch error:', error);
     return [];
   }
 }
 
 // ============================================================================
-// TRANSFORM FIXTURES
+// TRANSFORM FIXTURES (çıktı şekli korunur)
 // ============================================================================
 
 function transformFixtures(fixtures: any[]): any[] {
   return fixtures
-    .filter(f => f.participants && f.participants.length >= 2)
-    .map(f => {
-      const home = f.participants.find((p: any) => p.meta?.location === 'home');
-      const away = f.participants.find((p: any) => p.meta?.location === 'away');
-      
-      return {
-        id: f.id,
-        homeTeam: home?.name || 'Unknown',
-        awayTeam: away?.name || 'Unknown',
-        homeTeamId: home?.id,
-        awayTeamId: away?.id,
-        homeTeamLogo: home?.image_path,
-        awayTeamLogo: away?.image_path,
-        league: f.league?.name || 'Unknown League',
-        leagueId: f.league?.id,
-        leagueLogo: f.league?.image_path,
-        leagueCountry: f.league?.country?.name || '',
-        date: f.starting_at,
-        status: f.state?.short || 'NS',
-        homeScore: f.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'home')?.score?.goals,
-        awayScore: f.scores?.find((s: any) => s.description === 'CURRENT' && s.score?.participant === 'away')?.score?.goals,
-      };
-    })
+    .filter(f => f.teams?.home && f.teams?.away)
+    .map(f => ({
+      id: f.fixture?.id,
+      homeTeam: f.teams.home?.name || 'Unknown',
+      awayTeam: f.teams.away?.name || 'Unknown',
+      homeTeamId: f.teams.home?.id,
+      awayTeamId: f.teams.away?.id,
+      homeTeamLogo: f.teams.home?.logo,
+      awayTeamLogo: f.teams.away?.logo,
+      league: f.league?.name || 'Unknown League',
+      leagueId: f.league?.id,
+      leagueLogo: f.league?.logo,
+      leagueCountry: f.league?.country || '',
+      date: f.fixture?.date,
+      status: f.fixture?.status?.short || 'NS',
+      homeScore: f.goals?.home ?? undefined,
+      awayScore: f.goals?.away ?? undefined,
+    }))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
