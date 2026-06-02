@@ -251,7 +251,7 @@ def _parse_dt(v):
         except Exception:
             return None
     s = str(v).strip()
-    s = s.replace("Z", "").split("+")[0]
+    s = s.replace("Z", "").split("+")[0].split(".")[0]  # milisaniyeyi at (.000)
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d"):
         try:
             return datetime.strptime(s, fmt)
