@@ -200,6 +200,7 @@ class ResultStore:
         if self._by_league is not None and mt == self._mtime:
             return
         by = {}
+        seen_ids = set()  # mükerrer satırlara karşı (iki backfill aynı anda çalışmış olabilir)
         if os.path.exists(STORE_PATH):
             with open(STORE_PATH, encoding="utf-8") as f:
                 for line in f:
@@ -207,6 +208,10 @@ class ResultStore:
                         r = json.loads(line)
                     except Exception:
                         continue
+                    mid = r.get("id")
+                    if mid in seen_ids:
+                        continue
+                    seen_ids.add(mid)
                     by.setdefault(r.get("leagueId"), []).append(r)
         self._by_league = by
         self._mtime = mt
