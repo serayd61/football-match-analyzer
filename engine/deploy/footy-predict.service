@@ -1,0 +1,22 @@
+[Unit]
+Description=Footy Predict Service (Dixon-Coles FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# --- DÜZENLE: kullanıcı ve repo yolu ---
+User=root
+WorkingDirectory=/opt/football-match-analyzer/engine
+# --- DÜZENLE: FotMob/Free API anahtarın (RapidAPI) ---
+Environment=FOOTBALL_API_KEY=PASTE_YOUR_RAPIDAPI_KEY_HERE
+Environment=STORE_PATH=/var/lib/footy/results.jsonl
+Environment=MIN_LEAGUE_MATCHES=150
+# Opsiyonel: /predict ve admin uçlarını korumak istersen ayarla (n8n header ile gönderir)
+# Environment=PREDICT_SERVICE_TOKEN=uzun-rastgele-bir-deger
+ExecStart=/opt/football-match-analyzer/engine/.venv/bin/uvicorn service:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
