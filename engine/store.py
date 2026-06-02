@@ -266,6 +266,9 @@ class ResultStore:
     def __init__(self):
         self._by_league = None
         self._mtime = None
+        self._components = None      # team_id(str) -> component_root
+        self._comp_matches = None    # component_root -> [raw match rows]
+        self._comp_mtime = None
 
     def _load(self):
         mt = os.path.getmtime(STORE_PATH) if os.path.exists(STORE_PATH) else 0
@@ -323,6 +326,77 @@ class ResultStore:
     def leagues(self):
         self._load()
         return sorted(self._by_league.keys(), key=lambda k: -len(self._by_league[k]))
+
+    # ---- Bağlı bileşenler (union-find): gerçek rekabet havuzları ----
+    def _build_components(self):
+        self._load()
+        if self._components is not None and self._comp_mtime == self._mtime:
+            return
+        parent = {}
+
+        def find(x):
+            parent.setdefault(x, x)
+            root = x
+            while parent[root] != root:
+                root = parent[root]
+            while parent[x] != root:
+                parent[x], x = root, parent[x]
+            return root
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        for rows in self._by_league.values():
+            for r in rows:
+                hid, aid = r.get("homeId"), r.get("awayId")
+                if hid is None or aid is None:
+                    continue
+                union(str(hid), str(aid))
+
+        comp_of = {t: find(t) for t in list(parent.keys())}
+        comp_matches = {}
+        for rows in self._by_league.values():
+            for r in rows:
+                hid = r.get("homeId")
+                if hid is None:
+                    continue
+                c = comp_of.get(str(hid))
+                if c is None:
+                    continue
+                comp_matches.setdefault(c, []).append(r)
+
+        self._components = comp_of
+        self._comp_matches = comp_matches
+        self._comp_mtime = self._mtime
+
+    def component_id(self, team_id):
+        self._build_components()
+        return self._components.get(str(team_id))
+
+    def component_size(self, team_id) -> int:
+        self._build_components()
+        c = self._components.get(str(team_id))
+        return len(self._comp_matches.get(c, [])) if c else 0
+
+    def component_fit_matches(self, team_id):
+        """team_id'nin bulunduğu rekabet havuzunun TÜM maçları (model.fit şeklinde)."""
+        self._build_components()
+        c = self._components.get(str(team_id))
+        rows = self._comp_matches.get(c, []) if c else []
+        out = []
+        for r in rows:
+            d = _parse_dt(r.get("date"))
+            if not d or r.get("homeId") is None or r.get("awayId") is None:
+                continue
+            out.append({
+                "date": d, "season": "",
+                "home": str(r["homeId"]), "away": str(r["awayId"]),
+                "fthg": r["fthg"], "ftag": r["ftag"],
+            })
+        out.sort(key=lambda x: x["date"])
+        return out
 
 
 if __name__ == "__main__":

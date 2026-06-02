@@ -39,17 +39,19 @@ def _check_token(authorization: Optional[str]):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def _get_model(league_id: int, ref_ord: int) -> Optional[dict]:
-    key = (league_id, ref_ord)
-    if key in _fit_cache:
-        return _fit_cache[key]
-    matches = store.load_for_fit(league_id)
-    mdl = None
-    if len(matches) >= MIN_LEAGUE_MATCHES:
-        ref_date = datetime.fromordinal(ref_ord)
-        mdl = M.fit(matches, ref_date)
-    _fit_cache[key] = mdl
-    return mdl
+def _get_model_for_fixture(home_id, away_id, ref_ord: int):
+    """Bileşen-bazlı: iki takım aynı rekabet havuzunda mı? Havuza fit et."""
+    ch = store.component_id(home_id)
+    ca = store.component_id(away_id)
+    if ch is None or ch != ca:
+        return None  # bağlantısız / bilinmeyen takım
+    if store.component_size(home_id) < MIN_LEAGUE_MATCHES:
+        return None  # havuz çok küçük
+    key = ("comp", ch, ref_ord)
+    if key not in _fit_cache:
+        matches = store.component_fit_matches(home_id)
+        _fit_cache[key] = M.fit(matches, datetime.fromordinal(ref_ord))
+    return _fit_cache[key]
 
 
 def _pick_and_conf(pr: dict):
@@ -134,14 +136,14 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
             skipped += 1
             continue
 
-        mdl = _get_model(int(lid), ref_ord)
+        mdl = _get_model_for_fixture(home_id, away_id, ref_ord)
         if mdl is None:
             skipped += 1
             continue
 
         hk, ak = str(home_id), str(away_id)
         if hk not in mdl["teams"] or ak not in mdl["teams"]:
-            # takım geçmişte yok (yeni çıkmış/az maç) -> güvenilmez, atla
+            # takım havuzda yok (yeni/az maç) -> güvenilmez, atla
             skipped += 1
             continue
 

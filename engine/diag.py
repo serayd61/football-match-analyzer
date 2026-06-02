@@ -36,24 +36,21 @@ def main():
 
     can = 0
     for m in ns:
-        lid = m.get("leagueId")
-        cnt = s.league_count(lid)
-        fit = s.load_for_fit(lid)
-        teams = {x["home"] for x in fit} | {x["away"] for x in fit}
         h = str((m.get("home") or {}).get("id"))
         a = str((m.get("away") or {}).get("id"))
         hn = (m.get("home") or {}).get("name", "?")
         an = (m.get("away") or {}).get("name", "?")
-        league_ok = cnt >= MIN
-        teams_ok = h in teams and a in teams
-        ok = league_ok and teams_ok
+        ch = s.component_id(h)
+        ca = s.component_id(a)
+        same = ch is not None and ch == ca
+        size = s.component_size(h) if ch else 0
+        ok = same and size >= MIN
         if ok:
             can += 1
-        print(f"  L{lid} ({cnt} maç {'OK' if league_ok else 'AZ'}) | "
-              f"{hn}[lig:{'+' if h in teams else '-'} global:{team_total[h]}] vs "
-              f"{an}[lig:{'+' if a in teams else '-'} global:{team_total[a]}] "
+        print(f"  {hn}[g:{team_total[h]}] vs {an}[g:{team_total[a]}] | "
+              f"havuz {'AYNI' if same else 'FARKLI/yok'} ({size} maç) "
               f"-> {'TAHMIN' if ok else 'ELE'}")
-    print(f"\ntahmin edilebilir: {can}/{len(ns)}")
+    print(f"\ntahmin edilebilir (bileşen-bazlı): {can}/{len(ns)}")
 
 
 if __name__ == "__main__":
