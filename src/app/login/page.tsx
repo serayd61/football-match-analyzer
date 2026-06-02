@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { track } from '@/lib/analytics';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -115,6 +116,7 @@ export default function LoginPage() {
         if (result?.error) {
           setError(l.errorInvalid);
         } else {
+          track.login('credentials');
           router.push('/dashboard');
         }
       } else {
@@ -136,6 +138,7 @@ export default function LoginPage() {
           });
 
           if (result?.ok) {
+            track.signUp('credentials');
             router.push('/dashboard');
           }
         }
@@ -362,7 +365,7 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                onClick={() => { track.login('google'); signIn('google', { callbackUrl: '/dashboard' }); }}
                 className="flex items-center justify-center gap-2 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-gray-300 hover:bg-gray-700/50 hover:border-gray-600 transition-all"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

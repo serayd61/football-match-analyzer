@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { track } from '@/lib/analytics';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -15,11 +16,17 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const { lang } = useLanguage();
 
+  useEffect(() => {
+    track.viewPricing();
+  }, []);
+
   const handleSubscribe = async () => {
     if (!session) {
+      track.ctaClick('pricing_page', 'subscribe_logged_out');
       router.push('/login');
       return;
     }
+    track.beginCheckout();
     setLoading(true);
     try {
       const res = await fetch('/api/stripe/create-checkout', {
