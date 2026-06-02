@@ -6,6 +6,7 @@
 import { DataProvider } from './types';
 import { BrightDataMCPProvider } from './bright-data-mcp';
 import { SportmonksProvider } from './sportmonks-provider';
+import { FreeFootballProvider } from './free-football-provider';
 
 class DataProviderManager {
   private providers: DataProvider[] = [];
@@ -14,23 +15,22 @@ class DataProviderManager {
     // Öncelik sırasına göre provider'ları ekle
     // Düşük priority numarası = yüksek öncelik
 
-    // ⚠️ Bright Data devre dışı - kullanıcı isteği üzerine sadece Sportmonks kullanılıyor
-    // if (process.env.BRIGHT_DATA_API_KEY) {
-    //   this.providers.push(new BrightDataMCPProvider());
-    //   console.log('✅ Bright Data MCP Provider loaded');
-    // }
+    // Free API Live Football Data (birincil — Sportmonks'un yerini aldı)
+    if (process.env.FOOTBALL_API_KEY) {
+      this.providers.push(new FreeFootballProvider());
+      console.log('✅ FreeFootball Provider loaded (primary)');
+    }
 
-    // Sportmonks (tek kaynak)
+    // Sportmonks (yedek — yalnızca anahtar hâlâ tanımlıysa)
     if (process.env.SPORTMONKS_API_KEY) {
       this.providers.push(new SportmonksProvider());
-      console.log('✅ Sportmonks Provider loaded');
+      console.log('✅ Sportmonks Provider loaded (fallback)');
     }
 
     // Önceliğe göre sırala
     this.providers.sort((a, b) => a.priority - b.priority);
 
-    console.log(`📊 Data Providers: ${this.providers.map(p => p.name).join(', ')}`);
-    console.log(`⚠️ Bright Data disabled - using Sportmonks only`);
+    console.log(`📊 Data Providers: ${this.providers.map(p => p.name).join(', ') || 'NONE'}`);
   }
 
   // Methods that are expected to return null in many cases (pre-match data not available)

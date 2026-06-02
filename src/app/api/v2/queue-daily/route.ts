@@ -6,12 +6,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queueDailyAnalysis, AnalysisJob, queueAnalysisJob } from '@/lib/queue/qstash';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const SPORTMONKS_API = 'https://api.sportmonks.com/v3/football';
-const SPORTMONKS_KEY = process.env.SPORTMONKS_API_KEY || '';
 
 let _sb: SupabaseClient | null = null;
 function getSupabase() {
@@ -24,21 +22,25 @@ const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupaba
 // FETCH TODAY'S FIXTURES
 // ============================================================================
 
-async function fetchTodayFixtures(): Promise<any[]> {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  
+async function fetchTodayFixtures(): Promise<FFMatch[]> {
+  const today = new Date();
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
   try {
-    const url = new URL(`${SPORTMONKS_API}/fixtures/between/${today}/${tomorrow}`);
-    url.searchParams.append('api_token', SPORTMONKS_KEY);
-    url.searchParams.append('include', 'participants;league');
-    url.searchParams.append('per_page', '100');
-    
-    const res = await fetch(url.toString());
-    if (!res.ok) return [];
-    
-    const data = await res.json();
-    return data.data || [];
+    const [d1, d2] = await Promise.all([
+      getMatchesByDate(today),
+      getMatchesByDate(tomorrow),
+    ]);
+    // fixture id'ye göre tekille
+    const seen = new Set<number>();
+    const unique: FFMatch[] = [];
+    for (const m of [...d1, ...d2]) {
+      if (m.id && !seen.has(m.id)) {
+        seen.add(m.id);
+        unique.push(m);
+      }
+    }
+    return unique;
   } catch (error) {
     console.error('Fetch fixtures error:', error);
     return [];
@@ -49,31 +51,32 @@ async function fetchTodayFixtures(): Promise<any[]> {
 // FILTER UNANALYZED FIXTURES
 // ============================================================================
 
-async function filterUnanalyzedFixtures(fixtures: any[]): Promise<any[]> {
+async function filterUnanalyzedFixtures(fixtures: FFMatch[]): Promise<FFMatch[]> {
   const fixtureIds = fixtures.map(f => f.id);
-  
+
   // Supabase'den analiz edilmiş maçları al
   const { data: analyzed } = await supabase
     .from('smart_analysis')
     .select('fixture_id')
     .in('fixture_id', fixtureIds);
-  
+
   const analyzedIds = new Set((analyzed || []).map(a => a.fixture_id));
-  
+
   // Henüz analiz edilmemiş ve başlamamış maçları filtrele
   const now = new Date();
-  
+
   return fixtures.filter(f => {
     if (analyzedIds.has(f.id)) return false;
-    
-    // Maç başlamış mı?
-    const kickOff = new Date(f.starting_at);
+    if (f.started || f.finished || f.cancelled) return false;
+
+    const kickOff = new Date(f.utcTime);
+    if (isNaN(kickOff.getTime())) return false;
     if (kickOff <= now) return false;
-    
+
     // En az 15 dakika var mı?
     const minTime = new Date(now.getTime() + 15 * 60 * 1000);
     if (kickOff < minTime) return false;
-    
+
     return true;
   });
 }
@@ -116,17 +119,14 @@ export async function GET(request: NextRequest) {
     
     // 3. Transform fixtures to jobs
     const jobs: AnalysisJob[] = unanalyzed.slice(0, 50).map((f, index) => {
-      const home = f.participants?.find((p: any) => p.meta?.location === 'home');
-      const away = f.participants?.find((p: any) => p.meta?.location === 'away');
-      
       return {
         fixtureId: f.id,
-        homeTeam: home?.name || 'Unknown',
-        awayTeam: away?.name || 'Unknown',
-        homeTeamId: home?.id,
-        awayTeamId: away?.id,
-        league: f.league?.name || 'Unknown',
-        matchDate: f.starting_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+        homeTeam: f.homeName || 'Unknown',
+        awayTeam: f.awayName || 'Unknown',
+        homeTeamId: f.homeId,
+        awayTeamId: f.awayId,
+        league: f.leagueName || 'Unknown',
+        matchDate: f.utcTime?.split('T')[0] || new Date().toISOString().split('T')[0],
         priority: index < 10 ? 'high' : index < 30 ? 'normal' : 'low',
         createdAt: new Date().toISOString()
       };
