@@ -40,18 +40,24 @@ def _check_token(authorization: Optional[str]):
 
 
 def _get_model_for_fixture(home_id, away_id, ref_ord: int):
-    """Bileşen-bazlı: iki takım aynı rekabet havuzunda mı? Havuza fit et."""
+    """Bileşen-bazlı: iki takım aynı rekabet havuzunda mı? Havuza fit et.
+    Döner: (model|None, reason)"""
     ch = store.component_id(home_id)
     ca = store.component_id(away_id)
-    if ch is None or ch != ca:
-        return None  # bağlantısız / bilinmeyen takım
+    if ch is None or ca is None:
+        return None, "no_component"
+    if ch != ca:
+        return None, "diff_component"
     if store.component_size(home_id) < MIN_LEAGUE_MATCHES:
-        return None  # havuz çok küçük
+        return None, "small_pool"
     key = ("comp", ch, ref_ord)
     if key not in _fit_cache:
         matches = store.component_fit_matches(home_id)
         _fit_cache[key] = M.fit(matches, datetime.fromordinal(ref_ord))
-    return _fit_cache[key]
+    mdl = _fit_cache[key]
+    if mdl is None:
+        return None, "fit_none"
+    return mdl, "ok"
 
 
 def _pick_and_conf(pr: dict):
@@ -122,6 +128,13 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
 
     out: List[dict] = []
     skipped = 0
+    reasons: Dict[str, int] = {}
+
+    def _skip(reason):
+        nonlocal skipped
+        skipped += 1
+        reasons[reason] = reasons.get(reason, 0) + 1
+
     for fx in req.fixtures:
         fid = _f(fx, "id", "fixtureId")
         lid = _f(fx, "leagueId", "league_id")
@@ -133,23 +146,23 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
         kickoff = _f(fx, "date", "utcTime", "kickoff")
 
         if fid is None or lid is None or home_id is None or away_id is None:
-            skipped += 1
+            _skip("missing_field")
             continue
 
-        mdl = _get_model_for_fixture(home_id, away_id, ref_ord)
+        mdl, reason = _get_model_for_fixture(home_id, away_id, ref_ord)
         if mdl is None:
-            skipped += 1
+            _skip(reason)
             continue
 
         hk, ak = str(home_id), str(away_id)
         if hk not in mdl["teams"] or ak not in mdl["teams"]:
             # takım havuzda yok (yeni/az maç) -> güvenilmez, atla
-            skipped += 1
+            _skip("team_not_in_pool")
             continue
 
         pr = M.predict(mdl, hk, ak)
         if pr is None:
-            skipped += 1
+            _skip("predict_none")
             continue
 
         pick, conf = _pick_and_conf(pr)
@@ -182,6 +195,7 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
         "received": len(req.fixtures),
         "predicted": len(out),
         "skipped": skipped,
+        "skip_reasons": reasons,
         "predictions": out,
     }
 
