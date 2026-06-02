@@ -1,0 +1,124 @@
+{
+  "name": "footy-predictions",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 6 * * *" }
+          ]
+        }
+      },
+      "id": "trg-schedule",
+      "name": "Her gün 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-80, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = new Date(Date.now() + 24*60*60*1000);\nconst date = d.toISOString().slice(0,10);\nreturn [{ json: { date } }];"
+      },
+      "id": "code-date",
+      "name": "Yarının tarihi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [140, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://footballanalytics.pro/api/v2/fixtures",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "date", "value": "={{ $json.date }}" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "http-fixtures",
+      "name": "Maçları çek (site)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [360, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst all = (res.data && res.data.fixtures) ? res.data.fixtures : (res.fixtures || []);\n// sadece henüz başlamamış maçlar\nconst upcoming = all.filter(f => f.status === 'NS');\nreturn [{ json: { fixtures: upcoming, count: upcoming.length } }];"
+      },
+      "id": "code-prep",
+      "name": "Başlamamışları süz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [580, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/predict",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"fixtures\": $json.fixtures } }}",
+        "options": { "timeout": 120000 }
+      },
+      "id": "http-predict",
+      "name": "Tahmin et (predict-service)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst predictions = r.predictions || [];\nreturn [{ json: { predictions, predicted: r.predicted, skipped: r.skipped } }];"
+      },
+      "id": "code-collect",
+      "name": "Tahminleri topla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://footballanalytics.pro/api/v2/predictions/ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __PREDICTIONS_API_SECRET__" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"predictions\": $json.predictions } }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "http-ingest",
+      "name": "Siteye yaz (ingest)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 300]
+    }
+  ],
+  "connections": {
+    "Her gün 06:00": {
+      "main": [[{ "node": "Yarının tarihi", "type": "main", "index": 0 }]]
+    },
+    "Yarının tarihi": {
+      "main": [[{ "node": "Maçları çek (site)", "type": "main", "index": 0 }]]
+    },
+    "Maçları çek (site)": {
+      "main": [[{ "node": "Başlamamışları süz", "type": "main", "index": 0 }]]
+    },
+    "Başlamamışları süz": {
+      "main": [[{ "node": "Tahmin et (predict-service)", "type": "main", "index": 0 }]]
+    },
+    "Tahmin et (predict-service)": {
+      "main": [[{ "node": "Tahminleri topla", "type": "main", "index": 0 }]]
+    },
+    "Tahminleri topla": {
+      "main": [[{ "node": "Siteye yaz (ingest)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}
