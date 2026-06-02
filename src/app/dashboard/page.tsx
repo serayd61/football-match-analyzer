@@ -15,6 +15,7 @@ import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { Paywall } from '@/components/Paywall';
 import AIChatbot from '@/components/AIChatbot';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
+import EnginePredictions from '@/components/EnginePredictions';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -1934,6 +1935,33 @@ export default function DashboardPage() {
       </AnimatePresence>
       
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* 🎯 MOTOR TAHMİNLERİ (yeni Dixon-Coles motoru) — additive, mevcut akışa dokunmaz */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10"
+        >
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <span className="text-cyan-400">🎯</span>
+                {lang === 'tr' ? 'Motor Tahminleri' : lang === 'de' ? 'Engine-Vorhersagen' : 'Engine Predictions'}
+              </h2>
+              <p className="text-xs text-white/40 mt-0.5">
+                {lang === 'tr'
+                  ? 'Gerçek maç verisiyle eğitilmiş Dixon-Coles modeli — kalibre olasılıklar'
+                  : 'Dixon-Coles model trained on real match data — calibrated probabilities'}
+              </p>
+            </div>
+            <Link href="/tahminler"
+              className="text-xs px-3 py-1.5 rounded-lg border border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10 transition-colors">
+              {lang === 'tr' ? 'Tümünü gör →' : 'View all →'}
+            </Link>
+          </div>
+          <EnginePredictions lang={lang} showStats={true} showControls={false} limit={6} />
+        </motion.section>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left: Fixtures List - Futuristic Cards */}
           <motion.div 
