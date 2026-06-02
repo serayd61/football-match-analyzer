@@ -17,6 +17,11 @@ const T = {
     sub: 'Statistical model (Dixon-Coles) trained on real match data — calibrated probabilities',
     disclaimer: 'For information only, not betting advice.',
   },
+  de: {
+    title: 'Vorhersagen',
+    sub: 'Statistisches Modell (Dixon-Coles) mit echten Spieldaten — kalibrierte Wahrscheinlichkeiten',
+    disclaimer: 'Nur zur Information, keine Wettberatung.',
+  },
 };
 
 export default function TahminlerPage() {

@@ -61,6 +61,11 @@ const STR = {
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
     empty: 'No predictions to show right now. They appear automatically as matches approach.',
     loading: 'Loading predictions...' },
+  de: { home: 'Heim', draw: 'Unent.', away: 'Auswärts', conf: 'Konfidenz',
+    over: 'Über 2.5', btts: 'BTTS', why: 'Warum?', matches: 'Spiele', avgConf: 'Ø Konfidenz',
+    leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
+    empty: 'Derzeit keine Vorhersagen. Sie erscheinen automatisch, sobald Spiele näher rücken.',
+    loading: 'Vorhersagen werden geladen...' },
 };
 
 export default function EnginePredictions({
