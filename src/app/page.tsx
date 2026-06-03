@@ -5,10 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import LanguageSelector from '@/components/LanguageSelector';
 import Navigation from '@/components/Navigation';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
-import EnginePredictions from '@/components/EnginePredictions';
 import { motion } from 'framer-motion';
 
 // 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
@@ -40,8 +38,9 @@ export default function HomePage() {
       livePredictions: {
         badge: '🎯 CANLI',
         title: 'Canlı İstatistik Tahminleri',
-        subtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles motoru — her gün otomatik güncellenen kalibre olasılıklar. Üye olmadan inceleyin.',
+        subtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles motoru — her gün otomatik güncellenen kalibre olasılıklar.',
         cta: 'Tüm tahminleri gör',
+        lockCta: 'Giriş yap · 7 gün ücretsiz dene',
       },
       stats: [
         { value: 'Dixon-Coles', label: 'İstatistik Motoru' },
@@ -221,8 +220,9 @@ export default function HomePage() {
       livePredictions: {
         badge: '🎯 LIVE',
         title: 'Live Statistical Predictions',
-        subtitle: 'Dixon-Coles engine trained on real match data — calibrated probabilities, updated automatically every day. Browse without signing up.',
+        subtitle: 'Dixon-Coles engine trained on real match data — calibrated probabilities, updated automatically every day.',
         cta: 'See all predictions',
+        lockCta: 'Sign in · 7-day free trial',
       },
       stats: [
         { value: 'Dixon-Coles', label: 'Statistical Engine' },
@@ -404,8 +404,9 @@ export default function HomePage() {
     livePredictions: {
       badge: '🎯 LIVE',
       title: 'Live-Statistik-Vorhersagen',
-      subtitle: 'Dixon-Coles-Engine mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten, täglich automatisch aktualisiert. Ohne Anmeldung ansehen.',
+      subtitle: 'Dixon-Coles-Engine mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten, täglich automatisch aktualisiert.',
       cta: 'Alle Vorhersagen ansehen',
+      lockCta: 'Anmelden · 7 Tage kostenlos',
     },
     stats: [
       { value: 'Dixon-Coles', label: 'Statistik-Engine' },
@@ -721,20 +722,55 @@ export default function HomePage() {
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">{(l as any).livePredictions.subtitle}</p>
           </motion.div>
 
-          <EnginePredictions lang={lang} groupByLeague={false} showStats={false} showControls={false} limit={3} />
+          {/* Kilitli teaser: bulanık örnek kartlar + giriş/deneme çağrısı (gerçek veri yok) */}
+          <div className="relative">
+            <div className="grid md:grid-cols-3 gap-4 blur-[6px] select-none pointer-events-none opacity-60" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="h-3 w-20 bg-white/10 rounded" />
+                    <div className="h-3 w-12 bg-white/10 rounded" />
+                  </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col items-center gap-2 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-white/10" />
+                      <div className="h-2 w-14 bg-white/10 rounded" />
+                    </div>
+                    <div className="text-white/20 text-xs font-bold">VS</div>
+                    <div className="flex flex-col items-center gap-2 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-white/10" />
+                      <div className="h-2 w-14 bg-white/10 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-9 rounded-xl bg-white/5 mb-3" />
+                  <div className="h-2 rounded-full bg-white/10 mb-2" />
+                  <div className="flex gap-2">
+                    <div className="h-6 w-16 bg-white/5 rounded-lg" />
+                    <div className="h-6 w-16 bg-white/5 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          <div className="text-center mt-8">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
-              <Link
-                href="/tahminler"
-                className="inline-flex items-center gap-2 px-8 py-4 glass-futuristic border border-[#00f0ff]/50 text-white font-bold rounded-2xl neon-border-cyan neon-glow-cyan transition-all"
-              >
-                {(l as any).livePredictions.cta}
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            {/* Kilit overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <div className="w-14 h-14 rounded-full bg-[#00f0ff]/10 border border-[#00f0ff]/40 flex items-center justify-center text-[#00f0ff] mb-4 neon-glow-cyan">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-              </Link>
-            </motion.div>
+              </div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-8 py-4 glass-futuristic border border-[#00f0ff]/50 text-white font-bold rounded-2xl neon-border-cyan neon-glow-cyan transition-all"
+                >
+                  {(l as any).livePredictions.lockCta}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
