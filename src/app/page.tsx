@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import LanguageSelector from '@/components/LanguageSelector';
 import Navigation from '@/components/Navigation';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import EnginePredictions from '@/components/EnginePredictions';

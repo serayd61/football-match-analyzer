@@ -3,12 +3,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
+import LanguageSelector from '@/components/LanguageSelector';
+
+const LANG_OPTIONS = [
+  { code: 'tr', flag: '🇹🇷', name: 'Türkçe' },
+  { code: 'en', flag: '🇬🇧', name: 'English' },
+  { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
+] as const;
 
 export default function Navigation() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { lang } = useLanguage();
+  const { lang, setLang } = useLanguage();
 
   const labels = {
     tr: {
@@ -102,6 +109,15 @@ export default function Navigation() {
                   <span>{item.label}</span>
                 </Link>
               ))}
+              <div className="ml-2 pl-3 border-l border-white/10">
+                <LanguageSelector />
+              </div>
+              <Link
+                href="/login"
+                className="ml-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition"
+              >
+                {l.login}
+              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -168,7 +184,24 @@ export default function Navigation() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-800">
+            <div className="p-4 border-t border-gray-800 space-y-3">
+              {/* Dil seçimi */}
+              <div className="grid grid-cols-3 gap-2">
+                {LANG_OPTIONS.map(o => (
+                  <button
+                    key={o.code}
+                    onClick={() => setLang(o.code)}
+                    className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition ${
+                      lang === o.code
+                        ? 'bg-green-500/20 border-green-500/40 text-green-400'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="text-lg">{o.flag}</span>
+                    <span className="text-xs font-medium">{o.name}</span>
+                  </button>
+                ))}
+              </div>
               <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
