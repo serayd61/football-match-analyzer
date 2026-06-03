@@ -109,6 +109,40 @@ async function upsertSubscription(userId: string, patch: Record<string, any>) {
   }
 }
 
+/**
+ * Stripe abonelik durumunu profiles.subscription_status'a da yansıt.
+ * Erişim kontrolü (checkUserAccess) bu alanı okuduğu için, ödeme yapan/trial'daki
+ * kullanıcının erişim alması bu senkrona bağlı. Profil email ile anahtarlanır.
+ * Best-effort: hata webhook'u (ve para akışını) bozmasın.
+ */
+async function syncProfileStatus(email: string | null | undefined, status: 'active' | 'free') {
+  if (!email) return;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update({ subscription_status: status })
+      .ilike('email', email)
+      .select('email');
+    if (error) {
+      console.error('[stripe-webhook] profiles update failed', email, error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      const { error: insErr } = await supabaseAdmin
+        .from('profiles')
+        .insert({ email, subscription_status: status });
+      if (insErr) console.error('[stripe-webhook] profiles insert failed', email, insErr.message);
+    }
+  } catch (e) {
+    console.error('[stripe-webhook] syncProfileStatus error', email, e);
+  }
+}
+
+/** Stripe abonelik durumu -> profiles.subscription_status eşlemesi. */
+function mapStatusToProfile(stripeStatus: string): 'active' | 'free' {
+  return stripeStatus === 'active' || stripeStatus === 'trialing' ? 'active' : 'free';
+}
+
 // ---------------------------------------------------------------------------
 // Webhook
 // ---------------------------------------------------------------------------
@@ -147,6 +181,7 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: subscriptionId,
             status: 'trialing',
           });
+          await syncProfileStatus(await getCustomerEmail(customerId, email), 'active');
         } else {
           console.warn('[stripe-webhook] checkout.session.completed: no user match', customerId, email);
         }
@@ -168,6 +203,10 @@ export async function POST(request: NextRequest) {
             current_period_end: end,
             cancel_at_period_end: subscription.cancel_at_period_end,
           });
+          await syncProfileStatus(
+            await getCustomerEmail(customerId),
+            mapStatusToProfile(subscription.status),
+          );
         } else {
           console.warn('[stripe-webhook] subscription.updated: no user match', customerId);
         }
@@ -184,6 +223,7 @@ export async function POST(request: NextRequest) {
             stripe_customer_id: customerId,
             status: 'canceled',
           });
+          await syncProfileStatus(await getCustomerEmail(customerId), 'free');
         }
         break;
       }
@@ -205,6 +245,7 @@ export async function POST(request: NextRequest) {
             status: 'active',
             ...(periodEnd ? { current_period_end: periodEnd } : {}),
           });
+          await syncProfileStatus(await getCustomerEmail(customerId, email), 'active');
         } else {
           console.warn('[stripe-webhook] invoice.payment_succeeded: no user match', customerId, email);
         }
@@ -222,6 +263,7 @@ export async function POST(request: NextRequest) {
             stripe_customer_id: customerId,
             status: 'past_due',
           });
+          await syncProfileStatus(await getCustomerEmail(customerId, email), 'free');
         }
         break;
       }
