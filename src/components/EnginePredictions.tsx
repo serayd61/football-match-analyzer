@@ -7,10 +7,11 @@
 // ============================================================================
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Clock, ShieldCheck, Target, BarChart3,
-  ChevronDown, ChevronUp, RefreshCw,
+  ChevronDown, ChevronUp, RefreshCw, Lock, Crown,
 } from 'lucide-react';
 
 export interface Prediction {
@@ -55,17 +56,35 @@ const STR = {
     over: 'Üst 2.5', btts: 'KG Var', why: 'Neden?', matches: 'maç', avgConf: 'Ort. güven',
     leagues: 'lig', refresh: 'Yenile', sortConf: 'En güvenli', sortTime: 'Saate göre',
     empty: 'Şu an gösterilecek tahmin yok. Yeni maçlar yaklaştıkça otomatik eklenir.',
-    loading: 'Tahminler yükleniyor...', locale: 'tr-TR' },
+    loading: 'Tahminler yükleniyor...', locale: 'tr-TR',
+    gateAuthTitle: 'Tahminleri görmek için giriş yapın',
+    gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
+    gateAuthCta: 'Giriş yap / Üye ol',
+    gateSubTitle: 'Aktif abonelik gerekli',
+    gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.',
+    gateSubCta: '7 gün ücretsiz dene' },
   en: { home: 'Home', draw: 'Draw', away: 'Away', conf: 'Confidence',
     over: 'Over 2.5', btts: 'BTTS', why: 'Why?', matches: 'matches', avgConf: 'Avg. conf.',
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
     empty: 'No predictions to show right now. They appear automatically as matches approach.',
-    loading: 'Loading predictions...', locale: 'en-US' },
+    loading: 'Loading predictions...', locale: 'en-US',
+    gateAuthTitle: 'Sign in to see predictions',
+    gateAuthDesc: 'Engine predictions are available to members only.',
+    gateAuthCta: 'Sign in / Sign up',
+    gateSubTitle: 'Active subscription required',
+    gateSubDesc: 'Try free for 7 days, cancel anytime.',
+    gateSubCta: 'Start 7-day free trial' },
   de: { home: 'Heim', draw: 'Unent.', away: 'Auswärts', conf: 'Konfidenz',
     over: 'Über 2.5', btts: 'BTTS', why: 'Warum?', matches: 'Spiele', avgConf: 'Ø Konfidenz',
     leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
     empty: 'Derzeit keine Vorhersagen. Sie erscheinen automatisch, sobald Spiele näher rücken.',
-    loading: 'Vorhersagen werden geladen...', locale: 'de-DE' },
+    loading: 'Vorhersagen werden geladen...', locale: 'de-DE',
+    gateAuthTitle: 'Zum Ansehen anmelden',
+    gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
+    gateAuthCta: 'Anmelden / Registrieren',
+    gateSubTitle: 'Aktives Abo erforderlich',
+    gateSubDesc: '7 Tage kostenlos testen, jederzeit kündbar.',
+    gateSubCta: '7 Tage kostenlos testen' },
 };
 
 export default function EnginePredictions({
@@ -86,12 +105,16 @@ export default function EnginePredictions({
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'conf' | 'time'>('conf');
+  const [gate, setGate] = useState<null | 'auth' | 'subscription'>(null);
 
   async function load() {
     setLoading(true);
     try {
       const res = await fetch('/api/v2/predictions/list', { cache: 'no-store' });
+      if (res.status === 401) { setGate('auth'); setPreds([]); return; }
+      if (res.status === 403) { setGate('subscription'); setPreds([]); return; }
       const data = await res.json();
+      setGate(null);
       setPreds(data.predictions || []);
     } catch {
       setPreds([]);
@@ -126,6 +149,26 @@ export default function EnginePredictions({
     }
     return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
   }, [sorted, groupByLeague]);
+
+  // Erişim engeli: giriş yok (auth) ya da abonelik yok (subscription)
+  if (!loading && gate) {
+    const isAuth = gate === 'auth';
+    return (
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 text-center">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+          {isAuth ? <Lock size={24} /> : <Crown size={24} />}
+        </div>
+        <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
+        <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
+        <Link
+          href={isAuth ? '/login' : '/pricing'}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 transition-opacity"
+        >
+          {isAuth ? t.gateAuthCta : t.gateSubCta}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>

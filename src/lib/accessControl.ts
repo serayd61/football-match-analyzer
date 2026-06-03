@@ -1,8 +1,57 @@
 import { supabaseAdmin } from './supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { isAdminEmail } from './admin/emails';
 
 function getSupabase(): SupabaseClient {
   return supabaseAdmin;
+}
+
+/**
+ * Motor tahminleri (engine_predictions) erişim kontrolü — salt okuma, yan etkisiz.
+ * Erişim verilir eğer: admin VEYA Stripe aboneliği aktif/trial VEYA profiles
+ * subscription_status aktif/trial. İki kaynağı da kontrol ederek gerçek aboneyi
+ * yanlışlıkla engellememeyi garanti ederiz (profiles<->Stripe senkronu eksik olsa bile).
+ */
+export async function hasEnginePredictionAccess(email?: string | null): Promise<boolean> {
+  if (!email) return false;
+  if (isAdminEmail(email)) return true;
+
+  const db = getSupabase();
+
+  // 1) profiles tabanlı (eski/manuel)
+  try {
+    const { data: profile } = await db
+      .from('profiles')
+      .select('subscription_status')
+      .ilike('email', email)
+      .maybeSingle();
+    const ps = String(profile?.subscription_status || '').toLowerCase();
+    if (['active', 'trial', 'trialing', 'pro', 'premium'].includes(ps)) return true;
+  } catch (e) {
+    console.error('[access] profiles check failed', e);
+  }
+
+  // 2) Stripe subscriptions tablosu (gerçek ödeme kaynağı)
+  try {
+    const { data: user } = await db
+      .from('users')
+      .select('id')
+      .ilike('email', email)
+      .maybeSingle();
+    if (user?.id) {
+      const { data: sub } = await db
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle();
+      if (sub) return true;
+    }
+  } catch (e) {
+    console.error('[access] subscriptions check failed', e);
+  }
+
+  return false;
 }
 export interface AccessStatus {
   hasAccess: boolean;

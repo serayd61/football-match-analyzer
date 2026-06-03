@@ -1,13 +1,17 @@
 // ============================================================================
-// API V2: PREDICTIONS LIST (public, read-only)
+// API V2: PREDICTIONS LIST (korumalı, salt okuma)
 // engine_predictions tablosundan yaklaşan tahminleri döndürür.
-// Abonelik/giriş akışına dokunmaz — sadece okuma.
+// ERİŞİM: giriş + aktif abonelik/deneme (veya admin) gerekir.
+// Giriş yoksa 401, abonelik yoksa 403 döner — veri sızdırmaz.
 // ============================================================================
 
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { hasEnginePredictionAccess } from '@/lib/accessControl';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -21,6 +25,23 @@ function sb(): SupabaseClient {
 }
 
 export async function GET(request: NextRequest) {
+  // --- Erişim kontrolü: giriş + abonelik/deneme (veya admin) ---
+  const session = await getServerSession(authOptions);
+  const email = session?.user?.email;
+  if (!email) {
+    return NextResponse.json(
+      { ok: false, code: 'auth_required', error: 'Giriş gerekli', predictions: [] },
+      { status: 401 },
+    );
+  }
+  const allowed = await hasEnginePredictionAccess(email);
+  if (!allowed) {
+    return NextResponse.json(
+      { ok: false, code: 'subscription_required', error: 'Aktif abonelik/deneme gerekli', predictions: [] },
+      { status: 403 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date'); // YYYY-MM-DD (opsiyonel)
   const limit = Math.min(parseInt(searchParams.get('limit') || '200', 10) || 200, 500);
