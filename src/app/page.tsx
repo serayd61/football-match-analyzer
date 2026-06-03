@@ -8,6 +8,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import Navigation from '@/components/Navigation';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
+import EnginePredictions from '@/components/EnginePredictions';
 import { motion } from 'framer-motion';
 
 // 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
@@ -34,14 +35,20 @@ export default function HomePage() {
         subtitle: 'Dünyanın ilk hibrit analiz platformu: 4 Elite AI modeli + 3 Uzman Agent birlikte çalışır. Merkezi olmayan Heurist ağı üzerinde çalışan agent\'lar ile benzersiz doğruluk.',
         cta: 'Ücretsiz Başla',
         ctaSecondary: 'Nasıl Çalışır?',
-        trustedBy: '10.000+ kullanıcı güveniyor',
+        trustedBy: 'Profesyonel futbol analiz platformu',
       },
-      stats: {
-        matches: 'Analiz Edilen Maç',
-        accuracy: 'Doğruluk Oranı',
-        users: 'Aktif Kullanıcı',
-        leagues: 'Desteklenen Lig',
+      livePredictions: {
+        badge: '🎯 CANLI',
+        title: 'Canlı İstatistik Tahminleri',
+        subtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles motoru — her gün otomatik güncellenen kalibre olasılıklar. Üye olmadan inceleyin.',
+        cta: 'Tüm tahminleri gör',
       },
+      stats: [
+        { value: 'Dixon-Coles', label: 'İstatistik Motoru' },
+        { value: 'Günlük', label: 'Otomatik Tahminler' },
+        { value: '1X2 · Üst · KG', label: 'Tahmin Pazarları' },
+        { value: 'TR · EN · DE', label: 'Dil Desteği' },
+      ],
       systems: {
         title: 'İki Bağımsız Analiz Motoru',
         subtitle: 'Aynı maç için iki farklı perspektif, maksimum doğruluk',
@@ -77,13 +84,15 @@ export default function HomePage() {
           { icon: '📊', title: 'Performans Takibi', desc: 'Her AI\'ın başarı oranı gerçek zamanlı ölçülür' },
           { icon: '🔥', title: 'Value Bet Tespiti', desc: 'Bahisçi hatalarını otomatik yakalar' },
         ],
+        bestPrediction: 'En İyi Tahmin',
+        debateNote: 'AI modelleri farklı düşündüğünde, Debate Protocol devreye girer ve en güçlü argümanlar kazanır.',
       },
       features: {
         title: 'Neden Football Analytics Pro?',
         subtitle: 'Rakiplerinizden bir adım önde olmanızı sağlayan özellikler',
         items: [
           { icon: '🤖', title: '7 AI Model', desc: '4 AI + 3 Heurist Agent bir arada çalışır' },
-          { icon: '🎯', title: '%70+ Doğruluk', desc: 'Consensus sistemi ile yüksek başarı oranı' },
+          { icon: '🎯', title: 'Kalibre Olasılıklar', desc: 'Dixon-Coles ile kalibre edilmiş 1X2 ve gol olasılıkları' },
           { icon: '⚡', title: 'Gerçek Zamanlı', desc: 'Anlık oran değişiklikleri ve canlı analiz' },
           { icon: '💎', title: 'Value Bet Tespiti', desc: 'Bookmaker hatalarını otomatik yakala' },
           { icon: '📊', title: '27+ Lig', desc: 'Avrupa\'nın büyük ligleri kapsanır' },
@@ -116,6 +125,8 @@ export default function HomePage() {
             { type: '4+', multiplier: '×50' },
           ],
         },
+        joinCta: '🏆 Hemen Katıl',
+        aiPerfCta: '🧠 AI Performans',
       },
       proHighlight: {
         badge: '🚀 PRO ÜYELİK AVANTAJLARI',
@@ -192,7 +203,7 @@ export default function HomePage() {
         legal: 'Yasal',
         privacy: 'Gizlilik',
         terms: 'Kullanım Şartları',
-        copyright: '© 2024 Football Analytics Pro. Tüm hakları saklıdır.',
+        copyright: '© 2026 Football Analytics Pro. Tüm hakları saklıdır.',
         poweredBy: 'Powered by Heurist Network',
         developedBy: 'Swiss Digital tarafından geliştirildi',
       },
@@ -205,14 +216,20 @@ export default function HomePage() {
         subtitle: 'The world\'s first hybrid analysis platform: 4 Elite AI models + 3 Expert Agents working together. Unique accuracy with agents running on decentralized Heurist network.',
         cta: 'Start Free',
         ctaSecondary: 'How It Works?',
-        trustedBy: '10,000+ users trust us',
+        trustedBy: 'Professional football analytics platform',
       },
-      stats: {
-        matches: 'Matches Analyzed',
-        accuracy: 'Accuracy Rate',
-        users: 'Active Users',
-        leagues: 'Leagues Supported',
+      livePredictions: {
+        badge: '🎯 LIVE',
+        title: 'Live Statistical Predictions',
+        subtitle: 'Dixon-Coles engine trained on real match data — calibrated probabilities, updated automatically every day. Browse without signing up.',
+        cta: 'See all predictions',
       },
+      stats: [
+        { value: 'Dixon-Coles', label: 'Statistical Engine' },
+        { value: 'Daily', label: 'Auto Predictions' },
+        { value: '1X2 · O/U · BTTS', label: 'Prediction Markets' },
+        { value: 'TR · EN · DE', label: 'Languages' },
+      ],
       systems: {
         title: 'Two Independent Analysis Engines',
         subtitle: 'Two different perspectives for the same match, maximum accuracy',
@@ -248,13 +265,15 @@ export default function HomePage() {
           { icon: '📊', title: 'Performance Tracking', desc: 'Each AI\'s success rate is measured in real-time' },
           { icon: '🔥', title: 'Value Bet Detection', desc: 'Automatically catches bookmaker mistakes' },
         ],
+        bestPrediction: 'Best Prediction',
+        debateNote: 'When AI models disagree, the Debate Protocol kicks in and the strongest arguments win.',
       },
       features: {
         title: 'Why Football Analytics Pro?',
         subtitle: 'Features that keep you ahead of the competition',
         items: [
           { icon: '🤖', title: '7 AI Models', desc: '4 AI + 3 Heurist Agents working together' },
-          { icon: '🎯', title: '70%+ Accuracy', desc: 'High success rate with consensus system' },
+          { icon: '🎯', title: 'Calibrated Probabilities', desc: 'Calibrated 1X2 and goals probabilities via Dixon-Coles' },
           { icon: '⚡', title: 'Real-Time', desc: 'Instant odds changes and live analysis' },
           { icon: '💎', title: 'Value Bet Detection', desc: 'Automatically catch bookmaker mistakes' },
           { icon: '📊', title: '27+ Leagues', desc: 'Major European leagues covered' },
@@ -287,6 +306,8 @@ export default function HomePage() {
             { type: '4+', multiplier: '×50' },
           ],
         },
+        joinCta: '🏆 Join Now',
+        aiPerfCta: '🧠 AI Performance',
       },
       proHighlight: {
         badge: '🚀 PRO MEMBERSHIP BENEFITS',
@@ -363,7 +384,7 @@ export default function HomePage() {
         legal: 'Legal',
         privacy: 'Privacy',
         terms: 'Terms',
-        copyright: '© 2024 Football Analytics Pro. All rights reserved.',
+        copyright: '© 2026 Football Analytics Pro. All rights reserved.',
         poweredBy: 'Powered by Heurist Network',
         developedBy: 'Developed by Swiss Digital',
       },
@@ -378,14 +399,20 @@ export default function HomePage() {
       subtitle: 'Die weltweit erste hybride Analyseplattform: 4 Elite-KI-Modelle + 3 Experten-Agenten arbeiten zusammen. Einzigartige Genauigkeit mit Agenten auf dem dezentralen Heurist-Netzwerk.',
       cta: 'Kostenlos starten',
       ctaSecondary: 'Wie funktioniert es?',
-      trustedBy: '10.000+ Nutzer vertrauen uns',
+      trustedBy: 'Professionelle Fußball-Analyse-Plattform',
     },
-    stats: {
-      matches: 'Analysierte Spiele',
-      accuracy: 'Genauigkeitsrate',
-      users: 'Aktive Nutzer',
-      leagues: 'Unterstützte Ligen',
+    livePredictions: {
+      badge: '🎯 LIVE',
+      title: 'Live-Statistik-Vorhersagen',
+      subtitle: 'Dixon-Coles-Engine mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten, täglich automatisch aktualisiert. Ohne Anmeldung ansehen.',
+      cta: 'Alle Vorhersagen ansehen',
     },
+    stats: [
+      { value: 'Dixon-Coles', label: 'Statistik-Engine' },
+      { value: 'Täglich', label: 'Auto-Vorhersagen' },
+      { value: '1X2 · Ü/U · BTTS', label: 'Wettmärkte' },
+      { value: 'TR · EN · DE', label: 'Sprachen' },
+    ],
     systems: {
       title: 'Zwei unabhängige Analyse-Engines',
       subtitle: 'Zwei verschiedene Perspektiven für dasselbe Spiel, maximale Genauigkeit',
@@ -421,13 +448,15 @@ export default function HomePage() {
         { icon: '📊', title: 'Performance-Tracking', desc: 'Die Erfolgsrate jeder KI wird in Echtzeit gemessen' },
         { icon: '🔥', title: 'Value Bet Erkennung', desc: 'Erkennt automatisch Buchmacher-Fehler' },
       ],
+      bestPrediction: 'Beste Vorhersage',
+      debateNote: 'Wenn KI-Modelle uneinig sind, greift das Debate Protocol ein und die stärksten Argumente gewinnen.',
     },
     features: {
       title: 'Warum Football Analytics Pro?',
       subtitle: 'Funktionen, die Sie der Konkurrenz einen Schritt voraus halten',
       items: [
         { icon: '🤖', title: '7 KI-Modelle', desc: '4 KI + 3 Heurist-Agenten arbeiten zusammen' },
-        { icon: '🎯', title: '70%+ Genauigkeit', desc: 'Hohe Erfolgsrate durch Konsens-System' },
+        { icon: '🎯', title: 'Kalibrierte Wahrscheinlichkeiten', desc: 'Kalibrierte 1X2- und Tor-Wahrscheinlichkeiten via Dixon-Coles' },
         { icon: '⚡', title: 'Echtzeit', desc: 'Sofortige Quotenänderungen und Live-Analyse' },
         { icon: '💎', title: 'Value Bet Erkennung', desc: 'Buchmacher-Fehler automatisch finden' },
         { icon: '📊', title: '27+ Ligen', desc: 'Große europäische Ligen abgedeckt' },
@@ -460,6 +489,8 @@ export default function HomePage() {
           { type: '4+', multiplier: '×50' },
         ],
       },
+      joinCta: '🏆 Jetzt mitmachen',
+      aiPerfCta: '🧠 KI-Leistung',
     },
     proHighlight: {
       badge: '🚀 PRO-MITGLIEDSCHAFT VORTEILE',
@@ -536,7 +567,7 @@ export default function HomePage() {
       legal: 'Rechtliches',
       privacy: 'Datenschutz',
       terms: 'AGB',
-      copyright: '© 2024 Football Analytics Pro. Alle Rechte vorbehalten.',
+      copyright: '© 2026 Football Analytics Pro. Alle Rechte vorbehalten.',
       poweredBy: 'Powered by Heurist Network',
       developedBy: 'Entwickelt von Swiss Digital',
     },
@@ -654,25 +685,57 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9 }}
           >
-            {[
-              { value: '500+', label: l.stats.matches },
-              { value: '70%+', label: l.stats.accuracy },
-              { value: '10K+', label: l.stats.users },
-              { value: '27+', label: l.stats.leagues },
-            ].map((stat, idx) => (
-              <motion.div 
-                key={idx} 
+            {(l.stats as Array<{ value: string; label: string }>).map((stat, idx) => (
+              <motion.div
+                key={idx}
                 className="text-center p-6 glass-futuristic border border-[#00f0ff]/20 rounded-2xl neon-border-cyan"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1 + idx * 0.1 }}
                 whileHover={{ scale: 1.05, borderColor: 'rgba(0, 240, 255, 0.5)' }}
               >
-                <div className="text-4xl font-bold text-white mb-1 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>{stat.value}</div>
-                <div className="text-gray-400">{stat.label}</div>
+                <div className="text-2xl md:text-3xl font-bold text-white mb-1 neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>{stat.value}</div>
+                <div className="text-gray-400 text-sm">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* 🎯 Canlı İstatistik Tahminleri (yeni Dixon-Coles motoru) */}
+      <section id="live-predictions" className="py-12 px-4 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-full text-[#00f0ff] text-sm font-medium mb-4 neon-glow-cyan">
+              {(l as any).livePredictions.badge}
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3" style={{ fontFamily: 'var(--font-heading)' }}>
+              {(l as any).livePredictions.title}
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">{(l as any).livePredictions.subtitle}</p>
+          </motion.div>
+
+          <EnginePredictions lang={lang} groupByLeague={false} showStats={false} showControls={false} limit={3} />
+
+          <div className="text-center mt-8">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+              <Link
+                href="/tahminler"
+                className="inline-flex items-center gap-2 px-8 py-4 glass-futuristic border border-[#00f0ff]/50 text-white font-bold rounded-2xl neon-border-cyan neon-glow-cyan transition-all"
+              >
+                {(l as any).livePredictions.cta}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -811,12 +874,12 @@ export default function HomePage() {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/30 ring-4 ring-cyan-500/30">🏆</div>
                   <div>
                     <div className="text-white font-bold text-lg">Consensus</div>
-                    <div className="text-cyan-400 text-sm">En İyi Tahmin</div>
+                    <div className="text-cyan-400 text-sm">{(l as any).quadBrain.bestPrediction}</div>
                   </div>
                 </div>
               </div>
               <p className="text-center text-gray-400 mt-6 text-sm">
-                AI modelleri farklı düşündüğünde, Debate Protocol devreye girer ve en güçlü argümanlar kazanır.
+                {(l as any).quadBrain.debateNote}
               </p>
             </div>
           </div>
@@ -896,10 +959,10 @@ export default function HomePage() {
           {/* CTAs */}
           <div className="flex justify-center gap-4 mt-8">
             <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-500 hover:to-yellow-400 text-white font-bold rounded-2xl shadow-xl shadow-orange-500/30 transition-all">
-              🏆 Hemen Katıl
+              {l.tipsterLeague.joinCta}
             </Link>
             <Link href="/ai-performance" className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-2xl border border-gray-700 transition-all">
-              🧠 AI Performans
+              {l.tipsterLeague.aiPerfCta}
             </Link>
           </div>
         </div>
