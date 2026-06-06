@@ -16,6 +16,7 @@ import { Paywall } from '@/components/Paywall';
 import AIChatbot from '@/components/AIChatbot';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import EnginePredictions from '@/components/EnginePredictions';
+import MatchIntelligence from '@/components/MatchIntelligence';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -329,6 +330,8 @@ const translations = {
     noText: 'Hayır',
     engineTitle: 'Motor Tahminleri',
     engineSubtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles modeli — kalibre olasılıklar',
+    matchIntelTitle: 'Match Intelligence',
+    matchIntelSubtitle: 'İstatistik tahmini + haber özeti + çok dilli maç önizlemesi (gece güncellenir)',
     viewAll: 'Tümünü gör →',
     detailedAnalysis: 'Detaylı Maç Analizi',
     detailedAnalysisSub: 'Bir maç seçin ve yapay zeka destekli derin analizi görün'
@@ -545,6 +548,8 @@ const translations = {
     noText: 'No',
     engineTitle: 'Engine Predictions',
     engineSubtitle: 'Dixon-Coles model trained on real match data — calibrated probabilities',
+    matchIntelTitle: 'Match Intelligence',
+    matchIntelSubtitle: 'Statistical prediction + news digest + multilingual match preview (updated nightly)',
     viewAll: 'View all →',
     detailedAnalysis: 'Detailed Match Analysis',
     detailedAnalysisSub: 'Select a match to see the AI-powered deep analysis'
@@ -761,6 +766,8 @@ const translations = {
     noText: 'Nein',
     engineTitle: 'Engine-Vorhersagen',
     engineSubtitle: 'Dixon-Coles-Modell mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten',
+    matchIntelTitle: 'Match Intelligence',
+    matchIntelSubtitle: 'Statistische Vorhersage + Nachrichten + mehrsprachige Spielvorschau (nächtlich aktualisiert)',
     viewAll: 'Alle ansehen →',
     detailedAnalysis: 'Detaillierte Spielanalyse',
     detailedAnalysisSub: 'Wählen Sie ein Spiel für die KI-gestützte Tiefenanalyse'
@@ -2444,6 +2451,23 @@ export default function DashboardPage() {
             </Link>
           </div>
           <EnginePredictions lang={lang} showStats={true} showControls={false} limit={6} />
+        </motion.section>
+
+        {/* 🧠 MATCH INTELLIGENCE (Dolphin news digest + çok dilli preview) — additive, cache'ten okur */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10"
+        >
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-cyan-400">🧠</span>
+              {t.matchIntelTitle}
+            </h2>
+            <p className="text-xs text-white/40 mt-0.5">{t.matchIntelSubtitle}</p>
+          </div>
+          <MatchIntelligence lang={lang} limit={8} />
         </motion.section>
 
         {/* Bölüm ayırıcı: Detaylı manuel maç analizi alanı */}

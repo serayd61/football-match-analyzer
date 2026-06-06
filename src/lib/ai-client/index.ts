@@ -3,7 +3,7 @@
 // Replaces Heurist with direct API calls + MCP support
 // ============================================================================
 
-export type AIModel = 'claude' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'deepseek';
+export type AIModel = 'claude' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'deepseek' | 'dolphin';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -36,12 +36,20 @@ export class AIClient {
   private anthropicApiKey: string;
   private openaiApiKey: string;
   private deepseekApiKey: string;
+  private ollamaBaseUrl: string;
+  private ollamaModel: string;
   private mcpServerUrl?: string;
 
   constructor() {
     this.anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
     this.openaiApiKey = process.env.OPENAI_API_KEY || '';
     this.deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
+    // Dolphin / Ollama — OpenAI-uyumlu /v1 endpoint (Hetzner CPU-only sunucu).
+    // ⚠️ NOT: Vercel, Hetzner'in localhost'una erişemez. Bu istemci üretimde
+    // yalnızca Hetzner'de çalışan batch script'ler için anlamlıdır; Vercel
+    // tarafında base_url erişilemezse zarifçe null döner (fallback korunur).
+    this.ollamaBaseUrl = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1').replace(/\/$/, '');
+    this.ollamaModel = process.env.OLLAMA_MODEL || 'dolphin3:8b';
     // Use internal MCP server by default, or external if configured
     this.mcpServerUrl = process.env.MCP_SERVER_URL || this.getInternalMCPUrl();
     
@@ -329,6 +337,70 @@ export class AIClient {
   }
 
   /**
+   * Call Dolphin (Ollama, OpenAI-uyumlu /v1) — ucuz batch işçisi.
+   * Kullanım: haber özetleme, anlatı üretimi, çeviri. ASLA skor/olasılık üretmez.
+   * base_url = OLLAMA_BASE_URL, model = OLLAMA_MODEL. API key Ollama'da gereksiz,
+   * placeholder gönderiyoruz. Hata/timeout'ta null → çağıran taraf fallback yapar.
+   */
+  async callDolphin(
+    messages: AIMessage[],
+    options: AIOptions = {}
+  ): Promise<string | null> {
+    const model = this.ollamaModel;
+
+    const temperature = options.temperature ?? 0.4;
+    const maxTokens = options.maxTokens ?? 1500;
+    const timeout = options.timeout ?? 60000; // CPU-only → cömert timeout
+
+    try {
+      console.log(`🐬 Dolphin calling ${model} @ ${this.ollamaBaseUrl}`);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(`${this.ollamaBaseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          // Ollama API key istemez; OpenAI-uyumluluk için placeholder.
+          'Authorization': `Bearer ${process.env.OLLAMA_API_KEY || 'ollama'}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          messages,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Dolphin API error: ${response.status}`, errorText);
+        return null;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || null;
+
+      if (content) {
+        console.log(`✅ Dolphin response: ${content.length} chars`);
+      }
+
+      return content;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ Dolphin API timeout after ${timeout}ms`);
+      } else {
+        console.error('❌ Dolphin request error:', error?.message || error);
+      }
+      return null;
+    }
+  }
+
+  /**
    * MCP Fallback - Get data directly from MCP when AI fails
    */
   private async getMCPFallbackData(fixtureId: number, tools: string[]): Promise<string | null> {
@@ -446,8 +518,10 @@ export class AIClient {
     options: AIOptions = {}
   ): Promise<string | null> {
     const model = options.model || 'claude';
-    
-    if (model === 'deepseek') {
+
+    if (model === 'dolphin') {
+      return this.callDolphin(messages, options);
+    } else if (model === 'deepseek') {
       return this.callDeepSeek(messages, options);
     } else if (model === 'claude' || model.startsWith('claude')) {
       return this.callClaude(messages, options);
