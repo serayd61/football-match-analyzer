@@ -79,7 +79,9 @@ function ymd(d) { return d.toISOString().split('T')[0]; }
 async function fetchUpcomingMatches() {
   const from = new Date();
   const to = new Date();
-  to.setDate(to.getDate() + DAYS);
+  // football-data.org ücretsiz plan: tarih aralığı max 10 gün → kısıtla.
+  const spanDays = Math.min(DAYS, 10);
+  to.setDate(to.getDate() + spanDays);
   const url = `${FD_BASE}/matches?competitions=${COMPETITIONS.join(',')}&dateFrom=${ymd(from)}&dateTo=${ymd(to)}&status=SCHEDULED,TIMED`;
   const res = await fetch(url, { headers: fdHeaders });
   if (!res.ok) throw new Error(`football-data matches ${res.status}: ${await res.text()}`);
