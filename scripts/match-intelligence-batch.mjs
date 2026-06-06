@@ -206,7 +206,9 @@ async function collectNewsText(match) {
 // ----------------------------------------------------------------------------
 // LLM yardımcıları
 // ----------------------------------------------------------------------------
-async function callDolphin(messages, { temperature = 0.4, maxTokens = 900, timeout = 60000 } = {}) {
+const OLLAMA_TIMEOUT_MS = parseInt(ENV.OLLAMA_TIMEOUT_MS || '180000', 10); // CPU-only → cömert
+
+async function callDolphin(messages, { temperature = 0.4, maxTokens = 900, timeout = OLLAMA_TIMEOUT_MS } = {}) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeout);
   try {
@@ -387,11 +389,11 @@ async function main() {
       const rawNews = await collectNewsText(match);                        // (b)
       const digest = await summarizeNews(match, rawNews);                  // (c) Dolphin
 
-      const [tr, en, de] = await Promise.all([                            // (d)
-        generatePreview('tr', match, stats, digest),
-        generatePreview('en', match, stats, digest),
-        generatePreview('de', match, stats, digest),
-      ]);
+      // CPU-only sunucuda Ollama istekleri sıraya koyar → paralel çağrılar
+      // sırada beklerken timeout'a düşer. Bu yüzden önizlemeleri SIRAYLA üret.
+      const tr = await generatePreview('tr', match, stats, digest);       // (d)
+      const en = await generatePreview('en', match, stats, digest);
+      const de = await generatePreview('de', match, stats, digest);
 
       const confidence = await generateConfidence(match, stats, digest);  // (FAZ 4)
 
