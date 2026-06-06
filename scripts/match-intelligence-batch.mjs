@@ -92,8 +92,10 @@ async function fetchUpcomingMatches() {
     leagueName: m.competition?.name ?? null,
     homeId: m.homeTeam?.id ?? null,
     homeName: m.homeTeam?.name ?? null,
+    homeCrest: m.homeTeam?.crest ?? null,   // milli takımda = bayrak
     awayId: m.awayTeam?.id ?? null,
     awayName: m.awayTeam?.name ?? null,
+    awayCrest: m.awayTeam?.crest ?? null,
     kickoff: m.utcDate ?? null,
   }));
 }
@@ -403,8 +405,10 @@ async function main() {
         league_name: match.leagueName,
         home_id: match.homeId,
         home_name: match.homeName,
+        home_crest: match.homeCrest,
         away_id: match.awayId,
         away_name: match.awayName,
+        away_crest: match.awayCrest,
         kickoff: match.kickoff,
         stats_prediction: stats,
         news_digest: digest,

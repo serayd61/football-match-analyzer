@@ -26,7 +26,7 @@ function sb(): SupabaseClient {
 }
 
 const COLS =
-  'match_id, league_id, league_name, home_id, home_name, away_id, away_name, kickoff, ' +
+  'match_id, league_id, league_name, home_id, home_name, home_crest, away_id, away_name, away_crest, kickoff, ' +
   'stats_prediction, news_digest, preview_tr, preview_en, preview_de, confidence, ' +
   'preview_de_provider, model_version, updated_at';
 
@@ -37,8 +37,10 @@ function mapRow(r: any) {
     leagueName: r.league_name,
     homeId: r.home_id,
     homeName: r.home_name,
+    homeCrest: r.home_crest,
     awayId: r.away_id,
     awayName: r.away_name,
+    awayCrest: r.away_crest,
     kickoff: r.kickoff,
     statsPrediction: r.stats_prediction,
     newsDigest: r.news_digest,

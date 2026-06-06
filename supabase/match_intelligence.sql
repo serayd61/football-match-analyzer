@@ -25,8 +25,10 @@ create table if not exists public.match_intelligence (
   league_name     text,
   home_id         bigint,
   home_name       text,
+  home_crest      text,        -- football-data crest URL (milli takımda = bayrak)
   away_id         bigint,
   away_name       text,
+  away_crest      text,
   kickoff         timestamptz,
 
   -- istatistik tahmini (LLM DEĞİL — model çıktısı). Şema örneği:
