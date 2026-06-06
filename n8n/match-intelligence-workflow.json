@@ -1,0 +1,74 @@
+{
+    "name": "Match Intelligence — Nightly Batch (Hetzner/Dolphin)",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "0 2 * * *"
+                        }
+                    ]
+                }
+            },
+            "id": "nightly-schedule",
+            "name": "Nightly Trigger (02:00)",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [220, 300]
+        },
+        {
+            "parameters": {
+                "command": "cd /opt/football-match-analyzer && node scripts/match-intelligence-batch.mjs --days 4 --limit 60"
+            },
+            "id": "run-batch",
+            "name": "Run Match Intelligence Batch",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [480, 300],
+            "notes": "Hetzner'de çalışır. Script Ollama'yı http://localhost:11434/v1 üzerinden çağırır, sonucu Supabase'e (service_role) yazar. Env: SUPABASE_*, FOOTBALL_DATA_API_KEY, OLLAMA_BASE_URL, OLLAMA_MODEL, PREVIEW_DE_PROVIDER (+ DE=claude/gpt ise ANTHROPIC_API_KEY/OPENAI_API_KEY)."
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.exitCode }}",
+                            "operation": "notEqual",
+                            "value2": 0
+                        }
+                    ]
+                }
+            },
+            "id": "check-exit",
+            "name": "Exit code != 0?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [720, 300]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Hata olursa burada bildirim (Slack/Email) tetiklenebilir.\nconsole.log('Match Intelligence batch FAILED:', $json.stderr);\nreturn $input.all();"
+            },
+            "id": "on-failure",
+            "name": "On Failure (notify)",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [960, 200]
+        }
+    ],
+    "connections": {
+        "Nightly Trigger (02:00)": {
+            "main": [[{ "node": "Run Match Intelligence Batch", "type": "main", "index": 0 }]]
+        },
+        "Run Match Intelligence Batch": {
+            "main": [[{ "node": "Exit code != 0?", "type": "main", "index": 0 }]]
+        },
+        "Exit code != 0?": {
+            "main": [[{ "node": "On Failure (notify)", "type": "main", "index": 0 }], []]
+        }
+    },
+    "settings": { "executionOrder": "v1" },
+    "_doc": "Gece 02:00'de Hetzner'de Match Intelligence batch script'ini çalıştırır. Dolphin (Ollama) localhost'tan çağrılır — Vercel bu akışta YOK. Alternatif: executeCommand yerine her maç için ayrı Ollama HTTP node'u kurulabilir, ancak tek script daha az hareketli parça (önerilen)."
+}
