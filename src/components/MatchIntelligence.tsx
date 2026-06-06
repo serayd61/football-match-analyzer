@@ -33,8 +33,8 @@ interface NewsDigest {
 export interface MatchIntel {
   matchId: number;
   leagueId: number | null; leagueName: string | null;
-  homeId: number | null; homeName: string | null;
-  awayId: number | null; awayName: string | null;
+  homeId: number | null; homeName: string | null; homeCrest?: string | null;
+  awayId: number | null; awayName: string | null; awayCrest?: string | null;
   kickoff: string | null;
   statsPrediction: StatsPrediction | null;
   newsDigest: NewsDigest | null;
@@ -44,8 +44,6 @@ export interface MatchIntel {
   updatedAt: string | null;
 }
 
-const LOGO = (id: number | null) =>
-  id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : '';
 const pct = (x?: number | null) => (x == null ? '–' : `${Math.round(x * 100)}%`);
 
 const STR = {
@@ -93,9 +91,9 @@ const STR = {
   },
 };
 
-function TeamLogo({ id, name }: { id: number | null; name: string }) {
+function TeamLogo({ src, name }: { src?: string | null; name: string }) {
   const [ok, setOk] = useState(true);
-  if (!ok || !id) {
+  if (!ok || !src) {
     return (
       <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/70">
         {(name || '?').slice(0, 2).toUpperCase()}
@@ -103,7 +101,7 @@ function TeamLogo({ id, name }: { id: number | null; name: string }) {
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={LOGO(id)} alt={name} onError={() => setOk(false)} className="w-9 h-9 object-contain" loading="lazy" />;
+  return <img src={src} alt={name} onError={() => setOk(false)} className="w-9 h-9 object-contain" loading="lazy" />;
 }
 
 export default function MatchIntelligence({
@@ -242,12 +240,12 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
           <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-            <TeamLogo id={m.homeId} name={m.homeName || '?'} />
+            <TeamLogo src={m.homeCrest} name={m.homeName || '?'} />
             <span className="text-[11px] text-center text-white/80 truncate w-full">{m.homeName}</span>
           </div>
           <div className="text-white/30 text-xs font-bold px-1">VS</div>
           <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-            <TeamLogo id={m.awayId} name={m.awayName || '?'} />
+            <TeamLogo src={m.awayCrest} name={m.awayName || '?'} />
             <span className="text-[11px] text-center text-white/80 truncate w-full">{m.awayName}</span>
           </div>
         </div>
