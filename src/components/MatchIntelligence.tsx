@@ -12,8 +12,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Clock, Newspaper, Activity, AlertTriangle, ChevronDown, ChevronUp,
-  RefreshCw, Lock, Crown, Languages, Info,
+  Clock, Newspaper, Activity, AlertTriangle, ChevronUp,
+  RefreshCw, Lock, Crown, Languages, Info, Brain,
 } from 'lucide-react';
 
 type Lang = 'tr' | 'en' | 'de';
@@ -50,6 +50,7 @@ const pct = (x?: number | null) => (x == null ? '–' : `${Math.round(x * 100)}%
 
 const STR = {
   tr: {
+    analyze: 'Analiz Et', close: 'Kapat',
     title: 'Match Intelligence', home: 'Ev sahibi', draw: 'Beraberlik', away: 'Deplasman',
     over: 'Üst 2.5', btts: 'KG Var', stats: 'İstatistik tahmini', news: 'Haber özeti',
     preview: 'Maç önizlemesi', injuries: 'Sakatlıklar', suspensions: 'Cezalılar',
@@ -63,6 +64,7 @@ const STR = {
     gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.', gateSubCta: '7 gün ücretsiz dene',
   },
   en: {
+    analyze: 'Analyze', close: 'Close',
     title: 'Match Intelligence', home: 'Home', draw: 'Draw', away: 'Away',
     over: 'Over 2.5', btts: 'BTTS', stats: 'Statistical prediction', news: 'News digest',
     preview: 'Match preview', injuries: 'Injuries', suspensions: 'Suspensions',
@@ -76,6 +78,7 @@ const STR = {
     gateSubDesc: 'Try free for 7 days, cancel anytime.', gateSubCta: 'Start 7-day free trial',
   },
   de: {
+    analyze: 'Analysieren', close: 'Schliessen',
     title: 'Match Intelligence', home: 'Heim', draw: 'Unentschieden', away: 'Auswärts',
     over: 'Über 2.5', btts: 'BTTS', stats: 'Statistische Vorhersage', news: 'Nachrichten',
     preview: 'Spielvorschau', injuries: 'Verletzungen', suspensions: 'Sperren',
@@ -223,90 +226,110 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
   const injuries = d?.injuries || [];
   const suspensions = d?.suspensions || [];
   const facts = d?.key_facts || [];
+  const hasIntel = !!(previewText || d || (s && s.pHome != null));
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i * 0.03, 0.4) }}
-      className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 hover:border-cyan-400/30 transition-colors">
+      className={`rounded-2xl border bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-colors ${open ? 'border-cyan-400/40' : 'border-white/10 hover:border-cyan-400/20'}`}>
       {/* başlık */}
       <div className="flex items-center justify-between text-xs text-white/40 mb-3">
         <span className="truncate max-w-[55%]">{m.leagueName || '—'}</span>
         <span className="flex items-center gap-1"><Clock size={12} /> {koStr}</span>
       </div>
 
-      {/* takımlar */}
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-          <TeamLogo id={m.homeId} name={m.homeName || '?'} />
-          <span className="text-xs text-center text-white/80 truncate w-full">{m.homeName}</span>
+      {/* takımlar + Analiz Et butonu */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <TeamLogo id={m.homeId} name={m.homeName || '?'} />
+            <span className="text-[11px] text-center text-white/80 truncate w-full">{m.homeName}</span>
+          </div>
+          <div className="text-white/30 text-xs font-bold px-1">VS</div>
+          <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+            <TeamLogo id={m.awayId} name={m.awayName || '?'} />
+            <span className="text-[11px] text-center text-white/80 truncate w-full">{m.awayName}</span>
+          </div>
         </div>
-        <div className="text-white/30 text-xs font-bold px-2">VS</div>
-        <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-          <TeamLogo id={m.awayId} name={m.awayName || '?'} />
-          <span className="text-xs text-center text-white/80 truncate w-full">{m.awayName}</span>
-        </div>
-      </div>
-
-      {/* istatistik tahmini (LLM DEĞİL) */}
-      <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
-        <Activity size={12} className="text-cyan-300" /> {t.stats}
-        {s.source && <span className="text-white/25">· {s.source}</span>}
-      </div>
-      <div className="flex h-2 rounded-full overflow-hidden mb-1">
-        <div style={{ width: `${(s.pHome || 0) * 100}%` }} className="bg-cyan-400/70" />
-        <div style={{ width: `${(s.pDraw || 0) * 100}%` }} className="bg-amber-400/70" />
-        <div style={{ width: `${(s.pAway || 0) * 100}%` }} className="bg-fuchsia-500/70" />
-      </div>
-      <div className="flex justify-between text-[10px] text-white/40 mb-2">
-        <span>1 · {pct(s.pHome)}</span>
-        <span>X · {pct(s.pDraw)}</span>
-        <span>2 · {pct(s.pAway)}</span>
-      </div>
-      <div className="flex gap-2 mb-3">
-        <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{t.over}: <b className="text-white/80">{pct(s.pOver25)}</b></span>
-        <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{t.btts}: <b className="text-white/80">{pct(s.pBttsYes)}</b></span>
         <button onClick={onToggle}
-          className="ml-auto text-[11px] px-2 py-1 rounded-lg text-cyan-300/80 hover:text-cyan-300 flex items-center gap-1">
-          {t.why} {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-colors ${open
+            ? 'border-white/15 text-white/60 hover:text-white'
+            : 'border-cyan-400/40 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20'}`}>
+          {open ? (<>{t.close} <ChevronUp size={14} /></>) : (<><Brain size={14} /> {t.analyze}</>)}
         </button>
       </div>
 
-      {/* preview (seçili dil) */}
-      {previewText && (
-        <p className="text-xs text-white/70 leading-relaxed border-t border-white/10 pt-3">{previewText}</p>
-      )}
-
-      {/* açılır detay: news digest + güven */}
+      {/* açılır: tıklamayla o maçın analizi */}
       {open && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 border-t border-white/10 pt-3 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-white/50">
-            <Newspaper size={12} className="text-cyan-300" /> {t.news}
-            {d?.as_of && <span className="text-white/25">· {new Date(d.as_of).toLocaleDateString(t.locale)}</span>}
-          </div>
-          {!d ? (
-            <p className="text-[11px] text-white/35">{t.noData}</p>
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          className="mt-4 border-t border-white/10 pt-4 space-y-3 overflow-hidden">
+          {!hasIntel ? (
+            <p className="text-xs text-white/40 py-2">{t.noData}</p>
           ) : (
-            <div className="text-[11px] text-white/60 space-y-1">
-              <p><AlertTriangle size={11} className="inline text-amber-300/80 mr-1" />
-                <b className="text-white/70">{t.injuries}:</b>{' '}
-                {injuries.length ? injuries.map((x) => `${x.team || ''} ${x.player || ''}${x.status ? ` (${x.status})` : ''}`).join(', ') : t.none}
-              </p>
-              <p><b className="text-white/70">{t.suspensions}:</b>{' '}
-                {suspensions.length ? suspensions.map((x) => `${x.team || ''} ${x.player || ''}`).join(', ') : t.none}
-              </p>
-              {facts.length > 0 && (
-                <ul className="list-disc list-inside text-white/55">
-                  {facts.slice(0, 4).map((f, k) => <li key={k}>{f}</li>)}
-                </ul>
+            <>
+              {/* istatistik tahmini (LLM DEĞİL) */}
+              <div>
+                <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
+                  <Activity size={12} className="text-cyan-300" /> {t.stats}
+                  {s.source && <span className="text-white/25">· {s.source}</span>}
+                </div>
+                <div className="flex h-2 rounded-full overflow-hidden mb-1">
+                  <div style={{ width: `${(s.pHome || 0) * 100}%` }} className="bg-cyan-400/70" />
+                  <div style={{ width: `${(s.pDraw || 0) * 100}%` }} className="bg-amber-400/70" />
+                  <div style={{ width: `${(s.pAway || 0) * 100}%` }} className="bg-fuchsia-500/70" />
+                </div>
+                <div className="flex justify-between text-[10px] text-white/40 mb-2">
+                  <span>1 · {pct(s.pHome)}</span>
+                  <span>X · {pct(s.pDraw)}</span>
+                  <span>2 · {pct(s.pAway)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{t.over}: <b className="text-white/80">{pct(s.pOver25)}</b></span>
+                  <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{t.btts}: <b className="text-white/80">{pct(s.pBttsYes)}</b></span>
+                </div>
+              </div>
+
+              {/* preview (seçili dil) */}
+              {previewText && (
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
+                    <Newspaper size={12} className="text-cyan-300" /> {t.preview}
+                  </div>
+                  <p className="text-xs text-white/75 leading-relaxed">{previewText}</p>
+                </div>
               )}
-            </div>
+
+              {/* news digest */}
+              <div>
+                <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
+                  <AlertTriangle size={12} className="text-amber-300/80" /> {t.news}
+                  {d?.as_of && <span className="text-white/25">· {new Date(d.as_of).toLocaleDateString(t.locale)}</span>}
+                </div>
+                {!d ? (
+                  <p className="text-[11px] text-white/35">{t.noData}</p>
+                ) : (
+                  <div className="text-[11px] text-white/60 space-y-1">
+                    <p><b className="text-white/70">{t.injuries}:</b>{' '}
+                      {injuries.length ? injuries.map((x) => `${x.team || ''} ${x.player || ''}${x.status ? ` (${x.status})` : ''}`).join(', ') : t.none}</p>
+                    <p><b className="text-white/70">{t.suspensions}:</b>{' '}
+                      {suspensions.length ? suspensions.map((x) => `${x.team || ''} ${x.player || ''}`).join(', ') : t.none}</p>
+                    {facts.length > 0 && (
+                      <ul className="list-disc list-inside text-white/55">
+                        {facts.slice(0, 4).map((f, k) => <li key={k}>{f}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {m.confidence && (
+                <div className="text-[11px] text-white/60 border-t border-white/5 pt-2">
+                  <b className="text-white/70">Confidence:</b> {m.confidence}
+                </div>
+              )}
+              <p className="text-[10px] text-white/30">{t.statsNote}</p>
+            </>
           )}
-          {m.confidence && (
-            <div className="text-[11px] text-white/60 border-t border-white/5 pt-2">
-              <b className="text-white/70">Confidence:</b> {m.confidence}
-            </div>
-          )}
-          <p className="text-[10px] text-white/30 pt-1">{t.statsNote}</p>
         </motion.div>
       )}
     </motion.div>

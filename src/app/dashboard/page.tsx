@@ -17,6 +17,10 @@ import AIChatbot from '@/components/AIChatbot';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import EnginePredictions from '@/components/EnginePredictions';
 import MatchIntelligence from '@/components/MatchIntelligence';
+
+// Eski çok-modelli "Analiz Et" akışı frontend'den gizlendi (backend /api/analyze
+// korunuyor). Geri açmak için bunu true yap. — Match Intelligence ana akış oldu.
+const SHOW_LEGACY_ANALYSIS = false;
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -2467,9 +2471,11 @@ export default function DashboardPage() {
             </h2>
             <p className="text-xs text-white/40 mt-0.5">{t.matchIntelSubtitle}</p>
           </div>
-          <MatchIntelligence lang={lang} limit={8} />
+          <MatchIntelligence lang={lang} limit={30} />
         </motion.section>
 
+        {/* ⛔ Eski detaylı analiz akışı — frontend'den gizlendi (SHOW_LEGACY_ANALYSIS). */}
+        {SHOW_LEGACY_ANALYSIS && (<>
         {/* Bölüm ayırıcı: Detaylı manuel maç analizi alanı */}
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-shrink-0">
@@ -3659,8 +3665,9 @@ export default function DashboardPage() {
             )}
           </motion.div>
         </div>
+        </>)}
       </main>
-      
+
       {/* Paywall Modal */}
       <Paywall
         isOpen={showPaywall}
