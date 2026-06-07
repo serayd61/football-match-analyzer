@@ -26,7 +26,10 @@ export async function hasEnginePredictionAccess(email?: string | null): Promise<
       .ilike('email', email)
       .maybeSingle();
     const ps = String(profile?.subscription_status || '').toLowerCase();
-    if (['active', 'trial', 'trialing', 'pro', 'premium'].includes(ps)) return true;
+    // NOT: 'trial'/'trialing' profiles değeri ARTIK erişim VERMEZ — kart-zorunlu
+    // kuralı gereği gerçek trial'lar Stripe webhook'uyla profiles='active' olur.
+    // Stale/kartsız 'trial' kayıtları (eski sızıntı) erişemesin.
+    if (['active', 'pro', 'premium'].includes(ps)) return true;
   } catch (e) {
     console.error('[access] profiles check failed', e);
   }
@@ -83,18 +86,14 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
   console.log('📊 Profile query result:', JSON.stringify({ profile, error }));
   console.log('📊 subscription_status:', profile?.subscription_status);
 
-  // Profil yoksa oluştur (1 gün trial, 3 analiz limiti)
+  // Profil yoksa oluştur — KART-ZORUNLU: kartsız trial VERME, 'free' başlat.
+  // 7 gün ücretsiz deneme yalnızca Stripe Checkout'tan (kart girilerek) başlar.
   if (!profile) {
-    const trialEnds = new Date();
-    trialEnds.setDate(trialEnds.getDate() + 1); // 1 gün trial
-
     const { data: newProfile } = await db
       .from('profiles')
       .insert({
         email,
-        subscription_status: 'trial',
-        trial_start_date: now.toISOString(),
-        trial_ends_at: trialEnds.toISOString(),
+        subscription_status: 'free',
         analyses_today: 0,
       })
       .select()
