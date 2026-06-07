@@ -60,8 +60,14 @@ export async function GET(request: NextRequest) {
     // o günün maçları (kickoff o tarihte)
     q = q.gte('kickoff', `${date}T00:00:00Z`).lt('kickoff', `${date}T23:59:59Z`);
   } else {
-    // varsayılan: henüz sonuçlanmamış (yaklaşan) tahminler
-    q = q.eq('settled', false);
+    // Dashboard varsayılanı: SADECE önümüzdeki 24 saat içindeki, henüz
+    // sonuçlanmamış maçlar. Geçmiş maçlar settlement ile performansa taşınır.
+    const now = new Date();
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    q = q
+      .eq('settled', false)
+      .gte('kickoff', now.toISOString())
+      .lte('kickoff', in24h.toISOString());
   }
 
   const { data, error } = await q;
