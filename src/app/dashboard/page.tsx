@@ -17,6 +17,7 @@ import AIChatbot from '@/components/AIChatbot';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import EnginePredictions from '@/components/EnginePredictions';
 import MatchIntelligence from '@/components/MatchIntelligence';
+import EnginePerformance from '@/components/EnginePerformance';
 
 // Eski çok-modelli "Analiz Et" akışı frontend'den gizlendi (backend /api/analyze
 // korunuyor). Geri açmak için bunu true yap. — Match Intelligence ana akış oldu.
@@ -336,6 +337,8 @@ const translations = {
     engineSubtitle: 'Gerçek maç verisiyle eğitilmiş Dixon-Coles modeli — kalibre olasılıklar',
     matchIntelTitle: 'Match Intelligence',
     matchIntelSubtitle: 'İstatistik tahmini + haber özeti + çok dilli maç önizlemesi (gece güncellenir)',
+    enginePerfTitle: 'Motor Performansı',
+    enginePerfSubtitle: 'Biten maçların tahmin doğruluğu — otomatik sonuçlandırılır',
     viewAll: 'Tümünü gör →',
     detailedAnalysis: 'Detaylı Maç Analizi',
     detailedAnalysisSub: 'Bir maç seçin ve yapay zeka destekli derin analizi görün'
@@ -554,6 +557,8 @@ const translations = {
     engineSubtitle: 'Dixon-Coles model trained on real match data — calibrated probabilities',
     matchIntelTitle: 'Match Intelligence',
     matchIntelSubtitle: 'Statistical prediction + news digest + multilingual match preview (updated nightly)',
+    enginePerfTitle: 'Engine Performance',
+    enginePerfSubtitle: 'Prediction accuracy of finished matches — settled automatically',
     viewAll: 'View all →',
     detailedAnalysis: 'Detailed Match Analysis',
     detailedAnalysisSub: 'Select a match to see the AI-powered deep analysis'
@@ -772,6 +777,8 @@ const translations = {
     engineSubtitle: 'Dixon-Coles-Modell mit echten Spieldaten trainiert — kalibrierte Wahrscheinlichkeiten',
     matchIntelTitle: 'Match Intelligence',
     matchIntelSubtitle: 'Statistische Vorhersage + Nachrichten + mehrsprachige Spielvorschau (nächtlich aktualisiert)',
+    enginePerfTitle: 'Engine-Leistung',
+    enginePerfSubtitle: 'Vorhersagegenauigkeit beendeter Spiele — automatisch abgeschlossen',
     viewAll: 'Alle ansehen →',
     detailedAnalysis: 'Detaillierte Spielanalyse',
     detailedAnalysisSub: 'Wählen Sie ein Spiel für die KI-gestützte Tiefenanalyse'
@@ -2472,6 +2479,23 @@ export default function DashboardPage() {
             <p className="text-xs text-white/40 mt-0.5">{t.matchIntelSubtitle}</p>
           </div>
           <MatchIntelligence lang={lang} limit={30} />
+        </motion.section>
+
+        {/* 📈 MOTOR PERFORMANSI (sonuçlanan tahminler — doğruluk takibi) */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10"
+        >
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-emerald-400">📈</span>
+              {t.enginePerfTitle}
+            </h2>
+            <p className="text-xs text-white/40 mt-0.5">{t.enginePerfSubtitle}</p>
+          </div>
+          <EnginePerformance lang={lang} recent={30} />
         </motion.section>
 
         {/* ⛔ Eski detaylı analiz akışı — frontend'den gizlendi (SHOW_LEGACY_ANALYSIS). */}
