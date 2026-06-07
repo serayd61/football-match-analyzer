@@ -36,10 +36,10 @@ export default function LoginPage() {
       forgotPassword: 'Şifremi Unuttum',
       or: 'veya',
       features: [
-        '🤖 4 AI + 5 Heurist Agent ile Analiz',
-        '📊 Detaylı İstatistik ve Form Analizi',
-        '💰 Value Bet Tespiti',
-        '🌍 50+ Lig Desteği',
+        '📊 İstatistik motoru — kalibre olasılıklar',
+        '🧠 Match Intelligence — haber özeti + maç önizlemesi',
+        '💰 Value Bet tespiti',
+        '🌍 50+ lig · 3 dil (TR · EN · DE)',
       ],
       trusted: '10.000+ kullanıcı tarafından tercih ediliyor',
       errorInvalid: 'Geçersiz e-posta veya şifre',
@@ -61,10 +61,10 @@ export default function LoginPage() {
       forgotPassword: 'Forgot Password',
       or: 'or',
       features: [
-        '🤖 Analysis with 4 AI + 5 Heurist Agents',
-        '📊 Detailed Statistics & Form Analysis',
-        '💰 Value Bet Detection',
-        '🌍 50+ Leagues Supported',
+        '📊 Statistical engine — calibrated probabilities',
+        '🧠 Match Intelligence — news digest + match preview',
+        '💰 Value bet detection',
+        '🌍 50+ leagues · 3 languages (TR · EN · DE)',
       ],
       trusted: 'Trusted by 10,000+ users',
       errorInvalid: 'Invalid email or password',
@@ -86,10 +86,10 @@ export default function LoginPage() {
       forgotPassword: 'Passwort vergessen',
       or: 'oder',
       features: [
-        '🤖 Analyse mit 4 KI + 5 Heurist Agenten',
-        '📊 Detaillierte Statistiken & Formanalyse',
-        '💰 Value Bet Erkennung',
-        '🌍 50+ Ligen unterstützt',
+        '📊 Statistik-Engine — kalibrierte Wahrscheinlichkeiten',
+        '🧠 Match Intelligence — Nachrichten + Spielvorschau',
+        '💰 Value-Bet-Erkennung',
+        '🌍 50+ Ligen · 3 Sprachen (TR · EN · DE)',
       ],
       trusted: 'Von über 10.000 Nutzern vertraut',
       errorInvalid: 'Ungültige E-Mail oder Passwort',
@@ -223,8 +223,8 @@ export default function LoginPage() {
               <div className="text-sm text-gray-400">{lang === 'tr' ? 'Lig' : lang === 'de' ? 'Ligen' : 'Leagues'}</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-white">9</div>
-              <div className="text-sm text-gray-400">{lang === 'tr' ? 'AI Model' : lang === 'de' ? 'KI-Modelle' : 'AI Models'}</div>
+              <div className="text-3xl font-bold text-white">3</div>
+              <div className="text-sm text-gray-400">{lang === 'tr' ? 'Dil (TR·EN·DE)' : lang === 'de' ? 'Sprachen' : 'Languages'}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white">85%+</div>
