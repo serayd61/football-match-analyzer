@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,14 +9,10 @@ import Navigation from '@/components/Navigation';
 import { FootballBall3D, SimpleFootballIcon } from '@/components/Football3D';
 import { motion } from 'framer-motion';
 
-// 📹 YOUTUBE VIDEO ID - Football Match Analyzer Demo
-const YOUTUBE_VIDEO_ID = 'uL6L9QIRs94';
-
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { lang } = useLanguage();
-  const [showVideoModal, setShowVideoModal] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -624,8 +620,8 @@ export default function HomePage() {
                   </svg>
                 </Link>
               </motion.div>
-              <motion.button 
-                onClick={() => setShowVideoModal(true)}
+              <motion.button
+                onClick={() => document.getElementById('promo-video')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                 className="px-8 py-4 glass-futuristic border border-gray-700/50 text-white font-semibold text-lg rounded-2xl transition-all flex items-center justify-center gap-2 hover:border-[#00f0ff]/50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -672,6 +668,42 @@ export default function HomePage() {
                 <div className="text-gray-400 text-sm">{stat.label}</div>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 🎬 Promo Video */}
+      <section id="promo-video" className="py-12 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            className="text-center mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
+              {lang === 'tr' ? 'Bir bakışta' : lang === 'de' ? 'Auf einen Blick' : 'See it in action'}
+            </h2>
+          </motion.div>
+          <motion.div
+            className="relative rounded-2xl overflow-hidden glass-futuristic border border-[#00f0ff]/30 neon-border-cyan shadow-2xl"
+            initial={{ opacity: 0, scale: 0.96 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <video
+              className="w-full h-auto block"
+              src="/promo.mp4"
+              poster="/promo-poster.jpg"
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
           </motion.div>
         </div>
       </section>
@@ -1166,41 +1198,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      {/* Video Modal */}
-      {showVideoModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setShowVideoModal(false)}
-        >
-          <div 
-            className="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowVideoModal(false)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors flex items-center gap-2"
-            >
-              <span className="text-sm">
-                {lang === 'tr' ? 'Kapat' : lang === 'de' ? 'Schließen' : 'Close'}
-              </span>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* YouTube Shorts Embed */}
-            <iframe
-              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
-              title="How It Works"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
