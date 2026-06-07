@@ -149,6 +149,24 @@ export default function HomePage() {
           cancelAnytime: '✓ İstediğiniz zaman iptal',
         },
       },
+      matchIntel: {
+        badge: '🧠 YENİ · Match Intelligence',
+        title: 'Her maç için akıllı önizleme',
+        subtitle: 'İstatistiksel olasılıklar + yapay zekâ haber özeti + 3 dilde maç anlatısı — hepsi tek kartta.',
+        bullets: [
+          { icon: '📊', title: 'Gerçek olasılıklar', desc: 'Tahminler istatistik modelinden gelir — yapay zekâ skor uydurmaz.' },
+          { icon: '📰', title: 'Haber & sakatlık özeti', desc: 'Maç öncesi önemli gelişmeler nötr ve sade biçimde derlenir.' },
+          { icon: '🌍', title: '3 dil (TR · EN · DE)', desc: 'Her önizleme Türkçe, İngilizce ve Almanca hazır.' },
+          { icon: '🌙', title: 'Her gece güncel', desc: 'Yaklaşan maçlar otomatik analiz edilir, sabaha hazır olur.' },
+        ],
+        sampleLabel: 'Örnek',
+        sampleLeague: 'FIFA Dünya Kupası',
+        sampleHome: 'Fransa', sampleAway: 'Belçika',
+        probHome: 'Fransa %46', probDraw: 'Beraberlik %27', probAway: 'Belçika %27',
+        over: 'Üst 2.5', btts: 'KG Var', previewLabel: 'Önizleme',
+        samplePreview: 'Fransa istatistiksel olarak hafif favori (%46). Beklenen goller yakın; her iki takımın da gol atma olasılığı yüksek. Sakatlık tablosu dengeli.',
+        cta: 'Ücretsiz Dene',
+      },
       testimonials: {
         title: 'Kullanıcılarımız Ne Diyor?',
         items: [
@@ -303,6 +321,24 @@ export default function HomePage() {
           trialDesc: 'Try free for 7 days after entering your card details. Cancel instantly anytime!',
           cancelAnytime: '✓ Cancel anytime',
         },
+      },
+      matchIntel: {
+        badge: '🧠 NEW · Match Intelligence',
+        title: 'A smart preview for every match',
+        subtitle: 'Statistical probabilities + AI news digest + match narrative in 3 languages — all in one card.',
+        bullets: [
+          { icon: '📊', title: 'Real probabilities', desc: 'Predictions come from a statistical model — the AI never invents a score.' },
+          { icon: '📰', title: 'News & injury digest', desc: 'Key pre-match developments, summarised neutrally and clearly.' },
+          { icon: '🌍', title: '3 languages (TR · EN · DE)', desc: 'Every preview ready in Turkish, English and German.' },
+          { icon: '🌙', title: 'Updated nightly', desc: 'Upcoming matches are analysed automatically, ready by morning.' },
+        ],
+        sampleLabel: 'Example',
+        sampleLeague: 'FIFA World Cup',
+        sampleHome: 'France', sampleAway: 'Belgium',
+        probHome: 'France 46%', probDraw: 'Draw 27%', probAway: 'Belgium 27%',
+        over: 'Over 2.5', btts: 'BTTS', previewLabel: 'Preview',
+        samplePreview: 'France are slight statistical favourites (46%). Expected goals are close; both teams are likely to score. The injury picture is balanced.',
+        cta: 'Try it free',
       },
       testimonials: {
         title: 'What Our Users Say',
@@ -460,6 +496,24 @@ export default function HomePage() {
         trialDesc: 'Nach Eingabe Ihrer Kartendaten 7 Tage kostenlos testen. Jederzeit sofort kündigen!',
         cancelAnytime: '✓ Jederzeit kündbar',
       },
+    },
+    matchIntel: {
+      badge: '🧠 NEU · Match Intelligence',
+      title: 'Eine smarte Vorschau für jedes Spiel',
+      subtitle: 'Statistische Wahrscheinlichkeiten + KI-Nachrichten + Spielvorschau in 3 Sprachen — alles in einer Karte.',
+      bullets: [
+        { icon: '📊', title: 'Echte Wahrscheinlichkeiten', desc: 'Prognosen stammen aus einem statistischen Modell — die KI erfindet kein Ergebnis.' },
+        { icon: '📰', title: 'Nachrichten & Verletzungen', desc: 'Wichtige Entwicklungen vor dem Spiel, neutral und klar zusammengefasst.' },
+        { icon: '🌍', title: '3 Sprachen (TR · EN · DE)', desc: 'Jede Vorschau auf Türkisch, Englisch und Deutsch bereit.' },
+        { icon: '🌙', title: 'Jede Nacht aktuell', desc: 'Bevorstehende Spiele werden automatisch analysiert, bis zum Morgen bereit.' },
+      ],
+      sampleLabel: 'Beispiel',
+      sampleLeague: 'FIFA-Weltmeisterschaft',
+      sampleHome: 'Frankreich', sampleAway: 'Belgien',
+      probHome: 'Frankreich 46%', probDraw: 'Unentschieden 27%', probAway: 'Belgien 27%',
+      over: 'Über 2.5', btts: 'BTTS', previewLabel: 'Vorschau',
+      samplePreview: 'Frankreich ist statistisch leicht favorisiert (46%). Die erwarteten Tore liegen nahe beieinander; beide Teams treffen wahrscheinlich. Die Verletzungslage ist ausgeglichen.',
+      cta: 'Kostenlos testen',
     },
     testimonials: {
       title: 'Was unsere Nutzer sagen',
@@ -735,6 +789,89 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 🧠 Match Intelligence Showcase */}
+      {'matchIntel' in l && (
+        <section className="py-20 px-4 bg-gradient-to-br from-cyan-900/20 via-transparent to-fuchsia-900/20 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30 pointer-events-none">
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-fuchsia-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/15 border border-cyan-500/30 rounded-full text-cyan-300 text-sm font-bold mb-4">
+                {(l as any).matchIntel.badge}
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">{(l as any).matchIntel.title}</h2>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto">{(l as any).matchIntel.subtitle}</p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-10 items-center">
+              {/* Sol: özellikler */}
+              <div className="space-y-4">
+                {(l as any).matchIntel.bullets.map((b: any, idx: number) => (
+                  <div key={idx} className="flex items-start gap-4 bg-gray-800/40 border border-white/10 rounded-2xl p-5 hover:border-cyan-400/30 transition-all">
+                    <div className="text-3xl shrink-0">{b.icon}</div>
+                    <div>
+                      <h3 className="text-white font-bold mb-1">{b.title}</h3>
+                      <p className="text-gray-400 text-sm">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-2">
+                  <Link href="/login" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 transition-all">
+                    {(l as any).matchIntel.cta} →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Sağ: canlı görünümlü kart mockup */}
+              <div className="relative">
+                <div className="bg-gradient-to-b from-white/[0.07] to-white/[0.02] border border-cyan-400/20 rounded-3xl p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs text-cyan-300/70 font-mono uppercase tracking-wide">{(l as any).matchIntel.sampleLabel}</span>
+                    <div className="flex gap-1">
+                      {['TR', 'EN', 'DE'].map((x) => (
+                        <span key={x} className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${x === String(lang).toUpperCase() ? 'bg-cyan-400/20 text-cyan-300' : 'bg-white/5 text-white/40'}`}>{x}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-xs text-white/40 mb-3">{(l as any).matchIntel.sampleLeague}</div>
+                  <div className="flex items-center justify-between gap-2 mb-5">
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="text-3xl">🇫🇷</div>
+                      <span className="text-sm text-white/80">{(l as any).matchIntel.sampleHome}</span>
+                    </div>
+                    <div className="text-white/30 text-xs font-bold">VS</div>
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="text-3xl">🇧🇪</div>
+                      <span className="text-sm text-white/80">{(l as any).matchIntel.sampleAway}</span>
+                    </div>
+                  </div>
+                  <div className="flex h-2.5 rounded-full overflow-hidden mb-1.5">
+                    <div className="bg-cyan-400/70" style={{ width: '46%' }} />
+                    <div className="bg-amber-400/70" style={{ width: '27%' }} />
+                    <div className="bg-fuchsia-500/70" style={{ width: '27%' }} />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-white/50 mb-4">
+                    <span>{(l as any).matchIntel.probHome}</span>
+                    <span>{(l as any).matchIntel.probDraw}</span>
+                    <span>{(l as any).matchIntel.probAway}</span>
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    <span className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{(l as any).matchIntel.over}: <b className="text-white/80">55%</b></span>
+                    <span className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">{(l as any).matchIntel.btts}: <b className="text-white/80">58%</b></span>
+                  </div>
+                  <div className="border-t border-white/10 pt-3">
+                    <div className="flex items-center gap-1.5 text-[11px] text-cyan-300/70 mb-1.5">📰 {(l as any).matchIntel.previewLabel}</div>
+                    <p className="text-xs text-white/70 leading-relaxed">{(l as any).matchIntel.samplePreview}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Tipster League Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-orange-900/20 to-yellow-900/20">
