@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase';
+import { sendPaymentFailedEmail } from '@/lib/email';
 import Stripe from 'stripe';
 
 // ---------------------------------------------------------------------------
@@ -264,6 +265,27 @@ export async function POST(request: NextRequest) {
             status: 'past_due',
           });
           await syncProfileStatus(await getCustomerEmail(customerId, email), 'free');
+        }
+
+        // Kart güncelleme hatırlatma e-postası (best-effort — webhook'u bozmasın)
+        try {
+          const notifyEmail = await getCustomerEmail(customerId, email);
+          if (notifyEmail) {
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://footballanalytics.pro';
+            let manageUrl = `${siteUrl}/pricing`;
+            try {
+              const portal = await stripe.billingPortal.sessions.create({
+                customer: customerId,
+                return_url: `${siteUrl}/dashboard`,
+              });
+              manageUrl = portal.url;
+            } catch (e) {
+              console.warn('[stripe-webhook] billing portal link failed, fallback /pricing');
+            }
+            await sendPaymentFailedEmail(notifyEmail, manageUrl);
+          }
+        } catch (e: any) {
+          console.error('[stripe-webhook] payment-failed email error:', e?.message);
         }
         break;
       }
