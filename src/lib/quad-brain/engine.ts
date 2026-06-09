@@ -1178,6 +1178,37 @@ export async function runQuadBrainAnalysis(
     }
   }
 
+  // 11.5 📊 DIXON-COLES SKOR MATRİSİ (KOŞULLU)
+  // DC modeli varsa, LLM'in UYDURDUĞU poissonScores'u gerçek matematiksel
+  // skor matrisiyle değiştir. DC yoksa (kapsam dışı lig / takım eşleşmedi)
+  // mevcut LLM davranışı korunur — yanıt asla boşalmaz.
+  try {
+    const { getModelForLeague } = await import('../statistical/model-store');
+    const { runStatisticalAgent, resolveTeam } = await import('../statistical/statistical-agent');
+    const dcModel = await getModelForLeague(matchData.league);
+    if (dcModel) {
+      const h = resolveTeam(dcModel, matchData.homeTeam);
+      const a = resolveTeam(dcModel, matchData.awayTeam);
+      if (h && a) {
+        const stat = runStatisticalAgent(dcModel, h, a);
+        const realScores = stat.groundTruth.correctScore.map(s => ({
+          score: s.score,
+          probability: +(s.prob * 100).toFixed(1),
+        }));
+        for (const model of modelsUsed) {
+          const pred = (predictions as any)[model];
+          if (pred?.specializedInsights) {
+            pred.specializedInsights.poissonScores = realScores;
+            pred.specializedInsights.scoreSource = 'dixon-coles';
+          }
+        }
+        console.log(`📊 Quad-Brain: poissonScores Dixon-Coles ile değiştirildi (${h} vs ${a}, en olası ${stat.mostLikelyScore}).`);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Quad-Brain Dixon-Coles skor override atlandı:', e);
+  }
+
   // 12. FINAL RESULT
   console.log('\n' + '═'.repeat(60));
   console.log(`✅ QUAD-BRAIN ANALYSIS COMPLETE (${timing.total}ms)`);

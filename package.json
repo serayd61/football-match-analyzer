@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "backtest": "tsx scripts/backtest-dc.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.14.0",
@@ -44,6 +45,7 @@
     "autoprefixer": "^10",
     "postcss": "^8",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

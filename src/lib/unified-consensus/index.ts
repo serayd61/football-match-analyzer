@@ -15,6 +15,9 @@ import { predict as autolearnPredict } from '../autolearn/model';
 import { extractAgentPredictionsFromAnalysis, extractMatchContextFromAnalysis, type AgentPredictions as AutoLearnAgentPredictions } from '../autolearn/features';
 import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model';
 import { predict as survivalPredict, verdict as survivalVerdict, type SurvivalPrediction, type SurvivalVerdict } from '../survival-agent';
+// 📊 Dixon-Coles istatistiksel motor (opsiyonel anchor + konsensüs oyu)
+import { getModelForLeague } from '../statistical/model-store';
+import { runStatisticalAgent, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
@@ -116,6 +119,8 @@ export interface UnifiedConsensusResult {
       masterStrategist?: any;
       geniusAnalyst?: any;
       devilsAdvocate?: any;
+      dixonColes?: any; // 📊 İstatistiksel motor (Dixon-Coles)
+      autoLearn?: any;
     };
     ai?: {
       smart?: SmartAnalysisResult;
@@ -147,6 +152,33 @@ export async function runUnifiedConsensus(
   const systemsUsed: string[] = [];
 
   try {
+    // 0. 📊 Dixon-Coles İstatistiksel Motoru (opsiyonel — LLM agent'larından ÖNCE)
+    // Geçmiş maçlardan fit edilmiş model varsa olasılıkları HESAPLAR; LLM bunu
+    // anchor (zemin gerçeği) olarak alır. Lig kapsam dışıysa / takım modelde yoksa
+    // tamamen atlanır, mevcut akış birebir devam eder. ASLA analizi patlatmaz.
+    let statAgent: StatAgentOutput | null = null;
+    let statAnchor: string | undefined;
+    try {
+      const dcModel = await getModelForLeague(input.league);
+      if (dcModel) {
+        const homeMatch = resolveTeam(dcModel, input.homeTeam);
+        const awayMatch = resolveTeam(dcModel, input.awayTeam);
+        if (homeMatch && awayMatch) {
+          statAgent = runStatisticalAgent(dcModel, homeMatch, awayMatch);
+          statAnchor = buildHybridPromptBlock(statAgent, input.homeTeam, input.awayTeam);
+          systemsUsed.push('dixonColes');
+          const mr = statAgent.matchResult.probabilities;
+          console.log(`📊 Dixon-Coles: Ev %${(mr.home * 100).toFixed(1)} | Ber %${(mr.draw * 100).toFixed(1)} | Dep %${(mr.away * 100).toFixed(1)} | xG ${statAgent.expectedGoals.home.toFixed(2)}-${statAgent.expectedGoals.away.toFixed(2)} | Skor ${statAgent.mostLikelyScore}`);
+        } else {
+          console.log(`📊 Dixon-Coles: takım eşleşmedi (${input.homeTeam}/${input.awayTeam}) — atlandı.`);
+        }
+      } else {
+        console.log(`📊 Dixon-Coles: "${input.league}" kapsam dışı veya model yok — atlandı.`);
+      }
+    } catch (dcErr) {
+      console.warn('⚠️ Dixon-Coles atlandı (hata):', dcErr);
+    }
+
     // 1. Agent Analysis çalıştır (ana sistem)
     let agentResult: AgentAnalysisResult | null = null;
     const lang = input.lang || 'en';
@@ -158,7 +190,8 @@ export async function runUnifiedConsensus(
         input.homeTeamId,
         input.awayTeamId,
         lang,
-        onProgress
+        onProgress,
+        statAnchor // 📊 Dixon-Coles anchor (varsa) Master Strategist'e enjekte edilir
       );
       if (agentResult) {
         systemsUsed.push('agents');
@@ -308,7 +341,7 @@ export async function runUnifiedConsensus(
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type, statAgent);
 
     // 4.5 Survival Verdict - Tüm ajanları istişare edip TEK SONUÇ
     if (survivalPrediction) {
@@ -344,6 +377,19 @@ export async function runUnifiedConsensus(
       sources: {
         agents: {
           ...(agentResult?.agents || {}),
+          // 📊 Dixon-Coles istatistiksel motor (varsa) — gerçek hesaplanmış olasılıklar
+          ...(statAgent ? {
+            dixonColes: {
+              agent: 'DIXON_COLES',
+              source: 'dixon-coles',
+              expectedGoals: statAgent.expectedGoals,
+              matchResult: statAgent.matchResult,
+              overUnder25: statAgent.overUnder25,
+              btts: statAgent.btts,
+              mostLikelyScore: statAgent.mostLikelyScore,
+              correctScore: statAgent.groundTruth.correctScore,
+            }
+          } : {}),
           // 🧠 AutoLearn Agent sonuçları
           ...(autoLearnResults.length > 0 ? {
             autoLearn: {
@@ -387,7 +433,8 @@ async function createUnifiedConsensus(
   smartResult: SmartAnalysisResult | null,
   leagueStats: any[] | null = null,
   autoLearnResults: AutoLearnPredictResult[] = [],
-  matchType: string = 'regular'
+  matchType: string = 'regular',
+  statAgent: StatAgentOutput | null = null // 📊 Dixon-Coles istatistiksel motor (opsiyonel)
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
   // Gelişmiş performans bazlı dinamik ağırlıklar
@@ -399,7 +446,8 @@ async function createUnifiedConsensus(
     odds: 1.0,
     deepAnalysis: 1.0,
     masterStrategist: 1.0,
-    devilsAdvocate: 1.0
+    devilsAdvocate: 1.0,
+    dixonColes: 1.0 // 📊 MDAW verisi gelene kadar 1.0; base weight zaten 1.5× ağırlıklı
   };
   
   let overUnderMultipliers: Record<string, number> = { ...matchResultMultipliers };
@@ -582,6 +630,20 @@ async function createUnifiedConsensus(
     console.log(`   🧠 AutoLearn Agent weights: MR=${alMRWeight}, OU=${alOUWeight}, BTTS=${alBTTSWeight}`);
   }
   
+  // 📊 Dixon-Coles istatistiksel oy (varsa). Matematiksel zemin olduğu için
+  // base ağırlık diğer istatistiksel agent'ların ~1.5 katı. MDAW (dixonColes
+  // multiplier) zamanla performansa göre ayarlar.
+  const dcMR = statAgent ? normalize(statAgent.matchResult.prediction) : null;
+  const dcMRConf = statAgent?.matchResult.confidence || 0;
+  const dcOU = statAgent ? normalize(statAgent.overUnder25.prediction) : null;
+  const dcOUConf = statAgent ? Math.round(statAgent.overUnder25.probability * 100) : 0;
+  const dcBTTS = statAgent ? normalize(statAgent.btts.prediction) : null;
+  const dcBTTSConf = statAgent ? Math.round(statAgent.btts.probability * 100) : 0;
+  const dcMult = matchResultMultipliers.dixonColes ?? 1;
+  if (statAgent) {
+    console.log(`   📊 Dixon-Coles konsensüs oyu: MR=${dcMR} (%${dcMRConf}) | OU=${dcOU} | BTTS=${dcBTTS} | ağırlık×${dcMult.toFixed(2)}`);
+  }
+
   // 🧠 MDAW: Market bazlı ağırlıklar kullan
   // Match Result için matchResultMultipliers kullan (+ AutoLearn Agent)
   const matchResultConsensus = calculateWeightedConsensus(
@@ -592,6 +654,8 @@ async function createUnifiedConsensus(
       { value: agentResult?.agents?.deepAnalysis?.matchResult?.prediction, confidence: agentResult?.agents?.deepAnalysis?.matchResult?.confidence || 0, weight: 10 * matchResultMultipliers.deepAnalysis },
       { value: smartMR, confidence: smartMRConf, weight: 10 },
       { value: devilsMR, confidence: devilsMRConf, weight: 5 * matchResultMultipliers.devilsAdvocate },
+      // 📊 Dixon-Coles (matematiksel zemin, 1.5× ağırlık)
+      ...(dcMR ? [{ value: dcMR, confidence: dcMRConf, weight: 22 * dcMult }] : []),
       // 🧠 AutoLearn Agent
       ...(alMRResult && alMRWeight > 0 ? [{ value: alMRResult.prediction, confidence: alMRResult.autoLearnScore, weight: alMRWeight }] : [])
     ]
@@ -605,6 +669,8 @@ async function createUnifiedConsensus(
       { value: agentOU, confidence: agentOUConf, weight: 15 * overUnderMultipliers.stats },
       { value: agentResult?.agents?.deepAnalysis?.overUnder?.prediction, confidence: agentResult?.agents?.deepAnalysis?.overUnder?.confidence || 0, weight: 10 * overUnderMultipliers.deepAnalysis },
       { value: smartOU, confidence: smartOUConf, weight: 10 },
+      // 📊 Dixon-Coles (Poisson gol modeli — Üst/Alt'ta güçlü)
+      ...(dcOU ? [{ value: dcOU, confidence: dcOUConf, weight: 22 * (overUnderMultipliers.dixonColes ?? 1) }] : []),
       // 🧠 AutoLearn Agent
       ...(alOUResult && alOUWeight > 0 ? [{ value: alOUResult.prediction, confidence: alOUResult.autoLearnScore, weight: alOUWeight }] : [])
     ]
@@ -617,6 +683,8 @@ async function createUnifiedConsensus(
       { value: agentBTTS, confidence: agentBTTSConf, weight: 25 * bttsMultipliers.stats },
       { value: smartBTTS, confidence: smartBTTSConf, weight: 15 },
       { value: agentResult?.agents?.deepAnalysis?.btts?.prediction, confidence: agentResult?.agents?.deepAnalysis?.btts?.confidence || 0, weight: 10 * bttsMultipliers.deepAnalysis },
+      // 📊 Dixon-Coles (KG — Poisson çift-gol olasılığı)
+      ...(dcBTTS ? [{ value: dcBTTS, confidence: dcBTTSConf, weight: 35 * (bttsMultipliers.dixonColes ?? 1) }] : []),
       // 🧠 AutoLearn Agent
       ...(alBTTSResult && alBTTSWeight > 0 ? [{ value: alBTTSResult.prediction, confidence: alBTTSResult.autoLearnScore, weight: alBTTSWeight }] : [])
     ]
@@ -1165,6 +1233,33 @@ export async function saveUnifiedAnalysis(
         console.log('   ✅ Stats prediction recorded');
       } else {
         console.log('   ⚠️ No stats agent data to record');
+      }
+
+      // 📊 Dixon-Coles İstatistiksel Motor tahmini (varsa) — canlı doğruluk ölçümü + MDAW öğrenmesi
+      if (agents.dixonColes) {
+        const dc = agents.dixonColes;
+        console.log('   📊 Recording dixonColes prediction:', dc.matchResult?.prediction);
+        await recordAgentPrediction(
+          input.fixtureId,
+          'dixonColes',
+          {
+            matchResult: dc.matchResult?.prediction ? {
+              prediction: dc.matchResult.prediction, // HOME/DRAW/AWAY → settle normalize eder
+              confidence: dc.matchResult.confidence || 50
+            } : undefined,
+            overUnder: dc.overUnder25?.prediction ? {
+              prediction: dc.overUnder25.prediction, // OVER/UNDER
+              confidence: Math.round((dc.overUnder25.probability || 0.5) * 100)
+            } : undefined,
+            btts: dc.btts?.prediction ? {
+              prediction: dc.btts.prediction, // YES/NO
+              confidence: Math.round((dc.btts.probability || 0.5) * 100)
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record dixonColes prediction:', err));
+        console.log('   ✅ Dixon-Coles prediction recorded');
       }
 
       // Odds Agent tahmini
