@@ -33,6 +33,7 @@ function normalizeAgentName(agentName: string): string {
     'masterStrategistAgent': 'masterStrategist',
     'devilsAdvocate': 'devilsAdvocate',
     'geniusAnalyst': 'geniusAnalyst',
+    'dixonColes': 'dixonColes', // 📊 İstatistiksel motor — MDAW ağırlık lookup'ı ile aynı isim
   };
   return mapping[agentName] || agentName.toLowerCase();
 }

@@ -20,6 +20,26 @@ function toConfidence(probs: number[]): number {
   return Math.round(Math.min(95, Math.max(50, max * 100)));
 }
 
+/**
+ * Görünen takım adını modeldeki takım adına eşler (birebir → case-insensitive
+ * → normalize → içerik). Eşleşme yoksa null (çağıran DC'yi atlar).
+ */
+export function resolveTeam(model: DixonColesModel, name: string): string | null {
+  if (!name) return null;
+  const teams = Object.keys(model.getParams().attack);
+  if (teams.includes(name)) return name;
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/\b(fc|cf|afc|sc|cd|ac|as|bk|if|sk)\b/g, '').replace(/[^a-z0-9]/g, '').trim();
+  const t = norm(name);
+  if (!t) return null;
+  for (const tm of teams) if (norm(tm) === t) return tm;
+  for (const tm of teams) {
+    const n = norm(tm);
+    if (n && (n.includes(t) || t.includes(n))) return tm;
+  }
+  return null;
+}
+
 export function runStatisticalAgent(
   model: DixonColesModel,
   home: string,

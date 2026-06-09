@@ -843,6 +843,7 @@ export async function runMasterStrategist(
     deepAnalysis: any | null;
     geniusAnalyst?: any | null;
     devilsAdvocate?: any | null;
+    dixonColesAnchor?: string | null; // 📊 Dixon-Coles istatistiksel zemin (opsiyonel)
   },
   language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<MasterStrategistResult> {
@@ -866,7 +867,15 @@ export async function runMasterStrategist(
   const context = buildAgentContext(agentResults, matchData, weightedAnalysis, language);
   const learningContext = await getLearningContext(matchData.league, matchData.homeTeam, matchData.awayTeam, language);
 
-  const userMessage = `${learningContext}\n${context}\n\nAnalyze using the weighted analysis results above.`;
+  // 📊 Dixon-Coles istatistiksel zemin varsa prompt'un başına ekle (anchor)
+  const anchorBlock = agentResults.dixonColesAnchor
+    ? `${agentResults.dixonColesAnchor}\n\n`
+    : '';
+  if (anchorBlock) {
+    console.log('   📊 Dixon-Coles anchor Master Strategist prompt\'una enjekte edildi.');
+  }
+
+  const userMessage = `${anchorBlock}${learningContext}\n${context}\n\nAnalyze using the weighted analysis results above.`;
 
   try {
     const response = await aiClient.chat([
