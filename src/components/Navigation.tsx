@@ -23,6 +23,7 @@ export default function Navigation() {
       dashboard: 'Dashboard',
       live: 'Canlı',
       predictions: 'Tahminler',
+      trackRecord: 'Doğruluk',
       aiPerformance: 'AI Performans',
       contact: 'İletişim',
       admin: 'Admin',
@@ -34,6 +35,7 @@ export default function Navigation() {
       dashboard: 'Dashboard',
       live: 'Live',
       predictions: 'Predictions',
+      trackRecord: 'Track Record',
       aiPerformance: 'AI Performance',
       contact: 'Contact',
       admin: 'Admin',
@@ -45,6 +47,7 @@ export default function Navigation() {
       dashboard: 'Dashboard',
       live: 'Live',
       predictions: 'Vorhersagen',
+      trackRecord: 'Bilanz',
       aiPerformance: 'KI Leistung',
       contact: 'Kontakt',
       admin: 'Admin',
@@ -58,6 +61,7 @@ export default function Navigation() {
   const navItems = [
     { href: '/', label: l.home, icon: '🏠' },
     { href: '/tahminler', label: l.predictions, icon: '🎯' },
+    { href: '/track-record', label: l.trackRecord, icon: '📈' },
     { href: '/dashboard', label: l.dashboard, icon: '📊' },
     { href: '/contact', label: l.contact, icon: '📬' },
   ];
