@@ -79,7 +79,7 @@ export default function Navigation() {
     '/', '/dashboard', '/login', '/performance', '/tahminler', '/live', '/pricing', '/contact',
     '/ai-performance', '/leaderboard', '/stats', '/league-stats', '/favorites', '/settings',
     '/profile', '/odds-analysis', '/odds-patterns', '/predictions', '/analysis',
-    '/forgot-password', '/reset-password', '/offline',
+    '/track-record', '/forgot-password', '/reset-password', '/offline',
   ];
   const NEW_DESIGN_PREFIXES = ['/match/', '/analysis/'];
   if (NEW_DESIGN_ROUTES.includes(pathname) || NEW_DESIGN_PREFIXES.some((p) => pathname.startsWith(p))) {

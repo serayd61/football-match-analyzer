@@ -72,48 +72,48 @@ export default function DixonColesCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.42 }}
-      className="glass-futuristic rounded-2xl p-6 mt-6 neon-border-cyan"
+      className="fa-card p-6 mt-6"
     >
       <div className="flex items-center gap-2 mb-1">
-        <BarChart3 className="w-5 h-5 text-[#00f0ff]" />
-        <h3 className="text-lg font-bold text-white">{t.title}</h3>
-        <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#00f0ff]/15 text-[#00f0ff] border border-[#00f0ff]/30">
+        <BarChart3 className="w-5 h-5 text-brand-400" />
+        <h3 className="text-lg font-semibold text-content">{t.title}</h3>
+        <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
           DIXON-COLES
         </span>
       </div>
-      <p className="text-xs text-gray-400 mb-4">{t.subtitle}</p>
+      <p className="text-xs text-content-muted mb-4">{t.subtitle}</p>
 
       {/* Beklenen gol + en olası skor */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         {data.expectedGoals && (
-          <div className="bg-white/5 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-gray-400 mb-1">{t.xg}</p>
-            <p className="text-xl font-bold text-[#00f0ff]">
+          <div className="bg-surface-3 border border-line rounded-xl p-3 text-center">
+            <p className="text-[11px] text-content-muted mb-1">{t.xg}</p>
+            <p className="text-xl font-bold text-brand-400 tabular-nums">
               {data.expectedGoals.home?.toFixed(2)} - {data.expectedGoals.away?.toFixed(2)}
             </p>
           </div>
         )}
         {data.mostLikelyScore && (
-          <div className="bg-white/5 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-gray-400 mb-1">{t.score}</p>
-            <p className="text-xl font-bold text-[#00f0ff]">{data.mostLikelyScore}</p>
+          <div className="bg-surface-3 border border-line rounded-xl p-3 text-center">
+            <p className="text-[11px] text-content-muted mb-1">{t.score}</p>
+            <p className="text-xl font-bold text-brand-400 tabular-nums">{data.mostLikelyScore}</p>
           </div>
         )}
       </div>
 
       {/* Maç sonucu olasılık barı */}
       {mr && (
-        <div className="bg-white/5 rounded-xl p-3 mb-4">
-          <p className="text-[11px] text-gray-400 mb-2">{t.mr}</p>
+        <div className="bg-surface-3 border border-line rounded-xl p-3 mb-4">
+          <p className="text-[11px] text-content-muted mb-2">{t.mr}</p>
           <div className="flex h-2.5 rounded-full overflow-hidden mb-2">
-            <div style={{ width: pct(mr.home) }} className="bg-[#00f0ff]/70" />
+            <div style={{ width: pct(mr.home) }} className="bg-brand-500/70" />
             <div style={{ width: pct(mr.draw) }} className="bg-amber-400/70" />
-            <div style={{ width: pct(mr.away) }} className="bg-fuchsia-500/70" />
+            <div style={{ width: pct(mr.away) }} className="bg-sky-500/70" />
           </div>
           <div className="flex justify-between text-[11px]">
-            <span className="text-[#00f0ff]">{t.home} {pct(mr.home)}</span>
+            <span className="text-brand-300">{t.home} {pct(mr.home)}</span>
             <span className="text-amber-300">{t.draw} {pct(mr.draw)}</span>
-            <span className="text-fuchsia-300">{t.away} {pct(mr.away)}</span>
+            <span className="text-sky-300">{t.away} {pct(mr.away)}</span>
           </div>
         </div>
       )}
@@ -121,15 +121,15 @@ export default function DixonColesCard({
       {/* Üst/Alt + KG */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         {data.overUnder25 && (
-          <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">{t.over}</span>
-            <span className="text-sm font-bold text-white">{pct(data.overUnder25.probability)}</span>
+          <div className="bg-surface-3 border border-line rounded-xl p-3 flex items-center justify-between">
+            <span className="text-[11px] text-content-muted">{t.over}</span>
+            <span className="text-sm font-bold text-content">{pct(data.overUnder25.probability)}</span>
           </div>
         )}
         {data.btts && (
-          <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">{t.btts}</span>
-            <span className="text-sm font-bold text-white">{pct(data.btts.probability)}</span>
+          <div className="bg-surface-3 border border-line rounded-xl p-3 flex items-center justify-between">
+            <span className="text-[11px] text-content-muted">{t.btts}</span>
+            <span className="text-sm font-bold text-content">{pct(data.btts.probability)}</span>
           </div>
         )}
       </div>
@@ -137,14 +137,14 @@ export default function DixonColesCard({
       {/* En olası skorlar */}
       {data.correctScore && data.correctScore.length > 0 && (
         <div>
-          <p className="text-[11px] text-gray-400 mb-2">{t.topScores}</p>
+          <p className="text-[11px] text-content-muted mb-2">{t.topScores}</p>
           <div className="flex flex-wrap gap-2">
             {data.correctScore.slice(0, 6).map((s, i) => (
               <span
                 key={i}
-                className="text-xs px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-200"
+                className="text-xs px-2.5 py-1 rounded-lg bg-surface-3 border border-line text-content-muted"
               >
-                {s.score} <span className="text-[#00f0ff]">{pct(s.prob)}</span>
+                {s.score} <span className="text-brand-400">{pct(s.prob)}</span>
               </span>
             ))}
           </div>

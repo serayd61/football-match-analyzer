@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BarChart3, ShieldCheck, TrendingUp } from 'lucide-react';
+import { BarChart3, ShieldCheck, TrendingUp, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import SiteNav from '@/components/SiteNav';
 
 // ============================================================================
 // TRACK RECORD — Dixon-Coles backtest doğruluk vitrini (DÜRÜST)
@@ -90,36 +91,37 @@ export default function TrackRecordPage() {
   const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-black text-white px-4 py-10">
-      <div className="max-w-4xl mx-auto">
-        <Link href="/" className="text-sm text-gray-400 hover:text-white transition">{t.back}</Link>
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-content-subtle hover:text-content transition-colors"><ArrowLeft size={15} /> {t.back.replace('← ', '')}</Link>
 
         <div className="flex items-center gap-3 mt-4 mb-2">
-          <div className="p-2 rounded-xl bg-[#00f0ff]/15 border border-[#00f0ff]/30">
-            <BarChart3 className="w-6 h-6 text-[#00f0ff]" />
+          <div className="p-2 rounded-xl bg-brand-500/10 border border-brand-500/25">
+            <BarChart3 className="w-6 h-6 text-brand-400" />
           </div>
-          <h1 className="text-3xl font-bold">{t.title}</h1>
+          <h1 className="text-3xl font-bold text-content tracking-tight">{t.title}</h1>
         </div>
-        <p className="text-gray-400 mb-6 max-w-2xl">{t.subtitle}</p>
+        <p className="text-content-muted mb-6 max-w-2xl">{t.subtitle}</p>
 
         {/* Özet kartları */}
         {summary && summary.leagues > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <p className="text-xs text-gray-400">{t.leagues}</p>
-              <p className="text-2xl font-bold text-[#00f0ff]">{summary.leagues}</p>
+            <div className="fa-card p-4">
+              <p className="text-xs text-content-muted">{t.leagues}</p>
+              <p className="text-2xl font-bold text-brand-400 tabular-nums">{summary.leagues}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <p className="text-xs text-gray-400">{t.tested}</p>
-              <p className="text-2xl font-bold text-[#00f0ff]">{summary.totalTested.toLocaleString()}</p>
+            <div className="fa-card p-4">
+              <p className="text-xs text-content-muted">{t.tested}</p>
+              <p className="text-2xl font-bold text-brand-400 tabular-nums">{summary.totalTested.toLocaleString()}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <p className="text-xs text-gray-400">{t.mr} ({t.weighted})</p>
-              <p className="text-2xl font-bold text-emerald-400">{pct(summary.mrAccuracy)}</p>
+            <div className="fa-card p-4">
+              <p className="text-xs text-content-muted">{t.mr} ({t.weighted})</p>
+              <p className="text-2xl font-bold text-positive tabular-nums">{pct(summary.mrAccuracy)}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <p className="text-xs text-gray-400">{t.ou} / {t.btts}</p>
-              <p className="text-2xl font-bold text-emerald-400">{pct(summary.ouAccuracy)} / {pct(summary.bttsAccuracy)}</p>
+            <div className="fa-card p-4">
+              <p className="text-xs text-content-muted">{t.ou} / {t.btts}</p>
+              <p className="text-2xl font-bold text-positive tabular-nums">{pct(summary.ouAccuracy)} / {pct(summary.bttsAccuracy)}</p>
             </div>
           </div>
         )}
@@ -127,19 +129,19 @@ export default function TrackRecordPage() {
         {/* Dürüstlük notu */}
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6">
           <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-100/90">{t.honesty}</p>
+          <p className="text-sm text-amber-200/90">{t.honesty}</p>
         </div>
 
         {/* Tablo */}
         {loading ? (
-          <p className="text-gray-400">{t.loading}</p>
+          <p className="text-content-muted">{t.loading}</p>
         ) : rows.length === 0 ? (
-          <p className="text-gray-400">{t.empty}</p>
+          <p className="text-content-muted">{t.empty}</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <div className="overflow-x-auto rounded-2xl border border-line">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-white/5 text-gray-400 text-left">
+                <tr className="bg-surface-2 text-content-subtle text-left">
                   <th className="px-4 py-3 font-medium">{t.league}</th>
                   <th className="px-4 py-3 font-medium text-right">{t.matches}</th>
                   <th className="px-4 py-3 font-medium text-right">{t.mr}</th>
@@ -156,15 +158,15 @@ export default function TrackRecordPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
-                      className="border-t border-white/5 hover:bg-white/5"
+                      className="border-t border-line hover:bg-surface-2"
                     >
-                      <td className="px-4 py-3 font-medium">
+                      <td className="px-4 py-3 font-medium text-content">
                         <span className="mr-2">{lg.flag}</span>{lg.name}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-300">{r.tested_matches.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-400">{pct(r.mr_accuracy)}</td>
-                      <td className="px-4 py-3 text-right text-gray-200">{pct(r.ou_accuracy)}</td>
-                      <td className="px-4 py-3 text-right text-gray-200">{pct(r.btts_accuracy)}</td>
+                      <td className="px-4 py-3 text-right text-content-muted tabular-nums">{r.tested_matches.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-bold text-positive tabular-nums">{pct(r.mr_accuracy)}</td>
+                      <td className="px-4 py-3 text-right text-content-muted tabular-nums">{pct(r.ou_accuracy)}</td>
+                      <td className="px-4 py-3 text-right text-content-muted tabular-nums">{pct(r.btts_accuracy)}</td>
                     </motion.tr>
                   );
                 })}
@@ -174,7 +176,7 @@ export default function TrackRecordPage() {
         )}
 
         {/* Yöntem */}
-        <div className="flex items-start gap-3 mt-6 text-xs text-gray-500">
+        <div className="flex items-start gap-3 mt-6 text-xs text-content-subtle">
           <TrendingUp className="w-4 h-4 shrink-0 mt-0.5" />
           <p>{t.method}</p>
         </div>
