@@ -45,6 +45,7 @@ export interface AgentAnalysisResult {
     masterStrategist?: any;
     geniusAnalyst?: any;
     devilsAdvocate?: any;
+    dixonColes?: any; // 📊 İstatistiksel motor (Dixon-Coles) — opsiyonel
   };
 
   // Birleştirilmiş tahminler (Agent analizinde kullanılmıyor - sadece yeni özel tahminler kullanılıyor)
@@ -1242,7 +1243,8 @@ export async function runAgentAnalysis(
   homeTeamId: number,
   awayTeamId: number,
   lang: 'tr' | 'en' | 'de' = 'en',
-  onProgress?: (data: { stage: string; message: string; data?: any }) => void
+  onProgress?: (data: { stage: string; message: string; data?: any }) => void,
+  statAnchor?: string // 📊 Dixon-Coles anchor bloğu (opsiyonel) — LLM prompt'una enjekte edilir
 ): Promise<AgentAnalysisResult | null> {
 
   console.log(`\n🤖 ========================================`);
@@ -1448,6 +1450,7 @@ export async function runAgentAnalysis(
             deepAnalysis: deepAnalysisResult,
             geniusAnalyst: geniusAnalystResult,
             devilsAdvocate: null,
+            dixonColesAnchor: statAnchor, // 📊 İstatistiksel zemin (varsa)
           },
           language
         ),

@@ -12,6 +12,8 @@ import AutoLearnBadge, { AutoLearnPanel } from '@/components/AutoLearnBadge';
 import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
 import DevilsAdvocatePanel from '@/components/DevilsAdvocatePanel';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
+import DixonColesCard from '@/components/DixonColesCard';
+import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -22,6 +24,7 @@ export default function MatchAnalysisPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params?.id as string;
+  const { lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<any>(null);
@@ -407,6 +410,14 @@ export default function MatchAnalysisPage() {
               {analysis.bestBet.reasoning}
             </div>
           </motion.div>
+        )}
+
+        {/* 📊 Dixon-Coles İstatistiksel Zemin (varsa) */}
+        {analysis.sources?.agents?.dixonColes && (
+          <DixonColesCard
+            data={analysis.sources.agents.dixonColes}
+            lang={(lang as 'tr' | 'en' | 'de') || 'tr'}
+          />
         )}
 
         {/* System Insights (Expert Agents & Conflicts) */}

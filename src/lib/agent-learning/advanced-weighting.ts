@@ -363,7 +363,7 @@ export async function getAdvancedAgentWeights(
   league?: string | null,
   market: MarketType = 'matchResult'
 ): Promise<Record<string, AdvancedWeight>> {
-  const agents = ['stats', 'odds', 'deepAnalysis', 'masterStrategist', 'devilsAdvocate', 'geniusAnalyst'];
+  const agents = ['stats', 'odds', 'deepAnalysis', 'masterStrategist', 'devilsAdvocate', 'geniusAnalyst', 'dixonColes'];
   const weights: Record<string, AdvancedWeight> = {};
 
   // Paralel olarak tüm agent'ların ağırlıklarını hesapla
