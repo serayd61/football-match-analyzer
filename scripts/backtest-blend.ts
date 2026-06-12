@@ -34,6 +34,31 @@ function emptyTally(): Tally {
   return { n: 0, mrCorrect: 0, mrLogLoss: 0, ouCorrect: 0, ouN: 0, ouLogLoss: 0 };
 }
 
+// ── Value-betting (kapanış oranını yenmek) ───────────────────────────────────
+// Model olasılığı × sunulan oran > 1+eşik ise (pozitif beklenen değer) düz 1
+// birim bahis. ROI = net kâr / toplam yatırılan. Asıl ürün kanıtı: + ROI =
+// uzun vadede kapanış oranına karşı edge. (Tarihsel ROI iyimser olabilir — bu
+// yüzden EŞİK uygularız ve sonucu mütevazı yorumlarız.)
+interface ValueTally { bets: number; staked: number; profit: number; }
+function emptyValue(): ValueTally { return { bets: 0, staked: 0, profit: 0 }; }
+function valueBet(
+  t: ValueTally,
+  probs: { home: number; draw: number; away: number },
+  odds: { home: number; draw: number; away: number },
+  actual: 'home' | 'draw' | 'away',
+  edge: number
+) {
+  const keys: ('home' | 'draw' | 'away')[] = ['home', 'draw', 'away'];
+  for (const k of keys) {
+    const ev = probs[k] * odds[k] - 1;
+    if (ev > edge) {
+      t.bets++;
+      t.staked += 1;
+      t.profit += k === actual ? odds[k] - 1 : -1;
+    }
+  }
+}
+
 function argmaxMR(p: { home: number; draw: number; away: number }): 'home' | 'draw' | 'away' {
   return p.home >= p.draw && p.home >= p.away ? 'home' : p.draw >= p.away ? 'draw' : 'away';
 }
@@ -79,6 +104,10 @@ async function main() {
   W_GRID.forEach((w) => blendTallies.set(w, emptyTally()));
   const dcOnly = emptyTally();
   const mktOnly = emptyTally();
+  const EDGE = parseFloat(process.env.BT_EDGE || '0.05');
+  const vDC = emptyValue();
+  const vBlend = emptyValue();
+  const vMkt = emptyValue();
 
   const minTrain = 60;
   const refitEvery = Math.max(1, parseInt(process.env.BT_REFIT || '5', 10));
@@ -137,6 +166,12 @@ async function main() {
       accumMR(t, b.matchResult, actualMR);
       accumOU(t, b.overUnder['2.5'].over, actualOver);
     }
+
+    // Value-betting: DC-tek vs blend(0.7) vs piyasa-tek, sunulan oranlara karşı
+    const offered = { home: o.home, draw: o.draw, away: o.away };
+    valueBet(vDC, dc.matchResult, offered, actualMR, EDGE);
+    valueBet(vBlend, blendWithMarket(dc, m.odds, { marketWeight: 0.7 }).matchResult, offered, actualMR, EDGE);
+    valueBet(vMkt, mkt, offered, actualMR, EDGE);
   }
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
@@ -174,6 +209,21 @@ async function main() {
   const improve = ((dcLL - bestLL) / dcLL) * 100;
   console.log(`\n🏆 En iyi piyasa ağırlığı: w=${bestW}  (1X2 log-loss ${bestLL.toFixed(4)}, DC-tek'e göre %${improve.toFixed(1)} iyileşme)`);
   console.log(`   → src/lib/odds/blend.ts DEFAULT_MARKET_WEIGHT için öneri: ${bestW}`);
+
+  // ── Value-betting ROI (kapanış oranını yenmek) ─────────────────────────────
+  const roi = (v: ValueTally) => (v.staked > 0 ? (v.profit / v.staked) * 100 : 0);
+  const vrow = (label: string, v: ValueTally) =>
+    `│ ${label.padEnd(14)}│ ${String(v.bets).padStart(5)} │ ${(roi(v) >= 0 ? '+' : '') + roi(v).toFixed(1) + '%'}`.padEnd(33) + '│';
+  console.log(`\n💰 VALUE-BETTING (EV eşiği >%${(EDGE * 100).toFixed(0)}, düz 1 birim, sunulan orana karşı):`);
+  console.log('┌───────────────┬───────┬──────────────┐');
+  console.log('│ Strateji      │ Bahis │ ROI          │');
+  console.log('├───────────────┼───────┼──────────────┤');
+  console.log(vrow('DC-tek', vDC));
+  console.log(vrow('blend w=0.7', vBlend));
+  console.log(vrow('Piyasa-tek', vMkt));
+  console.log('└───────────────┴───────┴──────────────┘');
+  console.log('ℹ️  Piyasa-tek ROI ≈ −marj olmalı (oranı kendine karşı oynamak). Pozitif blend ROI = gerçek edge.');
+  console.log('⚠️  Tarihsel ROI iyimser olabilir (oran zamanlaması). Mütevazı yorumla — garanti değil.');
 }
 
 main().catch((e) => {
