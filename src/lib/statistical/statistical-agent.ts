@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { DixonColesModel, MatchRow, MarketProbabilities } from './dixon-coles';
+import { blendWithMarket, type MatchOdds } from '@/lib/odds/blend';
 
 export interface StatAgentOutput {
   source: 'dixon-coles';
@@ -40,12 +41,8 @@ export function resolveTeam(model: DixonColesModel, name: string): string | null
   return null;
 }
 
-export function runStatisticalAgent(
-  model: DixonColesModel,
-  home: string,
-  away: string
-): StatAgentOutput {
-  const gt = model.predict(home, away);
+/** MarketProbabilities (saf DC veya blend'lenmiş) → StatAgentOutput haritası. */
+function statOutputFromGroundTruth(gt: MarketProbabilities): StatAgentOutput {
   const mr = gt.matchResult;
   const mrEntries: [string, number][] = [['HOME', mr.home], ['DRAW', mr.draw], ['AWAY', mr.away]];
   mrEntries.sort((a, b) => b[1] - a[1]);
@@ -71,6 +68,32 @@ export function runStatisticalAgent(
     mostLikelyScore: gt.mostLikelyScore,
     groundTruth: gt,
   };
+}
+
+/**
+ * DC tahmini üretir. `odds` verilirse çıktı PİYASA oranıyla harmanlanır
+ * (DEFAULT_MARKET_WEIGHT) — backtest-blend ile doğrulanmış, isabeti/kalibrasyonu
+ * iyileştiren çıpa. Oran yoksa saf DC döner (davranış değişmez).
+ */
+export function runStatisticalAgent(
+  model: DixonColesModel,
+  home: string,
+  away: string,
+  odds?: MatchOdds | null
+): StatAgentOutput {
+  const gt = model.predict(home, away);
+  const blended = odds ? blendWithMarket(gt, odds) : gt;
+  return statOutputFromGroundTruth(blended);
+}
+
+/**
+ * Mevcut (saf DC) StatAgentOutput'u piyasa oranıyla yeniden harmanlar.
+ * unified-consensus'ta DC, oranlar gelmeden ÖNCE hesaplandığı için kullanılır:
+ * oran agent'ı tamamlandıktan sonra DC çıktısını piyasaya çekeriz.
+ */
+export function applyOddsBlend(stat: StatAgentOutput, odds: MatchOdds | null | undefined): StatAgentOutput {
+  if (!odds) return stat;
+  return statOutputFromGroundTruth(blendWithMarket(stat.groundTruth, odds));
 }
 
 /**

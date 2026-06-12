@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "generate-icons": "node scripts/generate-icons.js",
-    "backtest": "tsx scripts/backtest-dc.ts"
+    "backtest": "tsx scripts/backtest-dc.ts",
+    "backtest:blend": "tsx scripts/backtest-blend.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.14.0",

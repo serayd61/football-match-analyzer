@@ -17,7 +17,43 @@ import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model
 import { predict as survivalPredict, verdict as survivalVerdict, type SurvivalPrediction, type SurvivalVerdict } from '../survival-agent';
 // 📊 Dixon-Coles istatistiksel motor (opsiyonel anchor + konsensüs oyu)
 import { getModelForLeague } from '../statistical/model-store';
-import { runStatisticalAgent, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
+import { runStatisticalAgent, applyOddsBlend, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
+import type { MatchOdds } from '../odds/blend';
+import { bookmakerMargin } from '../odds/devig';
+
+/**
+ * Agent çıktısından canlı bahisçi oranını MatchOdds'a çıkarır.
+ * KRİTİK: sportmonks-provider gerçek oran yoksa sahte default döndürür
+ * (matchWinner 2.0/3.0/2.5 → marj ~%23). Gerçek 1X2 marjı ~%2-10'dur; bu yüzden
+ * marj bandı dışındaki (sahte/bozuk) oranları ELEYEREK zararlı blend'i önleriz.
+ */
+function extractLiveOdds(agentResult: any): MatchOdds | null {
+  const o = agentResult?.agents?.stats?.odds || agentResult?.agents?.odds;
+  if (!o) return null;
+  const out: MatchOdds = {};
+
+  const mw = o.matchWinner;
+  if (mw && [mw.home, mw.draw, mw.away].every((v) => typeof v === 'number' && v > 1)) {
+    const margin = bookmakerMargin([mw.home, mw.draw, mw.away]);
+    if (margin > 0.001 && margin < 0.15) {
+      out.matchResult = { home: mw.home, draw: mw.draw, away: mw.away };
+    }
+  }
+
+  const ou = o.overUnder25 || o.overUnder?.['2.5'];
+  if (ou && typeof ou.over === 'number' && typeof ou.under === 'number' && ou.over > 1 && ou.under > 1) {
+    const margin = bookmakerMargin([ou.over, ou.under]);
+    if (margin > 0.001 && margin < 0.15) out.overUnder = { '2.5': { over: ou.over, under: ou.under } };
+  }
+
+  const b = o.btts;
+  if (b && typeof b.yes === 'number' && typeof b.no === 'number' && b.yes > 1 && b.no > 1) {
+    const margin = bookmakerMargin([b.yes, b.no]);
+    if (margin > 0.001 && margin < 0.15) out.btts = { yes: b.yes, no: b.no };
+  }
+
+  return out.matchResult || out.overUnder || out.btts ? out : null;
+}
 
 // Lazy-loaded Supabase client (initialized at runtime, not build time)
 let supabaseClient: SupabaseClient | null = null;
@@ -336,6 +372,31 @@ export async function runUnifiedConsensus(
       }
     } catch (err) {
       console.warn('⚠️ Survival Agent failed (non-critical):', err);
+    }
+
+    // 3.9 📊 Dixon-Coles'u PİYASA oranıyla harmanla (varsa). DC oran agent'ından
+    // ÖNCE hesaplandı; oranlar geldiğine göre çıktıyı kapanış oranına çekiyoruz.
+    // backtest-blend.ts ile doğrulandı: 1X2 isabeti ~+3 puan, log-loss ~%4-6 ↓.
+    // Sahte/bozuk oran marj guard'ıyla elenir; oran yoksa saf DC korunur.
+    if (statAgent) {
+      try {
+        const liveOdds = extractLiveOdds(agentResult);
+        if (liveOdds) {
+          const before = statAgent.matchResult.probabilities;
+          statAgent = applyOddsBlend(statAgent, liveOdds);
+          const after = statAgent.matchResult.probabilities;
+          systemsUsed.push('oddsBlend');
+          console.log(
+            `📊 DC↔Piyasa blend (w=0.7): Ev %${(before.home * 100).toFixed(1)}→%${(after.home * 100).toFixed(1)} | ` +
+            `Ber %${(before.draw * 100).toFixed(1)}→%${(after.draw * 100).toFixed(1)} | ` +
+            `Dep %${(before.away * 100).toFixed(1)}→%${(after.away * 100).toFixed(1)}`
+          );
+        } else {
+          console.log('📊 DC↔Piyasa blend: geçerli canlı oran yok — saf DC korunuyor.');
+        }
+      } catch (blendErr) {
+        console.warn('⚠️ DC↔Piyasa blend atlandı (hata):', blendErr);
+      }
     }
 
     // 4. Konsensüs oluştur
