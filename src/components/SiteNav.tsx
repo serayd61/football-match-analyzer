@@ -45,6 +45,7 @@ export default function SiteNav() {
   ];
 
   return (
+    <>
     <header className={`sticky top-0 z-50 transition-colors duration-300 ${scrolled ? 'border-b border-line bg-surface-0/85 backdrop-blur-xl' : 'border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
@@ -83,15 +84,16 @@ export default function SiteNav() {
           </button>
         </div>
       </div>
+    </header>
 
       <AnimatePresence>
         {open && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 md:hidden" />
+              onClick={() => setOpen(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] md:hidden" />
             <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className="fixed top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-surface-1 border-l border-line z-50 md:hidden p-4">
+              className="fixed top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-surface-1 border-l border-line z-[101] md:hidden p-4 overflow-y-auto">
               <div className="flex items-center justify-between h-12 mb-2">
                 <span className="text-sm font-semibold text-content">Menu</span>
                 <button onClick={() => setOpen(false)} className="grid place-items-center w-9 h-9 rounded-lg text-content-muted hover:bg-surface-3"><X size={18} /></button>
@@ -117,6 +119,6 @@ export default function SiteNav() {
           </>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
