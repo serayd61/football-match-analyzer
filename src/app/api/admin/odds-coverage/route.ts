@@ -12,10 +12,31 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { dataProviderManager } from '@/lib/data-providers';
 import { bookmakerMargin } from '@/lib/odds/devig';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * ID verilmezse: gerçek analizlerin yazıldığı `unified_analysis` tablosundan
+ * son fixture_id'leri çeker. Bunlar pipeline'ın getPreMatchOdds'a GERÇEKTEN
+ * geçtiği ID'lerdir — doğru fixture-ID evreni garanti, audit canlı gerçeği ölçer.
+ */
+async function recentFixtureIds(limit: number): Promise<number[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  const sb = createClient(url, key, { auth: { persistSession: false } });
+  const { data } = await sb
+    .from('unified_analysis')
+    .select('fixture_id, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return Array.from(
+    new Set((data || []).map((r: any) => Number(r.fixture_id)).filter((n) => Number.isFinite(n)))
+  );
+}
 
 export async function GET(req: NextRequest) {
   // Opsiyonel koruma: CRON_SECRET tanımlıysa eşleşme iste (oran hassas değil ama temkinli).
@@ -26,14 +47,21 @@ export async function GET(req: NextRequest) {
   }
 
   const idsParam = req.nextUrl.searchParams.get('fixtures') || '';
-  const ids = idsParam
+  let ids = idsParam
     .split(',')
     .map((s) => parseInt(s.trim(), 10))
     .filter((n) => Number.isFinite(n));
 
+  // ID verilmediyse son gerçek analizlerden otomatik örnekle (tek-tık audit)
+  let source = 'manual';
+  if (!ids.length) {
+    ids = await recentFixtureIds(10);
+    source = 'unified_analysis (son analizler)';
+  }
+
   if (!ids.length) {
     return NextResponse.json(
-      { ok: false, error: 'fixtures query gerekli, örn: ?fixtures=19135052,19135053' },
+      { ok: false, error: 'fixture bulunamadı — ?fixtures=ID1,ID2 ile manuel ver veya önce bir maç analiz et.' },
       { status: 400 }
     );
   }
@@ -76,6 +104,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     summary: {
+      source,
       total: ids.length,
       hasOdds,
       passesGuard: pass,
