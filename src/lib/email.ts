@@ -88,43 +88,56 @@ export async function sendWorldCupCampaignEmail(
   const { ctaUrl, unsubscribeUrl } = opts;
   const hi = opts.name ? `${opts.name}, ` : '';
 
+  const btn = (label: string) =>
+    `<p style="text-align:center;margin:24px 0"><a href="${ctaUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">${label}</a></p>`;
+  const divider = `<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />`;
+
   const html = `
   <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
     <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
-    <p style="font-size:13px;color:#64748b;margin:0 0 18px">Dünya Kupası 2026 başladı · The World Cup is here</p>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">The World Cup is here · Die WM ist da · Dünya Kupası başladı</p>
 
-    <p>Merhaba ${hi}sistemimizi <strong>baştan yeniledik</strong>. Artık maç olasılıkları, geçmiş maçlardan matematiksel olarak öğrenen gerçek bir <strong>istatistik motoruyla (Dixon-Coles)</strong> hesaplanıyor — uydurma değil.</p>
+    <!-- EN -->
+    <p>Hi ${hi}we <strong>rebuilt the platform from the ground up</strong>. Match probabilities are now computed by a real <strong>statistical engine (Dixon-Coles)</strong> that learns from historical results — not fabricated.</p>
+    <p>🏆 <strong>The World Cup is the perfect time</strong>: try our improved prediction page free during the tournament. First <strong>7 days free</strong>, cancel anytime.</p>
+    ${btn('Try it free during the World Cup →')}
+
+    ${divider}
+    <!-- DE -->
+    <p>Hallo ${hi}wir haben die Plattform <strong>von Grund auf neu aufgebaut</strong>. Spielwahrscheinlichkeiten werden jetzt von einer echten <strong>statistischen Engine (Dixon-Coles)</strong> berechnet, die aus historischen Ergebnissen lernt — nicht erfunden.</p>
+    <p>🏆 <strong>Die WM ist der perfekte Moment</strong>: Teste unsere verbesserte Prognoseseite während des Turniers kostenlos. Die ersten <strong>7 Tage gratis</strong>, jederzeit kündbar.</p>
+    ${btn('Während der WM kostenlos testen →')}
+
+    ${divider}
+    <!-- TR -->
+    <p>Merhaba ${hi}sistemimizi <strong>baştan yeniledik</strong>. Artık maç olasılıkları, geçmiş maçlardan öğrenen gerçek bir <strong>istatistik motoruyla (Dixon-Coles)</strong> hesaplanıyor — uydurma değil.</p>
     <p>🏆 <strong>Dünya Kupası tam zamanı</strong>: yeni, geliştirilmiş tahmin sayfamızı turnuvada ücretsiz dene. İlk <strong>7 gün ücretsiz</strong>, dilediğin an iptal.</p>
-    <p style="text-align:center;margin:28px 0">
-      <a href="${ctaUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Dünya Kupası'nda Ücretsiz Dene →</a>
-    </p>
+    ${btn('Dünya Kupası\'nda Ücretsiz Dene →')}
 
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
-    <p style="color:#475569">Hi — we <strong>rebuilt the platform</strong>. Match probabilities are now computed by a real <strong>statistical engine (Dixon-Coles)</strong> trained on historical results. 🏆 The World Cup is the perfect time to try our improved prediction page — <strong>7 days free</strong>, cancel anytime.</p>
-    <p style="text-align:center;margin:18px 0">
-      <a href="${ctaUrl}" style="color:#059669;font-weight:600">Try it free during the World Cup →</a>
-    </p>
-
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    ${divider}
     <p style="font-size:11px;color:#94a3b8">
-      Bu e-postayı footballanalytics.pro'ya kayıtlı olduğun için aldın · You received this because you signed up at footballanalytics.pro.<br/>
-      <a href="${unsubscribeUrl}" style="color:#94a3b8">Abonelikten çık / Unsubscribe</a>
+      You received this because you signed up at footballanalytics.pro · Du erhältst diese E-Mail, weil du dich bei footballanalytics.pro registriert hast · Bu e-postayı footballanalytics.pro'ya kayıtlı olduğun için aldın.<br/>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe / Abmelden / Abonelikten çık</a>
     </p>
   </div>`;
 
-  const text = `Football Analytics Pro — Dünya Kupası 2026
+  const text = `Football Analytics Pro — World Cup 2026
 
-Sistemimizi baştan yeniledik: maç olasılıkları artık gerçek bir istatistik motoruyla (Dixon-Coles) hesaplanıyor. Dünya Kupası'nda yeni tahmin sayfamızı ücretsiz dene — ilk 7 gün ücretsiz, dilediğin an iptal.
+[EN] We rebuilt the platform from the ground up: match probabilities now come from a real statistical engine (Dixon-Coles) that learns from historical results. Try our improved prediction page free during the World Cup — first 7 days free, cancel anytime.
 ${ctaUrl}
 
-We rebuilt the platform — probabilities now come from a real statistical engine. Try it free during the World Cup, 7 days free.
+[DE] Wir haben die Plattform von Grund auf neu aufgebaut: Spielwahrscheinlichkeiten kommen jetzt von einer echten statistischen Engine (Dixon-Coles). Teste unsere verbesserte Prognoseseite während der WM kostenlos — die ersten 7 Tage gratis, jederzeit kündbar.
+${ctaUrl}
 
-Abonelikten çık / Unsubscribe: ${unsubscribeUrl}`;
+[TR] Sistemimizi baştan yeniledik: maç olasılıkları artık gerçek bir istatistik motoruyla (Dixon-Coles) hesaplanıyor. Dünya Kupası'nda yeni tahmin sayfamızı ücretsiz dene — ilk 7 gün ücretsiz, dilediğin an iptal.
+${ctaUrl}
+
+Unsubscribe / Abmelden / Abonelikten çık: ${unsubscribeUrl}`;
 
   await resend.emails.send({
     from: EMAIL_FROM,
     to,
-    subject: '🏆 Dünya Kupası başladı — yenilenen tahmin motorumuzu ücretsiz dene',
+    subject: '🏆 The World Cup is here — try our rebuilt prediction engine free',
     html,
     text,
     headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },

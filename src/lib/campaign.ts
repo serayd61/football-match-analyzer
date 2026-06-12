@@ -7,6 +7,10 @@ import crypto from 'crypto';
 import { SITE_URL } from '@/lib/seo';
 
 export const WORLD_CUP_CAMPAIGN_KEY = 'worldcup-2026-launch';
+// Yeniden gönderim (warm-up) — domain doğrulandıktan sonra 3 dilli mail ile
+// taze itibar için küçük partiler halinde tekrar gönderim. Ayrı log anahtarı
+// olduğu için ilk kampanyanın "sent" kayıtları bunu bloklamaz.
+export const WORLD_CUP_RELAUNCH_KEY = 'worldcup-2026-relaunch';
 
 // Unsubscribe token'ı için sunucu-yalnızca sır (URL'de email + token gider).
 function secret(): string {

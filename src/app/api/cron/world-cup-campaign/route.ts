@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { sendWorldCupCampaignEmail, SITE_URL } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, unsubscribeUrl } from '@/lib/campaign';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, unsubscribeUrl } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +47,11 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const dryRun = searchParams.get('dry') === '1';
+  // Warm-up modu: ayrı log anahtarı (taze gönderim) + günlük parti limiti.
+  const relaunch = searchParams.get('relaunch') === '1';
+  const activeKey = relaunch ? WORLD_CUP_RELAUNCH_KEY : WORLD_CUP_CAMPAIGN_KEY;
+  const limitParam = parseInt(searchParams.get('limit') || '', 10);
+  const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const canaryEmail = process.env.CAMPAIGN_CANARY_EMAIL || ADMIN_EMAILS[0];
 
   const supabase = getSupabase();
@@ -89,26 +94,36 @@ export async function GET(request: NextRequest) {
   const { data: sentData } = await supabase
     .from('email_campaign_log')
     .select('email')
-    .eq('campaign_key', WORLD_CUP_CAMPAIGN_KEY);
+    .eq('campaign_key', activeKey);
   const alreadySent = new Set((sentData || []).map((r: any) => r.email.toLowerCase()));
+  const canaryLower = (canaryEmail || '').toLowerCase().trim();
 
-  // Benzersiz, geçerli, hariç-tutulmamış alıcılar
+  // Benzersiz, geçerli, hariç-tutulmamış alıcılar (canary'yi de hariç tut)
   const seen = new Set<string>();
-  const recipients: { email: string; name: string | null }[] = [];
+  let recipients: { email: string; name: string | null }[] = [];
   for (const u of usersData || []) {
     const email = (u.email || '').toLowerCase().trim();
     if (!email || !EMAIL_RE.test(email)) continue;
-    if (seen.has(email) || unsub.has(email) || alreadySent.has(email)) continue;
+    if (seen.has(email) || unsub.has(email) || alreadySent.has(email) || email === canaryLower) continue;
     seen.add(email);
     recipients.push({ email, name: u.name || null });
   }
+
+  // Warm-up için: admin adreslerini öne al (izleme kolaylığı), sonra parti limiti uygula.
+  const adminSet = new Set(ADMIN_EMAILS.map((e) => e.toLowerCase()));
+  recipients.sort((a, b) => (adminSet.has(b.email) ? 1 : 0) - (adminSet.has(a.email) ? 1 : 0));
+  const remaining = recipients.length;
+  if (batchLimit !== Infinity) recipients = recipients.slice(0, batchLimit);
 
   if (dryRun) {
     return NextResponse.json({
       success: true,
       dryRun: true,
-      campaign: WORLD_CUP_CAMPAIGN_KEY,
-      wouldSend: recipients.length,
+      campaign: activeKey,
+      relaunch,
+      batchLimit: batchLimit === Infinity ? null : batchLimit,
+      remainingEligible: remaining,
+      wouldSendThisRun: recipients.length,
       excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size },
       sample: recipients.slice(0, 5).map((r) => r.email),
     });
@@ -127,7 +142,7 @@ export async function GET(request: NextRequest) {
       await supabase
         .from('email_campaign_log')
         .upsert(
-          { campaign_key: WORLD_CUP_CAMPAIGN_KEY, email: r.email, status: 'sent' },
+          { campaign_key: activeKey, email: r.email, status: 'sent' },
           { onConflict: 'campaign_key,email' }
         );
       sent++;
@@ -136,7 +151,7 @@ export async function GET(request: NextRequest) {
       await supabase
         .from('email_campaign_log')
         .upsert(
-          { campaign_key: WORLD_CUP_CAMPAIGN_KEY, email: r.email, status: 'failed', error: (e?.message || '').slice(0, 300) },
+          { campaign_key: activeKey, email: r.email, status: 'failed', error: (e?.message || '').slice(0, 300) },
           { onConflict: 'campaign_key,email' }
         );
       console.warn(`⚠️ Gönderilemedi ${r.email}: ${e?.message}`);
@@ -149,11 +164,13 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    campaign: WORLD_CUP_CAMPAIGN_KEY,
+    campaign: activeKey,
+    relaunch,
     canary: canaryEmail,
-    totalCandidates: recipients.length,
-    sent,
+    sentThisRun: sent,
     failed,
+    remainingAfterRun: Math.max(0, remaining - sent),
+    batchLimit: batchLimit === Infinity ? null : batchLimit,
     excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size },
     elapsedSeconds: elapsed,
   });
