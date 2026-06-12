@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import Navigation from '@/components/Navigation';
-import { FootballBall3D } from '@/components/Football3D';
+import SiteNav from '@/components/SiteNav';
+import { Spinner } from '@/components/ui';
 import { motion } from 'framer-motion';
 
 interface TeamStats {
@@ -72,7 +72,7 @@ const TeamLogo = ({ src, name, size = 'md' }: { src?: string; name: string; size
   }
 
   return (
-    <div className={`${sizeClasses[size]} bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center font-bold text-white`}>
+    <div className={`${sizeClasses[size]} bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center font-bold text-content`}>
       {name.charAt(0)}
     </div>
   );
@@ -251,10 +251,10 @@ export default function StatsPage() {
 
   const getFormColor = (result: string) => {
     switch (result) {
-      case 'W': return 'bg-green-500 text-white';
+      case 'W': return 'bg-green-500 text-content';
       case 'D': return 'bg-yellow-500 text-black';
-      case 'L': return 'bg-red-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'L': return 'bg-red-500 text-content';
+      default: return 'bg-gray-500 text-content';
     }
   };
 
@@ -344,44 +344,42 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4 neon-glow-cyan"></div>
-          <p className="text-gray-400">{l.loading}</p>
-          <p className="text-gray-500 text-sm mt-2">Takım istatistikleri yükleniyor...</p>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32 text-center">
+          <div>
+            <Spinner size={28} className="text-brand-400 mx-auto mb-4" />
+            <p className="text-content-muted">{l.loading}</p>
+            <p className="text-content-subtle text-sm mt-2">Takım istatistikleri yükleniyor...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      <Navigation />
-      
-      {/* 3D Football Decorations */}
-      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
-        <FootballBall3D size={150} />
-      </div>
-      
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+
       {/* Header */}
-      <header className="glass-futuristic border-b border-[#00f0ff]/30 sticky top-0 z-50">
+      <header className="border-b border-line bg-surface-0/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/dashboard" className="text-gray-400 hover:text-white text-sm mb-2 inline-block">
+              <Link href="/dashboard" className="text-content-muted hover:text-content text-sm mb-2 inline-block">
                 {l.back}
               </Link>
-              <h1 className="text-2xl font-bold text-white">{l.title}</h1>
-              <p className="text-gray-400 text-sm">{l.subtitle}</p>
+              <h1 className="text-2xl font-bold text-content">{l.title}</h1>
+              <p className="text-content-muted text-sm">{l.subtitle}</p>
             </div>
             <div className="flex items-center gap-4">
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-gray-800 text-white px-4 py-2 rounded-xl border border-gray-700 focus:border-blue-500 outline-none"
+                className="bg-surface-2 text-content px-4 py-2 rounded-xl border border-line focus:border-brand-500 outline-none"
               />
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-content-muted">
                 📅 {matches.length} maç
               </div>
             </div>
@@ -391,25 +389,25 @@ export default function StatsPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {matches.length === 0 ? (
-          <div className="text-center py-20 bg-gray-800/50 rounded-2xl">
+          <div className="text-center py-20 bg-surface-2 rounded-2xl">
             <div className="text-7xl mb-4">📭</div>
-            <p className="text-gray-400 text-xl">{l.noMatches}</p>
-            <p className="text-gray-500 mt-2">Başka bir tarih seçin</p>
+            <p className="text-content-muted text-xl">{l.noMatches}</p>
+            <p className="text-content-subtle mt-2">Başka bir tarih seçin</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sol Panel - Maç Listesi */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl overflow-hidden">
-                <div className="p-4 border-b border-gray-700/50">
-                  <h2 className="text-lg font-bold text-white">📅 {l.selectMatch}</h2>
+              <div className="bg-surface-2 border border-line/50 rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-line/50">
+                  <h2 className="text-lg font-bold text-content">📅 {l.selectMatch}</h2>
                 </div>
                 <div className="max-h-[700px] overflow-y-auto">
                   {Object.entries(matchesByLeague).map(([league, leagueMatches]) => (
                     <div key={league}>
                       <button
                         onClick={() => toggleLeague(league)}
-                        className="w-full px-4 py-3 bg-gray-700/30 flex items-center justify-between hover:bg-gray-700/50 transition-all"
+                        className="w-full px-4 py-3 bg-surface-3 flex items-center justify-between hover:bg-surface-3 transition-all"
                       >
                         <div className="flex items-center gap-2">
                           {leagueMatches[0]?.fixture.leagueLogo && (
@@ -420,11 +418,11 @@ export default function StatsPage() {
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           )}
-                          <span className="text-sm font-medium text-gray-300">{league}</span>
+                          <span className="text-sm font-medium text-content-muted">{league}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">{leagueMatches.length} maç</span>
-                          <span className="text-gray-400">{expandedLeagues.has(league) ? '▼' : '▶'}</span>
+                          <span className="text-xs text-content-subtle">{leagueMatches.length} maç</span>
+                          <span className="text-content-muted">{expandedLeagues.has(league) ? '▼' : '▶'}</span>
                         </div>
                       </button>
                       {(expandedLeagues.has(league) || expandedLeagues.size === 0) && (
@@ -433,7 +431,7 @@ export default function StatsPage() {
                             <button
                               key={match.fixture.id}
                               onClick={() => setSelectedMatch(match)}
-                              className={`w-full p-4 text-left hover:bg-gray-700/30 transition-all ${
+                              className={`w-full p-4 text-left hover:bg-surface-3 transition-all ${
                                 selectedMatch?.fixture.id === match.fixture.id
                                   ? 'bg-blue-500/10 border-l-4 border-blue-500'
                                   : ''
@@ -451,11 +449,11 @@ export default function StatsPage() {
                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                       />
                                     ) : (
-                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-content flex-shrink-0">
                                         {match.homeTeam.name.charAt(0)}
                                       </div>
                                     )}
-                                    <span className="font-medium text-white truncate text-sm">{match.homeTeam.name}</span>
+                                    <span className="font-medium text-content truncate text-sm">{match.homeTeam.name}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {match.awayTeam.logo ? (
@@ -466,11 +464,11 @@ export default function StatsPage() {
                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                       />
                                     ) : (
-                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                      <div className="w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-content flex-shrink-0">
                                         {match.awayTeam.name.charAt(0)}
                                       </div>
                                     )}
-                                    <span className="font-medium text-white truncate text-sm">{match.awayTeam.name}</span>
+                                    <span className="font-medium text-content truncate text-sm">{match.awayTeam.name}</span>
                                   </div>
                                 </div>
                                 
@@ -493,7 +491,7 @@ export default function StatsPage() {
                                 </div>
                               </div>
                               <div className="flex items-center justify-between mt-2">
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-content-subtle">
                                   {new Date(match.fixture.startTime).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 {match.h2h.stats.totalMatches > 0 && (
@@ -528,9 +526,9 @@ export default function StatsPage() {
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
                         )}
-                        <span className="text-sm text-gray-400">{selectedMatch.fixture.league}</span>
+                        <span className="text-sm text-content-muted">{selectedMatch.fixture.league}</span>
                       </div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-sm text-content-muted">
                         {new Date(selectedMatch.fixture.startTime).toLocaleString(lang, {
                           weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
@@ -550,12 +548,12 @@ export default function StatsPage() {
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
-                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-content">
                               {selectedMatch.homeTeam.name.charAt(0)}
                             </div>
                           )}
                         </div>
-                        <div className="text-xl font-bold text-white mb-2">{selectedMatch.homeTeam.name}</div>
+                        <div className="text-xl font-bold text-content mb-2">{selectedMatch.homeTeam.name}</div>
                         <div className="flex justify-center gap-1">
                           {selectedMatch.homeTeam.recentForm.form.map((r, i) => (
                             <span key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm ${getFormColor(r)}`}>
@@ -570,8 +568,8 @@ export default function StatsPage() {
                       
                       {/* VS */}
                       <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center border-2 border-gray-600">
-                          <span className="text-xl font-bold text-gray-400">VS</span>
+                        <div className="w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center border-2 border-line">
+                          <span className="text-xl font-bold text-content-muted">VS</span>
                         </div>
                       </div>
                       
@@ -586,12 +584,12 @@ export default function StatsPage() {
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
-                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-content">
                               {selectedMatch.awayTeam.name.charAt(0)}
                             </div>
                           )}
                         </div>
-                        <div className="text-xl font-bold text-white mb-2">{selectedMatch.awayTeam.name}</div>
+                        <div className="text-xl font-bold text-content mb-2">{selectedMatch.awayTeam.name}</div>
                         <div className="flex justify-center gap-1">
                           {selectedMatch.awayTeam.recentForm.form.map((r, i) => (
                             <span key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm ${getFormColor(r)}`}>
@@ -606,22 +604,22 @@ export default function StatsPage() {
                     </div>
                     
                     {selectedMatch.fixture.venue && (
-                      <div className="text-center mt-4 text-sm text-gray-400">
+                      <div className="text-center mt-4 text-sm text-content-muted">
                         🏟️ {selectedMatch.fixture.venue}
                       </div>
                     )}
                   </div>
 
                   {/* Sekmeler */}
-                  <div className="flex gap-2 bg-gray-800/50 p-1 rounded-xl">
+                  <div className="flex gap-2 bg-surface-2 p-1 rounded-xl">
                     {(['overview', 'form', 'h2h', 'goals'] as const).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                           activeTab === tab
-                            ? 'bg-blue-600 text-white shadow-lg'
-                            : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                            ? 'bg-blue-600 text-content shadow-lg'
+                            : 'text-content-muted hover:text-content hover:bg-surface-3'
                         }`}
                       >
                         {tab === 'overview' && '📊'} {l[tab]}
@@ -633,32 +631,32 @@ export default function StatsPage() {
                   {activeTab === 'overview' && (
                     <div className="grid grid-cols-2 gap-4">
                       {/* Home Form Card with Logo */}
-                      <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
+                      <div className="bg-surface-2 border border-line/50 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-4">
                           {selectedMatch.homeTeam.logo ? (
                             <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
                           ) : (
-                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-content">
                               {selectedMatch.homeTeam.name.charAt(0)}
                             </div>
                           )}
-                          <h3 className="text-lg font-bold text-white">{l.homeForm}</h3>
+                          <h3 className="text-lg font-bold text-content">{l.homeForm}</h3>
                         </div>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.points} (Son 5)</span>
-                            <span className="text-white font-bold">{selectedMatch.homeTeam.recentForm.points}/15</span>
+                            <span className="text-content-muted">{l.points} (Son 5)</span>
+                            <span className="text-content font-bold">{selectedMatch.homeTeam.recentForm.points}/15</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.scored}</span>
+                            <span className="text-content-muted">{l.scored}</span>
                             <span className="text-green-400 font-bold">{selectedMatch.homeTeam.recentForm.goalsScored}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.conceded}</span>
+                            <span className="text-content-muted">{l.conceded}</span>
                             <span className="text-red-400 font-bold">{selectedMatch.homeTeam.recentForm.goalsConceded}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.avgGoals}</span>
+                            <span className="text-content-muted">{l.avgGoals}</span>
                             <span className="text-yellow-400 font-bold">
                               {((selectedMatch.homeTeam.recentForm.goalsScored + selectedMatch.homeTeam.recentForm.goalsConceded) / 5).toFixed(1)}
                             </span>
@@ -667,32 +665,32 @@ export default function StatsPage() {
                       </div>
 
                       {/* Away Form Card with Logo */}
-                      <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
+                      <div className="bg-surface-2 border border-line/50 rounded-xl p-5">
                         <div className="flex items-center gap-3 mb-4">
                           {selectedMatch.awayTeam.logo ? (
                             <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
                           ) : (
-                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center text-sm font-bold text-content">
                               {selectedMatch.awayTeam.name.charAt(0)}
                             </div>
                           )}
-                          <h3 className="text-lg font-bold text-white">{l.awayForm}</h3>
+                          <h3 className="text-lg font-bold text-content">{l.awayForm}</h3>
                         </div>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.points} (Son 5)</span>
-                            <span className="text-white font-bold">{selectedMatch.awayTeam.recentForm.points}/15</span>
+                            <span className="text-content-muted">{l.points} (Son 5)</span>
+                            <span className="text-content font-bold">{selectedMatch.awayTeam.recentForm.points}/15</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.scored}</span>
+                            <span className="text-content-muted">{l.scored}</span>
                             <span className="text-green-400 font-bold">{selectedMatch.awayTeam.recentForm.goalsScored}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.conceded}</span>
+                            <span className="text-content-muted">{l.conceded}</span>
                             <span className="text-red-400 font-bold">{selectedMatch.awayTeam.recentForm.goalsConceded}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">{l.avgGoals}</span>
+                            <span className="text-content-muted">{l.avgGoals}</span>
                             <span className="text-yellow-400 font-bold">
                               {((selectedMatch.awayTeam.recentForm.goalsScored + selectedMatch.awayTeam.recentForm.goalsConceded) / 5).toFixed(1)}
                             </span>
@@ -703,28 +701,28 @@ export default function StatsPage() {
                       {/* H2H Record */}
                       {selectedMatch.h2h.stats.totalMatches > 0 && (
                         <div className="col-span-2 bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-500/30 rounded-xl p-5">
-                          <h3 className="text-lg font-bold text-white mb-4">⚔️ {l.h2hRecord}</h3>
+                          <h3 className="text-lg font-bold text-content mb-4">⚔️ {l.h2hRecord}</h3>
                           <div className="grid grid-cols-3 gap-4 text-center">
                             <div className="flex flex-col items-center">
                               {selectedMatch.homeTeam.logo && (
                                 <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain mb-2" />
                               )}
                               <div className="text-3xl font-bold text-green-400">{selectedMatch.h2h.stats.team1Wins}</div>
-                              <div className="text-sm text-gray-400">{selectedMatch.homeTeam.name}</div>
+                              <div className="text-sm text-content-muted">{selectedMatch.homeTeam.name}</div>
                             </div>
                             <div>
                               <div className="text-3xl font-bold text-yellow-400">{selectedMatch.h2h.stats.draws}</div>
-                              <div className="text-sm text-gray-400">{l.draws}</div>
+                              <div className="text-sm text-content-muted">{l.draws}</div>
                             </div>
                             <div className="flex flex-col items-center">
                               {selectedMatch.awayTeam.logo && (
                                 <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain mb-2" />
                               )}
                               <div className="text-3xl font-bold text-blue-400">{selectedMatch.h2h.stats.team2Wins}</div>
-                              <div className="text-sm text-gray-400">{selectedMatch.awayTeam.name}</div>
+                              <div className="text-sm text-content-muted">{selectedMatch.awayTeam.name}</div>
                             </div>
                           </div>
-                          <div className="mt-4 text-center text-sm text-gray-400">
+                          <div className="mt-4 text-center text-sm text-content-muted">
                             {l.totalMatches}: {selectedMatch.h2h.stats.totalMatches} | {l.avgGoals}: {selectedMatch.h2h.stats.avgGoals}
                           </div>
                         </div>
@@ -773,7 +771,7 @@ export default function StatsPage() {
                                 <span>{tip.text}</span>
                               </div>
                             )) : (
-                              <div className="text-gray-400">Yeterli veri yok</div>
+                              <div className="text-content-muted">Yeterli veri yok</div>
                             );
                           })()}
                         </div>
@@ -784,12 +782,12 @@ export default function StatsPage() {
                   {/* Form Tab - with Logos */}
                   {activeTab === 'form' && (
                     <div className="space-y-6">
-                      <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-gray-700/50 bg-green-500/10 flex items-center gap-3">
+                      <div className="bg-surface-2 border border-line/50 rounded-xl overflow-hidden">
+                        <div className="p-4 border-b border-line/50 bg-green-500/10 flex items-center gap-3">
                           {selectedMatch.homeTeam.logo && (
                             <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
                           )}
-                          <h3 className="font-bold text-white">{selectedMatch.homeTeam.name} - {l.last5}</h3>
+                          <h3 className="font-bold text-content">{selectedMatch.homeTeam.name} - {l.last5}</h3>
                         </div>
                         <div className="divide-y divide-gray-700/30">
                           {selectedMatch.homeTeam.recentMatches?.slice(0, 5).map((match: any, idx: number) => {
@@ -804,17 +802,17 @@ export default function StatsPage() {
                             });
                             
                             return (
-                              <div key={idx} className="p-3 flex items-center justify-between hover:bg-gray-700/20">
+                              <div key={idx} className="p-3 flex items-center justify-between hover:bg-surface-3/20">
                                 <div className="flex items-center gap-3">
                                   <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${getFormColor(selectedMatch.homeTeam.recentForm.form[idx])}`}>
                                     {selectedMatch.homeTeam.recentForm.form[idx]}
                                   </span>
                                   <div>
-                                    <div className="text-white text-sm">{home?.name} vs {away?.name}</div>
-                                    <div className="text-xs text-gray-500">{match.league?.name}</div>
+                                    <div className="text-content text-sm">{home?.name} vs {away?.name}</div>
+                                    <div className="text-xs text-content-subtle">{match.league?.name}</div>
                                   </div>
                                 </div>
-                                <div className="text-lg font-bold text-white">
+                                <div className="text-lg font-bold text-content">
                                   {homeScore} - {awayScore}
                                 </div>
                               </div>
@@ -823,12 +821,12 @@ export default function StatsPage() {
                         </div>
                       </div>
 
-                      <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-gray-700/50 bg-blue-500/10 flex items-center gap-3">
+                      <div className="bg-surface-2 border border-line/50 rounded-xl overflow-hidden">
+                        <div className="p-4 border-b border-line/50 bg-blue-500/10 flex items-center gap-3">
                           {selectedMatch.awayTeam.logo && (
                             <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
                           )}
-                          <h3 className="font-bold text-white">{selectedMatch.awayTeam.name} - {l.last5}</h3>
+                          <h3 className="font-bold text-content">{selectedMatch.awayTeam.name} - {l.last5}</h3>
                         </div>
                         <div className="divide-y divide-gray-700/30">
                           {selectedMatch.awayTeam.recentMatches?.slice(0, 5).map((match: any, idx: number) => {
@@ -843,17 +841,17 @@ export default function StatsPage() {
                             });
                             
                             return (
-                              <div key={idx} className="p-3 flex items-center justify-between hover:bg-gray-700/20">
+                              <div key={idx} className="p-3 flex items-center justify-between hover:bg-surface-3/20">
                                 <div className="flex items-center gap-3">
                                   <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${getFormColor(selectedMatch.awayTeam.recentForm.form[idx])}`}>
                                     {selectedMatch.awayTeam.recentForm.form[idx]}
                                   </span>
                                   <div>
-                                    <div className="text-white text-sm">{home?.name} vs {away?.name}</div>
-                                    <div className="text-xs text-gray-500">{match.league?.name}</div>
+                                    <div className="text-content text-sm">{home?.name} vs {away?.name}</div>
+                                    <div className="text-xs text-content-subtle">{match.league?.name}</div>
                                   </div>
                                 </div>
-                                <div className="text-lg font-bold text-white">
+                                <div className="text-lg font-bold text-content">
                                   {homeScore} - {awayScore}
                                 </div>
                               </div>
@@ -875,51 +873,51 @@ export default function StatsPage() {
                                 <img src={selectedMatch.homeTeam.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" />
                               )}
                               <div className="text-4xl font-bold text-green-400">{selectedMatch.h2h.stats.team1Wins}</div>
-                              <div className="text-sm text-gray-400 mt-1">{selectedMatch.homeTeam.name}</div>
-                              <div className="text-xs text-gray-500">{l.wins}</div>
+                              <div className="text-sm text-content-muted mt-1">{selectedMatch.homeTeam.name}</div>
+                              <div className="text-xs text-content-subtle">{l.wins}</div>
                             </div>
                             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-5 text-center">
                               <div className="text-4xl font-bold text-yellow-400">{selectedMatch.h2h.stats.draws}</div>
-                              <div className="text-sm text-gray-400 mt-1">{l.draws}</div>
+                              <div className="text-sm text-content-muted mt-1">{l.draws}</div>
                             </div>
                             <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5 text-center">
                               {selectedMatch.awayTeam.logo && (
                                 <img src={selectedMatch.awayTeam.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" />
                               )}
                               <div className="text-4xl font-bold text-blue-400">{selectedMatch.h2h.stats.team2Wins}</div>
-                              <div className="text-sm text-gray-400 mt-1">{selectedMatch.awayTeam.name}</div>
-                              <div className="text-xs text-gray-500">{l.wins}</div>
+                              <div className="text-sm text-content-muted mt-1">{selectedMatch.awayTeam.name}</div>
+                              <div className="text-xs text-content-subtle">{l.wins}</div>
                             </div>
                           </div>
 
-                          <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
+                          <div className="bg-surface-2 border border-line/50 rounded-xl p-5">
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="text-center p-4 bg-gray-700/30 rounded-lg">
-                                <div className="text-2xl font-bold text-white">{selectedMatch.h2h.stats.totalGoals}</div>
-                                <div className="text-sm text-gray-400">Toplam Gol</div>
+                              <div className="text-center p-4 bg-surface-3 rounded-lg">
+                                <div className="text-2xl font-bold text-content">{selectedMatch.h2h.stats.totalGoals}</div>
+                                <div className="text-sm text-content-muted">Toplam Gol</div>
                               </div>
-                              <div className="text-center p-4 bg-gray-700/30 rounded-lg">
+                              <div className="text-center p-4 bg-surface-3 rounded-lg">
                                 <div className="text-2xl font-bold text-yellow-400">{selectedMatch.h2h.stats.avgGoals}</div>
-                                <div className="text-sm text-gray-400">{l.avgGoals}</div>
+                                <div className="text-sm text-content-muted">{l.avgGoals}</div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl overflow-hidden">
-                            <div className="p-4 border-b border-gray-700/50">
-                              <h3 className="font-bold text-white">⚔️ {l.vsHistory}</h3>
+                          <div className="bg-surface-2 border border-line/50 rounded-xl overflow-hidden">
+                            <div className="p-4 border-b border-line/50">
+                              <h3 className="font-bold text-content">⚔️ {l.vsHistory}</h3>
                             </div>
                             <div className="divide-y divide-gray-700/30">
                               {selectedMatch.h2h.matches.map((match: any, idx: number) => (
-                                <div key={idx} className="p-4 hover:bg-gray-700/20">
+                                <div key={idx} className="p-4 hover:bg-surface-3/20">
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-white">{match.homeTeam}</span>
-                                        <span className="text-2xl font-bold text-white">{match.homeScore} - {match.awayScore}</span>
-                                        <span className="text-white">{match.awayTeam}</span>
+                                        <span className="text-content">{match.homeTeam}</span>
+                                        <span className="text-2xl font-bold text-content">{match.homeScore} - {match.awayScore}</span>
+                                        <span className="text-content">{match.awayTeam}</span>
                                       </div>
-                                      <div className="text-xs text-gray-500 mt-1">
+                                      <div className="text-xs text-content-subtle mt-1">
                                         {new Date(match.date).toLocaleDateString(lang)} • {match.league}
                                       </div>
                                     </div>
@@ -939,9 +937,9 @@ export default function StatsPage() {
                           </div>
                         </>
                       ) : (
-                        <div className="text-center py-16 bg-gray-800/50 rounded-2xl">
+                        <div className="text-center py-16 bg-surface-2 rounded-2xl">
                           <div className="text-6xl mb-4">🤷</div>
-                          <p className="text-gray-400">Bu takımlar daha önce karşılaşmamış</p>
+                          <p className="text-content-muted">Bu takımlar daha önce karşılaşmamış</p>
                         </div>
                       )}
                     </div>
@@ -957,118 +955,118 @@ export default function StatsPage() {
                         return (
                           <>
                             <div className="grid grid-cols-2 gap-6">
-                              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
+                              <div className="bg-surface-2 border border-line/50 rounded-xl p-5">
                                 <div className="flex items-center gap-3 mb-4">
                                   {selectedMatch.homeTeam.logo && (
                                     <img src={selectedMatch.homeTeam.logo} alt="" className="w-8 h-8 object-contain" />
                                   )}
-                                  <h3 className="font-bold text-white">{selectedMatch.homeTeam.name}</h3>
+                                  <h3 className="font-bold text-content">{selectedMatch.homeTeam.name}</h3>
                                 </div>
                                 <div className="space-y-4">
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.over25}</span>
-                                      <span className="text-white font-bold">{homeStats.over25}%</span>
+                                      <span className="text-content-muted">{l.over25}</span>
+                                      <span className="text-content font-bold">{homeStats.over25}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-green-500 rounded-full" style={{ width: `${homeStats.over25}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.bttsRate}</span>
-                                      <span className="text-white font-bold">{homeStats.btts}%</span>
+                                      <span className="text-content-muted">{l.bttsRate}</span>
+                                      <span className="text-content font-bold">{homeStats.btts}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${homeStats.btts}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.cleanSheets}</span>
-                                      <span className="text-white font-bold">{homeStats.cleanSheets}%</span>
+                                      <span className="text-content-muted">{l.cleanSheets}</span>
+                                      <span className="text-content font-bold">{homeStats.cleanSheets}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-blue-500 rounded-full" style={{ width: `${homeStats.cleanSheets}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.failedToScore}</span>
-                                      <span className="text-white font-bold">{homeStats.failedToScore}%</span>
+                                      <span className="text-content-muted">{l.failedToScore}</span>
+                                      <span className="text-content font-bold">{homeStats.failedToScore}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-red-500 rounded-full" style={{ width: `${homeStats.failedToScore}%` }}></div>
                                     </div>
                                   </div>
-                                  <div className="pt-4 border-t border-gray-700">
+                                  <div className="pt-4 border-t border-line">
                                     <div className="grid grid-cols-2 gap-4 text-center">
                                       <div className="p-3 bg-green-500/10 rounded-lg">
                                         <div className="text-2xl font-bold text-green-400">{homeStats.avgScored}</div>
-                                        <div className="text-xs text-gray-400">{l.scored}/maç</div>
+                                        <div className="text-xs text-content-muted">{l.scored}/maç</div>
                                       </div>
                                       <div className="p-3 bg-red-500/10 rounded-lg">
                                         <div className="text-2xl font-bold text-red-400">{homeStats.avgConceded}</div>
-                                        <div className="text-xs text-gray-400">{l.conceded}/maç</div>
+                                        <div className="text-xs text-content-muted">{l.conceded}/maç</div>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-5">
+                              <div className="bg-surface-2 border border-line/50 rounded-xl p-5">
                                 <div className="flex items-center gap-3 mb-4">
                                   {selectedMatch.awayTeam.logo && (
                                     <img src={selectedMatch.awayTeam.logo} alt="" className="w-8 h-8 object-contain" />
                                   )}
-                                  <h3 className="font-bold text-white">{selectedMatch.awayTeam.name}</h3>
+                                  <h3 className="font-bold text-content">{selectedMatch.awayTeam.name}</h3>
                                 </div>
                                 <div className="space-y-4">
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.over25}</span>
-                                      <span className="text-white font-bold">{awayStats.over25}%</span>
+                                      <span className="text-content-muted">{l.over25}</span>
+                                      <span className="text-content font-bold">{awayStats.over25}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-green-500 rounded-full" style={{ width: `${awayStats.over25}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.bttsRate}</span>
-                                      <span className="text-white font-bold">{awayStats.btts}%</span>
+                                      <span className="text-content-muted">{l.bttsRate}</span>
+                                      <span className="text-content font-bold">{awayStats.btts}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${awayStats.btts}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.cleanSheets}</span>
-                                      <span className="text-white font-bold">{awayStats.cleanSheets}%</span>
+                                      <span className="text-content-muted">{l.cleanSheets}</span>
+                                      <span className="text-content font-bold">{awayStats.cleanSheets}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-blue-500 rounded-full" style={{ width: `${awayStats.cleanSheets}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-sm mb-1">
-                                      <span className="text-gray-400">{l.failedToScore}</span>
-                                      <span className="text-white font-bold">{awayStats.failedToScore}%</span>
+                                      <span className="text-content-muted">{l.failedToScore}</span>
+                                      <span className="text-content font-bold">{awayStats.failedToScore}%</span>
                                     </div>
-                                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                                       <div className="h-full bg-red-500 rounded-full" style={{ width: `${awayStats.failedToScore}%` }}></div>
                                     </div>
                                   </div>
-                                  <div className="pt-4 border-t border-gray-700">
+                                  <div className="pt-4 border-t border-line">
                                     <div className="grid grid-cols-2 gap-4 text-center">
                                       <div className="p-3 bg-green-500/10 rounded-lg">
                                         <div className="text-2xl font-bold text-green-400">{awayStats.avgScored}</div>
-                                        <div className="text-xs text-gray-400">{l.scored}/maç</div>
+                                        <div className="text-xs text-content-muted">{l.scored}/maç</div>
                                       </div>
                                       <div className="p-3 bg-red-500/10 rounded-lg">
                                         <div className="text-2xl font-bold text-red-400">{awayStats.avgConceded}</div>
-                                        <div className="text-xs text-gray-400">{l.conceded}/maç</div>
+                                        <div className="text-xs text-content-muted">{l.conceded}/maç</div>
                                       </div>
                                     </div>
                                   </div>
@@ -1077,38 +1075,38 @@ export default function StatsPage() {
                             </div>
 
                             <div className="bg-gradient-to-r from-green-600/10 to-yellow-600/10 border border-green-500/30 rounded-xl p-5">
-                              <h3 className="font-bold text-white mb-4">🎯 {l.goalTrends}</h3>
+                              <h3 className="font-bold text-content mb-4">🎯 {l.goalTrends}</h3>
                               <div className="grid grid-cols-4 gap-4">
-                                <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+                                <div className="text-center p-4 bg-surface-2 rounded-lg">
                                   <div className="text-3xl font-bold text-green-400">
                                     {Math.round((homeStats.over25 + awayStats.over25) / 2)}%
                                   </div>
-                                  <div className="text-xs text-gray-400 mt-1">{l.over25}</div>
-                                  <div className="text-[10px] text-gray-500">Ort.</div>
+                                  <div className="text-xs text-content-muted mt-1">{l.over25}</div>
+                                  <div className="text-[10px] text-content-subtle">Ort.</div>
                                 </div>
-                                <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+                                <div className="text-center p-4 bg-surface-2 rounded-lg">
                                   <div className="text-3xl font-bold text-yellow-400">
                                     {Math.round((homeStats.btts + awayStats.btts) / 2)}%
                                   </div>
-                                  <div className="text-xs text-gray-400 mt-1">{l.bttsRate}</div>
-                                  <div className="text-[10px] text-gray-500">Ort.</div>
+                                  <div className="text-xs text-content-muted mt-1">{l.bttsRate}</div>
+                                  <div className="text-[10px] text-content-subtle">Ort.</div>
                                 </div>
-                                <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-                                  <div className="text-3xl font-bold text-white">
+                                <div className="text-center p-4 bg-surface-2 rounded-lg">
+                                  <div className="text-3xl font-bold text-content">
                                     {(homeStats.avgScored + awayStats.avgScored).toFixed(1)}
                                   </div>
-                                  <div className="text-xs text-gray-400 mt-1">Beklenen Gol</div>
-                                  <div className="text-[10px] text-gray-500">Toplam</div>
+                                  <div className="text-xs text-content-muted mt-1">Beklenen Gol</div>
+                                  <div className="text-[10px] text-content-subtle">Toplam</div>
                                 </div>
-                                <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+                                <div className="text-center p-4 bg-surface-2 rounded-lg">
                                   <div className={`text-3xl font-bold ${
                                     (homeStats.avgScored + awayStats.avgScored) > 2.5 
                                       ? 'text-green-400' : 'text-red-400'
                                   }`}>
                                     {(homeStats.avgScored + awayStats.avgScored) > 2.5 ? 'ÜST' : 'ALT'}
                                   </div>
-                                  <div className="text-xs text-gray-400 mt-1">2.5 Gol</div>
-                                  <div className="text-[10px] text-gray-500">Tahmin</div>
+                                  <div className="text-xs text-content-muted mt-1">2.5 Gol</div>
+                                  <div className="text-[10px] text-content-subtle">Tahmin</div>
                                 </div>
                               </div>
                             </div>
@@ -1119,11 +1117,11 @@ export default function StatsPage() {
                   )}
                 </div>
               ) : (
-                <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl flex items-center justify-center h-[600px]">
+                <div className="bg-surface-2 border border-line/50 rounded-2xl flex items-center justify-center h-[600px]">
                   <div className="text-center">
                     <div className="text-7xl mb-4">📊</div>
-                    <p className="text-xl text-gray-400">{l.selectMatch}</p>
-                    <p className="text-sm text-gray-500 mt-2">Sol taraftan bir maç seçin</p>
+                    <p className="text-xl text-content-muted">{l.selectMatch}</p>
+                    <p className="text-sm text-content-subtle mt-2">Sol taraftan bir maç seçin</p>
                   </div>
                 </div>
               )}

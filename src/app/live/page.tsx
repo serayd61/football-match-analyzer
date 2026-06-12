@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import Navigation from '@/components/Navigation';
-import { FootballBall3D } from '@/components/Football3D';
-import { motion } from 'framer-motion';
+import SiteNav from '@/components/SiteNav';
+import { RefreshCw, Radio } from 'lucide-react';
+import { Stat, Spinner, EmptyState, Segmented } from '@/components/ui';
 
 interface Match {
   id: number;
@@ -21,14 +20,14 @@ interface Match {
   venue: string;
 }
 
-const STATUS_MAP: { [key: number]: { label: string; color: string; isLive: boolean } } = {
-  1: { label: 'Başlamadı', color: 'bg-gray-500', isLive: false },
-  2: { label: '1. Yarı', color: 'bg-red-500', isLive: true },
-  3: { label: 'Devre Arası', color: 'bg-yellow-500', isLive: true },
-  4: { label: '2. Yarı', color: 'bg-red-500', isLive: true },
-  5: { label: 'Bitti', color: 'bg-green-600', isLive: false },
-  6: { label: 'Uzatma', color: 'bg-orange-500', isLive: true },
-  7: { label: 'Penaltılar', color: 'bg-purple-500', isLive: true },
+const STATUS_MAP: { [key: number]: { label: string; tone: string; isLive: boolean } } = {
+  1: { label: 'Başlamadı', tone: 'text-content-subtle bg-surface-3 border-line', isLive: false },
+  2: { label: '1. Yarı', tone: 'text-negative bg-negative/10 border-negative/30', isLive: true },
+  3: { label: 'Devre Arası', tone: 'text-caution bg-caution/10 border-caution/30', isLive: true },
+  4: { label: '2. Yarı', tone: 'text-negative bg-negative/10 border-negative/30', isLive: true },
+  5: { label: 'Bitti', tone: 'text-positive bg-positive/10 border-positive/30', isLive: false },
+  6: { label: 'Uzatma', tone: 'text-caution bg-caution/10 border-caution/30', isLive: true },
+  7: { label: 'Penaltılar', tone: 'text-info bg-info/10 border-info/30', isLive: true },
 };
 
 export default function LiveScoresPage() {
@@ -56,7 +55,7 @@ export default function LiveScoresPage() {
     return () => clearInterval(interval);
   }, [fetchLiveScores]);
 
-  const filteredMatches = matches.filter(match => {
+  const filteredMatches = matches.filter((match) => {
     const status = STATUS_MAP[match.statusCode] || { isLive: false };
     switch (filter) {
       case 'live': return status.isLive;
@@ -66,156 +65,105 @@ export default function LiveScoresPage() {
     }
   });
 
-  const liveCount = matches.filter(m => STATUS_MAP[m.statusCode]?.isLive).length;
+  const liveCount = matches.filter((m) => STATUS_MAP[m.statusCode]?.isLive).length;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#00f0ff] mx-auto mb-4 neon-glow-cyan"></div>
-          <p className="text-white text-xl">Yükleniyor...</p>
-        </div>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32"><Spinner size={28} className="text-brand-400" /></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
-      <Navigation />
-      
-      {/* 3D Football Decorations */}
-      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
-        <FootballBall3D size={150} />
-      </div>
-      {/* Header */}
-      <header className="glass-futuristic border-b border-[#00f0ff]/30 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-2xl font-bold text-white hover:text-green-400 transition">
-                ⚽ Football Analytics
-              </Link>
-              <span className="px-3 py-1 bg-red-500 text-white text-sm font-bold rounded-full animate-pulse">
-                🔴 CANLI
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-4 text-sm text-gray-400">
-              {lastUpdate && (
-                <span>Güncelleme: {lastUpdate.toLocaleTimeString('tr-TR')}</span>
-              )}
-              <button
-                onClick={fetchLiveScores}
-                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs hover:bg-blue-500/30"
-              >
-                ↻ Yenile
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
 
-      <main className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Page header */}
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl grid place-items-center bg-negative/10 border border-negative/30 text-negative">
+              <Radio size={18} />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-content tracking-tight flex items-center gap-2">
+                Canlı Skorlar
+                {liveCount > 0 && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-negative/15 text-negative border border-negative/30 font-semibold animate-pulse">
+                    {liveCount} canlı
+                  </span>
+                )}
+              </h1>
+              {lastUpdate && (
+                <p className="text-xs text-content-subtle mt-0.5">Güncelleme: {lastUpdate.toLocaleTimeString('tr-TR')}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={fetchLiveScores} className="fa-btn fa-btn-secondary">
+            <RefreshCw size={15} /> Yenile
+          </button>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
-            <div className="text-2xl font-bold text-white">{matches.length}</div>
-            <div className="text-gray-400 text-sm">Toplam</div>
-          </div>
-          <div className="bg-red-500/20 rounded-xl p-4 border border-red-500/50 text-center">
-            <div className="text-2xl font-bold text-red-400">{liveCount}</div>
-            <div className="text-red-300 text-sm">Canlı</div>
-          </div>
-          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
-            <div className="text-2xl font-bold text-yellow-400">
-              {matches.filter(m => m.statusCode === 1).length}
-            </div>
-            <div className="text-gray-400 text-sm">Başlayacak</div>
-          </div>
-          <div className="glass-futuristic rounded-xl p-4 border border-[#00f0ff]/20 text-center neon-border-cyan">
-            <div className="text-2xl font-bold text-green-400">
-              {matches.filter(m => m.statusCode === 5).length}
-            </div>
-            <div className="text-gray-400 text-sm">Biten</div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <Stat label="Toplam" value={matches.length} />
+          <Stat label="Canlı" value={liveCount} tone="negative" />
+          <Stat label="Başlayacak" value={matches.filter((m) => m.statusCode === 1).length} tone="caution" />
+          <Stat label="Biten" value={matches.filter((m) => m.statusCode === 5).length} tone="positive" />
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 mb-6">
-          {[
-            { key: 'all', label: 'Tümü' },
-            { key: 'live', label: '🔴 Canlı' },
-            { key: 'upcoming', label: '⏰ Başlayacak' },
-            { key: 'finished', label: '✅ Biten' },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key as typeof filter)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === tab.key
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="mb-6">
+          <Segmented
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: 'all', label: 'Tümü' },
+              { value: 'live', label: '🔴 Canlı' },
+              { value: 'upcoming', label: '⏰ Başlayacak' },
+              { value: 'finished', label: '✅ Biten' },
+            ]}
+          />
         </div>
 
         {/* Matches */}
         {filteredMatches.length === 0 ? (
-          <div className="bg-gray-800/50 rounded-xl p-12 text-center border border-gray-700">
-            <div className="text-6xl mb-4">⚽</div>
-            <h3 className="text-xl font-bold text-white mb-2">Maç Bulunamadı</h3>
-            <p className="text-gray-400">Bu kategoride maç yok</p>
-          </div>
+          <EmptyState icon={<span className="text-3xl">⚽</span>} title="Maç Bulunamadı" description="Bu kategoride maç yok." />
         ) : (
           <div className="space-y-3">
-            {filteredMatches.map(match => {
-              const status = STATUS_MAP[match.statusCode] || { label: '?', color: 'bg-gray-500', isLive: false };
-              
+            {filteredMatches.map((match) => {
+              const status = STATUS_MAP[match.statusCode] || { label: '?', tone: 'text-content-subtle bg-surface-3 border-line', isLive: false };
               return (
-                <div 
-                  key={match.id}
-                  className={`bg-gray-800/50 rounded-xl border overflow-hidden ${
-                    status.isLive ? 'border-red-500/50' : 'border-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-900/50 border-b border-gray-700">
-                    <span className="text-sm text-gray-400">{match.league}</span>
+                <div key={match.id} className={`fa-card overflow-hidden ${status.isLive ? 'border-negative/40' : ''}`}>
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-line bg-surface-1/60">
+                    <span className="text-sm text-content-subtle truncate">{match.league}</span>
                     <div className="flex items-center gap-2">
                       {status.isLive && match.minute && (
-                        <span className="text-red-400 font-mono text-sm animate-pulse">
-                          {match.minute}&apos;
-                        </span>
+                        <span className="text-negative font-mono text-sm animate-pulse">{match.minute}&apos;</span>
                       )}
-                      <span className={`px-2 py-0.5 ${status.color} text-white text-xs font-bold rounded`}>
-                        {status.label}
-                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${status.tone}`}>{status.label}</span>
                     </div>
                   </div>
-
                   <div className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 text-right">
-                        <span className="text-white font-semibold">{match.homeTeam}</span>
+                        <span className="text-content font-semibold">{match.homeTeam}</span>
                       </div>
                       <div className="px-6">
                         {match.statusCode === 1 ? (
-                          <div className="text-gray-400 text-sm">
-                            {new Date(match.startTime).toLocaleTimeString('tr-TR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
+                          <div className="text-content-subtle text-sm tabular-nums">
+                            {new Date(match.startTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         ) : (
-                          <div className={`text-2xl font-bold ${status.isLive ? 'text-green-400' : 'text-white'}`}>
-                            {match.homeScore ?? 0} - {match.awayScore ?? 0}
+                          <div className={`text-2xl font-bold tabular-nums ${status.isLive ? 'text-brand-400' : 'text-content'}`}>
+                            {match.homeScore ?? 0} – {match.awayScore ?? 0}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="text-white font-semibold">{match.awayTeam}</span>
+                        <span className="text-content font-semibold">{match.awayTeam}</span>
                       </div>
                     </div>
                   </div>

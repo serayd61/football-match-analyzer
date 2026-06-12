@@ -155,14 +155,14 @@ export default function EnginePredictions({
     const isAuth = gate === 'auth';
     return (
       <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
           {isAuth ? <Lock size={24} /> : <Crown size={24} />}
         </div>
         <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
         <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
         <Link
           href={isAuth ? '/login' : '/pricing'}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity"
         >
           {isAuth ? t.gateAuthCta : t.gateSubCta}
         </Link>
@@ -180,7 +180,7 @@ export default function EnginePredictions({
             { icon: <BarChart3 size={18} />, val: stats.leagues, label: t.leagues },
           ].map((s, i) => (
             <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-              <div className="flex items-center justify-center gap-2 text-cyan-300 mb-1">{s.icon}</div>
+              <div className="flex items-center justify-center gap-2 text-brand-300 mb-1">{s.icon}</div>
               <div className="text-2xl font-bold text-white">{s.val}</div>
               <div className="text-xs text-white/40">{s.label}</div>
             </div>
@@ -192,11 +192,11 @@ export default function EnginePredictions({
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
             <button onClick={() => setSortBy('conf')}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${sortBy === 'conf' ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/50'}`}>
+              className={`text-xs px-3 py-1.5 rounded-lg border ${sortBy === 'conf' ? 'border-brand-400/50 bg-brand-400/10 text-brand-300' : 'border-white/10 text-white/50'}`}>
               {t.sortConf}
             </button>
             <button onClick={() => setSortBy('time')}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${sortBy === 'time' ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/50'}`}>
+              className={`text-xs px-3 py-1.5 rounded-lg border ${sortBy === 'time' ? 'border-brand-400/50 bg-brand-400/10 text-brand-300' : 'border-white/10 text-white/50'}`}>
               {t.sortTime}
             </button>
           </div>
@@ -220,7 +220,7 @@ export default function EnginePredictions({
           {groups.map(([league, items]) => (
             <div key={league}>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-bold text-cyan-300">{league}</h3>
+                <h3 className="text-sm font-bold text-brand-300">{league}</h3>
                 <span className="text-xs text-white/30">{items.length} {t.matches}</span>
                 <div className="flex-1 h-px bg-white/10" />
               </div>
@@ -250,8 +250,8 @@ export default function EnginePredictions({
 function PredictionCard({ p, t, i, open, onToggle }: {
   p: Prediction; t: any; i: number; open: boolean; onToggle: () => void;
 }) {
-  const pickColor = p.pick === '1' ? 'text-cyan-300 border-cyan-400/40 bg-cyan-400/10'
-    : p.pick === '2' ? 'text-fuchsia-300 border-fuchsia-400/40 bg-fuchsia-400/10'
+  const pickColor = p.pick === '1' ? 'text-brand-300 border-brand-400/40 bg-brand-400/10'
+    : p.pick === '2' ? 'text-sky-300 border-sky-400/40 bg-sky-400/10'
     : 'text-amber-300 border-amber-400/40 bg-amber-400/10';
   const pickLabel = p.pick === '1' ? p.homeName : p.pick === '2' ? p.awayName : t.draw;
   const pickTag = p.pick === '1' ? t.home : p.pick === '2' ? t.away : t.draw;
@@ -262,7 +262,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i * 0.03, 0.4) }}
-      className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 hover:border-cyan-400/30 transition-colors">
+      className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 hover:border-brand-400/30 transition-colors">
       <div className="flex items-center justify-between text-xs text-white/40 mb-3">
         <span className="truncate max-w-[60%]">{p.leagueName || '—'}</span>
         <span className="flex items-center gap-1"><Clock size={12} /> {koStr}</span>
@@ -294,9 +294,9 @@ function PredictionCard({ p, t, i, open, onToggle }: {
       </div>
 
       <div className="flex h-2 rounded-full overflow-hidden mb-1">
-        <div style={{ width: `${p.pHome * 100}%` }} className="bg-cyan-400/70" />
+        <div style={{ width: `${p.pHome * 100}%` }} className="bg-brand-400/70" />
         <div style={{ width: `${p.pDraw * 100}%` }} className="bg-amber-400/70" />
-        <div style={{ width: `${p.pAway * 100}%` }} className="bg-fuchsia-500/70" />
+        <div style={{ width: `${p.pAway * 100}%` }} className="bg-sky-500/70" />
       </div>
       <div className="flex justify-between text-[10px] text-white/40 mb-3">
         <span>1 · {pct(p.pHome)}</span>
@@ -313,7 +313,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
         </span>
         {p.rationale && (
           <button onClick={onToggle}
-            className="ml-auto text-[11px] px-2 py-1 rounded-lg text-cyan-300/80 hover:text-cyan-300 flex items-center gap-1">
+            className="ml-auto text-[11px] px-2 py-1 rounded-lg text-brand-300/80 hover:text-brand-300 flex items-center gap-1">
             {t.why} {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
         )}

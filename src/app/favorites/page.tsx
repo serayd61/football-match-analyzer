@@ -10,10 +10,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Star, ArrowLeft, Calendar, Trophy, Target, TrendingUp,
-  CheckCircle, XCircle, Clock, Trash2, ExternalLink
+import {
+  Star, Calendar, Trophy, Target, TrendingUp,
+  Clock, Trash2, ExternalLink
 } from 'lucide-react';
+import SiteNav from '@/components/SiteNav';
+import { Spinner, EmptyState } from '@/components/ui';
 
 interface Favorite {
   id: string;
@@ -183,62 +185,39 @@ export default function FavoritesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent" />
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32"><Spinner size={28} className="text-brand-400" /></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-lg bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 border border-[#00f0ff]/30"
-              >
-                <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
-              </motion.button>
-            </Link>
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Page header */}
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl grid place-items-center bg-amber-500/10 border border-amber-500/25 text-amber-400">
+              <Star size={18} fill="currentColor" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-white neon-glow-cyan">
-                {t.title}
-              </h1>
-              <p className="text-xs text-[#00f0ff] font-medium">{t.subtitle}</p>
+              <h1 className="text-xl font-semibold text-content tracking-tight">{t.title}</h1>
+              <p className="text-content-subtle text-sm mt-0.5">{t.subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
-            <span className="text-white font-bold">{favorites.length}</span>
-          </div>
+          <span className="fa-badge"><Star size={12} className="text-amber-400" fill="currentColor" /> {favorites.length}</span>
         </div>
-      </header>
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
         {favorites.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
-          >
-            <Star className="w-20 h-20 text-gray-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">{t.noFavorites}</h2>
-            <p className="text-gray-400 mb-6">{t.noFavoritesDesc}</p>
-            <Link href="/dashboard">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-gradient-to-r from-[#00f0ff] to-[#ff00f0] text-white font-bold rounded-xl"
-              >
-                {t.goToDashboard}
-              </motion.button>
-            </Link>
-          </motion.div>
+          <EmptyState
+            icon={<Star size={26} className="text-content-subtle" />}
+            title={t.noFavorites}
+            description={t.noFavoritesDesc}
+            action={<Link href="/dashboard" className="fa-btn fa-btn-primary fa-btn-lg">{t.goToDashboard}</Link>}
+          />
         ) : (
           <div className="grid gap-6">
             {favorites.map((favorite, index) => (
@@ -246,108 +225,85 @@ export default function FavoritesPage() {
                 key={favorite.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-futuristic rounded-2xl border p-6 neon-border-cyan relative overflow-hidden"
+                transition={{ delay: index * 0.05 }}
+                className="fa-card p-6 relative overflow-hidden"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-2xl font-bold text-white">
-                        {favorite.home_team}
-                      </h3>
-                      <span className="text-[#00f0ff] font-black">VS</span>
-                      <h3 className="text-2xl font-bold text-white">
-                        {favorite.away_team}
-                      </h3>
+                <div className="flex items-start justify-between mb-6 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h3 className="text-xl font-semibold text-content">{favorite.home_team}</h3>
+                      <span className="text-brand-400 font-bold text-sm">VS</span>
+                      <h3 className="text-xl font-semibold text-content">{favorite.away_team}</h3>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-4 text-sm text-content-muted flex-wrap">
+                      <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
                         <span>{formatDate(favorite.match_date)}</span>
                       </div>
                       {favorite.league && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <Trophy className="w-4 h-4" />
                           <span>{favorite.league}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <motion.button
+                  <button
                     onClick={() => removeFavorite(favorite.fixture_id)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30"
+                    className="p-2 rounded-lg bg-negative/10 hover:bg-negative/20 border border-negative/30 transition-colors"
                   >
-                    <Trash2 className="w-5 h-5 text-red-400" />
-                  </motion.button>
+                    <Trash2 className="w-5 h-5 text-negative" />
+                  </button>
                 </div>
 
                 {/* Predictions Grid */}
                 <div className="grid md:grid-cols-3 gap-4 mb-6">
-                  {/* Match Result */}
                   {favorite.match_result_prediction && (
-                    <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/30 p-4">
+                    <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
-                        <h4 className="text-white font-bold">Maç Sonucu</h4>
+                        <Trophy className="w-5 h-5 text-amber-400" />
+                        <h4 className="text-content font-semibold">Maç Sonucu</h4>
                       </div>
-                      <div className="text-2xl font-black text-yellow-400 mb-2">
-                        {getPredictionText(favorite.match_result_prediction, 'mr')}
-                      </div>
+                      <div className="text-2xl font-bold text-amber-400 mb-2">{getPredictionText(favorite.match_result_prediction, 'mr')}</div>
                       {favorite.overall_confidence && (
-                        <div className="text-sm text-gray-400">
-                          Güven: %{Math.round(favorite.overall_confidence)}
-                        </div>
+                        <div className="text-sm text-content-muted">Güven: %{Math.round(favorite.overall_confidence)}</div>
                       )}
                     </div>
                   )}
 
-                  {/* Over/Under */}
                   {favorite.over_under_prediction && (
-                    <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30 p-4">
+                    <div className="rounded-xl border border-sky-500/25 bg-sky-500/[0.06] p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="w-5 h-5 text-purple-400" />
-                        <h4 className="text-white font-bold">Over/Under</h4>
+                        <TrendingUp className="w-5 h-5 text-sky-400" />
+                        <h4 className="text-content font-semibold">Over/Under</h4>
                       </div>
-                      <div className="text-2xl font-black text-purple-400 mb-2">
-                        {getPredictionText(favorite.over_under_prediction, 'ou')}
-                      </div>
+                      <div className="text-2xl font-bold text-sky-400 mb-2">{getPredictionText(favorite.over_under_prediction, 'ou')}</div>
                     </div>
                   )}
 
-                  {/* BTTS */}
                   {favorite.btts_prediction && (
-                    <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-xl border border-cyan-500/30 p-4">
+                    <div className="rounded-xl border border-brand-500/25 bg-brand-500/[0.06] p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <Target className="w-5 h-5 text-cyan-400" />
-                        <h4 className="text-white font-bold">BTTS</h4>
+                        <Target className="w-5 h-5 text-brand-400" />
+                        <h4 className="text-content font-semibold">BTTS</h4>
                       </div>
-                      <div className="text-2xl font-black text-cyan-400 mb-2">
-                        {getPredictionText(favorite.btts_prediction, 'btts')}
-                      </div>
+                      <div className="text-2xl font-bold text-brand-400 mb-2">{getPredictionText(favorite.btts_prediction, 'btts')}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Best Bet */}
                 {favorite.best_bet_market && favorite.best_bet_selection && (
-                  <div className="bg-gradient-to-r from-[#00ff88]/10 via-[#00f0ff]/10 to-[#ff00f0]/10 rounded-xl border border-[#00ff88]/30 p-4 mb-6">
+                  <div className="rounded-xl border border-brand-500/30 bg-brand-500/[0.07] p-4 mb-6">
                     <div className="flex items-center gap-2 mb-3">
-                      <Star className="w-5 h-5 text-[#00ff88]" fill="currentColor" />
-                      <h4 className="text-white font-bold">{t.bestBet}</h4>
+                      <Star className="w-5 h-5 text-brand-400" fill="currentColor" />
+                      <h4 className="text-content font-semibold">{t.bestBet}</h4>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xl font-black text-[#00ff88]">
-                          {favorite.best_bet_market} → {favorite.best_bet_selection}
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-lg font-bold text-brand-300">{favorite.best_bet_market} → {favorite.best_bet_selection}</div>
                       {favorite.best_bet_confidence && (
-                        <div className="text-3xl font-black text-[#00ff88]">
-                          %{Math.round(favorite.best_bet_confidence)}
-                        </div>
+                        <div className="text-3xl font-bold text-brand-400 tabular-nums">%{Math.round(favorite.best_bet_confidence)}</div>
                       )}
                     </div>
                   </div>
@@ -355,36 +311,30 @@ export default function FavoritesPage() {
 
                 {/* Genius Analysis */}
                 {favorite.genius_analysis?.boldBet && (
-                  <div className="bg-gradient-to-r from-red-900/20 to-orange-900/20 rounded-xl border border-red-500/30 p-4 mb-6">
+                  <div className="rounded-xl border border-negative/30 bg-negative/[0.06] p-4 mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-2xl">🔥</span>
-                      <h4 className="text-red-400 font-bold">{t.geniusAnalysis}</h4>
+                      <h4 className="text-negative font-semibold">{t.geniusAnalysis}</h4>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-white font-bold">{favorite.genius_analysis.boldBet.type}</span>
-                        <span className="text-yellow-400 ml-2">@ {favorite.genius_analysis.boldBet.odds?.toFixed(2)}</span>
+                        <span className="text-content font-bold">{favorite.genius_analysis.boldBet.type}</span>
+                        <span className="text-caution ml-2">@ {favorite.genius_analysis.boldBet.odds?.toFixed(2)}</span>
                       </div>
-                      <p className="text-gray-300">{favorite.genius_analysis.boldBet.scenario}</p>
+                      <p className="text-content-muted">{favorite.genius_analysis.boldBet.scenario}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-700/50">
-                  <div className="text-xs text-gray-400">
+                <div className="flex items-center justify-between pt-4 border-t border-line gap-3 flex-wrap">
+                  <div className="text-xs text-content-subtle">
                     <Clock className="w-3 h-3 inline mr-1" />
                     {t.savedAt}: {formatDate(favorite.created_at)}
                   </div>
-                  <Link href={`/dashboard?fixture=${favorite.fixture_id}`}>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 border border-[#00f0ff]/30 rounded-lg text-[#00f0ff] text-sm font-medium flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      {t.viewAnalysis}
-                    </motion.button>
+                  <Link href={`/dashboard?fixture=${favorite.fixture_id}`} className="fa-btn fa-btn-secondary fa-btn-sm">
+                    <ExternalLink className="w-4 h-4" />
+                    {t.viewAnalysis}
                   </Link>
                 </div>
               </motion.div>

@@ -60,11 +60,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 function Pred({ label, value, confidence }: { label: string; value: string; confidence?: number | null }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <div className="text-xs uppercase tracking-wide text-gray-400">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+    <div className="rounded-xl border border-line bg-surface-2 p-4">
+      <div className="text-xs uppercase tracking-wide text-content-muted">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-content">{value}</div>
       {confidence != null && (
-        <div className="mt-1 text-sm text-emerald-400">%{confidence} güven</div>
+        <div className="mt-1 text-sm text-brand-400">%{confidence} güven</div>
       )}
     </div>
   );
@@ -105,27 +105,28 @@ export default async function AnalysisPage({ params }: Params) {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 px-4 py-10">
+    <div className="fa-shell min-h-screen">
+      <main className="px-4 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <MountEvent name="view_analysis" params={{ fixture_id: String(a.fixture_id) }} />
       <div className="mx-auto max-w-3xl">
-        <nav className="mb-6 text-sm text-gray-400">
-          <Link href="/analysis" className="hover:text-white">
+        <nav className="mb-6 text-sm text-content-muted">
+          <Link href="/analysis" className="hover:text-content">
             ← Tüm Analizler
           </Link>
         </nav>
 
         <header className="mb-8">
           {a.league && (
-            <div className="mb-2 text-sm font-medium text-emerald-400">{a.league}</div>
+            <div className="mb-2 text-sm font-medium text-brand-400">{a.league}</div>
           )}
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">
-            {a.home_team} <span className="text-gray-500">vs</span> {a.away_team}
+          <h1 className="text-3xl font-semibold text-content tracking-tight sm:text-4xl">
+            {a.home_team} <span className="text-content-subtle">vs</span> {a.away_team}
           </h1>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-content-muted">
             {dateStr && <span>{dateStr} · </span>}
             Yapay Zeka Maç Tahmini &amp; Analizi
           </p>
@@ -136,20 +137,20 @@ export default async function AnalysisPage({ params }: Params) {
           <div
             className={`mb-6 rounded-xl border p-4 ${
               result.correct
-                ? 'border-emerald-500/40 bg-emerald-500/10'
-                : 'border-rose-500/40 bg-rose-500/10'
+                ? 'border-positive/40 bg-positive/10'
+                : 'border-negative/40 bg-negative/10'
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs uppercase tracking-wide text-gray-400">Maç Sonuçlandı</div>
-                <div className="text-lg font-semibold text-white">
+                <div className="text-xs uppercase tracking-wide text-content-muted">Maç Sonuçlandı</div>
+                <div className="text-lg font-semibold text-content">
                   {result.score ? `Skor: ${result.score}` : result.actual}
                 </div>
               </div>
               <div
                 className={`rounded-lg px-3 py-1 text-sm font-bold ${
-                  result.correct ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                  result.correct ? 'bg-positive text-white' : 'bg-negative text-white'
                 }`}
               >
                 {result.correct ? '✓ Tahmin Tuttu' : '✗ Tutmadı'}
@@ -159,24 +160,24 @@ export default async function AnalysisPage({ params }: Params) {
         )}
 
         {/* Headline prediction */}
-        <section className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
-          <div className="text-xs uppercase tracking-wide text-emerald-400">AI Konsensüs Tahmini</div>
-          <div className="mt-1 text-2xl font-bold text-white">{mr}</div>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-300">
-            {a.overall_confidence != null && <span>Genel güven: <b className="text-white">%{a.overall_confidence}</b></span>}
-            {a.agreement != null && <span>Model uzlaşısı: <b className="text-white">%{a.agreement}</b></span>}
-            {a.risk_level && <span>Risk: <b className="text-white capitalize">{a.risk_level}</b></span>}
+        <section className="mb-6 rounded-xl border border-brand-500/30 bg-brand-500/5 p-5">
+          <div className="text-xs uppercase tracking-wide text-brand-400">AI Konsensüs Tahmini</div>
+          <div className="mt-1 text-2xl font-bold text-content">{mr}</div>
+          <div className="mt-2 flex flex-wrap gap-4 text-sm text-content-muted">
+            {a.overall_confidence != null && <span>Genel güven: <b className="text-content">%{a.overall_confidence}</b></span>}
+            {a.agreement != null && <span>Model uzlaşısı: <b className="text-content">%{a.agreement}</b></span>}
+            {a.risk_level && <span>Risk: <b className="text-content capitalize">{a.risk_level}</b></span>}
           </div>
         </section>
 
         {/* Best bet */}
         {a.best_bet_selection && (
-          <section className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
-            <div className="text-xs uppercase tracking-wide text-amber-400">🔥 En Sağlam Bahis</div>
-            <div className="mt-1 text-xl font-bold text-white">{a.best_bet_selection}</div>
-            <div className="mt-1 text-sm text-gray-300">
+          <section className="mb-6 rounded-xl border border-caution/30 bg-caution/5 p-5">
+            <div className="text-xs uppercase tracking-wide text-caution">🔥 En Sağlam Bahis</div>
+            <div className="mt-1 text-xl font-bold text-content">{a.best_bet_selection}</div>
+            <div className="mt-1 text-sm text-content-muted">
               {a.best_bet_market}
-              {a.best_bet_confidence != null && <> · <b className="text-amber-400">%{a.best_bet_confidence} güven</b></>}
+              {a.best_bet_confidence != null && <> · <b className="text-caution">%{a.best_bet_confidence} güven</b></>}
             </div>
           </section>
         )}
@@ -189,7 +190,7 @@ export default async function AnalysisPage({ params }: Params) {
         </section>
 
         {(a.models_used?.length || a.systems_used?.length) && (
-          <p className="mb-8 text-sm text-gray-500">
+          <p className="mb-8 text-sm text-content-subtle">
             Analiz motorları:{' '}
             {(a.models_used && a.models_used.length ? a.models_used : a.systems_used || []).join(', ')}
           </p>
@@ -200,25 +201,26 @@ export default async function AnalysisPage({ params }: Params) {
         </div>
 
         {/* Conversion CTA */}
-        <section className="rounded-2xl border border-white/10 bg-gradient-to-r from-emerald-600/20 to-sky-600/20 p-6 text-center">
-          <h2 className="text-xl font-bold text-white">Her maç için canlı AI analizi ister misin?</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-gray-300">
+        <section className="rounded-xl border border-line bg-gradient-to-r from-brand-600/20 to-sky-600/20 p-6 text-center">
+          <h2 className="text-xl font-bold text-content">Her maç için canlı AI analizi ister misin?</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-content-muted">
             4 elite AI modeli + uzman agent&apos;lar her maçı senin için analiz etsin. İlk 7 gün ücretsiz.
           </p>
           <TrackedLink
             href="/login"
             event="cta_click"
             params={{ location: 'analysis_page', fixture_id: String(a.fixture_id) }}
-            className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-400"
+            className="fa-btn fa-btn-primary fa-btn-lg mt-4 inline-flex"
           >
             Ücretsiz Başla →
           </TrackedLink>
         </section>
 
-        <p className="mt-8 text-center text-xs text-gray-600">
+        <p className="mt-8 text-center text-xs text-content-subtle">
           Bu analiz yapay zeka tarafından üretilmiştir ve yatırım/bahis tavsiyesi değildir. 18+
         </p>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }

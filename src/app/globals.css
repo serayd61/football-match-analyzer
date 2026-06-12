@@ -442,3 +442,171 @@ html {
 .swipe-indicator {
   @apply w-10 h-1 bg-gray-600 rounded-full mx-auto mb-2;
 }
+
+/* ============================================================================
+   MODERN DESIGN SYSTEM — scoped under `.fa-shell`
+   Clean SaaS (Linear/Vercel inspired). Fully isolated from the legacy neon
+   theme above so other pages keep working untouched.
+   ============================================================================ */
+
+.fa-shell {
+  --c-bg: #08090c;
+  --c-surface-1: #0d0f14;
+  --c-surface-2: #12151c;
+  --c-surface-3: #181c25;
+  --c-surface-4: #1f2430;
+  --c-line: rgba(255, 255, 255, 0.08);
+  --c-line-strong: rgba(255, 255, 255, 0.14);
+  --c-text: #e7eaf0;
+  --c-text-muted: #9aa3b2;
+  --c-text-subtle: #646c7d;
+  --c-brand: #10b981;
+  --c-brand-soft: rgba(16, 185, 129, 0.12);
+
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Undo legacy global rules inside the shell */
+.fa-shell,
+.fa-shell * {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+}
+.fa-shell h1,
+.fa-shell h2,
+.fa-shell h3,
+.fa-shell h4,
+.fa-shell h5,
+.fa-shell h6 {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Ambient backdrop — subtle, professional (no heavy neon) */
+.fa-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 50% -10%, rgba(16, 185, 129, 0.07), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 0%, rgba(56, 189, 248, 0.05), transparent 55%);
+}
+.fa-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Cards ── */
+.fa-card {
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.fa-card-hover {
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+.fa-card-hover:hover {
+  border-color: var(--c-line-strong);
+  background: var(--c-surface-3);
+}
+
+/* ── Buttons ── */
+.fa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
+  border-radius: 0.625rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, opacity 0.16s ease, transform 0.06s ease;
+  white-space: nowrap;
+}
+.fa-btn:active { transform: translateY(0.5px); }
+.fa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fa-btn-primary {
+  background: var(--c-brand);
+  color: #06281d;
+}
+.fa-btn-primary:hover { background: #34d399; }
+.fa-btn-secondary {
+  background: var(--c-surface-3);
+  border-color: var(--c-line);
+  color: var(--c-text);
+}
+.fa-btn-secondary:hover { background: var(--c-surface-4); border-color: var(--c-line-strong); }
+.fa-btn-ghost {
+  background: transparent;
+  color: var(--c-text-muted);
+}
+.fa-btn-ghost:hover { background: var(--c-surface-3); color: var(--c-text); }
+
+/* ── Badges ── */
+.fa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface-3);
+  color: var(--c-text-muted);
+}
+
+/* ── Inputs ── */
+.fa-input {
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: 0.625rem;
+  padding: 0.55rem 0.75rem;
+  color: var(--c-text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.fa-input::placeholder { color: var(--c-text-subtle); }
+.fa-input:focus {
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* ── Skeleton ── */
+.fa-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--c-surface-3);
+  border-radius: 0.5rem;
+}
+.fa-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+/* Thin custom scrollbars inside the shell */
+.fa-shell ::-webkit-scrollbar { width: 8px; height: 8px; }
+.fa-shell ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+.fa-shell ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); }

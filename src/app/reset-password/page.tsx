@@ -3,6 +3,8 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Activity } from 'lucide-react';
+import { Spinner } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +52,7 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300">
+      <div className="rounded-xl border border-negative/30 bg-negative/10 p-4 text-negative">
         Geçersiz bağlantı. Lütfen{' '}
         <Link href="/forgot-password" className="underline">
           yeni bir sıfırlama isteyin
@@ -63,10 +65,10 @@ function ResetPasswordForm() {
   if (done) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-300">
+        <div className="rounded-xl border border-positive/30 bg-positive/10 p-4 text-positive">
           Şifren güncellendi! Giriş sayfasına yönlendiriliyorsun...
         </div>
-        <Link href="/login" className="block text-center text-green-400 hover:text-green-300">
+        <Link href="/login" className="block text-center text-brand-400 hover:text-brand-300 transition-colors">
           Hemen giriş yap →
         </Link>
       </div>
@@ -75,36 +77,40 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-gray-400">Yeni şifreni belirle.</p>
+      <p className="text-sm text-content-muted">Yeni şifreni belirle.</p>
       <div>
-        <label className="block text-sm text-gray-300 mb-1">Yeni Şifre</label>
+        <label className="block text-sm font-medium text-content-muted mb-2">Yeni Şifre</label>
         <input
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+          className="fa-input w-full"
         />
       </div>
       <div>
-        <label className="block text-sm text-gray-300 mb-1">Yeni Şifre (Tekrar)</label>
+        <label className="block text-sm font-medium text-content-muted mb-2">Yeni Şifre (Tekrar)</label>
         <input
           type="password"
           required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           placeholder="••••••••"
-          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+          className="fa-input w-full"
         />
       </div>
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && (
+        <div className="p-4 rounded-xl bg-negative/10 border border-negative/30 text-negative text-sm">
+          {error}
+        </div>
+      )}
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+        className="fa-btn fa-btn-primary fa-btn-lg w-full"
       >
-        {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+        {loading ? <><Spinner size={16} /> Güncelleniyor...</> : <span>Şifreyi Güncelle</span>}
       </button>
     </form>
   );
@@ -112,13 +118,16 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gray-900/60 p-8">
-        <h1 className="text-2xl font-bold text-white mb-4">Şifre Sıfırla</h1>
-        <Suspense fallback={<p className="text-gray-400">Yükleniyor...</p>}>
+    <div className="fa-shell min-h-screen flex items-center justify-center px-4">
+      <div className="fa-card w-full max-w-md mx-auto p-8">
+        <div className="w-12 h-12 rounded-2xl grid place-items-center bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand mb-6">
+          <Activity size={24} className="text-[#06281d]" strokeWidth={2.5} />
+        </div>
+        <h1 className="text-2xl font-semibold text-content tracking-tight mb-4">Şifre Sıfırla</h1>
+        <Suspense fallback={<p className="text-content-muted">Yükleniyor...</p>}>
           <ResetPasswordForm />
         </Suspense>
       </div>
-    </main>
+    </div>
   );
 }

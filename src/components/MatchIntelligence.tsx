@@ -150,13 +150,13 @@ export default function MatchIntelligence({
     const isAuth = gate === 'auth';
     return (
       <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
           {isAuth ? <Lock size={24} /> : <Crown size={24} />}
         </div>
         <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
         <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
         <Link href={isAuth ? '/login' : '/pricing'}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90 transition-opacity">
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity">
           {isAuth ? t.gateAuthCta : t.gateSubCta}
         </Link>
       </div>
@@ -168,7 +168,7 @@ export default function MatchIntelligence({
       {/* Başlık + dil seçici */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Newspaper size={18} className="text-cyan-300" />
+          <Newspaper size={18} className="text-brand-300" />
           <h3 className="text-sm font-bold text-white">{t.title}</h3>
         </div>
         <div className="flex items-center gap-2">
@@ -176,7 +176,7 @@ export default function MatchIntelligence({
             <Languages size={13} className="text-white/40 ml-1.5" />
             {(['tr', 'en', 'de'] as Lang[]).map((l) => (
               <button key={l} onClick={() => setViewLang(l)}
-                className={`text-[11px] px-2 py-1 rounded-md font-semibold uppercase ${viewLang === l ? 'bg-cyan-400/15 text-cyan-300' : 'text-white/45 hover:text-white/70'}`}>
+                className={`text-[11px] px-2 py-1 rounded-md font-semibold uppercase ${viewLang === l ? 'bg-brand-400/15 text-brand-300' : 'text-white/45 hover:text-white/70'}`}>
                 {l}
               </button>
             ))}
@@ -229,7 +229,7 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i * 0.03, 0.4) }}
-      className={`rounded-2xl border bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-colors ${open ? 'border-cyan-400/40' : 'border-white/10 hover:border-cyan-400/20'}`}>
+      className={`rounded-2xl border bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-colors ${open ? 'border-brand-400/40' : 'border-white/10 hover:border-brand-400/20'}`}>
       {/* başlık */}
       <div className="flex items-center justify-between text-xs text-white/40 mb-3">
         <span className="truncate max-w-[55%]">{m.leagueName || '—'}</span>
@@ -252,7 +252,7 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
         <button onClick={onToggle}
           className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-colors ${open
             ? 'border-white/15 text-white/60 hover:text-white'
-            : 'border-cyan-400/40 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20'}`}>
+            : 'border-brand-400/40 bg-brand-400/10 text-brand-300 hover:bg-brand-400/20'}`}>
           {open ? (<>{t.close} <ChevronUp size={14} /></>) : (<><Brain size={14} /> {t.analyze}</>)}
         </button>
       </div>
@@ -268,13 +268,13 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
               {/* istatistik tahmini (LLM DEĞİL) */}
               <div>
                 <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
-                  <Activity size={12} className="text-cyan-300" /> {t.stats}
+                  <Activity size={12} className="text-brand-300" /> {t.stats}
                   {s.source && <span className="text-white/25">· {s.source}</span>}
                 </div>
                 <div className="flex h-2 rounded-full overflow-hidden mb-1">
-                  <div style={{ width: `${(s.pHome || 0) * 100}%` }} className="bg-cyan-400/70" />
+                  <div style={{ width: `${(s.pHome || 0) * 100}%` }} className="bg-brand-400/70" />
                   <div style={{ width: `${(s.pDraw || 0) * 100}%` }} className="bg-amber-400/70" />
-                  <div style={{ width: `${(s.pAway || 0) * 100}%` }} className="bg-fuchsia-500/70" />
+                  <div style={{ width: `${(s.pAway || 0) * 100}%` }} className="bg-sky-500/70" />
                 </div>
                 <div className="flex justify-between text-[10px] text-white/40 mb-2">
                   <span>1 · {pct(s.pHome)}</span>
@@ -291,7 +291,7 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
               {previewText && (
                 <div>
                   <div className="flex items-center gap-1.5 text-[11px] text-white/50 mb-1.5">
-                    <Newspaper size={12} className="text-cyan-300" /> {t.preview}
+                    <Newspaper size={12} className="text-brand-300" /> {t.preview}
                   </div>
                   <p className="text-xs text-white/75 leading-relaxed">{previewText}</p>
                 </div>

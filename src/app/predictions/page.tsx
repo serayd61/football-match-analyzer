@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
-import Navigation from '@/components/Navigation';
+import SiteNav from '@/components/SiteNav';
+import { Spinner, EmptyState } from '@/components/ui';
 
 interface Match {
   fixture_id: number;
@@ -190,123 +190,72 @@ export default function PredictionsPage() {
 
   const getCouponColor = (type: string) => {
     switch (type) {
-      case 'safe': return 'from-green-600/20 to-green-900/30 border-green-500/40';
-      case 'balanced': return 'from-yellow-600/20 to-yellow-900/30 border-yellow-500/40';
-      case 'risky': return 'from-red-600/20 to-red-900/30 border-red-500/40';
-      default: return 'from-gray-600/20 to-gray-900/30 border-gray-500/40';
+      case 'safe': return 'border-positive/40';
+      case 'balanced': return 'border-caution/40';
+      case 'risky': return 'border-negative/40';
+      default: return 'border-line';
     }
   };
 
   const getConfidenceColor = (conf: number) => {
-    if (conf >= 75) return 'text-green-400';
-    if (conf >= 60) return 'text-yellow-400';
-    return 'text-red-400';
+    if (conf >= 75) return 'text-positive';
+    if (conf >= 60) return 'text-caution';
+    return 'text-negative';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400 neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>{l.loading}</p>
-        </div>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32"><Spinner size={28} className="text-brand-400" /></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <Navigation />
-      {/* Header */}
-      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.div
-                whileHover={{ scale: 1.1, x: -5 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Link href="/dashboard" className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all inline-block">
-                  <span className="text-[#00f0ff] text-sm">{l.back}</span>
-                </Link>
-              </motion.div>
-              <div className="flex items-center gap-3">
-                <FootballBall3D size={40} autoRotate={true} />
-                <div>
-                  <h1 className="text-2xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                    {l.title}
-                  </h1>
-                  <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'var(--font-body)' }}>{l.subtitle}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="glass-futuristic border border-[#00f0ff]/30 rounded-lg px-4 py-2 text-white hover:neon-border-cyan transition-all bg-black/50"
-                style={{ fontFamily: 'var(--font-body)' }}
-              />
-              <div className="flex gap-2 glass-futuristic p-1 rounded-xl border border-[#00f0ff]/20">
-                <motion.button
-                  onClick={() => setActiveTab('coupons')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'coupons' 
-                      ? 'bg-[#00f0ff] text-black neon-glow-cyan' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  {l.coupons}
-                </motion.button>
-                <motion.button
-                  onClick={() => setActiveTab('all')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'all' 
-                      ? 'bg-[#00f0ff] text-black neon-glow-cyan' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  {l.allPredictions}
-                </motion.button>
-              </div>
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Page header */}
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
+          <div>
+            <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-content-subtle hover:text-content transition-colors mb-2">{l.back}</Link>
+            <h1 className="text-2xl font-semibold text-content tracking-tight">{l.title}</h1>
+            <p className="text-content-subtle text-sm mt-0.5">{l.subtitle}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="fa-input" />
+            <div className="inline-flex p-0.5 rounded-lg bg-surface-1 border border-line">
+              <button onClick={() => setActiveTab('coupons')}
+                className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'coupons' ? 'bg-surface-4 text-content shadow-elev-1' : 'text-content-subtle hover:text-content'}`}>
+                {l.coupons}
+              </button>
+              <button onClick={() => setActiveTab('all')}
+                className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${activeTab === 'all' ? 'bg-surface-4 text-content shadow-elev-1' : 'text-content-subtle hover:text-content'}`}>
+                {l.allPredictions}
+              </button>
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
         {/* AI Models Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-6 glass-futuristic border border-[#00f0ff]/30 rounded-2xl hover:neon-border-cyan transition-all"
-        >
-          <div className="flex items-center justify-center gap-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="fa-card mb-8 p-6">
+          <div className="flex items-center justify-center gap-6 flex-wrap">
             {[
-              { name: 'Claude', icon: '🟣', color: 'from-[#ff00f0]/20 to-[#ff00f0]/5' },
-              { name: 'GPT-4', icon: '🟢', color: 'from-[#00ff88]/20 to-[#00ff88]/5' },
-              { name: 'Gemini', icon: '🔵', color: 'from-[#00f0ff]/20 to-[#00f0ff]/5' },
-              { name: l.consensus, icon: '🎯', color: 'from-[#ffff00]/20 to-[#ffff00]/5', isConsensus: true }
+              { name: 'Claude', icon: '🟣' },
+              { name: 'GPT-4', icon: '🟢' },
+              { name: 'Gemini', icon: '🔵' },
+              { name: l.consensus, icon: '🎯', isConsensus: true },
             ].map((model, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                <div className={`text-center ${idx < 3 ? '' : 'ml-4'}`}>
-                  <div className={`w-12 h-12 bg-gradient-to-br ${model.color} rounded-xl flex items-center justify-center mx-auto mb-2 border border-[#00f0ff]/20`}>
+                <div className={`text-center ${idx < 3 ? '' : 'ml-2'}`}>
+                  <div className="w-12 h-12 rounded-xl grid place-items-center mx-auto mb-2 bg-surface-3 border border-line">
                     <span className="text-2xl">{model.icon}</span>
                   </div>
-                  <span className={`text-sm ${model.isConsensus ? 'text-[#ffff00] font-bold neon-glow-cyan' : 'text-gray-300'}`} style={{ fontFamily: 'var(--font-body)' }}>
-                    {model.name}
-                  </span>
+                  <span className={`text-sm ${model.isConsensus ? 'text-brand-300 font-bold' : 'text-content-muted'}`}>{model.name}</span>
                 </div>
-                {idx < 3 && (
-                  <div className="text-[#00f0ff] text-lg">→</div>
-                )}
+                {idx < 3 && <div className="text-content-subtle text-lg">→</div>}
               </div>
             ))}
           </div>
@@ -316,43 +265,35 @@ export default function PredictionsPage() {
           /* Kuponlar */
           <div className="space-y-6">
             {coupons.length === 0 ? (
-              <div className="text-center py-16 bg-gray-800/50 rounded-2xl">
-                <div className="text-6xl mb-4">📭</div>
-                <p className="text-gray-400 text-lg">{l.noData}</p>
-                <p className="text-gray-500 text-sm mt-2">
-                  {lang === 'tr' ? "Kuponlar her gün 08:00'de oluşturulur" : "Coupons are generated daily at 08:00"}
-                </p>
-              </div>
+              <EmptyState icon={<span className="text-3xl">📭</span>} title={l.noData}
+                description={lang === 'tr' ? "Kuponlar her gün 08:00'de oluşturulur" : 'Coupons are generated daily at 08:00'} />
             ) : (
               coupons.map((coupon, idx) => (
-                <div key={idx} className={`bg-gradient-to-br ${getCouponColor(coupon.coupon_type)} border rounded-2xl overflow-hidden`}>
+                <div key={idx} className={`fa-card overflow-hidden ${getCouponColor(coupon.coupon_type)}`}>
                   {/* Coupon Header */}
-                  <div className="p-5 border-b border-white/10">
-                    <div className="flex items-center justify-between">
+                  <div className="p-5 border-b border-line">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">
                           {coupon.coupon_type === 'safe' ? '💚' : coupon.coupon_type === 'balanced' ? '🟡' : '🔴'}
                         </span>
                         <div>
-                          <h3 className="text-xl font-bold text-white">
+                          <h3 className="text-lg font-semibold text-content">
                             {coupon.coupon_type === 'safe' ? l.safe : coupon.coupon_type === 'balanced' ? l.balanced : l.risky}
                           </h3>
-                          <p className="text-gray-400 text-sm">{coupon.matches.length} maç</p>
+                          <p className="text-content-subtle text-sm">{coupon.matches.length} maç</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-green-400">{coupon.total_odds}</div>
-                          <div className="text-xs text-gray-400">{l.totalOdds}</div>
+                          <div className="text-2xl font-bold text-positive tabular-nums">{coupon.total_odds}</div>
+                          <div className="text-xs text-content-subtle">{l.totalOdds}</div>
                         </div>
                         <div className="text-center">
-                          <div className={`text-2xl font-bold ${getConfidenceColor(coupon.confidence)}`}>%{coupon.confidence}</div>
-                          <div className="text-xs text-gray-400">{l.confidence}</div>
+                          <div className={`text-2xl font-bold tabular-nums ${getConfidenceColor(coupon.confidence)}`}>%{coupon.confidence}</div>
+                          <div className="text-xs text-content-subtle">{l.confidence}</div>
                         </div>
-                        <button
-                          onClick={() => copyCoupon(coupon)}
-                          className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-sm transition-all"
-                        >
+                        <button onClick={() => copyCoupon(coupon)} className="fa-btn fa-btn-secondary">
                           📋 {l.copyCoupon}
                         </button>
                       </div>
@@ -360,36 +301,32 @@ export default function PredictionsPage() {
                   </div>
 
                   {/* Matches */}
-                  <div className="divide-y divide-white/5">
+                  <div className="divide-y divide-line">
                     {coupon.matches.map((match, midx) => (
-                      <div key={midx} className="p-4 hover:bg-white/5 transition-all">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-semibold text-white text-lg">{match.home_team} vs {match.away_team}</div>
+                      <div key={midx} className="p-4 hover:bg-surface-2 transition-colors">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-content">{match.home_team} vs {match.away_team}</div>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="text-sm text-gray-400">{match.league}</span>
+                              <span className="text-sm text-content-muted">{match.league}</span>
                               {match.kick_off && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-content-subtle">
                                   {new Date(match.kick_off).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <div className="text-center">
-                              <div className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg font-bold">
-                                {getBetLabel(match.bet_type, match.selection)}
-                              </div>
+                            <div className="px-3 py-1.5 rounded-lg font-bold text-sm bg-brand-500/10 text-brand-300 border border-brand-500/30">
+                              {getBetLabel(match.bet_type, match.selection)}
                             </div>
                             <div className="text-center">
-                              <div className="text-xl font-bold text-yellow-400">{match.odds}</div>
-                              <div className="text-xs text-gray-500">oran</div>
+                              <div className="text-xl font-bold text-caution tabular-nums">{match.odds}</div>
+                              <div className="text-xs text-content-subtle">oran</div>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded" title="AI Votes">
-                                🤖 {match.aiVotes}/3
-                              </span>
-                            </div>
+                            <span className="px-2 py-1 rounded text-sm bg-sky-500/10 text-sky-400 border border-sky-500/20" title="AI Votes">
+                              🤖 {match.aiVotes}/3
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -397,15 +334,15 @@ export default function PredictionsPage() {
                   </div>
 
                   {/* Coupon Footer */}
-                  <div className="p-4 bg-black/20 border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-400">
-                        {l.stake}: <span className="text-white font-bold">{coupon.suggested_stake} CHF</span>
+                  <div className="p-4 bg-surface-1/60 border-t border-line">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="text-sm text-content-muted">
+                        {l.stake}: <span className="text-content font-bold">{coupon.suggested_stake} CHF</span>
                         <span className="mx-2">→</span>
-                        {l.potentialWin}: <span className="text-green-400 font-bold">{coupon.potential_win} CHF</span>
+                        {l.potentialWin}: <span className="text-positive font-bold">{coupon.potential_win} CHF</span>
                       </div>
                       {coupon.ai_reasoning && (
-                        <p className="text-xs text-gray-500 italic max-w-md">{coupon.ai_reasoning}</p>
+                        <p className="text-xs text-content-subtle italic max-w-md">{coupon.ai_reasoning}</p>
                       )}
                     </div>
                   </div>
@@ -417,55 +354,40 @@ export default function PredictionsPage() {
           /* Tüm Tahminler */
           <div className="grid gap-4">
             {analyses.length === 0 ? (
-              <div className="text-center py-16 bg-gray-800/50 rounded-2xl">
-                <div className="text-6xl mb-4">📊</div>
-                <p className="text-gray-400 text-lg">{l.noData}</p>
-              </div>
+              <EmptyState icon={<span className="text-3xl">📊</span>} title={l.noData} />
             ) : (
               analyses.map((analysis, idx) => (
-                <div key={idx} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 hover:bg-gray-800/70 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="font-semibold text-white text-lg">{analysis.home_team} vs {analysis.away_team}</div>
+                <div key={idx} className="fa-card fa-card-hover p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-content">{analysis.home_team} vs {analysis.away_team}</div>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-sm text-gray-400">{analysis.league}</span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(analysis.start_time).toLocaleString(lang, { 
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                          })}
+                        <span className="text-sm text-content-muted">{analysis.league}</span>
+                        <span className="text-xs text-content-subtle">
+                          {new Date(analysis.start_time).toLocaleString(lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-5 flex-wrap">
                       <div className="text-center">
-                        <div className="text-xs text-gray-400 mb-1">{l.matchResult}</div>
-                        <div className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg font-bold">
-                          {analysis.ai_prediction}
-                        </div>
+                        <div className="text-xs text-content-subtle mb-1">{l.matchResult}</div>
+                        <div className="px-3 py-1 rounded-lg font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">{analysis.ai_prediction}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-400 mb-1">{l.overUnder}</div>
-                        <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg font-bold">
-                          {analysis.ai_over_under}
-                        </div>
+                        <div className="text-xs text-content-subtle mb-1">{l.overUnder}</div>
+                        <div className="px-3 py-1 rounded-lg font-bold bg-positive/10 text-positive border border-positive/20">{analysis.ai_over_under}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-400 mb-1">{l.btts}</div>
-                        <div className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-lg font-bold">
-                          {analysis.ai_btts}
-                        </div>
+                        <div className="text-xs text-content-subtle mb-1">{l.btts}</div>
+                        <div className="px-3 py-1 rounded-lg font-bold bg-caution/10 text-caution border border-caution/20">{analysis.ai_btts}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-400 mb-1">{l.confidence}</div>
-                        <div className={`text-xl font-bold ${getConfidenceColor(analysis.ai_confidence)}`}>
-                          %{analysis.ai_confidence}
-                        </div>
+                        <div className="text-xs text-content-subtle mb-1">{l.confidence}</div>
+                        <div className={`text-xl font-bold tabular-nums ${getConfidenceColor(analysis.ai_confidence)}`}>%{analysis.ai_confidence}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-400 mb-1">{l.consensus}</div>
-                        <div className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-sm font-medium">
-                          {analysis.ai_consensus}
-                        </div>
+                        <div className="text-xs text-content-subtle mb-1">{l.consensus}</div>
+                        <div className="px-2 py-1 rounded text-sm font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">{analysis.ai_consensus}</div>
                       </div>
                     </div>
                   </div>

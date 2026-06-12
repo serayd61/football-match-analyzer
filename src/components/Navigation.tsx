@@ -69,8 +69,16 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Dashboard, login ve performance sayfalarında navigasyonu gizle (kendi navbar'ları var)
-  if (pathname === '/dashboard' || pathname === '/login' || pathname === '/performance') {
+  // Yeni tasarım sistemine taşınan sayfalar kendi nav'larını (SiteNav/LandingNav) kullanır
+  // — global neon nav'ı gizle. Neredeyse tüm sayfalar taşındı.
+  const NEW_DESIGN_ROUTES = [
+    '/', '/dashboard', '/login', '/performance', '/tahminler', '/live', '/pricing', '/contact',
+    '/ai-performance', '/leaderboard', '/stats', '/league-stats', '/favorites', '/settings',
+    '/profile', '/odds-analysis', '/odds-patterns', '/predictions', '/analysis',
+    '/forgot-password', '/reset-password', '/offline',
+  ];
+  const NEW_DESIGN_PREFIXES = ['/match/', '/analysis/'];
+  if (NEW_DESIGN_ROUTES.includes(pathname) || NEW_DESIGN_PREFIXES.some((p) => pathname.startsWith(p))) {
     return null;
   }
 

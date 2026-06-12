@@ -193,14 +193,8 @@ export default function PerformancePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900">
-      {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-6 pb-24">
+    <div className="fa-shell min-h-screen">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 pb-24">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -209,9 +203,9 @@ export default function PerformancePage() {
         >
           {/* Back Navigation */}
           <div className="mb-4">
-            <Link 
-              href="/dashboard" 
-              className="inline-flex items-center gap-2 text-white/60 hover:text-cyan-400 transition-colors group"
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-content-subtle hover:text-content transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <Home className="w-4 h-4" />
@@ -220,29 +214,22 @@ export default function PerformancePage() {
           </div>
 
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                Performans Takibi
-              </h1>
-              <p className="text-white/50 text-sm mt-1">
-                Agent ve AI performansını detaylı izle
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl grid place-items-center bg-brand-500/10 border border-brand-500/25 text-brand-400">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold text-content tracking-tight">Performans Takibi</h1>
+                <p className="text-content-subtle text-sm mt-0.5">Agent ve AI performansını detaylı izle</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm transition-colors disabled:opacity-50"
-              >
+              <button onClick={handleRefresh} disabled={isLoading} className="fa-btn fa-btn-secondary">
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Yenile
               </button>
-              <button
-                onClick={handleSettleMatches}
-                disabled={settling}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white text-sm transition-colors disabled:opacity-50"
-              >
+              <button onClick={handleSettleMatches} disabled={settling} className="fa-btn fa-btn-primary">
                 {settling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {settling ? 'İşleniyor...' : 'Sonuçları Güncelle'}
               </button>
@@ -255,11 +242,11 @@ export default function PerformancePage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-3"
+            className="mb-6 p-4 bg-negative/10 border border-negative/30 rounded-xl flex items-center gap-3"
           >
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <span className="text-red-300">Veri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.</span>
-            <button onClick={handleRefresh} className="ml-auto text-red-300 hover:text-red-200 text-sm underline">
+            <AlertCircle className="w-5 h-5 text-negative" />
+            <span className="text-negative">Veri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.</span>
+            <button onClick={handleRefresh} className="ml-auto text-negative hover:opacity-80 text-sm underline">
               Tekrar Dene
             </button>
           </motion.div>
@@ -290,15 +277,15 @@ export default function PerformancePage() {
         />
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-6 bg-white/5 rounded-xl p-1 overflow-x-auto">
+        <div className="flex items-center gap-1 mb-6 bg-surface-1 border border-line rounded-xl p-1 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  ? 'bg-surface-4 text-content border border-line shadow-elev-1'
+                  : 'text-content-subtle hover:text-content hover:bg-surface-2'
               }`}
             >
               {tab.icon}
@@ -358,7 +345,7 @@ export default function PerformancePage() {
 
         {/* Processing Time Info */}
         {(statsQuery.data?.processingTime || analysesQuery.data?.processingTime) && (
-          <div className="mt-6 text-center text-xs text-white/30">
+          <div className="mt-6 text-center text-xs text-content-subtle">
             Stats: {statsQuery.data?.processingTime || '-'}ms | 
             Analyses: {analysesQuery.data?.processingTime || '-'}ms |
             Trends: {trendsQuery.data?.processingTime || '-'}ms

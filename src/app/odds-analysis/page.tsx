@@ -8,10 +8,10 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FootballBall3D } from '@/components/Football3D';
 import { motion } from 'framer-motion';
-import Navigation from '@/components/Navigation';
-import { 
+import SiteNav from '@/components/SiteNav';
+import { Spinner } from '@/components/ui';
+import {
   TrendingUp, Download, Filter, Search, Calendar,
   ArrowUp, ArrowDown, Minus, CheckCircle, XCircle, ArrowLeft
 } from 'lucide-react';
@@ -217,32 +217,35 @@ export default function OddsAnalysisPage() {
   };
   
   const getValueColor = (value: number) => {
-    if (value >= 10) return 'text-green-400';
-    if (value >= 5) return 'text-yellow-400';
-    if (value > 0) return 'text-blue-400';
-    return 'text-gray-400';
+    if (value >= 10) return 'text-positive';
+    if (value >= 5) return 'text-caution';
+    if (value > 0) return 'text-brand-400';
+    return 'text-content-muted';
   };
-  
+
   const getValueIcon = (value: number) => {
-    if (value > 0) return <ArrowUp className="w-4 h-4 text-green-400" />;
-    if (value < 0) return <ArrowDown className="w-4 h-4 text-red-400" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
+    if (value > 0) return <ArrowUp className="w-4 h-4 text-positive" />;
+    if (value < 0) return <ArrowDown className="w-4 h-4 text-negative" />;
+    return <Minus className="w-4 h-4 text-content-muted" />;
   };
   
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00f0ff] border-t-transparent mx-auto" />
-          <p className="mt-4 text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-body)' }}>Yükleniyor...</p>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32">
+          <div className="text-center">
+            <Spinner size={28} className="text-brand-400" />
+            <p className="mt-4 text-content-muted">Yükleniyor...</p>
+          </div>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-black">
-      <Navigation />
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -254,22 +257,19 @@ export default function OddsAnalysisPage() {
             <div className="flex items-center gap-4">
               <motion.button
                 onClick={() => router.push('/dashboard')}
-                whileHover={{ scale: 1.1, x: -5 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-lg glass-futuristic hover:neon-border-cyan transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="fa-btn fa-btn-ghost p-2"
               >
-                <ArrowLeft className="w-5 h-5 text-[#00f0ff]" />
+                <ArrowLeft className="w-5 h-5 text-brand-400" />
               </motion.button>
-              <div className="flex items-center gap-3">
-                <FootballBall3D size={40} autoRotate={true} />
-                <div>
-                  <h1 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
-                    💰 Odds Analiz Kayıtları
-                  </h1>
-                  <p className="text-gray-400 text-sm mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-                    Tüm odds analizlerinin detaylı kayıtları ve value bet tespitleri
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-bold text-content tracking-tight">
+                  💰 Odds Analiz Kayıtları
+                </h1>
+                <p className="text-content-muted text-sm mt-1">
+                  Tüm odds analizlerinin detaylı kayıtları ve value bet tespitleri
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -277,8 +277,7 @@ export default function OddsAnalysisPage() {
                 onClick={exportToCSV}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-[#00ff88] text-black rounded-lg hover:bg-[#00ff88]/80 font-bold flex items-center gap-2 neon-glow-cyan"
-                style={{ fontFamily: 'var(--font-heading)' }}
+                className="fa-btn fa-btn-primary"
               >
                 <Download className="w-4 h-4" />
                 CSV Export
@@ -287,8 +286,7 @@ export default function OddsAnalysisPage() {
                 onClick={exportToJSON}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80 font-bold flex items-center gap-2 neon-glow-cyan"
-                style={{ fontFamily: 'var(--font-heading)' }}
+                className="fa-btn fa-btn-secondary"
               >
                 <Download className="w-4 h-4" />
                 JSON Export
@@ -301,56 +299,52 @@ export default function OddsAnalysisPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-futuristic border border-[#00f0ff]/30 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-4 gap-4 hover:neon-border-cyan transition-all"
+            className="fa-card p-6 grid grid-cols-1 md:grid-cols-4 gap-4"
           >
             <div>
-              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Lig</label>
+              <label className="text-sm text-content-muted mb-1 block">Lig</label>
               <input
                 type="text"
                 value={filters.league}
                 onChange={(e) => setFilters({ ...filters, league: e.target.value })}
                 placeholder="Lig ara..."
-                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
-                style={{ fontFamily: 'var(--font-body)' }}
+                className="fa-input w-full"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Value Rating</label>
+              <label className="text-sm text-content-muted mb-1 block">Value Rating</label>
               <select
                 value={filters.valueRating}
                 onChange={(e) => setFilters({ ...filters, valueRating: e.target.value })}
-                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white hover:neon-border-cyan transition-all bg-black/50"
-                style={{ fontFamily: 'var(--font-body)' }}
+                className="fa-input w-full"
               >
-                <option value="" className="bg-black">Tümü</option>
-                <option value="High" className="bg-black">High</option>
-                <option value="Medium" className="bg-black">Medium</option>
-                <option value="Low" className="bg-black">Low</option>
-                <option value="None" className="bg-black">None</option>
+                <option value="" className="bg-surface-2">Tümü</option>
+                <option value="High" className="bg-surface-2">High</option>
+                <option value="Medium" className="bg-surface-2">Medium</option>
+                <option value="Low" className="bg-surface-2">Low</option>
+                <option value="None" className="bg-surface-2">None</option>
               </select>
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Min Value Amount</label>
+              <label className="text-sm text-content-muted mb-1 block">Min Value Amount</label>
               <input
                 type="number"
                 value={filters.minValueAmount}
                 onChange={(e) => setFilters({ ...filters, minValueAmount: e.target.value })}
                 placeholder="Min value %"
-                className="w-full px-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
-                style={{ fontFamily: 'var(--font-body)' }}
+                className="fa-input w-full"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1 block" style={{ fontFamily: 'var(--font-body)' }}>Ara</label>
+              <label className="text-sm text-content-muted mb-1 block">Ara</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-content-subtle z-10" />
                 <input
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   placeholder="Takım veya lig ara..."
-                  className="w-full pl-10 pr-3 py-2 glass-futuristic border border-[#00f0ff]/30 rounded-lg text-white placeholder-gray-400 hover:neon-border-cyan transition-all bg-black/50"
-                  style={{ fontFamily: 'var(--font-body)' }}
+                  className="fa-input w-full pl-10"
                 />
               </div>
             </div>
@@ -359,27 +353,27 @@ export default function OddsAnalysisPage() {
         
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="text-gray-400 text-sm mb-1">Toplam Kayıt</div>
-            <div className="text-2xl font-bold text-white">{logs.length}</div>
+          <div className="fa-card p-4">
+            <div className="text-content-subtle text-sm mb-1">Toplam Kayıt</div>
+            <div className="text-2xl font-bold text-content">{logs.length}</div>
           </div>
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="text-gray-400 text-sm mb-1">High Value</div>
-            <div className="text-2xl font-bold text-green-400">
+          <div className="fa-card p-4">
+            <div className="text-content-subtle text-sm mb-1">High Value</div>
+            <div className="text-2xl font-bold text-positive">
               {logs.filter(l => l.value_rating === 'High').length}
             </div>
           </div>
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="text-gray-400 text-sm mb-1">Ortalama Value</div>
-            <div className="text-2xl font-bold text-yellow-400">
-              {logs.length > 0 
+          <div className="fa-card p-4">
+            <div className="text-content-subtle text-sm mb-1">Ortalama Value</div>
+            <div className="text-2xl font-bold text-caution">
+              {logs.length > 0
                 ? Math.round(logs.reduce((sum, l) => sum + (l.best_value_amount || 0), 0) / logs.length)
                 : 0}%
             </div>
           </div>
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="text-gray-400 text-sm mb-1">Başarı Oranı</div>
-            <div className="text-2xl font-bold text-blue-400">
+          <div className="fa-card p-4">
+            <div className="text-content-subtle text-sm mb-1">Başarı Oranı</div>
+            <div className="text-2xl font-bold text-brand-400">
               {logs.filter(l => l.prediction_correct).length > 0
                 ? Math.round((logs.filter(l => l.prediction_correct).length / logs.filter(l => l.actual_result).length) * 100)
                 : 0}%
@@ -388,43 +382,43 @@ export default function OddsAnalysisPage() {
         </div>
         
         {/* Logs Table */}
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="fa-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-white/10">
+              <thead className="bg-surface-1/60 border-b border-line">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Maç</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Oranlar</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Implied %</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Form %</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Value</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Best Value</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Tahminler</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Sonuç</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Maç</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Oranlar</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Implied %</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Form %</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Value</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Best Value</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Tahminler</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-content-subtle">Sonuç</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-line">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/5">
+                  <tr key={log.id} className="hover:bg-surface-2">
                     <td className="px-4 py-3">
-                      <div className="text-white font-medium">{log.home_team} vs {log.away_team}</div>
-                      <div className="text-xs text-gray-400">{log.league}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-content font-medium">{log.home_team} vs {log.away_team}</div>
+                      <div className="text-xs text-content-muted">{log.league}</div>
+                      <div className="text-xs text-content-subtle">
                         {new Date(log.match_date).toLocaleDateString('tr-TR')}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300">
+                    <td className="px-4 py-3 text-sm text-content-muted">
                       <div>Ev: {log.home_odds}</div>
                       <div>Ber: {log.draw_odds}</div>
                       <div>Dep: {log.away_odds}</div>
                       <div className="mt-1">O2.5: {log.over_25_odds}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300">
+                    <td className="px-4 py-3 text-sm text-content-muted">
                       <div>Ev: {log.home_implied_prob}%</div>
                       <div>Dep: {log.away_implied_prob}%</div>
                       <div>O2.5: {log.over_25_implied_prob}%</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300">
+                    <td className="px-4 py-3 text-sm text-content-muted">
                       <div>Ev: {log.home_form_prob}%</div>
                       <div>Dep: {log.away_form_prob}%</div>
                       <div>O2.5: {log.over_25_form_prob}%</div>
@@ -444,22 +438,22 @@ export default function OddsAnalysisPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-white font-semibold">{log.best_value_market}</div>
+                      <div className="text-content font-semibold">{log.best_value_market}</div>
                       <div className={`text-sm font-bold ${
-                        log.best_value_amount >= 10 ? 'text-green-400' :
-                        log.best_value_amount >= 5 ? 'text-yellow-400' :
-                        'text-gray-400'
+                        log.best_value_amount >= 10 ? 'text-positive' :
+                        log.best_value_amount >= 5 ? 'text-caution' :
+                        'text-content-muted'
                       }`}>
                         +{log.best_value_amount}%
                       </div>
-                      <div className="text-xs text-gray-400">{log.value_rating}</div>
+                      <div className="text-xs text-content-muted">{log.value_rating}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300">
+                    <td className="px-4 py-3 text-sm text-content-muted">
                       <div>MS: {log.match_winner_value}</div>
                       <div>O/U: {log.recommendation}</div>
                       <div>BTTS: {log.btts_value}</div>
                       {log.value_bets && log.value_bets.length > 0 && (
-                        <div className="mt-1 text-xs text-green-400">
+                        <div className="mt-1 text-xs text-positive">
                           Value: {log.value_bets.join(', ')}
                         </div>
                       )}
@@ -467,22 +461,22 @@ export default function OddsAnalysisPage() {
                     <td className="px-4 py-3">
                       {log.actual_result ? (
                         <>
-                          <div className="text-white">{log.actual_result} - {log.actual_score}</div>
+                          <div className="text-content">{log.actual_result} - {log.actual_score}</div>
                           {log.prediction_correct !== undefined && (
                             <div className="flex items-center gap-1 mt-1">
                               {log.prediction_correct ? (
-                                <CheckCircle className="w-4 h-4 text-green-400" />
+                                <CheckCircle className="w-4 h-4 text-positive" />
                               ) : (
-                                <XCircle className="w-4 h-4 text-red-400" />
+                                <XCircle className="w-4 h-4 text-negative" />
                               )}
-                              <span className={log.prediction_correct ? 'text-green-400' : 'text-red-400'}>
+                              <span className={log.prediction_correct ? 'text-positive' : 'text-negative'}>
                                 {log.prediction_correct ? 'Doğru' : 'Yanlış'}
                               </span>
                             </div>
                           )}
                         </>
                       ) : (
-                        <span className="text-gray-500">Bekleniyor</span>
+                        <span className="text-content-subtle">Bekleniyor</span>
                       )}
                     </td>
                   </tr>
@@ -492,7 +486,7 @@ export default function OddsAnalysisPage() {
           </div>
           
           {logs.length === 0 && (
-            <div className="p-8 text-center text-gray-400">
+            <div className="p-8 text-center text-content-muted">
               Henüz kayıt bulunmuyor. Analiz yapıldıkça kayıtlar burada görünecek.
             </div>
           )}

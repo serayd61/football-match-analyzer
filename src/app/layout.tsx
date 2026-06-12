@@ -12,7 +12,11 @@ import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import QueryProvider from '@/components/QueryProvider';
 import { SITE_URL } from '@/lib/seo';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 const orgJsonLd = {
   '@context': 'https://schema.org',
@@ -90,7 +94,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} ${inter.variable}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}

@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History } from 'lucide-react';
-import { FootballBall3D } from '@/components/Football3D';
+import SiteNav from '@/components/SiteNav';
+import { Spinner } from '@/components/ui';
 import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components/HistoricalAccuracyBadge';
 import AutoLearnBadge, { AutoLearnPanel } from '@/components/AutoLearnBadge';
 import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
@@ -98,36 +99,38 @@ export default function MatchAnalysisPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="relative mb-8 flex justify-center">
-            <div className="absolute inset-0 bg-[#00f0ff]/20 blur-xl rounded-full scale-150 animate-pulse" />
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#00f0ff] border-t-transparent relative z-10" />
-          </div>
-          <h2 className="text-xl font-bold text-[#00f0ff] mb-2 uppercase tracking-widest">
-            {progress.length > 0 ? progress[progress.length - 1].message : 'Analiz Hazırlanıyor...'}
-          </h2>
-          <p className="text-gray-400 text-sm mb-8 italic">AI sistemleri verileri işleyip konsensüs oluşturuyor.</p>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="flex flex-col items-center justify-center p-4 py-24">
+          <div className="max-w-md w-full text-center">
+            <div className="mb-8 flex justify-center">
+              <Spinner size={56} className="text-brand-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-content tracking-tight mb-2">
+              {progress.length > 0 ? progress[progress.length - 1].message : 'Analiz Hazırlanıyor...'}
+            </h2>
+            <p className="text-content-muted text-sm mb-8">AI sistemleri verileri işleyip konsensüs oluşturuyor.</p>
 
-          <div className="bg-[#111] border border-[#00f0ff]/20 rounded-xl p-4 text-left h-48 overflow-y-auto custom-scrollbar">
-            <div className="space-y-3">
-              {progress.map((p, i) => (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={i}
-                  className="flex gap-3 items-start"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00f0ff] mt-1.5 shrink-0" />
-                  <p className="text-xs text-gray-300 font-mono leading-relaxed">
-                    <span className="text-[#00f0ff]/60 uppercase text-[10px] mr-2">[{p.stage}]</span>
-                    {p.message}
-                  </p>
-                </motion.div>
-              ))}
-              {progress.length === 0 && (
-                <p className="text-xs text-gray-500 italic animate-pulse">Sistemler uyandırılıyor...</p>
-              )}
+            <div className="bg-surface-2 border border-line rounded-xl p-4 text-left h-48 overflow-y-auto">
+              <div className="space-y-3">
+                {progress.map((p, i) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    key={i}
+                    className="flex gap-3 items-start"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 shrink-0" />
+                    <p className="text-xs text-content-muted font-mono leading-relaxed">
+                      <span className="text-brand-400/60 uppercase text-[10px] mr-2">[{p.stage}]</span>
+                      {p.message}
+                    </p>
+                  </motion.div>
+                ))}
+                {progress.length === 0 && (
+                  <p className="text-xs text-content-subtle animate-pulse">Sistemler uyandırılıyor...</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -137,36 +140,39 @@ export default function MatchAnalysisPage() {
 
   if (error || !analysis) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center text-white">
-          <p className="text-red-400 mb-4">{error || 'Analiz bulunamadı'}</p>
-          <Link href="/dashboard" className="px-4 py-2 bg-[#00f0ff] text-black rounded-lg hover:bg-[#00f0ff]/80">
-            Dashboard'a Dön
-          </Link>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center text-content">
+            <p className="text-negative mb-4">{error || 'Analiz bulunamadı'}</p>
+            <Link href="/dashboard" className="fa-btn fa-btn-primary">
+              Dashboard'a Dön
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-[#00f0ff]/30 glass-futuristic sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-[#00f0ff] hover:text-[#00f0ff]/80">
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+
+      <header className="border-b border-line">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2 text-brand-400 hover:text-brand-300">
             <ArrowLeft className="w-5 h-5" />
             <span>Dashboard</span>
           </Link>
           <div className="flex items-center gap-4">
             {isCached && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-positive/10 border border-positive/30 text-positive text-xs font-medium">
                 <Clock className="w-3.5 h-3.5" />
                 <span>Cached</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <FootballBall3D size={30} autoRotate={true} />
-              <span className="text-white font-bold">Unified Analysis</span>
+              <span className="text-content font-semibold">Unified Analysis</span>
             </div>
           </div>
         </div>
@@ -178,19 +184,19 @@ export default function MatchAnalysisPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-futuristic rounded-2xl p-8 mb-8 neon-border-cyan"
+          className="fa-card p-8 mb-8"
         >
           {/* Maç Tipi Etiketi */}
           {analysis.matchContext && (
             <div className="flex justify-center mb-4">
               <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full ${
                 analysis.matchContext.type === 'derby'
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  ? 'bg-negative/20 text-negative border border-negative/30'
                   : analysis.matchContext.type === 'relegation_battle'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  ? 'bg-caution/20 text-caution border border-caution/30'
                   : analysis.matchContext.type === 'title_race'
-                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                  : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                  ? 'bg-caution/20 text-caution border border-caution/30'
+                  : 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
               }`}>
                 {analysis.matchContext.label}
                 {analysis.matchContext.psychologyMultiplier > 1.0 && (
@@ -204,18 +210,17 @@ export default function MatchAnalysisPage() {
 
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <h2 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h2 className="text-3xl font-semibold text-content tracking-tight">
                 {analysis.sources?.agents?.stats?.homeTeam || 'Home Team'}
               </h2>
             </div>
-            <div className="px-8 relative">
-              <FootballBall3D size={60} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" autoRotate={true} />
-              <span className="text-3xl font-black text-[#00f0ff] neon-glow-cyan relative z-10" style={{ fontFamily: 'var(--font-heading)' }}>
+            <div className="px-8">
+              <span className="text-3xl font-black text-brand-400">
                 VS
               </span>
             </div>
             <div className="text-center flex-1">
-              <h2 className="text-3xl font-bold text-white neon-glow-cyan" style={{ fontFamily: 'var(--font-heading)' }}>
+              <h2 className="text-3xl font-semibold text-content tracking-tight">
                 {analysis.sources?.agents?.stats?.awayTeam || 'Away Team'}
               </h2>
             </div>
@@ -240,20 +245,20 @@ export default function MatchAnalysisPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-futuristic rounded-2xl p-6 neon-border-cyan"
+            className="fa-card p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-4">Maç Sonucu</h3>
-            <div className="text-4xl font-bold text-[#00f0ff] mb-2">
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">Maç Sonucu</h3>
+            <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.matchResult?.prediction || 'X'}
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-content-muted">
               Güven: {analysis.predictions?.matchResult?.confidence || 0}%
             </div>
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs text-content-subtle mt-2">
               {analysis.predictions?.matchResult?.reasoning || ''}
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+            <div className="mt-3 pt-3 border-t border-line space-y-2">
               <HistoricalAccuracyBadge
                 market="mr"
                 prediction={analysis.predictions?.matchResult?.prediction || ''}
@@ -277,20 +282,20 @@ export default function MatchAnalysisPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-futuristic rounded-2xl p-6 neon-border-cyan"
+            className="fa-card p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-4">Over/Under 2.5</h3>
-            <div className="text-4xl font-bold text-[#00f0ff] mb-2">
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">Over/Under 2.5</h3>
+            <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.overUnder?.prediction || 'Over'}
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-content-muted">
               Güven: {analysis.predictions?.overUnder?.confidence || 0}%
             </div>
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs text-content-subtle mt-2">
               Beklenen: {analysis.predictions?.overUnder?.expectedGoals?.toFixed(1) || '2.5'} gol
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+            <div className="mt-3 pt-3 border-t border-line space-y-2">
               <HistoricalAccuracyBadge
                 market="ou"
                 prediction={analysis.predictions?.overUnder?.prediction || ''}
@@ -314,17 +319,17 @@ export default function MatchAnalysisPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="glass-futuristic rounded-2xl p-6 neon-border-cyan"
+            className="fa-card p-6"
           >
-            <h3 className="text-lg font-bold text-white mb-4">BTTS</h3>
-            <div className="text-4xl font-bold text-[#00f0ff] mb-2">
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">BTTS</h3>
+            <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.btts?.prediction || 'Yes'}
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-content-muted">
               Güven: {analysis.predictions?.btts?.confidence || 0}%
             </div>
             {/* Tarihsel Doğruluk Badge */}
-            <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+            <div className="mt-3 pt-3 border-t border-line space-y-2">
               <HistoricalAccuracyBadge
                 market="btts"
                 prediction={analysis.predictions?.btts?.prediction || ''}
@@ -396,9 +401,9 @@ export default function MatchAnalysisPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="glass-futuristic rounded-2xl p-6 mt-6 neon-border-cyan bg-gradient-to-r from-[#00f0ff]/10 to-[#ff00f0]/10"
+            className="fa-card p-6 mt-6"
           >
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs text-content-subtle mt-2">
               {analysis.bestBet.reasoning}
             </div>
           </motion.div>
@@ -411,20 +416,20 @@ export default function MatchAnalysisPage() {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass-futuristic rounded-2xl p-6 border border-[#00f0ff]/20"
+              className="fa-card p-6"
             >
               <div className="flex items-center gap-2 mb-4">
-                <Award className="w-5 h-5 text-yellow-400" />
-                <h3 className="font-bold text-white">Lig Uzmanı Agentlar</h3>
+                <Award className="w-5 h-5 text-caution" />
+                <h3 className="font-semibold text-content tracking-tight">Lig Uzmanı Agentlar</h3>
               </div>
               <div className="flex flex-wrap gap-2">
                 {analysis.systemPerformance.expertAgents.map((agent: string) => (
-                  <span key={agent} className="px-3 py-1 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs rounded-full uppercase tracking-wider font-bold">
+                  <span key={agent} className="px-3 py-1 bg-caution/10 border border-caution/30 text-caution text-xs rounded-full uppercase tracking-wider font-bold">
                     {agent}
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-3">Bu agentlar bu ligdeki yüksek tarihsel başarıları nedeniyle daha fazla ağırlığa sahiptir.</p>
+              <p className="text-xs text-content-muted mt-3">Bu agentlar bu ligdeki yüksek tarihsel başarıları nedeniyle daha fazla ağırlığa sahiptir.</p>
             </motion.div>
           )}
 
@@ -433,19 +438,19 @@ export default function MatchAnalysisPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass-futuristic rounded-2xl p-6 border border-red-500/20"
+              className="fa-card p-6 border-negative/30"
             >
               <div className="flex items-center gap-2 mb-4">
-                <ShieldAlert className="w-5 h-5 text-red-400" />
-                <h3 className="font-bold text-white">Çelişki Çözümü</h3>
+                <ShieldAlert className="w-5 h-5 text-negative" />
+                <h3 className="font-semibold text-content tracking-tight">Çelişki Çözümü</h3>
               </div>
               <div className="space-y-3">
                 {analysis.systemPerformance.conflicts.map((conflict: any, idx: number) => (
-                  <div key={idx} className="bg-red-500/5 rounded-lg p-3 border border-red-500/10">
-                    <p className="text-xs font-bold text-red-400 uppercase">{conflict.field}</p>
-                    <p className="text-sm text-gray-300 mt-1">{conflict.description}</p>
-                    <p className="text-xs text-gray-400 mt-2 border-t border-red-500/10 pt-2">
-                      <span className="text-[#00f0ff]">Karar:</span> {conflict.resolution}
+                  <div key={idx} className="bg-negative/5 rounded-lg p-3 border border-negative/10">
+                    <p className="text-xs font-bold text-negative uppercase">{conflict.field}</p>
+                    <p className="text-sm text-content-muted mt-1">{conflict.description}</p>
+                    <p className="text-xs text-content-muted mt-2 border-t border-negative/10 pt-2">
+                      <span className="text-brand-400">Karar:</span> {conflict.resolution}
                     </p>
                   </div>
                 ))}

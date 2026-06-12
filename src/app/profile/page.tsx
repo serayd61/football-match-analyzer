@@ -5,9 +5,10 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
-import Navigation from '@/components/Navigation';
-import { FootballBall3D } from '@/components/Football3D';
+import SiteNav from '@/components/SiteNav';
+import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Spinner } from '@/components/ui';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -119,8 +120,9 @@ export default function ProfilePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#00f0ff] border-t-transparent rounded-full animate-spin neon-glow-cyan"></div>
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="grid place-items-center py-32"><Spinner size={28} className="text-brand-400" /></div>
       </div>
     );
   }
@@ -128,55 +130,42 @@ export default function ProfilePage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-black relative">
-      <Navigation />
-      
-      {/* 3D Football Decorations */}
-      <div className="fixed top-20 right-10 z-0 opacity-10 pointer-events-none">
-        <FootballBall3D size={150} />
-      </div>
-      
-      <div className="p-4 relative z-10">
-      <div className="max-w-2xl mx-auto">
+    <div className="fa-shell min-h-screen">
+      <SiteNav />
+
+      <div className="p-4">
+      <div className="max-w-2xl mx-auto pt-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard" className="text-content-subtle hover:text-content transition-colors flex items-center gap-2 text-sm">
+            <ArrowLeft size={16} />
             {l.backToDashboard}
           </Link>
         </div>
 
         {/* Profile Card */}
-        <motion.div 
-          className="glass-futuristic border border-[#00f0ff]/30 rounded-3xl overflow-hidden neon-border-cyan"
-          initial={{ opacity: 0, y: 30 }}
+        <motion.div
+          className="fa-card overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
           {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-b border-gray-700">
+          <div className="p-6 bg-surface-1/60 border-b border-line">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">
+              <div className="w-20 h-20 rounded-2xl grid place-items-center bg-gradient-to-br from-brand-500 to-sky-500 text-white text-3xl font-bold">
                 {session.user?.name?.charAt(0).toUpperCase() || 'U'}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">{session.user?.name}</h1>
-                <p className="text-gray-400">{session.user?.email}</p>
+                <h1 className="text-2xl font-semibold text-content tracking-tight">{session.user?.name}</h1>
+                <p className="text-content-muted">{session.user?.email}</p>
                 <div className="mt-2">
                   {profile?.isPro ? (
-                    <span className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-sm font-bold rounded-full">
-                      ⭐ {l.pro}
-                    </span>
+                    <span className="px-3 py-1 rounded-full text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">⭐ {l.pro}</span>
                   ) : profile?.isTrial ? (
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm font-medium rounded-full">
-                      ⏳ {l.trial} - {profile.trialDaysLeft} {l.daysLeft}
-                    </span>
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-sky-500/15 text-sky-400 border border-sky-500/30">⏳ {l.trial} - {profile.trialDaysLeft} {l.daysLeft}</span>
                   ) : (
-                    <span className="px-3 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full">
-                      ❌ {l.expired}
-                    </span>
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-negative/15 text-negative border border-negative/30">❌ {l.expired}</span>
                   )}
                 </div>
               </div>
@@ -184,110 +173,74 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-3">
             {/* Membership */}
-            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-surface-2 border border-line rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-xl">👑</span>
-                </div>
+                <div className="w-10 h-10 rounded-lg grid place-items-center bg-amber-500/10 border border-amber-500/20"><span className="text-xl">👑</span></div>
                 <div>
-                  <div className="text-sm text-gray-400">{l.membership}</div>
-                  <div className="font-medium text-white">
-                    {profile?.isPro ? l.pro : profile?.isTrial ? l.trial : l.expired}
-                  </div>
+                  <div className="text-sm text-content-muted">{l.membership}</div>
+                  <div className="font-medium text-content">{profile?.isPro ? l.pro : profile?.isTrial ? l.trial : l.expired}</div>
                 </div>
               </div>
               {profile?.isPro && profile?.subscriptionEnd && (
                 <div className="text-right">
-                  <div className="text-xs text-gray-400">{l.validUntil}</div>
-                  <div className="text-sm text-green-400">
-                    {new Date(profile.subscriptionEnd).toLocaleDateString()}
-                  </div>
+                  <div className="text-xs text-content-subtle">{l.validUntil}</div>
+                  <div className="text-sm text-positive">{new Date(profile.subscriptionEnd).toLocaleDateString()}</div>
                 </div>
               )}
             </div>
 
             {/* Analyses Today */}
-            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-surface-2 border border-line rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-xl">📊</span>
-                </div>
+                <div className="w-10 h-10 rounded-lg grid place-items-center bg-brand-500/10 border border-brand-500/20"><span className="text-xl">📊</span></div>
                 <div>
-                  <div className="text-sm text-gray-400">{l.analysesToday}</div>
-                  <div className="font-medium text-white">
-                    {profile?.isPro ? l.unlimited : `${profile?.analysesUsed || 0}/${profile?.analysesLimit || 3}`}
-                  </div>
+                  <div className="text-sm text-content-muted">{l.analysesToday}</div>
+                  <div className="font-medium text-content">{profile?.isPro ? l.unlimited : `${profile?.analysesUsed || 0}/${profile?.analysesLimit || 3}`}</div>
                 </div>
               </div>
               {!profile?.isPro && (
-                <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 rounded-full"
-                    style={{ width: `${((profile?.analysesUsed || 0) / (profile?.analysesLimit || 3)) * 100}%` }}
-                  ></div>
+                <div className="w-24 h-2 bg-surface-4 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand-500 rounded-full" style={{ width: `${((profile?.analysesUsed || 0) / (profile?.analysesLimit || 3)) * 100}%` }} />
                 </div>
               )}
             </div>
 
             {/* AI Agents */}
-            <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-surface-2 border border-line rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-xl">🧠</span>
-                </div>
+                <div className="w-10 h-10 rounded-lg grid place-items-center bg-sky-500/10 border border-sky-500/20"><span className="text-xl">🧠</span></div>
                 <div>
-                  <div className="text-sm text-gray-400">{l.aiAgents}</div>
-                  <div className="font-medium text-white">
-                    {profile?.canUseAgents ? (
-                      <span className="text-green-400">✓ {l.available}</span>
-                    ) : (
-                      <span className="text-gray-500">🔒 {l.notAvailable}</span>
-                    )}
+                  <div className="text-sm text-content-muted">{l.aiAgents}</div>
+                  <div className="font-medium text-content">
+                    {profile?.canUseAgents ? <span className="text-positive">✓ {l.available}</span> : <span className="text-content-subtle">🔒 {l.notAvailable}</span>}
                   </div>
                 </div>
               </div>
               {!profile?.canUseAgents && (
-                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded">PRO</span>
+                <span className="px-2 py-1 rounded text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25">PRO</span>
               )}
             </div>
           </div>
 
           {/* Actions */}
-          <div className="p-6 border-t border-gray-700 space-y-3">
+          <div className="p-6 border-t border-line space-y-3">
             {!profile?.isPro && (
-              <Link
-                href="/pricing"
-                className="block w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-xl text-center shadow-lg shadow-green-500/30 transition-all"
-              >
-                ⭐ {l.upgrade}
-              </Link>
+              <Link href="/pricing" className="fa-btn fa-btn-primary fa-btn-lg w-full">⭐ {l.upgrade}</Link>
             )}
-            
-            {/* Ayarlar Butonu */}
-            <Link
-              href="/settings"
-              className="block w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-medium rounded-xl text-center transition-colors"
-            >
+
+            <Link href="/settings" className="fa-btn fa-btn-secondary fa-btn-lg w-full">
               ⚙️ {lang === 'tr' ? 'Ayarlar' : lang === 'de' ? 'Einstellungen' : 'Settings'}
             </Link>
-            
-            {/* Stripe Portal Butonu - Sadece Pro üyeler için */}
+
             {profile?.isPro && profile?.subscriptionId && (
-              <button
-                onClick={handleManageSubscription}
-                disabled={openingPortal}
-                className="block w-full py-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-xl text-center transition-colors disabled:opacity-50"
-              >
+              <button onClick={handleManageSubscription} disabled={openingPortal} className="fa-btn fa-btn-secondary fa-btn-lg w-full">
                 {openingPortal ? l.openingPortal : `💳 ${l.manageSubscription}`}
               </button>
             )}
-            
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="block w-full py-4 bg-gray-700 hover:bg-gray-600 text-red-400 font-medium rounded-xl text-center transition-colors"
-            >
+
+            <button onClick={() => signOut({ callbackUrl: '/login' })} className="fa-btn fa-btn-ghost fa-btn-lg w-full text-negative">
               {l.logout}
             </button>
           </div>

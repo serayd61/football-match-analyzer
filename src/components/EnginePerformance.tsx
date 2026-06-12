@@ -80,7 +80,7 @@ export default function EnginePerformance({ lang = 'tr', recent = 30 }: { lang?:
           <div className="text-xs text-white/40">{t.accuracy}</div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-          <div className="flex items-center justify-center gap-2 text-cyan-300 mb-1"><Target size={18} /></div>
+          <div className="flex items-center justify-center gap-2 text-brand-300 mb-1"><Target size={18} /></div>
           <div className="text-3xl font-bold text-white">{data.total}</div>
           <div className="text-xs text-white/40">{t.settled}</div>
         </div>

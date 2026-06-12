@@ -16,22 +16,22 @@ export default function OfflinePage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-4xl animate-pulse">
+    <div className="fa-shell min-h-screen flex items-center justify-center p-4">
+      <div className="fa-card max-w-md mx-auto p-8 text-center">
+        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand rounded-2xl flex items-center justify-center text-4xl animate-pulse">
           ⚽
         </div>
-        <h1 className="text-white text-2xl font-bold mb-3">Çevrimdışısınız</h1>
-        <p className="text-gray-400 mb-6">
+        <h1 className="text-content text-2xl font-semibold tracking-tight mb-3">Çevrimdışısınız</h1>
+        <p className="text-content-muted mb-6">
           İnternet bağlantınız yok. Lütfen bağlantınızı kontrol edin ve tekrar deneyin.
         </p>
         <button
           onClick={() => router.push('/dashboard')}
-          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/30 transition-all"
+          className="fa-btn fa-btn-primary fa-btn-lg"
         >
           Tekrar Dene
         </button>
-        <div className="mt-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+        <div className="mt-6 p-3 bg-negative/10 border border-negative/30 rounded-lg text-negative text-sm">
           📡 Bağlantı bekleniyor...
         </div>
       </div>
