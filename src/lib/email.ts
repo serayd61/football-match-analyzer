@@ -164,6 +164,32 @@ export async function sendReengagementEmail(
     <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
     <p style="font-size:13px;color:#64748b;margin:0 0 18px">We rebuilt the platform — worth another look</p>
 
+    <!-- HERO (e-posta-güvenli, tablo-tabanlı görsel — bloklanmaz) -->
+    <a href="${ctaUrl}" style="text-decoration:none;display:block">
+    <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:18px 18px 16px;margin:0 0 22px">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
+        <td style="font-size:13px;font-weight:700;color:#e7eaf0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">⚽ Football<span style="color:#34d399">Analytics</span></td>
+        <td align="right"><span style="font-size:10px;font-weight:700;color:#6ee7b7;background:#10271f;border:1px solid #1f5e49;padding:4px 9px;border-radius:999px">DIXON-COLES</span></td>
+      </tr></table>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:16px;font-size:14px;font-weight:700;color:#e7eaf0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"><tr>
+        <td>Arsenal</td><td align="center" style="color:#646c7d;font-size:11px;font-weight:600">VS</td><td align="right">Chelsea</td>
+      </tr></table>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:12px 0 7px;border-radius:6px;overflow:hidden"><tr>
+        <td width="54%" height="9" style="background:#10b981;font-size:0;line-height:0">&nbsp;</td>
+        <td width="26%" height="9" style="background:#f59e0b;font-size:0;line-height:0">&nbsp;</td>
+        <td width="20%" height="9" style="background:#38bdf8;font-size:0;line-height:0">&nbsp;</td>
+      </tr></table>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="font-size:11px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"><tr>
+        <td style="color:#6ee7b7">1 · 54%</td><td align="center" style="color:#fcd34d">X · 26%</td><td align="right" style="color:#7dd3fc">2 · 20%</td>
+      </tr></table>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:13px"><tr>
+        <td width="33%" style="padding-right:5px"><div style="background:#12151c;border:1px solid #1e2430;border-radius:9px;padding:7px 4px;text-align:center"><div style="font-size:13px;font-weight:700;color:#e7eaf0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">61%</div><div style="font-size:9px;color:#9aa3b2">Over 2.5</div></div></td>
+        <td width="33%" style="padding:0 3px"><div style="background:#12151c;border:1px solid #1e2430;border-radius:9px;padding:7px 4px;text-align:center"><div style="font-size:13px;font-weight:700;color:#e7eaf0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">58%</div><div style="font-size:9px;color:#9aa3b2">BTTS</div></div></td>
+        <td width="33%" style="padding-left:5px"><div style="background:#12151c;border:1px solid #1e2430;border-radius:9px;padding:7px 4px;text-align:center"><div style="font-size:13px;font-weight:700;color:#e7eaf0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">2–1</div><div style="font-size:9px;color:#9aa3b2">Top score</div></div></td>
+      </tr></table>
+    </div>
+    </a>
+
     <p>Hi${hi}, you signed up at footballanalytics.pro a while ago but never got to see the new version.</p>
     <p>We <strong>rebuilt the prediction engine from scratch</strong>. Match probabilities now come from a real <strong>statistical model (Dixon-Coles)</strong> trained on thousands of historical results — computed mathematically, not made up. No "guaranteed wins," just <strong>transparent, honest data</strong> with a public track record you can check yourself.</p>
     <p style="text-align:center;margin:28px 0">
