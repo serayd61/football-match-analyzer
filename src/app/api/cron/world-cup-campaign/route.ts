@@ -72,9 +72,13 @@ export async function GET(request: NextRequest) {
   // 1.5) PROBE: seçili tipteki maili yalnızca canary/admin adresine gönder (test).
   //      Toplu gönderim YOK, log YOK. "nereye düşüyor" testi için.
   if (searchParams.get('probe') === '1') {
+    const probeTo = (searchParams.get('to') || canaryEmail || '').toLowerCase().trim();
+    if (!EMAIL_RE.test(probeTo)) {
+      return NextResponse.json({ success: false, probe: true, error: 'invalid probe address' }, { status: 400 });
+    }
     try {
-      await sendEmail(canaryEmail, null);
-      return NextResponse.json({ success: true, probe: true, type: isReengage ? 'reengage' : 'worldcup', sentTo: canaryEmail });
+      await sendEmail(probeTo, null);
+      return NextResponse.json({ success: true, probe: true, type: isReengage ? 'reengage' : 'worldcup', sentTo: probeTo });
     } catch (e: any) {
       return NextResponse.json({ success: false, probe: true, error: e?.message || String(e) }, { status: 500 });
     }
