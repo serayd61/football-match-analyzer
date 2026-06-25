@@ -4,6 +4,19 @@ import { useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
+
+const L = {
+  tr: { ev: 'Ev', dep: 'Dep', ber: 'Ber', ust: 'Üst', alt: 'Alt', evet: 'Evet', hayir: 'Hayır',
+        empty: 'Filtrelere uygun analiz bulunamadı', title: 'Analizler', records: 'kayıt',
+        confidence: 'güven', prev: 'Önceki', next: 'Sonraki', page: 'Sayfa' },
+  en: { ev: 'Home', dep: 'Away', ber: 'Draw', ust: 'Over', alt: 'Under', evet: 'Yes', hayir: 'No',
+        empty: 'No analyses match the filters', title: 'Analyses', records: 'records',
+        confidence: 'confidence', prev: 'Previous', next: 'Next', page: 'Page' },
+  de: { ev: 'Heim', dep: 'Ausw.', ber: 'Unent.', ust: 'Über', alt: 'Unter', evet: 'Ja', hayir: 'Nein',
+        empty: 'Keine Analysen für die Filter', title: 'Analysen', records: 'Einträge',
+        confidence: 'Konfidenz', prev: 'Zurück', next: 'Weiter', page: 'Seite' },
+} as const;
 
 interface AnalysisRecord {
   id: string;
@@ -57,11 +70,13 @@ function PredictionBadge({
   isCorrect: boolean | null;
   type: 'mr' | 'ou' | 'btts';
 }) {
-  const displayPrediction = type === 'mr' 
-    ? (prediction === '1' ? 'Ev' : prediction === '2' ? 'Dep' : prediction === 'X' ? 'Ber' : prediction)
+  const { lang } = useLanguage();
+  const t = L[lang as keyof typeof L] || L.en;
+  const displayPrediction = type === 'mr'
+    ? (prediction === '1' ? t.ev : prediction === '2' ? t.dep : prediction === 'X' ? t.ber : prediction)
     : type === 'ou'
-    ? (prediction?.toLowerCase().includes('over') ? 'Üst' : prediction?.toLowerCase().includes('under') ? 'Alt' : prediction)
-    : (prediction?.toLowerCase() === 'yes' ? 'Evet' : prediction?.toLowerCase() === 'no' ? 'Hayır' : prediction);
+    ? (prediction?.toLowerCase().includes('over') ? t.ust : prediction?.toLowerCase().includes('under') ? t.alt : prediction)
+    : (prediction?.toLowerCase() === 'yes' ? t.evet : prediction?.toLowerCase() === 'no' ? t.hayir : prediction);
 
   if (isCorrect === null) {
     return (
@@ -86,6 +101,8 @@ function PredictionBadge({
 
 export default function AnalysisTable({ analyses, isLoading = false, pagination, onPageChange }: Props) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const { lang } = useLanguage();
+  const t = L[lang as keyof typeof L] || L.en;
 
   const rowVirtualizer = useVirtualizer({
     count: analyses.length,
@@ -109,7 +126,7 @@ export default function AnalysisTable({ analyses, isLoading = false, pagination,
   if (!analyses || analyses.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 text-center">
-        <p className="text-white/50">Filtrelere uygun analiz bulunamadı</p>
+        <p className="text-white/50">{t.empty}</p>
       </div>
     );
   }
@@ -118,10 +135,10 @@ export default function AnalysisTable({ analyses, isLoading = false, pagination,
     <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-        <h3 className="text-white font-medium">Analizler</h3>
+        <h3 className="text-white font-medium">{t.title}</h3>
         {pagination && (
           <span className="text-xs text-white/50">
-            {pagination.totalRecords} kayıt
+            {pagination.totalRecords} {t.records}
           </span>
         )}
       </div>
@@ -197,7 +214,7 @@ export default function AnalysisTable({ analyses, isLoading = false, pagination,
                       type="btts"
                     />
                     <span className="text-xs text-white/40 ml-auto">
-                      {analysis.consensus_confidence}% güven
+                      {analysis.consensus_confidence}% {t.confidence}
                     </span>
                   </div>
                 </div>
@@ -216,11 +233,11 @@ export default function AnalysisTable({ analyses, isLoading = false, pagination,
             className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-lg text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            Önceki
+            {t.prev}
           </button>
-          
+
           <span className="text-sm text-white/60">
-            Sayfa {pagination.page} / {pagination.totalPages}
+            {t.page} {pagination.page} / {pagination.totalPages}
           </span>
           
           <button
@@ -228,7 +245,7 @@ export default function AnalysisTable({ analyses, isLoading = false, pagination,
             disabled={!pagination.hasMore}
             className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-lg text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
           >
-            Sonraki
+            {t.next}
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
