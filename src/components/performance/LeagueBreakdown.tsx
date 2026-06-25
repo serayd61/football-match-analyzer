@@ -2,6 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, TrendingDown } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
+
+const L = {
+  tr: { noData: 'Henüz lig performans verisi yok', title: 'Lig Bazlı Performans', match: 'maç' },
+  en: { noData: 'No league data yet', title: 'League Performance', match: 'matches' },
+  de: { noData: 'Noch keine Liga-Daten', title: 'Liga-Leistung', match: 'Spiele' },
+} as const;
 
 interface LeagueStats {
   league: string;
@@ -21,6 +28,8 @@ interface Props {
 }
 
 export default function LeagueBreakdown({ leagueStats, isLoading = false }: Props) {
+  const { lang } = useLanguage();
+  const t = L[lang] || L.en;
   if (isLoading) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
@@ -36,7 +45,7 @@ export default function LeagueBreakdown({ leagueStats, isLoading = false }: Prop
   if (!leagueStats || leagueStats.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 text-center">
-        <p className="text-white/50">Henüz lig performans verisi yok</p>
+        <p className="text-white/50">{t.noData}</p>
       </div>
     );
   }
@@ -48,7 +57,7 @@ export default function LeagueBreakdown({ leagueStats, isLoading = false }: Prop
     <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
         <Trophy className="w-5 h-5 text-amber-400" />
-        <h3 className="text-white font-medium">Lig Bazlı Performans</h3>
+        <h3 className="text-white font-medium">{t.title}</h3>
       </div>
 
       <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
@@ -70,7 +79,7 @@ export default function LeagueBreakdown({ leagueStats, isLoading = false }: Prop
                     {league.league}
                   </span>
                   <span className="text-xs text-white/40">
-                    ({league.total_matches} maç)
+                    ({league.total_matches} {t.match})
                   </span>
                 </div>
                 <div className={`flex items-center gap-1 ${isGood ? 'text-emerald-400' : 'text-red-400'}`}>

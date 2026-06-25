@@ -2,6 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
+
+const L = {
+  tr: { noData: 'Henüz agent performans verisi yok', title: 'Agent Performansları', best: 'En İyi:', analyzed: 'maç analiz edildi', match: 'Maç', overall: 'Genel', confidence: 'Güven', consensus: 'Konsensüs' },
+  en: { noData: 'No agent data yet', title: 'Agent Performance', best: 'Best:', analyzed: 'matches analyzed', match: 'Matches', overall: 'Overall', confidence: 'Confidence', consensus: 'Consensus' },
+  de: { noData: 'Noch keine Agent-Daten', title: 'Agent-Leistung', best: 'Beste:', analyzed: 'Spiele analysiert', match: 'Spiele', overall: 'Gesamt', confidence: 'Konfidenz', consensus: 'Konsens' },
+} as const;
 
 interface AgentStats {
   agent_name: string;
@@ -22,13 +29,17 @@ interface Props {
 }
 
 const agentDisplayNames: Record<string, string> = {
-  consensus: 'Konsensüs',
   stats_agent: 'Stats Agent',
   odds_agent: 'Odds Agent',
   deep_analysis: 'Deep Analysis',
   master_strategist: 'Master Strategist',
   ai_smart: 'AI Smart'
 };
+
+function displayName(agentName: string, consensusLabel: string): string {
+  if (agentName === 'consensus') return consensusLabel;
+  return agentDisplayNames[agentName] || agentName;
+}
 
 const agentColors: Record<string, string> = {
   consensus: 'from-cyan-500 to-blue-500',
@@ -55,6 +66,8 @@ function AccuracyBadge({ value }: { value: number }) {
 }
 
 export default function AgentPerformanceTable({ agentStats, isLoading = false }: Props) {
+  const { lang } = useLanguage();
+  const t = L[lang] || L.en;
   if (isLoading) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
@@ -70,7 +83,7 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
   if (!agentStats || agentStats.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 text-center">
-        <p className="text-white/50">Henüz agent performans verisi yok</p>
+        <p className="text-white/50">{t.noData}</p>
       </div>
     );
   }
@@ -84,11 +97,11 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Award className="w-5 h-5 text-amber-400" />
-          <h3 className="text-white font-medium">Agent Performansları</h3>
+          <h3 className="text-white font-medium">{t.title}</h3>
         </div>
         {bestAgent && (
           <span className="text-xs text-amber-400">
-            En İyi: {agentDisplayNames[bestAgent.agent_name] || bestAgent.agent_name}
+            {t.best} {displayName(bestAgent.agent_name, t.consensus)}
           </span>
         )}
       </div>
@@ -107,7 +120,7 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
               <div className="flex items-center gap-2">
                 {index === 0 && <Award className="w-4 h-4 text-amber-400" />}
                 <span className={`font-medium bg-gradient-to-r ${agentColors[agent.agent_name] || 'from-gray-400 to-gray-500'} bg-clip-text text-transparent`}>
-                  {agentDisplayNames[agent.agent_name] || agent.agent_name}
+                  {displayName(agent.agent_name, t.consensus)}
                 </span>
               </div>
               <AccuracyBadge value={agent.overall_accuracy} />
@@ -135,7 +148,7 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
             </div>
             
             <div className="mt-2 text-xs text-white/40 text-center">
-              {agent.total_matches} maç analiz edildi
+              {agent.total_matches} {t.analyzed}
             </div>
           </motion.div>
         ))}
@@ -148,12 +161,12 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
             <tr className="text-xs text-white/50 border-b border-white/10">
               <th className="px-4 py-3 text-left">#</th>
               <th className="px-4 py-3 text-left">Agent</th>
-              <th className="px-4 py-3 text-center">Maç</th>
+              <th className="px-4 py-3 text-center">{t.match}</th>
               <th className="px-4 py-3 text-center">MS</th>
               <th className="px-4 py-3 text-center">O/U</th>
               <th className="px-4 py-3 text-center">BTTS</th>
-              <th className="px-4 py-3 text-center">Genel</th>
-              <th className="px-4 py-3 text-center">Güven</th>
+              <th className="px-4 py-3 text-center">{t.overall}</th>
+              <th className="px-4 py-3 text-center">{t.confidence}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -174,7 +187,7 @@ export default function AgentPerformanceTable({ agentStats, isLoading = false }:
                 </td>
                 <td className="px-4 py-3">
                   <span className={`font-medium bg-gradient-to-r ${agentColors[agent.agent_name] || 'from-gray-400 to-gray-500'} bg-clip-text text-transparent`}>
-                    {agentDisplayNames[agent.agent_name] || agent.agent_name}
+                    {displayName(agent.agent_name, t.consensus)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center text-white/60 text-sm">

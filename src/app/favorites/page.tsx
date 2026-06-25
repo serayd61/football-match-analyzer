@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import SiteNav from '@/components/SiteNav';
 import { Spinner, EmptyState } from '@/components/ui';
+import { useLanguage } from '@/components/LanguageProvider';
 
 interface Favorite {
   id: string;
@@ -90,6 +91,32 @@ const translations = {
     addNote: 'Add Note',
     saveNote: 'Save',
   },
+  de: {
+    title: 'Meine Lieblingsspiele',
+    subtitle: 'Sehen Sie hier Ihre gespeicherten Analysen',
+    noFavorites: 'Noch keine Lieblingsspiele',
+    noFavoritesDesc: 'Sie können Spiele über das Dashboard zu den Favoriten hinzufügen',
+    goToDashboard: 'Zum Dashboard',
+    home: 'Heim',
+    away: 'Auswärts',
+    draw: 'Unentschieden',
+    over: 'Über',
+    under: 'Unter',
+    yes: 'Ja',
+    no: 'Nein',
+    bestBet: 'Beste Wette',
+    confidence: 'Konfidenz',
+    remove: 'Entfernen',
+    viewAnalysis: 'Analyse ansehen',
+    matchDate: 'Spieldatum',
+    savedAt: 'Gespeichert',
+    league: 'Liga',
+    predictions: 'Vorhersagen',
+    geniusAnalysis: 'Genius-Analyse',
+    notes: 'Notizen',
+    addNote: 'Notiz hinzufügen',
+    saveNote: 'Speichern',
+  },
 };
 
 export default function FavoritesPage() {
@@ -97,8 +124,8 @@ export default function FavoritesPage() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lang, setLang] = useState<'tr' | 'en'>('tr');
-  const t = translations[lang];
+  const { lang } = useLanguage();
+  const t = translations[lang] || translations.en;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -267,7 +294,7 @@ export default function FavoritesPage() {
                       </div>
                       <div className="text-2xl font-bold text-amber-400 mb-2">{getPredictionText(favorite.match_result_prediction, 'mr')}</div>
                       {favorite.overall_confidence && (
-                        <div className="text-sm text-content-muted">Güven: %{Math.round(favorite.overall_confidence)}</div>
+                        <div className="text-sm text-content-muted">{t.confidence}: %{Math.round(favorite.overall_confidence)}</div>
                       )}
                     </div>
                   )}

@@ -393,7 +393,7 @@ export default function AIPerformancePage() {
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <Spinner size={48} className="text-brand-400 mx-auto" />
-              <p className="mt-4 text-content">Yükleniyor...</p>
+              <p className="mt-4 text-content">{lang === 'tr' ? 'Yükleniyor...' : lang === 'de' ? 'Lädt...' : 'Loading...'}</p>
             </div>
           </div>
         </div>
@@ -694,7 +694,7 @@ export default function AIPerformancePage() {
 
               {/* League Performance */}
               <div className="fa-card p-6">
-                <h2 className="text-xl font-semibold text-content tracking-tight mb-4">🏆 {lang === 'tr' ? 'Lig Performansı' : 'League Performance'}</h2>
+                <h2 className="text-xl font-semibold text-content tracking-tight mb-4">🏆 {lang === 'tr' ? 'Lig Performansı' : lang === 'de' ? 'Liga-Leistung' : 'League Performance'}</h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {data?.leagues?.map((league, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-surface-2 border border-line rounded-lg p-3">

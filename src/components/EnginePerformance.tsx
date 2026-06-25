@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Target, CheckCircle2, XCircle, TrendingUp, RefreshCw } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
 
 interface RecentItem {
   fixtureId: number;
@@ -41,7 +42,9 @@ function pickLabel(pick: string | null, t: any) {
   return pick === '1' ? t.home.split(' ')[0] : pick === '2' ? t.away.split(' ')[0] : pick === 'X' ? t.draw.split(' ')[0] : '—';
 }
 
-export default function EnginePerformance({ lang = 'tr', recent = 30 }: { lang?: string; recent?: number }) {
+export default function EnginePerformance({ lang: langProp, recent = 30 }: { lang?: string; recent?: number }) {
+  const { lang: ctxLang } = useLanguage();
+  const lang = langProp || ctxLang;
   const t = (STR as any)[lang] || STR.en;
   const [data, setData] = useState<PerfData | null>(null);
   const [loading, setLoading] = useState(true);

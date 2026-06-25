@@ -2,6 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { BarChart3, CheckCircle, XCircle, Target, Clock, TrendingUp } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
+
+const L = {
+  tr: { total: 'Toplam Analiz', settled: 'Sonuçlanan', pending: 'Bekleyen', overall: 'Genel Doğruluk', mr: 'Maç Sonucu', ou: 'Alt/Üst', btts: 'KG Var', byMarket: 'Market Bazlı Doğruluk' },
+  en: { total: 'Total Analyses', settled: 'Settled', pending: 'Pending', overall: 'Overall Accuracy', mr: 'Match Result', ou: 'Over/Under', btts: 'BTTS', byMarket: 'Accuracy by Market' },
+  de: { total: 'Analysen gesamt', settled: 'Abgeschlossen', pending: 'Ausstehend', overall: 'Gesamtgenauigkeit', mr: 'Spielergebnis', ou: 'Über/Unter', btts: 'BTTS', byMarket: 'Genauigkeit nach Markt' },
+} as const;
 
 interface SummaryProps {
   totalMatches: number;
@@ -24,9 +31,11 @@ export default function PerformanceSummaryCards({
   bttsAccuracy,
   isLoading = false
 }: SummaryProps) {
+  const { lang } = useLanguage();
+  const t = L[lang] || L.en;
   const cards = [
     {
-      title: 'Toplam Analiz',
+      title: t.total,
       value: totalMatches,
       icon: BarChart3,
       color: 'from-blue-500 to-cyan-500',
@@ -34,7 +43,7 @@ export default function PerformanceSummaryCards({
       borderColor: 'border-blue-500/30'
     },
     {
-      title: 'Sonuçlanan',
+      title: t.settled,
       value: settledMatches,
       icon: CheckCircle,
       color: 'from-emerald-500 to-green-500',
@@ -42,7 +51,7 @@ export default function PerformanceSummaryCards({
       borderColor: 'border-emerald-500/30'
     },
     {
-      title: 'Bekleyen',
+      title: t.pending,
       value: pendingMatches,
       icon: Clock,
       color: 'from-amber-500 to-orange-500',
@@ -50,7 +59,7 @@ export default function PerformanceSummaryCards({
       borderColor: 'border-amber-500/30'
     },
     {
-      title: 'Genel Doğruluk',
+      title: t.overall,
       value: `${consensusAccuracy}%`,
       icon: Target,
       color: consensusAccuracy >= 60 ? 'from-emerald-500 to-green-500' : 'from-red-500 to-rose-500',
@@ -61,17 +70,17 @@ export default function PerformanceSummaryCards({
 
   const marketCards = [
     {
-      title: 'Maç Sonucu',
+      title: t.mr,
       value: `${matchResultAccuracy}%`,
       color: matchResultAccuracy >= 50 ? 'text-emerald-400' : 'text-red-400'
     },
     {
-      title: 'Alt/Üst',
+      title: t.ou,
       value: `${overUnderAccuracy}%`,
       color: overUnderAccuracy >= 50 ? 'text-emerald-400' : 'text-red-400'
     },
     {
-      title: 'KG Var',
+      title: t.btts,
       value: `${bttsAccuracy}%`,
       color: bttsAccuracy >= 50 ? 'text-emerald-400' : 'text-red-400'
     }
@@ -122,7 +131,7 @@ export default function PerformanceSummaryCards({
       >
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-cyan-400" />
-          <span className="text-sm text-white/80 font-medium">Market Bazlı Doğruluk</span>
+          <span className="text-sm text-white/80 font-medium">{t.byMarket}</span>
         </div>
         <div className="grid grid-cols-3 gap-4">
           {marketCards.map((market) => (
