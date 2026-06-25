@@ -144,4 +144,64 @@ Unsubscribe / Abmelden / Abonelikten çık: ${unsubscribeUrl}`;
   });
 }
 
+/**
+ * Re-engagement (win-back) e-postası — kayıtlı ama abone olmayan kullanıcılara,
+ * yenilenen siteyi tekrar denemeye çağırır. SADECE İngilizce (talep gereği).
+ * Dürüst konumlandırma: gerçek istatistik motoru + şeffaf track record, "garanti" YOK.
+ * Footer'da zorunlu unsubscribe. Best-effort: Resend yoksa hata fırlatır (runner yakalar).
+ */
+export async function sendReengagementEmail(
+  to: string,
+  opts: { ctaUrl: string; unsubscribeUrl: string; trackUrl: string; name?: string | null }
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { ctaUrl, unsubscribeUrl, trackUrl } = opts;
+  const hi = opts.name ? ` ${opts.name}` : '';
+
+  const html = `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">We rebuilt the platform — worth another look</p>
+
+    <p>Hi${hi}, you signed up at footballanalytics.pro a while ago but never got to see the new version.</p>
+    <p>We <strong>rebuilt the prediction engine from scratch</strong>. Match probabilities now come from a real <strong>statistical model (Dixon-Coles)</strong> trained on thousands of historical results — computed mathematically, not made up. No "guaranteed wins," just <strong>transparent, honest data</strong> with a public track record you can check yourself.</p>
+    <p style="text-align:center;margin:28px 0">
+      <a href="${ctaUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Explore the new site →</a>
+    </p>
+    <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
+      Curious how accurate it really is? <a href="${trackUrl}" style="color:#059669;font-weight:600">See our honest track record →</a>
+    </p>
+    <p style="font-size:13px;color:#64748b">Your first <strong>7 days are free</strong>, cancel anytime. Informational only — not betting advice.</p>
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    <p style="font-size:11px;color:#94a3b8">
+      You received this because you signed up at footballanalytics.pro.<br/>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a>
+    </p>
+  </div>`;
+
+  const text = `Football Analytics Pro — we rebuilt the platform
+
+Hi${hi}, you signed up at footballanalytics.pro a while ago but never got to see the new version.
+
+We rebuilt the prediction engine from scratch. Match probabilities now come from a real statistical model (Dixon-Coles) trained on thousands of historical results — computed mathematically, not made up. No "guaranteed wins," just transparent, honest data with a public track record.
+
+Explore the new site: ${ctaUrl}
+See our honest track record: ${trackUrl}
+
+Your first 7 days are free, cancel anytime. Informational only — not betting advice.
+
+Unsubscribe: ${unsubscribeUrl}`;
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject: 'We rebuilt Football Analytics — worth another look?',
+    html,
+    text,
+    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
+  });
+}
+
 export { SITE_URL };

@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, SITE_URL } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, unsubscribeUrl } from '@/lib/campaign';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, SITE_URL } from '@/lib/email';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, unsubscribeUrl } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -47,24 +47,36 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const dryRun = searchParams.get('dry') === '1';
-  // Warm-up modu: ayrı log anahtarı (taze gönderim) + günlük parti limiti.
+  // Kampanya tipi: type=reengage → İngilizce geri-kazanım (abone olmayanlara).
+  // Aksi halde Dünya Kupası kampanyası. Warm-up: relaunch=1 (taze key) + limit.
+  const isReengage = searchParams.get('type') === 'reengage';
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = relaunch ? WORLD_CUP_RELAUNCH_KEY : WORLD_CUP_CAMPAIGN_KEY;
+  const activeKey = isReengage
+    ? REENGAGE_CAMPAIGN_KEY
+    : relaunch
+      ? WORLD_CUP_RELAUNCH_KEY
+      : WORLD_CUP_CAMPAIGN_KEY;
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const canaryEmail = process.env.CAMPAIGN_CANARY_EMAIL || ADMIN_EMAILS[0];
 
+  // Doğru şablonu seçen tek gönderim fonksiyonu (canary + toplu aynı maili kullanır).
+  const trackUrl = `${SITE_URL}/track-record`;
+  const sendEmail = (email: string, name: string | null) =>
+    isReengage
+      ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name })
+      : sendWorldCupCampaignEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), name });
+
   const supabase = getSupabase();
 
-  // 2) CANARY (kuru çalışmada atlanır)
-  if (!dryRun) {
+  // 2) CANARY (kuru çalışmada atlanır). Reengage günlük cron olduğu için
+  //    canary atlanır (her gün admin'e tekrar mail gitmesin); domain doğrulandı.
+  //    İlk doğrulama elle canary ile yapılır. nocanary=1 ile de atlanabilir.
+  const skipCanary = isReengage || searchParams.get('nocanary') === '1';
+  if (!dryRun && !skipCanary) {
     try {
-      await sendWorldCupCampaignEmail(canaryEmail, {
-        ctaUrl: CTA_URL,
-        unsubscribeUrl: unsubscribeUrl(canaryEmail),
-        name: null,
-      });
-      console.log(`✅ Canary gönderildi: ${canaryEmail}`);
+      await sendEmail(canaryEmail, null);
+      console.log(`✅ Canary gönderildi (${activeKey}): ${canaryEmail}`);
     } catch (e: any) {
       console.error('❌ Canary başarısız — toplu gönderim İPTAL:', e?.message);
       return NextResponse.json(
@@ -98,13 +110,26 @@ export async function GET(request: NextRequest) {
   const alreadySent = new Set((sentData || []).map((r: any) => r.email.toLowerCase()));
   const canaryLower = (canaryEmail || '').toLowerCase().trim();
 
-  // Benzersiz, geçerli, hariç-tutulmamış alıcılar (canary'yi de hariç tut)
+  // Re-engagement: yalnızca ABONE OLMAYANLARA. Aktif/trial/past_due aboneleri hariç tut.
+  const subscriberSet = new Set<string>();
+  if (isReengage) {
+    const { data: profs } = await supabase.from('profiles').select('email, subscription_status');
+    for (const p of profs || []) {
+      const st = (p.subscription_status || '').toLowerCase();
+      if (['active', 'trialing', 'trial', 'past_due'].includes(st) && p.email) {
+        subscriberSet.add(p.email.toLowerCase().trim());
+      }
+    }
+  }
+
+  // Benzersiz, geçerli, hariç-tutulmamış alıcılar (canary + aboneler hariç)
   const seen = new Set<string>();
   let recipients: { email: string; name: string | null }[] = [];
   for (const u of usersData || []) {
     const email = (u.email || '').toLowerCase().trim();
     if (!email || !EMAIL_RE.test(email)) continue;
     if (seen.has(email) || unsub.has(email) || alreadySent.has(email) || email === canaryLower) continue;
+    if (subscriberSet.has(email)) continue;
     seen.add(email);
     recipients.push({ email, name: u.name || null });
   }
@@ -120,11 +145,12 @@ export async function GET(request: NextRequest) {
       success: true,
       dryRun: true,
       campaign: activeKey,
+      type: isReengage ? 'reengage' : 'worldcup',
       relaunch,
       batchLimit: batchLimit === Infinity ? null : batchLimit,
       remainingEligible: remaining,
       wouldSendThisRun: recipients.length,
-      excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size },
+      excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size, subscribers: subscriberSet.size },
       sample: recipients.slice(0, 5).map((r) => r.email),
     });
   }
@@ -134,11 +160,7 @@ export async function GET(request: NextRequest) {
   let failed = 0;
   for (const r of recipients) {
     try {
-      await sendWorldCupCampaignEmail(r.email, {
-        ctaUrl: CTA_URL,
-        unsubscribeUrl: unsubscribeUrl(r.email),
-        name: r.name,
-      });
+      await sendEmail(r.email, r.name);
       await supabase
         .from('email_campaign_log')
         .upsert(
@@ -165,13 +187,14 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     campaign: activeKey,
+    type: isReengage ? 'reengage' : 'worldcup',
     relaunch,
     canary: canaryEmail,
     sentThisRun: sent,
     failed,
     remainingAfterRun: Math.max(0, remaining - sent),
     batchLimit: batchLimit === Infinity ? null : batchLimit,
-    excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size },
+    excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size, subscribers: subscriberSet.size },
     elapsedSeconds: elapsed,
   });
 }

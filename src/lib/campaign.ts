@@ -11,6 +11,9 @@ export const WORLD_CUP_CAMPAIGN_KEY = 'worldcup-2026-launch';
 // taze itibar için küçük partiler halinde tekrar gönderim. Ayrı log anahtarı
 // olduğu için ilk kampanyanın "sent" kayıtları bunu bloklamaz.
 export const WORLD_CUP_RELAUNCH_KEY = 'worldcup-2026-relaunch';
+// Re-engagement (win-back) — kayıtlı ama abone olmayan kullanıcılara İngilizce
+// "geri gel, yenilenen siteyi incele" çağrısı. Ayrı log anahtarı.
+export const REENGAGE_CAMPAIGN_KEY = 'reengage-2026-06';
 
 // Unsubscribe token'ı için sunucu-yalnızca sır (URL'de email + token gider).
 function secret(): string {
