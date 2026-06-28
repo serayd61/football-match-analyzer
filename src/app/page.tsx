@@ -446,7 +446,7 @@ export default function HomePage() {
               { label: l.footer.careers, href: '#' },
             ]} />
             <FooterCol title={l.footer.legal} links={[
-              { label: l.footer.privacy, href: '#' },
+              { label: l.footer.privacy, href: '/privacy' },
               { label: l.footer.terms, href: '#' },
             ]} />
           </div>
