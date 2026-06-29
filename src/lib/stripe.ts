@@ -62,6 +62,14 @@ export async function createCheckoutSession({
   metadata: { userId },
   billing_address_collection: 'required',
   allow_promotion_codes: true,  // Promosyon kodu desteği
+  // 3D Secure'u her uygun kartta zorla → çalıntı kart denemelerini engeller,
+  // sorumluluğu kart sağlayıcıya kaydırır (chargeback koruması). AB-dışı
+  // kartlarda da 'any' ile tetiklenir (varsayılan 'automatic' tetiklemiyordu).
+  payment_method_options: {
+    card: {
+      request_three_d_secure: 'any',
+    },
+  },
 };
 
   // Sadece yeni kullanıcılar için trial ver
