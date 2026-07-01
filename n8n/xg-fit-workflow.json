@@ -1,0 +1,43 @@
+{
+  "name": "xG-Dixon-Coles Weekly Fit (Hetzner → dc_model_params)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 5 * * 3" } ] }
+      },
+      "id": "trigger-weekly",
+      "name": "Haftalık Trigger (Çar 05:00 UTC)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": {
+        "command": "cd /opt/football-match-analyzer/engine && SOCCERDATA_DIR=/opt/soccerdata SUPABASE_URL=\"$SUPABASE_URL\" SUPABASE_SERVICE_ROLE_KEY=\"$SUPABASE_SERVICE_ROLE_KEY\" /opt/football-match-analyzer/src/lib/data-sources/venv/bin/python publish_xg.py --write 2>&1"
+      },
+      "id": "run-fit",
+      "name": "xG-Fit + Publish",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [ 480, 300 ]
+    },
+    {
+      "parameters": {
+        "conditions": { "number": [ { "value1": "={{ $json.exitCode }}", "operation": "notEqual", "value2": 0 } ] }
+      },
+      "id": "check-exit",
+      "name": "Hata var mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 720, 300 ]
+    }
+  ],
+  "connections": {
+    "Haftalık Trigger (Çar 05:00 UTC)": { "main": [ [ { "node": "xG-Fit + Publish", "type": "main", "index": 0 } ] ] },
+    "xG-Fit + Publish": { "main": [ [ { "node": "Hata var mı?", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": {},
+  "meta": {
+    "description": "Çar 05:00 (Vercel gol-only cron'u Salı 04:00'dan SONRA). publish_xg.py --write: 5 üst-lig için xG-DC fit → toplamsal dönüşüm → football-data.org isim eşleme → dc_model_params INSERT. Script kendi doğrular (yalnız %100 kapsama+parite temiz ligleri yazar). Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Ön-koşul: /opt/soccerdata + venv (soccerdata+pandas+numpy)."
+  }
+}

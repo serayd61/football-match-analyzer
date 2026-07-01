@@ -159,6 +159,35 @@ def remap_names(params, fd_teams, fdorg_teams):
     return out, mapping, unmatched, len(mapping)
 
 
+def write_to_supabase(rows):
+    """Rows'u Supabase PostgREST'e INSERT eder (Hetzner job için). stdlib urllib.
+    Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Sadece %100 kapsama + parite temiz ligleri yazar."""
+    import urllib.request
+    url = os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1/dc_model_params"
+    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    written = []
+    for r in rows:
+        if r["unmatched"] or r["coverage_pct"] < 100.0 or r["parity_max_diff"] > 1e-9:
+            print(f"  ⏭️  {r['league_code']}: temiz değil (kapsama/parite) — yazılmadı")
+            continue
+        body = json.dumps({
+            "league_code": r["league_code"], "params": r["params"],
+            "trained_matches": r["trained_matches"], "season": r["season"],
+        }).encode()
+        req = urllib.request.Request(url, data=body, method="POST", headers={
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json", "Prefer": "return=minimal",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                print(f"  ✅ {r['league_code']}: yazıldı (HTTP {resp.status})")
+                written.append(r["league_code"])
+        except Exception as e:
+            print(f"  ❌ {r['league_code']}: yazım hatası — {e}")
+    print(f"  Toplam yazılan: {len(written)}/{len(rows)} → {written}")
+    return written
+
+
 def main(dry_run=True):
     from datetime import datetime, timezone
     ref = datetime(2026, 7, 1)
@@ -209,4 +238,9 @@ def main(dry_run=True):
 
 
 if __name__ == "__main__":
-    main(dry_run=True)
+    import sys
+    rows = main(dry_run=True)
+    if "--write" in sys.argv:
+        print("-" * 74)
+        print("  SUPABASE'E YAZILIYOR (--write)")
+        write_to_supabase(rows)
