@@ -145,6 +145,77 @@ Unsubscribe / Abmelden / Abonelikten çık: ${unsubscribeUrl}`;
 }
 
 /**
+ * Hoşgeldin e-postası — yeni ücretsiz kayıtlılara. İngilizce (talep gereği).
+ * DÜRÜST konumlandırma: free = günde 3 AI analizi (Claude + DeepSeek + istatistik);
+ * Pro = Dixon-Coles/xG/ELO tahmin motoru + sınırsız (7 gün deneme). Koşmayan model
+ * ismi (GPT/Gemini) VAAT EDİLMEZ. Footer'da zorunlu unsubscribe.
+ */
+export async function sendWelcomeEmail(
+  to: string,
+  opts: { ctaUrl: string; pricingUrl: string; unsubscribeUrl: string; name?: string | null }
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { ctaUrl, pricingUrl, unsubscribeUrl } = opts;
+  const hi = opts.name ? `${opts.name}, ` : '';
+
+  const btn = (href: string, label: string) =>
+    `<p style="text-align:center;margin:22px 0"><a href="${href}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">${label}</a></p>`;
+
+  const html = `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">Welcome aboard — your free analyses are ready</p>
+
+    <p>Hi ${hi}welcome to <strong>Football Analytics Pro</strong> — your account is all set. 🎉</p>
+    <p>You've got <strong>3 free AI match analyses every day</strong>, starting right now. No credit card, no catch.</p>
+
+    <p style="margin:18px 0 6px"><strong>Each analysis gives you:</strong></p>
+    <ul style="margin:0 0 8px;padding-left:20px;color:#334155">
+      <li>🤖 An <strong>AI-powered breakdown</strong> (Claude + DeepSeek) reading team form, stats and context</li>
+      <li>📊 <strong>Statistical modeling</strong> for real probabilities — calculated, not guessed</li>
+      <li>⚽ Match result, over/under 2.5, both-teams-to-score, and the most likely scoreline</li>
+    </ul>
+    ${btn(ctaUrl, 'Analyze your first match →')}
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+
+    <p><strong>Want more?</strong> Go <strong>Pro</strong> for <strong>unlimited analyses</strong> plus our daily <strong>prediction engine</strong> — a Dixon-Coles model with expected goals and club ELO across the top-5 leagues. <strong>7-day free trial</strong>, cancel anytime.</p>
+    ${btn(pricingUrl, 'Start your 7-day free trial →')}
+
+    <p style="font-size:12px;color:#64748b;text-align:center;margin:18px 0 0">Informational only — not betting advice.</p>
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    <p style="font-size:11px;color:#94a3b8">
+      You received this because you signed up at footballanalytics.pro.<br/>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a>
+    </p>
+  </div>`;
+
+  const text = `Football Analytics Pro — welcome!
+
+Your account is ready. You've got 3 free AI match analyses every day, starting now — no credit card needed.
+
+Each analysis: an AI-powered breakdown (Claude + DeepSeek) + statistical modeling → match result, over/under 2.5, both-teams-to-score and the most likely score.
+
+Analyze your first match: ${ctaUrl}
+
+Want more? Go Pro for unlimited analyses plus our daily prediction engine (Dixon-Coles + expected goals + club ELO) across the top-5 leagues. 7-day free trial, cancel anytime: ${pricingUrl}
+
+Informational only — not betting advice.
+Unsubscribe: ${unsubscribeUrl}`;
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject: '⚽ Welcome — your 3 free match analyses are ready',
+    html,
+    text,
+    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
+  });
+}
+
+/**
  * Re-engagement (win-back) e-postası — kayıtlı ama abone olmayan kullanıcılara,
  * yenilenen siteyi tekrar denemeye çağırır. SADECE İngilizce (talep gereği).
  * Dürüst konumlandırma: gerçek istatistik motoru + şeffaf track record, "garanti" YOK.
