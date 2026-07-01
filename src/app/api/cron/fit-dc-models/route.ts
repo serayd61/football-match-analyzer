@@ -15,6 +15,11 @@ import { loadTwoSeasons, FD_CODES } from '@/lib/statistical/data-loader';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
+// xG-Dixon-Coles ile yönetilen ligler (Hetzner/soccerdata haftalık job'u dc_model_params'a
+// xG-tabanlı parametre yazar). Bu Vercel gol-only cron'u onları ATLAR — yoksa daha zayıf
+// gol-only fit, üstün xG parametrelerinin üzerine yazardı. Kalan ligler burada fit edilir.
+const XG_MANAGED = new Set(['PL', 'PD', 'SA', 'BL1', 'FL1']);
+
 let supabaseInstance: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
   if (!supabaseInstance) {
@@ -53,6 +58,11 @@ export async function GET(request: NextRequest) {
   const results: Array<{ code: string; ok: boolean; matches?: number; error?: string }> = [];
 
   for (const code of FD_CODES) {
+    if (XG_MANAGED.has(code)) {
+      console.log(`⏭️  ${code}: xG-job yönetiyor — Vercel gol-only fit atlandı.`);
+      results.push({ code, ok: true, error: 'skipped_xg_managed' });
+      continue;
+    }
     try {
       console.log(`\n📥 ${code}: 2 sezon çekiliyor...`);
       const { matches, seasons } = await loadTwoSeasons(code);
