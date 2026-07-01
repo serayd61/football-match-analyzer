@@ -28,6 +28,10 @@ yarn-error.log*
 .env
 engine/.xg-env
 
+# Engine build/output artifacts
+engine/__pycache__/
+engine/*_output.json
+
 # Vercel
 .vercel
 

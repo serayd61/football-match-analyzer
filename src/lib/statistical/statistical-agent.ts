@@ -5,6 +5,7 @@
 
 import { DixonColesModel, MatchRow, MarketProbabilities } from './dixon-coles';
 import { blendWithMarket, type MatchOdds } from '@/lib/odds/blend';
+import { blendWithElo, type EloParams } from '@/lib/odds/elo-blend';
 
 export interface StatAgentOutput {
   source: 'dixon-coles';
@@ -94,6 +95,22 @@ export function runStatisticalAgent(
 export function applyOddsBlend(stat: StatAgentOutput, odds: MatchOdds | null | undefined): StatAgentOutput {
   if (!odds) return stat;
   return statOutputFromGroundTruth(blendWithMarket(stat.groundTruth, odds));
+}
+
+/**
+ * DC çıktısını ELO ile harmanlar (Faz 2). Piyasa harmanından ÖNCE, DC predict'ten
+ * hemen sonra uygulanır: ELO modelin bağımsız gücünü iyileştirir (backtest 5/5 lig
+ * log-loss+Brier↓). ELO verisi/param yoksa stat aynen döner (graceful).
+ * eloHome/eloAway sayısal ELO (elo-store'daki ratings'ten, model takım adıyla).
+ */
+export function applyEloBlend(
+  stat: StatAgentOutput,
+  eloHome: number | null | undefined,
+  eloAway: number | null | undefined,
+  params: EloParams | null | undefined
+): StatAgentOutput {
+  if (eloHome == null || eloAway == null || !params) return stat;
+  return statOutputFromGroundTruth(blendWithElo(stat.groundTruth, eloHome, eloAway, params));
 }
 
 /**

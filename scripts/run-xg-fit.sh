@@ -24,3 +24,8 @@ echo "[$(date -u +%FT%TZ)] xG-fit başlıyor"
 cd "$REPO/engine"
 "$PY" publish_xg.py --write
 echo "[$(date -u +%FT%TZ)] xG-fit bitti"
+
+# ELO snapshot (Faz 2) — team_elo tablosuna güncel Club Elo + eşleme
+echo "[$(date -u +%FT%TZ)] ELO-snapshot başlıyor"
+"$PY" publish_elo.py --write
+echo "[$(date -u +%FT%TZ)] ELO-snapshot bitti"

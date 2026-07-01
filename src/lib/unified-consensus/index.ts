@@ -17,7 +17,8 @@ import type { PredictResult as AutoLearnPredictResult } from '../autolearn/model
 import { predict as survivalPredict, verdict as survivalVerdict, type SurvivalPrediction, type SurvivalVerdict } from '../survival-agent';
 // 📊 Dixon-Coles istatistiksel motor (opsiyonel anchor + konsensüs oyu)
 import { getModelForLeague } from '../statistical/model-store';
-import { runStatisticalAgent, applyOddsBlend, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
+import { getEloForLeague, eloParamsFrom } from '../statistical/elo-store';
+import { runStatisticalAgent, applyOddsBlend, applyEloBlend, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
 import type { MatchOdds } from '../odds/blend';
 import { bookmakerMargin } from '../odds/devig';
 
@@ -201,6 +202,21 @@ export async function runUnifiedConsensus(
         const awayMatch = resolveTeam(dcModel, input.awayTeam);
         if (homeMatch && awayMatch) {
           statAgent = runStatisticalAgent(dcModel, homeMatch, awayMatch);
+          // ELO harmanı (Faz 2) — DC predict'ten hemen sonra, piyasa harmanından ÖNCE.
+          // Model takım adları (homeMatch/awayMatch) = team_elo ratings namespace.
+          try {
+            const eloSnap = await getEloForLeague(input.league);
+            if (eloSnap) {
+              const eh = eloSnap.ratings[homeMatch];
+              const ea = eloSnap.ratings[awayMatch];
+              if (eh != null && ea != null) {
+                statAgent = applyEloBlend(statAgent, eh, ea, eloParamsFrom(eloSnap));
+                console.log(`📈 ELO harmanı: ${homeMatch} ${eh.toFixed(0)} vs ${awayMatch} ${ea.toFixed(0)} (λ=${eloSnap.lambda})`);
+              }
+            }
+          } catch (eloErr) {
+            console.warn('⚠️ ELO harmanı atlandı (hata):', eloErr);
+          }
           statAnchor = buildHybridPromptBlock(statAgent, input.homeTeam, input.awayTeam);
           systemsUsed.push('dixonColes');
           const mr = statAgent.matchResult.probabilities;
