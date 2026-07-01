@@ -182,22 +182,32 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Free tier kontrolü - Kayıt ol ve 1 günlük trial başlat
+  // Free tier — kartsız kullanıcıya GÜNLÜK 3 AI maç analizi (dönüşüm kaldıracı:
+  // kartsız tat → limit dolunca Pro'ya yönlendir). Sayaç /api/unified/analyze'da
+  // incrementAnalysisCount ile artar (metreli). Motor tahminleri (engine_predictions)
+  // ve AI Agent'lar yine Pro'ya özel: hasEnginePredictionAccess / canUseAgents=false
+  // (agents route sayaç artırmadığı için free'ye AÇILMAZ — maliyet sızıntısı olmasın).
   const isFree = profile.subscription_status === 'free' || !profile.subscription_status;
-  
+
   if (isFree) {
+    const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
+    const FREE_DAILY_LIMIT = 3;
+    const canAnalyze = analysesToday < FREE_DAILY_LIMIT;
+
     return {
-      hasAccess: false,
+      hasAccess: true,
       isPro: false,
       isTrial: false,
       trialDaysLeft: 0,
       trialExpired: false,
-      analysesUsed: 0,
-      analysesLimit: 0,
-      canAnalyze: false,
-      canUseAgents: false,
-      message: 'Ücretsiz kayıt ol ve 3 maç analizi hakkı kazan!',
-      redirectTo: '/register',
+      analysesUsed: analysesToday,
+      analysesLimit: FREE_DAILY_LIMIT,
+      canAnalyze,
+      canUseAgents: false, // AI Agent'lar Pro'ya özel (metrelenmemiş = maliyet)
+      message: canAnalyze
+        ? `Ücretsiz: bugün ${FREE_DAILY_LIMIT - analysesToday} analiz hakkınız kaldı`
+        : 'Günlük 3 ücretsiz analiz hakkınız doldu. Sınırsız analiz için Pro\'ya geçin!',
+      redirectTo: canAnalyze ? undefined : '/pricing',
     };
   }
 
