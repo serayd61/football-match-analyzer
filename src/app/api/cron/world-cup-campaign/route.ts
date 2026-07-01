@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
   // 2) CANARY (kuru çalışmada atlanır). Reengage günlük cron olduğu için
   //    canary atlanır (her gün admin'e tekrar mail gitmesin); domain doğrulandı.
   //    İlk doğrulama elle canary ile yapılır. nocanary=1 ile de atlanabilir.
-  const skipCanary = isReengage || searchParams.get('nocanary') === '1';
+  const skipCanary = isReengage || isWelcome || searchParams.get('nocanary') === '1';
   if (!dryRun && !skipCanary) {
     try {
       await sendEmail(canaryEmail, null);
