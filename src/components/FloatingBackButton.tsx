@@ -16,8 +16,10 @@ export default function FloatingBackButton() {
 
   const l = labels[lang as keyof typeof labels] || labels.en;
 
-  // Only show on specific pages, not on dashboard or login
-  const showOnPages = ['/coupons', '/leaderboard', '/profile', '/pricing'];
+  // Only show on specific pages, not on dashboard or login.
+  // /pricing kaldırıldı: SiteNav zaten Panel/Dashboard butonu taşıyor ve bu
+  // yüzen yeşil hap fiyat kartlarının üstüne binip düzeni bozuyordu.
+  const showOnPages = ['/coupons', '/leaderboard', '/profile'];
   const shouldShow = showOnPages.some(page => pathname.startsWith(page));
 
   if (!shouldShow) return null;

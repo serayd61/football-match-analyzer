@@ -41,33 +41,40 @@ export default function PricingPage() {
     setLoading(false);
   };
 
+  // DÜRÜSTLÜK: özellik listesi gerçek ürünle birebir. Eski metin "4 AI model
+  // (GPT-4, Gemini...)", "value bet", "1 gün ücretsiz" iddiaları taşıyordu —
+  // hiçbiri canlı üründe yok(tu). AI = Claude + DeepSeek; motor = Dixon-Coles
+  // + xG + Club ELO; free = HER GÜN 3 analiz (24 saatlik deneme değil).
   const labels = {
     tr: {
-      backToHome: 'Ana Sayfa', title: 'Fiyatlandırma', subtitle: 'Profesyonel AI futbol analizi',
-      freePlan: 'Ücretsiz Deneme', freePrice: '0₺', freeBadge: '🎁 1 Gün Ücretsiz',
-      freeFeatures: ['3 maç analizi (24 saat)', 'Temel AI tahminleri', 'Maç sonucu, Ü/A, KG', 'AI Chatbot erişimi'],
-      freeButton: 'Ücretsiz Kayıt Ol', freeValid: '24 saat geçerli',
-      proPlan: 'Pro Üyelik', proPrice: '$19.99', proBadge: '⭐ En Popüler', perMonth: '/ay',
-      proFeatures: ['Sınırsız maç analizi', '4 AI Model (Claude, GPT-4, Gemini, DeepSeek)', '5 Uzman Agent Sistemi', 'Self-Learning AI (öğrenen sistem)', 'Gerçek zamanlı bahis oranları', 'Value bet tespiti', 'AI Chatbot sınırsız', 'Öncelikli destek'],
-      startTrial: "Pro'ya Yükselt", startNow: 'Hemen Başla', loading: 'Yükleniyor...', cancel: 'İstediğin zaman iptal edebilirsin', poweredBy: 'Destekleyen modeller',
+      backToHome: 'Ana Sayfa', title: 'Fiyatlandırma', subtitle: 'Gerçek istatistik + yapay zekâ. Abartı yok, şeffaf kayıt var.',
+      freePlan: 'Ücretsiz', freePrice: '$0', freeBadge: 'Her gün yenilenir',
+      freeFeatures: ['Her gün 3 AI maç analizi (Claude + DeepSeek)', 'Maç sonucu, Alt/Üst 2.5, KG tahmini', 'Motor performansı ve şeffaf sonuç kaydı', 'AI Chatbot erişimi', 'Kredi kartı gerekmez'],
+      freeButton: 'Ücretsiz Kayıt Ol', freeValid: 'Süresiz — günlük hak her gece sıfırlanır',
+      proPlan: 'Pro', proPrice: '$19.99', proBadge: '7 gün ücretsiz dene', perMonth: '/ay',
+      proFeatures: ['Sınırsız AI maç analizi', 'Günlük motor tahminleri: Dixon-Coles + xG + Club ELO', 'Olasılıklar: 1X2, Alt/Üst, KG — güven skoruyla', 'Match Intelligence: istatistik + haber özeti', '10+ ligde binlerce maçla doğrulanmış model', 'AI Agent analizleri', 'Öncelikli destek'],
+      startTrial: '7 gün ücretsiz dene', startNow: 'Hemen Başla', loading: 'Yükleniyor...', cancel: 'Deneme için kart gerekir · istediğin zaman iptal', poweredBy: 'Altyapı — pazarlama değil, gerçekte çalışanlar',
+      trackLink: 'Modelin şeffaf sonuç kaydını incele →',
     },
     en: {
-      backToHome: 'Home', title: 'Pricing', subtitle: 'Professional AI football analysis',
-      freePlan: 'Free Trial', freePrice: '$0', freeBadge: '🎁 1 Day Free',
-      freeFeatures: ['3 match analyses (24 hours)', 'Basic AI predictions', 'Match result, O/U, BTTS', 'AI Chatbot access'],
-      freeButton: 'Sign Up Free', freeValid: 'Valid for 24 hours',
-      proPlan: 'Pro Membership', proPrice: '$19.99', proBadge: '⭐ Most Popular', perMonth: '/month',
-      proFeatures: ['Unlimited match analysis', '4 AI Models (Claude, GPT-4, Gemini, DeepSeek)', '5 Expert Agent System', 'Self-Learning AI', 'Real-time betting odds', 'Value bet detection', 'Unlimited AI Chatbot', 'Priority support'],
-      startTrial: 'Upgrade to Pro', startNow: 'Start Now', loading: 'Loading...', cancel: 'Cancel anytime', poweredBy: 'Powered by',
+      backToHome: 'Home', title: 'Pricing', subtitle: 'Real statistics + AI. No hype — a transparent track record.',
+      freePlan: 'Free', freePrice: '$0', freeBadge: 'Renews daily',
+      freeFeatures: ['3 AI match analyses every day (Claude + DeepSeek)', 'Match result, Over/Under 2.5, BTTS', 'Engine performance & transparent track record', 'AI Chatbot access', 'No credit card required'],
+      freeButton: 'Sign Up Free', freeValid: 'Forever — daily quota resets every night',
+      proPlan: 'Pro', proPrice: '$19.99', proBadge: 'Try 7 days free', perMonth: '/month',
+      proFeatures: ['Unlimited AI match analyses', 'Daily engine picks: Dixon-Coles + xG + Club ELO', 'Probabilities: 1X2, O/U, BTTS — with confidence', 'Match Intelligence: stats + news digest', 'Validated on thousands of matches across 10+ leagues', 'AI Agent analyses', 'Priority support'],
+      startTrial: 'Try 7 days free', startNow: 'Start Now', loading: 'Loading...', cancel: 'Card required for trial · cancel anytime', poweredBy: 'The stack — what actually runs, not marketing',
+      trackLink: 'See the transparent track record →',
     },
     de: {
-      backToHome: 'Start', title: 'Preise', subtitle: 'Professionelle KI-Fußballanalyse',
-      freePlan: 'Kostenlose Testversion', freePrice: '0€', freeBadge: '🎁 1 Tag kostenlos',
-      freeFeatures: ['3 Spielanalysen (24 Stunden)', 'Basis-KI-Vorhersagen', 'Spielergebnis, Ü/U, BTTS', 'KI-Chatbot-Zugang'],
-      freeButton: 'Kostenlos registrieren', freeValid: '24 Stunden gültig',
-      proPlan: 'Pro-Mitgliedschaft', proPrice: '$19.99', proBadge: '⭐ Am beliebtesten', perMonth: '/Monat',
-      proFeatures: ['Unbegrenzte Spielanalysen', '4 KI-Modelle (Claude, GPT-4, Gemini, DeepSeek)', '5 Experten-Agent-System', 'Selbstlernendes KI-System', 'Echtzeit-Wettquoten', 'Value-Bet-Erkennung', 'Unbegrenzter KI-Chatbot', 'Prioritäts-Support'],
-      startTrial: 'Auf Pro upgraden', startNow: 'Jetzt starten', loading: 'Laden...', cancel: 'Jederzeit kündbar', poweredBy: 'Powered by',
+      backToHome: 'Start', title: 'Preise', subtitle: 'Echte Statistik + KI. Kein Hype — eine transparente Bilanz.',
+      freePlan: 'Kostenlos', freePrice: '$0', freeBadge: 'Täglich erneuert',
+      freeFeatures: ['Jeden Tag 3 KI-Spielanalysen (Claude + DeepSeek)', 'Spielergebnis, Über/Unter 2.5, BTTS', 'Engine-Performance & transparente Bilanz', 'KI-Chatbot-Zugang', 'Keine Kreditkarte nötig'],
+      freeButton: 'Kostenlos registrieren', freeValid: 'Unbefristet — Tageskontingent wird nachts zurückgesetzt',
+      proPlan: 'Pro', proPrice: '$19.99', proBadge: '7 Tage gratis testen', perMonth: '/Monat',
+      proFeatures: ['Unbegrenzte KI-Spielanalysen', 'Tägliche Engine-Tipps: Dixon-Coles + xG + Club ELO', 'Wahrscheinlichkeiten: 1X2, Ü/U, BTTS — mit Konfidenz', 'Match Intelligence: Statistik + News-Digest', 'Validiert an Tausenden Spielen in 10+ Ligen', 'KI-Agent-Analysen', 'Prioritäts-Support'],
+      startTrial: '7 Tage gratis testen', startNow: 'Jetzt starten', loading: 'Laden...', cancel: 'Karte für Test erforderlich · jederzeit kündbar', poweredBy: 'Der Stack — was wirklich läuft, kein Marketing',
+      trackLink: 'Transparente Erfolgsbilanz ansehen →',
     },
   };
 
@@ -82,7 +89,7 @@ export default function PricingPage() {
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-content-subtle hover:text-content transition-colors mb-6">
             <ArrowLeft size={15} /> {l.backToHome}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold text-content tracking-tight">⚽ {l.title}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-content tracking-tight">{l.title}</h1>
           <p className="text-content-muted text-lg mt-3">{l.subtitle}</p>
         </motion.div>
 
@@ -126,14 +133,17 @@ export default function PricingPage() {
           </motion.div>
         </div>
 
-        {/* AI Models */}
+        {/* Altyapı — yalnız gerçekte koşan bileşenler (dürüstlük kapısı) */}
         <motion.div className="mt-16 text-center" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <p className="text-content-subtle mb-4 text-sm">{l.poweredBy}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
-            {['🟣 Claude', '🟢 GPT-4', '🔵 Gemini', '🟠 DeepSeek'].map((model) => (
-              <div key={model} className="fa-card fa-card-hover p-3 text-sm text-content">{model}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
+            {['Claude', 'DeepSeek', 'Dixon-Coles + xG', 'Club ELO'].map((model) => (
+              <div key={model} className="fa-card p-3 text-sm text-content">{model}</div>
             ))}
           </div>
+          <Link href="/track-record" className="inline-block mt-6 text-sm text-brand-400 hover:text-brand-300 transition-colors">
+            {l.trackLink}
+          </Link>
         </motion.div>
       </div>
     </div>

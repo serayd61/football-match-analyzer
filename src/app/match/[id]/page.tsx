@@ -20,9 +20,16 @@ import { useLanguage } from '@/components/LanguageProvider';
 // Unified Consensus System ile analiz gösterir
 // ============================================================================
 
-// Limit/erişim ekranı metinleri (jenerik kırmızı hata yerine anlamlı durum)
+// Sayfa metinleri — TAMAMEN üç dilli (eski sürüm TR hardcode'du; dil
+// değiştirilse de içerik Türkçe kalıyordu).
 const GATE_STR: Record<string, any> = {
   tr: {
+    pageTitle: 'Maç Analizi', cached: 'Önbellek', preparing: 'Analiz Hazırlanıyor...',
+    preparingDesc: 'AI sistemleri verileri işleyip konsensüs oluşturuyor.', waking: 'Sistemler uyandırılıyor...',
+    matchResult: 'Maç Sonucu', confidence: 'Güven', overUnder: 'Alt/Üst 2.5', btts: 'KG (Karşılıklı Gol)',
+    expected: 'Beklenen', goals: 'gol', expertAgents: 'Lig Uzmanı Agentlar',
+    expertAgentsDesc: 'Bu agentlar bu ligdeki yüksek tarihsel başarıları nedeniyle daha fazla ağırlığa sahiptir.',
+    conflicts: 'Çelişki Çözümü', decision: 'Karar', notFoundGeneric: 'Analiz bulunamadı',
     limitTitle: 'Bugünkü 3 ücretsiz analizin doldu',
     limitDesc: 'Hakların yarın otomatik yenilenir. Beklemek istemiyorsan Pro ile sınırsız analiz yapabilirsin.',
     proCta: "Pro'ya geç — 7 gün ücretsiz",
@@ -35,6 +42,12 @@ const GATE_STR: Record<string, any> = {
     nextCta: 'Başka maç analiz et',
   },
   en: {
+    pageTitle: 'Match Analysis', cached: 'Cached', preparing: 'Preparing analysis...',
+    preparingDesc: 'AI systems are processing the data and building a consensus.', waking: 'Waking up the systems...',
+    matchResult: 'Match Result', confidence: 'Confidence', overUnder: 'Over/Under 2.5', btts: 'BTTS',
+    expected: 'Expected', goals: 'goals', expertAgents: 'League Expert Agents',
+    expertAgentsDesc: 'These agents carry extra weight due to their strong historical record in this league.',
+    conflicts: 'Conflict Resolution', decision: 'Decision', notFoundGeneric: 'Analysis not found',
     limitTitle: "You've used today's 3 free analyses",
     limitDesc: 'Your quota resets tomorrow. Don\'t want to wait? Go unlimited with Pro.',
     proCta: 'Go Pro — 7 days free',
@@ -47,6 +60,12 @@ const GATE_STR: Record<string, any> = {
     nextCta: 'Analyze another match',
   },
   de: {
+    pageTitle: 'Spielanalyse', cached: 'Zwischengespeichert', preparing: 'Analyse wird vorbereitet...',
+    preparingDesc: 'Die KI-Systeme verarbeiten die Daten und bilden einen Konsens.', waking: 'Systeme werden gestartet...',
+    matchResult: 'Spielausgang', confidence: 'Konfidenz', overUnder: 'Über/Unter 2.5', btts: 'BTTS',
+    expected: 'Erwartet', goals: 'Tore', expertAgents: 'Liga-Experten-Agents',
+    expertAgentsDesc: 'Diese Agents haben aufgrund ihrer starken historischen Bilanz in dieser Liga mehr Gewicht.',
+    conflicts: 'Konfliktauflösung', decision: 'Entscheidung', notFoundGeneric: 'Analyse nicht gefunden',
     limitTitle: 'Deine 3 kostenlosen Analysen für heute sind aufgebraucht',
     limitDesc: 'Dein Kontingent wird morgen zurückgesetzt. Mit Pro analysierst du unbegrenzt.',
     proCta: 'Pro holen — 7 Tage gratis',
@@ -232,9 +251,9 @@ export default function MatchAnalysisPage() {
               <Spinner size={56} className="text-brand-400" />
             </div>
             <h2 className="text-xl font-semibold text-content tracking-tight mb-2">
-              {progress.length > 0 ? progress[progress.length - 1].message : 'Analiz Hazırlanıyor...'}
+              {progress.length > 0 ? progress[progress.length - 1].message : gs.preparing}
             </h2>
-            <p className="text-content-muted text-sm mb-8">AI sistemleri verileri işleyip konsensüs oluşturuyor.</p>
+            <p className="text-content-muted text-sm mb-8">{gs.preparingDesc}</p>
 
             <div className="bg-surface-2 border border-line rounded-xl p-4 text-left h-48 overflow-y-auto">
               <div className="space-y-3">
@@ -253,7 +272,7 @@ export default function MatchAnalysisPage() {
                   </motion.div>
                 ))}
                 {progress.length === 0 && (
-                  <p className="text-xs text-content-subtle animate-pulse">Sistemler uyandırılıyor...</p>
+                  <p className="text-xs text-content-subtle animate-pulse">{gs.waking}</p>
                 )}
               </div>
             </div>
@@ -301,7 +320,7 @@ export default function MatchAnalysisPage() {
         <SiteNav />
         <div className="flex items-center justify-center py-32">
           <div className="text-center text-content">
-            <p className="text-negative mb-4">{error || 'Analiz bulunamadı'}</p>
+            <p className="text-negative mb-4">{error || gs.notFoundGeneric}</p>
             <Link href="/dashboard" className="fa-btn fa-btn-primary">
               {gs.back}
             </Link>
@@ -321,16 +340,14 @@ export default function MatchAnalysisPage() {
             <ArrowLeft className="w-5 h-5" />
             <span>Dashboard</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             {isCached && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-positive/10 border border-positive/30 text-positive text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-positive/10 border border-positive/30 text-positive text-xs font-medium shrink-0">
                 <Clock className="w-3.5 h-3.5" />
-                <span>Cached</span>
+                <span>{gs.cached}</span>
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <span className="text-content font-semibold">Unified Analysis</span>
-            </div>
+            <span className="text-content font-semibold truncate">{gs.pageTitle}</span>
           </div>
         </div>
       </header>
@@ -365,19 +382,21 @@ export default function MatchAnalysisPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <h2 className="text-3xl font-semibold text-content tracking-tight">
+          {/* min-w-0 + responsive boyut + break-words: uzun takım adları
+              mobilde karttan taşmasın (eski text-3xl sabit boyut taşıyordu) */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-center flex-1 min-w-0">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold text-content tracking-tight break-words">
                 {searchParams?.get('home') || analysis.sources?.agents?.stats?.homeTeam || 'Home Team'}
               </h2>
             </div>
-            <div className="px-8">
-              <span className="text-3xl font-black text-brand-400">
+            <div className="px-2 sm:px-8 shrink-0">
+              <span className="text-xl sm:text-3xl font-black text-brand-400">
                 VS
               </span>
             </div>
-            <div className="text-center flex-1">
-              <h2 className="text-3xl font-semibold text-content tracking-tight">
+            <div className="text-center flex-1 min-w-0">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold text-content tracking-tight break-words">
                 {searchParams?.get('away') || analysis.sources?.agents?.stats?.awayTeam || 'Away Team'}
               </h2>
             </div>
@@ -404,12 +423,12 @@ export default function MatchAnalysisPage() {
             transition={{ delay: 0.1 }}
             className="fa-card p-6"
           >
-            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">Maç Sonucu</h3>
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">{gs.matchResult}</h3>
             <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.matchResult?.prediction || 'X'}
             </div>
             <div className="text-sm text-content-muted">
-              Güven: {analysis.predictions?.matchResult?.confidence || 0}%
+              {gs.confidence}: {analysis.predictions?.matchResult?.confidence || 0}%
             </div>
             <div className="text-xs text-content-subtle mt-2">
               {analysis.predictions?.matchResult?.reasoning || ''}
@@ -441,15 +460,15 @@ export default function MatchAnalysisPage() {
             transition={{ delay: 0.2 }}
             className="fa-card p-6"
           >
-            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">Over/Under 2.5</h3>
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">{gs.overUnder}</h3>
             <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.overUnder?.prediction || 'Over'}
             </div>
             <div className="text-sm text-content-muted">
-              Güven: {analysis.predictions?.overUnder?.confidence || 0}%
+              {gs.confidence}: {analysis.predictions?.overUnder?.confidence || 0}%
             </div>
             <div className="text-xs text-content-subtle mt-2">
-              Beklenen: {analysis.predictions?.overUnder?.expectedGoals?.toFixed(1) || '2.5'} gol
+              {gs.expected}: {analysis.predictions?.overUnder?.expectedGoals?.toFixed(1) || '2.5'} {gs.goals}
             </div>
             {/* Tarihsel Doğruluk Badge */}
             <div className="mt-3 pt-3 border-t border-line space-y-2">
@@ -478,12 +497,12 @@ export default function MatchAnalysisPage() {
             transition={{ delay: 0.3 }}
             className="fa-card p-6"
           >
-            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">BTTS</h3>
+            <h3 className="text-lg font-semibold text-content tracking-tight mb-4">{gs.btts}</h3>
             <div className="text-4xl font-bold text-brand-400 mb-2">
               {analysis.predictions?.btts?.prediction || 'Yes'}
             </div>
             <div className="text-sm text-content-muted">
-              Güven: {analysis.predictions?.btts?.confidence || 0}%
+              {gs.confidence}: {analysis.predictions?.btts?.confidence || 0}%
             </div>
             {/* Tarihsel Doğruluk Badge */}
             <div className="mt-3 pt-3 border-t border-line space-y-2">
@@ -585,7 +604,7 @@ export default function MatchAnalysisPage() {
             >
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-5 h-5 text-caution" />
-                <h3 className="font-semibold text-content tracking-tight">Lig Uzmanı Agentlar</h3>
+                <h3 className="font-semibold text-content tracking-tight">{gs.expertAgents}</h3>
               </div>
               <div className="flex flex-wrap gap-2">
                 {analysis.systemPerformance.expertAgents.map((agent: string) => (
@@ -594,7 +613,7 @@ export default function MatchAnalysisPage() {
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-content-muted mt-3">Bu agentlar bu ligdeki yüksek tarihsel başarıları nedeniyle daha fazla ağırlığa sahiptir.</p>
+              <p className="text-xs text-content-muted mt-3">{gs.expertAgentsDesc}</p>
             </motion.div>
           )}
 
@@ -607,7 +626,7 @@ export default function MatchAnalysisPage() {
             >
               <div className="flex items-center gap-2 mb-4">
                 <ShieldAlert className="w-5 h-5 text-negative" />
-                <h3 className="font-semibold text-content tracking-tight">Çelişki Çözümü</h3>
+                <h3 className="font-semibold text-content tracking-tight">{gs.conflicts}</h3>
               </div>
               <div className="space-y-3">
                 {analysis.systemPerformance.conflicts.map((conflict: any, idx: number) => (
@@ -615,7 +634,7 @@ export default function MatchAnalysisPage() {
                     <p className="text-xs font-bold text-negative uppercase">{conflict.field}</p>
                     <p className="text-sm text-content-muted mt-1">{conflict.description}</p>
                     <p className="text-xs text-content-muted mt-2 border-t border-negative/10 pt-2">
-                      <span className="text-brand-400">Karar:</span> {conflict.resolution}
+                      <span className="text-brand-400">{gs.decision}:</span> {conflict.resolution}
                     </p>
                   </div>
                 ))}
