@@ -3,11 +3,32 @@
 import React, { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, Shield, Skull } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
 // DEVIL'S ADVOCATE PANEL
-// Çelişki tespit edildiğinde kırmızı/turuncu uyarı kutusu gösterir
+// Çelişki tespit edildiğinde kırmızı/turuncu uyarı kutusu gösterir.
+// Üç dilli (useLanguage). NOT: risk/analiz metinlerinin kendisi AI çıktısıdır
+// ve analizin üretildiği dilde gelir — burada yalnız arayüz etiketleri döner.
 // ============================================================================
+
+const L = {
+  tr: {
+    title: 'Şeytanın Avukatı', active: 'aktif', contrarianAvailable: 'Kontrarian analiz mevcut',
+    conflictsDetected: (n: number) => `${n} çelişki tespit edildi`,
+    risks: 'Riskler', trapIndicators: 'Tuzak Belirtileri', agentConflicts: 'Ajan Çelişkileri', resolution: 'Çözüm',
+  },
+  en: {
+    title: "Devil's Advocate", active: 'active', contrarianAvailable: 'Contrarian analysis available',
+    conflictsDetected: (n: number) => `${n} conflicts detected`,
+    risks: 'Risks', trapIndicators: 'Trap Indicators', agentConflicts: 'Agent Conflicts', resolution: 'Resolution',
+  },
+  de: {
+    title: 'Advocatus Diaboli', active: 'aktiv', contrarianAvailable: 'Konträre Analyse verfügbar',
+    conflictsDetected: (n: number) => `${n} Konflikte erkannt`,
+    risks: 'Risiken', trapIndicators: 'Fallen-Indikatoren', agentConflicts: 'Agent-Konflikte', resolution: 'Auflösung',
+  },
+} as const;
 
 interface DevilsAdvocateData {
   contrarianView?: string;
@@ -27,6 +48,8 @@ interface DevilsAdvocatePanelProps {
 
 export default function DevilsAdvocatePanel({ data, conflicts, isActivated }: DevilsAdvocatePanelProps) {
   const [expanded, setExpanded] = useState(false);
+  const { lang } = useLanguage();
+  const t = (L as any)[lang] || L.en;
 
   if (!data && (!conflicts || conflicts.length === 0)) return null;
 
@@ -54,17 +77,17 @@ export default function DevilsAdvocatePanel({ data, conflicts, isActivated }: De
           </div>
           <div className="text-left">
             <div className="text-sm font-bold text-red-400 flex items-center gap-2">
-              Şeytanın Avukatı
+              {t.title}
               {isActivated && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 uppercase tracking-wider">
-                  aktif
+                  {t.active}
                 </span>
               )}
             </div>
             <div className="text-xs text-gray-400">
               {hasDA
-                ? data.agentSummary || 'Kontrarian analiz mevcut'
-                : `${conflicts?.length} çelişki tespit edildi`
+                ? data.agentSummary || t.contrarianAvailable
+                : t.conflictsDetected(conflicts?.length || 0)
               }
             </div>
           </div>
@@ -114,7 +137,7 @@ export default function DevilsAdvocatePanel({ data, conflicts, isActivated }: De
                 <div className="space-y-1.5">
                   <div className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
                     <Shield className="w-3 h-3" />
-                    Riskler
+                    {t.risks}
                   </div>
                   <div className="grid gap-1">
                     {data.risks.map((risk, i) => (
@@ -130,7 +153,7 @@ export default function DevilsAdvocatePanel({ data, conflicts, isActivated }: De
               {/* Trap Match Indicators */}
               {hasDA && data.trapMatchIndicators && data.trapMatchIndicators.length > 0 && (
                 <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-yellow-400/80">Tuzak Belirtileri</div>
+                  <div className="text-xs font-medium text-yellow-400/80">{t.trapIndicators}</div>
                   <div className="flex flex-wrap gap-1.5">
                     {data.trapMatchIndicators.map((indicator, i) => (
                       <span
@@ -147,11 +170,11 @@ export default function DevilsAdvocatePanel({ data, conflicts, isActivated }: De
               {/* Consensus Conflicts */}
               {hasConflicts && (
                 <div className="space-y-1.5 pt-2 border-t border-white/5">
-                  <div className="text-xs font-medium text-gray-400">Ajan Çelişkileri</div>
+                  <div className="text-xs font-medium text-gray-400">{t.agentConflicts}</div>
                   {conflicts.map((conflict, i) => (
                     <div key={i} className="text-xs bg-white/[0.03] rounded-lg p-2.5 space-y-1">
                       <div className="text-orange-300 font-medium">{conflict.field}: {conflict.description}</div>
-                      <div className="text-gray-500">Çözüm: {conflict.resolution}</div>
+                      <div className="text-gray-500">{t.resolution}: {conflict.resolution}</div>
                     </div>
                   ))}
                 </div>

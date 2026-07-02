@@ -3,11 +3,33 @@
 import React from 'react';
 import { Brain, TrendingUp, TrendingDown, AlertCircle, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
 // AUTOLEARN BADGE
-// AutoLearn Agent'ın pattern-based skorunu gosterir
+// AutoLearn Agent'ın pattern-based skorunu gosterir. Üç dilli (useLanguage).
 // ============================================================================
+
+const L = {
+  tr: {
+    high: 'Yüksek', medium: 'Orta', low: 'Düşük', insufficient: 'Yetersiz',
+    reliability: 'güvenilirlik', sameAsOriginal: '= orijinal', patternsMatched: 'pattern eşleşti',
+    panelSubtitle: (n: number) => `Geçmiş pattern'lardan öğrenilmiş skorlar · ${n} pattern`,
+    mr: 'Maç Sonucu', ou: 'Alt/Üst', btts: 'KG', original: 'Orijinal',
+  },
+  en: {
+    high: 'High', medium: 'Medium', low: 'Low', insufficient: 'Insufficient',
+    reliability: 'reliability', sameAsOriginal: '= original', patternsMatched: 'patterns matched',
+    panelSubtitle: (n: number) => `Scores learned from past patterns · ${n} patterns`,
+    mr: 'Match Result', ou: 'Over/Under', btts: 'BTTS', original: 'Original',
+  },
+  de: {
+    high: 'Hoch', medium: 'Mittel', low: 'Niedrig', insufficient: 'Unzureichend',
+    reliability: 'Zuverlässigkeit', sameAsOriginal: '= Original', patternsMatched: 'Muster erkannt',
+    panelSubtitle: (n: number) => `Aus früheren Mustern gelernte Scores · ${n} Muster`,
+    mr: 'Spielausgang', ou: 'Über/Unter', btts: 'BTTS', original: 'Original',
+  },
+} as const;
 
 interface AutoLearnResult {
   market: string;
@@ -33,6 +55,8 @@ interface AutoLearnBadgeProps {
 }
 
 export default function AutoLearnBadge({ market, autoLearnData, compact = false }: AutoLearnBadgeProps) {
+  const { lang } = useLanguage();
+  const t = (L as any)[lang] || L.en;
   if (!autoLearnData?.results || autoLearnData.results.length === 0) return null;
 
   const result = autoLearnData.results.find(r => r.market === market);
@@ -50,12 +74,7 @@ export default function AutoLearnBadge({ market, autoLearnData, compact = false 
     insufficient: 'text-gray-600 border-gray-600/30 bg-gray-600/5'
   }[result.reliability];
 
-  const reliabilityLabel = {
-    high: 'Yüksek',
-    medium: 'Orta',
-    low: 'Düşük',
-    insufficient: 'Yetersiz'
-  }[result.reliability];
+  const reliabilityLabel = t[result.reliability];
 
   if (compact) {
     return (
@@ -81,7 +100,7 @@ export default function AutoLearnBadge({ market, autoLearnData, compact = false 
           <span className="text-xs font-bold uppercase tracking-wider">AutoLearn</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[10px] opacity-60">{reliabilityLabel} güvenilirlik</span>
+          <span className="text-[10px] opacity-60">{reliabilityLabel} {t.reliability}</span>
           <Sparkles className="w-3 h-3 opacity-40" />
         </div>
       </div>
@@ -100,11 +119,11 @@ export default function AutoLearnBadge({ market, autoLearnData, compact = false 
             </span>
           )}
           {!isHigher && !isLower && (
-            <span className="text-gray-500 text-xs">= orijinal</span>
+            <span className="text-gray-500 text-xs">{t.sameAsOriginal}</span>
           )}
         </div>
         <div className="text-[10px] opacity-50 pb-1">
-          {result.patternsUsed} pattern eşleşti
+          {result.patternsUsed} {t.patternsMatched}
         </div>
       </div>
 
@@ -137,6 +156,8 @@ interface AutoLearnPanelProps {
 }
 
 export function AutoLearnPanel({ autoLearnData }: AutoLearnPanelProps) {
+  const { lang } = useLanguage();
+  const t = (L as any)[lang] || L.en;
   if (!autoLearnData?.results || autoLearnData.results.length === 0) return null;
 
   const validResults = autoLearnData.results.filter(r => r.reliability !== 'insufficient');
@@ -157,13 +178,13 @@ export function AutoLearnPanel({ autoLearnData }: AutoLearnPanelProps) {
         </div>
         <div>
           <h3 className="font-bold text-white text-sm">AutoLearn Agent</h3>
-          <p className="text-[10px] text-gray-500">Geçmiş pattern'lardan öğrenilmiş skorlar · {totalPatterns} pattern</p>
+          <p className="text-[10px] text-gray-500">{t.panelSubtitle(totalPatterns)}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {validResults.map(result => {
-          const marketLabel = result.market === 'mr' ? 'Maç Sonucu' : result.market === 'ou' ? 'Over/Under' : 'BTTS';
+          const marketLabel = result.market === 'mr' ? t.mr : result.market === 'ou' ? t.ou : t.btts;
           const diff = result.autoLearnScore - result.originalConfidence;
 
           return (
@@ -183,7 +204,7 @@ export function AutoLearnPanel({ autoLearnData }: AutoLearnPanelProps) {
                 )}
               </div>
               <div className="text-[9px] text-gray-600 mt-1">
-                Orijinal: %{Math.round(result.originalConfidence)} · {result.patternsUsed}p
+                {t.original}: %{Math.round(result.originalConfidence)} · {result.patternsUsed}p
               </div>
             </div>
           );

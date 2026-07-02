@@ -2,11 +2,19 @@
 
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
 // AGENT PERFORMANCE BADGE
-// Her tahmin kartında ajanların o market için başarı yüzdelerini gösterir
+// Her tahmin kartında ajanların o market için başarı yüzdelerini gösterir.
+// Üç dilli (useLanguage).
 // ============================================================================
+
+const L = {
+  tr: { agentPerformance: 'Ajan Performansları', matches: 'maç' },
+  en: { agentPerformance: 'Agent Performance', matches: 'matches' },
+  de: { agentPerformance: 'Agent-Performance', matches: 'Spiele' },
+} as const;
 
 interface AgentProfile {
   agentName: string;
@@ -66,6 +74,8 @@ function TrendIcon({ trend }: { trend: string }) {
 }
 
 export default function AgentPerformanceBadge({ market, agentProfiles, compact = false }: AgentPerformanceBadgeProps) {
+  const { lang } = useLanguage();
+  const t = (L as any)[lang] || L.en;
   if (!agentProfiles || Object.keys(agentProfiles).length === 0) return null;
 
   const agents = Object.values(agentProfiles)
@@ -85,7 +95,7 @@ export default function AgentPerformanceBadge({ market, agentProfiles, compact =
             <span
               key={agent.agentName}
               className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/5 ${getAccuracyColor(acc)}`}
-              title={`${label}: %${acc} (${agent.totalMatches} maç) ${agent.trend === 'improving' ? '↑' : agent.trend === 'declining' ? '↓' : '→'}`}
+              title={`${label}: %${acc} (${agent.totalMatches} ${t.matches}) ${agent.trend === 'improving' ? '↑' : agent.trend === 'declining' ? '↓' : '→'}`}
             >
               <span className="font-medium opacity-60 text-gray-400">{label}</span>
               <span className="font-bold">%{acc.toFixed(0)}</span>
@@ -101,7 +111,7 @@ export default function AgentPerformanceBadge({ market, agentProfiles, compact =
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 text-xs text-gray-400">
         <Activity className="w-3.5 h-3.5" />
-        <span className="font-medium">Ajan Performansları</span>
+        <span className="font-medium">{t.agentPerformance}</span>
       </div>
       <div className="grid grid-cols-2 gap-1">
         {agents.map((agent) => {

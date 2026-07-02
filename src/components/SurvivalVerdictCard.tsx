@@ -3,11 +3,35 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Crosshair, Shield, Users, Database, Zap } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
 // SURVIVAL VERDICT CARD v2
 // "Ya Bil Ya Öl" - Tek sonuç. Tek karar. Ya güçlü ya ölü.
+// Üç dilli (useLanguage). NOT: marketLabel/selectionLabel/reasoning AI
+// çıktısıdır — analizin üretildiği dilde gelir; burada arayüz etiketleri döner.
 // ============================================================================
+
+const L = {
+  tr: {
+    agentName: 'Hayatta Kal Ajanı',
+    strongSignal: 'GÜÇLÜ SİNYAL', singleVerdict: 'TEK SONUÇ', playCareful: 'DİKKATLİ OYNA',
+    confidence: 'güven', agentsConsulted: 'ajan istişare',
+    riskLow: 'DÜŞÜK RİSK', riskMedium: 'ORTA RİSK', riskHigh: 'YÜKSEK RİSK',
+  },
+  en: {
+    agentName: 'Survival Agent',
+    strongSignal: 'STRONG SIGNAL', singleVerdict: 'SINGLE VERDICT', playCareful: 'PLAY IT SAFE',
+    confidence: 'confidence', agentsConsulted: 'agents consulted',
+    riskLow: 'LOW RISK', riskMedium: 'MEDIUM RISK', riskHigh: 'HIGH RISK',
+  },
+  de: {
+    agentName: 'Survival-Agent',
+    strongSignal: 'STARKES SIGNAL', singleVerdict: 'EIN URTEIL', playCareful: 'VORSICHTIG SPIELEN',
+    confidence: 'Konfidenz', agentsConsulted: 'Agents befragt',
+    riskLow: 'GERINGES RISIKO', riskMedium: 'MITTLERES RISIKO', riskHigh: 'HOHES RISIKO',
+  },
+} as const;
 
 interface SurvivalVerdictData {
   market: 'MS' | 'OU' | 'BTTS' | string;
@@ -29,17 +53,20 @@ interface Props {
   verdict?: SurvivalVerdictData | null;
 }
 
-const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  dusuk: { label: 'DÜŞÜK RİSK', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
-  orta: { label: 'ORTA RİSK', color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
-  yuksek: { label: 'YÜKSEK RİSK', color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30' },
+const RISK_STYLE: Record<string, { key: 'riskLow' | 'riskMedium' | 'riskHigh'; color: string; bg: string; border: string }> = {
+  dusuk: { key: 'riskLow', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
+  orta: { key: 'riskMedium', color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
+  yuksek: { key: 'riskHigh', color: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30' },
 };
 
 export default function SurvivalVerdictCard({ verdict }: Props) {
+  const { lang } = useLanguage();
+  const t = (L as any)[lang] || L.en;
   // Ajan karar veremedi veya veri yok → hiçbir şey gösterme
   if (!verdict || verdict.isDead || verdict.confidence === 0) return null;
 
-  const risk = RISK_CONFIG[verdict.riskLevel] || RISK_CONFIG.orta;
+  const risk = RISK_STYLE[verdict.riskLevel] || RISK_STYLE.orta;
+  const riskLabel = t[risk.key];
 
   // Güven rengini belirle
   const confColor = verdict.confidence >= 70 ? 'text-emerald-400' :
@@ -93,15 +120,15 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
             </motion.div>
             <div>
               <div className="text-xs font-bold tracking-widest uppercase text-gray-400">
-                Hayatta Kal Ajanı
+                {t.agentName}
               </div>
               <div className="text-[10px] text-gray-500 tracking-wide">
-                {verdict.confidence >= 70 ? 'GÜÇLÜ SİNYAL' : verdict.confidence >= 60 ? 'TEK SONUÇ' : 'DİKKATLİ OYNA'}
+                {verdict.confidence >= 70 ? t.strongSignal : verdict.confidence >= 60 ? t.singleVerdict : t.playCareful}
               </div>
             </div>
           </div>
           <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full ${risk.bg} ${risk.color} border ${risk.border}`}>
-            {risk.label}
+            {riskLabel}
           </span>
         </div>
 
@@ -129,7 +156,7 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
             >
               %{verdict.confidence}
             </motion.div>
-            <div className="text-[10px] text-gray-500 tracking-wider uppercase">güven</div>
+            <div className="text-[10px] text-gray-500 tracking-wider uppercase">{t.confidence}</div>
           </div>
         </div>
 
@@ -145,7 +172,7 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400 bg-white/[0.03] rounded-lg px-3 py-2">
             <Shield className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-            <span>{verdict.totalAgentsConsulted} ajan istişare</span>
+            <span>{verdict.totalAgentsConsulted} {t.agentsConsulted}</span>
           </div>
         </div>
 
