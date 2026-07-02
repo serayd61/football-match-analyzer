@@ -60,9 +60,11 @@ const STR = {
     gateAuthTitle: 'Tahminleri görmek için giriş yapın',
     gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol',
-    gateSubTitle: 'Aktif abonelik gerekli',
+    gateSubTitle: 'Motorun günlük tahminleri Pro üyelere açık',
     gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.',
-    gateSubCta: '7 gün ücretsiz dene' },
+    gateSubCta: '7 gün ücretsiz dene',
+    teaserLeagues: 'lig test edildi', teaserMatches: 'gerçek maçta doğrulandı',
+    teaserAcc: '1X2 isabet', teaserLink: 'Şeffaf sonuç kaydını gör →' },
   en: { home: 'Home', draw: 'Draw', away: 'Away', conf: 'Confidence',
     over: 'Over 2.5', btts: 'BTTS', why: 'Why?', matches: 'matches', avgConf: 'Avg. conf.',
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
@@ -71,9 +73,11 @@ const STR = {
     gateAuthTitle: 'Sign in to see predictions',
     gateAuthDesc: 'Engine predictions are available to members only.',
     gateAuthCta: 'Sign in / Sign up',
-    gateSubTitle: 'Active subscription required',
+    gateSubTitle: 'Daily engine picks are for Pro members',
     gateSubDesc: 'Try free for 7 days, cancel anytime.',
-    gateSubCta: 'Start 7-day free trial' },
+    gateSubCta: 'Start 7-day free trial',
+    teaserLeagues: 'leagues tested', teaserMatches: 'real matches backtested',
+    teaserAcc: '1X2 accuracy', teaserLink: 'See the transparent track record →' },
   de: { home: 'Heim', draw: 'Unent.', away: 'Auswärts', conf: 'Konfidenz',
     over: 'Über 2.5', btts: 'BTTS', why: 'Warum?', matches: 'Spiele', avgConf: 'Ø Konfidenz',
     leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
@@ -82,9 +86,11 @@ const STR = {
     gateAuthTitle: 'Zum Ansehen anmelden',
     gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren',
-    gateSubTitle: 'Aktives Abo erforderlich',
+    gateSubTitle: 'Tägliche Engine-Tipps sind Pro-Mitgliedern vorbehalten',
     gateSubDesc: '7 Tage kostenlos testen, jederzeit kündbar.',
-    gateSubCta: '7 Tage kostenlos testen' },
+    gateSubCta: '7 Tage kostenlos testen',
+    teaserLeagues: 'Ligen getestet', teaserMatches: 'echte Spiele im Backtest',
+    teaserAcc: '1X2-Trefferquote', teaserLink: 'Transparente Erfolgsbilanz ansehen →' },
 };
 
 export default function EnginePredictions({
@@ -106,6 +112,16 @@ export default function EnginePredictions({
   const [open, setOpen] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'conf' | 'time'>('conf');
   const [gate, setGate] = useState<null | 'auth' | 'subscription'>(null);
+  // Kilitli durumda gösterilen GERÇEK kanıt (public backtest özeti)
+  const [proof, setProof] = useState<{ leagues: number; totalTested: number; mrAccuracy: number } | null>(null);
+
+  useEffect(() => {
+    if (gate !== 'subscription' || proof) return;
+    fetch('/api/v2/dc-backtest')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.ok && d.summary?.totalTested > 0) setProof(d.summary); })
+      .catch(() => {});
+  }, [gate, proof]);
 
   async function load() {
     setLoading(true);
@@ -150,22 +166,77 @@ export default function EnginePredictions({
     return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length);
   }, [sorted, groupByLeague]);
 
-  // Erişim engeli: giriş yok (auth) ya da abonelik yok (subscription)
+  // Erişim engeli: giriş yok (auth) ya da abonelik yok (subscription).
+  // Subscription durumu boş bir "kilit kutusu" değil, GERÇEK kanıtlı bir
+  // value-teaser gösterir: public backtest özeti + blurlu içerik silueti.
   if (!loading && gate) {
     const isAuth = gate === 'auth';
+    const accPct = proof
+      ? Math.round((proof.mrAccuracy > 1 ? proof.mrAccuracy : proof.mrAccuracy * 100) * 10) / 10
+      : null;
     return (
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
-          {isAuth ? <Lock size={24} /> : <Crown size={24} />}
+      <div className="relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 overflow-hidden">
+        {/* Blurlu içerik silueti — arkada gerçek bir ürün olduğunu hissettirir */}
+        {!isAuth && (
+          <div aria-hidden className="absolute inset-0 p-6 blur-[7px] opacity-30 pointer-events-none select-none">
+            <div className="grid md:grid-cols-2 gap-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                  <div className="h-3 w-1/2 bg-white/20 rounded mb-3" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-full bg-white/15" />
+                    <div className="h-3 w-6 bg-white/10 rounded" />
+                    <div className="w-10 h-10 rounded-full bg-white/15" />
+                  </div>
+                  <div className="flex h-2 rounded-full overflow-hidden">
+                    <div className="bg-brand-400/70" style={{ width: '48%' }} />
+                    <div className="bg-amber-400/70" style={{ width: '27%' }} />
+                    <div className="bg-sky-500/70" style={{ width: '25%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="relative text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
+            {isAuth ? <Lock size={24} /> : <Crown size={24} />}
+          </div>
+          <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
+          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
+
+          {/* Gerçek kanıt şeridi (dc_backtest_results, public) */}
+          {!isAuth && proof && (
+            <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
+              {[
+                { val: proof.leagues, label: t.teaserLeagues },
+                { val: proof.totalTested.toLocaleString(t.locale), label: t.teaserMatches },
+                { val: `%${accPct}`, label: t.teaserAcc },
+              ].map((s, i) => (
+                <div key={i} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
+                  <div className="text-xl font-bold text-white">{s.val}</div>
+                  <div className="text-[10px] text-white/40 mt-0.5">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Link
+            href={isAuth ? '/login' : '/pricing'}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity"
+          >
+            {isAuth ? t.gateAuthCta : t.gateSubCta}
+          </Link>
+
+          {!isAuth && (
+            <div className="mt-4">
+              <Link href="/track-record" className="text-xs text-brand-300/80 hover:text-brand-300 transition-colors">
+                {t.teaserLink}
+              </Link>
+            </div>
+          )}
         </div>
-        <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
-        <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
-        <Link
-          href={isAuth ? '/login' : '/pricing'}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity"
-        >
-          {isAuth ? t.gateAuthCta : t.gateSubCta}
-        </Link>
       </div>
     );
   }

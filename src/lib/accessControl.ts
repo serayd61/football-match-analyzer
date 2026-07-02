@@ -187,7 +187,12 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
   // incrementAnalysisCount ile artar (metreli). Motor tahminleri (engine_predictions)
   // ve AI Agent'lar yine Pro'ya özel: hasEnginePredictionAccess / canUseAgents=false
   // (agents route sayaç artırmadığı için free'ye AÇILMAZ — maliyet sızıntısı olmasın).
-  const isFree = profile.subscription_status === 'free' || !profile.subscription_status;
+  // NOT: legacy kartsız 'trial'/'trialing' profiller de free sayılır — gerçek
+  // (kartlı) trial'lar Stripe webhook'uyla profiles='active' olduğundan çakışmaz.
+  // Eski davranış bu kullanıcıları 7 gün sonra TAMAMEN kilitliyordu; artık kalıcı
+  // 3/gün hakları var (welcome e-postasındaki söz ile tutarlı).
+  const status = String(profile.subscription_status || '').toLowerCase();
+  const isFree = status === 'free' || status === 'trial' || status === 'trialing' || !status;
 
   if (isFree) {
     const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
@@ -211,54 +216,7 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     };
   }
 
-  // Eski trial sistemi (backward compatibility)
-  const trialEnds = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-  const isTrial = trialEnds && trialEnds > now;
-  const trialExpired = trialEnds && trialEnds <= now;
-  const trialDaysLeft = isTrial ? Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-
-  // Trial bitti - ERİŞİM YOK
-  if (trialExpired) {
-    return {
-      hasAccess: false,
-      isPro: false,
-      isTrial: false,
-      trialDaysLeft: 0,
-      trialExpired: true,
-      analysesUsed: 0,
-      analysesLimit: 0,
-      canAnalyze: false,
-      canUseAgents: false,
-      message: 'Trial expired',
-      redirectTo: '/pricing',
-    };
-  }
-
-  // Trial aktif - 3 analiz limiti
-  if (isTrial) {
-    const today = now.toISOString().split('T')[0];
-    const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
-    const TRIAL_DAILY_LIMIT = 3;
-    const canAnalyze = analysesToday < TRIAL_DAILY_LIMIT;
-    
-    return {
-      hasAccess: true,
-      isPro: false,
-      isTrial: true,
-      trialDaysLeft,
-      trialExpired: false,
-      analysesUsed: analysesToday,
-      analysesLimit: TRIAL_DAILY_LIMIT,
-      canAnalyze, // Trial: Günlük 3 analiz limiti
-      canUseAgents: canAnalyze, // Agent'lar da aynı limite tabi
-      message: canAnalyze 
-        ? `Trial: ${TRIAL_DAILY_LIMIT - analysesToday} analiz hakkınız kaldı` 
-        : 'Günlük analiz limitinize ulaştınız. Pro\'ya yükseltin!',
-      redirectTo: canAnalyze ? undefined : '/pricing',
-    };
-  }
-
-  // Varsayılan - erişim yok
+  // Varsayılan - erişim yok (tanınmayan statü: cancelled/past_due vb.)
   return {
     hasAccess: false,
     isPro: false,

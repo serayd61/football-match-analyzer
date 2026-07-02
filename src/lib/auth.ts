@@ -83,15 +83,14 @@ export const authOptions: NextAuthOptions = {
           .single();
 
         if (!existing) {
-          const trialEnds = new Date();
-          trialEnds.setDate(trialEnds.getDate() + 7);
-
+          // KART-ZORUNLU kural: kartsız kayıt 'free' başlar (günde 3 analiz).
+          // 7 günlük trial yalnızca Stripe Checkout'tan (kart girilerek) başlar;
+          // webhook profili 'active' yapar. Eski 'trial' başlangıcı 7 gün sonra
+          // kullanıcıyı tamamen kilitliyordu (aktivasyon katili).
           await supabaseAdmin.from('profiles').insert({
             email: user.email,
             name: user.name || '',
-            subscription_status: 'trial',
-            trial_start_date: new Date().toISOString(),
-            trial_ends_at: trialEnds.toISOString(),
+            subscription_status: 'free',
             analyses_today: 0,
           });
         }

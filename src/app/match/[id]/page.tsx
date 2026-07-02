@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History } from 'lucide-react';
+import { ArrowLeft, Zap, Target, Clock, ShieldAlert, Award, History, Hourglass, Crown } from 'lucide-react';
 import SiteNav from '@/components/SiteNav';
 import { Spinner } from '@/components/ui';
 import HistoricalAccuracyBadge, { HistoricalAccuracySummary } from '@/components/HistoricalAccuracyBadge';
@@ -20,38 +20,160 @@ import { useLanguage } from '@/components/LanguageProvider';
 // Unified Consensus System ile analiz gösterir
 // ============================================================================
 
+// Limit/erişim ekranı metinleri (jenerik kırmızı hata yerine anlamlı durum)
+const GATE_STR: Record<string, any> = {
+  tr: {
+    limitTitle: 'Bugünkü 3 ücretsiz analizin doldu',
+    limitDesc: 'Hakların yarın otomatik yenilenir. Beklemek istemiyorsan Pro ile sınırsız analiz yapabilirsin.',
+    proCta: "Pro'ya geç — 7 gün ücretsiz",
+    back: "Dashboard'a dön",
+    authTitle: 'Analiz için giriş yap',
+    authCta: 'Giriş yap / Üye ol',
+    notFound: 'Maç bilgisi bulunamadı. Maç başlamış veya kaldırılmış olabilir.',
+    leftStrip: (n: number) => `Bugün ${n} ücretsiz analiz hakkın kaldı`,
+    leftStripEmpty: 'Bugünkü ücretsiz analiz hakların doldu — yarın yenilenir',
+    nextCta: 'Başka maç analiz et',
+  },
+  en: {
+    limitTitle: "You've used today's 3 free analyses",
+    limitDesc: 'Your quota resets tomorrow. Don\'t want to wait? Go unlimited with Pro.',
+    proCta: 'Go Pro — 7 days free',
+    back: 'Back to dashboard',
+    authTitle: 'Sign in to analyze',
+    authCta: 'Sign in / Sign up',
+    notFound: 'Match details not found. It may have started or been removed.',
+    leftStrip: (n: number) => `${n} free analyses left today`,
+    leftStripEmpty: 'Daily free analyses used — resets tomorrow',
+    nextCta: 'Analyze another match',
+  },
+  de: {
+    limitTitle: 'Deine 3 kostenlosen Analysen für heute sind aufgebraucht',
+    limitDesc: 'Dein Kontingent wird morgen zurückgesetzt. Mit Pro analysierst du unbegrenzt.',
+    proCta: 'Pro holen — 7 Tage gratis',
+    back: 'Zurück zum Dashboard',
+    authTitle: 'Zum Analysieren anmelden',
+    authCta: 'Anmelden / Registrieren',
+    notFound: 'Spieldaten nicht gefunden. Das Spiel hat evtl. begonnen oder wurde entfernt.',
+    leftStrip: (n: number) => `Heute noch ${n} kostenlose Analysen übrig`,
+    leftStripEmpty: 'Tageskontingent aufgebraucht — morgen wieder verfügbar',
+    nextCta: 'Weiteres Spiel analysieren',
+  },
+};
+
 export default function MatchAnalysisPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const matchId = params?.id as string;
   const { lang } = useLanguage();
+  const gs = GATE_STR[lang] || GATE_STR.en;
 
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  // Erişim engeli: 'limit' (3/gün doldu) | 'auth' (giriş yok) | null
+  const [gate, setGate] = useState<null | 'limit' | 'auth'>(null);
+  const [analysesLeft, setAnalysesLeft] = useState<number | null>(null);
   const [isCached, setIsCached] = useState(false);
   const [progress, setProgress] = useState<Array<{ stage: string; message: string }>>([]);
 
+  // StrictMode/dev çift-mount koruması: aynı maç için analizi BİR kez tetikle
+  // (aksi halde kullanıcının günlük hakkı yanlışlıkla 2 kez düşer).
+  const startedFor = React.useRef<string | null>(null);
   useEffect(() => {
-    if (matchId) {
+    if (matchId && startedFor.current !== matchId) {
+      startedFor.current = matchId;
       fetchAnalysis();
     }
   }, [matchId]);
+
+  // Analiz bitince kalan günlük hakkı göster (aktivasyon döngüsü şeridi)
+  useEffect(() => {
+    if (!analysis) return;
+    fetch('/api/me/access')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && !d.isPro) setAnalysesLeft(d.analysesLeft);
+      })
+      .catch(() => {});
+  }, [analysis]);
+
+  // Fixture bağlamını çöz: önce URL query'sinden (FeaturedMatches böyle
+  // gönderir), yoksa bugün+yarının fikstür listesinden id ile bul.
+  // (analyze API'si takım adları + id'leri zorunlu ister.)
+  const resolveFixture = async (): Promise<null | {
+    homeTeam: string; awayTeam: string; homeTeamId: number; awayTeamId: number;
+    league?: string; matchDate?: string;
+  }> => {
+    const q = (k: string) => searchParams?.get(k) || '';
+    if (q('home') && q('away') && q('homeId') && q('awayId')) {
+      return {
+        homeTeam: q('home'), awayTeam: q('away'),
+        homeTeamId: parseInt(q('homeId')), awayTeamId: parseInt(q('awayId')),
+        league: q('league') || undefined, matchDate: q('date') || undefined,
+      };
+    }
+    try {
+      const iso = (d: Date) => d.toISOString().split('T')[0];
+      const [r1, r2] = await Promise.all([
+        fetch(`/api/v2/fixtures?date=${iso(new Date())}`),
+        fetch(`/api/v2/fixtures?date=${iso(new Date(Date.now() + 86_400_000))}`),
+      ]);
+      const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+      const all = [
+        ...(d1?.data?.fixtures || d1?.fixtures || []),
+        ...(d2?.data?.fixtures || d2?.fixtures || []),
+      ];
+      const f = all.find((x: any) => x.id === parseInt(matchId));
+      if (!f) return null;
+      return {
+        homeTeam: f.homeTeam, awayTeam: f.awayTeam,
+        homeTeamId: f.homeTeamId, awayTeamId: f.awayTeamId,
+        league: f.league, matchDate: f.date,
+      };
+    } catch {
+      return null;
+    }
+  };
 
   const fetchAnalysis = async () => {
     try {
       setLoading(true);
       setProgress([]);
+      setGate(null);
+
+      const fixture = await resolveFixture();
+      if (!fixture) {
+        setError(gs.notFound);
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch(`/api/unified/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fixtureId: parseInt(matchId),
+          ...fixture,
+          lang,
           skipCache: false,
           stream: true
         })
       });
+
+      // Erişim/limit hataları SSE değil düz JSON döner — burada yakala.
+      if (res.status === 401) { setGate('auth'); setLoading(false); return; }
+      if (res.status === 403) {
+        setGate('limit');
+        setLoading(false);
+        return;
+      }
+      if (!res.ok && (res.headers.get('content-type') || '').includes('application/json')) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || `HTTP ${res.status}`);
+        setLoading(false);
+        return;
+      }
 
       if (!res.body) throw new Error('Streaming not supported');
 
@@ -141,6 +263,38 @@ export default function MatchAnalysisPage() {
     );
   }
 
+  // Günlük limit doldu / giriş yok — anlamlı, dönüşüm odaklı ekran
+  if (gate) {
+    const isAuth = gate === 'auth';
+    return (
+      <div className="fa-shell min-h-screen">
+        <SiteNav />
+        <div className="flex items-center justify-center py-28 px-4">
+          <div className="max-w-md w-full text-center fa-card p-8">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
+              {isAuth ? <ShieldAlert size={24} /> : <Hourglass size={24} />}
+            </div>
+            <h2 className="text-xl font-bold text-content mb-2">
+              {isAuth ? gs.authTitle : gs.limitTitle}
+            </h2>
+            {!isAuth && <p className="text-sm text-content-muted mb-6">{gs.limitDesc}</p>}
+            <div className="flex flex-col gap-2">
+              <Link
+                href={isAuth ? '/login' : '/pricing'}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity"
+              >
+                {isAuth ? gs.authCta : (<><Crown size={16} /> {gs.proCta}</>)}
+              </Link>
+              <Link href="/dashboard" className="text-sm text-content-muted hover:text-content py-2">
+                {gs.back}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !analysis) {
     return (
       <div className="fa-shell min-h-screen">
@@ -149,7 +303,7 @@ export default function MatchAnalysisPage() {
           <div className="text-center text-content">
             <p className="text-negative mb-4">{error || 'Analiz bulunamadı'}</p>
             <Link href="/dashboard" className="fa-btn fa-btn-primary">
-              Dashboard'a Dön
+              {gs.back}
             </Link>
           </div>
         </div>
@@ -214,7 +368,7 @@ export default function MatchAnalysisPage() {
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
               <h2 className="text-3xl font-semibold text-content tracking-tight">
-                {analysis.sources?.agents?.stats?.homeTeam || 'Home Team'}
+                {searchParams?.get('home') || analysis.sources?.agents?.stats?.homeTeam || 'Home Team'}
               </h2>
             </div>
             <div className="px-8">
@@ -224,7 +378,7 @@ export default function MatchAnalysisPage() {
             </div>
             <div className="text-center flex-1">
               <h2 className="text-3xl font-semibold text-content tracking-tight">
-                {analysis.sources?.agents?.stats?.awayTeam || 'Away Team'}
+                {searchParams?.get('away') || analysis.sources?.agents?.stats?.awayTeam || 'Away Team'}
               </h2>
             </div>
           </div>
@@ -469,6 +623,35 @@ export default function MatchAnalysisPage() {
             </motion.div>
           )}
         </div>
+
+        {/* Kalan günlük hak şeridi — aktivasyon döngüsünü besler (free) */}
+        {analysesLeft != null && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fa-card p-4 mt-8 flex flex-wrap items-center justify-between gap-3"
+          >
+            <span className="flex items-center gap-2 text-sm text-content-muted">
+              <Zap size={15} className="text-brand-400" />
+              {analysesLeft > 0 ? gs.leftStrip(analysesLeft) : gs.leftStripEmpty}
+            </span>
+            {analysesLeft > 0 ? (
+              <Link
+                href="/dashboard#featured-matches"
+                className="text-sm font-semibold text-brand-400 hover:text-brand-300 transition-colors"
+              >
+                {gs.nextCta} →
+              </Link>
+            ) : (
+              <Link
+                href="/pricing"
+                className="text-sm font-semibold text-brand-400 hover:text-brand-300 transition-colors"
+              >
+                {gs.proCta} →
+              </Link>
+            )}
+          </motion.div>
+        )}
       </main>
     </div>
   );

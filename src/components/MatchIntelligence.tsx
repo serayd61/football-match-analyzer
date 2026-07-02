@@ -60,6 +60,7 @@ const STR = {
     gateAuthTitle: 'Görmek için giriş yapın', gateAuthDesc: 'Match Intelligence yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol', gateSubTitle: 'Aktif abonelik gerekli',
     gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.', gateSubCta: '7 gün ücretsiz dene',
+    teaserLink: 'Şeffaf sonuç kaydını gör →',
   },
   en: {
     analyze: 'Analyze', close: 'Close',
@@ -74,6 +75,7 @@ const STR = {
     gateAuthTitle: 'Sign in to view', gateAuthDesc: 'Match Intelligence is available to members only.',
     gateAuthCta: 'Sign in / Sign up', gateSubTitle: 'Active subscription required',
     gateSubDesc: 'Try free for 7 days, cancel anytime.', gateSubCta: 'Start 7-day free trial',
+    teaserLink: 'See the transparent track record →',
   },
   de: {
     analyze: 'Analysieren', close: 'Schliessen',
@@ -88,6 +90,7 @@ const STR = {
     gateAuthTitle: 'Zum Ansehen anmelden', gateAuthDesc: 'Match Intelligence ist nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren', gateSubTitle: 'Aktives Abo erforderlich',
     gateSubDesc: '7 Tage kostenlos testen, jederzeit kündbar.', gateSubCta: '7 Tage kostenlos testen',
+    teaserLink: 'Transparente Erfolgsbilanz ansehen →',
   },
 };
 
@@ -145,20 +148,44 @@ export default function MatchIntelligence({
     [items],
   );
 
-  // Erişim engeli
+  // Erişim engeli — subscription durumunda boş kilit kutusu yerine blurlu
+  // içerik silueti + track-record linki (value-teaser deseni).
   if (!loading && gate) {
     const isAuth = gate === 'auth';
     return (
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
-          {isAuth ? <Lock size={24} /> : <Crown size={24} />}
+      <div className="relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 overflow-hidden">
+        {!isAuth && (
+          <div aria-hidden className="absolute inset-0 p-6 blur-[7px] opacity-30 pointer-events-none select-none">
+            <div className="grid md:grid-cols-2 gap-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                  <div className="h-3 w-2/3 bg-white/20 rounded mb-3" />
+                  <div className="h-2.5 w-full bg-white/10 rounded mb-2" />
+                  <div className="h-2.5 w-5/6 bg-white/10 rounded mb-2" />
+                  <div className="h-2.5 w-3/4 bg-white/10 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="relative text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-brand-300">
+            {isAuth ? <Lock size={24} /> : <Crown size={24} />}
+          </div>
+          <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
+          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
+          <Link href={isAuth ? '/login' : '/pricing'}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity">
+            {isAuth ? t.gateAuthCta : t.gateSubCta}
+          </Link>
+          {!isAuth && (
+            <div className="mt-4">
+              <Link href="/track-record" className="text-xs text-brand-300/80 hover:text-brand-300 transition-colors">
+                {(t as any).teaserLink || 'Track record →'}
+              </Link>
+            </div>
+          )}
         </div>
-        <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
-        <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
-        <Link href={isAuth ? '/login' : '/pricing'}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity">
-          {isAuth ? t.gateAuthCta : t.gateSubCta}
-        </Link>
       </div>
     );
   }

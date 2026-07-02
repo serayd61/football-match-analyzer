@@ -11,7 +11,7 @@ import { signOut } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity, BarChart3, Star, Trophy, User, Settings, LogOut,
-  TrendingUp, LayoutGrid, Menu, X, RefreshCw, ChevronDown, Target,
+  TrendingUp, LayoutGrid, Menu, X, RefreshCw, ChevronDown, Target, Zap,
 } from 'lucide-react';
 import LanguageSelector from '@/components/LanguageSelector';
 import { cx } from '@/components/ui';
@@ -24,12 +24,19 @@ export default function DashboardTopBar({
   userEmail,
   onRefresh,
   refreshing,
+  analysesLeft,
+  analysesLimit,
+  onAnalysesClick,
 }: {
   t: any;
   userName?: string | null;
   userEmail?: string | null;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** Free kullanıcının bugün kalan analiz hakkı; null/undefined = chip gizli (Pro). */
+  analysesLeft?: number | null;
+  analysesLimit?: number | null;
+  onAnalysesClick?: () => void;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,6 +103,22 @@ export default function DashboardTopBar({
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
+          {/* Free günlük analiz sayacı — tıklanınca öne çıkan maçlara götürür */}
+          {analysesLeft != null && analysesLimit != null && (
+            <button
+              onClick={onAnalysesClick}
+              title={t.freeAnalysesChip || 'Free analyses today'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                analysesLeft > 0
+                  ? 'border-brand-400/40 bg-brand-400/10 text-brand-300 hover:bg-brand-400/20'
+                  : 'border-line bg-surface-2 text-content-subtle hover:bg-surface-3'
+              }`}
+            >
+              <Zap size={13} />
+              {analysesLeft}/{analysesLimit}
+            </button>
+          )}
+
           {onRefresh && (
             <button
               onClick={onRefresh}
