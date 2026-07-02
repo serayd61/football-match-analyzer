@@ -29,12 +29,13 @@ interface Fixture {
 const LOGO = (id: number | null | undefined) =>
   id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : '';
 
-// FotMob lig id'leri: 77=Dünya Kupası, 42=UCL, 47=PL, 87=LaLiga, 55=SerieA,
-// 54=Bundesliga, 53=Ligue1. Sıralama önceliği (düşük = önce).
-const WORLD_CUP_ID = 77;
+// FotMob lig id'leri: 77=Dünya Kupası (klasik), 894789=Dünya Kupası 2026
+// (feed'in sezonluk turnuva id'si — prod'da doğrulandı), 42=UCL, 47=PL,
+// 87=LaLiga, 55=SerieA, 54=Bundesliga, 53=Ligue1. Düşük öncelik = önce.
+const WORLD_CUP_IDS = new Set([77, 894789]);
 const TOP_LEAGUE_IDS = new Set([42, 47, 87, 55, 54, 53]);
 function priority(f: Fixture): number {
-  if (f.leagueId === WORLD_CUP_ID) return 0;
+  if (WORLD_CUP_IDS.has(f.leagueId)) return 0;
   if ((f.leagueCountry || '').toUpperCase() === 'INT') return 1; // uluslararası
   if (TOP_LEAGUE_IDS.has(f.leagueId)) return 2;
   return 3;
