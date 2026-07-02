@@ -60,6 +60,8 @@ export default function ProfilePage() {
       pro: 'Pro Üye',
       trial: 'Deneme Süresi',
       expired: 'Süresi Dolmuş',
+      free: 'Ücretsiz Üye',
+      freeDetail: 'Her gün 3 ücretsiz analiz',
       daysLeft: 'gün kaldı',
       validUntil: 'Geçerlilik',
       email: 'E-posta',
@@ -80,6 +82,8 @@ export default function ProfilePage() {
       pro: 'Pro Member',
       trial: 'Trial Period',
       expired: 'Expired',
+      free: 'Free Member',
+      freeDetail: '3 free analyses every day',
       daysLeft: 'days left',
       validUntil: 'Valid Until',
       email: 'Email',
@@ -100,6 +104,8 @@ export default function ProfilePage() {
       pro: 'Pro-Mitglied',
       trial: 'Testversion',
       expired: 'Abgelaufen',
+      free: 'Kostenloses Mitglied',
+      freeDetail: 'Jeden Tag 3 kostenlose Analysen',
       daysLeft: 'Tage übrig',
       validUntil: 'Gültig bis',
       email: 'E-Mail',
@@ -165,7 +171,9 @@ export default function ProfilePage() {
                   ) : profile?.isTrial ? (
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-sky-500/15 text-sky-400 border border-sky-500/30">⏳ {l.trial} - {profile.trialDaysLeft} {l.daysLeft}</span>
                   ) : (
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-negative/15 text-negative border border-negative/30">❌ {l.expired}</span>
+                    /* Free = geçerli, kalıcı plan — eski "Süresi Dolmuş" kırmızısı
+                       yanlış mesajdı (free artık her gün 3 analiz hakkı demek). */
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-brand-500/15 text-brand-300 border border-brand-500/30">{l.free} · {l.freeDetail}</span>
                   )}
                 </div>
               </div>
@@ -180,7 +188,7 @@ export default function ProfilePage() {
                 <div className="w-10 h-10 rounded-lg grid place-items-center bg-amber-500/10 border border-amber-500/20"><span className="text-xl">👑</span></div>
                 <div>
                   <div className="text-sm text-content-muted">{l.membership}</div>
-                  <div className="font-medium text-content">{profile?.isPro ? l.pro : profile?.isTrial ? l.trial : l.expired}</div>
+                  <div className="font-medium text-content">{profile?.isPro ? l.pro : profile?.isTrial ? l.trial : l.free}</div>
                 </div>
               </div>
               {profile?.isPro && profile?.subscriptionEnd && (

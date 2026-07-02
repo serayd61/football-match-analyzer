@@ -103,21 +103,23 @@ export interface FFMatch {
 // Lig haritasında bulunmayan turnuva id'leri için elle düzeltme
 // (popular/all-leagues listeleri büyük turnuvaların sezonluk id'lerini
 // içermiyor → "League 894789" gibi çirkin adlar çıkıyordu).
-const LEAGUE_FIX: Record<number, { name: string; ccode: string }> = {
-  894789: { name: 'FIFA World Cup 2026', ccode: 'INT' },
+// Adlar tek kaynaktan: src/lib/league-names.ts (client kartlarıyla ortak).
+import { LEAGUE_NAME_FIX } from '@/lib/league-names';
+const LEAGUE_CCODE_FIX: Record<number, string> = {
+  77: 'INT',
+  894789: 'INT',
 };
 
 function normalize(m: any, leagues: Map<number, LeagueMeta>): FFMatch {
   const lid = m.leagueId;
-  const fix = LEAGUE_FIX[lid];
   const lm = leagues.get(lid);
   const st = m.status || {};
   return {
     id: m.id,
     leagueId: lid,
-    leagueName: fix?.name || lm?.name || `League ${lid}`,
+    leagueName: LEAGUE_NAME_FIX[lid] || lm?.name || `League ${lid}`,
     leagueLogo: lm?.logo || FOTMOB_LEAGUE_LOGO(lid),
-    leagueCountry: fix?.ccode || lm?.ccode || '',
+    leagueCountry: LEAGUE_CCODE_FIX[lid] || lm?.ccode || '',
     homeId: m.home?.id,
     homeName: m.home?.longName || m.home?.name || 'Unknown',
     homeLogo: FOTMOB_TEAM_LOGO(m.home?.id),

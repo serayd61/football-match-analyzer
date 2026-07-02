@@ -471,6 +471,9 @@ html {
   letter-spacing: -0.011em;
   min-height: 100vh;
   position: relative;
+  /* Kendi stacking context'i: ::before backdrop z:-1 ile TÜM içeriğin altında
+     kalır; çocukların z-index'ine dokunmaya gerek kalmaz. */
+  isolation: isolate;
 }
 
 /* Undo legacy global rules inside the shell */
@@ -489,20 +492,21 @@ html {
   letter-spacing: -0.02em;
 }
 
-/* Ambient backdrop — subtle, professional (no heavy neon) */
+/* Ambient backdrop — subtle, professional (no heavy neon).
+   NOT: Eski `.fa-shell > * { z-index: 1 }` kuralı Tailwind z-50/z-[101]
+   utility'lerini eziyordu → sticky header'ın profil/dil dropdown'ları ve
+   mobil slide-over, sayfa içeriğinin ALTINA çiziliyordu ("yazılar iç içe" /
+   Pro dashboard'daki karmaşık menü bunun sonucuydu). Kural kaldırıldı;
+   backdrop artık isolation + z:-1 ile en altta tutuluyor. */
 .fa-shell::before {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   background:
     radial-gradient(60rem 40rem at 50% -10%, rgba(16, 185, 129, 0.07), transparent 60%),
     radial-gradient(50rem 40rem at 100% 0%, rgba(56, 189, 248, 0.05), transparent 55%);
-}
-.fa-shell > * {
-  position: relative;
-  z-index: 1;
 }
 
 /* ── Cards ── */

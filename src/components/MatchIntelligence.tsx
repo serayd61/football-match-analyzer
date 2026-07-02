@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { displayLeague } from '@/lib/league-names';
 import {
   Clock, Newspaper, Activity, AlertTriangle, ChevronUp,
   RefreshCw, Lock, Crown, Languages, Info, Brain,
@@ -259,7 +260,7 @@ function IntelCard({ m, t, viewLang, i, open, onToggle }: {
       className={`rounded-2xl border bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-colors ${open ? 'border-brand-400/40' : 'border-white/10 hover:border-brand-400/20'}`}>
       {/* başlık */}
       <div className="flex items-center justify-between text-xs text-white/40 mb-3">
-        <span className="truncate max-w-[55%]">{m.leagueName || '—'}</span>
+        <span className="truncate max-w-[55%]">{displayLeague(m.leagueName, m.leagueId)}</span>
         <span className="flex items-center gap-1"><Clock size={12} /> {koStr}</span>
       </div>
 

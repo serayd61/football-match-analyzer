@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Target, CheckCircle2, XCircle, TrendingUp, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { displayLeague } from '@/lib/league-names';
 
 interface RecentItem {
   fixtureId: number;
@@ -112,7 +113,7 @@ export default function EnginePerformance({ lang: langProp, recent = 30 }: { lan
             {r.correct ? <CheckCircle2 size={18} className="text-emerald-400 shrink-0" /> : <XCircle size={18} className="text-rose-400 shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="text-sm text-white/85 truncate">{r.homeName} <span className="text-white/40">vs</span> {r.awayName}</div>
-              <div className="text-[11px] text-white/35 truncate">{r.leagueName || '—'}</div>
+              <div className="text-[11px] text-white/35 truncate">{displayLeague(r.leagueName)}</div>
             </div>
             <div className="text-right shrink-0">
               <div className="text-sm font-bold text-white">{r.homeScore}–{r.awayScore}</div>

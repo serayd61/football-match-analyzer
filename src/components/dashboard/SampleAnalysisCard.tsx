@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ShieldCheck, ArrowUp } from 'lucide-react';
+import { displayLeague } from '@/lib/league-names';
 
 interface Showcase {
   homeTeam: string;
@@ -92,7 +93,7 @@ export default function SampleAnalysisCard({ lang = 'tr' }: { lang?: string }) {
         <h3 className="text-lg font-bold text-white">
           {sc.homeTeam} <span className="text-white/30 font-normal">vs</span> {sc.awayTeam}
         </h3>
-        <span className="text-xs text-white/40">{sc.league}{md ? ` · ${md}` : ''}</span>
+        <span className="text-xs text-white/40">{[displayLeague(sc.league), md].filter(Boolean).join(' · ')}</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">

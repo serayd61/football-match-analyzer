@@ -13,6 +13,7 @@ import {
   TrendingUp, Clock, ShieldCheck, Target, BarChart3,
   ChevronDown, ChevronUp, RefreshCw, Lock, Crown,
 } from 'lucide-react';
+import { displayLeague } from '@/lib/league-names';
 
 export interface Prediction {
   fixtureId: number;
@@ -159,7 +160,7 @@ export default function EnginePredictions({
     if (!groupByLeague) return null;
     const m = new Map<string, Prediction[]>();
     for (const p of sorted) {
-      const k = p.leagueName || `Lig ${p.leagueId}`;
+      const k = displayLeague(p.leagueName, p.leagueId) || `#${p.leagueId}`;
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(p);
     }
@@ -335,7 +336,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
       transition={{ delay: Math.min(i * 0.03, 0.4) }}
       className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 hover:border-brand-400/30 transition-colors">
       <div className="flex items-center justify-between text-xs text-white/40 mb-3">
-        <span className="truncate max-w-[60%]">{p.leagueName || '—'}</span>
+        <span className="truncate max-w-[60%]">{displayLeague(p.leagueName, p.leagueId)}</span>
         <span className="flex items-center gap-1"><Clock size={12} /> {koStr}</span>
       </div>
 
