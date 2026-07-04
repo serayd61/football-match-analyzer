@@ -11,9 +11,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, Lock, Check, Star, Sparkles } from 'lucide-react';
+import { ArrowRight, Lock, Check, Star, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LandingNav from '@/components/landing/LandingNav';
+import HeroSpotlight from '@/components/landing/HeroSpotlight';
 import { labels, labelsDE } from '@/lib/landing-content';
 import { Spinner } from '@/components/ui';
 
@@ -37,58 +38,19 @@ export default function HomePage() {
     );
   }
 
-  const scrollTo = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
   return (
     <div className="fa-shell min-h-screen">
       <LandingNav lang={lang} />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative px-4 pt-20 pb-16 sm:pt-28 sm:pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-grid-faint [background-size:40px_40px] opacity-[0.5] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)] pointer-events-none" />
-        <div className="max-w-4xl mx-auto text-center relative">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-300 text-[13px] font-medium mb-6">
-              {l.hero.badge}
-            </span>
-            <h1 className="text-4xl sm:text-6xl font-bold text-content tracking-tight leading-[1.05]">
-              {l.hero.title}{' '}
-              <span className="bg-gradient-to-r from-brand-400 via-brand-300 to-sky-400 bg-clip-text text-transparent">
-                {l.hero.titleHighlight}
-              </span>
-            </h1>
-            <p className="text-lg text-content-muted mt-6 max-w-2xl mx-auto leading-relaxed">
-              {l.hero.subtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-9">
-              <Link href="/login" className="fa-btn fa-btn-primary fa-btn-lg">
-                {l.hero.cta} <ArrowRight size={18} />
-              </Link>
-              <button onClick={() => scrollTo('promo-video')} className="fa-btn fa-btn-secondary fa-btn-lg">
-                <Play size={16} /> {l.hero.ctaSecondary}
-              </button>
-            </div>
+      {/* ── Hero (cursor-spotlight reveal) ───────────────────────────────── */}
+      <HeroSpotlight l={l.hero} />
 
-            <div className="flex items-center justify-center gap-3 mt-10">
-              <div className="flex -space-x-2.5">
-                {['🧑‍💼', '👨‍💻', '👩‍💼', '🧑‍💻', '👨‍💼'].map((e, i) => (
-                  <div key={i} className="w-9 h-9 rounded-full bg-surface-3 border-2 border-surface-0 grid place-items-center text-base">
-                    {e}
-                  </div>
-                ))}
-              </div>
-              <div className="text-left">
-                <div className="flex text-amber-400">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} fill="currentColor" />)}</div>
-                <div className="text-xs text-content-subtle mt-0.5">{l.hero.trustedBy}</div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stats strip */}
+      {/* ── Stats strip ──────────────────────────────────────────────────── */}
+      <section className="px-4 pt-14 pb-4">
+        <div className="max-w-4xl mx-auto">
           <motion.div
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-16"
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3"
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
           >
             {(l.stats as Array<{ value: string; label: string }>).map((s, i) => (
               <div key={i} className="fa-card p-5 text-center">
@@ -459,6 +421,8 @@ export default function HomePage() {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function SectionTitle({ badge, title, subtitle, center }: { badge?: string; title: string; subtitle?: string; center?: boolean }) {
+  // Lithos tipografi dili: başlığın ilk kelimesi Playfair italic serif.
+  const [first, ...rest] = title.split(' ');
   return (
     <div className={center ? 'text-center max-w-2xl mx-auto' : 'max-w-2xl'}>
       {badge && (
@@ -466,7 +430,10 @@ function SectionTitle({ badge, title, subtitle, center }: { badge?: string; titl
           {badge}
         </span>
       )}
-      <h2 className="text-2xl sm:text-4xl font-bold text-content tracking-tight">{title}</h2>
+      <h2 className="text-2xl sm:text-4xl font-bold text-content tracking-tight">
+        <span className="font-playfair italic font-medium">{first}</span>
+        {rest.length > 0 ? ` ${rest.join(' ')}` : ''}
+      </h2>
       {subtitle && <p className="text-content-muted text-lg mt-3 leading-relaxed">{subtitle}</p>}
     </div>
   );

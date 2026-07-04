@@ -1,14 +1,15 @@
 'use client';
 
 // ============================================================================
-// LandingNav — modern marketing top nav for the public landing page.
-// Scoped under `.fa-shell`. The global neon <Navigation/> is hidden on '/'.
+// LandingNav — Lithos-style fixed transparent nav over the spotlight hero.
+// White wordmark (Playfair italic) + frosted center pill + white CTA.
+// Falls back to a dark blurred backdrop once scrolled past the hero.
 // ============================================================================
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import LanguageSelector from '@/components/LanguageSelector';
 
 const NAV_LABELS: Record<string, { features: string; pricing: string; how: string; signin: string; start: string }> = {
@@ -23,7 +24,8 @@ export default function LandingNav({ lang = 'en' }: { lang?: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    // Hero 100dvh — nav arka planı hero'dan çıkarken koyulaşır.
+    const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.8);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -36,48 +38,50 @@ export default function LandingNav({ lang = 'en' }: { lang?: string }) {
   ];
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-colors duration-300 ${
-        scrolled ? 'border-b border-line bg-surface-0/85 backdrop-blur-xl' : 'border-b border-transparent'
+    <nav
+      className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between p-4 sm:p-5 transition-colors duration-300 ${
+        scrolled ? 'bg-surface-0/85 backdrop-blur-xl border-b border-line' : 'border-b border-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-xl grid place-items-center bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow-brand">
-            <Activity size={18} className="text-[#06281d]" strokeWidth={2.5} />
-          </div>
-          <span className="text-[15px] font-semibold text-content tracking-tight">Football Analytics</span>
-        </Link>
+      <Link href="/" className="flex items-center gap-2.5 shrink-0">
+        <svg width="26" height="26" viewBox="0 0 256 256" fill="#ffffff" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 256 256 L 128 256 L 0 128 L 128 128 Z M 256 128 L 128 128 L 0 0 L 128 0 Z" />
+        </svg>
+        <span className="text-white text-xl sm:text-2xl font-playfair italic">footballanalytics</span>
+      </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {anchors.map((a) => (
-            <a
-              key={a.href}
-              href={a.href}
-              className="px-3 py-2 rounded-lg text-[13px] font-medium text-content-muted hover:text-content hover:bg-surface-2 transition-colors"
-            >
-              {a.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:block">
-            <LanguageSelector />
-          </div>
-          <Link href="/login" className="hidden sm:inline-flex fa-btn fa-btn-ghost">
-            {l.signin}
-          </Link>
-          <Link href="/login" className="fa-btn fa-btn-primary">
-            {l.start}
-          </Link>
-          <button
-            onClick={() => setOpen(true)}
-            className="md:hidden grid place-items-center w-9 h-9 rounded-lg text-content-muted hover:text-content hover:bg-surface-2"
+      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-2 py-2 items-center gap-1">
+        {anchors.map((a) => (
+          <a
+            key={a.href}
+            href={a.href}
+            className="px-4 py-1.5 rounded-full text-sm font-medium text-white/80 hover:bg-white/20 hover:text-white transition-colors"
           >
-            <Menu size={18} />
-          </button>
+            {a.label}
+          </a>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden sm:block">
+          <LanguageSelector />
         </div>
+        <Link href="/login" className="hidden md:block text-white/80 hover:text-white text-sm font-medium transition-colors">
+          {l.signin}
+        </Link>
+        <Link
+          href="/login"
+          className="hidden md:block bg-white text-gray-900 text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          {l.start}
+        </Link>
+        <button
+          onClick={() => setOpen(true)}
+          className="md:hidden grid place-items-center w-9 h-9 rounded-lg text-white hover:bg-white/20"
+          aria-label="Menu"
+        >
+          <Menu size={20} />
+        </button>
       </div>
 
       <AnimatePresence>
@@ -116,6 +120,6 @@ export default function LandingNav({ lang = 'en' }: { lang?: string }) {
           </>
         )}
       </AnimatePresence>
-    </header>
+    </nav>
   );
 }
