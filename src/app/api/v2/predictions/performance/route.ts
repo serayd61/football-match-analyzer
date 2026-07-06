@@ -23,8 +23,12 @@ function sb(): SupabaseClient {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const recentLimit = Math.min(parseInt(searchParams.get('recent') || '40', 10) || 40, 100);
+  // Opsiyonel filtreler: ?leagueId= (lig bazlı isabet, match sayfası kartı
+  // kullanır) ve ?days= (son N günle sınırla, ör. 30)
+  const leagueId = parseInt(searchParams.get('leagueId') || '', 10);
+  const days = parseInt(searchParams.get('days') || '', 10);
 
-  const { data, error } = await sb()
+  let q = sb()
     .from('engine_predictions')
     .select(
       'fixture_id, league_name, home_name, away_name, kickoff, pick, confidence, ' +
@@ -34,6 +38,13 @@ export async function GET(request: NextRequest) {
     .not('result', 'is', null)
     .order('kickoff', { ascending: false })
     .limit(500);
+
+  if (Number.isFinite(leagueId)) q = q.eq('league_id', leagueId);
+  if (Number.isFinite(days) && days > 0) {
+    q = q.gte('kickoff', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+  }
+
+  const { data, error } = await q;
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

@@ -22,6 +22,7 @@ import { track } from '@/lib/analytics';
 import { SectionHeader, Button, Badge, Spinner } from '@/components/ui';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import FeaturedMatches from '@/components/dashboard/FeaturedMatches';
+import DailyPicks from '@/components/dashboard/DailyPicks';
 import SampleAnalysisCard from '@/components/dashboard/SampleAnalysisCard';
 import EnginePredictions from '@/components/EnginePredictions';
 import MatchIntelligence from '@/components/MatchIntelligence';
@@ -240,6 +241,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </motion.section>
+
+        {/* Kanıt döngüsü: Dünün Karnesi (public) + Bugünün Seçimleri (Pro).
+            Free için dönüşüm yüzeyi, Pro için günlük özet — herkese gösterilir. */}
+        <DailyPicks key={`dp-${refreshKey}`} lang={lang} />
 
         {/* Öne çıkan maçlar — free kullanıcının 3 hakkını harcayacağı yer */}
         {isFreeUser && (

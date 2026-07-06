@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Zap, X, Crown } from 'lucide-react';
 import { useLanguage } from './LanguageProvider';
+import { track } from '@/lib/analytics';
 
 interface PaywallProps {
   isOpen: boolean;
@@ -18,6 +19,23 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
   const router = useRouter();
   const { lang } = useLanguage();
   const [loading, setLoading] = useState(false);
+  // Haftalık = düşük eşikli giriş (trial yok), aylık = tasarruf + 7 gün trial.
+  // STRIPE_PRICE_ID_WEEKLY yoksa haftalık seçenek gizlenir (checkout 503 verirdi).
+  const [billing, setBilling] = useState<'PRO_WEEKLY' | 'PRO'>('PRO');
+  const [weeklyAvailable, setWeeklyAvailable] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/stripe/plans')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && d.weekly) {
+          setWeeklyAvailable(true);
+          setBilling('PRO_WEEKLY');
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   const labels = {
     tr: {
@@ -44,6 +62,8 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
         '✅ Telegram bildirimleri',
       ],
       price: '$19.99/ay',
+      weeklyLabel: 'Haftalık', weeklyPrice: '$6.99', perWeek: '/hafta', weeklyNote: 'Dene — taahhüt yok',
+      monthlyLabel: 'Aylık', perMonth: '/ay', monthlyNote: '%30+ tasarruf · 7 gün ücretsiz',
       upgrade: 'Premium\'a Geç',
       cancel: 'İptal',
       loading: 'Yönlendiriliyor...',
@@ -72,6 +92,8 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
         '✅ Telegram notifications',
       ],
       price: '$19.99/month',
+      weeklyLabel: 'Weekly', weeklyPrice: '$6.99', perWeek: '/week', weeklyNote: 'Try it — no commitment',
+      monthlyLabel: 'Monthly', perMonth: '/month', monthlyNote: 'Save 30%+ · 7 days free',
       upgrade: 'Upgrade to Premium',
       cancel: 'Cancel',
       loading: 'Redirecting...',
@@ -100,6 +122,8 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
         '✅ Telegram-Benachrichtigungen',
       ],
       price: '$19.99/Monat',
+      weeklyLabel: 'Wöchentlich', weeklyPrice: '$6.99', perWeek: '/Woche', weeklyNote: 'Ausprobieren — ohne Bindung',
+      monthlyLabel: 'Monatlich', perMonth: '/Monat', monthlyNote: '30%+ sparen · 7 Tage gratis',
       upgrade: 'Auf Premium upgraden',
       cancel: 'Abbrechen',
       loading: 'Weiterleitung...',
@@ -125,10 +149,12 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
 
   const handleUpgrade = async () => {
     setLoading(true);
+    track.beginCheckout();
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: billing }),
       });
       const data = await res.json();
       if (data.url) {
@@ -196,10 +222,31 @@ export function Paywall({ isOpen, onClose, reason = 'limit_reached', currentUsag
                 ))}
               </div>
 
-              {/* Price */}
-              <div className="text-center mb-6">
-                <div className="text-3xl font-bold text-[#00f0ff]">{l.price}</div>
-                <p className="text-xs text-gray-500 mt-1">7 gün ücretsiz deneme</p>
+              {/* Fiyat seçimi: haftalık (trial yok) / aylık (7 gün trial) */}
+              <div className={`grid gap-2 mb-6 ${weeklyAvailable ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {([
+                  ...(weeklyAvailable
+                    ? [{ key: 'PRO_WEEKLY' as const, price: l.weeklyPrice, per: l.perWeek, label: l.weeklyLabel, note: l.weeklyNote }]
+                    : []),
+                  { key: 'PRO' as const, price: '$19.99', per: l.perMonth, label: l.monthlyLabel, note: l.monthlyNote },
+                ]).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setBilling(opt.key)}
+                    className={`rounded-xl border p-3 text-center transition-colors ${
+                      billing === opt.key
+                        ? 'border-[#00f0ff]/60 bg-[#00f0ff]/10'
+                        : 'border-white/10 bg-white/[0.03] hover:border-white/25'
+                    }`}
+                  >
+                    <div className="text-[11px] font-semibold text-gray-400">{opt.label}</div>
+                    <div className="text-xl font-bold text-[#00f0ff] mt-0.5">
+                      {opt.price}<span className="text-xs text-gray-500">{opt.per}</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{opt.note}</div>
+                  </button>
+                ))}
               </div>
 
               {/* Actions */}

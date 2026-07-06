@@ -20,6 +20,18 @@ export const PLANS = {
     trialDays: 7,
     stripePriceId: process.env.STRIPE_PRICE_ID!,
   },
+  // Haftalık düşük-eşik giriş: trial YOK (haftalık zaten deneme işlevi görür;
+  // trial+haftalık birleşince ilk ödeme 2 hafta sonraya kayar ve kötüye
+  // kullanılır). Webhook değişmez: mapStatusToProfile interval'den bağımsız.
+  PRO_WEEKLY: {
+    name: 'Pro Weekly',
+    price: 6.99,
+    currency: 'USD',
+    interval: 'week' as const,
+    features: [] as string[],
+    trialDays: 0,
+    stripePriceId: process.env.STRIPE_PRICE_ID_WEEKLY || '',
+  },
 };
 
 export async function createCheckoutSession({
@@ -29,6 +41,7 @@ export async function createCheckoutSession({
   successUrl,
   cancelUrl,
   isUpgrade = false,
+  trialDays,
 }: {
   userId: string;
   userEmail: string;
@@ -36,6 +49,9 @@ export async function createCheckoutSession({
   successUrl: string;
   cancelUrl: string;
   isUpgrade?: boolean;
+  // Plan bazlı trial: verilmezse eski davranış (yeni kullanıcıya 7 gün).
+  // 0 → trial yok (haftalık plan).
+  trialDays?: number;
 }) {
   const customers = await stripe.customers.list({
     email: userEmail,
@@ -72,10 +88,12 @@ export async function createCheckoutSession({
   },
 };
 
-  // Sadece yeni kullanıcılar için trial ver
-  if (!isUpgrade) {
+  // Sadece yeni kullanıcılar için trial ver; plan bazlı override mümkün
+  // (haftalık planda trialDays=0 gelir → trial hiç eklenmez)
+  const effectiveTrialDays = trialDays ?? (!isUpgrade ? 7 : 0);
+  if (effectiveTrialDays > 0) {
     sessionConfig.subscription_data = {
-      trial_period_days: 7,
+      trial_period_days: effectiveTrialDays,
       metadata: { userId },
     };
   } else {

@@ -13,6 +13,7 @@ import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
 import DevilsAdvocatePanel from '@/components/DevilsAdvocatePanel';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import DixonColesCard from '@/components/DixonColesCard';
+import EnginePickCard from '@/components/EnginePickCard';
 import { useLanguage } from '@/components/LanguageProvider';
 
 // ============================================================================
@@ -642,6 +643,10 @@ export default function MatchAnalysisPage() {
             </motion.div>
           )}
         </div>
+
+        {/* Kişisel dönüşüm anı: kullanıcının o an baktığı maç için motorun
+            seçimi (free'ye kilitli + lig isabeti kanıtı, Pro'ya açık) */}
+        <EnginePickCard fixtureId={matchId} lang={lang} />
 
         {/* Kalan günlük hak şeridi — aktivasyon döngüsünü besler (free) */}
         {analysesLeft != null && (
