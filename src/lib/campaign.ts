@@ -17,6 +17,9 @@ export const REENGAGE_CAMPAIGN_KEY = 'reengage-2026-06';
 // Hoşgeldin — yeni ücretsiz kayıtlılara "3 free analiz hazır, gel test et".
 // Ayrı log anahtarı → mükerrer engeli kendi içinde (kişi bir kez alır).
 export const WELCOME_CAMPAIGN_KEY = 'welcome-2026-07';
+// Teklif (Angebot) — kayıtlı ama abone olmayanlara haftalık $6.99 lansmanı,
+// son 7 günün gerçek motor karnesiyle. Tek seferlik; ayrı log anahtarı.
+export const OFFER_CAMPAIGN_KEY = 'offer-weekly-2026-07';
 
 // Unsubscribe token'ı için sunucu-yalnızca sır (URL'de email + token gider).
 function secret(): string {

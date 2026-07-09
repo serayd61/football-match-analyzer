@@ -301,4 +301,85 @@ Unsubscribe: ${unsubscribeUrl}`;
   });
 }
 
+// ── TEKLİF (offer) — haftalık $6.99 lansmanı, kanıt (son 7 gün karnesi) ile.
+// stats gönderim anında hesaplanır (route); null ise rakam bloğu gizlenir —
+// asla bayat/uydurma rakam gösterilmez.
+export async function sendOfferEmail(
+  to: string,
+  opts: {
+    pricingUrl: string;
+    dashboardUrl: string;
+    unsubscribeUrl: string;
+    name?: string | null;
+    stats: { total: number; correct: number; accuracy: number } | null;
+  }
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { pricingUrl, dashboardUrl, unsubscribeUrl, stats } = opts;
+  const hi = opts.name ? ` ${opts.name}` : '';
+
+  const subject = stats
+    ? `Last 7 days: ${stats.correct} of ${stats.total} engine picks correct — Pro is now $6.99/week`
+    : 'New: try Pro for $6.99/week — no commitment';
+
+  const statsBlock = stats
+    ? `
+    <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:0 0 22px;text-align:center">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">Last 7 days — public record</div>
+      <div style="font-size:34px;font-weight:800;color:#e7eaf0;margin:8px 0 2px">${stats.correct} / ${stats.total}</div>
+      <div style="font-size:13px;color:#9aa3b2">high-confidence engine picks correct · ${stats.accuracy}%</div>
+      <div style="font-size:11px;color:#646c7d;margin-top:8px">Wins AND losses published daily — nothing hidden.</div>
+    </div>`
+    : '';
+
+  const html = `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">The receipts are public. The price just dropped.</p>
+    ${statsBlock}
+    <p>Hi${hi}, every morning our prediction engine posts its receipt on the dashboard: yesterday's picks with final scores — the wins and the losses, nothing cherry-picked.</p>
+    <p>Until now, full access meant <strong>$19.99/month</strong>. We just added a lower-commitment way in: <strong>Pro Weekly — $6.99/week</strong>. Cancel anytime, no long-term commitment. You get today's high-confidence engine picks, unlimited AI analyses and all expert agents.</p>
+    <p style="text-align:center;margin:28px 0 10px">
+      <a href="${pricingUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Try Pro Weekly — $6.99/week →</a>
+    </p>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin:0 0 24px">Prefer monthly? $19.99/mo with a 7-day free trial.</p>
+    <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
+      Want proof first? <a href="${dashboardUrl}" style="color:#059669;font-weight:600">See yesterday's scorecard on your dashboard →</a>
+    </p>
+    <p style="font-size:12px;color:#94a3b8">Probabilities come from a statistical model (Dixon-Coles + xG + ELO), not guesses. Informational only — not betting advice. No outcome is guaranteed.</p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    <p style="font-size:11px;color:#94a3b8">
+      You received this because you signed up at footballanalytics.pro.<br/>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a>
+    </p>
+  </div>`;
+
+  const statsText = stats
+    ? `Last 7 days — public record: ${stats.correct} of ${stats.total} high-confidence engine picks correct (${stats.accuracy}%). Wins AND losses published daily — nothing hidden.\n\n`
+    : '';
+  const text = `Football Analytics Pro — the receipts are public, the price just dropped
+
+Hi${hi}, every morning our prediction engine posts its receipt on the dashboard: yesterday's picks with final scores — the wins and the losses, nothing cherry-picked.
+
+${statsText}Until now, full access meant $19.99/month. We just added a lower-commitment way in: Pro Weekly — $6.99/week. Cancel anytime, no long-term commitment. You get today's high-confidence engine picks, unlimited AI analyses and all expert agents.
+
+Try Pro Weekly: ${pricingUrl}
+Prefer monthly? $19.99/mo with a 7-day free trial.
+See yesterday's scorecard: ${dashboardUrl}
+
+Informational only — not betting advice. No outcome is guaranteed.
+
+Unsubscribe: ${unsubscribeUrl}`;
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject,
+    html,
+    text,
+    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
+  });
+}
+
 export { SITE_URL };

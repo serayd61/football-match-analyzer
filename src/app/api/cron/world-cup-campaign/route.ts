@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl } from '@/lib/campaign';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, sendOfferEmail, SITE_URL } from '@/lib/email';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, OFFER_CAMPAIGN_KEY, unsubscribeUrl } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -53,15 +53,20 @@ export async function GET(request: NextRequest) {
   // Hoşgeldin: yeni ücretsiz kayıtlılara "3 free analiz hazır". Varsayılan
   // pencere son 1 gün (bugünküler); ?days=N ile genişletilir.
   const isWelcome = searchParams.get('type') === 'welcome';
+  // Teklif: haftalık $6.99 lansmanı — kayıtlı ama abone olmayanlara, son 7
+  // günün gerçek motor karnesiyle (gönderim anında hesaplanır).
+  const isOffer = searchParams.get('type') === 'offer';
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = isWelcome
-    ? WELCOME_CAMPAIGN_KEY
-    : isReengage
-      ? REENGAGE_CAMPAIGN_KEY
-      : relaunch
-        ? WORLD_CUP_RELAUNCH_KEY
-        : WORLD_CUP_CAMPAIGN_KEY;
-  const campaignType = isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
+  const activeKey = isOffer
+    ? OFFER_CAMPAIGN_KEY
+    : isWelcome
+      ? WELCOME_CAMPAIGN_KEY
+      : isReengage
+        ? REENGAGE_CAMPAIGN_KEY
+        : relaunch
+          ? WORLD_CUP_RELAUNCH_KEY
+          : WORLD_CUP_CAMPAIGN_KEY;
+  const campaignType = isOffer ? 'offer' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const daysParam = parseInt(searchParams.get('days') || '', 10);
@@ -73,14 +78,37 @@ export async function GET(request: NextRequest) {
   const trackUrl = `${SITE_URL}/track-record`;
   const dashboardUrl = `${SITE_URL}/dashboard`;
   const pricingUrl = `${SITE_URL}/pricing`;
-  const sendEmail = (email: string, name: string | null) =>
-    isWelcome
-      ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name })
-      : isReengage
-        ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name })
-        : sendWorldCupCampaignEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), name });
 
   const supabase = getSupabase();
+
+  // Teklif maili için kanıt: son 7 günün settle edilmiş yüksek-güven motor
+  // karnesi. <10 örnek varsa rakam bloğu gösterilmez (bayat/zayıf kanıt yok).
+  let offerStats: { total: number; correct: number; accuracy: number } | null = null;
+  if (isOffer) {
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { data: predRows } = await supabase
+      .from('engine_predictions')
+      .select('correct')
+      .eq('settled', true)
+      .not('result', 'is', null)
+      .gte('confidence', 0.58)
+      .gte('kickoff', since);
+    const preds = (predRows || []) as any[];
+    const total = preds.length;
+    const correct = preds.filter((p) => p.correct === true).length;
+    if (total >= 10) {
+      offerStats = { total, correct, accuracy: Math.round((1000 * correct) / total) / 10 };
+    }
+  }
+
+  const sendEmail = (email: string, name: string | null) =>
+    isOffer
+      ? sendOfferEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name, stats: offerStats })
+      : isWelcome
+        ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name })
+        : isReengage
+          ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name })
+          : sendWorldCupCampaignEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), name });
 
   // 1.5) PROBE: seçili tipteki maili yalnızca canary/admin adresine gönder (test).
   //      Toplu gönderim YOK, log YOK. "nereye düşüyor" testi için.
@@ -138,9 +166,9 @@ export async function GET(request: NextRequest) {
   const alreadySent = new Set((sentData || []).map((r: any) => r.email.toLowerCase()));
   const canaryLower = (canaryEmail || '').toLowerCase().trim();
 
-  // Re-engagement & Welcome: yalnızca ABONE OLMAYANLARA. Aktif/trial/past_due hariç.
+  // Re-engagement & Welcome & Offer: yalnızca ABONE OLMAYANLARA. Aktif/trial/past_due hariç.
   const subscriberSet = new Set<string>();
-  if (isReengage || isWelcome) {
+  if (isReengage || isWelcome || isOffer) {
     const { data: profs } = await supabase.from('profiles').select('email, subscription_status');
     for (const p of profs || []) {
       const st = (p.subscription_status || '').toLowerCase();
@@ -179,6 +207,7 @@ export async function GET(request: NextRequest) {
       relaunch,
       welcomeDays,
       batchLimit: batchLimit === Infinity ? null : batchLimit,
+      offerStats: isOffer ? offerStats : undefined,
       remainingEligible: remaining,
       wouldSendThisRun: recipients.length,
       excluded: { unsubscribed: unsub.size, alreadySent: alreadySent.size, subscribers: subscriberSet.size },
