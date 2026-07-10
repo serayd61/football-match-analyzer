@@ -26,7 +26,16 @@ function getSupabase(): SupabaseClient {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) throw new Error('Supabase credentials yok');
-    sb = createClient(url, key);
+    // cache: 'no-store' ŞART — Next, route handler içindeki GET fetch'lerini
+    // (Supabase select'leri) cache'leyebiliyor. 2026-07-10 vakası: log tablosu
+    // ilk kez boşken sorgulandı, boş yanıt cache'den dönmeye devam etti →
+    // mükerrer engeli devre dışı kaldı, 120 kişiye mail İKİ KEZ gitti.
+    sb = createClient(url, key, {
+      auth: { persistSession: false },
+      global: {
+        fetch: (input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' }),
+      },
+    });
   }
   return sb;
 }
@@ -156,13 +165,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: usersErr.message }, { status: 500 });
   }
 
-  const { data: unsubData } = await supabase.from('email_unsubscribes').select('email');
+  // Bu iki okuma güvenlik kapısıdır: hata sessizce boş sayılırsa unsubscribe
+  // edilmişlere mail gider / herkese mükerrer gider. Hata → kampanya İPTAL.
+  const { data: unsubData, error: unsubErr } = await supabase.from('email_unsubscribes').select('email');
+  if (unsubErr) {
+    return NextResponse.json({ success: false, aborted: true, reason: 'unsub_read_failed', error: unsubErr.message }, { status: 500 });
+  }
   const unsub = new Set((unsubData || []).map((r: any) => r.email.toLowerCase()));
 
-  const { data: sentData } = await supabase
+  const { data: sentData, error: sentErr } = await supabase
     .from('email_campaign_log')
     .select('email')
     .eq('campaign_key', activeKey);
+  if (sentErr) {
+    return NextResponse.json({ success: false, aborted: true, reason: 'dedup_read_failed', error: sentErr.message }, { status: 500 });
+  }
   const alreadySent = new Set((sentData || []).map((r: any) => r.email.toLowerCase()));
   const canaryLower = (canaryEmail || '').toLowerCase().trim();
 
