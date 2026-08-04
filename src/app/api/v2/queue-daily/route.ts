@@ -51,6 +51,16 @@ async function fetchTodayFixtures(): Promise<FFMatch[]> {
 // FILTER UNANALYZED FIXTURES
 // ============================================================================
 
+// Maliyet kontrolü (2026-08-04): batch analiz TÜM dünya maçlarını tarıyordu
+// (ayda ~3.300 AI analizi; kullanıcıların baktığı ~250). Sadece vitrin değeri
+// olan ligler analiz edilir — kullanıcı analizi (match/[id]) etkilenmez, o
+// her lig için anlık çalışır. 77/894789=Dünya Kupası, 42=UCL, 73=UEL,
+// 47=PL, 87=LaLiga, 55=SerieA, 54=Bundesliga, 53=Ligue1; INT=milli takımlar.
+const BATCH_LEAGUE_IDS = new Set([77, 894789, 42, 73, 47, 87, 55, 54, 53]);
+function isBatchWorthy(f: FFMatch): boolean {
+  return BATCH_LEAGUE_IDS.has(f.leagueId) || (f.leagueCountry || '').toUpperCase() === 'INT';
+}
+
 async function filterUnanalyzedFixtures(fixtures: FFMatch[]): Promise<FFMatch[]> {
   const fixtureIds = fixtures.map(f => f.id);
 
@@ -93,9 +103,10 @@ export async function GET(request: NextRequest) {
     console.log('📅 QUEUE DAILY ANALYSIS');
     console.log('═'.repeat(60));
     
-    // 1. Bugünün maçlarını al
-    const fixtures = await fetchTodayFixtures();
-    console.log(`📊 Total fixtures: ${fixtures.length}`);
+    // 1. Bugünün maçlarını al (yalnızca batch'e değer ligler)
+    const allFixtures = await fetchTodayFixtures();
+    const fixtures = allFixtures.filter(isBatchWorthy);
+    console.log(`📊 Total fixtures: ${allFixtures.length}, batch-worthy: ${fixtures.length}`);
     
     if (fixtures.length === 0) {
       return NextResponse.json({

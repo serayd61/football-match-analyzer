@@ -78,12 +78,13 @@ export async function createCheckoutSession({
   metadata: { userId },
   billing_address_collection: 'required',
   allow_promotion_codes: true,  // Promosyon kodu desteği
-  // 3D Secure'u her uygun kartta zorla → çalıntı kart denemelerini engeller,
-  // sorumluluğu kart sağlayıcıya kaydırır (chargeback koruması). AB-dışı
-  // kartlarda da 'any' ile tetiklenir (varsayılan 'automatic' tetiklemiyordu).
+  // 3DS: 'any' (her kartta zorla) gerçek müşterileri de düşürüyordu —
+  // 2026 Tem: tek gerçek abonelik past_due'da öldü, 8 denemeden 6'sı
+  // başarısız. Çalıntı-kart savunması Radar kurallarında kalıyor; 3DS'i
+  // Stripe'ın risk bazlı kararına bırak ('automatic').
   payment_method_options: {
     card: {
-      request_three_d_secure: 'any',
+      request_three_d_secure: 'automatic',
     },
   },
 };
