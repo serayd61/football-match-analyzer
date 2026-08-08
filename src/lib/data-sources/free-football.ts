@@ -141,7 +141,9 @@ export async function getMatchLeagueInfo(
   eventId: number
 ): Promise<{ name: string; ccode: string; parentLeagueId: number | null } | null> {
   const r = await ffFetch(`/football-get-match-detail?eventid=${eventId}`);
-  const gen = r?.general || r?.detail?.general || r?.match?.general || r;
+  // Doğrulanmış şema (2026-08-08): { detail: { leagueId, leagueName,
+  // parentLeagueId, countryCode, ... } } — alanlar detail'in doğrudan üstünde.
+  const gen = r?.detail || r?.general || r;
   const name = gen?.leagueName || gen?.parentLeagueName || '';
   const ccode = gen?.countryCode || gen?.ccode || '';
   if (!name || /^League \d+$/.test(String(name).trim())) {
