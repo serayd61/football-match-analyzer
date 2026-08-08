@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Target, Lock, TrendingUp } from 'lucide-react';
 import { displayLeague } from '@/lib/league-names';
+import { countryLabel } from '@/lib/countries';
 
 interface ForMatch {
   ok: boolean;
@@ -21,6 +22,7 @@ interface ForMatch {
   locked?: boolean;
   leagueId?: number;
   leagueName?: string;
+  leagueCcode?: string;
   league30d?: { total: number; correct: number; accuracy: number | null };
   pick?: {
     pick: string; confidence: number | null;
@@ -79,7 +81,12 @@ export default function EnginePickCard({ fixtureId, lang = 'tr' }: { fixtureId: 
 
   if (!data?.exists) return null;
 
-  const league = displayLeague(data.leagueName || '', data.leagueId || 0);
+  const baseLeague = displayLeague(data.leagueName || '', data.leagueId || 0);
+  const country = countryLabel(data.leagueCcode);
+  // "Premier League (🏴 England)" — lig adı yoksa yalnız ülke, o da yoksa boş
+  const league = baseLeague
+    ? country ? `${baseLeague} (${country})` : baseLeague
+    : country;
   const proof =
     data.league30d && data.league30d.accuracy != null && data.league30d.total >= 5
       ? t.leagueProof(league, data.league30d.accuracy, data.league30d.total)

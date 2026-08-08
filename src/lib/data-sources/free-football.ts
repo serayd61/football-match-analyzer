@@ -105,10 +105,52 @@ export interface FFMatch {
 // içermiyor → "League 894789" gibi çirkin adlar çıkıyordu).
 // Adlar tek kaynaktan: src/lib/league-names.ts (client kartlarıyla ortak).
 import { LEAGUE_NAME_FIX } from '@/lib/league-names';
+import { getCatalogMap, feedLeagueCatalog } from '@/lib/league-catalog';
 const LEAGUE_CCODE_FIX: Record<number, string> = {
   77: 'INT',
   894789: 'INT',
 };
+
+// Canlı harita + kalıcı katalog birleşimi. Feed maçlarda SEZONLUK lig id'si
+// taşıyor; popular/all-leagues haritası neredeyse hiç eşleşmiyor (2026-08-08
+// ölçümü: 561 maçta 4 çözüm). Katalog (Supabase league_catalog), league-detail
+// cron'unun çözdüğü id'leri kalıcı tutar; harita taze çekildiğinde katalog da
+// beslenir (fire-and-forget).
+async function getMergedLeagueMap(): Promise<Map<number, LeagueMeta>> {
+  const [live, catalog] = await Promise.all([getLeagueMap(), getCatalogMap()]);
+  const merged = new Map(live);
+  for (const [id, e] of catalog) {
+    if (!merged.has(id)) {
+      merged.set(id, { id, name: e.name, ccode: e.ccode, logo: e.logo || FOTMOB_LEAGUE_LOGO(id) });
+    }
+  }
+  if (live.size) {
+    feedLeagueCatalog(Array.from(live.values()));
+  }
+  return merged;
+}
+
+/**
+ * Tek ligin detayı (id → ad + ülke kodu) — league-catalog cron'u çözümsüz
+ * sezonluk id'leri bununla çözer. Yanıt şeması savunmacı parse edilir;
+ * çözülemezse null (asla "League X" yazılmaz).
+ */
+export async function getLeagueDetail(
+  leagueId: number
+): Promise<{ id: number; name: string; ccode: string; logo: string; raw?: any } | null> {
+  const r = await ffFetch(`/football-get-league-detail?leagueid=${leagueId}`);
+  const det = r?.details || r?.league || r;
+  const name = det?.name || det?.leagueName || det?.localizedName || '';
+  const ccode = det?.country || det?.ccode || det?.countryCode || '';
+  if (!name || /^League \d+$/.test(String(name).trim())) return null;
+  return {
+    id: leagueId,
+    name: String(name).trim(),
+    ccode: String(ccode || '').trim(),
+    logo: FOTMOB_LEAGUE_LOGO(leagueId),
+    raw: det,
+  };
+}
 
 function normalize(m: any, leagues: Map<number, LeagueMeta>): FFMatch {
   const lid = m.leagueId;
@@ -143,7 +185,7 @@ export async function getMatchesByDate(date: string | Date): Promise<FFMatch[]> 
   const param = /^\d{8}$/.test(String(date)) ? String(date) : toDateParam(date);
   const [resp, leagues] = await Promise.all([
     ffFetch(`/football-get-matches-by-date?date=${param}`),
-    getLeagueMap(),
+    getMergedLeagueMap(),
   ]);
   const matches = resp?.matches || [];
   const allowed = getAllowedIds();
@@ -162,7 +204,7 @@ export async function getMatchById(fixtureId: number, matchDate: string | Date):
 export async function getLiveMatches(): Promise<FFMatch[]> {
   const [resp, leagues] = await Promise.all([
     ffFetch('/football-current-live'),
-    getLeagueMap(),
+    getMergedLeagueMap(),
   ]);
   const live = resp?.live || [];
   const allowed = getAllowedIds();

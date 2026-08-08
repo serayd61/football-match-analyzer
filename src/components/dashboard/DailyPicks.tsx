@@ -17,10 +17,11 @@ import {
 } from 'lucide-react';
 import { SectionHeader } from '@/components/ui';
 import { displayLeague } from '@/lib/league-names';
+import { countryInfo } from '@/lib/countries';
 
 interface Pick {
   fixtureId: number;
-  leagueId: number; leagueName: string;
+  leagueId: number; leagueName: string; leagueCcode?: string;
   homeId: number; homeName: string;
   awayId: number; awayName: string;
   kickoff: string;
@@ -182,6 +183,7 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
                     <span className="text-white/80 truncate flex-1 min-w-0">
                       {p.homeName} – {p.awayName}
                       <span className="text-white/35 ml-1.5 hidden sm:inline">
+                        {countryInfo(p.leagueCcode)?.flag ? `${countryInfo(p.leagueCcode)!.flag} ` : ''}
                         {displayLeague(p.leagueName, p.leagueId)}
                       </span>
                     </span>
@@ -264,6 +266,7 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
                     <span className="text-white/80 truncate flex-1 min-w-0">
                       {p.homeName} – {p.awayName}
                       <span className="text-white/35 ml-1.5 hidden sm:inline">
+                        {countryInfo(p.leagueCcode)?.flag ? `${countryInfo(p.leagueCcode)!.flag} ` : ''}
                         {displayLeague(p.leagueName, p.leagueId)}
                       </span>
                     </span>

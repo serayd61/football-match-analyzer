@@ -13,6 +13,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
+import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -70,12 +71,20 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const unlocked = await hasEnginePredictionAccess(session?.user?.email);
 
+    // Okuma-anı lig onarımı: insert anında ad çözümsüz kaldıysa ("League X")
+    // katalogdan ad + ülke kodu tamamlanır (bkz. league-catalog cron'u).
+    const catalog = await getCatalogMap().catch(() => new Map());
+    const cat = catalog.get(Number(pred.league_id));
+    const leagueName =
+      isUnresolvedLeagueName(pred.league_name) && cat ? cat.name : pred.league_name;
+
     return NextResponse.json({
       ok: true,
       exists: true,
       locked: !unlocked,
       leagueId: pred.league_id,
-      leagueName: pred.league_name,
+      leagueName,
+      leagueCcode: cat?.ccode || '',
       league30d: { total: leagueTotal, correct: leagueCorrect, accuracy: leagueAccuracy },
       pick: unlocked
         ? {

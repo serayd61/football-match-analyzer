@@ -17,6 +17,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
+import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 
 const CONFIDENCE_MIN = 0.58;
 const MAX_PICKS = 15;
@@ -37,11 +38,19 @@ const PICK_COLS =
   'fixture_id, league_id, league_name, home_id, home_name, away_id, away_name, ' +
   'kickoff, pick, confidence, home_score, away_score, result, correct';
 
-function mapPick(r: any) {
+// Okuma-anı lig onarımı: satırlar insert edildiğinde harita boştu ("League X").
+// Katalog (league_catalog, cron'la dolar) ad + ülke kodunu tamamlar — DB'yi
+// yeniden yazmadan tüm tarihi kayıtlar düzelir.
+type Catalog = Map<number, { name: string; ccode: string }>;
+function mapPick(r: any, catalog?: Catalog) {
+  const cat = catalog?.get(Number(r.league_id));
+  const leagueName =
+    isUnresolvedLeagueName(r.league_name) && cat ? cat.name : r.league_name;
   return {
     fixtureId: r.fixture_id,
     leagueId: r.league_id,
-    leagueName: r.league_name,
+    leagueName,
+    leagueCcode: cat?.ccode || '',
     homeId: r.home_id,
     homeName: r.home_name,
     awayId: r.away_id,
@@ -63,6 +72,9 @@ export async function GET(_request: NextRequest) {
     // sorguyla son 7 günün settled seçimleri çekilir, en yeni GÜN seçilir.
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Lig kataloğu (ad + ülke onarımı için; hata olursa boş harita ile devam)
+    const catalog = await getCatalogMap().catch(() => new Map());
 
     const { data: settledRows, error: settledErr } = await sb()
       .from('engine_predictions')
@@ -97,7 +109,7 @@ export async function GET(_request: NextRequest) {
       const correct = dayRows.filter((r: any) => r.correct === true).length;
       yesterday = {
         date: latestDay,
-        picks: dayRows.map(mapPick),
+        picks: dayRows.map((r: any) => mapPick(r, catalog)),
         total: dayRows.length,
         correct,
         accuracy: dayRows.length ? Math.round((correct / dayRows.length) * 1000) / 10 : 0,
@@ -134,7 +146,7 @@ export async function GET(_request: NextRequest) {
       firstKickoff,
       locked: !unlocked,
       picks: unlocked
-        ? upcoming.map((r: any) => ({ ...mapPick(r), rationale: r.rationale ?? null }))
+        ? upcoming.map((r: any) => ({ ...mapPick(r, catalog), rationale: r.rationale ?? null }))
         : [],
     };
 
