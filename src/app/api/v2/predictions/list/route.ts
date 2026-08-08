@@ -12,6 +12,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
+import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -76,10 +77,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: error.message, predictions: [] }, { status: 500 });
   }
 
-  const predictions = (data || []).map((p: any) => ({
+  // Okuma-anı lig onarımı: insert anında ad çözümsüz kaldıysa ("League X")
+  // katalogdan ad + ülke kodu tamamlanır (bkz. league-catalog cron'u).
+  const catalog = await getCatalogMap().catch(() => new Map());
+
+  const predictions = (data || []).map((p: any) => {
+    const cat = catalog.get(Number(p.league_id));
+    return {
     fixtureId: p.fixture_id,
     leagueId: p.league_id,
-    leagueName: p.league_name,
+    leagueName: isUnresolvedLeagueName(p.league_name) && cat ? cat.name : p.league_name,
+    leagueCcode: cat?.ccode || '',
     homeId: p.home_id,
     homeName: p.home_name,
     awayId: p.away_id,
@@ -100,7 +108,8 @@ export async function GET(request: NextRequest) {
     awayScore: p.away_score,
     result: p.result,
     correct: p.correct,
-  }));
+    };
+  });
 
   return NextResponse.json({ ok: true, count: predictions.length, predictions });
 }

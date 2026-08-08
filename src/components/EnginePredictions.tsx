@@ -14,10 +14,11 @@ import {
   ChevronDown, ChevronUp, RefreshCw, Lock, Crown,
 } from 'lucide-react';
 import { displayLeague } from '@/lib/league-names';
+import { countryInfo } from '@/lib/countries';
 
 export interface Prediction {
   fixtureId: number;
-  leagueId: number; leagueName: string;
+  leagueId: number; leagueName: string; leagueCcode?: string;
   homeId: number; homeName: string;
   awayId: number; awayName: string;
   kickoff: string;
@@ -160,7 +161,10 @@ export default function EnginePredictions({
     if (!groupByLeague) return null;
     const m = new Map<string, Prediction[]>();
     for (const p of sorted) {
-      const k = displayLeague(p.leagueName, p.leagueId) || `#${p.leagueId}`;
+      // Bayrak + lig adı ("🏴 EFL Cup"); ad çözülmemişse #id yerine ülke+#id
+      const base = displayLeague(p.leagueName, p.leagueId) || `#${p.leagueId}`;
+      const ci = countryInfo(p.leagueCcode);
+      const k = ci ? `${ci.flag} ${base}` : base;
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(p);
     }

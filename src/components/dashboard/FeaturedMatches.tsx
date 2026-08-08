@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Clock, Zap, CalendarOff, RefreshCw } from 'lucide-react';
 import { displayLeague } from '@/lib/league-names';
+import { countryInfo } from '@/lib/countries';
 
 interface Fixture {
   id: number;
@@ -150,7 +151,10 @@ export default function FeaturedMatches({ lang = 'tr', limit = 6 }: { lang?: str
             className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 hover:border-brand-400/40 transition-colors flex flex-col"
           >
             <div className="flex items-center justify-between text-xs text-white/40 mb-3">
-              <span className="truncate max-w-[60%]">{displayLeague(f.league, f.leagueId)}</span>
+              <span className="truncate max-w-[60%]">
+                {countryInfo(f.leagueCountry)?.flag ? `${countryInfo(f.leagueCountry)!.flag} ` : ''}
+                {displayLeague(f.league, f.leagueId)}
+              </span>
               <span className="flex items-center gap-1 shrink-0">
                 <Clock size={12} /> {dayLabel(f.date)} {koStr}
               </span>

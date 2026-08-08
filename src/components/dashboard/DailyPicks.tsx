@@ -182,7 +182,7 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
                     )}
                     <span className="text-white/80 truncate flex-1 min-w-0">
                       {p.homeName} – {p.awayName}
-                      <span className="text-white/35 ml-1.5 hidden sm:inline">
+                      <span className="text-white/35 ml-1.5">
                         {countryInfo(p.leagueCcode)?.flag ? `${countryInfo(p.leagueCcode)!.flag} ` : ''}
                         {displayLeague(p.leagueName, p.leagueId)}
                       </span>
@@ -265,7 +265,7 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
                     </span>
                     <span className="text-white/80 truncate flex-1 min-w-0">
                       {p.homeName} – {p.awayName}
-                      <span className="text-white/35 ml-1.5 hidden sm:inline">
+                      <span className="text-white/35 ml-1.5">
                         {countryInfo(p.leagueCcode)?.flag ? `${countryInfo(p.leagueCcode)!.flag} ` : ''}
                         {displayLeague(p.leagueName, p.leagueId)}
                       </span>
