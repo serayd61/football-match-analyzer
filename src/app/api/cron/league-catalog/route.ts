@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getMatchesByDate, getLeagueDetail } from '@/lib/data-sources/free-football';
+import { getMatchesByDate, getLeagueDetail, getMatchLeagueInfo } from '@/lib/data-sources/free-football';
 import { getCatalogMap, upsertLeagueCatalog, isUnresolvedLeagueName } from '@/lib/league-catalog';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
-  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 150) : 40;
+  // Fallback'li çözüm ~2.2s/lig sürer; maxDuration 120s'e güvenli sığması
+  // için parti üst sınırı 45 (backfill birkaç çağrıyla tamamlanır).
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 45) : 40;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,21 +55,31 @@ export async function GET(request: NextRequest) {
     getMatchesByDate(today).catch(() => []),
     getMatchesByDate(tomorrow).catch(() => []),
   ]);
+  // Lig başına örnek maç id'si: sezonluk id'ler league-detail'de çözülemiyor,
+  // match-detail fallback'i bu örnek maçla lig adını + ülkeyi çıkarır.
+  const sampleEvent = new Map<number, number>();
   const unresolvedFromFeed = new Set<number>();
   for (const m of [...d1, ...d2]) {
-    if (isUnresolvedLeagueName(m.leagueName) && m.leagueId) unresolvedFromFeed.add(m.leagueId);
+    if (isUnresolvedLeagueName(m.leagueName) && m.leagueId) {
+      unresolvedFromFeed.add(m.leagueId);
+      if (!sampleEvent.has(m.leagueId) && m.id) sampleEvent.set(m.leagueId, m.id);
+    }
   }
 
   // 2) engine_predictions'taki tarihi çözümsüzler (karne/tahmin ekranları
   //    okuma anında katalogdan düzelsin diye onları da çözeriz).
   const { data: predRows } = await supabase
     .from('engine_predictions')
-    .select('league_id, league_name')
+    .select('league_id, league_name, fixture_id')
     .like('league_name', 'League %')
     .limit(3000);
   const unresolvedFromDb = new Set<number>();
   for (const r of (predRows || []) as any[]) {
-    if (r.league_id && isUnresolvedLeagueName(r.league_name)) unresolvedFromDb.add(Number(r.league_id));
+    if (r.league_id && isUnresolvedLeagueName(r.league_name)) {
+      const lid = Number(r.league_id);
+      unresolvedFromDb.add(lid);
+      if (!sampleEvent.has(lid) && r.fixture_id) sampleEvent.set(lid, Number(r.fixture_id));
+    }
   }
 
   // 3) Katalogda zaten çözülmüş olanları düş
@@ -84,11 +96,30 @@ export async function GET(request: NextRequest) {
   let sampleRaw: any = null;
   const resolvedEntries: { id: number; name: string; ccode: string; logo: string }[] = [];
   for (const id of batch) {
+    // 1) league-detail (kanonik id'lerde çalışır)
+    let entry: { name: string; ccode: string } | null = null;
     const det = await getLeagueDetail(id);
-    if (det) {
-      resolvedEntries.push({ id: det.id, name: det.name, ccode: det.ccode, logo: det.logo });
+    if (det) entry = { name: det.name, ccode: det.ccode };
+
+    // 2) fallback: ligin örnek maçının detayından leagueName + countryCode
+    if (!entry) {
+      const ev = sampleEvent.get(id);
+      if (ev) {
+        await sleep(500);
+        const info = await getMatchLeagueInfo(ev);
+        if (info) entry = { name: info.name, ccode: info.ccode };
+      }
+    }
+
+    if (entry) {
+      resolvedEntries.push({
+        id,
+        name: entry.name,
+        ccode: entry.ccode,
+        logo: `https://images.fotmob.com/image_resources/logo/leaguelogo/dark/${id}.png`,
+      });
       resolved++;
-      if (!sampleRaw) sampleRaw = { id, parsed: { name: det.name, ccode: det.ccode } };
+      if (!sampleRaw) sampleRaw = { id, parsed: entry };
     } else {
       failed++;
     }

@@ -131,9 +131,31 @@ async function getMergedLeagueMap(): Promise<Map<number, LeagueMeta>> {
 }
 
 /**
- * Tek ligin detayı (id → ad + ülke kodu) — league-catalog cron'u çözümsüz
- * sezonluk id'leri bununla çözer. Yanıt şeması savunmacı parse edilir;
- * çözülemezse null (asla "League X" yazılmaz).
+ * Bir maçın detayından LİG bilgisi (ad + ülke kodu) çıkarır. Sezonluk lig
+ * id'leri league-detail endpoint'inde çözülemiyor (status=failed, 2026-08-08
+ * ölçümü: 60/60 başarısız) — ama match-detail yanıtının general bloğu
+ * leagueName + countryCode taşır. league-catalog cron'u çözümsüz ligler için
+ * o ligden örnek bir maçla bunu çağırır.
+ */
+export async function getMatchLeagueInfo(
+  eventId: number
+): Promise<{ name: string; ccode: string; parentLeagueId: number | null } | null> {
+  const r = await ffFetch(`/football-get-match-detail?eventid=${eventId}`);
+  const gen = r?.general || r?.detail?.general || r;
+  const name = gen?.leagueName || gen?.parentLeagueName || '';
+  const ccode = gen?.countryCode || gen?.ccode || '';
+  if (!name || /^League \d+$/.test(String(name).trim())) return null;
+  return {
+    name: String(name).trim(),
+    ccode: String(ccode || '').trim(),
+    parentLeagueId: Number.isFinite(Number(gen?.parentLeagueId)) ? Number(gen.parentLeagueId) : null,
+  };
+}
+
+/**
+ * Tek ligin detayı (id → ad + ülke kodu) — KANONİK id'lerde çalışır; sezonluk
+ * id'lerde API failed döner (o durumda getMatchLeagueInfo kullanılır).
+ * Çözülemezse null (asla "League X" yazılmaz).
  */
 export async function getLeagueDetail(
   leagueId: number
