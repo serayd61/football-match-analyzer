@@ -141,10 +141,14 @@ export async function getMatchLeagueInfo(
   eventId: number
 ): Promise<{ name: string; ccode: string; parentLeagueId: number | null } | null> {
   const r = await ffFetch(`/football-get-match-detail?eventid=${eventId}`);
-  const gen = r?.general || r?.detail?.general || r;
+  const gen = r?.general || r?.detail?.general || r?.match?.general || r;
   const name = gen?.leagueName || gen?.parentLeagueName || '';
   const ccode = gen?.countryCode || gen?.ccode || '';
-  if (!name || /^League \d+$/.test(String(name).trim())) return null;
+  if (!name || /^League \d+$/.test(String(name).trim())) {
+    // Şema teşhisi: parse ıskalarsa ham yanıtın başını logla (bir kez yeter)
+    if (r) console.warn(`[free-football] match-detail parse miss ev=${eventId} shape=${JSON.stringify(r).slice(0, 500)}`);
+    return null;
+  }
   return {
     name: String(name).trim(),
     ccode: String(ccode || '').trim(),
