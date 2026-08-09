@@ -112,10 +112,14 @@ export default function MatchIntelligence({
   lang = 'tr',
   matchId,
   limit = 12,
+  hideWhenEmpty = false,
 }: {
   lang?: string;
   matchId?: number; // verilirse tek maç (maç kartı sekmesi), yoksa yaklaşan liste
   limit?: number;
+  // true: veri yokken bileşen hiç render edilmez (dashboard'da boş kutu
+  // kalmasın). Erişim kapısı (auth/abonelik) yine gösterilir — dönüşüm yüzeyi.
+  hideWhenEmpty?: boolean;
 }) {
   // Önizleme dili — dışarıdan gelen lang varsayılan, kullanıcı değiştirebilir.
   const [viewLang, setViewLang] = useState<Lang>((['tr', 'en', 'de'].includes(lang) ? lang : 'en') as Lang);
@@ -189,6 +193,11 @@ export default function MatchIntelligence({
         </div>
       </div>
     );
+  }
+
+  // Boş liste + kapı yok → bölümü tamamen gizle (dashboard isteği)
+  if (hideWhenEmpty && !gate && (loading ? items.length === 0 : sorted.length === 0)) {
+    return null;
   }
 
   return (

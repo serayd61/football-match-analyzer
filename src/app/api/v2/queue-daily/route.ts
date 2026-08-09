@@ -57,8 +57,21 @@ async function fetchTodayFixtures(): Promise<FFMatch[]> {
 // her lig için anlık çalışır. 77/894789=Dünya Kupası, 42=UCL, 73=UEL,
 // 47=PL, 87=LaLiga, 55=SerieA, 54=Bundesliga, 53=Ligue1; INT=milli takımlar.
 const BATCH_LEAGUE_IDS = new Set([77, 894789, 42, 73, 47, 87, 55, 54, 53]);
+// KRİTİK (2026-08-09): feed maçlarda SEZONLUK lig id'si taşır (örn. PL 25/26
+// ≠ 47) — id beyaz listesi tek başına HİÇBİR maçı geçirmiyordu ve gece batch'i
+// 5+ gün boyunca 0 analiz üretti. Katalog sayesinde leagueName artık çözülü
+// geldiğinden ad+ülke çifti sezondan bağımsız eşleşir; id seti yedek kalır.
+const BATCH_LEAGUE_NAMES = new Set([
+  'Premier League|ENG', 'LaLiga|ESP', 'Serie A|ITA', 'Bundesliga|GER',
+  'Ligue 1|FRA', 'Champions League|INT', 'Europa League|INT', 'World Cup|INT',
+]);
 function isBatchWorthy(f: FFMatch): boolean {
-  return BATCH_LEAGUE_IDS.has(f.leagueId) || (f.leagueCountry || '').toUpperCase() === 'INT';
+  const ccode = (f.leagueCountry || '').toUpperCase();
+  return (
+    BATCH_LEAGUE_IDS.has(f.leagueId) ||
+    ccode === 'INT' ||
+    BATCH_LEAGUE_NAMES.has(`${f.leagueName}|${ccode}`)
+  );
 }
 
 async function filterUnanalyzedFixtures(fixtures: FFMatch[]): Promise<FFMatch[]> {

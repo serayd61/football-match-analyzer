@@ -326,22 +326,12 @@ export default function DashboardPage() {
           <EnginePredictions key={`pred-${refreshKey}`} lang={lang} showStats showControls={false} limit={6} />
         </motion.section>
 
-        {/* Match Intelligence */}
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.05 }}
-          className="mb-12"
-        >
-          <SectionHeader
-            icon={<Brain size={18} />}
-            title={t.matchIntelTitle || 'Match Intelligence'}
-            subtitle={t.matchIntelSubtitle}
-          />
-          {/* limit 30 → 12: dashboard'u sayfalarca uzatıyordu ("düzen bozuk"
-              şikayeti); tam liste /tahminler'de */}
-          <MatchIntelligence key={`mi-${refreshKey}`} lang={lang} limit={12} />
-        </motion.section>
+        {/* Match Intelligence — başlığı bileşenin kendi header'ı taşır (çift
+            başlık vardı); veri yokken bölüm tamamen gizlenir (boş kutu
+            şikayeti). limit 30 → 12: dashboard'u sayfalarca uzatıyordu. */}
+        <div className="mb-12 empty:mb-0 empty:hidden">
+          <MatchIntelligence key={`mi-${refreshKey}`} lang={lang} limit={12} hideWhenEmpty />
+        </div>
 
         {/* Engine Performance (free'de yukarıda gösterildi) */}
         {!isFreeUser && (
