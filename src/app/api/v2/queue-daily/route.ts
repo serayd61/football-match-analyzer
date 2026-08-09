@@ -57,10 +57,11 @@ async function fetchTodayFixtures(): Promise<FFMatch[]> {
 // her lig için anlık çalışır. 77/894789=Dünya Kupası, 42=UCL, 73=UEL,
 // 47=PL, 87=LaLiga, 55=SerieA, 54=Bundesliga, 53=Ligue1; INT=milli takımlar.
 const BATCH_LEAGUE_IDS = new Set([77, 894789, 42, 73, 47, 87, 55, 54, 53]);
-// KRİTİK (2026-08-09): feed maçlarda SEZONLUK lig id'si taşır (örn. PL 25/26
-// ≠ 47) — id beyaz listesi tek başına HİÇBİR maçı geçirmiyordu ve gece batch'i
-// 5+ gün boyunca 0 analiz üretti. Katalog sayesinde leagueName artık çözülü
-// geldiğinden ad+ülke çifti sezondan bağımsız eşleşir; id seti yedek kalır.
+// Yedek eşleşme (2026-08-09): feed BAZI turnuvalarda sezonluk id taşır
+// (EFL Cup=938221 gibi). Ölçüm: top-5 ligler kanonik id'yle geliyor
+// (PL=47, LaLiga=87, SerieA=55, Ligue1=53 — 22 Ağu fikstürlerinde doğrulandı),
+// yani id seti bugün çalışıyor. Ad+ülke çifti, ileride bir lig sezonluk id'ye
+// kayarsa batch'in sessizce boşalmaması için ikinci bir kanca.
 const BATCH_LEAGUE_NAMES = new Set([
   'Premier League|ENG', 'LaLiga|ESP', 'Serie A|ITA', 'Bundesliga|GER',
   'Ligue 1|FRA', 'Champions League|INT', 'Europa League|INT', 'World Cup|INT',
