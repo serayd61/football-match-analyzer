@@ -105,24 +105,35 @@ async function fetchTeamAverages(teamId) {
   const fallback = { avgFor: 1.3, avgAgainst: 1.3, played: 0, form: '' };
   if (!teamId) return fallback;
   try {
-    const url = `${FD_BASE}/teams/${teamId}/matches?status=FINISHED&limit=8`;
+    // Tarih aralığı ZORUNLU (2026-08-09'da tespit edildi): aralık verilmezse
+    // football-data.org yalnızca İÇİNDE BULUNULAN sezonu döndürür. Sezon
+    // başlamadan her takım 0 maçla dönüyordu → her maç aynı jenerik lambda'ya
+    // (1.43-1.17) düşüyor ve tüm önizlemeler birebir aynı olasılığı gösteriyordu.
+    // 400 gün, bir önceki sezonun tamamını kapsar.
+    const to = new Date();
+    const from = new Date(to.getTime() - 400 * 86400000);
+    const url = `${FD_BASE}/teams/${teamId}/matches?status=FINISHED`
+      + `&dateFrom=${ymd(from)}&dateTo=${ymd(to)}`;
     const res = await fetch(url, { headers: fdHeaders });
     if (!res.ok) return fallback;
     const json = await res.json();
-    const matches = json.matches || [];
-    if (!matches.length) return fallback;
+    // Aralık artık 30+ maç döndürebilir; en YENİ 8'i al (limit= parametresi
+    // "son N" demek değil, yalnızca üst sınır).
+    const recent = (json.matches || [])
+      .filter((m) => m.score?.fullTime?.home != null && m.score?.fullTime?.away != null)
+      .sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate))
+      .slice(0, 8);
+    if (!recent.length) return fallback;
     let gf = 0, ga = 0, n = 0;
     const form = [];
-    for (const m of matches) {
+    for (const m of recent) { // en yeniden eskiye
       const isHome = m.homeTeam?.id === teamId;
-      const fh = m.score?.fullTime?.home, fa = m.score?.fullTime?.away;
-      if (fh == null || fa == null) continue;
+      const fh = m.score.fullTime.home, fa = m.score.fullTime.away;
       const teamGoals = isHome ? fh : fa;
       const oppGoals = isHome ? fa : fh;
       gf += teamGoals; ga += oppGoals; n++;
       form.push(teamGoals > oppGoals ? 'W' : teamGoals < oppGoals ? 'L' : 'D');
     }
-    if (!n) return fallback;
     return { avgFor: gf / n, avgAgainst: ga / n, played: n, form: form.join('') };
   } catch {
     return fallback;
@@ -160,7 +171,9 @@ function poissonPrediction(homeAvg, awayAvg) {
     pOver25: round(pOver25), pBttsYes: round(pBtts),
     lambdaHome: round(lambdaHome), lambdaAway: round(lambdaAway),
     topScores: scores.slice(0, 3).map(s => ({ score: s.score, p: round(s.p) })),
-    source: 'poisson-1.0',
+    // Örneklem şeffaflığı: 0-0 görünüyorsa takım verisi yoktu ve sayılar
+    // jenerik fallback'tir (örn. alt ligden çıkmış takımlar API'de yok).
+    source: `poisson-1.1 (${homeAvg.played}-${awayAvg.played} maç)`,
   };
 }
 
