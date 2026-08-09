@@ -143,6 +143,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Kişisel analiz geçmişi (dashboard "Analizlerim") — cache hit'te de yazılır;
+    // kullanıcı için maç "analiz edilmiş" sayılır. Fire-and-forget, analiz akışını
+    // asla bloklamaz.
+    getSupabase()
+      .from('user_analysis_history')
+      .upsert(
+        {
+          email: session.user.email,
+          fixture_id: fixtureId,
+          home_team: homeTeam,
+          away_team: awayTeam,
+          home_id: homeTeamId,
+          away_id: awayTeamId,
+          league: league || null,
+          match_date: matchDate ? String(matchDate).split('T')[0] : null,
+          analyzed_at: new Date().toISOString(),
+        },
+        { onConflict: 'email,fixture_id' },
+      )
+      .then(
+        ({ error }) => {
+          if (error) console.error('⚠️ user_analysis_history upsert failed (non-critical):', error.message);
+        },
+        (e) => console.error('⚠️ user_analysis_history upsert rejected (non-critical):', e),
+      );
+
     // Cache kontrolü
     if (!skipCache) {
       const supabase = getSupabase();
@@ -153,12 +179,17 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (cached?.analysis) {
-        // Enforce 2-hour TTL for L2 Cache
+        // 2 saat TTL — maç ÖNCESİ bilgiler (oran, kadro) tazelensin diye.
+        // Maç günü geçtiyse TTL yok sayılır: bitmiş maça yeniden analiz
+        // koşturmak hem AI maliyeti hem kullanıcının günlük hakkını boşa
+        // harcar (Analizlerim geçmişinden dönüşlerde kritik).
         const cachedAt = new Date(cached.created_at).getTime();
         const now = Date.now();
         const twoHours = 2 * 60 * 60 * 1000;
+        const matchInPast =
+          !!matchDate && String(matchDate).split('T')[0] < new Date().toISOString().split('T')[0];
 
-        if (now - cachedAt < twoHours) {
+        if (matchInPast || now - cachedAt < twoHours) {
           console.log(`📦 Returning valid cached unified analysis for fixture ${fixtureId} (${Math.round((now - cachedAt) / 60000)} min old)`);
 
           if (stream) {

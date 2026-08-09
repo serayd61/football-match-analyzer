@@ -23,6 +23,7 @@ import { SectionHeader, Button, Badge, Spinner } from '@/components/ui';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import FeaturedMatches from '@/components/dashboard/FeaturedMatches';
 import DailyPicks from '@/components/dashboard/DailyPicks';
+import MyAnalyses from '@/components/dashboard/MyAnalyses';
 import SampleAnalysisCard from '@/components/dashboard/SampleAnalysisCard';
 import EnginePredictions from '@/components/EnginePredictions';
 import MatchIntelligence from '@/components/MatchIntelligence';
@@ -242,6 +243,10 @@ export default function DashboardPage() {
           </div>
         </motion.section>
 
+        {/* Analizlerim — kullanıcının geçmiş analizleri; "dünkü maçı bulamıyorum"
+            diye kaybolmasın diye hero'nun hemen altında. Geçmiş boşsa görünmez. */}
+        <MyAnalyses key={`mine-${refreshKey}`} lang={lang} />
+
         {/* Kanıt döngüsü: Dünün Karnesi (public) + Bugünün Seçimleri (Pro).
             Free için dönüşüm yüzeyi, Pro için günlük özet — herkese gösterilir. */}
         <DailyPicks key={`dp-${refreshKey}`} lang={lang} />
@@ -333,7 +338,9 @@ export default function DashboardPage() {
             title={t.matchIntelTitle || 'Match Intelligence'}
             subtitle={t.matchIntelSubtitle}
           />
-          <MatchIntelligence key={`mi-${refreshKey}`} lang={lang} limit={30} />
+          {/* limit 30 → 12: dashboard'u sayfalarca uzatıyordu ("düzen bozuk"
+              şikayeti); tam liste /tahminler'de */}
+          <MatchIntelligence key={`mi-${refreshKey}`} lang={lang} limit={12} />
         </motion.section>
 
         {/* Engine Performance (free'de yukarıda gösterildi) */}
