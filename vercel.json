@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/fit-calibration",
       "schedule": "50 3 * * 1"
+    },
+    {
+      "path": "/api/cron/snapshot-odds",
+      "schedule": "10 * * * *"
     }
   ]
 }

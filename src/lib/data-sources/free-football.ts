@@ -158,6 +158,95 @@ export async function getMatchLeagueInfo(
   };
 }
 
+export interface MatchOdds {
+  home: number; draw: number; away: number;
+  overround: number;
+  pHome: number; pDraw: number; pAway: number;
+  provider: string;
+  raw: any;
+}
+
+/**
+ * Maçın 1X2 ondalık oranları — /football-event-odds?eventid=&countrycode=
+ *
+ * ⚠️ Yanıt şeması belgelenmemiş; parse SAVUNMACI: tanınan birkaç biçim
+ * denenir, hiçbiri tutmazsa ham şeklin başı loglanır (getMatchLeagueInfo'da
+ * işe yarayan desen) ve null döner — asla uydurma oran üretilmez.
+ *
+ * Marj arındırma: oranların ters toplamı 1'i aşar (overround = bahisçi marjı).
+ * Olasılıklar bu toplama bölünüp normalize edilir; motorla karşılaştırılabilir
+ * hale gelen budur.
+ */
+export async function getMatchOdds(
+  eventId: number,
+  countryCode = 'GB',
+): Promise<MatchOdds | null> {
+  const r = await ffFetch(
+    `/football-event-odds?eventid=${eventId}&countrycode=${encodeURIComponent(countryCode)}`,
+  );
+  if (!r) return null;
+
+  const num = (v: any): number | null => {
+    const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+    return Number.isFinite(n) && n > 1 && n < 1000 ? n : null;
+  };
+
+  let h: number | null = null, d: number | null = null, a: number | null = null;
+  let provider = 'unknown';
+
+  const scan = (node: any, depth = 0): boolean => {
+    if (!node || depth > 5) return false;
+    if (Array.isArray(node)) return node.some((x) => scan(x, depth + 1));
+    if (typeof node !== 'object') return false;
+
+    // 1) Adlandırılmış alanlar
+    const cand: Array<[any, any, any]> = [
+      [node.home, node.draw, node.away],
+      [node.homeWin, node.draw, node.awayWin],
+      [node['1'], node['X'], node['2']],
+      [node.oddsHome, node.oddsDraw, node.oddsAway],
+    ];
+    for (const [x, y, z] of cand) {
+      const hh = num(x), dd = num(y), aa = num(z);
+      if (hh && dd && aa) {
+        h = hh; d = dd; a = aa;
+        provider = String(node.provider || node.bookmaker || node.source || provider);
+        return true;
+      }
+    }
+    // 2) 3 elemanlı seçenek dizisi (1/X/2 sırası)
+    const opts = node.options || node.outcomes || node.selections;
+    if (Array.isArray(opts) && opts.length === 3) {
+      const vals = opts.map((o: any) => num(o?.odds ?? o?.price ?? o?.value ?? o));
+      if (vals.every(Boolean)) {
+        h = vals[0] as number; d = vals[1] as number; a = vals[2] as number;
+        provider = String(node.provider || node.bookmaker || provider);
+        return true;
+      }
+    }
+    return Object.values(node).some((v) => scan(v, depth + 1));
+  };
+
+  scan(r);
+
+  if (!h || !d || !a) {
+    console.warn(`[free-football] odds parse miss ev=${eventId} shape=${JSON.stringify(r).slice(0, 600)}`);
+    return null;
+  }
+
+  const overround = 1 / h + 1 / d + 1 / a;
+  const rd = (x: number) => Math.round(x * 1000) / 1000;
+  return {
+    home: h, draw: d, away: a,
+    overround: rd(overround),
+    pHome: rd(1 / h / overround),
+    pDraw: rd(1 / d / overround),
+    pAway: rd(1 / a / overround),
+    provider,
+    raw: r,
+  };
+}
+
 /**
  * Tek ligin detayı (id → ad + ülke kodu) — KANONİK id'lerde çalışır; sezonluk
  * id'lerde API failed döner (o durumda getMatchLeagueInfo kullanılır).
