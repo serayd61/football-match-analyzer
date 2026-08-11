@@ -43,26 +43,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Sonuçlanmış tahminler (void'ler hariç: result NULL olanlar oynanmamış sayılır)
-  const { data, error } = await sb()
-    .from('engine_predictions')
-    .select('league_id, league_name, confidence, correct')
-    .eq('settled', true)
-    .not('result', 'is', null)
-    .not('correct', 'is', null)
-    .not('confidence', 'is', null)
-    .limit(20000);
-
-  if (error) {
-    console.error('[fit-calibration] read error:', error.message);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  // Sonuçlanmış tahminler (void'ler hariç: result NULL olanlar oynanmamış sayılır).
+  // ⚠️ PostgREST varsayılan üst sınırı 1000 satır — .limit() bunu AŞMAZ.
+  // Kalibrasyonun tüm geçmişi görmesi şart, o yüzden range ile sayfalanır.
+  const PAGE = 1000;
+  const data: any[] = [];
+  for (let from = 0; from < 50000; from += PAGE) {
+    const { data: page, error } = await sb()
+      .from('engine_predictions')
+      .select('league_id, league_name, confidence, correct')
+      .eq('settled', true)
+      .not('result', 'is', null)
+      .not('correct', 'is', null)
+      .not('confidence', 'is', null)
+      .order('kickoff', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) {
+      console.error('[fit-calibration] read error:', error.message);
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+    if (!page?.length) break;
+    data.push(...page);
+    if (page.length < PAGE) break;
   }
 
   const catalog = await getCatalogMap().catch(() => new Map());
   const all: Array<{ x: number; y: number }> = [];
   const covered: Array<{ x: number; y: number }> = [];
 
-  for (const r of (data || []) as any[]) {
+  for (const r of data) {
     const x = Number(r.confidence);
     if (!Number.isFinite(x)) continue;
     const y = r.correct === true ? 1 : 0;
