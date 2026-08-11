@@ -66,7 +66,10 @@ const STR = {
     gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.',
     gateSubCta: '7 gün ücretsiz dene',
     teaserLeagues: 'lig test edildi', teaserMatches: 'gerçek maçta doğrulandı',
-    teaserAcc: '1X2 isabet', teaserLink: 'Şeffaf sonuç kaydını gör →' },
+    teaserAcc: '1X2 isabet', teaserLink: 'Şeffaf sonuç kaydını gör →',
+    uncTitle: 'Model kapsamı dışında',
+    uncDesc: 'Bu liglerin takım gücü parametreleri eğitilmedi — sayılar genel istatistiksel yedekten gelir, güvenilirliği düşüktür. Yukarıdaki istatistiklere ve karneye dahil DEĞİLDİR.',
+    uncShow: (n: number) => `${n} tahmini göster`, uncHide: 'Gizle' },
   en: { home: 'Home', draw: 'Draw', away: 'Away', conf: 'Confidence',
     over: 'Over 2.5', btts: 'BTTS', why: 'Why?', matches: 'matches', avgConf: 'Avg. conf.',
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
@@ -79,7 +82,10 @@ const STR = {
     gateSubDesc: 'Try free for 7 days, cancel anytime.',
     gateSubCta: 'Start 7-day free trial',
     teaserLeagues: 'leagues tested', teaserMatches: 'real matches backtested',
-    teaserAcc: '1X2 accuracy', teaserLink: 'See the transparent track record →' },
+    teaserAcc: '1X2 accuracy', teaserLink: 'See the transparent track record →',
+    uncTitle: 'Outside model coverage',
+    uncDesc: 'Team-strength parameters were not fitted for these leagues — the numbers come from a generic statistical fallback and are less reliable. NOT included in the stats or track record above.',
+    uncShow: (n: number) => `Show ${n} predictions`, uncHide: 'Hide' },
   de: { home: 'Heim', draw: 'Unent.', away: 'Auswärts', conf: 'Konfidenz',
     over: 'Über 2.5', btts: 'BTTS', why: 'Warum?', matches: 'Spiele', avgConf: 'Ø Konfidenz',
     leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
@@ -92,7 +98,10 @@ const STR = {
     gateSubDesc: '7 Tage kostenlos testen, jederzeit kündbar.',
     gateSubCta: '7 Tage kostenlos testen',
     teaserLeagues: 'Ligen getestet', teaserMatches: 'echte Spiele im Backtest',
-    teaserAcc: '1X2-Trefferquote', teaserLink: 'Transparente Erfolgsbilanz ansehen →' },
+    teaserAcc: '1X2-Trefferquote', teaserLink: 'Transparente Erfolgsbilanz ansehen →',
+    uncTitle: 'Ausserhalb der Modellabdeckung',
+    uncDesc: 'Für diese Ligen wurden keine Teamstärke-Parameter trainiert — die Zahlen stammen aus einem generischen statistischen Fallback und sind weniger verlässlich. NICHT in den Statistiken oben enthalten.',
+    uncShow: (n: number) => `${n} Vorhersagen anzeigen`, uncHide: 'Ausblenden' },
 };
 
 export default function EnginePredictions({
@@ -110,6 +119,10 @@ export default function EnginePredictions({
 }) {
   const t = (STR as any)[lang] || STR.en;
   const [preds, setPreds] = useState<Prediction[]>([]);
+  // Modeli fit EDİLMEMİŞ liglerin tahminleri — ayrı tutulur, ayrı etiketlenir.
+  // İstatistik şeridi ve karne bunları ASLA içermez (bkz. lib/model-coverage).
+  const [uncovered, setUncovered] = useState<Prediction[]>([]);
+  const [showUncovered, setShowUncovered] = useState(false);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'conf' | 'time'>('conf');
@@ -129,13 +142,15 @@ export default function EnginePredictions({
     setLoading(true);
     try {
       const res = await fetch('/api/v2/predictions/list', { cache: 'no-store' });
-      if (res.status === 401) { setGate('auth'); setPreds([]); return; }
-      if (res.status === 403) { setGate('subscription'); setPreds([]); return; }
+      if (res.status === 401) { setGate('auth'); setPreds([]); setUncovered([]); return; }
+      if (res.status === 403) { setGate('subscription'); setPreds([]); setUncovered([]); return; }
       const data = await res.json();
       setGate(null);
       setPreds(data.predictions || []);
+      setUncovered(data.uncovered || []);
     } catch {
       setPreds([]);
+      setUncovered([]);
     } finally {
       setLoading(false);
     }
@@ -288,7 +303,9 @@ export default function EnginePredictions({
           <RefreshCw className="animate-spin mx-auto mb-3" /> {t.loading}
         </div>
       ) : sorted.length === 0 ? (
-        <div className="text-center py-16 text-white/40 border border-white/10 rounded-2xl bg-white/[0.02]">
+        // Kapsam dışı tahminler varsa boş kutu daha kısa: asıl mesaj alttaki
+        // sarı bölümde ("modelli ligde şu an maç yok, elimizdekiler bunlar").
+        <div className={`text-center text-white/40 border border-white/10 rounded-2xl bg-white/[0.02] ${uncovered.length ? 'py-8 text-sm' : 'py-16'}`}>
           {t.empty}
         </div>
       ) : groupByLeague && groups ? (
@@ -317,6 +334,39 @@ export default function EnginePredictions({
               open={open === p.fixtureId}
               onToggle={() => setOpen(open === p.fixtureId ? null : p.fixtureId)} />
           ))}
+        </div>
+      )}
+
+      {/* --- Model kapsamı dışı: ayrı bölüm, varsayılan KAPALI, açıkça uyarılı.
+          Gizlemek yerine etiketlemek: sayfa boş kalmaz ama kullanıcı hangisinin
+          gerçek motor çıktısı olduğunu karıştırmaz. --- */}
+      {!loading && uncovered.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-amber-200/90">{t.uncTitle}</h3>
+              <p className="text-xs text-white/45 mt-1 max-w-2xl">{t.uncDesc}</p>
+            </div>
+            <button
+              onClick={() => setShowUncovered((v) => !v)}
+              className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-amber-400/30 text-amber-200/80 hover:bg-amber-400/10 transition-colors"
+            >
+              {showUncovered ? t.uncHide : t.uncShow(uncovered.length)}
+            </button>
+          </div>
+
+          {showUncovered && (
+            <div className="grid md:grid-cols-2 gap-4 mt-4 opacity-70">
+              {uncovered
+                .slice()
+                .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+                .map((p, i) => (
+                  <PredictionCard key={p.fixtureId} p={p} t={t} i={i}
+                    open={open === p.fixtureId}
+                    onToggle={() => setOpen(open === p.fixtureId ? null : p.fixtureId)} />
+                ))}
+            </div>
+          )}
         </div>
       )}
     </div>

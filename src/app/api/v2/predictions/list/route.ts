@@ -120,19 +120,27 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  // Model kapsamı kapısı: parametresi fit edilmemiş ligler listelenmez.
-  // Ölçüm 2026-08-11: yayınlananın %99.8'i modelsiz liglerdendi ve isabet
-  // %49.4'te kalıyordu. ?all=1 eski davranışı verir (hata ayıklama).
-  const enforce = searchParams.get('all') !== '1';
-  const visible = enforce
-    ? predictions.filter((p) => isModelCovered(p.leagueName, p.leagueId, p.leagueCcode))
-    : predictions;
+  // Model kapsamı: tahminler GİZLENMEZ, ETİKETLENİR. Fit edilmiş ligler
+  // ana liste; kalanlar `uncovered` altında ayrı döner ve arayüzde "kapsam
+  // dışı — istatistiksel yedek" olarak gösterilir.
+  // Ölçüm 2026-08-11: kapsam dışı ligler %49.4 isabet; ana listeyle
+  // karıştırılırsa karne motoru değil yedeği ölçer (bkz. model-coverage.ts).
+  const withFlag = predictions.map((p) => ({
+    ...p,
+    modelCovered: isModelCovered(p.leagueName, p.leagueId, p.leagueCcode),
+  }));
+  const visible = withFlag.filter((p) => p.modelCovered);
+  const uncovered = withFlag.filter((p) => !p.modelCovered);
 
   return NextResponse.json({
     ok: true,
     count: visible.length,
     predictions: visible,
-    coverage: { enforced: enforce, filteredOut: predictions.length - visible.length },
+    // Ayrı alan: eski istemciler bunu görmez → karne/istatistik hesapları
+    // yanlışlıkla kapsam dışını içine almaz.
+    uncovered,
+    uncoveredCount: uncovered.length,
+    coverage: { enforced: true, filteredOut: uncovered.length },
     calibration: {
       applied: calib.knots.length >= 2,
       segment: calib.segment,
