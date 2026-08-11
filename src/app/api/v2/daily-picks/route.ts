@@ -18,6 +18,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
+import { isModelCovered, COVERED_LEAGUE_LABELS } from '@/lib/model-coverage';
 
 const CONFIDENCE_MIN = 0.58;
 const MAX_PICKS = 15;
@@ -65,8 +66,16 @@ function mapPick(r: any, catalog?: Catalog) {
   };
 }
 
+// Model kapsamı kapısı: parametresi fit edilmemiş ligler yayınlanmaz.
+// (?all=1 yalnızca hata ayıklama içindir — eski, filtresiz davranış.)
+function coveredOnly(picks: any[], skip: boolean) {
+  if (skip) return picks;
+  return picks.filter((p) => isModelCovered(p.leagueName, p.leagueId, p.leagueCcode));
+}
+
 export async function GET(_request: NextRequest) {
   try {
+    const skipCoverage = new URL(_request.url).searchParams.get('all') === '1';
     // --- DÜNÜN KARNESİ: en yakın geçmiş gün (7 güne kadar geriye bak) ---
     // Maçsız günler / settlement gecikmesi karneyi boş bırakmasın diye tek
     // sorguyla son 7 günün settled seçimleri çekilir, en yeni GÜN seçilir.
@@ -99,7 +108,12 @@ export async function GET(_request: NextRequest) {
       accuracy: number;
     } = { date: null, picks: [], total: 0, correct: 0, accuracy: 0 };
 
-    const settled = (settledRows || []) as any[];
+    // Önce ad+ülke onarımı, SONRA kapsam filtresi (kapsam eşleşmesi çözülmüş
+    // ada ve ülke koduna dayanır — ham "League 12345" ile eşleşemez).
+    const settled = coveredOnly(
+      ((settledRows || []) as any[]).map((r) => mapPick(r, catalog)),
+      skipCoverage,
+    );
     if (settled.length > 0) {
       const latestDay = new Date(settled[0].kickoff).toISOString().split('T')[0];
       const dayRows = settled
@@ -109,7 +123,7 @@ export async function GET(_request: NextRequest) {
       const correct = dayRows.filter((r: any) => r.correct === true).length;
       yesterday = {
         date: latestDay,
-        picks: dayRows.map((r: any) => mapPick(r, catalog)),
+        picks: dayRows,
         total: dayRows.length,
         correct,
         accuracy: dayRows.length ? Math.round((correct / dayRows.length) * 1000) / 10 : 0,
@@ -132,9 +146,13 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ ok: false, error: todayErr.message }, { status: 500 });
     }
 
-    const upcoming = ((todayRows || []) as any[]).sort(
-      (a: any, b: any) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime(),
-    );
+    const upcoming = coveredOnly(
+      ((todayRows || []) as any[]).map((r: any) => ({
+        ...mapPick(r, catalog),
+        rationale: r.rationale ?? null,
+      })),
+      skipCoverage,
+    ).sort((a: any, b: any) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
     const firstKickoff = upcoming.length ? upcoming[0].kickoff : null;
 
     // Pro kapısı: seçimlerin kendisi yalnızca erişimi olana açılır
@@ -145,9 +163,7 @@ export async function GET(_request: NextRequest) {
       count: upcoming.length,
       firstKickoff,
       locked: !unlocked,
-      picks: unlocked
-        ? upcoming.map((r: any) => ({ ...mapPick(r, catalog), rationale: r.rationale ?? null }))
-        : [],
+      picks: unlocked ? upcoming : [],
     };
 
     // --- DÜNYA KUPASI KARNESİ (settled WC seçimleri, tüm zamanlar) ---
@@ -166,6 +182,8 @@ export async function GET(_request: NextRequest) {
       yesterday,
       today,
       worldCup: { total: wcTotal, correct: wcCorrect },
+      // Arayüz "neden bugün seçim yok?" sorusunu dürüstçe yanıtlayabilsin diye.
+      coverage: { enforced: !skipCoverage, leagues: COVERED_LEAGUE_LABELS },
     });
   } catch (e: any) {
     console.error('[daily-picks] error:', e?.message);

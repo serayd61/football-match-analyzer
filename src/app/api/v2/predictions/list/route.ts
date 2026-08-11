@@ -13,6 +13,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
+import { isModelCovered } from '@/lib/model-coverage';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -111,5 +112,18 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ ok: true, count: predictions.length, predictions });
+  // Model kapsamı kapısı: parametresi fit edilmemiş ligler listelenmez.
+  // Ölçüm 2026-08-11: yayınlananın %99.8'i modelsiz liglerdendi ve isabet
+  // %49.4'te kalıyordu. ?all=1 eski davranışı verir (hata ayıklama).
+  const enforce = searchParams.get('all') !== '1';
+  const visible = enforce
+    ? predictions.filter((p) => isModelCovered(p.leagueName, p.leagueId, p.leagueCcode))
+    : predictions;
+
+  return NextResponse.json({
+    ok: true,
+    count: visible.length,
+    predictions: visible,
+    coverage: { enforced: enforce, filteredOut: predictions.length - visible.length },
+  });
 }
