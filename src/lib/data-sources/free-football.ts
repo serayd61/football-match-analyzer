@@ -177,13 +177,18 @@ export interface MatchOdds {
  * Olasılıklar bu toplama bölünüp normalize edilir; motorla karşılaştırılabilir
  * hale gelen budur.
  */
+/** Ham oran yanıtı — yalnızca şema teşhisi (CRON_SECRET'li sonda) için. */
+export async function getMatchOddsRaw(eventId: number, countryCode = 'GB'): Promise<any> {
+  return ffFetch(
+    `/football-event-odds?eventid=${eventId}&countrycode=${encodeURIComponent(countryCode)}`,
+  );
+}
+
 export async function getMatchOdds(
   eventId: number,
   countryCode = 'GB',
 ): Promise<MatchOdds | null> {
-  const r = await ffFetch(
-    `/football-event-odds?eventid=${eventId}&countrycode=${encodeURIComponent(countryCode)}`,
-  );
+  const r = await getMatchOddsRaw(eventId, countryCode);
   if (!r) return null;
 
   const num = (v: any): number | null => {

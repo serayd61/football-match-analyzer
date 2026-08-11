@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { getMatchOdds } from '@/lib/data-sources/free-football';
+import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 
@@ -53,11 +53,20 @@ export async function GET(request: NextRequest) {
   // arasında canlıya çıkıp 22 Ağustos'ta parse hatası keşfetmemek adına).
   const probe = new URL(request.url).searchParams.get('probe');
   if (probe) {
-    const odds = await getMatchOdds(Number(probe), new URL(request.url).searchParams.get('cc') || 'GB');
+    const cc = new URL(request.url).searchParams.get('cc') || 'GB';
+    const [odds, raw] = await Promise.all([
+      getMatchOdds(Number(probe), cc),
+      getMatchOddsRaw(Number(probe), cc),
+    ]);
+    // "Full Time Result" marketinin ham hali — seçenek yapısını görmek için
+    const markets = raw?.odds?.odds?.matchfactMarkets || raw?.odds?.matchfactMarkets || null;
     return NextResponse.json({
       ok: true, probe: Number(probe),
       parsed: odds ? { ...odds, raw: undefined } : null,
-      rawKeys: odds?.raw && typeof odds.raw === 'object' ? Object.keys(odds.raw).slice(0, 20) : null,
+      marketHeaders: Array.isArray(markets) ? markets.map((m: any) => m?.header) : null,
+      fullTimeResult: Array.isArray(markets)
+        ? markets.find((m: any) => /full time result/i.test(String(m?.header || ''))) ?? null
+        : null,
     });
   }
 
