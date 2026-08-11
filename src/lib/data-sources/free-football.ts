@@ -199,6 +199,32 @@ export async function getMatchOdds(
   let h: number | null = null, d: number | null = null, a: number | null = null;
   let provider = 'unknown';
 
+  // --- Doğrulanmış şema (2026-08-11, prod sondası) ---
+  // { odds: { persistentKey, providerId, odds: { matchfactMarkets: [
+  //     { header: "Full Time Result", headerTranslationKey: "who_will_win",
+  //       selections: [{name:"1",oddsDecimal:"2.75"}, {name:"x",...}, {name:"2",...}] }
+  // ]}}}
+  const book = r?.odds;
+  const markets = book?.odds?.matchfactMarkets || book?.matchfactMarkets;
+  if (Array.isArray(markets)) {
+    const ftr = markets.find(
+      (m: any) =>
+        m?.headerTranslationKey === 'who_will_win' ||
+        /full time result/i.test(String(m?.header || '')),
+    );
+    const sels = ftr?.selections;
+    if (Array.isArray(sels)) {
+      const pick = (n: string) =>
+        num(sels.find((s: any) => String(s?.name || '').toLowerCase() === n)?.oddsDecimal);
+      const hh = pick('1'), dd = pick('x'), aa = pick('2');
+      if (hh && dd && aa) {
+        h = hh; d = dd; a = aa;
+        provider = String(book?.persistentKey || book?.providerId || 'unknown');
+      }
+    }
+  }
+
+  // --- Yedek: şema değişirse genel tarama ---
   const scan = (node: any, depth = 0): boolean => {
     if (!node || depth > 5) return false;
     if (Array.isArray(node)) return node.some((x) => scan(x, depth + 1));
@@ -222,7 +248,7 @@ export async function getMatchOdds(
     // 2) 3 elemanlı seçenek dizisi (1/X/2 sırası)
     const opts = node.options || node.outcomes || node.selections;
     if (Array.isArray(opts) && opts.length === 3) {
-      const vals = opts.map((o: any) => num(o?.odds ?? o?.price ?? o?.value ?? o));
+      const vals = opts.map((o: any) => num(o?.oddsDecimal ?? o?.odds ?? o?.price ?? o?.value ?? o));
       if (vals.every(Boolean)) {
         h = vals[0] as number; d = vals[1] as number; a = vals[2] as number;
         provider = String(node.provider || node.bookmaker || provider);
@@ -232,7 +258,7 @@ export async function getMatchOdds(
     return Object.values(node).some((v) => scan(v, depth + 1));
   };
 
-  scan(r);
+  if (!h || !d || !a) scan(r);
 
   if (!h || !d || !a) {
     console.warn(`[free-football] odds parse miss ev=${eventId} shape=${JSON.stringify(r).slice(0, 600)}`);
