@@ -48,6 +48,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Şema sondası: ?probe=<eventId> tek maçın oranını çeker, HİÇBİR ŞEY YAZMAZ.
+  // Kapsanan ligde maç olmadığı dönemlerde parser'ı doğrulamak için (sezon
+  // arasında canlıya çıkıp 22 Ağustos'ta parse hatası keşfetmemek adına).
+  const probe = new URL(request.url).searchParams.get('probe');
+  if (probe) {
+    const odds = await getMatchOdds(Number(probe), new URL(request.url).searchParams.get('cc') || 'GB');
+    return NextResponse.json({
+      ok: true, probe: Number(probe),
+      parsed: odds ? { ...odds, raw: undefined } : null,
+      rawKeys: odds?.raw && typeof odds.raw === 'object' ? Object.keys(odds.raw).slice(0, 20) : null,
+    });
+  }
+
   const now = new Date();
   const horizon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
