@@ -14,6 +14,7 @@ import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
+import { getCalibration, applyCurve } from '@/lib/calibration';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -80,10 +81,14 @@ export async function GET(request: NextRequest) {
 
   // Okuma-anı lig onarımı: insert anında ad çözümsüz kaldıysa ("League X")
   // katalogdan ad + ülke kodu tamamlanır (bkz. league-catalog cron'u).
-  const catalog = await getCatalogMap().catch(() => new Map());
+  const [catalog, calib] = await Promise.all([
+    getCatalogMap().catch(() => new Map()),
+    getCalibration().catch(() => ({ knots: [], segment: 'none', nSamples: 0, fittedAt: null })),
+  ]);
 
   const predictions = (data || []).map((p: any) => {
     const cat = catalog.get(Number(p.league_id));
+    const rawConf = p.confidence != null ? Number(p.confidence) : null;
     return {
     fixtureId: p.fixture_id,
     leagueId: p.league_id,
@@ -102,7 +107,10 @@ export async function GET(request: NextRequest) {
     lambdaHome: p.lambda_home != null ? Number(p.lambda_home) : null,
     lambdaAway: p.lambda_away != null ? Number(p.lambda_away) : null,
     pick: p.pick,
-    confidence: p.confidence != null ? Number(p.confidence) : null,
+    // Gösterilen güven KALİBRE değerdir (bkz. lib/calibration.ts); ham model
+    // çıktısı confidenceRaw'da korunur.
+    confidence: applyCurve(rawConf, calib.knots),
+    confidenceRaw: rawConf,
     rationale: p.rationale,
     settled: p.settled,
     homeScore: p.home_score,
@@ -125,5 +133,11 @@ export async function GET(request: NextRequest) {
     count: visible.length,
     predictions: visible,
     coverage: { enforced: enforce, filteredOut: predictions.length - visible.length },
+    calibration: {
+      applied: calib.knots.length >= 2,
+      segment: calib.segment,
+      nSamples: calib.nSamples,
+      fittedAt: calib.fittedAt,
+    },
   });
 }

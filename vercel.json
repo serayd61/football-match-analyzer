@@ -35,7 +35,10 @@
     {
       "path": "/api/cron/world-cup-campaign?type=welcome&days=2",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/fit-calibration",
+      "schedule": "50 3 * * 1"
     }
   ]
 }
-

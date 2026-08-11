@@ -19,8 +19,13 @@ import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered, COVERED_LEAGUE_LABELS } from '@/lib/model-coverage';
+import { getCalibration, applyCurve } from '@/lib/calibration';
 
+// Yayın eşiği KALİBRE güven üzerinden uygulanır — yani "0.58" artık gerçekten
+// "%58 ihtimal" demek. Ham güven yalnızca DB'den ön eleme için kullanılır
+// (kalibrasyon ölçeği sıkıştırdığı için taban daha düşük tutulur).
 const CONFIDENCE_MIN = 0.58;
+const RAW_PREFILTER = 0.5;
 const MAX_PICKS = 15;
 const WORLD_CUP_LEAGUE_IDS = [77, 894789];
 
@@ -43,11 +48,15 @@ const PICK_COLS =
 // Katalog (league_catalog, cron'la dolar) ad + ülke kodunu tamamlar — DB'yi
 // yeniden yazmadan tüm tarihi kayıtlar düzelir.
 type Catalog = Map<number, { name: string; ccode: string }>;
-function mapPick(r: any, catalog?: Catalog) {
+function mapPick(r: any, catalog?: Catalog, knots: { x: number; y: number }[] = []) {
   const cat = catalog?.get(Number(r.league_id));
   const leagueName =
     isUnresolvedLeagueName(r.league_name) && cat ? cat.name : r.league_name;
+  const raw = r.confidence != null ? Number(r.confidence) : null;
   return {
+    // confidence = KALİBRE değer (arayüzde gösterilen); confidenceRaw = ham
+    // model çıktısı (hata ayıklama + geriye dönük karşılaştırma için).
+    confidenceRaw: raw,
     fixtureId: r.fixture_id,
     leagueId: r.league_id,
     leagueName,
@@ -58,7 +67,7 @@ function mapPick(r: any, catalog?: Catalog) {
     awayName: r.away_name,
     kickoff: r.kickoff,
     pick: r.pick,
-    confidence: r.confidence != null ? Number(r.confidence) : null,
+    confidence: applyCurve(raw, knots),
     homeScore: r.home_score,
     awayScore: r.away_score,
     result: r.result,
@@ -73,6 +82,11 @@ function coveredOnly(picks: any[], skip: boolean) {
   return picks.filter((p) => isModelCovered(p.leagueName, p.leagueId, p.leagueCcode));
 }
 
+/** Kalibre güven eşiği — eğri yoksa applyCurve kimlik döner, eşik ham değere uygulanır. */
+function aboveThreshold(p: any) {
+  return p.confidence != null && p.confidence >= CONFIDENCE_MIN;
+}
+
 export async function GET(_request: NextRequest) {
   try {
     const skipCoverage = new URL(_request.url).searchParams.get('all') === '1';
@@ -83,14 +97,19 @@ export async function GET(_request: NextRequest) {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // Lig kataloğu (ad + ülke onarımı için; hata olursa boş harita ile devam)
-    const catalog = await getCatalogMap().catch(() => new Map());
+    // + kalibrasyon eğrisi (yoksa boş → ham güven aynen kullanılır)
+    const [catalog, calib] = await Promise.all([
+      getCatalogMap().catch(() => new Map()),
+      getCalibration().catch(() => ({ knots: [], segment: 'none', nSamples: 0, fittedAt: null })),
+    ]);
+    const knots = calib.knots;
 
     const { data: settledRows, error: settledErr } = await sb()
       .from('engine_predictions')
       .select(PICK_COLS)
       .eq('settled', true)
       .not('result', 'is', null)
-      .gte('confidence', CONFIDENCE_MIN)
+      .gte('confidence', RAW_PREFILTER)
       .gte('kickoff', sevenDaysAgo.toISOString())
       .lt('kickoff', now.toISOString())
       .order('kickoff', { ascending: false })
@@ -111,9 +130,9 @@ export async function GET(_request: NextRequest) {
     // Önce ad+ülke onarımı, SONRA kapsam filtresi (kapsam eşleşmesi çözülmüş
     // ada ve ülke koduna dayanır — ham "League 12345" ile eşleşemez).
     const settled = coveredOnly(
-      ((settledRows || []) as any[]).map((r) => mapPick(r, catalog)),
+      ((settledRows || []) as any[]).map((r) => mapPick(r, catalog, knots)),
       skipCoverage,
-    );
+    ).filter(aboveThreshold);
     if (settled.length > 0) {
       const latestDay = new Date(settled[0].kickoff).toISOString().split('T')[0];
       const dayRows = settled
@@ -136,11 +155,11 @@ export async function GET(_request: NextRequest) {
       .from('engine_predictions')
       .select(PICK_COLS + ', rationale')
       .eq('settled', false)
-      .gte('confidence', CONFIDENCE_MIN)
+      .gte('confidence', RAW_PREFILTER)
       .gte('kickoff', now.toISOString())
       .lte('kickoff', in24h.toISOString())
       .order('confidence', { ascending: false })
-      .limit(MAX_PICKS);
+      .limit(200);
 
     if (todayErr) {
       return NextResponse.json({ ok: false, error: todayErr.message }, { status: 500 });
@@ -148,11 +167,14 @@ export async function GET(_request: NextRequest) {
 
     const upcoming = coveredOnly(
       ((todayRows || []) as any[]).map((r: any) => ({
-        ...mapPick(r, catalog),
+        ...mapPick(r, catalog, knots),
         rationale: r.rationale ?? null,
       })),
       skipCoverage,
-    ).sort((a: any, b: any) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
+    )
+      .filter(aboveThreshold)
+      .slice(0, MAX_PICKS)
+      .sort((a: any, b: any) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
     const firstKickoff = upcoming.length ? upcoming[0].kickoff : null;
 
     // Pro kapısı: seçimlerin kendisi yalnızca erişimi olana açılır
@@ -184,6 +206,12 @@ export async function GET(_request: NextRequest) {
       worldCup: { total: wcTotal, correct: wcCorrect },
       // Arayüz "neden bugün seçim yok?" sorusunu dürüstçe yanıtlayabilsin diye.
       coverage: { enforced: !skipCoverage, leagues: COVERED_LEAGUE_LABELS },
+      calibration: {
+        applied: knots.length >= 2,
+        segment: calib.segment,
+        nSamples: calib.nSamples,
+        fittedAt: calib.fittedAt,
+      },
     });
   } catch (e: any) {
     console.error('[daily-picks] error:', e?.message);
