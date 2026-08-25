@@ -12,6 +12,7 @@ import {
   formatMatchDate,
   type PublicAnalysis,
 } from '@/lib/seo';
+import { isCoveredLeagueName, COVERED_LEAGUE_LABELS } from '@/lib/model-coverage';
 import ShareButtons from './ShareButtons';
 import MountEvent from '@/components/analytics/MountEvent';
 import TrackedLink from '@/components/analytics/TrackedLink';
@@ -37,9 +38,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const mr = matchResultLabel(a.match_result_prediction, a.home_team, a.away_team);
   const dateStr = formatMatchDate(a.match_date);
   const title = `${a.home_team} - ${a.away_team} AI Tahmini & Analizi${dateStr ? ` (${dateStr})` : ''}`;
+  // Kapsam: Dixon-Coles parametreleri fit edilmiş 10 ligde motor konuşur;
+  // dışında çalışan şey istatistiksel yedektir (ölçülen isabeti ~%49). Arama
+  // sonucunda %-güven rakamı YALNIZCA kapsanan liglerde gösterilir — 1.000
+  // SEO sayfası boyunca yedeğin iddialı sayısını yayınlamak yanıltıcı olurdu.
+  const covered = isCoveredLeagueName(a.league);
   const desc =
-    `${a.home_team} vs ${a.away_team} maçı için yapay zeka tahmini: ${mr}` +
-    (a.overall_confidence ? ` (%${a.overall_confidence} güven)` : '') +
+    `${a.home_team} vs ${a.away_team} maçı için ${covered ? 'yapay zeka tahmini' : 'istatistiksel tahmin'}: ${mr}` +
+    (covered && a.overall_confidence ? ` (%${a.overall_confidence} güven)` : '') +
     (a.best_bet_selection ? `. En sağlam bahis: ${a.best_bet_selection}` : '') +
     (a.league ? `. ${a.league}.` : '.');
 
@@ -121,7 +127,18 @@ export default async function AnalysisPage({ params }: Params) {
 
         <header className="mb-8">
           {a.league && (
-            <div className="mb-2 text-sm font-medium text-brand-400">{a.league}</div>
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-sm font-medium">
+              <span className="text-brand-400">{a.league}</span>
+              {isCoveredLeagueName(a.league) ? (
+                <span className="rounded-md border border-positive/40 bg-positive/10 px-2 py-0.5 text-xs font-medium text-positive">
+                  Model kapsamında
+                </span>
+              ) : (
+                <span className="rounded-md border border-caution/40 bg-caution/10 px-2 py-0.5 text-xs font-medium text-caution">
+                  İstatistiksel tahmin
+                </span>
+              )}
+            </div>
           )}
           <h1 className="text-3xl font-semibold text-content tracking-tight sm:text-4xl">
             {a.home_team} <span className="text-content-subtle">vs</span> {a.away_team}
@@ -169,6 +186,16 @@ export default async function AnalysisPage({ params }: Params) {
             {a.risk_level && <span>Risk: <b className="text-content capitalize">{a.risk_level}</b></span>}
           </div>
         </section>
+
+        {!isCoveredLeagueName(a.league) && (
+          <section className="mb-6 rounded-xl border border-caution/25 bg-caution/[0.06] p-4 text-sm text-content-muted">
+            <b className="text-content">Bu lig model kapsamı dışında.</b> Dixon-Coles
+            parametrelerimiz {COVERED_LEAGUE_LABELS.join(', ')} için fit edilmiştir.
+            Bu sayfadaki tahmin, genel istatistiksel yedekten gelir — ölçülen isabeti
+            ana motorumuzunkinin altındadır. Kapsanan liglerin tahminleri için{' '}
+            <Link href="/tahminler" className="text-brand-400 hover:underline">tahminler sayfasına</Link> bakın.
+          </section>
+        )}
 
         {/* Best bet */}
         {a.best_bet_selection && (

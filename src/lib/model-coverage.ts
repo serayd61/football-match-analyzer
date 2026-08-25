@@ -47,6 +47,31 @@ export function isModelCovered(
   return COVERED_NAME_CCODE.has(`${name}|${cc}`);
 }
 
+/**
+ * Yalnızca ADA göre kapsam kontrolü — ülke kodu taşımayan yüzeyler için
+ * (örn. SEO analiz sayfaları: `smart_analysis.league` düz bir metin).
+ * Tam eşleşme aranır; "Russian Premier League" gibi adlar eşleşmez.
+ * "Serie A" hem İtalya hem Brezilya'yı gösterebilir ama ikisi de kapsamda.
+ */
+const COVERED_NAMES = new Set(
+  Array.from(COVERED_NAME_CCODE).map((k) => k.split('|')[0]),
+);
+const NAME_ALIASES: Record<string, string> = {
+  'Brasileirão': 'Brazilian Serie A',
+  'Brasileirao': 'Brazilian Serie A',
+  'Campeonato Brasileiro Série A': 'Brazilian Serie A',
+  'Primera División': 'LaLiga',
+  'La Liga': 'LaLiga',
+  'UEFA Champions League': 'Champions League',
+  'EFL Championship': 'Championship',
+  'Primeira Liga': 'Liga Portugal',
+};
+export function isCoveredLeagueName(leagueName?: string | null): boolean {
+  const raw = (leagueName || '').trim();
+  if (!raw) return false;
+  return COVERED_NAMES.has(NAME_ALIASES[raw] || raw);
+}
+
 /** Arayüzde "neden bu lig yok?" sorusuna cevap veren liste. */
 export const COVERED_LEAGUE_LABELS = [
   'Premier League', 'LaLiga', 'Serie A', 'Bundesliga', 'Ligue 1',

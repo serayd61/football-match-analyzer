@@ -16,6 +16,8 @@ import {
 import { displayLeague } from '@/lib/league-names';
 import { countryInfo } from '@/lib/countries';
 
+import { deriveDoubleChance, doubleChanceLabel } from '@/lib/double-chance';
+
 export interface Prediction {
   fixtureId: number;
   leagueId: number; leagueName: string; leagueCcode?: string;
@@ -59,6 +61,7 @@ const STR = {
     leagues: 'lig', refresh: 'Yenile', sortConf: 'En güvenli', sortTime: 'Saate göre',
     empty: 'Şu an gösterilecek tahmin yok. Yeni maçlar yaklaştıkça otomatik eklenir.',
     loading: 'Tahminler yükleniyor...', locale: 'tr-TR',
+    dcTitle: 'Güvenli seçim', dcHint: 'iki sonucu birden kapsar', lang: 'tr' as const,
     gateAuthTitle: 'Tahminleri görmek için giriş yapın',
     gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol',
@@ -75,6 +78,7 @@ const STR = {
     leagues: 'leagues', refresh: 'Refresh', sortConf: 'Most confident', sortTime: 'By time',
     empty: 'No predictions to show right now. They appear automatically as matches approach.',
     loading: 'Loading predictions...', locale: 'en-US',
+    dcTitle: 'Safer call', dcHint: 'covers two outcomes', lang: 'en' as const,
     gateAuthTitle: 'Sign in to see predictions',
     gateAuthDesc: 'Engine predictions are available to members only.',
     gateAuthCta: 'Sign in / Sign up',
@@ -91,6 +95,7 @@ const STR = {
     leagues: 'Ligen', refresh: 'Aktualisieren', sortConf: 'Sicherste', sortTime: 'Nach Zeit',
     empty: 'Derzeit keine Vorhersagen. Sie erscheinen automatisch, sobald Spiele näher rücken.',
     loading: 'Vorhersagen werden geladen...', locale: 'de-DE',
+    dcTitle: 'Sichere Wahl', dcHint: 'deckt zwei Ergebnisse ab', lang: 'de' as const,
     gateAuthTitle: 'Zum Ansehen anmelden',
     gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren',
@@ -382,6 +387,10 @@ function PredictionCard({ p, t, i, open, onToggle }: {
   const pickLabel = p.pick === '1' ? p.homeName : p.pick === '2' ? p.awayName : t.draw;
   const pickTag = p.pick === '1' ? t.home : p.pick === '2' ? t.away : t.draw;
   const conf = Math.round((p.confidence || 0) * 100);
+  // Çifte şans: aynı olasılıklardan türetilir. 1X2 argmax yapısal olarak
+  // tavanlı (maçların ~%24'ü beraberlik ve beraberlik nadiren en yüksek
+  // olasılık); ölçülen çifte şans isabeti %76.5 (bkz. lib/double-chance.ts).
+  const dc = deriveDoubleChance(p.pHome, p.pDraw, p.pAway);
   const ko = p.kickoff ? new Date(p.kickoff) : null;
   const koStr = ko ? ko.toLocaleString(t.locale || undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -418,6 +427,24 @@ function PredictionCard({ p, t, i, open, onToggle }: {
           <div className="text-[10px] text-white/40">{t.conf}</div>
         </div>
       </div>
+
+      {dc && (
+        <div className="flex items-center gap-2 mb-3 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.07] px-3 py-2">
+          <ShieldCheck size={14} className="shrink-0 text-emerald-300/90" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-wide text-emerald-300/70">
+              {t.dcTitle} · {dc.pick}
+            </div>
+            <div className="text-xs text-white/80 truncate">
+              {doubleChanceLabel(dc.pick, p.homeName, p.awayName, t.lang)}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-lg font-bold text-emerald-300">{Math.round(dc.p * 100)}%</div>
+            <div className="text-[9px] text-white/35">{t.dcHint}</div>
+          </div>
+        </div>
+      )}
 
       <div className="flex h-2 rounded-full overflow-hidden mb-1">
         <div style={{ width: `${p.pHome * 100}%` }} className="bg-brand-400/70" />

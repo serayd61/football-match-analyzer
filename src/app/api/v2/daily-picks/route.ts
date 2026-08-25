@@ -19,6 +19,7 @@ import { authOptions } from '@/lib/auth';
 import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered, COVERED_LEAGUE_LABELS } from '@/lib/model-coverage';
+import { deriveDoubleChance, isDoubleChanceCorrect } from '@/lib/double-chance';
 import { getCalibration, applyCurve } from '@/lib/calibration';
 
 // Yayın eşiği KALİBRE güven üzerinden uygulanır — yani "0.58" artık gerçekten
@@ -42,7 +43,9 @@ function sb(): SupabaseClient {
 
 const PICK_COLS =
   'fixture_id, league_id, league_name, home_id, home_name, away_id, away_name, ' +
-  'kickoff, pick, confidence, home_score, away_score, result, correct';
+  'kickoff, pick, confidence, home_score, away_score, result, correct, ' +
+  // çifte şans türetmesi için (bkz. lib/double-chance.ts)
+  'p_home, p_draw, p_away';
 
 // Okuma-anı lig onarımı: satırlar insert edildiğinde harita boştu ("League X").
 // Katalog (league_catalog, cron'la dolar) ad + ülke kodunu tamamlar — DB'yi
@@ -68,6 +71,14 @@ function mapPick(r: any, catalog?: Catalog, knots: { x: number; y: number }[] = 
     kickoff: r.kickoff,
     pick: r.pick,
     confidence: applyCurve(raw, knots),
+    // Çifte şans: aynı olasılıklardan türetilir. 1X2 argmax yapısal olarak
+    // ~%49 tavanlı (maçların %23.8'i beraberlik, argmax bunu yakalayamaz);
+    // ölçülen çifte şans isabeti %76.5. Motor değişmiyor, vitrin değişiyor.
+    doubleChance: deriveDoubleChance(r.p_home, r.p_draw, r.p_away),
+    doubleChanceCorrect:
+      r.result && deriveDoubleChance(r.p_home, r.p_draw, r.p_away)
+        ? isDoubleChanceCorrect(deriveDoubleChance(r.p_home, r.p_draw, r.p_away)!.pick, r.result)
+        : null,
     homeScore: r.home_score,
     awayScore: r.away_score,
     result: r.result,

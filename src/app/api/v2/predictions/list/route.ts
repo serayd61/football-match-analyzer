@@ -15,6 +15,7 @@ import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { getCalibration, applyCurve } from '@/lib/calibration';
+import { deriveDoubleChance } from '@/lib/double-chance';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -107,6 +108,9 @@ export async function GET(request: NextRequest) {
     lambdaHome: p.lambda_home != null ? Number(p.lambda_home) : null,
     lambdaAway: p.lambda_away != null ? Number(p.lambda_away) : null,
     pick: p.pick,
+    // Çifte şans: aynı olasılıklardan türetilir (bkz. lib/double-chance.ts).
+    // 1X2 argmax yapısal olarak ~%49 tavanlı; çifte şans ölçülen %76.5.
+    doubleChance: deriveDoubleChance(p.p_home, p.p_draw, p.p_away),
     // Gösterilen güven KALİBRE değerdir (bkz. lib/calibration.ts); ham model
     // çıktısı confidenceRaw'da korunur.
     confidence: applyCurve(rawConf, calib.knots),
