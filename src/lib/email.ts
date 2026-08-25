@@ -382,4 +382,108 @@ Unsubscribe: ${unsubscribeUrl}`;
   });
 }
 
+/**
+ * ÖDEME TEKRAR DENEME — checkout'ta düşmüş kullanıcılar için.
+ *
+ * Neden dürüst bir kampanya: bu kişiler zaten ödemeye ÇALIŞMIŞ ve düşmüşlerdi.
+ * Sebep bizdeydi — checkout'ta `request_three_d_secure: 'any'` zorunlu 3DS'i
+ * tetikliyor, gerçek kartları reddettiriyordu (8 denemeden 6'sı başarısız).
+ * 4 Ağustos 2026'da 'automatic'e çevrildi ve sonrasındaki ilk deneme başarılı
+ * oldu. Yani söyleyecek gerçek bir şeyimiz var.
+ *
+ * ⚠️ İSABET/KARNE İDDİASI YOK — sezon başı rakamları bunu taşımıyor (bkz.
+ * motor-kapsam-kalibrasyon). Mail tek bir şey vaat eder: ödeme artık çalışıyor.
+ */
+// ---------------------------------------------------------------------------
+// YARIM KALAN KAYIT ("unfinished signup")
+// Hedef: Ara 2025 – Oca 2026 arasında Pro'ya başlayıp checkout'u bitirmemiş 49
+// kişi. Veri kontrolü (2026-08-25): bu satırların HİÇBİRİNDE
+// stripe_customer_id / stripe_subscription_id / trial_end yok → Stripe'a hiç
+// ulaşılmamış, yani kimseden PARA ÇEKİLMEDİ ve kimsenin kartı REDDEDİLMEDİ.
+// Bu yüzden metin "ödemen başarısız oldu / bizim hatamızdı" DEMEZ (o hata —
+// zorunlu 3DS — 29 Haz 2026'da doğdu, 4 Ağu'da kapandı; bu gruptan 6 ay
+// SONRA). İsabet iddiası da taşımaz.
+// ---------------------------------------------------------------------------
+export async function sendUnfinishedSignupEmail(
+  to: string,
+  opts: {
+    pricingUrl: string;
+    dashboardUrl: string;
+    unsubscribeUrl: string;
+    name?: string | null;
+  }
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { pricingUrl, dashboardUrl, unsubscribeUrl } = opts;
+  const hi = opts.name ? ` ${opts.name}` : '';
+
+  const subject = 'You never finished signing up — and the price dropped since';
+
+  const html = `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 20px">You started a Pro signup a while back and never finished it.</p>
+
+    <p>Hi${hi} — you began upgrading to Pro at footballanalytics.pro and stopped before checkout completed.
+    <strong>Nothing was ever charged</strong>, and there is no subscription sitting on your account.</p>
+
+    <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:22px 0">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">What changed since</div>
+      <div style="font-size:14px;color:#cbd3e1;margin-top:12px;line-height:1.7">
+        • A <strong>weekly plan at $6.99</strong> — you no longer have to commit to a month.<br/>
+        • Predictions are now limited to the leagues our model is actually fitted on
+          (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Eredivisie, Championship and more),
+          instead of padding the list with lower divisions.<br/>
+        • Confidence numbers are recalibrated weekly against how those calls actually landed —
+          so a "72%" means 72% of the time, not marketing.
+      </div>
+    </div>
+
+    <p style="text-align:center;margin:28px 0 10px">
+      <a href="${pricingUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Pick up where you left off — from $6.99/week →</a>
+    </p>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin:0 0 24px">Monthly is $19.99 with a 7-day free trial. Cancel anytime.</p>
+
+    <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
+      Not ready to pay? Your free account gives you <strong>3 AI match analyses every day</strong> —
+      <a href="${dashboardUrl}" style="color:#059669;font-weight:600">use them here →</a>
+    </p>
+
+    <p style="font-size:12px;color:#94a3b8">Probabilities come from a statistical model (Dixon-Coles + xG + ELO). Informational only — not betting advice. No outcome is guaranteed.</p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    <p style="font-size:11px;color:#94a3b8">
+      You received this because you started a Pro signup at footballanalytics.pro.<br/>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a>
+    </p>
+  </div>`;
+
+  const text = `Football Analytics Pro — you never finished signing up
+
+Hi${hi} — you began upgrading to Pro at footballanalytics.pro and stopped before checkout completed. Nothing was ever charged, and there is no subscription on your account.
+
+What changed since:
+- A weekly plan at $6.99 — no month-long commitment.
+- Predictions are limited to the leagues our model is actually fitted on (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Eredivisie, Championship and more) instead of padding the list with lower divisions.
+- Confidence numbers are recalibrated weekly against how those calls actually landed.
+
+Pick up where you left off: ${pricingUrl}
+Monthly is $19.99 with a 7-day free trial. Cancel anytime.
+
+Not ready to pay? Your free account gives you 3 AI match analyses every day: ${dashboardUrl}
+
+Informational only — not betting advice. No outcome is guaranteed.
+
+Unsubscribe: ${unsubscribeUrl}`;
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject,
+    html,
+    text,
+    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
+  });
+}
+
 export { SITE_URL };

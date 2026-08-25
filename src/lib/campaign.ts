@@ -54,3 +54,9 @@ export function unsubscribeUrl(email: string): string {
 }
 
 export { SITE_URL };
+
+// Ödemesi checkout'ta düşmüş kullanıcılar (subscriptions.status='incomplete',
+// plan='pro'). Zorunlu 3DS düzeltmesi (4 Ağu 2026) sonrası tek seferlik
+// "tekrar dene" daveti. Kendi dedup anahtarı — teklif kampanyasından bağımsız.
+// Yarım kalan kayıtlar (Ara 2025 – Oca 2026 checkout'u bitirmemiş 49 kişi).
+export const UNFINISHED_SIGNUP_CAMPAIGN_KEY = 'unfinished-signup-2026-08';

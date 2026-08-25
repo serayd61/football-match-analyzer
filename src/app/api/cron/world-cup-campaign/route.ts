@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, sendOfferEmail, SITE_URL } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, OFFER_CAMPAIGN_KEY, unsubscribeUrl } from '@/lib/campaign';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, sendOfferEmail, SITE_URL, sendUnfinishedSignupEmail } from '@/lib/email';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, OFFER_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -65,8 +65,14 @@ export async function GET(request: NextRequest) {
   // Teklif: haftalık $6.99 lansmanı — kayıtlı ama abone olmayanlara, son 7
   // günün gerçek motor karnesiyle (gönderim anında hesaplanır).
   const isOffer = searchParams.get('type') === 'offer';
+  // Yarım kalan kayıt: subscriptions.status='incomplete' AND plan='pro'.
+  // Veri (2026-08-25): 49 kişi, Ara 2025–Oca 2026, hiçbirinde stripe id yok →
+  // ödeme HİÇ denenmemiş. Metin bu yüzden "ödemen reddedildi" demez.
+  const isUnfinished = searchParams.get('type') === 'unfinished-signup';
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = isOffer
+  const activeKey = isUnfinished
+    ? UNFINISHED_SIGNUP_CAMPAIGN_KEY
+    : isOffer
     ? OFFER_CAMPAIGN_KEY
     : isWelcome
       ? WELCOME_CAMPAIGN_KEY
@@ -75,7 +81,7 @@ export async function GET(request: NextRequest) {
         : relaunch
           ? WORLD_CUP_RELAUNCH_KEY
           : WORLD_CUP_CAMPAIGN_KEY;
-  const campaignType = isOffer ? 'offer' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
+  const campaignType = isUnfinished ? 'unfinished-signup' : isOffer ? 'offer' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const daysParam = parseInt(searchParams.get('days') || '', 10);
@@ -111,7 +117,9 @@ export async function GET(request: NextRequest) {
   }
 
   const sendEmail = (email: string, name: string | null) =>
-    isOffer
+    isUnfinished
+      ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name })
+      : isOffer
       ? sendOfferEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name, stats: offerStats })
       : isWelcome
         ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name })
@@ -160,7 +168,7 @@ export async function GET(request: NextRequest) {
   // 3) Alıcıları topla: kayıtlı üyeler − unsubscribe − zaten gönderilmiş
   const { data: usersData, error: usersErr } = await supabase
     .from('users')
-    .select('email, name, created_at');
+    .select('id, email, name, created_at');
   if (usersErr) {
     return NextResponse.json({ success: false, error: usersErr.message }, { status: 500 });
   }
@@ -185,13 +193,39 @@ export async function GET(request: NextRequest) {
 
   // Re-engagement & Welcome & Offer: yalnızca ABONE OLMAYANLARA. Aktif/trial/past_due hariç.
   const subscriberSet = new Set<string>();
-  if (isReengage || isWelcome || isOffer) {
+  if (isReengage || isWelcome || isOffer || isUnfinished) {
     const { data: profs } = await supabase.from('profiles').select('email, subscription_status');
     for (const p of profs || []) {
       const st = (p.subscription_status || '').toLowerCase();
       if (['active', 'trialing', 'trial', 'past_due'].includes(st) && p.email) {
         subscriberSet.add(p.email.toLowerCase().trim());
       }
+    }
+  }
+
+  // Yarım kalan kayıt: HEDEF LİSTE dar — yalnızca checkout'ta düşen pro denemeleri.
+  // `users` tablosunun tamamı DEĞİL; bu bir duyuru değil, bir özür + tekrar
+  // denemesi. subscriptions'ta e-posta yok, eşleme user_id → users.id.
+  // Boş küme dönerse hiç kimseye gitmez (fail-closed).
+  const retryIds = new Set<string>();
+  if (isUnfinished) {
+    const { data: subs, error: subsErr } = await supabase
+      .from('subscriptions')
+      .select('user_id, status, plan')
+      .eq('status', 'incomplete')
+      .eq('plan', 'pro');
+    if (subsErr) {
+      return NextResponse.json(
+        { success: false, aborted: true, reason: 'retry_target_read_failed', error: subsErr.message },
+        { status: 500 },
+      );
+    }
+    for (const r of subs || []) {
+      const id = (r as any).user_id;
+      if (id) retryIds.add(String(id));
+    }
+    if (retryIds.size === 0) {
+      return NextResponse.json({ success: true, campaign: activeKey, sent: 0, note: 'hedef liste boş' });
     }
   }
 
@@ -203,6 +237,7 @@ export async function GET(request: NextRequest) {
     if (!email || !EMAIL_RE.test(email)) continue;
     if (seen.has(email) || unsub.has(email) || alreadySent.has(email) || email === canaryLower) continue;
     if (subscriberSet.has(email)) continue;
+    if (isUnfinished && !retryIds.has(String((u as any).id))) continue;
     // Welcome: yalnızca son N gün içinde kayıt olanlar (varsayılan bugün)
     if (isWelcome && (!u.created_at || new Date(u.created_at).getTime() < welcomeCutoffMs)) continue;
     seen.add(email);
