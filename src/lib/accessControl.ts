@@ -6,6 +6,35 @@ function getSupabase(): SupabaseClient {
   return supabaseAdmin;
 }
 
+// ============================================================================
+// ABONELİK CANLI MI? — süre kontrolü
+// ----------------------------------------------------------------------------
+// Bug (2026-08-25'te bulundu): erişim yalnızca status='active' bakıyordu, bitiş
+// tarihine HİÇ bakmıyordu. İki hesap Stripe aboneliği olmadan, dönemleri 28
+// Haziran'da bitmişken 2 aydır ücretsiz Pro kullanıyordu.
+//
+// Kural:
+//   • Stripe aboneliği OLAN satır: tarih yoksa canlı sayılır (Stripe kaynaktır),
+//     tarih varsa geçmiş olmamalı. → webhook gecikirse ödeyen müşteri kilitlenmez.
+//   • Stripe aboneliği OLMAYAN (manuel/legacy) kayıt: GELECEK bitiş tarihi ZORUNLU.
+//     Açık uçlu manuel 'active' artık süresiz erişim vermez.
+// GRACE: webhook birkaç saat/gün gecikirse gerçek müşteri düşmesin.
+// ============================================================================
+const GRACE_DAYS = 3;
+const LIVE_STATUSES = ['active', 'trialing', 'pro', 'premium'];
+
+export function isGrantLive(
+  status?: string | null,
+  endsAt?: string | null,
+  hasStripeSub = false,
+): boolean {
+  if (!LIVE_STATUSES.includes(String(status || '').toLowerCase())) return false;
+  if (!endsAt) return hasStripeSub; // tarih yok: yalnızca gerçek Stripe aboneliği geçer
+  const end = new Date(endsAt).getTime();
+  if (!Number.isFinite(end)) return hasStripeSub;
+  return end > Date.now() - GRACE_DAYS * 86_400_000;
+}
+
 /**
  * Motor tahminleri (engine_predictions) erişim kontrolü — salt okuma, yan etkisiz.
  * Erişim verilir eğer: admin VEYA Stripe aboneliği aktif/trial VEYA profiles
@@ -22,14 +51,15 @@ export async function hasEnginePredictionAccess(email?: string | null): Promise<
   try {
     const { data: profile } = await db
       .from('profiles')
-      .select('subscription_status')
+      .select('subscription_status, subscription_end')
       .ilike('email', email)
       .maybeSingle();
-    const ps = String(profile?.subscription_status || '').toLowerCase();
     // NOT: 'trial'/'trialing' profiles değeri ARTIK erişim VERMEZ — kart-zorunlu
     // kuralı gereği gerçek trial'lar Stripe webhook'uyla profiles='active' olur.
-    // Stale/kartsız 'trial' kayıtları (eski sızıntı) erişemesin.
-    if (['active', 'pro', 'premium'].includes(ps)) return true;
+    // Ayrıca artık BİTİŞ TARİHİ zorunlu: açık uçlu manuel 'active' kayıtlar
+    // (subscription_end NULL) tek başına erişim vermez — gerçek abone aşağıdaki
+    // Stripe dalından zaten geçer.
+    if (isGrantLive(profile?.subscription_status, profile?.subscription_end, false)) return true;
   } catch (e) {
     console.error('[access] profiles check failed', e);
   }
@@ -44,11 +74,13 @@ export async function hasEnginePredictionAccess(email?: string | null): Promise<
     if (user?.id) {
       const { data: sub } = await db
         .from('subscriptions')
-        .select('status')
+        .select('status, current_period_end, stripe_subscription_id')
         .eq('user_id', user.id)
         .in('status', ['active', 'trialing'])
         .maybeSingle();
-      if (sub) return true;
+      if (isGrantLive(sub?.status, sub?.current_period_end, !!sub?.stripe_subscription_id)) {
+        return true;
+      }
     }
   } catch (e) {
     console.error('[access] subscriptions check failed', e);
@@ -165,8 +197,13 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     }
   }
 
-  // Pro kontrolü
-  const isPro = profile.subscription_status === 'active';
+  // Pro kontrolü — SÜRE DAHİL. profiles tek başına yetmez: açık uçlu manuel
+  // 'active' kayıtlar (subscription_end NULL, Stripe aboneliği yok) 2 aydır
+  // bedava Pro veriyordu. Gerçek abone hasEnginePredictionAccess'in Stripe
+  // dalından geçer, dolayısıyla ödeyen müşteri etkilenmez.
+  const isPro =
+    isGrantLive(profile.subscription_status, profile.subscription_end, false) ||
+    (await hasEnginePredictionAccess(email));
 
   if (isPro) {
     return {
