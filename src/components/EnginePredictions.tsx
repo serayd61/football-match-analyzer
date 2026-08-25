@@ -39,6 +39,10 @@ export interface Prediction {
 const LOGO = (id: number | null) =>
   id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : '';
 
+// Gol pazarı satırının görünmesi için gereken en düşük KALİBRE güven.
+// Altı "kenar yok" demektir (ölçüm: ham ~0.5 bandında isabet %46-49).
+const MARKET_EDGE = 0.55;
+
 function pct(x: number | null | undefined) {
   return x == null ? '–' : `${Math.round(x * 100)}%`;
 }
@@ -451,8 +455,11 @@ function PredictionCard({ p, t, i, open, onToggle }: {
 
       {/* Pazarlar — çifte şans + gol pazarları tek tip satırlar halinde.
           Gol pazarlarının yüzdesi KALİBREDİR (API'de eğriden geçer); ham
-          motor çıktısı 10-30 puan şişik olduğundan asla doğrudan basılmaz. */}
-      {(dc || p.overUnder || p.btts) && (
+          motor çıktısı 10-30 puan şişik olduğundan asla doğrudan basılmaz.
+          Kenar eşiği: kalibre güven < %55 ise satır GÖSTERİLMEZ — ham ~0.5
+          bandında gerçek isabet yazı-tura (%46-49), söylenecek söz yok
+          (ayrıca eğrinin 0.5'teki mikro-blok artefaktı %0 basabiliyor). */}
+      {(dc || (p.overUnder?.p ?? 0) >= MARKET_EDGE || (p.btts?.p ?? 0) >= MARKET_EDGE) && (
         <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-1 mb-3 divide-y divide-white/[0.06]">
           {dc && (
             <MarketRow
@@ -463,7 +470,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
               barClass="bg-emerald-400/80" textClass="text-emerald-300"
             />
           )}
-          {p.overUnder && p.overUnder.p != null && (
+          {p.overUnder && p.overUnder.p != null && p.overUnder.p >= MARKET_EDGE && (
             <MarketRow
               icon={<Target size={13} className="text-violet-300/90" />}
               label={t.mkOu}
@@ -472,7 +479,7 @@ function PredictionCard({ p, t, i, open, onToggle }: {
               barClass="bg-violet-400/80" textClass="text-violet-300"
             />
           )}
-          {p.btts && p.btts.p != null && (
+          {p.btts && p.btts.p != null && p.btts.p >= MARKET_EDGE && (
             <MarketRow
               icon={<BarChart3 size={13} className="text-sky-300/90" />}
               label={t.mkBtts}
