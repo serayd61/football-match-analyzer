@@ -16,8 +16,11 @@ import {
 import { displayLeague } from '@/lib/league-names';
 import { countryInfo } from '@/lib/countries';
 
-import { deriveDoubleChance, doubleChanceLabel } from '@/lib/double-chance';
-import { goalMarketLabel, type OverUnderPick, type BttsPick } from '@/lib/goal-markets';
+import { deriveDoubleChance, doubleChanceLabel, isDoubleChanceCorrect } from '@/lib/double-chance';
+import {
+  goalMarketLabel, isOverUnderCorrect, isBttsCorrect,
+  type OverUnderPick, type BttsPick,
+} from '@/lib/goal-markets';
 
 export interface Prediction {
   fixtureId: number;
@@ -72,6 +75,7 @@ const STR = {
     dcTitle: 'Güvenli seçim', dcHint: 'iki sonucu birden kapsar', lang: 'tr' as const,
     mkTitle: 'Pazarlar', mkDc: 'Çifte şans', mkOu: 'Toplam gol', mkBtts: 'Karşılıklı gol',
     mkCalibNote: 'Yüzdeler geçmiş sonuçlarla kalibre edilmiştir',
+    recentTitle: 'Sonuçlanan tahminler', recentSub: 'son 3 gün — sonra listeden düşer',
     gateAuthTitle: 'Tahminleri görmek için giriş yapın',
     gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol',
@@ -91,6 +95,7 @@ const STR = {
     dcTitle: 'Safer call', dcHint: 'covers two outcomes', lang: 'en' as const,
     mkTitle: 'Markets', mkDc: 'Double chance', mkOu: 'Total goals', mkBtts: 'Both teams to score',
     mkCalibNote: 'Percentages are calibrated against past results',
+    recentTitle: 'Settled predictions', recentSub: 'last 3 days — then they roll off',
     gateAuthTitle: 'Sign in to see predictions',
     gateAuthDesc: 'Engine predictions are available to members only.',
     gateAuthCta: 'Sign in / Sign up',
@@ -110,6 +115,7 @@ const STR = {
     dcTitle: 'Sichere Wahl', dcHint: 'deckt zwei Ergebnisse ab', lang: 'de' as const,
     mkTitle: 'Märkte', mkDc: 'Doppelte Chance', mkOu: 'Tore gesamt', mkBtts: 'Beide Teams treffen',
     mkCalibNote: 'Prozentwerte sind mit vergangenen Ergebnissen kalibriert',
+    recentTitle: 'Abgeschlossene Tipps', recentSub: 'letzte 3 Tage — danach ausgeblendet',
     gateAuthTitle: 'Zum Ansehen anmelden',
     gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren',
@@ -141,6 +147,9 @@ export default function EnginePredictions({
   // Modeli fit EDİLMEMİŞ liglerin tahminleri — ayrı tutulur, ayrı etiketlenir.
   // İstatistik şeridi ve karne bunları ASLA içermez (bkz. lib/model-coverage).
   const [uncovered, setUncovered] = useState<Prediction[]>([]);
+  // Son 3 günün SONUÇLANMIŞ tahminleri — maç başlayınca kart yok olmasın
+  // diye (istek 2026-08-25); skor + tuttu/tutmadı ile gösterilir.
+  const [recent, setRecent] = useState<Prediction[]>([]);
   const [showUncovered, setShowUncovered] = useState(false);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<number | null>(null);
@@ -161,15 +170,17 @@ export default function EnginePredictions({
     setLoading(true);
     try {
       const res = await fetch('/api/v2/predictions/list', { cache: 'no-store' });
-      if (res.status === 401) { setGate('auth'); setPreds([]); setUncovered([]); return; }
-      if (res.status === 403) { setGate('subscription'); setPreds([]); setUncovered([]); return; }
+      if (res.status === 401) { setGate('auth'); setPreds([]); setUncovered([]); setRecent([]); return; }
+      if (res.status === 403) { setGate('subscription'); setPreds([]); setUncovered([]); setRecent([]); return; }
       const data = await res.json();
       setGate(null);
       setPreds(data.predictions || []);
       setUncovered(data.uncovered || []);
+      setRecent(data.recentResults || []);
     } catch {
       setPreds([]);
       setUncovered([]);
+      setRecent([]);
     } finally {
       setLoading(false);
     }
@@ -356,6 +367,25 @@ export default function EnginePredictions({
         </div>
       )}
 
+      {/* --- Sonuçlanan tahminler (son 3 gün): maç başlayınca "yok olmak"
+          yerine skor + tuttu/tutmadı ile burada kalır, 72 saat sonra düşer.
+          Yalnızca kapsanan ligler (API tarafında filtreli) — karneyle tutarlı. --- */}
+      {!loading && recent.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-bold text-white/80">{t.recentTitle}</h3>
+            <span className="text-xs text-white/30">{t.recentSub}</span>
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/50 tabular-nums">
+              {recent.filter((r) => r.correct === true).length}/{recent.length} · {t.teaserAcc}
+            </span>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] divide-y divide-white/[0.06] overflow-hidden">
+            {recent.map((p) => <SettledRow key={p.fixtureId} p={p} t={t} />)}
+          </div>
+        </div>
+      )}
+
       {/* --- Model kapsamı dışı: ayrı bölüm, varsayılan KAPALI, açıkça uyarılı.
           Gizlemek yerine etiketlemek: sayfa boş kalmaz ama kullanıcı hangisinin
           gerçek motor çıktısı olduğunu karıştırmaz. --- */}
@@ -508,6 +538,59 @@ function PredictionCard({ p, t, i, open, onToggle }: {
         </motion.div>
       )}
     </motion.div>
+  );
+}
+
+// Sonuçlanmış tahmin satırı: tarih · takımlar + skor · pazar rozetleri
+// (1X2 / çifte şans / Ü-A / KG her biri ✓ yeşil veya ✗ kırmızı). Rozet
+// doğruluğu skor + result'tan YERELDE hesaplanır — ekstra API alanı gerekmez.
+function SettledRow({ p, t }: { p: Prediction; t: any }) {
+  const ko = p.kickoff ? new Date(p.kickoff) : null;
+  const koStr = ko ? ko.toLocaleDateString(t.locale || undefined, { day: '2-digit', month: 'short' }) : '';
+  const hs = p.homeScore, as = p.awayScore;
+  const res = (p.result || '') as 'H' | 'D' | 'A' | '';
+  const dc = deriveDoubleChance(p.pHome, p.pDraw, p.pAway);
+
+  const chips: Array<{ label: string; ok: boolean }> = [];
+  if (p.correct != null) chips.push({ label: `1X2 · ${p.pick}`, ok: p.correct === true });
+  if (dc && res) chips.push({ label: dc.pick, ok: isDoubleChanceCorrect(dc.pick, res) });
+  if (p.overUnder && hs != null && as != null) {
+    chips.push({
+      label: goalMarketLabel(p.overUnder.pick, t.lang),
+      ok: isOverUnderCorrect(p.overUnder.pick, hs, as),
+    });
+  }
+  if (p.btts && hs != null && as != null) {
+    chips.push({
+      label: goalMarketLabel(p.btts.pick, t.lang),
+      ok: isBttsCorrect(p.btts.pick, hs, as),
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 text-xs">
+      <span className="w-12 shrink-0 text-white/35 tabular-nums">{koStr}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-white/80 truncate">
+          <span className={res === 'H' ? 'font-semibold text-white' : ''}>{p.homeName}</span>
+          <span className="mx-1.5 font-bold tabular-nums text-white/90">{hs}-{as}</span>
+          <span className={res === 'A' ? 'font-semibold text-white' : ''}>{p.awayName}</span>
+        </div>
+        <div className="text-[10px] text-white/30 truncate">{displayLeague(p.leagueName, p.leagueId)}</div>
+      </div>
+      <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+        {chips.map((c) => (
+          <span key={c.label}
+            className={`px-1.5 py-0.5 rounded-md border text-[10px] font-medium tabular-nums ${
+              c.ok
+                ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                : 'border-rose-400/25 bg-rose-400/[0.07] text-rose-300/80'
+            }`}>
+            {c.ok ? '✓' : '✗'} {c.label}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

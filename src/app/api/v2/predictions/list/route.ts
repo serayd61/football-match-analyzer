@@ -51,13 +51,14 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get('date'); // YYYY-MM-DD (opsiyonel)
   const limit = Math.min(parseInt(searchParams.get('limit') || '200', 10) || 200, 500);
 
+  const COLS =
+    'fixture_id, league_id, league_name, home_id, home_name, away_id, away_name, kickoff, ' +
+    'p_home, p_draw, p_away, p_over25, p_btts_yes, lambda_home, lambda_away, ' +
+    'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version';
+
   let q = sb()
     .from('engine_predictions')
-    .select(
-      'fixture_id, league_id, league_name, home_id, home_name, away_id, away_name, kickoff, ' +
-        'p_home, p_draw, p_away, p_over25, p_btts_yes, lambda_home, lambda_away, ' +
-        'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version',
-    )
+    .select(COLS)
     .order('kickoff', { ascending: true })
     .limit(limit);
 
@@ -81,6 +82,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: error.message, predictions: [] }, { status: 500 });
   }
 
+  // Sonuçlanan tahminler ekranda 3 GÜN kalır (istek: 2026-08-25). Maç
+  // başlayınca karttan anında düşmesi "tahminler yok oluyor" hissi
+  // veriyordu; ayrıca skor + tuttu/tutmadı görünmesi kanıt döngüsünün
+  // parçası. Veri SİLİNMEZ (kalibrasyon + karne bu satırlardan beslenir),
+  // yalnızca 72 saatten eskiler bu listeden çıkar. Void'ler (result NULL)
+  // gösterilmez.
+  let settledData: any[] = [];
+  if (!date) {
+    const now = new Date();
+    const back72h = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+    const { data: sd, error: sErr } = await sb()
+      .from('engine_predictions')
+      .select(COLS)
+      .eq('settled', true)
+      .not('result', 'is', null)
+      .gte('kickoff', back72h.toISOString())
+      .lt('kickoff', now.toISOString())
+      .order('kickoff', { ascending: false })
+      .limit(120);
+    if (sErr) console.error('[predictions/list] settled read:', sErr.message);
+    else settledData = sd || [];
+  }
+
   // Okuma-anı lig onarımı: insert anında ad çözümsüz kaldıysa ("League X")
   // katalogdan ad + ülke kodu tamamlanır (bkz. league-catalog cron'u).
   const EMPTY_CURVE = { knots: [], segment: 'none', nSamples: 0, fittedAt: null };
@@ -91,7 +115,7 @@ export async function GET(request: NextRequest) {
     getCalibration('btts').catch(() => EMPTY_CURVE),
   ]);
 
-  const predictions = (data || []).map((p: any) => {
+  const mapRow = (p: any) => {
     const cat = catalog.get(Number(p.league_id));
     const rawConf = p.confidence != null ? Number(p.confidence) : null;
     // Gol pazarları: seçim ham olasılıktan, GÖSTERİLEN güven kalibre eğriden.
@@ -132,7 +156,8 @@ export async function GET(request: NextRequest) {
     result: p.result,
     correct: p.correct,
     };
-  });
+  };
+  const predictions = (data || []).map(mapRow);
 
   // Model kapsamı: tahminler GİZLENMEZ, ETİKETLENİR. Fit edilmiş ligler
   // ana liste; kalanlar `uncovered` altında ayrı döner ve arayüzde "kapsam
@@ -146,10 +171,18 @@ export async function GET(request: NextRequest) {
   const visible = withFlag.filter((p) => p.modelCovered);
   const uncovered = withFlag.filter((p) => !p.modelCovered);
 
+  // Son 3 günün sonuçları — yalnızca kapsanan ligler (kapsam dışı zaten
+  // istatistiklere girmez; sonuç listesinde de karneyi bulandırmasın).
+  const recentResults = settledData
+    .map(mapRow)
+    .filter((p) => isModelCovered(p.leagueName, p.leagueId, p.leagueCcode));
+
   return NextResponse.json({
     ok: true,
     count: visible.length,
     predictions: visible,
+    recentResults,
+    recentDays: 3,
     // Ayrı alan: eski istemciler bunu görmez → karne/istatistik hesapları
     // yanlışlıkla kapsam dışını içine almaz.
     uncovered,

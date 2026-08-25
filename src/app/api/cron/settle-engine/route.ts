@@ -61,7 +61,14 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '120', 10) || 120, 1), 400);
+  // ⚠️ KUYRUK BAŞI TIKANMASI (2026-08-25'te yaşandı): limit=120 iken, void
+  // eşiğinden GENÇ 139 notFound satır kuyruğun başını kapladı → saatlik tur
+  // her seferinde aynı bulunamayan satırları tarayıp SIFIR settlement yaptı
+  // (549 tahmin 3 gün sonuçsuz kaldı). Asıl maliyet satır sayısı değil TARİH
+  // başına 1 API çağrısı; satır limiti bu yüzden geniş (7 günlük void
+  // penceresi zaten kuyruğu ~1000'de sınırlar), tarih sayısı ayrıca sınırlı.
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '900', 10) || 900, 1), 1000);
+  const MAX_DATES = 10;
 
   // Sonuçlanmamış geçmiş tahminleri al (en eskiden başla)
   const { data: rows, error } = await sb()
@@ -79,11 +86,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, checked: 0, settled: 0, voided: 0, note: 'no pending past matches' });
   }
 
-  // Tarihe göre grupla → her tarih için tek FotMob çağrısı
+  // Tarihe göre grupla → her tarih için tek FotMob çağrısı. Tarih sayısı
+  // sınırlanır (en eskiler önce); artan tarihler bir sonraki saatlik tura
+  // kalır — her tarih penceresi en geç birkaç turda mutlaka işlenir.
   const byDate = new Map<string, typeof rows>();
   for (const r of rows) {
     const d = ymd(r.kickoff);
-    if (!byDate.has(d)) byDate.set(d, []);
+    if (!byDate.has(d)) {
+      if (byDate.size >= MAX_DATES) continue;
+      byDate.set(d, []);
+    }
     byDate.get(d)!.push(r);
   }
 
