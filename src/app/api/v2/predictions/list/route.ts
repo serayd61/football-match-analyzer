@@ -16,6 +16,7 @@ import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { getCalibration, applyCurve } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
+import { deriveOverUnder, deriveBtts } from '@/lib/goal-markets';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -82,14 +83,21 @@ export async function GET(request: NextRequest) {
 
   // Okuma-anı lig onarımı: insert anında ad çözümsüz kaldıysa ("League X")
   // katalogdan ad + ülke kodu tamamlanır (bkz. league-catalog cron'u).
-  const [catalog, calib] = await Promise.all([
+  const EMPTY_CURVE = { knots: [], segment: 'none', nSamples: 0, fittedAt: null };
+  const [catalog, calib, calibOu, calibBtts] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
-    getCalibration().catch(() => ({ knots: [], segment: 'none', nSamples: 0, fittedAt: null })),
+    getCalibration().catch(() => EMPTY_CURVE),
+    getCalibration('ou25').catch(() => EMPTY_CURVE),
+    getCalibration('btts').catch(() => EMPTY_CURVE),
   ]);
 
   const predictions = (data || []).map((p: any) => {
     const cat = catalog.get(Number(p.league_id));
     const rawConf = p.confidence != null ? Number(p.confidence) : null;
+    // Gol pazarları: seçim ham olasılıktan, GÖSTERİLEN güven kalibre eğriden.
+    // Ham değerler 10-30 puan şişik (bkz. lib/goal-markets.ts ölçümü).
+    const ou = deriveOverUnder(p.p_over25);
+    const bt = deriveBtts(p.p_btts_yes);
     return {
     fixtureId: p.fixture_id,
     leagueId: p.league_id,
@@ -111,6 +119,8 @@ export async function GET(request: NextRequest) {
     // Çifte şans: aynı olasılıklardan türetilir (bkz. lib/double-chance.ts).
     // 1X2 argmax yapısal olarak ~%49 tavanlı; çifte şans ölçülen %76.5.
     doubleChance: deriveDoubleChance(p.p_home, p.p_draw, p.p_away),
+    overUnder: ou ? { pick: ou.pick, p: applyCurve(ou.p, calibOu.knots), pRaw: ou.p } : null,
+    btts: bt ? { pick: bt.pick, p: applyCurve(bt.p, calibBtts.knots), pRaw: bt.p } : null,
     // Gösterilen güven KALİBRE değerdir (bkz. lib/calibration.ts); ham model
     // çıktısı confidenceRaw'da korunur.
     confidence: applyCurve(rawConf, calib.knots),

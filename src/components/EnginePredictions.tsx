@@ -17,6 +17,7 @@ import { displayLeague } from '@/lib/league-names';
 import { countryInfo } from '@/lib/countries';
 
 import { deriveDoubleChance, doubleChanceLabel } from '@/lib/double-chance';
+import { goalMarketLabel, type OverUnderPick, type BttsPick } from '@/lib/goal-markets';
 
 export interface Prediction {
   fixtureId: number;
@@ -26,6 +27,9 @@ export interface Prediction {
   kickoff: string;
   pHome: number; pDraw: number; pAway: number;
   pOver25: number | null; pBttsYes: number | null;
+  // Gol pazarları — API'de türetilir; `p` KALİBRE güvendir (ham: pRaw).
+  overUnder?: { pick: OverUnderPick; p: number | null; pRaw: number } | null;
+  btts?: { pick: BttsPick; p: number | null; pRaw: number } | null;
   lambdaHome: number | null; lambdaAway: number | null;
   pick: string; confidence: number | null;
   rationale: string | null;
@@ -62,6 +66,8 @@ const STR = {
     empty: 'Şu an gösterilecek tahmin yok. Yeni maçlar yaklaştıkça otomatik eklenir.',
     loading: 'Tahminler yükleniyor...', locale: 'tr-TR',
     dcTitle: 'Güvenli seçim', dcHint: 'iki sonucu birden kapsar', lang: 'tr' as const,
+    mkTitle: 'Pazarlar', mkDc: 'Çifte şans', mkOu: 'Toplam gol', mkBtts: 'Karşılıklı gol',
+    mkCalibNote: 'Yüzdeler geçmiş sonuçlarla kalibre edilmiştir',
     gateAuthTitle: 'Tahminleri görmek için giriş yapın',
     gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol',
@@ -79,6 +85,8 @@ const STR = {
     empty: 'No predictions to show right now. They appear automatically as matches approach.',
     loading: 'Loading predictions...', locale: 'en-US',
     dcTitle: 'Safer call', dcHint: 'covers two outcomes', lang: 'en' as const,
+    mkTitle: 'Markets', mkDc: 'Double chance', mkOu: 'Total goals', mkBtts: 'Both teams to score',
+    mkCalibNote: 'Percentages are calibrated against past results',
     gateAuthTitle: 'Sign in to see predictions',
     gateAuthDesc: 'Engine predictions are available to members only.',
     gateAuthCta: 'Sign in / Sign up',
@@ -96,6 +104,8 @@ const STR = {
     empty: 'Derzeit keine Vorhersagen. Sie erscheinen automatisch, sobald Spiele näher rücken.',
     loading: 'Vorhersagen werden geladen...', locale: 'de-DE',
     dcTitle: 'Sichere Wahl', dcHint: 'deckt zwei Ergebnisse ab', lang: 'de' as const,
+    mkTitle: 'Märkte', mkDc: 'Doppelte Chance', mkOu: 'Tore gesamt', mkBtts: 'Beide Teams treffen',
+    mkCalibNote: 'Prozentwerte sind mit vergangenen Ergebnissen kalibriert',
     gateAuthTitle: 'Zum Ansehen anmelden',
     gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren',
@@ -428,24 +438,6 @@ function PredictionCard({ p, t, i, open, onToggle }: {
         </div>
       </div>
 
-      {dc && (
-        <div className="flex items-center gap-2 mb-3 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.07] px-3 py-2">
-          <ShieldCheck size={14} className="shrink-0 text-emerald-300/90" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-wide text-emerald-300/70">
-              {t.dcTitle} · {dc.pick}
-            </div>
-            <div className="text-xs text-white/80 truncate">
-              {doubleChanceLabel(dc.pick, p.homeName, p.awayName, t.lang)}
-            </div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-lg font-bold text-emerald-300">{Math.round(dc.p * 100)}%</div>
-            <div className="text-[9px] text-white/35">{t.dcHint}</div>
-          </div>
-        </div>
-      )}
-
       <div className="flex h-2 rounded-full overflow-hidden mb-1">
         <div style={{ width: `${p.pHome * 100}%` }} className="bg-brand-400/70" />
         <div style={{ width: `${p.pDraw * 100}%` }} className="bg-amber-400/70" />
@@ -457,16 +449,46 @@ function PredictionCard({ p, t, i, open, onToggle }: {
         <span>2 · {pct(p.pAway)}</span>
       </div>
 
-      <div className="flex gap-2 mb-1">
-        <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">
-          {t.over}: <b className="text-white/80">{pct(p.pOver25)}</b>
-        </span>
-        <span className="text-[11px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/60">
-          {t.btts}: <b className="text-white/80">{pct(p.pBttsYes)}</b>
-        </span>
+      {/* Pazarlar — çifte şans + gol pazarları tek tip satırlar halinde.
+          Gol pazarlarının yüzdesi KALİBREDİR (API'de eğriden geçer); ham
+          motor çıktısı 10-30 puan şişik olduğundan asla doğrudan basılmaz. */}
+      {(dc || p.overUnder || p.btts) && (
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-1 mb-3 divide-y divide-white/[0.06]">
+          {dc && (
+            <MarketRow
+              icon={<ShieldCheck size={13} className="text-emerald-300/90" />}
+              label={`${t.mkDc} · ${dc.pick}`}
+              value={doubleChanceLabel(dc.pick, p.homeName, p.awayName, t.lang)}
+              percent={Math.round(dc.p * 100)}
+              barClass="bg-emerald-400/80" textClass="text-emerald-300"
+            />
+          )}
+          {p.overUnder && p.overUnder.p != null && (
+            <MarketRow
+              icon={<Target size={13} className="text-violet-300/90" />}
+              label={t.mkOu}
+              value={goalMarketLabel(p.overUnder.pick, t.lang)}
+              percent={Math.round(p.overUnder.p * 100)}
+              barClass="bg-violet-400/80" textClass="text-violet-300"
+            />
+          )}
+          {p.btts && p.btts.p != null && (
+            <MarketRow
+              icon={<BarChart3 size={13} className="text-sky-300/90" />}
+              label={t.mkBtts}
+              value={goalMarketLabel(p.btts.pick, t.lang)}
+              percent={Math.round(p.btts.p * 100)}
+              barClass="bg-sky-400/80" textClass="text-sky-300"
+            />
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[10px] text-white/25 truncate">{t.mkCalibNote}</span>
         {p.rationale && (
           <button onClick={onToggle}
-            className="ml-auto text-[11px] px-2 py-1 rounded-lg text-brand-300/80 hover:text-brand-300 flex items-center gap-1">
+            className="ml-auto shrink-0 text-[11px] px-2 py-1 rounded-lg text-brand-300/80 hover:text-brand-300 flex items-center gap-1">
             {t.why} {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
         )}
@@ -479,5 +501,29 @@ function PredictionCard({ p, t, i, open, onToggle }: {
         </motion.div>
       )}
     </motion.div>
+  );
+}
+
+// Tek tip pazar satırı: ikon + pazar adı + seçim + ince güven çubuğu + yüzde.
+// Kartın "profesyonel" hiyerarşisi buradan gelir — her pazar aynı düzende,
+// yüzdeler tabular hizada, renk yalnızca vurgu.
+function MarketRow({ icon, label, value, percent, barClass, textClass }: {
+  icon: React.ReactNode; label: string; value: string;
+  percent: number; barClass: string; textClass: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 py-2">
+      <span className="shrink-0">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[9px] uppercase tracking-wider text-white/35">{label}</div>
+        <div className="text-xs font-semibold text-white/85 truncate">{value}</div>
+      </div>
+      <div className="w-16 shrink-0 h-1 rounded-full bg-white/10 overflow-hidden">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${percent}%` }} />
+      </div>
+      <div className={`w-10 shrink-0 text-right text-sm font-bold tabular-nums ${textClass}`}>
+        {percent}%
+      </div>
+    </div>
   );
 }

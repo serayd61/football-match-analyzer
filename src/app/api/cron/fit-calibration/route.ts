@@ -3,11 +3,14 @@
 // Sonuçlanmış tahminlerden (güven → gerçek isabet) izotonik eğri çıkarır ve
 // confidence_calibration'a yazar. Haftalık (Pazartesi 03:50 UTC).
 //
-// İki segment fit edilir:
-//   all     — tüm sonuçlanmış tahminler (geniş örneklem, karışık rejim)
-//   covered — yalnızca modeli fit edilmiş ligler (dar ama DOĞRU rejim)
-// Okuma tarafı 'covered'ı tercih eder; yeterli örnek birikene kadar (MIN_COVERED)
-// yazılmaz, böylece gürültülü bir eğri sağlam olanın yerini almaz.
+// Dört segment fit edilir:
+//   all     — 1X2 güveni, tüm sonuçlanmış tahminler (geniş örneklem)
+//   covered — 1X2 güveni, yalnızca modeli fit edilmiş ligler (DOĞRU rejim)
+//   ou25    — Üst/Alt 2.5: x = seçilen tarafın ham olasılığı, y = tuttu mu
+//   btts    — KG Var/Yok: aynı şema (bkz. lib/goal-markets.ts ölçümü —
+//             ham olasılıklar 10-30 puan şişik, gösterim bu eğrilerden geçer)
+// Okuma tarafı 1X2'de 'covered'ı tercih eder; yeterli örnek birikene kadar
+// (MIN_COVERED) yazılmaz, böylece gürültülü bir eğri sağlamın yerini almaz.
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest) {
   for (let from = 0; from < 50000; from += PAGE) {
     const { data: page, error } = await sb()
       .from('engine_predictions')
-      .select('league_id, league_name, confidence, correct')
+      .select('league_id, league_name, confidence, correct, p_over25, p_btts_yes, home_score, away_score')
       .eq('settled', true)
       .not('result', 'is', null)
       .not('correct', 'is', null)
@@ -70,6 +73,8 @@ export async function GET(request: NextRequest) {
   const catalog = await getCatalogMap().catch(() => new Map());
   const all: Array<{ x: number; y: number }> = [];
   const covered: Array<{ x: number; y: number }> = [];
+  const ou25: Array<{ x: number; y: number }> = [];
+  const btts: Array<{ x: number; y: number }> = [];
 
   for (const r of data) {
     const x = Number(r.confidence);
@@ -80,6 +85,22 @@ export async function GET(request: NextRequest) {
     const cat = catalog.get(Number(r.league_id));
     const name = isUnresolvedLeagueName(r.league_name) && cat ? cat.name : r.league_name;
     if (isModelCovered(name, r.league_id, cat?.ccode)) covered.push({ x, y });
+
+    // Gol pazarları: x = seçilen tarafın ham olasılığı (>= 0.5), y = tuttu mu.
+    // Skor yoksa (void) atlanır; deriveOverUnder/deriveBtts ile aynı kural.
+    const hs = Number(r.home_score), as = Number(r.away_score);
+    if (Number.isFinite(hs) && Number.isFinite(as)) {
+      const pOver = Number(r.p_over25);
+      if (Number.isFinite(pOver) && pOver >= 0 && pOver <= 1) {
+        const pickOver = pOver >= 0.5;
+        ou25.push({ x: pickOver ? pOver : 1 - pOver, y: pickOver === (hs + as >= 3) ? 1 : 0 });
+      }
+      const pBtts = Number(r.p_btts_yes);
+      if (Number.isFinite(pBtts) && pBtts >= 0 && pBtts <= 1) {
+        const pickYes = pBtts >= 0.5;
+        btts.push({ x: pickYes ? pBtts : 1 - pBtts, y: pickYes === (hs > 0 && as > 0) ? 1 : 0 });
+      }
+    }
   }
 
   const results: any[] = [];
@@ -87,6 +108,8 @@ export async function GET(request: NextRequest) {
   for (const [segment, pts, min] of [
     ['all', all, MIN_ALL] as const,
     ['covered', covered, MIN_COVERED] as const,
+    ['ou25', ou25, MIN_ALL] as const,
+    ['btts', btts, MIN_ALL] as const,
   ]) {
     if (pts.length < min) {
       results.push({ segment, skipped: true, n: pts.length, need: min });
