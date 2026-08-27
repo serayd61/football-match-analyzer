@@ -11,14 +11,14 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Clock, ShieldCheck, Target, BarChart3,
-  ChevronDown, ChevronUp, RefreshCw, Lock, Crown,
+  ChevronDown, ChevronUp, RefreshCw, Lock, Crown, History, CalendarDays,
 } from 'lucide-react';
 import { displayLeague } from '@/lib/league-names';
 import { countryInfo } from '@/lib/countries';
 
 import { deriveDoubleChance, doubleChanceLabel, isDoubleChanceCorrect } from '@/lib/double-chance';
 import {
-  goalMarketLabel, isOverUnderCorrect, isBttsCorrect,
+  goalMarketLabel, isOverUnderCorrect, isBttsCorrect, MARKET_EDGE,
   type OverUnderPick, type BttsPick,
 } from '@/lib/goal-markets';
 
@@ -42,9 +42,9 @@ export interface Prediction {
 const LOGO = (id: number | null) =>
   id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : '';
 
-// Gol pazarı satırının görünmesi için gereken en düşük KALİBRE güven.
-// Altı "kenar yok" demektir (ölçüm: ham ~0.5 bandında isabet %46-49).
-const MARKET_EDGE = 0.55;
+// Karne (sonuçlar) API cevabındaki pazar özeti — bkz. predictions/list ?results=
+interface MarketSum { n: number; ok: number; hiN: number; hiOk: number }
+interface ResultsSummary { x12: MarketSum; dc: MarketSum; ou25: MarketSum; btts: MarketSum }
 
 function pct(x: number | null | undefined) {
   return x == null ? '–' : `${Math.round(x * 100)}%`;
@@ -76,6 +76,16 @@ const STR = {
     mkTitle: 'Pazarlar', mkDc: 'Çifte şans', mkOu: 'Toplam gol', mkBtts: 'Karşılıklı gol',
     mkCalibNote: 'Yüzdeler geçmiş sonuçlarla kalibre edilmiştir',
     recentTitle: 'Sonuçlanan tahminler', recentSub: 'son 3 gün — sonra listeden düşer',
+    tabUpcoming: 'Tahminler', tabResults: 'Sonuçlar & Karne',
+    resTitle: 'Pazar karnesi',
+    resSub: (d: number) => `son ${d} gün · yalnızca model kapsamındaki ligler`,
+    resDays: (d: number) => `${d} gün`,
+    mk1x2: 'Maç sonucu',
+    resHi1x2: 'güven ≥ %60', resHiDc: 'güven ≥ %75', resHiGoal: 'gösterilenler (≥ %55)',
+    resEmpty: 'Bu aralıkta sonuçlanmış tahmin yok.',
+    resShowing: (a: number, b: number) => `son ${a} maç listeleniyor · özet ${b} maçın tamamından`,
+    resAllLink: 'Tüm sonuçlar →',
+    resHit: 'isabet',
     gateAuthTitle: 'Tahminleri görmek için giriş yapın',
     gateAuthDesc: 'Motor tahminleri yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol',
@@ -96,6 +106,16 @@ const STR = {
     mkTitle: 'Markets', mkDc: 'Double chance', mkOu: 'Total goals', mkBtts: 'Both teams to score',
     mkCalibNote: 'Percentages are calibrated against past results',
     recentTitle: 'Settled predictions', recentSub: 'last 3 days — then they roll off',
+    tabUpcoming: 'Predictions', tabResults: 'Results & record',
+    resTitle: 'Market scorecard',
+    resSub: (d: number) => `last ${d} days · model-covered leagues only`,
+    resDays: (d: number) => `${d} days`,
+    mk1x2: 'Match result',
+    resHi1x2: 'confidence ≥ 60%', resHiDc: 'confidence ≥ 75%', resHiGoal: 'displayed picks (≥ 55%)',
+    resEmpty: 'No settled predictions in this window.',
+    resShowing: (a: number, b: number) => `showing last ${a} matches · summary covers all ${b}`,
+    resAllLink: 'All results →',
+    resHit: 'hit rate',
     gateAuthTitle: 'Sign in to see predictions',
     gateAuthDesc: 'Engine predictions are available to members only.',
     gateAuthCta: 'Sign in / Sign up',
@@ -116,6 +136,16 @@ const STR = {
     mkTitle: 'Märkte', mkDc: 'Doppelte Chance', mkOu: 'Tore gesamt', mkBtts: 'Beide Teams treffen',
     mkCalibNote: 'Prozentwerte sind mit vergangenen Ergebnissen kalibriert',
     recentTitle: 'Abgeschlossene Tipps', recentSub: 'letzte 3 Tage — danach ausgeblendet',
+    tabUpcoming: 'Vorhersagen', tabResults: 'Ergebnisse & Bilanz',
+    resTitle: 'Markt-Bilanz',
+    resSub: (d: number) => `letzte ${d} Tage · nur Ligen mit Modellabdeckung`,
+    resDays: (d: number) => `${d} Tage`,
+    mk1x2: 'Spielausgang',
+    resHi1x2: 'Konfidenz ≥ 60 %', resHiDc: 'Konfidenz ≥ 75 %', resHiGoal: 'angezeigte Picks (≥ 55 %)',
+    resEmpty: 'Keine abgeschlossenen Tipps in diesem Zeitraum.',
+    resShowing: (a: number, b: number) => `letzte ${a} Spiele gelistet · Bilanz über alle ${b}`,
+    resAllLink: 'Alle Ergebnisse →',
+    resHit: 'Trefferquote',
     gateAuthTitle: 'Zum Ansehen anmelden',
     gateAuthDesc: 'Engine-Vorhersagen sind nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren',
@@ -157,6 +187,17 @@ export default function EnginePredictions({
   const [gate, setGate] = useState<null | 'auth' | 'subscription'>(null);
   // Kilitli durumda gösterilen GERÇEK kanıt (public backtest özeti)
   const [proof, setProof] = useState<{ leagues: number; totalTested: number; mrAccuracy: number } | null>(null);
+  // --- Sonuçlar & Karne sekmesi (istek 2026-08-27): bitmiş maçların pazar
+  // bazında isabet yüzdeleri + tarihe gruplu sonuç listesi. Özet SUNUCUDA
+  // hesaplanır (?results=N) — pencere binlerce satır olabilir. Sekmeler
+  // yalnızca tam sayfada (showControls) görünür; dashboard gömme etkilenmez.
+  const [view, setView] = useState<'upcoming' | 'results'>('upcoming');
+  const [results, setResults] = useState<Prediction[]>([]);
+  const [resSummary, setResSummary] = useState<ResultsSummary | null>(null);
+  const [resTotal, setResTotal] = useState(0);
+  const [resDays, setResDays] = useState<number>(30);
+  const [resLoading, setResLoading] = useState(false);
+  const [resFetchedDays, setResFetchedDays] = useState<number | null>(null);
 
   useEffect(() => {
     if (gate !== 'subscription' || proof) return;
@@ -186,6 +227,42 @@ export default function EnginePredictions({
     }
   }
   useEffect(() => { load(); }, []);
+
+  async function loadResults(days: number) {
+    setResLoading(true);
+    try {
+      const res = await fetch(`/api/v2/predictions/list?results=${days}`, { cache: 'no-store' });
+      if (res.status === 401) { setGate('auth'); return; }
+      if (res.status === 403) { setGate('subscription'); return; }
+      const data = await res.json();
+      setGate(null);
+      setResults(data.results || []);
+      setResSummary(data.summary || null);
+      setResTotal(data.totalRows || 0);
+      setResFetchedDays(days);
+    } catch {
+      setResults([]); setResSummary(null); setResTotal(0);
+    } finally {
+      setResLoading(false);
+    }
+  }
+  useEffect(() => {
+    if (view === 'results' && resFetchedDays !== resDays) loadResults(resDays);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, resDays]);
+
+  // Sonuçlar güne gruplanır (API'den kickoff azalan gelir → grup sırası korunur)
+  const resGroups = useMemo(() => {
+    const m = new Map<string, Prediction[]>();
+    for (const p of results) {
+      const k = p.kickoff
+        ? new Date(p.kickoff).toLocaleDateString(t.locale || undefined, { weekday: 'long', day: '2-digit', month: 'long' })
+        : '—';
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(p);
+    }
+    return Array.from(m.entries());
+  }, [results, t.locale]);
 
   const sorted = useMemo(() => {
     let arr = [...preds];
@@ -291,8 +368,112 @@ export default function EnginePredictions({
     );
   }
 
+  const isResults = showControls && view === 'results';
+
   return (
     <div>
+      {/* Sekmeler: Tahminler | Sonuçlar & Karne — yalnızca tam sayfada */}
+      {showControls && (
+        <div className="flex items-center gap-1 mb-6 p-1 rounded-xl border border-white/10 bg-white/[0.03] w-fit">
+          {([
+            ['upcoming', <TrendingUp key="i" size={14} />, t.tabUpcoming],
+            ['results', <History key="i" size={14} />, t.tabResults],
+          ] as const).map(([v, icon, label]) => (
+            <button key={v} onClick={() => setView(v)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors ${
+                view === v
+                  ? 'bg-brand-400/15 text-brand-200 border border-brand-400/30'
+                  : 'text-white/50 hover:text-white/80 border border-transparent'
+              }`}>
+              {icon} {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isResults ? (
+        <div>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-white/85 flex items-center gap-2">
+                <CalendarDays size={15} className="text-brand-300" /> {t.resTitle}
+              </h3>
+              <p className="text-xs text-white/35 mt-0.5">{t.resSub(resDays)}</p>
+            </div>
+            <div className="flex gap-2">
+              {[7, 30, 90].map((d) => (
+                <button key={d} onClick={() => setResDays(d)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border tabular-nums ${
+                    resDays === d
+                      ? 'border-brand-400/50 bg-brand-400/10 text-brand-300'
+                      : 'border-white/10 text-white/50 hover:text-white/80'
+                  }`}>
+                  {t.resDays(d)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {resLoading ? (
+            <div className="text-center py-16 text-white/40">
+              <RefreshCw className="animate-spin mx-auto mb-3" /> {t.loading}
+            </div>
+          ) : !resSummary || resTotal === 0 ? (
+            <div className="text-center text-white/40 border border-white/10 rounded-2xl bg-white/[0.02] py-16">
+              {t.resEmpty}
+            </div>
+          ) : (
+            <>
+              {/* Pazar karnesi: genel isabet + yüksek-güven dilimi. Bu yüzdeler
+                  kullanıcının "neye ne kadar güveneyim" sorusunun cevabıdır. */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+                <ScoreCard title={`1X2 · ${t.mk1x2}`} sum={resSummary.x12} hiLabel={t.resHi1x2}
+                  icon={<TrendingUp size={13} className="text-brand-300/90" />}
+                  accentText="text-brand-300" accentBar="bg-brand-400/80" />
+                <ScoreCard title={t.mkDc} sum={resSummary.dc} hiLabel={t.resHiDc}
+                  icon={<ShieldCheck size={13} className="text-emerald-300/90" />}
+                  accentText="text-emerald-300" accentBar="bg-emerald-400/80" />
+                <ScoreCard title={t.mkOu} sum={resSummary.ou25} hiLabel={t.resHiGoal}
+                  icon={<Target size={13} className="text-violet-300/90" />}
+                  accentText="text-violet-300" accentBar="bg-violet-400/80" />
+                <ScoreCard title={t.mkBtts} sum={resSummary.btts} hiLabel={t.resHiGoal}
+                  icon={<BarChart3 size={13} className="text-sky-300/90" />}
+                  accentText="text-sky-300" accentBar="bg-sky-400/80" />
+              </div>
+              <p className="text-[10px] text-white/25 mb-6">{t.mkCalibNote}</p>
+
+              <div className="space-y-5">
+                {resGroups.map(([day, items]) => {
+                  const dayN = items.filter((r) => r.correct != null).length;
+                  const dayOk = items.filter((r) => r.correct === true).length;
+                  return (
+                    <div key={day}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-xs font-bold text-white/60">{day}</h4>
+                        <span className="text-[10px] text-white/30">{items.length} {t.matches}</span>
+                        <div className="flex-1 h-px bg-white/10" />
+                        <span className="text-[10px] text-white/40 tabular-nums">
+                          1X2 · {dayOk}/{dayN}
+                        </span>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.02] divide-y divide-white/[0.06] overflow-hidden">
+                        {items.map((p) => <SettledRow key={p.fixtureId} p={p} t={t} />)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {resTotal > results.length && (
+                <p className="text-center text-[11px] text-white/30 mt-5">
+                  {t.resShowing(results.length, resTotal)}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+      <>
       {showStats && (
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
@@ -379,6 +560,12 @@ export default function EnginePredictions({
             <span className="text-xs text-white/50 tabular-nums">
               {recent.filter((r) => r.correct === true).length}/{recent.length} · {t.teaserAcc}
             </span>
+            {showControls && (
+              <button onClick={() => setView('results')}
+                className="text-xs text-brand-300/80 hover:text-brand-300 transition-colors">
+                {t.resAllLink}
+              </button>
+            )}
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] divide-y divide-white/[0.06] overflow-hidden">
             {recent.map((p) => <SettledRow key={p.fixtureId} p={p} t={t} />)}
@@ -418,6 +605,40 @@ export default function EnginePredictions({
           )}
         </div>
       )}
+      </>
+      )}
+    </div>
+  );
+}
+
+// Karne kartı: pazar adı + büyük genel isabet yüzdesi + n/ok sayacı + ince
+// çubuk + yüksek-güven dilimi. Yüzdeler API özetinden gelir (sunucuda, tüm
+// pencere üzerinden hesaplı) — listedeki 150 satırdan DEĞİL.
+function ScoreCard({ title, sum, hiLabel, icon, accentText, accentBar }: {
+  title: string; sum: MarketSum; hiLabel: string;
+  icon: React.ReactNode; accentText: string; accentBar: string;
+}) {
+  const p = sum.n ? Math.round((sum.ok / sum.n) * 100) : null;
+  const hp = sum.hiN ? Math.round((sum.hiOk / sum.hiN) * 100) : null;
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/40">
+        {icon} <span className="truncate">{title}</span>
+      </div>
+      <div className="flex items-baseline gap-2 mt-1.5">
+        <span className={`text-2xl font-bold tabular-nums ${accentText}`}>{p == null ? '–' : `${p}%`}</span>
+        <span className="text-[11px] text-white/40 tabular-nums">{sum.ok}/{sum.n}</span>
+      </div>
+      <div className="h-1 rounded-full bg-white/10 overflow-hidden mt-2">
+        <div className={`h-full rounded-full ${accentBar}`} style={{ width: `${p ?? 0}%` }} />
+      </div>
+      <div className="mt-2.5 pt-2 border-t border-white/[0.07] text-[10px] text-white/40 flex items-center justify-between gap-2">
+        <span className="truncate">{hiLabel}</span>
+        <span className="font-bold tabular-nums text-white/70">
+          {hp == null ? '–' : `${hp}%`}
+          <span className="font-normal text-white/35"> · {sum.hiN}</span>
+        </span>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,13 @@
 export type OverUnderPick = 'over' | 'under';
 export type BttsPick = 'yes' | 'no';
 
+// Gol pazarı seçiminin GÖSTERİLMESİ için gereken en düşük KALİBRE güven.
+// Altı "kenar yok" demektir: ham ~0.5 bandında gerçek isabet %46-49 (yazı-tura),
+// ayrıca ou25 eğrisinin 0.5'teki mikro-blok artefaktı %0 basabiliyor.
+// Arayüz (EnginePredictions) ve karne özeti (predictions/list ?results=) aynı
+// eşiği kullanır — ölçülen yüzde, gösterilen seçimleri ölçsün diye.
+export const MARKET_EDGE = 0.55;
+
 export interface MarketCall<P extends string> {
   pick: P;
   /** Seçilen tarafın HAM olasılığı (>= 0.5). Gösterim için kalibre edin. */
