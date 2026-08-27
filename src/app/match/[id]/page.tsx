@@ -13,6 +13,7 @@ import AgentPerformanceBadge from '@/components/AgentPerformanceBadge';
 import DevilsAdvocatePanel from '@/components/DevilsAdvocatePanel';
 import SurvivalVerdictCard from '@/components/SurvivalVerdictCard';
 import DixonColesCard from '@/components/DixonColesCard';
+import MarketModelCard from '@/components/MarketModelCard';
 import EnginePickCard from '@/components/EnginePickCard';
 import { useLanguage } from '@/components/LanguageProvider';
 
@@ -590,6 +591,14 @@ export default function MatchAnalysisPage() {
         {analysis.sources?.agents?.dixonColes && (
           <DixonColesCard
             data={analysis.sources.agents.dixonColes}
+            lang={(lang as 'tr' | 'en' | 'de') || 'tr'}
+          />
+        )}
+
+        {/* 📉 Piyasa Modeli (DC kapsam dışıyken oran feed'inden zemin) */}
+        {!analysis.sources?.agents?.dixonColes && analysis.sources?.agents?.marketModel && (
+          <MarketModelCard
+            data={analysis.sources.agents.marketModel}
             lang={(lang as 'tr' | 'en' | 'de') || 'tr'}
           />
         )}

@@ -21,6 +21,10 @@ import { getEloForLeague, eloParamsFrom } from '../statistical/elo-store';
 import { runStatisticalAgent, applyOddsBlend, applyEloBlend, buildHybridPromptBlock, resolveTeam, type StatAgentOutput } from '../statistical/statistical-agent';
 import type { MatchOdds } from '../odds/blend';
 import { bookmakerMargin } from '../odds/devig';
+// 📉 Piyasa modeli — DC kapsam DIŞI kaldığında oran feed'inden algoritmik zemin
+// (bkz. lib/market-model.ts ölçüm notları: 1X2/ÇŞ güvenilir, Ü/A-KG kısıtlı)
+import { getMatchOdds as getFeedOdds } from '../data-sources/free-football';
+import { marketModel, buildMarketPromptBlock, type MarketModelOutput } from '../market-model';
 
 /**
  * Agent çıktısından canlı bahisçi oranını MatchOdds'a çıkarır.
@@ -157,6 +161,7 @@ export interface UnifiedConsensusResult {
       geniusAnalyst?: any;
       devilsAdvocate?: any;
       dixonColes?: any; // 📊 İstatistiksel motor (Dixon-Coles)
+      marketModel?: any; // 📉 Piyasa modeli (oran feed'i; DC kapsam dışıyken)
       autoLearn?: any;
     };
     ai?: {
@@ -229,6 +234,33 @@ export async function runUnifiedConsensus(
       }
     } catch (dcErr) {
       console.warn('⚠️ Dixon-Coles atlandı (hata):', dcErr);
+    }
+
+    // 0b. 📉 Piyasa Modeli (yalnızca DC yoksa) — maç detayı oran feed'inden
+    // marj arındırılmış 1X2 → Poisson ters çözümü. 242 modelsiz ligde LLM'e
+    // hesaplanmış bir zemin verir (yoksa LLM tamamen serbest uyduruyordu).
+    // Tek RapidAPI çağrısı; 8 sn'de yetişmezse analiz beklemez. ASLA patlatmaz.
+    let marketAgent: MarketModelOutput | null = null;
+    if (!statAgent) {
+      try {
+        const odds = await Promise.race([
+          getFeedOdds(input.fixtureId),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+        if (odds) {
+          marketAgent = marketModel(odds);
+          if (marketAgent) {
+            statAnchor = buildMarketPromptBlock(marketAgent, input.homeTeam, input.awayTeam);
+            systemsUsed.push('marketModel');
+            const mp = marketAgent.matchResult.probabilities;
+            console.log(`📉 Piyasa modeli (${marketAgent.provider}): Ev %${(mp.home * 100).toFixed(1)} | Ber %${(mp.draw * 100).toFixed(1)} | Dep %${(mp.away * 100).toFixed(1)} | xG~ ${marketAgent.expectedGoals.home.toFixed(2)}-${marketAgent.expectedGoals.away.toFixed(2)} | Skor ${marketAgent.mostLikelyScore}`);
+          }
+        } else {
+          console.log(`📉 Piyasa modeli: oran bulunamadı (fixture ${input.fixtureId}) — atlandı.`);
+        }
+      } catch (mmErr) {
+        console.warn('⚠️ Piyasa modeli atlandı (hata):', mmErr);
+      }
     }
 
     // 1. Agent Analysis çalıştır (ana sistem)
@@ -465,6 +497,23 @@ export async function runUnifiedConsensus(
               btts: statAgent.btts,
               mostLikelyScore: statAgent.mostLikelyScore,
               correctScore: statAgent.groundTruth.correctScore,
+            }
+          } : {}),
+          // 📉 Piyasa modeli (DC yokken) — oran feed'inden algoritmik zemin.
+          // trusted=false pazarları arayüz göstermez (bkz. lib/market-model.ts).
+          ...(marketAgent ? {
+            marketModel: {
+              agent: 'MARKET_MODEL',
+              source: 'market-model',
+              provider: marketAgent.provider,
+              overround: marketAgent.overround,
+              expectedGoals: marketAgent.expectedGoals,
+              matchResult: marketAgent.matchResult,
+              doubleChance: marketAgent.doubleChance,
+              overUnder25: marketAgent.overUnder25,
+              btts: marketAgent.btts,
+              mostLikelyScore: marketAgent.mostLikelyScore,
+              correctScore: marketAgent.topScores.map((s) => ({ score: s.score, prob: s.prob })),
             }
           } : {}),
           // 🧠 AutoLearn Agent sonuçları
@@ -1337,6 +1386,36 @@ export async function saveUnifiedAnalysis(
           normalizedMatchDate
         ).catch(err => console.warn('⚠️ Failed to record dixonColes prediction:', err));
         console.log('   ✅ Dixon-Coles prediction recorded');
+      }
+
+      // 📉 Piyasa Modeli tahmini (varsa) — canlı doğruluk ölçümü. Ü/A ve KG
+      // KASITLI olarak trusted=true iken bile 1X2 ile birlikte kaydedilir ki
+      // "gösterilmeyen" tarafın isabetini de ölçmeye devam edelim (n=70 ölçümü
+      // büyüsün); gösterim kararı arayüzde, ölçüm burada.
+      if (agents.marketModel) {
+        const mm = agents.marketModel;
+        console.log('   📉 Recording marketModel prediction:', mm.matchResult?.prediction);
+        await recordAgentPrediction(
+          input.fixtureId,
+          'marketModel',
+          {
+            matchResult: mm.matchResult?.prediction ? {
+              prediction: mm.matchResult.prediction,
+              confidence: mm.matchResult.confidence || 50
+            } : undefined,
+            overUnder: mm.overUnder25?.prediction ? {
+              prediction: mm.overUnder25.prediction,
+              confidence: Math.round((mm.overUnder25.probability || 0.5) * 100)
+            } : undefined,
+            btts: mm.btts?.prediction ? {
+              prediction: mm.btts.prediction,
+              confidence: Math.round((mm.btts.probability || 0.5) * 100)
+            } : undefined,
+          },
+          input.league,
+          normalizedMatchDate
+        ).catch(err => console.warn('⚠️ Failed to record marketModel prediction:', err));
+        console.log('   ✅ Market model prediction recorded');
       }
 
       // Odds Agent tahmini
