@@ -42,6 +42,9 @@ const GATE_STR: Record<string, any> = {
     leftStrip: (n: number) => `Bugün ${n} ücretsiz analiz hakkın kaldı`,
     leftStripEmpty: 'Bugünkü ücretsiz analiz hakların doldu — yarın yenilenir',
     nextCta: 'Başka maç analiz et',
+    ftLabel: 'Maç bitti', liveLabel: 'Canlı',
+    ftNote: 'Bu maç sona erdi — aşağıdaki analiz maç öncesi yapılmıştır.',
+    hit: 'Tuttu', miss: 'Tutmadı',
   },
   en: {
     pageTitle: 'Match Analysis', cached: 'Cached', preparing: 'Preparing analysis...',
@@ -60,6 +63,9 @@ const GATE_STR: Record<string, any> = {
     leftStrip: (n: number) => `${n} free analyses left today`,
     leftStripEmpty: 'Daily free analyses used — resets tomorrow',
     nextCta: 'Analyze another match',
+    ftLabel: 'Full-time', liveLabel: 'Live',
+    ftNote: 'This match has finished — the analysis below was made pre-match.',
+    hit: 'Hit', miss: 'Miss',
   },
   de: {
     pageTitle: 'Spielanalyse', cached: 'Zwischengespeichert', preparing: 'Analyse wird vorbereitet...',
@@ -78,6 +84,9 @@ const GATE_STR: Record<string, any> = {
     leftStrip: (n: number) => `Heute noch ${n} kostenlose Analysen übrig`,
     leftStripEmpty: 'Tageskontingent aufgebraucht — morgen wieder verfügbar',
     nextCta: 'Weiteres Spiel analysieren',
+    ftLabel: 'Beendet', liveLabel: 'Live',
+    ftNote: 'Dieses Spiel ist beendet — die folgende Analyse entstand vor dem Anpfiff.',
+    hit: 'Richtig', miss: 'Falsch',
   },
 };
 
@@ -97,6 +106,24 @@ export default function MatchAnalysisPage() {
   const [analysesLeft, setAnalysesLeft] = useState<number | null>(null);
   const [isCached, setIsCached] = useState(false);
   const [progress, setProgress] = useState<Array<{ stage: string; message: string }>>([]);
+  // Bitmiş/canlı maç skoru (fikstür listesinden). Analiz maç öncesi yapılır;
+  // maç bittiyse sayfa "bugünün tahmini" gibi görünmesin — skor + karne bandı.
+  const [finalScore, setFinalScore] = useState<null | { home: number; away: number; finished: boolean }>(null);
+
+  useEffect(() => {
+    const d = (searchParams?.get('date') || '').slice(0, 10);
+    if (!matchId || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    fetch(`/api/v2/fixtures?date=${d}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const all = j?.data?.fixtures || j?.fixtures || [];
+        const f = all.find((x: any) => x.id === parseInt(matchId));
+        if (f && (f.status === 'FT' || f.status === 'LIVE') && f.homeScore != null && f.awayScore != null) {
+          setFinalScore({ home: f.homeScore, away: f.awayScore, finished: f.status === 'FT' });
+        }
+      })
+      .catch(() => {});
+  }, [matchId, searchParams]);
 
   // StrictMode/dev çift-mount koruması: aynı maç için analizi BİR kez tetikle
   // (aksi halde kullanıcının günlük hakkı yanlışlıkla 2 kez düşer).
@@ -392,10 +419,23 @@ export default function MatchAnalysisPage() {
                 {searchParams?.get('home') || analysis.sources?.agents?.stats?.homeTeam || 'Home Team'}
               </h2>
             </div>
-            <div className="px-2 sm:px-8 shrink-0">
-              <span className="text-xl sm:text-3xl font-black text-brand-400">
-                VS
-              </span>
+            <div className="px-2 sm:px-8 shrink-0 text-center">
+              {finalScore ? (
+                <>
+                  <span className="text-xl sm:text-3xl font-black text-content tabular-nums">
+                    {finalScore.home} - {finalScore.away}
+                  </span>
+                  <div className={`mt-1 text-[10px] font-bold tracking-widest uppercase ${
+                    finalScore.finished ? 'text-content-muted' : 'text-negative animate-pulse'
+                  }`}>
+                    {finalScore.finished ? gs.ftLabel : gs.liveLabel}
+                  </div>
+                </>
+              ) : (
+                <span className="text-xl sm:text-3xl font-black text-brand-400">
+                  VS
+                </span>
+              )}
             </div>
             <div className="text-center flex-1 min-w-0">
               <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold text-content tracking-tight break-words">
@@ -404,6 +444,46 @@ export default function MatchAnalysisPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Bitmiş maç: maç öncesi tahminin sonuçla karşılaştırması */}
+        {finalScore?.finished && analysis.predictions && (() => {
+          const { home, away } = finalScore;
+          const actualMR = home > away ? '1' : home < away ? '2' : 'X';
+          const actualOver = home + away >= 3;
+          const actualBtts = home > 0 && away > 0;
+          const mr = analysis.predictions?.matchResult?.prediction;
+          const ou = analysis.predictions?.overUnder?.prediction;
+          const bt = analysis.predictions?.btts?.prediction;
+          const rows = [
+            mr ? { label: gs.matchResult, pred: mr, ok: mr === actualMR } : null,
+            ou ? { label: gs.overUnder, pred: ou, ok: (ou === 'Over') === actualOver } : null,
+            bt ? { label: gs.btts, pred: bt, ok: (bt === 'Yes') === actualBtts } : null,
+          ].filter(Boolean) as { label: string; pred: string; ok: boolean }[];
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.03 }}
+              className="fa-card p-4 mb-8"
+            >
+              <p className="text-xs text-content-muted mb-3">{gs.ftNote}</p>
+              <div className="flex flex-wrap gap-2">
+                {rows.map((r, i) => (
+                  <span
+                    key={i}
+                    className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${
+                      r.ok
+                        ? 'bg-positive/10 border-positive/30 text-positive'
+                        : 'bg-negative/10 border-negative/30 text-negative'
+                    }`}
+                  >
+                    {r.label}: {r.pred} · {r.ok ? gs.hit : gs.miss}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* Survival Verdict - TEK SONUÇ */}
         {analysis.survivalVerdict && (
