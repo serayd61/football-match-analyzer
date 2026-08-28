@@ -23,24 +23,26 @@ export const maxDuration = 300;
 const TAKE = 3;
 const TIME_BUDGET_MS = 240_000; // 300s limitine 60s emniyet payı
 
-// Vitrin önceliği (FeaturedMatches/queue-daily ile aynı aile): büyük kupa ve
-// top-5 ligler. Sadece bu ligler analiz edilir — maliyet kontrolü.
-const SHOWCASE_IDS = new Set([77, 894789, 42, 73, 47, 87, 55, 54, 53]);
-const SHOWCASE_NAMES: [RegExp, number][] = [
-  [/champions league/i, 0],
-  [/world cup/i, 0],
-  [/premier league/i, 1],
-  [/laliga|la liga/i, 1],
-  [/serie a\b/i, 1],
-  [/bundesliga/i, 1],
-  [/ligue 1/i, 1],
-  [/europa league/i, 2],
-  [/conference league/i, 3],
-];
+// Vitrin önceliği (queue-daily ile aynı yöntem): kanonik lig id'leri + TAM
+// "ad|ülke" eşleşmesi. Gevşek regex TUZAK: /premier league/i "Canadian
+// Premier League"i, /bundesliga/i "Frauen-Bundesliga"yı yakalar (2026-08-28
+// ilk koşuda yaşandı). Sadece bu ligler analiz edilir — maliyet kontrolü.
+const SHOWCASE_IDS = new Map<number, number>([
+  [77, 0], [894789, 0], [42, 0],          // Dünya Kupası, UCL
+  [47, 1], [87, 1], [55, 1], [54, 1], [53, 1], // top-5
+  [73, 2],                                 // UEL
+]);
+const SHOWCASE_NAMES = new Map<string, number>([
+  ['World Cup|INT', 0], ['Champions League|INT', 0],
+  ['Premier League|ENG', 1], ['LaLiga|ESP', 1], ['Serie A|ITA', 1],
+  ['Bundesliga|GER', 1], ['Ligue 1|FRA', 1],
+  ['Europa League|INT', 2],
+]);
 function showcasePriority(f: FFMatch): number | null {
-  for (const [re, p] of SHOWCASE_NAMES) if (re.test(f.leagueName || '')) return p;
-  if (SHOWCASE_IDS.has(f.leagueId)) return 1;
-  return null; // vitrin dışı — analiz edilmez
+  const byId = SHOWCASE_IDS.get(f.leagueId);
+  if (byId != null) return byId;
+  const byName = SHOWCASE_NAMES.get(`${f.leagueName}|${(f.leagueCountry || '').toUpperCase()}`);
+  return byName ?? null; // vitrin dışı — analiz edilmez
 }
 
 export async function GET(request: NextRequest) {
