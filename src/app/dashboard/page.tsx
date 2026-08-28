@@ -24,6 +24,7 @@ import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import FeaturedMatches from '@/components/dashboard/FeaturedMatches';
 import DailyPicks from '@/components/dashboard/DailyPicks';
 import MyAnalyses from '@/components/dashboard/MyAnalyses';
+import DailyAnalyses from '@/components/dashboard/DailyAnalyses';
 import SampleAnalysisCard from '@/components/dashboard/SampleAnalysisCard';
 import EnginePredictions from '@/components/EnginePredictions';
 import MatchIntelligence from '@/components/MatchIntelligence';
@@ -250,6 +251,10 @@ export default function DashboardPage() {
         {/* Kanıt döngüsü: Dünün Karnesi (public) + Bugünün Seçimleri (Pro).
             Free için dönüşüm yüzeyi, Pro için günlük özet — herkese gösterilir. */}
         <DailyPicks key={`dp-${refreshKey}`} lang={lang} />
+
+        {/* Günün Analizleri — gece batch'inin hazır tam analizleri (cache'ten
+            anında açılır) + dünün analizlerinin skor/karne şeridi */}
+        <DailyAnalyses lang={lang} />
 
         {/* Öne çıkan maçlar — free kullanıcının 3 hakkını harcayacağı yer */}
         {isFreeUser && (
