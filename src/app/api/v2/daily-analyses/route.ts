@@ -22,18 +22,19 @@ export const maxDuration = 30;
 
 const TAKE = 3;
 
-// Vitrin önceliği: büyük turnuva/lig önce (FeaturedMatches ile aynı mantık;
-// unified_analysis lig ID taşımadığı için ad üzerinden).
+// Vitrin önceliği: büyük turnuva/lig önce. unified_analysis lig ID taşımadığı
+// için ad üzerinden — ama ÇAPALI (^...$): gevşek /premier league/i "Canadian
+// Premier League"i, /bundesliga/i "Frauen-Bundesliga"yı yakalıyordu.
 const LEAGUE_PRIORITY: [RegExp, number][] = [
-  [/champions league/i, 0],
-  [/world cup/i, 0],
-  [/premier league/i, 1],
-  [/laliga|la liga/i, 1],
-  [/serie a\b/i, 1],
-  [/bundesliga/i, 1],
-  [/ligue 1/i, 1],
-  [/europa/i, 2],
-  [/conference/i, 3],
+  [/^(uefa )?champions league$/i, 0],
+  [/^(fifa )?world cup( 2\d{3})?$/i, 0],
+  [/^premier league$/i, 1],
+  [/^la ?liga$/i, 1],
+  [/^serie a$/i, 1],
+  [/^bundesliga$/i, 1],
+  [/^ligue 1$/i, 1],
+  [/^(uefa )?europa league$/i, 2],
+  [/^conference league/i, 3],
 ];
 function leaguePriority(name: string | null): number {
   for (const [re, p] of LEAGUE_PRIORITY) if (re.test(name || '')) return p;
