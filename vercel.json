@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/snapshot-odds",
       "schedule": "10 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-featured",
+      "schedule": "0 6 * * *"
     }
   ]
 }

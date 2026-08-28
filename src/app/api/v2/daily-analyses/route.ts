@@ -130,11 +130,18 @@ async function build() {
       .limit(60),
   ]);
 
+  // Kalite kapısı: yalnızca TAM konsensüs satırları ('1'/'X'/'2' formatı).
+  // 'home/under/no' formatlı satırlar smart-only hızlı analizden gelir —
+  // jenerik şablon güvenleri + saatsiz match_date taşır, vitrine çıkmaz.
+  const isFull = (r: Row) => ['1', 'X', '2'].includes(r.match_result_prediction || '');
   const todayRows = ((upcoming.data || []) as unknown as Row[])
-    .filter((r) => !r.is_settled)
+    .filter((r) => !r.is_settled && isFull(r))
     .sort(rank)
     .slice(0, TAKE);
-  const settledRows = ((settled.data || []) as unknown as Row[]).sort(rank).slice(0, TAKE);
+  const settledRows = ((settled.data || []) as unknown as Row[])
+    .filter(isFull)
+    .sort(rank)
+    .slice(0, TAKE);
 
   // Link paramları için takım id zenginleştirmesi (en fazla 3 tarih çağrısı)
   const dates = new Set<string>();
@@ -162,7 +169,7 @@ async function build() {
 
 export async function GET() {
   try {
-    const data = await getOrSet('daily-analyses:v1', build, 15 * 60);
+    const data = await getOrSet('daily-analyses:v2', build, 15 * 60);
     return NextResponse.json(data, {
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
     });
