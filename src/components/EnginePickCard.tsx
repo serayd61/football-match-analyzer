@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { Target, Lock, TrendingUp } from 'lucide-react';
 import { displayLeague } from '@/lib/league-names';
 import { countryLabel } from '@/lib/countries';
+import { localizeServerText } from '@/lib/i18n/server-text';
 
 interface ForMatch {
   ok: boolean;
@@ -168,7 +169,7 @@ export default function EnginePickCard({ fixtureId, lang = 'tr' }: { fixtureId: 
       </div>
       {p.rationale && (
         <p className="text-xs text-content-muted leading-relaxed border-t border-white/10 mt-3 pt-3">
-          <span className="text-brand-400 font-semibold">{t.why}:</span> {p.rationale}
+          <span className="text-brand-400 font-semibold">{t.why}:</span> {localizeServerText(lang, p.rationale)}
         </p>
       )}
     </motion.div>

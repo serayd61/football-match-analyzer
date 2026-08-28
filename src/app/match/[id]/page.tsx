@@ -16,6 +16,7 @@ import DixonColesCard from '@/components/DixonColesCard';
 import MarketModelCard from '@/components/MarketModelCard';
 import EnginePickCard from '@/components/EnginePickCard';
 import { useLanguage } from '@/components/LanguageProvider';
+import { localizeServerText } from '@/lib/i18n/server-text';
 
 // ============================================================================
 // MATCH ANALYSIS PAGE
@@ -513,7 +514,7 @@ export default function MatchAnalysisPage() {
               {gs.confidence}: {analysis.predictions?.matchResult?.confidence || 0}%
             </div>
             <div className="text-xs text-content-subtle mt-2">
-              {analysis.predictions?.matchResult?.reasoning || ''}
+              {localizeServerText(lang, analysis.predictions?.matchResult?.reasoning)}
             </div>
             {/* Tarihsel Doğruluk Badge */}
             <div className="mt-3 pt-3 border-t border-line space-y-2">
@@ -662,7 +663,7 @@ export default function MatchAnalysisPage() {
             className="fa-card p-6 mt-6"
           >
             <div className="text-xs text-content-subtle mt-2">
-              {analysis.bestBet.reasoning}
+              {localizeServerText(lang, analysis.bestBet.reasoning)}
             </div>
           </motion.div>
         )}
@@ -722,9 +723,9 @@ export default function MatchAnalysisPage() {
                 {analysis.systemPerformance.conflicts.map((conflict: any, idx: number) => (
                   <div key={idx} className="bg-negative/5 rounded-lg p-3 border border-negative/10">
                     <p className="text-xs font-bold text-negative uppercase">{conflict.field}</p>
-                    <p className="text-sm text-content-muted mt-1">{conflict.description}</p>
+                    <p className="text-sm text-content-muted mt-1">{localizeServerText(lang, conflict.description)}</p>
                     <p className="text-xs text-content-muted mt-2 border-t border-negative/10 pt-2">
-                      <span className="text-brand-400">{gs.decision}:</span> {conflict.resolution}
+                      <span className="text-brand-400">{gs.decision}:</span> {localizeServerText(lang, conflict.resolution)}
                     </p>
                   </div>
                 ))}

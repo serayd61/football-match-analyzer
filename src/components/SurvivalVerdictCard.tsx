@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Crosshair, Shield, Users, Database, Zap } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { localizeServerText } from '@/lib/i18n/server-text';
 
 // ============================================================================
 // SURVIVAL VERDICT CARD v2
@@ -135,7 +136,7 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
         {/* Main verdict */}
         <div className="flex items-center gap-5 mb-5">
           <div className="flex-1">
-            <div className="text-sm text-gray-400 mb-1">{verdict.marketLabel}</div>
+            <div className="text-sm text-gray-400 mb-1">{localizeServerText(lang, verdict.marketLabel)}</div>
             <motion.div 
               className="text-3xl md:text-4xl font-black text-white tracking-tight"
               style={{ fontFamily: 'var(--font-heading, inherit)' }}
@@ -143,7 +144,7 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              {verdict.selectionLabel}
+              {localizeServerText(lang, verdict.selectionLabel)}
             </motion.div>
           </div>
           <div className="text-right">
@@ -178,7 +179,7 @@ export default function SurvivalVerdictCard({ verdict }: Props) {
 
         {/* Reasoning */}
         <div className="text-sm text-gray-300 leading-relaxed bg-white/[0.02] rounded-lg px-4 py-3 border border-white/5">
-          {verdict.reasoning}
+          {localizeServerText(lang, verdict.reasoning)}
         </div>
       </div>
     </motion.div>
