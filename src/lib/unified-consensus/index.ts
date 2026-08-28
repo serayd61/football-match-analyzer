@@ -93,6 +93,9 @@ export interface UnifiedAnalysisInput {
 }
 
 export interface UnifiedConsensusResult {
+  // Üretim dili — LLM serbest metinleri bu dilde. Cache üç dilce paylaşıldığı
+  // için okuma tarafı (analyze route) dil uyuşmazsa çeviri katmanını çağırır.
+  lang?: 'tr' | 'en' | 'de';
   // Final tahminler (konsensüs)
   predictions: {
     matchResult: {
@@ -477,6 +480,8 @@ export async function runUnifiedConsensus(
 
     return {
       ...consensus,
+      // Üretim dili — cache okuma tarafındaki çeviri katmanı bunu kullanır
+      lang: input.lang || 'en',
       // 📊 Ajan Öz-Farkındalık Profilleri
       agentProfiles: Object.keys(agentProfiles).length > 0 ? agentProfiles : undefined,
       // 🏟️ Maç tipi bilgisi

@@ -281,7 +281,7 @@ export default function MatchAnalysisPage() {
               <Spinner size={56} className="text-brand-400" />
             </div>
             <h2 className="text-xl font-semibold text-content tracking-tight mb-2">
-              {progress.length > 0 ? progress[progress.length - 1].message : gs.preparing}
+              {progress.length > 0 ? localizeServerText(lang, progress[progress.length - 1].message) : gs.preparing}
             </h2>
             <p className="text-content-muted text-sm mb-8">{gs.preparingDesc}</p>
 
@@ -297,7 +297,7 @@ export default function MatchAnalysisPage() {
                     <div className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 shrink-0" />
                     <p className="text-xs text-content-muted font-mono leading-relaxed">
                       <span className="text-brand-400/60 uppercase text-[10px] mr-2">[{p.stage}]</span>
-                      {p.message}
+                      {localizeServerText(lang, p.message)}
                     </p>
                   </motion.div>
                 ))}

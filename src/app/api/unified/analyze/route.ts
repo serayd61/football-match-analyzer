@@ -10,6 +10,7 @@ import { runUnifiedConsensus, saveUnifiedAnalysis, UnifiedAnalysisInput } from '
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
 import { checkUserAccess, incrementAnalysisCount } from '@/lib/accessControl';
+import { localizeCachedAnalysis } from '@/lib/i18n/analysis-l10n';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // Vercel Pro: 300s limit, 120s yeterli
@@ -192,13 +193,18 @@ export async function POST(request: NextRequest) {
         if (matchInPast || now - cachedAt < twoHours) {
           console.log(`📦 Returning valid cached unified analysis for fixture ${fixtureId} (${Math.round((now - cachedAt) / 60000)} min old)`);
 
+          // Cache üç dilce paylaşılır: üretim dili istekle uyuşmuyorsa LLM
+          // serbest metinleri hedef dile çevrilir (fixture+dil başına 1 kez,
+          // redis'te saklanır; hata olursa orijinal döner).
+          const servedAnalysis = await localizeCachedAnalysis(cached.analysis, lang, fixtureId);
+
           if (stream) {
             // Stream mode'da bile cache sonucunu gönder ama stream olarak
             const encoder = new TextEncoder();
             const customStream = new ReadableStream({
               start(controller) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ stage: 'cache', message: 'Önbellekten yükleniyor...' })}\n\n`));
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ success: true, analysis: cached.analysis, cached: true })}\n\n`));
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ success: true, analysis: servedAnalysis, cached: true })}\n\n`));
                 controller.close();
               }
             });
@@ -209,7 +215,7 @@ export async function POST(request: NextRequest) {
 
           return NextResponse.json({
             success: true,
-            analysis: cached.analysis,
+            analysis: servedAnalysis,
             processingTime: Date.now() - startTime,
             cached: true,
             cachedAt: cached.created_at

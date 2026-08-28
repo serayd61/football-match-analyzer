@@ -55,7 +55,12 @@ export async function runDevilsAdvocateAgent(
     language: 'tr' | 'en' | 'de' = 'en'
 ): Promise<DevilsAdvocateResult | null> {
     try {
-        const prompt = PROMPTS[language === 'de' ? 'en' : language];
+        // DE için ayrı prompt yok — EN prompt + Almanca çıktı direktifi
+        // (önceden sessizce EN prompt kullanılıyor, çıktı İngilizce geliyordu).
+        const prompt =
+            language === 'de'
+                ? PROMPTS.en + '\n\nIMPORTANT: Write EVERY user-facing string value (contrarianView, risks, trapMatchIndicators, whyFavoriteMightFail, agentSummary) in GERMAN.'
+                : PROMPTS[language];
 
         // Prepare match context
         const context = `
