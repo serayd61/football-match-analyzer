@@ -165,12 +165,17 @@ export default function EnginePredictions({
   showStats = true,
   showControls = true,
   limit,
+  compact = false,
 }: {
   lang?: string;
   groupByLeague?: boolean;
   showStats?: boolean;
   showControls?: boolean;
   limit?: number;
+  // compact: dashboard gömme modu — yalnızca yaklaşan tahmin kartları görünür;
+  // "Sonuçlanan tahminler" ve "Model kapsamı dışında" blokları /tahminler tam
+  // sayfasına bırakılır (dashboard sayfalarca uzuyordu, istek 2026-08-29).
+  compact?: boolean;
 }) {
   const t = (STR as any)[lang] || STR.en;
   const [preds, setPreds] = useState<Prediction[]>([]);
@@ -551,7 +556,7 @@ export default function EnginePredictions({
       {/* --- Sonuçlanan tahminler (son 3 gün): maç başlayınca "yok olmak"
           yerine skor + tuttu/tutmadı ile burada kalır, 72 saat sonra düşer.
           Yalnızca kapsanan ligler (API tarafında filtreli) — karneyle tutarlı. --- */}
-      {!loading && recent.length > 0 && (
+      {!compact && !loading && recent.length > 0 && (
         <div className="mt-8">
           <div className="flex items-center gap-2 mb-3">
             <h3 className="text-sm font-bold text-white/80">{t.recentTitle}</h3>
@@ -576,7 +581,7 @@ export default function EnginePredictions({
       {/* --- Model kapsamı dışı: ayrı bölüm, varsayılan KAPALI, açıkça uyarılı.
           Gizlemek yerine etiketlemek: sayfa boş kalmaz ama kullanıcı hangisinin
           gerçek motor çıktısı olduğunu karıştırmaz. --- */}
-      {!loading && uncovered.length > 0 && (
+      {!compact && !loading && uncovered.length > 0 && (
         <div className="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-4">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">

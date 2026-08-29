@@ -328,7 +328,7 @@ export default function DashboardPage() {
               </Link>
             }
           />
-          <EnginePredictions key={`pred-${refreshKey}`} lang={lang} showStats showControls={false} limit={6} />
+          <EnginePredictions key={`pred-${refreshKey}`} lang={lang} showStats showControls={false} limit={6} compact />
         </motion.section>
 
         {/* Match Intelligence — başlığı bileşenin kendi header'ı taşır (çift

@@ -7,10 +7,12 @@
 // ============================================================================
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Target, CheckCircle2, XCircle, TrendingUp, RefreshCw } from 'lucide-react';
+import { Target, CheckCircle2, XCircle, TrendingUp, RefreshCw, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { displayLeague } from '@/lib/league-names';
+import { isCoveredLeagueName } from '@/lib/model-coverage';
 
 interface RecentItem {
   fixtureId: number;
@@ -34,9 +36,12 @@ interface PerfData {
 }
 
 const STR = {
-  tr: { title: 'Motor Performansı', subtitle: 'Sonuçlanan tahminlerin doğruluğu', accuracy: 'Doğruluk', settled: 'Sonuçlanan', hits: 'İsabet', home: 'Ev (1)', draw: 'Beraberlik (X)', away: 'Dep. (2)', pickLabel: 'Tahmin', empty: 'Henüz sonuçlanmış tahmin yok. Maçlar bittikçe otomatik işlenir.', loading: 'Yükleniyor...', locale: 'tr-TR' },
-  en: { title: 'Engine Performance', subtitle: 'Accuracy of settled predictions', accuracy: 'Accuracy', settled: 'Settled', hits: 'Hits', home: 'Home (1)', draw: 'Draw (X)', away: 'Away (2)', pickLabel: 'Pick', empty: 'No settled predictions yet. They are processed automatically as matches finish.', loading: 'Loading...', locale: 'en-US' },
-  de: { title: 'Engine-Leistung', subtitle: 'Genauigkeit abgeschlossener Vorhersagen', accuracy: 'Genauigkeit', settled: 'Abgeschlossen', hits: 'Treffer', home: 'Heim (1)', draw: 'Unent. (X)', away: 'Ausw. (2)', pickLabel: 'Tipp', empty: 'Noch keine abgeschlossenen Vorhersagen. Sie werden automatisch verarbeitet, sobald Spiele enden.', loading: 'Wird geladen...', locale: 'de-DE' },
+  tr: { title: 'Motor Performansı', subtitle: 'Sonuçlanan tahminlerin doğruluğu', accuracy: 'Doğruluk', settled: 'Sonuçlanan', hits: 'İsabet', home: 'Ev (1)', draw: 'Beraberlik (X)', away: 'Dep. (2)', pickLabel: 'Tahmin', empty: 'Henüz sonuçlanmış tahmin yok. Maçlar bittikçe otomatik işlenir.', loading: 'Yükleniyor...', locale: 'tr-TR',
+    showMore: (n: number) => `${n} sonucu daha göster`, showLess: 'Daralt', allLink: 'Pazar karnesi ve tüm sonuçlar', listNote: 'Tüm ligler dahil — büyük ligler önce listelenir.' },
+  en: { title: 'Engine Performance', subtitle: 'Accuracy of settled predictions', accuracy: 'Accuracy', settled: 'Settled', hits: 'Hits', home: 'Home (1)', draw: 'Draw (X)', away: 'Away (2)', pickLabel: 'Pick', empty: 'No settled predictions yet. They are processed automatically as matches finish.', loading: 'Loading...', locale: 'en-US',
+    showMore: (n: number) => `Show ${n} more results`, showLess: 'Collapse', allLink: 'Market scorecard & all results', listNote: 'All leagues included — top leagues listed first.' },
+  de: { title: 'Engine-Leistung', subtitle: 'Genauigkeit abgeschlossener Vorhersagen', accuracy: 'Genauigkeit', settled: 'Abgeschlossen', hits: 'Treffer', home: 'Heim (1)', draw: 'Unent. (X)', away: 'Ausw. (2)', pickLabel: 'Tipp', empty: 'Noch keine abgeschlossenen Vorhersagen. Sie werden automatisch verarbeitet, sobald Spiele enden.', loading: 'Wird geladen...', locale: 'de-DE',
+    showMore: (n: number) => `${n} weitere Ergebnisse anzeigen`, showLess: 'Einklappen', allLink: 'Markt-Bilanz & alle Ergebnisse', listNote: 'Alle Ligen enthalten — Top-Ligen zuerst.' },
 };
 
 function pickLabel(pick: string | null, t: any) {
@@ -49,6 +54,22 @@ export default function EnginePerformance({ lang: langProp, recent = 30 }: { lan
   const t = (STR as any)[lang] || STR.en;
   const [data, setData] = useState<PerfData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  // Liste düzeni: model kapsamındaki büyük ligler ÖNE (tanınır isimler),
+  // egzotik ligler arkaya — istatistikler yine TÜM satırlardan hesaplanır,
+  // hiçbir sonuç gizlenmez (dürüst karne ilkesi). Varsayılan 8 satır görünür.
+  const VISIBLE = 8;
+  const ordered = useMemo(() => {
+    const rows = data?.recent || [];
+    return [...rows].sort((a, b) => {
+      const ca = isCoveredLeagueName(a.leagueName) ? 0 : 1;
+      const cb = isCoveredLeagueName(b.leagueName) ? 0 : 1;
+      if (ca !== cb) return ca - cb;
+      return rows.indexOf(a) - rows.indexOf(b); // orijinal (tarih) sırası korunur
+    });
+  }, [data]);
+  const visibleRows = expanded ? ordered : ordered.slice(0, VISIBLE);
 
   async function load() {
     setLoading(true);
@@ -104,9 +125,9 @@ export default function EnginePerformance({ lang: langProp, recent = 30 }: { lan
         ))}
       </div>
 
-      {/* Sonuçlanan maçlar listesi */}
+      {/* Sonuçlanan maçlar listesi — kapsanan ligler önce, 8 satır + genişlet */}
       <div className="space-y-2">
-        {data.recent.map((r, i) => (
+        {visibleRows.map((r, i) => (
           <motion.div key={r.fixtureId} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.02, 0.3) }}
             className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${r.correct ? 'border-emerald-400/25 bg-emerald-400/[0.04]' : 'border-rose-400/20 bg-rose-400/[0.03]'}`}>
@@ -122,6 +143,26 @@ export default function EnginePerformance({ lang: langProp, recent = 30 }: { lan
           </motion.div>
         ))}
       </div>
+
+      {/* Alt şerit: genişlet/daralt + tam karne linki */}
+      <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
+        {ordered.length > VISIBLE ? (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white flex items-center gap-1.5 transition-colors"
+          >
+            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {expanded ? t.showLess : t.showMore(ordered.length - VISIBLE)}
+          </button>
+        ) : <span />}
+        <Link
+          href="/tahminler"
+          className="text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-1"
+        >
+          {t.allLink} <ArrowRight size={13} />
+        </Link>
+      </div>
+      <p className="text-[10px] text-white/25 mt-2">{t.listNote}</p>
     </div>
   );
 }

@@ -54,6 +54,9 @@ const STR = {
     inHours: (h: number) => (h <= 0 ? 'birazdan' : h === 1 ? '1 saat sonra' : `${h} saat sonra`),
     lockedCta: (n: number) => `Dünün karnesi ortada — bugünün ${n} seçimi kilitli.`,
     unlock: "Pro ile aç",
+    priceNote: (weekly: boolean) => weekly
+      ? '$6.99/hafta veya $19.99/ay · aylıkta 7 gün ücretsiz deneme'
+      : '$19.99/ay · 7 gün ücretsiz deneme',
     viewAll: 'Tüm tahminleri gör',
     pickLabel: 'Seçim',
     conf: 'güven',
@@ -76,6 +79,9 @@ const STR = {
     inHours: (h: number) => (h <= 0 ? 'soon' : h === 1 ? 'in 1 hour' : `in ${h} hours`),
     lockedCta: (n: number) => `Yesterday's receipt is public — today's ${n} picks are locked.`,
     unlock: 'Unlock with Pro',
+    priceNote: (weekly: boolean) => weekly
+      ? '$6.99/week or $19.99/mo · monthly includes a 7-day free trial'
+      : '$19.99/mo · 7-day free trial',
     viewAll: 'View all predictions',
     pickLabel: 'Pick',
     conf: 'conf.',
@@ -98,6 +104,9 @@ const STR = {
     inHours: (h: number) => (h <= 0 ? 'in Kürze' : h === 1 ? 'in 1 Stunde' : `in ${h} Stunden`),
     lockedCta: (n: number) => `Die gestrige Bilanz ist öffentlich — die heutigen ${n} Tipps sind gesperrt.`,
     unlock: 'Mit Pro freischalten',
+    priceNote: (weekly: boolean) => weekly
+      ? '$6.99/Woche oder $19.99/Monat · Monatsabo mit 7 Tagen Gratis-Test'
+      : '$19.99/Monat · 7 Tage gratis testen',
     viewAll: 'Alle Vorhersagen ansehen',
     pickLabel: 'Tipp',
     conf: 'Konf.',
@@ -115,6 +124,10 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
   const t = (STR as any)[lang] || STR.en;
   const [data, setData] = useState<DailyPicksData | null>(null);
   const [loading, setLoading] = useState(true);
+  // Fiyat notu için haftalık planın açık olup olmadığı — /api/stripe/plans
+  // public boolean döner; env kapalıysa yalnızca aylık fiyat yazılır (pricing
+  // sayfasındaki fallback ile aynı satış politikası).
+  const [weeklyPlan, setWeeklyPlan] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,6 +136,10 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
       .then((d) => { if (!cancelled && d?.ok) setData(d); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
+    fetch('/api/stripe/plans')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setWeeklyPlan(!!d.weekly); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -249,6 +266,7 @@ export default function DailyPicks({ lang = 'tr' }: { lang?: string }) {
                 >
                   <Lock size={14} /> {t.unlock}
                 </Link>
+                <p className="text-[11px] text-white/40 mt-2">{t.priceNote(weeklyPlan)}</p>
               </div>
             </>
           ) : (

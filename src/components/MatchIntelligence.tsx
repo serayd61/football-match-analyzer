@@ -123,6 +123,11 @@ export default function MatchIntelligence({
 }) {
   // Önizleme dili — dışarıdan gelen lang varsayılan, kullanıcı değiştirebilir.
   const [viewLang, setViewLang] = useState<Lang>((['tr', 'en', 'de'].includes(lang) ? lang : 'en') as Lang);
+  // Global dil değişince önizleme dili de takip etsin (eskiden mount'taki
+  // dilde takılı kalıyordu — "Almanca seçtim, blok Türkçe" şikâyeti).
+  useEffect(() => {
+    if (['tr', 'en', 'de'].includes(lang)) setViewLang(lang as Lang);
+  }, [lang]);
   const t = STR[viewLang];
 
   const [items, setItems] = useState<MatchIntel[]>([]);
