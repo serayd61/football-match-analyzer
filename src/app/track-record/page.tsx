@@ -3,13 +3,22 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BarChart3, ShieldCheck, TrendingUp, ArrowLeft } from 'lucide-react';
+import { BarChart3, ShieldCheck, TrendingUp, ArrowLeft, Activity } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import SiteNav from '@/components/SiteNav';
+import { useProof, formatAccuracy } from '@/lib/hooks/useProof';
 
 // ============================================================================
 // TRACK RECORD — Dixon-Coles backtest doğruluk vitrini (DÜRÜST)
 // dc_backtest_results'tan gerçek walk-forward sonuçları. Şişirme yok.
+//
+// Sayfada İKİ ayrı ölçüm var, karıştırılmamalı:
+//   ① CANLI karne (/api/v2/proof) — motorun yayında verdiği, sonuçlanmış
+//     tahminler. Reklam metinlerinde ("76% double chance") kullanılan sayı bu.
+//   ② BACKTEST (aşağıdaki tablo) — geçmiş veriyle walk-forward simülasyon.
+// Reklamdan gelen ziyaretçi bu sayfada reklamdaki sayıyı bulamayınca güven
+// kaybediyordu (manşet %51,3 backtest 1X2 idi). Bu yüzden canlı karne en üste
+// alındı; backtest tablosu altında, ne olduğu açıkça yazılarak duruyor.
 // ============================================================================
 
 const LEAGUE_NAMES: Record<string, { name: string; flag: string }> = {
@@ -39,6 +48,12 @@ const L = {
     anchorBefore: 'İzole DC', anchorAfter: 'Piyasa-çıpalı (v2)', anchorMetric: '1X2 isabet (backtest)',
     anchorProof: '3 büyük lig · ~2000 maç · gerçek kapanış oranı (walk-forward). İzole modele göre log-loss ~%4-6 daha düşük (daha iyi kalibrasyon).',
     anchorHonest: 'Şeffaflık: Bu, motoru piyasa verimliliğine HİZALAR — piyasayı YENME iddiası değildir. Kapanış oranına karşı value-betting backtest\'i marj sonrası kabaca başabaş/negatiftir. Garanti kazanç yoktur.',
+    liveBadge: 'Canlı yayındaki motor',
+    liveDc: 'Çifte şans isabeti',
+    liveHigh: 'Yüksek güvenli seçimler',
+    liveMr: 'Tek sonuç (1X2)',
+    liveNote: (n: string) => `${n} sonuçlanmış CANLI tahminde ölçüldü — ayıklanmamış, kaybedenler dahil. Aşağıdaki tablo ise geçmiş veriyle yapılan backtest'tir; iki ölçüm farklı sorulara cevap verir.`,
+    liveCta: 'Dünün maçlarını gör',
   },
   en: {
     title: 'Track Record',
@@ -53,6 +68,12 @@ const L = {
     anchorBefore: 'DC alone', anchorAfter: 'Market-anchored (v2)', anchorMetric: '1X2 accuracy (backtest)',
     anchorProof: '3 major leagues · ~2000 matches · real closing odds (walk-forward). ~4-6% lower log-loss vs the isolated model (better calibration).',
     anchorHonest: 'Transparency: this ALIGNS the engine with market efficiency — it is not a claim to BEAT the market. Value-betting backtest vs the closing line is roughly break-even/negative after margin. No guaranteed profit.',
+    liveBadge: 'Engine in production',
+    liveDc: 'Double chance accuracy',
+    liveHigh: 'High-confidence picks',
+    liveMr: 'Single outcome (1X2)',
+    liveNote: (n: string) => `Measured across ${n} settled LIVE predictions — unfiltered, losses included. The table below is a historical backtest instead; the two answer different questions.`,
+    liveCta: "See yesterday's matches",
   },
   de: {
     title: 'Erfolgsbilanz',
@@ -67,6 +88,12 @@ const L = {
     anchorBefore: 'Nur DC', anchorAfter: 'Markt-verankert (v2)', anchorMetric: '1X2-Genauigkeit (Backtest)',
     anchorProof: '3 grosse Ligen · ~2000 Spiele · echte Schlussquoten (Walk-forward). ~4-6% niedrigerer Log-Loss als das isolierte Modell (bessere Kalibrierung).',
     anchorHonest: 'Transparenz: Dies RICHTET die Engine an der Markteffizienz AUS — kein Anspruch, den Markt zu SCHLAGEN. Value-Betting-Backtest gegen die Schlussquote ist nach Marge etwa ausgeglichen/negativ. Kein garantierter Gewinn.',
+    liveBadge: 'Engine im Livebetrieb',
+    liveDc: 'Trefferquote der Doppelten Chance',
+    liveHigh: 'Tipps mit hoher Konfidenz',
+    liveMr: 'Einzelergebnis (1X2)',
+    liveNote: (n: string) => `Gemessen an ${n} abgerechneten LIVE-Prognosen — ungefiltert, Verluste inklusive. Die Tabelle unten ist dagegen ein historischer Backtest; beide beantworten unterschiedliche Fragen.`,
+    liveCta: 'Gestrige Spiele ansehen',
   },
 } as const;
 
@@ -89,6 +116,7 @@ export default function TrackRecordPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
+  const proof = useProof();
 
   useEffect(() => {
     fetch('/api/v2/dc-backtest')
@@ -118,6 +146,48 @@ export default function TrackRecordPage() {
           <h1 className="text-3xl font-bold text-content tracking-tight">{t.title}</h1>
         </div>
         <p className="text-content-muted mb-6 max-w-2xl">{t.subtitle}</p>
+
+        {/* ── CANLI karne — reklam metnindeki sayının karşılığı ─────────────
+            Veri yoksa hiç render edilmez (boş kutu yerine yokluk). */}
+        {proof?.record?.doubleChance?.total ? (
+          <div className="fa-card p-5 mb-6 border-brand-500/25">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-300 text-[11px] font-medium">
+                <Activity size={12} /> {(t as any).liveBadge}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+              <div>
+                <p className="text-4xl sm:text-5xl font-bold text-brand-400 tabular-nums leading-none">
+                  {formatAccuracy(proof.record.doubleChance.accuracy, lang)}
+                </p>
+                <p className="text-xs text-content-muted mt-1.5">{(t as any).liveDc}</p>
+              </div>
+              {proof.record.doubleChanceHigh?.total ? (
+                <div>
+                  <p className="text-2xl font-bold text-content tabular-nums leading-none">
+                    {formatAccuracy(proof.record.doubleChanceHigh.accuracy, lang)}
+                  </p>
+                  <p className="text-xs text-content-muted mt-1.5">{(t as any).liveHigh}</p>
+                </div>
+              ) : null}
+              {proof.record.matchResult?.total ? (
+                <div>
+                  <p className="text-2xl font-bold text-content-muted tabular-nums leading-none">
+                    {formatAccuracy(proof.record.matchResult.accuracy, lang)}
+                  </p>
+                  <p className="text-xs text-content-muted mt-1.5">{(t as any).liveMr}</p>
+                </div>
+              ) : null}
+            </div>
+            <p className="text-[11px] text-content-subtle mt-4 leading-relaxed">
+              {(t as any).liveNote(proof.record.doubleChance.total.toLocaleString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US'))}
+            </p>
+            <Link href="/#live-proof" className="inline-flex items-center gap-1.5 text-sm text-brand-300 hover:text-brand-200 transition-colors mt-3">
+              {(t as any).liveCta} →
+            </Link>
+          </div>
+        ) : null}
 
         {/* Özet kartları */}
         {summary && summary.leagues > 0 && (
