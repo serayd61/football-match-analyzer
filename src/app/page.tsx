@@ -15,13 +15,34 @@ import { ArrowRight, Lock, Check, Star, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LandingNav from '@/components/landing/LandingNav';
 import HeroSpotlight from '@/components/landing/HeroSpotlight';
+import LiveProof from '@/components/landing/LiveProof';
 import { labels, labelsDE } from '@/lib/landing-content';
+import { useProof, formatAccuracy } from '@/lib/hooks/useProof';
 import { Spinner } from '@/components/ui';
+
+// Hero rozeti metni — "6.868 maçta %76,2 çifte şans isabeti"
+const PROOF_LINE: Record<string, (acc: string, n: string) => string> = {
+  tr: (acc, n) => `${n} maçta ${acc} çifte şans isabeti`,
+  en: (acc, n) => `${acc} double chance accuracy over ${n} matches`,
+  de: (acc, n) => `${acc} Trefferquote (Doppelte Chance) in ${n} Spielen`,
+};
+
+// Gerçek rakamlardan kurulan istatistik şeridi etiketleri
+// DİKKAT: `marketsValue` de dile bağlı — "KG" (Karşılıklı Gol) Türkçe bir
+// kısaltmadır ve EN/DE'de "BTTS" olmalı. Sabit string sanılıp her dile
+// verilirse landing'e Türkçe sızar (bkz. lib/i18n/server-text.ts kuralı).
+const STAT_LABELS: Record<string, { dc: string; settled: string; high: string; markets: string; marketsValue: string }> = {
+  tr: { dc: 'Çifte şans isabeti', settled: 'Sonuçlanmış maç', high: 'Yüksek güvenli seçimlerde', markets: 'Tahmin pazarı', marketsValue: '1X2 · Üst/Alt · KG' },
+  en: { dc: 'Double chance accuracy', settled: 'Settled matches', high: 'On high-confidence picks', markets: 'Prediction markets', marketsValue: '1X2 · O/U 2.5 · BTTS' },
+  de: { dc: 'Doppelte-Chance-Quote', settled: 'Abgerechnete Spiele', high: 'Bei hoher Konfidenz', markets: 'Wettmärkte', marketsValue: '1X2 · Ü/U 2.5 · BTTS' },
+};
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { lang } = useLanguage();
+  // Kanıt verisi TEK kez çekilir; hero rozeti ve LiveProof aynı sonucu kullanır
+  const proof = useProof();
 
   useEffect(() => {
     if (session) router.push('/dashboard');
@@ -29,6 +50,23 @@ export default function HomePage() {
 
   const allLabels = { ...labels, de: labelsDE };
   const l = (allLabels[lang as keyof typeof allLabels] || labels.en) as any;
+
+  const dc = proof?.record?.doubleChance;
+  const locale = lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US';
+  const proofLine = dc?.total
+    ? (PROOF_LINE[lang] || PROOF_LINE.en)(formatAccuracy(dc.accuracy, lang), dc.total.toLocaleString(locale))
+    : null;
+
+  const sl = STAT_LABELS[lang] || STAT_LABELS.en;
+  const high = proof?.record?.doubleChanceHigh;
+  const liveStats = dc?.total
+    ? [
+        { value: formatAccuracy(dc.accuracy, lang), label: sl.dc },
+        { value: dc.total.toLocaleString(locale), label: sl.settled },
+        ...(high?.total ? [{ value: formatAccuracy(high.accuracy, lang), label: sl.high }] : []),
+        { value: sl.marketsValue, label: sl.markets },
+      ].slice(0, 4)
+    : null;
 
   if (status === 'loading') {
     return (
@@ -43,7 +81,13 @@ export default function HomePage() {
       <LandingNav lang={lang} />
 
       {/* ── Hero (cursor-spotlight reveal) ───────────────────────────────── */}
-      <HeroSpotlight l={l.hero} />
+      <HeroSpotlight l={l.hero} proofLine={proofLine} />
+
+      {/* ── Canlı kanıt (ölçülmüş karne) ─────────────────────────────────
+          Hero'nun HEMEN altında: reklamdan gelen ziyaretçi kayıt olmadan
+          gerçek isabet oranını ve dünün gerçek sonuçlarını burada görür.
+          Veri yoksa bileşen hiç render edilmez. */}
+      <LiveProof lang={lang} data={proof} />
 
       {/* ── Stats strip ──────────────────────────────────────────────────── */}
       <section className="px-4 pt-14 pb-4">
@@ -52,7 +96,9 @@ export default function HomePage() {
             className="grid grid-cols-2 md:grid-cols-4 gap-3"
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
           >
-            {(l.stats as Array<{ value: string; label: string }>).map((s, i) => (
+            {/* Kanıt geldiyse jenerik etiketler yerine GERÇEK rakamlar
+                ("Dixon-Coles / Günlük / TR·EN·DE" hiçbir şey satmıyordu). */}
+            {(liveStats || (l.stats as Array<{ value: string; label: string }>)).map((s, i) => (
               <div key={i} className="fa-card p-5 text-center">
                 <div className="text-xl md:text-2xl font-bold text-content tracking-tight">{s.value}</div>
                 <div className="text-xs text-content-subtle mt-1">{s.label}</div>

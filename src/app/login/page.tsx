@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Activity, Check, Star, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
+import { useProof, formatAccuracy } from '@/lib/hooks/useProof';
 import { Spinner } from '@/components/ui';
 
 export default function LoginPage() {
@@ -19,6 +20,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { lang } = useLanguage();
+  // Kayıt formunun yanındaki kanıt: landing'de görülen oranın aynısı
+  const proof = useProof();
+  const dcProof = proof?.record?.doubleChance ?? null;
 
   const labels = {
     tr: {
@@ -27,9 +31,10 @@ export default function LoginPage() {
       loginButton: 'Giriş Yap', registerButton: 'Hesap Oluştur', noAccount: 'Hesabınız yok mu?', hasAccount: 'Zaten hesabınız var mı?',
       forgotPassword: 'Şifremi Unuttum', or: 'veya',
       features: ['📊 İstatistik motoru — kalibre olasılıklar', '🧠 Match Intelligence — haber özeti + maç önizlemesi', '💰 Value Bet tespiti', '🌍 50+ lig · 3 dil (TR · EN · DE)'],
-      trusted: '10.000+ kullanıcı tarafından tercih ediliyor',
+      trusted: 'Karne halka açık — kaybedenler dahil, her gün güncellenir',
       errorInvalid: 'Geçersiz e-posta veya şifre', errorExists: 'Bu e-posta zaten kayıtlı', errorGeneral: 'Bir hata oluştu, tekrar deneyin',
-      processing: 'İşleniyor...', leagues: 'Lig', languages: 'Dil (TR·EN·DE)', accuracy: 'Doğruluk',
+      processing: 'İşleniyor...', leagues: 'Lig', languages: 'Dil (TR·EN·DE)', accuracy: 'Çifte şans isabeti',
+      settledLabel: 'Sonuçlanmış maç',
     },
     en: {
       title: 'Football Analytics Pro', subtitle: 'AI-Powered Professional Football Analysis Platform',
@@ -37,9 +42,10 @@ export default function LoginPage() {
       loginButton: 'Sign In', registerButton: 'Create Account', noAccount: "Don't have an account?", hasAccount: 'Already have an account?',
       forgotPassword: 'Forgot Password', or: 'or',
       features: ['📊 Statistical engine — calibrated probabilities', '🧠 Match Intelligence — news digest + match preview', '💰 Value bet detection', '🌍 50+ leagues · 3 languages (TR · EN · DE)'],
-      trusted: 'Trusted by 10,000+ users',
+      trusted: 'Public track record — losses included, updated daily',
       errorInvalid: 'Invalid email or password', errorExists: 'This email is already registered', errorGeneral: 'An error occurred, please try again',
-      processing: 'Processing...', leagues: 'Leagues', languages: 'Languages', accuracy: 'Accuracy',
+      processing: 'Processing...', leagues: 'Leagues', languages: 'Languages', accuracy: 'Double chance accuracy',
+      settledLabel: 'Settled matches',
     },
     de: {
       title: 'Football Analytics Pro', subtitle: 'KI-gestützte Professionelle Fußball-Analyseplattform',
@@ -47,9 +53,10 @@ export default function LoginPage() {
       loginButton: 'Anmelden', registerButton: 'Konto erstellen', noAccount: 'Noch kein Konto?', hasAccount: 'Bereits ein Konto?',
       forgotPassword: 'Passwort vergessen', or: 'oder',
       features: ['📊 Statistik-Engine — kalibrierte Wahrscheinlichkeiten', '🧠 Match Intelligence — Nachrichten + Spielvorschau', '💰 Value-Bet-Erkennung', '🌍 50+ Ligen · 3 Sprachen (TR · EN · DE)'],
-      trusted: 'Von über 10.000 Nutzern vertraut',
+      trusted: 'Öffentliche Bilanz — Verluste inklusive, täglich aktualisiert',
       errorInvalid: 'Ungültige E-Mail oder Passwort', errorExists: 'Diese E-Mail ist bereits registriert', errorGeneral: 'Ein Fehler ist aufgetreten, bitte erneut versuchen',
-      processing: 'Verarbeitung...', leagues: 'Ligen', languages: 'Sprachen', accuracy: 'Genauigkeit',
+      processing: 'Verarbeitung...', leagues: 'Ligen', languages: 'Sprachen', accuracy: 'Doppelte-Chance-Quote',
+      settledLabel: 'Abgerechnete Spiele',
     },
   };
 
@@ -134,10 +141,28 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Rakamlar ÖLÇÜLMÜŞ karneden gelir (/api/v2/proof). Burada eskiden
+              sabit "85%+ Doğruluk" yazıyordu — hiçbir ölçümle desteklenmiyordu
+              (gerçek: çifte şans %76, 1X2 %49) ve şişik beklenti iade/churn
+              olarak geri döner. Veri yoksa oran hücresi hiç gösterilmez. */}
           <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-line">
             <div><div className="text-2xl font-bold text-content">50+</div><div className="text-sm text-content-subtle">{l.leagues}</div></div>
-            <div><div className="text-2xl font-bold text-content">3</div><div className="text-sm text-content-subtle">{l.languages}</div></div>
-            <div><div className="text-2xl font-bold text-content">85%+</div><div className="text-sm text-content-subtle">{l.accuracy}</div></div>
+            {dcProof ? (
+              <>
+                <div>
+                  <div className="text-2xl font-bold text-brand-400">{formatAccuracy(dcProof.accuracy, lang)}</div>
+                  <div className="text-sm text-content-subtle">{l.accuracy}</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-content">
+                    {dcProof.total.toLocaleString(lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE' : 'en-US')}
+                  </div>
+                  <div className="text-sm text-content-subtle">{(l as any).settledLabel}</div>
+                </div>
+              </>
+            ) : (
+              <div><div className="text-2xl font-bold text-content">3</div><div className="text-sm text-content-subtle">{l.languages}</div></div>
+            )}
           </div>
         </div>
       </div>

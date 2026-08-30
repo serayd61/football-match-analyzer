@@ -21,6 +21,13 @@ export interface HeroSpotlightLabels {
   ctaButton: string;
 }
 
+/**
+ * Hero tam ekran (100dvh) olduğu için ziyaretçi scroll etmeden tek bir sayı
+ * görmüyordu — reklam trafiğinin %96'sı mobil, ilk ekranda kanıt şart.
+ * `proofLine` verildiğinde CTA'nın altında ölçülmüş oran rozeti çıkar ve
+ * kanıt bloğuna çapa atar. Veri yoksa rozet hiç render edilmez.
+ */
+
 function RevealLayer({ image, cursorX, cursorY }: { image: string; cursorX: number; cursorY: number }) {
   // Canvas + toDataURL her karede PNG kodlamak zorunda kaldığından ana
   // thread'i kilitliyordu; aynı gradyan duraklarıyla CSS mask birebir aynı
@@ -42,7 +49,7 @@ function RevealLayer({ image, cursorX, cursorY }: { image: string; cursorX: numb
   );
 }
 
-export default function HeroSpotlight({ l }: { l: HeroSpotlightLabels }) {
+export default function HeroSpotlight({ l, proofLine }: { l: HeroSpotlightLabels; proofLine?: string | null }) {
   const mouse = useRef({ x: -999, y: -999 });
   const smooth = useRef({ x: -999, y: -999 });
   const rafRef = useRef<number>(0);
@@ -118,7 +125,22 @@ export default function HeroSpotlight({ l }: { l: HeroSpotlightLabels }) {
         className="absolute bottom-10 sm:bottom-24 left-5 right-5 sm:left-auto sm:right-10 md:right-14 max-w-full sm:max-w-[260px] flex flex-col items-start gap-4 sm:gap-5 z-50 hero-anim hero-fade"
         style={{ animationDelay: '0.85s' }}
       >
-        <p className="text-xs sm:text-sm text-white/80 leading-relaxed">{l.paraRight}</p>
+        <p className="hidden sm:block text-xs sm:text-sm text-white/80 leading-relaxed">{l.paraRight}</p>
+
+        {/* Ölçülmüş oran rozeti — ilk ekrandaki tek somut sayı, bu yüzden
+            CTA'nın ÜSTÜNDE: ziyaretçi önce kanıtı görür, sonra butonu.
+            Kanıt bloğuna çapa atar (#live-proof). */}
+        {proofLine && (
+          <a
+            href="#live-proof"
+            className="group flex items-center gap-2 rounded-full border border-white/25 bg-black/40 backdrop-blur-sm px-4 py-2.5 text-white/90 hover:text-white hover:border-white/45 transition-colors"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-[13px] font-medium leading-tight">{proofLine}</span>
+            <span className="text-white/60 group-hover:translate-y-0.5 transition-transform shrink-0">↓</span>
+          </a>
+        )}
+
         <Link
           href="/login"
           className="bg-[#e8702a] hover:bg-[#d2611f] text-white text-sm font-medium px-7 py-3 rounded-full transition-all hover:scale-[1.03] active:scale-95 hover:shadow-lg hover:shadow-[#e8702a]/30"
