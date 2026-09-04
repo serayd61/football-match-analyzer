@@ -261,5 +261,29 @@
     "roiExplain": "Modelin 1X2 seçimine, başlama vuruşundan önce kaydedilen son oranla (kapanış, yoksa açılış) bir birim. Yalnızca oran kaydı olan maçlar sayılır; bu yüzden bu pencere tam karneden kısadır. Bahisçi satırı, aynı maçlarda piyasa favorisinin ne sıklıkla kazandığını marjdan arındırılmış Brier ile gösterir.",
     "footer": "Hesaplama: {at}. Saatte bir yenilenir. Sayıların tanımı için:",
     "footerLink": "yöntem."
+  },
+  "leagues": {
+    "title": "Ligler",
+    "lead": "Dixon-Coles modelinin fit edildiği {count} lig ve her birinin sonuçlanmış karnesi.",
+    "country": "Ülke",
+    "settled": "Sonuçlanan",
+    "record": "T–K",
+    "hitRate": "İsabet",
+    "brier": "Brier",
+    "note": "Bir lig ancak model o ligin sonuçlarıyla fit edildikten sonra eklenir. Küçük örneklemler dalgalanır; isabeti yanındaki sayıyla birlikte okuyun."
+  },
+  "league": {
+    "metaTitle": "{league} tahminleri ve karnesi",
+    "metaDescription": "{league} ({country}) için Dixon-Coles maç olasılıkları: yaklaşan seçimler, sonuçlanmış maçlar, isabet ve Brier skoru.",
+    "lead": "{league} için model olasılıkları ve sonuçlanmış karne.",
+    "allLeagues": "Tüm ligler",
+    "monthly": "Aya göre:",
+    "upcoming": "Yaklaşan",
+    "upcomingAll": "Tüm maçlar",
+    "upcomingEmpty": "Bu lig için yayınlanmış yaklaşan maç yok.",
+    "recent": "Son sonuçlar",
+    "recentAll": "Tüm sonuçlar",
+    "recentEmpty": "Henüz sonuçlanmış maç yok.",
+    "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır."
   }
 }

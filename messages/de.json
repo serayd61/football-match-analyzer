@@ -261,5 +261,29 @@
     "roiExplain": "Eine Einheit auf den 1X2-Tipp des Modells zur letzten erfassten Quote vor Anpfiff (Schluss-, sonst Eröffnungsquote). Nur Spiele mit Quotenerfassung zählen, darum ist dieses Fenster kürzer als die gesamte Bilanz. Die Buchmacher-Zeile zeigt, wie oft der Marktfavorit in denselben Spielen gewann, mit margenbereinigtem Brier.",
     "footer": "Berechnet {at}. Stündlich neu berechnet. Wie die Kennzahlen definiert sind:",
     "footerLink": "Methodik."
+  },
+  "leagues": {
+    "title": "Ligen",
+    "lead": "Die {count} Ligen, auf denen das Dixon-Coles-Modell gefittet ist, mit der abgerechneten Bilanz jeder Liga.",
+    "country": "Land",
+    "settled": "Abgerechnet",
+    "record": "S–N",
+    "hitRate": "Trefferquote",
+    "brier": "Brier",
+    "note": "Ligen kommen erst dazu, wenn das Modell auf ihren Resultaten gefittet wurde. Kleine Stichproben schwanken; die Trefferquote immer mit der Anzahl daneben lesen."
+  },
+  "league": {
+    "metaTitle": "{league}: Prognosen und Bilanz",
+    "metaDescription": "Dixon-Coles-Spielwahrscheinlichkeiten für die {league} ({country}): kommende Tipps, abgerechnete Resultate, Trefferquote und Brier-Score.",
+    "lead": "Modellwahrscheinlichkeiten und die abgerechnete Bilanz für die {league}.",
+    "allLeagues": "Alle Ligen",
+    "monthly": "Nach Monat:",
+    "upcoming": "Bevorstehend",
+    "upcomingAll": "Alle Spiele",
+    "upcomingEmpty": "Für diese Liga sind noch keine kommenden Spiele veröffentlicht.",
+    "recent": "Letzte Resultate",
+    "recentAll": "Alle Resultate",
+    "recentEmpty": "Noch keine abgerechneten Spiele.",
+    "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung."
   }
 }

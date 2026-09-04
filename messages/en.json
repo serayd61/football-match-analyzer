@@ -261,5 +261,29 @@
     "roiExplain": "One unit on the model's 1X2 pick at the last captured odds before kick-off (closing, else opening). Only matches with an odds snapshot count, so this window is shorter than the full record. The bookmaker line shows how often the market favourite won over the same matches, with its margin-free Brier.",
     "footer": "Computed {at}. Recomputed hourly. How the numbers are defined:",
     "footerLink": "methodology."
+  },
+  "leagues": {
+    "title": "Leagues",
+    "lead": "The {count} leagues the Dixon-Coles model is fitted on, with each league's settled record.",
+    "country": "Country",
+    "settled": "Settled",
+    "record": "W–L",
+    "hitRate": "Hit rate",
+    "brier": "Brier",
+    "note": "Leagues are added only after the model has been fitted on their results. Small samples swing; read the hit rate with the count beside it."
+  },
+  "league": {
+    "metaTitle": "{league} predictions and record",
+    "metaDescription": "Dixon-Coles match probabilities for the {league} ({country}): upcoming picks, settled results, hit rate and Brier score.",
+    "lead": "Model probabilities and the settled record for the {league}.",
+    "allLeagues": "All leagues",
+    "monthly": "By month:",
+    "upcoming": "Upcoming",
+    "upcomingAll": "All fixtures",
+    "upcomingEmpty": "No upcoming fixtures published for this league yet.",
+    "recent": "Recent results",
+    "recentAll": "All results",
+    "recentEmpty": "No settled matches yet.",
+    "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time."
   }
 }

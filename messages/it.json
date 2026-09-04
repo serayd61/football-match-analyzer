@@ -261,5 +261,29 @@
     "roiExplain": "Un'unità sulla scelta 1X2 del modello all'ultima quota registrata prima del calcio d'inizio (chiusura, altrimenti apertura). Contano solo le partite con quota registrata, perciò questa finestra è più corta del registro completo. La riga del bookmaker mostra quante volte la favorita del mercato ha vinto sulle stesse partite, con il Brier al netto del margine.",
     "footer": "Calcolato {at}. Ricalcolato ogni ora. Come sono definiti i numeri:",
     "footerLink": "metodologia."
+  },
+  "leagues": {
+    "title": "Campionati",
+    "lead": "I {count} campionati su cui è stimato il modello Dixon-Coles, con il registro chiuso di ciascuno.",
+    "country": "Paese",
+    "settled": "Chiuse",
+    "record": "V–P",
+    "hitRate": "Successo",
+    "brier": "Brier",
+    "note": "Un campionato viene aggiunto solo dopo che il modello è stato stimato sui suoi risultati. I campioni piccoli oscillano; leggi la percentuale insieme al numero accanto."
+  },
+  "league": {
+    "metaTitle": "{league}: pronostici e registro",
+    "metaDescription": "Probabilità Dixon-Coles per la {league} ({country}): prossime scelte, risultati chiusi, percentuale di successo e Brier score.",
+    "lead": "Probabilità del modello e registro chiuso per la {league}.",
+    "allLeagues": "Tutti i campionati",
+    "monthly": "Per mese:",
+    "upcoming": "Prossime",
+    "upcomingAll": "Tutte le partite",
+    "upcomingEmpty": "Nessuna partita in programma pubblicata per questo campionato.",
+    "recent": "Ultimi risultati",
+    "recentAll": "Tutti i risultati",
+    "recentEmpty": "Nessuna partita chiusa.",
+    "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione."
   }
 }

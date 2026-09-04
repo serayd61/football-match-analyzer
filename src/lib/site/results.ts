@@ -100,3 +100,42 @@ export function goalOutcomes(p: SitePrediction): { ou: 'won' | 'lost' | null; bt
     btts: p.btts ? ((p.btts.pick === 'yes') === both ? 'won' : 'lost') : null,
   };
 }
+
+/** Upcoming (unsettled, kick-off from now) covered predictions for one league. */
+export const listUpcomingForLeague = unstable_cache(
+  async (slug: string, limit = 30): Promise<SitePrediction[]> => {
+    const map = await coveredLeagueIds();
+    const ids = map[slug] || [];
+    if (!ids.length) return [];
+    const { data, error } = await db()
+      .from('engine_predictions')
+      .select(COLS)
+      .in('league_id', ids)
+      .eq('settled', false)
+      .gte('kickoff', new Date(Date.now() - 2 * 3600e3).toISOString())
+      .order('kickoff', { ascending: true })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    const ctx = await loadContext();
+    return parseRows(data).map((r) => mapRow(r, ctx));
+  },
+  ['site-upcoming-league'],
+  { revalidate: REVALIDATE.fixtures },
+);
+
+/** Fixture ids for the sitemap: covered matches from the last `days` days plus everything upcoming. */
+export const listSitemapFixtures = unstable_cache(
+  async (days = 30): Promise<Array<{ fixtureId: number; updatedAt: string | null }>> => {
+    const ids = await idsForLeague(null);
+    const { data } = await db()
+      .from('engine_predictions')
+      .select('fixture_id, updated_at')
+      .in('league_id', ids)
+      .gte('kickoff', new Date(Date.now() - days * 86400e3).toISOString())
+      .order('kickoff', { ascending: false })
+      .limit(2000);
+    return ((data || []) as Array<{ fixture_id: number; updated_at: string | null }>).map((r) => ({ fixtureId: Number(r.fixture_id), updatedAt: r.updated_at }));
+  },
+  ['site-sitemap-fixtures'],
+  { revalidate: REVALIDATE.performance },
+);
