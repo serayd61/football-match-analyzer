@@ -194,7 +194,15 @@
     "awaitingResult": "Awaiting result",
     "upcoming": "Upcoming",
     "modelNote": "The headline 1X2 figures come from the Dixon-Coles fit, which corrects low-scoring draws. The Poisson grid on this page does not apply that correction, so its 1X2 split can differ by a point or two.",
-    "disclaimer": "Probabilities are model estimates and are not guarantees. This page is not betting advice. 18+."
+    "disclaimer": "Probabilities are model estimates and are not guarantees. This page is not betting advice. 18+.",
+    "secMarkets": "Other markets vs bookmaker",
+    "market": "Market",
+    "selection": "Selection",
+    "mkAsian": "Asian handicap",
+    "mkDnb": "Draw no bet",
+    "modelVsBook": "model · bookmaker",
+    "csNote": "Bookmaker column: implied probability from the listed correct-score price, margin included (only the prices the book lists).",
+    "marketsNote": "Two-way markets with the bookmaker's margin removed. Asian handicap uses the book's main line; on quarter lines the model figure averages the two neighbouring lines. Draw no bet is the model's home/away split with the draw removed. Information, not a recommendation."
   },
   "results": {
     "title": "Results",

@@ -6,7 +6,8 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, type SitePrediction } from '@/lib/site/predictions';
-import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap } from '@/lib/site/poisson';
+import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap, handicapAt } from '@/lib/site/poisson';
+import { getMarketBook } from '@/lib/site/markets';
 import { Page, SectionTitle } from '@/components/site/ui';
 import ProbBar from '@/components/site/ProbBar';
 import LocalTime from '@/components/site/LocalTime';
@@ -55,8 +56,9 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const ts = await getTranslations('standings');
   const table = p.league ? await standingsIndex(p.league.slug) : new Map();
   const stRow = (id: number | null) => (id ? table.get(id) : undefined);
-  const [market, h2h, formHome, formAway] = await Promise.all([
+  const [market, book, h2h, formHome, formAway] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
+    getMarketBook(p.fixtureId),
     p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId) : Promise.resolve([] as SitePrediction[]),
     p.homeId ? getTeamForm(p.homeId) : Promise.resolve([] as SitePrediction[]),
     p.awayId ? getTeamForm(p.awayId) : Promise.resolve([] as SitePrediction[]),
@@ -88,6 +90,28 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   ] as const;
 
   const rh = record(formH), ra = record(formA);
+
+  // Extra markets vs the model (two-way markets, margin removed on the market side).
+  const csMap = new Map((book?.correctScore || []).map((c) => [`${c.home}-${c.away}`, c.implied]));
+  type MRow = { key: string; market: string; sel: string; model: number; mOdds: number; mProb: number };
+  const mrows: MRow[] = [];
+  if (book?.asian && sm) {
+    const h = handicapAt(sm, book.asian.line);
+    const modelHome = h.pHomeCover / (h.pHomeCover + h.pAwayCover);
+    const fmt = (l: number) => (l > 0 ? `+${l}` : `${l}`);
+    mrows.push({ key: 'ah-h', market: t('mkAsian'), sel: `${p.homeName} ${fmt(book.asian.line)}`, model: modelHome, mOdds: book.asian.home, mProb: book.asian.pHome });
+    mrows.push({ key: 'ah-a', market: t('mkAsian'), sel: `${p.awayName} ${fmt(-book.asian.line)}`, model: 1 - modelHome, mOdds: book.asian.away, mProb: book.asian.pAway });
+  }
+  if (book?.drawNoBet) {
+    const dh = p.pHome / (p.pHome + p.pAway);
+    mrows.push({ key: 'dnb-h', market: t('mkDnb'), sel: p.homeName, model: dh, mOdds: book.drawNoBet.a, mProb: book.drawNoBet.pA });
+    mrows.push({ key: 'dnb-a', market: t('mkDnb'), sel: p.awayName, model: 1 - dh, mOdds: book.drawNoBet.b, mProb: book.drawNoBet.pB });
+  }
+  if (book?.btts && sm) {
+    const by = bttsProb(sm);
+    mrows.push({ key: 'btts-y', market: tc('btts'), sel: tc('yes'), model: by, mOdds: book.btts.a, mProb: book.btts.pA });
+    mrows.push({ key: 'btts-n', market: tc('btts'), sel: tc('no'), model: 1 - by, mOdds: book.btts.b, mProb: book.btts.pB });
+  }
 
   return (
     <Page>
@@ -172,8 +196,8 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           {sm && (
             <section>
               <SectionTitle title={t('secGoals')} meta={t('lambdaMeta', { lh: f.number(sm.lambdaHome, 'fixed2'), la: f.number(sm.lambdaAway, 'fixed2') })} />
-              <div className="mt-4 grid gap-6 sm:grid-cols-2">
-                <table className="text-sm">
+              <div className="mt-4 grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wider text-s-muted">
                     <tr className="border-b border-s-line">
                       <th className="py-1.5 text-left font-medium">{t('line')}</th>
@@ -197,16 +221,21 @@ export default async function MatchPage({ params }: { params: { locale: string; 
                   </tbody>
                 </table>
                 <div>
-                  <h3 className="font-body text-xs font-medium uppercase tracking-wider text-s-muted">{t('likelyScores')}</h3>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="font-body text-xs font-medium uppercase tracking-wider text-s-muted">{t('likelyScores')}</h3>
+                    {csMap.size > 0 && <span className="text-xs text-s-muted">{t('modelVsBook')}</span>}
+                  </div>
                   <ul className="mt-1.5 divide-y divide-s-line border-b border-s-line text-sm">
                     {scores.map((s) => (
                       <li key={`${s.home}-${s.away}`} className="flex items-center gap-3 py-1.5">
                         <span className="num w-10 font-head text-lg">{s.home}–{s.away}</span>
                         <span className="h-2 flex-1 bg-s-raised"><span className="block h-2 bg-s-brand" style={{ width: `${Math.min(100, s.p * 400)}%` }} /></span>
                         <span className="num w-12 text-right">{(s.p * 100).toFixed(1)}%</span>
+                        {csMap.size > 0 && <span className="num w-12 text-right text-s-muted">{csMap.has(`${s.home}-${s.away}`) ? `${(csMap.get(`${s.home}-${s.away}`)! * 100).toFixed(1)}%` : '–'}</span>}
                       </li>
                     ))}
                   </ul>
+                  {csMap.size > 0 && <p className="mt-1 text-xs text-s-muted">{t('csNote')}</p>}
                   <p className="mt-2 text-xs text-s-muted">
                     {t('calibratedGoals', { ou: p.overUnder ? `${p.overUnder.pick === 'over' ? tc('over') : tc('under')} 2.5 ${pct(p.overUnder.p)}` : '–', btts: p.btts ? `${p.btts.pick === 'yes' ? tc('yes') : tc('no')} ${pct(p.btts.p)}` : '–' })}
                   </p>
@@ -242,6 +271,42 @@ export default async function MatchPage({ params }: { params: { locale: string; 
                 </table>
               </div>
               <p className="mt-2 text-xs text-s-muted">{t('handicapNote')}</p>
+            </section>
+          )}
+
+          {/* ── Other markets vs bookmaker ────────────────────────────── */}
+          {mrows.length > 0 && book && (
+            <section>
+              <SectionTitle title={t('secMarkets')} meta={t('marketMeta', { phase: book.phase === 'closing' ? t('closing') : t('opening'), provider: book.provider ?? '' })} />
+              <div className="tbl-scroll mt-3">
+                <table className="text-sm">
+                  <thead className="text-xs uppercase tracking-wider text-s-muted">
+                    <tr className="border-b border-s-line">
+                      <th className="py-1.5 text-left font-medium">{t('market')}</th>
+                      <th className="py-1.5 text-left font-medium">{t('selection')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('modelProb')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('fairOdds')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('marketOdds')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('marketProb')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('edge')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mrows.map((r) => { const e = r.model - r.mProb; return (
+                      <tr key={r.key} className="border-b border-s-line">
+                        <td className="py-2 pr-3 text-s-muted">{r.market}</td>
+                        <td className="py-2 pr-3">{r.sel}</td>
+                        <td className="num py-2 text-right">{pct(r.model)}</td>
+                        <td className="num py-2 text-right text-s-muted">{odds(r.model)}</td>
+                        <td className="num py-2 text-right">{r.mOdds.toFixed(2)}</td>
+                        <td className="num py-2 text-right text-s-muted">{pct(r.mProb)}</td>
+                        <td className={`num py-2 text-right ${e > 0.03 ? 'text-s-win' : e < -0.03 ? 'text-s-loss' : ''}`}>{pp(e)}</td>
+                      </tr>
+                    ); })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-xs text-s-muted">{t('marketsNote')}</p>
             </section>
           )}
         </div>
@@ -320,9 +385,9 @@ function Team({ name, crest, align }: { name: string; crest: string | null; alig
 
 function Cell({ p, label }: { p: number; label?: string }) {
   return (
-    <span className="inline-flex items-center justify-end gap-2">
+    <span className="inline-flex items-center justify-end gap-1.5">
       {label && <span className="text-xs text-s-muted">{label}</span>}
-      <span className="inline-block h-1.5 w-14 bg-s-raised"><span className="block h-1.5 bg-s-brand" style={{ width: `${p * 100}%` }} /></span>
+      <span className="inline-block h-1.5 w-12 bg-s-raised"><span className="block h-1.5 bg-s-brand" style={{ width: `${p * 100}%` }} /></span>
       <span className="w-10 text-right">{pct(p)}</span>
     </span>
   );

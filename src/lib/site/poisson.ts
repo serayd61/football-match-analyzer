@@ -86,3 +86,23 @@ export function fairHandicap(sm: ScoreMatrix): HandicapLine {
     return bal(cur) < bal(best) ? cur : best;
   });
 }
+
+/**
+ * Home cover / push / away cover for ANY Asian line. Quarter lines
+ * (x.25 / x.75) split the stake across the two neighbouring lines, so
+ * their figures are the mean of those two.
+ */
+export function handicapAt(sm: ScoreMatrix, line: number): HandicapLine {
+  const one = (l: number): HandicapLine => {
+    let cover = 0, push = 0, lose = 0;
+    sm.m.forEach((row, h) => row.forEach((p, a) => {
+      const d = h + l - a;
+      if (d > 1e-9) cover += p; else if (Math.abs(d) < 1e-9) push += p; else lose += p;
+    }));
+    return { line: l, pHomeCover: cover, pPush: push, pAwayCover: lose };
+  };
+  const q = Math.abs(line * 4) % 2 === 1; // quarter line
+  if (!q) return one(line);
+  const lo = one(line - 0.25), hi = one(line + 0.25);
+  return { line, pHomeCover: (lo.pHomeCover + hi.pHomeCover) / 2, pPush: (lo.pPush + hi.pPush) / 2, pAwayCover: (lo.pAwayCover + hi.pAwayCover) / 2 };
+}

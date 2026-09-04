@@ -194,7 +194,15 @@
     "awaitingResult": "Resultat ausstehend",
     "upcoming": "Bevorstehend",
     "modelNote": "Die 1X2-Hauptwerte stammen aus dem Dixon-Coles-Fit, der torarme Remis korrigiert. Das Poisson-Raster auf dieser Seite wendet diese Korrektur nicht an; die 1X2-Verteilung kann darum um ein bis zwei Punkte abweichen.",
-    "disclaimer": "Wahrscheinlichkeiten sind Modellschätzungen und keine Garantien. Diese Seite ist keine Wettempfehlung. Ab 18 Jahren."
+    "disclaimer": "Wahrscheinlichkeiten sind Modellschätzungen und keine Garantien. Diese Seite ist keine Wettempfehlung. Ab 18 Jahren.",
+    "secMarkets": "Weitere Märkte vs. Buchmacher",
+    "market": "Markt",
+    "selection": "Auswahl",
+    "mkAsian": "Asian Handicap",
+    "mkDnb": "Unentschieden – Einsatz zurück",
+    "modelVsBook": "Modell · Buchmacher",
+    "csNote": "Spalte Buchmacher: implizite Wahrscheinlichkeit aus der gelisteten Resultat-Quote, Marge enthalten (nur die Preise, die der Buchmacher listet).",
+    "marketsNote": "Zweiweg-Märkte, Buchmachermarge herausgerechnet. Asian Handicap nutzt die Hauptlinie des Buchmachers; bei Viertellinien mittelt das Modell die beiden Nachbarlinien. «Einsatz zurück» ist die Heim/Auswärts-Aufteilung des Modells ohne Remis. Information, keine Empfehlung."
   },
   "results": {
     "title": "Resultate",

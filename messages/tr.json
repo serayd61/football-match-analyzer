@@ -194,7 +194,15 @@
     "awaitingResult": "Sonuç bekleniyor",
     "upcoming": "Yaklaşan",
     "modelNote": "Ana 1X2 değerleri, düşük skorlu beraberlikleri düzelten Dixon-Coles fitinden gelir. Bu sayfadaki Poisson ızgarası o düzeltmeyi uygulamaz; 1X2 dağılımı bir iki puan farklı olabilir.",
-    "disclaimer": "Olasılıklar model tahminidir, garanti değildir. Bu sayfa bahis tavsiyesi değildir. 18+."
+    "disclaimer": "Olasılıklar model tahminidir, garanti değildir. Bu sayfa bahis tavsiyesi değildir. 18+.",
+    "secMarkets": "Diğer pazarlar vs bahisçi",
+    "market": "Pazar",
+    "selection": "Seçim",
+    "mkAsian": "Asya handikabı",
+    "mkDnb": "Beraberlikte iade",
+    "modelVsBook": "model · bahisçi",
+    "csNote": "Bahisçi sütunu: listelenen doğru skor oranından örtük olasılık, marj dahil (yalnızca bahisçinin listelediği fiyatlar).",
+    "marketsNote": "İki yönlü pazarlar, bahisçi marjı çıkarılmış. Asya handikabı bahisçinin ana çizgisini kullanır; çeyrek çizgilerde model değeri iki komşu çizginin ortalamasıdır. Beraberlikte iade, modelin beraberlik çıkarılmış ev/deplasman dağılımıdır. Bilgi amaçlıdır, öneri değildir."
   },
   "results": {
     "title": "Sonuçlar",

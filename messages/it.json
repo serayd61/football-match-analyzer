@@ -194,7 +194,15 @@
     "awaitingResult": "In attesa del risultato",
     "upcoming": "In programma",
     "modelNote": "I valori 1X2 principali derivano dal fit Dixon-Coles, che corregge i pareggi a basso punteggio. La griglia di Poisson in questa pagina non applica quella correzione, quindi la sua ripartizione 1X2 può differire di uno o due punti.",
-    "disclaimer": "Le probabilità sono stime del modello e non garanzie. Questa pagina non è un consiglio di scommessa. 18+."
+    "disclaimer": "Le probabilità sono stime del modello e non garanzie. Questa pagina non è un consiglio di scommessa. 18+.",
+    "secMarkets": "Altri mercati vs bookmaker",
+    "market": "Mercato",
+    "selection": "Selezione",
+    "mkAsian": "Handicap asiatico",
+    "mkDnb": "Pareggio rimborso",
+    "modelVsBook": "modello · bookmaker",
+    "csNote": "Colonna bookmaker: probabilità implicita dalla quota del risultato esatto, margine incluso (solo i prezzi che il bookmaker elenca).",
+    "marketsNote": "Mercati a due esiti con il margine del bookmaker rimosso. L'handicap asiatico usa la linea principale del bookmaker; sulle linee a quarto il valore del modello è la media delle due linee vicine. Pareggio rimborso è la ripartizione casa/trasferta del modello senza il pareggio. Informazione, non un consiglio."
   },
   "results": {
     "title": "Risultati",
