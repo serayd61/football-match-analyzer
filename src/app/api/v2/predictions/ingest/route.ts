@@ -1,4 +1,8 @@
-// ============================================================================
+  if (!API_SECRETS.length || !apiKey || !API_SECRETS.includes(apiKey)) {// İki sunucu sırrından biri yeterli: n8n PREDICTIONS_API_SECRET ile, elle
+// yeniden koşular (ör. 2026-09-04 RapidAPI kesintisi sonrası) CRON_SECRET ile.
+const API_SECRETS = [process.env.PREDICTIONS_API_SECRET, process.env.CRON_SECRET].filter(
+  (s): s is string => !!s,
+);// ============================================================================
 // API V2: PREDICTIONS INGEST
 // n8n → FastAPI predict-service çıktısını alır, engine_predictions'a yazar.
 // Bearer token: PREDICTIONS_API_SECRET (mevcut sırrı yeniden kullanır).
