@@ -82,7 +82,9 @@ export default function Navigation() {
     '/track-record', '/forgot-password', '/reset-password', '/offline',
   ];
   const NEW_DESIGN_PREFIXES = ['/match/', '/analysis/'];
-  if (NEW_DESIGN_ROUTES.includes(pathname) || NEW_DESIGN_PREFIXES.some((p) => pathname.startsWith(p))) {
+  // Public site (/en, /de/predictions, …) renders its own header.
+  const isLocalizedPublic = /^\/(en|de|it|tr)(\/|$)/.test(pathname);
+  if (isLocalizedPublic || NEW_DESIGN_ROUTES.includes(pathname) || NEW_DESIGN_PREFIXES.some((p) => pathname.startsWith(p))) {
     return null;
   }
 

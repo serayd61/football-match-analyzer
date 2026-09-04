@@ -1,9 +1,13 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
 import { isAdminEmail } from '@/lib/admin/emails';
+import { routing } from '@/i18n/routing';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
 // a `src/` directory — Next.js only picks up `src/middleware.ts` in that case.
+
+const intlMiddleware = createIntlMiddleware(routing);
 
 function isAdminPath(path: string): boolean {
   return path.startsWith('/api/admin') || path === '/admin' || path.startsWith('/admin/');
@@ -21,8 +25,6 @@ export default withAuth(
   function middleware(req) {
     const path = req.nextUrl.pathname;
 
-    // The matcher restricts this middleware to admin paths only, but guard
-    // defensively in case the matcher changes.
     if (isAdminPath(path)) {
       if (hasValidServiceSecret(req)) return NextResponse.next();
       const email = req.nextauth?.token?.email as string | undefined;
@@ -32,22 +34,37 @@ export default withAuth(
         }
         return NextResponse.redirect(new URL('/login', req.url));
       }
+      return NextResponse.next();
     }
 
-    return NextResponse.next();
+    // Public site: locale detection + prefixing (/ → /en, /predictions → /de/predictions …).
+    return intlMiddleware(req);
   },
   {
     callbacks: {
       // Do NOT gate non-admin routes here: the app gates protected pages
-      // client-side, and the matcher below ensures this middleware only runs
-      // for the admin surface — so cron/QStash/webhook/SEO routes are untouched.
+      // client-side. The matcher limits this middleware to the admin surface
+      // and the localized public site; legacy app routes are untouched.
       authorized: () => true,
     },
   }
 );
 
 export const config = {
-  // Run ONLY on the admin surface. Everything else bypasses middleware entirely,
-  // exactly as before this file existed.
-  matcher: ['/api/admin/:path*', '/admin/:path*'],
+  matcher: [
+    // Admin surface (unchanged behaviour)
+    '/api/admin/:path*',
+    '/admin/:path*',
+    // Localized public site
+    '/',
+    '/(en|de|it|tr)/:path*',
+    '/predictions/:path*',
+    '/results',
+    '/performance',
+    '/leagues/:path*',
+    '/methodology',
+    '/about',
+    '/privacy',
+    '/terms',
+  ],
 };

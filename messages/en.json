@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "siteName": "Football Analytics",
+    "tagline": "Football match probabilities from a statistical model, with every prediction scored in public.",
+    "description": "Match probabilities for 1X2, goals and both teams to score from a Dixon-Coles model. Every prediction is settled and published, wins and losses alike."
+  },
+  "nav": {
+    "predictions": "Predictions",
+    "results": "Results",
+    "performance": "Performance",
+    "leagues": "Leagues",
+    "methodology": "Methodology",
+    "about": "About",
+    "menu": "Menu",
+    "close": "Close",
+    "signIn": "Sign in",
+    "dashboard": "Dashboard",
+    "skipToContent": "Skip to content"
+  },
+  "locale": {
+    "label": "Language"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "footer": {
+    "dataSource": "Data",
+    "dataSourceText": "Fixtures, results and odds are supplied by third-party data providers and may lag live events. Probabilities come from our own statistical model.",
+    "responsible": "Responsible use",
+    "responsibleText": "Predictions are probabilities, not guarantees. Nothing on this site is betting advice. If you gamble, only stake what you can afford to lose. 18+.",
+    "links": "Site",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact",
+    "rights": "© {year} Football Analytics. All rights reserved."
+  },
+  "common": {
+    "loading": "Loading",
+    "retry": "Try again",
+    "back": "Back",
+    "empty": "Nothing here yet",
+    "emptyLead": "There is no data for this selection. Try a different date or league.",
+    "noData": "n/a",
+    "updatedAt": "Updated {time}",
+    "viewAll": "View all",
+    "all": "All",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "filters": "Filters",
+    "league": "League",
+    "date": "Date",
+    "market": "Market",
+    "model": "Model",
+    "market1x2": "1X2",
+    "ou25": "Over/Under 2.5",
+    "btts": "Both teams to score",
+    "home": "Home",
+    "draw": "Draw",
+    "away": "Away",
+    "over": "Over",
+    "under": "Under",
+    "yes": "Yes",
+    "no": "No",
+    "won": "Won",
+    "lost": "Lost",
+    "void": "Void",
+    "pending": "Pending",
+    "matches": "{count, plural, =1 {# match} other {# matches}}",
+    "kickoff": "Kick-off",
+    "localTime": "times shown in {zone}"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "lead": "The page could not be loaded. This is usually temporary.",
+    "retry": "Reload",
+    "notFoundTitle": "Page not found",
+    "notFoundLead": "The address may be wrong or the page has moved.",
+    "home": "Go to the home page"
+  },
+  "home": {
+    "eyebrow": "Statistical football predictions",
+    "title": "Probabilities, not promises.",
+    "lead": "A Dixon-Coles model rates every fixture in the leagues it is trained on. Each prediction is settled after the final whistle and published, whether it won or lost.",
+    "cta": "Today's predictions",
+    "ctaSecondary": "How the model works"
+  }
+}

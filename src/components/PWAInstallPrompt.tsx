@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -11,6 +12,9 @@ export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  // Public site (/en, /de/…) is a reading surface, not the app — no install nag there.
+  const pathname = usePathname();
+  const isPublicSite = /^\/(en|de|it|tr)(\/|$)/.test(pathname || '');
 
   useEffect(() => {
     // Check if already installed
@@ -61,7 +65,7 @@ export default function PWAInstallPrompt() {
     localStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
   };
 
-  if (isStandalone || !showPrompt) return null;
+  if (isPublicSite || isStandalone || !showPrompt) return null;
 
   return (
     <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 animate-slide-up">

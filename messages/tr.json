@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "siteName": "Football Analytics",
+    "tagline": "İstatistiksel modelden futbol olasılıkları; her tahmin herkese açık biçimde sonuçlandırılır.",
+    "description": "Dixon-Coles modelinden 1X2, gol ve karşılıklı gol olasılıkları. Her tahmin sonuçlandırılır ve yayınlanır; tutan da tutmayan da."
+  },
+  "nav": {
+    "predictions": "Tahminler",
+    "results": "Sonuçlar",
+    "performance": "Karne",
+    "leagues": "Ligler",
+    "methodology": "Yöntem",
+    "about": "Hakkında",
+    "menu": "Menü",
+    "close": "Kapat",
+    "signIn": "Giriş yap",
+    "dashboard": "Panel",
+    "skipToContent": "İçeriğe atla"
+  },
+  "locale": {
+    "label": "Dil"
+  },
+  "theme": {
+    "label": "Görünüm",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem"
+  },
+  "footer": {
+    "dataSource": "Veri",
+    "dataSourceText": "Fikstür, sonuç ve oranlar üçüncü taraf veri sağlayıcılardan gelir ve canlı akışın gerisinde kalabilir. Olasılıklar kendi istatistiksel modelimizden üretilir.",
+    "responsible": "Sorumlu kullanım",
+    "responsibleText": "Tahminler olasılıktır, garanti değildir. Bu sitedeki hiçbir içerik bahis tavsiyesi değildir. Bahis oynuyorsanız yalnızca kaybetmeyi göze alabileceğiniz kadar oynayın. 18+.",
+    "links": "Site",
+    "privacy": "Gizlilik",
+    "terms": "Kullanım şartları",
+    "contact": "İletişim",
+    "rights": "© {year} Football Analytics. Tüm hakları saklıdır."
+  },
+  "common": {
+    "loading": "Yükleniyor",
+    "retry": "Tekrar dene",
+    "back": "Geri",
+    "empty": "Henüz bir şey yok",
+    "emptyLead": "Bu seçim için veri yok. Başka bir tarih ya da lig deneyin.",
+    "noData": "yok",
+    "updatedAt": "Güncelleme {time}",
+    "viewAll": "Tümünü gör",
+    "all": "Tümü",
+    "today": "Bugün",
+    "tomorrow": "Yarın",
+    "yesterday": "Dün",
+    "filters": "Filtreler",
+    "league": "Lig",
+    "date": "Tarih",
+    "market": "Pazar",
+    "model": "Model",
+    "market1x2": "1X2",
+    "ou25": "Üst/Alt 2,5",
+    "btts": "Karşılıklı gol",
+    "home": "Ev",
+    "draw": "Beraberlik",
+    "away": "Deplasman",
+    "over": "Üst",
+    "under": "Alt",
+    "yes": "Var",
+    "no": "Yok",
+    "won": "Tuttu",
+    "lost": "Tutmadı",
+    "void": "İptal",
+    "pending": "Bekliyor",
+    "matches": "{count, plural, =1 {# maç} other {# maç}}",
+    "kickoff": "Başlama",
+    "localTime": "saatler {zone} dilimine göre"
+  },
+  "errors": {
+    "title": "Bir şeyler ters gitti",
+    "lead": "Sayfa yüklenemedi. Bu genellikle geçicidir.",
+    "retry": "Yeniden yükle",
+    "notFoundTitle": "Sayfa bulunamadı",
+    "notFoundLead": "Adres hatalı olabilir ya da sayfa taşınmış olabilir.",
+    "home": "Ana sayfaya git"
+  },
+  "home": {
+    "eyebrow": "İstatistiksel futbol tahminleri",
+    "title": "Vaat değil, olasılık.",
+    "lead": "Dixon-Coles modeli, eğitildiği liglerdeki her maçı değerlendirir. Her tahmin bitiş düdüğünden sonra sonuçlandırılır ve tutsun tutmasın yayınlanır.",
+    "cta": "Bugünün tahminleri",
+    "ctaSecondary": "Model nasıl çalışır"
+  }
+}

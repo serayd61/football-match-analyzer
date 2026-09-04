@@ -46,6 +46,21 @@ module.exports = {
         caution: '#f59e0b',
         negative: '#ef4444',
         info: '#3b82f6',
+        // ── Public site tokens (scoped under `.site`, see globals.css) ──
+        s: {
+          bg: 'rgb(var(--s-bg) / <alpha-value>)',
+          surface: 'rgb(var(--s-surface) / <alpha-value>)',
+          raised: 'rgb(var(--s-raised) / <alpha-value>)',
+          line: 'rgb(var(--s-line) / <alpha-value>)',
+          ink: 'rgb(var(--s-ink) / <alpha-value>)',
+          muted: 'rgb(var(--s-muted) / <alpha-value>)',
+          brand: 'rgb(var(--s-brand) / <alpha-value>)',
+          'brand-ink': 'rgb(var(--s-brand-ink) / <alpha-value>)',
+          accent: 'rgb(var(--s-accent) / <alpha-value>)',
+          win: 'rgb(var(--s-win) / <alpha-value>)',
+          loss: 'rgb(var(--s-loss) / <alpha-value>)',
+          void: 'rgb(var(--s-void) / <alpha-value>)',
+        },
       },
       borderRadius: {
         'xl2': '1rem',
@@ -55,6 +70,8 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        body: ['var(--font-site-body)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
+        head: ['var(--font-site-head)', 'Barlow Condensed', 'Arial Narrow', 'sans-serif'],
       },
       boxShadow: {
         'elev-1': '0 1px 2px rgba(0,0,0,0.4), 0 1px 1px rgba(0,0,0,0.2)',

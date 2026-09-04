@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "siteName": "Football Analytics",
+    "tagline": "Fussball-Wahrscheinlichkeiten aus einem statistischen Modell, jede Prognose öffentlich abgerechnet.",
+    "description": "Wahrscheinlichkeiten für 1X2, Tore und «Beide Teams treffen» aus einem Dixon-Coles-Modell. Jede Prognose wird abgerechnet und veröffentlicht, Treffer wie Fehlschläge."
+  },
+  "nav": {
+    "predictions": "Prognosen",
+    "results": "Resultate",
+    "performance": "Bilanz",
+    "leagues": "Ligen",
+    "methodology": "Methodik",
+    "about": "Über uns",
+    "menu": "Menü",
+    "close": "Schliessen",
+    "signIn": "Anmelden",
+    "dashboard": "Dashboard",
+    "skipToContent": "Zum Inhalt springen"
+  },
+  "locale": {
+    "label": "Sprache"
+  },
+  "theme": {
+    "label": "Darstellung",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
+  },
+  "footer": {
+    "dataSource": "Daten",
+    "dataSourceText": "Spielpläne, Resultate und Quoten stammen von externen Datenanbietern und können dem Live-Geschehen hinterherhinken. Die Wahrscheinlichkeiten berechnet unser eigenes statistisches Modell.",
+    "responsible": "Verantwortungsvoller Umgang",
+    "responsibleText": "Prognosen sind Wahrscheinlichkeiten, keine Garantien. Nichts auf dieser Seite ist eine Wettempfehlung. Wer wettet, sollte nur einsetzen, was er verlieren kann. Ab 18 Jahren.",
+    "links": "Seite",
+    "privacy": "Datenschutz",
+    "terms": "Nutzungsbedingungen",
+    "contact": "Kontakt",
+    "rights": "© {year} Football Analytics. Alle Rechte vorbehalten."
+  },
+  "common": {
+    "loading": "Wird geladen",
+    "retry": "Erneut versuchen",
+    "back": "Zurück",
+    "empty": "Noch nichts vorhanden",
+    "emptyLead": "Für diese Auswahl gibt es keine Daten. Versuchen Sie ein anderes Datum oder eine andere Liga.",
+    "noData": "k. A.",
+    "updatedAt": "Aktualisiert {time}",
+    "viewAll": "Alle anzeigen",
+    "all": "Alle",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern",
+    "filters": "Filter",
+    "league": "Liga",
+    "date": "Datum",
+    "market": "Markt",
+    "model": "Modell",
+    "market1x2": "1X2",
+    "ou25": "Über/Unter 2.5",
+    "btts": "Beide Teams treffen",
+    "home": "Heim",
+    "draw": "Remis",
+    "away": "Auswärts",
+    "over": "Über",
+    "under": "Unter",
+    "yes": "Ja",
+    "no": "Nein",
+    "won": "Getroffen",
+    "lost": "Verfehlt",
+    "void": "Ungültig",
+    "pending": "Offen",
+    "matches": "{count, plural, =1 {# Spiel} other {# Spiele}}",
+    "kickoff": "Anpfiff",
+    "localTime": "Zeiten in {zone}"
+  },
+  "errors": {
+    "title": "Etwas ist schiefgelaufen",
+    "lead": "Die Seite konnte nicht geladen werden. Das ist meist vorübergehend.",
+    "retry": "Neu laden",
+    "notFoundTitle": "Seite nicht gefunden",
+    "notFoundLead": "Die Adresse ist möglicherweise falsch oder die Seite wurde verschoben.",
+    "home": "Zur Startseite"
+  },
+  "home": {
+    "eyebrow": "Statistische Fussballprognosen",
+    "title": "Wahrscheinlichkeiten statt Versprechen.",
+    "lead": "Ein Dixon-Coles-Modell bewertet jedes Spiel in den Ligen, auf denen es trainiert wurde. Jede Prognose wird nach dem Schlusspfiff abgerechnet und veröffentlicht, ob getroffen oder nicht.",
+    "cta": "Prognosen von heute",
+    "ctaSecondary": "So funktioniert das Modell"
+  }
+}

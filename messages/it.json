@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "siteName": "Football Analytics",
+    "tagline": "Probabilità calcistiche da un modello statistico, con ogni pronostico verificato pubblicamente.",
+    "description": "Probabilità per 1X2, gol e Goal/No Goal da un modello Dixon-Coles. Ogni pronostico viene chiuso e pubblicato, vinto o perso."
+  },
+  "nav": {
+    "predictions": "Pronostici",
+    "results": "Risultati",
+    "performance": "Rendimento",
+    "leagues": "Campionati",
+    "methodology": "Metodologia",
+    "about": "Chi siamo",
+    "menu": "Menu",
+    "close": "Chiudi",
+    "signIn": "Accedi",
+    "dashboard": "Dashboard",
+    "skipToContent": "Vai al contenuto"
+  },
+  "locale": {
+    "label": "Lingua"
+  },
+  "theme": {
+    "label": "Tema",
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Sistema"
+  },
+  "footer": {
+    "dataSource": "Dati",
+    "dataSourceText": "Calendari, risultati e quote provengono da fornitori esterni e possono essere in ritardo rispetto al live. Le probabilità sono calcolate dal nostro modello statistico.",
+    "responsible": "Gioco responsabile",
+    "responsibleText": "I pronostici sono probabilità, non garanzie. Nulla su questo sito è un consiglio di scommessa. Se scommetti, punta solo ciò che puoi permetterti di perdere. Vietato ai minori di 18 anni.",
+    "links": "Sito",
+    "privacy": "Privacy",
+    "terms": "Termini",
+    "contact": "Contatti",
+    "rights": "© {year} Football Analytics. Tutti i diritti riservati."
+  },
+  "common": {
+    "loading": "Caricamento",
+    "retry": "Riprova",
+    "back": "Indietro",
+    "empty": "Ancora nulla qui",
+    "emptyLead": "Non ci sono dati per questa selezione. Prova un'altra data o un altro campionato.",
+    "noData": "n.d.",
+    "updatedAt": "Aggiornato {time}",
+    "viewAll": "Vedi tutto",
+    "all": "Tutti",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "yesterday": "Ieri",
+    "filters": "Filtri",
+    "league": "Campionato",
+    "date": "Data",
+    "market": "Mercato",
+    "model": "Modello",
+    "market1x2": "1X2",
+    "ou25": "Over/Under 2.5",
+    "btts": "Goal/No Goal",
+    "home": "Casa",
+    "draw": "Pareggio",
+    "away": "Trasferta",
+    "over": "Over",
+    "under": "Under",
+    "yes": "Sì",
+    "no": "No",
+    "won": "Vinto",
+    "lost": "Perso",
+    "void": "Annullato",
+    "pending": "In attesa",
+    "matches": "{count, plural, =1 {# partita} other {# partite}}",
+    "kickoff": "Calcio d'inizio",
+    "localTime": "orari in {zone}"
+  },
+  "errors": {
+    "title": "Qualcosa è andato storto",
+    "lead": "Impossibile caricare la pagina. Di solito è un problema temporaneo.",
+    "retry": "Ricarica",
+    "notFoundTitle": "Pagina non trovata",
+    "notFoundLead": "L'indirizzo potrebbe essere errato o la pagina è stata spostata.",
+    "home": "Vai alla home"
+  },
+  "home": {
+    "eyebrow": "Pronostici calcistici statistici",
+    "title": "Probabilità, non promesse.",
+    "lead": "Un modello Dixon-Coles valuta ogni partita dei campionati su cui è addestrato. Ogni pronostico viene chiuso al fischio finale e pubblicato, che sia vinto o perso.",
+    "cta": "Pronostici di oggi",
+    "ctaSecondary": "Come funziona il modello"
+  }
+}
