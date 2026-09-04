@@ -94,6 +94,19 @@ export async function GET(request: NextRequest) {
       .map((r: any) => r.fixture_id),
   );
 
+  // 2b) Yeniden deneme koruması (vercel.json: 06:00 + 09:00). Pencerede zaten
+  // ≥TAKE tam analiz varsa yeni maliyet üretme. 06:00 koşusu veri kaynağı
+  // kesintisinde boş dönerse (2026-09-04: RapidAPI ödeme gecikmesi, 06:01 koşusu
+  // HTTP 429/403 → "no showcase fixtures", vitrin gün boyu boş kaldı) 09:00 koşusu doldurur.
+  if (hasFull.size >= TAKE) {
+    return NextResponse.json({
+      ok: true,
+      tookMs: Date.now() - t0,
+      analyzed: [],
+      reason: `already have ${hasFull.size} full analyses in window`,
+    });
+  }
+
   // 3) En fazla TAKE maç için tam konsensüs (sıralı; süre bütçesi dolunca dur)
   const analyzed: any[] = [];
   const skipped: any[] = [];
