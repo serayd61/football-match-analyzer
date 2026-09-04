@@ -58,6 +58,7 @@ export const config = {
     // Localized public site
     '/',
     '/(en|de|it|tr)/:path*',
+    '/dashboard',
     '/predictions/:path*',
     '/results',
     '/performance',

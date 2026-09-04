@@ -32,9 +32,12 @@ export default function SiteHeader() {
   }, [open]);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
-  // Legacy app routes are not localized — plain anchors on purpose.
-  const authHref = status === 'authenticated' ? '/dashboard' : '/login';
-  const authLabel = status === 'authenticated' ? t('dashboard') : t('signIn');
+  // The dashboard is localized; login is a legacy (unlocalized) route.
+  const authed = status === 'authenticated';
+  const authLabel = authed ? t('dashboard') : t('signIn');
+  const authCls = 'h-8 inline-flex items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90';
+  const AuthLink = ({ className }: { className: string }) =>
+    authed ? <Link href="/dashboard" className={className}>{authLabel}</Link> : <a href="/login" className={className}>{authLabel}</a>;
 
   return (
     <header className="sticky top-0 z-40 border-b border-s-line bg-s-surface/95 backdrop-blur-[2px]">
@@ -63,12 +66,7 @@ export default function SiteHeader() {
         <div className="ml-auto hidden md:flex items-center gap-2">
           <LocaleSwitcher />
           <ThemeToggle />
-          <a
-            href={authHref}
-            className="h-8 inline-flex items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90"
-          >
-            {authLabel}
-          </a>
+          <AuthLink className={authCls} />
         </div>
 
         <button
@@ -100,9 +98,7 @@ export default function SiteHeader() {
           <div className="flex items-center gap-2 border-t border-s-line px-4 py-3">
             <LocaleSwitcher />
             <ThemeToggle />
-            <a href={authHref} className="ml-auto h-8 inline-flex items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink">
-              {authLabel}
-            </a>
+            <AuthLink className={`ml-auto ${authCls}`} />
           </div>
         </div>
       )}
