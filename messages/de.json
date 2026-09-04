@@ -73,7 +73,9 @@
     "kickoff": "Anpfiff",
     "localTime": "Zeiten in {zone}",
     "ou25Short": "Ü/U 2.5",
-    "bttsShort": "BTT"
+    "bttsShort": "BTT",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "contents": "Inhalt"
   },
   "errors": {
     "title": "Etwas ist schiefgelaufen",
@@ -285,5 +287,228 @@
     "recentAll": "Alle Resultate",
     "recentEmpty": "Noch keine abgerechneten Spiele.",
     "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung."
+  },
+  "docs": {
+    "methodology": {
+      "title": "Methodik",
+      "lead": "Wie die Wahrscheinlichkeiten auf dieser Seite entstehen, abgerechnet und bewertet werden. So geschrieben, dass sich jede Zahl nachprüfen lässt.",
+      "sections": [
+        {
+          "h": "1. Das Modell",
+          "p": [
+            "Die Spielwahrscheinlichkeiten stammen aus einem Dixon-Coles-Modell. Jedes Team erhält eine Angriffs- und eine Abwehrstärke, dazu kommt ein Heimvorteil pro Liga. Aus diesen Parametern folgen die erwarteten Tore beider Seiten; die Resultatverteilung besteht aus zwei Poisson-Zählungen mit der Dixon-Coles-Korrektur, die die Wahrscheinlichkeiten von 0:0, 1:0, 0:1 und 1:1 richtigstellt, welche reines Poisson falsch schätzt.",
+            "Die Parameter werden pro Liga per Maximum-Likelihood auf Resultaten der letzten 540 Tage gefittet. Ältere Spiele zählen weniger: Ein Resultat verliert alle 180 Tage die Hälfte seines Gewichts, sodass die aktuelle Form dominiert, ohne dass die letzte Saison ganz verschwindet.",
+            "Das Resultatraster reicht bis 10 Tore pro Seite. Daraus lesen wir 1X2, Über/Unter-Linien, «beide Teams treffen», die wahrscheinlichsten Resultate und die Deckungswahrscheinlichkeiten für Asian Handicaps ab. Die 1X2-Hauptwerte nutzen die Dixon-Coles-Korrektur; das Torraster auf einer Spielseite ist das rohe Poisson-Raster, weshalb dessen 1X2-Verteilung um ein bis zwei Punkte abweichen kann."
+          ]
+        },
+        {
+          "h": "2. Was nicht im Modell steckt",
+          "p": [
+            "- Aufstellungen, Verletzungen und Sperren\n- Expected Goals (xG) oder Schussdaten\n- Wetter, Reisen, Terminstau, Motivation\n- Wettmarktpreise (Quoten werden zum Vergleich erfasst, fliessen aber nie in die Wahrscheinlichkeiten ein)",
+            "Das ist Absicht. Ein reines Resultatmodell lässt sich leicht prüfen und hängt von keinen bezahlten Daten ab. Genau deshalb ist das Modell zu Saisonbeginn und bei Cupspielen auf neutralem Platz am schwächsten."
+          ]
+        },
+        {
+          "h": "3. Abdeckung",
+          "p": [
+            "Prognosen erscheinen nur für Ligen, auf denen das Modell gefittet wurde. Eine Liga kommt dazu, wenn im Trainingsfenster genug Resultate vorliegen (mindestens 120 Spiele), sonst bleibt sie draussen. Spiele ausserhalb der abgedeckten Ligen können im Spielplan auftauchen, tragen aber keine Modellbewertung und zählen nie zur Bilanz.",
+            "Die Liga-Kennungen des Feeds wechseln jede Saison, darum wird eine Liga über Name und Ländercode erkannt, mit einer festen Liste kanonischer Kennungen als Rückfallebene."
+          ]
+        },
+        {
+          "h": "4. Tipps, Konfidenz und Kalibrierung",
+          "p": [
+            "Der Tipp ist der Ausgang mit der höchsten Modellwahrscheinlichkeit. Die daneben gezeigte Konfidenz ist diese Wahrscheinlichkeit nach der Kalibrierung.",
+            "Die Kalibrierung ist eine isotonische Regression (Pool-Adjacent-Violators) auf abgerechneten Tipps: Sie bildet die rohe Modellwahrscheinlichkeit auf den Anteil der Tipps ab, die auf diesem Niveau tatsächlich eintrafen. Die Kurve ist monoton, hat höchstens 40 Stützstellen und wird erst angewendet, wenn mindestens 30 abgerechnete Tipps vorliegen. Sie wird laufend neu gefittet, sodass dieselbe rohe Wahrscheinlichkeit mit der Zeit leicht andere kalibrierte Werte ergeben kann. Spielseiten zeigen beide Zahlen.",
+            "Bei Über/Unter 2.5 und «beide Teams treffen» ist der Tipp die vom Modell bevorzugte Seite; ihre kalibrierten Wahrscheinlichkeiten nutzen eigene, pro Markt gefittete Kurven."
+          ]
+        },
+        {
+          "h": "5. Abrechnung",
+          "p": [
+            "Ein stündlicher Job vergleicht jede veröffentlichte Prognose mit dem Endresultat, sobald der Feed das Spiel als beendet meldet. Ein 1X2-Tipp gilt als gewonnen, wenn der tatsächliche Ausgang übereinstimmt; Tormarkt-Tipps werden am Endresultat abgerechnet. Prognosen werden nach dem Anpfiff nie bearbeitet und nach der Abrechnung nie entfernt.",
+            "Spiele, die als beendet gelten, aber kein brauchbares Resultat haben (verschoben, abgebrochen oder im Feed fehlend), bleiben aus der Bilanz und werden auf der Resultatseite separat mit ihrer Anzahl ausgewiesen."
+          ]
+        },
+        {
+          "h": "6. Wie die Bilanz bewertet wird",
+          "p": [
+            "- Trefferquote: Anteil der abgerechneten 1X2-Tipps, die gewonnen haben.\n- Brier-Score (1X2): Mittel über alle Spiele der Summe der quadrierten Fehler über die drei Ausgänge; 0 ist perfekt, 0.667 ist Zufall, und margenbereinigte Marktpreise erreichen in Topligen typischerweise etwa 0.60.\n- Brier-Score (Tormärkte): binäre Variante, bei der 0.25 einem Münzwurf entspricht.\n- Kalibrierungstabelle: abgerechnete Tipps nach kalibrierter Konfidenz gruppiert, mittlere vorhergesagte Wahrscheinlichkeit gegen beobachtete Trefferquote.\n- ROI bei fixem Einsatz: eine Einheit auf den Modelltipp zur letzten vor Anpfiff erfassten Quote (Schluss-, sonst Eröffnungsquote), summiert über Spiele mit Quotenerfassung. Renditen werden vor Buchmacherlimiten oder Kontobeschränkungen gezeigt, mit denen reale Wetter konfrontiert sind.",
+            "Alle Kennzahlen werden aus denselben abgerechneten Zeilen berechnet, die auf der Resultatseite stehen, stündlich neu, und schliessen Verlustmonate ein."
+          ]
+        },
+        {
+          "h": "7. Datenquellen und Aktualität",
+          "p": [
+            "Spielpläne, Resultate und Teamdaten stammen aus einem Fussball-Datenfeed eines Drittanbieters. Quotenerfassungen stammen aus einem Buchmacher-Feed und werden bei Eröffnung und kurz vor Anpfiff aufgezeichnet. Die öffentliche Seite liest aus unserer eigenen Datenbank und aktualisiert Prognosen alle 15 Minuten, Resultate alle 5 Minuten und Aggregate stündlich. Anpfiffzeiten erscheinen in der Zeitzone Ihres Browsers, mit Europe/Zurich als Rückfall."
+          ]
+        },
+        {
+          "h": "8. Bekannte Grenzen",
+          "p": [
+            "- Die öffentliche Bilanz beginnt Ende Juli 2026; die abgerechnete Stichprobe ist noch klein, und Werte einzelner Ligen schwanken.\n- Quotenerfassungen gibt es erst ab Mitte August 2026 und nicht für jedes Spiel, darum ist das ROI-Fenster kürzer als die Bilanz.\n- Der Feed hinkt gelegentlich hinterher oder lässt ein Resultat aus; solche Spiele bleiben offen, bis es eintrifft.\n- Wahrscheinlichkeiten sind Schätzungen. Ein 60-Prozent-Tipp verliert erwartungsgemäss zwei von fünf Mal."
+          ]
+        }
+      ]
+    },
+    "about": {
+      "title": "Über uns",
+      "lead": "Was diese Seite ist, wer sie betreibt, und was sie bewusst nicht ist.",
+      "sections": [
+        {
+          "h": "Was sie ist",
+          "p": [
+            "footballanalytics.pro veröffentlicht Spielwahrscheinlichkeiten aus einem statistischen Dixon-Coles-Modell für einen festen Satz von Ligen, rechnet jede Prognose am Endresultat ab und hält die gesamte Bilanz öffentlich: Trefferquote, Brier-Score, Kalibrierung und Rendite bei fixem Einsatz, einschliesslich der Monate, die schlecht liefen.",
+            "Die Seite richtet sich an Leute, die den Output eines Modells und seine Bilanz nebeneinander sehen wollen, im Format einer Statistikseite: Tabellen, Prozentwerte und ein Diagramm dort, wo es sich verdient."
+          ]
+        },
+        {
+          "h": "Was sie nicht ist",
+          "p": [
+            "Sie ist kein Tippdienst, und nichts auf der Seite ist eine Wettempfehlung. Die Wahrscheinlichkeiten sind Schätzungen eines Modells, das nur vergangene Resultate kennt. Sie sind keine Garantien, und ein positiver Monat sagt für sich wenig; die Kalibrierungstabelle und die Stichprobengrössen sind der ehrliche Blick.",
+            "Es gibt keine versteckten oder nachbearbeiteten Tipps. Wurde eine Prognose veröffentlicht, steht sie auf der Resultatseite."
+          ]
+        },
+        {
+          "h": "Wer sie betreibt",
+          "p": [
+            "Die Seite wird von swissdigital.life mit Sitz in der Schweiz betrieben. Kontakt: info@swissdigital.life. Fragen zu einer bestimmten Zahl sind willkommen; wenn etwas in der Bilanz falsch aussieht, hören wir das lieber."
+          ]
+        },
+        {
+          "h": "Daten",
+          "p": [
+            "Spielpläne, Resultate und Wappen stammen von Drittanbietern und können dem Live-Geschehen hinterherhinken. Die Wahrscheinlichkeiten sind unsere eigenen. Modell, Abrechnungsregeln und Kennzahldefinitionen stehen auf der Methodikseite."
+          ]
+        },
+        {
+          "h": "Verantwortungsvoller Umgang",
+          "p": [
+            "Sportwetten bergen ein reales Verlustrisiko. Diese Seite ist für Erwachsene (ab 18 Jahren) gedacht. Wer wettet, setzt nur ein, was er sich leisten kann zu verlieren, und holt sich Hilfe, wenn Spielen keine freie Wahl mehr ist: In der Schweiz ist die Helpline von Sucht Schweiz unter 0800 040 080 erreichbar."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "lead": "Welche personenbezogenen Daten diese Seite erhebt, warum, und welche Rechte Sie nach Schweizer und EU-Datenschutzrecht haben.",
+      "sections": [
+        {
+          "h": "1. Verantwortliche Stelle",
+          "p": [
+            "footballanalytics.pro («der Dienst», «wir») wird von swissdigital.life mit Sitz in der Schweiz betrieben. Bei Fragen zu dieser Erklärung oder zu Ihren Daten schreiben Sie an info@swissdigital.life. Diese Erklärung folgt dem Schweizer Datenschutzgesetz (DSG) und, soweit auf Besucher aus der EU/dem EWR anwendbar, der DSGVO."
+          ]
+        },
+        {
+          "h": "2. Welche Daten wir erheben",
+          "p": [
+            "- Öffentliche Seiten: Serverprotokolle (IP-Adresse, User-Agent, aufgerufene Seite, Zeitstempel), die unser Hosting-Anbieter kurz zur Sicherheit und Fehlerdiagnose aufbewahrt. Aggregierte, cookielose Seitenaufruf-Statistiken.\n- Kontoinhaber: E-Mail-Adresse und Name aus der Registrierung, Sprach- und Darstellungseinstellungen sowie Ihr Abonnementstatus.\n- Zahlungen: über Stripe abgewickelt. Kartendaten sehen oder speichern wir nie.\n- Kontaktformular: Name, E-Mail-Adresse und Nachricht.\n- Werbung: Ist das Google-Ads-Tag aktiv, kann Google ein Cookie zur Messung von Anzeigen-Conversions setzen. Auf dieser Seite schalten wir keine Anzeigen."
+          ]
+        },
+        {
+          "h": "3. Warum wir sie verarbeiten",
+          "p": [
+            "- Um die aufgerufenen Seiten auszuliefern und den Dienst sicher zu halten (berechtigtes Interesse).\n- Um Ihr Konto und Abonnement zu verwalten (Vertragserfüllung).\n- Um Ihre Nachrichten zu beantworten (berechtigtes Interesse).\n- Um die aggregierte Nutzung und Werbekampagnen zu messen (Einwilligung, wo erforderlich, sonst berechtigtes Interesse).\n- Um gesetzliche Pflichten zu erfüllen."
+          ]
+        },
+        {
+          "h": "4. Auftragsverarbeiter",
+          "p": [
+            "- Vercel: Hosting und cookielose Statistik\n- Supabase: Datenbank und Authentifizierung\n- Stripe: Zahlungen\n- Resend: Transaktions-E-Mails\n- Google: Ads-Conversion-Messung, sofern aktiv",
+            "Diese Anbieter verarbeiten Daten in unserem Auftrag auf vertraglicher Grundlage. Einige sitzen ausserhalb der Schweiz und der EU; Übermittlungen stützen sich auf Angemessenheitsbeschlüsse oder Standardvertragsklauseln. Wir verkaufen keine personenbezogenen Daten."
+          ]
+        },
+        {
+          "h": "5. Cookies und lokaler Speicher",
+          "p": [
+            "Die öffentliche Seite speichert Ihr gewähltes Farbschema und Ihre Sprache im lokalen Speicher Ihres Browsers; das verlässt Ihr Gerät nie. Angemeldete Bereiche nutzen ein Sitzungs-Cookie. Die Google-Ads-Messung verwendet, sofern aktiv, Cookies, die Sie im Browser ablehnen oder löschen können."
+          ]
+        },
+        {
+          "h": "6. Aufbewahrung",
+          "p": [
+            "Serverprotokolle bewahrt der Hosting-Anbieter kurzzeitig auf. Kontodaten bleiben, solange Ihr Konto besteht, und werden innert angemessener Frist gelöscht, nachdem Sie die Schliessung verlangt haben, sofern das Gesetz keine längere Aufbewahrung verlangt (etwa Buchhaltungsunterlagen)."
+          ]
+        },
+        {
+          "h": "7. Ihre Rechte",
+          "p": [
+            "Sie können Auskunft, Berichtigung, Löschung oder Einschränkung Ihrer personenbezogenen Daten verlangen, einer Verarbeitung auf Basis berechtigten Interesses widersprechen, die Herausgabe der uns gegebenen Daten verlangen und eine Einwilligung jederzeit widerrufen. Schreiben Sie an die obige Adresse. Personen in der EU/dem EWR können sich zudem an ihre Aufsichtsbehörde wenden; Personen in der Schweiz an den Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB)."
+          ]
+        },
+        {
+          "h": "8. Minderjährige",
+          "p": [
+            "Der Dienst richtet sich an Erwachsene. Wir erheben wissentlich keine Daten von Personen unter 18 Jahren."
+          ]
+        },
+        {
+          "h": "9. Änderungen",
+          "p": [
+            "Wir aktualisieren diese Erklärung, wenn sich der Dienst oder das Recht ändert, und veröffentlichen die aktuelle Fassung mit dem obigen Datum immer hier."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Nutzungsbedingungen",
+      "lead": "Die Bedingungen für die Nutzung von footballanalytics.pro. Kurzfassung: Die Zahlen sind Schätzungen, was Sie damit tun, liegt in Ihrer Verantwortung, und Sie müssen volljährig sein.",
+      "sections": [
+        {
+          "h": "1. Geltungsbereich",
+          "p": [
+            "Diese Bedingungen regeln die Nutzung von footballanalytics.pro («der Dienst»), betrieben von swissdigital.life, Schweiz (info@swissdigital.life). Mit der Nutzung des Dienstes akzeptieren Sie sie. Für kostenpflichtige Funktionen gelten zusätzlich die beim Kauf angezeigten Bedingungen."
+          ]
+        },
+        {
+          "h": "2. Nur Information, keine Beratung",
+          "p": [
+            "Der Dienst veröffentlicht Wahrscheinlichkeiten aus einem statistischen Modell und eine Bilanz darüber, wie frühere Prognosen abgerechnet wurden. Das ist Information, keine Beratung. Nichts im Dienst ist eine Empfehlung zu wetten, ein Glücksspielangebot oder eine Garantie für einen Ausgang oder eine Rendite. Vergangene Leistung, einschliesslich einer ausgewiesenen positiven Rendite, sagt nichts über künftige Ergebnisse aus."
+          ]
+        },
+        {
+          "h": "3. Alter und Rechtsordnung",
+          "p": [
+            "Sie müssen mindestens 18 Jahre alt sein, um den Dienst zu nutzen. Es liegt in Ihrer Verantwortung zu wissen, ob Sportwetten an Ihrem Wohnort erlaubt sind, und das lokale Recht einzuhalten. Der Dienst nimmt keine Wetten an und platziert keine."
+          ]
+        },
+        {
+          "h": "4. Keine Gewährleistung",
+          "p": [
+            "Der Dienst wird bereitgestellt, wie er ist. Spielpläne, Resultate und Quoten stammen aus Drittquellen und können unvollständig, verspätet oder falsch sein; das Modell kann irren. Wir gewährleisten weder Verfügbarkeit noch Richtigkeit noch Eignung für einen bestimmten Zweck und können jeden Teil des Dienstes jederzeit ändern oder einstellen."
+          ]
+        },
+        {
+          "h": "5. Haftung",
+          "p": [
+            "Soweit das Schweizer Recht es zulässt, haften wir nicht für Schäden aus der Nutzung des Dienstes, einschliesslich finanzieller Verluste aus Wettentscheiden, entgangenen Gewinnen oder indirekten Schäden. Die zwingende Haftung für Absicht oder grobe Fahrlässigkeit bleibt unberührt."
+          ]
+        },
+        {
+          "h": "6. Zulässige Nutzung",
+          "p": [
+            "Sie dürfen Seiten für den persönlichen, nicht kommerziellen Gebrauch ansehen und teilen. Sie dürfen die Daten nicht automatisiert abgreifen, massenhaft herunterladen oder weiterverkaufen, den Dienst nicht stören und seinen Output nicht als eigenen oder als garantiertes Produkt ausgeben. Teamnamen und Wappen gehören ihren Inhabern."
+          ]
+        },
+        {
+          "h": "7. Konten und Abonnemente",
+          "p": [
+            "Konten sind persönlich und sicher zu verwahren. Abonnementpreise, Abrechnungsperioden und Kündigung stehen auf der Preisseite und werden beim Kauf bestätigt; Zahlungen wickelt Stripe ab. Konten, die gegen diese Bedingungen verstossen, können wir sperren."
+          ]
+        },
+        {
+          "h": "8. Verantwortungsvolles Spielen",
+          "p": [
+            "Wer wettet, setzt sich Limiten und nur ein, was er sich leisten kann zu verlieren. Hilfe gibt es: in der Schweiz über Sucht Schweiz (0800 040 080), anderswo über nationale Beratungsstellen."
+          ]
+        },
+        {
+          "h": "9. Anwendbares Recht",
+          "p": [
+            "Diese Bedingungen unterstehen Schweizer Recht. Gerichtsstand ist der Sitz des Betreibers in der Schweiz, vorbehältlich zwingender Konsumentenschutzvorschriften, die Ihnen einen anderen Gerichtsstand einräumen. Wir können diese Bedingungen aktualisieren; die aktuelle Fassung mit Datum steht immer auf dieser Seite."
+          ]
+        }
+      ]
+    }
   }
 }

@@ -73,7 +73,9 @@
     "kickoff": "Calcio d'inizio",
     "localTime": "orari in {zone}",
     "ou25Short": "O/U 2.5",
-    "bttsShort": "GG/NG"
+    "bttsShort": "GG/NG",
+    "lastUpdated": "Ultimo aggiornamento",
+    "contents": "Indice"
   },
   "errors": {
     "title": "Qualcosa è andato storto",
@@ -285,5 +287,228 @@
     "recentAll": "Tutti i risultati",
     "recentEmpty": "Nessuna partita chiusa.",
     "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione."
+  },
+  "docs": {
+    "methodology": {
+      "title": "Metodologia",
+      "lead": "Come nascono, vengono chiuse e valutate le probabilità di questo sito. Scritto in modo che ogni numero si possa verificare.",
+      "sections": [
+        {
+          "h": "1. Il modello",
+          "p": [
+            "Le probabilità di partita provengono da un modello Dixon-Coles. Ogni squadra ha una forza d'attacco e una di difesa, e c'è un termine di vantaggio casalingo per campionato. Da questi parametri derivano i gol attesi delle due squadre; la distribuzione dei risultati è una coppia di conteggi di Poisson con la correzione Dixon-Coles, che sistema le probabilità di 0-0, 1-0, 0-1 e 1-1, che il Poisson semplice sbaglia.",
+            "I parametri sono stimati per campionato con la massima verosimiglianza sui risultati degli ultimi 540 giorni. Le partite più vecchie pesano meno: un risultato perde metà del suo peso ogni 180 giorni, così la forma attuale domina la stima senza che la stagione scorsa sparisca del tutto.",
+            "La griglia dei risultati arriva a 10 gol per squadra. Da essa leggiamo 1X2, linee over/under, Goal/No Goal, i risultati più probabili e le probabilità di copertura degli handicap asiatici. I valori 1X2 principali usano la correzione Dixon-Coles; la griglia dei gol nella pagina di una partita è la griglia di Poisson grezza, ed è per questo che la sua ripartizione 1X2 può differire di uno o due punti."
+          ]
+        },
+        {
+          "h": "2. Cosa non c'è nel modello",
+          "p": [
+            "- Formazioni, infortuni e squalifiche\n- Expected goals (xG) o dati sui tiri\n- Meteo, trasferte, calendario fitto, motivazioni\n- Prezzi del mercato delle scommesse (le quote vengono registrate per confronto, mai usate nelle probabilità)",
+            "È una scelta. Un modello basato solo sui risultati è facile da verificare e non dipende da dati a pagamento. È anche il motivo per cui il modello è più debole a inizio stagione e nelle partite di coppa in campo neutro."
+          ]
+        },
+        {
+          "h": "3. Copertura",
+          "p": [
+            "I pronostici sono pubblicati solo per i campionati su cui il modello è stato stimato. Un campionato viene aggiunto quando ha abbastanza risultati nella finestra di addestramento (almeno 120 partite) e resta fuori altrimenti. Le partite fuori dai campionati coperti possono comparire nel calendario ma non hanno valutazione del modello e non entrano mai nel registro.",
+            "Gli identificativi dei campionati nel feed cambiano ogni stagione, quindi un campionato viene riconosciuto da nome e codice paese, con una lista fissa di identificativi canonici come riserva."
+          ]
+        },
+        {
+          "h": "4. Scelte, confidenza e calibrazione",
+          "p": [
+            "La scelta è l'esito con la probabilità più alta secondo il modello. La confidenza mostrata accanto è quella probabilità dopo la calibrazione.",
+            "La calibrazione è una regressione isotonica (pool-adjacent-violators) stimata sulle scelte chiuse: associa la probabilità grezza del modello alla quota di scelte che a quel livello si sono davvero realizzate. La curva è monotona, usa al massimo 40 nodi e viene applicata solo quando esistono almeno 30 scelte chiuse. Viene ristimata man mano che arrivano i risultati, quindi la stessa probabilità grezza può corrispondere nel tempo a valori calibrati leggermente diversi. Le pagine delle partite mostrano entrambi i numeri.",
+            "Per Over/Under 2.5 e Goal/No Goal la scelta è il lato favorito dal modello; le loro probabilità calibrate usano curve separate stimate per mercato."
+          ]
+        },
+        {
+          "h": "5. Chiusura",
+          "p": [
+            "Un processo orario confronta ogni pronostico pubblicato con il risultato finale non appena il feed segnala la partita conclusa. Una scelta 1X2 è vinta quando l'esito reale coincide; le scelte sui mercati gol sono chiuse in base al risultato finale. I pronostici non vengono mai modificati dopo il calcio d'inizio né rimossi dopo la chiusura.",
+            "Le partite segnate come concluse ma senza un risultato utilizzabile (rinviate, sospese o assenti dal feed) restano fuori dal registro e sono indicate a parte, con il loro numero, nella pagina dei risultati."
+          ]
+        },
+        {
+          "h": "6. Come viene valutato il registro",
+          "p": [
+            "- Percentuale di successo: quota delle scelte 1X2 chiuse che hanno vinto.\n- Brier score (1X2): media sulle partite della somma degli errori quadratici sui tre esiti; 0 è perfetto, 0.667 è un tiro a caso, e i prezzi di mercato al netto del margine ottengono di norma circa 0.60 nei campionati maggiori.\n- Brier score (mercati gol): versione binaria, dove 0.25 è un lancio di moneta.\n- Tabella di calibrazione: scelte chiuse raggruppate per confidenza calibrata, con la probabilità media prevista a confronto con il successo osservato.\n- ROI a puntata fissa: un'unità sulla scelta del modello all'ultima quota registrata prima del calcio d'inizio (chiusura, altrimenti apertura), sommata sulle partite con quota registrata. I rendimenti sono mostrati al lordo dei limiti dei bookmaker o delle restrizioni sui conti che gli scommettitori reali incontrano.",
+            "Tutti i valori sono calcolati dalle stesse righe chiuse mostrate nella pagina dei risultati, ricalcolati ogni ora, e includono i mesi in perdita."
+          ]
+        },
+        {
+          "h": "7. Fonti dei dati e tempi",
+          "p": [
+            "Calendari, risultati e dati delle squadre provengono da un feed calcistico di terze parti. Le quote provengono da un feed di bookmaker e sono registrate all'apertura e poco prima del calcio d'inizio. Il sito pubblico legge dal nostro database e aggiorna i pronostici ogni 15 minuti, i risultati ogni 5 minuti e gli aggregati ogni ora. Gli orari sono mostrati nel fuso orario del tuo browser, con Europe/Zurich come riserva."
+          ]
+        },
+        {
+          "h": "8. Limiti noti",
+          "p": [
+            "- Il registro pubblico parte da fine luglio 2026; il campione chiuso è ancora piccolo e i valori per campionato oscillano.\n- Le quote esistono solo da metà agosto 2026 e non per ogni partita, quindi la finestra del ROI è più corta del registro.\n- Il feed a volte ritarda o omette un risultato; quelle partite restano aperte finché non arriva.\n- Le probabilità sono stime. Una scelta al 60% è attesa perdere due volte su cinque."
+          ]
+        }
+      ]
+    },
+    "about": {
+      "title": "Chi siamo",
+      "lead": "Cos'è questo sito, chi lo gestisce e cosa, di proposito, non è.",
+      "sections": [
+        {
+          "h": "Cos'è",
+          "p": [
+            "footballanalytics.pro pubblica probabilità di partita da un modello statistico Dixon-Coles per un insieme fisso di campionati, chiude ogni pronostico sul risultato finale e tiene pubblico l'intero registro: percentuale di successo, Brier score, calibrazione e rendimento a puntata fissa, compresi i mesi andati male.",
+            "Il sito è pensato per chi vuole vedere l'output di un modello e il suo storico fianco a fianco, nel formato di un sito di statistiche: tabelle, percentuali e un grafico dove serve davvero."
+          ]
+        },
+        {
+          "h": "Cosa non è",
+          "p": [
+            "Non è un servizio di pronostici a pagamento, e nulla sul sito è un invito a scommettere. Le probabilità sono stime di un modello che conosce solo i risultati passati. Non sono garanzie, e un mese positivo da solo dice poco; la tabella di calibrazione e le dimensioni del campione sono la lettura onesta.",
+            "Non ci sono scelte nascoste o modificate. Se un pronostico è stato pubblicato, è nella pagina dei risultati."
+          ]
+        },
+        {
+          "h": "Chi lo gestisce",
+          "p": [
+            "Il sito è gestito da swissdigital.life, con sede in Svizzera. Contatto: info@swissdigital.life. Le domande su un numero specifico sono benvenute; se qualcosa nel registro sembra sbagliato, preferiamo saperlo."
+          ]
+        },
+        {
+          "h": "Dati",
+          "p": [
+            "Calendari, risultati e stemmi provengono da fornitori terzi e possono essere in ritardo rispetto agli eventi dal vivo. Le probabilità sono nostre. Modello, regole di chiusura e definizioni delle metriche sono nella pagina della metodologia."
+          ]
+        },
+        {
+          "h": "Uso responsabile",
+          "p": [
+            "Le scommesse sportive comportano un rischio reale di perdita economica. Questo sito è destinato agli adulti (18+). Se scommetti, punta solo ciò che puoi permetterti di perdere e chiedi aiuto se il gioco smette di essere una scelta: in Svizzera la linea di Dipendenze Svizzera risponde allo 0800 040 080."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Informativa sulla privacy",
+      "lead": "Quali dati personali raccoglie questo sito, perché, e i tuoi diritti secondo il diritto svizzero ed europeo sulla protezione dei dati.",
+      "sections": [
+        {
+          "h": "1. Titolare",
+          "p": [
+            "footballanalytics.pro (\"il Servizio\", \"noi\") è gestito da swissdigital.life, con sede in Svizzera. Per qualsiasi domanda su questa informativa o sui tuoi dati scrivi a info@swissdigital.life. L'informativa segue la Legge federale svizzera sulla protezione dei dati (LPD) e, dove si applica ai visitatori dall'UE/SEE, il GDPR."
+          ]
+        },
+        {
+          "h": "2. Dati che raccogliamo",
+          "p": [
+            "- Pagine pubbliche: log del server (indirizzo IP, user agent, pagina richiesta, data e ora) conservati brevemente dal nostro provider di hosting per sicurezza e diagnosi degli errori. Statistiche aggregate di visualizzazione senza cookie.\n- Titolari di account: l'indirizzo email e il nome forniti alla registrazione, le preferenze di lingua e tema, e lo stato dell'abbonamento.\n- Pagamenti: elaborati da Stripe. Non vediamo né conserviamo mai i dati della carta.\n- Modulo di contatto: nome, indirizzo email e messaggio.\n- Pubblicità: se il tag Google Ads è attivo, Google può impostare un cookie per misurare le conversioni. Su questo sito non mostriamo annunci."
+          ]
+        },
+        {
+          "h": "3. Perché li trattiamo",
+          "p": [
+            "- Per fornire le pagine richieste e mantenere sicuro il Servizio (interesse legittimo).\n- Per gestire account e abbonamento (esecuzione del contratto).\n- Per rispondere ai tuoi messaggi (interesse legittimo).\n- Per misurare l'uso aggregato e le campagne pubblicitarie (consenso dove richiesto, altrimenti interesse legittimo).\n- Per adempiere a obblighi di legge."
+          ]
+        },
+        {
+          "h": "4. Responsabili del trattamento",
+          "p": [
+            "- Vercel: hosting e statistiche senza cookie\n- Supabase: database e autenticazione\n- Stripe: pagamenti\n- Resend: email transazionali\n- Google: misurazione delle conversioni Ads, se attiva",
+            "Questi fornitori trattano i dati per nostro conto su base contrattuale. Alcuni hanno sede fuori dalla Svizzera e dall'UE; i trasferimenti si basano su decisioni di adeguatezza o clausole contrattuali standard. Non vendiamo dati personali."
+          ]
+        },
+        {
+          "h": "5. Cookie e archiviazione locale",
+          "p": [
+            "Il sito pubblico salva tema e lingua scelti nell'archiviazione locale del tuo browser; questo dato non lascia mai il tuo dispositivo. Le aree con accesso usano un cookie di sessione. La misurazione Google Ads, se attiva, usa cookie che puoi rifiutare o cancellare nel browser."
+          ]
+        },
+        {
+          "h": "6. Conservazione",
+          "p": [
+            "I log del server sono conservati per breve tempo dal provider di hosting. I dati dell'account restano finché l'account esiste e vengono cancellati entro un periodo ragionevole dopo la richiesta di chiusura, salvo obblighi di legge che impongano una conservazione più lunga (per esempio i documenti contabili)."
+          ]
+        },
+        {
+          "h": "7. I tuoi diritti",
+          "p": [
+            "Puoi chiedere l'accesso, la rettifica, la cancellazione o la limitazione dei tuoi dati personali, opporti al trattamento basato sull'interesse legittimo, richiedere la portabilità dei dati che ci hai fornito e revocare il consenso in qualsiasi momento. Scrivi all'indirizzo sopra. I residenti nell'UE/SEE possono anche rivolgersi alla propria autorità di controllo; i residenti in Svizzera all'Incaricato federale della protezione dei dati e della trasparenza (IFPDT)."
+          ]
+        },
+        {
+          "h": "8. Minori",
+          "p": [
+            "Il Servizio è destinato agli adulti. Non raccogliamo consapevolmente dati di persone sotto i 18 anni."
+          ]
+        },
+        {
+          "h": "9. Modifiche",
+          "p": [
+            "Aggiorniamo questa informativa quando cambiano il Servizio o la legge e pubblichiamo sempre qui la versione corrente, con la data indicata sopra."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Condizioni d'uso",
+      "lead": "Le condizioni per usare footballanalytics.pro. In breve: i numeri sono stime, sei responsabile di ciò che ne fai, e devi essere maggiorenne.",
+      "sections": [
+        {
+          "h": "1. Ambito",
+          "p": [
+            "Queste condizioni regolano l'uso di footballanalytics.pro (\"il Servizio\"), gestito da swissdigital.life, Svizzera (info@swissdigital.life). Usando il Servizio le accetti. Le funzioni a pagamento sono inoltre soggette alle condizioni mostrate all'acquisto."
+          ]
+        },
+        {
+          "h": "2. Solo informazione, nessun consiglio",
+          "p": [
+            "Il Servizio pubblica probabilità prodotte da un modello statistico e un registro di come i pronostici passati sono stati chiusi. È informazione, non consulenza. Nulla nel Servizio è una raccomandazione a scommettere, un'offerta di gioco d'azzardo o una garanzia di esito o rendimento. Le prestazioni passate, compreso qualsiasi rendimento positivo mostrato, non indicano risultati futuri."
+          ]
+        },
+        {
+          "h": "3. Età e giurisdizione",
+          "p": [
+            "Devi avere almeno 18 anni per usare il Servizio. È tua responsabilità sapere se le scommesse sportive sono legali dove vivi e rispettare la legge locale. Il Servizio non accetta né piazza scommesse."
+          ]
+        },
+        {
+          "h": "4. Nessuna garanzia",
+          "p": [
+            "Il Servizio è fornito così com'è. Calendari, risultati e quote provengono da fonti terze e possono essere incompleti, in ritardo o errati; il modello può sbagliare. Non garantiamo disponibilità, accuratezza o idoneità a uno scopo, e possiamo modificare o interrompere qualsiasi parte del Servizio in ogni momento."
+          ]
+        },
+        {
+          "h": "5. Responsabilità",
+          "p": [
+            "Nei limiti consentiti dal diritto svizzero, non rispondiamo di perdite derivanti dall'uso del Servizio, comprese perdite economiche da decisioni di scommessa, mancati guadagni o danni indiretti. Resta ferma la responsabilità inderogabile per dolo o colpa grave."
+          ]
+        },
+        {
+          "h": "6. Uso consentito",
+          "p": [
+            "Puoi consultare e condividere le pagine per uso personale e non commerciale. Non puoi estrarre automaticamente, scaricare in massa o rivendere i dati, interferire con il Servizio, né presentare il suo output come tuo o come prodotto garantito. Nomi e stemmi delle squadre appartengono ai rispettivi titolari."
+          ]
+        },
+        {
+          "h": "7. Account e abbonamenti",
+          "p": [
+            "Gli account sono personali e vanno tenuti al sicuro. Prezzi, periodi di fatturazione e disdetta degli abbonamenti sono indicati nella pagina dei prezzi e confermati all'acquisto; i pagamenti sono gestiti da Stripe. Possiamo sospendere gli account che violano queste condizioni."
+          ]
+        },
+        {
+          "h": "8. Gioco responsabile",
+          "p": [
+            "Se scegli di scommettere, fissa dei limiti e punta solo ciò che puoi permetterti di perdere. L'aiuto esiste: in Svizzera tramite Dipendenze Svizzera (0800 040 080), altrove tramite le linee nazionali."
+          ]
+        },
+        {
+          "h": "9. Legge applicabile",
+          "p": [
+            "Queste condizioni sono regolate dal diritto svizzero. Il foro competente è la sede del gestore in Svizzera, fatte salve le norme inderogabili a tutela dei consumatori che ti riconoscono un foro diverso. Possiamo aggiornare queste condizioni; la versione corrente con la sua data è sempre pubblicata in questa pagina."
+          ]
+        }
+      ]
+    }
   }
 }

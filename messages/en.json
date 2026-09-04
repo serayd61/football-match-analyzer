@@ -73,7 +73,9 @@
     "kickoff": "Kick-off",
     "localTime": "times shown in {zone}",
     "ou25Short": "O/U 2.5",
-    "bttsShort": "BTTS"
+    "bttsShort": "BTTS",
+    "lastUpdated": "Last updated",
+    "contents": "Contents"
   },
   "errors": {
     "title": "Something went wrong",
@@ -285,5 +287,228 @@
     "recentAll": "All results",
     "recentEmpty": "No settled matches yet.",
     "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time."
+  },
+  "docs": {
+    "methodology": {
+      "title": "Methodology",
+      "lead": "How the probabilities on this site are produced, settled and scored. Written so that every number can be checked.",
+      "sections": [
+        {
+          "h": "1. The model",
+          "p": [
+            "Match probabilities come from a Dixon-Coles model. Each team gets an attack and a defence strength, and there is one home-advantage term per league. The expected goals of the two sides follow from those parameters; the score distribution is a pair of Poisson counts with the Dixon-Coles adjustment that corrects the probability of 0–0, 1–0, 0–1 and 1–1, which plain Poisson gets wrong.",
+            "Parameters are fitted per league by maximum likelihood on results from the last 540 days. Older matches count less: a result loses half its weight every 180 days, so the current form of a squad dominates the fit without last season disappearing entirely.",
+            "The score grid runs to 10 goals per side. From it we read 1X2, over/under lines, both-teams-to-score, the most likely scores and Asian handicap cover probabilities. The headline 1X2 figures use the Dixon-Coles adjustment; the goal grid shown on a match page is the raw Poisson grid, which is why its 1X2 split can differ by a point or two."
+          ]
+        },
+        {
+          "h": "2. What is not in the model",
+          "p": [
+            "- Line-ups, injuries and suspensions\n- Expected goals (xG) or shot data\n- Weather, travel, fixture congestion, motivation\n- Betting-market prices (odds are captured for comparison, never fed into the probabilities)",
+            "This is deliberate. A results-only model is easy to audit and does not depend on paid data. It is also why the model is weakest at the start of a season and around cup ties on neutral ground."
+          ]
+        },
+        {
+          "h": "3. Coverage",
+          "p": [
+            "Predictions are published only for leagues the model has been fitted on. A league is added when it has enough results in the training window (at least 120 matches) and is left out otherwise. Fixtures outside covered leagues can appear in the schedule but carry no model rating and are never counted in the record.",
+            "Feed league identifiers change every season, so a league is matched by its name and country code, with a fixed list of canonical identifiers as a fallback."
+          ]
+        },
+        {
+          "h": "4. Picks, confidence and calibration",
+          "p": [
+            "The pick is the outcome with the highest model probability. The confidence shown next to it is that probability after calibration.",
+            "Calibration is an isotonic regression (pool-adjacent-violators) fitted on settled picks: it maps the raw model probability to the share of picks that actually landed at that level. The curve is monotone, uses at most 40 knots and is only applied once at least 30 settled picks exist. It is refitted as results come in, so the same raw probability can map to slightly different calibrated values over time. Match pages show both numbers.",
+            "Over/under 2.5 and both-teams-to-score picks are the side the model favours; their calibrated probabilities use separate curves fitted per market."
+          ]
+        },
+        {
+          "h": "5. Settlement",
+          "p": [
+            "An hourly job compares every published prediction with the final score once the feed reports the match finished. A 1X2 pick is won when the actual outcome matches; goal-market picks are settled from the final score. Predictions are never edited after kick-off and never removed after settlement.",
+            "Matches marked as finished without a usable score (postponed, abandoned or missing from the feed) are kept out of the record and listed separately on the results page with a count."
+          ]
+        },
+        {
+          "h": "6. How the record is scored",
+          "p": [
+            "- Hit rate: share of settled 1X2 picks that won.\n- Brier score (1X2): mean over matches of the sum of squared errors across the three outcomes; 0 is perfect, 0.667 is a uniform guess, and the market's margin-free prices typically score about 0.60 in top leagues.\n- Brier score (goal markets): binary version, where 0.25 is a coin flip.\n- Calibration table: settled picks grouped by calibrated confidence, comparing the mean predicted probability with the observed hit rate.\n- Flat-stake ROI: one unit on the model pick at the last odds captured before kick-off (closing, otherwise opening), summed over matches that have an odds snapshot. Returns are shown before any bookmaker limits or account restrictions, which real bettors face.",
+            "All figures are computed from the same settled rows shown on the results page, recomputed hourly, and include losing months."
+          ]
+        },
+        {
+          "h": "7. Data sources and timing",
+          "p": [
+            "Fixtures, results and team data come from a third-party football data feed. Odds snapshots come from a bookmaker feed and are captured at opening and shortly before kick-off. The public site reads from our own database and refreshes predictions every 15 minutes, results every 5 minutes and aggregates every hour. Kick-off times are shown in your browser's time zone, with Europe/Zurich as the fallback."
+          ]
+        },
+        {
+          "h": "8. Known limitations",
+          "p": [
+            "- The public record starts in late July 2026; the settled sample is still small and league-level figures swing.\n- Odds snapshots exist only from mid-August 2026 and not for every match, so the ROI window is shorter than the record.\n- The feed occasionally lags or omits a result; such matches stay unsettled until it arrives.\n- Probabilities are estimates. A 60% pick is expected to lose two times in five."
+          ]
+        }
+      ]
+    },
+    "about": {
+      "title": "About",
+      "lead": "What this site is, who runs it, and what it deliberately is not.",
+      "sections": [
+        {
+          "h": "What it is",
+          "p": [
+            "footballanalytics.pro publishes match probabilities from a Dixon-Coles statistical model for a fixed set of leagues, settles every prediction against the final score and keeps the full record public: hit rate, Brier score, calibration and flat-stake returns, including the months that went badly.",
+            "The site is built for people who want to see a model's output and its track record side by side, in the format a stats site would use: tables, percentages and a chart where it earns its place."
+          ]
+        },
+        {
+          "h": "What it is not",
+          "p": [
+            "It is not a tipster service, and nothing on the site is a recommendation to bet. The probabilities are estimates from a model that only knows past results. They are not guarantees, and a positive month says little on its own; the calibration table and the sample sizes are the honest view.",
+            "There are no hidden or edited picks. If a prediction was published, it is on the results page."
+          ]
+        },
+        {
+          "h": "Who runs it",
+          "p": [
+            "The site is operated by swissdigital.life, based in Switzerland. Contact: info@swissdigital.life. Questions about a specific number are welcome; if something on the record looks wrong, we would rather hear about it."
+          ]
+        },
+        {
+          "h": "Data",
+          "p": [
+            "Fixtures, results and crests come from third-party data providers and may lag live events. The probabilities are our own. See the methodology page for the model, the settlement rules and the metric definitions."
+          ]
+        },
+        {
+          "h": "Responsible use",
+          "p": [
+            "Sports betting carries a real risk of financial loss. This site is intended for adults (18+). If you gamble, only stake what you can afford to lose, and seek help if gambling stops being a choice: in Switzerland, the Sucht Schweiz helpline is available at 0800 040 080."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "lead": "What personal data this site collects, why, and your rights under Swiss and EU data-protection law.",
+      "sections": [
+        {
+          "h": "1. Controller",
+          "p": [
+            "footballanalytics.pro (\"the Service\", \"we\") is operated by swissdigital.life, based in Switzerland. For any question about this policy or your data, write to info@swissdigital.life. This policy follows the Swiss Federal Act on Data Protection (FADP) and, where it applies to visitors from the EU/EEA, the GDPR."
+          ]
+        },
+        {
+          "h": "2. Data we collect",
+          "p": [
+            "- Public pages: server logs (IP address, user agent, requested page, timestamp) kept briefly by our hosting provider for security and error diagnosis. Aggregated, cookieless page-view analytics.\n- Account holders: the email address and name you provide when registering, your language and theme preferences, and your subscription status.\n- Payments: processed by Stripe. We never see or store card details.\n- Contact form: your name, email address and message.\n- Advertising: if the Google Ads tag is enabled, Google may set a cookie to measure ad conversions. We do not run ads on this site."
+          ]
+        },
+        {
+          "h": "3. Why we process it",
+          "p": [
+            "- To deliver the pages you request and keep the Service secure (legitimate interest).\n- To manage your account and subscription (performance of a contract).\n- To answer your messages (legitimate interest).\n- To measure aggregate usage and ad campaigns (consent where required, otherwise legitimate interest).\n- To meet legal obligations."
+          ]
+        },
+        {
+          "h": "4. Processors",
+          "p": [
+            "- Vercel: hosting and cookieless analytics\n- Supabase: database and authentication\n- Stripe: payments\n- Resend: transactional email\n- Google: Ads conversion measurement, when enabled",
+            "These providers process data on our behalf under contract. Some are located outside Switzerland and the EU; transfers rely on adequacy decisions or standard contractual clauses. We do not sell personal data."
+          ]
+        },
+        {
+          "h": "5. Cookies and local storage",
+          "p": [
+            "The public site stores your chosen theme and language in your browser's local storage; this never leaves your device. Signed-in areas use a session cookie. Google Ads measurement, when enabled, uses cookies you can refuse or delete in your browser."
+          ]
+        },
+        {
+          "h": "6. Retention",
+          "p": [
+            "Server logs are kept for a short period by the hosting provider. Account data is kept while your account exists and deleted within a reasonable period after you ask us to close it, unless the law requires longer retention (for example accounting records)."
+          ]
+        },
+        {
+          "h": "7. Your rights",
+          "p": [
+            "You can ask for access to, correction of, deletion of or restriction of your personal data, object to processing based on legitimate interest, request portability of data you gave us, and withdraw consent at any time. Write to the address above. EU/EEA residents may also complain to their supervisory authority; Swiss residents may contact the Federal Data Protection and Information Commissioner (FDPIC)."
+          ]
+        },
+        {
+          "h": "8. Minors",
+          "p": [
+            "The Service is intended for adults. We do not knowingly collect data from anyone under 18."
+          ]
+        },
+        {
+          "h": "9. Changes",
+          "p": [
+            "We update this policy when the Service or the law changes and always publish the current version here, with the date above."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms of use",
+      "lead": "The conditions for using footballanalytics.pro. Short version: the numbers are estimates, you are responsible for what you do with them, and you must be an adult.",
+      "sections": [
+        {
+          "h": "1. Scope",
+          "p": [
+            "These terms govern the use of footballanalytics.pro (\"the Service\"), operated by swissdigital.life, Switzerland (info@swissdigital.life). By using the Service you accept them. Paid features are additionally subject to the conditions shown at purchase."
+          ]
+        },
+        {
+          "h": "2. Information only, no advice",
+          "p": [
+            "The Service publishes probabilities produced by a statistical model and a record of how past predictions settled. This is information, not advice. Nothing on the Service is a recommendation to place a bet, an offer of gambling, or a guarantee of any outcome or return. Past performance, including any positive return shown, is no indication of future results."
+          ]
+        },
+        {
+          "h": "3. Age and jurisdiction",
+          "p": [
+            "You must be at least 18 years old to use the Service. It is your responsibility to know whether sports betting is legal where you live and to comply with local law. The Service does not accept or place bets."
+          ]
+        },
+        {
+          "h": "4. No warranty",
+          "p": [
+            "The Service is provided as is. Fixtures, results and odds come from third-party sources and may be incomplete, delayed or wrong; the model can be wrong. We do not warrant availability, accuracy or fitness for any purpose, and we may change or discontinue any part of the Service at any time."
+          ]
+        },
+        {
+          "h": "5. Liability",
+          "p": [
+            "To the extent permitted by Swiss law, we are not liable for any loss arising from use of the Service, including financial loss from betting decisions, lost profits or indirect damage. Mandatory liability for intent or gross negligence remains unaffected."
+          ]
+        },
+        {
+          "h": "6. Permitted use",
+          "p": [
+            "You may view and share pages for personal, non-commercial use. You may not scrape, bulk-download or resell the data, interfere with the Service, or present its output as your own or as a guaranteed product. Team names and crests belong to their owners."
+          ]
+        },
+        {
+          "h": "7. Accounts and subscriptions",
+          "p": [
+            "Accounts are personal and must be kept secure. Subscription prices, billing periods and cancellation are shown on the pricing page and confirmed at purchase; payments are handled by Stripe. We may suspend accounts that breach these terms."
+          ]
+        },
+        {
+          "h": "8. Responsible gambling",
+          "p": [
+            "If you choose to gamble, set limits and only stake what you can afford to lose. Help is available: in Switzerland via Sucht Schweiz (0800 040 080), and via national helplines elsewhere."
+          ]
+        },
+        {
+          "h": "9. Governing law",
+          "p": [
+            "These terms are governed by Swiss law. Place of jurisdiction is the seat of the operator in Switzerland, subject to mandatory consumer-protection rules that give you a different forum. We may update these terms; the current version with its date is always published on this page."
+          ]
+        }
+      ]
+    }
   }
 }

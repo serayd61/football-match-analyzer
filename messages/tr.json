@@ -73,7 +73,9 @@
     "kickoff": "Başlama",
     "localTime": "saatler {zone} dilimine göre",
     "ou25Short": "Ü/A 2,5",
-    "bttsShort": "KG"
+    "bttsShort": "KG",
+    "lastUpdated": "Son güncelleme",
+    "contents": "İçindekiler"
   },
   "errors": {
     "title": "Bir şeyler ters gitti",
@@ -285,5 +287,228 @@
     "recentAll": "Tüm sonuçlar",
     "recentEmpty": "Henüz sonuçlanmış maç yok.",
     "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır."
+  },
+  "docs": {
+    "methodology": {
+      "title": "Yöntem",
+      "lead": "Bu sitedeki olasılıkların nasıl üretildiği, sonuçlandırıldığı ve puanlandığı. Her sayının denetlenebilmesi için yazıldı.",
+      "sections": [
+        {
+          "h": "1. Model",
+          "p": [
+            "Maç olasılıkları bir Dixon-Coles modelinden gelir. Her takımın bir hücum ve bir savunma gücü, her ligin bir ev sahibi avantajı terimi vardır. İki tarafın beklenen golleri bu parametrelerden türer; skor dağılımı, düz Poisson'un yanlış tahmin ettiği 0-0, 1-0, 0-1 ve 1-1 olasılıklarını düzelten Dixon-Coles düzeltmesiyle iki Poisson sayımından oluşur.",
+            "Parametreler lig bazında, son 540 günün sonuçları üzerinde maksimum olabilirlikle fit edilir. Eski maçlar daha az sayılır: bir sonuç her 180 günde ağırlığının yarısını kaybeder; böylece güncel form fiti belirler ama geçen sezon tamamen kaybolmaz.",
+            "Skor ızgarası taraf başına 10 gole kadar uzanır. Buradan 1X2, üst/alt çizgileri, karşılıklı gol, en olası skorlar ve Asya handikabı geçme olasılıkları okunur. Ana 1X2 değerleri Dixon-Coles düzeltmesini kullanır; maç sayfasındaki gol ızgarası ham Poisson ızgarasıdır, bu yüzden 1X2 dağılımı bir iki puan farklı olabilir."
+          ]
+        },
+        {
+          "h": "2. Modelde olmayanlar",
+          "p": [
+            "- Kadrolar, sakatlıklar ve cezalar\n- Beklenen gol (xG) veya şut verisi\n- Hava, seyahat, fikstür yoğunluğu, motivasyon\n- Bahis piyasası fiyatları (oranlar kıyas için kaydedilir, olasılıklara asla girmez)",
+            "Bu bilinçli bir tercih. Yalnızca sonuçlara dayanan bir model kolay denetlenir ve ücretli veriye bağımlı değildir. Modelin sezon başında ve tarafsız sahadaki kupa maçlarında en zayıf olmasının nedeni de budur."
+          ]
+        },
+        {
+          "h": "3. Kapsam",
+          "p": [
+            "Tahminler yalnızca modelin fit edildiği ligler için yayınlanır. Bir lig, eğitim penceresinde yeterli sonucu (en az 120 maç) olduğunda eklenir; aksi halde dışarıda kalır. Kapsanan liglerin dışındaki maçlar programda görünebilir ama model değerlendirmesi taşımaz ve karneye asla sayılmaz.",
+            "Beslemedeki lig kimlikleri her sezon değişir; bu yüzden lig, ad ve ülke koduyla eşleştirilir, sabit bir kanonik kimlik listesi yedek olarak tutulur."
+          ]
+        },
+        {
+          "h": "4. Seçim, güven ve kalibrasyon",
+          "p": [
+            "Seçim, model olasılığı en yüksek sonuçtur. Yanında gösterilen güven, kalibrasyon sonrası bu olasılıktır.",
+            "Kalibrasyon, sonuçlanmış seçimler üzerinde fit edilen izotonik regresyondur (pool-adjacent-violators): ham model olasılığını, o seviyede gerçekten tutan seçimlerin payına eşler. Eğri monotondur, en fazla 40 düğüm kullanır ve yalnızca en az 30 sonuçlanmış seçim varken uygulanır. Sonuçlar geldikçe yeniden fit edilir; bu yüzden aynı ham olasılık zamanla biraz farklı kalibre değerlere eşlenebilir. Maç sayfaları iki sayıyı da gösterir.",
+            "Üst/Alt 2,5 ve karşılıklı gol seçimleri modelin ağırlık verdiği taraftır; kalibre olasılıkları pazar bazında fit edilen ayrı eğriler kullanır."
+          ]
+        },
+        {
+          "h": "5. Sonuçlandırma",
+          "p": [
+            "Saatlik bir görev, besleme maçı bitmiş bildirdiğinde her yayınlanmış tahmini maç skoruyla karşılaştırır. 1X2 seçimi gerçek sonuçla eşleşince tutmuş sayılır; gol pazarı seçimleri skordan sonuçlandırılır. Tahminler başlama vuruşundan sonra asla düzenlenmez, sonuçlandıktan sonra asla silinmez.",
+            "Bitmiş işaretlenen ama kullanılabilir skoru olmayan maçlar (ertelenen, yarıda kalan veya beslemede eksik) karnenin dışında tutulur ve sonuçlar sayfasında sayısıyla ayrıca belirtilir."
+          ]
+        },
+        {
+          "h": "6. Karne nasıl puanlanır",
+          "p": [
+            "- İsabet: tutan sonuçlanmış 1X2 seçimlerinin payı.\n- Brier skoru (1X2): üç sonuç üzerindeki kare hataların toplamının maç ortalaması; 0 mükemmel, 0,667 rastgele tahmin, büyük liglerde marjdan arındırılmış piyasa fiyatları tipik olarak yaklaşık 0,60 alır.\n- Brier skoru (gol pazarları): ikili sürüm; 0,25 yazı tura demektir.\n- Kalibrasyon tablosu: sonuçlanmış seçimler kalibre güvene göre gruplanır; ortalama öngörülen olasılık gözlenen isabetle karşılaştırılır.\n- Sabit bahis ROI: modelin seçimine, başlama vuruşundan önce kaydedilen son oranla (kapanış, yoksa açılış) bir birim; oran kaydı olan maçlar üzerinden toplanır. Getiriler, gerçek bahisçilerin karşılaştığı limit ve hesap kısıtlamalarından önce gösterilir.",
+            "Tüm değerler sonuçlar sayfasındaki aynı sonuçlanmış satırlardan hesaplanır, saatte bir yenilenir ve kayıp aylar dahildir."
+          ]
+        },
+        {
+          "h": "7. Veri kaynakları ve zamanlama",
+          "p": [
+            "Fikstür, sonuç ve takım verileri üçüncü taraf bir futbol veri beslemesinden gelir. Oran kayıtları bir bahisçi beslemesinden alınır; açılışta ve başlama vuruşundan kısa süre önce kaydedilir. Halka açık site kendi veritabanımızdan okur; tahminleri 15 dakikada, sonuçları 5 dakikada, toplu değerleri saatte bir yeniler. Maç saatleri tarayıcınızın saat diliminde, yedek olarak Europe/Zurich ile gösterilir."
+          ]
+        },
+        {
+          "h": "8. Bilinen sınırlar",
+          "p": [
+            "- Halka açık karne Temmuz 2026 sonunda başlar; sonuçlanmış örneklem hâlâ küçüktür ve lig bazlı değerler dalgalanır.\n- Oran kayıtları yalnızca Ağustos 2026 ortasından itibaren ve her maç için değil; bu yüzden ROI penceresi karneden kısadır.\n- Besleme zaman zaman gecikir veya bir sonucu atlar; bu maçlar sonuç gelene kadar açık kalır.\n- Olasılıklar tahmindir. %60'lık bir seçimin beşte iki kaybetmesi beklenir."
+          ]
+        }
+      ]
+    },
+    "about": {
+      "title": "Hakkında",
+      "lead": "Bu site nedir, kim işletir ve bilerek ne değildir.",
+      "sections": [
+        {
+          "h": "Ne olduğu",
+          "p": [
+            "footballanalytics.pro, sabit bir lig kümesi için istatistiksel bir Dixon-Coles modelinin maç olasılıklarını yayınlar, her tahmini maç skoruyla sonuçlandırır ve tüm karneyi açık tutar: isabet, Brier skoru, kalibrasyon ve sabit bahis getirisi, kötü geçen aylar dahil.",
+            "Site, bir modelin çıktısını ve karnesini yan yana görmek isteyenler için, bir istatistik sitesinin biçiminde kuruldu: tablolar, yüzdeler ve yalnızca gerektiği yerde bir grafik."
+          ]
+        },
+        {
+          "h": "Ne olmadığı",
+          "p": [
+            "Bir tahmin satış servisi değildir ve sitedeki hiçbir şey bahis önerisi değildir. Olasılıklar yalnızca geçmiş sonuçları bilen bir modelin tahminidir. Garanti değildir; tek başına iyi bir ay az şey söyler, dürüst bakış kalibrasyon tablosu ve örneklem büyüklükleridir.",
+            "Gizli veya sonradan düzenlenmiş seçim yoktur. Bir tahmin yayınlandıysa sonuçlar sayfasındadır."
+          ]
+        },
+        {
+          "h": "Kim işletiyor",
+          "p": [
+            "Site, İsviçre merkezli swissdigital.life tarafından işletilir. İletişim: info@swissdigital.life. Belirli bir sayıyla ilgili sorular memnuniyetle karşılanır; karnede yanlış görünen bir şey varsa duymayı tercih ederiz."
+          ]
+        },
+        {
+          "h": "Veri",
+          "p": [
+            "Fikstür, sonuç ve armalar üçüncü taraf sağlayıcılardan gelir ve canlı akışın gerisinde kalabilir. Olasılıklar bize aittir. Model, sonuçlandırma kuralları ve metrik tanımları yöntem sayfasındadır."
+          ]
+        },
+        {
+          "h": "Sorumlu kullanım",
+          "p": [
+            "Spor bahisleri gerçek bir maddi kayıp riski taşır. Bu site yetişkinler (18+) içindir. Bahis oynuyorsanız yalnızca kaybetmeyi göze alabileceğiniz kadar oynayın ve oyun bir tercih olmaktan çıktıysa yardım isteyin: İsviçre'de Sucht Schweiz yardım hattı 0800 040 080."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Gizlilik politikası",
+      "lead": "Bu sitenin hangi kişisel verileri neden topladığı ve İsviçre ile AB veri koruma hukuku kapsamındaki haklarınız.",
+      "sections": [
+        {
+          "h": "1. Veri sorumlusu",
+          "p": [
+            "footballanalytics.pro (\"Hizmet\", \"biz\") İsviçre merkezli swissdigital.life tarafından işletilir. Bu politika veya verilerinizle ilgili her soru için info@swissdigital.life adresine yazın. Politika, İsviçre Federal Veri Koruma Yasası'nı (FADP) ve AB/AEA ziyaretçilerine uygulandığı ölçüde GDPR'ı izler."
+          ]
+        },
+        {
+          "h": "2. Topladığımız veriler",
+          "p": [
+            "- Halka açık sayfalar: barındırma sağlayıcımızın güvenlik ve hata teşhisi için kısa süre tuttuğu sunucu günlükleri (IP adresi, tarayıcı bilgisi, istenen sayfa, zaman damgası). Çerezsiz, toplu sayfa görüntüleme istatistikleri.\n- Hesap sahipleri: kayıtta verdiğiniz e-posta ve ad, dil ve tema tercihleriniz, abonelik durumunuz.\n- Ödemeler: Stripe tarafından işlenir. Kart bilgilerini asla görmez veya saklamayız.\n- İletişim formu: adınız, e-posta adresiniz ve mesajınız.\n- Reklam: Google Ads etiketi etkinse Google, reklam dönüşümlerini ölçmek için çerez koyabilir. Bu sitede reklam göstermiyoruz."
+          ]
+        },
+        {
+          "h": "3. Neden işliyoruz",
+          "p": [
+            "- İstediğiniz sayfaları sunmak ve Hizmeti güvende tutmak için (meşru menfaat).\n- Hesabınızı ve aboneliğinizi yönetmek için (sözleşmenin ifası).\n- Mesajlarınızı yanıtlamak için (meşru menfaat).\n- Toplu kullanımı ve reklam kampanyalarını ölçmek için (gerektiğinde rıza, aksi halde meşru menfaat).\n- Yasal yükümlülükleri yerine getirmek için."
+          ]
+        },
+        {
+          "h": "4. Veri işleyenler",
+          "p": [
+            "- Vercel: barındırma ve çerezsiz istatistik\n- Supabase: veritabanı ve kimlik doğrulama\n- Stripe: ödemeler\n- Resend: işlem e-postaları\n- Google: etkinse Ads dönüşüm ölçümü",
+            "Bu sağlayıcılar verileri sözleşme kapsamında bizim adımıza işler. Bazıları İsviçre ve AB dışındadır; aktarımlar yeterlilik kararlarına veya standart sözleşme maddelerine dayanır. Kişisel veri satmayız."
+          ]
+        },
+        {
+          "h": "5. Çerezler ve yerel depolama",
+          "p": [
+            "Halka açık site, seçtiğiniz tema ve dili tarayıcınızın yerel depolamasında tutar; bu bilgi cihazınızdan asla çıkmaz. Oturum açılan alanlar bir oturum çerezi kullanır. Google Ads ölçümü etkinse tarayıcınızdan reddedebileceğiniz veya silebileceğiniz çerezler kullanır."
+          ]
+        },
+        {
+          "h": "6. Saklama",
+          "p": [
+            "Sunucu günlükleri barındırma sağlayıcısı tarafından kısa süre tutulur. Hesap verileri hesabınız var olduğu sürece saklanır ve kapatma talebinizden sonra makul bir süre içinde silinir; yasa daha uzun saklama gerektirmedikçe (örneğin muhasebe kayıtları)."
+          ]
+        },
+        {
+          "h": "7. Haklarınız",
+          "p": [
+            "Kişisel verilerinize erişim, düzeltme, silme veya işlemenin kısıtlanmasını isteyebilir, meşru menfaate dayalı işlemeye itiraz edebilir, bize verdiğiniz verilerin taşınabilirliğini talep edebilir ve rızanızı istediğiniz zaman geri çekebilirsiniz. Yukarıdaki adrese yazın. AB/AEA'da yaşayanlar ayrıca kendi denetim otoritelerine, İsviçre'de yaşayanlar Federal Veri Koruma ve Bilgi Komiseri'ne (FDPIC) başvurabilir."
+          ]
+        },
+        {
+          "h": "8. Reşit olmayanlar",
+          "p": [
+            "Hizmet yetişkinlere yöneliktir. 18 yaş altındaki kişilerden bilerek veri toplamayız."
+          ]
+        },
+        {
+          "h": "9. Değişiklikler",
+          "p": [
+            "Hizmet veya hukuk değiştiğinde bu politikayı güncelleriz ve güncel sürümü yukarıdaki tarihle her zaman burada yayınlarız."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Kullanım şartları",
+      "lead": "footballanalytics.pro'yu kullanma koşulları. Kısacası: sayılar tahmindir, onlarla ne yaptığınız sizin sorumluluğunuzdadır ve yetişkin olmalısınız.",
+      "sections": [
+        {
+          "h": "1. Kapsam",
+          "p": [
+            "Bu şartlar, swissdigital.life, İsviçre (info@swissdigital.life) tarafından işletilen footballanalytics.pro'nun (\"Hizmet\") kullanımını düzenler. Hizmeti kullanarak bunları kabul edersiniz. Ücretli özellikler ayrıca satın alma sırasında gösterilen koşullara tabidir."
+          ]
+        },
+        {
+          "h": "2. Yalnızca bilgi, tavsiye değil",
+          "p": [
+            "Hizmet, istatistiksel bir modelin ürettiği olasılıkları ve geçmiş tahminlerin nasıl sonuçlandığının karnesini yayınlar. Bu bilgidir, tavsiye değildir. Hizmetteki hiçbir şey bahis oynama önerisi, kumar teklifi veya herhangi bir sonuç ya da getiri garantisi değildir. Gösterilen pozitif getiri dahil geçmiş performans, gelecekteki sonuçların göstergesi değildir."
+          ]
+        },
+        {
+          "h": "3. Yaş ve yargı yetkisi",
+          "p": [
+            "Hizmeti kullanmak için en az 18 yaşında olmalısınız. Yaşadığınız yerde spor bahislerinin yasal olup olmadığını bilmek ve yerel hukuka uymak sizin sorumluluğunuzdadır. Hizmet bahis kabul etmez ve oynamaz."
+          ]
+        },
+        {
+          "h": "4. Garanti yok",
+          "p": [
+            "Hizmet olduğu gibi sunulur. Fikstür, sonuç ve oranlar üçüncü taraf kaynaklardan gelir; eksik, gecikmiş veya yanlış olabilir; model yanılabilir. Erişilebilirlik, doğruluk veya belirli bir amaca uygunluk garantisi vermeyiz ve Hizmetin herhangi bir bölümünü istediğimiz zaman değiştirebilir veya sonlandırabiliriz."
+          ]
+        },
+        {
+          "h": "5. Sorumluluk",
+          "p": [
+            "İsviçre hukukunun izin verdiği ölçüde, bahis kararlarından kaynaklanan maddi kayıplar, kâr kaybı veya dolaylı zararlar dahil Hizmetin kullanımından doğan hiçbir zarardan sorumlu değiliz. Kast veya ağır ihmal için zorunlu sorumluluk saklıdır."
+          ]
+        },
+        {
+          "h": "6. İzin verilen kullanım",
+          "p": [
+            "Sayfaları kişisel ve ticari olmayan amaçla görüntüleyebilir ve paylaşabilirsiniz. Verileri otomatik olarak toplayamaz, toplu indiremez veya yeniden satamaz, Hizmete müdahale edemez, çıktısını kendinizinmiş veya garantili bir ürünmüş gibi sunamazsınız. Takım adları ve armalar sahiplerine aittir."
+          ]
+        },
+        {
+          "h": "7. Hesaplar ve abonelikler",
+          "p": [
+            "Hesaplar kişiseldir ve güvende tutulmalıdır. Abonelik fiyatları, fatura dönemleri ve iptal koşulları fiyatlandırma sayfasında gösterilir ve satın almada onaylanır; ödemeler Stripe tarafından işlenir. Bu şartları ihlal eden hesapları askıya alabiliriz."
+          ]
+        },
+        {
+          "h": "8. Sorumlu oyun",
+          "p": [
+            "Bahis oynamayı seçerseniz limit koyun ve yalnızca kaybetmeyi göze alabileceğiniz kadar oynayın. Yardım mevcuttur: İsviçre'de Sucht Schweiz (0800 040 080), başka yerlerde ulusal yardım hatları."
+          ]
+        },
+        {
+          "h": "9. Uygulanacak hukuk",
+          "p": [
+            "Bu şartlar İsviçre hukukuna tabidir. Yetkili yer, size farklı bir yer tanıyan zorunlu tüketici koruma kuralları saklı kalmak üzere, işletmecinin İsviçre'deki merkezidir. Bu şartları güncelleyebiliriz; tarihli güncel sürüm her zaman bu sayfada yayınlanır."
+          ]
+        }
+      ]
+    }
   }
 }
