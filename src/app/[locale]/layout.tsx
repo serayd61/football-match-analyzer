@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Sans, Barlow_Condensed } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
+import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { routing, type Locale } from '@/i18n/routing';
 import { alternatesFor, SITE_URL } from '@/lib/site/seo';
 import SiteHeader from '@/components/site/SiteHeader';
@@ -55,12 +55,13 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as Locale)) notFound();
   unstable_setRequestLocale(locale);
   const messages = await getMessages();
+  const timeZone = await getTimeZone();
   const t = await getTranslations('nav');
 
   return (
     <div className={`site ${plex.variable} ${barlow.variable} flex min-h-screen flex-col`} lang={locale}>
       <script dangerouslySetInnerHTML={{ __html: bootScript }} />
-      <NextIntlClientProvider messages={messages}>
+      <NextIntlClientProvider messages={messages} timeZone={timeZone}>
         <a href="#main" className="skip-link">{t('skipToContent')}</a>
         <SiteHeader />
         <main id="main" className="flex-1">{children}</main>

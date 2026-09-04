@@ -18,10 +18,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
         fixed2: { maximumFractionDigits: 2, minimumFractionDigits: 2 },
       },
       dateTime: {
-        kickoff: { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
+        kickoff: { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
         dayLong: { weekday: 'long', day: 'numeric', month: 'long' },
         dayShort: { day: 'numeric', month: 'short' },
-        time: { hour: '2-digit', minute: '2-digit' },
+        time: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
         month: { month: 'short', year: 'numeric' },
       },
     },
