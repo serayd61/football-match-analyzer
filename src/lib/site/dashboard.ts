@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getOrSet } from '@/lib/cache/redis';
 import { getLiveMatches } from '@/lib/data-sources/free-football';
 import { db, REVALIDATE } from './db';
+import { supabaseAdmin } from '@/lib/supabase';
 import { SITE_LEAGUES } from './leagues';
 import { getStandings } from './standings';
 import { getMarketBook } from './markets';
@@ -150,7 +151,9 @@ export const teamDirectory = unstable_cache(
 export interface WatchItem { teamId: number; teamName: string; leagueSlug: string | null }
 
 export async function readWatchlist(email: string): Promise<{ items: WatchItem[]; available: boolean }> {
-  const { data, error } = await db()
+  // Per-user: must not go through db(), whose fetch layer caches responses
+  // for 5 minutes (the dashboard would show a stale list after add/remove).
+  const { data, error } = await supabaseAdmin
     .from('site_watchlist')
     .select('team_id, team_name, league_slug')
     .eq('user_email', email)
