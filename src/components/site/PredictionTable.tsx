@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import type { SitePrediction } from '@/lib/site/predictions';
 import ProbBar from './ProbBar';
 import LocalTime from './LocalTime';
+import { standingsIndex, type StandingRow } from '@/lib/site/standings';
 import OutcomeBadge from './OutcomeBadge';
 
 // Dense list of predictions grouped by league. One responsive grid per row:
@@ -33,6 +34,12 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
     if (!groups.has(key)) groups.set(key, { name: r.leagueName, slug: r.league?.slug || null, rows: [] });
     groups.get(key)!.rows.push(r);
   }
+
+  // League positions for covered groups (one cached table per league).
+  const tables = new Map<string, Map<number, StandingRow>>();
+  await Promise.all([...groups.values()].filter((g) => g.slug).map(async (g) => { tables.set(g.slug!, await standingsIndex(g.slug!)); }));
+  const pos = (slug: string | null, teamId: number | null) => (slug && teamId ? tables.get(slug)?.get(teamId)?.pos : undefined);
+  const Pos = ({ n }: { n?: number }) => (n ? <span className="num ml-1 text-xs text-s-muted" title={tp('positionTitle', { pos: n })}>{n}.</span> : null);
 
   const gridCols = showOutcome
     ? 'md:grid-cols-[4.5rem_minmax(14rem,1.4fr)_minmax(10rem,1fr)_8.5rem_5.5rem_5.5rem_5.5rem]'
@@ -67,8 +74,8 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
                     <LocalTime iso={p.kickoff} format="time" />
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5 text-[15px] leading-tight">
-                    <span className="flex items-center gap-2"><Crest src={p.homeCrest} alt="" /><span className="truncate">{p.homeName}</span></span>
-                    <span className="flex items-center gap-2"><Crest src={p.awayCrest} alt="" /><span className="truncate">{p.awayName}</span></span>
+                    <span className="flex items-center gap-2"><Crest src={p.homeCrest} alt="" /><span className="truncate">{p.homeName}</span><Pos n={pos(g.slug, p.homeId)} /></span>
+                    <span className="flex items-center gap-2"><Crest src={p.awayCrest} alt="" /><span className="truncate">{p.awayName}</span><Pos n={pos(g.slug, p.awayId)} /></span>
                   </span>
                   <span className={`col-span-2 text-sm text-s-muted ${showOutcome ? 'md:col-span-5' : 'md:col-span-4'}`}>
                     {tp('pendingModel')}
@@ -88,12 +95,12 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
                   <span className="flex min-w-0 flex-col gap-0.5 text-[15px] leading-tight">
                     <span className="flex items-center gap-2">
                       <Crest src={p.homeCrest} alt="" />
-                      <span className={`truncate ${p.pick === '1' ? 'font-semibold' : ''}`}>{p.homeName}</span>
+                      <span className={`truncate ${p.pick === '1' ? 'font-semibold' : ''}`}>{p.homeName}</span><Pos n={pos(g.slug, p.homeId)} />
                       {showOutcome && p.homeScore != null && <span className="num ml-auto font-semibold">{p.homeScore}</span>}
                     </span>
                     <span className="flex items-center gap-2">
                       <Crest src={p.awayCrest} alt="" />
-                      <span className={`truncate ${p.pick === '2' ? 'font-semibold' : ''}`}>{p.awayName}</span>
+                      <span className={`truncate ${p.pick === '2' ? 'font-semibold' : ''}`}>{p.awayName}</span><Pos n={pos(g.slug, p.awayId)} />
                       {showOutcome && p.awayScore != null && <span className="num ml-auto font-semibold">{p.awayScore}</span>}
                     </span>
                   </span>

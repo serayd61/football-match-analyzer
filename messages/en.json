@@ -140,7 +140,8 @@
     "goToNext": "Go to next match day",
     "footnote": "Pick = the outcome the model rates most likely; the percentage next to it is the calibrated probability, not the raw model output. Over/Under 2.5 and BTTS show the favoured side with its calibrated probability. Times are shown in your local time zone.",
     "pendingModel": "Model rating not published yet",
-    "pendingNote": "{count, plural, =1 {# fixture is} other {# fixtures are}} listed from the schedule without a model rating; ratings are published the evening before kick-off."
+    "pendingNote": "{count, plural, =1 {# fixture is} other {# fixtures are}} listed from the schedule without a model rating; ratings are published the evening before kick-off.",
+    "positionTitle": "Position {pos} in the league table"
   },
   "match": {
     "notFound": "Match not found",
@@ -512,5 +513,18 @@
         }
       ]
     }
+  },
+  "standings": {
+    "title": "Table",
+    "meta": "from the fixtures feed, refreshed every 6 hours",
+    "team": "Team",
+    "played": "P",
+    "won": "W",
+    "drawn": "D",
+    "lost": "L",
+    "goals": "Goals",
+    "gd": "GD",
+    "pts": "Pts",
+    "positionLine": "{pos}. in the table · {pts} pts from {played} · GD {gd}"
   }
 }

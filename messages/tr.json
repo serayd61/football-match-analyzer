@@ -140,7 +140,8 @@
     "goToNext": "Sonraki maç gününe git",
     "footnote": "Seçim = modelin en olası gördüğü sonuç; yanındaki yüzde ham model çıktısı değil, kalibre olasılıktır. Üst/Alt 2,5 ve karşılıklı gol, tercih edilen tarafı kalibre olasılığıyla gösterir. Saatler yerel saat diliminize göredir.",
     "pendingModel": "Model değerlendirmesi henüz yayınlanmadı",
-    "pendingNote": "{count} maç yalnızca fikstürden, model değerlendirmesi olmadan listeleniyor; değerlendirmeler maçtan önceki akşam yayınlanır."
+    "pendingNote": "{count} maç yalnızca fikstürden, model değerlendirmesi olmadan listeleniyor; değerlendirmeler maçtan önceki akşam yayınlanır.",
+    "positionTitle": "Ligde {pos}. sıra"
   },
   "match": {
     "notFound": "Maç bulunamadı",
@@ -512,5 +513,18 @@
         }
       ]
     }
+  },
+  "standings": {
+    "title": "Puan durumu",
+    "meta": "fikstür akışından, 6 saatte bir yenilenir",
+    "team": "Takım",
+    "played": "O",
+    "won": "G",
+    "drawn": "B",
+    "lost": "M",
+    "goals": "Gol",
+    "gd": "Av",
+    "pts": "P",
+    "positionLine": "{pos}. sırada · {played} maçta {pts} puan · Av {gd}"
   }
 }

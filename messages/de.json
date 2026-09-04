@@ -140,7 +140,8 @@
     "goToNext": "Zum nächsten Spieltag",
     "footnote": "Tipp = der Ausgang, den das Modell am wahrscheinlichsten hält; die Prozentzahl daneben ist die kalibrierte Wahrscheinlichkeit, nicht die rohe Modellausgabe. Über/Unter 2.5 und «Beide treffen» zeigen die bevorzugte Seite mit ihrer kalibrierten Wahrscheinlichkeit. Zeiten in Ihrer lokalen Zeitzone.",
     "pendingModel": "Modellbewertung noch nicht veröffentlicht",
-    "pendingNote": "{count, plural, =1 {# Spiel steht} other {# Spiele stehen}} nur aus dem Spielplan ohne Modellbewertung in der Liste; Bewertungen erscheinen am Vorabend des Anpfiffs."
+    "pendingNote": "{count, plural, =1 {# Spiel steht} other {# Spiele stehen}} nur aus dem Spielplan ohne Modellbewertung in der Liste; Bewertungen erscheinen am Vorabend des Anpfiffs.",
+    "positionTitle": "Tabellenplatz {pos}"
   },
   "match": {
     "notFound": "Spiel nicht gefunden",
@@ -512,5 +513,18 @@
         }
       ]
     }
+  },
+  "standings": {
+    "title": "Tabelle",
+    "meta": "aus dem Spielplan-Feed, alle 6 Stunden aktualisiert",
+    "team": "Team",
+    "played": "Sp",
+    "won": "S",
+    "drawn": "U",
+    "lost": "N",
+    "goals": "Tore",
+    "gd": "TD",
+    "pts": "Pkt",
+    "positionLine": "{pos}. der Tabelle · {pts} Pkt aus {played} · TD {gd}"
   }
 }

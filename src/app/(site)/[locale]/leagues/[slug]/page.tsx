@@ -7,6 +7,8 @@ import { alternatesFor } from '@/lib/site/seo';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { getPerformance } from '@/lib/site/performance';
 import { listResults, listUpcomingForLeague } from '@/lib/site/results';
+import { getStandings } from '@/lib/site/standings';
+import StandingsTable from '@/components/site/StandingsTable';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
 import ResultsTable from '@/components/site/ResultsTable';
@@ -36,11 +38,13 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   const tp = await getTranslations('performance');
   const f = await getFormatter();
 
-  const [perf, upcoming, recent] = await Promise.all([
+  const [perf, upcoming, recent, table] = await Promise.all([
     getPerformance(league.slug),
     listUpcomingForLeague(league.slug, 30),
     listResults({ league, from: null, to: null, page: 1, pageSize: 20 }),
+    getStandings(league.slug),
   ]);
+  const ts = await getTranslations('standings');
   const o = perf.overall;
   const pct = (x: number | null) => (x == null ? '–' : f.number(x, 'percent1'));
 
@@ -70,6 +74,13 @@ export default async function LeaguePage({ params }: { params: { locale: string;
         <SectionTitle title={t('upcoming')} meta={<Link href={`/predictions?league=${league.slug}`} className="underline underline-offset-4">{t('upcomingAll')}</Link>} />
         {upcoming.length ? <div className="mt-2"><PredictionTable rows={upcoming} /></div> : <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>}
       </section>
+
+      {table.length > 0 && (
+        <section className="mt-12">
+          <SectionTitle title={ts('title')} meta={ts('meta')} />
+          <div className="mt-2"><StandingsTable rows={table} /></div>
+        </section>
+      )}
 
       <section className="mt-12">
         <SectionTitle title={t('recent')} meta={<Link href={`/results?league=${league.slug}&period=all`} className="underline underline-offset-4">{t('recentAll')}</Link>} />

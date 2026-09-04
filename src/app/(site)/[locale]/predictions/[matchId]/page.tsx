@@ -12,6 +12,7 @@ import ProbBar from '@/components/site/ProbBar';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import FormStrip, { toFormItems } from '@/components/site/FormStrip';
+import { standingsIndex } from '@/lib/site/standings';
 
 export const revalidate = 900;
 
@@ -51,6 +52,9 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
+  const ts = await getTranslations('standings');
+  const table = p.league ? await standingsIndex(p.league.slug) : new Map();
+  const stRow = (id: number | null) => (id ? table.get(id) : undefined);
   const [market, h2h, formHome, formAway] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId) : Promise.resolve([] as SitePrediction[]),
@@ -247,12 +251,17 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           <section>
             <SectionTitle title={t('secForm')} meta={t('formMeta')} />
             <div className="mt-4 space-y-4 text-sm">
-              {[{ name: p.homeName, items: formH, r: rh }, { name: p.awayName, items: formA, r: ra }].map((team) => (
+              {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId) }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId) }].map((team) => (
                 <div key={team.name}>
                   <div className="flex items-baseline justify-between">
                     <span className="font-medium">{team.name}</span>
                     {team.items.length > 0 && <span className="num text-xs text-s-muted">{team.r.w}-{team.r.d}-{team.r.l}</span>}
                   </div>
+                  {team.st && (
+                    <p className="num mt-0.5 text-xs text-s-muted">
+                      {ts('positionLine', { pos: team.st.pos, pts: team.st.pts, played: team.st.played, gd: `${team.st.gd > 0 ? '+' : ''}${team.st.gd}` })}
+                    </p>
+                  )}
                   <div className="mt-1.5">
                     {team.items.length ? <FormStrip items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
                   </div>
