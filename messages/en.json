@@ -138,7 +138,9 @@
     "emptyLead": "The model publishes predictions the night before kick-off for leagues it is trained on.",
     "emptyNext": "Next predictions: {date}",
     "goToNext": "Go to next match day",
-    "footnote": "Pick = the outcome the model rates most likely; the percentage next to it is the calibrated probability, not the raw model output. Over/Under 2.5 and BTTS show the favoured side with its calibrated probability. Times are shown in your local time zone."
+    "footnote": "Pick = the outcome the model rates most likely; the percentage next to it is the calibrated probability, not the raw model output. Over/Under 2.5 and BTTS show the favoured side with its calibrated probability. Times are shown in your local time zone.",
+    "pendingModel": "Model rating not published yet",
+    "pendingNote": "{count, plural, =1 {# fixture is} other {# fixtures are}} listed from the schedule without a model rating; ratings are published the evening before kick-off."
   },
   "match": {
     "notFound": "Match not found",

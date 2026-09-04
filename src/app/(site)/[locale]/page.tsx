@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { listPredictionsForDay, nextDayWithPredictions } from '@/lib/site/predictions';
+import { listDayRows } from '@/lib/site/fixtures';
 import { listResults } from '@/lib/site/results';
 import { getPerformance } from '@/lib/site/performance';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
@@ -36,7 +37,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
 
   const today = todayYmd();
   const [todayRows, perf, latest] = await Promise.all([
-    listPredictionsForDay(today),
+    listDayRows(today),
     getPerformance(null),
     listResults({ league: null, from: null, to: null, page: 1, pageSize: 6 }),
   ]);

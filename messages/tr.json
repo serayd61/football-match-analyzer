@@ -138,7 +138,9 @@
     "emptyLead": "Model, eğitildiği ligler için tahminleri maçtan bir gece önce yayınlar.",
     "emptyNext": "Sonraki tahminler: {date}",
     "goToNext": "Sonraki maç gününe git",
-    "footnote": "Seçim = modelin en olası gördüğü sonuç; yanındaki yüzde ham model çıktısı değil, kalibre olasılıktır. Üst/Alt 2,5 ve karşılıklı gol, tercih edilen tarafı kalibre olasılığıyla gösterir. Saatler yerel saat diliminize göredir."
+    "footnote": "Seçim = modelin en olası gördüğü sonuç; yanındaki yüzde ham model çıktısı değil, kalibre olasılıktır. Üst/Alt 2,5 ve karşılıklı gol, tercih edilen tarafı kalibre olasılığıyla gösterir. Saatler yerel saat diliminize göredir.",
+    "pendingModel": "Model değerlendirmesi henüz yayınlanmadı",
+    "pendingNote": "{count} maç yalnızca fikstürden, model değerlendirmesi olmadan listeleniyor; değerlendirmeler maçtan önceki akşam yayınlanır."
   },
   "match": {
     "notFound": "Maç bulunamadı",

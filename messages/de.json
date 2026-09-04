@@ -138,7 +138,9 @@
     "emptyLead": "Das Modell veröffentlicht Prognosen am Vorabend des Anpfiffs für die Ligen, auf denen es trainiert wurde.",
     "emptyNext": "Nächste Prognosen: {date}",
     "goToNext": "Zum nächsten Spieltag",
-    "footnote": "Tipp = der Ausgang, den das Modell am wahrscheinlichsten hält; die Prozentzahl daneben ist die kalibrierte Wahrscheinlichkeit, nicht die rohe Modellausgabe. Über/Unter 2.5 und «Beide treffen» zeigen die bevorzugte Seite mit ihrer kalibrierten Wahrscheinlichkeit. Zeiten in Ihrer lokalen Zeitzone."
+    "footnote": "Tipp = der Ausgang, den das Modell am wahrscheinlichsten hält; die Prozentzahl daneben ist die kalibrierte Wahrscheinlichkeit, nicht die rohe Modellausgabe. Über/Unter 2.5 und «Beide treffen» zeigen die bevorzugte Seite mit ihrer kalibrierten Wahrscheinlichkeit. Zeiten in Ihrer lokalen Zeitzone.",
+    "pendingModel": "Modellbewertung noch nicht veröffentlicht",
+    "pendingNote": "{count, plural, =1 {# Spiel steht} other {# Spiele stehen}} nur aus dem Spielplan ohne Modellbewertung in der Liste; Bewertungen erscheinen am Vorabend des Anpfiffs."
   },
   "match": {
     "notFound": "Spiel nicht gefunden",

@@ -138,7 +138,9 @@
     "emptyLead": "Il modello pubblica i pronostici la sera prima del calcio d'inizio per i campionati su cui è addestrato.",
     "emptyNext": "Prossimi pronostici: {date}",
     "goToNext": "Vai alla prossima giornata",
-    "footnote": "Scelta = l'esito che il modello ritiene più probabile; la percentuale accanto è la probabilità calibrata, non l'output grezzo. Over/Under 2.5 e Goal/No Goal mostrano il lato favorito con la sua probabilità calibrata. Orari nel tuo fuso locale."
+    "footnote": "Scelta = l'esito che il modello ritiene più probabile; la percentuale accanto è la probabilità calibrata, non l'output grezzo. Over/Under 2.5 e Goal/No Goal mostrano il lato favorito con la sua probabilità calibrata. Orari nel tuo fuso locale.",
+    "pendingModel": "Valutazione del modello non ancora pubblicata",
+    "pendingNote": "{count, plural, =1 {# partita è elencata} other {# partite sono elencate}} dal calendario senza valutazione del modello; le valutazioni escono la sera prima del calcio d'inizio."
   },
   "match": {
     "notFound": "Partita non trovata",

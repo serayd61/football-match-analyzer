@@ -3,7 +3,8 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
-import { listPredictionsForDay, nextDayWithPredictions } from '@/lib/site/predictions';
+import { nextDayWithPredictions } from '@/lib/site/predictions';
+import { listDayRows } from '@/lib/site/fixtures';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, PageTitle, EmptyState } from '@/components/site/ui';
@@ -29,10 +30,11 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
   const scope = searchParams.scope === 'all' ? 'all' : 'covered';
 
-  const all = await listPredictionsForDay(date);
+  const all = await listDayRows(date);
   let rows = scope === 'all' ? all : all.filter((r) => r.covered);
   if (league) rows = rows.filter((r) => r.league?.slug === league.slug);
   const uncoveredCount = all.filter((r) => !r.covered).length;
+  const pendingCount = rows.filter((r) => !r.hasModel).length;
 
   const dayLabel = (ymd: string) =>
     ymd === today ? tc('today') : ymd === addDays(today, 1) ? tc('tomorrow') : ymd === addDays(today, -1) ? tc('yesterday')
@@ -125,7 +127,10 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       ) : (
         <>
           <PredictionTable rows={rows} showOutcome={date < today} />
-          <p className="mt-6 text-xs text-s-muted">{t('footnote')}</p>
+          <p className="mt-6 text-xs text-s-muted">
+            {pendingCount > 0 && <>{t('pendingNote', { count: pendingCount })} </>}
+            {t('footnote')}
+          </p>
         </>
       )}
     </Page>

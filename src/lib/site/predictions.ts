@@ -84,6 +84,8 @@ export interface SitePrediction {
   outcome: Outcome;
   modelVersion: string | null;
   updatedAt: string | null;
+  /** false for feed fixtures the model has not rated yet */
+  hasModel: boolean;
 }
 
 const crest = (id: number | null) => (id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : null);
@@ -168,6 +170,7 @@ export function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext
     outcome: outcomeOf(r),
     modelVersion: r.model_version,
     updatedAt: r.updated_at ?? null,
+    hasModel: true,
   };
 }
 

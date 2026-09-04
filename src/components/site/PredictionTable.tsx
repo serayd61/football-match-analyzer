@@ -60,7 +60,22 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
           </div>
 
           <ul className="divide-y divide-s-line border-b border-s-line">
-            {g.rows.map((p) => (
+            {g.rows.map((p) => !p.hasModel ? (
+              <li key={p.fixtureId}>
+                <div className={`grid grid-cols-[3.5rem_1fr] items-center gap-x-3 gap-y-1.5 px-1 py-2.5 ${gridCols}`}>
+                  <span className="text-sm text-s-muted">
+                    <LocalTime iso={p.kickoff} format="time" />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5 text-[15px] leading-tight">
+                    <span className="flex items-center gap-2"><Crest src={p.homeCrest} alt="" /><span className="truncate">{p.homeName}</span></span>
+                    <span className="flex items-center gap-2"><Crest src={p.awayCrest} alt="" /><span className="truncate">{p.awayName}</span></span>
+                  </span>
+                  <span className={`col-span-2 text-sm text-s-muted ${showOutcome ? 'md:col-span-5' : 'md:col-span-4'}`}>
+                    {tp('pendingModel')}
+                  </span>
+                </div>
+              </li>
+            ) : (
               <li key={p.fixtureId}>
                 <Link
                   href={`/predictions/${p.fixtureId}`}
