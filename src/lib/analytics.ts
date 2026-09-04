@@ -9,6 +9,17 @@ import { sendGAEvent } from '@next/third-parties/google';
 
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
+// Google Ads dönüşüm takibi -------------------------------------------------
+// AW-XXXXXXXXX (Ads hesabı açılınca env'e eklenir). Boşsa tüm Ads çağrıları no-op.
+export const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || '';
+// Her dönüşüm eyleminin "etiketi" Ads panelinden alınır (AW-ID/ETIKET).
+export const ADS_LABELS = {
+  // Birincil (optimizasyon): ücretsiz deneme başlangıcı — yeterli hacim verir.
+  signup: process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL || '',
+  // İkincil: ödemeli aboneliğe geçiş.
+  purchase: process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL || '',
+} as const;
+
 // Canonical funnel event names (keep stable — they become GA4 reports).
 export const Events = {
   // Acquisition / SEO
@@ -40,6 +51,36 @@ export function trackEvent(name: EventName | string, params: EventParams = {}): 
   }
 }
 
+type GtagFn = (...args: unknown[]) => void;
+function getGtag(): GtagFn | null {
+  if (typeof window === 'undefined') return null;
+  const w = window as unknown as { gtag?: GtagFn };
+  return typeof w.gtag === 'function' ? w.gtag : null;
+}
+
+/**
+ * Fire a Google Ads conversion. No-op unless NEXT_PUBLIC_GOOGLE_ADS_ID and the
+ * given label are set (i.e. once the Ads account exists). Safe to call always.
+ */
+export function trackAdsConversion(
+  label: string,
+  params: { value?: number; currency?: string; transactionId?: string } = {}
+): void {
+  if (!GOOGLE_ADS_ID || !label) return;
+  const gtag = getGtag();
+  if (!gtag) return;
+  try {
+    gtag('event', 'conversion', {
+      send_to: `${GOOGLE_ADS_ID}/${label}`,
+      value: params.value,
+      currency: params.currency ?? 'USD',
+      transaction_id: params.transactionId ?? '',
+    });
+  } catch {
+    /* analytics must never break the app */
+  }
+}
+
 // Convenience helpers for the key funnel steps -------------------------------
 
 export const PRO_PRICE_USD = 19.99;
@@ -47,15 +88,21 @@ export const PRO_PRICE_USD = 19.99;
 export const track = {
   ctaClick: (location: string, label?: string) =>
     trackEvent(Events.CTA_CLICK, { location, label: label ?? '' }),
-  signUp: (method: 'credentials' | 'google') =>
-    trackEvent(Events.SIGN_UP, { method }),
+  signUp: (method: 'credentials' | 'google') => {
+    trackEvent(Events.SIGN_UP, { method });
+    // Ücretsiz deneme başlangıcı = birincil Ads dönüşümü (hacim için).
+    trackAdsConversion(ADS_LABELS.signup, { value: 0, currency: 'USD' });
+  },
   login: (method: 'credentials' | 'google') =>
     trackEvent(Events.LOGIN, { method }),
   viewPricing: () => trackEvent(Events.VIEW_PRICING, {}),
   beginCheckout: () =>
     trackEvent(Events.BEGIN_CHECKOUT, { currency: 'USD', value: PRO_PRICE_USD }),
-  purchase: () =>
-    trackEvent(Events.PURCHASE, { currency: 'USD', value: PRO_PRICE_USD }),
+  purchase: () => {
+    trackEvent(Events.PURCHASE, { currency: 'USD', value: PRO_PRICE_USD });
+    // Ödemeli aboneliğe geçiş = ikincil Ads dönüşümü (değerli ama düşük hacim).
+    trackAdsConversion(ADS_LABELS.purchase, { value: PRO_PRICE_USD, currency: 'USD' });
+  },
   viewAnalysis: (fixtureId: number | string) =>
     trackEvent(Events.VIEW_ANALYSIS, { fixture_id: String(fixtureId) }),
   runAnalysis: (league?: string) =>
