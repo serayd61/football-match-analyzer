@@ -22,11 +22,11 @@ export default async function SiteFooter() {
         <div>
           <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-s-muted">{t('links')}</h2>
           <ul className="mt-2 space-y-1.5">
-            <li><Link href="/methodology" className="hover:underline underline-offset-4">{nav('methodology')}</Link></li>
-            <li><Link href="/about" className="hover:underline underline-offset-4">{nav('about')}</Link></li>
-            <li><Link href="/privacy" className="hover:underline underline-offset-4">{t('privacy')}</Link></li>
-            <li><Link href="/terms" className="hover:underline underline-offset-4">{t('terms')}</Link></li>
-            <li><a href="/contact" className="hover:underline underline-offset-4">{t('contact')}</a></li>
+            <li><Link href="/methodology" className="inline-block py-1 hover:underline underline-offset-4">{nav('methodology')}</Link></li>
+            <li><Link href="/about" className="inline-block py-1 hover:underline underline-offset-4">{nav('about')}</Link></li>
+            <li><Link href="/privacy" className="inline-block py-1 hover:underline underline-offset-4">{t('privacy')}</Link></li>
+            <li><Link href="/terms" className="inline-block py-1 hover:underline underline-offset-4">{t('terms')}</Link></li>
+            <li><a href="/contact" className="inline-block py-1 hover:underline underline-offset-4">{t('contact')}</a></li>
           </ul>
         </div>
         <div className="md:justify-self-end">

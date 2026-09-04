@@ -31,7 +31,7 @@ export default async function ResultsTable({ rows }: { rows: SitePrediction[] })
 
   return (
     <div>
-      <div className={`hidden ${cols} border-b border-s-line pb-1.5 text-[11px] uppercase tracking-wider text-s-muted md:grid`}>
+      <div className={`hidden ${cols} border-b border-s-line pb-1.5 text-xs uppercase tracking-wider text-s-muted md:grid`}>
         <span>{tc('kickoff')}</span>
         <span>{tc('league')}</span>
         <span>{t('colMatch')}</span>

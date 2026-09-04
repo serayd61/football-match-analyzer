@@ -4,7 +4,7 @@ import { getPrediction } from '@/lib/site/predictions';
 export const runtime = 'nodejs';
 export const revalidate = 900;
 
-const INK = '#14262b', MUTED = '#5c6c70', BRAND = '#0f3a45', ACCENT = '#c46c14', VOID = '#808b8e', BG = '#f6f7f5', LINE = '#d6dcd9';
+const INK = '#14262b', MUTED = '#5c6c70', BRAND = '#0f3a45', ACCENT = '#ac5a0a', VOID = '#808b8e', BG = '#f6f7f5', LINE = '#d6dcd9';
 
 // Open Graph card for a match: teams, kickoff, 1X2 bar and the pick.
 // English only by design: crawlers request one image per URL and the

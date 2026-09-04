@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Analytics } from '@vercel/analytics/react';
-import '@/app/globals.css';
+import '../site.css';
 import AuthProvider from '@/components/AuthProvider';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
 import { routing, type Locale } from '@/i18n/routing';

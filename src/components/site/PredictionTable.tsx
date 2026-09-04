@@ -49,7 +49,7 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
             <span className="text-xs text-s-muted">{t('matches', { count: g.rows.length })}</span>
           </div>
 
-          <div className={`hidden md:grid ${gridCols} gap-x-3 px-1 py-1.5 text-[11px] font-medium uppercase tracking-wider text-s-muted`}>
+          <div className={`hidden md:grid ${gridCols} gap-x-3 px-1 py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted`}>
             <span>{t('kickoff')}</span>
             <span>{tp('colMatch')}</span>
             <span>1 · X · 2</span>

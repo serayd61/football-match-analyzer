@@ -83,9 +83,9 @@ export default async function ResultsPage({ params: { locale }, searchParams }: 
 
         {/* Filter summary: counts only, no derived claims beyond the pick hit-rate */}
         <dl className="grid grid-cols-3 gap-x-6 text-sm">
-          <div><dt className="text-[11px] uppercase tracking-wider text-s-muted">{t('settledCount')}</dt><dd className="num font-head text-2xl">{f.number(res.total)}</dd></div>
-          <div><dt className="text-[11px] uppercase tracking-wider text-s-muted">{t('record')}</dt><dd className="num font-head text-2xl">{res.won}–{res.lost}</dd></div>
-          <div><dt className="text-[11px] uppercase tracking-wider text-s-muted">{t('hitRate')}</dt><dd className="num font-head text-2xl">{acc == null ? '–' : f.number(acc, 'percent1')}</dd></div>
+          <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('settledCount')}</dt><dd className="num font-head text-2xl">{f.number(res.total)}</dd></div>
+          <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('record')}</dt><dd className="num font-head text-2xl">{res.won}–{res.lost}</dd></div>
+          <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('hitRate')}</dt><dd className="num font-head text-2xl">{acc == null ? '–' : f.number(acc, 'percent1')}</dd></div>
         </dl>
       </div>
 

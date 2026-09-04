@@ -133,7 +133,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
             </div>
             <div className="tbl-scroll mt-3">
               <table className="text-sm">
-                <thead className="text-[11px] uppercase tracking-wider text-s-muted">
+                <thead className="text-xs uppercase tracking-wider text-s-muted">
                   <tr className="border-b border-s-line">
                     <th className="py-1.5 text-left font-medium">{t('outcome')}</th>
                     <th className="py-1.5 text-right font-medium">{t('modelProb')}</th>
@@ -170,7 +170,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
               <SectionTitle title={t('secGoals')} meta={t('lambdaMeta', { lh: f.number(sm.lambdaHome, 'fixed2'), la: f.number(sm.lambdaAway, 'fixed2') })} />
               <div className="mt-4 grid gap-6 sm:grid-cols-2">
                 <table className="text-sm">
-                  <thead className="text-[11px] uppercase tracking-wider text-s-muted">
+                  <thead className="text-xs uppercase tracking-wider text-s-muted">
                     <tr className="border-b border-s-line">
                       <th className="py-1.5 text-left font-medium">{t('line')}</th>
                       <th className="py-1.5 text-right font-medium">{tc('over')}</th>
@@ -193,7 +193,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
                   </tbody>
                 </table>
                 <div>
-                  <h3 className="font-body text-[11px] font-medium uppercase tracking-wider text-s-muted">{t('likelyScores')}</h3>
+                  <h3 className="font-body text-xs font-medium uppercase tracking-wider text-s-muted">{t('likelyScores')}</h3>
                   <ul className="mt-1.5 divide-y divide-s-line border-b border-s-line text-sm">
                     {scores.map((s) => (
                       <li key={`${s.home}-${s.away}`} className="flex items-center gap-3 py-1.5">
@@ -217,7 +217,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
               <SectionTitle title={t('secHandicap')} meta={t('fairLine', { team: fair.line <= 0 ? p.homeName : p.awayName, line: Math.abs(fair.line) === 0 ? '0' : `−${Math.abs(fair.line)}` })} />
               <div className="tbl-scroll mt-3">
                 <table className="text-sm">
-                  <thead className="text-[11px] uppercase tracking-wider text-s-muted">
+                  <thead className="text-xs uppercase tracking-wider text-s-muted">
                     <tr className="border-b border-s-line">
                       <th className="py-1.5 text-left font-medium">{t('homeLine', { team: p.homeName })}</th>
                       <th className="py-1.5 text-right font-medium">{t('homeCovers')}</th>

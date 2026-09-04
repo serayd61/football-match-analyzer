@@ -21,7 +21,7 @@ export default async function LeaguesPage({ params: { locale } }: { params: { lo
   const f = await getFormatter();
   const perf = await getPerformance(null);
   const stats = new Map(perf.leagues.map((l) => [l.league.slug, l]));
-  const th = 'py-1.5 text-[11px] font-medium uppercase tracking-wider text-s-muted';
+  const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
 
   return (
     <Page>

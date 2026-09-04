@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Public site stylesheet — loaded only by src/app/(site)/[locale]/layout.tsx.
+   Kept apart from globals.css so the legacy Google Fonts import (Orbitron,
+   Space Grotesk) and neon rules never reach the public pages. */
+
+/* ============================================================================
+   PUBLIC SITE — scoped under `.site` (src/app/[locale]/layout.tsx)
+   ----------------------------------------------------------------------------
+   Editorial, data-dense, calm. Tokens are RGB triplets so Tailwind can apply
+   alpha (`bg-s-brand/10`). Light is the default; dark follows the system
+   preference unless the wrapper carries data-theme="light|dark".
+   Legacy globals (`* { font-family }`, Orbitron headings, neon body mesh) are
+   neutralised here. Fonts: IBM Plex Sans (body, true tabular figures) and
+   Barlow Condensed (headings, team names) — loaded via next/font.
+   ============================================================================ */
+
+.site {
+  --s-bg: 246 247 245;
+  --s-surface: 255 255 255;
+  --s-raised: 239 242 240;
+  --s-line: 214 220 217;
+  --s-ink: 20 38 43;
+  --s-muted: 92 108 112;
+  --s-brand: 15 58 69;
+  --s-brand-ink: 255 255 255;
+  --s-accent: 172 90 10;
+  --s-win: 26 128 74;
+  --s-loss: 196 51 43;
+  --s-void: 128 139 142;
+  color-scheme: light;
+
+  background: rgb(var(--s-bg));
+  color: rgb(var(--s-ink));
+  font-family: var(--font-site-body), 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-feature-settings: 'tnum' 1;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+}
+.site[data-theme='dark'] {
+  --s-bg: 13 24 27;
+  --s-surface: 18 32 36;
+  --s-raised: 25 42 47;
+  --s-line: 42 62 68;
+  --s-ink: 230 236 234;
+  --s-muted: 156 172 176;
+  --s-brand: 118 186 200;
+  --s-brand-ink: 13 24 27;
+  --s-accent: 236 160 72;
+  --s-win: 74 191 122;
+  --s-loss: 236 108 96;
+  --s-void: 132 146 150;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  .site:not([data-theme='light']) {
+    --s-bg: 13 24 27;
+    --s-surface: 18 32 36;
+    --s-raised: 25 42 47;
+    --s-line: 42 62 68;
+    --s-ink: 230 236 234;
+    --s-muted: 156 172 176;
+    --s-brand: 118 186 200;
+    --s-brand-ink: 13 24 27;
+    --s-accent: 236 160 72;
+    --s-win: 74 191 122;
+    --s-loss: 236 108 96;
+    --s-void: 132 146 150;
+    color-scheme: dark;
+  }
+}
+
+/* Neutralise legacy global rules inside the public site */
+.site * { font-family: inherit; letter-spacing: inherit; }
+.site h1, .site h2, .site h3, .site h4 {
+  font-family: var(--font-site-head), 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  line-height: 1.05;
+  text-transform: none;
+}
+.site h5, .site h6 { font-weight: 600; letter-spacing: 0; }
+.site :focus-visible { outline: 2px solid rgb(var(--s-accent)); outline-offset: 2px; border-radius: 2px; }
+.site ::selection { background: rgb(var(--s-brand) / 0.18); }
+.site table { border-collapse: collapse; width: 100%; }
+.site th { font-weight: 500; }
+.site .num, .site td, .site th { font-variant-numeric: tabular-nums; }
+
+/* Utilities */
+.site .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.site .skip-link {
+  position: absolute; left: 0.75rem; top: -3rem; z-index: 100;
+  background: rgb(var(--s-brand)); color: rgb(var(--s-brand-ink));
+  padding: 0.5rem 0.75rem; border-radius: 2px; font-weight: 500;
+}
+.site .skip-link:focus { top: 0.75rem; }
+.site .skeleton {
+  background: rgb(var(--s-raised));
+  border-radius: 2px;
+  position: relative; overflow: hidden;
+}
+.site .skeleton::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--s-ink) / 0.05), transparent);
+  animation: siteShimmer 1.4s infinite;
+}
+@keyframes siteShimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .site .skeleton::after { animation: none; } }
+.site .tab-pill[aria-current='true'] { background: rgb(var(--s-brand)); color: rgb(var(--s-brand-ink)); border-color: rgb(var(--s-brand)); }
+

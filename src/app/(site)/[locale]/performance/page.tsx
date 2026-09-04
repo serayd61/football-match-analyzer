@@ -26,7 +26,7 @@ export default async function PerformancePage({ params: { locale } }: { params: 
 
   const monthLabel = (ym: string) => f.dateTime(new Date(`${ym}-15T12:00:00Z`), 'month');
   const marketName = { '1x2': tc('market1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
-  const th = 'py-1.5 text-[11px] font-medium uppercase tracking-wider text-s-muted';
+  const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
 
   if (!r.overall.n) {
     return (
@@ -171,7 +171,7 @@ export default async function PerformancePage({ params: { locale } }: { params: 
 function Stat({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'win' | 'loss' }) {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wider text-s-muted">{label}</dt>
+      <dt className="text-xs uppercase tracking-wider text-s-muted">{label}</dt>
       <dd className={`num mt-1 font-head text-4xl leading-none ${tone === 'win' ? 'text-s-win' : tone === 'loss' ? 'text-s-loss' : ''}`}>{value}</dd>
       {note && <dd className="mt-1 text-xs text-s-muted">{note}</dd>}
     </div>

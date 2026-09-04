@@ -150,7 +150,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
 function Stat({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'win' | 'loss' }) {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wider text-s-muted">{label}</dt>
+      <dt className="text-xs uppercase tracking-wider text-s-muted">{label}</dt>
       <dd className={`num mt-0.5 font-head text-3xl leading-none ${tone === 'win' ? 'text-s-win' : tone === 'loss' ? 'text-s-loss' : ''}`}>{value}</dd>
       {note && <dd className="mt-1 text-xs text-s-muted">{note}</dd>}
     </div>
