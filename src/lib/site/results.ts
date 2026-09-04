@@ -2,7 +2,6 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { db, REVALIDATE } from './db';
 import { SITE_LEAGUES, resolveLeague, type SiteLeague } from './leagues';
-import { getCatalogMap } from '@/lib/league-catalog';
 import { COLS, parseRows, mapRow, loadContext, type SitePrediction } from './predictions';
 import { zonedStartOfDay, addDays } from './time';
 
@@ -13,10 +12,10 @@ import { zonedStartOfDay, addDays } from './time';
 // ---------------------------------------------------------------------------
 export const coveredLeagueIds = unstable_cache(
   async (): Promise<Record<string, number[]>> => {
-    const catalog = await getCatalogMap().catch(() => new Map());
+    const { catalog } = await loadContext();
     const out: Record<string, number[]> = {};
     for (const l of SITE_LEAGUES) out[l.slug] = [...l.ids];
-    for (const [id, e] of catalog as Map<number, { name: string; ccode: string }>) {
+    for (const [id, e] of catalog) {
       const l = resolveLeague(e.name, null, e.ccode);
       if (l && !out[l.slug].includes(id)) out[l.slug].push(id);
     }

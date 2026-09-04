@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { db, REVALIDATE } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
-import { getCatalogMap } from '@/lib/league-catalog';
-import { getCalibration, applyCurve, type Knot } from '@/lib/calibration';
+import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
 import { deriveOverUnder, deriveBtts } from '@/lib/goal-markets';
 
@@ -97,15 +96,38 @@ function outcomeOf(r: EngineRowT): Outcome {
 
 interface Curves { pick: Knot[]; ou: Knot[]; btts: Knot[] }
 
+// Catalog + calibration curves read through the site client (the legacy
+// helpers use `no-store` fetches, which cannot run inside a static build).
+async function readCatalog(): Promise<Map<number, { ccode: string; name: string }>> {
+  const { data } = await db().from('league_catalog').select('league_id, name, ccode').limit(5000);
+  const map = new Map<number, { ccode: string; name: string }>();
+  for (const r of (data || []) as any[]) map.set(Number(r.league_id), { name: r.name, ccode: r.ccode || '' });
+  return map;
+}
+
+async function readCurve(market: '1x2' | 'ou25' | 'btts'): Promise<Knot[]> {
+  const prefer = market === '1x2' ? ['covered', 'all'] : [market];
+  const { data } = await db()
+    .from('confidence_calibration')
+    .select('segment, knots, fitted_at')
+    .in('segment', prefer)
+    .order('fitted_at', { ascending: false })
+    .limit(10);
+  for (const seg of prefer) {
+    const row = (data || []).find((r: any) => r.segment === seg) as any;
+    if (row) return Array.isArray(row.knots) ? row.knots : [];
+  }
+  return [];
+}
+
 export async function loadContext(): Promise<{ catalog: Map<number, { ccode: string; name: string }>; curves: Curves }> {
-  const EMPTY = { knots: [] as Knot[] };
-  const [catalog, c1, c2, c3] = await Promise.all([
-    getCatalogMap().catch(() => new Map()),
-    getCalibration('1x2').catch(() => EMPTY),
-    getCalibration('ou25').catch(() => EMPTY),
-    getCalibration('btts').catch(() => EMPTY),
+  const [catalog, pick, ou, btts] = await Promise.all([
+    readCatalog().catch(() => new Map<number, { ccode: string; name: string }>()),
+    readCurve('1x2').catch(() => []),
+    readCurve('ou25').catch(() => []),
+    readCurve('btts').catch(() => []),
   ]);
-  return { catalog: catalog as any, curves: { pick: c1.knots, ou: c2.knots, btts: c3.knots } };
+  return { catalog, curves: { pick, ou, btts } };
 }
 
 export function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext>>): SitePrediction {

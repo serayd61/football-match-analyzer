@@ -3,8 +3,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Server-only Supabase client for the public site. Uses the service key so
 // RLS never gets in the way of public reads; nothing here is exposed to the
-// browser. Every network call is `no-store`: caching happens one level up
-// with `unstable_cache` (see predictions.ts), not in fetch.
+// browser. Caching happens one level up with `unstable_cache`; the inner
+// fetch carries a short `revalidate` (not `no-store`, which throws a
+// DynamicServerError while ISR pages are prerendered at build time).
 let _sb: SupabaseClient | null = null;
 
 export function db(): SupabaseClient {
@@ -14,7 +15,7 @@ export function db(): SupabaseClient {
   if (!url || !key) throw new Error('Supabase env missing');
   _sb = createClient(url, key, {
     auth: { persistSession: false },
-    global: { fetch: (i: any, init?: any) => fetch(i, { ...init, cache: 'no-store' }) },
+    global: { fetch: (i: any, init?: any) => fetch(i, { ...init, next: { revalidate: 300 } }) },
   });
   return _sb;
 }

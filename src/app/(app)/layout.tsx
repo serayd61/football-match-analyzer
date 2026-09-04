@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
+import '../globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import FloatingBackButton from '@/components/FloatingBackButton';
 import { Analytics } from '@vercel/analytics/react';
 import { GoogleAnalytics } from '@next/third-parties/google';
+import GoogleAdsTag from '@/components/GoogleAdsTag';
 import Navigation from '@/components/Navigation';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
@@ -117,6 +118,9 @@ export default function RootLayout({
         <Analytics />
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
+        {process.env.NEXT_PUBLIC_GOOGLE_ADS_ID && (
+          <GoogleAdsTag adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID} />
         )}
       </body>
     </html>

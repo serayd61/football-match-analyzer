@@ -23,9 +23,10 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
   const sections = t.raw('sections') as DocSection[];
 
   return (
-    <Page className="max-w-3xl">
+    <Page>
+      <div className="max-w-3xl">
       <PageTitle title={t('title')} lead={t('lead')} />
-      {updated && <p className="text-xs text-s-muted">{tc('lastUpdated')}: {f.dateTime(new Date(`${updated}T12:00:00Z`), 'dayLong')}, {updated.slice(0, 4)}</p>}
+      {updated && <p className="text-xs text-s-muted">{tc('lastUpdated')}: {f.dateTime(new Date(`${updated}T12:00:00Z`), { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
       <nav aria-label={tc('contents')} className="mt-6 border-y border-s-line py-3 text-sm">
         <ol className="grid gap-1 sm:grid-cols-2">
           {sections.map((s, i) => (
@@ -50,6 +51,7 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
             </div>
           </section>
         ))}
+      </div>
       </div>
     </Page>
   );
