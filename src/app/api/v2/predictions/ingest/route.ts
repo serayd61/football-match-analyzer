@@ -1,8 +1,4 @@
-  if (!API_SECRETS.length || !apiKey || !API_SECRETS.includes(apiKey)) {// İki sunucu sırrından biri yeterli: n8n PREDICTIONS_API_SECRET ile, elle
-// yeniden koşular (ör. 2026-09-04 RapidAPI kesintisi sonrası) CRON_SECRET ile.
-const API_SECRETS = [process.env.PREDICTIONS_API_SECRET, process.env.CRON_SECRET].filter(
-  (s): s is string => !!s,
-);// ============================================================================
+// ============================================================================
 // API V2: PREDICTIONS INGEST
 // n8n → FastAPI predict-service çıktısını alır, engine_predictions'a yazar.
 // Bearer token: PREDICTIONS_API_SECRET (mevcut sırrı yeniden kullanır).
@@ -14,7 +10,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const API_SECRET = process.env.PREDICTIONS_API_SECRET || process.env.CRON_SECRET || '';
+// İki sunucu sırrından biri yeterli: n8n PREDICTIONS_API_SECRET ile, elle
+// yeniden koşular (ör. 2026-09-04 RapidAPI kesintisi sonrası) CRON_SECRET ile.
+const API_SECRETS = [process.env.PREDICTIONS_API_SECRET, process.env.CRON_SECRET].filter(
+  (s): s is string => !!s,
+);
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -57,7 +57,7 @@ function num(v: any): number | null {
 export async function POST(request: NextRequest) {
   // --- Auth ---
   const apiKey = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!API_SECRET || apiKey !== API_SECRET) {
+  if (!API_SECRETS.length || !apiKey || !API_SECRETS.includes(apiKey)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
