@@ -71,7 +71,9 @@
     "pending": "Pending",
     "matches": "{count, plural, =1 {# match} other {# matches}}",
     "kickoff": "Kick-off",
-    "localTime": "times shown in {zone}"
+    "localTime": "times shown in {zone}",
+    "ou25Short": "O/U 2.5",
+    "bttsShort": "BTTS"
   },
   "errors": {
     "title": "Something went wrong",
@@ -156,5 +158,31 @@
     "upcoming": "Upcoming",
     "modelNote": "The headline 1X2 figures come from the Dixon-Coles fit, which corrects low-scoring draws. The Poisson grid on this page does not apply that correction, so its 1X2 split can differ by a point or two.",
     "disclaimer": "Probabilities are model estimates and are not guarantees. This page is not betting advice. 18+."
+  },
+  "results": {
+    "title": "Results",
+    "lead": "Every settled match in the leagues the model covers, with the pick it made and how it landed. Nothing is removed after the fact.",
+    "aside": "Aggregated accuracy, calibration and returns are on the",
+    "asideLink": "performance page.",
+    "period": "Period",
+    "period_7d": "7 days",
+    "period_30d": "30 days",
+    "period_90d": "90 days",
+    "period_all": "All",
+    "settledCount": "Settled",
+    "record": "Won–lost",
+    "hitRate": "Hit rate",
+    "colMatch": "Match",
+    "colScore": "Score",
+    "colPick": "Pick",
+    "emptyTitle": "No settled matches for this filter",
+    "emptyLead": "Widen the period or pick another league.",
+    "emptyAction": "Show everything",
+    "pagination": "Pages",
+    "newer": "← Newer",
+    "older": "Older →",
+    "pageOf": "Page {page} of {pages}",
+    "footnote": "Hit rate counts the 1X2 pick only. Over/under 2.5 and both-teams-to-score calls are settled from the final score. The percentage next to a pick is the calibrated probability at the time it was published.",
+    "unresolvedNote": "{count, plural, =1 {# match} other {# matches}} in this filter never received a final score (postponed, abandoned or missing from the feed) and are left out of the list and the counts."
   }
 }

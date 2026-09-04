@@ -97,7 +97,7 @@ function outcomeOf(r: EngineRowT): Outcome {
 
 interface Curves { pick: Knot[]; ou: Knot[]; btts: Knot[] }
 
-async function loadContext(): Promise<{ catalog: Map<number, { ccode: string; name: string }>; curves: Curves }> {
+export async function loadContext(): Promise<{ catalog: Map<number, { ccode: string; name: string }>; curves: Curves }> {
   const EMPTY = { knots: [] as Knot[] };
   const [catalog, c1, c2, c3] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
@@ -108,7 +108,7 @@ async function loadContext(): Promise<{ catalog: Map<number, { ccode: string; na
   return { catalog: catalog as any, curves: { pick: c1.knots, ou: c2.knots, btts: c3.knots } };
 }
 
-function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext>>): SitePrediction {
+export function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext>>): SitePrediction {
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   const ou = deriveOverUnder(r.p_over25);
@@ -149,7 +149,7 @@ function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext>>): Si
   };
 }
 
-function parseRows(data: unknown): EngineRowT[] {
+export function parseRows(data: unknown): EngineRowT[] {
   const parsed = z.array(EngineRow).safeParse(data);
   if (!parsed.success) {
     console.error('[site/predictions] schema mismatch', parsed.error.issues.slice(0, 3));
