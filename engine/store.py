@@ -302,6 +302,7 @@ class ResultStore:
             if not d or r.get("homeId") is None or r.get("awayId") is None:
                 continue
             out.append({
+                "id": r.get("id"),
                 "date": d,
                 "season": "",
                 "home": str(r["homeId"]),

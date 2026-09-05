@@ -109,3 +109,32 @@ Model her gün taze veriyle daha iyi olsun diye depoyu güncelle. İki yol:
 - predict `predicted:0, skipped=hepsi` → o ligler için yeterli geçmiş yok (MIN_LEAGUE_MATCHES=150). Backfill gününü artır (örn. 720) ya da eşiği düşür.
 - ingest 401 → n8n header'daki Bearer değeri Vercel'deki `PREDICTIONS_API_SECRET` ile aynı değil.
 - n8n predict bağlanamıyor → 3.4'teki Docker URL notuna bak.
+
+---
+
+## xG (dc-2.0-xg) — 2026-09-05 kapısından sonra canlıya alma
+
+Kapı raporu: `reports/backtest-xg-gate.md` (5/5 lig GEÇTİ). Servis, `xg.jsonl` yoksa birebir eski davranıştadır; adımlar sırayla ve geri alınabilir.
+
+```bash
+cd /opt/football-match-analyzer && git pull            # dal merge edildikten sonra
+cd engine && .venv/bin/pip install soccerdata            # yalnız store_xg.py için (servis stdlib+fastapi)
+
+# 1) xG yan deposunu kur (Understat; ~1–2 dk). Kapsam lig başına yazdırılır.
+STORE_PATH=/var/lib/footy/results.jsonl SOCCERDATA_DIR=/var/lib/footy/soccerdata \
+  .venv/bin/python store_xg.py build --days 600
+.venv/bin/python store_xg.py stats                       # /var/lib/footy/xg.jsonl + .report.json
+
+# 2) Servisi yeniden başlat, hangi ligin hangi sürümle yayınlanacağını gör
+sudo systemctl restart footy-predict
+curl -s http://127.0.0.1:8000/status | python3 -m json.tool | sed -n '/"xg"/,$p'
+
+# 3) Günlük cron: store update'ten SONRA xG'yi de güncelle (aynı satıra ekle)
+#   ... store.py update 3 && STORE_PATH=... SOCCERDATA_DIR=... .venv/bin/python store_xg.py build --days 600 && systemctl restart footy-predict
+```
+
+Ayarlar (systemd `Environment=`): `XG_WEIGHT=0.75`, `XG_MIN_COVERAGE=0.95`, `MODEL_VERSION_XG=dc-2.0-xg`, `XG_PATH=/var/lib/footy/xg.jsonl`.
+
+Geri alma: `xg.jsonl`'i sil veya `XG_WEIGHT=0` ver → servis `dc-1.0` yayınlar. Site tarafında `SITE_MODEL_VERSION=dc-1.0` ile resmi sürüm eskiye sabitlenebilir.
+
+Kontrol (ilk günden sonra): `engine_predictions` içinde `model_version='dc-2.0-xg'` satırları yalnız 5 kapsanan ligde olmalı; `/status` → `xg.leagues[].xg_coverage` ≥ 0.95.
