@@ -75,7 +75,17 @@
     "ou25Short": "Ü/A 2,5",
     "bttsShort": "KG",
     "lastUpdated": "Son güncelleme",
-    "contents": "İçindekiler"
+    "contents": "İçindekiler",
+    "status": "Durum",
+    "statusScheduled": "Planlandı",
+    "statusLive": "Canlı",
+    "statusFinished": "Bitti",
+    "statusPostponed": "Ertelendi",
+    "statusCancelled": "İptal",
+    "statusUnknown": "Sonuç bekleniyor",
+    "search": "Ara",
+    "clear": "Temizle",
+    "sort": "Sırala"
   },
   "errors": {
     "title": "Bir şeyler ters gitti",
@@ -141,7 +151,23 @@
     "footnote": "Seçim = modelin en olası gördüğü sonuç; yanındaki yüzde ham model çıktısı değil, kalibre olasılıktır. Üst/Alt 2,5 ve karşılıklı gol, tercih edilen tarafı kalibre olasılığıyla gösterir. Saatler yerel saat diliminize göredir.",
     "pendingModel": "Model değerlendirmesi henüz yayınlanmadı",
     "pendingNote": "{count} maç yalnızca fikstürden, model değerlendirmesi olmadan listeleniyor; değerlendirmeler maçtan önceki akşam yayınlanır.",
-    "positionTitle": "Ligde {pos}. sıra"
+    "positionTitle": "Ligde {pos}. sıra",
+    "searchLabel": "Takım",
+    "searchPlaceholder": "Takım ara…",
+    "statusAll": "Tümü",
+    "statusUpcoming": "Yaklaşan",
+    "statusLive": "Canlı",
+    "statusFinished": "Biten",
+    "readyOnly": "Yalnız tahminli",
+    "sortTime": "Başlama",
+    "sortConfidence": "Güven",
+    "clearFilters": "Filtreleri temizle",
+    "emptyFiltered": "Bu filtrelerle maç yok",
+    "emptyFilteredLead": "Aramayı genişletin, başka bir durum seçin veya filtreleri temizleyin.",
+    "feedError": "Fikstür akışına ulaşılamadı; bu gün için yalnızca yayımlanmış tahminler listeleniyor.",
+    "feedStale": "Program {time} itibarıyla.",
+    "mobileMarkets": "Ü/A 2.5 {ou} · KG {btts}",
+    "statusHint": "Maç durumu fikstür akışından gelir; model tahmini ondan bağımsızdır."
   },
   "match": {
     "notFound": "Maç bulunamadı",
@@ -202,7 +228,16 @@
     "mkDnb": "Beraberlikte iade",
     "modelVsBook": "model · bahisçi",
     "csNote": "Bahisçi sütunu: listelenen doğru skor oranından örtük olasılık, marj dahil (yalnızca bahisçinin listelediği fiyatlar).",
-    "marketsNote": "İki yönlü pazarlar, bahisçi marjı çıkarılmış. Asya handikabı bahisçinin ana çizgisini kullanır; çeyrek çizgilerde model değeri iki komşu çizginin ortalamasıdır. Beraberlikte iade, modelin beraberlik çıkarılmış ev/deplasman dağılımıdır. Bilgi amaçlıdır, öneri değildir."
+    "marketsNote": "İki yönlü pazarlar, bahisçi marjı çıkarılmış. Asya handikabı bahisçinin ana çizgisini kullanır; çeyrek çizgilerde model değeri iki komşu çizginin ortalamasıdır. Beraberlikte iade, modelin beraberlik çıkarılmış ev/deplasman dağılımıdır. Bilgi amaçlıdır, öneri değildir.",
+    "secContext": "Takım bağlamı",
+    "formAsOf": "bu maçtan önce",
+    "contextSource": "Kaynak: motor arşivi (modelin puanladığı maçlar), tam fikstür geçmişi değil.",
+    "flagPostKickoff": "Bu kayıtlı tahmin en son maç başladıktan sonra yazılmış; temiz bir maç öncesi kayıt değildir.",
+    "sourceStored": "kayıtlı",
+    "sourceDerived": "beklenen gollerden türetilmiş",
+    "curveMeta": "Kalibrasyon eğrisi: {segment}, {n} maç, {date} tarihinde fit edildi.",
+    "noCurve": "Kalibrasyon eğrisi yüklü değil; kalibre değer ham çıktıya eşittir.",
+    "rawVsCal": "Ham model çıktısı ile kalibre olasılık farklı şeylerdir: ham değer modelin ürettiği sayıdır, kalibre değer geçmiş sonuçların o ham değere gerçekte ne kadar isabet biçtiğidir."
   },
   "results": {
     "title": "Sonuçlar",
@@ -273,7 +308,22 @@
     "marketFav": "Bahisçi favorisi",
     "roiExplain": "Modelin 1X2 seçimine, başlama vuruşundan önce kaydedilen son oranla (kapanış, yoksa açılış) bir birim. Yalnızca oran kaydı olan maçlar sayılır; bu yüzden bu pencere tam karneden kısadır. Bahisçi satırı, aynı maçlarda piyasa favorisinin ne sıklıkla kazandığını marjdan arındırılmış Brier ile gösterir.",
     "footer": "Hesaplama: {at}. Saatte bir yenilenir. Sayıların tanımı için:",
-    "footerLink": "yöntem."
+    "footerLink": "yöntem.",
+    "roiClosing": "Kapanış oranı",
+    "roiOpening": "Açılış oranı",
+    "coverage": "Oran kapsamı",
+    "coverageNote": "{decided} sonuçlanmış maçın {bets} tanesinde bu aşamanın oranı var; anlık görüntüsü olmayan {missing} maç ROI paydasının dışındadır.",
+    "providers": "Sağlayıcılar",
+    "calRetro": "Geriye dönük (bugünkü eğri)",
+    "calWalk": "İleriye dönük (yalnız önceki aylar)",
+    "walkNote": "Her ay, yalnızca kendinden önceki aylarla fit edilmiş eğriyle puanlanır. Başlangıçtaki {warmup} maç ısınma dönemidir ve puanlanmaz; ilk puanlanan ay: {month}.",
+    "walkBrier": "Seçim Brier ham {raw} → kalibre {cal} (ikili ölçek).",
+    "walkEmpty": "İleriye dönük ölçüm için henüz yeterli geçmiş yok.",
+    "brierScale": "1X2 Brier çok sınıflıdır (0 en iyi, 2 en kötü; 0,667 tekdüze tahmin). Üst/Alt ve KG Brier ikilidir (0–1; 0,25 yazı-tura). İki ölçek karşılaştırılamaz.",
+    "quality": "Veri kalitesi",
+    "qualityNote": "{decided} sonuçlanmış maç · model sürümü {versions}. {recomputed} satırda kayıtlı isabet işareti yoktu; skordan yeniden türetildi.",
+    "truncated": "Satır sınırına ulaşıldı; bu örneklem kesilmiştir.",
+    "roiPhaseNote": "Kapanış oranı piyasanın başlama anında bildiklerinin ölçütüdür; açılış oranı tahmin yayımlandığında erişilebilir olana daha yakındır. İkisi de gerçekleşmiş getiri değildir."
   },
   "leagues": {
     "title": "Ligler",
@@ -577,6 +627,8 @@
     "expand": "Aç",
     "collapse": "Kapat",
     "chatOpen": "Asistanı aç",
-    "disclaimer": "İstatistiksel tahminlerdir, bahis tavsiyesi değildir. Yalnızca kaybetmeyi göze alabildiğin kadar oyna."
+    "disclaimer": "İstatistiksel tahminlerdir, bahis tavsiyesi değildir. Yalnızca kaybetmeyi göze alabildiğin kadar oyna.",
+    "sourceDerived": "türetilmiş",
+    "sourceStored": "kayıtlı"
   }
 }

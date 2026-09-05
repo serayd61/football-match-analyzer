@@ -75,7 +75,17 @@
     "ou25Short": "O/U 2.5",
     "bttsShort": "BTTS",
     "lastUpdated": "Last updated",
-    "contents": "Contents"
+    "contents": "Contents",
+    "status": "Status",
+    "statusScheduled": "Scheduled",
+    "statusLive": "Live",
+    "statusFinished": "Finished",
+    "statusPostponed": "Postponed",
+    "statusCancelled": "Cancelled",
+    "statusUnknown": "Awaiting result",
+    "search": "Search",
+    "clear": "Clear",
+    "sort": "Sort"
   },
   "errors": {
     "title": "Something went wrong",
@@ -141,7 +151,23 @@
     "footnote": "Pick = the outcome the model rates most likely; the percentage next to it is the calibrated probability, not the raw model output. Over/Under 2.5 and BTTS show the favoured side with its calibrated probability. Times are shown in your local time zone.",
     "pendingModel": "Model rating not published yet",
     "pendingNote": "{count, plural, =1 {# fixture is} other {# fixtures are}} listed from the schedule without a model rating; ratings are published the evening before kick-off.",
-    "positionTitle": "Position {pos} in the league table"
+    "positionTitle": "Position {pos} in the league table",
+    "searchLabel": "Team",
+    "searchPlaceholder": "Search team…",
+    "statusAll": "All",
+    "statusUpcoming": "Upcoming",
+    "statusLive": "Live",
+    "statusFinished": "Finished",
+    "readyOnly": "Rated only",
+    "sortTime": "Kick-off",
+    "sortConfidence": "Confidence",
+    "clearFilters": "Clear filters",
+    "emptyFiltered": "No matches for these filters",
+    "emptyFilteredLead": "Widen the search, pick another status, or clear the filters.",
+    "feedError": "The fixture feed could not be reached, so only published predictions are listed for this day.",
+    "feedStale": "Schedule as of {time}.",
+    "mobileMarkets": "O/U 2.5 {ou} · BTTS {btts}",
+    "statusHint": "Match state comes from the schedule feed; the model rating is independent from it."
   },
   "match": {
     "notFound": "Match not found",
@@ -202,7 +228,16 @@
     "mkDnb": "Draw no bet",
     "modelVsBook": "model · bookmaker",
     "csNote": "Bookmaker column: implied probability from the listed correct-score price, margin included (only the prices the book lists).",
-    "marketsNote": "Two-way markets with the bookmaker's margin removed. Asian handicap uses the book's main line; on quarter lines the model figure averages the two neighbouring lines. Draw no bet is the model's home/away split with the draw removed. Information, not a recommendation."
+    "marketsNote": "Two-way markets with the bookmaker's margin removed. Asian handicap uses the book's main line; on quarter lines the model figure averages the two neighbouring lines. Draw no bet is the model's home/away split with the draw removed. Information, not a recommendation.",
+    "secContext": "Team context",
+    "formAsOf": "before this match",
+    "contextSource": "Source: the engine archive (matches the model rated), not the full fixture history.",
+    "flagPostKickoff": "This stored prediction was last written after kick-off, so it is not a clean pre-match record.",
+    "sourceStored": "stored",
+    "sourceDerived": "derived from expected goals",
+    "curveMeta": "Calibration curve: {segment}, {n} matches, fitted {date}.",
+    "noCurve": "No calibration curve loaded; the calibrated figure equals the raw output.",
+    "rawVsCal": "Raw model output and calibrated probability are different things: the raw figure is what the model produced, the calibrated one is what past results say that raw figure has actually delivered."
   },
   "results": {
     "title": "Results",
@@ -273,7 +308,22 @@
     "marketFav": "Bookmaker favourite",
     "roiExplain": "One unit on the model's 1X2 pick at the last captured odds before kick-off (closing, else opening). Only matches with an odds snapshot count, so this window is shorter than the full record. The bookmaker line shows how often the market favourite won over the same matches, with its margin-free Brier.",
     "footer": "Computed {at}. Recomputed hourly. How the numbers are defined:",
-    "footerLink": "methodology."
+    "footerLink": "methodology.",
+    "roiClosing": "Closing price",
+    "roiOpening": "Opening price",
+    "coverage": "Odds coverage",
+    "coverageNote": "{bets} of {decided} decided matches have a price for this phase; {missing} without a snapshot are outside the ROI denominator.",
+    "providers": "Providers",
+    "calRetro": "Retrospective (today's curve)",
+    "calWalk": "Walk-forward (earlier months only)",
+    "walkNote": "Each month is scored with a curve fitted on the months before it. {warmup} early matches form the warm-up and are not scored; first scored month: {month}.",
+    "walkBrier": "Pick Brier raw {raw} → calibrated {cal} (binary scale).",
+    "walkEmpty": "Not enough history yet for a walk-forward estimate.",
+    "brierScale": "1X2 Brier is multi-class (0 best, 2 worst; 0.667 is a uniform guess). Over/Under and BTTS Brier are binary (0 to 1; 0.25 is a coin flip). The two scales are not comparable.",
+    "quality": "Data quality",
+    "qualityNote": "{decided} decided matches · model version {versions}. {recomputed} rows had no stored outcome flag and were re-derived from the score.",
+    "truncated": "The row cap was reached; this sample is truncated.",
+    "roiPhaseNote": "The closing price is a benchmark of what the market knew at kick-off; the opening price is closer to what was available when the prediction was published. Neither is a realised return."
   },
   "leagues": {
     "title": "Leagues",
@@ -577,6 +627,8 @@
     "expand": "Open",
     "collapse": "Close",
     "chatOpen": "Open assistant",
-    "disclaimer": "Statistical estimates, not betting advice. Only bet what you can afford to lose."
+    "disclaimer": "Statistical estimates, not betting advice. Only bet what you can afford to lose.",
+    "sourceDerived": "derived",
+    "sourceStored": "stored"
   }
 }

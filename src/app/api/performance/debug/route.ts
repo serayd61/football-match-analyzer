@@ -4,8 +4,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { devOnlyGuard } from '@/lib/api/dev-only';
 
 export async function GET(request: NextRequest) {
+  // Denetim 2026-09-05: service-role ile test kaydı yazıp siliyor — üretimde kapalı.
+  const blocked = devOnlyGuard(request);
+  if (blocked) return blocked;
+
   const results: any = {
     timestamp: new Date().toISOString(),
     environment: {},

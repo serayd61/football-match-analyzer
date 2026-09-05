@@ -75,7 +75,17 @@
     "ou25Short": "Ü/U 2.5",
     "bttsShort": "BTT",
     "lastUpdated": "Zuletzt aktualisiert",
-    "contents": "Inhalt"
+    "contents": "Inhalt",
+    "status": "Status",
+    "statusScheduled": "Angesetzt",
+    "statusLive": "Live",
+    "statusFinished": "Beendet",
+    "statusPostponed": "Verschoben",
+    "statusCancelled": "Abgesagt",
+    "statusUnknown": "Ergebnis ausstehend",
+    "search": "Suchen",
+    "clear": "Zurücksetzen",
+    "sort": "Sortieren"
   },
   "errors": {
     "title": "Etwas ist schiefgelaufen",
@@ -141,7 +151,23 @@
     "footnote": "Tipp = der Ausgang, den das Modell am wahrscheinlichsten hält; die Prozentzahl daneben ist die kalibrierte Wahrscheinlichkeit, nicht die rohe Modellausgabe. Über/Unter 2.5 und «Beide treffen» zeigen die bevorzugte Seite mit ihrer kalibrierten Wahrscheinlichkeit. Zeiten in Ihrer lokalen Zeitzone.",
     "pendingModel": "Modellbewertung noch nicht veröffentlicht",
     "pendingNote": "{count, plural, =1 {# Spiel steht} other {# Spiele stehen}} nur aus dem Spielplan ohne Modellbewertung in der Liste; Bewertungen erscheinen am Vorabend des Anpfiffs.",
-    "positionTitle": "Tabellenplatz {pos}"
+    "positionTitle": "Tabellenplatz {pos}",
+    "searchLabel": "Team",
+    "searchPlaceholder": "Team suchen…",
+    "statusAll": "Alle",
+    "statusUpcoming": "Bevorstehend",
+    "statusLive": "Live",
+    "statusFinished": "Beendet",
+    "readyOnly": "Nur mit Bewertung",
+    "sortTime": "Anstoss",
+    "sortConfidence": "Konfidenz",
+    "clearFilters": "Filter zurücksetzen",
+    "emptyFiltered": "Keine Spiele für diese Filter",
+    "emptyFilteredLead": "Suche erweitern, anderen Status wählen oder Filter zurücksetzen.",
+    "feedError": "Der Spielplan-Feed war nicht erreichbar; für diesen Tag werden nur veröffentlichte Prognosen gelistet.",
+    "feedStale": "Spielplan Stand {time}.",
+    "mobileMarkets": "Ü/U 2,5 {ou} · BTTS {btts}",
+    "statusHint": "Der Spielstatus stammt aus dem Spielplan-Feed; die Modellbewertung ist davon unabhängig."
   },
   "match": {
     "notFound": "Spiel nicht gefunden",
@@ -202,7 +228,16 @@
     "mkDnb": "Unentschieden – Einsatz zurück",
     "modelVsBook": "Modell · Buchmacher",
     "csNote": "Spalte Buchmacher: implizite Wahrscheinlichkeit aus der gelisteten Resultat-Quote, Marge enthalten (nur die Preise, die der Buchmacher listet).",
-    "marketsNote": "Zweiweg-Märkte, Buchmachermarge herausgerechnet. Asian Handicap nutzt die Hauptlinie des Buchmachers; bei Viertellinien mittelt das Modell die beiden Nachbarlinien. «Einsatz zurück» ist die Heim/Auswärts-Aufteilung des Modells ohne Remis. Information, keine Empfehlung."
+    "marketsNote": "Zweiweg-Märkte, Buchmachermarge herausgerechnet. Asian Handicap nutzt die Hauptlinie des Buchmachers; bei Viertellinien mittelt das Modell die beiden Nachbarlinien. «Einsatz zurück» ist die Heim/Auswärts-Aufteilung des Modells ohne Remis. Information, keine Empfehlung.",
+    "secContext": "Teamkontext",
+    "formAsOf": "vor diesem Spiel",
+    "contextSource": "Quelle: das Engine-Archiv (vom Modell bewertete Spiele), nicht die vollständige Spielhistorie.",
+    "flagPostKickoff": "Diese gespeicherte Prognose wurde zuletzt nach dem Anstoss geschrieben und ist daher kein sauberer Pre-Match-Datensatz.",
+    "sourceStored": "gespeichert",
+    "sourceDerived": "aus erwarteten Toren abgeleitet",
+    "curveMeta": "Kalibrierungskurve: {segment}, {n} Spiele, angepasst am {date}.",
+    "noCurve": "Keine Kalibrierungskurve geladen; der kalibrierte Wert entspricht dem Rohwert.",
+    "rawVsCal": "Rohwert des Modells und kalibrierte Wahrscheinlichkeit sind zwei verschiedene Dinge: der Rohwert ist die Modellausgabe, der kalibrierte Wert ist das, was vergangene Ergebnisse für diesen Rohwert tatsächlich geliefert haben."
   },
   "results": {
     "title": "Resultate",
@@ -273,7 +308,22 @@
     "marketFav": "Buchmacher-Favorit",
     "roiExplain": "Eine Einheit auf den 1X2-Tipp des Modells zur letzten erfassten Quote vor Anpfiff (Schluss-, sonst Eröffnungsquote). Nur Spiele mit Quotenerfassung zählen, darum ist dieses Fenster kürzer als die gesamte Bilanz. Die Buchmacher-Zeile zeigt, wie oft der Marktfavorit in denselben Spielen gewann, mit margenbereinigtem Brier.",
     "footer": "Berechnet {at}. Stündlich neu berechnet. Wie die Kennzahlen definiert sind:",
-    "footerLink": "Methodik."
+    "footerLink": "Methodik.",
+    "roiClosing": "Schlusskurs",
+    "roiOpening": "Eröffnungskurs",
+    "coverage": "Quotenabdeckung",
+    "coverageNote": "{bets} von {decided} entschiedenen Spielen haben eine Quote dieser Phase; {missing} ohne Snapshot liegen ausserhalb des ROI-Nenners.",
+    "providers": "Anbieter",
+    "calRetro": "Rückblickend (heutige Kurve)",
+    "calWalk": "Walk-forward (nur frühere Monate)",
+    "walkNote": "Jeder Monat wird mit einer Kurve bewertet, die nur auf den Monaten davor angepasst wurde. {warmup} frühe Spiele bilden die Aufwärmphase und werden nicht bewertet; erster bewerteter Monat: {month}.",
+    "walkBrier": "Tipp-Brier roh {raw} → kalibriert {cal} (binäre Skala).",
+    "walkEmpty": "Noch nicht genug Historie für eine Walk-forward-Schätzung.",
+    "brierScale": "Der 1X2-Brier ist mehrklassig (0 am besten, 2 am schlechtesten; 0,667 entspricht Raten). Über/Unter- und BTTS-Brier sind binär (0 bis 1; 0,25 ist Münzwurf). Die Skalen sind nicht vergleichbar.",
+    "quality": "Datenqualität",
+    "qualityNote": "{decided} entschiedene Spiele · Modellversion {versions}. {recomputed} Zeilen hatten kein gespeichertes Ergebnis-Flag und wurden aus dem Resultat abgeleitet.",
+    "truncated": "Zeilenlimit erreicht; diese Stichprobe ist abgeschnitten.",
+    "roiPhaseNote": "Der Schlusskurs ist ein Massstab dafür, was der Markt beim Anstoss wusste; der Eröffnungskurs liegt näher an dem, was bei Veröffentlichung der Prognose verfügbar war. Keiner von beiden ist eine realisierte Rendite."
   },
   "leagues": {
     "title": "Ligen",
@@ -577,6 +627,8 @@
     "expand": "Öffnen",
     "collapse": "Schliessen",
     "chatOpen": "Assistent öffnen",
-    "disclaimer": "Statistische Schätzungen, keine Wettempfehlung. Setze nur, was du verlieren kannst."
+    "disclaimer": "Statistische Schätzungen, keine Wettempfehlung. Setze nur, was du verlieren kannst.",
+    "sourceDerived": "abgeleitet",
+    "sourceStored": "gespeichert"
   }
 }

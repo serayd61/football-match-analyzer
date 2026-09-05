@@ -81,6 +81,10 @@ export async function getLiveNow(): Promise<Map<number, LiveScore>> {
 // Value radar: largest model-vs-market gaps across a set of rated fixtures.
 // 1X2 comes from the snapshot (margin removed by the odds cron); BTTS from the
 // bookmaker's own market where captured. Edges are raw model minus market.
+// Denetim 2026-09-05: the BTTS model figure is the STORED p_btts_yes (the same
+// record the list and the calibration use); the Poisson grid is only a
+// fallback when the row has no stored value, and every line says which
+// (`source`). A model-vs-market gap is a hypothesis, not a realised return.
 // ---------------------------------------------------------------------------
 
 export interface ValueRow {
@@ -92,6 +96,14 @@ export interface ValueRow {
   market_p: number;
   odds: number;
   edge: number;
+  source: 'stored' | 'derived';
+}
+
+/** BTTS "yes" probability with provenance: stored record first, Poisson grid as fallback. */
+export function bttsYesProb(r: Pick<SitePrediction, 'btts' | 'lambdaHome' | 'lambdaAway'>): { p: number; source: 'stored' | 'derived' } | null {
+  if (r.btts) return { p: r.btts.pick === 'yes' ? r.btts.pRaw : 1 - r.btts.pRaw, source: 'stored' };
+  if (r.lambdaHome != null && r.lambdaAway != null) return { p: bttsProb(scoreMatrix(r.lambdaHome, r.lambdaAway)), source: 'derived' };
+  return null;
 }
 
 export async function valueRadar(rows: SitePrediction[], minEdge = 0.04, limit = 12): Promise<ValueRow[]> {
@@ -104,15 +116,17 @@ export async function valueRadar(rows: SitePrediction[], minEdge = 0.04, limit =
     const s = snaps[r.fixtureId];
     if (!s) return;
     const cands: Array<Omit<ValueRow, 'fixtureId' | 'row' | 'edge'>> = [
-      { market: '1x2', selection: '1', model: r.pHome, market_p: s.pHome, odds: s.homeOdds },
-      { market: '1x2', selection: 'X', model: r.pDraw, market_p: s.pDraw, odds: s.drawOdds },
-      { market: '1x2', selection: '2', model: r.pAway, market_p: s.pAway, odds: s.awayOdds },
+      { market: '1x2', selection: '1', model: r.pHome, market_p: s.pHome, odds: s.homeOdds, source: 'stored' },
+      { market: '1x2', selection: 'X', model: r.pDraw, market_p: s.pDraw, odds: s.drawOdds, source: 'stored' },
+      { market: '1x2', selection: '2', model: r.pAway, market_p: s.pAway, odds: s.awayOdds, source: 'stored' },
     ];
     const book = books[i];
-    if (book?.btts && r.lambdaHome != null && r.lambdaAway != null) {
-      const by = bttsProb(scoreMatrix(r.lambdaHome, r.lambdaAway));
-      cands.push({ market: 'btts', selection: 'yes', model: by, market_p: book.btts.pA, odds: book.btts.a });
-      cands.push({ market: 'btts', selection: 'no', model: 1 - by, market_p: book.btts.pB, odds: book.btts.b });
+    if (book?.btts) {
+      const by = bttsYesProb(r);
+      if (by) {
+        cands.push({ market: 'btts', selection: 'yes', model: by.p, market_p: book.btts.pA, odds: book.btts.a, source: by.source });
+        cands.push({ market: 'btts', selection: 'no', model: 1 - by.p, market_p: book.btts.pB, odds: book.btts.b, source: by.source });
+      }
     }
     // One line per fixture: its largest positive gap.
     const best = cands.map((c) => ({ ...c, edge: c.model - c.market_p })).sort((a, b) => b.edge - a.edge)[0];
@@ -185,6 +199,6 @@ export const nextMatchForTeam = unstable_cache(
     const ctx = await loadContext();
     return mapRow(rows[0], ctx);
   },
-  ['site-team-next'],
+  ['site-team-next-v2'],
   { revalidate: REVALIDATE.fixtures },
 );

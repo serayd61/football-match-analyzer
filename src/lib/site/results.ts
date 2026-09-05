@@ -78,7 +78,7 @@ export const listResults = unstable_cache(
       unresolved: unresolved.count ?? 0,
     };
   },
-  ['site-results'],
+  ['site-results-v2'],
   { revalidate: REVALIDATE.results },
 );
 
@@ -118,7 +118,7 @@ export const listUpcomingForLeague = unstable_cache(
     const ctx = await loadContext();
     return parseRows(data).map((r) => mapRow(r, ctx));
   },
-  ['site-upcoming-league'],
+  ['site-upcoming-league-v2'],
   { revalidate: REVALIDATE.fixtures },
 );
 

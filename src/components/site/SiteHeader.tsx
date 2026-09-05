@@ -17,6 +17,9 @@ const NAV: Array<{ href: string; key: 'predictions' | 'results' | 'performance' 
   { href: '/methodology', key: 'methodology' },
 ];
 
+// Denetim 2026-09-05 (P2): at 768–1023px the desktop nav + locale/theme/login
+// row measured ~885px and pushed the page into horizontal scroll (TR/DE labels
+// are long). The desktop layout now opens at `lg`; the menu button serves md.
 export default function SiteHeader() {
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -46,7 +49,7 @@ export default function SiteHeader() {
           <Wordmark />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1 ml-2" aria-label="Primary">
+        <nav className="hidden lg:flex items-center gap-1 ml-2" aria-label="Primary">
           {NAV.map((n) => (
             <Link
               key={n.href}
@@ -63,7 +66,7 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto hidden md:flex items-center gap-2">
+        <div className="ml-auto hidden lg:flex items-center gap-2">
           <LocaleSwitcher />
           <ThemeToggle />
           <AuthLink className={authCls} />
@@ -72,7 +75,7 @@ export default function SiteHeader() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="ml-auto md:hidden inline-flex h-9 w-9 items-center justify-center rounded-sm border border-s-line"
+          className="ml-auto lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-sm border border-s-line"
           aria-label={open ? t('close') : t('menu')}
           aria-expanded={open}
           aria-controls="site-mobile-nav"
@@ -82,7 +85,7 @@ export default function SiteHeader() {
       </div>
 
       {open && (
-        <div id="site-mobile-nav" className="md:hidden border-t border-s-line bg-s-surface">
+        <div id="site-mobile-nav" className="lg:hidden border-t border-s-line bg-s-surface">
           <nav className="flex flex-col px-2 py-2" aria-label="Primary">
             {NAV.map((n) => (
               <Link

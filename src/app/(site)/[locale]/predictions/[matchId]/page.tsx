@@ -5,7 +5,8 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
-import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, type SitePrediction } from '@/lib/site/predictions';
+import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, getCalibrationMeta, type SitePrediction } from '@/lib/site/predictions';
+import { StatusChip } from '@/components/site/PredictionTable';
 import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap, handicapAt } from '@/lib/site/poisson';
 import { getMarketBook } from '@/lib/site/markets';
 import { Page, SectionTitle } from '@/components/site/ui';
@@ -56,13 +57,17 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const ts = await getTranslations('standings');
   const table = p.league ? await standingsIndex(p.league.slug) : new Map();
   const stRow = (id: number | null) => (id ? table.get(id) : undefined);
-  const [market, book, h2h, formHome, formAway] = await Promise.all([
+  // Form and H2H are bounded to matches that kicked off before this one, so a
+  // past match never lists itself or later games as "form" (denetim 2026-09-05).
+  const [market, book, h2h, formHome, formAway, curves] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
-    p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId) : Promise.resolve([] as SitePrediction[]),
-    p.homeId ? getTeamForm(p.homeId) : Promise.resolve([] as SitePrediction[]),
-    p.awayId ? getTeamForm(p.awayId) : Promise.resolve([] as SitePrediction[]),
+    p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
+    p.homeId ? getTeamForm(p.homeId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
+    p.awayId ? getTeamForm(p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
+    getCalibrationMeta(),
   ]);
+  const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
 
   const sm = p.lambdaHome != null && p.lambdaAway != null ? scoreMatrix(p.lambdaHome, p.lambdaAway) : null;
   const derived = sm ? outcomeProbs(sm) : null;
@@ -122,6 +127,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
         {p.league ? <Link href={`/leagues/${p.league.slug}`} className="hover:underline underline-offset-4">{p.leagueName}</Link> : p.leagueName}
         {' · '}
         <LocalTime iso={p.kickoff} format="kickoff" />
+        {p.status !== 'scheduled' && <span className="ml-2 align-middle"><StatusChip status={p.status} label={tc(statusKey[p.status])} /></span>}
         {!p.covered && <span className="ml-2 rounded-[2px] border border-s-line px-1.5 py-0.5 text-xs">{t('outsideCoverage')}</span>}
       </div>
 
@@ -187,6 +193,8 @@ export default async function MatchPage({ params }: { params: { locale: string; 
             </div>
             <p className="mt-2 text-xs text-s-muted">
               {t('pickNote', { pick: pickName, cal: pct(p.confidence), raw: pct(p.confidenceRaw) })}
+              {' '}{t('rawVsCal')}
+              {' '}{curves.pick ? t('curveMeta', { segment: curves.pick.segment, n: f.number(curves.pick.nSamples ?? 0), date: curves.pick.fittedAt ? f.dateTime(new Date(curves.pick.fittedAt), 'dayShort') : '–' }) : t('noCurve')}
               {' '}{t('edgeNote')}
               {p.doubleChance && <> {t('dcNote', { dc: p.doubleChance.pick, p: pct(p.doubleChance.p) })}</>}
             </p>
@@ -195,7 +203,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           {/* ── Goals ─────────────────────────────────────────────────── */}
           {sm && (
             <section>
-              <SectionTitle title={t('secGoals')} meta={t('lambdaMeta', { lh: f.number(sm.lambdaHome, 'fixed2'), la: f.number(sm.lambdaAway, 'fixed2') })} />
+              <SectionTitle title={t('secGoals')} meta={<>{t('lambdaMeta', { lh: f.number(sm.lambdaHome, 'fixed2'), la: f.number(sm.lambdaAway, 'fixed2') })} · {t('sourceDerived')}</>} />
               <div className="mt-4 grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wider text-s-muted">
@@ -237,7 +245,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
                   </ul>
                   {csMap.size > 0 && <p className="mt-1 text-xs text-s-muted">{t('csNote')}</p>}
                   <p className="mt-2 text-xs text-s-muted">
-                    {t('calibratedGoals', { ou: p.overUnder ? `${p.overUnder.pick === 'over' ? tc('over') : tc('under')} 2.5 ${pct(p.overUnder.p)}` : '–', btts: p.btts ? `${p.btts.pick === 'yes' ? tc('yes') : tc('no')} ${pct(p.btts.p)}` : '–' })}
+                    {t('sourceStored')}: {t('calibratedGoals', { ou: p.overUnder ? `${p.overUnder.pick === 'over' ? tc('over') : tc('under')} 2.5 ${pct(p.overUnder.p)}` : '–', btts: p.btts ? `${p.btts.pick === 'yes' ? tc('yes') : tc('no')} ${pct(p.btts.p)}` : '–' })}
                   </p>
                 </div>
               </div>
@@ -314,7 +322,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
         <aside className="space-y-10">
           {/* ── Form ──────────────────────────────────────────────────── */}
           <section>
-            <SectionTitle title={t('secForm')} meta={t('formMeta')} />
+            <SectionTitle title={t('secContext')} meta={<>{t('formMeta')} · {t('formAsOf')}</>} />
             <div className="mt-4 space-y-4 text-sm">
               {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId) }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId) }].map((team) => (
                 <div key={team.name}>
@@ -334,6 +342,8 @@ export default async function MatchPage({ params }: { params: { locale: string; 
               ))}
             </div>
           </section>
+
+          <p className="mt-3 text-xs text-s-muted">{t('contextSource')}</p>
 
           {/* ── Head to head ──────────────────────────────────────────── */}
           <section>
@@ -362,8 +372,9 @@ export default async function MatchPage({ params }: { params: { locale: string; 
               <dt className="text-s-muted">{t('modelVersion')}</dt><dd className="num">{p.modelVersion ?? '–'}</dd>
               <dt className="text-s-muted">{t('derived1x2')}</dt><dd className="num">{derived ? `${pct(derived.home)} / ${pct(derived.draw)} / ${pct(derived.away)}` : '–'}</dd>
               <dt className="text-s-muted">{t('published')}</dt><dd className="num">{p.updatedAt ? f.dateTime(new Date(p.updatedAt), 'kickoff') : '–'}</dd>
-              <dt className="text-s-muted">{t('status')}</dt><dd>{isPast ? (p.settled ? t('settled') : t('awaitingResult')) : t('upcoming')}</dd>
+              <dt className="text-s-muted">{t('status')}</dt><dd>{tc(statusKey[p.status])}{p.settled ? ` · ${t('settled')}` : isPast ? ` · ${t('awaitingResult')}` : ''}</dd>
             </dl>
+            {p.publishedAfterKickoff && <p className="mt-2 rounded-[2px] border border-s-loss/40 bg-s-loss/10 px-2 py-1.5 text-xs">{t('flagPostKickoff')}</p>}
             <p className="mt-3 text-xs text-s-muted">{t('modelNote')}</p>
           </section>
         </aside>
