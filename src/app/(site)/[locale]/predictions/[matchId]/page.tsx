@@ -205,30 +205,31 @@ export default async function MatchPage({ params }: { params: { locale: string; 
             <section>
               <SectionTitle title={t('secGoals')} meta={<>{t('lambdaMeta', { lh: f.number(sm.lambdaHome, 'fixed2'), la: f.number(sm.lambdaAway, 'fixed2') })} · {t('sourceDerived')}</>} />
               <div className="mt-4 grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <table className="w-full text-sm">
+                {/* table-fixed + min-w-0: hücre içeriği sütunu genişletemez → sağdaki skor listesine taşma yok (2026-09-06) */}
+                <table className="w-full table-fixed self-start text-sm">
                   <thead className="text-xs uppercase tracking-wider text-s-muted">
                     <tr className="border-b border-s-line">
                       <th className="py-1.5 text-left font-medium">{t('line')}</th>
-                      <th className="py-1.5 text-right font-medium">{tc('over')}</th>
-                      <th className="py-1.5 text-right font-medium">{tc('under')}</th>
+                      <th className="w-[7.25rem] py-1.5 pl-2 text-right font-medium">{tc('over')}</th>
+                      <th className="w-[7.25rem] py-1.5 pl-2 text-right font-medium">{tc('under')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lines.map((l) => (
                       <tr key={l.line} className="border-b border-s-line">
                         <td className="py-2">{l.line.toFixed(1)}</td>
-                        <td className="num py-2 text-right"><Cell p={l.over} /></td>
-                        <td className="num py-2 text-right"><Cell p={1 - l.over} /></td>
+                        <td className="num py-2 pl-2 text-right"><Cell p={l.over} /></td>
+                        <td className="num py-2 pl-2 text-right"><Cell p={1 - l.over} /></td>
                       </tr>
                     ))}
                     <tr className="border-b border-s-line">
-                      <td className="whitespace-nowrap py-2">{tc('btts')}</td>
-                      <td className="num py-2 text-right"><Cell p={bttsProb(sm)} label={tc('yes')} /></td>
-                      <td className="num py-2 text-right"><Cell p={1 - bttsProb(sm)} label={tc('no')} /></td>
+                      <td className="py-2 pr-2 leading-tight">{tc('btts')}</td>
+                      <td className="num py-2 pl-2 text-right"><Cell p={bttsProb(sm)} label={tc('yes')} /></td>
+                      <td className="num py-2 pl-2 text-right"><Cell p={1 - bttsProb(sm)} label={tc('no')} /></td>
                     </tr>
                   </tbody>
                 </table>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-baseline justify-between">
                     <h3 className="font-body text-xs font-medium uppercase tracking-wider text-s-muted">{t('likelyScores')}</h3>
                     {csMap.size > 0 && <span className="text-xs text-s-muted">{t('modelVsBook')}</span>}
@@ -396,10 +397,10 @@ function Team({ name, crest, align }: { name: string; crest: string | null; alig
 
 function Cell({ p, label }: { p: number; label?: string }) {
   return (
-    <span className="inline-flex items-center justify-end gap-1.5">
-      {label && <span className="text-xs text-s-muted">{label}</span>}
-      <span className="inline-block h-1.5 w-12 bg-s-raised"><span className="block h-1.5 bg-s-brand" style={{ width: `${p * 100}%` }} /></span>
-      <span className="w-10 text-right">{pct(p)}</span>
+    <span className="flex w-full items-center justify-end gap-1.5">
+      {label && <span className="truncate text-xs text-s-muted">{label}</span>}
+      <span className="inline-block h-1.5 w-10 shrink-0 bg-s-raised"><span className="block h-1.5 bg-s-brand" style={{ width: `${p * 100}%` }} /></span>
+      <span className="w-9 shrink-0 text-right">{pct(p)}</span>
     </span>
   );
 }
