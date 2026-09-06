@@ -1,13 +1,20 @@
 """
 Dixon-Coles-lite gol modeli (saf Python, bağımlılık yok).
 - Zaman-ağırlıklı Poisson MLE (sabit-nokta iterasyonu) ile takım atak/defans gücü.
-- Dixon-Coles düşük-skor düzeltmesi (rho).
+- Dixon-Coles düşük-skor düzeltmesi (rho) — artık modelde saklanır (sürüm parametresi).
 - Skor matrisinden 1X2 / Üst-Alt 2.5 / KG olasılıkları.
+
+2026-09-07 (haftalık öğrenme döngüsü, Faz 3):
+- fit(..., rho=RHO, shrink_k=0.0): `shrink_k` yeni/az maçlı takım büzülmesi —
+  döngü sonunda A[t] = (n_t·A[t] + k·1) / (n_t + k), D aynı; n_t = takımın ağırlık
+  toplamı (etkin maç sayısı). k=0 → çıktı birebir eski (parite testi).
+- Dönen sözlükte "rho" ve "n_eff" (takım → etkin maç) vardır; predict rho'yu
+  modelden okur (yoksa RHO sabiti), servis n_eff ile az maçlı takımı atlar.
 """
 import math
 
 MAX_GOALS = 10
-RHO = -0.10  # Dixon-Coles düşük skor düzeltmesi
+RHO = -0.10  # Dixon-Coles düşük skor düzeltmesi (varsayılan)
 
 
 def _pois(k, lam):
@@ -16,7 +23,8 @@ def _pois(k, lam):
     return math.exp(-lam) * (lam ** k) / math.factorial(k)
 
 
-def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_matches=120):
+def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_matches=120,
+        rho=RHO, shrink_k=0.0):
     """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı Poisson MLE."""
     train = [m for m in matches if m["date"] < ref_date]
     if window_days:
@@ -33,9 +41,13 @@ def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_ma
 
     ln2 = math.log(2.0)
     w = []
+    n_eff = {t: 0.0 for t in teams}
     for m in train:
         age = ref_date.toordinal() - m["date"].toordinal()
-        w.append(math.exp(-ln2 * age / half_life_days))
+        wk = math.exp(-ln2 * age / half_life_days)
+        w.append(wk)
+        n_eff[m["home"]] += wk
+        n_eff[m["away"]] += wk
 
     for _ in range(iters):
         # base
@@ -85,7 +97,14 @@ def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_ma
                 D[t] /= md
             base *= ma * md
 
-    return {"A": A, "D": D, "H": H, "base": base, "teams": set(teams)}
+    if shrink_k and shrink_k > 0:
+        # Az maçlı takımı lig ortalamasına (1.0) çek; çok maçlı takım neredeyse değişmez.
+        for t in teams:
+            n = n_eff[t]
+            A[t] = (n * A[t] + shrink_k * 1.0) / (n + shrink_k)
+            D[t] = (n * D[t] + shrink_k * 1.0) / (n + shrink_k)
+
+    return {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff}
 
 
 def predict(model, home, away):
@@ -93,6 +112,7 @@ def predict(model, home, away):
     if model is None:
         return None
     A, D, H, base = model["A"], model["D"], model["H"], model["base"]
+    rho = model.get("rho", RHO)
     ah = A.get(home, 1.0); dh = D.get(home, 1.0)
     aa = A.get(away, 1.0); da = D.get(away, 1.0)
     lam_h = base * ah * da * H
@@ -111,13 +131,13 @@ def predict(model, home, away):
             p = ph[i] * pa[j]
             # Dixon-Coles düzeltmesi
             if i == 0 and j == 0:
-                p *= 1.0 - lam_h * lam_a * RHO
+                p *= 1.0 - lam_h * lam_a * rho
             elif i == 1 and j == 0:
-                p *= 1.0 + lam_a * RHO
+                p *= 1.0 + lam_a * rho
             elif i == 0 and j == 1:
-                p *= 1.0 + lam_h * RHO
+                p *= 1.0 + lam_h * rho
             elif i == 1 and j == 1:
-                p *= 1.0 - RHO
+                p *= 1.0 - rho
             if p < 0:
                 p = 0.0
             total += p

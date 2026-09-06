@@ -27,7 +27,7 @@ import { fitIsotonic, brier, applyCurve, invalidateCalibrationCache } from '@/li
 import { finiteOrNull, goalPoints, temporalSplit, holdoutBrier, type TPt } from '@/lib/calibration-eval';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
-import { pickOfficial } from '@/lib/site/official';
+import { pickOfficial, resolveOfficialVersion } from '@/lib/site/official';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Tek resmi satır / maç (birden çok model sürümü varsa çift sayma).
-  const data = pickOfficial(raw.map((r) => ({ ...r, fixture_id: Number(r.fixture_id) })));
+  const data = pickOfficial(raw.map((r) => ({ ...r, fixture_id: Number(r.fixture_id) })), await resolveOfficialVersion());
 
   const catalog = await getCatalogMap().catch(() => new Map());
   const all: TPt[] = [];

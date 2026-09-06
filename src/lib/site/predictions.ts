@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db, REVALIDATE } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
-import { pickOfficial, officialFilter } from './official';
+import { pickOfficial, officialFilter, resolveOfficialVersion, OFFICIAL_MODEL_VERSION } from './official';
 import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
 import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
@@ -217,7 +217,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now()): SiteP
 export interface ParseReport { rows: EngineRowT[]; rejected: number; issues: string[] }
 
 /** Row-level validation: bad rows are quarantined and counted, good rows survive. */
-export function parseRowsDetailed(data: unknown): ParseReport {
+export function parseRowsDetailed(data: unknown, official: string | null = OFFICIAL_MODEL_VERSION): ParseReport {
   if (!Array.isArray(data)) return { rows: [], rejected: 0, issues: data == null ? [] : ['payload is not an array'] };
   const rows: EngineRowT[] = [];
   const issues: string[] = [];
@@ -232,11 +232,11 @@ export function parseRowsDetailed(data: unknown): ParseReport {
     }
   }
   if (rejected) console.error(`[site/predictions] ${rejected}/${data.length} rows quarantined`, issues);
-  return { rows: pickOfficial(rows), rejected, issues };
+  return { rows: pickOfficial(rows, official), rejected, issues };
 }
 
-export function parseRows(data: unknown): EngineRowT[] {
-  return parseRowsDetailed(data).rows;
+export function parseRows(data: unknown, official: string | null = OFFICIAL_MODEL_VERSION): EngineRowT[] {
+  return parseRowsDetailed(data, official).rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -248,16 +248,17 @@ export const listPredictionsForDay = unstable_cache(
   async (ymd: string): Promise<SitePrediction[]> => {
     const from = zonedStartOfDay(ymd).toISOString();
     const to = zonedStartOfDay(addDays(ymd, 1)).toISOString();
+    const official = await resolveOfficialVersion();
     const { data, error } = await officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .gte('kickoff', from)
-      .lt('kickoff', to))
+      .lt('kickoff', to), official)
       .order('kickoff', { ascending: true })
       .limit(600);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data).map((r) => mapRow(r, ctx));
+    return parseRows(data, official).map((r) => mapRow(r, ctx));
   },
   ['site-predictions-day-v2'],
   { revalidate: REVALIDATE.fixtures },
@@ -267,7 +268,7 @@ export const listPredictionsForDay = unstable_cache(
 export const nextDayWithPredictions = unstable_cache(
   async (ymd: string, direction: 1 | -1 = 1): Promise<string | null> => {
     const pivot = zonedStartOfDay(addDays(ymd, direction === 1 ? 1 : 0)).toISOString();
-    let q = officialFilter(db().from('engine_predictions').select('kickoff, league_id, league_name')).limit(400);
+    let q = officialFilter(db().from('engine_predictions').select('kickoff, league_id, league_name'), await resolveOfficialVersion()).limit(400);
     q = direction === 1 ? q.gte('kickoff', pivot).order('kickoff', { ascending: true }) : q.lt('kickoff', pivot).order('kickoff', { ascending: false });
     const { data } = await q;
     if (!data?.length) return null;
@@ -288,11 +289,12 @@ export const nextDayWithPredictions = unstable_cache(
 /** The official prediction of a fixture (deterministic across model versions). */
 export const getPrediction = unstable_cache(
   async (fixtureId: number): Promise<SitePrediction | null> => {
-    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS).eq('fixture_id', fixtureId))
+    const official = await resolveOfficialVersion();
+    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS).eq('fixture_id', fixtureId), official)
       .order('updated_at', { ascending: false })
       .limit(10);
     if (error) throw new Error(error.message);
-    const rows = parseRows(data);
+    const rows = parseRows(data, official);
     if (!rows.length) return null;
     const ctx = await loadContext();
     return mapRow(rows[0], ctx);
@@ -351,16 +353,17 @@ export const getMarketSnapshot = unstable_cache(
  */
 export const getHeadToHead = unstable_cache(
   async (homeId: number, awayId: number, limit = 6, before: string | null = null): Promise<SitePrediction[]> => {
+    const official = await resolveOfficialVersion();
     let q = officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .eq('settled', true)
       .not('result', 'is', null)
-      .or(`and(home_id.eq.${homeId},away_id.eq.${awayId}),and(home_id.eq.${awayId},away_id.eq.${homeId})`));
+      .or(`and(home_id.eq.${homeId},away_id.eq.${awayId}),and(home_id.eq.${awayId},away_id.eq.${homeId})`), official);
     q = asOfFilter(q, before);
     const { data } = await q.order('kickoff', { ascending: false }).limit(limit);
     const ctx = await loadContext();
-    return parseRows(data).map((r) => mapRow(r, ctx));
+    return parseRows(data, official).map((r) => mapRow(r, ctx));
   },
   ['site-h2h-v2'],
   { revalidate: REVALIDATE.results },
@@ -369,16 +372,17 @@ export const getHeadToHead = unstable_cache(
 /** Last N settled matches of a team (either side), newest first, optionally as of `before`. */
 export const getTeamForm = unstable_cache(
   async (teamId: number, limit = 6, before: string | null = null): Promise<SitePrediction[]> => {
+    const official = await resolveOfficialVersion();
     let q = officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .eq('settled', true)
       .not('result', 'is', null)
-      .or(`home_id.eq.${teamId},away_id.eq.${teamId}`));
+      .or(`home_id.eq.${teamId},away_id.eq.${teamId}`), official);
     q = asOfFilter(q, before);
     const { data } = await q.order('kickoff', { ascending: false }).limit(limit);
     const ctx = await loadContext();
-    return parseRows(data).map((r) => mapRow(r, ctx));
+    return parseRows(data, official).map((r) => mapRow(r, ctx));
   },
   ['site-form-v2'],
   { revalidate: REVALIDATE.results },

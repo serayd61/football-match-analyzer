@@ -24,8 +24,9 @@ def _targets(m, w):
 
 
 def fit(matches, ref_date, xg_weight=0.0, half_life_days=180, window_days=540,
-        iters=25, min_matches=120):
-    """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı harmanlı-hedef Poisson MLE."""
+        iters=25, min_matches=120, rho=M.RHO, shrink_k=0.0):
+    """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı harmanlı-hedef Poisson MLE.
+    rho / shrink_k / n_eff: model.py ile aynı anlam (Faz 3 sürüm parametreleri)."""
     train = [m for m in matches if m["date"] < ref_date]
     if window_days:
         cutoff = ref_date.toordinal() - window_days
@@ -42,9 +43,13 @@ def fit(matches, ref_date, xg_weight=0.0, half_life_days=180, window_days=540,
     ln2 = math.log(2.0)
     w = []
     tgt = []  # (th, ta) önceden hesapla
+    n_eff = {t: 0.0 for t in teams}
     for m in train:
         age = ref_date.toordinal() - m["date"].toordinal()
-        w.append(math.exp(-ln2 * age / half_life_days))
+        wk = math.exp(-ln2 * age / half_life_days)
+        w.append(wk)
+        n_eff[m["home"]] += wk
+        n_eff[m["away"]] += wk
         tgt.append(_targets(m, xg_weight))
 
     for _ in range(iters):
@@ -89,7 +94,13 @@ def fit(matches, ref_date, xg_weight=0.0, half_life_days=180, window_days=540,
                 D[t] /= md
             base *= ma * md
 
-    return {"A": A, "D": D, "H": H, "base": base, "teams": set(teams)}
+    if shrink_k and shrink_k > 0:
+        for t in teams:
+            n = n_eff[t]
+            A[t] = (n * A[t] + shrink_k * 1.0) / (n + shrink_k)
+            D[t] = (n * D[t] + shrink_k * 1.0) / (n + shrink_k)
+
+    return {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff}
 
 
 # predict aynen model.py'den

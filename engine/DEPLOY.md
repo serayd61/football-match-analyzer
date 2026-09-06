@@ -92,15 +92,13 @@ curl -s https://footballanalytics.pro/api/v2/predictions/ingest    # {"ok":true,
 
 ---
 
-## 4) Günlük sonuç güncellemesi (opsiyonel ama önerilir)
+## 4) Günlük sonuç güncellemesi — servis kendini tazeler (cron GEREKMEZ)
 
-Model her gün taze veriyle daha iyi olsun diye depoyu güncelle. İki yol:
-- **systemd timer** ya da basit cron:
-  ```bash
-  # /etc/cron.d/footy-update
-  0 4 * * * root cd /opt/football-match-analyzer/engine && FOOTBALL_API_KEY='...' STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python store.py update 3 && systemctl restart footy-predict
-  ```
-- veya n8n'e bir HTTP node: `POST 127.0.0.1:8000/update {"days":3}`.
+2026-09-07'den itibaren `/predict`, `results.jsonl` **20 saatten eskiyse** arka planda
+`update_recent(4)` çalıştırır (xG yan deposu varsa onu da yeniden kurar) ve fit cache'ini
+boşaltır. n8n'in günlük çağrısı bu yüzden depoyu güncel tutar; Hetzner'a cron/timer eklemeyin.
+Ayar: `STORE_MAX_AGE_HOURS=20`, `STORE_REFRESH_DAYS=4`. Durum: `/status` → `store_age_hours`,
+`store_stale`, `refresh`. Elle tetiklemek için `POST /update {"days":3}` hâlâ çalışır.
 
 ---
 
@@ -129,12 +127,45 @@ STORE_PATH=/var/lib/footy/results.jsonl SOCCERDATA_DIR=/var/lib/footy/soccerdata
 sudo systemctl restart footy-predict
 curl -s http://127.0.0.1:8000/status | python3 -m json.tool | sed -n '/"xg"/,$p'
 
-# 3) Günlük cron: store update'ten SONRA xG'yi de güncelle (aynı satıra ekle)
-#   ... store.py update 3 && STORE_PATH=... SOCCERDATA_DIR=... .venv/bin/python store_xg.py build --days 600 && systemctl restart footy-predict
+# 3) Günlük yenileme: servis kendisi yapar (§4) — xg.jsonl varsa refresh onu da yeniden kurar.
 ```
 
-Ayarlar (systemd `Environment=`): `XG_WEIGHT=0.75`, `XG_MIN_COVERAGE=0.95`, `MODEL_VERSION_XG=dc-2.0-xg`, `XG_PATH=/var/lib/footy/xg.jsonl`.
+Ayarlar (systemd `Environment=`): `XG_PATH=/var/lib/footy/xg.jsonl`, `SOCCERDATA_DIR=/var/lib/footy/soccerdata`.
+`XG_WEIGHT` / `XG_MIN_COVERAGE` artık sürüm parametresidir (aşağıdaki §Sürümler); env yalnız
+`ENGINE_PARAMS_URL` erişilemezken kullanılan varsayılandır.
 
-Geri alma: `xg.jsonl`'i sil veya `XG_WEIGHT=0` ver → servis `dc-1.0` yayınlar. Site tarafında `SITE_MODEL_VERSION=dc-1.0` ile resmi sürüm eskiye sabitlenebilir.
+Geri alma: `xg.jsonl`'i sil → xG sürümü satır üretmez; ya da admin rotasından `dc-2.0-xg`'yi `retire` et.
 
-Kontrol (ilk günden sonra): `engine_predictions` içinde `model_version='dc-2.0-xg'` satırları yalnız 5 kapsanan ligde olmalı; `/status` → `xg.leagues[].xg_coverage` ≥ 0.95.
+Kontrol (ilk günden sonra): `engine_predictions` içinde `model_version='dc-2.0-xg'` satırları yalnız 5 kapsanan ligde olmalı; `/status` → `xg.leagues[].publishes` listesi.
+
+---
+
+## Sürümler ve parametreler (Faz 3, 2026-09-07) — gölge yayın, onaylı terfi
+
+Tek doğruluk kaynağı Supabase `engine_model_versions` (migration `2026-09-07_engine_model_versions.sql`;
+seed: `dc-1.0` **active**, `dc-2.0-xg` **shadow**). Servis bunu siteden okur:
+
+```ini
+# /etc/systemd/system/footy-predict.service  [Service] bölümüne
+Environment=ENGINE_PARAMS_URL=https://footballanalytics.pro/api/v2/engine/params
+# opsiyonel çevrimdışı yedek: Environment=PARAMS_PATH=/var/lib/footy/params.json
+```
+
+```bash
+cd /opt/football-match-analyzer && git pull && sudo systemctl daemon-reload && sudo systemctl restart footy-predict
+curl -s 127.0.0.1:8000/status | python3 -m json.tool | sed -n '/"versions"/,/"store_total/p'
+# versions.source = "url" olmalı; "defaults" ise URL'ye erişilemiyor (env varsayılanları kullanılır).
+```
+
+Davranış:
+- `/predict` her fixture için **aktif + gölge** sürümlerin hepsini üretir; `modelVersion` satır başına.
+  Site resmi sürümü `engine_model_versions.active`'den seçer (`SITE_MODEL_VERSION` env varsa o kazanır).
+- `kind: "xg"` sürüm, xG kapsamı `xg_min_coverage` altındaki ligde satır üretmez (gol sürümüne düşmez).
+- `n_eff < min_team_matches` (varsayılan 6 etkin maç) olan takım atlanır → yeni çıkan takımın uçuk λ'sı yayınlanmaz.
+- Parametre değişikliği: admin `POST /api/admin/engine-versions {action:'propose', version, kind, params, status:'shadow'}`
+  → servis 1 saat içinde alır (hemen almak için `POST 127.0.0.1:8000/reload`).
+- Terfi: Pazartesi `engine-weekly-review` raporu `promote` önerince admin `{action:'activate', version}`;
+  kapı (≥4 hafta, ≥600 eşleştirilmiş satır, ΔLL ≤ −0.003, %95 CI 0'ı dışlar, Ü/A-KG kötüleşmemiş)
+  sunucuda zorlanır; `force:true` + not ile aşılabilir, her şey `engine_learning_log`'a yazılır.
+
+Testler: `cd engine && python3 -m unittest discover tests` (parite: `shrink_k=0, rho=-0.10` → eski çıktı birebir).
