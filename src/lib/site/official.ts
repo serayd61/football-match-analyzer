@@ -17,6 +17,24 @@
 
 export const OFFICIAL_MODEL_VERSION: string | null = (process.env.SITE_MODEL_VERSION || '').trim() || null;
 
+// ---------------------------------------------------------------------------
+// Faz 3 (2026-09-07): env yoksa engine_model_versions.status='active' satırı
+// resmi sürümdür (60 sn cache; lib/engine/versions.ts). Env varsa o kazanır —
+// geçişte ikisinin çelişmemesine dikkat. Tablo yoksa/boşsa null → eski
+// "fixture başına en yeni satır" kuralı.
+// ---------------------------------------------------------------------------
+export async function resolveOfficialVersion(): Promise<string | null> {
+  if (OFFICIAL_MODEL_VERSION) return OFFICIAL_MODEL_VERSION;
+  try {
+    const { loadEngineVersions } = await import('@/lib/engine/versions');
+    return (await loadEngineVersions()).active?.version ?? null;
+  } catch { return null; }
+}
+
+export async function invalidateOfficialCache(): Promise<void> {
+  try { (await import('@/lib/engine/versions')).invalidateEngineVersions(); } catch { /* yok say */ }
+}
+
 interface Versioned { fixture_id: number; model_version: string | null; updated_at?: string | null }
 
 function rank(a: Versioned, b: Versioned): number {
@@ -40,8 +58,8 @@ export function pickOfficial<T extends Versioned>(rows: T[], official: string | 
 }
 
 /** Apply the official-version filter to a PostgREST query when configured. */
-export function officialFilter<Q>(q: Q): Q {
+export function officialFilter<Q>(q: Q, official: string | null = OFFICIAL_MODEL_VERSION): Q {
   // `any`: PostgrestFilterBuilder's `this`-typed chain makes a constrained
   // generic blow TS2589 ("excessively deep"); the call shape is stable.
-  return OFFICIAL_MODEL_VERSION ? (q as any).eq('model_version', OFFICIAL_MODEL_VERSION) : q;
+  return official ? (q as any).eq('model_version', official) : q;
 }

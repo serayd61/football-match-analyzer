@@ -5,7 +5,7 @@ import { db, REVALIDATE } from './db';
 import { SITE_LEAGUES, type SiteLeague } from './leagues';
 import { coveredLeagueIds } from './results';
 import { loadContext } from './predictions';
-import { pickOfficial, officialFilter } from './official';
+import { pickOfficial, officialFilter, resolveOfficialVersion } from './official';
 import { applyCurve } from '@/lib/calibration';
 import { makeBins, addToBin, finishBins, walkForwardBins, type CalBin, type TPt } from '@/lib/calibration-eval';
 import { deriveOverUnder, deriveBtts } from '@/lib/goal-markets';
@@ -54,13 +54,14 @@ async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: bo
   const out: Row[] = [];
   let truncated = false;
   let quarantined = 0;
+  const official = await resolveOfficialVersion();
   for (let from = 0; from < MAX_ROWS; from += PAGE) {
     const { data, error } = await officialFilter(db()
       .from('engine_predictions')
       .select(ROW_COLS)
       .eq('settled', true)
       .not('home_score', 'is', null)
-      .in('league_id', ids))
+      .in('league_id', ids), official)
       .order('kickoff', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) throw new Error(error.message);
@@ -73,7 +74,7 @@ async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: bo
     if (from + PAGE >= MAX_ROWS) truncated = true;
   }
   if (quarantined) console.error(`[site/performance] ${quarantined} rows quarantined`);
-  return { rows: pickOfficial(out), truncated, quarantined };
+  return { rows: pickOfficial(out, official), truncated, quarantined };
 }
 
 import { addRoi, finishRoi, mkRoi, isPickCorrect, type OddsRow, type Roi } from './roi';

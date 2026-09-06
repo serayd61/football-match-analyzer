@@ -20,6 +20,18 @@ kapıyla bitmeli. Tamamlanınca `scoreboard.md` ve burası güncellenir.
 Yapılmayacaklar (kanıtla düştü): form/H2H tilt (çift-sayım); ρ ile global beraberlik ayarı;
 piyasa olasılığını bağımsız modele girdi yapmak; "AI-powered" iddiası.
 
+## Haftalık döngü (2026-09-07'den itibaren)
+
+Her aday şu yoldan geçer; hiçbir adım otomatik terfi etmez:
+1. Çevrimdışı kapı (`export_preds.py` + `gate.py`, FD.co.uk) → geçtiyse admin `engine-versions`
+   `propose` (status `shadow`) — params jsonb'ye yazılır, motor ertesi gün gölge satır üretir.
+2. Pazartesi `engine-weekly-review`: aktif ↔ gölge eşleştirilmiş ΔLL (hafta bootstrap + 8 haftalık
+   Σ'lerden CI), `promotionVerdict` → rapor `proposals` (promote / keep_shadow / retire).
+3. Kapı geçince admin `activate` (kapı sunucuda tekrar zorlanır; `force` notla loglanır);
+   eski aktif gölgeye düşer (geri alma için satır üretmeye devam eder).
+Sıradaki adaylar: `dc-2.0-xg` (gölge, seed), sonra #3 (lig-başı ρ; params `leagues` override'ı
+ile tek sürümde), `shrink_k` (yeni takım büzülmesi; `model.fit` parametresi hazır, çevrimdışı tarama gerek).
+
 ## İlk sprint önerisi
 1 (gate ile yeniden ölçüm → canlıya taşıma planı) + 2 (CLV) + 9 (aralıklar). Üçü de
 mevcut veriyle yapılır, üretim yazımı yalnız 1'in son adımında ve kullanıcı onayıyla.
