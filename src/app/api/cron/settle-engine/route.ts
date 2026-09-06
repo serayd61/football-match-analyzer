@@ -23,7 +23,14 @@ function sb(): SupabaseClient {
     _sb = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { persistSession: false } },
+      {
+        auth: { persistSession: false },
+        // 2026-09-06: Next.js, PostgREST GET'lerini URL bazında önbelleğe alıyordu.
+        // Backfill seçimi sabit URL'li olduğundan her sayfa aynı 1000 satırı döndürdü
+        // ("updated 20000", gerçekte 1000). Saatlik yol kickoff<now ile URL'i değiştirdiği
+        // için etkilenmiyordu. Tüm okuma/yazmalar önbelleksiz.
+        global: { fetch: (i, init) => fetch(i, { ...init, cache: 'no-store' }) },
+      },
     );
   }
   return _sb;
