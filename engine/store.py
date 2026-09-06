@@ -265,11 +265,91 @@ def _parse_dt(v):
     return None
 
 
+MERGE_MIN_MATCHES = int(os.environ.get("MERGE_MIN_MATCHES", "30"))
+MERGE_MIN_JACCARD = float(os.environ.get("MERGE_MIN_JACCARD", "0.5"))
+
+
+def merge_season_ids(by_league: dict):
+    """
+    SEZONLUK LİG ID BİRLEŞTİRME (2026-09-06 Hetzner bulgusu).
+    FotMob büyük 5 lig dışındaki liglere her sezon YENİ id verir (Eredivisie 25/26 ≠ 26/27).
+    Depo id'ye göre gruplandığından her sezon başında ligin geçmişi sıfırlanıyor, ligler
+    "league_too_small" ile atlanıyordu (Eredivisie 2026-09-06: 37 maç).
+
+    Kural (ad/katalog gerekmez, yalnız veriden): iki id aynı ligin ardışık sezonlarıdır ⇔
+      • takım kümeleri örtüşüyor (Jaccard ≥ MERGE_MIN_JACCARD; sezonlar arası ~%85 aynı takım)
+      • VE tarih pencereleri KESİŞMİYOR (aynı takımlarla eşzamanlı oynanan kupa/play-off
+        birleşmez — kupalar hem farklı takım kümesi hem de aynı takvimde).
+    Her iki id de ≥ MERGE_MIN_MATCHES maça sahip olmalı (gürültü). Birleşim geçişlidir
+    (24/25 – 25/26 – 26/27). Kanonik anahtar = penceresi EN GEÇ biten id (fikstürler o
+    sezonun id'siyle gelir); eski id'ler de aynı gruba çözülür.
+    Döndürür: (groups {canonical_id: [rows]}, alias {any_id: canonical_id}).
+    """
+    ids = [lid for lid, rows in by_league.items() if lid is not None and len(rows) >= MERGE_MIN_MATCHES]
+    info = {}
+    for lid in ids:
+        teams, lo, hi = set(), None, None
+        for r in by_league[lid]:
+            d = _parse_dt(r.get("date"))
+            if d is None:
+                continue
+            teams.add(r.get("homeId")); teams.add(r.get("awayId"))
+            lo = d if lo is None or d < lo else lo
+            hi = d if hi is None or d > hi else hi
+        if lo is not None and teams:
+            info[lid] = (teams, lo, hi)
+    parent = {lid: lid for lid in info}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    # aday çiftleri takım indeksinden üret (n² yerine)
+    by_team = {}
+    for lid, (teams, _, _) in info.items():
+        for t in teams:
+            by_team.setdefault(t, set()).add(lid)
+    seen = set()
+    for lid, (teams, lo, hi) in info.items():
+        cands = set()
+        for t in teams:
+            cands |= by_team[t]
+        for other in cands:
+            if other == lid or (other, lid) in seen or (lid, other) in seen:
+                continue
+            seen.add((lid, other))
+            t2, lo2, hi2 = info[other]
+            if not (hi < lo2 or hi2 < lo):      # takvimler kesişiyor → aynı sezon (kupa vb.)
+                continue
+            inter = len(teams & t2)
+            union = len(teams | t2)
+            if union and inter / union >= MERGE_MIN_JACCARD:
+                parent[find(lid)] = find(other)
+
+    clusters = {}
+    for lid in info:
+        clusters.setdefault(find(lid), []).append(lid)
+    groups, alias = {}, {}
+    for members in clusters.values():
+        canon = max(members, key=lambda l: info[l][2])   # en geç biten sezon
+        rows = []
+        for l in members:
+            rows.extend(by_league[l]); alias[l] = canon
+        groups[canon] = rows
+    for lid, rows in by_league.items():                 # birleşmeyenler olduğu gibi
+        if lid not in alias:
+            groups[lid] = rows; alias[lid] = lid
+    return groups, alias
+
+
 class ResultStore:
-    """Depoyu lige göre gruplayıp model.fit'in beklediği şekle döndürür."""
+    """Depoyu lige göre gruplayıp model.fit'in beklediği şekle döndürür (sezon id'leri birleşik)."""
 
     def __init__(self):
         self._by_league = None
+        self._alias = None
         self._mtime = None
 
     def _load(self):
@@ -290,17 +370,22 @@ class ResultStore:
                         continue
                     seen_ids.add(mid)
                     by.setdefault(r.get("leagueId"), []).append(r)
-        self._by_league = by
+        self._by_league, self._alias = merge_season_ids(by)
         self._mtime = mt
 
     def reload(self):
         self._by_league = None
         self._load()
 
+    def resolve(self, league_id):
+        """Sezonluk id → kanonik grup id'si (bilinmeyen id olduğu gibi döner)."""
+        self._load()
+        return self._alias.get(league_id, league_id)
+
     def load_for_fit(self, league_id: int):
         """model.fit için: date(datetime), home/away (str id), fthg, ftag."""
         self._load()
-        rows = self._by_league.get(league_id, [])
+        rows = self._by_league.get(self.resolve(league_id), [])
         out = []
         for r in rows:
             d = _parse_dt(r.get("date"))
@@ -320,7 +405,7 @@ class ResultStore:
 
     def league_count(self, league_id: int) -> int:
         self._load()
-        return len(self._by_league.get(league_id, []))
+        return len(self._by_league.get(self.resolve(league_id), []))
 
     def total(self) -> int:
         self._load()
