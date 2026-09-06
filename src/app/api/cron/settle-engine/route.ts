@@ -11,7 +11,7 @@
 // ============================================================================
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
   try {
     if (searchParams.get('backfill') === '1') {
       const limit = parseInt(searchParams.get('limit') || '1000', 10) || 1000;
-      const res = await backfillRowScores(sb(), limit);
+      // 300 sn fonksiyon sınırı; 240 sn bütçeyle sayfa sayfa ilerle, kalanı `remaining` bildirir
+      const res = await backfillRowScores(sb(), limit, 240_000);
       return NextResponse.json({ ok: true, mode: 'backfill', ...res });
     }
 

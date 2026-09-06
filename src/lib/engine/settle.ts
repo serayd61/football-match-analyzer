@@ -153,29 +153,56 @@ export interface BackfillResult { scanned: number; updated: number; errors: numb
  * idempotent (ll_1x2 dolu satır bir daha seçilmez). Tek çağrıda en fazla
  * `limit` satır (varsayılan 1000); kalan sayısı döner.
  */
-export async function backfillRowScores(sb: SupabaseClient, limit = 1000): Promise<BackfillResult> {
-  const { data, error } = await sb
-    .from('engine_predictions')
-    .select('id, pick, p_home, p_draw, p_away, p_over25, p_btts_yes, home_score, away_score')
-    .eq('settled', true)
-    .not('result', 'is', null)
-    .not('home_score', 'is', null)
-    .not('away_score', 'is', null)
-    .is('ll_1x2', null)
-    .order('kickoff', { ascending: true })
-    .limit(Math.min(Math.max(limit, 1), 1000));
-  if (error) throw new Error(error.message);
+const BACKFILL_CONCURRENCY = 25;
 
-  let updated = 0, errors = 0;
-  for (const r of data || []) {
-    const hs = Number(r.home_score), as = Number(r.away_score);
-    if (!Number.isFinite(hs) || !Number.isFinite(as)) continue;
-    const scores = rowScores(r, hs, as);
-    // 1X2 olasılığı yoksa ll_1x2 null kalır → sonsuz kuyruk olmasın diye atla
-    if (scores.ll_1x2 == null) continue;
-    const { error: upErr } = await sb.from('engine_predictions').update(scores).eq('id', r.id);
-    if (upErr) { errors++; console.error(`[settle-engine backfill] id=${r.id}:`, upErr.message); }
-    else updated++;
+/**
+ * @param limit    sayfa büyüklüğü (1..1000)
+ * @param budgetMs 0 → tek sayfa; >0 → süre dolana dek sayfa sayfa devam et
+ *                 (2026-09-06: 1000 sıralı update 120 sn'ye sığmadı → eşzamanlı + bütçeli)
+ */
+export async function backfillRowScores(sb: SupabaseClient, limit = 1000, budgetMs = 0): Promise<BackfillResult> {
+  const started = Date.now();
+  let scanned = 0, updated = 0, errors = 0;
+  const pageSize = Math.min(Math.max(limit, 1), 1000);
+
+  for (;;) {
+    const { data, error } = await sb
+      .from('engine_predictions')
+      .select('id, pick, p_home, p_draw, p_away, p_over25, p_btts_yes, home_score, away_score')
+      .eq('settled', true)
+      .not('result', 'is', null)
+      .not('home_score', 'is', null)
+      .not('away_score', 'is', null)
+      .is('ll_1x2', null)
+      .order('kickoff', { ascending: true })
+      .limit(pageSize);
+    if (error) throw new Error(error.message);
+    const rows = data || [];
+    scanned += rows.length;
+
+    const jobs: Array<{ id: number; scores: ReturnType<typeof rowScores> }> = [];
+    for (const r of rows) {
+      const hs = Number(r.home_score), as = Number(r.away_score);
+      if (!Number.isFinite(hs) || !Number.isFinite(as)) continue;
+      const scores = rowScores(r, hs, as);
+      // 1X2 olasılığı yoksa ll_1x2 null kalır → sonsuz kuyruk olmasın diye atla
+      if (scores.ll_1x2 == null) continue;
+      jobs.push({ id: r.id, scores });
+    }
+    for (let i = 0; i < jobs.length; i += BACKFILL_CONCURRENCY) {
+      const results = await Promise.all(
+        jobs.slice(i, i + BACKFILL_CONCURRENCY).map((j) => sb.from('engine_predictions').update(j.scores).eq('id', j.id).then(({ error: e }) => ({ id: j.id, e }))),
+      );
+      for (const r of results) {
+        if (r.e) { errors++; console.error(`[settle-engine backfill] id=${r.id}:`, r.e.message); }
+        else updated++;
+      }
+    }
+
+    // Skorlanamayan satırlar (ll_1x2 null kalanlar) sayfayı sonsuza dek işgal edebilir:
+    // hiç güncelleme yapamadıysak ya da sayfa dolmadıysa dur.
+    const progressed = jobs.length > 0 && updated > 0;
+    if (!budgetMs || rows.length < pageSize || !progressed || Date.now() - started > budgetMs) break;
   }
 
   const { count } = await sb
@@ -186,5 +213,5 @@ export async function backfillRowScores(sb: SupabaseClient, limit = 1000): Promi
     .not('home_score', 'is', null)
     .is('ll_1x2', null);
 
-  return { scanned: (data || []).length, updated, errors, remaining: count ?? null };
+  return { scanned, updated, errors, remaining: count ?? null };
 }
