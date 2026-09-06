@@ -323,7 +323,18 @@
     "quality": "Datenqualität",
     "qualityNote": "{decided} entschiedene Spiele · Modellversion {versions}. {recomputed} Zeilen hatten kein gespeichertes Ergebnis-Flag und wurden aus dem Resultat abgeleitet.",
     "truncated": "Zeilenlimit erreicht; diese Stichprobe ist abgeschnitten.",
-    "roiPhaseNote": "Der Schlusskurs ist ein Massstab dafür, was der Markt beim Anstoss wusste; der Eröffnungskurs liegt näher an dem, was bei Veröffentlichung der Prognose verfügbar war. Keiner von beiden ist eine realisierte Rendite."
+    "roiPhaseNote": "Der Schlusskurs ist ein Massstab dafür, was der Markt beim Anstoss wusste; der Eröffnungskurs liegt näher an dem, was bei Veröffentlichung der Prognose verfügbar war. Keiner von beiden ist eine realisierte Rendite.",
+    "secWeekly": "Wöchentliche Entwicklung",
+    "weeklyMeta": "jeden Montag berechnet · abgedeckte Ligen · offizielle Version",
+    "week": "Woche",
+    "logLoss": "Log-Loss",
+    "ece": "ECE",
+    "rolling": "Letzte {weeks} Wochen",
+    "weeklyNote": "Jede Zeile umfasst die in dieser ISO-Woche gespielten und abgerechneten Spiele; die Zahlen ändern sich danach nicht mehr. Niedriger Log-Loss ist besser (1X2 zufällig = 1,099; binäre Märkte = 0,693). ECE ist die mittlere Abweichung zwischen vorhergesagter und beobachteter Wahrscheinlichkeit über 10 Klassen. Eine einzelne Woche ist verrauscht; Entscheidungen werden über das rollierende Fenster getroffen.",
+    "weeklyEmpty": "Die Wochenbilanz füllt sich nach der ersten Montagsprüfung.",
+    "weeklyBenchmark": "Bei den {n} Spielen mit Schlussquote: Modell {model}, Buchmacher-Favorit {market}, ROI {roi}.",
+    "weeklyCal": "Anzeigekalibrierung (eine Woche zuvor gefittete Kurve): Konfidenz-Brier roh {raw} → kalibriert {cal}.",
+    "weeklyAlerts": "Hinweise der letzten Prüfung"
   },
   "leagues": {
     "title": "Ligen",

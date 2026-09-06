@@ -323,7 +323,18 @@
     "quality": "Qualità dei dati",
     "qualityNote": "{decided} partite decise · versione modello {versions}. {recomputed} righe non avevano il flag di esito salvato e sono state ricavate dal punteggio.",
     "truncated": "Raggiunto il limite di righe; questo campione è troncato.",
-    "roiPhaseNote": "La quota di chiusura misura ciò che il mercato sapeva al calcio d’inizio; quella di apertura è più vicina a ciò che era disponibile alla pubblicazione della previsione. Nessuna delle due è un rendimento realizzato."
+    "roiPhaseNote": "La quota di chiusura misura ciò che il mercato sapeva al calcio d’inizio; quella di apertura è più vicina a ciò che era disponibile alla pubblicazione della previsione. Nessuna delle due è un rendimento realizzato.",
+    "secWeekly": "Progresso settimanale",
+    "weeklyMeta": "calcolato ogni lunedì · campionati coperti · versione ufficiale",
+    "week": "Settimana",
+    "logLoss": "Log-loss",
+    "ece": "ECE",
+    "rolling": "Ultime {weeks} settimane",
+    "weeklyNote": "Ogni riga contiene le partite giocate e liquidate in quella settimana ISO; i numeri non cambiano più. Un log-loss più basso è meglio (1X2 casuale = 1,099; mercati binari = 0,693). L'ECE è lo scarto medio tra probabilità prevista e osservata su 10 classi. Una singola settimana è rumorosa; le decisioni si prendono sulla finestra mobile.",
+    "weeklyEmpty": "Il registro settimanale si riempie dopo la prima revisione del lunedì.",
+    "weeklyBenchmark": "Sulle {n} partite con quota di chiusura: modello {model}, favorita del bookmaker {market}, ROI {roi}.",
+    "weeklyCal": "Calibrazione di visualizzazione (curva stimata una settimana prima): Brier della confidenza grezzo {raw} → calibrato {cal}.",
+    "weeklyAlerts": "Avvisi dell'ultima revisione"
   },
   "leagues": {
     "title": "Campionati",

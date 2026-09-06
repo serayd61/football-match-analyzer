@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { validateIngestBatch, toEngineRow } from '@/lib/engine/ingest-schema';
+import { loadEngineVersions } from '@/lib/engine/versions';
 
 // İki sunucu sırrından biri yeterli: n8n PREDICTIONS_API_SECRET ile, elle
 // yeniden koşular (ör. 2026-09-04 RapidAPI kesintisi sonrası) CRON_SECRET ile.
@@ -72,7 +73,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `batch too large (${list.length} > ${MAX_BATCH})` }, { status: 413 });
   }
 
-  const { valid, rejected } = validateIngestBatch(list, { allowPastKickoff });
+  const { valid: schemaValid, rejected } = validateIngestBatch(list, { allowPastKickoff });
+
+  // Faz 3: sürüm adı engine_model_versions'ta kayıtlı olmalı (yazım hatası yeni
+  // sürüm üretmez). Tablo boş/erişilemezse kontrol atlanır (eski davranış).
+  const known = (await loadEngineVersions()).known;
+  const valid = known.size
+    ? schemaValid.filter((p) => {
+        const v = p.modelVersion || 'dc-1.0';
+        if (known.has(v)) return true;
+        const index = list.findIndex((raw: any) => raw && Number(raw.fixtureId) === p.fixtureId && (raw.modelVersion || 'dc-1.0') === v);
+        rejected.push({ index, fixtureId: p.fixtureId, issues: [`modelVersion: ${v} is not a registered engine version`] });
+        return false;
+      })
+    : schemaValid;
 
   if (!valid.length) {
     return NextResponse.json(

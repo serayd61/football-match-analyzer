@@ -1,9 +1,11 @@
+import React from 'react';
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPerformance } from '@/lib/site/performance';
+import { getWeeklyProgress } from '@/lib/site/weekly-progress';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
 import { CalibrationChart, MonthlyChart } from '@/components/site/PerformanceCharts';
 
@@ -23,7 +25,7 @@ export default async function PerformancePage({ params: { locale } }: { params: 
   const tc = await getTranslations('common');
   const tm = await getTranslations('match');
   const f = await getFormatter();
-  const r = await getPerformance(null);
+  const [r, w] = await Promise.all([getPerformance(null), getWeeklyProgress(12)]);
 
   const monthLabel = (ym: string) => f.dateTime(new Date(`${ym}-15T12:00:00Z`), 'month');
   const marketName = { '1x2': tc('market1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
@@ -200,6 +202,82 @@ export default async function PerformancePage({ params: { locale } }: { params: 
           </div>
         </section>
       </div>
+
+      {/* Weekly progress — read from engine_weekly_metrics (Monday review), never recomputed here */}
+      <section className="mt-12">
+        <SectionTitle title={t('secWeekly')} meta={t('weeklyMeta')} />
+        {w.weeks.length ? (
+          <>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-s-line text-left">
+                    <th className={th}>{t('week')}</th>
+                    {(['1x2', 'ou25', 'btts'] as const).map((m) => (
+                      <th key={m} className={`${th} text-right`} colSpan={3}>{marketName[m]}</th>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-s-line text-left">
+                    <th className={th}></th>
+                    {(['1x2', 'ou25', 'btts'] as const).map((m) => (
+                      <React.Fragment key={m}>
+                        <th className={`${th} text-right`}>{t('nShort')}</th>
+                        <th className={`${th} text-right`}>{t('hitRate')}</th>
+                        <th className={`${th} text-right`}>{t('logLoss')}</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {w.weeks.map((wk) => (
+                    <tr key={wk} className="border-b border-s-line">
+                      <td className="num py-1.5">{wk}</td>
+                      {(['1x2', 'ou25', 'btts'] as const).map((m) => {
+                        const row = w.rows.find((x) => x.week === wk && x.market === m);
+                        return (
+                          <React.Fragment key={m}>
+                            <td className="num py-1.5 text-right">{row ? row.n : '–'}</td>
+                            <td className={`num py-1.5 text-right ${row && row.n < 30 ? 'text-s-muted' : ''}`}>{row ? pct(row.accuracy) : '–'}</td>
+                            <td className="num py-1.5 text-right text-s-muted">{row ? fx(row.logLoss) : '–'}</td>
+                          </React.Fragment>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-s-line font-medium">
+                    <td className="py-1.5">{t('rolling', { weeks: w.weeks.length })}</td>
+                    {(['1x2', 'ou25', 'btts'] as const).map((m) => {
+                      const ro = w.rolling[m];
+                      return (
+                        <React.Fragment key={m}>
+                          <td className="num py-1.5 text-right">{ro ? f.number(ro.n) : '–'}</td>
+                          <td className="num py-1.5 text-right">{ro ? pct(ro.accuracy) : '–'}</td>
+                          <td className="num py-1.5 text-right">{ro ? fx(ro.logLoss) : '–'}</td>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-s-muted">
+              {t('weeklyNote')}
+              {w.benchmark && <> {t('weeklyBenchmark', { n: f.number(w.benchmark.n), model: pct(w.benchmark.model), market: pct(w.benchmark.market), roi: w.benchmark.roi == null ? '–' : `${w.benchmark.roi >= 0 ? '+' : ''}${pct(w.benchmark.roi)}` })}</>}
+              {w.calibration && <> {t('weeklyCal', { raw: fx(w.calibration.raw, 4), cal: fx(w.calibration.cal, 4) })}</>}
+            </p>
+            {w.latest && w.latest.alerts.length > 0 && (
+              <div className="mt-3 text-xs">
+                <span className="font-medium text-s-ink">{t('weeklyAlerts')} ({w.latest.week}):</span>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-s-muted">
+                  {w.latest.alerts.map((a) => <li key={a.code}>{a.message}</li>)}
+                </ul>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="mt-3 text-sm text-s-muted">{t('weeklyEmpty')}</p>
+        )}
+      </section>
 
       <p className="mt-12 border-t border-s-line pt-4 text-xs text-s-muted">
         {t('footer', { at: f.dateTime(new Date(r.computedAt), 'kickoff') })} <Link href="/methodology" className="underline underline-offset-4">{t('footerLink')}</Link>
