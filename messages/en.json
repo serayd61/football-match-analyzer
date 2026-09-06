@@ -323,7 +323,18 @@
     "quality": "Data quality",
     "qualityNote": "{decided} decided matches · model version {versions}. {recomputed} rows had no stored outcome flag and were re-derived from the score.",
     "truncated": "The row cap was reached; this sample is truncated.",
-    "roiPhaseNote": "The closing price is a benchmark of what the market knew at kick-off; the opening price is closer to what was available when the prediction was published. Neither is a realised return."
+    "roiPhaseNote": "The closing price is a benchmark of what the market knew at kick-off; the opening price is closer to what was available when the prediction was published. Neither is a realised return.",
+    "secWeekly": "Weekly progress",
+    "weeklyMeta": "computed every Monday · covered leagues · official version",
+    "week": "Week",
+    "logLoss": "Log-loss",
+    "ece": "ECE",
+    "rolling": "Last {weeks} weeks",
+    "weeklyNote": "Each row is the matches played and settled in that ISO week; the numbers never change afterwards. Lower log-loss is better (1X2 random = 1.099; binary markets = 0.693). ECE is the mean gap between predicted and observed probability over 10 bins. A single week is noisy; decisions are taken on the rolling window.",
+    "weeklyEmpty": "The weekly record fills in after the first Monday review.",
+    "weeklyBenchmark": "On the {n} matches with a closing price: model {model}, bookmaker favourite {market}, ROI {roi}.",
+    "weeklyCal": "Display calibration (curve fitted one week earlier): confidence Brier raw {raw} → calibrated {cal}.",
+    "weeklyAlerts": "Alerts from the latest review"
   },
   "leagues": {
     "title": "Leagues",

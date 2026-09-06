@@ -41,6 +41,10 @@
       "schedule": "50 3 * * 1"
     },
     {
+      "path": "/api/cron/engine-weekly-review",
+      "schedule": "0 5 * * 1"
+    },
+    {
       "path": "/api/cron/snapshot-odds",
       "schedule": "10 * * * *"
     },

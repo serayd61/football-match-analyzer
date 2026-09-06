@@ -323,7 +323,18 @@
     "quality": "Veri kalitesi",
     "qualityNote": "{decided} sonuçlanmış maç · model sürümü {versions}. {recomputed} satırda kayıtlı isabet işareti yoktu; skordan yeniden türetildi.",
     "truncated": "Satır sınırına ulaşıldı; bu örneklem kesilmiştir.",
-    "roiPhaseNote": "Kapanış oranı piyasanın başlama anında bildiklerinin ölçütüdür; açılış oranı tahmin yayımlandığında erişilebilir olana daha yakındır. İkisi de gerçekleşmiş getiri değildir."
+    "roiPhaseNote": "Kapanış oranı piyasanın başlama anında bildiklerinin ölçütüdür; açılış oranı tahmin yayımlandığında erişilebilir olana daha yakındır. İkisi de gerçekleşmiş getiri değildir.",
+    "secWeekly": "Haftalık gelişim",
+    "weeklyMeta": "her Pazartesi hesaplanır · kapsanan ligler · resmi sürüm",
+    "week": "Hafta",
+    "logLoss": "Log-loss",
+    "ece": "ECE",
+    "rolling": "Son {weeks} hafta",
+    "weeklyNote": "Her satır o ISO haftasında oynanan ve sonuçlanan maçlardır; sayılar bir daha değişmez. Log-loss düşük iyidir (1X2 rastgele = 1,099; ikili pazarlar = 0,693). ECE, öngörülen ile gözlenen olasılık arasındaki ortalama farktır (10 kova). Tek hafta gürültülüdür; kararlar yuvarlanan pencereden verilir.",
+    "weeklyEmpty": "Haftalık karne ilk Pazartesi incelemesinden sonra dolar.",
+    "weeklyBenchmark": "Kapanış oranı olan {n} maçta: model {model}, bahisçi favorisi {market}, ROI {roi}.",
+    "weeklyCal": "Gösterim kalibrasyonu (bir hafta önce fit edilen eğri): güven Brier ham {raw} → kalibre {cal}.",
+    "weeklyAlerts": "Son inceleme uyarıları"
   },
   "leagues": {
     "title": "Ligler",
