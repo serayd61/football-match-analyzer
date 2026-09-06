@@ -38,3 +38,4 @@ engine/*_output.json
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+.playwright-mcp/

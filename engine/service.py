@@ -8,6 +8,10 @@ n8n bu servisi HTTP ile çağırır:
     GET  /status
 
 Model: engine/model.py (Dixon-Coles-lite). Veri: engine/store.py (FotMob sonuçları).
+xG (2026-09-05, reports/backtest-xg-gate.md GEÇTİ): engine/store_xg.py Understat xG'yi
+FotMob maçlarına bağlar; kapsamı XG_MIN_COVERAGE üstündeki liglerde model_xg.fit
+(xg_weight=XG_WEIGHT) kullanılır ve satır MODEL_VERSION_XG ile yayınlanır; diğer ligler
+gol-DC (MODEL_VERSION) olarak kalır. xg.jsonl yoksa servis birebir eski davranıştadır.
 Çalıştır:  uvicorn service:app --host 0.0.0.0 --port 8000
 """
 import os
@@ -18,17 +22,27 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 import model as M
+import model_xg as MX
 from store import ResultStore, backfill, update_recent, _parse_dt, league_name
+from store_xg import XgStore, choose_model as _choose
 
 MODEL_VERSION = os.environ.get("MODEL_VERSION", "dc-1.0")
+MODEL_VERSION_XG = os.environ.get("MODEL_VERSION_XG", "dc-2.0-xg")
+XG_WEIGHT = float(os.environ.get("XG_WEIGHT", "0.75"))            # plato değeri (backtest 0.5–1.0 arası düz)
+XG_MIN_COVERAGE = float(os.environ.get("XG_MIN_COVERAGE", "0.95"))  # eğitim penceresinde xG'li maç oranı
 SERVICE_TOKEN = os.environ.get("PREDICT_SERVICE_TOKEN", "")  # opsiyonel: /predict & admin koruması
 MIN_LEAGUE_MATCHES = int(os.environ.get("MIN_LEAGUE_MATCHES", "150"))
 
 app = FastAPI(title="Footy Predict Service", version=MODEL_VERSION)
 store = ResultStore()
+xg_store = XgStore()
 
-# (league_id, ref_ordinal) -> fitted model | None
-_fit_cache: Dict[tuple, Optional[dict]] = {}
+# (league_id, ref_ordinal) -> (fitted model | None, model_version, xg_coverage)
+_fit_cache: Dict[tuple, tuple] = {}
+
+
+def choose_model(matches, xg_coverage):
+    return _choose(matches, xg_coverage, XG_WEIGHT, XG_MIN_COVERAGE, MODEL_VERSION_XG, MODEL_VERSION)
 
 
 def _check_token(authorization: Optional[str]):
@@ -39,17 +53,20 @@ def _check_token(authorization: Optional[str]):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def _get_model(league_id: int, ref_ord: int) -> Optional[dict]:
+def _get_model(league_id: int, ref_ord: int):
+    """→ (model | None, model_version, xg_coverage). Lig xG kapsamı yeterliyse xG-DC."""
     key = (league_id, ref_ord)
     if key in _fit_cache:
         return _fit_cache[key]
     matches = store.load_for_fit(league_id)
+    cov = xg_store.attach(matches)
+    kind, version = choose_model(matches, cov)
     mdl = None
     if len(matches) >= MIN_LEAGUE_MATCHES:
         ref_date = datetime.fromordinal(ref_ord)
-        mdl = M.fit(matches, ref_date)
-    _fit_cache[key] = mdl
-    return mdl
+        mdl = MX.fit(matches, ref_date, xg_weight=XG_WEIGHT) if kind == "xg" else M.fit(matches, ref_date)
+    _fit_cache[key] = (mdl, version, cov)
+    return _fit_cache[key]
 
 
 def _pick_and_conf(pr: dict):
@@ -105,7 +122,25 @@ def status():
             for l in leagues[:15]
         ],
         "min_league_matches": MIN_LEAGUE_MATCHES,
+        "xg": {
+            "version": MODEL_VERSION_XG, "weight": XG_WEIGHT, "min_coverage": XG_MIN_COVERAGE,
+            "matches_with_xg": xg_store.total(), "path": xg_store.path,
+            # lig başına: eğitim deposundaki xG kapsamı ve hangi sürümün yayınlanacağı
+            "leagues": _xg_league_status(),
+        },
     }
+
+
+def _xg_league_status():
+    out = []
+    from store_xg import XG_LEAGUES
+    for lid in XG_LEAGUES:
+        matches = store.load_for_fit(lid)
+        cov = xg_store.attach(matches)
+        kind, version = choose_model(matches, cov)
+        out.append({"leagueId": lid, "name": league_name(lid), "matches": len(matches),
+                    "xg_coverage": round(cov, 3), "model": kind, "version": version})
+    return out
 
 
 @app.post("/predict")
@@ -134,7 +169,7 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
             skipped += 1
             continue
 
-        mdl = _get_model(int(lid), ref_ord)
+        mdl, version, _cov = _get_model(int(lid), ref_ord)
         if mdl is None:
             skipped += 1
             continue
@@ -170,7 +205,7 @@ def predict(req: PredictRequest, authorization: Optional[str] = Header(default=N
             "pick": pick,
             "confidence": round(conf, 4),
             "rationale": _rationale_tr(pr, home_name, away_name, pick),
-            "modelVersion": MODEL_VERSION,
+            "modelVersion": version,
         })
 
     return {

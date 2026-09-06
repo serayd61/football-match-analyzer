@@ -125,7 +125,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   );
 
   const selLabel = (v: ValueRow) => {
-    if (v.market === 'btts') return `${tc('btts')} · ${v.selection === 'yes' ? tc('yes') : tc('no')}`;
+    if (v.market === 'btts') return `${tc('btts')} · ${v.selection === 'yes' ? tc('yes') : tc('no')} (${v.source === 'derived' ? t('sourceDerived') : t('sourceStored')})`;
     return v.selection === '1' ? v.row.homeName : v.selection === '2' ? v.row.awayName : tc('draw');
   };
 

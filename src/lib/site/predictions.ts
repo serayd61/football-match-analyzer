@@ -4,44 +4,58 @@ import { z } from 'zod';
 import { db, REVALIDATE } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
+import { pickOfficial, officialFilter } from './official';
+import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
+import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
 import { deriveOverUnder, deriveBtts } from '@/lib/goal-markets';
 
 // ---------------------------------------------------------------------------
 // Row schema (engine_predictions). Validated with zod so a schema drift in
-// the DB fails loudly in logs instead of rendering NaN.
+// the DB fails loudly in logs instead of rendering NaN. Denetim 2026-09-05:
+// olasılıklar 0–1 aralığında ve toplamı 1 ± 0.03 olmalı; bir satır bozuksa
+// yalnız o satır karantinaya alınır (önceden tüm gün boş dönüyordu).
 // ---------------------------------------------------------------------------
 const num = z.coerce.number();
 const numN = z.coerce.number().nullable();
+const prob = z.coerce.number().min(0).max(1);
+const probN = z.coerce.number().min(0).max(1).nullable();
 
-export const EngineRow = z.object({
-  fixture_id: num,
-  league_id: numN,
-  league_name: z.string().nullable(),
-  home_id: numN,
-  home_name: z.string(),
-  away_id: numN,
-  away_name: z.string(),
-  kickoff: z.string(),
-  p_home: num,
-  p_draw: num,
-  p_away: num,
-  p_over25: numN,
-  p_btts_yes: numN,
-  lambda_home: numN,
-  lambda_away: numN,
-  pick: z.enum(['1', 'X', '2']).nullable(),
-  confidence: numN,
-  rationale: z.string().nullable(),
-  settled: z.boolean().nullable(),
-  home_score: numN,
-  away_score: numN,
-  result: z.enum(['H', 'D', 'A']).nullable(),
-  correct: z.boolean().nullable(),
-  model_version: z.string().nullable(),
-  updated_at: z.string().nullable().optional(),
-});
+export const PROB_SUM_TOLERANCE = 0.03;
+
+export const EngineRow = z
+  .object({
+    fixture_id: num,
+    league_id: numN,
+    league_name: z.string().nullable(),
+    home_id: numN,
+    home_name: z.string(),
+    away_id: numN,
+    away_name: z.string(),
+    kickoff: z.string().refine((s) => !Number.isNaN(Date.parse(s)), 'kickoff must be a datetime'),
+    p_home: prob,
+    p_draw: prob,
+    p_away: prob,
+    p_over25: probN,
+    p_btts_yes: probN,
+    lambda_home: numN,
+    lambda_away: numN,
+    pick: z.enum(['1', 'X', '2']).nullable(),
+    confidence: probN,
+    rationale: z.string().nullable(),
+    settled: z.boolean().nullable(),
+    home_score: numN,
+    away_score: numN,
+    result: z.enum(['H', 'D', 'A']).nullable(),
+    correct: z.boolean().nullable(),
+    model_version: z.string().nullable(),
+    updated_at: z.string().nullable().optional(),
+  })
+  .refine((r) => Math.abs(r.p_home + r.p_draw + r.p_away - 1) <= PROB_SUM_TOLERANCE, {
+    message: '1X2 probabilities do not sum to 1',
+    path: ['p_home'],
+  });
 export type EngineRowT = z.infer<typeof EngineRow>;
 
 export const COLS =
@@ -50,6 +64,8 @@ export const COLS =
   'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version, updated_at';
 
 export type Outcome = 'won' | 'lost' | 'void' | 'pending';
+
+export type { MatchStatus, ModelStatus };
 
 export interface SitePrediction {
   fixtureId: number;
@@ -86,6 +102,10 @@ export interface SitePrediction {
   updatedAt: string | null;
   /** false for feed fixtures the model has not rated yet */
   hasModel: boolean;
+  status: MatchStatus;
+  modelStatus: ModelStatus;
+  /** Quality flag: the stored row was last written after kick-off (not a clean pre-match record). */
+  publishedAfterKickoff: boolean;
 }
 
 const crest = (id: number | null) => (id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : null);
@@ -107,37 +127,54 @@ async function readCatalog(): Promise<Map<number, { ccode: string; name: string 
   return map;
 }
 
-async function readCurve(market: '1x2' | 'ou25' | 'btts'): Promise<Knot[]> {
+export interface CurveMeta { segment: string; fittedAt: string | null; nSamples: number | null }
+
+async function readCurve(market: '1x2' | 'ou25' | 'btts'): Promise<{ knots: Knot[]; meta: CurveMeta | null }> {
   const prefer = market === '1x2' ? ['covered', 'all'] : [market];
   const { data } = await db()
     .from('confidence_calibration')
-    .select('segment, knots, fitted_at')
+    .select('segment, knots, fitted_at, n_samples')
     .in('segment', prefer)
     .order('fitted_at', { ascending: false })
     .limit(10);
   for (const seg of prefer) {
     const row = (data || []).find((r: any) => r.segment === seg) as any;
-    if (row) return Array.isArray(row.knots) ? row.knots : [];
+    if (row) return { knots: Array.isArray(row.knots) ? row.knots : [], meta: { segment: row.segment, fittedAt: row.fitted_at ?? null, nSamples: row.n_samples ?? null } };
   }
-  return [];
+  return { knots: [], meta: null };
 }
 
-export async function loadContext(): Promise<{ catalog: Map<number, { ccode: string; name: string }>; curves: Curves }> {
+export interface SiteContext {
+  catalog: Map<number, { ccode: string; name: string }>;
+  curves: Curves;
+  curveMeta: { pick: CurveMeta | null; ou: CurveMeta | null; btts: CurveMeta | null };
+}
+
+export async function loadContext(): Promise<SiteContext> {
+  const empty = { knots: [] as Knot[], meta: null as CurveMeta | null };
   const [catalog, pick, ou, btts] = await Promise.all([
     readCatalog().catch(() => new Map<number, { ccode: string; name: string }>()),
-    readCurve('1x2').catch(() => []),
-    readCurve('ou25').catch(() => []),
-    readCurve('btts').catch(() => []),
+    readCurve('1x2').catch(() => empty),
+    readCurve('ou25').catch(() => empty),
+    readCurve('btts').catch(() => empty),
   ]);
-  return { catalog, curves: { pick, ou, btts } };
+  return { catalog, curves: { pick: pick.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta } };
 }
 
-export function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext>>): SitePrediction {
+/** Which calibration curves are live (segment, sample size, fit date) — for UI provenance labels. */
+export const getCalibrationMeta = unstable_cache(
+  async (): Promise<SiteContext['curveMeta']> => (await loadContext()).curveMeta,
+  ['site-curve-meta'],
+  { revalidate: REVALIDATE.performance },
+);
+
+export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now()): SitePrediction {
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   const ou = deriveOverUnder(r.p_over25);
   const bt = deriveBtts(r.p_btts_yes);
   const leagueName = r.league_name && !/^League \d+$/.test(r.league_name) ? r.league_name : cat?.name || r.league_name || '';
+  const publishedAfterKickoff = !!r.updated_at && !r.settled && Date.parse(r.updated_at) > Date.parse(r.kickoff);
   return {
     fixtureId: r.fixture_id,
     league,
@@ -171,16 +208,35 @@ export function mapRow(r: EngineRowT, ctx: Awaited<ReturnType<typeof loadContext
     modelVersion: r.model_version,
     updatedAt: r.updated_at ?? null,
     hasModel: true,
+    status: statusOfRow(r, now),
+    modelStatus: 'ready',
+    publishedAfterKickoff,
   };
 }
 
-export function parseRows(data: unknown): EngineRowT[] {
-  const parsed = z.array(EngineRow).safeParse(data);
-  if (!parsed.success) {
-    console.error('[site/predictions] schema mismatch', parsed.error.issues.slice(0, 3));
-    return [];
+export interface ParseReport { rows: EngineRowT[]; rejected: number; issues: string[] }
+
+/** Row-level validation: bad rows are quarantined and counted, good rows survive. */
+export function parseRowsDetailed(data: unknown): ParseReport {
+  if (!Array.isArray(data)) return { rows: [], rejected: 0, issues: data == null ? [] : ['payload is not an array'] };
+  const rows: EngineRowT[] = [];
+  const issues: string[] = [];
+  let rejected = 0;
+  for (const raw of data) {
+    const p = EngineRow.safeParse(raw);
+    if (p.success) { rows.push(p.data); continue; }
+    rejected++;
+    if (issues.length < 5) {
+      const fid = raw && typeof raw === 'object' ? (raw as any).fixture_id : '?';
+      issues.push(`fixture ${fid}: ${p.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}`);
+    }
   }
-  return parsed.data;
+  if (rejected) console.error(`[site/predictions] ${rejected}/${data.length} rows quarantined`, issues);
+  return { rows: pickOfficial(rows), rejected, issues };
+}
+
+export function parseRows(data: unknown): EngineRowT[] {
+  return parseRowsDetailed(data).rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,18 +248,18 @@ export const listPredictionsForDay = unstable_cache(
   async (ymd: string): Promise<SitePrediction[]> => {
     const from = zonedStartOfDay(ymd).toISOString();
     const to = zonedStartOfDay(addDays(ymd, 1)).toISOString();
-    const { data, error } = await db()
+    const { data, error } = await officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .gte('kickoff', from)
-      .lt('kickoff', to)
+      .lt('kickoff', to))
       .order('kickoff', { ascending: true })
       .limit(600);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
     return parseRows(data).map((r) => mapRow(r, ctx));
   },
-  ['site-predictions-day'],
+  ['site-predictions-day-v2'],
   { revalidate: REVALIDATE.fixtures },
 );
 
@@ -211,7 +267,7 @@ export const listPredictionsForDay = unstable_cache(
 export const nextDayWithPredictions = unstable_cache(
   async (ymd: string, direction: 1 | -1 = 1): Promise<string | null> => {
     const pivot = zonedStartOfDay(addDays(ymd, direction === 1 ? 1 : 0)).toISOString();
-    let q = db().from('engine_predictions').select('kickoff, league_id, league_name').limit(400);
+    let q = officialFilter(db().from('engine_predictions').select('kickoff, league_id, league_name')).limit(400);
     q = direction === 1 ? q.gte('kickoff', pivot).order('kickoff', { ascending: true }) : q.lt('kickoff', pivot).order('kickoff', { ascending: false });
     const { data } = await q;
     if (!data?.length) return null;
@@ -229,16 +285,19 @@ export const nextDayWithPredictions = unstable_cache(
   { revalidate: REVALIDATE.fixtures },
 );
 
+/** The official prediction of a fixture (deterministic across model versions). */
 export const getPrediction = unstable_cache(
   async (fixtureId: number): Promise<SitePrediction | null> => {
-    const { data, error } = await db().from('engine_predictions').select(COLS).eq('fixture_id', fixtureId).limit(1);
+    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS).eq('fixture_id', fixtureId))
+      .order('updated_at', { ascending: false })
+      .limit(10);
     if (error) throw new Error(error.message);
     const rows = parseRows(data);
     if (!rows.length) return null;
     const ctx = await loadContext();
     return mapRow(rows[0], ctx);
   },
-  ['site-prediction'],
+  ['site-prediction-v2'],
   { revalidate: REVALIDATE.fixtures },
 );
 
@@ -284,38 +343,43 @@ export const getMarketSnapshot = unstable_cache(
   { revalidate: REVALIDATE.fixtures },
 );
 
-/** Recent settled meetings between the two clubs known to the engine (H2H). */
+/**
+ * Recent settled meetings between the two clubs known to the engine (H2H).
+ * `before` (ISO) bounds the window to matches that kicked off strictly earlier
+ * — pass the examined match's kick-off so it never lists itself or later games
+ * (denetim 2026-09-05). Source is the engine archive, not a full fixture history.
+ */
 export const getHeadToHead = unstable_cache(
-  async (homeId: number, awayId: number, limit = 6): Promise<SitePrediction[]> => {
-    const { data } = await db()
+  async (homeId: number, awayId: number, limit = 6, before: string | null = null): Promise<SitePrediction[]> => {
+    let q = officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .eq('settled', true)
       .not('result', 'is', null)
-      .or(`and(home_id.eq.${homeId},away_id.eq.${awayId}),and(home_id.eq.${awayId},away_id.eq.${homeId})`)
-      .order('kickoff', { ascending: false })
-      .limit(limit);
+      .or(`and(home_id.eq.${homeId},away_id.eq.${awayId}),and(home_id.eq.${awayId},away_id.eq.${homeId})`));
+    q = asOfFilter(q, before);
+    const { data } = await q.order('kickoff', { ascending: false }).limit(limit);
     const ctx = await loadContext();
     return parseRows(data).map((r) => mapRow(r, ctx));
   },
-  ['site-h2h'],
+  ['site-h2h-v2'],
   { revalidate: REVALIDATE.results },
 );
 
-/** Last N settled matches of a team (either side), newest first. */
+/** Last N settled matches of a team (either side), newest first, optionally as of `before`. */
 export const getTeamForm = unstable_cache(
-  async (teamId: number, limit = 6): Promise<SitePrediction[]> => {
-    const { data } = await db()
+  async (teamId: number, limit = 6, before: string | null = null): Promise<SitePrediction[]> => {
+    let q = officialFilter(db()
       .from('engine_predictions')
       .select(COLS)
       .eq('settled', true)
       .not('result', 'is', null)
-      .or(`home_id.eq.${teamId},away_id.eq.${teamId}`)
-      .order('kickoff', { ascending: false })
-      .limit(limit);
+      .or(`home_id.eq.${teamId},away_id.eq.${teamId}`));
+    q = asOfFilter(q, before);
+    const { data } = await q.order('kickoff', { ascending: false }).limit(limit);
     const ctx = await loadContext();
     return parseRows(data).map((r) => mapRow(r, ctx));
   },
-  ['site-form'],
+  ['site-form-v2'],
   { revalidate: REVALIDATE.results },
 );

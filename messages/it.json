@@ -75,7 +75,17 @@
     "ou25Short": "O/U 2.5",
     "bttsShort": "GG/NG",
     "lastUpdated": "Ultimo aggiornamento",
-    "contents": "Indice"
+    "contents": "Indice",
+    "status": "Stato",
+    "statusScheduled": "In programma",
+    "statusLive": "Live",
+    "statusFinished": "Finita",
+    "statusPostponed": "Rinviata",
+    "statusCancelled": "Annullata",
+    "statusUnknown": "In attesa del risultato",
+    "search": "Cerca",
+    "clear": "Azzera",
+    "sort": "Ordina"
   },
   "errors": {
     "title": "Qualcosa è andato storto",
@@ -141,7 +151,23 @@
     "footnote": "Scelta = l'esito che il modello ritiene più probabile; la percentuale accanto è la probabilità calibrata, non l'output grezzo. Over/Under 2.5 e Goal/No Goal mostrano il lato favorito con la sua probabilità calibrata. Orari nel tuo fuso locale.",
     "pendingModel": "Valutazione del modello non ancora pubblicata",
     "pendingNote": "{count, plural, =1 {# partita è elencata} other {# partite sono elencate}} dal calendario senza valutazione del modello; le valutazioni escono la sera prima del calcio d'inizio.",
-    "positionTitle": "Posizione {pos} in classifica"
+    "positionTitle": "Posizione {pos} in classifica",
+    "searchLabel": "Squadra",
+    "searchPlaceholder": "Cerca squadra…",
+    "statusAll": "Tutte",
+    "statusUpcoming": "In arrivo",
+    "statusLive": "Live",
+    "statusFinished": "Finite",
+    "readyOnly": "Solo con valutazione",
+    "sortTime": "Calcio d’inizio",
+    "sortConfidence": "Confidenza",
+    "clearFilters": "Azzera i filtri",
+    "emptyFiltered": "Nessuna partita con questi filtri",
+    "emptyFilteredLead": "Allarga la ricerca, scegli un altro stato o azzera i filtri.",
+    "feedError": "Il feed del calendario non è raggiungibile; per questo giorno sono elencate solo le previsioni pubblicate.",
+    "feedStale": "Calendario aggiornato alle {time}.",
+    "mobileMarkets": "O/U 2,5 {ou} · GG {btts}",
+    "statusHint": "Lo stato della partita arriva dal feed del calendario; la valutazione del modello è indipendente."
   },
   "match": {
     "notFound": "Partita non trovata",
@@ -202,7 +228,16 @@
     "mkDnb": "Pareggio rimborso",
     "modelVsBook": "modello · bookmaker",
     "csNote": "Colonna bookmaker: probabilità implicita dalla quota del risultato esatto, margine incluso (solo i prezzi che il bookmaker elenca).",
-    "marketsNote": "Mercati a due esiti con il margine del bookmaker rimosso. L'handicap asiatico usa la linea principale del bookmaker; sulle linee a quarto il valore del modello è la media delle due linee vicine. Pareggio rimborso è la ripartizione casa/trasferta del modello senza il pareggio. Informazione, non un consiglio."
+    "marketsNote": "Mercati a due esiti con il margine del bookmaker rimosso. L'handicap asiatico usa la linea principale del bookmaker; sulle linee a quarto il valore del modello è la media delle due linee vicine. Pareggio rimborso è la ripartizione casa/trasferta del modello senza il pareggio. Informazione, non un consiglio.",
+    "secContext": "Contesto squadre",
+    "formAsOf": "prima di questa partita",
+    "contextSource": "Fonte: l’archivio del motore (partite valutate dal modello), non lo storico completo.",
+    "flagPostKickoff": "Questa previsione salvata è stata scritta l’ultima volta dopo il calcio d’inizio: non è un record pre-partita pulito.",
+    "sourceStored": "salvata",
+    "sourceDerived": "derivata dai gol attesi",
+    "curveMeta": "Curva di calibrazione: {segment}, {n} partite, stimata il {date}.",
+    "noCurve": "Nessuna curva di calibrazione caricata; il valore calibrato coincide con quello grezzo.",
+    "rawVsCal": "Output grezzo del modello e probabilità calibrata sono cose diverse: il grezzo è ciò che il modello ha prodotto, il calibrato è ciò che i risultati passati dicono che quel valore ha davvero reso."
   },
   "results": {
     "title": "Risultati",
@@ -273,7 +308,22 @@
     "marketFav": "Favorita del bookmaker",
     "roiExplain": "Un'unità sulla scelta 1X2 del modello all'ultima quota registrata prima del calcio d'inizio (chiusura, altrimenti apertura). Contano solo le partite con quota registrata, perciò questa finestra è più corta del registro completo. La riga del bookmaker mostra quante volte la favorita del mercato ha vinto sulle stesse partite, con il Brier al netto del margine.",
     "footer": "Calcolato {at}. Ricalcolato ogni ora. Come sono definiti i numeri:",
-    "footerLink": "metodologia."
+    "footerLink": "metodologia.",
+    "roiClosing": "Quota di chiusura",
+    "roiOpening": "Quota di apertura",
+    "coverage": "Copertura quote",
+    "coverageNote": "{bets} su {decided} partite decise hanno una quota per questa fase; {missing} senza snapshot restano fuori dal denominatore del ROI.",
+    "providers": "Fornitori",
+    "calRetro": "Retrospettiva (curva attuale)",
+    "calWalk": "Walk-forward (solo mesi precedenti)",
+    "walkNote": "Ogni mese è valutato con una curva stimata solo sui mesi precedenti. Le prime {warmup} partite sono il periodo di riscaldamento e non vengono valutate; primo mese valutato: {month}.",
+    "walkBrier": "Brier della scelta grezzo {raw} → calibrato {cal} (scala binaria).",
+    "walkEmpty": "Storico ancora insufficiente per una stima walk-forward.",
+    "brierScale": "Il Brier 1X2 è multiclasse (0 ottimo, 2 pessimo; 0,667 è tirare a caso). I Brier Over/Under e GG sono binari (da 0 a 1; 0,25 è testa o croce). Le due scale non sono confrontabili.",
+    "quality": "Qualità dei dati",
+    "qualityNote": "{decided} partite decise · versione modello {versions}. {recomputed} righe non avevano il flag di esito salvato e sono state ricavate dal punteggio.",
+    "truncated": "Raggiunto il limite di righe; questo campione è troncato.",
+    "roiPhaseNote": "La quota di chiusura misura ciò che il mercato sapeva al calcio d’inizio; quella di apertura è più vicina a ciò che era disponibile alla pubblicazione della previsione. Nessuna delle due è un rendimento realizzato."
   },
   "leagues": {
     "title": "Campionati",
@@ -577,6 +627,8 @@
     "expand": "Apri",
     "collapse": "Chiudi",
     "chatOpen": "Apri l'assistente",
-    "disclaimer": "Stime statistiche, non consigli di scommessa. Punta solo ciò che puoi permetterti di perdere."
+    "disclaimer": "Stime statistiche, non consigli di scommessa. Punta solo ciò che puoi permetterti di perdere.",
+    "sourceDerived": "derivata",
+    "sourceStored": "salvata"
   }
 }

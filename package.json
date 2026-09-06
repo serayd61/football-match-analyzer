@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
     "generate-icons": "node scripts/generate-icons.js",
     "backtest": "tsx scripts/backtest-dc.ts",
     "backtest:blend": "tsx scripts/backtest-blend.ts"

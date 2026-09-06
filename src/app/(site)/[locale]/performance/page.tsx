@@ -21,6 +21,7 @@ export default async function PerformancePage({ params: { locale } }: { params: 
   unstable_setRequestLocale(locale);
   const t = await getTranslations('performance');
   const tc = await getTranslations('common');
+  const tm = await getTranslations('match');
   const f = await getFormatter();
   const r = await getPerformance(null);
 
@@ -50,8 +51,13 @@ export default async function PerformancePage({ params: { locale } }: { params: 
         <Stat label={t('settled')} value={f.number(r.overall.n)} note={t('settledNote')} />
         <Stat label={t('hitRate')} value={pct(r.overall.acc)} note={t('hitRateNote', { won: r.overall.won, n: r.overall.n })} />
         <Stat label={t('brier')} value={fx(r.overall.brier)} note={t('brierNote')} />
-        <Stat label={t('roi')} value={r.roi ? `${r.roi.roi >= 0 ? '+' : ''}${pct(r.roi.roi)}` : '–'} note={r.roi ? t('roiNote', { bets: r.roi.bets }) : t('roiNone')} tone={r.roi ? (r.roi.roi >= 0 ? 'win' : 'loss') : undefined} />
+        <Stat label={`${t('roi')} · ${t('roiClosing')}`} value={r.roi ? `${r.roi.roi >= 0 ? '+' : ''}${pct(r.roi.roi)}` : '–'} note={r.roi ? `${t('roiNote', { bets: r.roi.bets })} · ${t('coverage')} ${pct(r.roi.coverage, 0)}` : t('roiNone')} tone={r.roi ? (r.roi.roi >= 0 ? 'win' : 'loss') : undefined} />
       </dl>
+      <p className="mt-3 text-xs text-s-muted">
+        {t('qualityNote', { decided: f.number(r.quality.decided), versions: r.quality.modelVersions.join(', ') || '–', recomputed: r.quality.recomputedCorrect })}
+        {r.quality.truncated && <> {t('truncated')}</>}
+        {' '}{t('brierScale')}
+      </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         {/* Monthly trend */}
@@ -97,7 +103,36 @@ export default async function PerformancePage({ params: { locale } }: { params: 
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-xs text-s-muted">{t('calibrationNote')}</p>
+          <p className="mt-2 text-xs text-s-muted">
+            <span className="font-medium text-s-ink">{t('calRetro')}.</span> {t('calibrationNote')}
+            {r.calibrationCurve && <> {tm('curveMeta', { segment: r.calibrationCurve.segment, n: f.number(r.calibrationCurve.nSamples ?? 0), date: r.calibrationCurve.fittedAt ? f.dateTime(new Date(r.calibrationCurve.fittedAt), 'dayShort') : '–' })}</>}
+          </p>
+
+          <h3 className="mt-6 font-body text-xs font-medium uppercase tracking-wider text-s-muted">{t('calWalk')}</h3>
+          {r.calibrationWalkForward.bins.length ? (
+            <>
+              <table className="mt-2 w-full text-sm">
+                <thead><tr className="border-b border-s-line text-left"><th className={th}>{t('bin')}</th><th className={`${th} text-right`}>{t('nShort')}</th><th className={`${th} text-right`}>{t('predicted')}</th><th className={`${th} text-right`}>{t('observed')}</th><th className={`${th} text-right`}>{t('gap')}</th></tr></thead>
+                <tbody>
+                  {r.calibrationWalkForward.bins.map((b) => (
+                    <tr key={b.lo} className="border-b border-s-line">
+                      <td className="num py-1.5">{Math.round(b.lo * 100)}–{Math.round(b.hi * 100)}%</td>
+                      <td className="num py-1.5 text-right">{b.n}</td>
+                      <td className="num py-1.5 text-right">{pct(b.predicted)}</td>
+                      <td className="num py-1.5 text-right">{pct(b.observed)}</td>
+                      <td className={`num py-1.5 text-right ${Math.abs(b.observed - b.predicted) > 0.1 ? 'text-s-loss' : 'text-s-muted'}`}>{b.observed - b.predicted >= 0 ? '+' : '−'}{Math.abs(Math.round((b.observed - b.predicted) * 100))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-2 text-xs text-s-muted">
+                {t('walkNote', { warmup: f.number(r.calibrationWalkForward.warmup), month: r.calibrationWalkForward.firstScoredMonth ? monthLabel(r.calibrationWalkForward.firstScoredMonth) : '–' })}
+                {' '}{t('walkBrier', { raw: fx(r.calibrationWalkForward.brierRaw, 4), cal: fx(r.calibrationWalkForward.brierCalibrated, 4) })}
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-xs text-s-muted">{t('walkEmpty')}</p>
+          )}
         </section>
 
         {/* By league */}
@@ -142,21 +177,26 @@ export default async function PerformancePage({ params: { locale } }: { params: 
           </div>
 
           <div>
-            <SectionTitle title={t('secRoi')} meta={r.roi ? t('roiWindow', { from: r.roi.from ? f.dateTime(new Date(r.roi.from), 'dayShort') : '–', to: r.roi.to ? f.dateTime(new Date(r.roi.to), 'dayShort') : '–' }) : undefined} />
-            {r.roi ? (
-              <>
-                <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-sm">
-                  <dt className="text-s-muted">{t('bets')}</dt><dd className="num">{r.roi.bets} · {r.roi.won}–{r.roi.bets - r.roi.won}</dd>
-                  <dt className="text-s-muted">{t('staked')}</dt><dd className="num">{f.number(r.roi.staked, 'fixed2')}</dd>
-                  <dt className="text-s-muted">{t('returned')}</dt><dd className="num">{f.number(r.roi.returned, 'fixed2')}</dd>
-                  <dt className="text-s-muted">{t('profit')}</dt><dd className={`num font-medium ${r.roi.profit >= 0 ? 'text-s-win' : 'text-s-loss'}`}>{r.roi.profit >= 0 ? '+' : ''}{f.number(r.roi.profit, 'fixed2')} ({r.roi.roi >= 0 ? '+' : ''}{pct(r.roi.roi)})</dd>
-                  <dt className="text-s-muted">{t('marketFav')}</dt><dd className="num">{pct(r.roi.marketAcc)} · {t('brier')} {fx(r.roi.marketBrier)}</dd>
+            <SectionTitle title={t('secRoi')} />
+            {[r.roi, r.roiOpening].filter((x): x is NonNullable<typeof x> => !!x).map((roi) => (
+              <div key={roi.phase} className="mt-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                  <span className="font-medium">{roi.phase === 'closing' ? t('roiClosing') : t('roiOpening')}</span>
+                  <span className="text-xs text-s-muted">{t('roiWindow', { from: roi.from ? f.dateTime(new Date(roi.from), 'dayShort') : '–', to: roi.to ? f.dateTime(new Date(roi.to), 'dayShort') : '–' })}</span>
+                </div>
+                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-sm">
+                  <dt className="text-s-muted">{t('bets')}</dt><dd className="num">{roi.bets} · {roi.won}–{roi.bets - roi.won}</dd>
+                  <dt className="text-s-muted">{t('coverage')}</dt><dd className="num">{pct(roi.coverage, 0)} · {t('coverageNote', { bets: roi.bets, decided: r.quality.decided, missing: roi.missing })}</dd>
+                  <dt className="text-s-muted">{t('staked')}</dt><dd className="num">{f.number(roi.staked, 'fixed2')}</dd>
+                  <dt className="text-s-muted">{t('returned')}</dt><dd className="num">{f.number(roi.returned, 'fixed2')}</dd>
+                  <dt className="text-s-muted">{t('profit')}</dt><dd className={`num font-medium ${roi.profit >= 0 ? 'text-s-win' : 'text-s-loss'}`}>{roi.profit >= 0 ? '+' : ''}{f.number(roi.profit, 'fixed2')} ({roi.roi >= 0 ? '+' : ''}{pct(roi.roi)})</dd>
+                  <dt className="text-s-muted">{t('marketFav')}</dt><dd className="num">{pct(roi.marketAcc)} · {t('brier')} {fx(roi.marketBrier)}</dd>
+                  <dt className="text-s-muted">{t('providers')}</dt><dd>{roi.providers.join(', ') || '–'}</dd>
                 </dl>
-                <p className="mt-2 text-xs text-s-muted">{t('roiExplain')}</p>
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-s-muted">{t('roiNone')}</p>
-            )}
+              </div>
+            ))}
+            {!r.roi && !r.roiOpening && <p className="mt-2 text-sm text-s-muted">{t('roiNone')}</p>}
+            <p className="mt-2 text-xs text-s-muted">{t('roiExplain')} {t('roiPhaseNote')}</p>
           </div>
         </section>
       </div>

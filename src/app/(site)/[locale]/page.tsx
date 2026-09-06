@@ -42,10 +42,11 @@ export default async function HomePage({ params: { locale } }: { params: { local
     listResults({ league: null, from: null, to: null, page: 1, pageSize: 6 }),
   ]);
   let day = today;
-  let upcoming = todayRows.filter((r) => r.covered && !r.settled);
+  // Only fixtures that have not kicked off (feed live/finished state and settlement are separate now).
+  let upcoming = todayRows.filter((r) => r.covered && r.status === 'scheduled');
   if (!upcoming.length) {
     const next = await nextDayWithPredictions(today, 1);
-    if (next) { day = next; upcoming = (await listPredictionsForDay(next)).filter((r) => r.covered); }
+    if (next) { day = next; upcoming = (await listPredictionsForDay(next)).filter((r) => r.covered && r.status === 'scheduled'); }
   }
   upcoming = upcoming.slice(0, 10);
 
