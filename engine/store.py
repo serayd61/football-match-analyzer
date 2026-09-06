@@ -252,6 +252,11 @@ def _parse_dt(v):
             return None
     s = str(v).strip()
     s = s.replace("Z", "").split("+")[0]
+    # 2026-09-06: depo tarihleri "2026-05-31T19:30:00.000Z" biçiminde (milisaniyeli).
+    # strptime "%S" kesri kabul etmez → 120.979 satırın TAMAMI parse edilemiyor, her lig
+    # "league_too_small" sayılıyor ve servis 0 tahmin üretiyordu. Kesir düşürülür.
+    if "." in s:
+        s = s.split(".")[0]
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d"):
         try:
             return datetime.strptime(s, fmt)
