@@ -16,7 +16,8 @@
     "signIn": "Giriş yap",
     "dashboard": "Panel",
     "skipToContent": "İçeriğe atla",
-    "signUp": "Ücretsiz başla"
+    "signUp": "Ücretsiz başla",
+    "signOut": "Çıkış"
   },
   "locale": {
     "label": "Dil"

@@ -16,7 +16,8 @@
     "signIn": "Accedi",
     "dashboard": "Dashboard",
     "skipToContent": "Vai al contenuto",
-    "signUp": "Inizia gratis"
+    "signUp": "Inizia gratis",
+    "signOut": "Esci"
   },
   "locale": {
     "label": "Lingua"

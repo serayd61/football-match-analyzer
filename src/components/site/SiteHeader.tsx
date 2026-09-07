@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { Menu, X } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
@@ -42,7 +42,11 @@ export default function SiteHeader() {
   const authCls = 'h-8 inline-flex items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90';
   const AuthLink = ({ className }: { className: string }) =>
     authed ? (
-      <Link href="/dashboard" className={className}>{t('dashboard')}</Link>
+      <span className="inline-flex items-center gap-3">
+        <Link href="/dashboard" className={className}>{t('dashboard')}</Link>
+        {/* 2026-09-07: sign-out only existed on the legacy profile page. */}
+        <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="text-sm text-s-muted hover:text-s-ink">{t('signOut')}</button>
+      </span>
     ) : (
       <span className="inline-flex items-center gap-3">
         <a href="/login" className="text-sm text-s-muted hover:text-s-ink">{t('signIn')}</a>
