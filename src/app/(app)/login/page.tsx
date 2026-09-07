@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { track } from '@/lib/analytics';
 import Link from 'next/link';
-import { Activity, Check, Star, AlertCircle } from 'lucide-react';
+import { Activity, Check, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useProof, formatAccuracy } from '@/lib/hooks/useProof';
 import { Spinner } from '@/components/ui';
+import { SITE_LEAGUES } from '@/lib/site/leagues';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,37 +23,40 @@ export default function LoginPage() {
   const { lang } = useLanguage();
   // Kayıt formunun yanındaki kanıt: landing'de görülen oranın aynısı
   const proof = useProof();
+  useEffect(() => {
+    try { if (new URLSearchParams(window.location.search).get('mode') === 'register') setIsLogin(false); } catch {}
+  }, []);
   const dcProof = proof?.record?.doubleChance ?? null;
 
   const labels = {
     tr: {
-      title: 'Football Analytics Pro', subtitle: 'Yapay Zeka Destekli Profesyonel Futbol Analiz Platformu',
+      title: 'Football Analytics Pro', subtitle: 'On ligde her maç için olasılık; her tahmin sonuçlandırılır ve karnede kalır.',
       login: 'Giriş Yap', register: 'Kayıt Ol', email: 'E-posta Adresi', password: 'Şifre', name: 'Ad Soyad',
       loginButton: 'Giriş Yap', registerButton: 'Hesap Oluştur', noAccount: 'Hesabınız yok mu?', hasAccount: 'Zaten hesabınız var mı?',
       forgotPassword: 'Şifremi Unuttum', or: 'veya',
-      features: ['📊 İstatistik motoru — kalibre olasılıklar', '🧠 Match Intelligence — haber özeti + maç önizlemesi', '💰 Value Bet tespiti', '🌍 50+ lig · 3 dil (TR · EN · DE)'],
+      features: ['Günün tahminleri: 1X2, üst/alt 2,5, karşılıklı gol', 'Ücretsiz hesapla günde 3 yazılı maç analizi', 'Ücretli planda değer radarı: modelin bahisçiden ayrıştığı maçlar', 'Karne herkese açık: isabet, kalibrasyon, kapanış oranına karşı getiri'],
       trusted: 'Karne halka açık — kaybedenler dahil, her gün güncellenir',
       errorInvalid: 'Geçersiz e-posta veya şifre', errorExists: 'Bu e-posta zaten kayıtlı', errorGeneral: 'Bir hata oluştu, tekrar deneyin',
       processing: 'İşleniyor...', leagues: 'Lig', languages: 'Dil (TR·EN·DE)', accuracy: 'Çifte şans isabeti',
       settledLabel: 'Sonuçlanmış maç',
     },
     en: {
-      title: 'Football Analytics Pro', subtitle: 'AI-Powered Professional Football Analysis Platform',
+      title: 'Football Analytics Pro', subtitle: 'Probabilities for every match in ten leagues; every prediction is settled and stays on the record.',
       login: 'Sign In', register: 'Sign Up', email: 'Email Address', password: 'Password', name: 'Full Name',
       loginButton: 'Sign In', registerButton: 'Create Account', noAccount: "Don't have an account?", hasAccount: 'Already have an account?',
       forgotPassword: 'Forgot Password', or: 'or',
-      features: ['📊 Statistical engine — calibrated probabilities', '🧠 Match Intelligence — news digest + match preview', '💰 Value bet detection', '🌍 50+ leagues · 3 languages (TR · EN · DE)'],
+      features: ["The day's predictions: 1X2, over/under 2.5, both teams to score", '3 written match analyses a day on the free account', 'Paid plan: value radar, the matches where the model disagrees with the bookmaker', 'Public record: hit rate, calibration, return against closing odds'],
       trusted: 'Public track record — losses included, updated daily',
       errorInvalid: 'Invalid email or password', errorExists: 'This email is already registered', errorGeneral: 'An error occurred, please try again',
       processing: 'Processing...', leagues: 'Leagues', languages: 'Languages', accuracy: 'Double chance accuracy',
       settledLabel: 'Settled matches',
     },
     de: {
-      title: 'Football Analytics Pro', subtitle: 'KI-gestützte Professionelle Fußball-Analyseplattform',
+      title: 'Football Analytics Pro', subtitle: 'Wahrscheinlichkeiten für jedes Spiel in zehn Ligen; jede Prognose wird abgerechnet und bleibt in der Bilanz.',
       login: 'Anmelden', register: 'Registrieren', email: 'E-Mail-Adresse', password: 'Passwort', name: 'Vollständiger Name',
       loginButton: 'Anmelden', registerButton: 'Konto erstellen', noAccount: 'Noch kein Konto?', hasAccount: 'Bereits ein Konto?',
       forgotPassword: 'Passwort vergessen', or: 'oder',
-      features: ['📊 Statistik-Engine — kalibrierte Wahrscheinlichkeiten', '🧠 Match Intelligence — Nachrichten + Spielvorschau', '💰 Value-Bet-Erkennung', '🌍 50+ Ligen · 3 Sprachen (TR · EN · DE)'],
+      features: ['Prognosen des Tages: 1X2, Über/Unter 2,5, beide treffen', '3 schriftliche Spielanalysen pro Tag im Gratiskonto', 'Bezahlplan: Value-Radar mit den Spielen, bei denen das Modell vom Buchmacher abweicht', 'Öffentliche Bilanz: Trefferquote, Kalibrierung, Rendite gegen die Schlussquote'],
       trusted: 'Öffentliche Bilanz — Verluste inklusive, täglich aktualisiert',
       errorInvalid: 'Ungültige E-Mail oder Passwort', errorExists: 'Diese E-Mail ist bereits registriert', errorGeneral: 'Ein Fehler ist aufgetreten, bitte erneut versuchen',
       processing: 'Verarbeitung...', leagues: 'Ligen', languages: 'Sprachen', accuracy: 'Doppelte-Chance-Quote',
@@ -113,7 +117,6 @@ export default function LoginPage() {
               <h1 className="text-2xl font-bold text-content tracking-tight">{l.title}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <span className="px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 text-[11px] font-semibold border border-brand-500/25">PRO</span>
-                <span className="px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 text-[11px] font-semibold border border-sky-500/25">AI-POWERED</span>
               </div>
             </div>
           </div>
@@ -129,24 +132,16 @@ export default function LoginPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2.5">
-              {['🧑‍💼', '👨‍💻', '👩‍💼', '🧑‍💻', '👨‍💼'].map((emoji, idx) => (
-                <div key={idx} className="w-9 h-9 rounded-full bg-surface-3 border-2 border-surface-0 grid place-items-center text-base">{emoji}</div>
-              ))}
-            </div>
-            <div className="text-sm text-content-subtle">
-              <div className="flex text-amber-400">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={12} fill="currentColor" />)}</div>
-              {l.trusted}
-            </div>
-          </div>
+          {/* 2026-09-07: the emoji avatar row and five stars were decorative
+              social proof with nothing behind them; the sentence stands alone. */}
+          <p className="text-sm text-content-subtle">{l.trusted}</p>
 
           {/* Rakamlar ÖLÇÜLMÜŞ karneden gelir (/api/v2/proof). Burada eskiden
               sabit "85%+ Doğruluk" yazıyordu — hiçbir ölçümle desteklenmiyordu
               (gerçek: çifte şans %76, 1X2 %49) ve şişik beklenti iade/churn
               olarak geri döner. Veri yoksa oran hücresi hiç gösterilmez. */}
           <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-line">
-            <div><div className="text-2xl font-bold text-content">50+</div><div className="text-sm text-content-subtle">{l.leagues}</div></div>
+            <div><div className="text-2xl font-bold text-content">{SITE_LEAGUES.length}</div><div className="text-sm text-content-subtle">{l.leagues}</div></div>
             {dcProof ? (
               <>
                 <div>
