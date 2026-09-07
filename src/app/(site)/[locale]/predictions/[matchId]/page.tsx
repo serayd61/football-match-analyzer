@@ -150,7 +150,11 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           pick: pickName, p: Math.round((p.confidence ?? p.confidenceRaw ?? 0) * 100),
           lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2'),
           home: p.homeName, away: p.awayName,
-          over: Math.round((p.overUnder?.pRaw ?? 0) * 100), btts: Math.round((p.btts?.pRaw ?? 0) * 100),
+          // pRaw is the favoured side's probability; the sentence names the
+          // over / "yes" side, so flip when the pick is under / no
+          // (2026-09-07: Getafe–Celta read "Üst 2,5 %74" for a 26% over).
+          over: Math.round((p.overUnder ? (p.overUnder.pick === 'over' ? p.overUnder.pRaw : 1 - p.overUnder.pRaw) : 0) * 100),
+          btts: Math.round((p.btts ? (p.btts.pick === 'yes' ? p.btts.pRaw : 1 - p.btts.pRaw) : 0) * 100),
         })}
         {formH.length >= 3 && formA.length >= 3 && (
           <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>
