@@ -195,7 +195,6 @@ export default async function HomePage({ params: { locale } }: { params: { local
             cta={<a href={PRICING_HREF} className={primary}>{t('proCta')}</a>}
           />
         </div>
-        <p className="mt-4 text-xs text-s-muted">{t('plansNote')}</p>
       </section>
 
       {/* ── How it works + coverage ─────────────────────────────────── */}
