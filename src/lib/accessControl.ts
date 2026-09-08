@@ -244,7 +244,11 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
   // Eski davranış bu kullanıcıları 7 gün sonra TAMAMEN kilitliyordu; artık kalıcı
   // 3/gün hakları var (welcome e-postasındaki söz ile tutarlı).
   const status = String(profile.subscription_status || '').toLowerCase();
-  const isFree = status === 'free' || status === 'trial' || status === 'trialing' || !status;
+  // 2026-09-08: kartsız günlük 3 analiz hakkı yalnız 7 günlük kayıt denemesi
+  // sürerken geçerli. Deneme bitince abonelik şart; aşağıdaki "erişim yok"
+  // dalına düşer (redirect /pricing).
+  const isFree = (status === 'free' || status === 'trial' || status === 'trialing' || !status)
+    && isRegistrationTrialLive(profile.trial_ends_at);
 
   if (isFree) {
     const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
