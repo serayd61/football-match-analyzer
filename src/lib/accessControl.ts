@@ -35,6 +35,19 @@ export function isGrantLive(
   return end > Date.now() - GRACE_DAYS * 86_400_000;
 }
 
+// Kayıt denemesi canlı mı? profiles.trial_ends_at saat dilimsiz ISO yazılır
+// ("2026-09-13T14:52:17.611"); UTC kabul edilir.
+export function trialEndMs(endsAt?: string | null): number | null {
+  if (!endsAt) return null;
+  const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(endsAt) ? endsAt : `${endsAt}Z`;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+export function isRegistrationTrialLive(endsAt?: string | null, now = Date.now()): boolean {
+  const end = trialEndMs(endsAt);
+  return end != null && end > now;
+}
+
 /**
  * Motor tahminleri (engine_predictions) erişim kontrolü — salt okuma, yan etkisiz.
  * Erişim verilir eğer: admin VEYA Stripe aboneliği aktif/trial VEYA profiles
@@ -51,15 +64,17 @@ export async function hasEnginePredictionAccess(email?: string | null): Promise<
   try {
     const { data: profile } = await db
       .from('profiles')
-      .select('subscription_status, subscription_end')
+      .select('subscription_status, subscription_end, trial_ends_at')
       .ilike('email', email)
       .maybeSingle();
-    // NOT: 'trial'/'trialing' profiles değeri ARTIK erişim VERMEZ — kart-zorunlu
-    // kuralı gereği gerçek trial'lar Stripe webhook'uyla profiles='active' olur.
-    // Ayrıca artık BİTİŞ TARİHİ zorunlu: açık uçlu manuel 'active' kayıtlar
-    // (subscription_end NULL) tek başına erişim vermez — gerçek abone aşağıdaki
-    // Stripe dalından zaten geçer.
+    // BİTİŞ TARİHİ zorunlu: açık uçlu manuel 'active' kayıtlar (subscription_end
+    // NULL) tek başına erişim vermez — gerçek abone aşağıdaki Stripe dalından
+    // zaten geçer.
     if (isGrantLive(profile?.subscription_status, profile?.subscription_end, false)) return true;
+    // Kayıt denemesi (2026-09-08 kararı): her yeni hesap kayıt anından itibaren
+    // 7 gün tam erişim alır (register route trial_ends_at yazar), sonra abonelik
+    // şart. 'subscription_status' değerine bakılmaz; yalnız tarih belirleyicidir.
+    if (isRegistrationTrialLive(profile?.trial_ends_at)) return true;
   } catch (e) {
     console.error('[access] profiles check failed', e);
   }

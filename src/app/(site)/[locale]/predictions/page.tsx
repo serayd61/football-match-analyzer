@@ -10,8 +10,11 @@ import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, PageTitle, EmptyState } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
+import { requireSiteAccess } from '@/lib/site/access';
+import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
-export const revalidate = 900;
+// Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
+export const dynamic = 'force-dynamic';
 
 type Search = { date?: string; league?: string; scope?: string; q?: string; status?: string; ready?: string; sort?: string };
 
@@ -22,9 +25,19 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 
 export default async function PredictionsPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
+  const access = await requireSiteAccess(locale, '/predictions');
   const t = await getTranslations('predictions');
   const tc = await getTranslations('common');
   const f = await getFormatter();
+
+  if (access.state === 'expired') {
+    return (
+      <Page>
+        <PageTitle title={t('title')} lead={t('lead')} />
+        <Paywall />
+      </Page>
+    );
+  }
 
   const today = todayYmd();
   const date = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : today;
@@ -161,6 +174,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           </Link>
         )}
       </div>
+
+      <TrialNotice access={access} />
 
       {day.feed === 'error' && (
         <p role="status" className="mb-3 rounded-[2px] border border-s-loss/40 bg-s-loss/10 px-3 py-2 text-sm">{t('feedError')}</p>

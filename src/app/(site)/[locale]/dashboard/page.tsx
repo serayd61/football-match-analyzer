@@ -17,6 +17,8 @@ import FormStrip, { toFormItems } from '@/components/site/FormStrip';
 import WatchlistPanel, { UnfollowButton } from '@/components/site/dashboard/WatchlistPanel';
 import IntelCard from '@/components/site/dashboard/IntelCard';
 import PurchaseTracker from '@/components/site/dashboard/PurchaseTracker';
+import { getSiteAccess } from '@/lib/site/access';
+import { Paywall } from '@/components/site/Paywall';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -46,9 +48,10 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   ]);
 
   const today = todayYmd();
-  const [access, engineAccess, todayAll, tomorrowAll, live, watch, directory] = await Promise.all([
+  const [access, engineAccess, site, todayAll, tomorrowAll, live, watch, directory] = await Promise.all([
     checkUserAccess(email).catch(() => null),
     hasEnginePredictionAccess(email).catch(() => false),
+    getSiteAccess(),
     listDayRows(today),
     listDayRows(addDays(today, 1)),
     getLiveNow(),
@@ -56,6 +59,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     teamDirectory(),
   ]);
   const paid = !!(access?.isPro || engineAccess);
+  // Plan chip: a running registration trial is labelled as such, not as paid.
+  const trial = site.state === 'trial';
   const todayRows = todayAll.filter((r) => r.covered);
   const tomorrowRows = tomorrowAll.filter((r) => r.covered);
   const snaps = await getMarketSnapshots([...todayRows, ...tomorrowRows].filter((r) => r.hasModel).map((r) => r.fixtureId));
@@ -139,13 +144,16 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
         aside={
           <div className="flex items-center gap-2">
             <span className={`inline-flex h-7 items-center rounded-[2px] border px-2 text-xs font-medium ${paid ? 'border-s-brand text-s-brand' : 'border-s-line text-s-muted'}`}>
-              {paid ? t('planPro') : t('planFree')}
+              {trial ? t('planTrial', { days: site.trialDaysLeft }) : paid ? t('planPro') : t('planFree')}
             </span>
-            {!paid && <a href="/pricing" className="inline-flex h-8 items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>}
+            <Link href="/account" className="text-sm underline underline-offset-4">{t('account')}</Link>
+            {(!paid || trial) && <a href="/pricing" className="inline-flex h-8 items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>}
           </div>
         }
       />
 
+      {/* Trial over and no subscription: no fixtures anywhere on the panel (2026-09-08). */}
+      {site.state === 'expired' ? <Paywall /> : (
       <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-12">
           {/* ── Today ─────────────────────────────────────────────────── */}
@@ -259,6 +267,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
           <p className="text-xs text-s-muted">{t('disclaimer')}</p>
         </aside>
       </div>
+      )}
     </Page>
   );
 }

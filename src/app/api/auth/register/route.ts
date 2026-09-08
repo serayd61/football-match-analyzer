@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Hesap oluşturuldu! Ücretsiz plan ile başlıyorsun.',
+      message: 'Hesap oluşturuldu! İlk 7 gün her şey açık.',
       redirectTo: '/dashboard',
     });
 

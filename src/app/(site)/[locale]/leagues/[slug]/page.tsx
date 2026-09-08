@@ -12,8 +12,11 @@ import StandingsTable from '@/components/site/StandingsTable';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
 import ResultsTable from '@/components/site/ResultsTable';
+import { requireSiteAccess } from '@/lib/site/access';
+import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
-export const revalidate = 900;
+// Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) => SITE_LEAGUES.map((l) => ({ locale, slug: l.slug })));
@@ -34,9 +37,19 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   unstable_setRequestLocale(params.locale);
   const league = leagueBySlug(params.slug);
   if (!league) notFound();
+  const access = await requireSiteAccess(params.locale, `/leagues/${league.slug}`);
   const t = await getTranslations('league');
   const tp = await getTranslations('performance');
   const f = await getFormatter();
+
+  if (access.state === 'expired') {
+    return (
+      <Page>
+        <PageTitle title={league.name} eyebrow={league.country} />
+        <Paywall />
+      </Page>
+    );
+  }
 
   const [perf, upcoming, recent, table] = await Promise.all([
     getPerformance(league.slug),
@@ -56,6 +69,8 @@ export default async function LeaguePage({ params }: { params: { locale: string;
         lead={t('lead', { league: league.name })}
         aside={<Link href="/leagues" className="text-xs underline underline-offset-4">{t('allLeagues')}</Link>}
       />
+
+      <TrialNotice access={access} />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-s-line py-5 sm:grid-cols-4">
         <Stat label={tp('settled')} value={f.number(o.n)} />

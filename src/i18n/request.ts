@@ -21,6 +21,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
         kickoff: { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
         dayLong: { weekday: 'long', day: 'numeric', month: 'long' },
         dayShort: { day: 'numeric', month: 'short' },
+        dateFull: { day: 'numeric', month: 'long', year: 'numeric' },
         time: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
         month: { month: 'short', year: 'numeric' },
       },

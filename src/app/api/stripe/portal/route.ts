@@ -12,23 +12,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 });
     }
 
-    // profiles tablosundan subscription_id al
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('subscription_id')
-      .eq('email', session.user.email)
-      .single();
+    // Dönüş yolu (yeni site: /<locale>/account). Yalnız site-içi yol kabul edilir.
+    let returnPath = '/profile';
+    try {
+      const body = await request.json();
+      if (typeof body?.returnPath === 'string' && /^\/[a-z]{2}\/[a-z-]+$/.test(body.returnPath)) returnPath = body.returnPath;
+    } catch { /* gövde yok: eski istemci */ }
 
-    if (!profile?.subscription_id) {
+    // Müşteri: önce subscriptions.stripe_customer_id (webhook'un yazdığı),
+    // yoksa profiles.subscription_id üzerinden Stripe'tan çözülür.
+    let customerId: string | null = null;
+    const { data: user } = await supabaseAdmin.from('users').select('id').ilike('email', session.user.email).maybeSingle();
+    if (user?.id) {
+      const { data: sub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('stripe_customer_id, stripe_subscription_id')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      customerId = sub?.stripe_customer_id || null;
+      if (!customerId && sub?.stripe_subscription_id) {
+        const s = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+        customerId = s.customer as string;
+      }
+    }
+    if (!customerId) {
+      const { data: profile } = await supabaseAdmin.from('profiles').select('subscription_id').ilike('email', session.user.email).maybeSingle();
+      if (profile?.subscription_id) {
+        const s = await stripe.subscriptions.retrieve(profile.subscription_id);
+        customerId = s.customer as string;
+      }
+    }
+    if (!customerId) {
       return NextResponse.json({ error: 'Abonelik bulunamadı' }, { status: 404 });
     }
 
-    // Subscription'dan customer ID al
-    const subscription = await stripe.subscriptions.retrieve(profile.subscription_id);
-    
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: subscription.customer as string,
-      return_url: `${process.env.NEXTAUTH_URL}/profile`,
+      customer: customerId,
+      return_url: `${process.env.NEXTAUTH_URL || 'https://footballanalytics.pro'}${returnPath}`,
     });
 
     return NextResponse.json({ url: portalSession.url });
