@@ -149,22 +149,24 @@
     "valueCta": "7 gün ücretsiz dene",
     "valueNote": "Bilgi amaçlıdır, öneri değildir.",
     "plansTitle": "İki plan, aynı model",
-    "plansLead": "Tahminler ve karne herkese açık. Ücretli plan işin kazanç tarafını açar: model ile piyasanın ayrıştığı maçlar ve yazılı maç raporları.",
-    "freeName": "Ücretsiz",
-    "freePrice": "0 $",
+    "plansLead": "Tahminler yalnız üye hesaplarına açık. Her yeni hesap 7 gün boyunca her şeyi görür; sonrası için ücretli plan.",
+    "freeName": "Deneme",
+    "freePrice": "7 gün · 0 $",
     "freeItems1": "{count} ligde günün tahminleri: 1X2, üst/alt, karşılıklı gol",
-    "freeItems2": "Sonuçlar, karne ve kalibrasyon sayfaları",
+    "freeItems2": "Sonuçlar, karne, lig ve puan durumu sayfaları",
     "freeItems3": "Günde 3 yazılı maç analizi",
-    "freeCta": "Hesap aç",
+    "freeCta": "7 gün ücretsiz başla",
     "proName": "Ücretli",
     "proPrice": "19,99 $ / ay",
     "proBadge": "7 gün ücretsiz, istediğin zaman iptal",
     "proItems1": "Değer radarı: model ile bahisçinin ayrıştığı her maç, oranıyla",
     "proItems2": "Sınırsız yazılı maç raporu ve asistan",
     "proItems3": "Takip listesi: kulüplerinin sıradaki değerlendirilmiş maçı",
-    "proItems4": "Ücretsiz plandaki her şey",
+    "proItems4": "Deneme bittiğinde kesintisiz devam",
     "proCta": "7 gün ücretsiz dene",
-    "plansNote": "Ücretsiz hesap için kart gerekmez. Ücretli planı deneme süresi bitmeden iptal edersen ücret alınmaz."
+    "plansNote": "Kayıt için kart gerekmez. İlk 7 gün her şey açık; sonra devam etmek için abonelik gerekir.",
+    "ctaSignIn": "Giriş yap",
+    "latestLocked": "Sonuçlanan maçlar ve model karnesi üye hesaplarına açık. Toplam isabet oranı karne sayfasında herkese açık."
   },
   "predictions": {
     "title": "Tahminler",
@@ -269,7 +271,8 @@
     "sourceDerived": "beklenen gollerden türetilmiş",
     "curveMeta": "Kalibrasyon eğrisi: {segment}, {n} maç, {date} tarihinde fit edildi.",
     "noCurve": "Kalibrasyon eğrisi yüklü değil; kalibre değer ham çıktıya eşittir.",
-    "rawVsCal": "Ham model çıktısı ile kalibre olasılık farklı şeylerdir: ham değer modelin ürettiği sayıdır, kalibre değer geçmiş sonuçların o ham değere gerçekte ne kadar isabet biçtiğidir."
+    "rawVsCal": "Ham model çıktısı ile kalibre olasılık farklı şeylerdir: ham değer modelin ürettiği sayıdır, kalibre değer geçmiş sonuçların o ham değere gerçekte ne kadar isabet biçtiğidir.",
+    "metaLocked": "{home} – {away}, {league}: model tahmini, beklenen gol, olası skorlar ve handikap çizgileri. Üye hesaplarına özel, ilk 7 gün ücretsiz."
   },
   "results": {
     "title": "Sonuçlar",
@@ -672,6 +675,20 @@
     "chatOpen": "Asistanı aç",
     "disclaimer": "İstatistiksel tahminlerdir, bahis tavsiyesi değildir. Yalnızca kaybetmeyi göze alabildiğin kadar oyna.",
     "sourceDerived": "türetilmiş",
-    "sourceStored": "kayıtlı"
+    "sourceStored": "kayıtlı",
+    "planTrial": "{days, plural, =0 {Deneme · bugün bitiyor} =1 {Deneme · son 1 gün} other {Deneme · # gün kaldı}}"
+  },
+  "paywall": {
+    "expiredTitle": "7 günlük deneme süren doldu",
+    "expiredLead": "Tahminler, sonuçlar ve lig sayfaları abonelikle devam eder. Aylık plan, istediğin zaman iptal.",
+    "expiredCta": "Planları gör",
+    "expiredAlt": "Karneye bak",
+    "trialLeft": "{days, plural, =0 {Deneme bugün bitiyor} =1 {Deneme: son 1 gün} other {Deneme: # gün kaldı}}",
+    "trialCta": "Planları gör",
+    "lockedTitle": "Tahminler üye hesaplarına özel",
+    "lockedLead": "Ücretsiz hesap aç, 7 gün boyunca tüm tahminleri gör. Kart gerekmez.",
+    "lockedCta": "7 gün ücretsiz başla",
+    "lockedSignIn": "Zaten üyeyim, giriş yap",
+    "lockedCount": "{n, plural, =1 {Bugün # maç değerlendirildi} other {Bugün # maç değerlendirildi}}"
   }
 }

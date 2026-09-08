@@ -8,8 +8,11 @@ import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { todayYmd } from '@/lib/site/time';
 import { Page, PageTitle, EmptyState } from '@/components/site/ui';
 import ResultsTable from '@/components/site/ResultsTable';
+import { requireSiteAccess } from '@/lib/site/access';
+import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
-export const revalidate = 300;
+// Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
+export const dynamic = 'force-dynamic';
 
 const PERIODS = ['7d', '30d', '90d', 'all'] as const;
 type Period = (typeof PERIODS)[number];
@@ -24,9 +27,19 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 
 export default async function ResultsPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
+  const access = await requireSiteAccess(locale, '/results');
   const t = await getTranslations('results');
   const tc = await getTranslations('common');
   const f = await getFormatter();
+
+  if (access.state === 'expired') {
+    return (
+      <Page>
+        <PageTitle title={t('title')} lead={t('lead')} />
+        <Paywall />
+      </Page>
+    );
+  }
 
   const period: Period = (PERIODS as readonly string[]).includes(searchParams.period || '') ? (searchParams.period as Period) : '30d';
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
@@ -88,6 +101,8 @@ export default async function ResultsPage({ params: { locale }, searchParams }: 
           <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('hitRate')}</dt><dd className="num font-head text-2xl">{acc == null ? '–' : f.number(acc, 'percent1')}</dd></div>
         </dl>
       </div>
+
+      <TrialNotice access={access} />
 
       {res.rows.length === 0 ? (
         <EmptyState title={t('emptyTitle')} lead={t('emptyLead')} action={<Link href={href({ period: 'all', league: undefined, page: '1' })} className="underline underline-offset-4">{t('emptyAction')}</Link>} />

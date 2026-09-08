@@ -15,13 +15,18 @@ import { Page, SectionTitle } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
 import ResultsTable from '@/components/site/ResultsTable';
 import LocalTime from '@/components/site/LocalTime';
+import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { LockedBlock } from '@/components/site/Paywall';
 
-export const revalidate = 900;
+// Members-only site (2026-09-08): the landing is the only page a visitor sees.
+// It shows the record and counts, never a fixture — tables render only for a
+// live trial or a paid account. Reading the session makes it dynamic.
+export const dynamic = 'force-dynamic';
 
-// Landing (2026-09-07): the page has one job — turn a visitor into a free
-// account, and a free account into the paid plan. Order: claim + record →
-// today's predictions (the free product) → value radar teaser (the paid
-// product, real count, selections locked) → plans → method/coverage.
+// Landing (2026-09-07): the page has one job — turn a visitor into an
+// account (7 free days), and a trial into the paid plan. Order: claim +
+// record → today's predictions (locked for visitors) → value radar teaser
+// (real count, selections locked) → plans → method/coverage.
 // The closing-odds ROI and calibration stay public on /performance; the
 // masthead shows per-market hit rates, which are what a first-time visitor
 // can actually read.
@@ -51,6 +56,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const tc = await getTranslations('common');
   const f = await getFormatter();
   const count = SITE_LEAGUES.length;
+  const access = await getSiteAccess();
+  const unlocked = canSeeMatches(access);
 
   const today = todayYmd();
   const [todayRows, tomorrowRows, perf, latest] = await Promise.all([
@@ -69,8 +76,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
   upcoming = upcoming.slice(0, 10);
 
   // Paid-plan teaser: the same radar the dashboard shows, computed on covered
-  // fixtures of today and tomorrow. Count and fixtures are public; the
-  // selection and the size of the gap are not.
+  // fixtures of today and tomorrow. Only the count is public; fixtures show to
+  // members, the selection and the size of the gap only on the paid plan.
   const radar = await valueRadar([...todayRows, ...tomorrowRows].filter((r) => r.covered)).catch(() => []);
 
   const dayLabel = day === today ? tc('today') : day === addDays(today, 1) ? tc('tomorrow') : f.dateTime(zonedStartOfDay(day), 'dayLong');
@@ -89,8 +96,14 @@ export default async function HomePage({ params: { locale } }: { params: { local
           <h1 className="mt-2 max-w-2xl text-4xl leading-[1.02] sm:text-5xl">{t('title')}</h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-s-muted">{t('lead', { count })}</p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <a href={REGISTER_HREF} className={primary}>{t('ctaPrimary')}</a>
-            <Link href="/predictions" className={secondary}>{t('ctaPredictions')}</Link>
+            {unlocked ? (
+              <Link href="/predictions" className={primary}>{t('ctaPredictions')}</Link>
+            ) : (
+              <>
+                <a href={REGISTER_HREF} className={primary}>{t('ctaPrimary')}</a>
+                <a href="/login" className={secondary}>{t('ctaSignIn')}</a>
+              </>
+            )}
           </div>
           <p className="mt-3 text-xs text-s-muted">{t('plansNote')}</p>
         </div>
@@ -130,7 +143,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
       {/* ── Upcoming ────────────────────────────────────────────────── */}
       <section className="mt-10">
         <SectionTitle title={t('upcomingTitle', { day: dayLabel })} meta={<Link href={day === today ? '/predictions' : `/predictions?date=${day}`} className="underline underline-offset-4">{t('upcomingAll')}</Link>} />
-        {upcoming.length ? (
+        {!unlocked ? (
+          <LockedBlock count={upcoming.length} />
+        ) : upcoming.length ? (
           <div className="mt-2"><PredictionTable rows={upcoming} /></div>
         ) : (
           <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>
@@ -146,7 +161,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
         {radar.length ? (
           <>
             <p className="mt-2 text-[15px]">{t('valueFound', { n: radar.length })}</p>
-            <ul className="mt-3 divide-y divide-s-line border-y border-s-line">
+            {unlocked && <ul className="mt-3 divide-y divide-s-line border-y border-s-line">
               {radar.slice(0, 3).map((v) => (
                 <li key={v.fixtureId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 text-sm">
                   <span className="flex min-w-0 flex-col gap-0.5">
@@ -158,7 +173,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
                   </span>
                 </li>
               ))}
-            </ul>
+            </ul>}
           </>
         ) : (
           <p className="mt-2 text-sm text-s-muted">{t('valueEmpty')}</p>
@@ -172,7 +187,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
       {/* ── Latest results ──────────────────────────────────────────── */}
       <section className="mt-12">
         <SectionTitle title={t('latestTitle')} meta={<Link href="/results" className="underline underline-offset-4">{t('latestAll')}</Link>} />
-        {latest.rows.length ? (
+        {!unlocked ? (
+          <LockedBlock count={0} lead={t('latestLocked')} />
+        ) : latest.rows.length ? (
           <div className="mt-2"><ResultsTable rows={latest.rows} /></div>
         ) : (
           <p className="mt-3 text-sm text-s-muted">{t('latestEmpty')}</p>

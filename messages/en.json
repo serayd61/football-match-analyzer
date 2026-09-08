@@ -149,22 +149,24 @@
     "valueCta": "Try 7 days free",
     "valueNote": "For information only, not a recommendation.",
     "plansTitle": "Two plans, one model",
-    "plansLead": "Predictions and the scorecard are public. The paid plan opens the money side: matches where the model and the market disagree, plus written match reports.",
-    "freeName": "Free",
-    "freePrice": "$0",
+    "plansLead": "Predictions are for members only. Every new account sees everything for 7 days; the paid plan takes it from there.",
+    "freeName": "Trial",
+    "freePrice": "7 days · $0",
     "freeItems1": "The day's predictions in {count} leagues: 1X2, over/under, both teams to score",
-    "freeItems2": "Results, scorecard and calibration pages",
+    "freeItems2": "Results, scorecard, league and standings pages",
     "freeItems3": "3 written match analyses per day",
-    "freeCta": "Create account",
+    "freeCta": "Start 7 days free",
     "proName": "Paid",
     "proPrice": "$19.99 / month",
     "proBadge": "7 days free, cancel anytime",
     "proItems1": "Value radar: every match where the model and the bookmaker disagree, with the price",
     "proItems2": "Unlimited written match reports and the assistant",
     "proItems3": "Watchlist: your clubs' next rated match",
-    "proItems4": "Everything in the free plan",
+    "proItems4": "Uninterrupted access when the trial ends",
     "proCta": "Try 7 days free",
-    "plansNote": "No card needed for a free account. Cancel the paid plan before the trial ends and you pay nothing."
+    "plansNote": "No card needed to sign up. Everything is open for the first 7 days; a subscription is needed to continue.",
+    "ctaSignIn": "Sign in",
+    "latestLocked": "Settled matches and the model record are for members. The overall hit rate stays public on the scorecard."
   },
   "predictions": {
     "title": "Predictions",
@@ -269,7 +271,8 @@
     "sourceDerived": "derived from expected goals",
     "curveMeta": "Calibration curve: {segment}, {n} matches, fitted {date}.",
     "noCurve": "No calibration curve loaded; the calibrated figure equals the raw output.",
-    "rawVsCal": "Raw model output and calibrated probability are different things: the raw figure is what the model produced, the calibrated one is what past results say that raw figure has actually delivered."
+    "rawVsCal": "Raw model output and calibrated probability are different things: the raw figure is what the model produced, the calibrated one is what past results say that raw figure has actually delivered.",
+    "metaLocked": "{home} vs {away}, {league}: model prediction, expected goals, likely scores and handicap lines. Members only, first 7 days free."
   },
   "results": {
     "title": "Results",
@@ -672,6 +675,20 @@
     "chatOpen": "Open assistant",
     "disclaimer": "Statistical estimates, not betting advice. Only bet what you can afford to lose.",
     "sourceDerived": "derived",
-    "sourceStored": "stored"
+    "sourceStored": "stored",
+    "planTrial": "{days, plural, =0 {Trial · ends today} =1 {Trial · 1 day left} other {Trial · # days left}}"
+  },
+  "paywall": {
+    "expiredTitle": "Your 7-day trial has ended",
+    "expiredLead": "Predictions, results and league pages continue with a subscription. Monthly plan, cancel anytime.",
+    "expiredCta": "See plans",
+    "expiredAlt": "View the scorecard",
+    "trialLeft": "{days, plural, =0 {Trial ends today} =1 {Trial: 1 day left} other {Trial: # days left}}",
+    "trialCta": "See plans",
+    "lockedTitle": "Predictions are for members",
+    "lockedLead": "Create a free account and see every prediction for 7 days. No card needed.",
+    "lockedCta": "Start 7 days free",
+    "lockedSignIn": "Already a member? Sign in",
+    "lockedCount": "{n, plural, =1 {# match rated today} other {# matches rated today}}"
   }
 }

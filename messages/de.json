@@ -149,22 +149,24 @@
     "valueCta": "7 Tage gratis testen",
     "valueNote": "Nur zur Information, keine Empfehlung.",
     "plansTitle": "Zwei Pläne, ein Modell",
-    "plansLead": "Prognosen und Bilanz sind öffentlich. Der Bezahlplan öffnet die Geldseite: Spiele, bei denen Modell und Markt auseinanderliegen, dazu schriftliche Spielberichte.",
-    "freeName": "Gratis",
-    "freePrice": "0 $",
+    "plansLead": "Prognosen gibt es nur für Mitglieder. Jedes neue Konto sieht 7 Tage lang alles; danach übernimmt der Bezahlplan.",
+    "freeName": "Testphase",
+    "freePrice": "7 Tage · 0 $",
     "freeItems1": "Prognosen des Tages in {count} Ligen: 1X2, Über/Unter, beide treffen",
-    "freeItems2": "Ergebnisse, Bilanz und Kalibrierung",
+    "freeItems2": "Ergebnisse, Bilanz, Liga- und Tabellenseiten",
     "freeItems3": "3 schriftliche Spielanalysen pro Tag",
-    "freeCta": "Konto anlegen",
+    "freeCta": "7 Tage gratis starten",
     "proName": "Bezahlplan",
     "proPrice": "19,99 $ / Monat",
     "proBadge": "7 Tage gratis, jederzeit kündbar",
     "proItems1": "Value-Radar: jedes Spiel, bei dem Modell und Buchmacher abweichen, mit Quote",
     "proItems2": "Unbegrenzt schriftliche Spielberichte und Assistent",
     "proItems3": "Beobachtungsliste: das nächste bewertete Spiel deiner Vereine",
-    "proItems4": "Alles aus dem Gratisplan",
+    "proItems4": "Nahtlos weiter, wenn die Testphase endet",
     "proCta": "7 Tage gratis testen",
-    "plansNote": "Für das Gratiskonto ist keine Karte nötig. Wer den Bezahlplan vor Ablauf der Testphase kündigt, zahlt nichts."
+    "plansNote": "Für die Registrierung ist keine Karte nötig. Die ersten 7 Tage ist alles offen; danach braucht es ein Abo.",
+    "ctaSignIn": "Anmelden",
+    "latestLocked": "Abgerechnete Spiele und die Modellbilanz sind für Mitglieder. Die Gesamttrefferquote bleibt auf der Bilanzseite öffentlich."
   },
   "predictions": {
     "title": "Prognosen",
@@ -269,7 +271,8 @@
     "sourceDerived": "aus erwarteten Toren abgeleitet",
     "curveMeta": "Kalibrierungskurve: {segment}, {n} Spiele, angepasst am {date}.",
     "noCurve": "Keine Kalibrierungskurve geladen; der kalibrierte Wert entspricht dem Rohwert.",
-    "rawVsCal": "Rohwert des Modells und kalibrierte Wahrscheinlichkeit sind zwei verschiedene Dinge: der Rohwert ist die Modellausgabe, der kalibrierte Wert ist das, was vergangene Ergebnisse für diesen Rohwert tatsächlich geliefert haben."
+    "rawVsCal": "Rohwert des Modells und kalibrierte Wahrscheinlichkeit sind zwei verschiedene Dinge: der Rohwert ist die Modellausgabe, der kalibrierte Wert ist das, was vergangene Ergebnisse für diesen Rohwert tatsächlich geliefert haben.",
+    "metaLocked": "{home} gegen {away}, {league}: Modellprognose, Expected Goals, wahrscheinliche Resultate und Handicap-Linien. Nur für Mitglieder, die ersten 7 Tage gratis."
   },
   "results": {
     "title": "Resultate",
@@ -672,6 +675,20 @@
     "chatOpen": "Assistent öffnen",
     "disclaimer": "Statistische Schätzungen, keine Wettempfehlung. Setze nur, was du verlieren kannst.",
     "sourceDerived": "abgeleitet",
-    "sourceStored": "gespeichert"
+    "sourceStored": "gespeichert",
+    "planTrial": "{days, plural, =0 {Testphase · endet heute} =1 {Testphase · noch 1 Tag} other {Testphase · noch # Tage}}"
+  },
+  "paywall": {
+    "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",
+    "expiredLead": "Prognosen, Ergebnisse und Ligaseiten gehen mit einem Abo weiter. Monatsplan, jederzeit kündbar.",
+    "expiredCta": "Pläne ansehen",
+    "expiredAlt": "Zur Bilanz",
+    "trialLeft": "{days, plural, =0 {Testphase endet heute} =1 {Testphase: noch 1 Tag} other {Testphase: noch # Tage}}",
+    "trialCta": "Pläne ansehen",
+    "lockedTitle": "Prognosen sind Mitgliedern vorbehalten",
+    "lockedLead": "Gratiskonto anlegen und 7 Tage lang alle Prognosen sehen. Keine Karte nötig.",
+    "lockedCta": "7 Tage gratis starten",
+    "lockedSignIn": "Schon Mitglied? Anmelden",
+    "lockedCount": "{n, plural, =1 {Heute # Spiel bewertet} other {Heute # Spiele bewertet}}"
   }
 }

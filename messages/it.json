@@ -149,22 +149,24 @@
     "valueCta": "Prova 7 giorni gratis",
     "valueNote": "Solo a scopo informativo, non è un consiglio.",
     "plansTitle": "Due piani, un solo modello",
-    "plansLead": "Pronostici e registro sono pubblici. Il piano a pagamento apre la parte economica: le partite in cui modello e mercato non concordano, più i report scritti.",
-    "freeName": "Gratuito",
-    "freePrice": "0 $",
+    "plansLead": "I pronostici sono riservati ai membri. Ogni nuovo account vede tutto per 7 giorni; poi subentra il piano a pagamento.",
+    "freeName": "Prova",
+    "freePrice": "7 giorni · 0 $",
     "freeItems1": "Pronostici del giorno in {count} campionati: 1X2, over/under, gol entrambe",
-    "freeItems2": "Risultati, registro e calibrazione",
+    "freeItems2": "Risultati, registro, pagine dei campionati e classifiche",
     "freeItems3": "3 analisi scritte al giorno",
-    "freeCta": "Crea account",
+    "freeCta": "Inizia 7 giorni gratis",
     "proName": "A pagamento",
     "proPrice": "19,99 $ / mese",
     "proBadge": "7 giorni gratis, disdici quando vuoi",
     "proItems1": "Radar del valore: ogni partita in cui modello e bookmaker si discostano, con la quota",
     "proItems2": "Report scritti illimitati e assistente",
     "proItems3": "Lista seguiti: la prossima partita valutata dei tuoi club",
-    "proItems4": "Tutto ciò che c'è nel piano gratuito",
+    "proItems4": "Accesso senza interruzioni alla fine della prova",
     "proCta": "Prova 7 giorni gratis",
-    "plansNote": "Per l'account gratuito non serve la carta. Se disdici il piano a pagamento prima della fine della prova, non paghi nulla."
+    "plansNote": "Per registrarti non serve la carta. I primi 7 giorni è tutto aperto; poi serve un abbonamento per continuare.",
+    "ctaSignIn": "Accedi",
+    "latestLocked": "Le partite concluse e il registro del modello sono per i membri. La percentuale di successo complessiva resta pubblica nel registro."
   },
   "predictions": {
     "title": "Pronostici",
@@ -269,7 +271,8 @@
     "sourceDerived": "derivata dai gol attesi",
     "curveMeta": "Curva di calibrazione: {segment}, {n} partite, stimata il {date}.",
     "noCurve": "Nessuna curva di calibrazione caricata; il valore calibrato coincide con quello grezzo.",
-    "rawVsCal": "Output grezzo del modello e probabilità calibrata sono cose diverse: il grezzo è ciò che il modello ha prodotto, il calibrato è ciò che i risultati passati dicono che quel valore ha davvero reso."
+    "rawVsCal": "Output grezzo del modello e probabilità calibrata sono cose diverse: il grezzo è ciò che il modello ha prodotto, il calibrato è ciò che i risultati passati dicono che quel valore ha davvero reso.",
+    "metaLocked": "{home} contro {away}, {league}: pronostico del modello, expected goals, risultati probabili e linee di handicap. Solo per i membri, primi 7 giorni gratis."
   },
   "results": {
     "title": "Risultati",
@@ -672,6 +675,20 @@
     "chatOpen": "Apri l'assistente",
     "disclaimer": "Stime statistiche, non consigli di scommessa. Punta solo ciò che puoi permetterti di perdere.",
     "sourceDerived": "derivata",
-    "sourceStored": "salvata"
+    "sourceStored": "salvata",
+    "planTrial": "{days, plural, =0 {Prova · finisce oggi} =1 {Prova · ultimo giorno} other {Prova · # giorni rimasti}}"
+  },
+  "paywall": {
+    "expiredTitle": "La tua prova di 7 giorni è finita",
+    "expiredLead": "Pronostici, risultati e pagine dei campionati continuano con un abbonamento. Piano mensile, disdici quando vuoi.",
+    "expiredCta": "Vedi i piani",
+    "expiredAlt": "Vai al registro",
+    "trialLeft": "{days, plural, =0 {La prova finisce oggi} =1 {Prova: ultimo giorno} other {Prova: # giorni rimasti}}",
+    "trialCta": "Vedi i piani",
+    "lockedTitle": "I pronostici sono riservati ai membri",
+    "lockedLead": "Crea un account gratuito e vedi tutti i pronostici per 7 giorni. Nessuna carta richiesta.",
+    "lockedCta": "Inizia 7 giorni gratis",
+    "lockedSignIn": "Sei già membro? Accedi",
+    "lockedCount": "{n, plural, =1 {Oggi # partita valutata} other {Oggi # partite valutate}}"
   }
 }
