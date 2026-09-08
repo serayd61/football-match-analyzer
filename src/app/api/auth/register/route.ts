@@ -3,16 +3,24 @@ import { supabaseAdmin } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { createCheckoutSession, PLANS } from '@/lib/stripe';
 
+// Yanıt metinleri istemcinin diliyle (login sayfası data.error'ı doğrudan gösterir).
+const MSG = {
+  tr: { required: 'E-posta ve şifre gerekli', short: 'Şifre en az 8 karakter olmalı', exists: 'Bu e-posta zaten kayıtlı', failed: 'Hesap oluşturulamadı', created: 'Hesap oluşturuldu! İlk 7 gün her şey açık.', generic: 'Bir hata oluştu' },
+  en: { required: 'Email and password are required', short: 'The password must be at least 8 characters', exists: 'This email is already registered', failed: 'Could not create the account', created: 'Account created. Everything is open for the first 7 days.', generic: 'Something went wrong' },
+  de: { required: 'E-Mail und Passwort sind erforderlich', short: 'Das Passwort muss mindestens 8 Zeichen haben', exists: 'Diese E-Mail ist bereits registriert', failed: 'Konto konnte nicht erstellt werden', created: 'Konto erstellt. Die ersten 7 Tage ist alles offen.', generic: 'Etwas ist schiefgelaufen' },
+} as const;
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, name, lang } = await request.json();
+    const L = lang === 'en' ? MSG.en : lang === 'de' ? MSG.de : MSG.tr;
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email ve şifre gerekli' }, { status: 400 });
+      return NextResponse.json({ error: L.required }, { status: 400 });
     }
 
     if (password.length < 8) {
-      return NextResponse.json({ error: 'Şifre en az 8 karakter olmalı' }, { status: 400 });
+      return NextResponse.json({ error: L.short }, { status: 400 });
     }
 
     const { data: existingUser } = await supabaseAdmin
@@ -22,7 +30,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingUser) {
-      return NextResponse.json({ error: 'Bu email zaten kullanılıyor' }, { status: 400 });
+      return NextResponse.json({ error: L.exists }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -38,7 +46,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError) {
-      return NextResponse.json({ error: 'Kullanıcı oluşturulamadı' }, { status: 500 });
+      return NextResponse.json({ error: L.failed }, { status: 500 });
     }
 
     // Free tier subscription kaydı oluştur
@@ -62,12 +70,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Hesap oluşturuldu! İlk 7 gün her şey açık.',
+      message: L.created,
       redirectTo: '/dashboard',
     });
 
   } catch (error: any) {
     console.error('Registration error:', error);
-    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
+    return NextResponse.json({ error: MSG.tr.generic }, { status: 500 });
   }
 }

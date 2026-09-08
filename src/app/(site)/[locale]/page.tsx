@@ -17,6 +17,7 @@ import ResultsTable from '@/components/site/ResultsTable';
 import LocalTime from '@/components/site/LocalTime';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { LockedBlock } from '@/components/site/Paywall';
+import { legacyHref } from '@/lib/site/legacy';
 
 // Members-only site (2026-09-08): the landing is the only page a visitor sees.
 // It shows the record and counts, never a fixture — tables render only for a
@@ -47,8 +48,8 @@ const pct = (x: number | null, d = 1) => (x == null ? '–' : `${(x * 100).toFix
 
 // Legacy (unlocalized) routes: the account and billing flows still live in
 // the old app shell, so these are plain anchors, not locale-aware Links.
-const REGISTER_HREF = '/login?mode=register';
-const PRICING_HREF = '/pricing';
+const REGISTER_PATH = '/login?mode=register';
+const PRICING_PATH = '/pricing';
 
 export default async function HomePage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
@@ -58,6 +59,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const count = SITE_LEAGUES.length;
   const access = await getSiteAccess();
   const unlocked = canSeeMatches(access);
+  const REGISTER_HREF = legacyHref(REGISTER_PATH, locale);
+  const PRICING_HREF = legacyHref(PRICING_PATH, locale);
+  const SIGNIN_HREF = legacyHref('/login', locale);
 
   const today = todayYmd();
   const [todayRows, tomorrowRows, perf, latest] = await Promise.all([
@@ -101,7 +105,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
             ) : (
               <>
                 <a href={REGISTER_HREF} className={primary}>{t('ctaPrimary')}</a>
-                <a href="/login" className={secondary}>{t('ctaSignIn')}</a>
+                <a href={SIGNIN_HREF} className={secondary}>{t('ctaSignIn')}</a>
               </>
             )}
           </div>

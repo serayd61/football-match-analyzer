@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { legacyHref } from '@/lib/site/legacy';
 import { signOut, useSession } from 'next-auth/react';
 import { Menu, X } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
@@ -22,6 +23,7 @@ const NAV: Array<{ href: string; key: 'predictions' | 'results' | 'performance' 
 // are long). The desktop layout now opens at `lg`; the menu button serves md.
 export default function SiteHeader() {
   const t = useTranslations('nav');
+  const locale = useLocale();
   const pathname = usePathname();
   const { status } = useSession();
   const [open, setOpen] = useState(false);
@@ -51,8 +53,8 @@ export default function SiteHeader() {
       </span>
     ) : (
       <span className="inline-flex items-center gap-3">
-        <a href="/login" className="text-sm text-s-muted hover:text-s-ink">{t('signIn')}</a>
-        <a href="/login?mode=register" className={className}>{t('signUp')}</a>
+        <a href={legacyHref('/login', locale)} className="text-sm text-s-muted hover:text-s-ink">{t('signIn')}</a>
+        <a href={legacyHref('/login?mode=register', locale)} className={className}>{t('signUp')}</a>
       </span>
     );
 

@@ -1,6 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/components/LanguageProvider';
+
+// 2026-09-08: metinler eski kabuğun diliyle (önceden yalnız Türkçeydi; Almanca
+// giriş sayfasının altında Türkçe 'Uygulamayı Yükle' kutusu çıkıyordu).
+const L = {
+  tr: { title: 'Uygulamayı Yükle', ios: 'Safari\'de paylaş butonuna dokunun ve "Ana Ekrana Ekle" seçin', lead: 'Hızlı erişim için ana ekranınıza ekleyin', install: 'Şimdi Yükle', iosHint: 'Paylaş → Ana Ekrana Ekle' },
+  en: { title: 'Install the app', ios: 'Tap the share button in Safari and choose "Add to Home Screen"', lead: 'Add it to your home screen for quick access', install: 'Install now', iosHint: 'Share → Add to Home Screen' },
+  de: { title: 'App installieren', ios: 'Tippe in Safari auf Teilen und wähle "Zum Home-Bildschirm"', lead: 'Für schnellen Zugriff zum Home-Bildschirm hinzufügen', install: 'Jetzt installieren', iosHint: 'Teilen → Zum Home-Bildschirm' },
+} as const;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +23,8 @@ export default function PWAInstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
   // Public site (/en, /de/…) is a reading surface, not the app — no install nag there.
   const pathname = usePathname();
+  const { lang } = useLanguage();
+  const l = L[lang] || L.en;
   const isPublicSite = /^\/(en|de|it|tr)(\/|$)/.test(pathname || '');
 
   useEffect(() => {
@@ -76,13 +87,10 @@ export default function PWAInstallPrompt() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-semibold text-sm">
-              Uygulamayı Yükle
+              {l.title}
             </h3>
             <p className="text-gray-400 text-xs mt-1">
-              {isIOS 
-                ? 'Safari\'de paylaş butonuna dokunun ve "Ana Ekrana Ekle" seçin'
-                : 'Hızlı erişim için ana ekranınıza ekleyin'
-              }
+              {isIOS ? l.ios : l.lead}
             </p>
           </div>
           <button
@@ -100,14 +108,14 @@ export default function PWAInstallPrompt() {
             onClick={handleInstall}
             className="w-full mt-3 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl text-sm hover:shadow-lg hover:shadow-green-500/30 transition-all active:scale-[0.98]"
           >
-            Şimdi Yükle
+            {l.install}
           </button>
         )}
         
         {isIOS && (
           <div className="mt-3 flex items-center justify-center gap-2 text-gray-400 text-xs">
             <span>📤</span>
-            <span>Paylaş → Ana Ekrana Ekle</span>
+            <span>{l.iosHint}</span>
           </div>
         )}
       </div>

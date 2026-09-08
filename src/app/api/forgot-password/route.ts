@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const { email } = await request.json();
+    const { email, lang } = await request.json();
+    const mailLang: 'tr' | 'en' | 'de' = lang === 'tr' || lang === 'de' ? lang : 'en';
     if (!email || typeof email !== 'string') return ok;
     const normalized = email.toLowerCase().trim();
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       if (!insertError) {
         const resetUrl = `${SITE_URL}/reset-password?token=${rawToken}`;
         try {
-          await sendPasswordResetEmail(normalized, resetUrl);
+          await sendPasswordResetEmail(normalized, resetUrl, mailLang);
         } catch (mailErr) {
           console.error('[forgot-password] email send failed:', mailErr);
         }
