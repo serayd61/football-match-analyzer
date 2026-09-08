@@ -8,6 +8,7 @@ import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import LocaleSwitcher from '@/components/site/LocaleSwitcher';
 import ThemeToggle from '@/components/site/ThemeToggle';
 import { StripeButton, SignOutButton } from '@/components/site/account/BillingActions';
+import { legacyHref } from '@/lib/site/legacy';
 
 // Account (2026-09-08): one page for who you are, what your access is and
 // where it comes from, and the billing/settings actions. Replaces the legacy
@@ -19,8 +20,6 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   return { title: t('metaTitle'), robots: { index: false, follow: false } };
 }
 
-const PRICING_HREF = '/pricing';
-const RESET_HREF = '/forgot-password';
 
 export default async function AccountPage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
@@ -28,6 +27,9 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
   if (access.state === 'anon') redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
   const [t, f, acct] = await Promise.all([getTranslations('account'), getFormatter(), getAccountSummary(access)]);
   if (!acct) redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
+  const PRICING_HREF = legacyHref('/pricing', locale);
+  const RESET_HREF = legacyHref('/forgot-password', locale);
+  const SETTINGS_HREF = legacyHref('/settings', locale);
 
   const day = (iso: string | null) => (iso ? f.dateTime(new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`), 'dateFull') : '–');
   const b = acct.billing;
@@ -114,7 +116,7 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
             <div className={row}><dt className={dt}>{t('password')}</dt><dd><a href={RESET_HREF} className="underline underline-offset-4">{t('resetPassword')}</a></dd></div>
             <div className={row}><dt className={dt}>{t('session')}</dt><dd><SignOutButton /></dd></div>
           </dl>
-          <p className="mt-3 text-xs text-s-muted">{t('legacyNote')} <a href="/settings" className="underline underline-offset-4">{t('legacyLink')}</a></p>
+          <p className="mt-3 text-xs text-s-muted">{t('legacyNote')} <a href={SETTINGS_HREF} className="underline underline-offset-4">{t('legacyLink')}</a></p>
         </section>
       </div>
     </Page>

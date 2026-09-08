@@ -18,23 +18,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('language') as Language;
-    if (savedLang && ['tr', 'en', 'de'].includes(savedLang)) {
-      setLangState(savedLang);
-    } else {
-      // Tarayıcı dilini kontrol et
-      const browserLang = navigator.language.slice(0, 2);
-      if (browserLang === 'tr') {
-        setLangState('tr');
-        localStorage.setItem('language', 'tr');
-      } else if (browserLang === 'de') {
-        setLangState('de');
-        localStorage.setItem('language', 'de');
-      } else {
-        setLangState('en');
-        localStorage.setItem('language', 'en');
-      }
-    }
+    // Dil önceliği (2026-09-08): yeni site (/tr, /de …) eski kabuğa link verirken
+    // ?lang=xx ekler; next-intl ayrıca NEXT_LOCALE çerezi bırakır. İkisi de
+    // yoksa eski davranış (localStorage → tarayıcı dili). Böylece /tr'den gelen
+    // kullanıcı giriş/şifre/fiyat sayfalarını Almanca görmez.
+    const norm = (v: string | null | undefined): Language | null => {
+      const x = (v || '').slice(0, 2).toLowerCase();
+      if (x === 'tr' || x === 'en' || x === 'de') return x;
+      if (x === 'it') return 'en'; // eski kabukta İtalyanca yok
+      return null;
+    };
+    let fromUrl: Language | null = null;
+    let fromCookie: Language | null = null;
+    try { fromUrl = norm(new URLSearchParams(window.location.search).get('lang')); } catch {}
+    try { fromCookie = norm(document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1]); } catch {}
+    const savedLang = norm(localStorage.getItem('language'));
+    const picked = fromUrl || fromCookie || savedLang || norm(navigator.language) || 'en';
+    setLangState(picked);
+    localStorage.setItem('language', picked);
+    document.documentElement.lang = picked;
     setMounted(true);
   }, []);
 

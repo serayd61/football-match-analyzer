@@ -13,30 +13,60 @@ export function isEmailConfigured(): boolean {
   return Boolean(RESEND_API_KEY);
 }
 
-export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+const RESET_COPY = {
+  tr: {
+    subject: 'Şifre sıfırlama talebi — Football Analytics Pro',
+    intro: 'Şifreni sıfırlamak için bir talep aldık. Aşağıdaki butona tıklayarak yeni şifreni belirleyebilirsin:',
+    button: 'Şifremi Sıfırla',
+    expiry: 'Bu bağlantı 1 saat içinde geçerliliğini yitirir. Eğer bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin; hesabın güvende.',
+    fallback: 'Buton çalışmıyorsa:',
+    text: (url: string) => `Şifreni sıfırlamak için: ${url} (bağlantı 1 saat geçerlidir). Bu talebi sen yapmadıysan yok say.`,
+  },
+  en: {
+    subject: 'Password reset request — Football Analytics Pro',
+    intro: 'We received a request to reset your password. Click the button below to choose a new one:',
+    button: 'Reset my password',
+    expiry: 'This link expires in 1 hour. If you did not request this, you can ignore this email; your account is safe.',
+    fallback: 'If the button does not work:',
+    text: (url: string) => `Reset your password: ${url} (the link is valid for 1 hour). If you did not request this, ignore this email.`,
+  },
+  de: {
+    subject: 'Passwort zurücksetzen — Football Analytics Pro',
+    intro: 'Wir haben eine Anfrage zum Zurücksetzen deines Passworts erhalten. Klicke auf den Button, um ein neues Passwort festzulegen:',
+    button: 'Passwort zurücksetzen',
+    expiry: 'Dieser Link ist 1 Stunde gültig. Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren; dein Konto ist sicher.',
+    fallback: 'Falls der Button nicht funktioniert:',
+    text: (url: string) => `Passwort zurücksetzen: ${url} (der Link ist 1 Stunde gültig). Falls du das nicht angefordert hast, ignoriere diese E-Mail.`,
+  },
+} as const;
+
+export async function sendPasswordResetEmail(to: string, resetUrl: string, lang: 'tr' | 'en' | 'de' = 'tr'): Promise<void> {
   if (!RESEND_API_KEY) {
     throw new Error('RESEND_API_KEY is not configured');
   }
   const resend = new Resend(RESEND_API_KEY);
+  const c = RESET_COPY[lang] || RESET_COPY.en;
 
   const html = `
   <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
     <h2 style="color:#059669;margin:0 0 12px">Football Analytics Pro</h2>
-    <p>Şifreni sıfırlamak için bir talep aldık. Aşağıdaki butona tıklayarak yeni şifreni belirleyebilirsin:</p>
+    <p>${c.intro}</p>
     <p style="text-align:center;margin:28px 0">
-      <a href="${resetUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;display:inline-block">Şifremi Sıfırla</a>
+      <a href="${resetUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;display:inline-block">${c.button}</a>
     </p>
-    <p style="font-size:13px;color:#64748b">Bu bağlantı 1 saat içinde geçerliliğini yitirir. Eğer bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin; hesabın güvende.</p>
-    <p style="font-size:12px;color:#94a3b8;word-break:break-all">Buton çalışmıyorsa: ${resetUrl}</p>
+    <p style="font-size:13px;color:#64748b">${c.expiry}</p>
+    <p style="font-size:12px;color:#94a3b8;word-break:break-all">${c.fallback} ${resetUrl}</p>
   </div>`;
 
-  await resend.emails.send({
+  // Resend hata dönerse (alan doğrulanmamış, alıcı kısıtı vb.) fırlat: çağıran loglar.
+  const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to,
-    subject: 'Şifre sıfırlama talebi — Football Analytics Pro',
+    subject: c.subject,
     html,
-    text: `Şifreni sıfırlamak için: ${resetUrl} (bağlantı 1 saat geçerlidir). Bu talebi sen yapmadıysan yok say.`,
+    text: c.text(resetUrl),
   });
+  if (error) throw new Error(`Resend: ${error.name || ''} ${error.message || JSON.stringify(error)}`);
 }
 
 /**
