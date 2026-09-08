@@ -25,7 +25,7 @@ const orgJsonLd = {
   name: 'Football Analytics Pro',
   url: SITE_URL,
   logo: `${SITE_URL}/icons/icon-512x512.png`,
-  description: 'AI-powered football match predictions and analysis.',
+  description: 'Statistical football match probabilities with a public, settled track record.',
 };
 
 const siteJsonLd = {
@@ -52,10 +52,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Football Analytics Pro - AI-Powered Match Predictions',
+    default: 'Football Analytics Pro - Football predictions with a public track record',
     template: '%s | Football Analytics Pro',
   },
-  description: 'AI-powered football match prediction and analysis system with Claude, GPT-4, Gemini consensus',
+  description: 'Match probabilities for ten leagues: 1X2, over/under 2.5 and both teams to score. Every prediction is settled after the final whistle and stays on the record.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -69,12 +69,12 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Football Analytics Pro',
     title: 'Football Analytics Pro',
-    description: 'AI-powered football predictions with 70%+ accuracy',
+    description: 'Match probabilities for ten leagues, settled after every game. Hit rate, calibration and return against closing odds are public.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Football Analytics Pro',
-    description: 'AI-powered football predictions',
+    description: 'Football match probabilities with a public, settled track record.',
   },
   icons: {
     icon: [
