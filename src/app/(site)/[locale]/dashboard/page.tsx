@@ -146,6 +146,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
             <span className={`inline-flex h-7 items-center rounded-[2px] border px-2 text-xs font-medium ${paid ? 'border-s-brand text-s-brand' : 'border-s-line text-s-muted'}`}>
               {trial ? t('planTrial', { days: site.trialDaysLeft }) : paid ? t('planPro') : t('planFree')}
             </span>
+            <Link href="/account" className="text-sm underline underline-offset-4">{t('account')}</Link>
             {(!paid || trial) && <a href="/pricing" className="inline-flex h-8 items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>}
           </div>
         }

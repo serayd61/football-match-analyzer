@@ -44,6 +44,8 @@ export default function SiteHeader() {
     authed ? (
       <span className="inline-flex items-center gap-3">
         <Link href="/dashboard" className={className}>{t('dashboard')}</Link>
+        {/* 2026-09-08: account page — plan, billing, settings. */}
+        <Link href="/account" className="text-sm text-s-muted hover:text-s-ink">{t('account')}</Link>
         {/* 2026-09-07: sign-out only existed on the legacy profile page. */}
         <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="text-sm text-s-muted hover:text-s-ink">{t('signOut')}</button>
       </span>
