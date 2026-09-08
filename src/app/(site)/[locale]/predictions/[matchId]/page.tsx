@@ -15,8 +15,11 @@ import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import FormStrip, { toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
+import { requireSiteAccess } from '@/lib/site/access';
+import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
-export const revalidate = 900;
+// Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
+export const dynamic = 'force-dynamic';
 
 function parseId(s: string): number | null {
   const n = Number(s);
@@ -31,9 +34,10 @@ export async function generateMetadata({ params }: { params: { locale: string; m
   if (!p) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: 'match' });
   const title = `${p.homeName} – ${p.awayName}`;
+  // Members-only: the description and OG card carry no model numbers.
   return {
     title,
-    description: t('metaDescription', { home: p.homeName, away: p.awayName, league: p.leagueName, pHome: Math.round(p.pHome * 100), pDraw: Math.round(p.pDraw * 100), pAway: Math.round(p.pAway * 100) }),
+    description: t('metaLocked', { home: p.homeName, away: p.awayName, league: p.leagueName }),
     alternates: alternatesFor(params.locale as Locale, `/predictions/${p.fixtureId}`),
     openGraph: { title, images: [`/api/og/match/${p.fixtureId}`] },
   };
@@ -49,10 +53,23 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   if (!id) notFound();
   const p = await getPrediction(id);
   if (!p) notFound();
+  const access = await requireSiteAccess(params.locale, `/predictions/${id}`);
 
   const t = await getTranslations('match');
   const tc = await getTranslations('common');
   const f = await getFormatter();
+
+  if (access.state === 'expired') {
+    return (
+      <Page>
+        <div className="pt-8">
+          <p className="text-xs text-s-muted">{p.leagueName}</p>
+          <h1 className="mt-1 text-3xl sm:text-4xl">{p.homeName} – {p.awayName}</h1>
+        </div>
+        <Paywall />
+      </Page>
+    );
+  }
 
   const ts = await getTranslations('standings');
   const table = p.league ? await standingsIndex(p.league.slug) : new Map();
@@ -120,6 +137,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
 
   return (
     <Page>
+      <TrialNotice access={access} />
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="pt-6 text-sm text-s-muted">
         <Link href="/predictions" className="hover:underline underline-offset-4">{t('backToList')}</Link>
