@@ -112,7 +112,8 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
 }
 
 export interface Bucket { n: number; won: number; acc: number | null; brier: number | null }
-export interface LeagueBucket extends Bucket { league: SiteLeague }
+/** Per-league card: 1X2 in the base bucket, goal markets alongside (same settlement rules as `markets`). */
+export interface LeagueBucket extends Bucket { league: SiteLeague; ou25: Bucket; btts: Bucket }
 export interface MonthBucket extends Bucket { month: string }
 export interface MarketBucket extends Bucket { market: '1x2' | 'ou25' | 'btts' }
 export type { CalBin };
@@ -157,6 +158,8 @@ export const getPerformance = unstable_cache(
 
     const overall = mk();
     const byLeague = new Map<string, ReturnType<typeof mk>>();
+    const byLeagueOu = new Map<string, ReturnType<typeof mk>>();
+    const byLeagueBtts = new Map<string, ReturnType<typeof mk>>();
     const byMonth = new Map<string, ReturnType<typeof mk>>();
     const ou = mk(), btts = mk();
     const bins = makeBins();
@@ -187,10 +190,20 @@ export const getPerformance = unstable_cache(
       const hs = r.home_score!, as = r.away_score!;
       const total = hs + as;
       const o = deriveOverUnder(r.p_over25);
-      if (o && r.p_over25 != null) { ou.n++; const hit = o.pick === 'over' ? total > 2.5 : total < 2.5; if (hit) ou.won++; ou.sq += (r.p_over25 - (total > 2.5 ? 1 : 0)) ** 2; }
+      const addGoal = (map: Map<string, ReturnType<typeof mk>>, b: ReturnType<typeof mk>, hit: boolean, sq2: number) => {
+        b.n++; if (hit) b.won++; b.sq += sq2;
+        if (slug) { if (!map.has(slug)) map.set(slug, mk()); const lb = map.get(slug)!; lb.n++; if (hit) lb.won++; lb.sq += sq2; }
+      };
+      if (o && r.p_over25 != null) {
+        const hit = o.pick === 'over' ? total > 2.5 : total < 2.5;
+        addGoal(byLeagueOu, ou, hit, (r.p_over25 - (total > 2.5 ? 1 : 0)) ** 2);
+      }
       const b = deriveBtts(r.p_btts_yes);
       const both = hs > 0 && as > 0;
-      if (b && r.p_btts_yes != null) { btts.n++; const hit = (b.pick === 'yes') === both; if (hit) btts.won++; btts.sq += (r.p_btts_yes - (both ? 1 : 0)) ** 2; }
+      if (b && r.p_btts_yes != null) {
+        const hit = (b.pick === 'yes') === both;
+        addGoal(byLeagueBtts, btts, hit, (r.p_btts_yes - (both ? 1 : 0)) ** 2);
+      }
 
       const od = odds.get(r.fixture_id);
       if (od?.closing) addRoi(roiClosing, r, od.closing, won);
@@ -198,7 +211,9 @@ export const getPerformance = unstable_cache(
     }
 
     const months = [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, b]) => ({ month, ...fin(b) }));
-    const leagues = SITE_LEAGUES.filter((l) => byLeague.has(l.slug)).map((l) => ({ league: l, ...fin(byLeague.get(l.slug)!) })).sort((a, b) => b.n - a.n);
+    const leagues = SITE_LEAGUES.filter((l) => byLeague.has(l.slug))
+      .map((l) => ({ league: l, ...fin(byLeague.get(l.slug)!), ou25: fin(byLeagueOu.get(l.slug) ?? mk()), btts: fin(byLeagueBtts.get(l.slug) ?? mk()) }))
+      .sort((a, b) => b.n - a.n);
 
     return {
       overall: fin(overall),
