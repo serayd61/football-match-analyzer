@@ -331,7 +331,7 @@
     "gap": "Gap",
     "calibrationNote": "A well-calibrated model sits on the diagonal: picks published at 60% should land about 60% of the time. Gaps beyond 10 points are marked. Bins with fewer than 10 picks are listed but not plotted.",
     "secLeagues": "By league",
-    "leaguesNote": "Only leagues with settled matches are listed.",
+    "leaguesNote": "Only leagues with settled matches are listed. Hit rate and W–L per market; Over/Under 2.5 and both-teams-to-score are settled from the score. Green from 60%, red under 45% for 1X2 and under 50% for goal markets (10+ matches).",
     "secMarkets": "By market",
     "market": "Market",
     "marketsNote": "Over/under 2.5 and both-teams-to-score are scored on the raw model probability and settled from the final score. Their Brier is binary (0.25 = coin flip).",
