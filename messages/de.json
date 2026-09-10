@@ -331,7 +331,7 @@
     "gap": "Abweichung",
     "calibrationNote": "Ein gut kalibriertes Modell liegt auf der Diagonalen: Tipps mit 60 % sollten in etwa 60 % der Fälle eintreffen. Abweichungen über 10 Punkte sind markiert. Klassen mit weniger als 10 Tipps werden aufgeführt, aber nicht gezeichnet.",
     "secLeagues": "Nach Liga",
-    "leaguesNote": "Nur Ligen mit abgerechneten Spielen werden aufgeführt.",
+    "leaguesNote": "Nur Ligen mit abgerechneten Spielen werden aufgeführt. Trefferquote und S–N je Markt; Über/Unter 2.5 und Beide Teams treffen werden aus dem Ergebnis abgerechnet. Grün ab 60 %, rot unter 45 % bei 1X2 und unter 50 % bei Tormärkten (ab 10 Spielen).",
     "secMarkets": "Nach Markt",
     "market": "Markt",
     "marketsNote": "Über/Unter 2.5 und «beide Teams treffen» werden auf der rohen Modellwahrscheinlichkeit bewertet und anhand des Endresultats abgerechnet. Ihr Brier ist binär (0.25 = Münzwurf).",

@@ -331,7 +331,7 @@
     "gap": "Fark",
     "calibrationNote": "İyi kalibre bir model köşegen üzerinde durur: %60 ile yayınlanan seçimler yaklaşık %60 tutmalıdır. 10 puanı aşan farklar işaretlidir. 10'dan az seçim içeren aralıklar tabloda listelenir, grafikte çizilmez.",
     "secLeagues": "Lige göre",
-    "leaguesNote": "Yalnızca sonuçlanmış maçı olan ligler listelenir.",
+    "leaguesNote": "Yalnızca sonuçlanmış maçı olan ligler listelenir. Her pazar için isabet yüzdesi ve T–K; Üst/Alt 2,5 ve karşılıklı gol skordan sonuçlandırılır. Yeşil %60 ve üzeri, kırmızı 1X2'de %45, gol pazarlarında %50 altı (en az 10 maç).",
     "secMarkets": "Pazara göre",
     "market": "Pazar",
     "marketsNote": "Üst/Alt 2,5 ve karşılıklı gol ham model olasılığı üzerinden puanlanır ve skordan sonuçlandırılır. Brier değerleri ikilidir (0,25 = yazı tura).",

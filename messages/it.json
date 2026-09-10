@@ -331,7 +331,7 @@
     "gap": "Scarto",
     "calibrationNote": "Un modello ben calibrato sta sulla diagonale: le scelte pubblicate al 60% dovrebbero centrare circa il 60% delle volte. Gli scarti oltre 10 punti sono evidenziati. Le classi con meno di 10 scelte sono elencate ma non tracciate.",
     "secLeagues": "Per campionato",
-    "leaguesNote": "Sono elencati solo i campionati con partite chiuse.",
+    "leaguesNote": "Sono elencati solo i campionati con partite chiuse. Percentuale di successo e V–P per mercato; Over/Under 2.5 e Goal/No Goal sono regolati dal risultato. Verde dal 60%, rosso sotto il 45% per l'1X2 e sotto il 50% per i mercati gol (almeno 10 partite).",
     "secMarkets": "Per mercato",
     "market": "Mercato",
     "marketsNote": "Over/Under 2.5 e Goal/No Goal sono valutati sulla probabilità grezza del modello e chiusi in base al risultato finale. Il loro Brier è binario (0.25 = lancio di moneta).",

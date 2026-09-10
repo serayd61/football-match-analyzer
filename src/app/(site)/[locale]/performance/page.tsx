@@ -19,6 +19,17 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 const pct = (x: number | null, digits = 1) => (x == null ? '–' : `${(x * 100).toFixed(digits)}%`);
 const fx = (x: number | null, d = 3) => (x == null ? '–' : x.toFixed(d));
 
+/** Hit rate with the W–L record underneath; red below `loss`, green at 60%+ on a real sample. */
+function MarketCell({ b, loss }: { b: { n: number; won: number; acc: number | null }; loss: number }) {
+  const tone = b.acc == null || b.n < 10 ? '' : b.acc < loss ? 'text-s-loss' : b.acc >= 0.6 ? 'text-s-win' : '';
+  return (
+    <td className="num py-1.5 text-right">
+      <span className={tone}>{pct(b.acc)}</span>
+      <span className="ml-1.5 text-xs text-s-muted">{b.n ? `${b.won}–${b.n - b.won}` : ''}</span>
+    </td>
+  );
+}
+
 export default async function PerformancePage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations('performance');
@@ -140,20 +151,32 @@ export default async function PerformancePage({ params: { locale } }: { params: 
         {/* By league */}
         <section>
           <SectionTitle title={t('secLeagues')} />
+          <div className="overflow-x-auto">
           <table className="mt-2 w-full text-sm">
-            <thead><tr className="border-b border-s-line text-left"><th className={th}>{tc('league')}</th><th className={`${th} text-right`}>{t('nShort')}</th><th className={`${th} text-right`}>{t('record')}</th><th className={`${th} text-right`}>{t('hitRate')}</th><th className={`${th} text-right`}>{t('brier')}</th></tr></thead>
+            <thead>
+              <tr className="border-b border-s-line text-left">
+                <th className={th}>{tc('league')}</th>
+                <th className={`${th} text-right`}>{t('nShort')}</th>
+                <th className={`${th} text-right`}>{tc('market1x2')}</th>
+                <th className={`${th} text-right`}>{tc('ou25')}</th>
+                <th className={`${th} text-right`}>{tc('btts')}</th>
+                <th className={`${th} text-right`}>{t('brier')}</th>
+              </tr>
+            </thead>
             <tbody>
               {r.leagues.map((l) => (
                 <tr key={l.league.slug} className="border-b border-s-line">
                   <td className="py-1.5"><Link href={`/leagues/${l.league.slug}`} className="hover:underline underline-offset-4">{l.league.name}</Link></td>
                   <td className="num py-1.5 text-right">{l.n}</td>
-                  <td className="num py-1.5 text-right">{l.won}–{l.n - l.won}</td>
-                  <td className={`num py-1.5 text-right ${l.acc != null && l.acc < 0.45 ? 'text-s-loss' : ''}`}>{pct(l.acc)}</td>
+                  <MarketCell b={l} loss={0.45} />
+                  <MarketCell b={l.ou25} loss={0.5} />
+                  <MarketCell b={l.btts} loss={0.5} />
                   <td className="num py-1.5 text-right text-s-muted">{fx(l.brier)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           <p className="mt-2 text-xs text-s-muted">{t('leaguesNote')}</p>
         </section>
 
