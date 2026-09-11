@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site: MetadataRoute.Sitemap = [
     ...localized('', { changeFrequency: 'hourly', priority: 1 }),
     ...localized('/predictions', { changeFrequency: 'hourly', priority: 0.9 }),
-    ...localized('/results', { changeFrequency: 'hourly', priority: 0.8 }),
+    ...localized('/pricing', { changeFrequency: 'monthly', priority: 0.6 }),
     ...localized('/performance', { changeFrequency: 'daily', priority: 0.8 }),
     ...localized('/leagues', { changeFrequency: 'weekly', priority: 0.6 }),
     ...localized('/methodology', { changeFrequency: 'monthly', priority: 0.6 }),
@@ -43,7 +43,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Legacy app surface (unchanged).
   const legacy: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/analysis`, changeFrequency: 'hourly', priority: 0.7 },
-    { url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE_URL}/ai-performance`, changeFrequency: 'daily', priority: 0.5 },
     { url: `${SITE_URL}/leaderboard`, changeFrequency: 'daily', priority: 0.5 },
   ];

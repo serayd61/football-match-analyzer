@@ -66,6 +66,7 @@ export async function getSiteAccess(): Promise<SiteAccess> {
 /** Anonymous visitors are sent to sign-in and come back to `path` afterwards. */
 export async function requireSiteAccess(locale: string, path: string): Promise<SiteAccess> {
   const access = await getSiteAccess();
-  if (access.state === 'anon') redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}${path}`)}`);
+  // Sign-in lives on the localized site (2026-09-11); callbackUrl brings the visitor back.
+  if (access.state === 'anon') redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}${path}`)}`);
   return access;
 }

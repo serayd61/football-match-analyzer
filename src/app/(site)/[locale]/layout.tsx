@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Sans, Barlow_Condensed } from 'next/font/google';
+import { Archivo } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
@@ -16,20 +16,13 @@ import SiteFooter from '@/components/site/SiteFooter';
 // separate from the legacy app root: no LanguageProvider mount gate, no
 // neon navigation, no service-worker prompt — and a real <html lang>.
 //
-// Body: IBM Plex Sans — true tabular figures, wide Latin coverage (DE/IT/TR),
-// stays legible at 13px in dense tables. Headings and team names: Barlow
-// Condensed — compact in narrow columns, carries a sports-page voice without
-// shouting. Loaded once here, exposed as CSS variables for `.site`.
-const plex = IBM_Plex_Sans({
+// Archivo (Google Fonts) for everything — "Modernist" redesign 2026-09-11.
+// Headings 800, body 400/600. One family exposed under both CSS variables the
+// stylesheet reads (`--font-site-body`, `--font-site-head`).
+const archivo = Archivo({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-site-body',
-  display: 'swap',
-});
-const barlow = Barlow_Condensed({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['500', '600', '700'],
-  variable: '--font-site-head',
   display: 'swap',
 });
 
@@ -42,8 +35,8 @@ export function generateStaticParams() {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f6f7f5' },
-    { media: '(prefers-color-scheme: dark)', color: '#0d181b' },
+    { media: '(prefers-color-scheme: light)', color: '#f3f2f2' },
+    { media: '(prefers-color-scheme: dark)', color: '#181716' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -79,7 +72,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className={`${plex.variable} ${barlow.variable}`}>
+      <body className={archivo.variable} style={{ ['--font-site-head' as string]: 'var(--font-site-body)' }}>
         <div className="site flex min-h-screen flex-col">
           <script dangerouslySetInnerHTML={{ __html: bootScript }} />
           <AuthProvider>

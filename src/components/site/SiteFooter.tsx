@@ -1,43 +1,29 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
 
+// Footer (design 2026-09-11): top 2px rule, 12px muted line
+// "© 2026 footballanalytics.pro · Predictions are statistical estimates, not
+// financial advice. 18+ · Play responsibly." + links Methodology / Terms /
+// Privacy. Leagues / About / Contact stay reachable here too.
 export default async function SiteFooter() {
-  const t = await getTranslations('footer');
+  const t = await getTranslations('v2.footer');
   const nav = await getTranslations('nav');
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-16 border-t border-s-line bg-s-surface text-sm">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr_auto]">
-        <div>
-          <Wordmark />
-          <p className="mt-3 max-w-sm text-s-muted">{t('dataSourceText')}</p>
-        </div>
-        <div>
-          <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-s-muted">{t('responsible')}</h2>
-          <p className="mt-2 max-w-sm text-s-muted">{t('responsibleText')}</p>
-        </div>
-        <div>
-          <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-s-muted">{t('links')}</h2>
-          <ul className="mt-2 space-y-1.5">
-            <li><Link href="/methodology" className="inline-block py-1 hover:underline underline-offset-4">{nav('methodology')}</Link></li>
-            <li><Link href="/about" className="inline-block py-1 hover:underline underline-offset-4">{nav('about')}</Link></li>
-            <li><Link href="/privacy" className="inline-block py-1 hover:underline underline-offset-4">{t('privacy')}</Link></li>
-            <li><Link href="/terms" className="inline-block py-1 hover:underline underline-offset-4">{t('terms')}</Link></li>
-            <li><a href="/contact" className="inline-block py-1 hover:underline underline-offset-4">{t('contact')}</a></li>
-          </ul>
-        </div>
-        <div className="md:justify-self-end">
+    <footer className="rule-t mt-16 text-[12px] text-s-muted">
+      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+        <span className="max-w-3xl">{t('line', { year })}</span>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Footer">
+          <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
+          <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>
+          <Link href="/about" className="hover:text-s-ink">{nav('about')}</Link>
+          <Link href="/terms" className="hover:text-s-ink">{t('terms')}</Link>
+          <Link href="/privacy" className="hover:text-s-ink">{t('privacy')}</Link>
+          <a href="/contact" className="hover:text-s-ink">{t('contact')}</a>
           <LocaleSwitcher />
-        </div>
-      </div>
-      <div className="border-t border-s-line">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-s-muted sm:px-6">
-          <span>{t('rights', { year })}</span>
-          <span>18+</span>
-        </div>
+        </nav>
       </div>
     </footer>
   );

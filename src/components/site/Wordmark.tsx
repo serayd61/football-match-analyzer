@@ -1,18 +1,12 @@
-// Text-based wordmark with a small pitch mark. The mark is a top-down pitch:
-// outline, halfway line, centre circle. Reads at 20px and scales to print.
+// Brand: 28×28 accent square with "FA" 12px in the page colour, then
+// "FOOTBALLANALYTICS.PRO" 800 — ".PRO" in accent. Reads at header size and
+// scales down for the footer (`compact`).
 export default function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2 select-none" aria-label="Football Analytics">
-      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" aria-hidden className="shrink-0">
-        <rect x="1" y="1" width="24" height="16" stroke="currentColor" strokeWidth="1.6" />
-        <line x1="13" y1="1" x2="13" y2="17" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="13" cy="9" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-        <rect x="1" y="5.5" width="4" height="7" stroke="currentColor" strokeWidth="1.2" />
-        <rect x="21" y="5.5" width="4" height="7" stroke="currentColor" strokeWidth="1.2" />
-      </svg>
-      <span className="font-head font-semibold text-[1.35rem] leading-none tracking-[0.01em]">
-        Football<span className="text-s-accent">Analytics</span>
-        {!compact && <span className="text-s-muted font-medium">.pro</span>}
+    <span className="inline-flex items-center gap-2 select-none" aria-label="footballanalytics.pro">
+      <span className={`grid shrink-0 place-items-center bg-s-accent font-head font-extrabold text-s-brand-ink ${compact ? 'h-5 w-5 text-[9px]' : 'h-7 w-7 text-[12px]'}`} aria-hidden>FA</span>
+      <span className={`font-head font-extrabold uppercase leading-none tracking-[0.01em] ${compact ? 'text-[12px]' : 'text-[14px] sm:text-[15px]'}`}>
+        FootballAnalytics<span className="text-s-accent">.pro</span>
       </span>
     </span>
   );

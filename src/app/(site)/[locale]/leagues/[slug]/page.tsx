@@ -98,7 +98,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       )}
 
       <section className="mt-12">
-        <SectionTitle title={t('recent')} meta={<Link href={`/results?league=${league.slug}&period=all`} className="underline underline-offset-4">{t('recentAll')}</Link>} />
+        <SectionTitle title={t('recent')} meta={<Link href={`/performance?league=${league.slug}#results`} className="underline underline-offset-4">{t('recentAll')}</Link>} />
         {recent.rows.length ? <div className="mt-2"><ResultsTable rows={recent.rows} /></div> : <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p>}
       </section>
 

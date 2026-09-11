@@ -7,34 +7,57 @@
    Space Grotesk) and neon rules never reach the public pages. */
 
 /* ============================================================================
-   PUBLIC SITE — scoped under `.site` (src/app/[locale]/layout.tsx)
+   PUBLIC SITE — "Modernist" design language (redesign 2026-09-11)
    ----------------------------------------------------------------------------
-   Editorial, data-dense, calm. Tokens are RGB triplets so Tailwind can apply
-   alpha (`bg-s-brand/10`). Light is the default; dark follows the system
-   preference unless the wrapper carries data-theme="light|dark".
-   Legacy globals (`* { font-family }`, Orbitron headings, neon body mesh) are
-   neutralised here. Fonts: IBM Plex Sans (body, true tabular figures) and
-   Barlow Condensed (headings, team names) — loaded via next/font.
+   Flat, architectural. Zero border-radius. No gradients, no shadows on cards.
+   Structure comes from 2px rules between major sections and 1px rules between
+   cells. One accent (red) used sparingly. Archivo for everything.
+
+   Tokens are RGB triplets so Tailwind can apply alpha (`bg-s-ink/40`). The
+   `s-*` names are kept so pages outside the six redesigned screens (leagues,
+   docs, dashboard, account) pick the new palette up automatically:
+     s-bg      page background           #f3f2f2
+     s-surface card fill                  #eae9e9
+     s-raised  hover fill / ring track    #d7d3d3 (neutral-300)
+     s-line    divider ink at 40%         rgba(32,30,29,.4) → see --s-divider
+     s-ink     text                       #201e1d
+     s-muted   muted text                 #7d7979 (neutral-600)
+     s-brand   primary button = accent    #ec3013
+     s-accent  accent                     #ec3013
+     s-win     WON (neutral tag ink)      #444141 (neutral-800)
+     s-loss    LOST / accent-700 text     #a4200c
    ============================================================================ */
 
 .site {
-  --s-bg: 246 247 245;
-  --s-surface: 255 255 255;
-  --s-raised: 239 242 240;
-  --s-line: 214 220 217;
-  --s-ink: 20 38 43;
-  --s-muted: 92 108 112;
-  --s-brand: 15 58 69;
-  --s-brand-ink: 255 255 255;
-  --s-accent: 172 90 10;
-  --s-win: 26 128 74;
-  --s-loss: 196 51 43;
-  --s-void: 128 139 142;
+  --s-bg: 243 242 242;
+  --s-surface: 234 233 233;
+  --s-raised: 215 211 211;
+  --s-ink: 32 30 29;
+  --s-muted: 125 121 121;
+  --s-brand: 236 48 19;
+  --s-brand-ink: 243 242 242;
+  --s-accent: 236 48 19;
+  --s-accent-600: 201 40 15;
+  --s-accent-700: 164 32 12;
+  --s-accent-800: 124 20 5;
+  --s-accent-100: 255 242 239;
+  --s-accent2-700: 158 53 38;
+  --s-n200: 234 231 231;
+  --s-n300: 215 211 211;
+  --s-n400: 186 182 182;
+  --s-n600: 125 121 121;
+  --s-n800: 68 65 65;
+  --s-win: 68 65 65;
+  --s-loss: 164 32 12;
+  --s-void: 125 121 121;
+  /* dividers are ink at 40% — kept as a full colour string for borders */
+  --s-divider: rgb(32 30 29 / 0.4);
+  --s-line: 176 175 175;
   color-scheme: light;
 
   background: rgb(var(--s-bg));
   color: rgb(var(--s-ink));
-  font-family: var(--font-site-body), 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: var(--font-site-body), 'Archivo', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   letter-spacing: 0;
@@ -44,35 +67,48 @@
   position: relative;
   isolation: isolate;
 }
+/* Dark: the same architecture with ink and paper swapped. Accent stays. */
 .site[data-theme='dark'] {
-  --s-bg: 13 24 27;
-  --s-surface: 18 32 36;
-  --s-raised: 25 42 47;
-  --s-line: 42 62 68;
-  --s-ink: 230 236 234;
-  --s-muted: 156 172 176;
-  --s-brand: 118 186 200;
-  --s-brand-ink: 13 24 27;
-  --s-accent: 236 160 72;
-  --s-win: 74 191 122;
-  --s-loss: 236 108 96;
-  --s-void: 132 146 150;
+  --s-bg: 24 23 22;
+  --s-surface: 36 34 33;
+  --s-raised: 58 55 54;
+  --s-ink: 236 234 233;
+  --s-muted: 158 153 153;
+  --s-brand-ink: 24 23 22;
+  --s-accent-100: 74 22 12;
+  --s-accent-800: 255 214 204;
+  --s-accent-700: 255 150 128;
+  --s-accent2-700: 255 170 150;
+  --s-n200: 52 50 49;
+  --s-n300: 58 55 54;
+  --s-n400: 98 94 94;
+  --s-n800: 200 196 196;
+  --s-win: 200 196 196;
+  --s-loss: 255 150 128;
+  --s-divider: rgb(236 234 233 / 0.4);
+  --s-line: 110 108 107;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   .site:not([data-theme='light']) {
-    --s-bg: 13 24 27;
-    --s-surface: 18 32 36;
-    --s-raised: 25 42 47;
-    --s-line: 42 62 68;
-    --s-ink: 230 236 234;
-    --s-muted: 156 172 176;
-    --s-brand: 118 186 200;
-    --s-brand-ink: 13 24 27;
-    --s-accent: 236 160 72;
-    --s-win: 74 191 122;
-    --s-loss: 236 108 96;
-    --s-void: 132 146 150;
+    --s-bg: 24 23 22;
+    --s-surface: 36 34 33;
+    --s-raised: 58 55 54;
+    --s-ink: 236 234 233;
+    --s-muted: 158 153 153;
+    --s-brand-ink: 24 23 22;
+    --s-accent-100: 74 22 12;
+    --s-accent-800: 255 214 204;
+    --s-accent-700: 255 150 128;
+    --s-accent2-700: 255 170 150;
+    --s-n200: 52 50 49;
+    --s-n300: 58 55 54;
+    --s-n400: 98 94 94;
+    --s-n800: 200 196 196;
+    --s-win: 200 196 196;
+    --s-loss: 255 150 128;
+    --s-divider: rgb(236 234 233 / 0.4);
+    --s-line: 110 108 107;
     color-scheme: dark;
   }
 }
@@ -80,32 +116,107 @@
 /* Neutralise legacy global rules inside the public site */
 .site * { font-family: inherit; letter-spacing: inherit; }
 .site h1, .site h2, .site h3, .site h4 {
-  font-family: var(--font-site-head), 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.005em;
-  line-height: 1.05;
+  font-family: var(--font-site-head), 'Archivo', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
   text-transform: none;
 }
-.site h5, .site h6 { font-weight: 600; letter-spacing: 0; }
-.site :focus-visible { outline: 2px solid rgb(var(--s-accent)); outline-offset: 2px; border-radius: 2px; }
-.site ::selection { background: rgb(var(--s-brand) / 0.18); }
+.site h5 { font-weight: 800; }
+/* H6 = kicker */
+.site h6 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.site :focus-visible { outline: 2px solid rgb(var(--s-accent)); outline-offset: 2px; }
+.site ::selection { background: rgb(var(--s-accent) / 0.18); }
 .site table { border-collapse: collapse; width: 100%; }
 .site th { font-weight: 500; }
 .site .num, .site td, .site th { font-variant-numeric: tabular-nums; }
+.site a { transition: color 150ms, background-color 150ms, border-color 150ms; }
+
+/* Zero radius everywhere — Tailwind `rounded-*` on shared pages included.
+   The confidence ring is the one circle in the system. */
+.site *, .site *::before, .site *::after { border-radius: 0 !important; }
+.site .ring, .site .ring > * { border-radius: 50% !important; }
+
+/* Dividers: 2px major / 1px minor, ink at 40%. Declared as utilities so
+   responsive variants (`lg:rule-r`) work. */
+@layer utilities {
+  .rule { border-color: var(--s-divider); }
+  .rule-t { border-top: 2px solid var(--s-divider); }
+  .rule-b { border-bottom: 2px solid var(--s-divider); }
+  .rule-r { border-right: 2px solid var(--s-divider); }
+  .rule-l { border-left: 2px solid var(--s-divider); }
+  .rule-t-1 { border-top: 1px solid var(--s-divider); }
+  .rule-b-1 { border-bottom: 1px solid var(--s-divider); }
+  .rule-l-1 { border-left: 1px solid var(--s-divider); }
+  .rule-r-1 { border-right: 1px solid var(--s-divider); }
+  .rule-t-0 { border-top: 0; }
+  .rule-l-0 { border-left: 0; }
+  .divide-rule > * + * { border-top: 1px solid var(--s-divider); }
+  .divide-rule-x > * + * { border-left: 1px solid var(--s-divider); }
+}
+
+/* Buttons — labels flush left, 40px tall, no radius */
+.site .btn {
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  height: 40px; padding: 0 16px; font-size: 14px; font-weight: 600; line-height: 1;
+  text-align: left; text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+.site .btn-primary { background: rgb(var(--s-accent)); color: rgb(var(--s-brand-ink)); border: 2px solid rgb(var(--s-accent)); }
+.site .btn-primary:hover { background: rgb(var(--s-accent-600)); border-color: rgb(var(--s-accent-600)); }
+.site .btn-secondary { background: transparent; color: rgb(var(--s-ink)); border: 2px solid rgb(var(--s-ink)); }
+.site .btn-secondary:hover { background: rgb(var(--s-n300)); }
+.site .btn-block { display: flex; width: 100%; }
+.site .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+.site .btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Card */
+.site .card {
+  background: rgb(var(--s-surface)); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: background-color 150ms;
+}
+.site .card-top { border-top: 2px solid rgb(var(--s-ink)); }
+.site a.card:hover, .site .card-hover:hover { background: rgb(var(--s-n300)); }
+.site .kicker { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(var(--s-muted)); }
+
+/* Tags */
+.site .tag {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  background: rgb(var(--s-n200)); color: rgb(var(--s-ink)); white-space: nowrap;
+}
+.site .tag-accent { background: rgb(var(--s-accent-100)); color: rgb(var(--s-accent-800)); }
+.site .tag-outline { background: transparent; border: 1px solid var(--s-divider); color: rgb(var(--s-muted)); }
+
+/* Risk note — 2px accent left border, no fill */
+.site .risk-note { font-size: 13px; line-height: 1.55; padding-left: 12px; border-left: 2px solid rgb(var(--s-accent)); margin: 0; }
+
+/* Fields */
+.site .field { display: flex; flex-direction: column; gap: 4px; }
+.site .field > span, .site .field > label { font-size: 12px; font-weight: 600; }
+.site .input {
+  height: 40px; padding: 0 12px; font-size: 15px; background: rgb(var(--s-bg)); color: rgb(var(--s-ink));
+  border: 1px solid rgb(var(--s-ink)); outline: none; width: 100%;
+}
+.site .input:focus { border-color: rgb(var(--s-accent)); box-shadow: inset 0 0 0 1px rgb(var(--s-accent)); }
+.site .input::placeholder { color: rgb(var(--s-muted)); }
+
+/* Table */
+.site .table { width: 100%; font-size: 14px; }
+.site .table th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(var(--s-muted)); padding: 8px 12px 8px 0; border-bottom: 2px solid var(--s-divider); }
+.site .table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--s-divider); vertical-align: middle; }
+.site .table th:last-child, .site .table td:last-child { padding-right: 0; }
 
 /* Utilities */
 .site .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .site .skip-link {
   position: absolute; left: 0.75rem; top: -3rem; z-index: 100;
-  background: rgb(var(--s-brand)); color: rgb(var(--s-brand-ink));
-  padding: 0.5rem 0.75rem; border-radius: 2px; font-weight: 500;
+  background: rgb(var(--s-accent)); color: rgb(var(--s-brand-ink));
+  padding: 0.5rem 0.75rem; font-weight: 600;
 }
 .site .skip-link:focus { top: 0.75rem; }
-.site .skeleton {
-  background: rgb(var(--s-raised));
-  border-radius: 2px;
-  position: relative; overflow: hidden;
-}
+.site .skeleton { background: rgb(var(--s-surface)); position: relative; overflow: hidden; }
 .site .skeleton::after {
   content: ''; position: absolute; inset: 0; transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, rgb(var(--s-ink) / 0.05), transparent);
@@ -113,5 +224,6 @@
 }
 @keyframes siteShimmer { 100% { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .site .skeleton::after { animation: none; } }
-.site .tab-pill[aria-current='true'] { background: rgb(var(--s-brand)); color: rgb(var(--s-brand-ink)); border-color: rgb(var(--s-brand)); }
-
+.site .tab-pill[aria-current='true'] { background: rgb(var(--s-accent)); color: rgb(var(--s-brand-ink)); border-color: rgb(var(--s-accent)); }
+.site .blur-locked { filter: blur(4px); user-select: none; pointer-events: none; }
+.site img { filter: grayscale(1); }

@@ -6,35 +6,76 @@ import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPerformance } from '@/lib/site/performance';
 import { getWeeklyProgress } from '@/lib/site/weekly-progress';
-import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
-import { CalibrationChart, MonthlyChart } from '@/components/site/PerformanceCharts';
+import { listResults } from '@/lib/site/results';
+import { leagueBySlug, SITE_LEAGUES } from '@/lib/site/leagues';
+import { Page, SectionTitle, EmptyState } from '@/components/site/ui';
+import { CalibrationChart } from '@/components/site/PerformanceCharts';
+import { StatRow, StatCell } from '@/components/site/StatCell';
+import ResultsTable from '@/components/site/ResultsTable';
+import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { LockedBlock, TrialNotice } from '@/components/site/Paywall';
 
-export const revalidate = 3600;
+// Performance (Modernist redesign 2026-09-11) — replaces /results. Track
+// record first: four stat cells, the monthly hit-rate bars and the latest
+// settled picks (members; visitors see the count). The full report —
+// calibration, leagues, markets, ROI, weekly review — follows below.
+// The session read makes the page dynamic; the report itself stays cached.
+export const dynamic = 'force-dynamic';
+
+type Search = { page?: string; league?: string };
+const PAGE_SIZE = 25;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: 'performance' });
+  const t = await getTranslations({ locale, namespace: 'v2.performance' });
   return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/performance') };
 }
 
 const pct = (x: number | null, digits = 1) => (x == null ? '–' : `${(x * 100).toFixed(digits)}%`);
 const fx = (x: number | null, d = 3) => (x == null ? '–' : x.toFixed(d));
 
-export default async function PerformancePage({ params: { locale } }: { params: { locale: string } }) {
+export default async function PerformancePage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations('performance');
+  const t2 = await getTranslations('v2.performance');
   const tc = await getTranslations('common');
   const tm = await getTranslations('match');
   const f = await getFormatter();
-  const [r, w] = await Promise.all([getPerformance(null), getWeeklyProgress(12)]);
+  const access = await getSiteAccess();
+  const unlocked = canSeeMatches(access);
+  const page = Math.max(1, Math.min(500, Number.parseInt(searchParams.page || '1', 10) || 1));
+  const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
+
+  const [r, w, res, recent] = await Promise.all([
+    getPerformance(null),
+    getWeeklyProgress(12),
+    listResults({ league, from: null, to: null, page, pageSize: PAGE_SIZE }),
+    // Longest losing run over the last 400 settled 1X2 picks (newest first → reversed).
+    listResults({ league: null, from: null, to: null, page: 1, pageSize: 400 }),
+  ]);
+  let losingRun = 0, run = 0;
+  for (const row of [...recent.rows].reverse()) {
+    if (row.outcome === 'lost') { run += 1; losingRun = Math.max(losingRun, run); } else if (row.outcome === 'won') run = 0;
+  }
 
   const monthLabel = (ym: string) => f.dateTime(new Date(`${ym}-15T12:00:00Z`), 'month');
+  const monthShort = (ym: string) => f.dateTime(new Date(`${ym}-15T12:00:00Z`), { month: 'short' });
   const marketName = { '1x2': tc('market1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
   const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
+  const months = r.months.slice(-6);
+  const pages = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
+  const href = (over: Partial<Search>) => {
+    const qs = new URLSearchParams();
+    const m = { page: String(page), league: league?.slug, ...over };
+    if (m.league) qs.set('league', m.league);
+    if (m.page && m.page !== '1') qs.set('page', m.page);
+    const q = qs.toString();
+    return `/performance${q ? `?${q}` : ''}#results`;
+  };
 
   if (!r.overall.n) {
     return (
       <Page>
-        <PageTitle title={t('title')} lead={t('lead')} />
+        <div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t2('title')}</h1><p className="mt-2 text-[14px] text-s-muted">{t2('lead')}</p></div>
         <EmptyState title={t('emptyTitle')} lead={t('emptyLead')} />
       </Page>
     );
@@ -42,32 +83,83 @@ export default async function PerformancePage({ params: { locale } }: { params: 
 
   return (
     <Page>
-      <PageTitle
-        title={t('title')}
-        lead={t('lead')}
-        aside={<p className="text-xs text-s-muted">{t('window', { from: r.from ? f.dateTime(new Date(r.from), 'dayShort') : '–', to: r.to ? f.dateTime(new Date(r.to), 'dayShort') : '–' })}</p>}
-      />
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 pt-8">
+        <div>
+          <h1 className="text-[32px] sm:text-[40px]">{t2('title')}</h1>
+          <p className="mt-2 max-w-2xl text-[14px] text-s-muted">{t2('lead')}</p>
+        </div>
+        <p className="text-[12px] text-s-muted">{t2('window', { from: r.from ? f.dateTime(new Date(r.from), 'dayShort') : '–', to: r.to ? f.dateTime(new Date(r.to), 'dayShort') : '–' })}</p>
+      </div>
 
-      {/* Headline numbers */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-s-line py-5 sm:grid-cols-4">
-        <Stat label={t('settled')} value={f.number(r.overall.n)} note={t('settledNote')} />
-        <Stat label={t('hitRate')} value={pct(r.overall.acc)} note={t('hitRateNote', { won: r.overall.won, n: r.overall.n })} />
-        <Stat label={t('brier')} value={fx(r.overall.brier)} note={t('brierNote')} />
-        <Stat label={`${t('roi')} · ${t('roiClosing')}`} value={r.roi ? `${r.roi.roi >= 0 ? '+' : ''}${pct(r.roi.roi)}` : '–'} note={r.roi ? `${t('roiNote', { bets: r.roi.bets })} · ${t('coverage')} ${pct(r.roi.coverage, 0)}` : t('roiNone')} tone={r.roi ? (r.roi.roi >= 0 ? 'win' : 'loss') : undefined} />
-      </dl>
+      {/* ── 4 stat cells ────────────────────────────────────────────── */}
+      <StatRow cols={4}>
+        <StatCell first size="lg" label={t2('hitRate')} value={pct(r.overall.acc)} note={t('hitRateNote', { won: r.overall.won, n: r.overall.n })} />
+        <StatCell size="lg" label={`${t2('roi')} · ${t('roiClosing')}`} value={r.roi ? `${r.roi.roi >= 0 ? '+' : ''}${pct(r.roi.roi)}` : '–'} note={r.roi ? t('roiNote', { bets: r.roi.bets }) : t('roiNone')} />
+        <StatCell size="lg" label={t2('settled')} value={f.number(r.overall.n)} note={t('settledNote')} />
+        <StatCell size="lg" label={t2('losingRun')} value={losingRun || '–'} tone="accent" />
+      </StatRow>
+
+      {/* ── Monthly bars + latest results ───────────────────────────── */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)]">
+        <section>
+          <h2 className="text-[24px]">{t2('monthlyTitle')}</h2>
+          <div className="rule-b mt-4 grid h-[180px] items-end gap-2" style={{ gridTemplateColumns: `repeat(${months.length || 1}, minmax(0, 1fr))` }} role="img" aria-label={t('secMonthly')}>
+            {months.map((m) => (
+              <div key={m.month} className="flex h-full flex-col justify-end gap-1">
+                <span className="num text-[12px] font-semibold leading-none">{m.acc == null ? '–' : Math.round(m.acc * 100)}</span>
+                <span className={`w-full ${m.n < 30 ? 'bg-s-n400' : 'bg-s-ink'}`} style={{ height: `${Math.round((m.acc ?? 0) * 100)}%` }} title={`${monthLabel(m.month)} · ${pct(m.acc)} · ${t('nShort')} ${m.n}`} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 grid gap-2 text-[11px] text-s-muted" style={{ gridTemplateColumns: `repeat(${months.length || 1}, minmax(0, 1fr))` }}>
+            {months.map((m) => <span key={m.month} className="truncate">{monthShort(m.month)}</span>)}
+          </div>
+          <p className="mt-3 text-[12px] text-s-muted">{t('monthlyNote')}</p>
+        </section>
+
+        <section id="results">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="text-[24px]">{t2('resultsTitle')}</h2>
+            <nav className="flex flex-wrap gap-1" aria-label={tc('league')}>
+              <Link href={href({ league: undefined, page: '1' })} className={`btn btn-sm ${!league ? 'btn-primary' : 'btn-secondary'}`}>{tc('all')}</Link>
+              {SITE_LEAGUES.map((l) => <Link key={l.slug} href={href({ league: l.slug, page: '1' })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`}>{l.name}</Link>)}
+            </nav>
+          </div>
+          <div className="mt-4"><TrialNotice access={access} /></div>
+          {!unlocked ? (
+            <LockedBlock count={res.total} />
+          ) : res.rows.length ? (
+            <>
+              <ResultsTable rows={res.rows} />
+              <div className="mt-3 flex items-center justify-between text-[13px]">
+                <span className="text-s-muted">{res.total} · {page}/{pages}</span>
+                <span className="flex gap-4">
+                  {page > 1 && <Link href={href({ page: String(page - 1) })} className="font-semibold hover:text-s-accent-600">←</Link>}
+                  {page < pages && <Link href={href({ page: String(page + 1) })} className="font-semibold hover:text-s-accent-600">→</Link>}
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-s-muted">{t('emptyLead')}</p>
+          )}
+        </section>
+      </div>
+
+      {/* ── Full report ─────────────────────────────────────────────── */}
+      <section className="rule-t mt-10 pt-8">
+        <h2 className="text-[30px]">{t2('detailsTitle')}</h2>
+        <p className="mt-2 max-w-2xl text-[14px] text-s-muted">{t2('detailsLead')}</p>
+      </section>
       <p className="mt-3 text-xs text-s-muted">
         {t('qualityNote', { decided: f.number(r.quality.decided), versions: r.quality.modelVersions.join(', ') || '–', recomputed: r.quality.recomputedCorrect })}
         {r.quality.truncated && <> {t('truncated')}</>}
         {' '}{t('brierScale')}
       </p>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-2">
+      <div className="mt-8 grid gap-10 lg:grid-cols-2">
         {/* Monthly trend */}
         <section>
           <SectionTitle title={t('secMonthly')} meta={t('monthlyMeta')} />
-          <div className="mt-4">
-            <MonthlyChart months={r.months.map((m) => ({ ...m, label: monthLabel(m.month) }))} labels={{ acc: t('hitRate'), n: t('nShort') }} />
-          </div>
           <table className="mt-3 w-full text-sm">
             <thead><tr className="border-b border-s-line text-left"><th className={th}>{t('month')}</th><th className={`${th} text-right`}>{t('nShort')}</th><th className={`${th} text-right`}>{t('record')}</th><th className={`${th} text-right`}>{t('hitRate')}</th><th className={`${th} text-right`}>{t('brier')}</th></tr></thead>
             <tbody>
@@ -279,19 +371,9 @@ export default async function PerformancePage({ params: { locale } }: { params: 
         )}
       </section>
 
-      <p className="mt-12 border-t border-s-line pt-4 text-xs text-s-muted">
+      <p className="rule-t mt-12 pt-4 text-xs text-s-muted">
         {t('footer', { at: f.dateTime(new Date(r.computedAt), 'kickoff') })} <Link href="/methodology" className="underline underline-offset-4">{t('footerLink')}</Link>
       </p>
     </Page>
-  );
-}
-
-function Stat({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'win' | 'loss' }) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wider text-s-muted">{label}</dt>
-      <dd className={`num mt-1 font-head text-4xl leading-none ${tone === 'win' ? 'text-s-win' : tone === 'loss' ? 'text-s-loss' : ''}`}>{value}</dd>
-      {note && <dd className="mt-1 text-xs text-s-muted">{note}</dd>}
-    </div>
   );
 }

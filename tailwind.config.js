@@ -60,6 +60,18 @@ module.exports = {
           win: 'rgb(var(--s-win) / <alpha-value>)',
           loss: 'rgb(var(--s-loss) / <alpha-value>)',
           void: 'rgb(var(--s-void) / <alpha-value>)',
+          // Modernist redesign (2026-09-11) — accent ramp + neutral steps
+          'accent-100': 'rgb(var(--s-accent-100) / <alpha-value>)',
+          'accent-600': 'rgb(var(--s-accent-600) / <alpha-value>)',
+          'accent-700': 'rgb(var(--s-accent-700) / <alpha-value>)',
+          'accent-800': 'rgb(var(--s-accent-800) / <alpha-value>)',
+          'accent2-700': 'rgb(var(--s-accent2-700) / <alpha-value>)',
+          n200: 'rgb(var(--s-n200) / <alpha-value>)',
+          n300: 'rgb(var(--s-n300) / <alpha-value>)',
+          n400: 'rgb(var(--s-n400) / <alpha-value>)',
+          n600: 'rgb(var(--s-n600) / <alpha-value>)',
+          n800: 'rgb(var(--s-n800) / <alpha-value>)',
+          divider: 'var(--s-divider)',
         },
       },
       borderRadius: {
@@ -70,8 +82,8 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-        body: ['var(--font-site-body)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
-        head: ['var(--font-site-head)', 'Barlow Condensed', 'Arial Narrow', 'sans-serif'],
+        body: ['var(--font-site-body)', 'Archivo', 'system-ui', 'sans-serif'],
+        head: ['var(--font-site-head)', 'Archivo', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'elev-1': '0 1px 2px rgba(0,0,0,0.4), 0 1px 1px rgba(0,0,0,0.2)',

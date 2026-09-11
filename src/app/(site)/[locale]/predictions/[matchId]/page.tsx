@@ -11,12 +11,16 @@ import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable
 import { getMarketBook } from '@/lib/site/markets';
 import { Page, SectionTitle } from '@/components/site/ui';
 import ProbBar from '@/components/site/ProbBar';
+import ConfidenceRing from '@/components/site/ConfidenceRing';
+import { RiskLabel, RiskNote } from '@/components/site/Risk';
+import { StatRow, StatCell } from '@/components/site/StatCell';
+import { riskOf, lossRate } from '@/lib/site/risk';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import FormStrip, { toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
 import { requireSiteAccess } from '@/lib/site/access';
-import { Paywall, TrialNotice } from '@/components/site/Paywall';
+import { Paywall, TrialNotice, LockedPick } from '@/components/site/Paywall';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -56,15 +60,17 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const access = await requireSiteAccess(params.locale, `/predictions/${id}`);
 
   const t = await getTranslations('match');
+  const t2 = await getTranslations('v2.match');
+  const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
   if (access.state === 'expired') {
     return (
       <Page>
-        <div className="pt-8">
-          <p className="text-xs text-s-muted">{p.leagueName}</p>
-          <h1 className="mt-1 text-3xl sm:text-4xl">{p.homeName} – {p.awayName}</h1>
+        <div className="rule-b pb-4 pt-8">
+          <p className="kicker">{p.leagueName}</p>
+          <h1 className="mt-2 text-[32px] sm:text-[40px]">{p.homeName} <span className="text-s-muted">{t2('vs')}</span> {p.awayName}</h1>
         </div>
         <Paywall />
       </Page>
@@ -135,51 +141,109 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     mrows.push({ key: 'btts-n', market: tc('btts'), sel: tc('no'), model: 1 - by, mOdds: book.btts.b, mProb: book.btts.pB });
   }
 
+  // Modernist top (2026-09-11): the pick, its confidence and its risk first;
+  // the detailed tables follow below.
+  const conf = p.confidence ?? p.confidenceRaw;
+  const confPct = conf == null ? null : Math.round(conf * 100);
+  const loss = lossRate(conf);
+  const risk = riskOf(conf);
+  const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0;
+  const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
+  const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
+  const edgePts = marketPickP != null ? Math.round((pickP - marketPickP) * 100) : null;
+  const pickTitle = p.pick === '1' ? t2('win', { team: p.homeName }) : p.pick === '2' ? t2('win', { team: p.awayName }) : t2('draw');
+  const locked = false; // `unlockAll` preview flag — the members-only model gates the whole page instead.
+  const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
+  const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
+
   return (
     <Page>
-      <TrialNotice access={access} />
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="pt-6 text-sm text-s-muted">
-        <Link href="/predictions" className="hover:underline underline-offset-4">{t('backToList')}</Link>
-        {' · '}
-        {p.league ? <Link href={`/leagues/${p.league.slug}`} className="hover:underline underline-offset-4">{p.leagueName}</Link> : p.leagueName}
-        {' · '}
-        <LocalTime iso={p.kickoff} format="kickoff" />
-        {p.status !== 'scheduled' && <span className="ml-2 align-middle"><StatusChip status={p.status} label={tc(statusKey[p.status])} /></span>}
-        {!p.covered && <span className="ml-2 rounded-[2px] border border-s-line px-1.5 py-0.5 text-xs">{t('outsideCoverage')}</span>}
-      </div>
-
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-s-line pb-5">
-        <Team name={p.homeName} crest={p.homeCrest} align="right" />
-        <div className="text-center">
-          {p.homeScore != null && p.awayScore != null ? (
-            <div className="num font-head text-4xl font-semibold sm:text-5xl">{p.homeScore}–{p.awayScore}</div>
-          ) : (
-            <div className="font-head text-2xl text-s-muted">{t('vs')}</div>
-          )}
-          {(p.outcome !== 'pending' || isPast) && <div className="mt-1"><OutcomeBadge outcome={p.outcome} /></div>}
-        </div>
-        <Team name={p.awayName} crest={p.awayCrest} align="left" />
-      </div>
-
-      {/* ── Summary line (data-derived, per locale) ───────────────────── */}
-      <p className="mt-5 max-w-3xl text-[15px]">
-        {t('summary', {
-          pick: pickName, p: Math.round((p.confidence ?? p.confidenceRaw ?? 0) * 100),
-          lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2'),
-          home: p.homeName, away: p.awayName,
-          // pRaw is the favoured side's probability; the sentence names the
-          // over / "yes" side, so flip when the pick is under / no
-          // (2026-09-07: Getafe–Celta read "Üst 2,5 %74" for a 26% over).
-          over: Math.round((p.overUnder ? (p.overUnder.pick === 'over' ? p.overUnder.pRaw : 1 - p.overUnder.pRaw) : 0) * 100),
-          btts: Math.round((p.btts ? (p.btts.pick === 'yes' ? p.btts.pRaw : 1 - p.btts.pRaw) : 0) * 100),
-        })}
-        {formH.length >= 3 && formA.length >= 3 && (
-          <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>
-        )}
+      <div className="pt-6"><TrialNotice access={access} /></div>
+      <p className="pt-2 text-[13px]">
+        <Link href="/predictions" className="font-semibold hover:text-s-accent-600">{t2('back')}</Link>
+        {!p.covered && <span className="tag tag-outline ml-3 align-middle">{t('outsideCoverage')}</span>}
+        {p.publishedAfterKickoff && <span className="tag tag-accent ml-3 align-middle">{t('flagPostKickoff')}</span>}
       </p>
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+      {/* ── Top grid 1.3fr / 0.7fr under a 2px rule ─────────────────── */}
+      <div className="rule-t mt-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+        <div className="flex flex-col gap-6 py-8 lg:rule-r lg:pr-6">
+          <p className="kicker">
+            {p.league ? <Link href={`/leagues/${p.league.slug}`} className="hover:text-s-ink">{p.leagueName}</Link> : p.leagueName}
+            {' · '}{isToday && <>{t2('today')} </>}<LocalTime iso={p.kickoff} format={isToday ? 'time' : 'kickoff'} />
+            {p.status !== 'scheduled' && <span className="ml-2 align-middle"><StatusChip status={p.status} label={tc(statusKey[p.status])} /></span>}
+          </p>
+          <h1 className="text-[clamp(36px,5vw,60px)]">
+            <span className="flex items-center gap-3">{p.homeCrest && <Image src={p.homeCrest} alt="" width={44} height={44} className="h-9 w-9 object-contain sm:h-11 sm:w-11" unoptimized />}{p.homeName}</span>
+            <span className="flex items-center gap-3"><span className="text-s-muted">{th('vs')}</span> {p.awayCrest && <Image src={p.awayCrest} alt="" width={44} height={44} className="h-9 w-9 object-contain sm:h-11 sm:w-11" unoptimized />}{p.awayName}</span>
+          </h1>
+          {p.homeScore != null && p.awayScore != null && (
+            <p className="flex items-center gap-3 text-[14px]">
+              <span className="text-s-muted">{t2('finalScore')}</span>
+              <span className="num text-[24px] font-extrabold leading-none">{p.homeScore}–{p.awayScore}</span>
+              {(p.outcome !== 'pending' || isPast) && <OutcomeBadge outcome={p.outcome} />}
+            </p>
+          )}
+          <ProbBar home={p.pHome} draw={p.pDraw} away={p.pAway} highlight={p.pick} labels={labels} size="lg" caption={false} />
+          <StatRow cols={3} rule={1} className="-mt-3">
+            <StatCell first label={t2('win', { team: p.homeName })} value={pct(p.pHome)} />
+            <StatCell label={t2('draw')} value={pct(p.pDraw)} tone="muted" />
+            <StatCell label={t2('win', { team: p.awayName })} value={pct(p.pAway)} tone="accent" />
+          </StatRow>
+
+          <div>
+            <h2 className="text-[24px]">{t2('breakdown')}</h2>
+            <StatRow cols={4} rule={1} className="mt-3">
+              <StatCell first size="sm" label={t2('xgHome')} value={p.lambdaHome != null ? f.number(p.lambdaHome, 'fixed2') : '–'} />
+              <StatCell size="sm" label={t2('xgAway')} value={p.lambdaAway != null ? f.number(p.lambdaAway, 'fixed2') : '–'} />
+              <StatCell size="sm" label={t2('marketImplied')} value={marketPickP != null ? pct(marketPickP) : '–'} note={marketPickOdds != null ? t2('marketOdds', { side: marketPickOdds.toFixed(2) }) : undefined} />
+              <StatCell size="sm" label={t2('edge')} value={edgePts == null ? '–' : `${edgePts > 0 ? '+' : edgePts < 0 ? '−' : ''}${Math.abs(edgePts)}`} tone={edgePts != null && edgePts > 0 ? 'accent-700' : undefined} />
+            </StatRow>
+            <p className="mt-4 max-w-[600px] text-[14px] text-s-muted">
+              {t2('breakdownText', { pick: pickTitle, conf: pct(p.confidence), raw: pct(p.confidenceRaw), lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2') })}
+              {edgePts != null && market
+                ? t2('breakdownEdge', { edge: Math.abs(edgePts), dir: edgePts >= 0 ? t2('above') : t2('below'), phase: market.phase === 'closing' ? t2('closing') : t2('opening'), provider: market.provider ? ` (${market.provider})` : '' })
+                : ` ${t2('noMarket')}`}
+              {formH.length >= 3 && formA.length >= 3 && <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>}
+            </p>
+          </div>
+        </div>
+
+        <aside className="rule-t flex flex-col gap-4 py-8 lg:rule-t-0 lg:pl-6">
+          <div className="flex items-center justify-between gap-2">
+            <p className="kicker">{t2('confidence')}</p>
+            <RiskLabel risk={risk} />
+          </div>
+          <div className="flex items-center gap-4">
+            <ConfidenceRing conf={conf} size={110} />
+            <p className="text-[13px] leading-snug">
+              {confPct != null ? (
+                <>
+                  {t2.rich('expected', { conf: confPct, b: (c) => <strong className="text-[15px]">{c}</strong> })}<br />
+                  {t2.rich('lossRate', { loss: loss ?? 0, b: (c) => <strong className="text-[15px] text-s-accent-700">{c}</strong> })}
+                </>
+              ) : t2('noConfidence')}
+            </p>
+          </div>
+          <div className="card card-top">
+            <p className="kicker">{t2('recommended')}</p>
+            {locked ? (
+              <LockedPick size="lg" />
+            ) : (
+              <>
+                <p className="text-[24px] font-extrabold leading-[1.05]">{pickTitle}</p>
+                <p className="num text-[13px] text-s-muted">
+                  {edgePts != null ? t2('fairValue', { fair: odds(pickP), value: `${edgePts >= 0 ? '+' : '−'}${Math.abs(edgePts)}%` }) : t2('fairOnly', { fair: odds(pickP) })}
+                </p>
+                {p.settled && <p className="text-[12px] text-s-muted">{t2('settledAs')}: <OutcomeBadge outcome={p.outcome} /></p>}
+              </>
+            )}
+          </div>
+          <RiskNote className="text-s-muted"><strong className="text-s-ink">{t2('beforeTitle')}</strong> {t2('beforeText')}</RiskNote>
+        </aside>
+      </div>
+
+      <div className="rule-t mt-2 grid gap-10 pt-8 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-10">
           {/* ── 1X2 ───────────────────────────────────────────────────── */}
           <section>
@@ -403,17 +467,8 @@ export default async function MatchPage({ params }: { params: { locale: string; 
         </aside>
       </div>
 
-      <p className="mt-12 border-t border-s-line pt-4 text-xs text-s-muted">{t('disclaimer')}</p>
+      <p className="rule-t mt-12 pt-4 text-xs text-s-muted">{t('disclaimer')}</p>
     </Page>
-  );
-}
-
-function Team({ name, crest, align }: { name: string; crest: string | null; align: 'left' | 'right' }) {
-  return (
-    <div className={`flex items-center gap-3 ${align === 'right' ? 'flex-row-reverse text-right' : ''}`}>
-      {crest ? <Image src={crest} alt="" width={44} height={44} className="h-9 w-9 object-contain sm:h-11 sm:w-11" unoptimized /> : <span className="h-9 w-9 rounded-sm bg-s-raised sm:h-11 sm:w-11" />}
-      <h1 className="text-2xl leading-none sm:text-3xl">{name}</h1>
-    </div>
   );
 }
 

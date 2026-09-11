@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
-import { legacyHref } from '@/lib/site/legacy';
+import { useTranslations } from 'next-intl';
 import { signOut, useSession } from 'next-auth/react';
 import { Menu, X } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
@@ -10,20 +9,18 @@ import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
 import ThemeToggle from './ThemeToggle';
 
-const NAV: Array<{ href: string; key: 'predictions' | 'results' | 'performance' | 'leagues' | 'methodology' }> = [
+// Header (design 2026-09-11): sticky, page bg, bottom 2px rule, 24px gutters,
+// 56px tall. Brand · nav Home / Predictions / Performance / Pricing (active =
+// accent) · right: primary "Sign in". Below `lg` the nav becomes a menu button.
+const NAV: Array<{ href: string; key: 'home' | 'predictions' | 'performance' | 'pricing' }> = [
+  { href: '/', key: 'home' },
   { href: '/predictions', key: 'predictions' },
-  { href: '/results', key: 'results' },
   { href: '/performance', key: 'performance' },
-  { href: '/leagues', key: 'leagues' },
-  { href: '/methodology', key: 'methodology' },
+  { href: '/pricing', key: 'pricing' },
 ];
 
-// Denetim 2026-09-05 (P2): at 768–1023px the desktop nav + locale/theme/login
-// row measured ~885px and pushed the page into horizontal scroll (TR/DE labels
-// are long). The desktop layout now opens at `lg`; the menu button serves md.
 export default function SiteHeader() {
   const t = useTranslations('nav');
-  const locale = useLocale();
   const pathname = usePathname();
   const { status } = useSession();
   const [open, setOpen] = useState(false);
@@ -36,62 +33,50 @@ export default function SiteHeader() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
-  // The dashboard is localized; login is a legacy (unlocalized) route.
-  // Signed out: a quiet sign-in link plus the one filled button on the page
-  // ("start free" → register tab). Signed in: the dashboard.
+  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'));
   const authed = status === 'authenticated';
-  const authCls = 'h-8 inline-flex items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90';
-  const AuthLink = ({ className }: { className: string }) =>
+
+  const AuthLinks = ({ block = false }: { block?: boolean }) =>
     authed ? (
-      <span className="inline-flex items-center gap-3">
-        <Link href="/dashboard" className={className}>{t('dashboard')}</Link>
-        {/* 2026-09-08: account page — plan, billing, settings. */}
+      <span className={`inline-flex items-center gap-3 ${block ? 'w-full justify-between' : ''}`}>
+        <Link href="/dashboard" className="btn btn-primary btn-sm">{t('dashboard')}</Link>
         <Link href="/account" className="text-sm text-s-muted hover:text-s-ink">{t('account')}</Link>
-        {/* 2026-09-07: sign-out only existed on the legacy profile page. */}
         <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="text-sm text-s-muted hover:text-s-ink">{t('signOut')}</button>
       </span>
     ) : (
-      <span className="inline-flex items-center gap-3">
-        <a href={legacyHref('/login', locale)} className="text-sm text-s-muted hover:text-s-ink">{t('signIn')}</a>
-        <a href={legacyHref('/login?mode=register', locale)} className={className}>{t('signUp')}</a>
-      </span>
+      <Link href="/login" className={`btn btn-primary btn-sm ${block ? 'btn-block' : ''}`}>{t('signIn')}</Link>
     );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-s-line bg-s-surface/95 backdrop-blur-[2px]">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
+    <header className="rule-b sticky top-0 z-40 bg-s-bg">
+      <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-6 px-6">
         <Link href="/" className="shrink-0 text-s-ink">
           <Wordmark />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 ml-2" aria-label="Primary">
+        <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
               aria-current={isActive(n.href) ? 'page' : undefined}
-              className={`px-3 py-1.5 text-sm rounded-sm border-b-2 -mb-px ${
-                isActive(n.href)
-                  ? 'border-s-accent text-s-ink font-medium'
-                  : 'border-transparent text-s-muted hover:text-s-ink'
-              }`}
+              className={`text-[14px] font-semibold leading-none hover:text-s-accent-600 ${isActive(n.href) ? 'text-s-accent' : 'text-s-ink'}`}
             >
               {t(n.key)}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto hidden lg:flex items-center gap-2">
+        <div className="ml-auto hidden items-center gap-3 lg:flex">
           <LocaleSwitcher />
           <ThemeToggle />
-          <AuthLink className={authCls} />
+          <AuthLinks />
         </div>
 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="ml-auto lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-sm border border-s-line"
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center border-2 border-s-ink lg:hidden"
           aria-label={open ? t('close') : t('menu')}
           aria-expanded={open}
           aria-controls="site-mobile-nav"
@@ -101,23 +86,23 @@ export default function SiteHeader() {
       </div>
 
       {open && (
-        <div id="site-mobile-nav" className="lg:hidden border-t border-s-line bg-s-surface">
-          <nav className="flex flex-col px-2 py-2" aria-label="Primary">
+        <div id="site-mobile-nav" className="rule-t bg-s-bg lg:hidden">
+          <nav className="divide-rule flex flex-col px-6" aria-label="Primary">
             {NAV.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
                 aria-current={isActive(n.href) ? 'page' : undefined}
-                className={`px-3 py-2.5 text-base rounded-sm ${isActive(n.href) ? 'bg-s-raised font-medium' : 'text-s-muted'}`}
+                className={`py-3 text-[16px] font-semibold ${isActive(n.href) ? 'text-s-accent' : ''}`}
               >
                 {t(n.key)}
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2 border-t border-s-line px-4 py-3">
+          <div className="rule-t-1 flex flex-wrap items-center gap-3 px-6 py-3">
             <LocaleSwitcher />
             <ThemeToggle />
-            <AuthLink className={`ml-auto ${authCls}`} />
+            <span className="ml-auto"><AuthLinks /></span>
           </div>
         </div>
       )}

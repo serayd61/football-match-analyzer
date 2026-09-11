@@ -4,19 +4,24 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { nextDayWithPredictions } from '@/lib/site/predictions';
-import { applyFilters, STATUS_FILTERS, type StatusFilter, type Sort } from '@/lib/site/filters';
 import { listDay } from '@/lib/site/fixtures';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
-import { Page, PageTitle, EmptyState } from '@/components/site/ui';
-import PredictionTable from '@/components/site/PredictionTable';
+import { Page, EmptyState } from '@/components/site/ui';
+import PredictionCard from '@/components/site/PredictionCard';
+import { RiskNote } from '@/components/site/Risk';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
 
-type Search = { date?: string; league?: string; scope?: string; q?: string; status?: string; ready?: string; sort?: string };
+// Predictions (Modernist redesign 2026-09-11). Header row with the day and
+// the model's update time, league filter buttons (state in the URL), a
+// toggleable "How to read confidence" note, then a 3-column grid of cards.
+// The date strip and the covered/all switch survive as small links.
+
+type Search = { date?: string; league?: string; scope?: string; note?: string };
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'predictions' });
@@ -26,14 +31,15 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 export default async function PredictionsPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
   const access = await requireSiteAccess(locale, '/predictions');
-  const t = await getTranslations('predictions');
+  const t = await getTranslations('v2.predictions');
+  const tp = await getTranslations('predictions');
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
   if (access.state === 'expired') {
     return (
       <Page>
-        <PageTitle title={t('title')} lead={t('lead')} />
+        <div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div>
         <Paywall />
       </Page>
     );
@@ -43,169 +49,92 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const date = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : today;
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
   const scope = searchParams.scope === 'all' ? 'all' : 'covered';
-  const q = (searchParams.q || '').slice(0, 60);
-  const status: StatusFilter = (STATUS_FILTERS as readonly string[]).includes(searchParams.status || '') ? (searchParams.status as StatusFilter) : 'all';
-  const ready = searchParams.ready === '1';
-  const sort: Sort = searchParams.sort === 'confidence' ? 'confidence' : 'time';
-  const filtersActive = !!q || status !== 'all' || ready || sort !== 'time' || !!league;
+  const showNote = searchParams.note !== '0';
 
   const day = await listDay(date);
   const all = day.rows;
   const scoped = scope === 'all' ? all : all.filter((r) => r.covered);
-  const rows = applyFilters(scoped, { q, status, ready, league: league?.slug ?? null, sort });
+  const rows = league ? scoped.filter((r) => r.league?.slug === league.slug) : scoped;
   const uncoveredCount = all.filter((r) => !r.covered).length;
-  const pendingCount = rows.filter((r) => !r.hasModel).length;
 
   const dayLabel = (ymd: string) =>
     ymd === today ? tc('today') : ymd === addDays(today, 1) ? tc('tomorrow') : ymd === addDays(today, -1) ? tc('yesterday')
     : f.dateTime(zonedStartOfDay(ymd), { weekday: 'short', day: 'numeric', month: 'short' });
 
-  const current = { date, league: league?.slug, scope, q, status, ready: ready ? '1' : undefined, sort };
-  const href = (over: Partial<Record<keyof Search, string | undefined>>) => {
+  const href = (over: Partial<Search>) => {
     const qs = new URLSearchParams();
-    const m = { ...current, ...over };
+    const m = { date, league: league?.slug, scope, note: showNote ? undefined : '0', ...over };
     if (m.date && m.date !== today) qs.set('date', m.date);
     if (m.league) qs.set('league', m.league);
     if (m.scope === 'all') qs.set('scope', 'all');
-    if (m.q) qs.set('q', m.q);
-    if (m.status && m.status !== 'all') qs.set('status', m.status);
-    if (m.ready === '1') qs.set('ready', '1');
-    if (m.sort && m.sort !== 'time') qs.set('sort', m.sort);
+    if (m.note === '0') qs.set('note', '0');
     const s = qs.toString();
     return `/predictions${s ? `?${s}` : ''}`;
   };
 
-  const days = [-1, 0, 1, 2, 3, 4, 5].map((n) => addDays(today, n));
-  if (!days.includes(date)) { days.push(date); days.sort(); }
-
   const nextDay = scoped.length === 0 ? await nextDayWithPredictions(date, 1) : null;
-  const pill = 'tab-pill inline-flex h-7 items-center rounded-[2px] border border-transparent px-2 text-s-muted hover:text-s-ink';
+  const leaguesToday = SITE_LEAGUES.filter((l) => scoped.some((r) => r.league?.slug === l.slug));
+  const updated = day.feed === 'ok' ? f.dateTime(new Date(day.fetchedAt), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : null;
+  const fullDay = f.dateTime(zonedStartOfDay(date), { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
     <Page>
-      <PageTitle
-        title={t('title')}
-        lead={t('lead')}
-        aside={
-          <p className="text-xs text-s-muted">
-            {t('coverage', { count: SITE_LEAGUES.length })}{' '}
-            <Link href="/methodology" className="underline underline-offset-4">{t('coverageLink')}</Link>
+      {/* Header row */}
+      <div className="rule-b flex flex-wrap items-end justify-between gap-4 pb-4 pt-8">
+        <div>
+          <h1 className="text-[32px] sm:text-[40px]">{date === today ? t('title') : t('titleDay', { day: dayLabel(date) })}</h1>
+          <p className="mt-2 text-[14px] text-s-muted">
+            {updated ? t('meta', { day: fullDay, matches: rows.length, time: updated }) : t('metaNoFeed', { day: fullDay, matches: rows.length })}
           </p>
-        }
-      />
-
-      {/* Date strip */}
-      <nav aria-label={tc('date')} className="tbl-scroll -mx-4 px-4 sm:mx-0 sm:px-0">
-        <ul className="flex gap-1 border-b border-s-line pb-2">
-          {days.map((d) => (
-            <li key={d}>
-              <Link
-                href={href({ date: d })}
-                aria-current={d === date ? 'true' : undefined}
-                className="tab-pill inline-flex h-8 items-center whitespace-nowrap rounded-[2px] border border-s-line px-3 text-sm hover:border-s-muted"
-              >
-                {dayLabel(d)}
-              </Link>
-            </li>
+        </div>
+        <nav aria-label={tc('league')} className="flex flex-wrap gap-1">
+          <Link href={href({ league: undefined })} className={`btn btn-sm ${!league ? 'btn-primary' : 'btn-secondary'}`} aria-current={!league ? 'true' : undefined}>{t('all')}</Link>
+          {(leaguesToday.length ? leaguesToday : SITE_LEAGUES).map((l) => (
+            <Link key={l.slug} href={href({ league: l.slug })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`} aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>
           ))}
-        </ul>
-      </nav>
-
-      {/* League filter */}
-      <nav aria-label={tc('league')} className="tbl-scroll -mx-4 px-4 sm:mx-0 sm:px-0">
-        <ul className="flex flex-wrap gap-1 py-3 text-sm">
-          <li>
-            <Link href={href({ league: undefined })} aria-current={!league ? 'true' : undefined} className={pill}>{tc('all')}</Link>
-          </li>
-          {SITE_LEAGUES.map((l) => (
-            <li key={l.slug}>
-              <Link href={href({ league: l.slug })} aria-current={league?.slug === l.slug ? 'true' : undefined} className={pill}>{l.name}</Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Search · status · rated-only · sort — plain GET form, state lives in the URL. */}
-      <form action={`/${locale}/predictions`} method="get" role="search" className="flex flex-wrap items-end gap-x-4 gap-y-2 border-y border-s-line py-3 text-sm">
-        {date !== today && <input type="hidden" name="date" value={date} />}
-        {league && <input type="hidden" name="league" value={league.slug} />}
-        {scope === 'all' && <input type="hidden" name="scope" value="all" />}
-        <label className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wider text-s-muted">{t('searchLabel')}</span>
-          <input type="search" name="q" defaultValue={q} placeholder={t('searchPlaceholder')} maxLength={60} autoComplete="off"
-            className="h-9 w-48 rounded-[2px] border border-s-line bg-s-surface px-2 text-s-ink placeholder:text-s-muted focus:border-s-muted" />
-        </label>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="text-xs uppercase tracking-wider text-s-muted">{tc('status')}</legend>
-          <div className="flex gap-1">
-            {STATUS_FILTERS.map((s) => (
-              <label key={s} className={`inline-flex h-9 cursor-pointer items-center rounded-[2px] border px-2 has-[:checked]:border-s-brand has-[:checked]:bg-s-brand has-[:checked]:text-s-brand-ink ${s === status ? 'border-s-brand' : 'border-s-line'}`}>
-                <input type="radio" name="status" value={s} defaultChecked={s === status} className="sr-only" />
-                {t(s === 'all' ? 'statusAll' : s === 'upcoming' ? 'statusUpcoming' : s === 'live' ? 'statusLive' : 'statusFinished')}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <label className="inline-flex h-9 items-center gap-2">
-          <input type="checkbox" name="ready" value="1" defaultChecked={ready} className="h-4 w-4 accent-[rgb(var(--s-brand))]" />
-          {t('readyOnly')}
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wider text-s-muted">{tc('sort')}</span>
-          <select name="sort" defaultValue={sort} className="h-9 rounded-[2px] border border-s-line bg-s-surface px-2 text-s-ink">
-            <option value="time">{t('sortTime')}</option>
-            <option value="confidence">{t('sortConfidence')}</option>
-          </select>
-        </label>
-        <button type="submit" className="inline-flex h-9 items-center rounded-[2px] bg-s-brand px-3 font-medium text-s-brand-ink hover:opacity-90">{tc('search')}</button>
-        {filtersActive && (
-          <Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined, league: undefined })} className="inline-flex h-9 items-center underline underline-offset-4">{t('clearFilters')}</Link>
-        )}
-      </form>
-
-      <div className="my-3 flex flex-wrap items-center justify-between gap-2 text-sm text-s-muted">
-        <span>
-          <span className="font-medium text-s-ink">{dayLabel(date)}</span> · {tc('matches', { count: rows.length })}
-          {day.feed === 'ok' && <> · <span className="text-xs">{t('feedStale', { time: f.dateTime(new Date(day.fetchedAt), { hour: '2-digit', minute: '2-digit' }) })}</span></>}
-        </span>
-        {uncoveredCount > 0 && (
-          <Link href={href({ scope: scope === 'all' ? 'covered' : 'all' })} className="underline underline-offset-4">
-            {scope === 'all' ? t('hideUncovered') : t('showUncovered', { count: uncoveredCount })}
-          </Link>
-        )}
+        </nav>
       </div>
 
-      <TrialNotice access={access} />
+      {/* Day strip + scope */}
+      <div className="rule-b-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-[13px]">
+        <span className="flex gap-4">
+          <Link href={href({ date: addDays(date, -1) })} className="font-semibold hover:text-s-accent-600">{t('dayPrev')}</Link>
+          <Link href={href({ date: addDays(date, 1) })} className="font-semibold hover:text-s-accent-600">{t('dayNext')}</Link>
+        </span>
+        <span className="flex gap-4 text-s-muted">
+          {uncoveredCount > 0 && (
+            <Link href={href({ scope: scope === 'all' ? 'covered' : 'all' })} className="hover:text-s-ink">
+              {scope === 'all' ? t('hideUncovered') : t('showUncovered', { count: uncoveredCount })}
+            </Link>
+          )}
+          <Link href={href({ note: showNote ? '0' : undefined })} className="hover:text-s-ink">{showNote ? t('hide') : t('show')}</Link>
+        </span>
+      </div>
+
+      {showNote && (
+        <RiskNote className="mt-4 max-w-[760px]">
+          <strong>{t('howTitle')}</strong> {t('howText')}
+        </RiskNote>
+      )}
+
+      <div className="mt-4"><TrialNotice access={access} /></div>
 
       {day.feed === 'error' && (
-        <p role="status" className="mb-3 rounded-[2px] border border-s-loss/40 bg-s-loss/10 px-3 py-2 text-sm">{t('feedError')}</p>
+        <p role="status" className="risk-note mb-3">{tp('feedError')}</p>
       )}
 
       {rows.length === 0 ? (
-        scoped.length > 0 ? (
-          <EmptyState
-            title={t('emptyFiltered')}
-            lead={t('emptyFilteredLead')}
-            action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined, league: undefined })} className="inline-flex h-9 items-center rounded-[2px] border border-s-line px-3 text-sm font-medium hover:border-s-muted">{t('clearFilters')}</Link>}
-          />
-        ) : (
-          <EmptyState
-            title={t('emptyTitle')}
-            lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : t('emptyLead')}
-            action={nextDay ? (
-              <Link href={href({ date: nextDay })} className="inline-flex h-9 items-center rounded-[2px] bg-s-brand px-3 text-sm font-medium text-s-brand-ink">
-                {t('goToNext')}
-              </Link>
-            ) : undefined}
-          />
-        )
+        <EmptyState
+          title={t('emptyTitle')}
+          lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}
+          action={nextDay ? <Link href={href({ date: nextDay })} className="btn btn-primary">{t('goToNext', { date: dayLabel(nextDay) })}</Link> : (league ? <Link href={href({ league: undefined })} className="btn btn-secondary">{t('all')}</Link> : undefined)}
+        />
       ) : (
         <>
-          <PredictionTable rows={rows} showOutcome={date < today} />
-          <p className="mt-6 text-xs text-s-muted">
-            {pendingCount > 0 && <>{t('pendingNote', { count: pendingCount })} </>}
-            {t('statusHint')} {t('footnote')}
-          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map((p) => <PredictionCard key={p.fixtureId} p={p} />)}
+          </div>
+          <p className="mt-6 text-[12px] text-s-muted">{t('footnote')}</p>
         </>
       )}
     </Page>
