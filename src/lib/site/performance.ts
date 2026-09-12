@@ -78,7 +78,6 @@ async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: bo
 }
 
 import { addRoi, finishRoi, mkRoi, isPickCorrect, type OddsRow, type Roi } from './roi';
-import { parseMarkets } from './markets';
 export type { Roi };
 export type OddsIndex = Map<number, { opening?: OddsRow; closing?: OddsRow; btts?: { pYes: number; pNo: number } }>;
 
@@ -93,12 +92,12 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
   const CHUNK = 200;
   for (let i = 0; i < fixtureIds.length; i += CHUNK) {
     const chunk = fixtureIds.slice(i, i + CHUNK);
-    const { data, error } = await db()
-      .from('prediction_odds')
-      .select('fixture_id, phase, provider, home_odds, draw_odds, away_odds, captured_at, raw')
-      .in('fixture_id', chunk)
-      .order('captured_at', { ascending: false })
-      .limit(chunk.length * 4);
+    // KG oranı sütunlardan (raw jsonb ~75 KB/satır; 2026-09-12 build timeout'u).
+    // Migration uygulanmamışsa sütunsuz tekrar dener; KG farkı o zaman boş kalır.
+    const base = 'fixture_id, phase, provider, home_odds, draw_odds, away_odds, captured_at';
+    const q = (cols: string) => db().from('prediction_odds').select(cols).in('fixture_id', chunk).order('captured_at', { ascending: false }).limit(chunk.length * 4);
+    let { data, error } = await q(`${base}, btts_yes_odds, btts_no_odds`);
+    if (error && /btts_(yes|no)_odds/.test(error.message)) ({ data, error } = await q(base));
     if (error) { console.error('[site/performance] odds fetch failed', error.message); continue; }
     for (const raw of (data || []) as unknown[]) {
       const p = OddsSchema.safeParse(raw);
@@ -108,8 +107,8 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
       if (!slot[r.phase]) slot[r.phase] = r; // newest first → keep the latest per phase
       // KG kitabı: kapanış varsa kapanış, yoksa ilk görülen (açılış). Sinyal karnesi için.
       if (!slot.btts || r.phase === 'closing') {
-        const bk = parseMarkets((raw as any)?.raw);
-        if (bk?.btts && (!slot.btts || r.phase === 'closing')) slot.btts = { pYes: bk.btts.pA, pNo: bk.btts.pB };
+        const y = Number((raw as any)?.btts_yes_odds), n = Number((raw as any)?.btts_no_odds);
+        if (y > 1 && n > 1) { const s = 1 / y + 1 / n; slot.btts = { pYes: 1 / y / s, pNo: 1 / n / s }; }
       }
       map.set(r.fixture_id, slot);
     }
