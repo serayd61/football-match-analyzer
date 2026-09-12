@@ -17,6 +17,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
+import { parseMarkets } from '@/lib/site/markets';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -129,8 +130,12 @@ export async function GET(request: NextRequest) {
     if (!odds) { missed++; await sleep(SLEEP_MS); continue; }
 
     const mins = Math.round((new Date(job.kickoff).getTime() - Date.now()) / 60000);
-    const { error: insErr } = await sb().from('prediction_odds').upsert(
+    // KG oranı sütuna: karne raw'ı taramasın (2026-09-12 build timeout'u).
+    const book = parseMarkets(odds.raw);
+    const bttsCols = book?.btts ? { btts_yes_odds: book.btts.a, btts_no_odds: book.btts.b } : { btts_yes_odds: 0, btts_no_odds: 0 };
+    const upsert = (extra: Record<string, number>) => sb().from('prediction_odds').upsert(
       {
+        ...extra,
         fixture_id: job.fixtureId,
         kickoff: job.kickoff,
         minutes_to_kickoff: mins,
@@ -148,6 +153,9 @@ export async function GET(request: NextRequest) {
       },
       { onConflict: 'fixture_id,phase' },
     );
+    let { error: insErr } = await upsert(bttsCols);
+    // Migration henüz uygulanmadıysa sütunsuz yaz; yakalama kaçmasın.
+    if (insErr && /btts_(yes|no)_odds/.test(insErr.message)) ({ error: insErr } = await upsert({}));
     if (insErr) console.error('[snapshot-odds] insert:', insErr.message);
     else captured++;
     await sleep(SLEEP_MS);
