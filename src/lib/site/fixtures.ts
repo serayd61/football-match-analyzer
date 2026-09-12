@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { getMatchesByDate } from '@/lib/data-sources/free-football';
 import { REVALIDATE } from './db';
-import { listPredictionsForDay, loadContext, type SitePrediction } from './predictions';
+import { listPredictionsForDay, fetchPredictionsForDay, loadContext, type SitePrediction } from './predictions';
 import { mergeFeed, type FeedRow } from './merge-feed';
 export { mergeFeed, fixtureRow, type FeedRow } from './merge-feed';
 export { feedStatus } from './status';
@@ -54,9 +54,7 @@ async function feedForDay(ymd: string): Promise<FeedRow[]> {
  * feed fixture the model has not rated yet. Only today and the next two
  * days consult the feed; other days come from the database alone.
  */
-export const listDay = unstable_cache(
-  async (ymd: string): Promise<DayRows> => {
-    const predictions = await listPredictionsForDay(ymd);
+async function buildDay(ymd: string, predictions: SitePrediction[]): Promise<DayRows> {
     const today = todayYmd();
     const fetchedAt = new Date().toISOString();
     if (ymd < today || ymd > addDays(today, 2)) return { rows: predictions, feed: 'skipped', fetchedAt };
@@ -67,10 +65,25 @@ export const listDay = unstable_cache(
     const ctx = await loadContext();
     const window = { from: zonedStartOfDay(ymd).getTime(), to: zonedStartOfDay(addDays(ymd, 1)).getTime() };
     return { rows: mergeFeed(predictions, feed, ctx.catalog, window), feed: 'ok', fetchedAt };
-  },
+}
+
+export const listDay = unstable_cache(
+  async (ymd: string): Promise<DayRows> => buildDay(ymd, await listPredictionsForDay(ymd)),
   ['site-day-v2'],
   { revalidate: REVALIDATE.fixtures },
 );
+
+/**
+ * Same as listDay but reads engine_predictions directly, bypassing the two
+ * nested 15-min ISR caches. For crons (daily picks) that run right after an
+ * ingest: 2026-09-13 the picks cron saw hasModel=0 for ~30 min after
+ * engine-sync wrote the day's rows because the stale day cache was served.
+ * The feed still goes through Redis (5 min), which is fine — fixtures don't
+ * change, predictions do.
+ */
+export async function listDayFresh(ymd: string): Promise<DayRows> {
+  return buildDay(ymd, await fetchPredictionsForDay(ymd));
+}
 
 /** Backwards-compatible: rows only. */
 export async function listDayRows(ymd: string): Promise<SitePrediction[]> {

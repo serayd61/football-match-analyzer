@@ -244,8 +244,7 @@ export function parseRows(data: unknown, official: string | null = OFFICIAL_MODE
 // ---------------------------------------------------------------------------
 
 /** Predictions with kick-off on the given Zurich calendar day. */
-export const listPredictionsForDay = unstable_cache(
-  async (ymd: string): Promise<SitePrediction[]> => {
+export async function fetchPredictionsForDay(ymd: string): Promise<SitePrediction[]> {
     const from = zonedStartOfDay(ymd).toISOString();
     const to = zonedStartOfDay(addDays(ymd, 1)).toISOString();
     const official = await resolveOfficialVersion();
@@ -259,10 +258,10 @@ export const listPredictionsForDay = unstable_cache(
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
     return parseRows(data, official).map((r) => mapRow(r, ctx));
-  },
-  ['site-predictions-day-v2'],
-  { revalidate: REVALIDATE.fixtures },
-);
+}
+
+/** Predictions with kick-off on the given Zurich calendar day (15 min cache). */
+export const listPredictionsForDay = unstable_cache(fetchPredictionsForDay, ['site-predictions-day-v2'], { revalidate: REVALIDATE.fixtures });
 
 /** Next calendar day (Zurich) after `ymd` that has any covered prediction, or null. */
 export const nextDayWithPredictions = unstable_cache(
