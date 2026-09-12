@@ -45,6 +45,10 @@
       "schedule": "0 5 * * 1"
     },
     {
+      "path": "/api/cron/daily-picks",
+      "schedule": "15 6 * * *"
+    },
+    {
       "path": "/api/cron/snapshot-odds",
       "schedule": "10 * * * *"
     },

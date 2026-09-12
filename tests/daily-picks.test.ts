@@ -1,0 +1,52 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { selectDailyPicks, settlePick, MIN_BTTS, MIN_OVER, ODDS_MAX } from '@/lib/site/daily-picks-rule';
+
+const row = (o: Partial<Parameters<typeof selectDailyPicks>[0][number]>) => ({
+  fixtureId: 1, leagueSlug: 'bundesliga', kickoff: '2026-09-12T14:30:00Z', pBttsYes: 0.5, pOver25: 0.5, ...o,
+});
+
+test('only whitelisted leagues and only above-threshold goal markets qualify', () => {
+  const picks = selectDailyPicks([
+    row({ fixtureId: 1, leagueSlug: 'ligue-1', pOver25: 0.9 }),          // lig dışı
+    row({ fixtureId: 2, leagueSlug: 'bundesliga', pOver25: MIN_OVER - 0.01, pBttsYes: MIN_BTTS - 0.01 }), // eşik altı
+    row({ fixtureId: 3, leagueSlug: 'eredivisie', pOver25: 0.70 }),
+  ]);
+  assert.deepEqual(picks.map((p) => p.fixtureId), [3]);
+  assert.equal(picks[0].market, 'ou25');
+  assert.equal(picks[0].oddsSource, 'fair');
+  assert.equal(picks[0].odds, 1.43);
+});
+
+test('one leg per fixture: the market that clears its threshold by more wins', () => {
+  const [p] = selectDailyPicks([row({ pOver25: 0.78, pBttsYes: 0.77 })]);
+  assert.equal(p.market, 'btts'); // +17 > +13
+});
+
+test('book odds outside the band drop the leg; fair odds never do', () => {
+  const picks = selectDailyPicks([
+    row({ fixtureId: 1, pBttsYes: 0.7, bttsYesOdds: ODDS_MAX + 0.1 }),
+    row({ fixtureId: 2, pBttsYes: 0.7, bttsYesOdds: 1.45 }),
+    row({ fixtureId: 3, pBttsYes: 0.62 }),
+  ]);
+  assert.deepEqual(picks.map((p) => [p.fixtureId, p.oddsSource]), [[2, 'book'], [3, 'fair']]);
+});
+
+test('takes the top three by probability, skips kicked-off matches', () => {
+  const now = Date.parse('2026-09-12T15:00:00Z');
+  const picks = selectDailyPicks([
+    row({ fixtureId: 1, pOver25: 0.9, kickoff: '2026-09-12T14:30:00Z' }), // başlamış
+    row({ fixtureId: 2, pOver25: 0.70, kickoff: '2026-09-12T16:00:00Z' }),
+    row({ fixtureId: 3, pOver25: 0.80, kickoff: '2026-09-12T16:00:00Z' }),
+    row({ fixtureId: 4, pOver25: 0.75, kickoff: '2026-09-12T16:00:00Z' }),
+    row({ fixtureId: 5, pOver25: 0.66, kickoff: '2026-09-12T16:00:00Z' }),
+  ], now);
+  assert.deepEqual(picks.map((p) => p.fixtureId), [3, 4, 2]);
+});
+
+test('settlement follows the score', () => {
+  assert.equal(settlePick('btts', 1, 1), true);
+  assert.equal(settlePick('btts', 2, 0), false);
+  assert.equal(settlePick('ou25', 2, 1), true);
+  assert.equal(settlePick('ou25', 1, 1), false);
+});

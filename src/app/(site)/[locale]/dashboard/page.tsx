@@ -18,6 +18,7 @@ import WatchlistPanel, { UnfollowButton } from '@/components/site/dashboard/Watc
 import IntelCard from '@/components/site/dashboard/IntelCard';
 import PurchaseTracker from '@/components/site/dashboard/PurchaseTracker';
 import { getSiteAccess } from '@/lib/site/access';
+import { getDailyPicks, dailyPicksRecord } from '@/lib/site/daily-picks';
 import { Paywall } from '@/components/site/Paywall';
 import { legacyHref } from '@/lib/site/legacy';
 
@@ -67,6 +68,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const snaps = await getMarketSnapshots([...todayRows, ...tomorrowRows].filter((r) => r.hasModel).map((r) => r.fixtureId));
   // Computed for everyone: free users see the count behind a locked overlay.
   const radar = await valueRadar([...todayRows, ...tomorrowRows]);
+  // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
+  const [{ picks }, picksRec] = await Promise.all([getDailyPicks(today), dailyPicksRecord(30)]);
 
   // Followed clubs: position, form and next rated match, in parallel.
   const followed = await Promise.all(watch.items.map(async (w) => {
@@ -176,6 +179,57 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                 )}
               </>
             )}
+          </section>
+
+          {/* ── Today's 3 picks (validated goal-market rule) ───────────── */}
+          <section>
+            <SectionTitle title={t('picksTitle')} meta={t('picksMeta')} />
+            {picks.length === 0 ? (
+              <p className="mt-3 text-sm text-s-muted">{t('picksEmpty')}</p>
+            ) : (
+              <div className="relative mt-3">
+                <div className={`tbl-scroll ${paid ? '' : 'pointer-events-none select-none blur-[5px]'}`} aria-hidden={!paid}>
+                  <table className="text-sm">
+                    <thead className="text-xs uppercase tracking-wider text-s-muted">
+                      <tr className="border-b border-s-line">
+                        <th className="py-1.5 text-left font-medium">{t('colMatch')}</th>
+                        <th className="py-1.5 text-left font-medium">{t('colSelection')}</th>
+                        <th className="py-1.5 text-right font-medium">{tc('model')}</th>
+                        <th className="py-1.5 text-right font-medium">{t('colOdds')}</th>
+                        <th className="py-1.5 text-right font-medium">{tc('league')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {picks.map((p) => (
+                        <tr key={p.fixtureId} className="border-b border-s-line">
+                          <td className="py-2 pr-3">
+                            {paid ? <Link href={`/predictions/${p.fixtureId}`} className="hover:underline">{p.homeName} – {p.awayName}</Link> : <>{p.homeName} – {p.awayName}</>}
+                            <span className="ml-2 text-xs text-s-muted"><LocalTime iso={p.kickoff} format="kickoff" /></span>
+                          </td>
+                          <td className="py-2 pr-3 font-medium">{p.market === 'btts' ? `${tc('btts')} · ${tc('yes')}` : `${tc('ou25')} · ${tc('over')}`}</td>
+                          <td className="num py-2 text-right">{pct(p.modelP)}</td>
+                          <td className="num py-2 text-right">{p.odds.toFixed(2)} <span className="text-xs text-s-muted">{p.oddsSource === 'book' ? t('picksBook') : t('picksFair')}</span></td>
+                          <td className="py-2 text-right text-s-muted">{p.leagueSlug.replace(/-/g, ' ')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!paid && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="max-w-sm rounded-sm border border-s-line bg-s-surface p-5 text-center shadow-sm">
+                      <p className="font-medium">{t('picksLocked', { n: picks.length })}</p>
+                      <p className="mt-1 text-sm text-s-muted">{t('picksLockedLead')}</p>
+                      <a href={legacyHref('/pricing', locale)} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <p className={`mt-2 text-sm ${picksRec.n && picksRec.roi != null && picksRec.roi >= 0 ? 'text-s-win' : ''}`}>
+              {picksRec.n ? t('picksRecord', { days: picksRec.days, won: picksRec.won, n: picksRec.n, hit: pct(picksRec.won / picksRec.n), roi: picksRec.roi == null ? '–' : `${picksRec.roi >= 0 ? '+' : '−'}${Math.abs(Math.round(picksRec.roi * 100))}%` }) : t('picksRecordEmpty')}
+            </p>
+            <p className="mt-2 text-xs text-s-muted">{t('picksNote')}</p>
           </section>
 
           {/* ── Value radar ───────────────────────────────────────────── */}

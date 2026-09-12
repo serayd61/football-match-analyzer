@@ -663,7 +663,7 @@
     "valueEmpty": "Şu anda model ile bahisçi arasında 4 puan ve üzeri bir fark yok.",
     "valueLocked": "Bugün {n} fark bulundu",
     "valueLockedLead": "Değer radarı, model ile bahisçinin 4 puan ve üzeri ayrıştığı her maçı listeler.",
-    "valueNote": "Ham model olasılığı eksi bahisçinin marjsız olasılığı, yüzde puanı olarak. Maç başına tek satır: 1X2 ve karşılıklı gol arasındaki en büyük fark. Bilgi amaçlıdır, öneri değildir.",
+    "valueNote": "Ham model olasılığı eksi bahisçinin marjsız olasılığı, yüzde puanı olarak. Bilgi amaçlıdır: geriye dönük testte 1X2'de büyük farklar kârlı çıkmadı (fark ≥ +5 → ROI −23). Bahis için yukarıdaki günün seçimlerini kullanın.",
     "colMatch": "Maç",
     "colSelection": "Seçim",
     "colOdds": "Oran",
@@ -687,7 +687,17 @@
     "sourceDerived": "türetilmiş",
     "sourceStored": "kayıtlı",
     "planTrial": "{days, plural, =0 {Deneme · bugün bitiyor} =1 {Deneme · son 1 gün} other {Deneme · # gün kaldı}}",
-    "account": "Hesap ve abonelik"
+    "account": "Hesap ve abonelik",
+    "picksTitle": "Günün 3 seçimi",
+    "picksMeta": "gol pazarları · doğrulanmış kural",
+    "picksEmpty": "Bugün kurala uyan seçim yok. Kural gevşetilmez; boş gün de karnenin parçasıdır.",
+    "picksNote": "Kural: Karşılıklı gol Var için model ≥ %60, Üst 2,5 için ≥ %65; yalnız Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League ve Şampiyonlar Ligi; günde en fazla 3 ayak. Piyasaya karşı fark şart değil: geriye dönük testte piyasayla uyuşan gol ayakları tuttu, kavga edenler tutmadı. Seçimler sabah dondurulur ve skordan sonuçlandırılır.",
+    "picksRecord": "Son {days} gün: {won}/{n} tuttu ({hit}) · sabit bahis getirisi {roi}",
+    "picksRecordEmpty": "Karne, ilk seçimler sonuçlanınca başlar.",
+    "picksFair": "adil",
+    "picksBook": "bahisçi",
+    "picksLocked": "Bugün {n} seçim hazır",
+    "picksLockedLead": "Günün seçimleri üyelere özeldir. Kayıt sonrası 7 gün ücretsiz görürsünüz."
   },
   "paywall": {
     "expiredTitle": "7 günlük deneme süren doldu",
