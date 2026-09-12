@@ -372,7 +372,14 @@
     "weeklyEmpty": "The weekly record fills in after the first Monday review.",
     "weeklyBenchmark": "On the {n} matches with a closing price: model {model}, bookmaker favourite {market}, ROI {roi}.",
     "weeklyCal": "Display calibration (curve fitted one week earlier): confidence Brier raw {raw} → calibrated {cal}.",
-    "weeklyAlerts": "Alerts from the latest review"
+    "weeklyAlerts": "Alerts from the latest review",
+    "secSignals": "Signal report",
+    "signalsMeta": "market × league × signal · which signal actually hits?",
+    "signalsLead": "When the model says 70% for a selection, does it hit 70%? When it disagrees with the market by 10 points, is it right? For each market these tables bucket the model probability of the chosen side (level) and the gap between model and margin-free bookmaker probability (edge, percentage points) and show the hit rate. Green from 65%, red under 50%; buckets with fewer than 10 matches are faded.",
+    "signalsLevel": "model level",
+    "signalsEdge": "edge vs market",
+    "signalsAll": "All leagues",
+    "signalsNote": "How to read it (as of 2026-09-12): in 1X2 the hit rate falls as the edge grows, so a model drifting away from the market is not being proven right; in the goal markets the level works: Over 2.5 and both-teams-to-score selections above 60% hit, no edge required. Edge tables only include matches with recorded odds (no bookmaker price is stored for Over/Under). Today's picks are built on this report."
   },
   "leagues": {
     "title": "Leagues",

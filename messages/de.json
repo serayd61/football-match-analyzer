@@ -372,7 +372,14 @@
     "weeklyEmpty": "Die Wochenbilanz füllt sich nach der ersten Montagsprüfung.",
     "weeklyBenchmark": "Bei den {n} Spielen mit Schlussquote: Modell {model}, Buchmacher-Favorit {market}, ROI {roi}.",
     "weeklyCal": "Anzeigekalibrierung (eine Woche zuvor gefittete Kurve): Konfidenz-Brier roh {raw} → kalibriert {cal}.",
-    "weeklyAlerts": "Hinweise der letzten Prüfung"
+    "weeklyAlerts": "Hinweise der letzten Prüfung",
+    "secSignals": "Signalbilanz",
+    "signalsMeta": "Markt × Liga × Signal · welches Signal trifft?",
+    "signalsLead": "Sagt das Modell 70 % für eine Auswahl, trifft sie dann zu 70 %? Weicht es 10 Punkte vom Markt ab, hat es recht? Die Tabellen teilen je Markt die Modellwahrscheinlichkeit der gewählten Seite (Niveau) und die Differenz zwischen Modell und margenfreier Buchmacherwahrscheinlichkeit (Vorsprung, Prozentpunkte) in Klassen ein und zeigen die Trefferquote. Grün ab 65 %, rot unter 50 %; Klassen mit weniger als 10 Spielen sind abgeschwächt.",
+    "signalsLevel": "Modellniveau",
+    "signalsEdge": "Vorsprung zum Markt",
+    "signalsAll": "Alle Ligen",
+    "signalsNote": "Lesehilfe (Stand 2026-09-12): bei 1X2 sinkt die Trefferquote mit wachsendem Vorsprung, ein vom Markt abweichendes Modell bekommt also nicht recht; in den Tormärkten wirkt das Niveau: Über 2,5 und Beide treffen über 60 % treffen, ohne Vorsprungsbedingung. Vorsprungstabellen enthalten nur Spiele mit erfassten Quoten (für Über/Unter wird keine Buchmacherquote gespeichert). Die Tipps des Tages beruhen auf dieser Bilanz."
   },
   "leagues": {
     "title": "Ligen",

@@ -44,6 +44,18 @@ function MarketCell({ b, loss }: { b: { n: number; won: number; acc: number | nu
   );
 }
 
+/** Signal cell: hit% then W–L; muted when the sample is tiny (n<10), green ≥65%, red <50%. */
+function SignalCellTd({ c }: { c: { n: number; won: number; acc: number | null } }) {
+  if (!c.n) return <td className="num py-1.5 text-right text-s-muted">–</td>;
+  const tone = c.n < 10 ? 'text-s-muted' : c.acc! >= 0.65 ? 'text-s-win' : c.acc! < 0.5 ? 'text-s-loss' : '';
+  return (
+    <td className="num py-1.5 text-right">
+      <span className={tone}>{pct(c.acc)}</span>
+      <span className="ml-1 text-xs text-s-muted">{c.won}–{c.n - c.won}</span>
+    </td>
+  );
+}
+
 export default async function PerformancePage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations('performance');
@@ -317,6 +329,40 @@ export default async function PerformancePage({ params: { locale }, searchParams
           </div>
         </section>
       </div>
+
+      {/* Signal report: market × league × (model level | market edge). Backtest 2026-09-12 made permanent. */}
+      <section className="mt-12">
+        <SectionTitle title={t('secSignals')} meta={t('signalsMeta')} />
+        <p className="mt-2 max-w-3xl text-sm text-s-muted">{t('signalsLead')}</p>
+        <div className="mt-4 grid gap-8 lg:grid-cols-2">
+          {r.signals.map((tb) => (
+            <div key={`${tb.market}-${tb.kind}`} className="overflow-x-auto">
+              <h3 className="font-body text-sm font-medium">{marketName[tb.market]} <span className="text-s-muted">· {tb.kind === 'level' ? t('signalsLevel') : t('signalsEdge')}</span></h3>
+              <table className="mt-2 w-full text-sm">
+                <thead>
+                  <tr className="border-b border-s-line text-left">
+                    <th className={th}>{tc('league')}</th>
+                    {tb.buckets.map((b) => <th key={b} className={`${th} text-right`}>{b}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-s-line font-medium">
+                    <td className="py-1.5">{t('signalsAll')}</td>
+                    {tb.all.map((c, i) => <SignalCellTd key={i} c={c} />)}
+                  </tr>
+                  {tb.leagues.map((row) => (
+                    <tr key={row.league.slug} className="border-b border-s-line">
+                      <td className="py-1.5"><Link href={`/leagues/${row.league.slug}`} className="hover:underline underline-offset-4">{row.league.name}</Link></td>
+                      {row.cells.map((c, i) => <SignalCellTd key={i} c={c} />)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 max-w-3xl text-xs text-s-muted">{t('signalsNote')}</p>
+      </section>
 
       {/* Weekly progress — read from engine_weekly_metrics (Monday review), never recomputed here */}
       <section className="mt-12">

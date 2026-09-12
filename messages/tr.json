@@ -372,7 +372,14 @@
     "weeklyEmpty": "Haftalık karne ilk Pazartesi incelemesinden sonra dolar.",
     "weeklyBenchmark": "Kapanış oranı olan {n} maçta: model {model}, bahisçi favorisi {market}, ROI {roi}.",
     "weeklyCal": "Gösterim kalibrasyonu (bir hafta önce fit edilen eğri): güven Brier ham {raw} → kalibre {cal}.",
-    "weeklyAlerts": "Son inceleme uyarıları"
+    "weeklyAlerts": "Son inceleme uyarıları",
+    "secSignals": "Sinyal karnesi",
+    "signalsMeta": "pazar × lig × sinyal · hangi sinyal tutuyor?",
+    "signalsLead": "Model bir seçime %70 diyorsa gerçekten %70 mi tutuyor? Piyasadan 10 puan ayrıştığında haklı mı çıkıyor? Bu tablolar her pazar için seçilen tarafın model olasılığını (seviye) ve model ile marjsız bahisçi olasılığı arasındaki farkı (fark, yüzde puan) kovalara ayırıp isabeti gösterir. Yeşil %65 ve üzeri, kırmızı %50 altı; 10 maçtan az kovalar soluk.",
+    "signalsLevel": "model seviyesi",
+    "signalsEdge": "piyasaya karşı fark",
+    "signalsAll": "Tüm ligler",
+    "signalsNote": "Okuma kılavuzu (2026-09-12 itibarıyla): 1X2'de fark büyüdükçe isabet düşer, yani piyasadan uzaklaşan model haklı çıkmıyor; gol pazarlarında ise seviye çalışır: Üst 2,5 ve karşılıklı golde %60 üstü seçimler tutar, fark şartı gerekmez. Fark tabloları yalnız oran kaydı olan maçları içerir (Üst/Alt için bahisçi oranı kaydedilmiyor). Günün seçimleri bu karneye göre kurulmuştur."
   },
   "leagues": {
     "title": "Ligler",
