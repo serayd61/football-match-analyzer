@@ -875,7 +875,12 @@
       "beforeTitle": "Bevor du handelst.",
       "beforeText": "Prognosen sind probabilistische Schätzungen, keine Garantien. Jage Verlusten nie hinterher, setze einen festen kleinen Prozentsatz deiner Bankroll und behandle Tipps mit hohem Risiko als spekulativ. Nur 18+.",
       "settledAs": "Abgerechnet",
-      "finalScore": "Endstand"
+      "finalScore": "Endstand",
+      "latest": "letzte Erfassung",
+      "driftLine": "Quotenbewegung ({n} Erfassungen): {side} {from} → {to} ({pp} Punkte).",
+      "driftToward": "Der Markt bewegt sich zur Modellwahl hin.",
+      "driftAway": "Der Markt bewegt sich von der Modellwahl weg; Vorsicht.",
+      "driftFlat": "Seit der Eröffnung keine nennenswerte Bewegung."
     },
     "pricing": {
       "title": "Zahle für den Vorsprung, kenne das Risiko.",

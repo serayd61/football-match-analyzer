@@ -18,11 +18,13 @@ import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football'
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { parseMarkets } from '@/lib/site/markets';
+import { phaseForMinutes, type OddsPhase } from '@/lib/site/odds-phases';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-const CLOSING_WINDOW_MIN = 90;   // bu dakikanın altında kalan maç "kapanış"
+// Fazlar: opening (ilk görüş) → h24 → h12 → h6 → h3 → closing (≤90 dk); bkz. odds-phases.ts.
+// Tur başına maç başına tek çağrı: o anki faz yazılır, açılış yoksa aynı orandan açılış da yazılır.
 const MAX_CALLS = 40;            // tur başına üst sınır (maliyet freni)
 const SLEEP_MS = 400;
 
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
   const catalog = await getCatalogMap().catch(() => new Map());
 
   // Kapsanan ligler + hangi faz gerekiyor
-  type Job = { fixtureId: number; kickoff: string; phase: 'opening' | 'closing'; ccode: string };
+  type Job = { fixtureId: number; kickoff: string; phase: OddsPhase; ccode: string };
   const candidates: Job[] = [];
   for (const p of (preds || []) as any[]) {
     const cat = catalog.get(Number(p.league_id));
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
     candidates.push({
       fixtureId: p.fixture_id,
       kickoff: p.kickoff,
-      phase: mins <= CLOSING_WINDOW_MIN ? 'closing' : 'opening',
+      phase: phaseForMinutes(mins),
       ccode: cat?.ccode || 'GB',
     });
   }
@@ -120,8 +122,8 @@ export async function GET(request: NextRequest) {
 
   const todo = candidates
     .filter((c) => !done.has(`${c.fixtureId}:${c.phase}`))
-    // kapanış önceliklidir: kaçarsa bir daha yakalanamaz
-    .sort((a, b) => (a.phase === b.phase ? 0 : a.phase === 'closing' ? -1 : 1))
+    // kapanış önceliklidir: kaçarsa bir daha yakalanamaz; sonra maça en yakın olan
+    .sort((a, b) => (a.phase === b.phase ? a.kickoff.localeCompare(b.kickoff) : a.phase === 'closing' ? -1 : b.phase === 'closing' ? 1 : 0))
     .slice(0, MAX_CALLS);
 
   let captured = 0, missed = 0;
@@ -133,9 +135,8 @@ export async function GET(request: NextRequest) {
     // KG oranı sütuna: karne raw'ı taramasın (2026-09-12 build timeout'u).
     const book = parseMarkets(odds.raw);
     const bttsCols = book?.btts ? { btts_yes_odds: book.btts.a, btts_no_odds: book.btts.b } : { btts_yes_odds: 0, btts_no_odds: 0 };
-    const upsert = (extra: Record<string, number>) => sb().from('prediction_odds').upsert(
+    const upsert = (extra: Record<string, number | string>) => sb().from('prediction_odds').upsert(
       {
-        ...extra,
         fixture_id: job.fixtureId,
         kickoff: job.kickoff,
         minutes_to_kickoff: mins,
@@ -150,6 +151,7 @@ export async function GET(request: NextRequest) {
         provider: odds.provider,
         // Şemayı öğrenene kadar ham yanıt saklanır; sonra kapatılabilir.
         raw: odds.raw,
+        ...extra,
       },
       { onConflict: 'fixture_id,phase' },
     );
@@ -157,6 +159,11 @@ export async function GET(request: NextRequest) {
     // Migration henüz uygulanmadıysa sütunsuz yaz; yakalama kaçmasın.
     if (insErr && /btts_(yes|no)_odds/.test(insErr.message)) ({ error: insErr } = await upsert({}));
     if (insErr) console.error('[snapshot-odds] insert:', insErr.message);
+    // İlk görüş bu turdaysa açılış da bu orandır (aynı çağrı, ikinci satır).
+    if (!insErr && job.phase !== 'opening' && !done.has(`${job.fixtureId}:opening`)) {
+      const { error: opErr } = await upsert({ ...bttsCols, phase: 'opening' as any });
+      if (opErr && /btts_(yes|no)_odds/.test(opErr.message)) await upsert({ phase: 'opening' as any });
+    }
     else captured++;
     await sleep(SLEEP_MS);
   }

@@ -1,4 +1,5 @@
 import 'server-only';
+import { latestPhase } from './odds-phases';
 import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
 import { db, REVALIDATE } from './db';
@@ -304,7 +305,8 @@ export const getPrediction = unstable_cache(
 );
 
 export interface MarketSnapshot {
-  phase: 'opening' | 'closing';
+  /** opening | h24 | h12 | h6 | h3 | closing (odds-phases.ts) */
+  phase: string;
   provider: string | null;
   capturedAt: string;
   minutesToKickoff: number | null;
@@ -327,9 +329,10 @@ export const getMarketSnapshot = unstable_cache(
       .order('captured_at', { ascending: false })
       .limit(10);
     if (!data?.length) return null;
-    const row = (data as any[]).find((r) => r.phase === 'closing') || data[0];
+    // En geç faz (kapanış > h3 > … > açılış); son görülen oran = piyasanın son sözü.
+    const row = latestPhase(data as any[]) ?? data[0];
     const S = z.object({
-      phase: z.enum(['opening', 'closing']), provider: z.string().nullable(), captured_at: z.string(),
+      phase: z.string(), provider: z.string().nullable(), captured_at: z.string(),
       minutes_to_kickoff: numN, home_odds: num, draw_odds: num, away_odds: num, overround: numN,
       p_home_market: num, p_draw_market: num, p_away_market: num,
     }).safeParse(row);

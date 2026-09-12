@@ -1,6 +1,6 @@
 // Pure ROI / benchmark accumulators for the performance report (unit-tested).
 
-export interface OddsRow { fixture_id: number; phase: 'opening' | 'closing'; provider: string | null; home_odds: number; draw_odds: number; away_odds: number; captured_at: string }
+export interface OddsRow { fixture_id: number; phase: string; provider: string | null; home_odds: number; draw_odds: number; away_odds: number; captured_at: string }
 export type Pick1x2 = '1' | 'X' | '2';
 export type Result1x2 = 'H' | 'D' | 'A';
 

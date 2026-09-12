@@ -875,7 +875,12 @@
       "beforeTitle": "Prima di agire.",
       "beforeText": "Le previsioni sono stime probabilistiche, non garanzie. Non inseguire le perdite, punta una piccola percentuale fissa del bankroll e considera speculativi i pronostici ad alto rischio. Solo 18+.",
       "settledAs": "Regolato",
-      "finalScore": "Risultato finale"
+      "finalScore": "Risultato finale",
+      "latest": "ultima rilevazione",
+      "driftLine": "Movimento delle quote ({n} rilevazioni): {side} {from} → {to} ({pp} punti).",
+      "driftToward": "Il mercato si sta avvicinando alla scelta del modello.",
+      "driftAway": "Il mercato si sta allontanando dalla scelta del modello; attenzione.",
+      "driftFlat": "Nessun movimento rilevante dall'apertura."
     },
     "pricing": {
       "title": "Paga il vantaggio, conosci il rischio.",

@@ -875,7 +875,12 @@
       "beforeTitle": "Harekete geçmeden önce.",
       "beforeText": "Tahminler olasılıksal kestirimdir, garanti değildir. Kaybı kovalama, kasanın sabit küçük bir yüzdesini oyna ve Yüksek riskli tahminleri spekülatif say. Yalnızca 18+.",
       "settledAs": "Sonuç",
-      "finalScore": "Maç sonucu"
+      "finalScore": "Maç sonucu",
+      "latest": "son görüş",
+      "driftLine": "Oran hareketi ({n} görüş): {side} {from} → {to} ({pp} puan).",
+      "driftToward": "Piyasa modelin seçimine doğru kayıyor.",
+      "driftAway": "Piyasa modelin seçiminden uzaklaşıyor; dikkat.",
+      "driftFlat": "Açılıştan bu yana kayda değer hareket yok."
     },
     "pricing": {
       "title": "Avantaj için öde, riski bil.",

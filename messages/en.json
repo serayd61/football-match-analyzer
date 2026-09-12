@@ -875,7 +875,12 @@
       "beforeTitle": "Before you act.",
       "beforeText": "Predictions are probabilistic estimates, not guarantees. Never chase losses, stake a fixed small % of your bankroll, and treat High-risk picks as speculative. 18+ only.",
       "settledAs": "Settled",
-      "finalScore": "Final score"
+      "finalScore": "Final score",
+      "latest": "latest",
+      "driftLine": "Odds movement ({n} snapshots): {side} {from} → {to} ({pp} pts).",
+      "driftToward": "The market is moving toward the model's pick.",
+      "driftAway": "The market is moving away from the model's pick; caution.",
+      "driftFlat": "No notable movement since opening."
     },
     "pricing": {
       "title": "Pay for the edge, know the risk.",
