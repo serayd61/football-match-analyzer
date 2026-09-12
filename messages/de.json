@@ -663,7 +663,7 @@
     "valueEmpty": "Derzeit keine Abweichung von 4 Punkten oder mehr zwischen Modell und Buchmacher.",
     "valueLocked": "{n} Abweichungen heute gefunden",
     "valueLockedLead": "Das Value-Radar listet jedes Spiel, bei dem Modell und Buchmacher um 4 Punkte oder mehr auseinanderliegen.",
-    "valueNote": "Rohe Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit, in Prozentpunkten. Eine Zeile pro Spiel: die grösste Abweichung über 1X2 und Beide treffen. Information, keine Empfehlung.",
+    "valueNote": "Rohe Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit, in Prozentpunkten. Nur zur Information: im Backtest waren grosse 1X2-Abweichungen nicht profitabel (Abweichung ≥ +5 → ROI −23). Zum Wetten die Tipps des Tages oben verwenden.",
     "colMatch": "Spiel",
     "colSelection": "Auswahl",
     "colOdds": "Quote",
@@ -687,7 +687,17 @@
     "sourceDerived": "abgeleitet",
     "sourceStored": "gespeichert",
     "planTrial": "{days, plural, =0 {Testphase · endet heute} =1 {Testphase · noch 1 Tag} other {Testphase · noch # Tage}}",
-    "account": "Konto & Abo"
+    "account": "Konto & Abo",
+    "picksTitle": "3 Tipps des Tages",
+    "picksMeta": "Tormärkte · geprüfte Regel",
+    "picksEmpty": "Heute erfüllt kein Tipp die Regel. Die Regel wird nicht gelockert; ein leerer Tag gehört zur Bilanz.",
+    "picksNote": "Regel: Beide treffen Ja braucht Modell ≥ 60 %, Über 2,5 braucht ≥ 65 %; nur Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League und Champions League; höchstens 3 Tipps pro Tag. Kein Vorsprung gegenüber dem Markt nötig: im Backtest trafen Tor-Tipps, die mit dem Markt übereinstimmten, und nicht die, die ihm widersprachen. Tipps werden morgens eingefroren und nach dem Ergebnis abgerechnet.",
+    "picksRecord": "Letzte {days} Tage: {won}/{n} getroffen ({hit}) · Rendite bei festem Einsatz {roi}",
+    "picksRecordEmpty": "Die Bilanz beginnt, sobald die ersten Tipps abgerechnet sind.",
+    "picksFair": "fair",
+    "picksBook": "Buchmacher",
+    "picksLocked": "Heute {n} Tipps bereit",
+    "picksLockedLead": "Die Tipps des Tages sind für Mitglieder. Nach der Registrierung 7 Tage gratis."
   },
   "paywall": {
     "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",

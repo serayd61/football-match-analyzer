@@ -663,7 +663,7 @@
     "valueEmpty": "Al momento nessuno scarto di 4 punti o più tra modello e bookmaker.",
     "valueLocked": "{n} scarti trovati oggi",
     "valueLockedLead": "Il radar del valore elenca ogni partita in cui modello e bookmaker divergono di 4 punti o più.",
-    "valueNote": "Probabilità grezza del modello meno probabilità del bookmaker senza margine, in punti percentuali. Una riga per partita: lo scarto maggiore tra 1X2 e Goal/No Goal. Informazione, non un consiglio.",
+    "valueNote": "Probabilità grezza del modello meno probabilità del bookmaker senza margine, in punti percentuali. Solo informazione: nel backtest i grandi scarti sull'1X2 non sono stati redditizi (scarto ≥ +5 → ROI −23). Per scommettere usa i pronostici di oggi qui sopra.",
     "colMatch": "Partita",
     "colSelection": "Selezione",
     "colOdds": "Quota",
@@ -687,7 +687,17 @@
     "sourceDerived": "derivata",
     "sourceStored": "salvata",
     "planTrial": "{days, plural, =0 {Prova · finisce oggi} =1 {Prova · ultimo giorno} other {Prova · # giorni rimasti}}",
-    "account": "Account e abbonamento"
+    "account": "Account e abbonamento",
+    "picksTitle": "I 3 pronostici di oggi",
+    "picksMeta": "mercati gol · regola verificata",
+    "picksEmpty": "Oggi nessun pronostico rispetta la regola. La regola non si allenta; un giorno vuoto fa parte del bilancio.",
+    "picksNote": "Regola: Goal richiede modello ≥ 60%, Over 2,5 richiede ≥ 65%; solo Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League e Champions League; al massimo 3 selezioni al giorno. Non serve uno scarto rispetto al mercato: nel backtest le selezioni gol in accordo con il mercato hanno vinto, quelle in contrasto no. I pronostici vengono fissati al mattino e regolati dal risultato.",
+    "picksRecord": "Ultimi {days} giorni: {won}/{n} vinti ({hit}) · rendimento a puntata fissa {roi}",
+    "picksRecordEmpty": "Il bilancio inizia quando i primi pronostici vengono regolati.",
+    "picksFair": "equa",
+    "picksBook": "bookmaker",
+    "picksLocked": "Oggi {n} pronostici pronti",
+    "picksLockedLead": "I pronostici del giorno sono per i membri. Con la registrazione 7 giorni gratis."
   },
   "paywall": {
     "expiredTitle": "La tua prova di 7 giorni è finita",
