@@ -78,8 +78,9 @@ async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: bo
 }
 
 import { addRoi, finishRoi, mkRoi, isPickCorrect, type OddsRow, type Roi } from './roi';
+import { parseMarkets } from './markets';
 export type { Roi };
-export type OddsIndex = Map<number, { opening?: OddsRow; closing?: OddsRow }>;
+export type OddsIndex = Map<number, { opening?: OddsRow; closing?: OddsRow; btts?: { pYes: number; pNo: number } }>;
 
 const OddsSchema = z.object({
   fixture_id: z.coerce.number(), phase: z.enum(['opening', 'closing']), provider: z.string().nullable().optional(),
@@ -94,7 +95,7 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
     const chunk = fixtureIds.slice(i, i + CHUNK);
     const { data, error } = await db()
       .from('prediction_odds')
-      .select('fixture_id, phase, provider, home_odds, draw_odds, away_odds, captured_at')
+      .select('fixture_id, phase, provider, home_odds, draw_odds, away_odds, captured_at, raw')
       .in('fixture_id', chunk)
       .order('captured_at', { ascending: false })
       .limit(chunk.length * 4);
@@ -105,6 +106,11 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
       const r = { ...p.data, provider: p.data.provider ?? null };
       const slot = map.get(r.fixture_id) ?? {};
       if (!slot[r.phase]) slot[r.phase] = r; // newest first → keep the latest per phase
+      // KG kitabı: kapanış varsa kapanış, yoksa ilk görülen (açılış). Sinyal karnesi için.
+      if (!slot.btts || r.phase === 'closing') {
+        const bk = parseMarkets((raw as any)?.raw);
+        if (bk?.btts && (!slot.btts || r.phase === 'closing')) slot.btts = { pYes: bk.btts.pA, pNo: bk.btts.pB };
+      }
       map.set(r.fixture_id, slot);
     }
   }
@@ -117,10 +123,28 @@ export interface LeagueBucket extends Bucket { league: SiteLeague; ou25: Bucket;
 export interface MonthBucket extends Bucket { month: string }
 export interface MarketBucket extends Bucket { market: '1x2' | 'ou25' | 'btts' }
 export type { CalBin };
+
+// ── Sinyal karnesi ──────────────────────────────────────────────────────────
+// Soru: "model şu kadar diyorsa / piyasadan şu kadar ayrışıyorsa ne kadar tutuyor?"
+// pazar × lig × kova. İki kova türü: model SEVİYESİ (seçilen tarafın ham
+// olasılığı) ve piyasa FARKI (model − marjsız piyasa, yüzde puan; yalnız oranı
+// kayıtlı maçlar). 2026-09-12 backtest'inin sitedeki kalıcı hali.
+export type SignalMarket = '1x2' | 'ou25' | 'btts';
+export type SignalKind = 'level' | 'edge';
+export interface SignalCell { n: number; won: number; acc: number | null }
+export interface SignalLeagueRow { league: SiteLeague; n: number; cells: SignalCell[] }
+export interface SignalTable { market: SignalMarket; kind: SignalKind; buckets: string[]; all: SignalCell[]; leagues: SignalLeagueRow[] }
+export const LEVEL_BUCKETS = ['<50%', '50–60%', '60–70%', '≥70%'] as const;
+export const EDGE_BUCKETS = ['≤−5', '−5…0', '0…+5', '+5…+10', '>+10'] as const;
+export const levelBucket = (p: number) => (p < 0.5 ? 0 : p < 0.6 ? 1 : p < 0.7 ? 2 : 3);
+export const edgeBucket = (e: number) => { const pp = e * 100; return pp <= -5 ? 0 : pp < 0 ? 1 : pp < 5 ? 2 : pp < 10 ? 3 : 4; };
+
 export interface PerformanceReport {
   overall: Bucket;
   leagues: LeagueBucket[];
   markets: MarketBucket[];
+  /** pazar × lig × (seviye | fark) kovaları */
+  signals: SignalTable[];
   months: MonthBucket[];
   /** today's curve applied to every past row (retrospective; NOT an out-of-sample result) */
   calibration: CalBin[];
@@ -165,6 +189,15 @@ export const getPerformance = unstable_cache(
     const bins = makeBins();
     const wfPoints: TPt[] = [];
     const roiClosing = mkRoi(), roiOpening = mkRoi();
+    // Sinyal karnesi sayaçları: key = market|kind|league(or *)|bucket
+    const sig = new Map<string, { n: number; won: number }>();
+    const bump = (market: SignalMarket, kind: SignalKind, league: string | null, bucket: number, won: boolean) => {
+      for (const lg of [null, league]) {
+        if (lg === undefined) continue;
+        const k = `${market}|${kind}|${lg ?? '*'}|${bucket}`;
+        const c = sig.get(k) ?? { n: 0, won: 0 }; c.n++; if (won) c.won++; sig.set(k, c);
+      }
+    };
     let recomputedCorrect = 0;
     const versions = new Set<string>();
 
@@ -208,6 +241,36 @@ export const getPerformance = unstable_cache(
       const od = odds.get(r.fixture_id);
       if (od?.closing) addRoi(roiClosing, r, od.closing, won);
       if (od?.opening) addRoi(roiOpening, r, od.opening, won);
+
+      // Sinyal karnesi (skor + pick zaten doğrulandı)
+      const lg = slug ?? null;
+      const pickP = r.pick === '1' ? r.p_home : r.pick === '2' ? r.p_away : r.p_draw;
+      bump('1x2', 'level', lg, levelBucket(pickP), won);
+      const book = od?.closing ?? od?.opening;
+      if (book) {
+        const inv = [1 / book.home_odds, 1 / book.draw_odds, 1 / book.away_odds]; const sum = inv[0] + inv[1] + inv[2];
+        const mp = r.pick === '1' ? inv[0] / sum : r.pick === '2' ? inv[2] / sum : inv[1] / sum;
+        bump('1x2', 'edge', lg, edgeBucket(pickP - mp), won);
+      }
+      if (o && r.p_over25 != null) {
+        const pSide = o.pick === 'over' ? r.p_over25 : 1 - r.p_over25;
+        bump('ou25', 'level', lg, levelBucket(pSide), o.pick === 'over' ? total > 2.5 : total < 2.5);
+      }
+      if (b && r.p_btts_yes != null) {
+        const pSide = b.pick === 'yes' ? r.p_btts_yes : 1 - r.p_btts_yes;
+        const hitB = (b.pick === 'yes') === both;
+        bump('btts', 'level', lg, levelBucket(pSide), hitB);
+        if (od?.btts) bump('btts', 'edge', lg, edgeBucket(pSide - (b.pick === 'yes' ? od.btts.pYes : od.btts.pNo)), hitB);
+      }
+    }
+
+    const signals: SignalTable[] = [];
+    for (const [market, kind, buckets] of [['1x2', 'level', LEVEL_BUCKETS], ['1x2', 'edge', EDGE_BUCKETS], ['ou25', 'level', LEVEL_BUCKETS], ['btts', 'level', LEVEL_BUCKETS], ['btts', 'edge', EDGE_BUCKETS]] as const) {
+      const cell = (lg: string | null, i: number): SignalCell => { const c = sig.get(`${market}|${kind}|${lg ?? '*'}|${i}`) ?? { n: 0, won: 0 }; return { ...c, acc: c.n ? c.won / c.n : null }; };
+      const all = buckets.map((_, i) => cell(null, i));
+      const leagues = SITE_LEAGUES.map((l) => { const cells = buckets.map((_, i) => cell(l.slug, i)); return { league: l, n: cells.reduce((a, c) => a + c.n, 0), cells }; })
+        .filter((row) => row.n >= 5).sort((a, b) => b.n - a.n);
+      signals.push({ market, kind, buckets: [...buckets], all, leagues });
     }
 
     const months = [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, b]) => ({ month, ...fin(b) }));
@@ -223,6 +286,7 @@ export const getPerformance = unstable_cache(
         { market: 'ou25', ...fin(ou) },
         { market: 'btts', ...fin(btts) },
       ],
+      signals,
       months,
       calibration: finishBins(bins),
       calibrationWalkForward: walkForwardBins(wfPoints),
@@ -235,6 +299,6 @@ export const getPerformance = unstable_cache(
       computedAt: new Date().toISOString(),
     };
   },
-  ['site-performance-v2'],
+  ['site-performance-v3'],
   { revalidate: REVALIDATE.performance },
 );

@@ -372,7 +372,14 @@
     "weeklyEmpty": "Il registro settimanale si riempie dopo la prima revisione del lunedì.",
     "weeklyBenchmark": "Sulle {n} partite con quota di chiusura: modello {model}, favorita del bookmaker {market}, ROI {roi}.",
     "weeklyCal": "Calibrazione di visualizzazione (curva stimata una settimana prima): Brier della confidenza grezzo {raw} → calibrato {cal}.",
-    "weeklyAlerts": "Avvisi dell'ultima revisione"
+    "weeklyAlerts": "Avvisi dell'ultima revisione",
+    "secSignals": "Bilancio dei segnali",
+    "signalsMeta": "mercato × campionato × segnale · quale segnale funziona?",
+    "signalsLead": "Se il modello dà il 70% a una selezione, vince davvero il 70%? Quando diverge di 10 punti dal mercato, ha ragione? Per ogni mercato queste tabelle raggruppano la probabilità del modello per il lato scelto (livello) e lo scarto tra modello e probabilità del bookmaker senza margine (scarto, punti percentuali) e mostrano la percentuale di successo. Verde dal 65%, rosso sotto il 50%; le classi con meno di 10 partite sono attenuate.",
+    "signalsLevel": "livello del modello",
+    "signalsEdge": "scarto rispetto al mercato",
+    "signalsAll": "Tutti i campionati",
+    "signalsNote": "Come leggerlo (al 2026-09-12): nell'1X2 la percentuale di successo cala al crescere dello scarto, quindi un modello che si allontana dal mercato non ha ragione; nei mercati gol funziona il livello: Over 2,5 e Goal sopra il 60% vincono, senza bisogno di scarto. Le tabelle dello scarto includono solo partite con quote registrate (per Over/Under non viene salvata la quota del bookmaker). I pronostici del giorno si basano su questo bilancio."
   },
   "leagues": {
     "title": "Campionati",
