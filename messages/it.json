@@ -378,8 +378,9 @@
     "signalsLead": "Se il modello dà il 70% a una selezione, vince davvero il 70%? Quando diverge di 10 punti dal mercato, ha ragione? Per ogni mercato queste tabelle raggruppano la probabilità del modello per il lato scelto (livello) e lo scarto tra modello e probabilità del bookmaker senza margine (scarto, punti percentuali) e mostrano la percentuale di successo. Verde dal 65%, rosso sotto il 50%; le classi con meno di 10 partite sono attenuate.",
     "signalsLevel": "livello del modello",
     "signalsEdge": "scarto rispetto al mercato",
+    "signalsClash": "Divergenza 1X2 (sopra soglia)",
     "signalsAll": "Tutti i campionati",
-    "signalsNote": "Come leggerlo (al 2026-09-12): nell'1X2 la percentuale di successo cala al crescere dello scarto, quindi un modello che si allontana dal mercato non ha ragione; nei mercati gol funziona il livello: Over 2,5 e Goal sopra il 60% vincono, senza bisogno di scarto. Le tabelle dello scarto includono solo partite con quote registrate (per Over/Under non viene salvata la quota del bookmaker). I pronostici del giorno si basano su questo bilancio."
+    "signalsNote": "Come leggerlo (al 2026-09-12): nell'1X2 la percentuale di successo cala al crescere dello scarto, quindi un modello che si allontana dal mercato non ha ragione; nei mercati gol funziona il livello: Over 2,5 e Goal sopra il 60% vincono, senza bisogno di scarto. Le tabelle dello scarto includono solo partite con quote registrate (per Over/Under non viene salvata la quota del bookmaker). I pronostici del giorno si basano su questo bilancio. Tabelle di divergenza: scarto assoluto (punti percentuali) tra la scelta 1X2 del modello e il mercato senza margine, solo per Over 2,5 ≥ 65% e GG Sì ≥ 60%. Al 13 settembre i mercati gol colgono nettamente meglio con divergenza ≥10 punti (Over 13/13, GG 22/24), ma il campione è per lo più Eredivisie; entra nella regola quando si accumulano dati fuori dall'Eredivisie."
   },
   "leagues": {
     "title": "Campionati",
