@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { SITE_LEAGUES } from './leagues';
 import { getStandings } from './standings';
 import { getMarketBook } from './markets';
+import { PHASE_ORDER, type OddsPhase } from './odds-phases';
 import { scoreMatrix, bttsProb } from './poisson';
 import { loadContext, mapRow, parseRows, COLS, type SitePrediction, type MarketSnapshot } from './predictions';
 
@@ -33,7 +34,7 @@ export const getMarketSnapshots = unstable_cache(
       .limit(ids.length * 12);
     const out: Record<number, MarketSnapshot> = {};
     const S = z.object({
-      fixture_id: num, phase: z.enum(['opening', 'closing']), provider: z.string().nullable(), captured_at: z.string(),
+      fixture_id: num, phase: z.string(), provider: z.string().nullable(), captured_at: z.string(),
       minutes_to_kickoff: num.nullable(), home_odds: num, draw_odds: num, away_odds: num, overround: num.nullable(),
       p_home_market: num, p_draw_market: num, p_away_market: num,
     });
@@ -42,9 +43,8 @@ export const getMarketSnapshots = unstable_cache(
       if (!r.success) continue;
       const d = r.data;
       const cur = out[d.fixture_id];
-      // Rows arrive newest first: keep the first row per fixture, but let a
-      // closing snapshot replace an opening one.
-      if (cur && !(cur.phase === 'opening' && d.phase === 'closing')) continue;
+      // Rows arrive newest first; the latest phase (closing > h3 > … > opening) wins.
+      if (cur && (PHASE_ORDER[d.phase as OddsPhase] ?? -1) <= (PHASE_ORDER[cur.phase as OddsPhase] ?? -1)) continue;
       out[d.fixture_id] = {
         phase: d.phase, provider: d.provider, capturedAt: d.captured_at, minutesToKickoff: d.minutes_to_kickoff,
         homeOdds: d.home_odds, drawOdds: d.draw_odds, awayOdds: d.away_odds, overround: d.overround,

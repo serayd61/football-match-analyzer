@@ -82,7 +82,7 @@ export type { Roi };
 export type OddsIndex = Map<number, { opening?: OddsRow; closing?: OddsRow; btts?: { pYes: number; pNo: number } }>;
 
 const OddsSchema = z.object({
-  fixture_id: z.coerce.number(), phase: z.enum(['opening', 'closing']), provider: z.string().nullable().optional(),
+  fixture_id: z.coerce.number(), phase: z.string(), provider: z.string().nullable().optional(),
   home_odds: z.coerce.number(), draw_odds: z.coerce.number(), away_odds: z.coerce.number(), captured_at: z.string(),
 });
 
@@ -104,7 +104,8 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
       if (!p.success) continue;
       const r = { ...p.data, provider: p.data.provider ?? null };
       const slot = map.get(r.fixture_id) ?? {};
-      if (!slot[r.phase]) slot[r.phase] = r; // newest first → keep the latest per phase
+      // ROI anlamı değişmez: 'opening' = ilk görüş, 'closing' = ≤90 dk; ara fazlar (h24…h3) burada sayılmaz.
+      if ((r.phase === 'opening' || r.phase === 'closing') && !slot[r.phase]) slot[r.phase] = r; // newest first → keep the latest per phase
       // KG kitabı: kapanış varsa kapanış, yoksa ilk görülen (açılış). Sinyal karnesi için.
       if (!slot.btts || r.phase === 'closing') {
         const y = Number((raw as any)?.btts_yes_odds), n = Number((raw as any)?.btts_no_odds);

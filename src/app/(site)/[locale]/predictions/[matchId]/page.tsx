@@ -9,6 +9,8 @@ import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, getCalibr
 import { StatusChip } from '@/components/site/PredictionTable';
 import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap, handicapAt } from '@/lib/site/poisson';
 import { getMarketBook } from '@/lib/site/markets';
+import { getOddsDrift } from '@/lib/site/odds-drift';
+import { driftVsPick } from '@/lib/site/odds-drift-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
 import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
@@ -82,9 +84,10 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const stRow = (id: number | null) => (id ? table.get(id) : undefined);
   // Form and H2H are bounded to matches that kicked off before this one, so a
   // past match never lists itself or later games as "form" (denetim 2026-09-05).
-  const [market, book, h2h, formHome, formAway, curves] = await Promise.all([
+  const [market, book, drift, h2h, formHome, formAway, curves] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
+    getOddsDrift(p.fixtureId).catch(() => null),
     p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     p.homeId ? getTeamForm(p.homeId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     p.awayId ? getTeamForm(p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
@@ -202,8 +205,18 @@ export default async function MatchPage({ params }: { params: { locale: string; 
             <p className="mt-4 max-w-[600px] text-[14px] text-s-muted">
               {t2('breakdownText', { pick: pickTitle, conf: pct(p.confidence), raw: pct(p.confidenceRaw), lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2') })}
               {edgePts != null && market
-                ? t2('breakdownEdge', { edge: Math.abs(edgePts), dir: edgePts >= 0 ? t2('above') : t2('below'), phase: market.phase === 'closing' ? t2('closing') : t2('opening'), provider: market.provider ? ` (${market.provider})` : '' })
+                ? t2('breakdownEdge', { edge: Math.abs(edgePts), dir: edgePts >= 0 ? t2('above') : t2('below'), phase: market.phase === 'closing' ? t2('closing') : market.phase === 'opening' ? t2('opening') : t2('latest'), provider: market.provider ? ` (${market.provider})` : '' })
                 : ` ${t2('noMarket')}`}
+              {/* Oran hareketi: açılıştan son görüşe piyasa olasılığı; modelin seçimine göre yön. Bilgi amaçlı, seçim kuralına girmez. */}
+              {drift && drift.points >= 2 && (
+                <> {t2('driftLine', {
+                  side: drift.mover === '1' ? p.homeName : drift.mover === '2' ? p.awayName : tc('draw'),
+                  from: (drift.mover === '1' ? drift.first.homeOdds : drift.mover === '2' ? drift.first.awayOdds : drift.first.drawOdds).toFixed(2),
+                  to: (drift.mover === '1' ? drift.last.homeOdds : drift.mover === '2' ? drift.last.awayOdds : drift.last.drawOdds).toFixed(2),
+                  pp: `${(drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) >= 0 ? '+' : '−'}${Math.abs(Math.round((drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) * 100))}`,
+                  n: drift.points,
+                })} {driftVsPick(drift, p.pick) === 'toward' ? t2('driftToward') : driftVsPick(drift, p.pick) === 'away' ? t2('driftAway') : t2('driftFlat')}</>
+              )}
               {formH.length >= 3 && formA.length >= 3 && <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>}
             </p>
           </div>
