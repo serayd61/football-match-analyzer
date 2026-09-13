@@ -77,7 +77,12 @@ function candidate(
     if (bookOdds < ODDS_MIN || bookOdds > ODDS_MAX) return null;
     return { fixtureId: r.fixtureId, leagueSlug: r.leagueSlug, kickoff: r.kickoff, market, selection: market === 'btts' ? 'yes' : 'over', modelP: p, odds: bookOdds, oddsSource: 'book' };
   }
-  return { fixtureId: r.fixtureId, leagueSlug: r.leagueSlug, kickoff: r.kickoff, market, selection: market === 'btts' ? 'yes' : 'over', modelP: p, odds: fair(p), oddsSource: 'fair' };
+  // Piyasa oranı yoksa (Ü/A çoğu zaman feed'de yok) adil oran 1/p ile aynı
+  // bant uygulanır: p≥0.80 → ≤1.25 → kupona değer katmaz, kural dışı.
+  // 2026-09-13: PSV–Sparta Ü2,5 p=0.87 (1.15) bu yüzden dışarıda kalır.
+  const f = fair(p);
+  if (f < ODDS_MIN || f > ODDS_MAX) return null;
+  return { fixtureId: r.fixtureId, leagueSlug: r.leagueSlug, kickoff: r.kickoff, market, selection: market === 'btts' ? 'yes' : 'over', modelP: p, odds: f, oddsSource: 'fair' };
 }
 
 /**

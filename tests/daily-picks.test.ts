@@ -23,11 +23,12 @@ test('one leg per fixture: the market that clears its threshold by more wins', (
   assert.equal(p.market, 'btts'); // +17 > +13
 });
 
-test('book odds outside the band drop the leg; fair odds never do', () => {
+test('book odds outside the band drop the leg; fair odds use the same band', () => {
   const picks = selectDailyPicks([
     row({ fixtureId: 1, pBttsYes: 0.7, bttsYesOdds: ODDS_MAX + 0.1 }),
     row({ fixtureId: 2, pBttsYes: 0.7, bttsYesOdds: 1.45 }),
     row({ fixtureId: 3, pBttsYes: 0.62 }),
+    row({ fixtureId: 4, pOver25: 0.87 }), // adil oran 1.15 < 1.25 → dışarıda (PSV–Sparta, 2026-09-13)
   ]);
   assert.deepEqual(picks.map((p) => [p.fixtureId, p.oddsSource]), [[2, 'book'], [3, 'fair']]);
 });

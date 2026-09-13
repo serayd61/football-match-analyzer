@@ -1,10 +1,13 @@
 import 'server-only';
 import { db } from './db';
-import { listDayRows } from './fixtures';
+import { listDayFresh } from './fixtures';
+
 import { getMarketBook } from './markets';
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
 import { selectDailyPicks, settlePick, RULE_VERSION, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
+/** Cron/preview yolu: sayfa önbelleğini atlayıp DB'den okur (ingest sonrası bayat 'hasModel=0' görülmesin). */
+const freshRows = async (ymd: string) => (await listDayFresh(ymd)).rows;
 
 // Günün 3 seçimi — üretim + okuma + karne. Kural daily-picks-rule.ts'te.
 // Seçimler günde bir kez site_daily_picks'e dondurulur (cron 06:15 UTC ya da
@@ -54,7 +57,7 @@ function toInput(r: SitePrediction, bttsYesOdds: number | null): PickCandidateIn
 
 /** Kural girdilerini görmek için (cron ?debug=1). */
 export async function debugInputs(ymd: string) {
-  const all = await listDayRows(ymd);
+  const all = await freshRows(ymd);
   const rows = all.filter((r) => r.covered && r.hasModel && !r.settled);
   const c = { covered: all.filter((r) => r.covered).length, hasModel: all.filter((r) => r.hasModel).length, coveredModel: all.filter((r) => r.covered && r.hasModel).length, settled: all.filter((r) => r.settled).length, sampleCovered: all.filter((r) => r.covered).slice(0, 3).map((r) => ({ id: r.fixtureId, league: r.league?.slug, hasModel: r.hasModel, settled: r.settled, btts: r.btts, ou: r.overUnder, mv: r.modelVersion })) };
   return { total: all.length, eligible: rows.length, counts: c, inputs: rows.map((r) => toInput(r, null)) };
@@ -62,7 +65,7 @@ export async function debugInputs(ymd: string) {
 
 async function generate(ymd: string, now = Date.now(), includeSettled = false): Promise<DailyPick[]> {
   // Simülasyonda (asOf geçmiş) sonuçlanmış satırlar da aday: kural o sabah ne derdi?
-  const rows = (await listDayRows(ymd)).filter((r) => r.covered && r.hasModel && (includeSettled || !r.settled));
+  const rows = (await freshRows(ymd)).filter((r) => r.covered && r.hasModel && (includeSettled || !r.settled));
   const books = await Promise.all(rows.map((r) => getMarketBook(r.fixtureId).catch(() => null)));
   const inputs = rows.map((r, i) => toInput(r, books[i]?.btts?.a ?? null));
   const picks = selectDailyPicks(inputs, now);
