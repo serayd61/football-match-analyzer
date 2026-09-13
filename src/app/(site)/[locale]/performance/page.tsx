@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPerformance } from '@/lib/site/performance';
+import { showcaseRecord } from '@/lib/site/showcase';
 import { getWeeklyProgress } from '@/lib/site/weekly-progress';
 import { listResults } from '@/lib/site/results';
 import { leagueBySlug, SITE_LEAGUES } from '@/lib/site/leagues';
@@ -68,6 +69,7 @@ export default async function PerformancePage({ params: { locale }, searchParams
   const page = Math.max(1, Math.min(500, Number.parseInt(searchParams.page || '1', 10) || 1));
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
 
+  const showcase = await showcaseRecord(30).catch(() => null);
   const [r, w, res, recent] = await Promise.all([
     getPerformance(null),
     getWeeklyProgress(12),
@@ -362,6 +364,41 @@ export default async function PerformancePage({ params: { locale }, searchParams
           ))}
         </div>
         <p className="mt-3 max-w-3xl text-xs text-s-muted">{t('signalsNote')}</p>
+      </section>
+
+      {/* Vitrin karnesi — kural E (showcase-rule.ts), dondurulmuş satırlar, skordan sonuçlandırma. 2026-09-13. */}
+      <section className="mt-12">
+        <SectionTitle title={t('secShowcase')} meta={t('showcaseMeta')} />
+        <p className="mt-2 max-w-3xl text-sm text-s-muted">{t('showcaseLead')}</p>
+        {showcase && showcase.n + showcase.noPick > 0 ? (
+          <div className="mt-4 grid gap-8 lg:grid-cols-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-s-line text-left"><th className={th}>{tc('market')}</th><th className={`${th} text-right`}>n</th><th className={`${th} text-right`}>{t('showcaseAcc')}</th></tr></thead>
+                <tbody>
+                  <tr className="border-b border-s-line font-medium"><td className="py-1.5">{t('showcaseAll')}</td><td className="py-1.5 text-right tabular-nums">{showcase.n}</td><td className="py-1.5 text-right tabular-nums">{showcase.n ? f.number(showcase.won / showcase.n, 'percent') : '—'}</td></tr>
+                  {(['1x2', 'ou25', 'btts'] as const).map((m) => (
+                    <tr key={m} className="border-b border-s-line"><td className="py-1.5">{marketName[m]}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n ? f.number(showcase.byMarket[m].won / showcase.byMarket[m].n, 'percent') : '—'}</td></tr>
+                  ))}
+                  <tr className="text-s-muted"><td className="py-1.5">{t('showcaseNoPick')}</td><td className="py-1.5 text-right tabular-nums">{showcase.noPick}</td><td className="py-1.5 text-right tabular-nums">{f.number(showcase.noPick / (showcase.n + showcase.noPick), 'percent')}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-s-line text-left"><th className={th}>{tc('league')}</th><th className={`${th} text-right`}>n</th><th className={`${th} text-right`}>{t('showcaseAcc')}</th><th className={`${th} text-right`}>{t('showcaseNoPick')}</th></tr></thead>
+                <tbody>
+                  {showcase.byLeague.map((L) => (
+                    <tr key={L.slug} className="border-b border-s-line"><td className="py-1.5"><Link href={`/leagues/${L.slug}`} className="hover:underline underline-offset-4">{L.name}</Link></td><td className="py-1.5 text-right tabular-nums">{L.n}</td><td className="py-1.5 text-right tabular-nums">{L.n ? f.number(L.won / L.n, 'percent') : '—'}</td><td className="py-1.5 text-right tabular-nums">{L.noPick}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-s-muted">{t('showcaseEmpty')}</p>
+        )}
+        <p className="mt-3 max-w-3xl text-xs text-s-muted">{t('showcaseNote')}</p>
       </section>
 
       {/* Weekly progress — read from engine_weekly_metrics (Monday review), never recomputed here */}
