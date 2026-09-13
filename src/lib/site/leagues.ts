@@ -25,6 +25,10 @@ export const SITE_LEAGUES: SiteLeague[] = [
   { slug: 'liga-portugal', name: 'Liga Portugal', ccode: 'POR', fdCode: 'PPL', ids: [61], country: 'Portugal' },
   { slug: 'champions-league', name: 'Champions League', ccode: 'INT', fdCode: 'CL', ids: [42], country: 'Europe' },
   { slug: 'brasileirao', name: 'Brasileirão', ccode: 'BRA', fdCode: 'BSA', ids: [268], country: 'Brazil' },
+  // 2026-09-13: kullanıcı isteğiyle eklendi. Motor (Hetzner) ligi kendi
+  // verisinden fit ediyor (dc-1.0, 39 sonuçlanmış maç). Günün seçimi beyaz
+  // listesine GİRMEZ (1X2 13/39; gol pazarları henüz küçük örneklem).
+  { slug: 'super-lig', name: 'Süper Lig', ccode: 'TUR', fdCode: 'TSL', ids: [71], country: 'Türkiye' },
 ];
 
 const NAME_ALIASES: Record<string, string> = {
@@ -36,6 +40,8 @@ const NAME_ALIASES: Record<string, string> = {
   'UEFA Champions League': 'Champions League',
   'EFL Championship': 'Championship',
   'Primeira Liga': 'Liga Portugal',
+  'Super Lig': 'Süper Lig',
+  'Trendyol Süper Lig': 'Süper Lig',
 };
 
 const BY_SLUG = new Map(SITE_LEAGUES.map((l) => [l.slug, l]));

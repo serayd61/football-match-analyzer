@@ -26,10 +26,12 @@ const COVERED_NAME_CCODE = new Set([
   'Liga Portugal|POR',    // PPL
   'Championship|ENG',     // ELC
   'Brazilian Serie A|BRA', // BSA
+  'Super Lig|TUR',        // TSL — feed adı; katalog 'Süper Lig' de olabilir
+  'Süper Lig|TUR',
 ]);
 
 /** Kanonik FotMob id'leri — ad çözümlenemediğinde yedek eşleşme. */
-const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268]);
+const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268, 71]);
 
 /**
  * Bu maç, parametreleri fit edilmiş bir ligde mi?
