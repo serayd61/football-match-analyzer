@@ -337,7 +337,7 @@ export default async function PerformancePage({ params: { locale }, searchParams
         <div className="mt-4 grid gap-8 lg:grid-cols-2">
           {r.signals.map((tb) => (
             <div key={`${tb.market}-${tb.kind}`} className="overflow-x-auto">
-              <h3 className="font-body text-sm font-medium">{marketName[tb.market]} <span className="text-s-muted">· {tb.kind === 'level' ? t('signalsLevel') : t('signalsEdge')}</span></h3>
+              <h3 className="font-body text-sm font-medium">{marketName[tb.market]} <span className="text-s-muted">· {tb.kind === 'level' ? t('signalsLevel') : tb.kind === 'edge' ? t('signalsEdge') : t('signalsClash')}</span></h3>
               <table className="mt-2 w-full text-sm">
                 <thead>
                   <tr className="border-b border-s-line text-left">

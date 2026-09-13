@@ -378,8 +378,9 @@
     "signalsLead": "Model bir seçime %70 diyorsa gerçekten %70 mi tutuyor? Piyasadan 10 puan ayrıştığında haklı mı çıkıyor? Bu tablolar her pazar için seçilen tarafın model olasılığını (seviye) ve model ile marjsız bahisçi olasılığı arasındaki farkı (fark, yüzde puan) kovalara ayırıp isabeti gösterir. Yeşil %65 ve üzeri, kırmızı %50 altı; 10 maçtan az kovalar soluk.",
     "signalsLevel": "model seviyesi",
     "signalsEdge": "piyasaya karşı fark",
+    "signalsClash": "1X2 uyuşmazlığı (eşik üstü)",
     "signalsAll": "Tüm ligler",
-    "signalsNote": "Okuma kılavuzu (2026-09-12 itibarıyla): 1X2'de fark büyüdükçe isabet düşer, yani piyasadan uzaklaşan model haklı çıkmıyor; gol pazarlarında ise seviye çalışır: Üst 2,5 ve karşılıklı golde %60 üstü seçimler tutar, fark şartı gerekmez. Fark tabloları yalnız oran kaydı olan maçları içerir (Üst/Alt için bahisçi oranı kaydedilmiyor). Günün seçimleri bu karneye göre kurulmuştur."
+    "signalsNote": "Okuma kılavuzu (2026-09-12 itibarıyla): 1X2'de fark büyüdükçe isabet düşer, yani piyasadan uzaklaşan model haklı çıkmıyor; gol pazarlarında ise seviye çalışır: Üst 2,5 ve karşılıklı golde %60 üstü seçimler tutar, fark şartı gerekmez. Fark tabloları yalnız oran kaydı olan maçları içerir (Üst/Alt için bahisçi oranı kaydedilmiyor). Günün seçimleri bu karneye göre kurulmuştur. Uyuşmazlık tabloları: modelin 1X2 seçimi ile marjsız piyasa arasındaki mutlak fark (yüzde puan), yalnız Üst 2,5 ≥ %65 ve KG Var ≥ %60 seçimlerinde. 13 Eylül itibarıyla ≥10 puan uyuşmazlıkta gol pazarları belirgin daha iyi tutuyor (Üst 13/13, KG 22/24), ancak örneklemin çoğu Eredivisie; kurala girmesi için Eredivisie dışı birikim bekleniyor."
   },
   "leagues": {
     "title": "Ligler",
