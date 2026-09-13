@@ -126,10 +126,22 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => (a.phase === b.phase ? a.kickoff.localeCompare(b.kickoff) : a.phase === 'closing' ? -1 : b.phase === 'closing' ? 1 : 0))
     .slice(0, MAX_CALLS);
 
+  // Ülke kodu geri dönüşü (2026-09-13): oran akışı İtalya (ITA) ve Türkiye (TUR)
+  // için boş dönüyor — Serie A 0/32, Süper Lig 0/39 maçta hiç oran yoktu.
+  // Aynı maç GB/ES/DE koduyla geliyor (Paddy Power, 1xBet, Tipico). Bilinen
+  // boş kodlar doğrudan GB'ye gider; diğerleri ilk deneme boşsa GB'yi dener.
+  const NO_FEED_CC = new Set(['ITA', 'TUR']);
+  const ccodesFor = (cc: string) => Array.from(new Set([NO_FEED_CC.has(cc) ? 'GB' : cc, 'GB', 'ES']));
+
   let captured = 0, missed = 0;
   for (const job of todo) {
-    const odds = await getMatchOdds(job.fixtureId, job.ccode);
-    if (!odds) { missed++; await sleep(SLEEP_MS); continue; }
+    let odds: Awaited<ReturnType<typeof getMatchOdds>> = null;
+    for (const cc of ccodesFor(job.ccode)) {
+      odds = await getMatchOdds(job.fixtureId, cc);
+      if (odds) break;
+      await sleep(SLEEP_MS);
+    }
+    if (!odds) { missed++; continue; }
 
     const mins = Math.round((new Date(job.kickoff).getTime() - Date.now()) / 60000);
     // KG oranı sütuna: karne raw'ı taramasın (2026-09-12 build timeout'u).
