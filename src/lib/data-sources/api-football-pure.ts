@@ -110,9 +110,13 @@ export function sideFor(name: string, home: string, away: string, index: number)
 export function parseAfInjuries(response: any[], home: string, away: string): AfInjury[] {
   const teams: string[] = [];
   const out: AfInjury[] = [];
+  const seen = new Set<string>();
   for (const r of response || []) {
     const team = String(r?.team?.name || '').trim(), player = String(r?.player?.name || '').trim();
     if (!team || !player) continue;
+    // API-Football aynı oyuncuyu iki kez döndürebiliyor (2026-09-14: Torino–Roma 12 kayıt / 6 oyuncu)
+    if (seen.has(`${team}|${player}`)) continue;
+    seen.add(`${team}|${player}`);
     if (!teams.includes(team)) teams.push(team);
     out.push({ side: sideFor(team, home, away, teams.indexOf(team)), team, player, type: String(r?.player?.type || 'Missing Fixture'), reason: r?.player?.reason ? String(r.player.reason) : null });
   }
