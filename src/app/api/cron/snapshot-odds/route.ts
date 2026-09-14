@@ -201,12 +201,37 @@ export async function GET(request: NextRequest) {
     await sleep(SLEEP_MS);
   }
 
+  // Tamamlama: eşlenmiş maçın SON faz satırında Üst/Alt yoksa (eşleme sonradan
+  // geldi ya da faz bu turdan önce yazıldı) şimdiki oranla doldur — yalnız son faz,
+  // eski fazlara bugünkü oran yazılmaz. Tur başına sınırlı.
+  let afFilled = 0;
+  if (afOn) {
+    const allIds = Array.from(new Set(candidates.map((c) => c.fixtureId)));
+    const afAll = await afIdsFor(allIds);
+    const { data: rows } = await sb().from('prediction_odds').select('fixture_id, phase, over25_odds').in('fixture_id', Array.from(afAll.keys()));
+    const order: Record<string, number> = { opening: 0, h24: 1, h12: 2, h6: 3, h3: 4, closing: 5 };
+    const latest = new Map<number, { phase: string; has: boolean }>();
+    for (const r of (rows || []) as any[]) {
+      const k = Number(r.fixture_id); const cur = latest.get(k);
+      if (!cur || (order[r.phase] ?? -1) > (order[cur.phase] ?? -1)) latest.set(k, { phase: r.phase, has: r.over25_odds > 1 });
+    }
+    const need = Array.from(latest.entries()).filter(([, v]) => !v.has).slice(0, 15);
+    for (const [fid, v] of need) {
+      const r = await afOdds(afAll.get(fid)!);
+      if (r.ok && r.odds && r.odds.over25) {
+        const { error } = await sb().from('prediction_odds').update({ over25_odds: r.odds.over25, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker }).eq('fixture_id', fid).eq('phase', v.phase);
+        if (!error) afFilled++;
+      }
+      await sleep(SLEEP_MS);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     coveredUpcoming: candidates.length,
     pending: todo.length,
     captured,
     missed,
-    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed } : null,
+    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled } : null,
   });
 }

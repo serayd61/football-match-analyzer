@@ -26,3 +26,15 @@ export const REVALIDATE = {
   results: 5 * 60,
   performance: 60 * 60,
 } as const;
+
+// Önbelleksiz istemci (cron/yazma yolları): db() GET yanıtları 5 dk Next fetch
+// önbelleğinde kalır — 2026-09-14'te af_fixture_map ilk boş okuması 5 dk boyunca
+// "boş" döndü ve eşleme her turda yeniden yapıldı. Sayfalar db() ile kalır.
+let _fresh: SupabaseClient | null = null;
+export function dbFresh(): SupabaseClient {
+  if (_fresh) return _fresh;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  _fresh = createClient(url, key, { auth: { persistSession: false }, global: { fetch: (i: any, init?: any) => fetch(i, { ...init, cache: 'no-store' }) } });
+  return _fresh;
+}

@@ -1,5 +1,5 @@
 import 'server-only';
-import { db } from './db';
+import { dbFresh as db } from './db';
 import { listDayFresh } from './fixtures';
 import { todayYmd, addDays } from './time';
 import { AF_LEAGUE, afFixtures, afSeasonFor, matchFixtures, hasApiFootballKey } from '@/lib/data-sources/api-football';

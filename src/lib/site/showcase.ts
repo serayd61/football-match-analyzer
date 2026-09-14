@@ -1,5 +1,5 @@
 import 'server-only';
-import { db } from './db';
+import { dbFresh as db } from './db';
 import { listDayFresh } from './fixtures';
 import { latestPhase } from './odds-phases';
 import { SITE_LEAGUES } from './leagues';

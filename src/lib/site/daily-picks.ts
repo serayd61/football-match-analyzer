@@ -1,5 +1,5 @@
 import 'server-only';
-import { db } from './db';
+import { db, dbFresh } from './db';
 import { listDayFresh } from './fixtures';
 
 import type { SitePrediction } from './predictions';
@@ -68,9 +68,9 @@ async function latestBookOdds(ids: number[]): Promise<Map<number, { btts: number
   const rank: Record<string, number> = { opening: 0, h24: 1, h12: 2, h6: 3, h3: 4, closing: 5 };
   const best = new Map<number, number>();
   for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await db().from('prediction_odds').select('fixture_id, phase, btts_yes_odds, over25_odds').in('fixture_id', ids.slice(i, i + 200));
+    const { data, error } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds, over25_odds').in('fixture_id', ids.slice(i, i + 200));
     if (error) { // over25_odds sütunu henüz yoksa KG ile devam
-      const { data: d2 } = await db().from('prediction_odds').select('fixture_id, phase, btts_yes_odds').in('fixture_id', ids.slice(i, i + 200));
+      const { data: d2 } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds').in('fixture_id', ids.slice(i, i + 200));
       for (const r of (d2 ?? []) as any[]) { const k = Number(r.fixture_id); const rk = rank[r.phase] ?? -1; if (rk >= (best.get(k) ?? -1)) { best.set(k, rk); out.set(k, { btts: r.btts_yes_odds > 1 ? Number(r.btts_yes_odds) : null, over: null }); } }
       continue;
     }
