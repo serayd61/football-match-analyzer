@@ -36,6 +36,8 @@ XG_LEAGUES = {
 }
 
 XG_PATH = os.environ.get("XG_PATH", os.path.join(os.path.dirname(STORE_PATH) or ".", "xg.jsonl"))
+# Yol B (2026-09-14): akıştan çekilen xG (store_xg_feed.py). Aynı maçta akış Understat'a baskındır.
+XG_FEED_PATH = os.environ.get("XG_FEED_PATH", os.path.join(os.path.dirname(STORE_PATH) or ".", "xg_feed.jsonl"))
 
 # FotMob longName yüzey formu → canonical (features._ALIASES'in kapsamadığı FotMob'a özgü adlar)
 _FOTMOB_FIX = {
@@ -247,26 +249,41 @@ def choose_model(matches, xg_coverage, xg_weight, min_coverage, version_xg, vers
 class XgStore:
     """xg.jsonl okuyucu: maç id → (home_xg, away_xg). Dosya değişince yeniden yükler."""
 
-    def __init__(self, path=XG_PATH):
+    def __init__(self, path=XG_PATH, feed_path=XG_FEED_PATH):
         self.path = path
+        self.feed_path = feed_path
         self._by_id = None
         self._mtime = None
+        self._counts = {"understat": 0, "fotmob": 0}
 
-    def _load(self):
-        mt = os.path.getmtime(self.path) if os.path.exists(self.path) else 0
-        if self._by_id is not None and mt == self._mtime:
-            return
-        d = {}
-        if os.path.exists(self.path):
-            with open(self.path, encoding="utf-8") as f:
+    @staticmethod
+    def _read(path, into):
+        n = 0
+        if path and os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
                 for line in f:
                     try:
                         r = json.loads(line)
-                        d[r["id"]] = (float(r["home_xg"]), float(r["away_xg"]))
+                        into[r["id"]] = (float(r["home_xg"]), float(r["away_xg"]))
+                        n += 1
                     except Exception:
                         continue
+        return n
+
+    def _load(self):
+        mt = tuple(os.path.getmtime(p) if p and os.path.exists(p) else 0 for p in (self.path, self.feed_path))
+        if self._by_id is not None and mt == self._mtime:
+            return
+        d = {}
+        n_us = self._read(self.path, d)
+        n_feed = self._read(self.feed_path, d)  # sonra yazılan kazanır → akış baskın
         self._by_id = d
         self._mtime = mt
+        self._counts = {"understat": n_us, "fotmob": n_feed}
+
+    def counts(self):
+        self._load()
+        return dict(self._counts, merged=len(self._by_id))
 
     def attach(self, matches):
         """store.load_for_fit çıktısına home_xg/away_xg ekler; kapsam oranını döndürür."""

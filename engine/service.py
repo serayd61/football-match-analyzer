@@ -213,7 +213,7 @@ def status():
         "min_league_matches": MIN_LEAGUE_MATCHES,
         "fit_cache_entries": len(_fit_cache),
         "xg": {
-            "matches_with_xg": xg_store.total(), "path": xg_store.path,
+            "matches_with_xg": xg_store.total(), "path": xg_store.path, "feed_path": xg_store.feed_path, "counts": xg_store.counts(),
             "leagues": _xg_league_status(p),
         },
     }

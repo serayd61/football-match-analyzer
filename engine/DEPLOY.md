@@ -169,3 +169,22 @@ Davranış:
   sunucuda zorlanır; `force:true` + not ile aşılabilir, her şey `engine_learning_log`'a yazılır.
 
 Testler: `cd engine && python3 -m unittest discover tests` (parite: `shrink_k=0, rho=-0.10` → eski çıktı birebir).
+
+## xG Yol B — akıştan (store_xg_feed.py), 2026-09-14
+
+Abone olunan akışın `/football-get-match-all-stats` ucu bitmiş maç için xG veriyor (FotMob/Opta).
+Understat yolundan farkı: doğrudan FotMob maç id'si, tüm kapsanan ligler (Eredivisie, Portekiz,
+Championship, Brezilya, Süper Lig, ŞL dahil), takım adı eşlemesi yok. `XgStore` iki dosyayı
+birleştirir, aynı maçta akış baskındır. Servis değişikliği gerektirmez (xg_feed.jsonl yoksa eski davranış).
+
+```bash
+cd /opt/football-match-analyzer/engine
+# ilk doldurma (birkaç kez; her koşu en fazla --max çağrı, en yeni maçtan geriye)
+FOOTBALL_API_KEY=... STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python store_xg_feed.py build --days 400 --max 600
+.venv/bin/python store_xg_feed.py stats
+# cron (04:00 sonuç güncellemesinden sonra)
+40 4 * * * cd /opt/football-match-analyzer/engine && FOOTBALL_API_KEY=... STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python store_xg_feed.py build --days 3 --max 200 >> /var/log/xg-feed.log 2>&1
+# kontrol
+curl -s http://127.0.0.1:8000/status | python3 -c "import sys,json;print(json.load(sys.stdin)['xg'])"
+```
+İstatistiği olmayan maçlar `xg_feed.jsonl.missing.json`'da; 2 gün sonra yeniden denenir, 3 denemeden sonra kalıcı atlanır.
