@@ -23,7 +23,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-from store import STORE_PATH, _parse_dt
+from store import STORE_PATH, _parse_dt, ResultStore
 
 HOST = "free-api-live-football-data.p.rapidapi.com"
 XG_FEED_PATH = os.environ.get("XG_FEED_PATH", os.path.join(os.path.dirname(STORE_PATH) or ".", "xg_feed.jsonl"))
@@ -117,13 +117,16 @@ def candidates(days: int, have: set, missing: dict, now=None):
     out = []
     if not os.path.exists(STORE_PATH):
         return out
-    with open(STORE_PATH, encoding="utf-8") as f:
-        for line in f:
-            try:
-                r = json.loads(line)
-            except Exception:
-                continue
-            if r.get("leagueId") not in LEAGUES or r.get("fthg") is None or r.get("id") in have:
+    # Sezonluk lig id'leri (Eredivisie 26/27 = 937276 ≠ 57): ResultStore grupları üzerinden,
+    # kapsanan id'lerden herhangi birini içeren her grup alınır.
+    st = ResultStore()
+    st._load()
+    canons = {c for lid, c in st._alias.items() if lid in LEAGUES} | {st.resolve(l) for l in LEAGUES}
+    rows = []
+    for c in canons:
+        rows.extend(st._by_league.get(c, []))
+    for r in rows:
+            if r.get("fthg") is None or r.get("id") in have:
                 continue
             d = _parse_dt(r.get("date"))
             if d is not None and d.tzinfo is None:
