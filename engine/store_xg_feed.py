@@ -126,6 +126,8 @@ def candidates(days: int, have: set, missing: dict, now=None):
             if r.get("leagueId") not in LEAGUES or r.get("fthg") is None or r.get("id") in have:
                 continue
             d = _parse_dt(r.get("date"))
+            if d is not None and d.tzinfo is None:
+                d = d.replace(tzinfo=timezone.utc)  # depo tarihleri UTC, _parse_dt naive döndürebilir
             if not d or d < since or d > now - timedelta(hours=2):
                 continue
             m = missing.get(str(r["id"]))
@@ -133,6 +135,8 @@ def candidates(days: int, have: set, missing: dict, now=None):
                 if m.get("tries", 0) >= MISS_MAX_TRIES:
                     continue
                 last = _parse_dt(m.get("last"))
+                if last is not None and last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
                 if last and now - last < timedelta(days=MISS_RETRY_DAYS):
                     continue
             out.append((d, r))
