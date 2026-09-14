@@ -19,6 +19,8 @@ import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { parseMarkets } from '@/lib/site/markets';
 import { phaseForMinutes, type OddsPhase } from '@/lib/site/odds-phases';
+import { afOdds, hasApiFootballKey } from '@/lib/data-sources/api-football';
+import { afIdsFor, buildAfMap } from '@/lib/site/af-map';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -133,6 +135,13 @@ export async function GET(request: NextRequest) {
   const NO_FEED_CC = new Set(['ITA', 'TUR']);
   const ccodesFor = (cc: string) => Array.from(new Set([NO_FEED_CC.has(cc) ? 'GB' : cc, 'GB', 'ES']));
 
+  // API-Football (2026-09-14): Üst/Alt 2,5 (+ akışta yoksa KG) — eşlenmiş maçlar için
+  // faz başına tek ek çağrı. Eşleme tablosu her turda tamamlanır (lig+gün başına 1 çağrı).
+  const afOn = hasApiFootballKey();
+  let afMapped = 0, afCaptured = 0, afMissed = 0;
+  if (afOn) { try { afMapped = (await buildAfMap(3, 20)).mapped ?? 0; } catch (e: any) { console.error('[snapshot-odds] af map:', e?.message); } }
+  const afIds = afOn ? await afIdsFor(todo.map((j) => j.fixtureId)) : new Map<number, number>();
+
   let captured = 0, missed = 0;
   for (const job of todo) {
     let odds: Awaited<ReturnType<typeof getMatchOdds>> = null;
@@ -177,6 +186,18 @@ export async function GET(request: NextRequest) {
       if (opErr && /btts_(yes|no)_odds/.test(opErr.message)) await upsert({ phase: 'opening' as any });
     }
     else captured++;
+    // Üst/Alt 2,5 sütunları (ve KG akışta yoksa) API-Football'dan; hata yakalamayı bozmaz.
+    const afId = afIds.get(job.fixtureId);
+    if (!insErr && afId) {
+      const r = await afOdds(afId);
+      if (r.ok && r.odds && (r.odds.over25 || r.odds.bttsYes)) {
+        const cols: Record<string, number | string> = { over25_odds: r.odds.over25 ?? 0, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker };
+        if (!book?.btts && r.odds.bttsYes && r.odds.bttsNo) { cols.btts_yes_odds = r.odds.bttsYes; cols.btts_no_odds = r.odds.bttsNo; }
+        const phases = job.phase !== 'opening' && !done.has(`${job.fixtureId}:opening`) ? [job.phase, 'opening'] : [job.phase];
+        const { error: afErr } = await sb().from('prediction_odds').update(cols).eq('fixture_id', job.fixtureId).in('phase', phases);
+        if (afErr) console.error('[snapshot-odds] af update:', afErr.message); else afCaptured++;
+      } else afMissed++;
+    }
     await sleep(SLEEP_MS);
   }
 
@@ -186,5 +207,6 @@ export async function GET(request: NextRequest) {
     pending: todo.length,
     captured,
     missed,
+    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed } : null,
   });
 }

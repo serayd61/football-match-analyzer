@@ -2,7 +2,6 @@ import 'server-only';
 import { db } from './db';
 import { listDayFresh } from './fixtures';
 
-import { getMarketBook } from './markets';
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
 import { selectDailyPicks, settlePick, RULE_VERSION, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
@@ -49,10 +48,10 @@ function fromRow(r: any): DailyPick {
 }
 
 /** SitePrediction → kural girdisi (olasılıklar seçilen tarafa değil, "var"/"üst" tarafına çevrilir). */
-function toInput(r: SitePrediction, bttsYesOdds: number | null): PickCandidateInput {
+function toInput(r: SitePrediction, bttsYesOdds: number | null, over25Odds: number | null = null): PickCandidateInput {
   const pBtts = r.btts ? (r.btts.pick === 'yes' ? r.btts.pRaw : 1 - r.btts.pRaw) : null;
   const pOver = r.overUnder ? (r.overUnder.pick === 'over' ? r.overUnder.pRaw : 1 - r.overUnder.pRaw) : null;
-  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds };
+  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds, over25Odds };
 }
 
 /** Kural girdilerini görmek için (cron ?debug=1). */
@@ -63,11 +62,29 @@ export async function debugInputs(ymd: string) {
   return { total: all.length, eligible: rows.length, counts: c, inputs: rows.map((r) => toInput(r, null)) };
 }
 
+/** Son görüş (en geç faz) KG Var ve Üst 2,5 kitap oranları — prediction_odds sütunlarından, tek sorgu. */
+async function latestBookOdds(ids: number[]): Promise<Map<number, { btts: number | null; over: number | null }>> {
+  const out = new Map<number, { btts: number | null; over: number | null }>();
+  const rank: Record<string, number> = { opening: 0, h24: 1, h12: 2, h6: 3, h3: 4, closing: 5 };
+  const best = new Map<number, number>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await db().from('prediction_odds').select('fixture_id, phase, btts_yes_odds, over25_odds').in('fixture_id', ids.slice(i, i + 200));
+    if (error) { // over25_odds sütunu henüz yoksa KG ile devam
+      const { data: d2 } = await db().from('prediction_odds').select('fixture_id, phase, btts_yes_odds').in('fixture_id', ids.slice(i, i + 200));
+      for (const r of (d2 ?? []) as any[]) { const k = Number(r.fixture_id); const rk = rank[r.phase] ?? -1; if (rk >= (best.get(k) ?? -1)) { best.set(k, rk); out.set(k, { btts: r.btts_yes_odds > 1 ? Number(r.btts_yes_odds) : null, over: null }); } }
+      continue;
+    }
+    for (const r of (data ?? []) as any[]) { const k = Number(r.fixture_id); const rk = rank[r.phase] ?? -1; if (rk >= (best.get(k) ?? -1)) { best.set(k, rk); out.set(k, { btts: r.btts_yes_odds > 1 ? Number(r.btts_yes_odds) : null, over: r.over25_odds > 1 ? Number(r.over25_odds) : null }); } }
+  }
+  return out;
+}
+
 async function generate(ymd: string, now = Date.now(), includeSettled = false): Promise<DailyPick[]> {
   // Simülasyonda (asOf geçmiş) sonuçlanmış satırlar da aday: kural o sabah ne derdi?
   const rows = (await freshRows(ymd)).filter((r) => r.covered && r.hasModel && (includeSettled || !r.settled));
-  const books = await Promise.all(rows.map((r) => getMarketBook(r.fixtureId).catch(() => null)));
-  const inputs = rows.map((r, i) => toInput(r, books[i]?.btts?.a ?? null));
+  // 2026-09-14: kitap oranları sütundan (KG akıştan, Üst 2,5 API-Football'dan); raw taranmaz.
+  const books = await latestBookOdds(rows.map((r) => r.fixtureId));
+  const inputs = rows.map((r) => toInput(r, books.get(r.fixtureId)?.btts ?? null, books.get(r.fixtureId)?.over ?? null));
   const picks = selectDailyPicks(inputs, now);
   const byId = new Map(rows.map((r) => [r.fixtureId, r]));
   return picks.map((p) => {
