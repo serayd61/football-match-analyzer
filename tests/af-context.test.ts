@@ -9,6 +9,7 @@ test('parseAfInjuries maps API-Football team names to our home/away sides', () =
     { player: { name: 'D. Boloca', type: 'Missing Fixture', reason: 'Muscle Injury' }, team: { name: 'Sassuolo' } },
     { player: { name: 'G. Chiesa', type: 'Questionable', reason: 'Knock' }, team: { name: 'Juventus' } },
     { player: { name: '', type: 'Missing Fixture' }, team: { name: 'Juventus' } },
+    { player: { name: 'D. Boloca', type: 'Missing Fixture', reason: 'Muscle Injury' }, team: { name: 'Sassuolo' } },
   ];
   const rows = parseAfInjuries(resp, 'US Sassuolo Calcio', 'Juventus FC');
   assert.equal(rows.length, 2);
