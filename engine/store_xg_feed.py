@@ -31,6 +31,14 @@ MISS_PATH = XG_FEED_PATH + ".missing.json"
 # Site kapsamı (src/lib/model-coverage.ts COVERED_IDS + Süper Lig 71). Env ile genişletilebilir.
 DEFAULT_LEAGUES = "47,87,55,54,53,42,57,61,48,268,71"
 LEAGUES = {int(x) for x in os.environ.get("XG_FEED_LEAGUES", DEFAULT_LEAGUES).split(",") if x.strip()}
+# Sezonluk id keşfi: FotMob büyük 5 lig dışına her sezon yeni id verir (Eredivisie 26/27 = 937276).
+# Site fikstür ucu (anahtarsız) lig adı + ülke kodu döner; kapsanan ad|ülke çiftleri
+# (src/lib/model-coverage.ts ile aynı) eşleşince id kümeye eklenir ve dosyada biriktirilir.
+SITE_FIXTURES_URL = os.environ.get("SITE_FIXTURES_URL", "https://footballanalytics.pro/api/v2/fixtures?date=")
+COVERED_NAME_CC = {("Premier League", "ENG"), ("Championship", "ENG"), ("LaLiga", "ESP"), ("Serie A", "ITA"),
+                   ("Bundesliga", "GER"), ("Ligue 1", "FRA"), ("Eredivisie", "NED"), ("Liga Portugal", "POR"),
+                   ("Champions League", "INT"), ("Brazilian Serie A", "BRA"), ("Super Lig", "TUR"), ("Süper Lig", "TUR")}
+LEAGUES_CACHE = XG_FEED_PATH + ".leagues.json"
 MISS_RETRY_DAYS = 2      # istatistiği olmayan maç bu kadar gün sonra yeniden denenir
 MISS_MAX_TRIES = 3       # sonra kalıcı olarak atlanır
 SLEEP_S = 0.35           # çağrı arası (kota ve nezaket)
@@ -81,6 +89,38 @@ def fetch_stats(match_id: int, key: str, retries: int = 2):
     return ("error", "retries")
 
 
+def discover_league_ids(days_back=2, days_fwd=2, verbose=True) -> set:
+    """Site fikstür ucundan kapsanan liglerin güncel (sezonluk) id'leri; önbellekle birleştirilir."""
+    cached = set()
+    if os.path.exists(LEAGUES_CACHE):
+        try:
+            with open(LEAGUES_CACHE, encoding="utf-8") as f:
+                cached = set(json.load(f))
+        except Exception:
+            cached = set()
+    found = set()
+    today = datetime.now(timezone.utc).date()
+    for off in range(-days_back, days_fwd + 1):
+        ymd = (today + timedelta(days=off)).isoformat()
+        try:
+            with urllib.request.urlopen(urllib.request.Request(SITE_FIXTURES_URL + ymd), timeout=25) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            for fx in ((data.get("data") or {}).get("fixtures") or []):
+                if (fx.get("league"), fx.get("leagueCountry")) in COVERED_NAME_CC and fx.get("leagueId") is not None:
+                    found.add(int(fx["leagueId"]))
+        except Exception as e:
+            if verbose:
+                print(f"[xg-feed] lig keşfi {ymd} atlandı: {str(e)[:80]}")
+    merged = cached | found
+    if merged != cached:
+        try:
+            with open(LEAGUES_CACHE, "w", encoding="utf-8") as f:
+                json.dump(sorted(merged), f)
+        except Exception:
+            pass
+    return merged
+
+
 def _load_ids(path):
     ids = set()
     if os.path.exists(path):
@@ -121,7 +161,8 @@ def candidates(days: int, have: set, missing: dict, now=None):
     # kapsanan id'lerden herhangi birini içeren her grup alınır.
     st = ResultStore()
     st._load()
-    canons = {c for lid, c in st._alias.items() if lid in LEAGUES} | {st.resolve(l) for l in LEAGUES}
+    leagues = LEAGUES | discover_league_ids(verbose=False)
+    canons = {c for lid, c in st._alias.items() if lid in leagues} | {st.resolve(l) for l in leagues}
     rows = []
     for c in canons:
         rows.extend(st._by_league.get(c, []))
@@ -153,7 +194,7 @@ def build(days=3, max_calls=200, verbose=True):
     missing = _load_missing()
     todo = candidates(days, have, missing)
     if verbose:
-        print(f"[xg-feed] depoda {len(have)} maç; aday {len(todo)} (son {days} gün, {len(LEAGUES)} lig), sınır {max_calls}")
+        print(f"[xg-feed] depoda {len(have)} maç; aday {len(todo)} (son {days} gün, {len(LEAGUES | discover_league_ids(verbose=False))} lig id), sınır {max_calls}")
     added = none = errors = 0
     now_iso = datetime.now(timezone.utc).isoformat()
     with open(XG_FEED_PATH, "a", encoding="utf-8") as out:
