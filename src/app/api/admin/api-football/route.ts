@@ -2,9 +2,12 @@
 //   ?status=1           → plan, kalan istek
 //   ?map=1[&days=3]     → eşleme tablosunu doldur (yazar)
 //   ?odds=<fotmobId>    → eşlenmiş maçın API-Football oranları (yazmaz)
+//   ?context=<fotmobId> → eksikler + kadroyu zorla tazele (yazar)
 import { NextRequest, NextResponse } from 'next/server';
 import { afStatus, afOdds } from '@/lib/data-sources/api-football';
 import { buildAfMap, afIdsFor } from '@/lib/site/af-map';
+import { refreshAfContext } from '@/lib/site/af-context';
+import { getPrediction } from '@/lib/site/predictions';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -21,6 +24,12 @@ export async function GET(request: NextRequest) {
     if (!af) return NextResponse.json({ ok: false, error: 'eşleme yok', fixtureId: id });
     const r = await afOdds(af);
     return NextResponse.json({ fixtureId: id, afFixtureId: af, ...r });
+  }
+  if (q.get('context')) {
+    const id = Number(q.get('context'));
+    const p = await getPrediction(id);
+    if (!p) return NextResponse.json({ ok: false, error: 'maç yok', fixtureId: id });
+    return NextResponse.json({ fixtureId: id, ...(await refreshAfContext(id, p.homeName, p.awayName, p.kickoff)) });
   }
   return NextResponse.json(await afStatus());
 }

@@ -82,3 +82,66 @@ export function matchFixtures(ours: MapCandidate[], theirs: AfFixture[], minScor
   }
   return out;
 }
+
+// ---- Maç bağlamı: eksikler + kadro (saf) --------------------------------------
+// /injuries?fixture= ve /fixtures/lineups?fixture= yanıtlarını sadeleştirir ve
+// hangi takımın "home"/"away" olduğunu bizim takım adlarımızla eşler (API-Football
+// takım kimlikleri bizde yok). Zamanlama: eksikler ≤48 s kala, 6 s'de bir; kadro
+// ~75 dk kala, bir kez (alındıktan sonra değişmez).
+
+export type AfSide = 'home' | 'away';
+export interface AfInjury { side: AfSide; team: string; player: string; type: string; reason: string | null }
+export interface AfLineupPlayer { name: string; number: number | null; pos: string | null }
+export interface AfLineup { side: AfSide; team: string; formation: string | null; coach: string | null; startXI: AfLineupPlayer[]; bench: AfLineupPlayer[] }
+
+export const INJURIES_WINDOW_MS = 48 * 3600_000;
+export const INJURIES_TTL_MS = 6 * 3600_000;
+export const LINEUPS_BEFORE_MS = 75 * 60_000;
+export const LINEUPS_AFTER_MS = 4 * 3600_000;
+
+/** API-Football takım adını ev/deplasman tarafına eşle; belirsizse verilen sıra (0 ev, 1 dep). */
+export function sideFor(name: string, home: string, away: string, index: number): AfSide {
+  const h = teamSim(name, home), a = teamSim(name, away);
+  if (h > a && h >= 0.5) return 'home';
+  if (a > h && a >= 0.5) return 'away';
+  return index === 0 ? 'home' : 'away';
+}
+
+export function parseAfInjuries(response: any[], home: string, away: string): AfInjury[] {
+  const teams: string[] = [];
+  const out: AfInjury[] = [];
+  for (const r of response || []) {
+    const team = String(r?.team?.name || '').trim(), player = String(r?.player?.name || '').trim();
+    if (!team || !player) continue;
+    if (!teams.includes(team)) teams.push(team);
+    out.push({ side: sideFor(team, home, away, teams.indexOf(team)), team, player, type: String(r?.player?.type || 'Missing Fixture'), reason: r?.player?.reason ? String(r.player.reason) : null });
+  }
+  return out;
+}
+
+const player = (p: any): AfLineupPlayer => ({ name: String(p?.player?.name || ''), number: Number.isFinite(Number(p?.player?.number)) ? Number(p.player.number) : null, pos: p?.player?.pos ? String(p.player.pos) : null });
+
+/** Kadro açıklanmadıysa (boş yanıt / 11 eksik) null. */
+export function parseAfLineups(response: any[], home: string, away: string): AfLineup[] | null {
+  const rows = (response || []).map((t: any, i: number): AfLineup => ({
+    side: sideFor(String(t?.team?.name || ''), home, away, i), team: String(t?.team?.name || ''),
+    formation: t?.formation ? String(t.formation) : null, coach: t?.coach?.name ? String(t.coach.name) : null,
+    startXI: (t?.startXI || []).map(player).filter((p: AfLineupPlayer) => p.name), bench: (t?.substitutes || []).map(player).filter((p: AfLineupPlayer) => p.name),
+  }));
+  if (rows.length < 2 || rows.some((r) => r.startXI.length < 11)) return null;
+  return rows;
+}
+
+/** Eksikler tazelensin mi: başlamaya ≤48 s ve başlamadan önce; son alım ≥6 s önce. */
+export function injuriesDue(kickoffIso: string, nowMs: number, lastAtIso: string | null): boolean {
+  const k = Date.parse(kickoffIso);
+  if (!Number.isFinite(k) || nowMs > k || k - nowMs > INJURIES_WINDOW_MS) return false;
+  return !lastAtIso || nowMs - Date.parse(lastAtIso) >= INJURIES_TTL_MS;
+}
+
+/** Kadro alınsın mı: ~75 dk kala ile +4 s arası ve elde kadro yok. */
+export function lineupsDue(kickoffIso: string, nowMs: number, haveLineups: boolean): boolean {
+  if (haveLineups) return false;
+  const k = Date.parse(kickoffIso);
+  return Number.isFinite(k) && k - nowMs <= LINEUPS_BEFORE_MS && nowMs - k <= LINEUPS_AFTER_MS;
+}

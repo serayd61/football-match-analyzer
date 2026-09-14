@@ -10,6 +10,8 @@ import { StatusChip } from '@/components/site/PredictionTable';
 import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap, handicapAt } from '@/lib/site/poisson';
 import { getMarketBook } from '@/lib/site/markets';
 import { getOddsDrift } from '@/lib/site/odds-drift';
+import { getAfContext } from '@/lib/site/af-context';
+import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
 import ProbBar from '@/components/site/ProbBar';
@@ -84,7 +86,9 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   const stRow = (id: number | null) => (id ? table.get(id) : undefined);
   // Form and H2H are bounded to matches that kicked off before this one, so a
   // past match never lists itself or later games as "form" (denetim 2026-09-05).
-  const [market, book, drift, h2h, formHome, formAway, curves] = await Promise.all([
+  // Eksikler + kadro yalnız API-Football'a eşlenen liglerde (2026-09-14); undefined → bölüm gizli.
+  const afLeague = !!(p.league && AF_LEAGUE[p.league.slug]);
+  const [market, book, drift, h2h, formHome, formAway, curves, squad] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
@@ -92,6 +96,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     p.homeId ? getTeamForm(p.homeId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     p.awayId ? getTeamForm(p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     getCalibrationMeta(),
+    afLeague ? getAfContext(p.fixtureId, p.homeName, p.awayName, p.kickoff).catch(() => null) : Promise.resolve(undefined),
   ]);
   const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
 
@@ -444,6 +449,53 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           </section>
 
           <p className="mt-3 text-xs text-s-muted">{t('contextSource')}</p>
+
+          {/* ── Eksikler ve kadro ─────────────────────────────────────── */}
+          {squad !== undefined && (
+            <section>
+              <SectionTitle
+                title={t('secSquad')}
+                meta={squad?.lineupsAt ? t('lineupPosted', { time: f.dateTime(new Date(squad.lineupsAt), 'time') }) : squad?.injuriesAt ? t('squadMeta', { time: f.dateTime(new Date(squad.injuriesAt), 'kickoff') }) : undefined}
+              />
+              {!squad ? (
+                <p className="mt-2 text-xs text-s-muted">{t('squadUnavailable')}</p>
+              ) : (
+                <div className="mt-3 space-y-4 text-sm">
+                  {(['home', 'away'] as const).map((side) => {
+                    const lu = squad.lineups?.find((l) => l.side === side);
+                    const inj = (squad.injuries ?? []).filter((i) => i.side === side);
+                    return (
+                      <div key={side}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-medium">{side === 'home' ? p.homeName : p.awayName}</span>
+                          {lu && <span className="num truncate text-xs text-s-muted">{[lu.formation, lu.coach].filter(Boolean).join(' · ')}</span>}
+                        </div>
+                        {lu ? (
+                          <p className="mt-1 text-xs leading-5">{lu.startXI.map((x) => x.name).join(', ')}</p>
+                        ) : (
+                          <p className="mt-1 text-xs text-s-muted">{isPast ? t('lineupNone') : t('lineupPending')}</p>
+                        )}
+                        {inj.length ? (
+                          <ul className="mt-1.5 space-y-0.5 text-xs">
+                            {inj.slice(0, 8).map((i) => (
+                              <li key={`${i.player}-${i.reason}`} className="flex justify-between gap-2">
+                                <span className="truncate">{i.player}{i.type === 'Questionable' ? <span className="text-s-muted"> · {t('questionable')}</span> : null}</span>
+                                <span className="shrink-0 text-s-muted">{i.reason ?? ''}</span>
+                              </li>
+                            ))}
+                            {inj.length > 8 && <li className="text-s-muted">{t('moreAbsent', { n: inj.length - 8 })}</li>}
+                          </ul>
+                        ) : squad.injuries ? (
+                          <p className="mt-1 text-xs text-s-muted">{t('noAbsences')}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="mt-3 text-xs text-s-muted">{t('squadSource')}</p>
+            </section>
+          )}
 
           {/* ── Head to head ──────────────────────────────────────────── */}
           <section>
