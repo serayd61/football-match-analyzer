@@ -11,9 +11,9 @@
 import 'server-only';
 
 const HOST = 'https://v3.football.api-sports.io';
-export { AF_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, normTeam, teamSim, matchFixtures } from './api-football-pure';
-export type { AfFixture, AfOdds, MapCandidate } from './api-football-pure';
-import { parseAfOdds, type AfFixture, type AfOdds } from './api-football-pure';
+export { AF_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, normTeam, teamSim, matchFixtures, parseAfInjuries, parseAfLineups, injuriesDue, lineupsDue } from './api-football-pure';
+export type { AfFixture, AfOdds, MapCandidate, AfInjury, AfLineup, AfLineupPlayer, AfSide } from './api-football-pure';
+import { parseAfOdds, parseAfInjuries, parseAfLineups, type AfFixture, type AfOdds, type AfInjury, type AfLineup } from './api-football-pure';
 
 export function hasApiFootballKey(): boolean { return !!(process.env.API_FOOTBALL_KEY || '').trim(); }
 
@@ -53,3 +53,17 @@ export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfO
   return { ok: true, odds: parseAfOdds(r.data || []) };
 }
 
+
+/** Bir fikstürün eksikleri (sakatlık/ceza; iki takım, tek çağrı). Taraf bizim takım adlarımızla eşlenir. */
+export async function afInjuries(afFixtureId: number, home: string, away: string): Promise<{ ok: true; rows: AfInjury[] } | { ok: false; error: string }> {
+  const r = await afFetch<any[]>(`/injuries?fixture=${afFixtureId}`);
+  if (!r.ok) return r;
+  return { ok: true, rows: parseAfInjuries(r.data || [], home, away) };
+}
+
+/** Açıklanan kadro (~1 saat kala); henüz yoksa lineups: null. */
+export async function afLineups(afFixtureId: number, home: string, away: string): Promise<{ ok: true; lineups: AfLineup[] | null } | { ok: false; error: string }> {
+  const r = await afFetch<any[]>(`/fixtures/lineups?fixture=${afFixtureId}`);
+  if (!r.ok) return r;
+  return { ok: true, lineups: parseAfLineups(r.data || [], home, away) };
+}

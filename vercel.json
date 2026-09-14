@@ -57,6 +57,10 @@
       "schedule": "20 * * * *"
     },
     {
+      "path": "/api/cron/af-context",
+      "schedule": "25 * * * *"
+    },
+    {
       "path": "/api/cron/daily-featured",
       "schedule": "0 6 * * *"
     },
