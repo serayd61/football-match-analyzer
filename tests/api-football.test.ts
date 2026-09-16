@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAfOdds, teamSim, matchFixtures, afSeasonFor } from '@/lib/data-sources/api-football-pure';
+import { parseAfOdds, teamSim, matchFixtures, afSeasonFor, afToMatchOdds } from '@/lib/data-sources/api-football-pure';
 
 test('parseAfOdds prefers Bet365 and reads O/U 2.5, BTTS and 1X2', () => {
   const resp = [{ bookmakers: [
@@ -45,4 +45,14 @@ test('season year: Aug–May leagues use start year, Brazil uses calendar year',
   assert.equal(afSeasonFor('serie-a', '2026-09-14T16:30:00Z'), 2026);
   assert.equal(afSeasonFor('serie-a', '2027-03-01T16:30:00Z'), 2026);
   assert.equal(afSeasonFor('brasileirao', '2026-09-14T23:00:00Z'), 2026);
+});
+
+test('afToMatchOdds builds margin-free probabilities and tags the provider', () => {
+  const o = afToMatchOdds({ bookmaker: 'Bet365', home: 1.44, draw: 4.5, away: 7, over25: null, under25: null, bttsYes: null, bttsNo: null })!;
+  assert.equal(o.provider, 'API-Football/Bet365');
+  assert.ok(Math.abs(o.pHome + o.pDraw + o.pAway - 1) < 1e-9);
+  assert.ok(o.overround > 1.05 && o.overround < 1.1);
+  assert.ok(o.pHome > 0.65 && o.pHome < 0.67);
+  assert.equal(afToMatchOdds(null), null);
+  assert.equal(afToMatchOdds({ bookmaker: 'X', home: 2, draw: null, away: 3, over25: 1.8, under25: 2, bttsYes: null, bttsNo: null }), null);
 });

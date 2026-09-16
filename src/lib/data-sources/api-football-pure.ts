@@ -149,3 +149,17 @@ export function lineupsDue(kickoffIso: string, nowMs: number, haveLineups: boole
   const k = Date.parse(kickoffIso);
   return Number.isFinite(k) && k - nowMs <= LINEUPS_BEFORE_MS && nowMs - k <= LINEUPS_AFTER_MS;
 }
+
+// ---- Akış boş döndüğünde 1X2 yedeği (saf) ----------------------------------
+// 2026-09-16: FotMob akışı Atlético–Osasuna için 14 Eyl'den beri boş döndü, faz
+// serisi (h24…closing) hiç oluşmadı; API-Football aynı maç için 1X2 veriyordu.
+// Marjsız olasılık: (1/o) / Σ(1/o). Bahisçi adı provider'a yazılır.
+export interface AfMatchOdds {
+  home: number; draw: number; away: number; overround: number;
+  pHome: number; pDraw: number; pAway: number; provider: string; raw: { source: 'api-football'; bookmaker: string };
+}
+export function afToMatchOdds(a: AfOdds | null): AfMatchOdds | null {
+  if (!a || !a.home || !a.draw || !a.away) return null;
+  const ih = 1 / a.home, id = 1 / a.draw, ia = 1 / a.away, s = ih + id + ia;
+  return { home: a.home, draw: a.draw, away: a.away, overround: s, pHome: ih / s, pDraw: id / s, pAway: ia / s, provider: `API-Football/${a.bookmaker}`, raw: { source: 'api-football', bookmaker: a.bookmaker } };
+}
