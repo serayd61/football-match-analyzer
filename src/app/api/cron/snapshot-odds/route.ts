@@ -19,7 +19,7 @@ import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { parseMarkets } from '@/lib/site/markets';
 import { phaseForMinutes, type OddsPhase } from '@/lib/site/odds-phases';
-import { afOdds, hasApiFootballKey } from '@/lib/data-sources/api-football';
+import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds } from '@/lib/data-sources/api-football';
 import { afIdsFor, buildAfMap } from '@/lib/site/af-map';
 
 export const dynamic = 'force-dynamic';
@@ -142,13 +142,23 @@ export async function GET(request: NextRequest) {
   if (afOn) { try { afMapped = (await buildAfMap(3, 20)).mapped ?? 0; } catch (e: any) { console.error('[snapshot-odds] af map:', e?.message); } }
   const afIds = afOn ? await afIdsFor(todo.map((j) => j.fixtureId)) : new Map<number, number>();
 
-  let captured = 0, missed = 0;
+  let captured = 0, missed = 0, afFallback = 0;
   for (const job of todo) {
     let odds: Awaited<ReturnType<typeof getMatchOdds>> = null;
     for (const cc of ccodesFor(job.ccode)) {
       odds = await getMatchOdds(job.fixtureId, cc);
       if (odds) break;
       await sleep(SLEEP_MS);
+    }
+    // Akış boş döndüyse 1X2'yi API-Football'dan al (2026-09-16: Atlético–Osasuna
+    // 14 Eyl'den beri fazsız kalmıştı); aynı yanıt aşağıda Ü/A ve KG için de kullanılır.
+    const afId = afIds.get(job.fixtureId);
+    let afPre: AfOdds | null | undefined;
+    if (!odds && afId) {
+      const r = await afOdds(afId);
+      afPre = r.ok ? r.odds : null;
+      const fb = afToMatchOdds(afPre);
+      if (fb) { odds = fb; afFallback++; }
     }
     if (!odds) { missed++; continue; }
 
@@ -187,9 +197,8 @@ export async function GET(request: NextRequest) {
     }
     else captured++;
     // Üst/Alt 2,5 sütunları (ve KG akışta yoksa) API-Football'dan; hata yakalamayı bozmaz.
-    const afId = afIds.get(job.fixtureId);
     if (!insErr && afId) {
-      const r = await afOdds(afId);
+      const r = afPre !== undefined ? { ok: true as const, odds: afPre } : await afOdds(afId);
       if (r.ok && r.odds && (r.odds.over25 || r.odds.bttsYes)) {
         const cols: Record<string, number | string> = { over25_odds: r.odds.over25 ?? 0, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker };
         if (!book?.btts && r.odds.bttsYes && r.odds.bttsNo) { cols.btts_yes_odds = r.odds.bttsYes; cols.btts_no_odds = r.odds.bttsNo; }
@@ -232,6 +241,6 @@ export async function GET(request: NextRequest) {
     pending: todo.length,
     captured,
     missed,
-    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled } : null,
+    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback } : null,
   });
 }
