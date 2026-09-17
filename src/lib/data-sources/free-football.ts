@@ -11,6 +11,9 @@ const BASE = `https://${HOST}`;
 // çalışıyor → ilk anahtar 401/403 verirse sıradakine geçilir, çalışan hatırlanır.
 const KEYS = [process.env.FOOTBALL_API_KEY, process.env.RAPIDAPI_KEY].map((k) => (k || '').trim()).filter((k, i, a) => k && a.indexOf(k) === i);
 let keyIdx = 0;
+/** Deneme sırasıyla anahtarlar (çalışan önce); 401/403 gören çağıran ffNoteBadKey ile ilerletir. */
+export function ffKeys(): string[] { return KEYS.map((_, i) => KEYS[(keyIdx + i) % KEYS.length]); }
+export function ffNoteBadKey(key: string) { if (KEYS[keyIdx] === key && KEYS.length > 1) keyIdx = (keyIdx + 1) % KEYS.length; }
 
 const FOTMOB_TEAM_LOGO = (id: number | string) =>
   `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`;

@@ -1,3 +1,4 @@
+import { ffKeys, ffNoteBadKey } from '@/lib/data-sources/free-football';
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { leagueBySlug } from './leagues';
@@ -27,13 +28,17 @@ export interface StandingRow {
 }
 
 async function fetchStandings(leagueId: number): Promise<StandingRow[]> {
-  const key = process.env.FOOTBALL_API_KEY;
-  if (!key) return [];
-  const res = await fetch(`https://${HOST}/football-get-standing-all?leagueid=${leagueId}`, {
-    headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': key },
-    next: { revalidate: 6 * 3600 },
-  });
-  if (!res.ok) { console.error(`[site/standings] ${leagueId} HTTP ${res.status}`); return []; }
+  // Anahtar zinciri free-football ile ortak (2026-09-17: FOOTBALL_API_KEY geçersiz kaldı).
+  let res: Response | null = null;
+  for (const key of ffKeys()) {
+    res = await fetch(`https://${HOST}/football-get-standing-all?leagueid=${leagueId}`, {
+      headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': key },
+      next: { revalidate: 6 * 3600 },
+    });
+    if (res.status !== 401 && res.status !== 403) break;
+    ffNoteBadKey(key);
+  }
+  if (!res || !res.ok) { console.error(`[site/standings] ${leagueId} HTTP ${res?.status}`); return []; }
   const json = await res.json();
   const list: any[] = json?.response?.standing || json?.standing || [];
   return list
