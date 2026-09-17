@@ -5,7 +5,12 @@
 
 const HOST = 'free-api-live-football-data.p.rapidapi.com';
 const BASE = `https://${HOST}`;
-const KEY = process.env.FOOTBALL_API_KEY || '';
+// Anahtar zinciri (2026-09-17): FOOTBALL_API_KEY RapidAPI'de geçersiz kaldı
+// ("Invalid API key"), site 14 Eyl 07:00 UTC'den beri fikstür/oran alamadı,
+// motor 3 gün tahmin üretmedi. Aynı hesabın RAPIDAPI_KEY'i bu host'a abone ve
+// çalışıyor → ilk anahtar 401/403 verirse sıradakine geçilir, çalışan hatırlanır.
+const KEYS = [process.env.FOOTBALL_API_KEY, process.env.RAPIDAPI_KEY].map((k) => (k || '').trim()).filter((k, i, a) => k && a.indexOf(k) === i);
+let keyIdx = 0;
 
 const FOTMOB_TEAM_LOGO = (id: number | string) =>
   `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`;
@@ -13,17 +18,23 @@ const FOTMOB_LEAGUE_LOGO = (id: number | string) =>
   `https://images.fotmob.com/image_resources/logo/leaguelogo/dark/${id}.png`;
 
 async function ffFetch(path: string): Promise<any | null> {
-  if (!KEY) {
+  if (!KEYS.length) {
     console.error('[free-football] FOOTBALL_API_KEY missing');
     return null;
   }
   try {
-    const res = await fetch(`${BASE}${path}`, {
-      headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': KEY },
-      next: { revalidate: 0 },
-    });
-    if (!res.ok) {
-      console.error(`[free-football] ${path} HTTP ${res.status}`);
+    let res: Response | null = null;
+    for (let tries = 0; tries < KEYS.length; tries++) {
+      res = await fetch(`${BASE}${path}`, {
+        headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': KEYS[keyIdx] },
+        next: { revalidate: 0 },
+      });
+      if (res.status !== 401 && res.status !== 403) break;
+      console.error(`[free-football] ${path} HTTP ${res.status} (anahtar #${keyIdx + 1} geçersiz)`);
+      keyIdx = (keyIdx + 1) % KEYS.length;
+    }
+    if (!res || !res.ok) {
+      console.error(`[free-football] ${path} HTTP ${res?.status}`);
       return null;
     }
     const json = await res.json();
