@@ -193,5 +193,5 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
 
 export function socialStatus() {
   const tg = targets();
-  return { targets: tg.map((t) => `${t.platform}:${t.account}`), telegramBot: hasTelegram(), twitterTr: !!twitterCreds('TWITTER_TR'), twitterEn: !!twitterCreds('TWITTER_EN'), twitterBearer: !!(process.env.TWITTER_BEARER_TOKEN || '').trim(), telegramChatEn: (process.env.TELEGRAM_CHAT_EN || '').trim() || null };
+  return { targets: tg.map((t) => `${t.platform}:${t.account}`), telegramBot: hasTelegram(), twitterTr: !!twitterCreds('TWITTER_TR'), twitterEn: !!twitterCreds('TWITTER_EN'), twitterBearer: !!(process.env.TWITTER_BEARER_TOKEN || '').trim(), telegramAdmin: !!(process.env.TELEGRAM_ADMIN_CHAT || '').trim(), telegramChatEn: (process.env.TELEGRAM_CHAT_EN || '').trim() || null };
 }
