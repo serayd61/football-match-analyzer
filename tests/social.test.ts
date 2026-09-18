@@ -42,6 +42,9 @@ test('dailyText stays within 280 weighted chars and carries the UTM link', () =>
   assert.ok(t.includes('Üst 2,5'));
   assert.ok(t.includes('1,62'));
   assert.ok(t.includes('Son 7 gün: 11/21'));
+  const tg = dailyText(legs, '2026-09-19', 'en', null, 'telegram');
+  assert.ok(tg.includes('utm_source=telegram'));
+  assert.ok(/Today's picks · 19 September · CES?T/.test(tg), tg.split('\n')[0]);
   const en = dailyText(legs, '2026-09-19', 'en', null);
   assert.ok(en.startsWith("Today's picks"));
   assert.ok(en.includes('Over 2.5') && en.includes('Away3 win'));

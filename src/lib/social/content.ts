@@ -17,9 +17,15 @@ export interface DailyContent { legs: Leg[]; text: string; imageTitle: string; i
 
 export const SITE = 'https://footballanalytics.pro';
 const TZ: Record<Lang, string> = { tr: 'Europe/Istanbul', en: 'Europe/Zurich' };
-const TZ_LABEL: Record<Lang, string> = { tr: 'TSİ', en: 'CET' };
+export type Source = 'twitter' | 'telegram';
+/** Saat dilimi etiketi: TR sabit TSİ; EN için Zürih'in o günkü kısaltması (CET/CEST). */
+export const tzLabel = (lang: Lang, iso: string): string => {
+  if (lang === 'tr') return 'TSİ';
+  const part = new Intl.DateTimeFormat('en-GB', { timeZone: TZ.en, timeZoneName: 'short' }).formatToParts(new Date(iso)).find((p) => p.type === 'timeZoneName');
+  return part?.value ?? 'CET';
+};
 
-export const utm = (path: string, lang: Lang, campaign: string, source = 'twitter') =>
+export const utm = (path: string, lang: Lang, campaign: string, source: Source = 'twitter') =>
   `${SITE}/${lang}${path}?utm_source=${source}&utm_medium=social&utm_campaign=${campaign}`;
 
 export const fmtTime = (iso: string, lang: Lang) => new Intl.DateTimeFormat(lang === 'tr' ? 'tr-TR' : 'en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: TZ[lang] }).format(new Date(iso));
@@ -53,21 +59,22 @@ export function tweetLength(text: string): number {
   return text.replace(/https?:\/\/\S+/g, 'x'.repeat(23)).length;
 }
 
-export function dailyText(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null): string {
-  const head = lang === 'tr' ? `Günün seçimleri · ${fmtDate(ymd, lang)}` : `Today's picks · ${fmtDate(ymd, lang)}`;
+export function dailyText(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null, source: Source = 'twitter'): string {
+  const tz = legs.length ? ` · ${tzLabel(lang, legs[0].kickoff)}` : '';
+  const head = lang === 'tr' ? `Günün seçimleri · ${fmtDate(ymd, lang)}${tz}` : `Today's picks · ${fmtDate(ymd, lang)}${tz}`;
   const lines = legs.map((l) => {
     const odds = l.odds ? ` · ${fmtOdds(l.odds, lang)}` : '';
     return `${fmtTime(l.kickoff, lang)} ${l.homeName} – ${l.awayName}: ${marketLabel(l, lang)} · ${lang === 'tr' ? 'model' : 'model'} ${pct(l.modelP)}${odds}`;
   });
   const rec = record && record.n ? (lang === 'tr' ? `Son 7 gün: ${record.won}/${record.n}` : `Last 7 days: ${record.won}/${record.n}`) : '';
-  const link = utm('/predictions', lang, 'daily-pick');
+  const link = utm('/predictions', lang, 'daily-pick', source);
   let text = [head, '', ...lines, '', rec, link].filter((s, i, a) => !(s === '' && a[i - 1] === '')).join('\n');
   // sığmazsa bacak satırlarını kısalt (takım adı 14 karakter), yine sığmazsa son bacağı at
   if (tweetLength(text) > 280) {
     const short = legs.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName.slice(0, 14)} – ${l.awayName.slice(0, 14)}: ${marketLabel(l, lang)} ${pct(l.modelP)}`);
     text = [head, '', ...short, '', rec, link].filter((s, i, a) => !(s === '' && a[i - 1] === '')).join('\n');
   }
-  while (tweetLength(text) > 280 && legs.length > 1) { legs = legs.slice(0, -1); return dailyText(legs, ymd, lang, record); }
+  while (tweetLength(text) > 280 && legs.length > 1) { legs = legs.slice(0, -1); return dailyText(legs, ymd, lang, record, source); }
   return text;
 }
 
@@ -80,11 +87,11 @@ export function resultText(leg: Leg, h: number, a: number, won: boolean, lang: L
 
 export interface WeeklyStats { from: string; to: string; n: number; won: number; byMarket: Record<string, { n: number; won: number }>; noPick: number }
 
-export function weeklyText(s: WeeklyStats, lang: Lang): string[] {
+export function weeklyText(s: WeeklyStats, lang: Lang, source: Source = 'twitter'): string[] {
   const rate = s.n ? Math.round((s.won / s.n) * 100) : 0;
   const mk = (k: string) => s.byMarket[k] ?? { n: 0, won: 0 };
   const range = `${fmtDate(s.from, lang)} – ${fmtDate(s.to, lang)}`;
-  const link = utm('/performance', lang, 'weekly-record');
+  const link = utm('/performance', lang, 'weekly-record', source);
   if (lang === 'tr') return [
     `Haftalık karne · ${range}\n\nVitrin seçimleri: ${s.won}/${s.n} (%${rate})\n1X2 ${mk('1x2').won}/${mk('1x2').n} · Üst 2,5 ${mk('ou25').won}/${mk('ou25').n} · KG ${mk('btts').won}/${mk('btts').n}\nSeçim yok denilen maç: ${s.noPick}`,
     `Her seçim maçtan en az 3 saat önce dondurulur ve sonuç ne olursa olsun yazılır. Tüm karne ve pazar bazında ayrıntı: ${link}`,
