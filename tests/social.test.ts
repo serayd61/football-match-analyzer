@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { oauth1Header, oauth1Signature, pctEncode } from '@/lib/social/oauth1';
-import { pickLegs, dailyText, tweetLength, resultText, weeklyText, marketLabel, type Leg } from '@/lib/social/content';
+import { pickLegs, dailyText, tweetLength, resultText, weeklyText, marketLabel, hashtags, matchTrends, toTag, type Leg } from '@/lib/social/content';
 
 // X belgelerindeki "Creating a signature" örneği (bilinen vektör).
 test('oauth1 signature matches the X documentation example', () => {
@@ -59,4 +59,30 @@ test('result and weekly texts', () => {
   assert.ok(w[0].includes('11/21 (%52)') && w[0].includes('KG 2/8'));
   assert.ok(w[1].includes('utm_campaign=weekly-record'));
   assert.ok(tweetLength(w[0]) <= 280 && tweetLength(w[1]) <= 280);
+});
+
+test('hashtags: trend matches on team/league words, league tags follow, max 3, twitter only', () => {
+  const legs: Leg[] = [
+    { fixtureId: 1, leagueSlug: 'bundesliga', leagueName: 'Bundesliga', homeName: 'Bayern München', awayName: 'Union Berlin', kickoff: '2026-09-18T18:30:00Z', market: 'ou25', selection: 'over', modelP: 0.89, odds: 1.11, source: 'daily' },
+    { fixtureId: 2, leagueSlug: 'premier-league', leagueName: 'Premier League', homeName: 'Brentford', awayName: 'Chelsea', kickoff: '2026-09-18T19:00:00Z', market: 'btts', selection: 'yes', modelP: 0.68, odds: 1.4, source: 'daily' },
+    { fixtureId: 3, leagueSlug: 'eredivisie', leagueName: 'Eredivisie', homeName: 'FC Groningen', awayName: 'PEC Zwolle', kickoff: '2026-09-18T18:00:00Z', market: 'ou25', selection: 'over', modelP: 0.67, odds: 1.44, source: 'daily' },
+  ];
+  const trends = ['Taylor Swift', '#Bayern', 'Chelsea', 'Manchester United', '#Eredivisie', 'Union'];
+  assert.deepEqual(matchTrends(legs, trends), ['#Bayern', '#Chelsea', '#Eredivisie']); // 'Union' generic → yok
+  assert.deepEqual(hashtags(legs, trends), ['#Bayern', '#Chelsea', '#Bundesliga']);
+  assert.deepEqual(hashtags(legs, []), ['#Bundesliga', '#PL', '#Eredivisie']);
+  assert.equal(toTag('Bayern Munich'), '#BayernMunich');
+  const tw = dailyText(legs, '2026-09-18', 'en', null, 'twitter', hashtags(legs, trends));
+  assert.ok(tw.includes('#Bayern #Chelsea #Bundesliga'), tw);
+  assert.ok(tweetLength(tw) <= 280);
+  const tg = dailyText(legs, '2026-09-18', 'en', null, 'telegram', hashtags(legs, trends));
+  assert.ok(!tg.includes('#'), tg);
+  const w = weeklyText({ from: '2026-09-13', to: '2026-09-19', n: 21, won: 11, byMarket: {}, noPick: 9 }, 'en', 'twitter', ['#football']);
+  assert.ok(w[0].endsWith('#football'));
+});
+
+test('pickLegs: showcase legs outside the 1.25–1.75 odds band (or without odds) are dropped', () => {
+  const mk = (id: number, market: any, odds: number | null, source: any): Leg => ({ fixtureId: id, leagueSlug: 'bundesliga', leagueName: 'Bundesliga', homeName: 'A' + id, awayName: 'B' + id, kickoff: '2026-09-18T18:00:00Z', market, selection: market === '1x2' ? '1' : market === 'btts' ? 'yes' : 'over', modelP: 0.7, odds, source });
+  const legs = pickLegs([mk(1, 'ou25', 1.44, 'daily')], [mk(2, 'ou25', 1.11, 'showcase'), mk(3, 'btts', 1.6, 'showcase'), mk(4, '1x2', 1.22, 'showcase'), mk(5, '1x2', null, 'showcase'), mk(6, '1x2', 1.5, 'showcase')]);
+  assert.deepEqual(legs.map((l) => l.fixtureId).sort(), [1, 3, 6]);
 });
