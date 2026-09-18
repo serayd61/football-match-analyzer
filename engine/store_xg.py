@@ -246,6 +246,23 @@ def choose_model(matches, xg_coverage, xg_weight, min_coverage, version_xg, vers
     return "goals", version_goals
 
 
+def window_coverage(matches, ref_date, window_days=None):
+    """attach() sonrası: xG kapsamını modelin GERÇEK eğitim kümesinde ölçer.
+
+    Denetim 2026-09-18 (B09): kapı, load_for_fit'in tamamında ölçülüyordu; oysa
+    model.fit yalnız date < ref_date ve son window_days günü kullanır. Depo hiç
+    budanmadığı, xG ise ~600 günle sınırlı olduğu için oran zamanla tek yönlü
+    düşüp xG sürümünü sessizce durduruyordu. Filtre model_xg.fit ile birebir aynı.
+    """
+    train = [m for m in matches if m["date"] < ref_date]
+    if window_days:
+        cutoff = ref_date.toordinal() - window_days
+        train = [m for m in train if m["date"].toordinal() >= cutoff]
+    if not train:
+        return 0.0
+    return sum(1 for m in train if m.get("home_xg") is not None) / len(train)
+
+
 class XgStore:
     """xg.jsonl okuyucu: maç id → (home_xg, away_xg). Dosya değişince yeniden yükler."""
 

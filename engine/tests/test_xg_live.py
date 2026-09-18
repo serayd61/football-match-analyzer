@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import model as M
 import model_xg as MX
-from store_xg import map_teams, XgStore
+from store_xg import map_teams, XgStore, window_coverage
 
 
 def synth_matches(n=400, seed=3):
@@ -124,6 +124,25 @@ class ModelChoice(unittest.TestCase):
         self.assertEqual(choose_model(ms, 0.90)[0], "goals")
         self.assertEqual(choose_model([{"home_xg": None}], 1.0)[0], "goals")
         self.assertEqual(choose_model(ms, 1.0, xg_weight=0)[0], "goals")
+
+
+
+class WindowCoverageTest(unittest.TestCase):
+    """B09: kapsam, modelin eğitim penceresiyle aynı kümede ölçülür."""
+
+    def test_old_matches_without_xg_do_not_block_a_fully_covered_window(self):
+        ref = datetime(2026, 9, 18)
+        old = [{"date": ref - timedelta(days=700 + i), "home_xg": None} for i in range(300)]
+        recent = [{"date": ref - timedelta(days=1 + i), "home_xg": 1.2} for i in range(200)]
+        future = [{"date": ref + timedelta(days=1), "home_xg": None}]
+        allm = old + recent + future
+        naive = sum(1 for m in allm if m["home_xg"] is not None) / len(allm)
+        self.assertLess(naive, 0.95)                       # eski ölçüm kapıyı kapatırdı
+        self.assertEqual(window_coverage(allm, ref, 600), 1.0)
+        self.assertAlmostEqual(window_coverage(allm, ref, None), 200 / 500)
+
+    def test_empty_window_is_zero(self):
+        self.assertEqual(window_coverage([], datetime(2026, 1, 1), 600), 0.0)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,12 @@
+[Unit]
+Description=Footy results store refresh (POST /update before the 06:00 predict run)
+After=footy-predict.service
+Requires=footy-predict.service
+
+[Service]
+Type=oneshot
+# --- DÜZENLE: footy-predict.service içindeki PREDICT_SERVICE_TOKEN ile aynı değer ---
+Environment=PREDICT_SERVICE_TOKEN=PASTE_LONG_RANDOM_TOKEN_HERE
+ExecStart=/usr/bin/curl -fsS --max-time 900 -X POST http://127.0.0.1:8000/update \
+  -H "Authorization: Bearer ${PREDICT_SERVICE_TOKEN}" \
+  -H "Content-Type: application/json" -d '{"days":4}'

@@ -87,6 +87,8 @@ curl -s https://footballanalytics.pro/api/v2/predictions/ingest    # {"ok":true,
      (Linux'ta gerekiyorsa n8n container'ını `--add-host=host.docker.internal:host-gateway` ile başlat),
      ya da `http://172.17.0.1:8000/predict` (docker bridge gateway).
    - n8n host üzerinde (Docker'sız) çalışıyorsa `127.0.0.1:8000` doğrudur.
+   - **"Tahmin et (predict-service)"** node'unda Header `Authorization` →
+     `Bearer __PREDICT_SERVICE_TOKEN__` değerini unit dosyasındaki `PREDICT_SERVICE_TOKEN` ile değiştir.
 5. Sağ üstten **Execute Workflow** ile elle dene → son node'da `{success:true, upserted:N}` görmelisin.
 6. Çalışınca workflow'u **Active** yap (her gün 06:00).
 
@@ -188,3 +190,44 @@ FOOTBALL_API_KEY=... STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python st
 curl -s http://127.0.0.1:8000/status | python3 -c "import sys,json;print(json.load(sys.stdin)['xg'])"
 ```
 İstatistiği olmayan maçlar `xg_feed.jsonl.missing.json`'da; 2 gün sonra yeniden denenir, 3 denemeden sonra kalıcı atlanır.
+
+---
+
+## Ek (2026-09-18) — servis token'ı artık zorunlu
+
+Denetim bulgusu: `PREDICT_SERVICE_TOKEN` boşken `/predict`, `/backfill`, `/update`, `/reload`
+kimliksiz açıktı ve servis `0.0.0.0:8000` dinliyor. Bu sürümden itibaren token yoksa bu uçlar
+**503** döner. Mevcut kurulumu güncellerken sıra önemli, yoksa 06:00 tahmin akışı durur:
+
+1. Token üret: `openssl rand -hex 32`
+2. n8n → "footy-predictions" → **Tahmin et** node'u → Send Headers → `Authorization: Bearer <token>`.
+3. `/etc/systemd/system/footy-predict.service` içine `Environment=PREDICT_SERVICE_TOKEN=<token>` ekle.
+4. `git pull && systemctl daemon-reload && systemctl restart footy-predict`
+5. Doğrula: `curl -s -o /dev/null -w '%{http_code}' -X POST 127.0.0.1:8000/predict -d '{}' -H 'content-type: application/json'` → `401`;
+   n8n'de **Execute Workflow** → ingest `{success:true}`.
+6. Port: `ufw deny 8000/tcp` (ve Hetzner Cloud Firewall'da 8000 kapalı). Dışarıdan
+   `curl http://<sunucu-ip>:8000/health` zaman aşımına uğramalı.
+
+Geçici kaçış (yalnız özel ağda, önerilmez): `Environment=PREDICT_ALLOW_ANON=1`.
+
+---
+
+## Ek (2026-09-18) — tahminden önce depo yenileme (B08)
+
+§4'teki "servis kendini tazeler" tasarımı pratikte her gün bir gün geriden geliyordu:
+06:00 çağrısında depo ≈ 24 saatlik → `/predict` yenilemeyi **arka plana** atıp o günün
+tahminlerini eski depoyla üretiyordu (dünkü sonuçlar modele girmeden). Arka plan yenilemesi
+yedek olarak duruyor; asıl yenileme artık tahminden önce ayrı bir timer ile yapılır:
+
+```bash
+cp engine/deploy/footy-update.service engine/deploy/footy-update.timer /etc/systemd/system/
+# footy-update.service içindeki PREDICT_SERVICE_TOKEN'ı doldur
+systemctl daemon-reload && systemctl enable --now footy-update.timer
+systemctl start footy-update.service && journalctl -u footy-update -n 5   # elle dene
+```
+
+Doğrulama: 06:00 koşusundan sonra n8n "Tahmin et" çıktısında `store_stale: false`,
+`curl 127.0.0.1:8000/status` → `store_age_hours` < 1. Bu belgede daha önce geçen
+"04:00 sonuç güncellemesi" cron'u depoda hiç yoktu; xG cron'u (04:40) bu timer'dan
+bağımsız çalışmaya devam eder.
+
