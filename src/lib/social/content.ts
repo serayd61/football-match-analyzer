@@ -93,10 +93,27 @@ export function matchTrends(legs: Leg[], trends: string[]): string[] {
   return out;
 }
 
+/** Lig etiketi önceliği (kitle büyüklüğü): üst sınıra takılınca büyük kitle kalır. */
+const LEAGUE_PRIORITY = ['premier-league', 'champions-league', 'la-liga', 'bundesliga', 'serie-a', 'ligue-1', 'championship', 'eredivisie', 'liga-portugal', 'super-lig', 'brasileirao'];
+
 export function hashtags(legs: Leg[], trends: string[] = []): string[] {
   const out = matchTrends(legs, trends).slice(0, 2);
-  for (const l of legs) { const t = LEAGUE_TAG[l.leagueSlug]; if (t && !out.some((x) => norm(x) === norm(t))) out.push(t); }
+  const slugs = [...new Set(legs.map((l) => l.leagueSlug))].sort((a, b) => (LEAGUE_PRIORITY.indexOf(a) + 1 || 99) - (LEAGUE_PRIORITY.indexOf(b) + 1 || 99));
+  for (const slug of slugs) { const t = LEAGUE_TAG[slug]; if (t && !out.some((x) => norm(x) === norm(t))) out.push(t); }
   return out.slice(0, MAX_TAGS);
+}
+
+/** Telegram kanal/grup adını (@ad) bağlantıya çevirir; sayısal id ise null. */
+export const telegramLink = (chat: string | null | undefined): string | null => {
+  const c = (chat || '').trim().replace(/^@/, '');
+  return c && /^[A-Za-z0-9_]+$/.test(c) ? `https://t.me/${c}` : null;
+};
+
+/** X günlük gönderisinin altına: Telegram davet yanıtı (kullanıcı isteği 18 Eyl: insanlar gruba gelsin). */
+export function inviteText(link: string, lang: Lang): string {
+  return lang === 'tr'
+    ? `Seçimler ve sonuçlar Telegram grubunda da paylaşılıyor, ücretsiz: ${link}`
+    : `Picks and results are also posted in our Telegram group, free to join: ${link}`;
 }
 
 export function dailyText(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null, source: Source = 'twitter', tags: string[] = []): string {
