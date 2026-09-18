@@ -67,7 +67,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
   }
   const rated = upcoming.filter((r) => r.hasModel && r.pick);
   const pod = [...rated].sort((a, b) => (b.confidence ?? b.confidenceRaw ?? 0) - (a.confidence ?? a.confidenceRaw ?? 0))[0] ?? null;
-  const winners = latest.rows.filter((r) => r.outcome === 'won').slice(0, 3);
+  // Denetim 2026-09-18: yalnız kazananları seçmek kanıt değil vitrindi. Son sonuçlanan 6 tahmin,
+  // kazanan ve kaybeden birlikte, seçmeden.
+  const winners = latest.rows.filter((r) => r.outcome === 'won' || r.outcome === 'lost').slice(0, 6);
 
   const dayLabel = day === today ? tc('today') : day === addDays(today, 1) ? tc('tomorrow') : f.dateTime(zonedStartOfDay(day), 'dayLong');
   const kicker = rated.length && day === today ? t('kickerLive', { count: rated.length }) : rated.length ? t('kickerNext', { day: dayLabel }) : t('kickerIdle');
@@ -170,7 +172,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
               <Link key={w.fixtureId} href={`/predictions/${w.fixtureId}`} className="card card-top">
                 <div className="flex items-center justify-between gap-2">
                   <span className="kicker">{w.leagueName}</span>
-                  <span className="tag">{tc('won')}</span>
+                  <span className={`tag ${w.outcome === 'lost' ? 'text-s-loss' : ''}`}>{w.outcome === 'lost' ? tc('lost') : tc('won')}</span>
                 </div>
                 <h3 className="text-[20px] leading-[1.05]">{w.homeName} {w.homeScore}–{w.awayScore} {w.awayName}</h3>
                 <div className="flex items-baseline justify-between gap-2 text-[13px]">

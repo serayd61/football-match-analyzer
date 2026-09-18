@@ -17,7 +17,9 @@ export default function LocaleSwitcher({ className = '' }: { className?: string 
     // Same route, other locale. Dynamic segments come from useParams.
     router.replace(
       // @ts-expect-error — pathname/params pairing is validated at runtime by next-intl
-      { pathname, params },
+      // query korunur: dil değişince tarih/lig/arama filtreleri kaybolmasın (denetim B10).
+      // useSearchParams DEĞİL: statik sayfalarda Suspense sınırı ister, build'i kırar.
+      { pathname, params, query: Object.fromEntries(new URLSearchParams(window.location.search).entries()) },
       { locale: next },
     );
   }

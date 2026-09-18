@@ -6,6 +6,7 @@ import { alternatesFor } from '@/lib/site/seo';
 import { nextDayWithPredictions } from '@/lib/site/predictions';
 import { listDay } from '@/lib/site/fixtures';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
+import { applyFilters, parseFilters } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import PredictionCard from '@/components/site/PredictionCard';
@@ -21,7 +22,7 @@ export const dynamic = 'force-dynamic';
 // toggleable "How to read confidence" note, then a 3-column grid of cards.
 // The date strip and the covered/all switch survive as small links.
 
-type Search = { date?: string; league?: string; scope?: string; note?: string };
+type Search = { date?: string; league?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string };
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'predictions' });
@@ -30,7 +31,9 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 
 export default async function PredictionsPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
-  const access = await requireSiteAccess(locale, '/predictions');
+  // Giriş dönüşünde filtreler korunur: callbackUrl tam sorguyu taşır.
+  const backQs = new URLSearchParams(Object.entries(searchParams).filter((e): e is [string, string] => typeof e[1] === 'string')).toString();
+  const access = await requireSiteAccess(locale, `/predictions${backQs ? `?${backQs}` : ''}`);
   const t = await getTranslations('v2.predictions');
   const tp = await getTranslations('predictions');
   const tc = await getTranslations('common');
@@ -54,7 +57,11 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const day = await listDay(date);
   const all = day.rows;
   const scoped = scope === 'all' ? all : all.filter((r) => r.covered);
-  const rows = league ? scoped.filter((r) => r.league?.slug === league.slug) : scoped;
+  const inLeague = league ? scoped.filter((r) => r.league?.slug === league.slug) : scoped;
+  // Denetim B10: filters.ts (arama/durum/hazır/sıralama) kart tasarımına geçişte sayfadan düşmüştü.
+  const flt = parseFilters(searchParams);
+  const rows = applyFilters(inLeague, flt);
+  const filtersOn = !!flt.q || flt.status !== 'all' || flt.ready || flt.sort !== 'time';
   const uncoveredCount = all.filter((r) => !r.covered).length;
 
   const dayLabel = (ymd: string) =>
@@ -63,11 +70,15 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
   const href = (over: Partial<Search>) => {
     const qs = new URLSearchParams();
-    const m = { date, league: league?.slug, scope, note: showNote ? undefined : '0', ...over };
+    const m = { date, league: league?.slug, scope, note: showNote ? undefined : '0', q: flt.q || undefined, status: flt.status === 'all' ? undefined : flt.status, ready: flt.ready ? '1' : undefined, sort: flt.sort === 'time' ? undefined : flt.sort, ...over };
     if (m.date && m.date !== today) qs.set('date', m.date);
     if (m.league) qs.set('league', m.league);
     if (m.scope === 'all') qs.set('scope', 'all');
     if (m.note === '0') qs.set('note', '0');
+    if (m.q) qs.set('q', m.q);
+    if (m.status) qs.set('status', m.status);
+    if (m.ready) qs.set('ready', '1');
+    if (m.sort) qs.set('sort', m.sort);
     const s = qs.toString();
     return `/predictions${s ? `?${s}` : ''}`;
   };
@@ -75,6 +86,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const nextDay = scoped.length === 0 ? await nextDayWithPredictions(date, 1) : null;
   const leaguesToday = SITE_LEAGUES.filter((l) => scoped.some((r) => r.league?.slug === l.slug));
   const updated = day.feed === 'ok' ? f.dateTime(new Date(day.fetchedAt), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : null;
+  // Denetim B11: day.fetchedAt akışın okunma anıdır; tahminin yayın zamanı satırların updated_at'idir.
+  const lastPublished = rows.reduce<string | null>((m, r) => (r.hasModel && r.updatedAt && (!m || r.updatedAt > m) ? r.updatedAt : m), null);
+  const published = lastPublished ? f.dateTime(new Date(lastPublished), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : null;
   const fullDay = f.dateTime(zonedStartOfDay(date), { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
@@ -85,6 +99,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           <h1 className="text-[32px] sm:text-[40px]">{date === today ? t('title') : t('titleDay', { day: dayLabel(date) })}</h1>
           <p className="mt-2 text-[14px] text-s-muted">
             {updated ? t('meta', { day: fullDay, matches: rows.length, time: updated }) : t('metaNoFeed', { day: fullDay, matches: rows.length })}
+            {published && <> · {t('published', { time: published })}</>}
           </p>
         </div>
         <nav aria-label={tc('league')} className="flex flex-wrap gap-1">
@@ -111,6 +126,37 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         </span>
       </div>
 
+      {/* Filtreler: JS'siz GET formu — durum URL'de, geri/ileri ve paylaşım kendiliğinden çalışır */}
+      <form method="get" action="" role="search" className="rule-b-1 flex flex-wrap items-center gap-2 py-3 text-[13px]">
+        {date !== today && <input type="hidden" name="date" value={date} />}
+        {league && <input type="hidden" name="league" value={league.slug} />}
+        {scope === 'all' && <input type="hidden" name="scope" value="all" />}
+        {!showNote && <input type="hidden" name="note" value="0" />}
+        <label className="sr-only" htmlFor="flt-q">{tc('search')}</label>
+        <input id="flt-q" name="q" type="search" defaultValue={flt.q} placeholder={t('searchPh')} maxLength={60} className="input h-9 w-full min-w-0 sm:w-56" />
+        <label className="sr-only" htmlFor="flt-status">{tc('status')}</label>
+        <select id="flt-status" name="status" defaultValue={flt.status} className="input h-9">
+          <option value="all">{t('statusAll')}</option>
+          <option value="upcoming">{t('statusUpcoming')}</option>
+          <option value="live">{t('statusLive')}</option>
+          <option value="finished">{t('statusFinished')}</option>
+        </select>
+        <label className="sr-only" htmlFor="flt-sort">{tc('sort')}</label>
+        <select id="flt-sort" name="sort" defaultValue={flt.sort} className="input h-9">
+          <option value="time">{t('sortTime')}</option>
+          <option value="confidence">{t('sortConfidence')}</option>
+        </select>
+        <label className="flex min-h-[36px] items-center gap-2"><input type="checkbox" name="ready" value="1" defaultChecked={flt.ready} /> {t('ready')}</label>
+        <button type="submit" className="btn btn-sm btn-primary">{t('apply')}</button>
+        {filtersOn && <Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-sm btn-secondary">{tc('clear')}</Link>}
+      </form>
+      {filtersOn && (
+        <p role="status" className="py-2 text-[13px] text-s-muted">
+          {t('filtered', { shown: rows.length, total: inLeague.length })}
+          {flt.sort === 'confidence' && <> · {t('sortNote')}</>}
+        </p>
+      )}
+
       {showNote && (
         <RiskNote className="mt-4 max-w-[760px]">
           <strong>{t('howTitle')}</strong> {t('howText')}
@@ -123,7 +169,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <p role="status" className="risk-note mb-3">{tp('feedError')}</p>
       )}
 
-      {rows.length === 0 ? (
+      {rows.length === 0 && filtersOn && inLeague.length > 0 ? (
+        <EmptyState title={t('emptyFiltered')} lead={t('emptyFilteredLead')} action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-secondary">{tc('clear')}</Link>} />
+      ) : rows.length === 0 ? (
         <EmptyState
           title={t('emptyTitle')}
           lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}

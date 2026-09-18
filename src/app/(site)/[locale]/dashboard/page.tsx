@@ -158,7 +158,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               {trial ? t('planTrial', { days: site.trialDaysLeft }) : paid ? t('planPro') : t('planFree')}
             </span>
             <Link href="/account" className="text-sm underline underline-offset-4">{t('account')}</Link>
-            {(!paid || trial) && <a href={legacyHref('/pricing', locale)} className="inline-flex h-8 items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>}
+            {(!paid || trial) && <a href={`/${locale}/pricing`} className="inline-flex h-8 items-center rounded-sm bg-s-brand px-3 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>}
           </div>
         }
       />
@@ -227,7 +227,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                     <div className="max-w-sm rounded-sm border border-s-line bg-s-surface p-5 text-center shadow-sm">
                       <p className="font-medium">{t('picksLocked', { n: picks.length })}</p>
                       <p className="mt-1 text-sm text-s-muted">{t('picksLockedLead')}</p>
-                      <a href={legacyHref('/pricing', locale)} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
+                      <a href={`/${locale}/pricing`} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
                     </div>
                   </div>
                 )}
@@ -283,7 +283,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                     <div className="max-w-sm rounded-sm border border-s-line bg-s-surface p-5 text-center shadow-sm">
                       <p className="font-medium">{t('valueLocked', { n: radar.length })}</p>
                       <p className="mt-1 text-sm text-s-muted">{t('valueLockedLead')}</p>
-                      <a href={legacyHref('/pricing', locale)} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
+                      <a href={`/${locale}/pricing`} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
                     </div>
                   </div>
                 )}
