@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { oauth1Header, oauth1Signature, pctEncode } from '@/lib/social/oauth1';
-import { pickLegs, dailyText, tweetLength, resultText, weeklyText, marketLabel, hashtags, matchTrends, toTag, type Leg } from '@/lib/social/content';
+import { pickLegs, dailyText, tweetLength, resultText, weeklyText, marketLabel, hashtags, matchTrends, toTag, telegramLink, inviteText, type Leg } from '@/lib/social/content';
 
 // X belgelerindeki "Creating a signature" örneği (bilinen vektör).
 test('oauth1 signature matches the X documentation example', () => {
@@ -69,11 +69,11 @@ test('hashtags: trend matches on team/league words, league tags follow, max 3, t
   ];
   const trends = ['Taylor Swift', '#Bayern', 'Chelsea', 'Manchester United', '#Eredivisie', 'Union'];
   assert.deepEqual(matchTrends(legs, trends), ['#Bayern', '#Chelsea', '#Eredivisie']); // 'Union' generic → yok
-  assert.deepEqual(hashtags(legs, trends), ['#Bayern', '#Chelsea', '#Bundesliga']);
-  assert.deepEqual(hashtags(legs, []), ['#Bundesliga', '#PL', '#Eredivisie']);
+  assert.deepEqual(hashtags(legs, trends), ['#Bayern', '#Chelsea', '#PL']); // lig etiketi kitle sırasıyla: PL önce
+  assert.deepEqual(hashtags(legs, []), ['#PL', '#Bundesliga', '#Eredivisie']);
   assert.equal(toTag('Bayern Munich'), '#BayernMunich');
   const tw = dailyText(legs, '2026-09-18', 'en', null, 'twitter', hashtags(legs, trends));
-  assert.ok(tw.includes('#Bayern #Chelsea #Bundesliga'), tw);
+  assert.ok(tw.includes('#Bayern #Chelsea #PL'), tw);
   assert.ok(tweetLength(tw) <= 280);
   const tg = dailyText(legs, '2026-09-18', 'en', null, 'telegram', hashtags(legs, trends));
   assert.ok(!tg.includes('#'), tg);
@@ -85,4 +85,12 @@ test('pickLegs: showcase legs outside the 1.25–1.75 odds band (or without odds
   const mk = (id: number, market: any, odds: number | null, source: any): Leg => ({ fixtureId: id, leagueSlug: 'bundesliga', leagueName: 'Bundesliga', homeName: 'A' + id, awayName: 'B' + id, kickoff: '2026-09-18T18:00:00Z', market, selection: market === '1x2' ? '1' : market === 'btts' ? 'yes' : 'over', modelP: 0.7, odds, source });
   const legs = pickLegs([mk(1, 'ou25', 1.44, 'daily')], [mk(2, 'ou25', 1.11, 'showcase'), mk(3, 'btts', 1.6, 'showcase'), mk(4, '1x2', 1.22, 'showcase'), mk(5, '1x2', null, 'showcase'), mk(6, '1x2', 1.5, 'showcase')]);
   assert.deepEqual(legs.map((l) => l.fixtureId).sort(), [1, 3, 6]);
+});
+
+test('telegramLink + inviteText', () => {
+  assert.equal(telegramLink('@fanalytics_pro'), 'https://t.me/fanalytics_pro');
+  assert.equal(telegramLink('-1004491183019'), null);
+  assert.equal(telegramLink(''), null);
+  const t = inviteText('https://t.me/fanalytics_pro', 'en');
+  assert.ok(t.includes('https://t.me/fanalytics_pro') && tweetLength(t) <= 280);
 });

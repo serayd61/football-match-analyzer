@@ -14,7 +14,7 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, hashtags, pickLegs, resultText, weeklyText, type Lang, type Leg, type WeeklyStats } from './content';
+import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
 import { hasTelegram, sendMessage, sendPhoto } from './telegram';
@@ -102,11 +102,24 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
     const key = `daily|${day}|${t.platform}|${t.account}`;
     const text = dailyText([...legs], day, t.account, rec, t.platform, tags);
     if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
-    if (opts.dry) { out.push({ key, status: 'dry', text }); continue; }
+    if (opts.dry) {
+      out.push({ key, status: 'dry', text });
+      const l = t.platform === 'twitter' ? telegramLink(process.env[`TELEGRAM_CHAT_${t.account.toUpperCase()}`]) : null;
+      if (l) out.push({ key: `invite|${day}|twitter|${t.account}`, status: 'dry', text: inviteText(l, t.account) });
+      continue;
+    }
     images[t.account] ??= await dailyImage(legs, day, t.account, rec);
     const r = await send(t, text, images[t.account]!);
     await record({ key, kind: 'daily', day, platform: t.platform, account: t.account, fixtureIds: legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
     out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
+    // X'te günlük gönderinin altına Telegram daveti (aynı dilin grubu tanımlıysa)
+    const tgLink = t.platform === 'twitter' && r.ok ? telegramLink(process.env[`TELEGRAM_CHAT_${t.account.toUpperCase()}`]) : null;
+    if (tgLink && r.ok) {
+      const ikey = `invite|${day}|twitter|${t.account}`, itext = inviteText(tgLink, t.account);
+      const ir = await send(t, itext, null, r.id);
+      await record({ key: ikey, kind: 'invite', day, platform: 'twitter', account: t.account, fixtureIds: [], postId: ir.ok ? ir.id : null, parentId: r.id, body: itext, status: ir.ok ? 'posted' : 'failed', error: ir.ok ? null : ir.error });
+      out.push({ key: ikey, status: ir.ok ? 'posted' : 'failed', id: ir.ok ? ir.id : undefined, error: ir.ok ? undefined : ir.error });
+    }
   }
   return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection}`), tags, trends: trends.length, targets: tg.length, dry: !!opts.dry, posts: out };
 }
@@ -162,7 +175,9 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `weekly|${day}|${t.platform}|${t.account}`;
-    const [first, second] = weeklyText(stats, t.account, t.platform, ['#football']);
+    const wl = t.platform === 'twitter' ? telegramLink(process.env[`TELEGRAM_CHAT_${t.account.toUpperCase()}`]) : null;
+    const [first, second0] = weeklyText(stats, t.account, t.platform, ['#football']);
+    const second = wl ? `${second0}\n\n${t.account === 'tr' ? 'Telegram' : 'Telegram'}: ${wl}` : second0;
     if (have.has(key)) { out.push({ key, status: 'already' }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text: [first, second] }); continue; }
     if (!stats.n) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'sonuçlanmış seçim yok' }); out.push({ key, status: 'skipped' }); continue; }
