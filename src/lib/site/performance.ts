@@ -96,7 +96,10 @@ async function fetchOddsFor(fixtureIds: number[]): Promise<OddsIndex> {
     // KG oranı sütunlardan (raw jsonb ~75 KB/satır; 2026-09-12 build timeout'u).
     // Migration uygulanmamışsa sütunsuz tekrar dener; KG farkı o zaman boş kalır.
     const base = 'fixture_id, phase, provider, home_odds, draw_odds, away_odds, captured_at';
-    const q = (cols: string) => db().from('prediction_odds').select(cols).in('fixture_id', chunk).order('captured_at', { ascending: false }).limit(chunk.length * 4);
+    // Denetim 2026-09-18 (B05): 6 faz varken fazsız sorgu + ×4 limit, captured_at DESC
+    // sırasında en eski (opening) satırları kesiyordu. Anahtar (fixture_id, phase)
+    // tekil → iki fazla ×2 tam sayıdır, kesilme olamaz. (weekly.ts aynı kalıp.)
+    const q = (cols: string) => db().from('prediction_odds').select(cols).in('fixture_id', chunk).in('phase', ['opening', 'closing']).order('captured_at', { ascending: false }).limit(chunk.length * 2);
     let { data, error } = await q(`${base}, btts_yes_odds, btts_no_odds`);
     if (error && /btts_(yes|no)_odds/.test(error.message)) ({ data, error } = await q(base));
     if (error) { console.error('[site/performance] odds fetch failed', error.message); continue; }

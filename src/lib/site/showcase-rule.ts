@@ -21,6 +21,20 @@ export const NO_1X2_LEAGUES: ReadonlySet<string> = new Set(['premier-league', 'l
 /** Başlamaya bu kadar dakika kala satır dondurulur; sonrası değişmez. */
 export const FREEZE_MINUTES = 180;
 
+export type FreezeState = 'open' | 'freeze' | 'late';
+/**
+ * Denetim 2026-09-18 (B07): eski koşul `mins <= 180` alt sınırsızdı; başlamış maç
+ * (mins < 0) ilk kez hesaplanıp "dondurulmuş" karneye girebiliyordu.
+ *  open   → 3 saatten uzak: yazılır, sonraki cron yeniden hesaplar
+ *  freeze → (0, 180] dk: yazılır ve dondurulur
+ *  late   → başlamış: yeni seçim YAZILMAZ (donmamış eski satır karneye girmez)
+ */
+export function freezeState(kickoff: string, now: number): FreezeState {
+  const mins = (Date.parse(kickoff) - now) / 60000;
+  if (!(mins > 0)) return 'late';
+  return mins <= FREEZE_MINUTES ? 'freeze' : 'open';
+}
+
 export type ShowcaseMarket = '1x2' | 'ou25' | 'btts';
 export type ShowcaseSelection = '1' | 'X' | '2' | 'over' | 'yes';
 export type ShowcaseReason = 'goal' | '1x2' | 'edge_high' | 'no_market' | 'league_no_1x2' | 'below_threshold';

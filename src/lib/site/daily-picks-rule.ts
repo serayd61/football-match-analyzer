@@ -112,3 +112,34 @@ export function selectDailyPicks(rows: PickCandidateInput[], now?: number, take 
 export function settlePick(market: PickMarket, homeGoals: number, awayGoals: number): boolean {
   return market === 'btts' ? homeGoals > 0 && awayGoals > 0 : homeGoals + awayGoals >= 3;
 }
+
+export interface PicksTally {
+  n: number;
+  won: number;
+  byMarket: Record<PickMarket, { n: number; won: number }>;
+  /** sabit 1 birim, YALNIZ bahisçi oranlı ayaklar — alınabilir getiri */
+  roi: number | null;
+  nBook: number;
+  /** adil oranlı (1/p) ayaklar: teorik senaryo, gerçek getiriye girmez */
+  nFair: number;
+  roiFair: number | null;
+}
+
+/**
+ * Denetim 2026-09-18 (B04): adil oran (1/p) modelden türetilir, piyasada alınabilir
+ * bir fiyat değildir; eskiden gerçek getiriyle aynı toplamdaydı. İsabet (n/won)
+ * tüm ayakları sayar; getiri yalnız oddsSource='book'.
+ */
+export function tallyPicks(settled: Array<{ market: PickMarket; odds: number; oddsSource: 'book' | 'fair'; won: boolean }>): PicksTally {
+  const t: PicksTally = { n: 0, won: 0, byMarket: { btts: { n: 0, won: 0 }, ou25: { n: 0, won: 0 } }, roi: null, nBook: 0, nFair: 0, roiFair: null };
+  let bookRet = 0, fairRet = 0;
+  for (const p of settled) {
+    t.n++; t.byMarket[p.market].n++;
+    if (p.won) { t.won++; t.byMarket[p.market].won++; }
+    if (p.oddsSource === 'book') { t.nBook++; if (p.won) bookRet += p.odds; }
+    else { t.nFair++; if (p.won) fairRet += p.odds; }
+  }
+  t.roi = t.nBook ? (bookRet - t.nBook) / t.nBook : null;
+  t.roiFair = t.nFair ? (fairRet - t.nFair) / t.nFair : null;
+  return t;
+}

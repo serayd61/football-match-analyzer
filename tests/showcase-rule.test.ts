@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { showcaseFor, settleShowcase, EDGE_MAX_1X2 } from '@/lib/site/showcase-rule';
+import { showcaseFor, settleShowcase, freezeState, EDGE_MAX_1X2 } from '@/lib/site/showcase-rule';
 
 const base = { fixtureId: 1, leagueSlug: 'bundesliga', kickoff: '2026-09-13T13:30:00Z', pick: '1' as const, pHome: 0.55, pDraw: 0.25, pAway: 0.20, pBttsYes: 0.5, pOver25: 0.5, market: { pHome: 0.53, pDraw: 0.25, pAway: 0.22, phase: 'h12' } };
 
@@ -31,4 +31,14 @@ test('settlement', () => {
   assert.equal(settleShowcase('1x2', '1', 1, 1), false);
   assert.equal(settleShowcase('ou25', 'over', 2, 1), true);
   assert.equal(settleShowcase('btts', 'yes', 2, 0), false);
+});
+
+test('freeze window has a lower bound: a started match is never frozen as a new pick', () => {
+  const ko = '2026-09-13T13:30:00Z', t = Date.parse(ko), min = 60000;
+  assert.equal(freezeState(ko, t - 181 * min), 'open');
+  assert.equal(freezeState(ko, t - 180 * min), 'freeze');
+  assert.equal(freezeState(ko, t - 1 * min), 'freeze');
+  assert.equal(freezeState(ko, t), 'late');
+  assert.equal(freezeState(ko, t + 120 * min), 'late'); // denetimdeki karşı örnek: mins = -120
+  assert.equal(freezeState('not-a-date', t), 'late');
 });

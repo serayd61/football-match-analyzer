@@ -733,7 +733,8 @@
     "picksMeta": "gol pazarları · doğrulanmış kural",
     "picksEmpty": "Bugün kurala uyan seçim yok. Kural gevşetilmez; boş gün de karnenin parçasıdır.",
     "picksNote": "Kural: Karşılıklı gol Var için model ≥ %60, Üst 2,5 için ≥ %65; yalnız Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League ve Şampiyonlar Ligi; günde en fazla 3 ayak. Piyasaya karşı fark şart değil: geriye dönük testte piyasayla uyuşan gol ayakları tuttu, kavga edenler tutmadı. Seçimler sabah dondurulur ve skordan sonuçlandırılır.",
-    "picksRecord": "Son {days} gün: {won}/{n} tuttu ({hit}) · sabit bahis getirisi {roi}",
+    "picksRecord": "Son {days} gün: {won}/{n} tuttu ({hit}) · sabit bahis getirisi {roi} (bahisçi oranı olan {nBook} seçim)",
+    "picksRecordFair": "Bahisçi oranı bulunmayan {nFair} seçim getiriye dahil değil. Adil oranla (1/olasılık) teorik sonuç: {roiFair}.",
     "picksRecordEmpty": "Karne, ilk seçimler sonuçlanınca başlar.",
     "picksFair": "adil",
     "picksBook": "bahisçi",
@@ -870,7 +871,7 @@
     "predictions": {
       "title": "Bugünün tahminleri",
       "titleDay": "Tahminler · {day}",
-      "meta": "{day} · {matches, plural, =1 {1 maç} other {# maç}} · model güncellendi {time} UTC",
+      "meta": "{day} · {matches, plural, =1 {1 maç} other {# maç}} · veriler güncellendi {time} UTC",
       "metaNoFeed": "{day} · {matches, plural, =1 {1 maç} other {# maç}}",
       "all": "Tümü",
       "howTitle": "Güven nasıl okunur.",

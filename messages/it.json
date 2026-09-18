@@ -733,7 +733,8 @@
     "picksMeta": "mercati gol · regola verificata",
     "picksEmpty": "Oggi nessun pronostico rispetta la regola. La regola non si allenta; un giorno vuoto fa parte del bilancio.",
     "picksNote": "Regola: Goal richiede modello ≥ 60%, Over 2,5 richiede ≥ 65%; solo Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League e Champions League; al massimo 3 selezioni al giorno. Non serve uno scarto rispetto al mercato: nel backtest le selezioni gol in accordo con il mercato hanno vinto, quelle in contrasto no. I pronostici vengono fissati al mattino e regolati dal risultato.",
-    "picksRecord": "Ultimi {days} giorni: {won}/{n} vinti ({hit}) · rendimento a puntata fissa {roi}",
+    "picksRecord": "Ultimi {days} giorni: {won}/{n} vinti ({hit}) · rendimento a puntata fissa {roi} ({nBook} selezioni con quota bookmaker)",
+    "picksRecordFair": "{nFair} selezioni senza quota bookmaker sono escluse dal rendimento. Risultato teorico a quota equa (1/probabilità): {roiFair}.",
     "picksRecordEmpty": "Il bilancio inizia quando i primi pronostici vengono regolati.",
     "picksFair": "equa",
     "picksBook": "bookmaker",
@@ -870,7 +871,7 @@
     "predictions": {
       "title": "Pronostici di oggi",
       "titleDay": "Pronostici · {day}",
-      "meta": "{day} · {matches, plural, =1 {1 partita} other {# partite}} · modello aggiornato {time} UTC",
+      "meta": "{day} · {matches, plural, =1 {1 partita} other {# partite}} · dati aggiornati {time} UTC",
       "metaNoFeed": "{day} · {matches, plural, =1 {1 partita} other {# partite}}",
       "all": "Tutti",
       "howTitle": "Come leggere la confidenza.",

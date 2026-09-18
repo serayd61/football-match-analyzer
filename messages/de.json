@@ -733,7 +733,8 @@
     "picksMeta": "Tormärkte · geprüfte Regel",
     "picksEmpty": "Heute erfüllt kein Tipp die Regel. Die Regel wird nicht gelockert; ein leerer Tag gehört zur Bilanz.",
     "picksNote": "Regel: Beide treffen Ja braucht Modell ≥ 60 %, Über 2,5 braucht ≥ 65 %; nur Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League und Champions League; höchstens 3 Tipps pro Tag. Kein Vorsprung gegenüber dem Markt nötig: im Backtest trafen Tor-Tipps, die mit dem Markt übereinstimmten, und nicht die, die ihm widersprachen. Tipps werden morgens eingefroren und nach dem Ergebnis abgerechnet.",
-    "picksRecord": "Letzte {days} Tage: {won}/{n} getroffen ({hit}) · Rendite bei festem Einsatz {roi}",
+    "picksRecord": "Letzte {days} Tage: {won}/{n} getroffen ({hit}) · Rendite bei festem Einsatz {roi} ({nBook} Tipps mit Buchmacherquote)",
+    "picksRecordFair": "{nFair} Tipps hatten keine Buchmacherquote und zählen nicht zur Rendite. Theoretisches Ergebnis zur fairen Quote (1/Wahrscheinlichkeit): {roiFair}.",
     "picksRecordEmpty": "Die Bilanz beginnt, sobald die ersten Tipps abgerechnet sind.",
     "picksFair": "fair",
     "picksBook": "Buchmacher",
@@ -870,7 +871,7 @@
     "predictions": {
       "title": "Heutige Prognosen",
       "titleDay": "Prognosen · {day}",
-      "meta": "{day} · {matches, plural, =1 {1 Spiel} other {# Spiele}} · Modell aktualisiert {time} UTC",
+      "meta": "{day} · {matches, plural, =1 {1 Spiel} other {# Spiele}} · Daten aktualisiert {time} UTC",
       "metaNoFeed": "{day} · {matches, plural, =1 {1 Spiel} other {# Spiele}}",
       "all": "Alle",
       "howTitle": "So liest du die Konfidenz.",

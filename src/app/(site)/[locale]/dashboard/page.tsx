@@ -18,7 +18,7 @@ import WatchlistPanel, { UnfollowButton } from '@/components/site/dashboard/Watc
 import IntelCard from '@/components/site/dashboard/IntelCard';
 import PurchaseTracker from '@/components/site/dashboard/PurchaseTracker';
 import { getSiteAccess } from '@/lib/site/access';
-import { getDailyPicks, dailyPicksRecord } from '@/lib/site/daily-picks';
+import { readDailyPicks, dailyPicksRecord } from '@/lib/site/daily-picks';
 import { Paywall } from '@/components/site/Paywall';
 import { legacyHref } from '@/lib/site/legacy';
 
@@ -38,6 +38,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 
 const pp = (x: number) => { const n = Math.round(x * 100); return `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)}`; };
 const pct = (x: number | null | undefined) => (x == null ? '–' : `${Math.round(x * 100)}%`);
+const signedPct = (x: number | null | undefined) => (x == null ? '–' : `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x * 100))}%`);
 
 export default async function DashboardPage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
@@ -69,7 +70,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   // Computed for everyone: free users see the count behind a locked overlay.
   const radar = await valueRadar([...todayRows, ...tomorrowRows]);
   // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
-  const [{ picks }, picksRec] = await Promise.all([getDailyPicks(today), dailyPicksRecord(30)]);
+  const [picks, picksRec] = await Promise.all([readDailyPicks(today), dailyPicksRecord(30)]);
 
   // Followed clubs: position, form and next rated match, in parallel.
   const followed = await Promise.all(watch.items.map(async (w) => {
@@ -227,8 +228,11 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               </div>
             )}
             <p className={`mt-2 text-sm ${picksRec.n && picksRec.roi != null && picksRec.roi >= 0 ? 'text-s-win' : ''}`}>
-              {picksRec.n ? t('picksRecord', { days: picksRec.days, won: picksRec.won, n: picksRec.n, hit: pct(picksRec.won / picksRec.n), roi: picksRec.roi == null ? '–' : `${picksRec.roi >= 0 ? '+' : '−'}${Math.abs(Math.round(picksRec.roi * 100))}%` }) : t('picksRecordEmpty')}
+              {picksRec.n ? t('picksRecord', { days: picksRec.days, won: picksRec.won, n: picksRec.n, hit: pct(picksRec.won / picksRec.n), roi: signedPct(picksRec.roi), nBook: picksRec.nBook }) : t('picksRecordEmpty')}
             </p>
+            {picksRec.nFair > 0 && (
+              <p className="mt-1 text-xs text-s-muted">{t('picksRecordFair', { nFair: picksRec.nFair, roiFair: signedPct(picksRec.roiFair) })}</p>
+            )}
             <p className="mt-2 text-xs text-s-muted">{t('picksNote')}</p>
           </section>
 

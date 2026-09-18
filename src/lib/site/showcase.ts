@@ -5,7 +5,7 @@ import { latestPhase } from './odds-phases';
 import { SITE_LEAGUES } from './leagues';
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
-import { showcaseFor, settleShowcase, SHOWCASE_RULE_VERSION, FREEZE_MINUTES, type ShowcaseMarket, type ShowcasePick, type ShowcaseInput } from './showcase-rule';
+import { showcaseFor, settleShowcase, SHOWCASE_RULE_VERSION, freezeState, type ShowcaseMarket, type ShowcasePick, type ShowcaseInput } from './showcase-rule';
 
 // Vitrin seçimi — hesap + dondurma + karne. Kural showcase-rule.ts'te (saf).
 // Saatlik cron D..D+2 penceresindeki kapsanan maçlar için son piyasa görüşüyle
@@ -48,17 +48,18 @@ function toInput(r: SitePrediction, market: Mkt | null): ShowcaseInput {
 export async function computeShowcase(days = 3, write = true, now = Date.now()) {
   const today = todayYmd();
   const rows: SitePrediction[] = [];
-  for (let d = 0; d < days; d++) rows.push(...(await listDayFresh(addDays(today, d))).rows.filter((r) => r.covered && r.hasModel && !r.settled && r.league));
+  for (let d = 0; d < days; d++) rows.push(...(await listDayFresh(addDays(today, d))).rows.filter((r) => r.covered && r.hasModel && !r.settled && r.status === 'scheduled' && r.league));
   const ids = rows.map((r) => r.fixtureId);
   const [markets, frozenRes] = await Promise.all([freshMarkets(ids), db().from(TABLE).select('fixture_id').in('fixture_id', ids).eq('frozen', true)]);
   const frozen = new Set(((frozenRes.data ?? []) as any[]).map((r) => Number(r.fixture_id)));
-  const picks: ShowcaseRow[] = []; let skipped = 0, froze = 0;
+  const picks: ShowcaseRow[] = []; let skipped = 0, froze = 0, late = 0;
   const upserts: any[] = [];
   for (const r of rows) {
     if (frozen.has(r.fixtureId)) { skipped++; continue; }
+    const state = freezeState(r.kickoff, now);
+    if (state === 'late') { late++; continue; } // feed 'scheduled' dese de saat geçmişse yazma
     const p = showcaseFor(toInput(r, markets.get(r.fixtureId) ?? null));
-    const mins = (Date.parse(r.kickoff) - now) / 60000;
-    const freeze = mins <= FREEZE_MINUTES;
+    const freeze = state === 'freeze';
     if (freeze) froze++;
     const row: ShowcaseRow = { ...p, kickoff: r.kickoff, leagueSlug: r.league!.slug, homeName: r.homeName, awayName: r.awayName, frozen: freeze, computedAt: new Date(now).toISOString() };
     picks.push(row);
@@ -71,7 +72,7 @@ export async function computeShowcase(days = 3, write = true, now = Date.now()) 
   }
   const byReason: Record<string, number> = {};
   for (const p of picks) byReason[p.reason] = (byReason[p.reason] ?? 0) + 1;
-  return { window: days, candidates: rows.length, computed: picks.length, skippedFrozen: skipped, frozenNow: froze, byReason, error, picks };
+  return { window: days, candidates: rows.length, computed: picks.length, skippedFrozen: skipped, skippedLate: late, frozenNow: froze, byReason, error, picks };
 }
 
 export interface ShowcaseRecord {

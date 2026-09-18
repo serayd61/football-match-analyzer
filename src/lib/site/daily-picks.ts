@@ -4,7 +4,7 @@ import { listDayFresh } from './fixtures';
 
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
-import { selectDailyPicks, settlePick, RULE_VERSION, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
+import { selectDailyPicks, settlePick, tallyPicks, RULE_VERSION, type PicksTally, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
 /** Cron/preview yolu: sayfa önbelleğini atlayıp DB'den okur (ingest sonrası bayat 'hasModel=0' görülmesin). */
 const freshRows = async (ymd: string) => (await listDayFresh(ymd)).rows;
 
@@ -28,13 +28,8 @@ export interface DailyPick {
   ruleVersion: string;
 }
 
-export interface PicksRecord {
+export interface PicksRecord extends PicksTally {
   days: number;
-  n: number;
-  won: number;
-  /** sabit 1 birim, seçimdeki oranla (adil oranlı ayaklar dahil) */
-  roi: number | null;
-  byMarket: Record<PickMarket, { n: number; won: number }>;
 }
 
 const TABLE = 'site_daily_picks';
@@ -101,29 +96,41 @@ export async function previewDailyPicks(ymd: string, asOf?: number): Promise<Dai
   return generate(ymd, asOf ?? Date.now(), asOf != null);
 }
 
-export async function getDailyPicks(ymd = todayYmd()): Promise<{ picks: DailyPick[]; generated: boolean }> {
-  const { data, error } = await db().from(TABLE).select('*').eq('pick_date', ymd).order('kickoff');
-  // Tablo henüz yoksa (migration bekliyor) panel boş kalmasın: üret, kaydetme.
+/**
+ * Yalnız okur, asla üretmez/yazmaz — sayfa render'ı için (denetim 2026-09-18).
+ * Eskiden panel ilk okumada seçim üretip yazıyordu: eşzamanlı iki render farklı
+ * aday kümesi yazıp günü 3'ten fazla satırla bırakabiliyor, db()'nin 300 sn'lik
+ * önbelleği yüzünden cron yazdıktan sonra bile "boş" görüp yeniden üretebiliyordu.
+ */
+export async function readDailyPicks(ymd = todayYmd()): Promise<DailyPick[]> {
+  const { data, error } = await dbFresh().from(TABLE).select('*').eq('pick_date', ymd).order('kickoff');
   if (error) console.error('[daily-picks] read failed', error.message);
-  if (data?.length) return { picks: data.map(fromRow), generated: false };
+  return (data ?? []).map(fromRow);
+}
+
+/** Üretim yolu (cron / sosyal yayın). Tabloda varsa onları döner; yoksa üretip dondurur. */
+export async function getDailyPicks(ymd = todayYmd()): Promise<{ picks: DailyPick[]; generated: boolean }> {
+  const existing = await readDailyPicks(ymd);
+  if (existing.length) return { picks: existing, generated: false };
 
   const today = todayYmd();
   if (ymd !== today && ymd !== addDays(today, 1)) return { picks: [], generated: false };
 
   const picks = await generate(ymd);
   if (!picks.length) return { picks, generated: true };
-  const { error: insErr } = await db().from(TABLE).upsert(
+  const { error: insErr } = await dbFresh().from(TABLE).upsert(
     picks.map((p) => ({ pick_date: p.date, fixture_id: p.fixtureId, market: p.market, selection: p.selection, model_p: p.modelP, odds: p.odds, odds_source: p.oddsSource, league_slug: p.leagueSlug, home_name: p.homeName, away_name: p.awayName, kickoff: p.kickoff, rule_version: p.ruleVersion })),
     { onConflict: 'pick_date,fixture_id', ignoreDuplicates: true },
   );
   if (insErr) console.error('[daily-picks] insert failed', insErr.message);
-  return { picks, generated: true };
+  // Yalnız kaydedilmiş seçim sunulur: yazılamayan ya da yarışı kaybeden hesap dönmez.
+  return { picks: await readDailyPicks(ymd), generated: !insErr };
 }
 
 /** Son N günün seçimlerini skorla sonuçlandırır (bugün hariç). */
 export async function dailyPicksRecord(days = 30): Promise<PicksRecord> {
   const today = todayYmd();
-  const empty: PicksRecord = { days, n: 0, won: 0, roi: null, byMarket: { btts: { n: 0, won: 0 }, ou25: { n: 0, won: 0 } } };
+  const empty: PicksRecord = { days, ...tallyPicks([]) };
   const { data } = await db().from(TABLE).select('*').lt('pick_date', today).gte('pick_date', addDays(today, -days));
   if (!data?.length) return empty;
   const picks = data.map(fromRow);
@@ -131,16 +138,9 @@ export async function dailyPicksRecord(days = 30): Promise<PicksRecord> {
   const { data: scores } = await db().from('engine_predictions').select('fixture_id, home_score, away_score').in('fixture_id', ids).not('home_score', 'is', null).not('away_score', 'is', null);
   const score = new Map<number, [number, number]>();
   for (const s of (scores ?? []) as any[]) if (!score.has(Number(s.fixture_id))) score.set(Number(s.fixture_id), [Number(s.home_score), Number(s.away_score)]);
-  let staked = 0, returned = 0;
-  const rec = { ...empty, byMarket: { btts: { n: 0, won: 0 }, ou25: { n: 0, won: 0 } } };
-  for (const p of picks) {
+  const settled = picks.flatMap((p) => {
     const sc = score.get(p.fixtureId);
-    if (!sc) continue;
-    const won = settlePick(p.market, sc[0], sc[1]);
-    rec.n++; rec.byMarket[p.market].n++;
-    if (won) { rec.won++; rec.byMarket[p.market].won++; returned += p.odds; }
-    staked += 1;
-  }
-  rec.roi = staked ? (returned - staked) / staked : null;
-  return rec;
+    return sc ? [{ market: p.market, odds: p.odds, oddsSource: p.oddsSource, won: settlePick(p.market, sc[0], sc[1]) }] : [];
+  });
+  return { days, ...tallyPicks(settled) };
 }

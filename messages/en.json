@@ -733,7 +733,8 @@
     "picksMeta": "goal markets · validated rule",
     "picksEmpty": "No pick meets the rule today. The rule is not loosened; an empty day is part of the record.",
     "picksNote": "Rule: both-teams-to-score Yes needs model ≥ 60%, Over 2.5 needs ≥ 65%; only Eredivisie, Bundesliga, LaLiga, Serie A, Championship, Premier League and Champions League; at most 3 legs a day. No edge against the market is required: in the backtest, goal legs that agreed with the market hit and those that fought it did not. Picks are frozen in the morning and settled from the score.",
-    "picksRecord": "Last {days} days: {won}/{n} hit ({hit}) · flat-stake return {roi}",
+    "picksRecord": "Last {days} days: {won}/{n} hit ({hit}) · flat-stake return {roi} ({nBook} picks with a bookmaker price)",
+    "picksRecordFair": "{nFair} picks had no bookmaker price and are excluded from the return. Theoretical result at fair odds (1/probability): {roiFair}.",
     "picksRecordEmpty": "The record starts once the first picks settle.",
     "picksFair": "fair",
     "picksBook": "book",
@@ -870,7 +871,7 @@
     "predictions": {
       "title": "Today's predictions",
       "titleDay": "Predictions · {day}",
-      "meta": "{day} · {matches, plural, =1 {1 match} other {# matches}} · model updated {time} UTC",
+      "meta": "{day} · {matches, plural, =1 {1 match} other {# matches}} · data refreshed {time} UTC",
       "metaNoFeed": "{day} · {matches, plural, =1 {1 match} other {# matches}}",
       "all": "All",
       "howTitle": "How to read confidence.",
