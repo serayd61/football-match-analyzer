@@ -97,7 +97,7 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `daily|${day}|${t.platform}|${t.account}`;
-    const text = dailyText([...legs], day, t.account, rec);
+    const text = dailyText([...legs], day, t.account, rec, t.platform);
     if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text }); continue; }
     images[t.account] ??= await dailyImage(legs, day, t.account, rec);
@@ -151,7 +151,7 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `weekly|${day}|${t.platform}|${t.account}`;
-    const [first, second] = weeklyText(stats, t.account);
+    const [first, second] = weeklyText(stats, t.account, t.platform);
     if (have.has(key)) { out.push({ key, status: 'already' }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text: [first, second] }); continue; }
     if (!stats.n) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'sonuçlanmış seçim yok' }); out.push({ key, status: 'skipped' }); continue; }

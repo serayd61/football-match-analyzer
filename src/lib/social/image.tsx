@@ -1,6 +1,7 @@
 // Dikey paylaşım görseli (1080×1350) — günün seçimleri ve haftalık karne.
-// next/og (Satori) ile üretilir; yazı tipi Google Fonts'tan TTF olarak çekilip
-// bellekte tutulur. Renkler site kimliğiyle uyumlu (kiremit vurgu, sıcak zemin).
+// next/og (Satori) ile üretilir; yazı tipi Google Fonts'tan çekilip bellekte
+// tutulur. Google eski tarayıcı UA'sına TTF ya da WOFF döndürür (2026-09-18: WOFF);
+// Satori ikisini de okur, WOFF2 okumaz — bu yüzden UA sabit. Renkler site kimliğiyle uyumlu (kiremit vurgu, sıcak zemin).
 import 'server-only';
 import { ImageResponse } from 'next/og';
 import { fmtDate, fmtOdds, fmtTime, marketLabel, pct, type Lang, type Leg, type WeeklyStats } from './content';
@@ -13,8 +14,8 @@ async function googleFont(family: string, weight: number): Promise<ArrayBuffer> 
   const key = `${family}:${weight}`;
   if (!fontCache.has(key)) fontCache.set(key, (async () => {
     const css = await fetch(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20100101 Firefox/10.0' } }).then((r) => r.text());
-    const m = css.match(/src: url\(([^)]+\.ttf)\)/);
-    if (!m) throw new Error(`font url yok: ${family}`);
+    const m = css.match(/src: url\(([^)]+\.(?:ttf|otf|woff))\)/);
+    if (!m) throw new Error(`font url yok: ${family} (${css.slice(0, 120).replace(/\s+/g, ' ')})`);
     return fetch(m[1]).then((r) => r.arrayBuffer());
   })());
   return fontCache.get(key)!;
