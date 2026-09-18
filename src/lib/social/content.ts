@@ -15,6 +15,8 @@ export interface Leg {
 }
 export interface DailyContent { legs: Leg[]; text: string; imageTitle: string; imageDate: string; link: string }
 
+import { ODDS_MIN, ODDS_MAX } from '@/lib/site/daily-picks-rule';
+
 export const SITE = 'https://footballanalytics.pro';
 const TZ: Record<Lang, string> = { tr: 'Europe/Istanbul', en: 'Europe/Zurich' };
 export type Source = 'twitter' | 'telegram';
@@ -48,9 +50,11 @@ export function marketLabel(leg: Pick<Leg, 'market' | 'selection' | 'homeName' |
 export function pickLegs(daily: Leg[], showcase: Leg[], max = 3): Leg[] {
   const out: Leg[] = []; const seen = new Set<number>();
   const push = (l: Leg) => { if (out.length < max && !seen.has(l.fixtureId)) { seen.add(l.fixtureId); out.push(l); } };
+  // Vitrin bacakları da oran bandına uyar (görsel alt yazısı 1,25–1,75 diyor; 18 Eyl: Bayern 1,11 çelişkisi). Oranı bilinmeyen vitrin bacağı gönderiye girmez.
+  const inBand = (l: Leg) => l.odds != null && l.odds >= ODDS_MIN && l.odds <= ODDS_MAX;
   daily.forEach(push);
-  showcase.filter((l) => l.market !== '1x2').sort((a, b) => b.modelP - a.modelP).forEach(push);
-  showcase.filter((l) => l.market === '1x2').sort((a, b) => b.modelP - a.modelP).forEach(push);
+  showcase.filter((l) => l.market !== '1x2' && inBand(l)).sort((a, b) => b.modelP - a.modelP).forEach(push);
+  showcase.filter((l) => l.market === '1x2' && inBand(l)).sort((a, b) => b.modelP - a.modelP).forEach(push);
   return out.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 

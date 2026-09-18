@@ -38,7 +38,7 @@ function Brand() {
 
 export async function dailyImage(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null): Promise<Buffer> {
   const title = lang === 'tr' ? 'Günün seçimleri' : "Today's picks";
-  const rule = lang === 'tr' ? 'Kural: gol pazarı eşiği + piyasaya karşı ≥3 puan marj · oran 1,25–1,75 · maçtan önce dondurulur' : 'Rule: goal-market threshold + ≥3pt margin vs market · odds 1.25–1.75 · frozen before kick-off';
+  const rule = lang === 'tr' ? 'Kural: model eşiği + piyasaya karşı marj · oran 1,25–1,75 · maçtan önce dondurulur' : 'Rule: model threshold + margin vs market · odds 1.25–1.75 · frozen before kick-off';
   const rec = record && record.n ? (lang === 'tr' ? `Son 7 gün ${record.won}/${record.n}` : `Last 7 days ${record.won}/${record.n}`) : '';
   return toBuffer(new ImageResponse(
     (
@@ -60,8 +60,8 @@ export async function dailyImage(legs: Leg[], ymd: string, lang: Lang, record: {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 22 }}>
                 <span style={{ fontFamily: 'Archivo', fontSize: 40, color: ACCENT }}>{marketLabel(l, lang)}</span>
                 <div style={{ display: 'flex', gap: 34, fontSize: 30 }}>
-                  <span><span style={{ color: MUTED }}>{lang === 'tr' ? 'model ' : 'model '}</span>{pct(l.modelP)}</span>
-                  {l.odds ? <span><span style={{ color: MUTED }}>{lang === 'tr' ? 'oran ' : 'odds '}</span>{fmtOdds(l.odds, lang)}</span> : null}
+                  <span><span style={{ color: MUTED, marginRight: 8 }}>model</span>{pct(l.modelP)}</span>
+                  {l.odds ? <span><span style={{ color: MUTED, marginRight: 8 }}>{lang === 'tr' ? 'oran' : 'odds'}</span>{fmtOdds(l.odds, lang)}</span> : null}
                 </div>
               </div>
             </div>

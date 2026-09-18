@@ -80,3 +80,9 @@ test('hashtags: trend matches on team/league words, league tags follow, max 3, t
   const w = weeklyText({ from: '2026-09-13', to: '2026-09-19', n: 21, won: 11, byMarket: {}, noPick: 9 }, 'en', 'twitter', ['#football']);
   assert.ok(w[0].endsWith('#football'));
 });
+
+test('pickLegs: showcase legs outside the 1.25–1.75 odds band (or without odds) are dropped', () => {
+  const mk = (id: number, market: any, odds: number | null, source: any): Leg => ({ fixtureId: id, leagueSlug: 'bundesliga', leagueName: 'Bundesliga', homeName: 'A' + id, awayName: 'B' + id, kickoff: '2026-09-18T18:00:00Z', market, selection: market === '1x2' ? '1' : market === 'btts' ? 'yes' : 'over', modelP: 0.7, odds, source });
+  const legs = pickLegs([mk(1, 'ou25', 1.44, 'daily')], [mk(2, 'ou25', 1.11, 'showcase'), mk(3, 'btts', 1.6, 'showcase'), mk(4, '1x2', 1.22, 'showcase'), mk(5, '1x2', null, 'showcase'), mk(6, '1x2', 1.5, 'showcase')]);
+  assert.deepEqual(legs.map((l) => l.fixtureId).sort(), [1, 3, 6]);
+});
