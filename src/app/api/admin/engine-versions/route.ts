@@ -13,6 +13,8 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { pairedFromSums, promotionVerdict, PROMOTION_GATE, type PairedStats } from '@/lib/engine/gate';
 import { invalidateOfficialCache } from '@/lib/site/official';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +25,11 @@ function sb() {
   });
 }
 
-function actorOf(req: NextRequest): string {
-  // middleware oturum e-postasını header'a koymaz; en iyi çaba: Bearer → 'admin:secret'
-  const email = req.headers.get('x-admin-email') || req.cookies.get('admin_email')?.value;
+// Denetim B12: aktör istemcinin gönderdiği x-admin-email başlığından/çerezinden okunuyordu →
+// middleware'i geçen herkes denetim kaydındaki imzayı taklit edebiliyordu. Artık yalnız
+// doğrulanmış NextAuth oturumu; oturum yoksa çağrı servis sırrıyla gelmiştir.
+async function actorOf(): Promise<string> {
+  const email = (await getServerSession(authOptions).catch(() => null))?.user?.email;
   return email ? `admin:${email}` : 'admin:secret';
 }
 
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') }, { status: 400 });
   const body = parsed.data;
   const client = sb();
-  const actor = actorOf(request);
+  const actor = await actorOf();
   const now = new Date().toISOString();
 
   const { data: existing } = await client.from('engine_model_versions').select('*').eq('version', body.version).maybeSingle();
@@ -143,6 +147,18 @@ export async function POST(request: NextRequest) {
   }
   if (!verdict.pass && body.force && !(body.note && body.note.trim().length >= 10)) {
     return NextResponse.json({ ok: false, error: 'force requires a note (≥10 chars) explaining why the gate is bypassed' }, { status: 400 });
+  }
+
+  // Tek transaction (activate_engine_version RPC: kilit + demote + promote + log). Fonksiyon
+  // henüz uygulanmadıysa (PGRST202 / 42883) aşağıdaki eski iki adımlı yola düşer.
+  const newEvidence = pair ? { comparison: pair, verdict, forced: !verdict.pass } : null;
+  const rpc = await client.rpc('activate_engine_version', { p_version: body.version, p_actor: actor, p_note: body.note ?? null, p_evidence: newEvidence });
+  if (!rpc.error) {
+    await invalidateOfficialCache();
+    return NextResponse.json({ ok: true, version: body.version, status: 'active', previous: current, verdict, forced: !verdict.pass, atomic: true });
+  }
+  if (!['PGRST202', '42883'].includes(String(rpc.error.code))) {
+    return NextResponse.json({ ok: false, error: rpc.error.message }, { status: 500 });
   }
 
   // Tek aktif: eskisini 'retired'? Hayır — eski aktif 'shadow'a düşer (geri alma için sonuç üretmeye devam eder).
