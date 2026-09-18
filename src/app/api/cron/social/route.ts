@@ -8,9 +8,11 @@
 //   &image=1       (daily/weekly) görselin PNG'sini döner, gönderi yok
 //   &day=YYYY-MM-DD gün seçimi (varsayılan bugün)
 //   ?status=1      hangi hesaplar tanımlı
+//   ?trends=1      günün X trendleri + bacaklarla eşleşen etiketler (teşhis)
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { publishDaily, publishResults, publishWeekly, socialStatus, dailyLegs } from '@/lib/social/publish';
+import { publishDaily, publishResults, publishWeekly, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
+import { hashtags, matchTrends } from '@/lib/social/content';
 import { dailyImage, weeklyImage } from '@/lib/social/image';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { todayYmd, addDays } from '@/lib/site/time';
@@ -24,6 +26,11 @@ export async function GET(request: NextRequest) {
   if (!ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const q = request.nextUrl.searchParams;
   if (q.get('status') === '1') return NextResponse.json(socialStatus());
+  if (q.get('trends') === '1') {
+    const legs = await dailyLegs(q.get('day') || todayYmd());
+    const trends = await dayTrends();
+    return NextResponse.json({ trends: trends.length, sample: trends.slice(0, 30), matched: matchTrends(legs, trends), tags: hashtags(legs, trends) });
+  }
   const kind = q.get('kind') || 'daily';
   const dry = q.get('dry') === '1';
   const day = q.get('day') || todayYmd();

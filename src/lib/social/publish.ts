@@ -14,10 +14,11 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, pickLegs, resultText, weeklyText, type Lang, type Leg, type WeeklyStats } from './content';
+import { dailyText, hashtags, pickLegs, resultText, weeklyText, type Lang, type Leg, type WeeklyStats } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
 import { hasTelegram, sendMessage, sendPhoto } from './telegram';
+import { fetchTrends } from './twitter';
 
 const TABLE = 'social_posts';
 const LANGS: Lang[] = ['tr', 'en'];
@@ -94,10 +95,12 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
     return { ok: true, day, legs: 0, note: 'kurala uyan bacak yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry };
   }
   const have = await posted(tg.map((t) => `daily|${day}|${t.platform}|${t.account}`));
+  const trends = await dayTrends(tg);
+  const tags = hashtags(legs, trends);
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `daily|${day}|${t.platform}|${t.account}`;
-    const text = dailyText([...legs], day, t.account, rec, t.platform);
+    const text = dailyText([...legs], day, t.account, rec, t.platform, tags);
     if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text }); continue; }
     images[t.account] ??= await dailyImage(legs, day, t.account, rec);
@@ -105,7 +108,14 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
     await record({ key, kind: 'daily', day, platform: t.platform, account: t.account, fixtureIds: legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
     out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
   }
-  return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection}`), targets: tg.length, dry: !!opts.dry, posts: out };
+  return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection}`), tags, trends: trends.length, targets: tg.length, dry: !!opts.dry, posts: out };
+}
+
+/** X hedefi varsa günün trendleri (ilk X hesabının anahtarıyla, tek çağrı). */
+export async function dayTrends(tg: Target[] = targets()): Promise<string[]> {
+  const tw = tg.find((t) => t.platform === 'twitter');
+  const creds = tw ? twitterCreds(`TWITTER_${tw.account.toUpperCase()}`) : null;
+  return creds ? fetchTrends(creds) : [];
 }
 
 /** Sonuç yanıtları: bugün/dün gönderilen günlük gönderilerin bacakları sonuçlandıysa aynı diziye yanıt. */
@@ -151,7 +161,7 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `weekly|${day}|${t.platform}|${t.account}`;
-    const [first, second] = weeklyText(stats, t.account, t.platform);
+    const [first, second] = weeklyText(stats, t.account, t.platform, ['#football']);
     if (have.has(key)) { out.push({ key, status: 'already' }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text: [first, second] }); continue; }
     if (!stats.n) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'sonuçlanmış seçim yok' }); out.push({ key, status: 'skipped' }); continue; }

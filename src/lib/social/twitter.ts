@@ -38,3 +38,20 @@ export async function postTweet(creds: OAuth1Creds, text: string, opts: { mediaI
     return { ok: true, id: String(j.data.id) };
   } catch (e: any) { return { ok: false, error: `tweet: ${String(e?.message || e).slice(0, 120)}` }; }
 }
+
+/**
+ * Günün trendleri (X API v2 trends/by_woeid; 1 = dünya, 23424975 = UK). Kredili
+ * çağrı; günde bir kez, günlük gönderi öncesi. Hata → boş liste, gönderi etiketsiz gider.
+ */
+export async function fetchTrends(creds: OAuth1Creds, woeids: number[] = [1, 23424975]): Promise<string[]> {
+  const out: string[] = [];
+  for (const w of woeids) {
+    const url = `https://api.x.com/2/trends/by_woeid/${w}?max_trends=50`;
+    try {
+      const r = await fetch(url, { headers: { Authorization: oauth1Header('GET', url, creds) }, signal: AbortSignal.timeout(15_000) });
+      const j: any = await r.json().catch(() => ({}));
+      for (const t of j?.data ?? []) { const n = String(t?.trend_name ?? '').trim(); if (n && !out.includes(n)) out.push(n); }
+    } catch { /* etiketsiz devam */ }
+  }
+  return out;
+}
