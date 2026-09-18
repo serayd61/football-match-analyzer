@@ -61,6 +61,18 @@
       "schedule": "25 * * * *"
     },
     {
+      "path": "/api/cron/social?kind=daily",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/social?kind=results",
+      "schedule": "40 * * * *"
+    },
+    {
+      "path": "/api/cron/social?kind=weekly",
+      "schedule": "0 6 * * 1"
+    },
+    {
       "path": "/api/cron/daily-featured",
       "schedule": "0 6 * * *"
     },
