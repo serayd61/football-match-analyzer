@@ -11,6 +11,9 @@ import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable
 import { getMarketBook } from '@/lib/site/markets';
 import { getOddsDrift } from '@/lib/site/odds-drift';
 import { getAfContext } from '@/lib/site/af-context';
+import { getPerformance } from '@/lib/site/performance';
+import { standingFor } from '@/lib/site/match-standing';
+import MatchStanding, { type StandingLabels } from '@/components/site/MatchStanding';
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
@@ -88,7 +91,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   // past match never lists itself or later games as "form" (denetim 2026-09-05).
   // Eksikler + kadro yalnız API-Football'a eşlenen liglerde (2026-09-14); undefined → bölüm gizli.
   const afLeague = !!(p.league && AF_LEAGUE[p.league.slug]);
-  const [market, book, drift, h2h, formHome, formAway, curves, squad] = await Promise.all([
+  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
@@ -97,7 +100,26 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     p.awayId ? getTeamForm(p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     getCalibrationMeta(),
     afLeague ? getAfContext(p.fixtureId, p.homeName, p.awayName, p.kickoff).catch(() => null) : Promise.resolve(undefined),
+    p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
   ]);
+  // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
+  const standing = perf ? standingFor({
+    leagueSlug: p.league?.slug ?? null, pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
+    over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
+    btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
+    market: market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null,
+    bttsMarketYes: book?.btts ? book.btts.pA : null,
+  }, perf.signals) : [];
+  const standingLabels: StandingLabels = {
+    market: { '1x2': t('sec1x2'), ou25: t('standingOu'), btts: t('standingBtts') },
+    selection: (s) => s.market === '1x2' ? (s.selection === '1' ? p.homeName : s.selection === '2' ? p.awayName : tc('draw')) : s.market === 'ou25' ? (s.selection === 'over' ? t('standingOver') : t('standingUnder')) : (s.selection === 'yes' ? t('standingYes') : t('standingNo')),
+    verdict: { strong: t('verdictStrong'), mid: t('verdictMid'), weak: t('verdictWeak'), thin: t('verdictThin') },
+    evidence: (e) => e.kind === 'level' ? t('evidenceLevel', { bucket: e.bucket }) : e.kind === 'edge' ? t('evidenceEdge', { bucket: e.bucket }) : t('evidenceClash', { bucket: e.bucket }),
+    scopeLeague: (won, n) => t('scopeLeague', { league: p.league?.name ?? p.leagueName, won, n, acc: Math.round((won / n) * 100) }),
+    scopeAll: (won, n) => t('scopeAll', { won, n, acc: Math.round((won / n) * 100) }),
+    thin: t('standingThin'),
+    model: t('standingModel'),
+  };
   const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
 
   const sm = p.lambdaHome != null && p.lambdaAway != null ? scoreMatrix(p.lambdaHome, p.lambdaAway) : null;
@@ -260,6 +282,18 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           <RiskNote className="text-s-muted"><strong className="text-s-ink">{t2('beforeTitle')}</strong> {t2('beforeText')}</RiskNote>
         </aside>
       </div>
+
+      {/* ── Bu maç karnemizde nerede ─────────────────────────────────── */}
+      {!locked && standing.length > 0 && (
+        <section className="rule-t mt-2 pt-8">
+          <SectionTitle title={t('secStanding')} meta={t('standingMeta', { n: perf?.overall.n ?? 0 })} />
+          <p className="mt-2 max-w-[68ch] text-sm text-s-muted">{t('standingLead')}</p>
+          <div className="mt-6">
+            <MatchStanding rows={standing} labels={standingLabels} />
+          </div>
+          <p className="mt-6 text-xs text-s-muted">{t('standingNote')} <Link href="/performance" className="underline">{t('standingLink')}</Link></p>
+        </section>
+      )}
 
       <div className="rule-t mt-2 grid gap-10 pt-8 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-10">
