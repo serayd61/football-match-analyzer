@@ -40,18 +40,21 @@ export async function postTweet(creds: OAuth1Creds, text: string, opts: { mediaI
 }
 
 /**
- * Günün trendleri (X API v2 trends/by_woeid; 1 = dünya, 23424975 = UK). Kredili
- * çağrı; günde bir kez, günlük gönderi öncesi. Hata → boş liste, gönderi etiketsiz gider.
+ * Günün trendleri. İki kaynak (18 Eyl 2026 doğrulandı):
+ *  - GET /2/trends/by/woeid/{woeid} (1 dünya, 23424975 UK): yalnız Bearer (app-only) kabul eder → TWITTER_BEARER_TOKEN.
+ *  - GET /2/users/personalized_trends: kullanıcı bağlamı (OAuth 1.0a), hesabın "senin için" trendleri.
+ * Kredili çağrılar; günde bir kez, günlük gönderi öncesi. Hata → boş, gönderi lig etiketiyle gider.
  */
-export async function fetchTrends(creds: OAuth1Creds, woeids: number[] = [1, 23424975]): Promise<string[]> {
+export async function fetchTrends(creds: OAuth1Creds | null, bearer: string | null, woeids: number[] = [1, 23424975]): Promise<string[]> {
   const out: string[] = [];
-  for (const w of woeids) {
-    const url = `https://api.x.com/2/trends/by_woeid/${w}?max_trends=50`;
+  const add = (j: any) => { for (const t of j?.data ?? []) { const n = String(t?.trend_name ?? '').trim(); if (n && !out.includes(n)) out.push(n); } };
+  const get = async (url: string, auth: string) => {
     try {
-      const r = await fetch(url, { headers: { Authorization: oauth1Header('GET', url, creds) }, signal: AbortSignal.timeout(15_000) });
-      const j: any = await r.json().catch(() => ({}));
-      for (const t of j?.data ?? []) { const n = String(t?.trend_name ?? '').trim(); if (n && !out.includes(n)) out.push(n); }
+      const r = await fetch(url, { headers: { Authorization: auth }, signal: AbortSignal.timeout(15_000) });
+      if (r.ok) add(await r.json().catch(() => ({})));
     } catch { /* etiketsiz devam */ }
-  }
+  };
+  if (bearer) for (const w of woeids) await get(`https://api.x.com/2/trends/by/woeid/${w}?max_trends=50`, `Bearer ${bearer}`);
+  if (creds) { const url = 'https://api.x.com/2/users/personalized_trends'; await get(url, oauth1Header('GET', url, creds)); }
   return out;
 }
