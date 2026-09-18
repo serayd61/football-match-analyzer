@@ -6,6 +6,7 @@
 // harmlessly to dataLayer and are dropped.
 
 import { sendGAEvent } from '@next/third-parties/google';
+import { track as vercelTrack } from '@vercel/analytics';
 
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
@@ -41,14 +42,31 @@ export type EventName = (typeof Events)[keyof typeof Events];
 
 type EventParams = Record<string, string | number | boolean | undefined>;
 
-/** Fire a GA4 event. No-op on the server or when GA is not configured. */
+// İlk temas UTM'i (UtmTracker yazar) — dönüşüm olaylarına kaynak/kampanya eklemek için.
+const UTM_KEY = 'fa_utm';
+export interface FirstTouchUtm { source: string; medium: string; campaign: string; at: string }
+export function rememberUtm(u: { source: string; medium: string; campaign: string }): void {
+  try { if (!localStorage.getItem(UTM_KEY)) localStorage.setItem(UTM_KEY, JSON.stringify({ ...u, at: new Date().toISOString() })); } catch { /* storage kapalı olabilir */ }
+}
+export function firstTouchUtm(): FirstTouchUtm | null {
+  try { const raw = localStorage.getItem(UTM_KEY); return raw ? (JSON.parse(raw) as FirstTouchUtm) : null; } catch { return null; }
+}
+
+/**
+ * Fire an event to GA4 (if configured) AND Vercel Web Analytics custom events.
+ * Vercel tarafı: panelde "Events" bölümü (Pro planda açık); eventData/utm_source ile kırılım.
+ * Dönüşüm olaylarına ilk temas UTM'i otomatik eklenir. No-op on the server.
+ */
 export function trackEvent(name: EventName | string, params: EventParams = {}): void {
   if (typeof window === 'undefined') return;
+  const utm = name === 'utm_landing' ? null : firstTouchUtm();
+  const merged: EventParams = utm ? { utm_source: utm.source, utm_campaign: utm.campaign, ...params } : params;
+  try { sendGAEvent('event', name, merged); } catch { /* analytics must never break the app */ }
   try {
-    sendGAEvent('event', name, params);
-  } catch {
-    /* analytics must never break the app */
-  }
+    const clean: Record<string, string | number | boolean> = {};
+    for (const [k, v] of Object.entries(merged)) if (v !== undefined) clean[k] = v;
+    vercelTrack(name, clean);
+  } catch { /* analytics must never break the app */ }
 }
 
 type GtagFn = (...args: unknown[]) => void;
