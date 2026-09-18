@@ -71,6 +71,12 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const radar = await valueRadar([...todayRows, ...tomorrowRows]);
   // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
   const [picks, picksRec] = await Promise.all([readDailyPicks(today), dailyPicksRecord(30)]);
+  // Denetim 2026-09-19: kilitli bölüm eskiden GERÇEK satırları CSS blur arkasında HTML'e
+  // basıyordu (kaynağı görüntüle = ücretli veri). Ödemeyen için satırlar sunucuda maskelenir;
+  // bulanık tablo yalnız yer tutucudur, sayı (n) gerçek kalır.
+  const MASK = '██████';
+  const shownPicks = paid ? picks : picks.map((p, i) => ({ ...p, fixtureId: -(i + 1), homeName: MASK, awayName: MASK, leagueSlug: MASK, modelP: 0.5, odds: 2, kickoff: today + 'T12:00:00Z' }));
+  const shownRadar = paid ? radar : radar.slice(0, 4).map((v, i) => ({ ...v, fixtureId: -(i + 1), model: 0.5, market_p: 0.5, odds: 2, edge: 0, row: { ...v.row, homeName: MASK, awayName: MASK, kickoff: today + 'T12:00:00Z' } }));
 
   // Followed clubs: position, form and next rated match, in parallel.
   const followed = await Promise.all(watch.items.map(async (w) => {
@@ -201,7 +207,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                       </tr>
                     </thead>
                     <tbody>
-                      {picks.map((p) => (
+                      {shownPicks.map((p) => (
                         <tr key={p.fixtureId} className="border-b border-s-line">
                           <td className="py-2 pr-3">
                             {paid ? <Link href={`/predictions/${p.fixtureId}`} className="hover:underline">{p.homeName} – {p.awayName}</Link> : <>{p.homeName} – {p.awayName}</>}
@@ -256,7 +262,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                       </tr>
                     </thead>
                     <tbody>
-                      {(paid ? radar : radar.slice(0, 4)).map((v) => (
+                      {shownRadar.map((v) => (
                         <tr key={`${v.fixtureId}-${v.market}`} className="border-b border-s-line">
                           <td className="py-2 pr-3">
                             {paid ? <Link href={`/predictions/${v.fixtureId}`} className="hover:underline">{v.row.homeName} – {v.row.awayName}</Link> : <>{v.row.homeName} – {v.row.awayName}</>}

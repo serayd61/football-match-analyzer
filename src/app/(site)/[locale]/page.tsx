@@ -117,9 +117,12 @@ export default async function HomePage({ params: { locale } }: { params: { local
                   {unlocked ? pod.homeName : '████████'}<br />
                   <span className="text-s-muted">{t('vs')}</span> {unlocked ? pod.awayName : '███████'}
                 </h2>
-                <ConfidenceRing conf={conf} size={104} label={t('confidence')} />
+                {/* Denetim 2026-09-19: kilitliyken gerçek güven/olasılık HTML'e basılmaz (yer tutucu). */}
+                <ConfidenceRing conf={unlocked ? conf : null} size={104} label={t('confidence')} />
               </div>
-              <ProbBar home={pod.pHome} draw={pod.pDraw} away={pod.pAway} highlight={pod.pick} labels={labels} size="md" />
+              {unlocked
+                ? <ProbBar home={pod.pHome} draw={pod.pDraw} away={pod.pAway} highlight={pod.pick} labels={labels} size="md" />
+                : <div aria-hidden className="blur-locked"><ProbBar home={0.4} draw={0.3} away={0.3} highlight={null} labels={labels} size="md" /></div>}
               {unlocked ? (
                 <>
                   <StatRow cols={3} rule={1}>

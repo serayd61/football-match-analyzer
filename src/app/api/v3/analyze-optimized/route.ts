@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import {
   getOptimizedWeight,
   normalizeWeights,
@@ -222,6 +223,9 @@ async function callOptimizedAgent(
 // ============================================================================
 
 export async function POST(req: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const {

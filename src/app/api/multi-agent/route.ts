@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -130,6 +131,9 @@ function calculateForm(matches: any[], teamId: number) {
 }
 
 export async function POST(request: Request) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { matches } = body; // Array of matches to analyze

@@ -4,6 +4,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +80,9 @@ Wenn der Benutzer eine nicht-fußballbezogene Frage stellt, sage höflich "Ich k
 };
 
 export async function POST(request: NextRequest) {
+  // Denetim 2026-09-19: kimliksiz istek OpenAI çağrısı yakıyordu → oturum şart.
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { message, language = 'en', history = [] } = await request.json();
 

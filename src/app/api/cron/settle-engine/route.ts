@@ -37,14 +37,12 @@ function sb(): SupabaseClient {
 }
 
 export async function GET(request: NextRequest) {
-  // Opsiyonel koruma: CRON_SECRET ayarlıysa Bearer iste
-  const secret = process.env.CRON_SECRET || process.env.PREDICTIONS_API_SECRET || '';
-  if (secret) {
-    const auth = request.headers.get('authorization')?.replace('Bearer ', '');
-    const isVercelCron = !!request.headers.get('x-vercel-cron');
-    if (!isVercelCron && auth !== secret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Vercel cron Authorization: Bearer $CRON_SECRET gönderir; x-vercel-cron başlığı taklit
+  // edilebildiği için muafiyet kaldırıldı (denetim 2026-09-19). Sır yoksa kapalı.
+  const secrets = [process.env.CRON_SECRET, process.env.PREDICTIONS_API_SECRET].filter((x): x is string => !!x);
+  const auth = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!secrets.length || !auth || !secrets.includes(auth)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);

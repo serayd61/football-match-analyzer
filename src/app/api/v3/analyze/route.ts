@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -130,6 +131,9 @@ async function callAgent(provider: 'openai' | 'anthropic' | 'gemini', systemProm
 // ============================================================================
 
 export async function POST(req: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { match, homeStats, awayStats, h2h } = body;

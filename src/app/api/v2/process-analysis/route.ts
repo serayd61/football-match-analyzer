@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runSmartAnalysis, saveSmartAnalysis } from '@/lib/smart-analyzer';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 1 dakika max
@@ -22,6 +23,8 @@ const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupaba
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {

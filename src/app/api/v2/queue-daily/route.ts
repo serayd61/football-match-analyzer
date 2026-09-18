@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queueDailyAnalysis, AnalysisJob, queueAnalysisJob } from '@/lib/queue/qstash';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -110,6 +111,8 @@ async function filterUnanalyzedFixtures(fixtures: FFMatch[]): Promise<FFMatch[]>
 // ============================================================================
 
 export async function GET(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {
@@ -196,6 +199,8 @@ export async function GET(request: NextRequest) {
 
 // POST da aynı işi yapsın
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   return GET(request);
 }
 

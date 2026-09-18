@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 // Vercel Cron Job - Runs every hour
 export const dynamic = 'force-dynamic';
@@ -148,6 +149,8 @@ async function settlePrediction(
 }
 
 export async function GET(request: Request) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {
@@ -251,6 +254,8 @@ export async function GET(request: Request) {
 
 // Also allow POST for manual triggers
 export async function POST(request: Request) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   return GET(request);
 }
 

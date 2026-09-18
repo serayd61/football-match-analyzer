@@ -6,10 +6,13 @@
 
 import { NextResponse } from 'next/server';
 import { updateModel } from '@/lib/autolearn/model';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     console.log('🧠 AutoLearn: Update API called');
 

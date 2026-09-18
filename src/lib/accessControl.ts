@@ -54,7 +54,11 @@ export function isRegistrationTrialLive(endsAt?: string | null, now = Date.now()
  * subscription_status aktif/trial. İki kaynağı da kontrol ederek gerçek aboneyi
  * yanlışlıkla engellememeyi garanti ederiz (profiles<->Stripe senkronu eksik olsa bile).
  */
-export async function hasEnginePredictionAccess(email?: string | null): Promise<boolean> {
+export async function hasEnginePredictionAccess(
+  email?: string | null,
+  // paidOnly: kayıt denemesini sayma (checkUserAccess ödeyen/deneme ayrımı için kullanır).
+  opts: { paidOnly?: boolean } = {},
+): Promise<boolean> {
   if (!email) return false;
   if (isAdminEmail(email)) return true;
 
@@ -74,7 +78,7 @@ export async function hasEnginePredictionAccess(email?: string | null): Promise<
     // Kayıt denemesi (2026-09-08 kararı): her yeni hesap kayıt anından itibaren
     // 7 gün tam erişim alır (register route trial_ends_at yazar), sonra abonelik
     // şart. 'subscription_status' değerine bakılmaz; yalnız tarih belirleyicidir.
-    if (isRegistrationTrialLive(profile?.trial_ends_at)) return true;
+    if (!opts.paidOnly && isRegistrationTrialLive(profile?.trial_ends_at)) return true;
   } catch (e) {
     console.error('[access] profiles check failed', e);
   }
@@ -218,7 +222,11 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
   // dalından geçer, dolayısıyla ödeyen müşteri etkilenmez.
   const isPro =
     isGrantLive(profile.subscription_status, profile.subscription_end, false) ||
-    (await hasEnginePredictionAccess(email));
+    // Denetim 2026-09-18 (B03): kayıt denemesi burada Pro SAYILMAZ. Eskiden deneme
+    // hasEnginePredictionAccess üzerinden isPro=true yapıp 1000 limit + canUseAgents
+    // veriyordu; aşağıdaki günlük 3 analiz dalı ölü koddu. Deneme motor tahminlerini
+    // tam görür (site/access.ts), metresiz LLM agent maliyeti ise yalnız ödeyene açık.
+    (await hasEnginePredictionAccess(email, { paidOnly: true }));
 
   if (isPro) {
     return {
@@ -251,6 +259,7 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     && isRegistrationTrialLive(profile.trial_ends_at);
 
   if (isFree) {
+    const trialMsLeft = Date.parse(String(profile.trial_ends_at)) - Date.now();
     const analysesToday = profile.last_analysis_date === today ? (profile.analyses_today || 0) : 0;
     const FREE_DAILY_LIMIT = 3;
     const canAnalyze = analysesToday < FREE_DAILY_LIMIT;
@@ -258,8 +267,8 @@ export async function checkUserAccess(email: string, ip?: string): Promise<Acces
     return {
       hasAccess: true,
       isPro: false,
-      isTrial: false,
-      trialDaysLeft: 0,
+      isTrial: true,
+      trialDaysLeft: Math.max(0, Math.ceil(trialMsLeft / 86_400_000)),
       trialExpired: false,
       analysesUsed: analysesToday,
       analysesLimit: FREE_DAILY_LIMIT,

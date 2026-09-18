@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runSmartAnalysis, saveSmartAnalysis, SmartAnalysisResult } from '@/lib/smart-analyzer';
 import { runAgentAnalysis, saveAgentAnalysis } from '@/lib/agent-analyzer';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 saniye max (Vercel Pro plan limiti) - Agent Analysis timeout handling ile yönetiliyor
@@ -24,6 +25,9 @@ const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupaba
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {

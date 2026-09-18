@@ -5,8 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runBacktest, evaluateAgentAccuracy, calibrationScore, BacktestMatch } from '@/lib/backtesting';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export async function POST(req: NextRequest) {
+  const denied = serviceOnlyGuard(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { matches, action } = body;
@@ -73,6 +76,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = serviceOnlyGuard(req);
+  if (denied) return denied;
   const searchParams = req.nextUrl.searchParams;
   const action = searchParams.get('action');
 

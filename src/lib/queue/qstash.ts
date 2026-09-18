@@ -68,6 +68,8 @@ export async function queueAnalysisJob(job: AnalysisJob): Promise<JobResult> {
     const result = await client.publishJSON({
       url: `${baseUrl}/api/v2/process-analysis`,
       body: job,
+      // process-analysis serviceOnlyGuard arkasında (denetim 2026-09-19): QStash bu başlığı hedefe iletir.
+      headers: { Authorization: `Bearer ${process.env.CRON_SECRET || process.env.ADMIN_SECRET || ''}` },
       retries: 3,
       delay: job.priority === 'high' ? 0 : job.priority === 'normal' ? 5 : 30,
     });

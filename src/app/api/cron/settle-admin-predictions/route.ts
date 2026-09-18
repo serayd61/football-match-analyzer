@@ -9,6 +9,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { settleMatchResult } from '@/lib/admin/service';
 import { settlePrediction, settleProfessionalMarketPrediction } from '@/lib/admin/enhanced-service';
 import { matchResultManager } from '@/lib/match-results';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // Increased to 120 seconds
@@ -18,6 +19,8 @@ export const maxDuration = 120; // Increased to 120 seconds
 // ============================================================================
 
 export async function GET(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {
@@ -273,6 +276,8 @@ function sleep(ms: number): Promise<void> {
 
 // Also support POST for manual triggers
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   return GET(request);
 }
 

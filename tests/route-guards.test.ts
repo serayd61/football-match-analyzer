@@ -47,6 +47,27 @@ const guarded: Array<[string, 'GET' | 'POST']> = [
   ['@/app/api/deepseek-master/route', 'POST'],
   ['@/app/api/deepseek-evaluate/route', 'POST'],
   ['@/app/api/auto-predict/route', 'POST'],
+  // Denetim 2026-09-19: ikinci tur — kalan kimliksiz makine ve LLM uçları
+  ['@/app/api/v2/queue-daily/route', 'GET'],
+  ['@/app/api/v2/queue-daily/route', 'POST'],
+  ['@/app/api/v2/process-analysis/route', 'POST'],
+  ['@/app/api/v2/odds-analysis-settle/route', 'POST'],
+  ['@/app/api/performance/save-analysis/route', 'POST'],
+  ['@/app/api/autolearn/train/route', 'POST'],
+  ['@/app/api/autolearn/train/route', 'GET'],
+  ['@/app/api/autolearn/update/route', 'POST'],
+  ['@/app/api/v3/admin/backtest/route', 'POST'],
+  ['@/app/api/cron/settle-admin-predictions/route', 'GET'],
+  ['@/app/api/cron/sync-predictions/route', 'GET'],
+  ['@/app/api/cron/settle-engine/route', 'GET'],
+  ['@/app/api/analyze/route', 'POST'],
+  ['@/app/api/multi-agent/route', 'POST'],
+  ['@/app/api/v2/analyze/route', 'POST'],
+  ['@/app/api/v2/analyze-agents/route', 'POST'],
+  ['@/app/api/v3/analyze/route', 'POST'],
+  ['@/app/api/v3/analyze-optimized/route', 'POST'],
+  ['@/app/api/quad-brain/route', 'POST'],
+  ['@/app/api/simulation/run/route', 'POST'],
 ];
 
 for (const [mod, method] of guarded) {
@@ -70,4 +91,10 @@ test('unified/settle rejects out-of-range and non-integer scores even with a val
     const res = await POST(req('POST', 'Bearer test-cron-secret', bad));
     assert.equal(res.status, 400, JSON.stringify(bad));
   }
+});
+
+test('cron/settle-engine no longer trusts a spoofable x-vercel-cron header', async () => {
+  const { GET } = await import('@/app/api/cron/settle-engine/route');
+  const spoof = new NextRequest('http://localhost/api/cron/settle-engine', { headers: { 'x-vercel-cron': '1' } });
+  assert.equal((await GET(spoof)).status, 401);
 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 
@@ -1686,6 +1687,9 @@ function calculateWeightedConsensus(
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
 
   try {

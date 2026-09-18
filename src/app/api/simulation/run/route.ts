@@ -4,12 +4,16 @@ import { runAgentAnalysis } from '@/lib/agent-analyzer';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { getFullFixtureData } from '@/lib/sportmonks/index';
 import { savePrediction, updatePredictionResult } from '@/lib/predictions';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 // Set timeout to 5 minutes for simulation
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(req);
+  if (denied) return denied;
     try {
         const body = await req.json();
         const { fixtureId, simulateDate, saveToLearning = false } = body;

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runAgentAnalysis, saveAgentAnalysis } from '@/lib/agent-analyzer';
 import { getOrSet, CACHE_KEYS, CACHE_TTL, setAnalysisStatus, getAnalysisStatus, getRedisClient } from '@/lib/cache/redis';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 let _sb: SupabaseClient | null = null;
 function getSupabase() {
@@ -19,6 +20,9 @@ export const maxDuration = 60;
 
 // GET: Mevcut agent analizini çek
 export async function GET(request: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const searchParams = request.nextUrl.searchParams;
     const fixtureId = parseInt(searchParams.get('fixtureId') || '0');
@@ -64,6 +68,9 @@ export async function GET(request: NextRequest) {
 
 // POST: Yeni agent analizi başlat
 export async function POST(request: NextRequest) {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { fixtureId, homeTeamId, awayTeamId } = body;

@@ -5,8 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { saveAnalysisToPerformance, AnalysisRecord } from '@/lib/performance';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     

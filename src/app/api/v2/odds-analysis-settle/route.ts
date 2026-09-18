@@ -5,11 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { settleOddsAnalysisFromSportmonks, settleAllUnsettledOddsAnalyses } from '@/lib/odds-logger/settlement';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const { fixtureId, settleAll } = body;

@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updatePredictionResult } from '@/lib/predictions';
 
 // API Key kontrolü (basit güvenlik)
-const API_SECRET = process.env.PREDICTIONS_API_SECRET || 'your-secret-key';
+const API_SECRET = process.env.PREDICTIONS_API_SECRET || '';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const apiKey = authHeader?.replace('Bearer ', '');
     
-    if (apiKey !== API_SECRET) {
+    if (!API_SECRET || apiKey !== API_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const apiKey = authHeader?.replace('Bearer ', '');
     
-    if (apiKey !== API_SECRET) {
+    if (!API_SECRET || apiKey !== API_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

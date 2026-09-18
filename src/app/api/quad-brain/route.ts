@@ -9,6 +9,7 @@ import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 import { fetchCompleteMatchData, fetchMatchDataByFixtureId } from '@/lib/heurist/sportmonks-data';
 import { savePrediction } from '@/lib/admin/service';
 import { savePredictionSession, type ModelPrediction } from '@/lib/admin/enhanced-service';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 saniye timeout
@@ -18,6 +19,9 @@ export const maxDuration = 60; // 60 saniye timeout
 // ============================================================================
 
 export async function POST(request: NextRequest): Promise<NextResponse<QuadBrainAPIResponse>> {
+  // Denetim 2026-09-19: arayüz bu ucu çağırmıyor; kimliksiz istek ücretli LLM çağrısı yakıyordu.
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied as any;
   const startTime = Date.now();
 
   try {
