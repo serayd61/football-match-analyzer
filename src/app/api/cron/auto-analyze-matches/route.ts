@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -1219,6 +1220,8 @@ function hasMatchStarted(kickOffTime: string | undefined): boolean {
 // ============================================================================
 
 export async function GET(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
 
   try {

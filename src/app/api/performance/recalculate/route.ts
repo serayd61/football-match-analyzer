@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,8 @@ function normalizeBTTS(val: string | null | undefined): string {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     console.log('🔄 Starting recalculation of correctness values...');
     

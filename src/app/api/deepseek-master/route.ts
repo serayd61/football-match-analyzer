@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -291,6 +292,8 @@ function normalizeMatchResultToDb(pred: string): 'home' | 'draw' | 'away' {
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
 
   try {

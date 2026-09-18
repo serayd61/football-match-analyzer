@@ -56,6 +56,12 @@
       "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/predict",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer __PREDICT_SERVICE_TOKEN__" }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"fixtures\": $json.fixtures } }}",

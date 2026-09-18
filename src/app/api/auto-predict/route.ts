@@ -4,6 +4,7 @@
 
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
@@ -356,6 +357,8 @@ function calculateConsensus(results: any[]) {
 // ==================== ANA FONKSİYON ====================
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   
   try {

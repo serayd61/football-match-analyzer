@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchById } from '@/lib/data-sources/free-football';
 
@@ -157,6 +158,8 @@ async function settleUnifiedAnalysis(
 // ============================================================================
 
 export async function GET(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
 
   try {

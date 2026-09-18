@@ -5,8 +5,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
+
+// Denetim 2026-09-18 (B01): skorlar istekten geliyor → yalnız servis sırrıyla
+// ve katı şemayla. Eskiden kimliksiz POST, karneyi kalıcı olarak bozabiliyordu
+// (is_settled=true olan satırı settle-unified cron'u bir daha düzeltmez).
+const SettleBody = z.object({
+  fixtureId: z.coerce.number().int().positive(),
+  homeScore: z.number().int().min(0).max(30),
+  awayScore: z.number().int().min(0).max(30),
+});
 
 let _sb: SupabaseClient | null = null;
 function getSupabase() {
@@ -16,16 +27,17 @@ function getSupabase() {
 const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupabase() as any)[p]; } });
 
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
-    const body = await request.json();
-    const { fixtureId, homeScore, awayScore } = body;
-    
-    if (!fixtureId || homeScore === undefined || awayScore === undefined) {
+    const parsed = SettleBody.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: fixtureId, homeScore, awayScore' },
+        { success: false, error: 'Invalid body: fixtureId, homeScore, awayScore (integers, scores 0-30)' },
         { status: 400 }
       );
     }
+    const { fixtureId, homeScore, awayScore } = parsed.data;
     
     // Get analysis
     const { data: analysis, error: fetchError } = await supabase

@@ -5,6 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { hasServiceSecret } from '@/lib/api/dev-only';
 
 export const dynamic = 'force-dynamic';
 
@@ -214,6 +217,12 @@ async function settleAnalysis(
 }
 
 export async function POST(request: NextRequest) {
+  // Denetim 2026-09-18: /performance sayfasındaki düğme oturumla çağırır;
+  // makine çağrıları Bearer sır taşır. Anonim çağrı Sportmonks kotasını yakıyordu.
+  if (!hasServiceSecret(request)) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     console.log('🔄 Starting match settlement process...');
     

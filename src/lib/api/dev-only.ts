@@ -27,3 +27,13 @@ export function devOnlyGuard(req: HeaderReader): NextResponse | null {
   if (hasServiceSecret(req)) return null;
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }
+
+/**
+ * Denetim 2026-09-18 (B01): service-role ile yazan ya da ücretli LLM çağıran
+ * makine uçları için. Null → devam; aksi halde 401. devOnlyGuard'dan farkı:
+ * geliştirmede de sır ister (cron/n8n çağrıları her ortamda Bearer taşır).
+ */
+export function serviceOnlyGuard(req: HeaderReader): NextResponse | null {
+  if (hasServiceSecret(req)) return null;
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}

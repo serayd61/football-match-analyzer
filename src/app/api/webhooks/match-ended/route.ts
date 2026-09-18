@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settleAgentPredictions } from '@/lib/agent-learning/performance-tracker';
 
@@ -213,6 +214,8 @@ async function settleUnifiedAnalysis(
 
 // POST: Tek bir maç için settlement
 export async function POST(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
 
   try {
@@ -307,6 +310,8 @@ export async function POST(request: NextRequest) {
 
 // GET: Biten maçları kontrol et ve settle et (n8n polling için)
 export async function GET(request: NextRequest) {
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   const startTime = Date.now();
   const supabase = getSupabase();
 

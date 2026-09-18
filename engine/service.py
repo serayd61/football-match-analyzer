@@ -38,9 +38,13 @@ import model as M
 import model_xg as MX
 import params as P
 from store import ResultStore, STORE_PATH, backfill, update_recent, _parse_dt, league_name
-from store_xg import XgStore
+from store_xg import XgStore, window_coverage
 
-SERVICE_TOKEN = os.environ.get("PREDICT_SERVICE_TOKEN", "")  # opsiyonel: /predict & admin koruması
+SERVICE_TOKEN = os.environ.get("PREDICT_SERVICE_TOKEN", "")
+# Denetim 2026-09-18: token boşken kontrol sessizce devre dışıydı (fail-open) ve
+# servis 0.0.0.0:8000 dinliyor. Artık token yoksa korumalı uçlar 503 döner;
+# bilinçli olarak açık bırakmak için PREDICT_ALLOW_ANON=1 (yalnız özel ağda).
+ALLOW_ANON = os.environ.get("PREDICT_ALLOW_ANON", "") == "1"
 MIN_LEAGUE_MATCHES = int(os.environ.get("MIN_LEAGUE_MATCHES", "150"))
 MIN_TEAM_MATCHES = float(os.environ.get("MIN_TEAM_MATCHES", "6"))       # sürüm params'ı yoksa
 STORE_MAX_AGE_H = float(os.environ.get("STORE_MAX_AGE_HOURS", "20"))     # depo bundan eskiyse tazele
@@ -60,7 +64,9 @@ _refresh_state: Dict[str, Any] = {"running": False, "last_started": None, "last_
 
 def _check_token(authorization: Optional[str]):
     if not SERVICE_TOKEN:
-        return
+        if ALLOW_ANON:
+            return
+        raise HTTPException(status_code=503, detail="PREDICT_SERVICE_TOKEN not configured")
     tok = (authorization or "").replace("Bearer ", "")
     if tok != SERVICE_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -83,12 +89,13 @@ def _get_model(league_id: int, ref_ord: int, spec: Dict[str, Any]):
         return _fit_cache[key]
     prm = P.params_for_league(spec, league_id)
     matches = store.load_for_fit(league_id)
-    cov = xg_store.attach(matches)
+    xg_store.attach(matches)
+    ref_date = datetime.fromordinal(ref_ord)
+    cov = window_coverage(matches, ref_date, prm["window_days"])  # eğitim penceresiyle aynı küme
     mdl, reason = None, None
     if len(matches) < MIN_LEAGUE_MATCHES:
         reason = "league_too_small"
     else:
-        ref_date = datetime.fromordinal(ref_ord)
         common = dict(half_life_days=prm["half_life_days"], window_days=prm["window_days"], iters=prm["iters"],
                       min_matches=prm["min_matches"], rho=prm["rho"], shrink_k=prm["shrink_k"])
         if spec["kind"] == "xg":
@@ -225,9 +232,13 @@ def _xg_league_status(p: Dict[str, Any]):
     xg_specs = [s for s in P.all_specs(p) if s["kind"] == "xg"]
     for lid in XG_LEAGUES:
         matches = store.load_for_fit(lid)
-        cov = xg_store.attach(matches)
-        row = {"leagueId": lid, "name": league_name(lid), "matches": len(matches), "xg_coverage": round(cov, 3)}
-        row["publishes"] = [s["version"] for s in xg_specs if cov >= P.params_for_league(s, lid)["xg_min_coverage"]]
+        store_cov = xg_store.attach(matches)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)  # depo tarihleri naive UTC
+        covs = {s["version"]: window_coverage(matches, now, P.params_for_league(s, lid)["window_days"]) for s in xg_specs}
+        cov = max(covs.values()) if covs else store_cov
+        row = {"leagueId": lid, "name": league_name(lid), "matches": len(matches), "xg_coverage": round(cov, 3),
+               "xg_coverage_store": round(store_cov, 3)}
+        row["publishes"] = [s["version"] for s in xg_specs if covs[s["version"]] >= P.params_for_league(s, lid)["xg_min_coverage"]]
         out.append(row)
     return out
 

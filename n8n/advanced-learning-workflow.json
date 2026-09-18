@@ -23,6 +23,15 @@
         "method": "GET",
         "url": "https://footballanalytics.pro/api/webhooks/match-ended",
         "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CRON_SECRET_HERE"
+            }
+          ]
+        },
         "options": {
           "timeout": 60000
         }
