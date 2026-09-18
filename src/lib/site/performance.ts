@@ -5,7 +5,7 @@ import { db, REVALIDATE } from './db';
 import { SITE_LEAGUES, type SiteLeague } from './leagues';
 import { coveredLeagueIds } from './results';
 import { loadContext } from './predictions';
-import { pickOfficial, officialFilter, resolveOfficialVersion } from './official';
+import { pickOfficial, officialFilter, resolveOfficialVersion, OFFICIAL_MODEL_VERSION } from './official';
 import { applyCurve } from '@/lib/calibration';
 import { MIN_OVER, MIN_BTTS } from './daily-picks-rule';
 import { makeBins, addToBin, finishBins, walkForwardBins, type CalBin, type TPt } from '@/lib/calibration-eval';
@@ -51,18 +51,53 @@ const ROW_COLS = 'fixture_id, model_version, updated_at, league_id, kickoff, p_h
 const PAGE = 1000;
 const MAX_ROWS = 40000;
 
-async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: boolean; quarantined: number }> {
+/** Aktivasyon zaman çizgisi: sürüm tablosu + değişmez öğrenme günlüğü (yeniden aktivasyon activated_at'ı ezer). */
+async function loadTimeline(): Promise<Activation[]> {
+  try {
+    const [v, l] = await Promise.all([
+      db().from('engine_model_versions').select('version, activated_at').not('activated_at', 'is', null),
+      db().from('engine_learning_log').select('subject, occurred_at').eq('layer', 'version').eq('action', 'activate').limit(1000),
+    ]);
+    return buildTimeline([
+      ...((v.data || []) as any[]).map((r) => ({ version: String(r.version), at: String(r.activated_at) })),
+      ...((l.data || []) as any[]).map((r) => ({ version: String(r.subject), at: String(r.occurred_at) })),
+    ]);
+  } catch { return []; }
+}
+
+/** Başlama öncesi yayın satırları (engine_prediction_history), fixture başına gruplu. Tablo yoksa boş. */
+async function fetchHistory(fixtureIds: number[]): Promise<Map<number, HistoryRow[]>> {
+  const out = new Map<number, HistoryRow[]>();
+  const CHUNK = 100; // satır/maç ≈ sürüm × yeniden yayın; 100 id açık limitin çok altında kalır
+  for (let i = 0; i < fixtureIds.length; i += CHUNK) {
+    const { data, error } = await db().from('engine_prediction_history')
+      .select('fixture_id, model_version, issued_at, p_raw')
+      .in('fixture_id', fixtureIds.slice(i, i + CHUNK)).order('id', { ascending: true }).limit(1000);
+    if (error) { console.error('[site/performance] history read failed', error.message); return new Map(); }
+    for (const r of (data || []) as any[]) {
+      const k = Number(r.fixture_id);
+      if (!out.has(k)) out.set(k, []);
+      out.get(k)!.push({ fixture_id: k, model_version: r.model_version, issued_at: String(r.issued_at), p_raw: r.p_raw });
+    }
+  }
+  return out;
+}
+
+async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: boolean; quarantined: number; published: number; archive: number }> {
   const out: Row[] = [];
   let truncated = false;
   let quarantined = 0;
   const official = await resolveOfficialVersion();
+  // Denetim 2026-09-18 (B06): sürüm filtresi sorguda DEĞİL, maç bazında uygulanır — resmî sürüm
+  // başlama anında aktif olandır. SITE_MODEL_VERSION ayarlıysa (acil sabitleme) o kazanır.
+  const pinned = OFFICIAL_MODEL_VERSION;
   for (let from = 0; from < MAX_ROWS; from += PAGE) {
     const { data, error } = await officialFilter(db()
       .from('engine_predictions')
       .select(ROW_COLS)
       .eq('settled', true)
       .not('home_score', 'is', null)
-      .in('league_id', ids), official)
+      .in('league_id', ids), pinned)
       .order('kickoff', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) throw new Error(error.message);
@@ -75,9 +110,32 @@ async function fetchSettled(ids: number[]): Promise<{ rows: Row[]; truncated: bo
     if (from + PAGE >= MAX_ROWS) truncated = true;
   }
   if (quarantined) console.error(`[site/performance] ${quarantined} rows quarantined`);
-  return { rows: pickOfficial(out, official), truncated, quarantined };
+
+  const timeline = pinned ? [] : await loadTimeline();
+  const firstAt = timeline.length ? Date.parse(timeline[0].at) : Infinity;
+  const byFixture = new Map<number, Row[]>();
+  for (const r of out) { if (!byFixture.has(r.fixture_id)) byFixture.set(r.fixture_id, []); byFixture.get(r.fixture_id)!.push(r); }
+  const recent = [...byFixture.keys()].filter((id) => Date.parse(byFixture.get(id)![0].kickoff) >= firstAt || pinned);
+  const history = await fetchHistory(recent);
+
+  const rows: Row[] = [];
+  let published = 0;
+  let archive = 0;
+  for (const [id, cands] of byFixture) {
+    const ko = cands[0].kickoff;
+    const version = pinned ?? officialAt(timeline, ko) ?? official;
+    const base = cands.find((c) => c.model_version === version) ?? pickOfficial(cands, null)[0];
+    if (!base) continue;
+    const h = pickPublished(history.get(id) ?? [], ko, base.model_version);
+    const pf = h ? publishedFields(h) : null;
+    if (pf) { published++; rows.push({ ...base, ...pf, correct: pf.pick && base.result ? isPickCorrect(pf.pick, base.result) : null }); }
+    else { archive++; rows.push(base); }
+  }
+  rows.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  return { rows, truncated, quarantined, published, archive };
 }
 
+import { buildTimeline, officialAt, pickPublished, publishedFields, type Activation, type HistoryRow } from './publication';
 import { addRoi, finishRoi, mkRoi, isPickCorrect, type OddsRow, type Roi } from './roi';
 export type { Roi };
 export type OddsIndex = Map<number, { opening?: OddsRow; closing?: OddsRow; btts?: { pYes: number; pNo: number } }>;

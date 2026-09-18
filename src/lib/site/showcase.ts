@@ -27,7 +27,8 @@ async function freshMarkets(ids: number[]): Promise<Map<number, Mkt>> {
   for (let i = 0; i < ids.length; i += 100) {
     const { data } = await db().from('prediction_odds')
       .select('fixture_id, phase, captured_at, p_home_market, p_draw_market, p_away_market')
-      .in('fixture_id', ids.slice(i, i + 100));
+      .in('fixture_id', ids.slice(i, i + 100))
+      .limit(100 * 6); // 6 faz × 100 id, (fixture_id, phase) tekil → kesilme olmaz (B05)
     const by = new Map<number, any[]>();
     for (const r of (data ?? []) as any[]) { const k = Number(r.fixture_id); if (!by.has(k)) by.set(k, []); by.get(k)!.push(r); }
     for (const [k, rows] of by) {

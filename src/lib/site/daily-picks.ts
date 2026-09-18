@@ -1,10 +1,11 @@
 import 'server-only';
 import { db, dbFresh } from './db';
 import { listDayFresh } from './fixtures';
+import { ODDS_PHASES } from './odds-phases';
 
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
-import { selectDailyPicks, settlePick, tallyPicks, RULE_VERSION, type PicksTally, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
+import { selectDailyPicks, settlePick, tallyPicks, RULE_VERSION, TAKE, type PicksTally, type PickMarket, type PickSelection, type PickCandidateInput } from './daily-picks-rule';
 /** Cron/preview yolu: sayfa önbelleğini atlayıp DB'den okur (ingest sonrası bayat 'hasModel=0' görülmesin). */
 const freshRows = async (ymd: string) => (await listDayFresh(ymd)).rows;
 
@@ -62,10 +63,14 @@ async function latestBookOdds(ids: number[]): Promise<Map<number, { btts: number
   const out = new Map<number, { btts: number | null; over: number | null }>();
   const rank: Record<string, number> = { opening: 0, h24: 1, h12: 2, h6: 3, h3: 4, closing: 5 };
   const best = new Map<number, number>();
-  for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds, over25_odds').in('fixture_id', ids.slice(i, i + 200));
+  // Denetim B05 kalanı: 200 id × 6 faz = 1200 satır PostgREST max-rows (1000) üstünde sessizce
+  // kesiliyordu. 100 id × 6 faz = 600, limit açık → (fixture_id, phase) tekil olduğundan tam sayı.
+  const CHUNK = 100;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const { data, error } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds, over25_odds').in('fixture_id', chunk).limit(CHUNK * ODDS_PHASES.length);
     if (error) { // over25_odds sütunu henüz yoksa KG ile devam
-      const { data: d2 } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds').in('fixture_id', ids.slice(i, i + 200));
+      const { data: d2 } = await dbFresh().from('prediction_odds').select('fixture_id, phase, btts_yes_odds').in('fixture_id', chunk).limit(CHUNK * ODDS_PHASES.length);
       for (const r of (d2 ?? []) as any[]) { const k = Number(r.fixture_id); const rk = rank[r.phase] ?? -1; if (rk >= (best.get(k) ?? -1)) { best.set(k, rk); out.set(k, { btts: r.btts_yes_odds > 1 ? Number(r.btts_yes_odds) : null, over: null }); } }
       continue;
     }
@@ -103,9 +108,11 @@ export async function previewDailyPicks(ymd: string, asOf?: number): Promise<Dai
  * önbelleği yüzünden cron yazdıktan sonra bile "boş" görüp yeniden üretebiliyordu.
  */
 export async function readDailyPicks(ymd = todayYmd()): Promise<DailyPick[]> {
-  const { data, error } = await dbFresh().from(TABLE).select('*').eq('pick_date', ymd).order('kickoff');
+  // İlk yazılan TAKE satır resmî seçimdir (B07 kalanı: iki eşzamanlı üretim farklı aday yazarsa
+  // upsert fixture bazında tekilleştirir ama günü sınırlamaz) → deterministik tavan burada.
+  const { data, error } = await dbFresh().from(TABLE).select('*').eq('pick_date', ymd).order('created_at').order('fixture_id').limit(TAKE);
   if (error) console.error('[daily-picks] read failed', error.message);
-  return (data ?? []).map(fromRow);
+  return (data ?? []).map(fromRow).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 
 /** Üretim yolu (cron / sosyal yayın). Tabloda varsa onları döner; yoksa üretip dondurur. */
