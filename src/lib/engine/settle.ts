@@ -20,6 +20,13 @@
 //
 // Kaynak hatası (getMatchesByDate throw): o tarih atlanır ama VOID EDİLMEZ —
 // geçici API arızası kalıcı veri kaybına dönüşmesin.
+//
+// KAYNAK TARİH KAYMASI (2026-09-19): FotMob akışı ~19:00 UTC ve sonrası başlayan
+// maçları BİR SONRAKİ günün kovasında listeler (Brentford–Chelsea 18 Eyl 19:00
+// UTC → date=20260919). UTC kickoff tarihine bakınca bu maçlar hep notFound kaldı
+// ve 7 gün sonra void oldu (18 Eyl'de 40 satır). Artık her tarih için hem o gün
+// hem ertesi gün çekilir (önbellekli → ardışık tarihlerde çağrı sayısı artmaz).
+// Ertesi gün çekilemezse o grubun notFound satırları VOID EDİLMEZ.
 // ============================================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -33,6 +40,8 @@ export interface SettleOptions {
   /** en fazla kaç bekleyen satır okunur (1..1000, varsayılan 900) */
   limit?: number;
   now?: Date;
+  /** test için kaynak enjeksiyonu (varsayılan getMatchesByDate) */
+  fetch?: FeedFetch;
 }
 
 export interface SettleResult {
@@ -45,6 +54,10 @@ export interface SettleResult {
 }
 
 const ymd = (iso: string) => new Date(iso).toISOString().split('T')[0];
+export const nextDay = (date: string) => new Date(new Date(date + 'T00:00:00Z').getTime() + 86_400_000).toISOString().split('T')[0];
+
+/** Kaynağın maç listesini, tarih kayması için o gün + ertesi gün olarak birleştirir. */
+export type FeedFetch = (date: string) => Promise<FFMatch[]>;
 
 const PENDING_COLS = 'id, fixture_id, kickoff, pick, p_home, p_draw, p_away, p_over25, p_btts_yes';
 
@@ -83,17 +96,31 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
   const voidIds: number[] = [];
   const settledAt = now.toISOString();
 
+  const fetchFeed = opts.fetch ?? getMatchesByDate;
+  const cache = new Map<string, FFMatch[] | null>(); // null = kaynak hatası
+  const fetchCached = async (d: string): Promise<FFMatch[] | null> => {
+    if (cache.has(d)) return cache.get(d)!;
+    let res: FFMatch[] | null = null;
+    try { res = await fetchFeed(d); }
+    catch (e: any) { console.error(`[settle-engine] ${d}: getMatchesByDate failed:`, e?.message); }
+    cache.set(d, res);
+    return res;
+  };
+
   for (const [date, items] of byDate) {
-    let matches: FFMatch[] = [];
-    try {
-      matches = await getMatchesByDate(date);
-    } catch (e: any) {
+    const primary = await fetchCached(date);
+    if (!primary) {
       out.failedDates.push(date);
-      console.error(`[settle-engine] ${date}: getMatchesByDate failed (${items.length} rows deferred):`, e?.message);
+      console.error(`[settle-engine] ${date}: source unavailable (${items.length} rows deferred)`);
       continue;
     }
+    // Tarih kayması: geç saatte başlayan maçlar ertesi günün kovasında.
+    const next = await fetchCached(nextDay(date));
     const map = new Map<number, FFMatch>();
-    for (const m of matches) map.set(Number(m.id), m);
+    for (const m of primary) map.set(Number(m.id), m);
+    for (const m of next ?? []) if (!map.has(Number(m.id))) map.set(Number(m.id), m);
+    // Ertesi gün çekilemediyse "bulunamadı" güvenilir değil → void etme.
+    const canVoid = next != null;
 
     for (const r of items) {
       out.checked++;
@@ -105,7 +132,7 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
 
       if (reason) {
         out.skipped[reason]++;
-        if (new Date(r.kickoff) < voidCutoff) voidIds.push(r.id);
+        if (canVoid && new Date(r.kickoff) < voidCutoff) voidIds.push(r.id);
         else console.log(`[settle-engine] ${date} fixture=${r.fixture_id}: skipped (${reason})`);
         continue;
       }
