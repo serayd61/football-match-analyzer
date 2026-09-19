@@ -71,6 +71,7 @@ module.exports = {
           n400: 'rgb(var(--s-n400) / <alpha-value>)',
           n600: 'rgb(var(--s-n600) / <alpha-value>)',
           n800: 'rgb(var(--s-n800) / <alpha-value>)',
+          info: 'rgb(var(--s-info) / <alpha-value>)',
           divider: 'var(--s-divider)',
         },
       },

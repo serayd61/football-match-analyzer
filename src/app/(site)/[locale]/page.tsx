@@ -1,34 +1,26 @@
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
+import { UserPlus, ListFilter, LineChart, Plus } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
-import { listPredictionsForDay, nextDayWithPredictions, type SitePrediction } from '@/lib/site/predictions';
-import { listDayRows } from '@/lib/site/fixtures';
+import type { SitePrediction } from '@/lib/site/predictions';
 import { listResults } from '@/lib/site/results';
 import { getPerformance } from '@/lib/site/performance';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
-import { todayYmd, addDays, zonedStartOfDay } from '@/lib/site/time';
-import { riskOf, lossRate } from '@/lib/site/risk';
+import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { Page } from '@/components/site/ui';
-import ProbBar from '@/components/site/ProbBar';
-import ConfidenceRing from '@/components/site/ConfidenceRing';
-import { RiskLabel, RiskNote } from '@/components/site/Risk';
-import { StatRow, StatCell } from '@/components/site/StatCell';
-import LocalTime from '@/components/site/LocalTime';
+import DemoAnalysis from '@/components/site/DemoAnalysis';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
-import { LockedBlock, REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 
-// Members-only site (2026-09-08): the landing shows the record and counts; a
-// fixture renders only for a live trial or a paid account. Reading the
-// session makes it dynamic.
+// Members-only site (2026-09-08): reading the session makes this dynamic.
 export const dynamic = 'force-dynamic';
 
-// Home (Modernist redesign 2026-09-11). Two-column hero: claim + record on the
-// left, "Pick of the day" on the right (confidence ring, 1X2 bar, risk note).
-// Then "Recent winners" cards and three "why" cells. All numbers are live:
-// the record comes from the settled table, the pick is today's highest
-// calibrated confidence.
+// Ana sayfa (görsel yenileme 2026-09-19). Sıra: koyu ilk ekran (tek ana CTA + okunabilir,
+// açıkça etiketli ÖRNEK analiz) → kapsam şeridi → ürün anlatımı → 3 adım → şeffaf performans
+// → fiyat özeti → SSS → kompakt kapanış. Tüm sayılar canlı karneden; sabit pazarlama
+// rakamı, sahte canlı rozeti, uydurma sosyal kanıt yok. Üyeye özel veri HTML'e basılmaz.
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'home' });
@@ -41,161 +33,207 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 }
 
 const pct = (x: number | null | undefined, d = 1) => (x == null ? '–' : `${(x * 100).toFixed(d)}%`);
-const fairOdds = (p: number) => (p > 0 ? (1 / p).toFixed(2) : '–');
-const pickProb = (p: SitePrediction) => (p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0);
+const signed = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
 
 export default async function HomePage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
-  const t = await getTranslations('v2.home');
+  const t = await getTranslations('v2.landing');
+  const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
+  const tp = await getTranslations('v2.pricing');
   const f = await getFormatter();
-  const count = SITE_LEAGUES.length;
   const access = await getSiteAccess();
   const unlocked = canSeeMatches(access);
+  const authed = access.state !== 'anon';
 
-  const today = todayYmd();
-  const [todayRows, perf, latest] = await Promise.all([
-    listDayRows(today),
+  const [perf, latest] = await Promise.all([
     getPerformance(null),
-    listResults({ league: null, from: null, to: null, page: 1, pageSize: 24 }),
+    unlocked ? listResults({ league: null, from: null, to: null, page: 1, pageSize: 12 }) : Promise.resolve(null),
   ]);
-  let day = today;
-  let upcoming = todayRows.filter((r) => r.covered && r.status === 'scheduled');
-  if (!upcoming.length) {
-    const next = await nextDayWithPredictions(today, 1);
-    if (next) { day = next; upcoming = (await listPredictionsForDay(next)).filter((r) => r.covered && r.status === 'scheduled'); }
-  }
-  const rated = upcoming.filter((r) => r.hasModel && r.pick);
-  const pod = [...rated].sort((a, b) => (b.confidence ?? b.confidenceRaw ?? 0) - (a.confidence ?? a.confidenceRaw ?? 0))[0] ?? null;
-  // Denetim 2026-09-18: yalnız kazananları seçmek kanıt değil vitrindi. Son sonuçlanan 6 tahmin,
-  // kazanan ve kaybeden birlikte, seçmeden.
-  const winners = latest.rows.filter((r) => r.outcome === 'won' || r.outcome === 'lost').slice(0, 6);
+  // Seçmeden: en son sonuçlanan 5 tahmin (kazanan da kaybeden de). Yalnız erişimi olana.
+  const recent = (latest?.rows ?? []).filter((r) => r.outcome === 'won' || r.outcome === 'lost').slice(0, 5);
+  const pickName = (p: SitePrediction) => (p.pick === '1' ? th('pickWin', { team: p.homeName }) : p.pick === '2' ? th('pickWin', { team: p.awayName }) : th('pickDraw'));
+  const day = (iso: string | null) => (iso ? f.dateTime(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' }) : '–');
 
-  const dayLabel = day === today ? tc('today') : day === addDays(today, 1) ? tc('tomorrow') : f.dateTime(zonedStartOfDay(day), 'dayLong');
-  const kicker = rated.length && day === today ? t('kickerLive', { count: rated.length }) : rated.length ? t('kickerNext', { day: dayLabel }) : t('kickerIdle');
+  const primary = unlocked
+    ? { href: '/predictions', label: t('ctaToday') }
+    : authed ? { href: PRICING_HREF, label: tp('proCta') } : { href: REGISTER_HREF, label: t('ctaTry') };
 
-  const conf = pod ? (pod.confidence ?? pod.confidenceRaw) : null;
-  const confPct = conf == null ? null : Math.round(conf * 100);
-  const pickName = (p: SitePrediction) => (p.pick === '1' ? t('pickWin', { team: p.homeName }) : p.pick === '2' ? t('pickWin', { team: p.awayName }) : t('pickDraw'));
-  const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
+  const steps = [
+    { Icon: UserPlus, title: t('step1T'), text: t('step1') },
+    { Icon: ListFilter, title: t('step2T'), text: t('step2') },
+    { Icon: LineChart, title: t('step3T'), text: t('step3') },
+  ];
+  const faqs = (['1', '2', '3', '4', '5', '6'] as const).map((n) => ({ q: t(`q${n}`), a: t(`a${n}`) }));
 
   return (
-    <Page>
-      {/* ── Hero: 1fr 1fr, 2px vertical rule between ───────────────── */}
-      <div className="rule-b grid lg:grid-cols-2">
-        <div className="flex flex-col gap-6 py-8 lg:rule-r lg:pr-6">
-          <p className="kicker !text-s-accent">{kicker}</p>
-          <h1 className="max-w-[12ch] text-[clamp(40px,5.5vw,72px)]" style={{ textWrap: 'pretty' } as React.CSSProperties}>{t('title')}</h1>
-          <p className="max-w-[520px] text-[17px] text-s-muted" style={{ textWrap: 'pretty' } as React.CSSProperties}>{t('lead', { count })}</p>
-          <div className="flex flex-wrap gap-2">
-            {unlocked ? (
-              <Link href="/predictions" className="btn btn-primary">{t('ctaPredictions')}</Link>
-            ) : (
-              <Link href={REGISTER_HREF} className="btn btn-primary">{t('ctaStart')}</Link>
-            )}
-            <Link href="/performance" className="btn btn-secondary">{t('ctaRecord')}</Link>
-            {!unlocked && <Link href={SIGNIN_HREF} className="btn btn-secondary">{t('ctaSignIn')}</Link>}
+    <>
+      {/* ── B. İlk ekran: koyu bant ─────────────────────────────────── */}
+      <section className="band-dark pitch-bg">
+        <Page className="grid items-center gap-10 py-14 lg:grid-cols-[0.82fr_1fr] lg:gap-14 lg:py-20">
+          <div className="flex flex-col gap-6">
+            <p className="kicker !text-s-accent-700">{t('eyebrow')}</p>
+            <h1 className="max-w-[14ch] text-[38px] leading-[1.06] sm:text-[52px] lg:text-[60px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{t('title')}</h1>
+            <p className="max-w-[46ch] text-[17px] text-s-muted sm:text-[18px]">{t('lead')}</p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Link href={primary.href} className="btn btn-primary btn-lg" data-cta="hero-primary">{primary.label}</Link>
+              <a href="#demo" className="text-[15px] font-semibold underline decoration-s-n400 underline-offset-4 hover:decoration-s-accent" data-cta="hero-demo">{t('ctaDemo')}</a>
+            </div>
+            {!authed && <p className="text-[14px] text-s-muted">{t('noCard')}</p>}
           </div>
-          <StatRow cols={3} className="mt-2">
-            <StatCell first label={t('statHit')} value={perf.overall.n ? pct(perf.overall.acc) : '–'} />
-            <StatCell label={perf.roi ? t('statRoi') : t('statRoiNone')} value={perf.roi ? `${perf.roi.roi >= 0 ? '+' : ''}${pct(perf.roi.roi)}` : '–'} />
-            <StatCell label={t('statSettled')} value={perf.overall.n ? f.number(perf.overall.n) : '–'} />
-          </StatRow>
+          <DemoAnalysis id="demo" />
+        </Page>
+      </section>
+
+      {/* ── C. Kapsam şeridi ────────────────────────────────────────── */}
+      <section className="border-b border-s-line bg-s-surface" aria-labelledby="cov-title">
+        <Page className="flex flex-col gap-3 py-5 lg:flex-row lg:items-center lg:gap-6">
+          <h2 id="cov-title" className="kicker shrink-0 !font-semibold">{t('leaguesTitle')}</h2>
+          <ul className="tbl-scroll -mx-5 flex gap-2 px-5 pb-1 sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-wrap lg:px-0 lg:pb-0">
+            {SITE_LEAGUES.map((l) => (
+              <li key={l.slug} className="shrink-0">
+                <Link href={`/leagues/${l.slug}`} className="inline-flex h-9 items-center rounded-full border border-s-line px-3.5 text-[14px] font-medium hover:border-s-n400">{l.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </Page>
+      </section>
+
+      {/* ── D. Ürünü gösteren bölüm ─────────────────────────────────── */}
+      <Page className="py-14 lg:py-24">
+        <h2 className="max-w-[22ch] text-[30px] sm:text-[38px]">{t('showTitle')}</h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {(['1', '2', '3'] as const).map((n) => (
+            <article key={n} className="card card-flat">
+              <span className="num grid h-8 w-8 place-items-center rounded-full bg-s-accent-100 text-[14px] font-bold text-s-accent-800" aria-hidden>{n}</span>
+              <h3 className="text-[20px]">{t(`show${n}T`)}</h3>
+              <p className="text-[15px] text-s-muted">{t(`show${n}`)}</p>
+            </article>
+          ))}
+        </div>
+      </Page>
+
+      {/* ── E. Üç adım ──────────────────────────────────────────────── */}
+      <section id="how" className="scroll-mt-20 border-y border-s-line bg-s-surface">
+        <Page className="py-14 lg:py-20">
+          <h2 className="text-[30px] sm:text-[38px]">{t('stepsTitle')}</h2>
+          <ol className="mt-8 grid gap-8 md:grid-cols-3">
+            {steps.map(({ Icon, title, text }, i) => (
+              <li key={title} className="flex gap-4">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-s-line bg-s-bg text-s-accent-700" aria-hidden><Icon size={20} /></span>
+                <div>
+                  <h3 className="text-[18px]"><span className="num text-s-muted">{i + 1}.</span> {title}</h3>
+                  <p className="mt-1 text-[15px] text-s-muted">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Page>
+      </section>
+
+      {/* ── F. Şeffaf performans ────────────────────────────────────── */}
+      <Page className="py-14 lg:py-24">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-[30px] sm:text-[38px]">{t('perfTitle')}</h2>
+            <p className="mt-2 max-w-[60ch] text-[16px] text-s-muted">{t('perfLead')}</p>
+          </div>
+          <Link href="/performance" className="text-[15px] font-semibold text-s-accent-700 hover:underline">{t('perfLink')}</Link>
         </div>
 
-        {/* Pick of the day */}
-        <div className="rule-t flex flex-col gap-4 py-8 lg:rule-t-0 lg:pl-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="kicker">{unlocked ? t('pickOfDay') : t('pickOfDayLocked')}</p>
-            {pod && <span className="text-[12px] text-s-muted">{pod.leagueName} · <LocalTime iso={pod.kickoff} format="time" /></span>}
+        <dl className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="card card-flat">
+            <dt className="kicker">{t('perfHit')}</dt>
+            <dd className="num text-[40px] font-extrabold leading-none">{perf.overall.n ? pct(perf.overall.acc) : '–'}</dd>
+            <dd className="text-[13px] text-s-muted">{t('perfHitNote', { n: f.number(perf.overall.n), from: day(perf.from), to: day(perf.to) })}</dd>
           </div>
+          <div className="card card-flat">
+            <dt className="kicker">{t('perfRoi')}</dt>
+            <dd className={`num text-[40px] font-extrabold leading-none ${perf.roi && perf.roi.roi < 0 ? 'text-s-loss' : ''}`}>{perf.roi ? signed(perf.roi.roi) : '–'}</dd>
+            <dd className="text-[13px] text-s-muted">{perf.roi ? t('perfRoiNote', { bets: f.number(perf.roi.bets) }) : t('perfRoiNone')}</dd>
+          </div>
+          <div className="card card-flat">
+            <dt className="kicker">{t('perfSettled')}</dt>
+            <dd className="num text-[40px] font-extrabold leading-none">{perf.overall.n ? f.number(perf.overall.n) : '–'}</dd>
+            <dd className="text-[13px] text-s-muted">{t('perfSettledNote')}</dd>
+          </div>
+        </dl>
 
-          {!pod ? (
-            <p className="text-[15px] text-s-muted">{t('noPick')}</p>
-          ) : (
+        <div className="mt-10">
+          {recent.length ? (
             <>
-              <div className="flex items-center justify-between gap-4">
-                <h2 className={`text-[30px] leading-[1] sm:text-[36px] ${unlocked ? '' : 'blur-locked'}`} aria-hidden={!unlocked}>
-                  {unlocked ? pod.homeName : '████████'}<br />
-                  <span className="text-s-muted">{t('vs')}</span> {unlocked ? pod.awayName : '███████'}
-                </h2>
-                {/* Denetim 2026-09-19: kilitliyken gerçek güven/olasılık HTML'e basılmaz (yer tutucu). */}
-                <ConfidenceRing conf={unlocked ? conf : null} size={104} label={t('confidence')} />
-              </div>
-              {unlocked
-                ? <ProbBar home={pod.pHome} draw={pod.pDraw} away={pod.pAway} highlight={pod.pick} labels={labels} size="md" />
-                : <div aria-hidden className="blur-locked"><ProbBar home={0.4} draw={0.3} away={0.3} highlight={null} labels={labels} size="md" /></div>}
-              {unlocked ? (
-                <>
-                  <StatRow cols={3} rule={1}>
-                    <div className="flex flex-col gap-1 py-2 pr-3">
-                      <dt className="text-[11px] text-s-muted">{t('pick')}</dt>
-                      <dd className="text-[15px] font-semibold leading-tight">{pickName(pod)}</dd>
-                    </div>
-                    <div className="rule-l-1 flex flex-col gap-1 px-3 py-2">
-                      <dt className="text-[11px] text-s-muted">{t('fairOdds')}</dt>
-                      <dd className="num text-[15px] font-semibold leading-tight">{fairOdds(pickProb(pod))}</dd>
-                    </div>
-                    <div className="rule-l-1 flex flex-col gap-1 px-3 py-2">
-                      <dt className="text-[11px] text-s-muted">{t('risk')}</dt>
-                      <dd className="text-[15px] font-semibold leading-tight"><RiskLabel risk={riskOf(conf)} className="!text-[15px]" /></dd>
-                    </div>
-                  </StatRow>
-                  {confPct != null && <RiskNote>{t('riskNote', { conf: confPct, loss: lossRate(conf) })}</RiskNote>}
-                  <Link href={`/predictions/${pod.fixtureId}`} className="text-[13px] font-semibold text-s-accent hover:text-s-accent-600">{t('ctaPredictions')}</Link>
-                </>
-              ) : (
-                <>
-                  <RiskNote>{t('riskNoteLocked')}</RiskNote>
-                  <LockedBlock count={rated.length} />
-                </>
-              )}
+              <h3 className="text-[20px]">{t('perfRecent')}</h3>
+              <p className="mt-1 text-[14px] text-s-muted">{t('perfRecentSub')}</p>
+              <ul className="mt-4 divide-y divide-s-line overflow-hidden rounded-[14px] border border-s-line bg-s-surface">
+                {recent.map((w) => (
+                  <li key={w.fixtureId}>
+                    <Link href={`/predictions/${w.fixtureId}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-s-raised sm:px-5">
+                      <span className={`tag ${w.outcome === 'won' ? 'tag-win' : 'tag-loss'}`}>{w.outcome === 'won' ? tc('won') : tc('lost')}</span>
+                      <span className="min-w-0 flex-1 font-semibold">{w.homeName} <span className="num">{w.homeScore}–{w.awayScore}</span> {w.awayName}</span>
+                      <span className="text-[13px] text-s-muted">{pickName(w)} · <span className="num">{pct(w.confidence, 0)}</span></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </>
+          ) : (
+            <div className="rounded-[14px] border border-dashed border-s-n400 px-5 py-4">
+              <h3 className="text-[18px]">{t('perfSummary')}</h3>
+              <p className="mt-1 text-[14px] text-s-muted">{t('perfSummarySub')}</p>
+            </div>
           )}
         </div>
-      </div>
+      </Page>
 
-      {/* ── Recent winners ─────────────────────────────────────────── */}
-      <section className="mt-8">
-        <div className="rule-b flex flex-wrap items-end justify-between gap-3 pb-3">
-          <div>
-            <h2 className="text-[30px]">{t('winnersTitle')}</h2>
-            <p className="mt-1 text-[14px] text-s-muted">{t('winnersSub')}</p>
+      {/* ── G. Fiyat ve deneme ──────────────────────────────────────── */}
+      <section className="border-y border-s-line bg-s-surface">
+        <Page className="py-14 lg:py-20">
+          <h2 className="max-w-[20ch] text-[30px] sm:text-[38px]">{t('priceTitle')}</h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="card card-flat !bg-s-bg">
+              <h3 className="text-[20px]">{t('priceTrial')}</h3>
+              <p className="num text-[36px] font-extrabold leading-none">{money(0)} <span className="text-[15px] font-medium text-s-muted">· {tp('freeFor')}</span></p>
+              <p className="text-[15px]">{t('priceTrialSub')}</p>
+              <p className="text-[14px] text-s-muted">{t('priceTrialAfter')}</p>
+              {!authed && <Link href={REGISTER_HREF} className="btn btn-secondary mt-auto self-start" data-cta="home-price-trial">{t('ctaTry')}</Link>}
+            </div>
+            <div className="card card-accent">
+              <h3 className="text-[20px]">{t('pricePro')}</h3>
+              <p className="num text-[36px] font-extrabold leading-none">{money(PLAN_PRICES.monthly.amount)}<span className="text-[15px] font-medium text-s-muted">{t('perMonth')} · {t('priceWeekly', { price: money(PLAN_PRICES.weekly.amount) })}</span></p>
+              <p className="text-[15px]">{t('priceProSub')}</p>
+              <p className="text-[14px] text-s-muted">{t('priceCancel')}</p>
+              <Link href={PRICING_HREF} className="mt-auto self-start text-[15px] font-semibold text-s-accent-700 hover:underline" data-cta="home-price-compare">{t('priceLink')}</Link>
+            </div>
           </div>
-          <Link href="/performance" className="text-[13px] font-semibold hover:text-s-accent-600">{t('winnersLink')}</Link>
+        </Page>
+      </section>
+
+      {/* ── H. SSS ──────────────────────────────────────────────────── */}
+      <Page className="py-14 lg:py-24">
+        <h2 className="text-[30px] sm:text-[38px]">{t('faqTitle')}</h2>
+        <div className="mt-6 max-w-[820px] divide-y divide-s-line border-y border-s-line">
+          {faqs.map((x) => (
+            <details key={x.q} className="faq group">
+              <summary className="flex min-h-[56px] items-center justify-between gap-4 py-3 text-[17px] font-semibold">
+                {x.q}
+                <Plus size={18} className="faq-plus shrink-0 text-s-muted" aria-hidden />
+              </summary>
+              <p className="pb-5 pr-8 text-[15px] text-s-muted">{x.a}</p>
+            </details>
+          ))}
         </div>
-        {!unlocked ? (
-          <LockedBlock count={latest.total} />
-        ) : winners.length ? (
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {winners.map((w) => (
-              <Link key={w.fixtureId} href={`/predictions/${w.fixtureId}`} className="card card-top">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="kicker">{w.leagueName}</span>
-                  <span className={`tag ${w.outcome === 'lost' ? 'text-s-loss' : ''}`}>{w.outcome === 'lost' ? tc('lost') : tc('won')}</span>
-                </div>
-                <h3 className="text-[20px] leading-[1.05]">{w.homeName} {w.homeScore}–{w.awayScore} {w.awayName}</h3>
-                <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                  <span className="font-semibold">{pickName(w)}</span>
-                  <span className="num text-s-muted">{pct(w.confidence, 0)} · {t('atOdds', { odds: fairOdds(pickProb(w)) })}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-s-muted">{t('winnersEmpty')}</p>
-        )}
-      </section>
+      </Page>
 
-      {/* ── Why: 3 equal cells with 1px rules ──────────────────────── */}
-      <section className="rule-t mt-8 grid sm:grid-cols-3">
-        {(['1', '2', '3'] as const).map((n, i) => (
-          <div key={n} className={`py-6 ${i === 0 ? 'sm:pr-6' : 'sm:rule-l-1 sm:px-6'} ${i > 0 ? 'rule-t-1 sm:border-t-0' : ''}`}>
-            <h4 className="text-[20px]">{t(`why${n}Title`)}</h4>
-            <p className="mt-2 text-[14px] text-s-muted">{t(`why${n}Text`)}</p>
+      {/* ── I. Kapanış ──────────────────────────────────────────────── */}
+      <section className="band-dark pitch-bg">
+        <Page className="flex flex-col items-start gap-5 py-14 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-[28px] sm:text-[34px]">{t('closeTitle')}</h2>
+            {!authed && <p className="mt-2 text-[15px] text-s-muted">{t('closeNote')}</p>}
           </div>
-        ))}
+          <Link href={primary.href} className="btn btn-primary btn-lg shrink-0" data-cta="home-close">{primary.label}</Link>
+        </Page>
       </section>
-    </Page>
+    </>
   );
 }

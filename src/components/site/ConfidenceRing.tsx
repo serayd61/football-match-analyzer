@@ -19,7 +19,7 @@ export default function ConfidenceRing({
   const font = size >= 100 ? Math.round(size * 0.27) : Math.round(size * 0.265);
   return (
     <div
-      className={`ring grid shrink-0 place-items-center ${className}`}
+      className={`conf-ring grid shrink-0 place-items-center ${className}`}
       style={{ width: size, height: size, background: `conic-gradient(rgb(var(--s-accent)) ${pct ?? 0}%, rgb(var(--s-n300)) 0)` }}
       role="img"
       aria-label={pct == null ? '–' : `${pct}%${label ? ` ${label}` : ''}`}

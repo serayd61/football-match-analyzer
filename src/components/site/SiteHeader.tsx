@@ -12,8 +12,10 @@ import ThemeToggle from './ThemeToggle';
 // Header (design 2026-09-11): sticky, page bg, bottom 2px rule, 24px gutters,
 // 56px tall. Brand · nav Home / Predictions / Performance / Pricing (active =
 // accent) · right: primary "Sign in". Below `lg` the nav becomes a menu button.
-const NAV: Array<{ href: string; key: 'home' | 'predictions' | 'performance' | 'pricing' }> = [
-  { href: '/', key: 'home' },
+// Görsel yenileme 2026-09-19: "Ana sayfa" yerine ana sayfadaki gerçek bölüme giden
+// "Nasıl çalışır"; sağda sakin "Giriş yap" + tek belirgin deneme CTA'sı (aynı kayıt akışı).
+const NAV: Array<{ href: string; key: 'how' | 'predictions' | 'performance' | 'pricing' }> = [
+  { href: '/#how', key: 'how' },
   { href: '/predictions', key: 'predictions' },
   { href: '/performance', key: 'performance' },
   { href: '/pricing', key: 'pricing' },
@@ -33,7 +35,7 @@ export default function SiteHeader() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'));
+  const isActive = (href: string) => (href.includes('#') ? false : pathname === href || pathname.startsWith(href + '/'));
   const authed = status === 'authenticated';
 
   const AuthLinks = ({ block = false }: { block?: boolean }) =>
@@ -44,12 +46,15 @@ export default function SiteHeader() {
         <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="text-sm text-s-muted hover:text-s-ink">{t('signOut')}</button>
       </span>
     ) : (
-      <Link href="/login" className={`btn btn-primary btn-sm ${block ? 'btn-block' : ''}`}>{t('signIn')}</Link>
+      <span className={`inline-flex items-center gap-2 ${block ? 'w-full justify-between' : ''}`}>
+        <Link href="/login" className="btn btn-ghost btn-sm">{t('signIn')}</Link>
+        <Link href="/login?mode=register" className="btn btn-primary btn-sm" data-cta="header">{t('tryFree')}</Link>
+      </span>
     );
 
   return (
-    <header className="rule-b sticky top-0 z-40 bg-s-bg">
-      <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-6 px-6">
+    <header className="sticky top-0 z-40 border-b border-s-line bg-s-bg/90 backdrop-blur supports-[backdrop-filter]:bg-s-bg/80">
+      <div className="mx-auto flex h-16 max-w-[1240px] items-center gap-7 px-5 sm:px-8">
         <Link href="/" className="shrink-0 text-s-ink">
           <Wordmark />
         </Link>
@@ -60,7 +65,7 @@ export default function SiteHeader() {
               key={n.href}
               href={n.href}
               aria-current={isActive(n.href) ? 'page' : undefined}
-              className={`text-[14px] font-semibold leading-none hover:text-s-accent-600 ${isActive(n.href) ? 'text-s-accent' : 'text-s-ink'}`}
+              className={`text-[15px] font-medium leading-none hover:text-s-accent-700 ${isActive(n.href) ? 'text-s-accent-700' : 'text-s-ink'}`}
             >
               {t(n.key)}
             </Link>
@@ -76,7 +81,7 @@ export default function SiteHeader() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="ml-auto inline-flex h-9 w-9 items-center justify-center border-2 border-s-ink lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg border border-s-n400 lg:hidden"
           aria-label={open ? t('close') : t('menu')}
           aria-expanded={open}
           aria-controls="site-mobile-nav"

@@ -7,59 +7,51 @@
    Space Grotesk) and neon rules never reach the public pages. */
 
 /* ============================================================================
-   PUBLIC SITE — "Modernist" design language (redesign 2026-09-11)
+   PUBLIC SITE — "Analiz stüdyosu" (görsel yenileme 2026-09-19)
    ----------------------------------------------------------------------------
-   Flat, architectural. Zero border-radius. No gradients, no shadows on cards.
-   Structure comes from 2px rules between major sections and 1px rules between
-   cells. One accent (red) used sparingly. Archivo for everything.
-
-   Tokens are RGB triplets so Tailwind can apply alpha (`bg-s-ink/40`). The
-   `s-*` names are kept so pages outside the six redesigned screens (leagues,
-   docs, dashboard, account) pick the new palette up automatically:
-     s-bg      page background           #f3f2f2
-     s-surface card fill                  #eae9e9
-     s-raised  hover fill / ring track    #d7d3d3 (neutral-300)
-     s-line    divider ink at 40%         rgba(32,30,29,.4) → see --s-divider
-     s-ink     text                       #201e1d
-     s-muted   muted text                 #7d7979 (neutral-600)
-     s-brand   primary button = accent    #ec3013
-     s-accent  accent                     #ec3013
-     s-win     WON (neutral tag ink)      #444141 (neutral-800)
-     s-loss    LOST / accent-700 text     #a4200c
+   Koyu antrasit ilk ekran, sıcak açık içerik alanları, beyaz kartlar; ince
+   border + çok hafif gölge. Kırmızı marka vurgusu korunur; ana buton beyaz
+   yazı için koyulaştırılmış kırmızı (#C92A14, 5.6:1). Kazanç yeşili ayrı token
+   (--s-win) — kırmızı yalnız marka/kayıp. Köşeler token: kart 14px, kontrol 8px.
+   .band-dark: temadan bağımsız koyu bant (token'ları yerelde koyuya çevirir;
+   içindeki s-* sınıfları kendiliğinden uyar). Tokenlar RGB üçlüsü (Tailwind alfa).
    ============================================================================ */
 
 .site {
-  --s-bg: 243 242 242;
-  --s-surface: 234 233 233;
-  --s-raised: 215 211 211;
-  --s-ink: 32 30 29;
-  --s-muted: 125 121 121;
-  --s-brand: 236 48 19;
-  --s-brand-ink: 243 242 242;
+  --s-bg: 245 246 248;
+  --s-surface: 255 255 255;
+  --s-raised: 236 239 243;
+  --s-ink: 23 32 45;
+  --s-muted: 89 101 121;
+  --s-brand: 201 42 20;
+  --s-brand-ink: 255 255 255;
   --s-accent: 236 48 19;
-  --s-accent-600: 201 40 15;
+  --s-accent-600: 201 42 20;
   --s-accent-700: 164 32 12;
   --s-accent-800: 124 20 5;
-  --s-accent-100: 255 242 239;
+  --s-accent-100: 255 240 236;
   --s-accent2-700: 158 53 38;
-  --s-n200: 234 231 231;
-  --s-n300: 215 211 211;
-  --s-n400: 186 182 182;
-  --s-n600: 125 121 121;
-  --s-n800: 68 65 65;
-  --s-win: 68 65 65;
+  --s-n200: 236 239 243;
+  --s-n300: 222 227 234;
+  --s-n400: 176 186 199;
+  --s-n600: 89 101 121;
+  --s-n800: 46 58 74;
+  --s-win: 22 134 93;
   --s-loss: 164 32 12;
-  --s-void: 125 121 121;
-  /* dividers are ink at 40% — kept as a full colour string for borders */
-  --s-divider: rgb(32 30 29 / 0.4);
-  --s-line: 176 175 175;
+  --s-void: 89 101 121;
+  --s-info: 37 99 235;
+  --s-divider: rgb(23 32 45 / 0.14);
+  --s-line: 217 224 232;
+  --s-r-card: 14px;
+  --s-r-ctl: 8px;
+  --s-shadow: 0 1px 2px rgb(16 22 30 / 0.05), 0 8px 24px -12px rgb(16 22 30 / 0.12);
   color-scheme: light;
 
   background: rgb(var(--s-bg));
   color: rgb(var(--s-ink));
   font-family: var(--font-site-body), 'Archivo', system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
   letter-spacing: 0;
   font-feature-settings: 'tnum' 1;
   -webkit-font-smoothing: antialiased;
@@ -68,47 +60,58 @@
   isolation: isolate;
 }
 /* Dark: the same architecture with ink and paper swapped. Accent stays. */
-.site[data-theme='dark'] {
-  --s-bg: 24 23 22;
-  --s-surface: 36 34 33;
-  --s-raised: 58 55 54;
-  --s-ink: 236 234 233;
-  --s-muted: 158 153 153;
-  --s-brand-ink: 24 23 22;
+.site[data-theme='dark'],
+.site .band-dark {
+  --s-bg: 16 22 30;
+  --s-surface: 26 36 48;
+  --s-raised: 37 49 64;
+  --s-ink: 248 250 252;
+  --s-muted: 183 194 208;
+  --s-brand: 201 42 20;
+  --s-brand-ink: 255 255 255;
   --s-accent-100: 74 22 12;
   --s-accent-800: 255 214 204;
   --s-accent-700: 255 150 128;
   --s-accent2-700: 255 170 150;
-  --s-n200: 52 50 49;
-  --s-n300: 58 55 54;
-  --s-n400: 98 94 94;
-  --s-n800: 200 196 196;
-  --s-win: 200 196 196;
+  --s-n200: 33 44 58;
+  --s-n300: 44 57 73;
+  --s-n400: 92 106 124;
+  --s-n600: 183 194 208;
+  --s-n800: 214 222 232;
+  --s-win: 74 205 152;
   --s-loss: 255 150 128;
-  --s-divider: rgb(236 234 233 / 0.4);
-  --s-line: 110 108 107;
+  --s-void: 183 194 208;
+  --s-info: 96 165 250;
+  --s-divider: rgb(248 250 252 / 0.14);
+  --s-line: 53 64 77;
+  --s-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   .site:not([data-theme='light']) {
-    --s-bg: 24 23 22;
-    --s-surface: 36 34 33;
-    --s-raised: 58 55 54;
-    --s-ink: 236 234 233;
-    --s-muted: 158 153 153;
-    --s-brand-ink: 24 23 22;
+    --s-bg: 16 22 30;
+    --s-surface: 26 36 48;
+    --s-raised: 37 49 64;
+    --s-ink: 248 250 252;
+    --s-muted: 183 194 208;
+    --s-brand: 201 42 20;
+    --s-brand-ink: 255 255 255;
     --s-accent-100: 74 22 12;
     --s-accent-800: 255 214 204;
     --s-accent-700: 255 150 128;
     --s-accent2-700: 255 170 150;
-    --s-n200: 52 50 49;
-    --s-n300: 58 55 54;
-    --s-n400: 98 94 94;
-    --s-n800: 200 196 196;
-    --s-win: 200 196 196;
+    --s-n200: 33 44 58;
+    --s-n300: 44 57 73;
+    --s-n400: 92 106 124;
+    --s-n600: 183 194 208;
+    --s-n800: 214 222 232;
+    --s-win: 74 205 152;
     --s-loss: 255 150 128;
-    --s-divider: rgb(236 234 233 / 0.4);
-    --s-line: 110 108 107;
+    --s-void: 183 194 208;
+    --s-info: 96 165 250;
+    --s-divider: rgb(248 250 252 / 0.14);
+    --s-line: 53 64 77;
+    --s-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
     color-scheme: dark;
   }
 }
@@ -118,8 +121,8 @@
 .site h1, .site h2, .site h3, .site h4 {
   font-family: var(--font-site-head), 'Archivo', system-ui, sans-serif;
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1;
+  letter-spacing: -0.015em;
+  line-height: 1.08;
   text-transform: none;
 }
 .site h5 { font-weight: 800; }
@@ -132,10 +135,10 @@
 .site .num, .site td, .site th { font-variant-numeric: tabular-nums; }
 .site a { transition: color 150ms, background-color 150ms, border-color 150ms; }
 
-/* Zero radius everywhere — Tailwind `rounded-*` on shared pages included.
-   The confidence ring is the one circle in the system. */
-.site *, .site *::before, .site *::after { border-radius: 0 !important; }
-.site .ring, .site .ring > * { border-radius: 50% !important; }
+/* Köşeler token ile: global sıfır-radius (!important) kaldırıldı — yeni yarıçapı
+   override zinciriyle değil kaynağında tanımlıyoruz. */
+.site .conf-ring, .site .conf-ring > * { border-radius: 50%; }
+.site .band-dark { background: rgb(var(--s-bg)); color: rgb(var(--s-ink)); }
 
 /* Dividers: 2px major / 1px minor, ink at 40%. Declared as utilities so
    responsive variants (`lg:rule-r`) work. */
@@ -155,36 +158,43 @@
   .divide-rule-x > * + * { border-left: 1px solid var(--s-divider); }
 }
 
-/* Buttons — labels flush left, 40px tall, no radius */
+/* Buttons — 44px (lg 48px), 8px köşe, ortalı etiket */
 .site .btn {
-  display: inline-flex; align-items: center; justify-content: flex-start;
-  height: 40px; padding: 0 16px; font-size: 14px; font-weight: 600; line-height: 1;
-  text-align: left; text-decoration: none; cursor: pointer; white-space: nowrap;
-  transition: background-color 150ms, color 150ms, border-color 150ms;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 44px; padding: 0 18px; font-size: 15px; font-weight: 600; line-height: 1;
+  text-decoration: none; cursor: pointer; white-space: nowrap; border-radius: var(--s-r-ctl);
+  transition: background-color 160ms, color 160ms, border-color 160ms, box-shadow 160ms;
 }
-.site .btn-primary { background: rgb(var(--s-accent)); color: rgb(var(--s-brand-ink)); border: 2px solid rgb(var(--s-accent)); }
-.site .btn-primary:hover { background: rgb(var(--s-accent-600)); border-color: rgb(var(--s-accent-600)); }
-.site .btn-secondary { background: transparent; color: rgb(var(--s-ink)); border: 2px solid rgb(var(--s-ink)); }
-.site .btn-secondary:hover { background: rgb(var(--s-n300)); }
+.site .btn-lg { height: 48px; padding: 0 22px; font-size: 16px; }
+.site .btn-primary { background: rgb(var(--s-brand)); color: rgb(var(--s-brand-ink)); border: 1px solid rgb(var(--s-brand)); box-shadow: 0 1px 2px rgb(124 20 5 / 0.25); }
+.site .btn-primary:hover { background: rgb(var(--s-accent-700)); border-color: rgb(var(--s-accent-700)); }
+.site .btn-secondary { background: rgb(var(--s-surface)); color: rgb(var(--s-ink)); border: 1px solid rgb(var(--s-n400)); }
+.site .btn-secondary:hover { background: rgb(var(--s-raised)); }
+.site .btn-ghost { background: transparent; color: rgb(var(--s-ink)); border: 1px solid transparent; padding: 0 10px; }
+.site .btn-ghost:hover { color: rgb(var(--s-accent-700)); }
 .site .btn-block { display: flex; width: 100%; }
-.site .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+.site .btn-sm { height: 36px; padding: 0 14px; font-size: 14px; }
 .site .btn:disabled { opacity: 0.6; cursor: default; }
 
-/* Card */
+/* Card — beyaz yüzey, ince border, çok hafif gölge */
 .site .card {
-  background: rgb(var(--s-surface)); padding: 16px;
+  background: rgb(var(--s-surface)); padding: 24px; border: 1px solid rgb(var(--s-line));
+  border-radius: var(--s-r-card); box-shadow: var(--s-shadow);
   display: flex; flex-direction: column; gap: 12px;
-  transition: background-color 150ms;
+  transition: border-color 160ms, box-shadow 160ms;
 }
-.site .card-top { border-top: 2px solid rgb(var(--s-ink)); }
-.site a.card:hover, .site .card-hover:hover { background: rgb(var(--s-n300)); }
+@media (max-width: 640px) { .site .card { padding: 20px; } }
+.site .card-top { border-top: 1px solid rgb(var(--s-line)); }
+.site .card-flat { box-shadow: none; }
+.site .card-accent { border-color: rgb(var(--s-accent) / 0.55); box-shadow: 0 0 0 1px rgb(var(--s-accent) / 0.25), var(--s-shadow); }
+.site a.card:hover, .site .card-hover:hover { border-color: rgb(var(--s-n400)); }
 .site .kicker { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(var(--s-muted)); }
 
 /* Tags */
 .site .tag {
-  display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
-  background: rgb(var(--s-n200)); color: rgb(var(--s-ink)); white-space: nowrap;
+  background: rgb(var(--s-n200)); color: rgb(var(--s-ink)); white-space: nowrap; border-radius: 6px;
 }
 .site .tag-accent { background: rgb(var(--s-accent-100)); color: rgb(var(--s-accent-800)); }
 .site .tag-outline { background: transparent; border: 1px solid var(--s-divider); color: rgb(var(--s-muted)); }
@@ -196,8 +206,8 @@
 .site .field { display: flex; flex-direction: column; gap: 4px; }
 .site .field > span, .site .field > label { font-size: 12px; font-weight: 600; }
 .site .input {
-  height: 40px; padding: 0 12px; font-size: 15px; background: rgb(var(--s-bg)); color: rgb(var(--s-ink));
-  border: 1px solid rgb(var(--s-ink)); outline: none; width: 100%;
+  height: 44px; padding: 0 12px; font-size: 16px; background: rgb(var(--s-surface)); color: rgb(var(--s-ink));
+  border: 1px solid rgb(var(--s-n400)); outline: none; width: 100%; border-radius: var(--s-r-ctl);
 }
 .site .input:focus { border-color: rgb(var(--s-accent)); box-shadow: inset 0 0 0 1px rgb(var(--s-accent)); }
 .site .input::placeholder { color: rgb(var(--s-muted)); }
@@ -226,4 +236,27 @@
 @media (prefers-reduced-motion: reduce) { .site .skeleton::after { animation: none; } }
 .site .tab-pill[aria-current='true'] { background: rgb(var(--s-accent)); color: rgb(var(--s-brand-ink)); border-color: rgb(var(--s-accent)); }
 .site .blur-locked { filter: blur(4px); user-select: none; pointer-events: none; }
-.site img { filter: grayscale(1); }
+.site .tag-win { background: rgb(var(--s-win) / 0.12); color: rgb(var(--s-win)); }
+.site .tag-loss { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss)); }
+
+/* Koyu bant zemini: çok düşük opaklıklı saha geometrisi (dekoratif, pointer almaz) */
+.site .pitch-bg { position: relative; isolation: isolate; overflow: hidden; }
+.site .pitch-bg::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.5;
+  background:
+    radial-gradient(60% 80% at 78% 40%, rgb(236 48 19 / 0.10), transparent 70%),
+    linear-gradient(rgb(248 250 252 / 0.035) 1px, transparent 1px) 0 0 / 100% 56px,
+    linear-gradient(90deg, rgb(248 250 252 / 0.035) 1px, transparent 1px) 0 0 / 56px 100%;
+}
+.site .pitch-bg::after {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  right: -140px; top: 50%; width: 520px; height: 520px; transform: translateY(-50%);
+  border: 1px solid rgb(248 250 252 / 0.07); border-radius: 50%;
+}
+.site details.faq > summary { list-style: none; cursor: pointer; }
+.site details.faq > summary::-webkit-details-marker { display: none; }
+.site details.faq[open] .faq-plus { transform: rotate(45deg); }
+.site .faq-plus { transition: transform 180ms; }
+@media (prefers-reduced-motion: reduce) { .site *, .site *::before, .site *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

@@ -26,7 +26,7 @@ export default function ProbBar({
   const aria = segs.map((s) => `${s.label} ${pct(s.v)}%`).join(', ');
   return (
     <div className="w-full">
-      <div className={`flex w-full gap-[2px] ${h}`} role="img" aria-label={aria}>
+      <div className={`flex w-full gap-[2px] overflow-hidden rounded-full ${h}`} role="img" aria-label={aria}>
         {segs.map((s) => (
           <div key={s.key} className={`${s.cls}`} style={{ width: `${Math.max(0, s.v * 100)}%` }} />
         ))}

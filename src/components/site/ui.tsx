@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[1280px] px-6 ${className}`}>{children}</div>;
+  return <div className={`mx-auto w-full max-w-[1240px] px-5 sm:px-8 ${className}`}>{children}</div>;
 }
 
 export function PageTitle({ eyebrow, title, lead, aside }: { eyebrow?: string; title: string; lead?: string; aside?: ReactNode }) {
