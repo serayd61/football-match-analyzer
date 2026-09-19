@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { track } from '@/lib/analytics';
@@ -51,8 +52,8 @@ export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, 
   return (
     <>
       {/* Top grid */}
-      <div className="rule-b grid items-end gap-6 pb-6 pt-8 lg:grid-cols-2">
-        <h1 className="text-[clamp(40px,5vw,60px)]">{l.title}</h1>
+      <div className="grid items-end gap-6 pb-8 pt-12 lg:grid-cols-2 lg:pt-16">
+        <h1 className="max-w-[16ch] text-[36px] sm:text-[48px]">{l.title}</h1>
         <div>
           <p className="max-w-[440px] text-[16px] text-s-muted">{l.lead}</p>
           {weeklyAvailable && <div className="mt-4 flex flex-wrap gap-1">{seg('weekly', l.weekly)}{seg('monthly', l.monthly)}</div>}
@@ -60,21 +61,21 @@ export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, 
       </div>
 
       {/* Plan columns */}
-      <div className="grid lg:grid-cols-2">
-        <section className="flex flex-col gap-4 py-8 lg:rule-r lg:pr-6" aria-labelledby="plan-free">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="card card-flat !gap-5" aria-labelledby="plan-free">
           <div>
             <h3 id="plan-free" className="text-[24px]">{l.freeName}</h3>
             <p className="mt-1 text-[14px] text-s-muted">{l.freeSub}</p>
           </div>
-          <p className="flex items-baseline gap-2"><span className="num text-[56px] font-extrabold leading-none">{l.freePrice}</span><span className="text-[14px] text-s-muted">{l.freeFor}</span></p>
-          <ul className="divide-rule rule-t-1 rule-b-1 text-[14px]">
-            {l.free.map((f) => <li key={f} className="py-2">{f}</li>)}
-            <li className="py-2 text-s-muted">{l.freeNot}</li>
+          <p className="flex items-baseline gap-2"><span className="num text-[48px] font-extrabold leading-none">{l.freePrice}</span><span className="text-[14px] text-s-muted">{l.freeFor}</span></p>
+          <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
+            {l.free.map((f) => <li key={f} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{f}</li>)}
+            <li className="pt-1 text-[14px] text-s-muted">{l.freeNot}</li>
           </ul>
-          <Link href="/login?mode=register" className="btn btn-secondary btn-block">{l.freeCta}</Link>
+          <Link href="/login?mode=register" className="btn btn-secondary btn-lg btn-block mt-auto">{l.freeCta}</Link>
         </section>
 
-        <section className="rule-t flex flex-col gap-4 py-8 lg:rule-t-0 lg:pl-6" aria-labelledby="plan-pro">
+        <section className="card card-accent !gap-5" aria-labelledby="plan-pro">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 id="plan-pro" className="text-[24px]">{l.proName}</h3>
@@ -84,22 +85,22 @@ export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, 
           </div>
           <div>
             <p className="flex items-baseline gap-2">
-              <span className="num text-[56px] font-extrabold leading-none">{billing === 'weekly' ? prices.weekly : prices.monthly}</span>
+              <span className="num text-[48px] font-extrabold leading-none">{billing === 'weekly' ? prices.weekly : prices.monthly}</span>
               <span className="text-[14px] text-s-muted">{billing === 'weekly' ? l.perWeek : l.perMonth}</span>
             </p>
-            <p className="mt-1.5 text-[12px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
+            <p className="mt-2 text-[14px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
           </div>
-          <ul className="divide-rule rule-t-1 rule-b-1 text-[14px]">
-            {l.pro.map((f) => <li key={f} className="py-2">{f}</li>)}
+          <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
+            {l.pro.map((f) => <li key={f} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{f}</li>)}
           </ul>
           {isPro ? (
             <Link href="/account" className="btn btn-secondary btn-block">{l.proCtaSignedIn}</Link>
           ) : (
-            <button type="button" onClick={subscribe} disabled={loading} className="btn btn-primary btn-block">
+            <button type="button" onClick={subscribe} disabled={loading} className="btn btn-primary btn-lg btn-block mt-auto">
               {loading ? l.loading : signedIn ? l.proCtaSignedIn : l.proCta}
             </button>
           )}
-          {!signedIn && <p className="text-[12px] text-s-muted">{l.signInFirst}</p>}
+          {!signedIn && <p className="text-[13px] text-s-muted">{l.signInFirst}</p>}
           {error && <p role="alert" className="risk-note">{error}</p>}
         </section>
       </div>

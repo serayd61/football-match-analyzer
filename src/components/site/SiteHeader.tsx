@@ -59,20 +59,20 @@ export default function SiteHeader() {
           <Wordmark />
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-5 xl:flex" aria-label="Primary">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
               aria-current={isActive(n.href) ? 'page' : undefined}
-              className={`text-[15px] font-medium leading-none hover:text-s-accent-700 ${isActive(n.href) ? 'text-s-accent-700' : 'text-s-ink'}`}
+              className={`whitespace-nowrap text-[15px] font-medium leading-none hover:text-s-accent-700 ${isActive(n.href) ? 'text-s-accent-700' : 'text-s-ink'}`}
             >
               {t(n.key)}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto hidden items-center gap-3 lg:flex">
+        <div className="ml-auto hidden items-center gap-3 xl:flex">
           <LocaleSwitcher />
           <ThemeToggle />
           <AuthLinks />
@@ -81,7 +81,7 @@ export default function SiteHeader() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg border border-s-n400 lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg border border-s-n400 xl:hidden"
           aria-label={open ? t('close') : t('menu')}
           aria-expanded={open}
           aria-controls="site-mobile-nav"
@@ -91,7 +91,7 @@ export default function SiteHeader() {
       </div>
 
       {open && (
-        <div id="site-mobile-nav" className="rule-t bg-s-bg lg:hidden">
+        <div id="site-mobile-nav" className="border-t border-s-line bg-s-bg xl:hidden">
           <nav className="divide-rule flex flex-col px-6" aria-label="Primary">
             {NAV.map((n) => (
               <Link

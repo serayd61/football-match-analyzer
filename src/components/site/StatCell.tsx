@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 export function StatRow({ children, cols, className = '', rule = 2, dense = false }: { children: ReactNode; cols: 2 | 3 | 4; className?: string; rule?: 1 | 2; dense?: boolean }) {
   const grid = cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4';
-  const rules = rule === 2 ? 'rule-t rule-b' : 'rule-t-1 rule-b-1';
+  const rules = rule === 2 ? 'stat-cards gap-3 sm:gap-4' : 'rule-t-1 rule-b-1';
   return (
     <dl className={`grid ${grid} ${rules} ${dense ? 'stat-dense' : ''} ${className}`}>{children}</dl>
   );

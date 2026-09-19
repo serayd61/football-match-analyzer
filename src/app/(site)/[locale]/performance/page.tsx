@@ -108,10 +108,10 @@ export default async function PerformancePage({ params: { locale }, searchParams
 
   return (
     <Page>
-      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 pt-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-8 pt-12">
         <div>
-          <h1 className="text-[32px] sm:text-[40px]">{t2('title')}</h1>
-          <p className="mt-2 max-w-2xl text-[14px] text-s-muted">{t2('lead')}</p>
+          <h1 className="text-[36px] sm:text-[48px]">{t2('title')}</h1>
+          <p className="mt-3 max-w-2xl text-[16px] text-s-muted">{t2('lead')}</p>
         </div>
         <p className="text-[12px] text-s-muted">{t2('window', { from: r.from ? f.dateTime(new Date(r.from), 'dayShort') : '–', to: r.to ? f.dateTime(new Date(r.to), 'dayShort') : '–' })}</p>
       </div>
@@ -126,13 +126,13 @@ export default async function PerformancePage({ params: { locale }, searchParams
 
       {/* ── Monthly bars + latest results ───────────────────────────── */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)]">
-        <section>
-          <h2 className="text-[24px]">{t2('monthlyTitle')}</h2>
+        <section className="card !block">
+          <h2 className="text-[22px]">{t2('monthlyTitle')}</h2>
           <div className="rule-b mt-4 grid h-[180px] items-end gap-2" style={{ gridTemplateColumns: `repeat(${months.length || 1}, minmax(0, 1fr))` }} role="img" aria-label={t('secMonthly')}>
             {months.map((m) => (
               <div key={m.month} className="flex h-full flex-col justify-end gap-1">
                 <span className="num text-[12px] font-semibold leading-none">{m.acc == null ? '–' : Math.round(m.acc * 100)}</span>
-                <span className={`w-full ${m.n < 30 ? 'bg-s-n400' : 'bg-s-ink'}`} style={{ height: `${Math.round((m.acc ?? 0) * 100)}%` }} title={`${monthLabel(m.month)} · ${pct(m.acc)} · ${t('nShort')} ${m.n}`} />
+                <span className={`w-full rounded-t-[4px] ${m.n < 30 ? 'bg-s-n400' : 'bg-s-ink'}`} style={{ height: `${Math.round((m.acc ?? 0) * 100)}%` }} title={`${monthLabel(m.month)} · ${pct(m.acc)} · ${t('nShort')} ${m.n}`} />
               </div>
             ))}
           </div>
@@ -142,9 +142,9 @@ export default async function PerformancePage({ params: { locale }, searchParams
           <p className="mt-3 text-[12px] text-s-muted">{t('monthlyNote')}</p>
         </section>
 
-        <section id="results">
+        <section id="results" className="card !block min-w-0">
           <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-[24px]">{t2('resultsTitle')}</h2>
+            <h2 className="text-[22px]">{t2('resultsTitle')}</h2>
             <nav className="flex flex-wrap gap-1" aria-label={tc('league')}>
               <Link href={href({ league: undefined, page: '1' })} className={`btn btn-sm ${!league ? 'btn-primary' : 'btn-secondary'}`}>{tc('all')}</Link>
               {SITE_LEAGUES.map((l) => <Link key={l.slug} href={href({ league: l.slug, page: '1' })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`}>{l.name}</Link>)}
@@ -171,10 +171,15 @@ export default async function PerformancePage({ params: { locale }, searchParams
       </div>
 
       {/* ── Full report ─────────────────────────────────────────────── */}
-      <section className="rule-t mt-10 pt-8">
-        <h2 className="text-[30px]">{t2('detailsTitle')}</h2>
-        <p className="mt-2 max-w-2xl text-[14px] text-s-muted">{t2('detailsLead')}</p>
-      </section>
+      <details className="tech mt-10">
+        <summary>
+          <span>
+            <span className="block font-head text-[22px] font-extrabold sm:text-[26px]">{t2('detailsTitle')}</span>
+            <span className="mt-1 block max-w-2xl text-[14px] text-s-muted">{t2('detailsLead')}</span>
+          </span>
+          <span className="faq-plus shrink-0 text-[28px] leading-none text-s-muted" aria-hidden>+</span>
+        </summary>
+        <div className="tech-body">
       <p className="mt-3 text-xs text-s-muted">
         {t('qualityNote', { decided: f.number(r.quality.decided), versions: r.quality.modelVersions.join(', ') || '–', recomputed: r.quality.recomputedCorrect })}
         {r.quality.truncated && <> {t('truncated')}</>}
@@ -477,7 +482,10 @@ export default async function PerformancePage({ params: { locale }, searchParams
         )}
       </section>
 
-      <p className="rule-t mt-12 pt-4 text-xs text-s-muted">
+        </div>
+      </details>
+
+      <p className="mt-8 text-[13px] text-s-muted">
         {t('footer', { at: f.dateTime(new Date(r.computedAt), 'kickoff') })} <Link href="/methodology" className="underline underline-offset-4">{t('footerLink')}</Link>
       </p>
     </Page>

@@ -46,7 +46,7 @@ export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref
   };
 
   return (
-    <div className="flex max-w-[480px] flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {error && <p role="alert" className="risk-note">{error}</p>}
       <form onSubmit={submit} className="flex flex-col gap-3">
         {mode === 'register' && (
@@ -63,9 +63,9 @@ export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref
           <span>{l.password}</span>
           <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === 'register' ? 'new-password' : 'current-password'} minLength={6} />
         </label>
-        <button type="submit" disabled={loading} className="btn btn-primary btn-block mt-1">{loading ? l.processing : mode === 'register' ? l.register : l.signIn}</button>
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block mt-1">{loading ? l.processing : mode === 'register' ? l.register : l.signIn}</button>
       </form>
-      <button type="button" onClick={() => { track.login('google'); signIn('google', { callbackUrl }); }} className="btn btn-secondary btn-block">{l.google}</button>
+      <button type="button" onClick={() => { track.login('google'); signIn('google', { callbackUrl }); }} className="btn btn-secondary btn-lg btn-block">{l.google}</button>
       <p className="text-[13px] text-s-muted">
         {mode === 'signin' ? (
           <>{l.noAccount} <button type="button" onClick={() => { setMode('register'); setError(''); }} className="font-semibold text-s-ink hover:text-s-accent-600">{l.startFree}</button>

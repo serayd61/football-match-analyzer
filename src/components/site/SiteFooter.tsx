@@ -12,10 +12,10 @@ export default async function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="rule-t mt-16 text-[12px] text-s-muted">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+    <footer className="mt-0 border-t border-s-line bg-s-surface text-[13px] text-s-muted">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-8 sm:px-8">
         <span className="max-w-3xl">{t('line', { year })}</span>
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Footer">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-3" aria-label="Footer">
           <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
           <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>
           <Link href="/about" className="hover:text-s-ink">{nav('about')}</Link>

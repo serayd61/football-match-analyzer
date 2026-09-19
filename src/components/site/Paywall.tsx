@@ -18,7 +18,7 @@ export const PRICING_HREF = '/pricing';
 export async function Paywall() {
   const t = await getTranslations('paywall');
   return (
-    <section className="rule-t rule-b my-8 grid gap-6 py-8 lg:grid-cols-[1fr_1fr]" aria-labelledby="paywall-title">
+    <section className="my-8 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 shadow-[var(--s-shadow)] lg:grid-cols-[1fr_1fr] lg:p-8" aria-labelledby="paywall-title">
       <div>
         <p className="kicker">{t('expiredKicker')}</p>
         <h2 id="paywall-title" className="mt-2 text-[30px]">{t('expiredTitle')}</h2>
@@ -37,7 +37,7 @@ export async function TrialNotice({ access }: { access: SiteAccess }) {
   if (access.state !== 'trial') return null;
   const t = await getTranslations('paywall');
   return (
-    <p role="status" className="rule-t-1 rule-b-1 mb-3 flex flex-wrap items-center justify-between gap-2 py-2 text-[13px]">
+    <p role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-s-line bg-s-surface px-4 py-2.5 text-[14px]">
       <span>{t('trialLeft', { days: access.trialDaysLeft })}</span>
       <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>
     </p>

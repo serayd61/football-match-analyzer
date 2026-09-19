@@ -144,10 +144,10 @@
    responsive variants (`lg:rule-r`) work. */
 @layer utilities {
   .rule { border-color: var(--s-divider); }
-  .rule-t { border-top: 2px solid var(--s-divider); }
-  .rule-b { border-bottom: 2px solid var(--s-divider); }
-  .rule-r { border-right: 2px solid var(--s-divider); }
-  .rule-l { border-left: 2px solid var(--s-divider); }
+  .rule-t { border-top: 1px solid rgb(var(--s-line)); }
+  .rule-b { border-bottom: 1px solid rgb(var(--s-line)); }
+  .rule-r { border-right: 1px solid rgb(var(--s-line)); }
+  .rule-l { border-left: 1px solid rgb(var(--s-line)); }
   .rule-t-1 { border-top: 1px solid var(--s-divider); }
   .rule-b-1 { border-bottom: 1px solid var(--s-divider); }
   .rule-l-1 { border-left: 1px solid var(--s-divider); }
@@ -260,3 +260,22 @@
 @media (prefers-reduced-motion: reduce) { .site *, .site *::before, .site *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* KPI kartları: StatRow rule=2 — hücreler ayrı kart, sol çizgi yok */
+.site .stat-cards > * { border: 1px solid rgb(var(--s-line)); border-left-width: 1px !important; border-radius: var(--s-r-card); background: rgb(var(--s-surface)); box-shadow: var(--s-shadow); padding: 18px 20px !important; gap: 6px; }
+.site .stat-cards dt { font-size: 13px; }
+.site .stat-cards dd:last-child:not(:nth-child(2)) { font-size: 13px; line-height: 1.4; }
+/* Açılır teknik rapor */
+.site details.tech { border: 1px solid rgb(var(--s-line)); border-radius: var(--s-r-card); background: rgb(var(--s-surface)); }
+.site details.tech > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
+.site details.tech > summary::-webkit-details-marker { display: none; }
+.site details.tech > summary:focus-visible { outline: 2px solid rgb(var(--s-brand)); outline-offset: 2px; border-radius: var(--s-r-card); }
+.site details.tech[open] > summary { border-bottom: 1px solid rgb(var(--s-line)); }
+.site details.tech[open] .faq-plus { transform: rotate(45deg); }
+.site details.tech > .tech-body { padding: 8px 24px 28px; }
+@media (max-width: 640px) { .site details.tech > summary { padding: 16px; } .site details.tech > .tech-body { padding: 4px 16px 20px; } }
+.site .tech-body table th { font-weight: 600; }
+.site details.tech > .tech-body { overflow-x: auto; }
+.site .tech-body section { min-width: 0; }
+.site .stat-cards > * { min-width: 0; }
+@media (max-width: 480px) { .site .stat-cards > * { padding: 14px !important; } .site .stat-cards dd.num { font-size: clamp(24px, 7.6vw, 34px); } }

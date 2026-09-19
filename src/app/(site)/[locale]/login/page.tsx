@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Check } from 'lucide-react';
+import DemoAnalysis from '@/components/site/DemoAnalysis';
 import { redirect } from 'next/navigation';
 import { getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
@@ -31,6 +33,7 @@ function safeCallback(raw: string | undefined, locale: string): string {
 export default async function LoginPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations('v2.login');
+  const tl = await getTranslations('v2.landing');
   const callbackUrl = safeCallback(searchParams.callbackUrl, locale);
   const access = await getSiteAccess();
   if (access.state !== 'anon') redirect(callbackUrl);
@@ -38,13 +41,12 @@ export default async function LoginPage({ params: { locale }, searchParams }: { 
 
   return (
     <Page>
-      <div className="grid min-h-[60vh] lg:grid-cols-2">
-        <div className="flex flex-col gap-4 py-8 lg:rule-r lg:pr-6">
-          <h1 className="text-[clamp(36px,5vw,60px)]">{register ? t('titleRegister') : t('title')}</h1>
-          <p className="max-w-[440px] text-[16px] text-s-muted">{register ? t('leadRegister') : t('lead')}</p>
-          <RiskNote className="mt-2 max-w-[440px]">{t('note')}</RiskNote>
-        </div>
-        <div className="rule-t py-8 lg:rule-t-0 lg:pl-6">
+      <div className="grid items-start gap-8 py-10 lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-14 lg:py-16">
+        <div className="card !gap-5">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[28px] sm:text-[32px]">{register ? t('titleRegister') : t('title')}</h1>
+            <p className="text-[15px] text-s-muted">{register ? t('leadRegister') : t('lead')}</p>
+          </div>
           <LoginForm
             locale={locale}
             callbackUrl={callbackUrl}
@@ -57,6 +59,15 @@ export default async function LoginPage({ params: { locale }, searchParams }: { 
             }}
           />
         </div>
+        <aside className="flex flex-col gap-6">
+          <ul className="flex flex-col gap-3 text-[15px]">
+            {[tl('show1T'), tl('show2T'), tl('show3T')].map((b) => (
+              <li key={b} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{b}</li>
+            ))}
+          </ul>
+          <div className="max-w-[460px]"><DemoAnalysis /></div>
+          <RiskNote className="max-w-[460px]">{t('note')}</RiskNote>
+        </aside>
       </div>
     </Page>
   );

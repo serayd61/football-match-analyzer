@@ -43,11 +43,11 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
         }}
       />
-      <div className="rule-t mt-8 grid gap-6 pt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <h4 className="text-[20px]">{t('buyTitle')}</h4>
+      <div className="mb-16 mt-10 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:p-8">
+        <h2 className="text-[22px]">{t('buyTitle')}</h2>
         <div>
-          <p className="text-[14px] text-s-muted">{t('buyText')}</p>
-          <p className="mt-3 text-[13px]"><Link href="/performance" className="font-semibold hover:text-s-accent-600">{t('trackLink')}</Link></p>
+          <p className="text-[15px] text-s-muted">{t('buyText')}</p>
+          <p className="mt-3 text-[15px]"><Link href="/performance" className="font-semibold hover:text-s-accent-600">{t('trackLink')}</Link></p>
         </div>
       </div>
     </Page>
