@@ -30,7 +30,7 @@
 // ============================================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMatchesByDate, type FFMatch } from '@/lib/data-sources/free-football';
+import { getMatchesByDateStrict, type FFMatch } from '@/lib/data-sources/free-football';
 import { rowScores } from './scoring';
 
 export const VOID_AFTER_DAYS = 7;
@@ -40,7 +40,7 @@ export interface SettleOptions {
   /** en fazla kaç bekleyen satır okunur (1..1000, varsayılan 900) */
   limit?: number;
   now?: Date;
-  /** test için kaynak enjeksiyonu (varsayılan getMatchesByDate) */
+  /** test için kaynak enjeksiyonu (varsayılan getMatchesByDateStrict) */
   fetch?: FeedFetch;
 }
 
@@ -96,7 +96,7 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
   const voidIds: number[] = [];
   const settledAt = now.toISOString();
 
-  const fetchFeed = opts.fetch ?? getMatchesByDate;
+  const fetchFeed = opts.fetch ?? getMatchesByDateStrict; // kaynak hatası → throw → ertele, void etme
   const cache = new Map<string, FFMatch[] | null>(); // null = kaynak hatası
   const fetchCached = async (d: string): Promise<FFMatch[] | null> => {
     if (cache.has(d)) return cache.get(d)!;

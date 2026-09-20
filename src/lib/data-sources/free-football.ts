@@ -344,11 +344,32 @@ function normalize(m: any, leagues: Map<number, LeagueMeta>): FFMatch {
  * date: 'YYYY-MM-DD' | 'YYYYMMDD' | Date
  */
 export async function getMatchesByDate(date: string | Date): Promise<FFMatch[]> {
+  return (await fetchMatchesByDate(date)) ?? [];
+}
+
+/**
+ * Kaynak hatasını boş günden ayıran sürüm: HTTP 429/403/ağ hatasında THROW eder.
+ * 2026-09-20: Vercel'de anahtarlar 403/429 dönerken getMatchesByDate [] verdi;
+ * settlement bunu "maç bulunamadı" sayıp 7 gün sonra VOID edecekti, fikstür
+ * rotası da boş listeyi önbelleğe yazdı. Kuyruk/sonuç kararı verenler bunu kullanır.
+ */
+export class FeedUnavailableError extends Error {
+  constructor(public readonly date: string) { super(`free-football feed unavailable for ${date}`); this.name = 'FeedUnavailableError'; }
+}
+export async function getMatchesByDateStrict(date: string | Date): Promise<FFMatch[]> {
+  const list = await fetchMatchesByDate(date);
+  if (list === null) throw new FeedUnavailableError(String(date));
+  return list;
+}
+
+/** null = kaynak cevap vermedi (hata); [] = gerçekten maç yok */
+async function fetchMatchesByDate(date: string | Date): Promise<FFMatch[] | null> {
   const param = /^\d{8}$/.test(String(date)) ? String(date) : toDateParam(date);
   const [resp, leagues] = await Promise.all([
     ffFetch(`/football-get-matches-by-date?date=${param}`),
     getMergedLeagueMap(),
   ]);
+  if (resp === null) return null;
   const matches = resp?.matches || [];
   const allowed = getAllowedIds();
   return matches
