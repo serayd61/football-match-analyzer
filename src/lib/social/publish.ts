@@ -132,9 +132,13 @@ export async function dayTrends(tg: Target[] = targets()): Promise<string[]> {
   return creds || bearer ? fetchTrends(creds, bearer) : [];
 }
 
-/** Sonuç yanıtları: bugün/dün gönderilen günlük gönderilerin bacakları sonuçlandıysa aynı diziye yanıt. */
+/** Sonuç yanıtı penceresi (gün): geç başlayan maçlar ertesi gün sonuçlanır; settlement gecikirse
+ *  (kaynak tarih kayması, 19 Eyl) 2 günlük pencere yanıtı kaçırıyordu → 3 gün. */
+export const RESULTS_WINDOW_DAYS = 3;
+
+/** Sonuç yanıtları: son 3 günün günlük gönderilerinin bacakları sonuçlandıysa aynı diziye yanıt. */
 export async function publishResults(opts: { dry?: boolean } = {}) {
-  const days = [addDays(todayYmd(), -1), todayYmd()];
+  const days = Array.from({ length: RESULTS_WINDOW_DAYS }, (_, i) => addDays(todayYmd(), -i));
   const { data } = await db().from(TABLE).select('*').eq('kind', 'daily').eq('status', 'posted').in('day', days);
   const parents = (data ?? []) as any[];
   if (!parents.length) return { ok: true, note: 'yanıtlanacak günlük gönderi yok', posts: [] };
