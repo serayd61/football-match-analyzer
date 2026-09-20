@@ -50,7 +50,8 @@ function toInput(r: SitePrediction, bttsYesOdds: number | null, over25Odds: numb
   // goals-1.2: oran varsa piyasa ile harmanlanmış olasılık (goal-blend), yoksa model hamı
   const pBtts = yesSideP(r.btts, 'yes');
   const pOver = yesSideP(r.overUnder, 'over');
-  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds, over25Odds };
+  // goals-1.1: λ dengesi (tek taraflı maçta KG Var aday olmaz)
+  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds, over25Odds, lambdaHome: r.lambdaHome, lambdaAway: r.lambdaAway };
 }
 
 /** Kural girdilerini görmek için (cron ?debug=1). */
