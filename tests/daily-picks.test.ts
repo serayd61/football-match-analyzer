@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectDailyPicks, settlePick, tallyPicks, MIN_BTTS, MIN_OVER, ODDS_MAX } from '@/lib/site/daily-picks-rule';
+import { selectDailyPicks, settlePick, tallyPicks, lambdaRatio, MIN_BTTS, MIN_OVER, ODDS_MAX, MAX_LAMBDA_RATIO_BTTS } from '@/lib/site/daily-picks-rule';
 
 const row = (o: Partial<Parameters<typeof selectDailyPicks>[0][number]>) => ({
   fixtureId: 1, leagueSlug: 'bundesliga', kickoff: '2026-09-12T14:30:00Z', pBttsYes: 0.5, pOver25: 0.5, ...o,
@@ -68,4 +68,20 @@ test('fair-odds legs count for the hit rate but never enter the real return', ()
   assert.equal(mixed.nBook, 2); assert.equal(mixed.nFair, 1);
   assert.ok(Math.abs(mixed.roi! - (1.60 - 2) / 2) < 1e-9); // −%20, adil ayak paydada yok
   assert.deepEqual(mixed.byMarket, { btts: { n: 2, won: 1 }, ou25: { n: 1, won: 1 } });
+});
+
+test('one-sided λ drops the BTTS candidate but keeps Over; missing λ leaves the rule unchanged', () => {
+  // Feyenoord–Utrecht 2026-09-20: λ 2.40/1.30 (oran 1.85) → KG %66 aday olmaz, Üst %71 kalır
+  const [p] = selectDailyPicks([row({ pBttsYes: 0.66, pOver25: 0.71, lambdaHome: 2.40, lambdaAway: 1.30 })]);
+  assert.equal(p.market, 'ou25');
+  // NEC–Go Ahead: λ 2.11/1.76 (oran 1.20) dengeli → eşikten uzaklık KG'yi seçer
+  const [q] = selectDailyPicks([row({ pBttsYes: 0.73, pOver25: 0.74, lambdaHome: 2.11, lambdaAway: 1.76 })]);
+  assert.equal(q.market, 'btts');
+  // tek taraflı + yalnız KG eşik üstü → maçtan ayak çıkmaz
+  assert.deepEqual(selectDailyPicks([row({ pBttsYes: 0.70, pOver25: 0.60, lambdaHome: 2.5, lambdaAway: 1.0 })]), []);
+  // λ yoksa filtre yok
+  assert.equal(selectDailyPicks([row({ pBttsYes: 0.70, pOver25: 0.60 })])[0].market, 'btts');
+  assert.equal(lambdaRatio(2.4, 1.3), 2.4 / 1.3);
+  assert.equal(lambdaRatio(null, 1), null);
+  assert.ok(MAX_LAMBDA_RATIO_BTTS === 1.6);
 });

@@ -47,7 +47,7 @@ function fromRow(r: any): DailyPick {
 function toInput(r: SitePrediction, bttsYesOdds: number | null, over25Odds: number | null = null): PickCandidateInput {
   const pBtts = r.btts ? (r.btts.pick === 'yes' ? r.btts.pRaw : 1 - r.btts.pRaw) : null;
   const pOver = r.overUnder ? (r.overUnder.pick === 'over' ? r.overUnder.pRaw : 1 - r.overUnder.pRaw) : null;
-  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds, over25Odds };
+  return { fixtureId: r.fixtureId, leagueSlug: r.league?.slug ?? null, kickoff: r.kickoff, pBttsYes: pBtts, pOver25: pOver, bttsYesOdds, over25Odds, lambdaHome: r.lambdaHome, lambdaAway: r.lambdaAway };
 }
 
 /** Kural girdilerini görmek için (cron ?debug=1). */

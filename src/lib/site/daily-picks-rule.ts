@@ -12,10 +12,14 @@
 //     LaLiga, Serie A küçük örneklemde iyi; Ligue 1 (%50 / %50), Liga Portugal
 //     ve Brasileirão zayıf → beyaz listede yok.
 //   • Kupon boyu beklenen getiriyi artırmıyor, varyansı büyütüyor → günde 3 ayak.
+// 2026-09-20 (goals-1.1): λ dengesi. Haziran'dan beri 956 sonuçlanmış maçta
+//   KG ≥ %60: λ oranı (büyük/küçük) ≤1,6 → %62 (125/203), >1,6 → %57 (52/92);
+//   Üst ≥ %65: ≤1,6 → %69, >1,6 → %60. Tek taraflı maçta (Feyenoord–Utrecht 5-0,
+//   λ 2,40/1,30) küçük taraf gol atamıyor → KG Var adayı düşer, Üst kalır.
 // Kural değişirse RULE_VERSION artar; site_daily_picks satırları sürümü taşır.
 // ============================================================================
 
-export const RULE_VERSION = 'goals-1.0';
+export const RULE_VERSION = 'goals-1.1';
 
 /** Lig öncelik sırası (küçük = önce). Listede olmayan lig aday değildir. */
 export const LEAGUE_TIER: Record<string, number> = {
@@ -34,6 +38,13 @@ export const MIN_OVER = 0.65;
 export const ODDS_MIN = 1.25;
 export const ODDS_MAX = 1.75;
 export const TAKE = 3;
+/** λ dengesi: büyük λ / küçük λ bu değeri aşarsa KG Var aday olmaz (tek taraflı maç). */
+export const MAX_LAMBDA_RATIO_BTTS = 1.6;
+
+export function lambdaRatio(lh: number | null | undefined, la: number | null | undefined): number | null {
+  if (lh == null || la == null || !(lh > 0) || !(la > 0)) return null;
+  return Math.max(lh, la) / Math.min(lh, la);
+}
 
 export type PickMarket = 'btts' | 'ou25';
 export type PickSelection = 'yes' | 'over';
@@ -50,6 +61,9 @@ export interface PickCandidateInput {
   bttsYesOdds?: number | null;
   /** Bahisçi Üst 2,5 oranı (marjlı), varsa */
   over25Odds?: number | null;
+  /** Dixon-Coles gol beklentileri (λ dengesi için); yoksa filtre uygulanmaz */
+  lambdaHome?: number | null;
+  lambdaAway?: number | null;
 }
 
 export interface PickCandidate {
@@ -96,7 +110,8 @@ export function selectDailyPicks(rows: PickCandidateInput[], now?: number, take 
     if (!r.leagueSlug || !(r.leagueSlug in LEAGUE_TIER)) continue;
     if (now != null && Date.parse(r.kickoff) <= now) continue;
     const over = candidate(r, 'ou25', r.pOver25, MIN_OVER, r.over25Odds);
-    const btts = candidate(r, 'btts', r.pBttsYes, MIN_BTTS, r.bttsYesOdds);
+    const ratio = lambdaRatio(r.lambdaHome, r.lambdaAway);
+    const btts = ratio != null && ratio > MAX_LAMBDA_RATIO_BTTS ? null : candidate(r, 'btts', r.pBttsYes, MIN_BTTS, r.bttsYesOdds);
     const best = [over, btts]
       .filter((c): c is PickCandidate => !!c)
       // Eşiğin üstünde kalan pay: Ü2,5 %78 (+13) KG %77 (+17) → KG öne geçer.
