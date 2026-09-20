@@ -10,7 +10,8 @@ import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
 import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
-import { deriveOverUnder, deriveBtts } from '@/lib/goal-markets';
+import { blendCall, type GoalCall, type GoalBook } from './goal-blend';
+import { latestGoalBook } from './goal-book';
 
 // ---------------------------------------------------------------------------
 // Row schema (engine_predictions). Validated with zod so a schema drift in
@@ -91,8 +92,9 @@ export interface SitePrediction {
   confidence: number | null;
   confidenceRaw: number | null;
   doubleChance: ReturnType<typeof deriveDoubleChance>;
-  overUnder: { pick: 'over' | 'under'; p: number | null; pRaw: number } | null;
-  btts: { pick: 'yes' | 'no'; p: number | null; pRaw: number } | null;
+  /** p: harman (oran varsa) ya da kalibrasyon eğrisi; pRaw: model hamı — bkz. goal-blend.ts */
+  overUnder: GoalCall<'over' | 'under'> | null;
+  btts: GoalCall<'yes' | 'no'> | null;
   rationale: string | null;
   settled: boolean;
   homeScore: number | null;
@@ -169,11 +171,12 @@ export const getCalibrationMeta = unstable_cache(
   { revalidate: REVALIDATE.performance },
 );
 
-export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now()): SitePrediction {
+export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: GoalBook | null = null): SitePrediction {
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
-  const ou = deriveOverUnder(r.p_over25);
-  const bt = deriveBtts(r.p_btts_yes);
+  // Gol pazarları: oran varsa piyasa çıpası (w=0,7), yoksa kalibrasyon eğrisi.
+  const ou = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ctx.curves.ou));
+  const bt = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts));
   const leagueName = r.league_name && !/^League \d+$/.test(r.league_name) ? r.league_name : cat?.name || r.league_name || '';
   const publishedAfterKickoff = !!r.updated_at && !r.settled && Date.parse(r.updated_at) > Date.parse(r.kickoff);
   return {
@@ -198,8 +201,8 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now()): SiteP
     confidence: applyCurve(r.confidence, ctx.curves.pick),
     confidenceRaw: r.confidence,
     doubleChance: deriveDoubleChance(r.p_home, r.p_draw, r.p_away),
-    overUnder: ou ? { pick: ou.pick, p: applyCurve(ou.p, ctx.curves.ou), pRaw: ou.p } : null,
-    btts: bt ? { pick: bt.pick, p: applyCurve(bt.p, ctx.curves.btts), pRaw: bt.p } : null,
+    overUnder: ou,
+    btts: bt,
     rationale: r.rationale,
     settled: !!r.settled,
     homeScore: r.home_score,
@@ -258,11 +261,13 @@ export async function fetchPredictionsForDay(ymd: string): Promise<SitePredictio
       .limit(600);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data, official).map((r) => mapRow(r, ctx));
+    const rows = parseRows(data, official);
+    const book = await latestGoalBook(rows.map((r) => r.fixture_id));
+    return rows.map((r) => mapRow(r, ctx, Date.now(), book.get(r.fixture_id) ?? null));
 }
 
 /** Predictions with kick-off on the given Zurich calendar day (15 min cache). */
-export const listPredictionsForDay = unstable_cache(fetchPredictionsForDay, ['site-predictions-day-v2'], { revalidate: REVALIDATE.fixtures });
+export const listPredictionsForDay = unstable_cache(fetchPredictionsForDay, ['site-predictions-day-v3'], { revalidate: REVALIDATE.fixtures });
 
 /** Next calendar day (Zurich) after `ymd` that has any covered prediction, or null. */
 export const nextDayWithPredictions = unstable_cache(
@@ -297,9 +302,10 @@ export const getPrediction = unstable_cache(
     const rows = parseRows(data, official);
     if (!rows.length) return null;
     const ctx = await loadContext();
-    return mapRow(rows[0], ctx);
+    const book = await latestGoalBook([fixtureId]);
+    return mapRow(rows[0], ctx, Date.now(), book.get(fixtureId) ?? null);
   },
-  ['site-prediction-v2'],
+  ['site-prediction-v3'],
   { revalidate: REVALIDATE.fixtures },
 );
 
