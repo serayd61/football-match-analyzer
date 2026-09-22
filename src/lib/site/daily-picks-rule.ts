@@ -17,7 +17,9 @@
 
 export const RULE_VERSION = 'goals-1.0';
 
-/** Lig öncelik sırası (küçük = önce). Listede olmayan lig aday değildir. */
+/** Lig öncelik sırası (küçük = önce). Listede olmayan lig aday değildir.
+ *  2026-09-22: tek kaynak artık league_coverage tablosu (lib/coverage/registry
+ *  whitelistTiers); bu sabit tohum + tablo boşsa yedek. */
 export const LEAGUE_TIER: Record<string, number> = {
   eredivisie: 0,
   bundesliga: 0,
@@ -90,10 +92,10 @@ function candidate(
  * olasılığa göre sıralı, lig kademesi eşitlik bozucu, en fazla TAKE ayak.
  * `now` verilirse başlamış maçlar elenir.
  */
-export function selectDailyPicks(rows: PickCandidateInput[], now?: number, take = TAKE): PickCandidate[] {
+export function selectDailyPicks(rows: PickCandidateInput[], now?: number, take = TAKE, tiers: Record<string, number> = LEAGUE_TIER): PickCandidate[] {
   const out: PickCandidate[] = [];
   for (const r of rows) {
-    if (!r.leagueSlug || !(r.leagueSlug in LEAGUE_TIER)) continue;
+    if (!r.leagueSlug || !(r.leagueSlug in tiers)) continue;
     if (now != null && Date.parse(r.kickoff) <= now) continue;
     const over = candidate(r, 'ou25', r.pOver25, MIN_OVER, r.over25Odds);
     const btts = candidate(r, 'btts', r.pBttsYes, MIN_BTTS, r.bttsYesOdds);
@@ -104,7 +106,7 @@ export function selectDailyPicks(rows: PickCandidateInput[], now?: number, take 
     if (best) out.push(best);
   }
   return out
-    .sort((a, b) => b.modelP - a.modelP || LEAGUE_TIER[a.leagueSlug] - LEAGUE_TIER[b.leagueSlug] || a.kickoff.localeCompare(b.kickoff))
+    .sort((a, b) => b.modelP - a.modelP || tiers[a.leagueSlug] - tiers[b.leagueSlug] || a.kickoff.localeCompare(b.kickoff))
     .slice(0, take);
 }
 

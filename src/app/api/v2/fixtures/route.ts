@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
 import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
+import { excludedLeagueIds } from '@/lib/coverage/registry';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -89,6 +90,9 @@ async function getFixturesHandler(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
     const leagueId = searchParams.get('league_id');
+    // ?scope=model: kapsam sicilinde 'excluded' ligler elenir (motor senkronu bunu kullanır;
+    // Gana/Galler ligine tahmin üretilmez, akış kotası ve void yükü düşer)
+    const scopeModel = searchParams.get('scope') === 'model';
   
   // Tarih validasyonu
   if (date && isNaN(Date.parse(date))) {
@@ -99,7 +103,7 @@ async function getFixturesHandler(request: NextRequest) {
     const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
     
     // Get from cache or fetch
-    const allFixtures = await getOrSet(
+    const allFixturesRaw = await getOrSet(
       cacheKey,
       async () => {
         const rawFixtures = await fetchFixturesFromAPI(date);
@@ -108,6 +112,9 @@ async function getFixturesHandler(request: NextRequest) {
       CACHE_TTL.FIXTURES
     );
     
+    const excluded = scopeModel ? await excludedLeagueIds() : null;
+    const allFixtures = excluded ? allFixturesRaw.filter((f) => !excluded.has(Number(f.leagueId))) : allFixturesRaw;
+
     // Ligleri çıkar
     const leagues = extractLeagues(allFixtures);
     
