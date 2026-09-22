@@ -61,7 +61,9 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const known = cur.get(leagueId);
     // ccode: katalog → sicil satırının kendi ccode'u (ilk eklemede yazılmıştı) → yok
     const ccode = cat?.ccode || known?.ccode || null;
-    const site = resolveLeague(name, leagueId, ccode);
+    // Ad: motor satırında ingest anındaki "League 937276" kalmış olabilir → katalog / sicil adı önce
+    const resolveName = cat?.name || known?.name || name;
+    const site = resolveLeague(resolveName, leagueId, ccode);
     const stats = aggregateLeague(rows, WINDOW_DAYS);
     const alias = !known && site?.slug ? bySlug.get(site.slug) : null;
     // Onarım: daha önce otomatik 'excluded' açılmış ama aslında slug'lı bir site ligine
@@ -70,7 +72,7 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const repair = known && !known.slug && String(known.reason || '').startsWith('otomatik') && site?.slug ? bySlug.get(site.slug) : null;
     const status: CoverageStatus = repair?.status ?? known?.status ?? alias?.status ?? 'excluded';
     if (!known) inserted++;
-    if (repair || alias) { repaired++; console.log(`[coverage] alias ${leagueId} ${name} (${ccode ?? '-'}) → ${(repair ?? alias).slug} ${(repair ?? alias).status}${repair ? ' (onarım)' : ''}`); }
+    if (repair || alias) { repaired++; console.log(`[coverage] alias ${leagueId} ${resolveName} (${ccode ?? '-'}) → ${(repair ?? alias).slug} ${(repair ?? alias).status}${repair ? ' (onarım)' : ''}`); }
     upserts.push(known
       ? repair
         ? { ...known, status: repair.status, tier: repair.tier, country: repair.country ?? known.country, reason: `alias: ${repair.slug} (mevsimlik id ${leagueId})`, decided_at: nowIso, decided_by: ACTOR, stats, updated_at: nowIso }
