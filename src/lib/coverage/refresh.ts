@@ -18,7 +18,7 @@ const PAGE = 1000;
 const ACTOR = 'cron:engine-weekly-review';
 const COLS = 'league_id, league_name, kickoff, p_over25, p_btts_yes, home_score, away_score, correct, ll_1x2';
 
-export interface RefreshResult { leagues: number; inserted: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number }
+export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number }
 
 export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Promise<RefreshResult> {
   const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
@@ -55,12 +55,14 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
   const nowIso = now.toISOString();
   const upserts: any[] = [];
   const evaluated: Array<{ leagueId: number; name: string; status: CoverageStatus; proposal: CoverageProposal }> = [];
-  let inserted = 0;
+  let inserted = 0, repaired = 0;
   for (const [leagueId, { name, rows }] of byLeague) {
     const cat = catalog.get(leagueId);
-    const site = resolveLeague(name, leagueId, cat?.ccode);
-    const stats = aggregateLeague(rows, WINDOW_DAYS);
     const known = cur.get(leagueId);
+    // ccode: katalog → sicil satırının kendi ccode'u (ilk eklemede yazılmıştı) → yok
+    const ccode = cat?.ccode || known?.ccode || null;
+    const site = resolveLeague(name, leagueId, ccode);
+    const stats = aggregateLeague(rows, WINDOW_DAYS);
     const alias = !known && site?.slug ? bySlug.get(site.slug) : null;
     // Onarım: daha önce otomatik 'excluded' açılmış ama aslında slug'lı bir site ligine
     // çözülen mevsimlik id (Eredivisie 937276 → 57, 22 Eyl) alias'a çevrilir; admin
@@ -68,6 +70,7 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const repair = known && !known.slug && String(known.reason || '').startsWith('otomatik') && site?.slug ? bySlug.get(site.slug) : null;
     const status: CoverageStatus = repair?.status ?? known?.status ?? alias?.status ?? 'excluded';
     if (!known) inserted++;
+    if (repair || alias) { repaired++; console.log(`[coverage] alias ${leagueId} ${name} (${ccode ?? '-'}) → ${(repair ?? alias).slug} ${(repair ?? alias).status}${repair ? ' (onarım)' : ''}`); }
     upserts.push(known
       ? repair
         ? { ...known, status: repair.status, tier: repair.tier, country: repair.country ?? known.country, reason: `alias: ${repair.slug} (mevsimlik id ${leagueId})`, decided_at: nowIso, decided_by: ACTOR, stats, updated_at: nowIso }
@@ -103,6 +106,6 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     if (error) console.error('[coverage] proposal insert failed:', error.message);
     else out.push({ leagueId: e.leagueId, name: e.name, type: e.proposal.type, to: e.proposal.to });
   }
-  console.log(`[coverage] leagues=${byLeague.size} inserted=${inserted} proposals=${out.length} cooldown=${skipped} rows=${total}`);
-  return { leagues: byLeague.size, inserted, proposals: out, skippedCooldown: skipped, rows: total };
+  console.log(`[coverage] leagues=${byLeague.size} inserted=${inserted} repaired=${repaired} proposals=${out.length} cooldown=${skipped} rows=${total}`);
+  return { leagues: byLeague.size, inserted, repaired, proposals: out, skippedCooldown: skipped, rows: total };
 }
