@@ -42,9 +42,11 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
 
   const [catalog, { data: existing }] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
-    sb.from('league_coverage').select('league_id, status, name'),
+    sb.from('league_coverage').select('*'),
   ]);
-  const cur = new Map<number, { status: CoverageStatus; name: string }>((existing ?? []).map((r: any) => [Number(r.league_id), { status: r.status, name: r.name }]));
+  // Toplu upsert'te satırlar aynı kolon kümesini taşımalı (eksik kolon null yazılır →
+  // status not-null ihlali, 22 Eyl). Mevcut satır tüm alanlarıyla geri yazılır.
+  const cur = new Map<number, any>((existing ?? []).map((r: any) => [Number(r.league_id), r]));
 
   const nowIso = now.toISOString();
   const upserts: any[] = [];
@@ -58,8 +60,8 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const status: CoverageStatus = known?.status ?? 'excluded';
     if (!known) inserted++;
     upserts.push(known
-      ? { league_id: leagueId, stats, updated_at: nowIso, name: known.name }      // durum/kademe korunur
-      : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_by: ACTOR, updated_at: nowIso });
+      ? { ...known, stats, updated_at: nowIso }      // durum/kademe/gerekçe korunur
+      : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso });
     const p = evaluateLeague(status, stats);
     if (p) evaluated.push({ leagueId, name: known?.name ?? (cat?.name || name), status, proposal: p });
   }
