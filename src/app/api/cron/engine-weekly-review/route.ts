@@ -12,6 +12,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { refreshCoverage } from '@/lib/coverage/refresh';
+import { invalidateCoverage } from '@/lib/coverage/registry';
 import { settleEnginePredictions, backfillRowScores } from '@/lib/engine/settle';
 import { computeWeek, buildReport } from '@/lib/engine/weekly';
 import { parseIsoWeek, previousIsoWeek, isoWeekLabel, type IsoWeek } from '@/lib/engine/scoring';
@@ -49,13 +51,15 @@ export async function GET(request: NextRequest) {
     weeks = [k];
   } else if (Number.isFinite(back) && back > 0) {
     for (let i = Math.min(back, 26); i >= 1; i--) weeks.push(previousIsoWeek(now, i));
+  } else if (url.searchParams.get('coverageOnly') === '1') {
+    weeks = []; // yalnız kapsam sicili
   } else {
     weeks = [previousIsoWeek(now, 2), previousIsoWeek(now, 1)];
   }
 
   // 1) Geç settlement + skor geri dolumu (hata olsa da hesaba devam)
   let settle: unknown = null, backfill: unknown = null;
-  if (url.searchParams.get('skipSettle') !== '1') {
+  if (url.searchParams.get('skipSettle') !== '1' && url.searchParams.get('coverageOnly') !== '1') {
     try { settle = await settleEnginePredictions(client, { now }); } catch (e: any) { settle = { error: e?.message }; }
     try { backfill = await backfillRowScores(client, 1000); } catch (e: any) { backfill = { error: e?.message }; }
   }
@@ -79,5 +83,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: results.every((r) => r.ok), ms: Date.now() - t0, settle, backfill, weeks: results });
+  // 3) Kapsam sicili: lig istatistikleri + terfi/indirme önerileri (karar admin'de)
+  let coverage: unknown = null;
+  if (url.searchParams.get('skipCoverage') !== '1') {
+    try { coverage = await refreshCoverage(client, now); invalidateCoverage(); } catch (e: any) { coverage = { error: e?.message }; }
+  }
+
+  return NextResponse.json({ ok: results.every((r) => r.ok), ms: Date.now() - t0, settle, backfill, weeks: results, coverage });
 }

@@ -3,6 +3,7 @@ import { db, dbFresh } from './db';
 import { listDayFresh } from './fixtures';
 import { latestGoalBook } from './goal-book';
 import { yesSideP } from './goal-blend';
+import { whitelistTiers } from '@/lib/coverage/registry';
 
 import type { SitePrediction } from './predictions';
 import { todayYmd, addDays } from './time';
@@ -66,7 +67,7 @@ async function generate(ymd: string, now = Date.now(), includeSettled = false): 
   // 2026-09-14: kitap oranları sütundan (KG akıştan, Üst 2,5 API-Football'dan); raw taranmaz.
   const books = await latestGoalBook(rows.map((r) => r.fixtureId));
   const inputs = rows.map((r) => toInput(r, books.get(r.fixtureId)?.bttsYes ?? null, books.get(r.fixtureId)?.over25 ?? null));
-  const picks = selectDailyPicks(inputs, now);
+  const picks = selectDailyPicks(inputs, now, TAKE, await whitelistTiers()); // beyaz liste: kapsam sicili
   const byId = new Map(rows.map((r) => [r.fixtureId, r]));
   return picks.map((p) => {
     const r = byId.get(p.fixtureId)!;
