@@ -62,14 +62,20 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const stats = aggregateLeague(rows, WINDOW_DAYS);
     const known = cur.get(leagueId);
     const alias = !known && site?.slug ? bySlug.get(site.slug) : null;
-    const status: CoverageStatus = known?.status ?? alias?.status ?? 'excluded';
+    // Onarım: daha önce otomatik 'excluded' açılmış ama aslında slug'lı bir site ligine
+    // çözülen mevsimlik id (Eredivisie 937276 → 57, 22 Eyl) alias'a çevrilir; admin
+    // kararıyla yazılmış satırlara (reason 'otomatik:' değilse) dokunulmaz.
+    const repair = known && !known.slug && String(known.reason || '').startsWith('otomatik') && site?.slug ? bySlug.get(site.slug) : null;
+    const status: CoverageStatus = repair?.status ?? known?.status ?? alias?.status ?? 'excluded';
     if (!known) inserted++;
     upserts.push(known
-      ? { ...known, stats, updated_at: nowIso }      // durum/kademe/gerekçe korunur
+      ? repair
+        ? { ...known, status: repair.status, tier: repair.tier, country: repair.country ?? known.country, reason: `alias: ${repair.slug} (mevsimlik id ${leagueId})`, decided_at: nowIso, decided_by: ACTOR, stats, updated_at: nowIso }
+        : { ...known, stats, updated_at: nowIso }      // durum/kademe/gerekçe korunur
       : alias
         ? { league_id: leagueId, slug: null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: alias.country ?? null, status: alias.status, tier: alias.tier, reason: `alias: ${alias.slug} (mevsimlik id ${leagueId})`, stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso }
         : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso });
-    if (alias) continue;                                             // alias'ın önerisi ana satırdan gelir
+    if (alias || repair) continue;                                   // alias'ın önerisi ana satırdan gelir
     if (status === 'excluded' && !isProposalEligibleName(cat?.name || name)) continue;
     const p = evaluateLeague(status, stats);
     if (p) evaluated.push({ leagueId, name: known?.name ?? (cat?.name || name), status, proposal: p });
