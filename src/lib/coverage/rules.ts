@@ -27,7 +27,7 @@ export const COVERAGE_GATE = {
 } as const;
 
 /** Hazırlık, kadın, altyapı, rezerv ligleri hiçbir öneriye girmez (motor kapsamı için anlamsız). */
-const NOISE = /friendl|hazırlık|premier league 2|professional development|\(w\)|women|frauen|femen|feminin|kvinn|dames|\bu-?(15|16|17|18|19|20|21|23)\b|youth|junior|reserve|reserves|\bii\b|\bb\b|primavera|next pro|regionalliga|oberliga|3\. divisjon|2\. divisjon|ettan|division 2|non league|national league (north|south)|highland|lowland|amateur/i;
+const NOISE = /friendl|hazırlık|premier league 2|professional development|\(w\)|women|frauen|femen|feminin|kvinn|dames|\bu-?(15|16|17|18|19|20|21|23)\b|youth|junior|reserve|reserves|\bii\b|\bb\b|primavera|next pro|regionalliga|oberliga|3\. divisjon|2\. divisjon|\bettan\b|division 2|non league|national league (north|south)|highland|lowland|amateur/i;
 export function isProposalEligibleName(name: string | null | undefined): boolean {
   return !!name && !NOISE.test(name);
 }
