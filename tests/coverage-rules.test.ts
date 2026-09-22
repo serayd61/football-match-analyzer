@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateLeague, evaluateLeague, COVERAGE_GATE } from '@/lib/coverage/rules';
+import { aggregateLeague, evaluateLeague, isProposalEligibleName, COVERAGE_GATE } from '@/lib/coverage/rules';
 
 const row = (o: Partial<Parameters<typeof aggregateLeague>[0][number]>) => ({ p_over25: null, p_btts_yes: null, home_score: 1, away_score: 1, correct: null, ll_1x2: null, kickoff: '2026-09-01T12:00:00Z', ...o });
 
@@ -29,7 +29,15 @@ test('observe league is proposed for promotion only above the gate with enough l
 test('whitelist league is proposed for demotion when a goal market falls below the floor; excluded strong league becomes a watch candidate', () => {
   assert.equal(evaluateLeague('whitelist', stats([21, 40], [30, 40]))?.type, 'demote');     // Üst 52.5% < 55
   assert.equal(evaluateLeague('whitelist', stats([26, 40], [30, 40])), null);               // 65% / 75%
-  const w = evaluateLeague('excluded', stats([30, 40], [10, 40], COVERAGE_GATE.watchMinN));
+  const w = evaluateLeague('excluded', stats([30, 40], [26, 40], COVERAGE_GATE.watchMinN));
   assert.equal(w?.type, 'watch'); assert.equal(w?.to, 'observe');
-  assert.equal(evaluateLeague('excluded', stats([30, 40], [10, 40], 59)), null);
+  assert.equal(evaluateLeague('excluded', stats([30, 40], [10, 40], COVERAGE_GATE.watchMinN)), null); // tek pazar yetmez
+  assert.equal(evaluateLeague('excluded', stats([30, 40], [26, 40], COVERAGE_GATE.watchMinN - 1)), null);
+});
+
+test('friendlies, women, youth, reserve and lower amateur tiers are never proposal-eligible', () => {
+  for (const n of ['Club Friendlies', 'Frauen-Bundesliga', 'Ajax (W)', 'Premier League 2', 'U21 Premier League', 'MLS Next Pro', '3. Divisjon Avd. 2', 'Ettan Soedra', 'Regionalliga North', 'Serie A (W)']) {
+    assert.equal(isProposalEligibleName(n), false, n);
+  }
+  for (const n of ['Eliteserien', 'Superettan', 'Major League Soccer', 'Süper Lig', '1. Divisjon']) assert.equal(isProposalEligibleName(n), true, n);
 });

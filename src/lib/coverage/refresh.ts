@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCatalogMap } from '@/lib/league-catalog';
 import { resolveLeague } from '@/lib/site/leagues';
-import { aggregateLeague, evaluateLeague, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
+import { aggregateLeague, evaluateLeague, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
 
 // ============================================================================
 // KAPSAM SİCİLİ YENİLEME — haftalık inceleme adımı
@@ -47,6 +47,10 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
   // Toplu upsert'te satırlar aynı kolon kümesini taşımalı (eksik kolon null yazılır →
   // status not-null ihlali, 22 Eyl). Mevcut satır tüm alanlarıyla geri yazılır.
   const cur = new Map<number, any>((existing ?? []).map((r: any) => [Number(r.league_id), r]));
+  // Slug → sicil satırı: FotMob büyük-5 dışı liglere her sezon yeni id verir; aynı site
+  // ligine çözülen yeni id, slug'ı olan satırın DURUMUNU/KADEMESİNİ miras alır (alias),
+  // slug ise tekil kalır (unique ihlali 22 Eyl).
+  const bySlug = new Map<string, any>((existing ?? []).filter((r: any) => r.slug).map((r: any) => [r.slug, r]));
 
   const nowIso = now.toISOString();
   const upserts: any[] = [];
@@ -57,11 +61,16 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const site = resolveLeague(name, leagueId, cat?.ccode);
     const stats = aggregateLeague(rows, WINDOW_DAYS);
     const known = cur.get(leagueId);
-    const status: CoverageStatus = known?.status ?? 'excluded';
+    const alias = !known && site?.slug ? bySlug.get(site.slug) : null;
+    const status: CoverageStatus = known?.status ?? alias?.status ?? 'excluded';
     if (!known) inserted++;
     upserts.push(known
       ? { ...known, stats, updated_at: nowIso }      // durum/kademe/gerekçe korunur
-      : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso });
+      : alias
+        ? { league_id: leagueId, slug: null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: alias.country ?? null, status: alias.status, tier: alias.tier, reason: `alias: ${alias.slug} (mevsimlik id ${leagueId})`, stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso }
+        : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso });
+    if (alias) continue;                                             // alias'ın önerisi ana satırdan gelir
+    if (status === 'excluded' && !isProposalEligibleName(cat?.name || name)) continue;
     const p = evaluateLeague(status, stats);
     if (p) evaluated.push({ leagueId, name: known?.name ?? (cat?.name || name), status, proposal: p });
   }

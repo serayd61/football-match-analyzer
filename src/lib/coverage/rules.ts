@@ -23,8 +23,14 @@ export const COVERAGE_GATE = {
   promoteBtts: 0.62,  // observe → whitelist: KG ayakları isabeti
   demoteOu: 0.55,     // whitelist → observe
   demoteBtts: 0.52,
-  watchMinN: 60,      // excluded → observe adayı: toplam satır
+  watchMinN: 100,     // excluded → observe adayı: toplam satır (22 Eyl: 60 → 100; İKİ pazar da eşik üstü)
 } as const;
+
+/** Hazırlık, kadın, altyapı, rezerv ligleri hiçbir öneriye girmez (motor kapsamı için anlamsız). */
+const NOISE = /friendl|hazırlık|premier league 2|professional development|\(w\)|women|frauen|femen|feminin|kvinn|dames|\bu-?(15|16|17|18|19|20|21|23)\b|youth|junior|reserve|reserves|\bii\b|\bb\b|primavera|next pro|regionalliga|oberliga|3\. divisjon|2\. divisjon|ettan|division 2|non league|national league (north|south)|highland|lowland|amateur/i;
+export function isProposalEligibleName(name: string | null | undefined): boolean {
+  return !!name && !NOISE.test(name);
+}
 
 export type ProposalType = 'promote' | 'demote' | 'watch';
 export interface CoverageProposal { type: ProposalType; from: CoverageStatus; to: CoverageStatus; reason: string; evidence: Record<string, unknown> }
@@ -64,7 +70,7 @@ export function evaluateLeague(status: CoverageStatus, s: LeagueStats, g = COVER
   if (status === 'whitelist' && (ouBad || btBad)) {
     return { type: 'demote', from: 'whitelist', to: 'observe', reason: `${ouBad ? `Üst ayakları ${s.ouHi.won}/${s.ouHi.n} (${pct(ou)}) < ${pct(g.demoteOu)}` : ''}${ouBad && btBad ? '; ' : ''}${btBad ? `KG ayakları ${s.bttsHi.won}/${s.bttsHi.n} (${pct(bt)}) < ${pct(g.demoteBtts)}` : ''}`, evidence: ev };
   }
-  if (status === 'excluded' && s.n >= g.watchMinN && (ouOk || btOk)) {
+  if (status === 'excluded' && s.n >= g.watchMinN && ouOk && btOk) {
     return { type: 'watch', from: 'excluded', to: 'observe', reason: `Kapsam dışı ligde ${s.n} sonuçlanmış maç; Üst ${s.ouHi.won}/${s.ouHi.n} (${pct(ou)}), KG ${s.bttsHi.won}/${s.bttsHi.n} (${pct(bt)}) — gözleme alınmaya aday`, evidence: ev };
   }
   return null;
