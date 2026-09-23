@@ -105,6 +105,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message, rejected }, { status: 500 });
   }
 
+  // Ertelenen maç (2026-09-23, Brentwood–Maldon): 7 Eyl'de void edilmiş satır (settled,
+  // result null) yeni kickoff'la tekrar gelince kapalı kaldığı için hiç sonuçlanmadı.
+  // Upsert settled'a dokunmaz; ileri tarihli void satırlar burada yeniden açılır.
+  let reopened = 0;
+  {
+    const { count: n, error: e2 } = await sb()
+      .from('engine_predictions')
+      .update({ settled: false, settled_at: null }, { count: 'exact' })
+      .in('fixture_id', rows.map((r: any) => r.fixture_id))
+      .eq('settled', true).is('result', null)
+      .gt('kickoff', new Date().toISOString());
+    if (e2) console.warn('[ingest] reopen postponed failed:', e2.message);
+    else reopened = n ?? 0;
+    if (reopened) console.log(`[ingest] reopened ${reopened} postponed (voided) rows`);
+  }
+
   if (rejected.length) {
     console.warn(`[ingest] ${rejected.length}/${list.length} rows rejected`, rejected.slice(0, 5));
   }
@@ -113,6 +129,7 @@ export async function POST(request: NextRequest) {
     success: true,
     received: list.length,
     upserted: count ?? rows.length,
+    reopened,
     rejectedCount: rejected.length,
     rejected,
     modelVersions: Array.from(new Set(rows.map((r) => r.model_version))),
