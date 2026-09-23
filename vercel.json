@@ -79,6 +79,10 @@
     {
       "path": "/api/cron/daily-featured?retry=1",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/tier-b",
+      "schedule": "30 6 * * *"
     }
   ]
 }

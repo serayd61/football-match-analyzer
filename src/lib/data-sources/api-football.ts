@@ -46,6 +46,17 @@ export async function afFixtures(leagueId: number, season: number, ymd: string):
   })) };
 }
 
+/** Bir UTC gün için TÜM fikstürler (lig filtresi yok; tek çağrı, ~1000 satır). Kapsam dışı ligler için. */
+export async function afFixturesByDate(ymd: string): Promise<{ ok: true; rows: Array<AfFixture & { leagueId: number; leagueName: string }> } | { ok: false; error: string }> {
+  const r = await afFetch<any[]>(`/fixtures?date=${ymd}&timezone=UTC`);
+  if (!r.ok) return r;
+  return { ok: true, rows: (r.data || []).map((f: any) => ({
+    id: Number(f.fixture?.id), dateUtc: String(f.fixture?.date || ''), status: String(f.fixture?.status?.short || ''),
+    home: String(f.teams?.home?.name || ''), away: String(f.teams?.away?.name || ''), homeId: Number(f.teams?.home?.id), awayId: Number(f.teams?.away?.id),
+    leagueId: Number(f.league?.id), leagueName: String(f.league?.name || ''),
+  })) };
+}
+
 /** Bir API-Football fikstürü için maç öncesi oranlar (tek çağrı, tüm bahisçiler). */
 export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfOdds | null } | { ok: false; error: string }> {
   const r = await afFetch<any[]>(`/odds?fixture=${afFixtureId}`);

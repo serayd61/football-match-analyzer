@@ -8,13 +8,29 @@
 
 export type CoverageStatus = 'whitelist' | 'observe' | 'excluded';
 
+export interface BucketCell { n: number; won: number }
+/** Olasılık dilimi karnesi (23 Eyl): pazar → dilim etiketi → n/won. Etiketler BUCKETS'tan. */
+export interface LeagueBuckets { x12: Record<string, BucketCell>; ou25: Record<string, BucketCell>; under25: Record<string, BucketCell>; btts: Record<string, BucketCell> }
 export interface LeagueStats {
   n: number;                                   // sonuçlanmış satır (pencere)
   x12: { n: number; won: number; ll: number | null };
   ouHi: { n: number; won: number };            // p_over25 ≥ MIN_OVER ayakları
   bttsHi: { n: number; won: number };          // p_btts_yes ≥ MIN_BTTS ayakları
+  buckets?: LeagueBuckets;
   lastKickoff: string | null;
   windowDays: number;
+}
+
+export const BUCKETS = {
+  x12: [[0, '<50'], [0.5, '50–60'], [0.6, '60–70'], [0.7, '70–80'], [0.8, '≥80']],
+  ou25: [[0, '<55'], [0.55, '55–65'], [0.65, '65–75'], [0.75, '75–85'], [0.85, '≥85']],
+  under25: [[0.65, '65–75'], [0.75, '≥75']],
+  btts: [[0, '<50'], [0.5, '50–60'], [0.6, '60–70'], [0.7, '70–80'], [0.8, '≥80']],
+} as const satisfies Record<string, ReadonlyArray<readonly [number, string]>>;
+export function bucketOf(kind: keyof typeof BUCKETS, p: number): string | null {
+  let label: string | null = null;
+  for (const [lo, name] of BUCKETS[kind]) { if (p >= lo) label = name; }
+  return label;
 }
 
 export const COVERAGE_GATE = {
@@ -39,12 +55,23 @@ const acc = (c: { n: number; won: number }) => (c.n ? c.won / c.n : null);
 const pct = (x: number | null) => (x == null ? '–' : `${Math.round(x * 100)}%`);
 
 /** Satır listesinden lig istatistiği. Satır: p_over25/p_btts_yes/skor/1X2 sonucu. */
-export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_yes: number | null; home_score: number | null; away_score: number | null; correct: boolean | null; ll_1x2: number | null; kickoff: string }>, windowDays: number, minOver = 0.65, minBtts = 0.60): LeagueStats {
-  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, lastKickoff: null, windowDays };
+export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_yes: number | null; p_home?: number | null; p_draw?: number | null; p_away?: number | null; home_score: number | null; away_score: number | null; correct: boolean | null; ll_1x2: number | null; kickoff: string }>, windowDays: number, minOver = 0.65, minBtts = 0.60): LeagueStats {
+  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, buckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, lastKickoff: null, windowDays };
+  const hit = (kind: keyof LeagueBuckets, p: number, won: boolean) => {
+    const b = bucketOf(kind, p); if (!b) return;
+    const c = (s.buckets![kind][b] ??= { n: 0, won: 0 }); c.n++; if (won) c.won++;
+  };
   let llSum = 0, llN = 0;
   for (const r of rows) {
     if (r.home_score == null || r.away_score == null) continue;
     s.n++;
+    if (r.p_home != null && r.p_draw != null && r.p_away != null) {
+      const ps = [r.p_home, r.p_draw, r.p_away]; const i = ps.indexOf(Math.max(...ps));
+      const w = i === 0 ? r.home_score > r.away_score : i === 1 ? r.home_score === r.away_score : r.home_score < r.away_score;
+      hit('x12', ps[i], w);
+    }
+    if (r.p_over25 != null) { hit('ou25', r.p_over25, r.home_score + r.away_score >= 3); hit('under25', 1 - r.p_over25, r.home_score + r.away_score <= 2); }
+    if (r.p_btts_yes != null) hit('btts', r.p_btts_yes, r.home_score > 0 && r.away_score > 0);
     if (!s.lastKickoff || r.kickoff > s.lastKickoff) s.lastKickoff = r.kickoff;
     if (r.correct != null) { s.x12.n++; if (r.correct) s.x12.won++; }
     if (r.ll_1x2 != null && Number.isFinite(Number(r.ll_1x2))) { llSum += Number(r.ll_1x2); llN++; }

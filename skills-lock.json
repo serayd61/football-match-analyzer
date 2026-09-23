@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "betting": {
+      "source": "machina-sports/sports-skills",
+      "sourceType": "github",
+      "skillPath": "skills/betting/SKILL.md",
+      "computedHash": "67b196557ed5aec7c35f94868286526d23b3c4e6747ac37d4892e552c61bd421"
+    },
+    "football-data": {
+      "source": "machina-sports/sports-skills",
+      "sourceType": "github",
+      "skillPath": "skills/football-data/SKILL.md",
+      "computedHash": "7d7b80c4f18a5e78440f54e604c450d7b237ba4650a849c8e5d0325adc23c08d"
+    },
+    "football-match-forecasting": {
+      "source": "Football-Skill/football-match-forecasting",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "93348886b60546f198cdb9e9d86f1592702da9253a7e7edc1feae6130026e2a6"
+    },
+    "nutmeg-compute": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/compute/SKILL.md",
+      "computedHash": "5e5540008ae256f3b93e4a3725acc641845a07239ab8ab0c6591ff2e422f9582"
+    },
+    "nutmeg-learn": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/learn/SKILL.md",
+      "computedHash": "9e2ef0f9c98467eb7c54cecab7c5535a15bd345f98dd4ac2091e48983a81d309"
+    }
+  }
+}

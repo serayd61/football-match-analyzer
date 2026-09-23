@@ -16,7 +16,7 @@ import { aggregateLeague, evaluateLeague, isProposalEligibleName, PROPOSAL_COOLD
 export const WINDOW_DAYS = 180;
 const PAGE = 1000;
 const ACTOR = 'cron:engine-weekly-review';
-const COLS = 'league_id, league_name, kickoff, p_over25, p_btts_yes, home_score, away_score, correct, ll_1x2';
+const COLS = 'league_id, league_name, kickoff, p_over25, p_btts_yes, p_home, p_draw, p_away, home_score, away_score, correct, ll_1x2';
 
 export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number }
 
