@@ -309,7 +309,10 @@
     "curveMeta": "Kalibrasyon eğrisi: {segment}, {n} maç, {date} tarihinde fit edildi.",
     "noCurve": "Kalibrasyon eğrisi yüklü değil; kalibre değer ham çıktıya eşittir.",
     "rawVsCal": "Ham model çıktısı ile kalibre olasılık farklı şeylerdir: ham değer modelin ürettiği sayıdır, kalibre değer geçmiş sonuçların o ham değere gerçekte ne kadar isabet biçtiğidir.",
-    "metaLocked": "{home} – {away}, {league}: model tahmini, beklenen gol, olası skorlar ve handikap çizgileri. Üye hesaplarına özel, ilk 7 gün ücretsiz."
+    "metaLocked": "{home} – {away}, {league}: model tahmini, beklenen gol, olası skorlar ve handikap çizgileri. Üye hesaplarına özel, ilk 7 gün ücretsiz.",
+    "scopeOutside": "kapsam dışı ligler: {won}/{n} tuttu (%{acc})",
+    "standingMetaOutside": "{n} sonuçlanmış maç · lig dilim karnesi",
+    "standingLeadOutside": "Bu lig model kapsamı dışında. Her pazar için seçimin düştüğü olasılık dilimini ve o dilimde bu ligde (10'dan az maç varsa kapsam dışı tüm liglerde) geçmiş isabetimizi gösterir. Garanti değil, aynı durumdaki maçların kaydı."
   },
   "results": {
     "title": "Sonuçlar",
@@ -903,7 +906,14 @@
       "sortNote": "Yüksek güven, garanti sonuç değildir.",
       "filtered": "{shown} / {total} maç gösteriliyor",
       "emptyFiltered": "Bu filtrelerle maç yok",
-      "emptyFilteredLead": "Filtreleri temizleyip tüm günü görebilirsin."
+      "emptyFilteredLead": "Filtreleri temizleyip tüm günü görebilirsin.",
+      "uncoveredTitle": "Kapsam dışı ligler: {count} maç, {leagues} lig",
+      "uncoveredLead": "Bu liglerde model fit edilmedi; tahmin var ama kupon kuralına girmez. Risk notu, ligin 180 günlük dilim karnesinden gelir: aynı olasılık diliminde daha önce ne oldu. Lig karnesi ince ise kapsam dışı tüm liglerin toplamı esas alınır.",
+      "leagueMeta": "180 gün: {n} maç · 1X2 %{x12} · Üst %{ou} · KG %{btts}",
+      "leagueMetaThin": "180 gün: {n} maç · karne ince",
+      "outsideEvidence": "Bu ligde 1X2 {bucket}: {won}/{n} tuttu (%{acc})",
+      "outsideEvidenceAll": "Kapsam dışı liglerde 1X2 {bucket}: {won}/{n} tuttu (%{acc})",
+      "outsideThin": "Bu dilimde yeterli maç yok"
     },
     "match": {
       "back": "← Tüm tahminler",

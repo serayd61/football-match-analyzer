@@ -43,7 +43,7 @@ function evidence(tables: SignalTable[], market: SignalMarket, kind: StandingEvi
   return { kind, bucket: t.buckets[bucket], league: row ? row.cells[bucket] : null, all: t.all[bucket] };
 }
 
-function finish(market: SignalMarket, selection: string, modelP: number, primary: StandingEvidence, secondary: StandingEvidence | null): MarketStanding {
+export function finishStanding(market: SignalMarket, selection: string, modelP: number, primary: StandingEvidence, secondary: StandingEvidence | null): MarketStanding {
   const useLeague = !!primary.league && primary.league.n >= MIN_EVIDENCE;
   const cell = useLeague ? primary.league! : primary.all;
   const acc = cell.n >= MIN_EVIDENCE ? cell.acc : null;
@@ -64,12 +64,12 @@ export function standingFor(input: StandingInput, tables: SignalTable[]): Market
       edge = evidence(tables, '1x2', 'edge', edgeBucket(pickP - mp), lg);
       clash = clashBucket(pickP - mp);
     }
-    if (level) out.push(finish('1x2', input.pick, pickP, edge ?? level, edge ? level : null));
+    if (level) out.push(finishStanding('1x2', input.pick, pickP, edge ?? level, edge ? level : null));
     if (input.over) {
       const pSide = input.over.pick === 'over' ? input.over.pRaw : 1 - input.over.pRaw;
       const lv = evidence(tables, 'ou25', 'level', levelBucket(pSide), lg);
       const cl = clash != null && input.over.pick === 'over' && input.over.pRaw >= MIN_OVER ? evidence(tables, 'ou25', 'clash', clash, lg) : null;
-      if (lv) out.push(finish('ou25', input.over.pick, pSide, lv, cl));
+      if (lv) out.push(finishStanding('ou25', input.over.pick, pSide, lv, cl));
     }
     if (input.btts) {
       const pSide = input.btts.pick === 'yes' ? input.btts.pRaw : 1 - input.btts.pRaw;
@@ -77,7 +77,7 @@ export function standingFor(input: StandingInput, tables: SignalTable[]): Market
       let sec: StandingEvidence | null = null;
       if (input.bttsMarketYes != null) sec = evidence(tables, 'btts', 'edge', edgeBucket(pSide - (input.btts.pick === 'yes' ? input.bttsMarketYes : 1 - input.bttsMarketYes)), lg);
       else if (clash != null && input.btts.pick === 'yes' && input.btts.pRaw >= MIN_BTTS) sec = evidence(tables, 'btts', 'clash', clash, lg);
-      if (lv) out.push(finish('btts', input.btts.pick, pSide, lv, sec));
+      if (lv) out.push(finishStanding('btts', input.btts.pick, pSide, lv, sec));
     }
   }
   return out;

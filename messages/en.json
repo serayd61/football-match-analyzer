@@ -309,7 +309,10 @@
     "curveMeta": "Calibration curve: {segment}, {n} matches, fitted {date}.",
     "noCurve": "No calibration curve loaded; the calibrated figure equals the raw output.",
     "rawVsCal": "Raw model output and calibrated probability are different things: the raw figure is what the model produced, the calibrated one is what past results say that raw figure has actually delivered.",
-    "metaLocked": "{home} vs {away}, {league}: model prediction, expected goals, likely scores and handicap lines. Members only, first 7 days free."
+    "metaLocked": "{home} vs {away}, {league}: model prediction, expected goals, likely scores and handicap lines. Members only, first 7 days free.",
+    "scopeOutside": "uncovered leagues: {won}/{n} hit ({acc}%)",
+    "standingMetaOutside": "{n} decided matches · league bucket record",
+    "standingLeadOutside": "This league is outside model coverage. For each market, the probability bucket the pick falls into and our past hit rate in that bucket for this league (or across all uncovered leagues when fewer than 10 matches). Not a guarantee, a record of what happened in the same situation."
   },
   "results": {
     "title": "Results",
@@ -903,7 +906,14 @@
       "sortNote": "High confidence is not a guaranteed result.",
       "filtered": "Showing {shown} of {total} matches",
       "emptyFiltered": "No matches for these filters",
-      "emptyFilteredLead": "Clear the filters to see the whole day."
+      "emptyFilteredLead": "Clear the filters to see the whole day.",
+      "uncoveredTitle": "Outside model coverage: {count} matches, {leagues} leagues",
+      "uncoveredLead": "The model is not fitted on these leagues; the prediction exists but never enters the coupon rule. The risk label comes from the league's 180-day bucket record: what happened before in the same probability bucket. When the league record is thin, the total across all uncovered leagues is used.",
+      "leagueMeta": "180 days: {n} matches · 1X2 {x12}% · Over {ou}% · BTTS {btts}%",
+      "leagueMetaThin": "180 days: {n} matches · thin record",
+      "outsideEvidence": "This league, 1X2 {bucket}: {won}/{n} hit ({acc}%)",
+      "outsideEvidenceAll": "Uncovered leagues, 1X2 {bucket}: {won}/{n} hit ({acc}%)",
+      "outsideThin": "Not enough matches in this bucket"
     },
     "match": {
       "back": "← All predictions",
