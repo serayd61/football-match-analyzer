@@ -38,3 +38,8 @@ export async function excludedLeagueIds(): Promise<Set<number>> {
 }
 
 export function invalidateCoverage() { try { revalidateTag(COVERAGE_TAG); } catch { /* build/test ortamı */ } }
+
+/** league_id → sicil satırı (kapsam dışı risk notu için). */
+export async function coverageById(): Promise<Map<number, CoverageRow>> {
+  return new Map((await loadCoverage()).map((r) => [Number(r.league_id), r]));
+}

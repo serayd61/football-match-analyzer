@@ -309,7 +309,10 @@
     "curveMeta": "Kalibrierungskurve: {segment}, {n} Spiele, angepasst am {date}.",
     "noCurve": "Keine Kalibrierungskurve geladen; der kalibrierte Wert entspricht dem Rohwert.",
     "rawVsCal": "Rohwert des Modells und kalibrierte Wahrscheinlichkeit sind zwei verschiedene Dinge: der Rohwert ist die Modellausgabe, der kalibrierte Wert ist das, was vergangene Ergebnisse für diesen Rohwert tatsächlich geliefert haben.",
-    "metaLocked": "{home} gegen {away}, {league}: Modellprognose, Expected Goals, wahrscheinliche Resultate und Handicap-Linien. Nur für Mitglieder, die ersten 7 Tage gratis."
+    "metaLocked": "{home} gegen {away}, {league}: Modellprognose, Expected Goals, wahrscheinliche Resultate und Handicap-Linien. Nur für Mitglieder, die ersten 7 Tage gratis.",
+    "scopeOutside": "nicht abgedeckte Ligen: {won}/{n} getroffen ({acc}%)",
+    "standingMetaOutside": "{n} entschiedene Spiele · Liga-Segmentbilanz",
+    "standingLeadOutside": "Diese Liga liegt außerhalb der Modellabdeckung. Pro Markt das Wahrscheinlichkeitssegment des Tipps und unsere bisherige Trefferquote in diesem Segment für diese Liga (bzw. über alle nicht abgedeckten Ligen bei unter 10 Spielen). Keine Garantie, ein Protokoll dessen, was in derselben Lage geschah."
   },
   "results": {
     "title": "Resultate",
@@ -903,7 +906,14 @@
       "sortNote": "Hohe Konfidenz ist kein garantiertes Ergebnis.",
       "filtered": "{shown} von {total} Spielen",
       "emptyFiltered": "Keine Spiele für diese Filter",
-      "emptyFilteredLead": "Filter löschen, um den ganzen Tag zu sehen."
+      "emptyFilteredLead": "Filter löschen, um den ganzen Tag zu sehen.",
+      "uncoveredTitle": "Außerhalb der Modellabdeckung: {count} Spiele, {leagues} Ligen",
+      "uncoveredLead": "Für diese Ligen ist das Modell nicht gefittet; die Prognose existiert, fällt aber nie unter die Kuponregel. Das Risikolabel stammt aus der 180-Tage-Segmentbilanz der Liga: was zuvor im selben Wahrscheinlichkeitssegment geschah. Ist die Ligabilanz dünn, zählt die Summe aller nicht abgedeckten Ligen.",
+      "leagueMeta": "180 Tage: {n} Spiele · 1X2 {x12}% · Über {ou}% · BTTS {btts}%",
+      "leagueMetaThin": "180 Tage: {n} Spiele · dünne Bilanz",
+      "outsideEvidence": "Diese Liga, 1X2 {bucket}: {won}/{n} getroffen ({acc}%)",
+      "outsideEvidenceAll": "Nicht abgedeckte Ligen, 1X2 {bucket}: {won}/{n} getroffen ({acc}%)",
+      "outsideThin": "Zu wenige Spiele in diesem Segment"
     },
     "match": {
       "back": "← Alle Prognosen",

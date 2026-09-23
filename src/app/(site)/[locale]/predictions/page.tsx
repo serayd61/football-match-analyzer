@@ -9,7 +9,9 @@ import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { applyFilters, parseFilters } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
-import PredictionCard from '@/components/site/PredictionCard';
+import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
+import { coverageById } from '@/lib/coverage/registry';
+import { sumBuckets, coverageStanding, coverageRisk, leagueSummary } from '@/lib/site/coverage-risk';
 import { RiskNote } from '@/components/site/Risk';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
@@ -56,13 +58,38 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
   const day = await listDay(date);
   const all = day.rows;
-  const scoped = scope === 'all' ? all : all.filter((r) => r.covered);
+  // Kapsam dışı maçlar artık ana ızgaraya karışmaz; aşağıda lig lig gruplanır (2026-09-23).
+  const scoped = all.filter((r) => r.covered);
   const inLeague = league ? scoped.filter((r) => r.league?.slug === league.slug) : scoped;
   // Denetim B10: filters.ts (arama/durum/hazır/sıralama) kart tasarımına geçişte sayfadan düşmüştü.
   const flt = parseFilters(searchParams);
   const rows = applyFilters(inLeague, flt);
   const filtersOn = !!flt.q || flt.status !== 'all' || flt.ready || flt.sort !== 'time';
   const uncoveredCount = all.filter((r) => !r.covered).length;
+  // Kapsam dışı: lig lig grupla, risk notunu lig dilim karnesinden ver (lib/site/coverage-risk).
+  const uncoveredRows = league ? [] : applyFilters(all.filter((r) => !r.covered && r.hasModel), flt);
+  const cov = uncoveredRows.length ? await coverageById() : new Map();
+  const outsideAll = sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats));
+  const groups = new Map<string, { name: string; ccode: string | null; n: number; meta: string; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
+  for (const p of uncoveredRows) {
+    const c = p.leagueId != null ? cov.get(p.leagueId) : undefined;
+    const standing = coverageStanding({
+      pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
+      over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
+      btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
+    }, c?.stats?.buckets ?? null, outsideAll);
+    const x = standing.find((r) => r.market === '1x2');
+    const note = !x || x.acc == null ? t('outsideThin')
+      : t(x.scope === 'league' ? 'outsideEvidence' : 'outsideEvidenceAll', { bucket: x.primary.bucket, won: x.won, n: x.n, acc: Math.round(x.acc * 100) });
+    const key = String(p.leagueId ?? p.leagueName);
+    if (!groups.has(key)) {
+      const sm = leagueSummary(c?.stats);
+      const meta = sm.x12 != null ? t('leagueMeta', { n: sm.n, x12: sm.x12, ou: sm.ou ?? '–', btts: sm.btts ?? '–' }) : t('leagueMetaThin', { n: sm.n });
+      groups.set(key, { name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, meta, rows: [] });
+    }
+    groups.get(key)!.rows.push({ p, outside: { risk: coverageRisk(standing), note } });
+  }
+  const uncoveredGroups = [...groups.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
 
   const dayLabel = (ymd: string) =>
     ymd === today ? tc('today') : ymd === addDays(today, 1) ? tc('tomorrow') : ymd === addDays(today, -1) ? tc('yesterday')
@@ -184,6 +211,25 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           </div>
           <p className="mt-6 text-[12px] text-s-muted">{t('footnote')}</p>
         </>
+      )}
+
+      {/* ── Kapsam dışı ligler: lig lig, risk notu dilim karnesinden ─────── */}
+      {uncoveredGroups.length > 0 && (
+        <details open={scope === 'all'} className="rule-t mt-8 pt-6">
+          <summary className="cursor-pointer text-[18px] font-semibold">{t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</summary>
+          <p className="mt-2 max-w-[68ch] text-[13px] text-s-muted">{t('uncoveredLead')}</p>
+          {uncoveredGroups.map((g) => (
+            <section key={g.name + (g.ccode ?? '')} className="mt-6">
+              <div className="rule-b-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-2">
+                <h2 className="text-[18px]">{g.name}{g.ccode && <span className="ml-2 text-[13px] font-normal text-s-muted">{g.ccode}</span>}</h2>
+                <span className="num text-[12px] text-s-muted">{g.meta}</span>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {g.rows.map(({ p, outside }) => <PredictionCard key={p.fixtureId} p={p} outside={outside} />)}
+              </div>
+            </section>
+          ))}
+        </details>
       )}
     </Page>
   );

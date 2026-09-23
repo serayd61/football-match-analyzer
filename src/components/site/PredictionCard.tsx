@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SitePrediction } from '@/lib/site/predictions';
-import { riskOf } from '@/lib/site/risk';
+import { riskOf, type Risk } from '@/lib/site/risk';
 import ProbBar from './ProbBar';
 import ConfidenceRing from './ConfidenceRing';
 import { RiskLabel } from './Risk';
@@ -22,7 +22,10 @@ const STATUS_KEY = {
 
 const fair = (p: number) => (p > 0 ? (1 / p).toFixed(2) : '–');
 
-export default async function PredictionCard({ p, locked = false, market }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null }) {
+/** Kapsam dışı maç: risk etiketi lig dilim karnesinden gelir (lib/site/coverage-risk), kart altına kanıt satırı düşer. */
+export interface OutsideRisk { risk: Risk; note: string | null }
+
+export default async function PredictionCard({ p, locked = false, market, outside = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null }) {
   const t = await getTranslations('v2.predictions');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
@@ -41,7 +44,7 @@ export default async function PredictionCard({ p, locked = false, market }: { p:
           <span className="truncate">{p.leagueName} · <LocalTime iso={p.kickoff} format="time" /></span>
           {showState && <StatusChip status={p.status} label={tc(STATUS_KEY[p.status])} />}
         </span>
-        {p.hasModel ? <RiskLabel risk={riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
+        {p.hasModel ? <RiskLabel risk={outside ? outside.risk : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
       </div>
       <div className="flex items-center justify-between gap-3">
         <h3 className="min-w-0 text-[22px] leading-[1.05]">
@@ -55,6 +58,7 @@ export default async function PredictionCard({ p, locked = false, market }: { p:
       ) : (
         <p className="text-[13px] text-s-muted">{t('pendingModel')}</p>
       )}
+      {outside?.note && <p className="text-[12px] text-s-muted">{outside.note}</p>}
       {p.hasModel && (
         <div className="rule-t-1 flex items-center justify-between gap-2 pt-2">
           {locked ? (

@@ -13,6 +13,8 @@ import { getOddsDrift } from '@/lib/site/odds-drift';
 import { getAfContext } from '@/lib/site/af-context';
 import { getPerformance } from '@/lib/site/performance';
 import { standingFor } from '@/lib/site/match-standing';
+import { coverageById } from '@/lib/coverage/registry';
+import { sumBuckets, coverageStanding, coverageRisk } from '@/lib/site/coverage-risk';
 import MatchStanding, { type StandingLabels } from '@/components/site/MatchStanding';
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
@@ -102,8 +104,16 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     afLeague ? getAfContext(p.fixtureId, p.homeName, p.awayName, p.kickoff).catch(() => null) : Promise.resolve(undefined),
     p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
   ]);
+  // Kapsam dışı lig: sinyal karnesi yerine sicilin dilim karnesi (2026-09-23).
+  const cov = !p.covered ? await coverageById() : null;
+  const covRow = cov && p.leagueId != null ? cov.get(p.leagueId) ?? null : null;
+  const outsideStanding = cov ? coverageStanding({
+    pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
+    over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
+    btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
+  }, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats))) : [];
   // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
-  const standing = perf ? standingFor({
+  const standing = cov ? outsideStanding : perf ? standingFor({
     leagueSlug: p.league?.slug ?? null, pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
     over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
     btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
@@ -116,7 +126,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     verdict: { strong: t('verdictStrong'), mid: t('verdictMid'), weak: t('verdictWeak'), thin: t('verdictThin') },
     evidence: (e) => e.kind === 'level' ? t('evidenceLevel', { bucket: e.bucket }) : e.kind === 'edge' ? t('evidenceEdge', { bucket: e.bucket }) : t('evidenceClash', { bucket: e.bucket }),
     scopeLeague: (won, n) => t('scopeLeague', { league: p.league?.name ?? p.leagueName, won, n, acc: Math.round((won / n) * 100) }),
-    scopeAll: (won, n) => t('scopeAll', { won, n, acc: Math.round((won / n) * 100) }),
+    scopeAll: (won, n) => t(p.covered ? 'scopeAll' : 'scopeOutside', { won, n, acc: Math.round((won / n) * 100) }),
     thin: t('standingThin'),
     model: t('standingModel'),
   };
@@ -175,8 +185,10 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   // the detailed tables follow below.
   const conf = p.confidence ?? p.confidenceRaw;
   const confPct = conf == null ? null : Math.round(conf * 100);
-  const loss = lossRate(conf);
-  const risk = riskOf(conf);
+  // Kapsam dışı: risk ve beklenen kayıp, beyaz liste eğrisinden değil lig dilim karnesinden.
+  const outsideAcc = !p.covered ? (outsideStanding.find((r) => r.market === '1x2')?.acc ?? null) : null;
+  const loss = p.covered ? lossRate(conf) : outsideAcc != null ? Math.round((1 - outsideAcc) * 100) : null;
+  const risk = p.covered ? riskOf(conf) : coverageRisk(outsideStanding);
   const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0;
   const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
   const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
@@ -286,8 +298,8 @@ export default async function MatchPage({ params }: { params: { locale: string; 
       {/* ── Bu maç karnemizde nerede ─────────────────────────────────── */}
       {!locked && standing.length > 0 && (
         <section className="rule-t mt-2 pt-8">
-          <SectionTitle title={t('secStanding')} meta={t('standingMeta', { n: perf?.overall.n ?? 0 })} />
-          <p className="mt-2 max-w-[68ch] text-sm text-s-muted">{t('standingLead')}</p>
+          <SectionTitle title={t('secStanding')} meta={p.covered ? t('standingMeta', { n: perf?.overall.n ?? 0 }) : t('standingMetaOutside', { n: covRow?.stats?.n ?? 0 })} />
+          <p className="mt-2 max-w-[68ch] text-sm text-s-muted">{p.covered ? t('standingLead') : t('standingLeadOutside')}</p>
           <div className="mt-6">
             <MatchStanding rows={standing} labels={standingLabels} />
           </div>

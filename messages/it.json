@@ -309,7 +309,10 @@
     "curveMeta": "Curva di calibrazione: {segment}, {n} partite, stimata il {date}.",
     "noCurve": "Nessuna curva di calibrazione caricata; il valore calibrato coincide con quello grezzo.",
     "rawVsCal": "Output grezzo del modello e probabilità calibrata sono cose diverse: il grezzo è ciò che il modello ha prodotto, il calibrato è ciò che i risultati passati dicono che quel valore ha davvero reso.",
-    "metaLocked": "{home} contro {away}, {league}: pronostico del modello, expected goals, risultati probabili e linee di handicap. Solo per i membri, primi 7 giorni gratis."
+    "metaLocked": "{home} contro {away}, {league}: pronostico del modello, expected goals, risultati probabili e linee di handicap. Solo per i membri, primi 7 giorni gratis.",
+    "scopeOutside": "campionati non coperti: {won}/{n} centrate ({acc}%)",
+    "standingMetaOutside": "{n} partite decise · registro a fasce del campionato",
+    "standingLeadOutside": "Questo campionato è fuori dalla copertura del modello. Per ogni mercato, la fascia di probabilità della scelta e la nostra percentuale storica in quella fascia per questo campionato (o su tutti i campionati non coperti se meno di 10 partite). Non una garanzia, un registro di ciò che è accaduto nella stessa situazione."
   },
   "results": {
     "title": "Risultati",
@@ -903,7 +906,14 @@
       "sortNote": "Alta confidenza non significa risultato garantito.",
       "filtered": "{shown} di {total} partite",
       "emptyFiltered": "Nessuna partita con questi filtri",
-      "emptyFilteredLead": "Rimuovi i filtri per vedere tutta la giornata."
+      "emptyFilteredLead": "Rimuovi i filtri per vedere tutta la giornata.",
+      "uncoveredTitle": "Fuori copertura del modello: {count} partite, {leagues} campionati",
+      "uncoveredLead": "Il modello non è calibrato su questi campionati; la previsione esiste ma non entra mai nella regola della schedina. L'etichetta di rischio viene dal registro a fasce degli ultimi 180 giorni del campionato: cosa è successo prima nella stessa fascia di probabilità. Se il registro del campionato è scarso, si usa il totale di tutti i campionati non coperti.",
+      "leagueMeta": "180 giorni: {n} partite · 1X2 {x12}% · Over {ou}% · Gol {btts}%",
+      "leagueMetaThin": "180 giorni: {n} partite · registro scarso",
+      "outsideEvidence": "Questo campionato, 1X2 {bucket}: {won}/{n} centrate ({acc}%)",
+      "outsideEvidenceAll": "Campionati non coperti, 1X2 {bucket}: {won}/{n} centrate ({acc}%)",
+      "outsideThin": "Partite insufficienti in questa fascia"
     },
     "match": {
       "back": "← Tutti i pronostici",
