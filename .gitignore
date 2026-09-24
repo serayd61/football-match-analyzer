@@ -40,3 +40,7 @@ engine/*_output.json
 next-env.d.ts
 .playwright-mcp/
 engine/.cache/
+
+# Python
+__pycache__/
+*.pyc
