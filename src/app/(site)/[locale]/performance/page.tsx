@@ -5,6 +5,8 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPerformance } from '@/lib/site/performance';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { strongBoard } from '@/lib/site/strong-markets';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { getWeeklyProgress } from '@/lib/site/weekly-progress';
 import { listResults } from '@/lib/site/results';
@@ -61,6 +63,9 @@ export default async function PerformancePage({ params: { locale }, searchParams
   unstable_setRequestLocale(locale);
   const t = await getTranslations('performance');
   const t2 = await getTranslations('v2.performance');
+  const tv = await getTranslations('v2.predictions');
+  const mktName: Record<string, string> = { x12: tv('mkt1x2'), ou25: tv('mktOver'), under25: tv('mktUnder'), btts: tv('mktBtts') };
+  const strong = strongBoard(await loadCoverage().catch(() => []), 5);
   const tc = await getTranslations('common');
   const tm = await getTranslations('match');
   const f = await getFormatter();
@@ -290,6 +295,38 @@ export default async function PerformancePage({ params: { locale }, searchParams
           </div>
           <p className="mt-2 text-xs text-s-muted">{t('leaguesNote')}</p>
         </section>
+
+        {/* Güçlü pazarlar (24 Eyl): sicil stats.strong, kapsam dışı dahil */}
+        {strong.length > 0 && (
+          <section id="strong">
+            <SectionTitle title={t('secStrong')} meta={t('strongMeta')} />
+            <div className="overflow-x-auto">
+            <table className="mt-2 w-full text-sm">
+              <thead>
+                <tr className="border-b border-s-line text-left">
+                  <th className={th}>{t('market')}</th>
+                  <th className={th}>{tc('league')}</th>
+                  <th className={`${th} text-right`}>{t('colZone')}</th>
+                  <th className={`${th} text-right`}>{t('record')}</th>
+                  <th className={`${th} text-right`}>{t('hitRate')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {strong.flatMap((b) => b.rows.map((l, i) => (
+                  <tr key={`${b.market}-${l.leagueId}`} className="border-b border-s-line">
+                    <td className="py-1.5">{i === 0 ? mktName[b.market] : ''}</td>
+                    <td className="py-1.5">{l.name}{l.ccode && <span className="ml-1.5 text-xs text-s-muted">{l.ccode}</span>}</td>
+                    <td className="num py-1.5 text-right text-s-muted">≥{Math.round(l.from * 100)}%</td>
+                    <td className="num py-1.5 text-right">{l.won}/{l.n}</td>
+                    <td className="num py-1.5 text-right">{Math.round(l.acc * 100)}%</td>
+                  </tr>
+                )))}
+              </tbody>
+            </table>
+            </div>
+            <p className="mt-2 text-xs text-s-muted">{t('strongNote')}</p>
+          </section>
+        )}
 
         {/* By market + ROI */}
         <section className="space-y-8">

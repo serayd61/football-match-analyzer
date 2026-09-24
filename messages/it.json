@@ -426,7 +426,11 @@
     "signalsEdge": "scarto rispetto al mercato",
     "signalsClash": "Divergenza 1X2 (sopra soglia)",
     "signalsAll": "Tutti i campionati",
-    "signalsNote": "Come leggerlo (al 2026-09-12): nell'1X2 la percentuale di successo cala al crescere dello scarto, quindi un modello che si allontana dal mercato non ha ragione; nei mercati gol funziona il livello: Over 2,5 e Goal sopra il 60% vincono, senza bisogno di scarto. Le tabelle dello scarto includono solo partite con quote registrate (per Over/Under non viene salvata la quota del bookmaker). I pronostici del giorno si basano su questo bilancio. Tabelle di divergenza: scarto assoluto (punti percentuali) tra la scelta 1X2 del modello e il mercato senza margine, solo per Over 2,5 ≥ 65% e GG Sì ≥ 60%. Al 13 settembre i mercati gol colgono nettamente meglio con divergenza ≥10 punti (Over 13/13, GG 22/24), ma il campione è per lo più Eredivisie; entra nella regola quando si accumulano dati fuori dall'Eredivisie."
+    "signalsNote": "Come leggerlo (al 2026-09-12): nell'1X2 la percentuale di successo cala al crescere dello scarto, quindi un modello che si allontana dal mercato non ha ragione; nei mercati gol funziona il livello: Over 2,5 e Goal sopra il 60% vincono, senza bisogno di scarto. Le tabelle dello scarto includono solo partite con quote registrate (per Over/Under non viene salvata la quota del bookmaker). I pronostici del giorno si basano su questo bilancio. Tabelle di divergenza: scarto assoluto (punti percentuali) tra la scelta 1X2 del modello e il mercato senza margine, solo per Over 2,5 ≥ 65% e GG Sì ≥ 60%. Al 13 settembre i mercati gol colgono nettamente meglio con divergenza ≥10 punti (Over 13/13, GG 22/24), ma il campione è per lo più Eredivisie; entra nella regola quando si accumulano dati fuori dall'Eredivisie.",
+    "secStrong": "Mercati forti",
+    "strongMeta": "campionato × mercato · ≥15 partite · ≥70% · 180 giorni",
+    "strongNote": "Campionati non coperti inclusi; partite femminili, giovanili, amichevoli e di coppa non vengono messe in vetrina. Un campionato esce dalla lista all'aggiornamento del lunedì se scende sotto la soglia.",
+    "colZone": "Zona"
   },
   "leagues": {
     "title": "Campionati",
@@ -745,7 +749,15 @@
     "picksFair": "equa",
     "picksBook": "bookmaker",
     "picksLocked": "Oggi {n} pronostici pronti",
-    "picksLockedLead": "I pronostici del giorno sono per i membri. Con la registrazione 7 giorni gratis."
+    "picksLockedLead": "I pronostici del giorno sono per i membri. Con la registrazione 7 giorni gratis.",
+    "strongTitle": "Mercati forti oggi",
+    "strongMeta": "registro campionato-mercato ≥70% · 180 giorni",
+    "strongEmpty": "Oggi nessuna partita cade in una zona forte.",
+    "strongNote": "Una coppia campionato-mercato è 'forte' se ha centrato ≥70% su almeno 15 partite negli ultimi 180 giorni; una riga compare quando la scelta del modello cade in quella zona. Campionati non coperti inclusi. Non una garanzia, un registro di ciò che è accaduto nella stessa situazione.",
+    "colRecord": "Registro campionato",
+    "boardTitle": "Registro mercati",
+    "boardLead": "Campionati più forti per mercato, 180 giorni. Aggiornato il lunedì.",
+    "boardAll": "Tabella completa nel registro →"
   },
   "paywall": {
     "expiredTitle": "La tua prova di 7 giorni è finita",

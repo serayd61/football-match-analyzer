@@ -426,7 +426,11 @@
     "signalsEdge": "piyasaya karşı fark",
     "signalsClash": "1X2 uyuşmazlığı (eşik üstü)",
     "signalsAll": "Tüm ligler",
-    "signalsNote": "Okuma kılavuzu (2026-09-12 itibarıyla): 1X2'de fark büyüdükçe isabet düşer, yani piyasadan uzaklaşan model haklı çıkmıyor; gol pazarlarında ise seviye çalışır: Üst 2,5 ve karşılıklı golde %60 üstü seçimler tutar, fark şartı gerekmez. Fark tabloları yalnız oran kaydı olan maçları içerir (Üst/Alt için bahisçi oranı kaydedilmiyor). Günün seçimleri bu karneye göre kurulmuştur. Uyuşmazlık tabloları: modelin 1X2 seçimi ile marjsız piyasa arasındaki mutlak fark (yüzde puan), yalnız Üst 2,5 ≥ %65 ve KG Var ≥ %60 seçimlerinde. 13 Eylül itibarıyla ≥10 puan uyuşmazlıkta gol pazarları belirgin daha iyi tutuyor (Üst 13/13, KG 22/24), ancak örneklemin çoğu Eredivisie; kurala girmesi için Eredivisie dışı birikim bekleniyor."
+    "signalsNote": "Okuma kılavuzu (2026-09-12 itibarıyla): 1X2'de fark büyüdükçe isabet düşer, yani piyasadan uzaklaşan model haklı çıkmıyor; gol pazarlarında ise seviye çalışır: Üst 2,5 ve karşılıklı golde %60 üstü seçimler tutar, fark şartı gerekmez. Fark tabloları yalnız oran kaydı olan maçları içerir (Üst/Alt için bahisçi oranı kaydedilmiyor). Günün seçimleri bu karneye göre kurulmuştur. Uyuşmazlık tabloları: modelin 1X2 seçimi ile marjsız piyasa arasındaki mutlak fark (yüzde puan), yalnız Üst 2,5 ≥ %65 ve KG Var ≥ %60 seçimlerinde. 13 Eylül itibarıyla ≥10 puan uyuşmazlıkta gol pazarları belirgin daha iyi tutuyor (Üst 13/13, KG 22/24), ancak örneklemin çoğu Eredivisie; kurala girmesi için Eredivisie dışı birikim bekleniyor.",
+    "secStrong": "Güçlü pazarlar",
+    "strongMeta": "lig × pazar · ≥15 maç · ≥%70 · 180 gün",
+    "strongNote": "Kapsam dışı ligler dahil; kadın, altyapı, hazırlık ve kupa maçları vitrine girmez. Eşik altına düşen lig pazartesi yenilemesinde listeden çıkar.",
+    "colZone": "Bölge"
   },
   "leagues": {
     "title": "Ligler",
@@ -745,7 +749,15 @@
     "picksFair": "adil",
     "picksBook": "bahisçi",
     "picksLocked": "Bugün {n} seçim hazır",
-    "picksLockedLead": "Günün seçimleri üyelere özeldir. Kayıt sonrası 7 gün ücretsiz görürsünüz."
+    "picksLockedLead": "Günün seçimleri üyelere özeldir. Kayıt sonrası 7 gün ücretsiz görürsünüz.",
+    "strongTitle": "Bugün güçlü pazarlar",
+    "strongMeta": "lig-pazar karnesi ≥%70 · 180 gün",
+    "strongEmpty": "Bugün güçlü bölgeye düşen maç yok.",
+    "strongNote": "Bir lig-pazar çifti son 180 günde en az 15 maçta ≥%70 tuttuysa 'güçlü' sayılır; satır, modelin seçimi o bölgeye düşünce girer. Kapsam dışı ligler dahil. Garanti değil, aynı durumdaki maçların kaydı.",
+    "colRecord": "Lig karnesi",
+    "boardTitle": "Pazar karnesi",
+    "boardLead": "Pazar başına en güçlü ligler, 180 gün. Pazartesi yenilenir.",
+    "boardAll": "Tam tablo karnede →"
   },
   "paywall": {
     "expiredTitle": "7 günlük deneme süren doldu",
