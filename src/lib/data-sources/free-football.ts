@@ -4,6 +4,8 @@
 // ============================================================================
 
 const HOST = 'free-api-live-football-data.p.rapidapi.com';
+/** Akış isteği başına üst sınır (ms). Normal yanıt ~1 sn; 8 sn üstü sağlayıcı arızasıdır. */
+export const FF_TIMEOUT_MS = Math.max(2000, Number(process.env.FOOTBALL_API_TIMEOUT_MS) || 8000);
 const BASE = `https://${HOST}`;
 // Anahtar zinciri (2026-09-17): FOOTBALL_API_KEY RapidAPI'de geçersiz kaldı
 // ("Invalid API key"), site 14 Eyl 07:00 UTC'den beri fikstür/oran alamadı,
@@ -31,6 +33,10 @@ async function ffFetch(path: string): Promise<any | null> {
       res = await fetch(`${BASE}${path}`, {
         headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': KEYS[keyIdx] },
         next: { revalidate: 0 },
+        // 2026-09-23: RapidAPI asılı kalınca (502/hiç yanıt yok) her sayfa ve cron Vercel
+        // zaman aşımına düştü (30–300 sn). Sert sınır: akış cevap vermiyorsa hızlı düş,
+        // sayfa veritabanındaki tahminlerle açılsın, settle "kaynak yok" deyip ertelesin.
+        signal: AbortSignal.timeout(FF_TIMEOUT_MS),
       });
       if (res.status !== 401 && res.status !== 403) break;
       console.error(`[free-football] ${path} HTTP ${res.status} (anahtar #${keyIdx + 1} geçersiz)`);
