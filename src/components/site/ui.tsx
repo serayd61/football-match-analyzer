@@ -11,7 +11,7 @@ export function PageTitle({ eyebrow, title, lead, aside }: { eyebrow?: string; t
     <div className="rule-b flex flex-wrap items-end justify-between gap-4 pb-4 pt-8">
       <div className="max-w-2xl">
         {eyebrow && <p className="kicker mb-2">{eyebrow}</p>}
-        <h1 className="text-[32px] sm:text-[40px]">{title}</h1>
+        <h1 className="text-[32px] sm:text-[40px] hyphens-auto [overflow-wrap:anywhere]">{title}</h1>
         {lead && <p className="mt-2 text-[14px] text-s-muted">{lead}</p>}
       </div>
       {aside && <div className="shrink-0">{aside}</div>}

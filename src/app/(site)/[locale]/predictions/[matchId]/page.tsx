@@ -80,7 +80,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
       <Page>
         <div className="rule-b pb-4 pt-8">
           <p className="kicker">{p.leagueName}</p>
-          <h1 className="mt-2 text-[32px] sm:text-[40px]">{p.homeName} <span className="text-s-muted">{t2('vs')}</span> {p.awayName}</h1>
+          <h1 className="mt-2 text-[32px] sm:text-[40px] hyphens-auto [overflow-wrap:anywhere]">{p.homeName} <span className="text-s-muted">{t2('vs')}</span> {p.awayName}</h1>
         </div>
         <Paywall />
       </Page>
