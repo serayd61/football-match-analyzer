@@ -39,3 +39,7 @@ engine/*_output.json
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+
+# Python
+__pycache__/
+*.pyc

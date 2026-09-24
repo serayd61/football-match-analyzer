@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { verifyUnsubscribeToken } from '@/lib/campaign';
+import { escapeHtml } from '@/lib/api/html';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,6 @@ export async function GET(request: NextRequest) {
 
   return page(
     'Abonelikten çıktın · Unsubscribed',
-    `<strong>${email}</strong> artık pazarlama e-postası almayacak. Fikrini değiştirirsen footballanalytics.pro'dan tekrar başlayabilirsin.<br/><br/>You will no longer receive marketing emails.`
+    `<strong>${escapeHtml(email)}</strong> artık pazarlama e-postası almayacak. Fikrini değiştirirsen footballanalytics.pro'dan tekrar başlayabilirsin.<br/><br/>You will no longer receive marketing emails.`
   );
 }

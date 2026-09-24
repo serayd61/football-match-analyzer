@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { serviceOnlyGuard } from '@/lib/api/dev-only';
+import { escapeHtml } from '@/lib/api/html';
 
 let _sb: SupabaseClient | null = null;
 function getSupabase() {
@@ -10,6 +12,8 @@ const supabase = new Proxy({} as SupabaseClient, { get(_, p) { return (getSupaba
 
 // Email gönderimi için Resend API veya SMTP kullanılabilir
 // Şimdilik Supabase'e kayıt + webhook bildirimi kullanıyoruz
+
+const ALLOWED_TYPES = ['general', 'bug', 'feature', 'complaint', 'praise'];
 
 interface ContactBody {
   name: string;
@@ -22,8 +26,15 @@ interface ContactBody {
 
 export async function POST(request: Request) {
   try {
-    const body: ContactBody = await request.json();
-    const { name, email, subject, type, message, rating } = body;
+    const body = (await request.json()) as Partial<ContactBody>;
+    const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+    const name = str(body.name, 100);
+    const email = str(body.email, 254);
+    const subject = str(body.subject, 200).replace(/[\r\n]+/g, ' ');
+    const message = str(body.message, 5000);
+    const type = ALLOWED_TYPES.includes(body.type as string) ? (body.type as string) : 'general';
+    const r = Number(body.rating);
+    const rating = Number.isInteger(r) && r >= 1 && r <= 5 ? r : 0;
 
     // Validation
     if (!name || !email || !subject || !message) {
@@ -88,7 +99,7 @@ export async function POST(request: Request) {
             <div style="padding: 32px; color: #e2e8f0;">
               <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                 <h2 style="color: #60a5fa; margin: 0 0 16px 0; font-size: 18px;">${typeEmoji} ${type === 'general' ? 'Genel Soru' : type === 'bug' ? 'Hata Bildirimi' : type === 'feature' ? 'Özellik Önerisi' : type === 'complaint' ? 'Şikayet' : 'Övgü'}</h2>
-                <p style="margin: 0; color: #94a3b8;"><strong>Konu:</strong> ${subject}</p>
+                <p style="margin: 0; color: #94a3b8;"><strong>Konu:</strong> ${escapeHtml(subject)}</p>
               </div>
               
               <table style="width: 100%; border-collapse: collapse;">
@@ -97,7 +108,7 @@ export async function POST(request: Request) {
                     <span style="color: #94a3b8;">👤 Gönderen</span>
                   </td>
                   <td style="padding: 12px 0; border-bottom: 1px solid #334155; text-align: right;">
-                    <span style="color: #f1f5f9; font-weight: 600;">${name}</span>
+                    <span style="color: #f1f5f9; font-weight: 600;">${escapeHtml(name)}</span>
                   </td>
                 </tr>
                 <tr>
@@ -105,7 +116,7 @@ export async function POST(request: Request) {
                     <span style="color: #94a3b8;">📧 E-posta</span>
                   </td>
                   <td style="padding: 12px 0; border-bottom: 1px solid #334155; text-align: right;">
-                    <a href="mailto:${email}" style="color: #60a5fa; text-decoration: none;">${email}</a>
+                    <a href="mailto:${encodeURIComponent(email)}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(email)}</a>
                   </td>
                 </tr>
                 <tr>
@@ -128,11 +139,11 @@ export async function POST(request: Request) {
               
               <div style="margin-top: 24px; background: #1e293b; border-radius: 12px; padding: 20px;">
                 <h3 style="color: #f1f5f9; margin: 0 0 12px 0; font-size: 16px;">📝 Mesaj</h3>
-                <p style="color: #cbd5e1; line-height: 1.6; margin: 0; white-space: pre-wrap;">${message}</p>
+                <p style="color: #cbd5e1; line-height: 1.6; margin: 0; white-space: pre-wrap;">${escapeHtml(message)}</p>
               </div>
               
               <div style="margin-top: 24px; text-align: center;">
-                <a href="mailto:${email}?subject=Re: ${subject}" 
+                <a href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Re: ' + subject)}" 
                    style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600;">
                   ↩️ Yanıtla
                 </a>
@@ -214,10 +225,14 @@ export async function POST(request: Request) {
 
 // GET endpoint - Admin için mesajları listele
 export async function GET(request: Request) {
+  // Mesajlar ad/e-posta içerir: yalnız servis sırrıyla okunur (önceden herkese açıktı).
+  const denied = serviceOnlyGuard(request);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const parsed = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 200) : 50;
 
     let query = supabase
       .from('contact_messages')
