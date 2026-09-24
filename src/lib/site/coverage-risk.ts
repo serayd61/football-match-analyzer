@@ -9,7 +9,7 @@
 // tüm liglerin toplamı esas alınır; risk o dilimin geçmiş isabetinden gelir.
 // Müşteriye gösterilen şey bir garanti değil, aynı durumdaki maçların kaydı.
 // ============================================================================
-import { bucketOf, BUCKETS, type LeagueBuckets, type BucketCell, type LeagueStats } from '@/lib/coverage/rules';
+import { bucketOf, BUCKETS, type LeagueBuckets, type BucketCell, type LeagueStats, type StrongMarket } from '@/lib/coverage/rules';
 import { finishStanding, MIN_EVIDENCE, type MarketStanding, type StandingEvidence } from './match-standing';
 import { RISK_LOW, RISK_MEDIUM, type Risk } from './risk';
 
@@ -81,3 +81,29 @@ export function leagueSummary(stats: LeagueStats | null | undefined): LeagueSumm
 }
 
 export const BUCKET_LABELS = BUCKETS;
+
+// ---- Güçlü pazar (24 Eyl): ligin ≥15 maç / ≥%70 tutan üst dilimi -------------
+export interface StrongPick { market: StrongMarket['market']; selection: '1' | 'X' | '2' | 'over' | 'under' | 'yes'; p: number; sm: StrongMarket }
+
+/** Maçın seçimi ligin güçlü pazarının eşik bölgesine düşüyorsa onu döner (ilk uyan; sıra: gol pazarları önce). */
+export function strongPickFor(input: CoverageStandingInput, strong: StrongMarket[] | undefined): StrongPick | null {
+  if (!strong?.length) return null;
+  const order: StrongMarket['market'][] = ['ou25', 'under25', 'btts', 'x12'];
+  for (const m of order) {
+    const sm = strong.find((x) => x.market === m); if (!sm) continue;
+    if (m === 'ou25' && input.over?.pick === 'over' && input.over.pRaw >= sm.from) return { market: m, selection: 'over', p: input.over.pRaw, sm };
+    if (m === 'under25' && input.over?.pick === 'under' && 1 - input.over.pRaw >= sm.from) return { market: m, selection: 'under', p: 1 - input.over.pRaw, sm };
+    if (m === 'btts' && input.btts?.pick === 'yes' && input.btts.pRaw >= sm.from) return { market: m, selection: 'yes', p: input.btts.pRaw, sm };
+    if (m === 'x12' && input.pick) {
+      const p = input.pick === '1' ? input.pHome : input.pick === '2' ? input.pAway : input.pDraw;
+      if (p >= sm.from) return { market: m, selection: input.pick, p, sm };
+    }
+  }
+  return null;
+}
+
+/** Güçlü pazara düşen seçimde risk o pazarın lig karnesinden gelir. */
+export function strongRisk(sp: StrongPick): Risk {
+  const acc = sp.sm.won / sp.sm.n;
+  return acc >= RISK_LOW ? 'low' : acc >= RISK_MEDIUM ? 'medium' : 'high';
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sumBuckets, coverageStanding, coverageRisk, leagueSummary } from '@/lib/site/coverage-risk';
+import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import type { LeagueStats } from '@/lib/coverage/rules';
 
 const stats = (buckets: LeagueStats['buckets'], n = 50): LeagueStats => ({ n, x12: { n: 40, won: 24, ll: null }, ouHi: { n: 20, won: 15 }, bttsHi: { n: 5, won: 4 }, buckets, lastKickoff: null, windowDays: 180 });
@@ -27,4 +27,16 @@ test('coverageStanding uses the league cell at ≥10 matches, else the out-of-co
 test('leagueSummary hides thin markets', () => {
   assert.deepEqual(leagueSummary(stats({ x12: {}, ou25: {}, under25: {}, btts: {} })), { n: 50, x12: 60, ou: 75, btts: null });
   assert.deepEqual(leagueSummary(null), { n: 0, x12: null, ou: null, btts: null });
+});
+
+test('strongPickFor prefers goal markets and requires the pick to sit in the strong zone', () => {
+  const strong = [{ market: 'btts' as const, from: 0.7, n: 24, won: 17 }, { market: 'x12' as const, from: 0.7, n: 20, won: 15 }];
+  const sp = strongPickFor({ pick: '1', pHome: 0.75, pDraw: 0.15, pAway: 0.1, over: { pick: 'over', pRaw: 0.6 }, btts: { pick: 'yes', pRaw: 0.72 } }, strong)!;
+  assert.deepEqual([sp.market, sp.selection, sp.p], ['btts', 'yes', 0.72]);
+  assert.equal(strongRisk(sp), 'medium');   // 17/24 = 71%
+  const x = strongPickFor({ pick: '1', pHome: 0.75, pDraw: 0.15, pAway: 0.1, over: null, btts: { pick: 'yes', pRaw: 0.55 } }, strong)!;
+  assert.deepEqual([x.market, x.selection], ['x12', '1']);
+  assert.equal(strongRisk(x), 'low');       // 15/20 = 75%
+  assert.equal(strongPickFor({ pick: '2', pHome: 0.3, pDraw: 0.3, pAway: 0.4, over: null, btts: null }, strong), null);
+  assert.equal(strongPickFor({ pick: '1', pHome: 0.9, pDraw: 0.05, pAway: 0.05, over: null, btts: null }, []), null);
 });

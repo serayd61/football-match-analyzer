@@ -312,7 +312,8 @@
     "metaLocked": "{home} – {away}, {league}: model tahmini, beklenen gol, olası skorlar ve handikap çizgileri. Üye hesaplarına özel, ilk 7 gün ücretsiz.",
     "scopeOutside": "kapsam dışı ligler: {won}/{n} tuttu (%{acc})",
     "standingMetaOutside": "{n} sonuçlanmış maç · lig dilim karnesi",
-    "standingLeadOutside": "Bu lig model kapsamı dışında. Her pazar için seçimin düştüğü olasılık dilimini ve o dilimde bu ligde (10'dan az maç varsa kapsam dışı tüm liglerde) geçmiş isabetimizi gösterir. Garanti değil, aynı durumdaki maçların kaydı."
+    "standingLeadOutside": "Bu lig model kapsamı dışında. Her pazar için seçimin düştüğü olasılık dilimini ve o dilimde bu ligde (10'dan az maç varsa kapsam dışı tüm liglerde) geçmiş isabetimizi gösterir. Garanti değil, aynı durumdaki maçların kaydı.",
+    "strongTag": "güçlü pazar: {market}"
   },
   "results": {
     "title": "Sonuçlar",
@@ -913,7 +914,13 @@
       "leagueMetaThin": "180 gün: {n} maç · karne ince",
       "outsideEvidence": "Bu ligde 1X2 {bucket}: {won}/{n} tuttu (%{acc})",
       "outsideEvidenceAll": "Kapsam dışı liglerde 1X2 {bucket}: {won}/{n} tuttu (%{acc})",
-      "outsideThin": "Bu dilimde yeterli maç yok"
+      "outsideThin": "Bu dilimde yeterli maç yok",
+      "strongLeague": "Güçlü pazar: {market} ≥%{from} · {won}/{n} tuttu (%{acc})",
+      "strongPick": "Güçlü pazar · {market} %{p} · bu ligde {won}/{n} (%{acc})",
+      "mkt1x2": "1X2",
+      "mktOver": "Üst 2,5",
+      "mktUnder": "Alt 2,5",
+      "mktBtts": "KG Var"
     },
     "match": {
       "back": "← Tüm tahminler",
