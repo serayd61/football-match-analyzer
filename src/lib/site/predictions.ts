@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
 import { db, REVALIDATE } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
+import { hiddenLeagueIds } from '@/lib/coverage/registry';
 import { zonedStartOfDay, addDays } from './time';
 import { pickOfficial, officialFilter, resolveOfficialVersion, OFFICIAL_MODEL_VERSION } from './official';
 import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
@@ -261,7 +262,8 @@ export async function fetchPredictionsForDay(ymd: string): Promise<SitePredictio
       .limit(600);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    const rows = parseRows(data, official);
+    const hidden = await hiddenLeagueIds(); // sicilde 'hidden': sinyalsiz lig, sitede yok (2026-09-24)
+    const rows = parseRows(data, official).filter((r) => r.league_id == null || !hidden.has(Number(r.league_id)));
     const book = await latestGoalBook(rows.map((r) => r.fixture_id));
     return rows.map((r) => mapRow(r, ctx, Date.now(), book.get(r.fixture_id) ?? null));
 }
@@ -301,6 +303,7 @@ export const getPrediction = unstable_cache(
     if (error) throw new Error(error.message);
     const rows = parseRows(data, official);
     if (!rows.length) return null;
+    if (rows[0].league_id != null && (await hiddenLeagueIds()).has(Number(rows[0].league_id))) return null; // gizli lig → 404
     const ctx = await loadContext();
     const book = await latestGoalBook([fixtureId]);
     return mapRow(rows[0], ctx, Date.now(), book.get(fixtureId) ?? null);

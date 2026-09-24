@@ -43,3 +43,8 @@ export function invalidateCoverage() { try { revalidateTag(COVERAGE_TAG); } catc
 export async function coverageById(): Promise<Map<number, CoverageRow>> {
   return new Map((await loadCoverage()).map((r) => [Number(r.league_id), r]));
 }
+
+/** Gizli ligler: sitede ve Tier-B'de gösterilmez (1X2 log-loss rastgeleden kötü ya da admin kararı). */
+export async function hiddenLeagueIds(): Promise<Set<number>> {
+  return new Set((await loadCoverage()).filter((r) => r.status === 'hidden').map((r) => Number(r.league_id)));
+}

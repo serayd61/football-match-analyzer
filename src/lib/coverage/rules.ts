@@ -6,7 +6,22 @@
 // Eşikler 12 Eyl backtest'i ve 20 Eyl λ analizinden; n ≥ 40 altında öneri yok.
 // ============================================================================
 
-export type CoverageStatus = 'whitelist' | 'observe' | 'excluded';
+export type CoverageStatus = 'whitelist' | 'observe' | 'excluded' | 'hidden';
+
+/**
+ * Gizleme kapısı (24 Eyl): kapsam dışı ligde 1X2 log-loss rastgele tahminden (ln 3 =
+ * 1,0986) kötüyse model o ligde sinyalsiz → sitede/Tier-B'de gösterilmez. Histerezis:
+ * LL < 1,05'e inince geri açılır. Motor tahmin üretmeye devam eder (karne birikir).
+ * Neden: El Salvador Apertura 9/21, LL 1,12; aynı durumda 55 lig (23 Eyl taraması).
+ */
+export const HIDE_GATE = { minN: 20, hideLl: Math.log(3), unhideLl: 1.05 } as const;
+export function hideDecision(status: CoverageStatus, s: LeagueStats, g = HIDE_GATE): 'hide' | 'unhide' | null {
+  const ll = s.x12.ll;
+  if (ll == null || s.x12.n < g.minN) return null;
+  if (status === 'excluded' && ll >= g.hideLl) return 'hide';
+  if (status === 'hidden' && ll < g.unhideLl) return 'unhide';
+  return null;
+}
 
 export interface BucketCell { n: number; won: number }
 /** Olasılık dilimi karnesi (23 Eyl): pazar → dilim etiketi → n/won. Etiketler BUCKETS'tan. */

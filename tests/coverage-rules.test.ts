@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, COVERAGE_GATE } from '@/lib/coverage/rules';
+import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, hideDecision, COVERAGE_GATE } from '@/lib/coverage/rules';
 
 const row = (o: Partial<Parameters<typeof aggregateLeague>[0][number]>) => ({ p_over25: null, p_btts_yes: null, home_score: 1, away_score: 1, correct: null, ll_1x2: null, kickoff: '2026-09-01T12:00:00Z', ...o });
 
@@ -54,4 +54,15 @@ test('bucketOf labels and aggregateLeague fills per-market buckets', () => {
   assert.deepEqual(s.buckets!.ou25['≥85'], { n: 1, won: 1 });
   assert.deepEqual(s.buckets!.under25['≥75'], { n: 1, won: 1 });   // 1-0.2 = 0.8 → Alt ✓ (1-1)
   assert.deepEqual(s.buckets!.btts['≥80'], { n: 1, won: 1 });
+});
+
+test('hideDecision: excluded league with worse-than-random 1X2 log-loss is hidden at n>=20; hidden league returns when LL < 1.05', () => {
+  const st = (n: number, ll: number | null) => ({ n, x12: { n, won: 0, ll }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, lastKickoff: null, windowDays: 180 });
+  assert.equal(hideDecision('excluded', st(21, 1.12)), 'hide');
+  assert.equal(hideDecision('excluded', st(19, 1.5)), null);      // örnek küçük
+  assert.equal(hideDecision('excluded', st(50, 1.05)), null);
+  assert.equal(hideDecision('hidden', st(50, 1.07)), null);       // histerezis
+  assert.equal(hideDecision('hidden', st(50, 1.04)), 'unhide');
+  assert.equal(hideDecision('whitelist', st(50, 1.5)), null);     // beyaz liste kuralı ayrı (demote)
+  assert.equal(hideDecision('excluded', st(50, null)), null);
 });

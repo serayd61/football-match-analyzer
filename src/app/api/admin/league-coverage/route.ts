@@ -41,7 +41,7 @@ export async function GET() {
 }
 
 const Body = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('set'), leagueId: z.number().int(), status: z.enum(['whitelist', 'observe', 'excluded']), tier: z.number().int().min(0).max(9).optional(), reason: z.string().max(500).optional(), note: z.string().max(2000).optional(), reviewAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+  z.object({ action: z.literal('set'), leagueId: z.number().int(), status: z.enum(['whitelist', 'observe', 'excluded', 'hidden']), tier: z.number().int().min(0).max(9).optional(), reason: z.string().max(500).optional(), note: z.string().max(2000).optional(), reviewAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
   z.object({ action: z.literal('reject'), leagueId: z.number().int(), proposalType: z.enum(['promote', 'demote', 'watch']).optional(), note: z.string().max(2000).optional() }),
   z.object({ action: z.literal('refresh') }),
 ]);
