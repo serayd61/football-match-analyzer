@@ -11,7 +11,9 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "generate-icons": "node scripts/generate-icons.js",
     "backtest": "tsx scripts/backtest-dc.ts",
-    "backtest:blend": "tsx scripts/backtest-blend.ts"
+    "backtest:blend": "tsx scripts/backtest-blend.ts",
+    "e2e": "playwright test",
+    "e2e:prod": "E2E_BASE_URL=https://footballanalytics.pro playwright test"
   },
   "dependencies": {
     "@next/third-parties": "^14.2.35",
@@ -41,6 +43,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
