@@ -5,7 +5,7 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
-import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, getCalibrationMeta, type SitePrediction } from '@/lib/site/predictions';
+import { getPrediction, getMarketSnapshot, getHeadToHead, getTeamForm, getCalibrationMeta, type SitePrediction, getTeamRecord } from '@/lib/site/predictions';
 import { StatusChip } from '@/components/site/PredictionTable';
 import { scoreMatrix, outcomeProbs, overProb, bttsProb, topScores, handicapTable, fairHandicap, handicapAt } from '@/lib/site/poisson';
 import { getMarketBook } from '@/lib/site/markets';
@@ -13,6 +13,7 @@ import { getOddsDrift } from '@/lib/site/odds-drift';
 import { getAfContext } from '@/lib/site/af-context';
 import { getPerformance } from '@/lib/site/performance';
 import { standingFor } from '@/lib/site/match-standing';
+import { teamVerdict, fmtCell } from '@/lib/site/team-record';
 import { coverageById } from '@/lib/coverage/registry';
 import { sumBuckets, coverageStanding, coverageRisk, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import MatchStanding, { type StandingLabels } from '@/components/site/MatchStanding';
@@ -93,6 +94,10 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   // past match never lists itself or later games as "form" (denetim 2026-09-05).
   // Eksikler + kadro yalnız API-Football'a eşlenen liglerde (2026-09-14); undefined → bölüm gizli.
   const afLeague = !!(p.league && AF_LEAGUE[p.league.slug]);
+  const [recHome, recAway] = await Promise.all([
+    p.homeId ? getTeamRecord(p.homeId, p.kickoff) : Promise.resolve(null),
+    p.awayId ? getTeamRecord(p.awayId, p.kickoff) : Promise.resolve(null),
+  ]);
   const [market, book, drift, h2h, formHome, formAway, curves, squad, perf] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
@@ -479,7 +484,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
           <section>
             <SectionTitle title={t('secContext')} meta={<>{t('formMeta')} · {t('formAsOf')}</>} />
             <div className="mt-4 space-y-4 text-sm">
-              {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId) }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId) }].map((team) => (
+              {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId), rec: recHome }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId), rec: recAway }].map((team) => (
                 <div key={team.name}>
                   <div className="flex items-baseline justify-between">
                     <span className="font-medium">{team.name}</span>
@@ -493,6 +498,18 @@ export default async function MatchPage({ params }: { params: { locale: string; 
                   <div className="mt-1.5">
                     {team.items.length ? <FormStrip items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
                   </div>
+                  {/* Takım karnesi (24 Eyl): bu takımın maçlarında bizim seçimlerimiz; ≥5 maç, kayıt biçiminde */}
+                  {team.rec && (
+                    <p className="mt-1.5 text-xs text-s-muted">
+                      <span className="font-medium text-s-ink">{t('teamRecTitle')}</span>
+                      {team.rec.x12.n >= 5 ? (
+                        <>
+                          {' '}<span className={`rounded-[2px] px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${{ strong: 'bg-s-win text-white', mid: 'bg-s-raised text-s-ink', weak: 'bg-s-loss text-white', thin: 'border border-s-line' }[teamVerdict(team.rec.x12)]}`}>{t(`verdict${teamVerdict(team.rec.x12) === 'strong' ? 'Strong' : teamVerdict(team.rec.x12) === 'weak' ? 'Weak' : teamVerdict(team.rec.x12) === 'mid' ? 'Mid' : 'Thin'}`)}</span>
+                          <span className="num block">{t('teamRecLine', { x12: fmtCell(team.rec.x12), toWin: fmtCell(team.rec.toWin), over: fmtCell(team.rec.over), btts: fmtCell(team.rec.btts) })}</span>
+                        </>
+                      ) : <span className="block">{t('teamRecThin')}</span>}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

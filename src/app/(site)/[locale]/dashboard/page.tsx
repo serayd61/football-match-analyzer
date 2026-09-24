@@ -8,7 +8,7 @@ import { checkUserAccess, hasEnginePredictionAccess } from '@/lib/accessControl'
 import { listDayRows } from '@/lib/site/fixtures';
 import { todayYmd, addDays } from '@/lib/site/time';
 import { getLiveNow, getMarketSnapshots, valueRadar, readWatchlist, teamDirectory, nextMatchForTeam, type ValueRow } from '@/lib/site/dashboard';
-import { getTeamForm, type SitePrediction } from '@/lib/site/predictions';
+import { getTeamForm, type SitePrediction, getTeamRecord } from '@/lib/site/predictions';
 import { standingsIndex, type StandingRow } from '@/lib/site/standings';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
 import { Crest, pickLabel } from '@/components/site/PredictionTable';
@@ -24,6 +24,7 @@ import { legacyHref } from '@/lib/site/legacy';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard, strongToday } from '@/lib/site/strong-markets';
 import { strongRisk } from '@/lib/site/coverage-risk';
+import { fmtCell } from '@/lib/site/team-record';
 import { RiskLabel } from '@/components/site/Risk';
 
 // Signed-in dashboard in the public design system. Three blocks:
@@ -96,12 +97,13 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
   // Followed clubs: position, form and next rated match, in parallel.
   const followed = await Promise.all(watch.items.map(async (w) => {
-    const [form, next, table] = await Promise.all([
+    const [form, next, table, rec] = await Promise.all([
       getTeamForm(w.teamId, 5),
       nextMatchForTeam(w.teamId),
       w.leagueSlug ? standingsIndex(w.leagueSlug) : Promise.resolve(new Map<number, StandingRow>()),
+      getTeamRecord(w.teamId).catch(() => null),
     ]);
-    return { ...w, form: toFormItems(w.teamId, form), next, st: table.get(w.teamId) ?? null };
+    return { ...w, form: toFormItems(w.teamId, form), next, st: table.get(w.teamId) ?? null, rec };
   }));
   const followedIds = new Set(watch.items.map((w) => w.teamId));
 
@@ -387,6 +389,9 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                   <UnfollowButton teamId={w.teamId} label={t('unfollow')} />
                 </div>
                 {w.form.length > 0 && <div className="mt-2"><FormStrip items={w.form} labels={formLabels} /></div>}
+                {w.rec && w.rec.x12.n >= 5 && (
+                  <p className="num mt-1.5 text-xs text-s-muted"><span className="text-s-ink">{tm('teamRecTitle')}:</span> {tm('teamRecLine', { x12: fmtCell(w.rec.x12), toWin: fmtCell(w.rec.toWin), over: fmtCell(w.rec.over), btts: fmtCell(w.rec.btts) })}</p>
+                )}
                 <p className="mt-2 text-sm">
                   {w.next ? (
                     <Link href={`/predictions/${w.next.fixtureId}`} className="hover:underline">
