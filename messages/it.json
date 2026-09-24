@@ -313,7 +313,11 @@
     "scopeOutside": "campionati non coperti: {won}/{n} centrate ({acc}%)",
     "standingMetaOutside": "{n} partite decise · registro a fasce del campionato",
     "standingLeadOutside": "Questo campionato è fuori dalla copertura del modello. Per ogni mercato, la fascia di probabilità della scelta e la nostra percentuale storica in quella fascia per questo campionato (o su tutti i campionati non coperti se meno di 10 partite). Non una garanzia, un registro di ciò che è accaduto nella stessa situazione.",
-    "strongTag": "mercato forte: {market}"
+    "strongTag": "mercato forte: {market}",
+    "teamRecTitle": "Il nostro registro su questa squadra",
+    "teamRecLine": "1X2 {x12} · data vincente {toWin} · Over {over} · Gol {btts}",
+    "teamRecThin": "meno di 5 partite decise in 180 giorni",
+    "teamRecMeta": "180 giorni · {n} partite"
   },
   "results": {
     "title": "Risultati",

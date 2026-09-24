@@ -313,7 +313,11 @@
     "scopeOutside": "uncovered leagues: {won}/{n} hit ({acc}%)",
     "standingMetaOutside": "{n} decided matches · league bucket record",
     "standingLeadOutside": "This league is outside model coverage. For each market, the probability bucket the pick falls into and our past hit rate in that bucket for this league (or across all uncovered leagues when fewer than 10 matches). Not a guarantee, a record of what happened in the same situation.",
-    "strongTag": "strong market: {market}"
+    "strongTag": "strong market: {market}",
+    "teamRecTitle": "Our record on this team",
+    "teamRecLine": "1X2 {x12} · picked to win {toWin} · Over {over} · BTTS {btts}",
+    "teamRecThin": "fewer than 5 decided matches in 180 days",
+    "teamRecMeta": "180 days · {n} matches"
   },
   "results": {
     "title": "Results",

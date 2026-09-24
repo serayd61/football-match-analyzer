@@ -313,7 +313,11 @@
     "scopeOutside": "kapsam dışı ligler: {won}/{n} tuttu (%{acc})",
     "standingMetaOutside": "{n} sonuçlanmış maç · lig dilim karnesi",
     "standingLeadOutside": "Bu lig model kapsamı dışında. Her pazar için seçimin düştüğü olasılık dilimini ve o dilimde bu ligde (10'dan az maç varsa kapsam dışı tüm liglerde) geçmiş isabetimizi gösterir. Garanti değil, aynı durumdaki maçların kaydı.",
-    "strongTag": "güçlü pazar: {market}"
+    "strongTag": "güçlü pazar: {market}",
+    "teamRecTitle": "Karnemiz bu takımda",
+    "teamRecLine": "1X2 {x12} · kazanır dedik {toWin} · Üst {over} · KG {btts}",
+    "teamRecThin": "180 günde 5'ten az sonuçlanmış maç",
+    "teamRecMeta": "180 gün · {n} maç"
   },
   "results": {
     "title": "Sonuçlar",

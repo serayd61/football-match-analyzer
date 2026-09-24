@@ -313,7 +313,11 @@
     "scopeOutside": "nicht abgedeckte Ligen: {won}/{n} getroffen ({acc}%)",
     "standingMetaOutside": "{n} entschiedene Spiele · Liga-Segmentbilanz",
     "standingLeadOutside": "Diese Liga liegt außerhalb der Modellabdeckung. Pro Markt das Wahrscheinlichkeitssegment des Tipps und unsere bisherige Trefferquote in diesem Segment für diese Liga (bzw. über alle nicht abgedeckten Ligen bei unter 10 Spielen). Keine Garantie, ein Protokoll dessen, was in derselben Lage geschah.",
-    "strongTag": "starker Markt: {market}"
+    "strongTag": "starker Markt: {market}",
+    "teamRecTitle": "Unsere Bilanz bei diesem Team",
+    "teamRecLine": "1X2 {x12} · als Sieger getippt {toWin} · Über {over} · BTTS {btts}",
+    "teamRecThin": "weniger als 5 entschiedene Spiele in 180 Tagen",
+    "teamRecMeta": "180 Tage · {n} Spiele"
   },
   "results": {
     "title": "Resultate",

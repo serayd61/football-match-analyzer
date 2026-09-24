@@ -13,6 +13,7 @@ import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
 import { blendCall, type GoalCall, type GoalBook } from './goal-blend';
 import { latestGoalBook } from './goal-book';
+import { teamRecord, type TeamRecord } from './team-record';
 
 // ---------------------------------------------------------------------------
 // Row schema (engine_predictions). Validated with zod so a schema drift in
@@ -381,6 +382,26 @@ export const getHeadToHead = unstable_cache(
 );
 
 /** Last N settled matches of a team (either side), newest first, optionally as of `before`. */
+/** Takım karnesi (24 Eyl): takımın son 180 gündeki sonuçlanmış maçlarında bizim seçimlerimiz. `before` → maç öncesi kesit. */
+export const getTeamRecord = unstable_cache(
+  async (teamId: number, before: string | null = null): Promise<TeamRecord> => {
+    const official = await resolveOfficialVersion();
+    const since = new Date((before ? Date.parse(before) : Date.now()) - 180 * 86_400_000).toISOString();
+    let q = officialFilter(db()
+      .from('engine_predictions')
+      .select('home_id, away_id, pick, correct, ou_pick, ou_correct, btts_pick, btts_correct, home_score, away_score, kickoff')
+      .eq('settled', true)
+      .not('result', 'is', null)
+      .gte('kickoff', since)
+      .or(`home_id.eq.${teamId},away_id.eq.${teamId}`), official);
+    q = asOfFilter(q, before);
+    const { data } = await q.order('kickoff', { ascending: false }).limit(80);
+    return teamRecord(((data ?? []) as any[]), teamId);
+  },
+  ['site-team-record-v1'],
+  { revalidate: REVALIDATE.results },
+);
+
 export const getTeamForm = unstable_cache(
   async (teamId: number, limit = 6, before: string | null = null): Promise<SitePrediction[]> => {
     const official = await resolveOfficialVersion();
