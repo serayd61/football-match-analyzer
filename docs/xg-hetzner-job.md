@@ -53,3 +53,11 @@ En son satırların `trained_at`'i job çalışmasıyla güncel olmalı. Backtes
 
 ## Sezon geçişi notu
 `publish_xg.py` içindeki `FDORG_TEAMS` (football-data.org takım adları) ve `START,END` (sezonlar) yıllık güncellenmeli — yeni sezon takımları/promosyon-küme değişince. Kapsama %100'ün altına düşerse job o ligi yazmaz (güvenli) ve log'a `EŞLEŞMEYEN` basar → `OVERRIDES`/`FDORG_TEAMS` güncelle.
+
+## Belirsizlik aralıklı backtest (2026-09-24)
+xG/ELO kararlarını nokta tahmini yerine %95 aralıkla vermek için (salt okuma, DB'ye yazmaz):
+```bash
+cd /opt/football-match-analyzer/engine
+SOCCERDATA_DIR=/opt/soccerdata ../src/lib/data-sources/venv/bin/python backtest_ci.py --out ../reports/backtest-ci.md
+```
+Rapor üç tablo içerir: xG vs gol-DC, ELO harmanı vs xG-DC, value-bet ROI. Karar kuralı raporun başında yazılı.
