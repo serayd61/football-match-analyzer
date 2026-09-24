@@ -1124,7 +1124,9 @@
       "q6": "Cosa significano le probabilità?",
       "a6": "Sono la stima di un modello statistico, non una certezza. Un esito al 70% non si verifica circa tre volte su dieci nel lungo periodo. Nessuna garanzia di profitto.",
       "closeTitle": "Leggi la prossima partita nei dati.",
-      "closeNote": "7 giorni di accesso completo. Nessuna carta."
+      "closeNote": "7 giorni di accesso completo. Nessuna carta.",
+      "strongLine": "In {n} campionati un mercato ha centrato ≥70% su almeno 15 partite negli ultimi 180 giorni.",
+      "strongCta": "Quali →"
     }
   }
 }

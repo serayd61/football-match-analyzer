@@ -14,9 +14,12 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats } from './content';
+import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { strongBoard, strongToday } from '@/lib/site/strong-markets';
+import { listDayRows } from '@/lib/site/fixtures';
 import { hasTelegram, sendMessage, sendPhoto } from './telegram';
 import { fetchTrends } from './twitter';
 
@@ -124,6 +127,42 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
   return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection}`), tags, trends: trends.length, targets: tg.length, dry: !!opts.dry, posts: out };
 }
 
+/** Günün güçlü pazar bacakları (plan adım 4): sicil stats.strong bölgesine düşen maçlar. */
+export async function strongLegs(ymd: string, limit = 6): Promise<StrongLeg[]> {
+  const [rows, coverage] = await Promise.all([listDayRows(ymd), loadCoverage()]);
+  const cov = new Map(coverage.map((c) => [Number(c.league_id), c]));
+  return strongToday(
+    rows.filter((r) => r.hasModel && !r.settled && Date.parse(r.kickoff) > Date.now()).map((r) => ({
+      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff,
+      input: { pick: r.pick, pHome: r.pHome, pDraw: r.pDraw, pAway: r.pAway, over: r.overUnder ? { pick: r.overUnder.pick, pRaw: r.overUnder.pRaw } : null, btts: r.btts ? { pick: r.btts.pick, pRaw: r.btts.pRaw } : null },
+    })),
+    (id) => { const c = cov.get(id); return c ? { strong: c.stats?.strong, status: c.status, name: c.name } : undefined; },
+    limit,
+  ).map(({ row: r, pick: sp, leagueName }) => ({ fixtureId: r.fixtureId, homeName: r.homeName, awayName: r.awayName, kickoff: r.kickoff, leagueName, market: sp.market, selection: sp.selection, modelP: sp.p, won: sp.sm.won, n: sp.sm.n }));
+}
+
+/** Sabah "güçlü pazarlar" gönderisi (07:10 UTC; bacak yoksa atlanır). */
+export async function publishStrong(opts: { day?: string; dry?: boolean } = {}) {
+  const day = opts.day ?? todayYmd();
+  const legs = await strongLegs(day);
+  const tg = targets();
+  const out: any[] = [];
+  if (!legs.length) return { ok: true, day, legs: 0, note: 'güçlü bölgeye düşen maç yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry };
+  const have = await posted(tg.map((t) => `strong|${day}|${t.platform}|${t.account}`));
+  const trends = await dayTrends(tg);
+  const tags = hashtags(legs.map((l) => ({ fixtureId: l.fixtureId, leagueSlug: '', leagueName: l.leagueName, homeName: l.homeName, awayName: l.awayName, kickoff: l.kickoff, market: l.market === 'x12' ? '1x2' : l.market === 'under25' ? 'ou25' : l.market, selection: l.selection, modelP: l.modelP, odds: null, source: 'showcase' as const })), trends);
+  for (const t of tg) {
+    const key = `strong|${day}|${t.platform}|${t.account}`;
+    const text = strongText(legs, day, t.account, t.platform, tags);
+    if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
+    if (opts.dry) { out.push({ key, status: 'dry', text }); continue; }
+    const r = await send(t, text, null);
+    await record({ key, kind: 'strong', day, platform: t.platform, account: t.account, fixtureIds: legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
+    out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
+  }
+  return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection} (${l.won}/${l.n})`), targets: tg.length, dry: !!opts.dry, posts: out };
+}
+
 /** X hedefi varsa günün trendleri (ilk X hesabının anahtarıyla, tek çağrı). */
 export async function dayTrends(tg: Target[] = targets()): Promise<string[]> {
   const tw = tg.find((t) => t.platform === 'twitter');
@@ -174,6 +213,7 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
   const rec = await showcaseRecord(7, Date.parse(`${day}T00:00:00Z`));
   const stats: WeeklyStats = { from, to, n: rec.n, won: rec.won, byMarket: rec.byMarket, noPick: rec.noPick };
   const tg = targets();
+  const boardLines = strongBoard(await loadCoverage().catch(() => []), 3).map((b) => ({ market: b.market, leagues: b.rows.map((r) => ({ name: r.name, won: r.won, n: r.n })) }));
   const have = await posted(tg.map((t) => `weekly|${day}|${t.platform}|${t.account}`));
   const out: any[] = [];
   const images: Partial<Record<Lang, Buffer>> = {};
@@ -183,14 +223,16 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
     const [first, second0] = weeklyText(stats, t.account, t.platform, ['#football']);
     const second = wl ? `${second0}\n\n${t.account === 'tr' ? 'Telegram' : 'Telegram'}: ${wl}` : second0;
     if (have.has(key)) { out.push({ key, status: 'already' }); continue; }
-    if (opts.dry) { out.push({ key, status: 'dry', text: [first, second] }); continue; }
+    if (opts.dry) { out.push({ key, status: 'dry', text: [first, second, boardLines.length ? strongBoardText(boardLines, t.account, t.platform) : null] }); continue; }
     if (!stats.n) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'sonuçlanmış seçim yok' }); out.push({ key, status: 'skipped' }); continue; }
     images[t.account] ??= await weeklyImage(stats, t.account);
     const r1 = await send(t, first, images[t.account]!);
     if (!r1.ok) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: first, status: 'failed', error: r1.error }); out.push({ key, status: 'failed', error: r1.error }); continue; }
     const r2 = await send(t, second, null, r1.id);
     await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], postId: r1.id, body: `${first}\n---\n${second}`, status: 'posted', error: r2.ok ? null : `2. gönderi: ${r2.error}` });
-    out.push({ key, status: 'posted', id: r1.id, second: r2.ok ? r2.id : r2.error });
+    // Üçüncü gönderi: pazar karnesi (plan adım 4); yoksa atlanır.
+    const r3 = boardLines.length && r2.ok ? await send(t, strongBoardText(boardLines, t.account, t.platform), null, r2.id) : null;
+    out.push({ key, status: 'posted', id: r1.id, second: r2.ok ? r2.id : r2.error, third: r3 ? (r3.ok ? r3.id : r3.error) : undefined });
   }
   return { ok: out.every((o) => o.status !== 'failed'), day, stats, targets: tg.length, dry: !!opts.dry, posts: out };
 }

@@ -44,7 +44,7 @@ test('record and DM text', () => {
   ]);
   assert.deepEqual([rec.n, rec.won, rec.lost, rec.pending, rec.void, rec.priced, rec.roi], [3, 2, 1, 1, 1, 2, -30]);
   const text = formatTierBDm('2026-09-23', [{ ...candidateLegs(row({ pOver25: 0.9 }))[0], price: { odds: 1.4, marketP: 0.674, margin: 22.6 } }], rec, { date: '2026-09-22', rows: [{ home: 'A', away: 'B', market: 'ou25', selection: 'over', won: true, hs: 3, as: 1 }] });
-  assert.match(text, /Bodø\/Glimt – Sandefjord · Üst 2,5 %90 @1\.40 \(piyasa %67, marj \+22\.6\)/);
+  assert.match(text, /• .*Bodø\/Glimt – Sandefjord · Üst 2,5 %90 @1\.40 \(piyasa %67, marj \+22\.6\)/);
   assert.match(text, /Dün \(2026-09-22\): 1\/1/);
   assert.match(text, /Karne 30 gün: 2\/3 \(%67\) — MS 1\/1 · Ü\/A 1\/2 · ROI -30% \(2 oranlı\) · 1 bekliyor/);
 });

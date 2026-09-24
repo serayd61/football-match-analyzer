@@ -142,7 +142,7 @@ const MARKET_TR: Record<TierBMarket, (s: string) => string> = {
 const pct = (p: number) => `%${Math.round(p * 100)}`;
 const hhmm = (iso: string, tz: string) => new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso));
 
-export interface DmLeg extends TierBLeg { price?: LegPrice | null }
+export interface DmLeg extends TierBLeg { price?: LegPrice | null; strong?: string | null }
 export interface DmYesterday { date: string; rows: Array<{ home: string; away: string; market: TierBMarket; selection: string; won: boolean | null; hs: number | null; as: number | null }> }
 
 export function formatTierBDm(date: string, legs: DmLeg[], record: TierBRecord, yesterday: DmYesterday | null, tz = 'Europe/Istanbul'): string {
@@ -153,7 +153,7 @@ export function formatTierBDm(date: string, legs: DmLeg[], record: TierBRecord, 
   if (!legs.length) lines.push('Bugün eşik üstü ayak yok.');
   for (const l of legs) {
     const price = l.price ? ` @${l.price.odds.toFixed(2)} (piyasa ${pct(l.price.marketP)}, marj ${l.price.margin >= 0 ? '+' : ''}${l.price.margin.toFixed(1)})` : '';
-    lines.push(`• ${hhmm(l.kickoff, tz)} ${l.home} – ${l.away} · ${MARKET_TR[l.market](l.selection)} ${pct(l.modelP)}${price}`);
+    lines.push(`${l.strong ? '★' : '•'} ${hhmm(l.kickoff, tz)} ${l.home} – ${l.away} · ${MARKET_TR[l.market](l.selection)} ${pct(l.modelP)}${price}${l.strong ? ` · güçlü pazar ${l.strong}` : ''}`);
     lines.push(`  ${l.leagueName ?? '?'}`);
   }
   if (yesterday && yesterday.rows.length) {

@@ -119,7 +119,13 @@ export async function generateTierB(date: string, opts: { now?: Date; dry?: bool
 export async function buildDm(date: string): Promise<string> {
   const sb = dbFresh();
   const { data: today } = await sb.from('tier_b_picks').select('*').eq('pick_date', date).order('kickoff');
+  const cov = new Map((await loadCoverage()).map((c) => [Number(c.league_id), c]));
+  const strongOf = (r: any): string | null => {
+    const sm = (cov.get(Number(r.league_id))?.stats?.strong ?? []).find((m) => (r.market === 'ou25' ? (r.selection === 'over' ? m.market === 'ou25' : m.market === 'under25') : r.market === 'btts' ? m.market === 'btts' : m.market === 'x12') && Number(r.model_p) >= m.from);
+    return sm ? `${sm.won}/${sm.n}` : null;
+  };
   const legs: DmLeg[] = ((today ?? []) as any[]).map((r) => ({
+    strong: strongOf(r),
     fixtureId: Number(r.fixture_id), leagueId: r.league_id, leagueName: r.league_name, home: r.home_name, away: r.away_name, kickoff: r.kickoff,
     market: r.market, selection: r.selection, modelP: Number(r.model_p), threshold: Number(r.threshold), edge: Number(r.model_p) - Number(r.threshold),
     price: r.odds != null ? { odds: Number(r.odds), marketP: Number(r.market_p), margin: Number(r.margin) } : null,
