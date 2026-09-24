@@ -1124,7 +1124,9 @@
       "q6": "Olasılıklar ne anlama gelir?",
       "a6": "İstatistiksel bir modelin tahminidir; kesinlik değildir. %70 olasılıklı bir sonuç, uzun vadede yaklaşık on maçın üçünde gerçekleşmez. Kâr garantisi yoktur.",
       "closeTitle": "Bir sonraki maçı verilerle incele.",
-      "closeNote": "7 gün tam erişim. Kart gerekmez."
+      "closeNote": "7 gün tam erişim. Kart gerekmez.",
+      "strongLine": "{n} ligde bir pazar son 180 günde en az 15 maçta ≥%70 tuttu.",
+      "strongCta": "Hangileri →"
     }
   }
 }

@@ -1124,7 +1124,9 @@
       "q6": "What do the probabilities mean?",
       "a6": "They are a statistical model's estimate, not a certainty. A 70% outcome fails about three times in ten over the long run. There is no profit guarantee.",
       "closeTitle": "Read your next match in data.",
-      "closeNote": "7 days of full access. No card needed."
+      "closeNote": "7 days of full access. No card needed.",
+      "strongLine": "In {n} leagues a market hit ≥70% over at least 15 matches in the last 180 days.",
+      "strongCta": "Which ones →"
     }
   }
 }

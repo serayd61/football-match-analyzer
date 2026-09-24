@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/tier-b",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/social?kind=strong",
+      "schedule": "10 7 * * *"
     }
   ]
 }

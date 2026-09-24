@@ -3,7 +3,8 @@
 // ----------------------------------------------------------------------------
 //   ?kind=daily    07:00 UTC her gün   → günün seçimleri + görsel
 //   ?kind=results  saat başı :40       → sonuçlanan bacaklara yanıt
-//   ?kind=weekly   Pazartesi 06:00 UTC → haftalık karne dizisi + görsel
+//   ?kind=weekly   Pazartesi 06:00 UTC → haftalık karne dizisi + görsel (+ pazar karnesi)
+//   ?kind=strong   07:10 UTC her gün   → güçlü pazar bölgesine düşen maçlar (yoksa atlanır)
 //   ?kind=pack     kullanıcıya X etkileşim paketi (Telegram özel mesaj); daily de sonunda gönderir
 //   &dry=1         hiçbir yere göndermez, metni döner
 //   &image=1       (daily/weekly) görselin PNG'sini döner, gönderi yok
@@ -12,7 +13,7 @@
 //   ?trends=1      günün X trendleri + bacaklarla eşleşen etiketler (teşhis)
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { publishDaily, publishResults, publishWeekly, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
+import { publishDaily, publishResults, publishWeekly, publishStrong, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
 import { hashtags, matchTrends } from '@/lib/social/content';
 import { dailyImage, weeklyImage } from '@/lib/social/image';
 import { sendEngagementPack } from '@/lib/social/engage';
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
     }
     if (kind === 'results') return NextResponse.json(await publishResults({ dry }));
     if (kind === 'weekly') return NextResponse.json(await publishWeekly({ dry, day }));
+    if (kind === 'strong') return NextResponse.json(await publishStrong({ dry, day }));
     if (kind === 'pack') return NextResponse.json(await sendEngagementPack({ dry, day }));
     const daily = await publishDaily({ dry, day });
     const pack = await sendEngagementPack({ dry, day }).catch((e: any) => ({ ok: false, error: String(e?.message || e).slice(0, 200) }));

@@ -1124,7 +1124,9 @@
       "q6": "Was bedeuten die Wahrscheinlichkeiten?",
       "a6": "Sie sind die Schätzung eines statistischen Modells, keine Gewissheit. Ein 70-%-Ergebnis tritt langfristig etwa drei von zehn Mal nicht ein. Es gibt keine Gewinngarantie.",
       "closeTitle": "Das nächste Spiel in Daten lesen.",
-      "closeNote": "7 Tage voller Zugang. Keine Karte nötig."
+      "closeNote": "7 Tage voller Zugang. Keine Karte nötig.",
+      "strongLine": "In {n} Ligen traf ein Markt in den letzten 180 Tagen bei mindestens 15 Spielen ≥70 %.",
+      "strongCta": "Welche →"
     }
   }
 }

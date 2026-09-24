@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { strongBoard } from '@/lib/site/strong-markets';
 import { UserPlus, ListFilter, LineChart, Plus } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -39,6 +41,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
   unstable_setRequestLocale(locale);
   const t = await getTranslations('v2.landing');
   const th = await getTranslations('v2.home');
+  // Güçlü pazar sayısı (plan adım 3, 24 Eyl): vitrin filtresiyle, maç ayrıntısı yok (paywall korunur).
+  const strongLeagues = new Set(strongBoard(await loadCoverage().catch(() => []), 99).flatMap((b) => b.rows.map((r) => r.leagueId))).size;
   const tc = await getTranslations('common');
   const tp = await getTranslations('v2.pricing');
   const f = await getFormatter();
@@ -97,6 +101,14 @@ export default async function HomePage({ params: { locale } }: { params: { local
             ))}
           </ul>
         </Page>
+        {strongLeagues > 0 && (
+          <Page className="!pt-0 pb-4">
+            <p className="text-[14px] text-s-muted">
+              {t('strongLine', { n: strongLeagues })}{' '}
+              <Link href="/performance#strong" className="font-semibold text-s-ink underline decoration-s-n400 underline-offset-4 hover:decoration-s-accent" data-cta="strong-markets">{t('strongCta')}</Link>
+            </p>
+          </Page>
+        )}
       </section>
 
       {/* ── D. Ürünü gösteren bölüm ─────────────────────────────────── */}

@@ -160,3 +160,50 @@ export function weeklyText(s: WeeklyStats, lang: Lang, source: Source = 'twitter
     `Every pick is frozen at least 3 hours before kick-off and recorded whatever the result. Full record by market: ${link}`,
   ];
 }
+
+// ---- Güçlü pazarlar gönderisi (plan adım 4, 24 Eyl) ------------------------
+export interface StrongLeg { fixtureId: number; homeName: string; awayName: string; kickoff: string; leagueName: string; market: 'x12' | 'ou25' | 'under25' | 'btts'; selection: string; modelP: number; won: number; n: number }
+export interface StrongBoardLine { market: 'x12' | 'ou25' | 'under25' | 'btts'; leagues: Array<{ name: string; won: number; n: number }> }
+
+export function strongMarketLabel(l: Pick<StrongLeg, 'market' | 'selection' | 'homeName' | 'awayName'>, lang: Lang): string {
+  if (l.market === 'ou25') return lang === 'tr' ? 'Üst 2,5' : 'Over 2.5';
+  if (l.market === 'under25') return lang === 'tr' ? 'Alt 2,5' : 'Under 2.5';
+  if (l.market === 'btts') return lang === 'tr' ? 'KG Var' : 'BTTS Yes';
+  return marketLabel({ market: '1x2', selection: l.selection, homeName: l.homeName, awayName: l.awayName }, lang);
+}
+const boardMarket = (m: StrongBoardLine['market'], lang: Lang) => m === 'ou25' ? (lang === 'tr' ? 'Üst 2,5' : 'Over 2.5') : m === 'under25' ? (lang === 'tr' ? 'Alt 2,5' : 'Under 2.5') : m === 'btts' ? (lang === 'tr' ? 'KG Var' : 'BTTS') : '1X2';
+
+/** Sabah "güçlü pazarlar" gönderisi: lig-pazar karnesi ≥%70 olan bölgeye düşen maçlar. 280'e sığdırır. */
+export function strongText(legs: StrongLeg[], ymd: string, lang: Lang, source: Source = 'twitter', tags: string[] = []): string {
+  const tz = legs.length ? ` · ${tzLabel(lang, legs[0].kickoff)}` : '';
+  const head = lang === 'tr' ? `Bugün güçlü pazarlar · ${fmtDate(ymd, lang)}${tz}` : `Strong markets today · ${fmtDate(ymd, lang)}${tz}`;
+  const sub = lang === 'tr' ? 'Lig-pazar karnesi son 180 günde ≥%70 (≥15 maç). Garanti değil, kayıt.' : 'League–market record ≥70% over 180 days (≥15 matches). A record, not a guarantee.';
+  const link = utm('/performance#strong', lang, 'strong-markets', source);
+  const join = (a: string[]) => a.filter((s, i, arr) => !(s === '' && arr[i - 1] === '')).join('\n');
+  const full = legs.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName} – ${l.awayName}: ${strongMarketLabel(l, lang)} ${pct(l.modelP)} · ${l.leagueName} ${l.won}/${l.n}`);
+  const short = legs.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName.slice(0, 12)} – ${l.awayName.slice(0, 12)}: ${strongMarketLabel(l, lang)} ${pct(l.modelP)} (${l.won}/${l.n})`);
+  const tagSet = source === 'twitter' ? tags.slice(0, MAX_TAGS) : [];
+  if (source === 'telegram') return join([head, sub, '', ...full, '', link]);
+  for (const lines of [full, short]) {
+    for (let n = tagSet.length; n >= 0; n--) {
+      const text = join([head, '', ...lines, '', n ? tagSet.slice(0, n).join(' ') : '', link]);
+      if (tweetLength(text) <= 280) return text;
+    }
+  }
+  if (legs.length > 1) return strongText(legs.slice(0, -1), ymd, lang, source, tags);
+  return join([head, '', ...short, '', link]);
+}
+
+/** Haftalık dizinin üçüncü gönderisi: pazar başına en güçlü ligler. */
+export function strongBoardText(board: StrongBoardLine[], lang: Lang, source: Source = 'twitter'): string {
+  const head = lang === 'tr' ? 'En güçlü lig-pazar çiftleri (180 gün):' : 'Strongest league–market pairs (180 days):';
+  const lines = board.map((b) => `${boardMarket(b.market, lang)}: ${b.leagues.map((l) => `${l.name} ${l.won}/${l.n}`).join(' · ')}`);
+  const link = utm('/performance#strong', lang, 'strong-markets', source);
+  let text = [head, ...lines, '', link].join('\n');
+  let take = board.map((b) => b.leagues.length);
+  while (source === 'twitter' && tweetLength(text) > 280 && take.some((n) => n > 1)) {
+    take = take.map((n) => Math.max(1, n - 1));
+    text = [head, ...board.map((b, i) => `${boardMarket(b.market, lang)}: ${b.leagues.slice(0, take[i]).map((l) => `${l.name} ${l.won}/${l.n}`).join(' · ')}`), '', link].join('\n');
+  }
+  return text;
+}
