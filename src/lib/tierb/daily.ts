@@ -65,13 +65,17 @@ export async function priceLegs(legs: TierBLeg[]): Promise<{ legs: PricedLeg[]; 
   const pairs = matchFixtures(ours, theirs as any, 0.6);
   const afId = new Map(pairs.map((p) => [p.fixtureId, p.afId]));
   let matched = 0;
+  const oddsCache = new Map<number, Awaited<ReturnType<typeof afOdds>>>(); // aynı maçın birden çok ayağı → tek çağrı
   for (const l of out) {
     const id = afId.get(l.fixtureId);
     if (!id) continue;
     l.afFixtureId = id; matched++;
-    if (calls >= MAX_ODDS_CALLS + days.length) continue;
-    const r = await afOdds(id); calls++;
-    if (!r.ok) { errors.push(`odds ${id}: ${r.error}`); continue; }
+    let r = oddsCache.get(id);
+    if (!r) {
+      if (calls >= MAX_ODDS_CALLS + days.length) continue;
+      r = await afOdds(id); calls++; oddsCache.set(id, r);
+    }
+    if (!r.ok) { if (!errors.includes(`odds ${id}: ${r.error}`)) errors.push(`odds ${id}: ${r.error}`); continue; }
     if (!r.odds) continue;
     const p = priceLeg(l.market, l.selection, r.odds);
     if (p) l.price = withMargin(p, l.modelP);
@@ -174,3 +178,30 @@ export async function settleTierB(now = new Date()): Promise<SettleResult> {
 }
 
 export const tierBDateOf = (d: Date) => ymdOf(d);
+
+/**
+ * Fiyatlama modu (25 Eyl, kullanıcı: "maçlar bet365'te olmalı"): günün kapsam dışı ve gizli
+ * olmayan maçlarında olasılığı ≥minP olan HER ayağı API-Football/bet365 ile fiyatlar; kaydetmez.
+ * Kupon kurarken bahisçide gerçekten açık olan maçları görmek için. Bütçe: maç başına 1 çağrı.
+ */
+export async function priceDay(date: string, minP = 0.62, opts: { now?: Date; includeWhitelist?: boolean } = {}) {
+  const now = opts.now ?? new Date();
+  const coverage = await loadCoverage();
+  const status = new Map(coverage.map((c) => [Number(c.league_id), c.status]));
+  const rows = (await dayRows(date)).filter((r) => Date.parse(r.kickoff) > now.getTime() && (r.leagueId == null || (status.get(r.leagueId) !== 'hidden' && (opts.includeWhitelist || status.get(r.leagueId) !== 'whitelist'))));
+  const legs: TierBLeg[] = [];
+  const push = (r: TierBInput, market: TierBLeg['market'], selection: TierBLeg['selection'], p: number | null | undefined, threshold: number) => {
+    if (p == null || p < minP) return;
+    legs.push({ fixtureId: r.fixtureId, leagueId: r.leagueId, leagueName: r.leagueName, home: r.home, away: r.away, kickoff: r.kickoff, market, selection, modelP: Math.round(p * 1000) / 1000, threshold, edge: Math.round((p - threshold) * 1000) / 1000 });
+  };
+  for (const r of rows) {
+    if (r.pHome != null && r.pDraw != null && r.pAway != null) {
+      const ps: Array<[TierBLeg['selection'], number]> = [['1', r.pHome], ['X', r.pDraw], ['2', r.pAway]];
+      const [sel, p] = ps.reduce((a, b) => (b[1] > a[1] ? b : a)); push(r, '1x2', sel, p, 0.8);
+    }
+    if (r.pOver25 != null) { push(r, 'ou25', 'over', r.pOver25, 0.85); push(r, 'ou25', 'under', 1 - r.pOver25, 0.75); }
+    if (r.pBtts != null) push(r, 'btts', 'yes', r.pBtts, 0.8);
+  }
+  const priced = await priceLegs(legs);
+  return { date, minP, matches: rows.length, legs: priced.legs.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff) || a.fixtureId - b.fixtureId), calls: priced.calls, matched: priced.matched, errors: priced.errors };
+}
