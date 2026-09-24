@@ -454,6 +454,8 @@
     "recent": "Son sonuçlar",
     "recentAll": "Tüm sonuçlar",
     "recentEmpty": "Henüz sonuçlanmış maç yok.",
+    "lockedUpcoming": "Bu {league} maçlarının tahminleri (seçim, olasılıklar ve gol pazarları) üyelere özel. Ücretsiz hesap aç, 7 gün boyunca gör.",
+    "lockedRecent": "{n, plural, =1 {Sonuçlanmış # {league} seçimi} other {Sonuçlanmış # {league} seçimi}} sonuç ve skoruyla üyelere özel. Ücretsiz hesap aç, 7 gün boyunca tüm karneyi gör.",
     "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır."
   },
   "docs": {

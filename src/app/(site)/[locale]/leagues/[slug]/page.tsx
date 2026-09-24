@@ -11,11 +11,16 @@ import { getStandings } from '@/lib/site/standings';
 import StandingsTable from '@/components/site/StandingsTable';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
+import FixtureList from '@/components/site/FixtureList';
 import ResultsTable from '@/components/site/ResultsTable';
-import { requireSiteAccess } from '@/lib/site/access';
-import { Paywall, TrialNotice } from '@/components/site/Paywall';
+import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { Paywall, LockedBlock, TrialNotice } from '@/components/site/Paywall';
 
-// Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
+// Freemium SEO (2026-09-24): league pages are public again so Google can
+// index standings, fixtures and the settled record per league. Predictions
+// stay members-only: an anonymous or expired visitor sees the upcoming
+// fixtures WITHOUT pick/probabilities and a locked block in place of the
+// settled picks. Session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
@@ -37,19 +42,11 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   unstable_setRequestLocale(params.locale);
   const league = leagueBySlug(params.slug);
   if (!league) notFound();
-  const access = await requireSiteAccess(params.locale, `/leagues/${league.slug}`);
+  const access = await getSiteAccess();
+  const unlocked = canSeeMatches(access);
   const t = await getTranslations('league');
   const tp = await getTranslations('performance');
   const f = await getFormatter();
-
-  if (access.state === 'expired') {
-    return (
-      <Page>
-        <PageTitle title={league.name} eyebrow={league.country} />
-        <Paywall />
-      </Page>
-    );
-  }
 
   const [perf, upcoming, recent, table] = await Promise.all([
     getPerformance(league.slug),
@@ -71,6 +68,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       />
 
       <TrialNotice access={access} />
+      {access.state === 'expired' && <Paywall />}
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-s-line py-5 sm:grid-cols-4">
         <Stat label={tp('settled')} value={f.number(o.n)} />
@@ -86,8 +84,17 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       )}
 
       <section className="mt-10">
-        <SectionTitle title={t('upcoming')} meta={<Link href={`/predictions?league=${league.slug}`} className="underline underline-offset-4">{t('upcomingAll')}</Link>} />
-        {upcoming.length ? <div className="mt-2"><PredictionTable rows={upcoming} /></div> : <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>}
+        <SectionTitle title={t('upcoming')} meta={unlocked ? <Link href={`/predictions?league=${league.slug}`} className="underline underline-offset-4">{t('upcomingAll')}</Link> : undefined} />
+        {!upcoming.length ? (
+          <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>
+        ) : unlocked ? (
+          <div className="mt-2"><PredictionTable rows={upcoming} /></div>
+        ) : (
+          <>
+            <div className="mt-2"><FixtureList rows={upcoming} /></div>
+            <LockedBlock count={0} lead={t('lockedUpcoming', { league: league.name })} />
+          </>
+        )}
       </section>
 
       {table.length > 0 && (
@@ -99,7 +106,13 @@ export default async function LeaguePage({ params }: { params: { locale: string;
 
       <section className="mt-12">
         <SectionTitle title={t('recent')} meta={<Link href={`/performance?league=${league.slug}#results`} className="underline underline-offset-4">{t('recentAll')}</Link>} />
-        {recent.rows.length ? <div className="mt-2"><ResultsTable rows={recent.rows} /></div> : <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p>}
+        {!recent.rows.length ? (
+          <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p>
+        ) : unlocked ? (
+          <div className="mt-2"><ResultsTable rows={recent.rows} /></div>
+        ) : (
+          <LockedBlock count={0} lead={t('lockedRecent', { league: league.name, n: recent.total })} />
+        )}
       </section>
 
       <p className="mt-12 border-t border-s-line pt-4 text-xs text-s-muted">{t('note', { league: league.name })}</p>

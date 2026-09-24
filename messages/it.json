@@ -454,6 +454,8 @@
     "recent": "Ultimi risultati",
     "recentAll": "Tutti i risultati",
     "recentEmpty": "Nessuna partita chiusa.",
+    "lockedUpcoming": "I pronostici per queste partite di {league} — scelta, probabilità e mercati gol — sono per i membri. Crea un account gratuito e vedili per 7 giorni.",
+    "lockedRecent": "{n, plural, =1 {# scelta chiusa di {league}} other {# scelte chiuse di {league}}} con esito e risultato sono per i membri. Crea un account gratuito e vedi tutto il registro per 7 giorni.",
     "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione."
   },
   "docs": {
