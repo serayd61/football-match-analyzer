@@ -458,6 +458,8 @@
     "recent": "Letzte Resultate",
     "recentAll": "Alle Resultate",
     "recentEmpty": "Noch keine abgerechneten Spiele.",
+    "lockedUpcoming": "Die Prognosen zu diesen {league}-Spielen — Tipp, Wahrscheinlichkeiten und Tormärkte — sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang alles sehen.",
+    "lockedRecent": "{n, plural, =1 {# abgerechneter {league}-Tipp} other {# abgerechnete {league}-Tipps}} mit Ausgang und Resultat sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang die ganze Bilanz sehen.",
     "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung."
   },
   "docs": {

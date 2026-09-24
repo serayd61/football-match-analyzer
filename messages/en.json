@@ -458,6 +458,8 @@
     "recent": "Recent results",
     "recentAll": "All results",
     "recentEmpty": "No settled matches yet.",
+    "lockedUpcoming": "Predictions for these {league} fixtures — pick, probabilities and goal markets — are for members. Create a free account and see them for 7 days.",
+    "lockedRecent": "{n, plural, =1 {# settled {league} pick} other {# settled {league} picks}} with outcome and score are for members. Create a free account and see the full record for 7 days.",
     "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time."
   },
   "docs": {
