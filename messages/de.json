@@ -312,7 +312,8 @@
     "metaLocked": "{home} gegen {away}, {league}: Modellprognose, Expected Goals, wahrscheinliche Resultate und Handicap-Linien. Nur für Mitglieder, die ersten 7 Tage gratis.",
     "scopeOutside": "nicht abgedeckte Ligen: {won}/{n} getroffen ({acc}%)",
     "standingMetaOutside": "{n} entschiedene Spiele · Liga-Segmentbilanz",
-    "standingLeadOutside": "Diese Liga liegt außerhalb der Modellabdeckung. Pro Markt das Wahrscheinlichkeitssegment des Tipps und unsere bisherige Trefferquote in diesem Segment für diese Liga (bzw. über alle nicht abgedeckten Ligen bei unter 10 Spielen). Keine Garantie, ein Protokoll dessen, was in derselben Lage geschah."
+    "standingLeadOutside": "Diese Liga liegt außerhalb der Modellabdeckung. Pro Markt das Wahrscheinlichkeitssegment des Tipps und unsere bisherige Trefferquote in diesem Segment für diese Liga (bzw. über alle nicht abgedeckten Ligen bei unter 10 Spielen). Keine Garantie, ein Protokoll dessen, was in derselben Lage geschah.",
+    "strongTag": "starker Markt: {market}"
   },
   "results": {
     "title": "Resultate",
@@ -913,7 +914,13 @@
       "leagueMetaThin": "180 Tage: {n} Spiele · dünne Bilanz",
       "outsideEvidence": "Diese Liga, 1X2 {bucket}: {won}/{n} getroffen ({acc}%)",
       "outsideEvidenceAll": "Nicht abgedeckte Ligen, 1X2 {bucket}: {won}/{n} getroffen ({acc}%)",
-      "outsideThin": "Zu wenige Spiele in diesem Segment"
+      "outsideThin": "Zu wenige Spiele in diesem Segment",
+      "strongLeague": "Starker Markt: {market} ≥{from}% · {won}/{n} getroffen ({acc}%)",
+      "strongPick": "Starker Markt · {market} {p}% · diese Liga {won}/{n} ({acc}%)",
+      "mkt1x2": "1X2",
+      "mktOver": "Über 2,5",
+      "mktUnder": "Unter 2,5",
+      "mktBtts": "BTTS Ja"
     },
     "match": {
       "back": "← Alle Prognosen",

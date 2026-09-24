@@ -11,7 +11,7 @@ import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
 import { coverageById } from '@/lib/coverage/registry';
-import { sumBuckets, coverageStanding, coverageRisk, leagueSummary } from '@/lib/site/coverage-risk';
+import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import { RiskNote } from '@/components/site/Risk';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
@@ -68,28 +68,35 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const uncoveredCount = all.filter((r) => !r.covered).length;
   // Kapsam dışı: lig lig grupla, risk notunu lig dilim karnesinden ver (lib/site/coverage-risk).
   const uncoveredRows = league ? [] : applyFilters(all.filter((r) => !r.covered && r.hasModel), flt);
-  const cov = uncoveredRows.length ? await coverageById() : new Map();
+  const cov = uncoveredRows.length ? await coverageById() : new Map<number, Awaited<ReturnType<typeof coverageById>> extends Map<number, infer R> ? R : never>();
   const outsideAll = sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats));
-  const groups = new Map<string, { name: string; ccode: string | null; n: number; meta: string; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
+  const mktName: Record<string, string> = { x12: t('mkt1x2'), ou25: t('mktOver'), under25: t('mktUnder'), btts: t('mktBtts') };
+  const groups = new Map<string, { name: string; ccode: string | null; n: number; strong: number; meta: string; strongMeta: string[]; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
   for (const p of uncoveredRows) {
     const c = p.leagueId != null ? cov.get(p.leagueId) : undefined;
-    const standing = coverageStanding({
+    const input = {
       pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
       over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
       btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
-    }, c?.stats?.buckets ?? null, outsideAll);
+    };
+    const standing = coverageStanding(input, c?.stats?.buckets ?? null, outsideAll);
+    // Güçlü pazar (≥15 maç, ≥%70): seçim o bölgeye düşüyorsa risk ve not oradan (24 Eyl).
+    const sp = strongPickFor(input, c?.stats?.strong);
     const x = standing.find((r) => r.market === '1x2');
-    const note = !x || x.acc == null ? t('outsideThin')
+    const note = sp ? t('strongPick', { market: mktName[sp.market], p: Math.round(sp.p * 100), won: sp.sm.won, n: sp.sm.n, acc: Math.round((sp.sm.won / sp.sm.n) * 100) })
+      : !x || x.acc == null ? t('outsideThin')
       : t(x.scope === 'league' ? 'outsideEvidence' : 'outsideEvidenceAll', { bucket: x.primary.bucket, won: x.won, n: x.n, acc: Math.round(x.acc * 100) });
     const key = String(p.leagueId ?? p.leagueName);
     if (!groups.has(key)) {
       const sm = leagueSummary(c?.stats);
       const meta = sm.x12 != null ? t('leagueMeta', { n: sm.n, x12: sm.x12, ou: sm.ou ?? '–', btts: sm.btts ?? '–' }) : t('leagueMetaThin', { n: sm.n });
-      groups.set(key, { name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, meta, rows: [] });
+      const strongMeta = (c?.stats?.strong ?? []).map((m) => t('strongLeague', { market: mktName[m.market], from: Math.round(m.from * 100), won: m.won, n: m.n, acc: Math.round((m.won / m.n) * 100) }));
+      groups.set(key, { name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, strong: strongMeta.length, meta, strongMeta, rows: [] });
     }
-    groups.get(key)!.rows.push({ p, outside: { risk: coverageRisk(standing), note } });
+    groups.get(key)!.rows.push({ p, outside: { risk: sp ? strongRisk(sp) : coverageRisk(standing), note } });
   }
-  const uncoveredGroups = [...groups.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+  // Güçlü pazarı olan ligler önce, sonra karne büyüklüğü.
+  const uncoveredGroups = [...groups.values()].sort((a, b) => b.strong - a.strong || b.n - a.n || a.name.localeCompare(b.name));
 
   const dayLabel = (ymd: string) =>
     ymd === today ? tc('today') : ymd === addDays(today, 1) ? tc('tomorrow') : ymd === addDays(today, -1) ? tc('yesterday')
@@ -224,6 +231,11 @@ export default async function PredictionsPage({ params: { locale }, searchParams
                 <h2 className="text-[18px]">{g.name}{g.ccode && <span className="ml-2 text-[13px] font-normal text-s-muted">{g.ccode}</span>}</h2>
                 <span className="num text-[12px] text-s-muted">{g.meta}</span>
               </div>
+              {g.strongMeta.length > 0 && (
+                <p className="mt-2 flex flex-wrap gap-2">
+                  {g.strongMeta.map((m) => <span key={m} className="tag tag-accent num">{m}</span>)}
+                </p>
+              )}
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {g.rows.map(({ p, outside }) => <PredictionCard key={p.fixtureId} p={p} outside={outside} />)}
               </div>

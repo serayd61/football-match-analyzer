@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, hideDecision, COVERAGE_GATE } from '@/lib/coverage/rules';
+import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, hideDecision, strongMarkets, COVERAGE_GATE } from '@/lib/coverage/rules';
 
 const row = (o: Partial<Parameters<typeof aggregateLeague>[0][number]>) => ({ p_over25: null, p_btts_yes: null, home_score: 1, away_score: 1, correct: null, ll_1x2: null, kickoff: '2026-09-01T12:00:00Z', ...o });
 
@@ -65,4 +65,14 @@ test('hideDecision: excluded league with worse-than-random 1X2 log-loss is hidde
   assert.equal(hideDecision('hidden', st(50, 1.04)), 'unhide');
   assert.equal(hideDecision('whitelist', st(50, 1.5)), null);     // beyaz liste kuralı ayrı (demote)
   assert.equal(hideDecision('excluded', st(50, null)), null);
+});
+
+test('strongMarkets: top buckets combined, n>=15 and acc>=70%; a strong market blocks hiding and lifts it', () => {
+  const b = { x12: { '70–80': { n: 4, won: 2 }, '≥80': { n: 8, won: 2 } }, ou25: { '75–85': { n: 16, won: 9 }, '≥85': { n: 10, won: 7 } }, under25: {}, btts: { '70–80': { n: 17, won: 11 }, '≥80': { n: 7, won: 6 } } };
+  assert.deepEqual(strongMarkets(b), [{ market: 'btts', from: 0.7, n: 24, won: 17 }]);   // Isthmian: Üst 16/26 = 62% → değil, KG 17/24 = 71% → güçlü
+  assert.deepEqual(strongMarkets(undefined), []);
+  const st = (status: any, strong: any[]) => hideDecision(status, { n: 63, x12: { n: 63, won: 25, ll: 1.2989 }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, strong, lastKickoff: null, windowDays: 180 });
+  assert.equal(st('excluded', strongMarkets(b)), null);
+  assert.equal(st('hidden', strongMarkets(b)), 'unhide');
+  assert.equal(st('excluded', []), 'hide');
 });

@@ -17,8 +17,10 @@ export type CoverageStatus = 'whitelist' | 'observe' | 'excluded' | 'hidden';
 export const HIDE_GATE = { minN: 20, hideLl: Math.log(3), unhideLl: 1.05 } as const;
 export function hideDecision(status: CoverageStatus, s: LeagueStats, g = HIDE_GATE): 'hide' | 'unhide' | null {
   const ll = s.x12.ll;
+  const strong = (s.strong ?? []).length > 0; // güçlü pazarı olan lig gizlenmez (Isthmian KG 17/24, 24 Eyl)
+  if (status === 'hidden' && strong) return 'unhide';
   if (ll == null || s.x12.n < g.minN) return null;
-  if (status === 'excluded' && ll >= g.hideLl) return 'hide';
+  if (status === 'excluded' && ll >= g.hideLl && !strong) return 'hide';
   if (status === 'hidden' && ll < g.unhideLl) return 'unhide';
   return null;
 }
@@ -26,12 +28,31 @@ export function hideDecision(status: CoverageStatus, s: LeagueStats, g = HIDE_GA
 export interface BucketCell { n: number; won: number }
 /** Olasılık dilimi karnesi (23 Eyl): pazar → dilim etiketi → n/won. Etiketler BUCKETS'tan. */
 export interface LeagueBuckets { x12: Record<string, BucketCell>; ou25: Record<string, BucketCell>; under25: Record<string, BucketCell>; btts: Record<string, BucketCell> }
+/** Ligin güçlü pazarı (24 Eyl): üst dilimlerde ≥15 maç ve ≥%70 isabet. `from` = model olasılık eşiği. */
+export interface StrongMarket { market: keyof LeagueBuckets; from: number; n: number; won: number }
+export const STRONG_GATE = { minN: 15, minAcc: 0.70 } as const;
+const STRONG_ZONES: Array<[keyof LeagueBuckets, number, string[]]> = [
+  ['x12', 0.70, ['70–80', '≥80']], ['ou25', 0.75, ['75–85', '≥85']], ['under25', 0.75, ['≥75']], ['btts', 0.70, ['70–80', '≥80']],
+];
+export function strongMarkets(b: LeagueBuckets | undefined, g = STRONG_GATE): StrongMarket[] {
+  if (!b) return [];
+  const out: StrongMarket[] = [];
+  for (const [market, from, labels] of STRONG_ZONES) {
+    let n = 0, won = 0;
+    for (const l of labels) { const c = b[market]?.[l]; if (c) { n += c.n; won += c.won; } }
+    if (n >= g.minN && won / n >= g.minAcc) out.push({ market, from, n, won });
+  }
+  return out;
+}
+
 export interface LeagueStats {
   n: number;                                   // sonuçlanmış satır (pencere)
   x12: { n: number; won: number; ll: number | null };
   ouHi: { n: number; won: number };            // p_over25 ≥ MIN_OVER ayakları
   bttsHi: { n: number; won: number };          // p_btts_yes ≥ MIN_BTTS ayakları
   buckets?: LeagueBuckets;
+  /** üst dilimlerde ≥15 maç, ≥%70 tutan pazarlar (strongMarkets) */
+  strong?: StrongMarket[];
   lastKickoff: string | null;
   windowDays: number;
 }
@@ -95,6 +116,7 @@ export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_ye
     if (r.p_btts_yes != null && r.p_btts_yes >= minBtts) { s.bttsHi.n++; if (both) s.bttsHi.won++; }
   }
   s.x12.ll = llN ? Math.round((llSum / llN) * 10000) / 10000 : null;
+  s.strong = strongMarkets(s.buckets);
   return s;
 }
 

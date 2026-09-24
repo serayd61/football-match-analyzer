@@ -312,7 +312,8 @@
     "metaLocked": "{home} vs {away}, {league}: model prediction, expected goals, likely scores and handicap lines. Members only, first 7 days free.",
     "scopeOutside": "uncovered leagues: {won}/{n} hit ({acc}%)",
     "standingMetaOutside": "{n} decided matches · league bucket record",
-    "standingLeadOutside": "This league is outside model coverage. For each market, the probability bucket the pick falls into and our past hit rate in that bucket for this league (or across all uncovered leagues when fewer than 10 matches). Not a guarantee, a record of what happened in the same situation."
+    "standingLeadOutside": "This league is outside model coverage. For each market, the probability bucket the pick falls into and our past hit rate in that bucket for this league (or across all uncovered leagues when fewer than 10 matches). Not a guarantee, a record of what happened in the same situation.",
+    "strongTag": "strong market: {market}"
   },
   "results": {
     "title": "Results",
@@ -913,7 +914,13 @@
       "leagueMetaThin": "180 days: {n} matches · thin record",
       "outsideEvidence": "This league, 1X2 {bucket}: {won}/{n} hit ({acc}%)",
       "outsideEvidenceAll": "Uncovered leagues, 1X2 {bucket}: {won}/{n} hit ({acc}%)",
-      "outsideThin": "Not enough matches in this bucket"
+      "outsideThin": "Not enough matches in this bucket",
+      "strongLeague": "Strong market: {market} ≥{from}% · {won}/{n} hit ({acc}%)",
+      "strongPick": "Strong market · {market} {p}% · this league {won}/{n} ({acc}%)",
+      "mkt1x2": "1X2",
+      "mktOver": "Over 2.5",
+      "mktUnder": "Under 2.5",
+      "mktBtts": "BTTS Yes"
     },
     "match": {
       "back": "← All predictions",

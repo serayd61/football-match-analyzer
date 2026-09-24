@@ -312,7 +312,8 @@
     "metaLocked": "{home} contro {away}, {league}: pronostico del modello, expected goals, risultati probabili e linee di handicap. Solo per i membri, primi 7 giorni gratis.",
     "scopeOutside": "campionati non coperti: {won}/{n} centrate ({acc}%)",
     "standingMetaOutside": "{n} partite decise · registro a fasce del campionato",
-    "standingLeadOutside": "Questo campionato è fuori dalla copertura del modello. Per ogni mercato, la fascia di probabilità della scelta e la nostra percentuale storica in quella fascia per questo campionato (o su tutti i campionati non coperti se meno di 10 partite). Non una garanzia, un registro di ciò che è accaduto nella stessa situazione."
+    "standingLeadOutside": "Questo campionato è fuori dalla copertura del modello. Per ogni mercato, la fascia di probabilità della scelta e la nostra percentuale storica in quella fascia per questo campionato (o su tutti i campionati non coperti se meno di 10 partite). Non una garanzia, un registro di ciò che è accaduto nella stessa situazione.",
+    "strongTag": "mercato forte: {market}"
   },
   "results": {
     "title": "Risultati",
@@ -913,7 +914,13 @@
       "leagueMetaThin": "180 giorni: {n} partite · registro scarso",
       "outsideEvidence": "Questo campionato, 1X2 {bucket}: {won}/{n} centrate ({acc}%)",
       "outsideEvidenceAll": "Campionati non coperti, 1X2 {bucket}: {won}/{n} centrate ({acc}%)",
-      "outsideThin": "Partite insufficienti in questa fascia"
+      "outsideThin": "Partite insufficienti in questa fascia",
+      "strongLeague": "Mercato forte: {market} ≥{from}% · {won}/{n} centrate ({acc}%)",
+      "strongPick": "Mercato forte · {market} {p}% · questo campionato {won}/{n} ({acc}%)",
+      "mkt1x2": "1X2",
+      "mktOver": "Over 2,5",
+      "mktUnder": "Under 2,5",
+      "mktBtts": "Gol Sì"
     },
     "match": {
       "back": "← Tutti i pronostici",

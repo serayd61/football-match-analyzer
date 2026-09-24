@@ -14,7 +14,7 @@ import { getAfContext } from '@/lib/site/af-context';
 import { getPerformance } from '@/lib/site/performance';
 import { standingFor } from '@/lib/site/match-standing';
 import { coverageById } from '@/lib/coverage/registry';
-import { sumBuckets, coverageStanding, coverageRisk } from '@/lib/site/coverage-risk';
+import { sumBuckets, coverageStanding, coverageRisk, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import MatchStanding, { type StandingLabels } from '@/components/site/MatchStanding';
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
@@ -107,11 +107,14 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   // Kapsam dışı lig: sinyal karnesi yerine sicilin dilim karnesi (2026-09-23).
   const cov = !p.covered ? await coverageById() : null;
   const covRow = cov && p.leagueId != null ? cov.get(p.leagueId) ?? null : null;
-  const outsideStanding = cov ? coverageStanding({
+  const outsideInput = {
     pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
     over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
     btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
-  }, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats))) : [];
+  };
+  const outsideStanding = cov ? coverageStanding(outsideInput, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats))) : [];
+  const strongPick = cov ? strongPickFor(outsideInput, covRow?.stats?.strong) : null;
+  const mktName: Record<string, string> = { x12: t('sec1x2'), ou25: t('standingOver'), under25: t('standingUnder'), btts: t('standingYes') };
   // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
   const standing = cov ? outsideStanding : perf ? standingFor({
     leagueSlug: p.league?.slug ?? null, pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
@@ -188,7 +191,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
   // Kapsam dışı: risk ve beklenen kayıp, beyaz liste eğrisinden değil lig dilim karnesinden.
   const outsideAcc = !p.covered ? (outsideStanding.find((r) => r.market === '1x2')?.acc ?? null) : null;
   const loss = p.covered ? lossRate(conf) : outsideAcc != null ? Math.round((1 - outsideAcc) * 100) : null;
-  const risk = p.covered ? riskOf(conf) : coverageRisk(outsideStanding);
+  const risk = p.covered ? riskOf(conf) : strongPick ? strongRisk(strongPick) : coverageRisk(outsideStanding);
   const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0;
   const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
   const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
@@ -204,6 +207,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
       <p className="pt-2 text-[13px]">
         <Link href="/predictions" className="font-semibold hover:text-s-accent-600">{t2('back')}</Link>
         {!p.covered && <span className="tag tag-outline ml-3 align-middle">{t('outsideCoverage')}</span>}
+        {strongPick && <span className="tag tag-accent ml-3 align-middle">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-accent ml-3 align-middle">{t('flagPostKickoff')}</span>}
       </p>
 
