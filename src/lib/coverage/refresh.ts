@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCatalogMap } from '@/lib/league-catalog';
 import { resolveLeague } from '@/lib/site/leagues';
-import { aggregateLeague, evaluateLeague, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
+import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
 
 // ============================================================================
 // KAPSAM SİCİLİ YENİLEME — haftalık inceleme adımı
@@ -18,7 +18,7 @@ const PAGE = 1000;
 const ACTOR = 'cron:engine-weekly-review';
 const COLS = 'league_id, league_name, kickoff, p_over25, p_btts_yes, p_home, p_draw, p_away, home_score, away_score, correct, ll_1x2';
 
-export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number }
+export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number; hidden: number; unhidden: number }
 
 export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Promise<RefreshResult> {
   const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
@@ -56,6 +56,7 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
   const upserts: any[] = [];
   const evaluated: Array<{ leagueId: number; name: string; status: CoverageStatus; proposal: CoverageProposal }> = [];
   let inserted = 0, repaired = 0;
+  const hideLog: any[] = [];
   for (const [leagueId, { name, rows }] of byLeague) {
     const cat = catalog.get(leagueId);
     const known = cur.get(leagueId);
@@ -73,14 +74,21 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     const status: CoverageStatus = repair?.status ?? known?.status ?? alias?.status ?? 'excluded';
     if (!known) inserted++;
     if (repair || alias) { repaired++; console.log(`[coverage] alias ${leagueId} ${resolveName} (${ccode ?? '-'}) → ${(repair ?? alias).slug} ${(repair ?? alias).status}${repair ? ' (onarım)' : ''}`); }
+    // Gizleme kuralı (otomatik, admin kararlı 'hidden' satırına dokunmaz): excluded ↔ hidden
+    const auto = !known || String(known.reason || '').startsWith('otomatik');
+    const hd = !repair && !alias && auto ? hideDecision(status, stats) : null;
+    const hidePatch = hd === 'hide'
+      ? { status: 'hidden' as const, reason: `otomatik: 1X2 log-loss ${stats.x12.ll} ≥ rastgele (n=${stats.x12.n})`, decided_at: nowIso, decided_by: ACTOR }
+      : hd === 'unhide' ? { status: 'excluded' as const, reason: `otomatik: 1X2 log-loss ${stats.x12.ll} düzeldi (n=${stats.x12.n})`, decided_at: nowIso, decided_by: ACTOR } : null;
+    if (hidePatch) hideLog.push({ layer: 'coverage', action: 'apply', subject: `league:${leagueId}`, before: { status }, after: { status: hidePatch.status, type: hd }, evidence: { league: resolveName, x12: stats.x12, n: stats.n }, actor: ACTOR, note: hidePatch.reason });
     upserts.push(known
       ? repair
         ? { ...known, status: repair.status, tier: repair.tier, country: repair.country ?? known.country, reason: `alias: ${repair.slug} (mevsimlik id ${leagueId})`, decided_at: nowIso, decided_by: ACTOR, stats, updated_at: nowIso }
-        : { ...known, stats, updated_at: nowIso }      // durum/kademe/gerekçe korunur
+        : { ...known, stats, updated_at: nowIso, ...(hidePatch ?? {}) }      // durum/kademe/gerekçe korunur (gizleme kuralı hariç)
       : alias
         ? { league_id: leagueId, slug: null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: alias.country ?? null, status: alias.status, tier: alias.tier, reason: `alias: ${alias.slug} (mevsimlik id ${leagueId})`, stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso }
-        : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, status: 'excluded', tier: 9, reason: 'otomatik: akışta görüldü, kapsam dışı', stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso });
-    if (alias || repair) continue;                                   // alias'ın önerisi ana satırdan gelir
+        : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, tier: 9, stats, review_at: null, updated_at: nowIso, ...(hidePatch ?? { status: 'excluded', reason: 'otomatik: akışta görüldü, kapsam dışı', decided_at: nowIso, decided_by: ACTOR }) });
+    if (alias || repair || hidePatch || status === 'hidden') continue; // alias'ın önerisi ana satırdan gelir; gizli lig öneri üretmez
     if (status === 'excluded' && !isProposalEligibleName(cat?.name || name)) continue;
     const p = evaluateLeague(status, stats);
     if (p) evaluated.push({ leagueId, name: known?.name ?? (cat?.name || name), status, proposal: p });
@@ -88,6 +96,12 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
   for (let i = 0; i < upserts.length; i += 200) {
     const { error } = await sb.from('league_coverage').upsert(upserts.slice(i, i + 200), { onConflict: 'league_id' });
     if (error) throw new Error(`league_coverage upsert: ${error.message}`);
+  }
+  const hiddenN = hideLog.filter((h) => h.after.type === 'hide').length, unhiddenN = hideLog.length - hiddenN;
+  if (hideLog.length) {
+    const { error } = await sb.from('engine_learning_log').insert(hideLog);
+    if (error) console.error('[coverage] hide log insert failed:', error.message);
+    console.log(`[coverage] hidden=${hiddenN} unhidden=${unhiddenN}: ${hideLog.map((h) => `${h.evidence.league}→${h.after.status}`).join(', ')}`);
   }
 
   // Öneriler (soğuma penceresi: aynı lig + tip)
@@ -109,5 +123,5 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Pro
     else out.push({ leagueId: e.leagueId, name: e.name, type: e.proposal.type, to: e.proposal.to });
   }
   console.log(`[coverage] leagues=${byLeague.size} inserted=${inserted} repaired=${repaired} proposals=${out.length} cooldown=${skipped} rows=${total}`);
-  return { leagues: byLeague.size, inserted, repaired, proposals: out, skippedCooldown: skipped, rows: total };
+  return { leagues: byLeague.size, inserted, repaired, proposals: out, skippedCooldown: skipped, rows: total, hidden: hiddenN, unhidden: unhiddenN };
 }

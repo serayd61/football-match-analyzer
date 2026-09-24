@@ -85,7 +85,8 @@ export async function generateTierB(date: string, opts: { now?: Date; dry?: bool
   const now = opts.now ?? new Date();
   const sb = dbFresh();
   const coverage = await loadCoverage();
-  const whitelist = new Set(coverage.filter((c) => c.status === 'whitelist').map((c) => c.league_id));
+  // Beyaz liste kuponun alanı, gizli ligler sinyalsiz: ikisi de Tier-B'ye girmez.
+  const whitelist = new Set(coverage.filter((c) => c.status === 'whitelist' || c.status === 'hidden').map((c) => c.league_id));
   const rows = await dayRows(date);
   const { data: existingRows } = await sb.from('tier_b_picks').select('fixture_id').eq('pick_date', date);
   const existing = new Set(((existingRows ?? []) as any[]).map((r) => Number(r.fixture_id)));
