@@ -17,7 +17,7 @@
 //     etiketlenir (in-sample). Ek olarak kronolojik %20 holdout ile dış
 //     örneklem etkisi ölçülür ve varsa yeni sütunlara yazılır
 //     (brier_holdout_before/after, n_holdout, fit_from, fit_to — bkz.
-//     supabase/migrations/2026-09-05_confidence_calibration_holdout.sql).
+//     supabase/migrations/20260905010000_confidence_calibration_holdout.sql).
 //     Sütunlar yoksa eski şemaya düşülür ve uyarı loglanır.
 // ============================================================================
 
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     let insErr = legacySchema ? null : (await sb().from('confidence_calibration').insert(extended)).error;
     if (insErr && isMissingColumn(insErr.message)) {
-      console.warn('[fit-calibration] holdout columns missing — apply supabase/migrations/2026-09-05_confidence_calibration_holdout.sql; writing legacy row');
+      console.warn('[fit-calibration] holdout columns missing — apply supabase/migrations/20260905010000_confidence_calibration_holdout.sql; writing legacy row');
       legacySchema = true;
       insErr = null;
     }

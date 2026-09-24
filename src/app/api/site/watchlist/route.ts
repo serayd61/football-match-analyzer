@@ -3,7 +3,7 @@
 // GET    → { ok, items: [{ teamId, teamName, leagueSlug }] }
 // POST   { teamId, teamName, leagueSlug? } → add (idempotent, max 30)
 // DELETE { teamId } → remove
-// Table: site_watchlist (src/lib/supabase/migrations/create_site_watchlist.sql)
+// Table: site_watchlist (supabase/legacy/app/create_site_watchlist.sql)
 // ============================================================================
 export const dynamic = 'force-dynamic';
 

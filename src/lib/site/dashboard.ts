@@ -158,7 +158,7 @@ export const teamDirectory = unstable_cache(
 
 // ---------------------------------------------------------------------------
 // Watchlist (per user). Table: site_watchlist — see
-// src/lib/supabase/migrations/create_site_watchlist.sql. If the table is
+// supabase/legacy/app/create_site_watchlist.sql. If the table is
 // missing the dashboard shows the section as unavailable instead of failing.
 // ---------------------------------------------------------------------------
 

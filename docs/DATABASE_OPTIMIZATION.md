@@ -284,7 +284,7 @@ Tüm önerilen index'leri eklemek için:
 
 ```bash
 # Supabase SQL Editor'da çalıştır
-psql < supabase/optimization_indexes.sql
+psql < supabase/legacy/optimization_indexes.sql
 ```
 
 Veya Supabase Dashboard > SQL Editor'dan çalıştır.
