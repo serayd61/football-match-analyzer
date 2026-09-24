@@ -21,6 +21,10 @@ import { getSiteAccess } from '@/lib/site/access';
 import { readDailyPicks, dailyPicksRecord } from '@/lib/site/daily-picks';
 import { Paywall } from '@/components/site/Paywall';
 import { legacyHref } from '@/lib/site/legacy';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { strongBoard, strongToday } from '@/lib/site/strong-markets';
+import { strongRisk } from '@/lib/site/coverage-risk';
+import { RiskLabel } from '@/components/site/Risk';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -46,9 +50,10 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const email = session?.user?.email;
   if (!email) redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/dashboard`)}`);
 
-  const [t, tc, tm, f] = await Promise.all([
-    getTranslations('dashboard'), getTranslations('common'), getTranslations('match'), getFormatter(),
+  const [t, tc, tm, tv, f] = await Promise.all([
+    getTranslations('dashboard'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getFormatter(),
   ]);
+  const mktName: Record<string, string> = { x12: tv('mkt1x2'), ou25: tv('mktOver'), under25: tv('mktUnder'), btts: tv('mktBtts') };
 
   const today = todayYmd();
   const [access, engineAccess, site, todayAll, tomorrowAll, live, watch, directory] = await Promise.all([
@@ -71,6 +76,17 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const radar = await valueRadar([...todayRows, ...tomorrowRows]);
   // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
   const [picks, picksRec] = await Promise.all([readDailyPicks(today), dailyPicksRecord(30)]);
+  // Güçlü pazarlar (24 Eyl): sicil stats.strong; bugün o bölgeye düşen maçlar + pazar karnesi.
+  const coverage = await loadCoverage();
+  const covById = new Map(coverage.map((c) => [Number(c.league_id), c]));
+  const strongRows = strongToday(
+    todayAll.filter((r) => r.hasModel && !r.settled).map((r) => ({
+      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff,
+      input: { pick: r.pick, pHome: r.pHome, pDraw: r.pDraw, pAway: r.pAway, over: r.overUnder ? { pick: r.overUnder.pick, pRaw: r.overUnder.pRaw } : null, btts: r.btts ? { pick: r.btts.pick, pRaw: r.btts.pRaw } : null },
+    })),
+    (id) => { const c = covById.get(id); return c ? { strong: c.stats?.strong, status: c.status, name: c.name } : undefined; },
+  );
+  const board = strongBoard(coverage, 3);
   // Denetim 2026-09-19: kilitli bölüm eskiden GERÇEK satırları CSS blur arkasında HTML'e
   // basıyordu (kaynağı görüntüle = ücretli veri). Ödemeyen için satırlar sunucuda maskelenir;
   // bulanık tablo yalnız yer tutucudur, sayı (n) gerçek kalır.
@@ -188,6 +204,42 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
             )}
           </section>
 
+          {/* ── Bugün güçlü pazarlar (24 Eyl) ─────────────────────────── */}
+          <section>
+            <SectionTitle title={t('strongTitle')} meta={t('strongMeta')} />
+            {strongRows.length === 0 ? (
+              <p className="mt-3 text-sm text-s-muted">{t('strongEmpty')}</p>
+            ) : (
+              <div className="tbl-scroll mt-3">
+                <table className="text-sm">
+                  <thead className="text-xs uppercase tracking-wider text-s-muted">
+                    <tr className="border-b border-s-line">
+                      <th className="py-1.5 text-left font-medium">{tc('kickoff')}</th>
+                      <th className="py-1.5 text-left font-medium">{t('colMatch')}</th>
+                      <th className="py-1.5 text-left font-medium">{t('colSelection')}</th>
+                      <th className="py-1.5 text-right font-medium">{tc('model')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('colRecord')}</th>
+                      <th className="py-1.5 text-right font-medium">{tc('league')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {strongRows.map(({ row: r, pick: sp, leagueName }) => (
+                      <tr key={r.fixtureId} className="border-b border-s-line">
+                        <td className="py-2 pr-3 text-s-muted"><LocalTime iso={r.kickoff} format="time" /></td>
+                        <td className="py-2 pr-3"><Link href={`/predictions/${r.fixtureId}`} className="hover:underline">{r.homeName} – {r.awayName}</Link></td>
+                        <td className="py-2 pr-3">{sp.market === 'x12' ? (sp.selection === '1' ? r.homeName : sp.selection === '2' ? r.awayName : tc('draw')) : mktName[sp.market]} <span className="ml-1 align-middle"><RiskLabel risk={strongRisk(sp)} /></span></td>
+                        <td className="num py-2 text-right">{pct(sp.p)}</td>
+                        <td className="num py-2 text-right">{sp.sm.won}/{sp.sm.n} <span className="text-s-muted">({pct(sp.sm.won / sp.sm.n)})</span></td>
+                        <td className="py-2 text-right text-xs text-s-muted">{leagueName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="mt-2 text-xs text-s-muted">{t('strongNote')}</p>
+          </section>
+
           {/* ── Today's 3 picks (validated goal-market rule) ───────────── */}
           <section>
             <SectionTitle title={t('picksTitle')} meta={t('picksMeta')} />
@@ -297,6 +349,27 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
         {/* ── Following ───────────────────────────────────────────────── */}
         <aside className="space-y-4">
+          {/* ── Pazar karnesi (24 Eyl) ───────────────────────────────── */}
+          {board.length > 0 && (
+            <div className="mb-10">
+              <SectionTitle title={t('boardTitle')} />
+              <p className="mt-2 text-sm text-s-muted">{t('boardLead')}</p>
+              <dl className="mt-3 space-y-3">
+                {board.map((b) => (
+                  <div key={b.market}>
+                    <dt className="text-xs font-medium uppercase tracking-wider text-s-muted">{mktName[b.market]}</dt>
+                    {b.rows.map((l) => (
+                      <dd key={`${b.market}-${l.leagueId}`} className="flex items-baseline justify-between gap-3 border-b border-s-line py-1.5 text-sm">
+                        <span className="truncate">{l.name}{l.ccode && <span className="ml-1.5 text-xs text-s-muted">{l.ccode}</span>}</span>
+                        <span className="num shrink-0">{l.won}/{l.n} <span className="text-s-muted">({pct(l.acc)})</span></span>
+                      </dd>
+                    ))}
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-2 text-xs"><Link href="/performance#strong" className="underline underline-offset-2">{t('boardAll')}</Link></p>
+            </div>
+          )}
           <SectionTitle title={t('watchTitle')} meta={watch.available ? `${watch.items.length}/30` : undefined} />
           <p className="text-sm text-s-muted">{t('watchLead')}</p>
           <WatchlistPanel teams={directory} following={[...followedIds]} available={watch.available} />

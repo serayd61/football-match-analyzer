@@ -426,7 +426,11 @@
     "signalsEdge": "Vorsprung zum Markt",
     "signalsClash": "1X2-Abweichung (über Schwelle)",
     "signalsAll": "Alle Ligen",
-    "signalsNote": "Lesehilfe (Stand 2026-09-12): bei 1X2 sinkt die Trefferquote mit wachsendem Vorsprung, ein vom Markt abweichendes Modell bekommt also nicht recht; in den Tormärkten wirkt das Niveau: Über 2,5 und Beide treffen über 60 % treffen, ohne Vorsprungsbedingung. Vorsprungstabellen enthalten nur Spiele mit erfassten Quoten (für Über/Unter wird keine Buchmacherquote gespeichert). Die Tipps des Tages beruhen auf dieser Bilanz. Abweichungstabellen: absoluter Abstand (Prozentpunkte) zwischen dem 1X2-Tipp des Modells und dem margenfreien Markt, nur bei Über 2,5 ≥ 65 % und BTTS Ja ≥ 60 %. Stand 13. Sept. treffen Tormärkte bei ≥10 Punkten Abweichung deutlich besser (Über 13/13, BTTS 22/24), die Stichprobe ist aber überwiegend Eredivisie; in die Regel kommt es erst mit Daten außerhalb der Eredivisie."
+    "signalsNote": "Lesehilfe (Stand 2026-09-12): bei 1X2 sinkt die Trefferquote mit wachsendem Vorsprung, ein vom Markt abweichendes Modell bekommt also nicht recht; in den Tormärkten wirkt das Niveau: Über 2,5 und Beide treffen über 60 % treffen, ohne Vorsprungsbedingung. Vorsprungstabellen enthalten nur Spiele mit erfassten Quoten (für Über/Unter wird keine Buchmacherquote gespeichert). Die Tipps des Tages beruhen auf dieser Bilanz. Abweichungstabellen: absoluter Abstand (Prozentpunkte) zwischen dem 1X2-Tipp des Modells und dem margenfreien Markt, nur bei Über 2,5 ≥ 65 % und BTTS Ja ≥ 60 %. Stand 13. Sept. treffen Tormärkte bei ≥10 Punkten Abweichung deutlich besser (Über 13/13, BTTS 22/24), die Stichprobe ist aber überwiegend Eredivisie; in die Regel kommt es erst mit Daten außerhalb der Eredivisie.",
+    "secStrong": "Starke Märkte",
+    "strongMeta": "Liga × Markt · ≥15 Spiele · ≥70 % · 180 Tage",
+    "strongNote": "Nicht abgedeckte Ligen eingeschlossen; Frauen-, Jugend-, Freundschafts- und Pokalspiele werden nicht hervorgehoben. Fällt eine Liga unter die Schwelle, verschwindet sie bei der Montagsaktualisierung.",
+    "colZone": "Zone"
   },
   "leagues": {
     "title": "Ligen",
@@ -745,7 +749,15 @@
     "picksFair": "fair",
     "picksBook": "Buchmacher",
     "picksLocked": "Heute {n} Tipps bereit",
-    "picksLockedLead": "Die Tipps des Tages sind für Mitglieder. Nach der Registrierung 7 Tage gratis."
+    "picksLockedLead": "Die Tipps des Tages sind für Mitglieder. Nach der Registrierung 7 Tage gratis.",
+    "strongTitle": "Starke Märkte heute",
+    "strongMeta": "Liga-Markt-Bilanz ≥70 % · 180 Tage",
+    "strongEmpty": "Heute fällt kein Spiel in eine starke Zone.",
+    "strongNote": "Ein Liga-Markt-Paar gilt als 'stark', wenn es in den letzten 180 Tagen bei mindestens 15 Spielen ≥70 % getroffen hat; eine Zeile erscheint, wenn der Modelltipp in diese Zone fällt. Nicht abgedeckte Ligen eingeschlossen. Keine Garantie, ein Protokoll dessen, was in derselben Lage geschah.",
+    "colRecord": "Ligabilanz",
+    "boardTitle": "Marktbilanz",
+    "boardLead": "Stärkste Ligen je Markt, 180 Tage. Montags aktualisiert.",
+    "boardAll": "Volle Tabelle auf der Bilanzseite →"
   },
   "paywall": {
     "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",

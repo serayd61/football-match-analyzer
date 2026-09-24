@@ -426,7 +426,11 @@
     "signalsEdge": "edge vs market",
     "signalsClash": "1X2 disagreement (above threshold)",
     "signalsAll": "All leagues",
-    "signalsNote": "How to read it (as of 2026-09-12): in 1X2 the hit rate falls as the edge grows, so a model drifting away from the market is not being proven right; in the goal markets the level works: Over 2.5 and both-teams-to-score selections above 60% hit, no edge required. Edge tables only include matches with recorded odds (no bookmaker price is stored for Over/Under). Today's picks are built on this report. Disagreement tables: absolute gap (percentage points) between the model's 1X2 pick and the vig-free market, only for Over 2.5 ≥ 65% and BTTS Yes ≥ 60% picks. As of 13 Sept, goal markets hit markedly better at ≥10 points of disagreement (Over 13/13, BTTS 22/24), but most of the sample is Eredivisie; it joins the rule once non-Eredivisie data accumulates."
+    "signalsNote": "How to read it (as of 2026-09-12): in 1X2 the hit rate falls as the edge grows, so a model drifting away from the market is not being proven right; in the goal markets the level works: Over 2.5 and both-teams-to-score selections above 60% hit, no edge required. Edge tables only include matches with recorded odds (no bookmaker price is stored for Over/Under). Today's picks are built on this report. Disagreement tables: absolute gap (percentage points) between the model's 1X2 pick and the vig-free market, only for Over 2.5 ≥ 65% and BTTS Yes ≥ 60% picks. As of 13 Sept, goal markets hit markedly better at ≥10 points of disagreement (Over 13/13, BTTS 22/24), but most of the sample is Eredivisie; it joins the rule once non-Eredivisie data accumulates.",
+    "secStrong": "Strong markets",
+    "strongMeta": "league × market · ≥15 matches · ≥70% · 180 days",
+    "strongNote": "Uncovered leagues included; women's, youth, friendly and cup matches are not showcased. A league drops off at the Monday refresh when it falls below the threshold.",
+    "colZone": "Zone"
   },
   "leagues": {
     "title": "Leagues",
@@ -745,7 +749,15 @@
     "picksFair": "fair",
     "picksBook": "book",
     "picksLocked": "{n} picks ready today",
-    "picksLockedLead": "Today's picks are for members. Registration gives 7 free days."
+    "picksLockedLead": "Today's picks are for members. Registration gives 7 free days.",
+    "strongTitle": "Strong markets today",
+    "strongMeta": "league-market record ≥70% · 180 days",
+    "strongEmpty": "No match falls into a strong zone today.",
+    "strongNote": "A league-market pair counts as 'strong' when it hit ≥70% over at least 15 matches in the last 180 days; a row enters when the model's pick falls into that zone. Uncovered leagues included. Not a guarantee, a record of what happened in the same situation.",
+    "colRecord": "League record",
+    "boardTitle": "Market record",
+    "boardLead": "Strongest leagues per market, 180 days. Refreshed on Mondays.",
+    "boardAll": "Full table on the record page →"
   },
   "paywall": {
     "expiredTitle": "Your 7-day trial has ended",
