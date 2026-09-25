@@ -12,6 +12,7 @@ import { Page, EmptyState } from '@/components/site/ui';
 import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
 import { coverageById } from '@/lib/coverage/registry';
 import { countryName } from '@/lib/site/countries';
+import { sectionId } from '@/lib/site/back-link';
 import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import { RiskNote } from '@/components/site/Risk';
 import { requireSiteAccess } from '@/lib/site/access';
@@ -98,7 +99,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const uncoveredRows = applyFilters(uncoveredAll.filter((p) => uLeagueId != null ? p.leagueId === uLeagueId : country ? (ccodeOf(p) ?? '') === country : true), flt);
   const outsideAll = sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats));
   const mktName: Record<string, string> = { x12: t('mkt1x2'), ou25: t('mktOver'), under25: t('mktUnder'), btts: t('mktBtts') };
-  const groups = new Map<string, { name: string; ccode: string | null; n: number; strong: number; meta: string; strongMeta: string[]; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
+  const groups = new Map<string, { id: string | undefined; name: string; ccode: string | null; n: number; strong: number; meta: string; strongMeta: string[]; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
   for (const p of uncoveredRows) {
     const c = p.leagueId != null ? cov.get(p.leagueId) : undefined;
     const input = {
@@ -118,7 +119,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       const sm = leagueSummary(c?.stats);
       const meta = sm.x12 != null ? t('leagueMeta', { n: sm.n, x12: sm.x12, ou: sm.ou ?? '–', btts: sm.btts ?? '–' }) : t('leagueMetaThin', { n: sm.n });
       const strongMeta = (c?.stats?.strong ?? []).map((m) => t('strongLeague', { market: mktName[m.market], from: Math.round(m.from * 100), won: m.won, n: m.n, acc: Math.round((m.won / m.n) * 100) }));
-      groups.set(key, { name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, strong: strongMeta.length, meta, strongMeta, rows: [] });
+      groups.set(key, { id: sectionId(p.leagueId) ?? undefined, name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, strong: strongMeta.length, meta, strongMeta, rows: [] });
     }
     groups.get(key)!.rows.push({ p, outside: { risk: sp ? strongRisk(sp) : coverageRisk(standing), note } });
   }
@@ -146,6 +147,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   };
 
   const nextDay = scoped.length === 0 && !outsideMode ? await nextDayWithPredictions(date, 1) : null;
+  // Maç sayfasındaki "geri" bağlantısı bu sorguyu korur (gün, kapsam, ülke/lig, filtreler).
+  const listQs = href({}).split('?')[1] ?? '';
   const uSelected = uLeagueId != null ? uLeagues.get(uLeagueId) ?? null : null;
   const outsideTitle = uSelected ? uSelected.name : country ? (uCountries.get(country)?.country ?? country) : null;
   const leaguesToday = SITE_LEAGUES.filter((l) => scoped.some((r) => r.league?.slug === l.slug));
@@ -273,7 +276,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       ) : (
         <>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((p) => <PredictionCard key={p.fixtureId} p={p} />)}
+            {rows.map((p) => <PredictionCard key={p.fixtureId} p={p} back={listQs} />)}
           </div>
           <p className="mt-6 text-[12px] text-s-muted">{t('footnote')}</p>
         </>
@@ -285,7 +288,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           <summary className="cursor-pointer text-[18px] font-semibold">{outsideMode ? t('outsideTitle', { name: outsideTitle ?? '', count: uncoveredRows.length, leagues: uncoveredGroups.length }) : t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</summary>
           <p className="mt-2 max-w-[68ch] text-[13px] text-s-muted">{t('uncoveredLead')}</p>
           {uncoveredGroups.map((g) => (
-            <section key={g.name + (g.ccode ?? '')} className="mt-6">
+            <section key={g.name + (g.ccode ?? '')} id={g.id} className="mt-6 scroll-mt-4">
               <div className="rule-b-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-2">
                 <h2 className="text-[18px]">{g.name}{g.ccode && <span className="ml-2 text-[13px] font-normal text-s-muted">{g.ccode}</span>}</h2>
                 <span className="num text-[12px] text-s-muted">{g.meta}</span>
@@ -296,7 +299,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
                 </p>
               )}
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {g.rows.map(({ p, outside }) => <PredictionCard key={p.fixtureId} p={p} outside={outside} />)}
+                {g.rows.map(({ p, outside }) => <PredictionCard key={p.fixtureId} p={p} outside={outside} back={listQs} />)}
               </div>
             </section>
           ))}
