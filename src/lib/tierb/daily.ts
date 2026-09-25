@@ -78,7 +78,7 @@ export async function priceLegs(legs: TierBLeg[]): Promise<{ legs: PricedLeg[]; 
     if (!r.ok) { if (!errors.includes(`odds ${id}: ${r.error}`)) errors.push(`odds ${id}: ${r.error}`); continue; }
     if (!r.odds) continue;
     const p = priceLeg(l.market, l.selection, r.odds);
-    if (p) l.price = withMargin(p, l.modelP);
+    if (p) l.price = { ...withMargin(p, l.modelP), bookmaker: r.odds.bookmaker, bookmakers: r.bookmakers };
   }
   return { legs: out, calls, matched, errors };
 }
@@ -103,7 +103,7 @@ export async function generateTierB(date: string, opts: { now?: Date; dry?: bool
     const { error } = await sb.from('tier_b_picks').upsert(pricing.legs.map((l) => ({
       pick_date: date, fixture_id: l.fixtureId, league_id: l.leagueId, league_name: l.leagueName, home_name: l.home, away_name: l.away, kickoff: l.kickoff,
       market: l.market, selection: l.selection, model_p: l.modelP, threshold: l.threshold,
-      odds: l.price?.odds ?? null, odds_source: l.price ? 'api-football' : null, market_p: l.price?.marketP ?? null, margin: l.price?.margin ?? null, af_fixture_id: l.afFixtureId,
+      odds: l.price?.odds ?? null, odds_source: l.price ? `api-football:${l.price.bookmaker ?? '?'}` : null, market_p: l.price?.marketP ?? null, margin: l.price?.margin ?? null, af_fixture_id: l.afFixtureId,
     })), { onConflict: 'pick_date,fixture_id', ignoreDuplicates: true });
     if (error) throw new Error(error.message);
     inserted = pricing.legs.length;
