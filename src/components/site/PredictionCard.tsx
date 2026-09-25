@@ -25,7 +25,7 @@ const fair = (p: number) => (p > 0 ? (1 / p).toFixed(2) : '–');
 /** Kapsam dışı maç: risk etiketi lig dilim karnesinden gelir (lib/site/coverage-risk), kart altına kanıt satırı düşer. */
 export interface OutsideRisk { risk: Risk; note: string | null }
 
-export default async function PredictionCard({ p, locked = false, market, outside = null, back = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null; /** listenin sorgusu (başında ? yok) → maç sayfası "geri" bağlantısı bunu korur */ back?: string | null }) {
+export default async function PredictionCard({ p, locked = false, market, outside = null, back = null, spot = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null; /** listenin sorgusu (başında ? yok) → maç sayfası "geri" bağlantısı bunu korur */ back?: string | null; /** pazar eşiği filtresi açıkken kartta gösterilen olasılık */ spot?: { label: string; p: number } | null }) {
   const t = await getTranslations('v2.predictions');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
@@ -44,7 +44,10 @@ export default async function PredictionCard({ p, locked = false, market, outsid
           <span className="truncate">{p.leagueName} · <LocalTime iso={p.kickoff} format="time" /></span>
           {showState && <StatusChip status={p.status} label={tc(STATUS_KEY[p.status])} />}
         </span>
-        {p.hasModel ? <RiskLabel risk={outside ? outside.risk : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {spot && <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span>}
+          {p.hasModel ? <RiskLabel risk={outside ? outside.risk : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
+        </span>
       </div>
       <div className="flex items-center justify-between gap-3">
         <h3 className="min-w-0 text-[22px] leading-[1.05]">

@@ -6,6 +6,7 @@ test('back query keeps known keys only and drops junk', () => {
   assert.equal(sanitizeBackQs('date=2026-09-26&scope=all&country=NED&evil=1&league=u111'), 'date=2026-09-26&scope=all&country=NED&league=u111');
   assert.equal(sanitizeBackQs('scope=none&date=x'), null);
   assert.equal(sanitizeBackQs(''), null);
+  assert.equal(sanitizeBackQs('market=btts&minp=65&minp=99'), 'market=btts&minp=65');
 });
 
 test('uncovered match returns to the list with scope=all and a league anchor; covered match to the day', () => {
