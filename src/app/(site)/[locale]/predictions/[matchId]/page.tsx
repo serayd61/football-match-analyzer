@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { ymdOf, todayYmd } from '@/lib/site/time';
+import { backHref } from '@/lib/site/back-link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
@@ -61,7 +63,7 @@ const pct = (x: number | null | undefined, dash = '–') => (x == null ? dash : 
 const odds = (p: number) => (p > 0 ? (1 / p).toFixed(2) : '–');
 const pp = (x: number) => { const v = Math.round(x * 100); return v === 0 ? '0' : `${v > 0 ? '+' : '−'}${Math.abs(v)}`; };
 
-export default async function MatchPage({ params }: { params: { locale: string; matchId: string } }) {
+export default async function MatchPage({ params, searchParams }: { params: { locale: string; matchId: string }; searchParams?: { back?: string } }) {
   unstable_setRequestLocale(params.locale);
   const id = parseId(params.matchId);
   if (!id) notFound();
@@ -210,7 +212,7 @@ export default async function MatchPage({ params }: { params: { locale: string; 
     <Page>
       <div className="pt-6"><TrialNotice access={access} /></div>
       <p className="pt-2 text-[13px]">
-        <Link href="/predictions" className="font-semibold hover:text-s-accent-600">{t2('back')}</Link>
+        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold hover:text-s-accent-600">{t2('back')}</Link>
         {!p.covered && <span className="tag tag-outline ml-3 align-middle">{t('outsideCoverage')}</span>}
         {strongPick && <span className="tag tag-accent ml-3 align-middle">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-accent ml-3 align-middle">{t('flagPostKickoff')}</span>}

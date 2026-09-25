@@ -25,7 +25,7 @@ const fair = (p: number) => (p > 0 ? (1 / p).toFixed(2) : '–');
 /** Kapsam dışı maç: risk etiketi lig dilim karnesinden gelir (lib/site/coverage-risk), kart altına kanıt satırı düşer. */
 export interface OutsideRisk { risk: Risk; note: string | null }
 
-export default async function PredictionCard({ p, locked = false, market, outside = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null }) {
+export default async function PredictionCard({ p, locked = false, market, outside = null, back = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null; /** listenin sorgusu (başında ? yok) → maç sayfası "geri" bağlantısı bunu korur */ back?: string | null }) {
   const t = await getTranslations('v2.predictions');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
@@ -75,7 +75,7 @@ export default async function PredictionCard({ p, locked = false, market, outsid
   );
 
   return p.hasModel && !locked ? (
-    <Link href={`/predictions/${p.fixtureId}`} className="card card-top">{body}</Link>
+    <Link href={`/predictions/${p.fixtureId}${back ? `?back=${encodeURIComponent(back)}` : ''}`} className="card card-top">{body}</Link>
   ) : (
     <div className="card card-top">{body}</div>
   );
