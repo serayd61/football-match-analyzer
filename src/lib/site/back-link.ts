@@ -19,6 +19,8 @@ const ALLOWED: Record<string, RegExp> = {
   status: /^(upcoming|live|finished)$/,
   ready: /^1$/,
   sort: /^confidence$/,
+  market: /^(x12|ou25|btts)$/,
+  minp: /^(50|55|60|65|70|75|80|85|90)$/,
 };
 
 export function sanitizeBackQs(back: string | undefined | null): string | null {

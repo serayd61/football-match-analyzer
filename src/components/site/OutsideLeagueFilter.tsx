@@ -7,12 +7,15 @@ import { useMemo, useRef, useState } from 'react';
 
 export interface OutsideCountry { ccode: string; country: string; n: number }
 export interface OutsideLeague { id: number; name: string; ccode: string | null; n: number }
-export interface OutsideLabels { filter: string; country: string; league: string; countryAll: string; leagueAll: string; apply: string; clear: string }
+export interface OutsideLabels { filter: string; country: string; league: string; countryAll: string; leagueAll: string; apply: string; clear: string; market: string; marketAll: string; markets: Record<string, string>; /** eşik → etiket ('≥ %60'); client bileşene fonksiyon geçmek yasak */ minP: Record<string, string> }
 
-export default function OutsideLeagueFilter({ countries, leagues, country, leagueId, hidden, labels, clearHref }: {
+export default function OutsideLeagueFilter({ countries, leagues, country, leagueId, market, minP, minPSteps, hidden, labels, clearHref }: {
   countries: OutsideCountry[]; leagues: OutsideLeague[]; country: string | null; leagueId: number | null;
+  market: string | null; minP: number | null; minPSteps: readonly number[];
   hidden: Record<string, string>; labels: OutsideLabels; clearHref: string | null;
 }) {
+  const [mk, setMk] = useState(market ?? '');
+  const [mp, setMp] = useState(String(minP ?? 60));
   const [cc, setCc] = useState(country ?? '');
   const [lg, setLg] = useState(leagueId != null ? `u${leagueId}` : '');
   const form = useRef<HTMLFormElement>(null);
@@ -35,6 +38,16 @@ export default function OutsideLeagueFilter({ countries, leagues, country, leagu
             {leagues.filter((u) => (u.ccode ?? '') === c.ccode).map((u) => <option key={u.id} value={`u${u.id}`}>{u.name} ({u.n})</option>)}
           </optgroup>
         ))}
+      </select>
+      <span className="ml-2 text-s-muted">{labels.market}</span>
+      <label className="sr-only" htmlFor="flt-market">{labels.market}</label>
+      <select id="flt-market" name="market" value={mk} onChange={(e) => setMk(e.target.value)} className="input h-9 w-full sm:w-auto">
+        <option value="">{labels.marketAll}</option>
+        {Object.entries(labels.markets).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+      </select>
+      <label className="sr-only" htmlFor="flt-minp">{labels.minP[mp]}</label>
+      <select id="flt-minp" name="minp" value={mp} onChange={(e) => setMp(e.target.value)} disabled={!mk} className="input h-9 w-full sm:w-auto">
+        {minPSteps.map((p) => <option key={p} value={String(p)}>{labels.minP[String(p)]}</option>)}
       </select>
       <button type="submit" className="btn btn-sm btn-primary">{labels.apply}</button>
       {clearHref && <a href={clearHref} className="btn btn-sm btn-secondary">{labels.clear}</a>}
