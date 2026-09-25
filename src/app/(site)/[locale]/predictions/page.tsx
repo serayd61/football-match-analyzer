@@ -10,6 +10,7 @@ import { applyFilters, parseFilters } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
+import OutsideLeagueFilter from '@/components/site/OutsideLeagueFilter';
 import { coverageById } from '@/lib/coverage/registry';
 import { countryName } from '@/lib/site/countries';
 import { sectionId } from '@/lib/site/back-link';
@@ -177,29 +178,17 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         </nav>
       </div>
 
-      {/* Kapsam dışı: ülke ve lig seçici (JS'siz GET; ülke seçilince lig listesi o ülkeye daralır) */}
+      {/* Kapsam dışı: ülke ve lig seçici — ülke değişince lig listesi anında daralır (client) */}
       {uLeagueList.length > 0 && (
-        <form method="get" action="" className="rule-b-1 flex flex-wrap items-center gap-2 py-3 text-[13px]">
-          {date !== today && <input type="hidden" name="date" value={date} />}
-          {!showNote && <input type="hidden" name="note" value="0" />}
-          <span className="text-s-muted">{t('outsideFilter')}</span>
-          <label className="sr-only" htmlFor="flt-country">{t('country')}</label>
-          <select id="flt-country" name="country" defaultValue={country ?? ''} className="input h-9 w-full sm:w-auto sm:max-w-[260px]">
-            <option value="">{t('countryAll', { count: uCountryList.length })}</option>
-            {uCountryList.map((c) => <option key={c.ccode} value={c.ccode}>{c.country} ({c.n})</option>)}
-          </select>
-          <label className="sr-only" htmlFor="flt-uleague">{tc('league')}</label>
-          <select id="flt-uleague" name="league" defaultValue={uLeagueId != null ? `u${uLeagueId}` : ''} className="input h-9 w-full sm:w-auto sm:max-w-[300px]">
-            <option value="">{t('leagueAll')}</option>
-            {uCountryList.filter((c) => !country || c.ccode === country).map((c) => (
-              <optgroup key={c.ccode} label={c.country}>
-                {uLeagueList.filter((u) => (u.ccode ?? '') === c.ccode).map((u) => <option key={u.id} value={`u${u.id}`}>{u.name} ({u.n})</option>)}
-              </optgroup>
-            ))}
-          </select>
-          <button type="submit" className="btn btn-sm btn-primary">{t('apply')}</button>
-          {outsideMode && <Link href={href({ league: undefined, country: undefined })} className="btn btn-sm btn-secondary">{tc('clear')}</Link>}
-        </form>
+        <OutsideLeagueFilter
+          countries={uCountryList}
+          leagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
+          country={country}
+          leagueId={uLeagueId}
+          hidden={{ ...(date !== today ? { date } : {}), ...(!showNote ? { note: '0' } : {}) }}
+          labels={{ filter: t('outsideFilter'), country: t('country'), league: tc('league'), countryAll: t('countryAll', { count: uCountryList.length }), leagueAll: t('leagueAll'), apply: t('apply'), clear: tc('clear') }}
+          clearHref={outsideMode ? `/${locale}${href({ league: undefined, country: undefined })}` : null}
+        />
       )}
 
       {/* Day strip + scope */}
