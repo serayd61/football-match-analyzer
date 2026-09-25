@@ -11,6 +11,7 @@ import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
 import { coverageById } from '@/lib/coverage/registry';
+import { countryName } from '@/lib/site/countries';
 import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import { RiskNote } from '@/components/site/Risk';
 import { requireSiteAccess } from '@/lib/site/access';
@@ -24,7 +25,12 @@ export const dynamic = 'force-dynamic';
 // toggleable "How to read confidence" note, then a 3-column grid of cards.
 // The date strip and the covered/all switch survive as small links.
 
-type Search = { date?: string; league?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string };
+type Search = { date?: string; league?: string; country?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string };
+
+// Kapsam dışı lig filtresi (2026-09-26): `league=u<leagueId>` tek lig, `country=<ccode>` ülkenin
+// tüm kapsam dışı ligleri. Beyaz liste çipleri değişmez; seçim ülke/lig <select> ile yapılır.
+const U_LEAGUE_RE = /^u(\d{1,9})$/;
+const CCODE_RE = /^[A-Z]{2,3}$/;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'predictions' });
@@ -53,7 +59,10 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const today = todayYmd();
   const date = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : today;
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
-  const scope = searchParams.scope === 'all' ? 'all' : 'covered';
+  const uLeagueId = searchParams.league && U_LEAGUE_RE.test(searchParams.league) ? Number(searchParams.league.slice(1)) : null;
+  const country = searchParams.country && CCODE_RE.test(searchParams.country) ? searchParams.country : null;
+  const outsideMode = uLeagueId != null || country != null;
+  const scope = searchParams.scope === 'all' || outsideMode ? 'all' : 'covered';
   const showNote = searchParams.note !== '0';
 
   const day = await listDay(date);
@@ -67,8 +76,26 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const filtersOn = !!flt.q || flt.status !== 'all' || flt.ready || flt.sort !== 'time';
   const uncoveredCount = all.filter((r) => !r.covered).length;
   // Kapsam dışı: lig lig grupla, risk notunu lig dilim karnesinden ver (lib/site/coverage-risk).
-  const uncoveredRows = league ? [] : applyFilters(all.filter((r) => !r.covered && r.hasModel), flt);
-  const cov = uncoveredRows.length ? await coverageById() : new Map<number, Awaited<ReturnType<typeof coverageById>> extends Map<number, infer R> ? R : never>();
+  const uncoveredAll = league ? [] : all.filter((r) => !r.covered && r.hasModel);
+  const cov = uncoveredAll.length ? await coverageById() : new Map<number, Awaited<ReturnType<typeof coverageById>> extends Map<number, infer R> ? R : never>();
+  // Seçici için günün kapsam dışı ligleri (ülke kodu sicilden; sicilde yoksa "diğer").
+  const ccodeOf = (p: (typeof uncoveredAll)[number]) => (p.leagueId != null ? cov.get(p.leagueId)?.ccode : null) ?? null;
+  const uLeagues = new Map<number, { id: number; name: string; ccode: string | null; country: string | null; n: number }>();
+  for (const p of uncoveredAll) {
+    if (p.leagueId == null) continue;
+    const c = cov.get(p.leagueId);
+    const u = uLeagues.get(p.leagueId) ?? { id: p.leagueId, name: c?.name || p.leagueName, ccode: c?.ccode ?? null, country: countryName(c?.ccode, locale), n: 0 };
+    u.n++; uLeagues.set(p.leagueId, u);
+  }
+  const uLeagueList = [...uLeagues.values()].sort((a, b) => (a.country ?? a.ccode ?? '~').localeCompare(b.country ?? b.ccode ?? '~') || a.name.localeCompare(b.name));
+  const uCountries = new Map<string, { ccode: string; country: string; n: number }>();
+  for (const u of uLeagueList) {
+    const k = u.ccode ?? '';
+    const c = uCountries.get(k) ?? { ccode: k, country: u.country ?? u.ccode ?? t('countryOther'), n: 0 };
+    c.n += u.n; uCountries.set(k, c);
+  }
+  const uCountryList = [...uCountries.values()].sort((a, b) => a.country.localeCompare(b.country));
+  const uncoveredRows = applyFilters(uncoveredAll.filter((p) => uLeagueId != null ? p.leagueId === uLeagueId : country ? (ccodeOf(p) ?? '') === country : true), flt);
   const outsideAll = sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats));
   const mktName: Record<string, string> = { x12: t('mkt1x2'), ou25: t('mktOver'), under25: t('mktUnder'), btts: t('mktBtts') };
   const groups = new Map<string, { name: string; ccode: string | null; n: number; strong: number; meta: string; strongMeta: string[]; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
@@ -104,9 +131,10 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
   const href = (over: Partial<Search>) => {
     const qs = new URLSearchParams();
-    const m = { date, league: league?.slug, scope, note: showNote ? undefined : '0', q: flt.q || undefined, status: flt.status === 'all' ? undefined : flt.status, ready: flt.ready ? '1' : undefined, sort: flt.sort === 'time' ? undefined : flt.sort, ...over };
+    const m = { date, league: league?.slug ?? (uLeagueId != null ? `u${uLeagueId}` : undefined), country: country ?? undefined, scope: outsideMode ? 'covered' : scope, note: showNote ? undefined : '0', q: flt.q || undefined, status: flt.status === 'all' ? undefined : flt.status, ready: flt.ready ? '1' : undefined, sort: flt.sort === 'time' ? undefined : flt.sort, ...over };
     if (m.date && m.date !== today) qs.set('date', m.date);
     if (m.league) qs.set('league', m.league);
+    if (m.country) qs.set('country', m.country);
     if (m.scope === 'all') qs.set('scope', 'all');
     if (m.note === '0') qs.set('note', '0');
     if (m.q) qs.set('q', m.q);
@@ -117,7 +145,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
     return `/predictions${s ? `?${s}` : ''}`;
   };
 
-  const nextDay = scoped.length === 0 ? await nextDayWithPredictions(date, 1) : null;
+  const nextDay = scoped.length === 0 && !outsideMode ? await nextDayWithPredictions(date, 1) : null;
+  const uSelected = uLeagueId != null ? uLeagues.get(uLeagueId) ?? null : null;
+  const outsideTitle = uSelected ? uSelected.name : country ? (uCountries.get(country)?.country ?? country) : null;
   const leaguesToday = SITE_LEAGUES.filter((l) => scoped.some((r) => r.league?.slug === l.slug));
   const updated = day.feed === 'ok' ? f.dateTime(new Date(day.fetchedAt), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : null;
   // Denetim B11: day.fetchedAt akışın okunma anıdır; tahminin yayın zamanı satırların updated_at'idir.
@@ -132,17 +162,42 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <div>
           <h1 className="text-[32px] sm:text-[40px]">{date === today ? t('title') : t('titleDay', { day: dayLabel(date) })}</h1>
           <p className="mt-2 text-[14px] text-s-muted">
-            {updated ? t('meta', { day: fullDay, matches: rows.length, time: updated }) : t('metaNoFeed', { day: fullDay, matches: rows.length })}
+            {updated ? t('meta', { day: fullDay, matches: outsideMode ? uncoveredRows.length : rows.length, time: updated }) : t('metaNoFeed', { day: fullDay, matches: outsideMode ? uncoveredRows.length : rows.length })}
             {published && <> · {t('published', { time: published })}</>}
           </p>
         </div>
         <nav aria-label={tc('league')} className="flex flex-wrap gap-1">
-          <Link href={href({ league: undefined })} className={`btn btn-sm ${!league ? 'btn-primary' : 'btn-secondary'}`} aria-current={!league ? 'true' : undefined}>{t('all')}</Link>
+          <Link href={href({ league: undefined, country: undefined })} className={`btn btn-sm ${!league && !outsideMode ? 'btn-primary' : 'btn-secondary'}`} aria-current={!league && !outsideMode ? 'true' : undefined}>{t('all')}</Link>
           {(leaguesToday.length ? leaguesToday : SITE_LEAGUES).map((l) => (
-            <Link key={l.slug} href={href({ league: l.slug })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`} aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>
+            <Link key={l.slug} href={href({ league: l.slug, country: undefined })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`} aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>
           ))}
         </nav>
       </div>
+
+      {/* Kapsam dışı: ülke ve lig seçici (JS'siz GET; ülke seçilince lig listesi o ülkeye daralır) */}
+      {uLeagueList.length > 0 && (
+        <form method="get" action="" className="rule-b-1 flex flex-wrap items-center gap-2 py-3 text-[13px]">
+          {date !== today && <input type="hidden" name="date" value={date} />}
+          {!showNote && <input type="hidden" name="note" value="0" />}
+          <span className="text-s-muted">{t('outsideFilter')}</span>
+          <label className="sr-only" htmlFor="flt-country">{t('country')}</label>
+          <select id="flt-country" name="country" defaultValue={country ?? ''} className="input h-9 w-full sm:w-auto sm:max-w-[260px]">
+            <option value="">{t('countryAll', { count: uCountryList.length })}</option>
+            {uCountryList.map((c) => <option key={c.ccode} value={c.ccode}>{c.country} ({c.n})</option>)}
+          </select>
+          <label className="sr-only" htmlFor="flt-uleague">{tc('league')}</label>
+          <select id="flt-uleague" name="league" defaultValue={uLeagueId != null ? `u${uLeagueId}` : ''} className="input h-9 w-full sm:w-auto sm:max-w-[300px]">
+            <option value="">{t('leagueAll')}</option>
+            {uCountryList.filter((c) => !country || c.ccode === country).map((c) => (
+              <optgroup key={c.ccode} label={c.country}>
+                {uLeagueList.filter((u) => (u.ccode ?? '') === c.ccode).map((u) => <option key={u.id} value={`u${u.id}`}>{u.name} ({u.n})</option>)}
+              </optgroup>
+            ))}
+          </select>
+          <button type="submit" className="btn btn-sm btn-primary">{t('apply')}</button>
+          {outsideMode && <Link href={href({ league: undefined, country: undefined })} className="btn btn-sm btn-secondary">{tc('clear')}</Link>}
+        </form>
+      )}
 
       {/* Day strip + scope */}
       <div className="rule-b-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-[13px]">
@@ -151,7 +206,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           <Link href={href({ date: addDays(date, 1) })} className="font-semibold hover:text-s-accent-600">{t('dayNext')}</Link>
         </span>
         <span className="flex gap-4 text-s-muted">
-          {uncoveredCount > 0 && (
+          {uncoveredCount > 0 && !outsideMode && (
             <Link href={href({ scope: scope === 'all' ? 'covered' : 'all' })} className="hover:text-s-ink">
               {scope === 'all' ? t('hideUncovered') : t('showUncovered', { count: uncoveredCount })}
             </Link>
@@ -203,7 +258,11 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <p role="status" className="risk-note mb-3">{tp('feedError')}</p>
       )}
 
-      {rows.length === 0 && filtersOn && inLeague.length > 0 ? (
+      {outsideMode ? (
+        uncoveredRows.length === 0 && (
+          <EmptyState title={t('outsideEmpty', { name: outsideTitle ?? '' })} lead={t('outsideEmptyLead')} action={<Link href={href({ league: undefined, country: undefined })} className="btn btn-secondary">{t('all')}</Link>} />
+        )
+      ) : rows.length === 0 && filtersOn && inLeague.length > 0 ? (
         <EmptyState title={t('emptyFiltered')} lead={t('emptyFilteredLead')} action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-secondary">{tc('clear')}</Link>} />
       ) : rows.length === 0 ? (
         <EmptyState
@@ -222,8 +281,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
       {/* ── Kapsam dışı ligler: lig lig, risk notu dilim karnesinden ─────── */}
       {uncoveredGroups.length > 0 && (
-        <details open={scope === 'all'} className="rule-t mt-8 pt-6">
-          <summary className="cursor-pointer text-[18px] font-semibold">{t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</summary>
+        <details open={scope === 'all'} className={outsideMode ? 'mt-4' : 'rule-t mt-8 pt-6'}>
+          <summary className="cursor-pointer text-[18px] font-semibold">{outsideMode ? t('outsideTitle', { name: outsideTitle ?? '', count: uncoveredRows.length, leagues: uncoveredGroups.length }) : t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</summary>
           <p className="mt-2 max-w-[68ch] text-[13px] text-s-muted">{t('uncoveredLead')}</p>
           {uncoveredGroups.map((g) => (
             <section key={g.name + (g.ccode ?? '')} className="mt-6">
