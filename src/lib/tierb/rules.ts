@@ -94,7 +94,7 @@ export function legWon(market: TierBMarket, selection: string, hs: number, as: n
 }
 
 // ---- Oran / marj (API-Football) -------------------------------------------
-export interface LegPrice { odds: number; marketP: number; margin: number }
+export interface LegPrice { odds: number; marketP: number; margin: number; bookmaker?: string; bookmakers?: string[] }
 
 /** Seçilen tarafın oranı + marjsız (çarpımsal devig) piyasa olasılığı + model marjı (puan). */
 export function priceLeg(market: TierBMarket, selection: string, odds: AfOdds): LegPrice | null {

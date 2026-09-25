@@ -58,10 +58,12 @@ export async function afFixturesByDate(ymd: string): Promise<{ ok: true; rows: A
 }
 
 /** Bir API-Football fikstürü için maç öncesi oranlar (tek çağrı, tüm bahisçiler). */
-export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfOdds | null } | { ok: false; error: string }> {
+export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfOdds | null; bookmakers: string[] } | { ok: false; error: string }> {
   const r = await afFetch<any[]>(`/odds?fixture=${afFixtureId}`);
   if (!r.ok) return r;
-  return { ok: true, odds: parseAfOdds(r.data || []) };
+  // Bu maça oran açan tüm bahisçiler (kullanıcı hangi sitede oynayabileceğini görsün, 25 Eyl)
+  const bookmakers = [...new Set(((r.data || []) as any[]).flatMap((f: any) => (f?.bookmakers || []).map((b: any) => String(b?.name || '')).filter(Boolean)))];
+  return { ok: true, odds: parseAfOdds(r.data || []), bookmakers };
 }
 
 
