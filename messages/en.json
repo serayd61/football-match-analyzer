@@ -1148,5 +1148,22 @@
       "strongLine": "In {n} leagues a market hit ≥70% over at least 15 matches in the last 180 days.",
       "strongCta": "Which ones →"
     }
+  },
+  "v3": {
+    "predictions": {
+      "otherLeagues": "Other leagues"
+    },
+    "home": {
+      "todayTitle": "Today's matches",
+      "todayAll": "All matches"
+    },
+    "match": {
+      "tabs": "Match sections",
+      "tabSummary": "Summary",
+      "tabMarkets": "Markets & odds",
+      "tabSquad": "Team news",
+      "tabModel": "Model",
+      "marketShort": "Market"
+    }
   }
 }

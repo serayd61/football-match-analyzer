@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Archivo } from 'next/font/google';
+import { Manrope } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
@@ -12,15 +12,15 @@ import { routing, type Locale } from '@/i18n/routing';
 import { alternatesFor, SITE_URL } from '@/lib/site/seo';
 import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
+import MobileTabBar from '@/components/site/MobileTabBar';
 
 // Root layout of the public site (route group `(site)`). It is deliberately
 // separate from the legacy app root: no LanguageProvider mount gate, no
 // neon navigation, no service-worker prompt — and a real <html lang>.
 //
-// Archivo (Google Fonts) for everything — "Modernist" redesign 2026-09-11.
-// Headings 800, body 400/600. One family exposed under both CSS variables the
-// stylesheet reads (`--font-site-body`, `--font-site-head`).
-const archivo = Archivo({
+// Manrope (Google Fonts) for everything — v3 redesign 2026-09-26.
+// Headings 700, body 400/500/600. One family under both CSS variables.
+const manrope = Manrope({
   subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-site-body',
@@ -36,8 +36,8 @@ export function generateStaticParams() {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f3f2f2' },
-    { media: '(prefers-color-scheme: dark)', color: '#181716' },
+    { media: '(prefers-color-scheme: light)', color: '#f6f7f5' },
+    { media: '(prefers-color-scheme: dark)', color: '#0e1311' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -73,7 +73,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className={archivo.variable} style={{ ['--font-site-head' as string]: 'var(--font-site-body)' }}>
+      <body className={manrope.variable} style={{ ['--font-site-head' as string]: 'var(--font-site-body)' }}>
         <div className="site flex min-h-screen flex-col">
           <script dangerouslySetInnerHTML={{ __html: bootScript }} />
           <AuthProvider>
@@ -82,6 +82,7 @@ export default async function LocaleLayout({
               <SiteHeader />
               <main id="main" className="flex-1">{children}</main>
               <SiteFooter />
+              <MobileTabBar />
             </NextIntlClientProvider>
           </AuthProvider>
         </div>

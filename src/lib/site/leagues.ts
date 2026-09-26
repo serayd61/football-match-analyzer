@@ -23,7 +23,9 @@ export const SITE_LEAGUES: SiteLeague[] = [
   { slug: 'ligue-1', name: 'Ligue 1', ccode: 'FRA', fdCode: 'FL1', ids: [53], country: 'France' },
   { slug: 'eredivisie', name: 'Eredivisie', ccode: 'NED', fdCode: 'DED', ids: [57], country: 'Netherlands' },
   { slug: 'liga-portugal', name: 'Liga Portugal', ccode: 'POR', fdCode: 'PPL', ids: [61], country: 'Portugal' },
-  { slug: 'champions-league', name: 'Champions League', ccode: 'INT', fdCode: 'CL', ids: [42], country: 'Europe' },
+  // 2026-09-27: FotMob 2026-27 lig aşamasını YENİ kimlikle veriyor (943230, ccode "INT-2");
+  // 42 eski sezon kimliği. İkisi de kapsam sayılır; resolveLeague "INT-2" → "INT" katlar.
+  { slug: 'champions-league', name: 'Champions League', ccode: 'INT', fdCode: 'CL', ids: [42, 943230], country: 'Europe' },
   { slug: 'brasileirao', name: 'Brasileirão', ccode: 'BRA', fdCode: 'BSA', ids: [268], country: 'Brazil' },
   // 2026-09-13: kullanıcı isteğiyle eklendi. Motor (Hetzner) ligi kendi
   // verisinden fit ediyor (dc-1.0, 39 sonuçlanmış maç). Günün seçimi beyaz
@@ -64,7 +66,8 @@ export function resolveLeague(leagueName: string | null | undefined, leagueId: n
   if (leagueId != null && BY_ID.has(Number(leagueId))) return BY_ID.get(Number(leagueId))!;
   const raw = (leagueName || '').trim();
   const name = NAME_ALIASES[raw] || raw;
-  const cc = (ccode || '').trim().toUpperCase();
+  // FotMob uluslararası kupalarda sezon kimliğiyle birlikte ccode'u da değiştiriyor ("INT" → "INT-2").
+  const cc = (ccode || '').trim().toUpperCase().replace(/-\d+$/, '');
   if (name && cc) {
     const hit = BY_KEY.get(`${name}|${cc}`);
     if (hit) return hit;

@@ -113,12 +113,12 @@ export default async function PerformancePage({ params: { locale }, searchParams
 
   return (
     <Page>
-      <div className="flex flex-wrap items-end justify-between gap-4 pb-8 pt-12">
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 pt-7">
         <div>
-          <h1 className="text-[36px] sm:text-[48px]">{t2('title')}</h1>
-          <p className="mt-3 max-w-2xl text-[16px] text-s-muted">{t2('lead')}</p>
+          <h1 className="text-[28px] sm:text-[36px]">{t2('title')}</h1>
+          <p className="mt-2 max-w-2xl text-[15px] text-s-muted">{t2('lead')}</p>
         </div>
-        <p className="text-[12px] text-s-muted">{t2('window', { from: r.from ? f.dateTime(new Date(r.from), 'dayShort') : '–', to: r.to ? f.dateTime(new Date(r.to), 'dayShort') : '–' })}</p>
+        <p className="tag tag-outline !h-7 !normal-case !tracking-normal">{t2('window', { from: r.from ? f.dateTime(new Date(r.from), 'dayShort') : '–', to: r.to ? f.dateTime(new Date(r.to), 'dayShort') : '–' })}</p>
       </div>
 
       {/* ── 4 stat cells ────────────────────────────────────────────── */}
@@ -131,13 +131,13 @@ export default async function PerformancePage({ params: { locale }, searchParams
 
       {/* ── Monthly bars + latest results ───────────────────────────── */}
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)]">
-        <section className="card !block">
-          <h2 className="text-[22px]">{t2('monthlyTitle')}</h2>
+        <section className="card !block self-start">
+          <h2 className="text-[18px]">{t2('monthlyTitle')}</h2>
           <div className="rule-b mt-4 grid h-[180px] items-end gap-2" style={{ gridTemplateColumns: `repeat(${months.length || 1}, minmax(0, 1fr))` }} role="img" aria-label={t('secMonthly')}>
             {months.map((m) => (
               <div key={m.month} className="flex h-full flex-col justify-end gap-1">
                 <span className="num text-[12px] font-semibold leading-none">{m.acc == null ? '–' : Math.round(m.acc * 100)}</span>
-                <span className={`w-full rounded-t-[4px] ${m.n < 30 ? 'bg-s-n400' : 'bg-s-ink'}`} style={{ height: `${Math.round((m.acc ?? 0) * 100)}%` }} title={`${monthLabel(m.month)} · ${pct(m.acc)} · ${t('nShort')} ${m.n}`} />
+                <span className={`w-full rounded-t-md ${m.n < 30 ? 'bg-s-n400' : 'bg-s-accent'}`} style={{ height: `${Math.round((m.acc ?? 0) * 100)}%` }} title={`${monthLabel(m.month)} · ${pct(m.acc)} · ${t('nShort')} ${m.n}`} />
               </div>
             ))}
           </div>
@@ -149,10 +149,10 @@ export default async function PerformancePage({ params: { locale }, searchParams
 
         <section id="results" className="card !block min-w-0">
           <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-[22px]">{t2('resultsTitle')}</h2>
-            <nav className="flex flex-wrap gap-1" aria-label={tc('league')}>
-              <Link href={href({ league: undefined, page: '1' })} className={`btn btn-sm ${!league ? 'btn-primary' : 'btn-secondary'}`}>{tc('all')}</Link>
-              {SITE_LEAGUES.map((l) => <Link key={l.slug} href={href({ league: l.slug, page: '1' })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`}>{l.name}</Link>)}
+            <h2 className="text-[18px]">{t2('resultsTitle')}</h2>
+            <nav className="no-scrollbar -mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-1" aria-label={tc('league')}>
+              <Link href={href({ league: undefined, page: '1' })} className="chip chip-sm" aria-current={!league ? 'true' : undefined}>{tc('all')}</Link>
+              {SITE_LEAGUES.map((l) => <Link key={l.slug} href={href({ league: l.slug, page: '1' })} className="chip chip-sm" aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>)}
             </nav>
           </div>
           <div className="mt-4"><TrialNotice access={access} /></div>
@@ -164,8 +164,8 @@ export default async function PerformancePage({ params: { locale }, searchParams
               <div className="mt-3 flex items-center justify-between text-[13px]">
                 <span className="text-s-muted">{res.total} · {page}/{pages}</span>
                 <span className="flex gap-4">
-                  {page > 1 && <Link href={href({ page: String(page - 1) })} className="font-semibold hover:text-s-accent-600">←</Link>}
-                  {page < pages && <Link href={href({ page: String(page + 1) })} className="font-semibold hover:text-s-accent-600">→</Link>}
+                  {page > 1 && <Link href={href({ page: String(page - 1) })} className="btn btn-secondary btn-xs">←</Link>}
+                  {page < pages && <Link href={href({ page: String(page + 1) })} className="btn btn-secondary btn-xs">→</Link>}
                 </span>
               </div>
             </>
@@ -179,7 +179,7 @@ export default async function PerformancePage({ params: { locale }, searchParams
       <details className="tech mt-10">
         <summary>
           <span>
-            <span className="block font-head text-[22px] font-extrabold sm:text-[26px]">{t2('detailsTitle')}</span>
+            <span className="block font-head text-[20px] font-bold sm:text-[24px]">{t2('detailsTitle')}</span>
             <span className="mt-1 block max-w-2xl text-[14px] text-s-muted">{t2('detailsLead')}</span>
           </span>
           <span className="faq-plus shrink-0 text-[28px] leading-none text-s-muted" aria-hidden>+</span>

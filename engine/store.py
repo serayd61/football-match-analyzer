@@ -269,6 +269,31 @@ MERGE_MIN_MATCHES = int(os.environ.get("MERGE_MIN_MATCHES", "30"))
 MERGE_MIN_JACCARD = float(os.environ.get("MERGE_MIN_JACCARD", "0.5"))
 
 
+def parse_league_aliases(raw: str | None) -> dict:
+    """
+    ELLE LİG KİMLİĞİ BİRLEŞTİRME (2026-09-27). Jaccard birleşimi kupalarda tutmaz:
+    Şampiyonlar Ligi'nde sezondan sezona takım kümesi ~%50 değişir ve lig aşaması
+    36 maçla MERGE_MIN_MATCHES eşiğine ancak MD2'de ulaşır → 943230 (26/27) hiç
+    42 (eski) ile birleşmez, "league_too_small" kalır. Ortam değişkeni:
+        LEAGUE_ALIASES="943230:42,937348:42"   (yeni_id:kanonik_id, virgülle)
+    Bozuk parçalar sessizce atlanır.
+    """
+    out = {}
+    for part in (raw or "").split(","):
+        part = part.strip()
+        if not part or ":" not in part:
+            continue
+        a, b = part.split(":", 1)
+        try:
+            out[int(a)] = int(b)
+        except ValueError:
+            continue
+    return out
+
+
+LEAGUE_ALIASES = parse_league_aliases(os.environ.get("LEAGUE_ALIASES"))
+
+
 def merge_season_ids(by_league: dict):
     """
     SEZONLUK LİG ID BİRLEŞTİRME (2026-09-06 Hetzner bulgusu).
@@ -341,6 +366,23 @@ def merge_season_ids(by_league: dict):
     for lid, rows in by_league.items():                 # birleşmeyenler olduğu gibi
         if lid not in alias:
             groups[lid] = rows; alias[lid] = lid
+    # Elle birleştirme (LEAGUE_ALIASES): yeni id'nin grubu kanonik gruba eklenir; kanonik
+    # depoda yoksa yeni id'nin satırları kanonik ada taşınır. Depoda hiç görülmemiş bir
+    # yeni id de (ilk fikstür gelmeden) kanoniğe çözülür ki tahmin eski veriyle çıksın.
+    for new_id, canon in LEAGUE_ALIASES.items():
+        if new_id == canon:
+            continue
+        src = alias.get(new_id, new_id)
+        dst = alias.get(canon, canon)
+        if src == dst:
+            continue
+        rows = groups.pop(src, [])
+        groups.setdefault(dst, []).extend(rows)
+        for k, v in list(alias.items()):
+            if v == src:
+                alias[k] = dst
+        alias[new_id] = dst
+        alias[canon] = dst
     return groups, alias
 
 

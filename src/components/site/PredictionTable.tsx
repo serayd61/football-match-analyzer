@@ -34,8 +34,9 @@ const STATUS_KEY: Record<MatchStatus, string> = {
 };
 
 export function StatusChip({ status, label }: { status: MatchStatus; label: string }) {
-  const tone = status === 'live' ? 'border-s-accent text-s-accent' : status === 'cancelled' || status === 'postponed' ? 'border-s-loss/40 text-s-loss' : 'border-s-line text-s-muted';
-  return <span className={`inline-flex h-5 items-center rounded-[2px] border px-1.5 text-[11px] font-medium uppercase tracking-wider ${tone}`}>{label}</span>;
+  if (status === 'live') return <span className="tag tag-live">{label}</span>;
+  const tone = status === 'cancelled' || status === 'postponed' ? 'tag-loss' : 'tag-outline';
+  return <span className={`tag ${tone}`}>{label}</span>;
 }
 
 export default async function PredictionTable({ rows, showOutcome = false }: { rows: SitePrediction[]; showOutcome?: boolean }) {

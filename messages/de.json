@@ -1148,5 +1148,22 @@
       "strongLine": "In {n} Ligen traf ein Markt in den letzten 180 Tagen bei mindestens 15 Spielen ≥70 %.",
       "strongCta": "Welche →"
     }
+  },
+  "v3": {
+    "predictions": {
+      "otherLeagues": "Andere Ligen"
+    },
+    "home": {
+      "todayTitle": "Heutige Spiele",
+      "todayAll": "Alle Spiele"
+    },
+    "match": {
+      "tabs": "Spielabschnitte",
+      "tabSummary": "Überblick",
+      "tabMarkets": "Märkte & Quoten",
+      "tabSquad": "Teamnews",
+      "tabModel": "Modell",
+      "marketShort": "Markt"
+    }
   }
 }

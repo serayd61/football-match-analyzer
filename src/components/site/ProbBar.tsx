@@ -1,6 +1,6 @@
 // Three-way probability bar (home / draw / away). Pure, server-safe.
-// Modernist: flex row, 2px gaps, heights 10 / 14 / 18px. Segments: Home = ink,
-// Draw = neutral-400, Away = accent. Below, an 11–12px row: "1 · 48%" left,
+// v3: flex row, 2px gaps, heights 10 / 14 / 18px. Segments: Home = brand green,
+// Draw = neutral-400, Away = slate blue. Below, an 11–12px row: "1 · 48%" left,
 // "X · 27%" muted centre, "2 · 25%" accent-700 right. The full breakdown is
 // in the accessible label. `compact` (10px, no caption) is for dense tables.
 export default function ProbBar({
@@ -19,9 +19,9 @@ export default function ProbBar({
   const h = compact || size === 'sm' ? 'h-[10px]' : size === 'lg' ? 'h-[18px]' : 'h-[14px]';
   const showCaption = caption && !compact;
   const segs = [
-    { key: '1', v: home, cls: 'bg-s-ink', label: labels.home, text: '' },
+    { key: '1', v: home, cls: 'bg-s-accent', label: labels.home, text: 'text-s-accent-700' },
     { key: 'X', v: draw, cls: 'bg-s-n400', label: labels.draw, text: 'text-s-muted' },
-    { key: '2', v: away, cls: 'bg-s-accent', label: labels.away, text: 'text-s-accent-700' },
+    { key: '2', v: away, cls: 'bg-s-away', label: labels.away, text: 'text-s-away' },
   ] as const;
   const aria = segs.map((s) => `${s.label} ${pct(s.v)}%`).join(', ');
   return (

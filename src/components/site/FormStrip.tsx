@@ -30,7 +30,7 @@ export default function FormStrip({ items, labels }: { items: FormItem[]; labels
         <li key={it.fixtureId}>
           <Link
             href={`/predictions/${it.fixtureId}`}
-            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-[2px] px-1.5 text-xs font-semibold ${CHIP[it.res]}`}
+            className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-xs font-bold ${CHIP[it.res]}`}
             title={`${it.home ? labels.home : labels.away} ${labels.vs} ${it.opponent} · ${it.score}`}
           >
             {labels[it.res]}
