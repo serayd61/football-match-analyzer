@@ -40,7 +40,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     <button
       type="button"
       onClick={cycle}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-sm border border-s-line bg-s-surface text-s-ink hover:border-s-muted ${className}`}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border border-s-line bg-s-surface text-s-ink hover:bg-s-raised ${className}`}
       aria-label={`${t('label')}: ${t(mode)}`}
       title={`${t('label')}: ${t(mode)}`}
     >

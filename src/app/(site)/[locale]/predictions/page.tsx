@@ -9,8 +9,10 @@ import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { applyFilters, parseFilters, marketProb, MIN_P_STEPS } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
-import PredictionCard, { type OutsideRisk } from '@/components/site/PredictionCard';
-import OutsideLeagueFilter from '@/components/site/OutsideLeagueFilter';
+import { type OutsideRisk } from '@/components/site/PredictionCard';
+import MatchRow from '@/components/site/MatchRow';
+import PredictionsToolbar from '@/components/site/PredictionsToolbar';
+import LeagueGroup from '@/components/site/LeagueGroup';
 import { coverageById } from '@/lib/coverage/registry';
 import { countryName } from '@/lib/site/countries';
 import { sectionId } from '@/lib/site/back-link';
@@ -22,10 +24,10 @@ import { Paywall, TrialNotice } from '@/components/site/Paywall';
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
 
-// Predictions (Modernist redesign 2026-09-11). Header row with the day and
-// the model's update time, league filter buttons (state in the URL), a
-// toggleable "How to read confidence" note, then a 3-column grid of cards.
-// The date strip and the covered/all switch survive as small links.
+// Predictions v3 (2026-09-26). One toolbar (day · leagues · filters) drives the
+// URL; below it the day's fixtures grouped by league as compact rows. Leagues
+// outside model coverage follow in their own groups when the "other leagues"
+// chip is on. All query keys are unchanged from v2.
 
 type Search = { date?: string; league?: string; country?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string; market?: string; minp?: string };
 
@@ -163,87 +165,49 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const published = lastPublished ? f.dateTime(new Date(lastPublished), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : null;
   const fullDay = f.dateTime(zonedStartOfDay(date), { weekday: 'short', day: 'numeric', month: 'short' });
 
+  // v3: covered rows grouped by league, kickoff order preserved.
+  const covGroups = new Map<string, { slug: string | null; name: string; country: string | null; rows: typeof rows }>();
+  for (const r of rows) {
+    const k = r.league?.slug ?? r.leagueName;
+    if (!covGroups.has(k)) covGroups.set(k, { slug: r.league?.slug ?? null, name: r.league?.name ?? r.leagueName, country: r.league?.country ?? null, rows: [] });
+    covGroups.get(k)!.rows.push(r);
+  }
+  const shownCount = outsideMode || (flt.market && inLeague.length === 0) ? uncoveredRows.length : rows.length + (scope === 'all' ? uncoveredRows.length : 0);
+  const t3 = await getTranslations('v3.predictions');
+
   return (
     <Page>
-      {/* Header row */}
-      <div className="rule-b flex flex-wrap items-end justify-between gap-4 pb-4 pt-8">
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-5 pt-7">
         <div>
-          <h1 className="text-[32px] sm:text-[40px]">{date === today ? t('title') : t('titleDay', { day: dayLabel(date) })}</h1>
-          <p className="mt-2 text-[14px] text-s-muted">
-            {updated ? t('meta', { day: fullDay, matches: outsideMode ? uncoveredRows.length : rows.length, time: updated }) : t('metaNoFeed', { day: fullDay, matches: outsideMode ? uncoveredRows.length : rows.length })}
+          <h1 className="text-[28px] sm:text-[36px]">{date === today ? t('title') : t('titleDay', { day: dayLabel(date) })}</h1>
+          <p className="mt-1.5 text-[14px] text-s-muted">
+            {updated ? t('meta', { day: fullDay, matches: shownCount, time: updated }) : t('metaNoFeed', { day: fullDay, matches: shownCount })}
             {published && <> · {t('published', { time: published })}</>}
           </p>
         </div>
-        <nav aria-label={tc('league')} className="flex flex-wrap gap-1">
-          <Link href={href({ league: undefined, country: undefined })} className={`btn btn-sm ${!league && !outsideMode ? 'btn-primary' : 'btn-secondary'}`} aria-current={!league && !outsideMode ? 'true' : undefined}>{t('all')}</Link>
-          {(leaguesToday.length ? leaguesToday : SITE_LEAGUES).map((l) => (
-            <Link key={l.slug} href={href({ league: l.slug, country: undefined })} className={`btn btn-sm ${league?.slug === l.slug ? 'btn-primary' : 'btn-secondary'}`} aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>
-          ))}
-        </nav>
+        <Link href={href({ note: showNote ? '0' : undefined })} className="text-[13px] font-semibold text-s-muted hover:text-s-ink">{showNote ? t('hide') : t('show')}</Link>
       </div>
 
-      {/* Kapsam dışı: ülke ve lig seçici — ülke değişince lig listesi anında daralır (client) */}
-      {uLeagueList.length > 0 && (
-        <OutsideLeagueFilter
-          countries={uCountryList}
-          leagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
-          country={country}
-          leagueId={uLeagueId}
-          market={flt.market}
-          minP={flt.minP}
-          minPSteps={MIN_P_STEPS}
-          hidden={{ ...(date !== today ? { date } : {}), ...(!showNote ? { note: '0' } : {}), ...(flt.q ? { q: flt.q } : {}), ...(flt.status !== 'all' ? { status: flt.status } : {}), ...(flt.ready ? { ready: '1' } : {}), ...(flt.sort !== 'time' ? { sort: flt.sort } : {}) }}
-          labels={{ filter: t('outsideFilter'), country: t('country'), league: tc('league'), countryAll: t('countryAll', { count: uCountryList.length }), leagueAll: t('leagueAll'), apply: t('apply'), clear: tc('clear'), market: t('marketFilter'), marketAll: t('marketAll'), markets: { x12: t('mkt1x2'), ou25: t('mktOver'), btts: t('mktBtts') }, minP: Object.fromEntries(MIN_P_STEPS.map((p) => [String(p), t('minP', { p })])) }}
-          clearHref={outsideMode || flt.market ? `/${locale}${href({ league: undefined, country: undefined, market: undefined, minp: undefined })}` : null}
-        />
-      )}
+      <PredictionsToolbar
+        state={{ date, today, league: league?.slug ?? null, country, uLeagueId, scope, q: flt.q, status: flt.status, sort: flt.sort, ready: flt.ready, market: flt.market, minP: flt.minP, note: showNote }}
+        leagues={leaguesToday.map((l) => ({ slug: l.slug, name: l.name, n: scoped.filter((r) => r.league?.slug === l.slug).length }))}
+        uncoveredCount={uncoveredCount}
+        countries={uCountryList}
+        uLeagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
+        minPSteps={MIN_P_STEPS}
+        dayLabel={{ prev: dayLabel(addDays(date, -1)), cur: dayLabel(date), next: dayLabel(addDays(date, 1)) }}
+        labels={{
+          yesterday: tc('yesterday'), today: tc('today'), tomorrow: tc('tomorrow'), prevDay: t('dayPrev'), nextDay: t('dayNext'), pickDate: tc('date'),
+          all: t('all'), otherLeagues: t3('otherLeagues'), filters: tc('filters'), clear: tc('clear'), search: tc('search'), searchPh: t('searchPh'),
+          status: tc('status'), statusAll: t('statusAll'), statusUpcoming: t('statusUpcoming'), statusLive: t('statusLive'), statusFinished: t('statusFinished'),
+          sort: tc('sort'), sortTime: t('sortTime'), sortConfidence: t('sortConfidence'), ready: t('ready'),
+          market: tc('market'), marketAll: t('marketAll'), markets: { x12: t('mkt1x2'), ou25: t('mktOver'), btts: t('mktBtts') }, minP: Object.fromEntries(MIN_P_STEPS.map((p) => [String(p), t('minP', { p })])),
+          country: t('country'), countryAll: t('countryAll', { count: uCountryList.length }), league: tc('league'), leagueAll: t('leagueAll'), matches: tc('matches', { count: shownCount }),
+        }}
+      />
 
-      {/* Day strip + scope */}
-      <div className="rule-b-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 text-[13px]">
-        <span className="flex gap-4">
-          <Link href={href({ date: addDays(date, -1) })} className="font-semibold hover:text-s-accent-600">{t('dayPrev')}</Link>
-          <Link href={href({ date: addDays(date, 1) })} className="font-semibold hover:text-s-accent-600">{t('dayNext')}</Link>
-        </span>
-        <span className="flex gap-4 text-s-muted">
-          {uncoveredCount > 0 && !outsideMode && (
-            <Link href={href({ scope: scope === 'all' ? 'covered' : 'all' })} className="hover:text-s-ink">
-              {scope === 'all' ? t('hideUncovered') : t('showUncovered', { count: uncoveredCount })}
-            </Link>
-          )}
-          <Link href={href({ note: showNote ? '0' : undefined })} className="hover:text-s-ink">{showNote ? t('hide') : t('show')}</Link>
-        </span>
-      </div>
-
-      {/* Filtreler: JS'siz GET formu — durum URL'de, geri/ileri ve paylaşım kendiliğinden çalışır */}
-      <form method="get" action="" role="search" className="rule-b-1 flex flex-wrap items-center gap-2 py-3 text-[13px]">
-        {date !== today && <input type="hidden" name="date" value={date} />}
-        {league && <input type="hidden" name="league" value={league.slug} />}
-        {uLeagueId != null && <input type="hidden" name="league" value={`u${uLeagueId}`} />}
-        {country && <input type="hidden" name="country" value={country} />}
-        {flt.market && <input type="hidden" name="market" value={flt.market} />}
-        {flt.market && flt.minP && <input type="hidden" name="minp" value={String(flt.minP)} />}
-        {scope === 'all' && !outsideMode && !flt.market && <input type="hidden" name="scope" value="all" />}
-        {!showNote && <input type="hidden" name="note" value="0" />}
-        <label className="sr-only" htmlFor="flt-q">{tc('search')}</label>
-        <input id="flt-q" name="q" type="search" defaultValue={flt.q} placeholder={t('searchPh')} maxLength={60} className="input h-9 w-full min-w-0 sm:w-56" />
-        <label className="sr-only" htmlFor="flt-status">{tc('status')}</label>
-        <select id="flt-status" name="status" defaultValue={flt.status} className="input h-9">
-          <option value="all">{t('statusAll')}</option>
-          <option value="upcoming">{t('statusUpcoming')}</option>
-          <option value="live">{t('statusLive')}</option>
-          <option value="finished">{t('statusFinished')}</option>
-        </select>
-        <label className="sr-only" htmlFor="flt-sort">{tc('sort')}</label>
-        <select id="flt-sort" name="sort" defaultValue={flt.sort} className="input h-9">
-          <option value="time">{t('sortTime')}</option>
-          <option value="confidence">{t('sortConfidence')}</option>
-        </select>
-        <label className="flex min-h-[36px] items-center gap-2"><input type="checkbox" name="ready" value="1" defaultChecked={flt.ready} /> {t('ready')}</label>
-        <button type="submit" className="btn btn-sm btn-primary">{t('apply')}</button>
-        {filtersOn && <Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined, market: undefined, minp: undefined })} className="btn btn-sm btn-secondary">{tc('clear')}</Link>}
-      </form>
       {filtersOn && (
-        <p role="status" className="py-2 text-[13px] text-s-muted">
+        <p role="status" className="mt-3 text-[13px] text-s-muted">
           {flt.market && t('marketFiltered', { market: mktName[flt.market], p: flt.minP ?? 60, shown: rows.length + uncoveredRows.length })}
           {flt.market && inLeague.length > 0 && ' · '}
           {(!flt.market || inLeague.length > 0) && t('filtered', { shown: rows.length, total: inLeague.length })}
@@ -263,49 +227,57 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <p role="status" className="risk-note mb-3">{tp('feedError')}</p>
       )}
 
+      {/* ── Covered leagues ─────────────────────────────────────────── */}
       {outsideMode || (flt.market && inLeague.length === 0) ? (
         uncoveredRows.length === 0 && (
-          <EmptyState title={t('outsideEmpty', { name: outsideTitle ?? '' })} lead={t('outsideEmptyLead')} action={<Link href={href({ league: undefined, country: undefined })} className="btn btn-secondary">{t('all')}</Link>} />
+          <div className="mt-6"><EmptyState title={t('outsideEmpty', { name: outsideTitle ?? '' })} lead={t('outsideEmptyLead')} action={<Link href={href({ league: undefined, country: undefined })} className="btn btn-secondary">{t('all')}</Link>} /></div>
         )
       ) : rows.length === 0 && filtersOn && inLeague.length > 0 ? (
-        <EmptyState title={t('emptyFiltered')} lead={t('emptyFilteredLead')} action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-secondary">{tc('clear')}</Link>} />
+        <div className="mt-6"><EmptyState title={t('emptyFiltered')} lead={t('emptyFilteredLead')} action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-secondary">{tc('clear')}</Link>} /></div>
+      ) : rows.length === 0 && scope === 'all' && uncoveredGroups.length > 0 ? (
+        <p className="mt-5 text-[14px] text-s-muted">{t('emptyTitle')} {nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}</p>
       ) : rows.length === 0 ? (
-        <EmptyState
-          title={t('emptyTitle')}
-          lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}
-          action={nextDay ? <Link href={href({ date: nextDay })} className="btn btn-primary">{t('goToNext', { date: dayLabel(nextDay) })}</Link> : (league ? <Link href={href({ league: undefined })} className="btn btn-secondary">{t('all')}</Link> : undefined)}
-        />
+        <div className="mt-6">
+          <EmptyState
+            title={t('emptyTitle')}
+            lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}
+            action={nextDay ? <Link href={href({ date: nextDay })} className="btn btn-primary">{t('goToNext', { date: dayLabel(nextDay) })}</Link> : (league ? <Link href={href({ league: undefined })} className="btn btn-secondary">{t('all')}</Link> : uncoveredCount > 0 && scope !== 'all' ? <Link href={href({ scope: 'all' })} className="btn btn-secondary">{t('showUncovered', { count: uncoveredCount })}</Link> : undefined)}
+          />
+        </div>
       ) : (
-        <>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((p) => <PredictionCard key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} />)}
-          </div>
-          <p className="mt-6 text-[12px] text-s-muted">{t('footnote')}</p>
-        </>
+        <div className="mt-5 flex flex-col gap-4">
+          {[...covGroups.values()].map((g) => (
+            <LeagueGroup key={g.slug ?? g.name} name={g.name} meta={g.country ?? undefined} href={g.slug ? `/leagues/${g.slug}` : undefined} count={g.rows.length}>
+              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} />)}
+            </LeagueGroup>
+          ))}
+          <p className="text-[12px] text-s-muted">{t('footnote')}</p>
+        </div>
       )}
 
-      {/* ── Kapsam dışı ligler: lig lig, risk notu dilim karnesinden ─────── */}
-      {uncoveredGroups.length > 0 && (
-        <details open={scope === 'all'} className={outsideMode ? 'mt-4' : 'rule-t mt-8 pt-6'}>
-          <summary className="cursor-pointer text-[18px] font-semibold">{outsideMode ? t('outsideTitle', { name: outsideTitle ?? '', count: uncoveredRows.length, leagues: uncoveredGroups.length }) : t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</summary>
-          <p className="mt-2 max-w-[68ch] text-[13px] text-s-muted">{t('uncoveredLead')}</p>
-          {uncoveredGroups.map((g) => (
-            <section key={g.name + (g.ccode ?? '')} id={g.id} className="mt-6 scroll-mt-4">
-              <div className="rule-b-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-2">
-                <h2 className="text-[18px]">{g.name}{g.ccode && <span className="ml-2 text-[13px] font-normal text-s-muted">{g.ccode}</span>}</h2>
-                <span className="num text-[12px] text-s-muted">{g.meta}</span>
-              </div>
-              {g.strongMeta.length > 0 && (
-                <p className="mt-2 flex flex-wrap gap-2">
-                  {g.strongMeta.map((m) => <span key={m} className="tag tag-accent num">{m}</span>)}
-                </p>
-              )}
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {g.rows.map(({ p, outside }) => <PredictionCard key={p.fixtureId} p={p} outside={outside} back={listQs} spot={spotOf(p)} />)}
-              </div>
-            </section>
-          ))}
-        </details>
+      {/* ── Outside model coverage ──────────────────────────────────── */}
+      {uncoveredGroups.length > 0 && (scope === 'all' || outsideMode) && (
+        <section className={outsideMode ? 'mt-5' : 'mt-10'}>
+          <div className="flex flex-wrap items-end justify-between gap-2 pb-3">
+            <div>
+              <h2 className="text-[20px]">{outsideMode ? t('outsideTitle', { name: outsideTitle ?? '', count: uncoveredRows.length, leagues: uncoveredGroups.length }) : t('uncoveredTitle', { count: uncoveredRows.length, leagues: uncoveredGroups.length })}</h2>
+              <p className="mt-1 max-w-[72ch] text-[13px] text-s-muted">{t('uncoveredLead')}</p>
+            </div>
+            {!outsideMode && <Link href={href({ scope: 'covered' })} className="text-[13px] font-semibold text-s-muted hover:text-s-ink">{t('hideUncovered')}</Link>}
+          </div>
+          <div className="flex flex-col gap-4">
+            {uncoveredGroups.map((g) => (
+              <LeagueGroup key={g.name + (g.ccode ?? '')} id={g.id} name={g.name} meta={[g.ccode, g.meta].filter(Boolean).join(' · ')} count={g.rows.length} tags={g.strongMeta} muted>
+                {g.rows.map(({ p, outside }) => <MatchRow key={p.fixtureId} p={p} outside={outside} back={listQs} spot={spotOf(p)} />)}
+              </LeagueGroup>
+            ))}
+          </div>
+        </section>
+      )}
+      {uncoveredGroups.length > 0 && scope !== 'all' && !outsideMode && rows.length > 0 && (
+        <p className="mt-8 text-[13.5px] text-s-muted">
+          <Link href={href({ scope: 'all' })} className="font-semibold text-s-ink underline decoration-s-n400 underline-offset-4 hover:decoration-s-accent">{t('showUncovered', { count: uncoveredCount })}</Link>
+        </p>
       )}
     </Page>
   );

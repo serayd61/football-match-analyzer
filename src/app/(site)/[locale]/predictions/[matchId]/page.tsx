@@ -22,6 +22,7 @@ import MatchStanding, { type StandingLabels } from '@/components/site/MatchStand
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
+import SectionTabs from '@/components/site/SectionTabs';
 import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
@@ -207,108 +208,121 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const locked = false; // `unlockAll` preview flag — the members-only model gates the whole page instead.
   const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
   const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
+  const t3 = await getTranslations('v3.match');
+  const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
+    <div className="flex items-center gap-3">
+      {crest ? <Image src={crest} alt="" width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
+      <span className={`min-w-0 truncate text-[22px] leading-tight sm:text-[28px] ${bold ? 'font-bold' : 'font-semibold text-s-ink/80'}`}>{name}</span>
+      {score != null && <span className="num ml-auto pl-3 text-[26px] font-bold leading-none sm:text-[32px]">{score}</span>}
+    </div>
+  );
 
   return (
     <Page>
-      <div className="pt-6"><TrialNotice access={access} /></div>
-      <p className="pt-2 text-[13px]">
-        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold hover:text-s-accent-600">{t2('back')}</Link>
-        {!p.covered && <span className="tag tag-outline ml-3 align-middle">{t('outsideCoverage')}</span>}
-        {strongPick && <span className="tag tag-accent ml-3 align-middle">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
-        {p.publishedAfterKickoff && <span className="tag tag-accent ml-3 align-middle">{t('flagPostKickoff')}</span>}
+      <div className="pt-5"><TrialNotice access={access} /></div>
+      <p className="flex flex-wrap items-center gap-2 pt-2 text-[13px]">
+        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2('back')}</Link>
+        {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
+        {strongPick && <span className="tag tag-accent">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
+        {p.publishedAfterKickoff && <span className="tag tag-loss">{t('flagPostKickoff')}</span>}
       </p>
 
-      {/* ── Top grid 1.3fr / 0.7fr under a 2px rule ─────────────────── */}
-      <div className="rule-t mt-4 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
-        <div className="flex flex-col gap-6 py-8 lg:rule-r lg:pr-6">
-          <p className="kicker">
-            {p.league ? <Link href={`/leagues/${p.league.slug}`} className="hover:text-s-ink">{p.leagueName}</Link> : p.leagueName}
-            {' · '}{isToday && <>{t2('today')} </>}<LocalTime iso={p.kickoff} format={isToday ? 'time' : 'kickoff'} />
-            {p.status !== 'scheduled' && <span className="ml-2 align-middle"><StatusChip status={p.status} label={tc(statusKey[p.status])} /></span>}
+      {/* ── Hero: match + probabilities | model pick ───────────────── */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]">
+        <section className="card !gap-6 !p-5 sm:!p-7">
+          <p className="kicker flex flex-wrap items-center gap-x-2 gap-y-1">
+            {p.league ? <Link href={`/leagues/${p.league.slug}`} className="text-s-ink hover:underline">{p.leagueName}</Link> : <span className="text-s-ink">{p.leagueName}</span>}
+            <span aria-hidden>·</span>
+            <span>{isToday && <>{t2('today')} </>}<LocalTime iso={p.kickoff} format={isToday ? 'time' : 'kickoff'} /></span>
+            {p.status !== 'scheduled' && <StatusChip status={p.status} label={tc(statusKey[p.status])} />}
+            {p.homeScore != null && p.awayScore != null && (p.outcome !== 'pending' || isPast) && <span className="ml-auto"><OutcomeBadge outcome={p.outcome} /></span>}
           </p>
-          <h1 className="text-[clamp(36px,5vw,60px)]">
-            <span className="flex items-center gap-3">{p.homeCrest && <Image src={p.homeCrest} alt="" width={44} height={44} className="h-9 w-9 object-contain sm:h-11 sm:w-11" unoptimized />}{p.homeName}</span>
-            <span className="flex items-center gap-3"><span className="text-s-muted">{th('vs')}</span> {p.awayCrest && <Image src={p.awayCrest} alt="" width={44} height={44} className="h-9 w-9 object-contain sm:h-11 sm:w-11" unoptimized />}{p.awayName}</span>
-          </h1>
-          {p.homeScore != null && p.awayScore != null && (
-            <p className="flex items-center gap-3 text-[14px]">
-              <span className="text-s-muted">{t2('finalScore')}</span>
-              <span className="num text-[24px] font-extrabold leading-none">{p.homeScore}–{p.awayScore}</span>
-              {(p.outcome !== 'pending' || isPast) && <OutcomeBadge outcome={p.outcome} />}
-            </p>
-          )}
-          <ProbBar home={p.pHome} draw={p.pDraw} away={p.pAway} highlight={p.pick} labels={labels} size="lg" caption={false} />
-          <StatRow cols={3} rule={1} className="-mt-3">
-            <StatCell first label={t2('win', { team: p.homeName })} value={pct(p.pHome)} />
-            <StatCell label={t2('draw')} value={pct(p.pDraw)} tone="muted" />
-            <StatCell label={t2('win', { team: p.awayName })} value={pct(p.pAway)} tone="accent" />
-          </StatRow>
-
-          <div>
-            <h2 className="text-[24px]">{t2('breakdown')}</h2>
-            <StatRow cols={4} rule={1} className="mt-3">
-              <StatCell first size="sm" label={t2('xgHome')} value={p.lambdaHome != null ? f.number(p.lambdaHome, 'fixed2') : '–'} />
-              <StatCell size="sm" label={t2('xgAway')} value={p.lambdaAway != null ? f.number(p.lambdaAway, 'fixed2') : '–'} />
-              <StatCell size="sm" label={t2('marketImplied')} value={marketPickP != null ? pct(marketPickP) : '–'} note={marketPickOdds != null ? t2('marketOdds', { side: marketPickOdds.toFixed(2) }) : undefined} />
-              <StatCell size="sm" label={t2('edge')} value={edgePts == null ? '–' : `${edgePts > 0 ? '+' : edgePts < 0 ? '−' : ''}${Math.abs(edgePts)}`} tone={edgePts != null && edgePts > 0 ? 'accent-700' : undefined} />
-            </StatRow>
-            <p className="mt-4 max-w-[600px] text-[14px] text-s-muted">
-              {t2('breakdownText', { pick: pickTitle, conf: pct(p.confidence), raw: pct(p.confidenceRaw), lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2') })}
-              {edgePts != null && market
-                ? t2('breakdownEdge', { edge: Math.abs(edgePts), dir: edgePts >= 0 ? t2('above') : t2('below'), phase: market.phase === 'closing' ? t2('closing') : market.phase === 'opening' ? t2('opening') : t2('latest'), provider: market.provider ? ` (${market.provider})` : '' })
-                : ` ${t2('noMarket')}`}
-              {/* Oran hareketi: açılıştan son görüşe piyasa olasılığı; modelin seçimine göre yön. Bilgi amaçlı, seçim kuralına girmez. */}
-              {drift && drift.points >= 2 && (
-                <> {t2('driftLine', {
-                  side: drift.mover === '1' ? p.homeName : drift.mover === '2' ? p.awayName : tc('draw'),
-                  from: (drift.mover === '1' ? drift.first.homeOdds : drift.mover === '2' ? drift.first.awayOdds : drift.first.drawOdds).toFixed(2),
-                  to: (drift.mover === '1' ? drift.last.homeOdds : drift.mover === '2' ? drift.last.awayOdds : drift.last.drawOdds).toFixed(2),
-                  pp: `${(drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) >= 0 ? '+' : '−'}${Math.abs(Math.round((drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) * 100))}`,
-                  n: drift.points,
-                })} {driftVsPick(drift, p.pick) === 'toward' ? t2('driftToward') : driftVsPick(drift, p.pick) === 'away' ? t2('driftAway') : t2('driftFlat')}</>
-              )}
-              {formH.length >= 3 && formA.length >= 3 && <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>}
-            </p>
+          <h1 className="sr-only">{p.homeName} – {p.awayName}</h1>
+          <div className="flex flex-col gap-3">
+            {teamRow(p.homeName, p.homeCrest, p.homeScore != null && p.awayScore != null ? p.homeScore : null, p.pick === '1')}
+            {teamRow(p.awayName, p.awayCrest, p.homeScore != null && p.awayScore != null ? p.awayScore : null, p.pick === '2')}
           </div>
-        </div>
+          <div>
+            <ProbBar home={p.pHome} draw={p.pDraw} away={p.pAway} highlight={p.pick} labels={labels} size="lg" caption={false} />
+            <dl className="mt-3 grid grid-cols-3 gap-3">
+              {outcomes.map((o) => (
+                <div key={o.key} className={`rounded-xl border px-3 py-2.5 ${p.pick === o.key ? 'border-s-accent/50 bg-s-accent-100/50' : 'border-s-line'}`}>
+                  <dt className="truncate text-[12px] text-s-muted"><span className="num mr-1 font-semibold text-s-ink">{o.key}</span>{o.label}</dt>
+                  <dd className={`num mt-0.5 text-[22px] font-bold leading-none sm:text-[26px] ${o.key === '1' ? 'text-s-accent-700' : o.key === '2' ? 'text-s-away' : ''}`}>{pct(o.p)}</dd>
+                  {o.o != null && <dd className="num mt-1 text-[11.5px] text-s-muted">{t3('marketShort')} {o.o.toFixed(2)}{o.e != null && <span className={o.e > 0.03 ? 'text-s-win' : o.e < -0.03 ? 'text-s-loss' : ''}> · {pp(o.e)}</span>}</dd>}
+                </div>
+              ))}
+            </dl>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-s-line pt-4 text-[14px] sm:grid-cols-4">
+            <div><dt className="text-[12px] text-s-muted">{t2('xgHome')}</dt><dd className="num font-semibold">{p.lambdaHome != null ? f.number(p.lambdaHome, 'fixed2') : '–'}</dd></div>
+            <div><dt className="text-[12px] text-s-muted">{t2('xgAway')}</dt><dd className="num font-semibold">{p.lambdaAway != null ? f.number(p.lambdaAway, 'fixed2') : '–'}</dd></div>
+            <div><dt className="text-[12px] text-s-muted">{t2('marketImplied')}</dt><dd className="num font-semibold">{marketPickP != null ? pct(marketPickP) : '–'}{marketPickOdds != null && <span className="ml-1 font-normal text-s-muted">@{marketPickOdds.toFixed(2)}</span>}</dd></div>
+            <div><dt className="text-[12px] text-s-muted">{t2('edge')}</dt><dd className={`num font-semibold ${edgePts != null && edgePts > 0 ? 'text-s-win' : edgePts != null && edgePts < 0 ? 'text-s-loss' : ''}`}>{edgePts == null ? '–' : `${edgePts > 0 ? '+' : edgePts < 0 ? '−' : ''}${Math.abs(edgePts)} pt`}</dd></div>
+          </dl>
+        </section>
 
-        <aside className="rule-t flex flex-col gap-4 py-8 lg:rule-t-0 lg:pl-6">
+        <aside className="card card-accent !gap-4 !p-5 sm:!p-6">
           <div className="flex items-center justify-between gap-2">
-            <p className="kicker">{t2('confidence')}</p>
+            <p className="kicker">{t2('recommended')}</p>
             <RiskLabel risk={risk} />
           </div>
-          <div className="flex items-center gap-4">
-            <ConfidenceRing conf={conf} size={110} />
-            <p className="text-[13px] leading-snug">
-              {confPct != null ? (
-                <>
-                  {t2.rich('expected', { conf: confPct, b: (c) => <strong className="text-[15px]">{c}</strong> })}<br />
-                  {t2.rich('lossRate', { loss: loss ?? 0, b: (c) => <strong className="text-[15px] text-s-accent-700">{c}</strong> })}
-                </>
-              ) : t2('noConfidence')}
-            </p>
-          </div>
-          <div className="card card-top">
-            <p className="kicker">{t2('recommended')}</p>
-            {locked ? (
-              <LockedPick size="lg" />
-            ) : (
-              <>
-                <p className="text-[24px] font-extrabold leading-[1.05]">{pickTitle}</p>
-                <p className="num text-[13px] text-s-muted">
-                  {edgePts != null ? t2('fairValue', { fair: odds(pickP), value: `${edgePts >= 0 ? '+' : '−'}${Math.abs(edgePts)}%` }) : t2('fairOnly', { fair: odds(pickP) })}
+          {locked ? <LockedPick size="lg" /> : (
+            <>
+              <p className="text-[26px] font-bold leading-[1.05]">{pickTitle}</p>
+              <div className="flex items-center gap-4">
+                <ConfidenceRing conf={conf} size={96} inner="surface" label={t2('confidence')} />
+                <p className="text-[13.5px] leading-snug text-s-muted">
+                  {confPct != null ? (
+                    <>
+                      {t2.rich('expected', { conf: confPct, b: (c) => <strong className="text-[15px] text-s-ink">{c}</strong> })}<br />
+                      {t2.rich('lossRate', { loss: loss ?? 0, b: (c) => <strong className="text-[15px] text-s-loss">{c}</strong> })}
+                    </>
+                  ) : t2('noConfidence')}
                 </p>
-                {p.settled && <p className="text-[12px] text-s-muted">{t2('settledAs')}: <OutcomeBadge outcome={p.outcome} /></p>}
-              </>
-            )}
-          </div>
-          <RiskNote className="text-s-muted"><strong className="text-s-ink">{t2('beforeTitle')}</strong> {t2('beforeText')}</RiskNote>
+              </div>
+              <p className="num rounded-lg bg-s-raised px-3 py-2 text-[13px]">
+                {edgePts != null ? t2('fairValue', { fair: odds(pickP), value: `${edgePts >= 0 ? '+' : '−'}${Math.abs(edgePts)}%` }) : t2('fairOnly', { fair: odds(pickP) })}
+              </p>
+              {p.settled && <p className="text-[12.5px] text-s-muted">{t2('settledAs')}: <OutcomeBadge outcome={p.outcome} /></p>}
+            </>
+          )}
+          <RiskNote className="mt-auto text-s-muted"><strong className="text-s-ink">{t2('beforeTitle')}</strong> {t2('beforeText')}</RiskNote>
         </aside>
       </div>
 
-      {/* ── Bu maç karnemizde nerede ─────────────────────────────────── */}
+      {/* ── Tabs ───────────────────────────────────────────────────── */}
+      <div className="mt-8">
+        <SectionTabs
+          ariaLabel={t3('tabs')}
+          panels={[
+            {
+              id: 'summary', label: t3('tabSummary'),
+              content: (
+                <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr]">
+                  <div className="space-y-10">
+                    <section>
+                      <SectionTitle title={t2('breakdown')} />
+                      <p className="mt-4 max-w-[68ch] text-[15px] leading-relaxed">
+                        {t2('breakdownText', { pick: pickTitle, conf: p.confidence == null ? '–' : Math.round(p.confidence * 100), raw: p.confidenceRaw == null ? '–' : Math.round(p.confidenceRaw * 100), lh: f.number(p.lambdaHome ?? 0, 'fixed2'), la: f.number(p.lambdaAway ?? 0, 'fixed2') })}
+                        {edgePts != null && market
+                          ? t2('breakdownEdge', { edge: Math.abs(edgePts), dir: edgePts >= 0 ? t2('above') : t2('below'), phase: market.phase === 'closing' ? t2('closing') : market.phase === 'opening' ? t2('opening') : t2('latest'), provider: market.provider ? ` (${market.provider})` : '' })
+                          : ` ${t2('noMarket')}`}
+                        {drift && drift.points >= 2 && (
+                          <> {t2('driftLine', {
+                            side: drift.mover === '1' ? p.homeName : drift.mover === '2' ? p.awayName : tc('draw'),
+                            from: (drift.mover === '1' ? drift.first.homeOdds : drift.mover === '2' ? drift.first.awayOdds : drift.first.drawOdds).toFixed(2),
+                            to: (drift.mover === '1' ? drift.last.homeOdds : drift.mover === '2' ? drift.last.awayOdds : drift.last.drawOdds).toFixed(2),
+                            pp: `${(drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) >= 0 ? '+' : '−'}${Math.abs(Math.round((drift.mover === '1' ? drift.dHome : drift.mover === '2' ? drift.dAway : drift.dDraw) * 100))}`,
+                            n: drift.points,
+                          })} {driftVsPick(drift, p.pick) === 'toward' ? t2('driftToward') : driftVsPick(drift, p.pick) === 'away' ? t2('driftAway') : t2('driftFlat')}</>
+                        )}
+                        {formH.length >= 3 && formA.length >= 3 && <> {t('summaryForm', { home: p.homeName, hw: rh.w, hn: formH.length, away: p.awayName, aw: ra.w, an: formA.length })}</>}
+                      </p>
+                    </section>
+                    {/* ── Bu maç karnemizde nerede ─────────────────────────────────── */}
       {!locked && standing.length > 0 && (
-        <section className="rule-t mt-2 pt-8">
+        <section>
           <SectionTitle title={t('secStanding')} meta={p.covered ? t('standingMeta', { n: perf?.overall.n ?? 0 }) : t('standingMetaOutside', { n: covRow?.stats?.n ?? 0 })} />
           <p className="mt-2 max-w-[68ch] text-sm text-s-muted">{p.covered ? t('standingLead') : t('standingLeadOutside')}</p>
           <div className="mt-6">
@@ -318,8 +332,73 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         </section>
       )}
 
-      <div className="rule-t mt-2 grid gap-10 pt-8 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-10">
+                  </div>
+                  <aside className="space-y-10">
+          {/* ── Form ──────────────────────────────────────────────────── */}
+          <section>
+            <SectionTitle title={t('secContext')} meta={<>{t('formMeta')} · {t('formAsOf')}</>} />
+            <div className="mt-4 space-y-4 text-sm">
+              {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId), rec: recHome }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId), rec: recAway }].map((team) => (
+                <div key={team.name}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-medium">{team.name}</span>
+                    {team.items.length > 0 && <span className="num text-xs text-s-muted">{team.r.w}-{team.r.d}-{team.r.l}</span>}
+                  </div>
+                  {team.st && (
+                    <p className="num mt-0.5 text-xs text-s-muted">
+                      {ts('positionLine', { pos: team.st.pos, pts: team.st.pts, played: team.st.played, gd: `${team.st.gd > 0 ? '+' : ''}${team.st.gd}` })}
+                    </p>
+                  )}
+                  <div className="mt-1.5">
+                    {team.items.length ? <FormStrip items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
+                  </div>
+                  {/* Takım karnesi (24 Eyl): bu takımın maçlarında bizim seçimlerimiz; ≥5 maç, kayıt biçiminde */}
+                  {team.rec && (
+                    <p className="mt-1.5 text-xs text-s-muted">
+                      <span className="font-medium text-s-ink">{t('teamRecTitle')}</span>
+                      {team.rec.x12.n >= 5 ? (
+                        <>
+                          {' '}<span className={`rounded-[2px] px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${{ strong: 'bg-s-win text-white', mid: 'bg-s-raised text-s-ink', weak: 'bg-s-loss text-white', thin: 'border border-s-line' }[teamVerdict(team.rec.x12)]}`}>{t(`verdict${teamVerdict(team.rec.x12) === 'strong' ? 'Strong' : teamVerdict(team.rec.x12) === 'weak' ? 'Weak' : teamVerdict(team.rec.x12) === 'mid' ? 'Mid' : 'Thin'}`)}</span>
+                          <span className="num block">{t('teamRecLine', { x12: fmtCell(team.rec.x12), toWin: fmtCell(team.rec.toWin), over: fmtCell(team.rec.over), btts: fmtCell(team.rec.btts) })}</span>
+                        </>
+                      ) : <span className="block">{t('teamRecThin')}</span>}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <p className="mt-3 text-xs text-s-muted">{t('contextSource')}</p>
+
+          {/* ── Head to head ──────────────────────────────────────────── */}
+          <section>
+            <SectionTitle title={t('secH2h')} />
+            {h2h.length ? (
+              <ul className="mt-2 divide-y divide-s-line border-b border-s-line text-sm">
+                {h2h.map((m) => (
+                  <li key={m.fixtureId}>
+                    <Link href={`/predictions/${m.fixtureId}`} className="flex items-center gap-3 py-2 hover:bg-s-raised/60">
+                      <span className="w-16 shrink-0 text-xs text-s-muted"><LocalTime iso={m.kickoff} format="dayShort" /></span>
+                      <span className="min-w-0 flex-1 truncate">{m.homeName} – {m.awayName}</span>
+                      <span className="num font-semibold">{m.homeScore}–{m.awayScore}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-s-muted">{t('noH2h')}</p>
+            )}
+          </section>
+
+                  </aside>
+                </div>
+              ),
+            },
+            {
+              id: 'markets', label: t3('tabMarkets'),
+              content: (
+                <div className="space-y-10">
           {/* ── 1X2 ───────────────────────────────────────────────────── */}
           <section>
             <SectionTitle title={t('sec1x2')} meta={market ? t('marketMeta', { phase: market.phase === 'closing' ? t('closing') : t('opening'), provider: market.provider ?? '' }) : t('noMarket')} />
@@ -479,46 +558,13 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
               <p className="mt-2 text-xs text-s-muted">{t('marketsNote')}</p>
             </section>
           )}
-        </div>
-
-        <aside className="space-y-10">
-          {/* ── Form ──────────────────────────────────────────────────── */}
-          <section>
-            <SectionTitle title={t('secContext')} meta={<>{t('formMeta')} · {t('formAsOf')}</>} />
-            <div className="mt-4 space-y-4 text-sm">
-              {[{ name: p.homeName, items: formH, r: rh, st: stRow(p.homeId), rec: recHome }, { name: p.awayName, items: formA, r: ra, st: stRow(p.awayId), rec: recAway }].map((team) => (
-                <div key={team.name}>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-medium">{team.name}</span>
-                    {team.items.length > 0 && <span className="num text-xs text-s-muted">{team.r.w}-{team.r.d}-{team.r.l}</span>}
-                  </div>
-                  {team.st && (
-                    <p className="num mt-0.5 text-xs text-s-muted">
-                      {ts('positionLine', { pos: team.st.pos, pts: team.st.pts, played: team.st.played, gd: `${team.st.gd > 0 ? '+' : ''}${team.st.gd}` })}
-                    </p>
-                  )}
-                  <div className="mt-1.5">
-                    {team.items.length ? <FormStrip items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
-                  </div>
-                  {/* Takım karnesi (24 Eyl): bu takımın maçlarında bizim seçimlerimiz; ≥5 maç, kayıt biçiminde */}
-                  {team.rec && (
-                    <p className="mt-1.5 text-xs text-s-muted">
-                      <span className="font-medium text-s-ink">{t('teamRecTitle')}</span>
-                      {team.rec.x12.n >= 5 ? (
-                        <>
-                          {' '}<span className={`rounded-[2px] px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${{ strong: 'bg-s-win text-white', mid: 'bg-s-raised text-s-ink', weak: 'bg-s-loss text-white', thin: 'border border-s-line' }[teamVerdict(team.rec.x12)]}`}>{t(`verdict${teamVerdict(team.rec.x12) === 'strong' ? 'Strong' : teamVerdict(team.rec.x12) === 'weak' ? 'Weak' : teamVerdict(team.rec.x12) === 'mid' ? 'Mid' : 'Thin'}`)}</span>
-                          <span className="num block">{t('teamRecLine', { x12: fmtCell(team.rec.x12), toWin: fmtCell(team.rec.toWin), over: fmtCell(team.rec.over), btts: fmtCell(team.rec.btts) })}</span>
-                        </>
-                      ) : <span className="block">{t('teamRecThin')}</span>}
-                    </p>
-                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <p className="mt-3 text-xs text-s-muted">{t('contextSource')}</p>
-
+              ),
+            },
+            ...(squad !== undefined ? [{
+              id: 'squad', label: t3('tabSquad'),
+              content: (
+                <div className="max-w-[760px]">
           {/* ── Eksikler ve kadro ─────────────────────────────────────── */}
           {squad !== undefined && (
             <section>
@@ -566,26 +612,13 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
             </section>
           )}
 
-          {/* ── Head to head ──────────────────────────────────────────── */}
-          <section>
-            <SectionTitle title={t('secH2h')} />
-            {h2h.length ? (
-              <ul className="mt-2 divide-y divide-s-line border-b border-s-line text-sm">
-                {h2h.map((m) => (
-                  <li key={m.fixtureId}>
-                    <Link href={`/predictions/${m.fixtureId}`} className="flex items-center gap-3 py-2 hover:bg-s-raised/60">
-                      <span className="w-16 shrink-0 text-xs text-s-muted"><LocalTime iso={m.kickoff} format="dayShort" /></span>
-                      <span className="min-w-0 flex-1 truncate">{m.homeName} – {m.awayName}</span>
-                      <span className="num font-semibold">{m.homeScore}–{m.awayScore}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-xs text-s-muted">{t('noH2h')}</p>
-            )}
-          </section>
-
+                </div>
+              ),
+            }] : []),
+            {
+              id: 'model', label: t3('tabModel'),
+              content: (
+                <div className="max-w-[640px]">
           {/* ── Model facts ───────────────────────────────────────────── */}
           <section>
             <SectionTitle title={t('secModel')} />
@@ -598,7 +631,11 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
             {p.publishedAfterKickoff && <p className="mt-2 rounded-[2px] border border-s-loss/40 bg-s-loss/10 px-2 py-1.5 text-xs">{t('flagPostKickoff')}</p>}
             <p className="mt-3 text-xs text-s-muted">{t('modelNote')}</p>
           </section>
-        </aside>
+                </div>
+              ),
+            },
+          ]}
+        />
       </div>
 
       <p className="rule-t mt-12 pt-4 text-xs text-s-muted">{t('disclaimer')}</p>

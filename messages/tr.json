@@ -1148,5 +1148,22 @@
       "strongLine": "{n} ligde bir pazar son 180 günde en az 15 maçta ≥%70 tuttu.",
       "strongCta": "Hangileri →"
     }
+  },
+  "v3": {
+    "predictions": {
+      "otherLeagues": "Diğer ligler"
+    },
+    "home": {
+      "todayTitle": "Bugünün maçları",
+      "todayAll": "Tüm maçlar"
+    },
+    "match": {
+      "tabs": "Maç bölümleri",
+      "tabSummary": "Özet",
+      "tabMarkets": "Pazarlar ve oranlar",
+      "tabSquad": "Kadro",
+      "tabModel": "Model",
+      "marketShort": "Piyasa"
+    }
   }
 }

@@ -31,7 +31,7 @@ export default function LocaleSwitcher({ className = '' }: { className?: string 
         value={locale}
         onChange={onChange}
         aria-label={t('label')}
-        className="h-8 rounded-sm border border-s-line bg-s-surface px-2 text-sm text-s-ink hover:border-s-muted"
+        className="h-9 rounded-lg border border-s-line bg-s-surface px-2 text-sm font-medium text-s-ink hover:bg-s-raised"
       >
         {routing.locales.map((l) => (
           <option key={l} value={l}>{LOCALE_LABELS[l]}</option>

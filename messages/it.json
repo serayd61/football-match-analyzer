@@ -1148,5 +1148,22 @@
       "strongLine": "In {n} campionati un mercato ha centrato ≥70% su almeno 15 partite negli ultimi 180 giorni.",
       "strongCta": "Quali →"
     }
+  },
+  "v3": {
+    "predictions": {
+      "otherLeagues": "Altre leghe"
+    },
+    "home": {
+      "todayTitle": "Partite di oggi",
+      "todayAll": "Tutte le partite"
+    },
+    "match": {
+      "tabs": "Sezioni partita",
+      "tabSummary": "Riepilogo",
+      "tabMarkets": "Mercati e quote",
+      "tabSquad": "Formazioni",
+      "tabModel": "Modello",
+      "marketShort": "Mercato"
+    }
   }
 }
