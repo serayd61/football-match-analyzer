@@ -11,6 +11,7 @@ import { listResults } from '@/lib/site/results';
 import { getPerformance } from '@/lib/site/performance';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { launchOffer } from '@/lib/site/offer';
 import { Page } from '@/components/site/ui';
 import DemoAnalysis from '@/components/site/DemoAnalysis';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
@@ -212,6 +213,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
             <div className="card card-accent">
               <h3 className="text-[20px]">{t('pricePro')}</h3>
               <p className="num text-[36px] font-extrabold leading-none">{money(PLAN_PRICES.monthly.amount)}<span className="text-[15px] font-medium text-s-muted">{t('perMonth')} · {t('priceWeekly', { price: money(PLAN_PRICES.weekly.amount) })}</span></p>
+              {(() => { const o = launchOffer(); return o ? <p className="mt-2 inline-block rounded-[6px] bg-s-win/10 px-2 py-1 text-[13px] font-semibold text-s-win">{o.until ? tp('offerUntil', { price: money(o.price), full: money(PLAN_PRICES.monthly.amount), until: o.until }) : tp('offer', { price: money(o.price), full: money(PLAN_PRICES.monthly.amount) })}</p> : null; })()}
               <p className="text-[15px]">{t('priceProSub')}</p>
               <p className="text-[14px] text-s-muted">{t('priceCancel')}</p>
               <Link href={PRICING_HREF} className="mt-auto self-start text-[15px] font-semibold text-s-accent-700 hover:underline" data-cta="home-price-compare">{t('priceLink')}</Link>

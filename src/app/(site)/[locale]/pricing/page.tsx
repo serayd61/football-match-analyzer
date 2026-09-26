@@ -6,6 +6,7 @@ import { alternatesFor } from '@/lib/site/seo';
 import { Page } from '@/components/site/ui';
 import { getSiteAccess } from '@/lib/site/access';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { launchOffer } from '@/lib/site/offer';
 import PlanChooser from './PlanChooser';
 
 // Pricing (Modernist redesign 2026-09-11), localized. Top grid: H1 + intro
@@ -24,6 +25,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
   const t = await getTranslations('v2.pricing');
   const access = await getSiteAccess();
   const weeklyAvailable = !!process.env.STRIPE_PRICE_ID_WEEKLY;
+  const offer = launchOffer();
+  const offerLine = offer ? (offer.until ? t('offerUntil', { price: money(offer.price), full: money(PLAN_PRICES.monthly.amount), until: offer.until }) : t('offer', { price: money(offer.price), full: money(PLAN_PRICES.monthly.amount) })) : null;
 
   return (
     <Page>
@@ -33,6 +36,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
         isPro={access.state === 'pro'}
         weeklyAvailable={weeklyAvailable}
         prices={{ monthly: money(PLAN_PRICES.monthly.amount), weekly: money(PLAN_PRICES.weekly.amount) }}
+        offerLine={offerLine}
         labels={{
           title: t('title'), lead: t('lead'), weekly: t('weekly'), monthly: t('monthly'),
           freeName: t('freeName'), freeSub: t('freeSub'), freePrice: t('freePrice'), freeFor: t('freeFor'),

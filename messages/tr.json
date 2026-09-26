@@ -1017,6 +1017,8 @@
       "proCtaSignedIn": "Ödemeye devam et →",
       "loading": "Yükleniyor…",
       "signInFirst": "Abone olmak için giriş yap",
+      "offer": "Lansman teklifi: ilk ay {price}, sonra {full}",
+      "offerUntil": "Lansman teklifi: ilk ay {price}, sonra {full} · {until} tarihine kadar",
       "buyTitle": "Ne alıyorsun — ne almıyorsun.",
       "buyText": "Pro sana kalibre olasılıklar ve herkese açık, sonuçlanmış bir karne verir — kapanış oranına karşı güncel getiri için Performans sayfasına bak. Kâr garantisi yoktur; 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. Yalnızca hem ücreti hem bahisleri karşılayabiliyorsan abone ol. Hesabından istediğin zaman iptal et.",
       "trackLink": "Karneyi gör →",

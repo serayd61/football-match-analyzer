@@ -517,3 +517,90 @@ Unsubscribe: ${unsubscribeUrl}`;
 }
 
 export { SITE_URL };
+
+// ============================================================================
+// Deneme dönemi e-postaları (2026-09-26) — lib/site/trial-emails.ts seçer,
+// api/cron/trial-emails gönderir. İngilizce (diğer kampanyalarla tutarlı).
+// ============================================================================
+export interface TrialEmailOpts {
+  name?: string | null;
+  daysLeft: number;
+  /** son 7 günün vitrin karnesi; <10 örnek → gösterilmez */
+  stats: { n: number; won: number } | null;
+  predictionsUrl: string;
+  pricingUrl: string;
+  unsubscribeUrl: string;
+  /** süreli lansman teklifi (ilk ay fiyatı, son gün) */
+  offer: { price: number; until: string | null } | null;
+  fullPrice: number;
+}
+
+function trialShell(title: string, sub: string, body: string, unsubscribeUrl: string): string {
+  return `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">${sub}</p>
+    <h3 style="margin:0 0 14px;font-size:20px">${title}</h3>
+    ${body}
+    <p style="font-size:12px;color:#94a3b8;margin-top:28px">Predictions are probabilities, not guarantees. 18+. Nothing here is betting advice.<br>
+      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a></p>
+  </div>`;
+}
+const trialBtn = (href: string, label: string) =>
+  `<p style="text-align:center;margin:22px 0"><a href="${href}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">${label}</a></p>`;
+const trialStats = (stats: { n: number; won: number } | null) => stats && stats.n >= 10
+  ? `<div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:0 0 22px;text-align:center">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">Last 7 days — public record</div>
+      <div style="font-size:34px;font-weight:800;color:#e7eaf0;margin:8px 0 2px">${stats.won} / ${stats.n}</div>
+      <div style="font-size:13px;color:#9aa3b2">showcase picks correct · ${Math.round((stats.won / stats.n) * 100)}%</div>
+      <div style="font-size:11px;color:#646c7d;margin-top:8px">Wins and losses published daily — nothing hidden.</div>
+    </div>` : '';
+const trialOffer = (o: TrialEmailOpts['offer'], full: number) => o
+  ? `<p style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;font-size:14px"><strong>Launch offer:</strong> first month <strong>$${o.price.toFixed(2)}</strong> instead of $${full.toFixed(2)}${o.until ? ` — until ${o.until}` : ''}. Applied automatically at checkout.</p>`
+  : '';
+
+export async function sendTrialMidEmail(to: string, o: TrialEmailOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const subject = o.stats && o.stats.n >= 10
+    ? `This week's record: ${o.stats.won} of ${o.stats.n} picks correct — ${o.daysLeft} trial days left`
+    : `${o.daysLeft} trial days left — today's predictions are ready`;
+  const body = `
+    <p>Hi${hi}, you're ${o.daysLeft} days from the end of your free trial. Here is what the model actually did this week, with the misses included:</p>
+    ${trialStats(o.stats)}
+    <p>Every match page shows where the pick sits in our own track record — the same probability bucket, the same league, how often it landed before. Use the rest of your trial to check the goal markets (Over 2.5, Both teams to score): that's where the record is strongest.</p>
+    ${trialBtn(o.predictionsUrl, "See today's predictions →")}
+    ${trialOffer(o.offer, o.fullPrice)}
+    <p style="font-size:13px;color:#64748b;text-align:center">Keep full access after the trial: <a href="${o.pricingUrl}" style="color:#059669">Pro plans</a></p>`;
+  const html = trialShell('Your trial, day by day', `Trial check-in · ${o.daysLeft} days left`, body, o.unsubscribeUrl);
+  const text = `Hi${hi}, ${o.daysLeft} trial days left.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
+Today's predictions: ${o.predictionsUrl}
+${o.offer ? `Launch offer: first month $${o.offer.price.toFixed(2)} instead of $${o.fullPrice.toFixed(2)}${o.offer.until ? ` until ${o.offer.until}` : ''}.\n` : ''}Pro plans: ${o.pricingUrl}
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
+export async function sendTrialEndingEmail(to: string, o: TrialEmailOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const when = o.daysLeft <= 1 ? 'tomorrow' : `in ${o.daysLeft} days`;
+  const subject = o.offer
+    ? `Your trial ends ${when} — keep access for $${o.offer.price.toFixed(2)} the first month`
+    : `Your trial ends ${when} — keep full access`;
+  const body = `
+    <p>Hi${hi}, your free trial ends <strong>${when}</strong>. After that the predictions, the goal-model details and the value radar close for your account; the public track record stays open.</p>
+    ${trialStats(o.stats)}
+    ${trialOffer(o.offer, o.fullPrice)}
+    <p>Pro is <strong>$${o.fullPrice.toFixed(2)}/month</strong>, cancel any time. There is also a weekly plan if you prefer no commitment.</p>
+    ${trialBtn(o.pricingUrl, o.offer ? `Keep access — $${o.offer.price.toFixed(2)} first month →` : 'Keep full access →')}
+    <p style="font-size:13px;color:#64748b;text-align:center">Not for you? No action needed — the account simply drops to the free view.</p>`;
+  const html = trialShell(`Your trial ends ${when}`, 'Trial ending', body, o.unsubscribeUrl);
+  const text = `Hi${hi}, your free trial ends ${when}.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
+${o.offer ? `Launch offer: first month $${o.offer.price.toFixed(2)} instead of $${o.fullPrice.toFixed(2)}${o.offer.until ? ` until ${o.offer.until}` : ''}.\n` : ''}Keep access: ${o.pricingUrl}
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}

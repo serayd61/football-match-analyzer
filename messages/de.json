@@ -1017,6 +1017,8 @@
       "proCtaSignedIn": "Weiter zur Kasse →",
       "loading": "Laden…",
       "signInFirst": "Zum Abonnieren anmelden",
+      "offer": "Startangebot: erster Monat {price}, danach {full}",
+      "offerUntil": "Startangebot: erster Monat {price}, danach {full} · bis {until}",
       "buyTitle": "Was du kaufst — und was nicht.",
       "buyText": "Pro gibt dir kalibrierte Wahrscheinlichkeiten und eine öffentliche, abgerechnete Bilanz — die aktuelle Rendite gegen die Schlussquote steht auf der Performance-Seite. Gewinn ist nicht garantiert; Verlustserien von 5–7 Tipps kommen mehrmals pro Saison vor. Abonniere nur, wenn du dir Gebühr und Einsätze leisten kannst. Jederzeit im Konto kündbar.",
       "trackLink": "Bilanz ansehen →",

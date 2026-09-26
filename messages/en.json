@@ -1017,6 +1017,8 @@
       "proCtaSignedIn": "Continue to checkout →",
       "loading": "Loading…",
       "signInFirst": "Sign in to subscribe",
+      "offer": "Launch offer: first month {price}, then {full}",
+      "offerUntil": "Launch offer: first month {price}, then {full} · until {until}",
       "buyTitle": "What you are buying — and what you're not.",
       "buyText": "Pro gives you calibrated probabilities and a public, settled track record — see the Performance page for the current return against closing odds. It does not guarantee profit; losing streaks of 5–7 picks happen several times a season. Only subscribe if you can afford both the fee and the stakes. Cancel any time from your account.",
       "trackLink": "See the track record →",
