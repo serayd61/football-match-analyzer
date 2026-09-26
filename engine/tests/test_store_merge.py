@@ -85,3 +85,46 @@ class MergeSeasons(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ManualAliases(unittest.TestCase):
+    """LEAGUE_ALIASES: kupalar için elle birleştirme (Şampiyonlar Ligi 943230 → 42)."""
+
+    def setUp(self):
+        import store
+        self._store = store
+        self._saved = dict(store.LEAGUE_ALIASES)
+        # UCL: sezondan sezona takım kümesi yarı yarıya değişir → Jaccard birleştirmez
+        self.by = {
+            42: season(42, list(range(1, 37)), datetime(2025, 9, 16), 144, 0),
+            943230: season(943230, list(range(19, 55)), datetime(2026, 9, 15), 18, 10000),
+        }
+
+    def tearDown(self):
+        self._store.LEAGUE_ALIASES.clear()
+        self._store.LEAGUE_ALIASES.update(self._saved)
+
+    def test_parse(self):
+        self.assertEqual(self._store.parse_league_aliases("943230:42, 937348:42,bozuk,1:x"), {943230: 42, 937348: 42})
+        self.assertEqual(self._store.parse_league_aliases(None), {})
+
+    def test_without_alias_new_id_stays_small(self):
+        groups, alias = merge_season_ids(self.by)
+        self.assertEqual(alias[943230], 943230)
+        self.assertEqual(len(groups[943230]), 18)
+
+    def test_alias_merges_new_id_into_canonical(self):
+        self._store.LEAGUE_ALIASES.clear()
+        self._store.LEAGUE_ALIASES.update({943230: 42})
+        groups, alias = merge_season_ids(self.by)
+        self.assertEqual(alias[943230], 42)
+        self.assertEqual(alias[42], 42)
+        self.assertEqual(len(groups[42]), 162)
+        self.assertNotIn(943230, groups)
+
+    def test_alias_for_id_not_yet_in_store(self):
+        self._store.LEAGUE_ALIASES.clear()
+        self._store.LEAGUE_ALIASES.update({943230: 42})
+        groups, alias = merge_season_ids({42: self.by[42]})
+        self.assertEqual(alias[943230], 42)
+        self.assertEqual(len(groups[42]), 144)

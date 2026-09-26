@@ -12,6 +12,8 @@ WorkingDirectory=/opt/football-match-analyzer/engine
 Environment=FOOTBALL_API_KEY=PASTE_YOUR_RAPIDAPI_KEY_HERE
 Environment=STORE_PATH=/var/lib/footy/results.jsonl
 Environment=MIN_LEAGUE_MATCHES=150
+# Kupalar için elle lig kimliği birleştirme (yeni_id:kanonik_id). 2026-27 Şampiyonlar Ligi = 943230.
+Environment=LEAGUE_ALIASES=943230:42
 # ZORUNLU (2026-09-18): /predict, /backfill, /update, /reload bu token olmadan 503 döner.
 # n8n "Tahmin et" node'u aynı değeri `Authorization: Bearer ...` header'ıyla gönderir.
 # Üret: openssl rand -hex 32
