@@ -1017,6 +1017,8 @@
       "proCtaSignedIn": "Vai al pagamento →",
       "loading": "Caricamento…",
       "signInFirst": "Accedi per abbonarti",
+      "offer": "Offerta lancio: primo mese {price}, poi {full}",
+      "offerUntil": "Offerta lancio: primo mese {price}, poi {full} · fino al {until}",
       "buyTitle": "Cosa compri — e cosa no.",
       "buyText": "Pro ti dà probabilità calibrate e uno storico pubblico e regolato — il rendimento attuale contro la quota di chiusura è nella pagina Performance. Non garantisce profitto; serie di 5–7 pronostici persi capitano più volte a stagione. Abbonati solo se puoi permetterti sia la quota sia le puntate. Disdici quando vuoi dal tuo account.",
       "trackLink": "Vedi lo storico →",

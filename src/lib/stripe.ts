@@ -42,6 +42,7 @@ export async function createCheckoutSession({
   cancelUrl,
   isUpgrade = false,
   trialDays,
+  coupon,
 }: {
   userId: string;
   userEmail: string;
@@ -52,6 +53,9 @@ export async function createCheckoutSession({
   // Plan bazlı trial: verilmezse eski davranış (yeni kullanıcıya 7 gün).
   // 0 → trial yok (haftalık plan).
   trialDays?: number;
+  // Lansman teklifi kuponu (lib/site/offer.ts): verilirse otomatik uygulanır.
+  // Stripe kuralı: discounts ile allow_promotion_codes aynı oturumda olamaz.
+  coupon?: string | null;
 }) {
   const customers = await stripe.customers.list({
     email: userEmail,
@@ -101,6 +105,11 @@ export async function createCheckoutSession({
     sessionConfig.subscription_data = {
       metadata: { userId },
     };
+  }
+
+  if (coupon) {
+    sessionConfig.discounts = [{ coupon }];
+    delete sessionConfig.allow_promotion_codes;
   }
 
   const session = await stripe.checkout.sessions.create(sessionConfig);

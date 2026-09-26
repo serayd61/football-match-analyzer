@@ -13,9 +13,9 @@ type Labels = {
 };
 
 // Client half of the pricing page: the billing toggle and the checkout call.
-export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, prices, labels: l }: {
+export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, prices, offerLine = null, labels: l }: {
   locale: string; signedIn: boolean; isPro: boolean; weeklyAvailable: boolean;
-  prices: { monthly: string; weekly: string }; labels: Labels;
+  prices: { monthly: string; weekly: string }; /** lansman teklifi satırı (yalnız aylık) */ offerLine?: string | null; labels: Labels;
 }) {
   const router = useRouter();
   // Monthly is the default (7-day trial); weekly is the low-threshold entry when configured.
@@ -89,6 +89,7 @@ export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, 
               <span className="text-[14px] text-s-muted">{billing === 'weekly' ? l.perWeek : l.perMonth}</span>
             </p>
             <p className="mt-2 text-[14px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
+            {offerLine && billing === 'monthly' && <p className="mt-2 inline-block rounded-[6px] bg-s-win/10 px-2 py-1 text-[13px] font-semibold text-s-win">{offerLine}</p>}
           </div>
           <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
             {l.pro.map((f) => <li key={f} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{f}</li>)}

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createCheckoutSession, PLANS } from '@/lib/stripe';
+import { launchOffer } from '@/lib/site/offer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
       successUrl: `${baseUrl}/dashboard?payment=success`,
       cancelUrl: `${baseUrl}/pricing?payment=cancelled`,
       trialDays: plan.trialDays,
+      // Lansman teklifi yalnız aylık plana (ilk ay indirimi); haftalıkta yok.
+      coupon: planKey === 'PRO' ? launchOffer()?.coupon ?? null : null,
     });
 
     return NextResponse.json({ success: true, url: checkoutSession.url });
