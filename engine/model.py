@@ -23,9 +23,44 @@ def _pois(k, lam):
     return math.exp(-lam) * (lam ** k) / math.factorial(k)
 
 
+def level_factor(model, matches, ref_date, half_life_days=45.0, shrink_k=40.0, window_days=540):
+    """
+    LİG GOL SEVİYESİ ÇARPANI (2026-09-27 deneyi). `base` 540g/180g ile ~1,5 sezonun
+    ortalamasıdır ve sezon-içi gol seviyesine ataletle tepki verir (canlı denetim:
+    λ toplamı 2,82 vs gerçek 3,07). Bu çarpan aynı fit'in λ̂'larına karşı yakın geçmişin
+    gerçek gollerini KISA yarı-ömürle tartar ve uzun seviyeye doğru büzülür:
+        f = (Σ w_s·g + k·ḡ) / (Σ w_s·λ̂ + k·ḡ),   ḡ = maç başı beklenen gol (uzun fit)
+    k "maç eşdeğeri" (etkin ağırlık); veri azsa f → 1. predict() iki λ'yı da f ile çarpar;
+    takım güçleri (A, D) ve ev avantajı (H) değişmez, yalnız seviye kayar.
+    """
+    if model is None or not half_life_days:
+        return 1.0
+    train = [m for m in matches if m["date"] < ref_date]
+    if window_days:
+        cutoff = ref_date.toordinal() - window_days
+        train = [m for m in train if m["date"].toordinal() >= cutoff]
+    if not train:
+        return 1.0
+    A, D, H, base = model["A"], model["D"], model["H"], model["base"]
+    ln2 = math.log(2.0)
+    num = den = 0.0
+    tot_exp = 0.0
+    for m in train:
+        lam = base * (A.get(m["home"], 1.0) * D.get(m["away"], 1.0) * H + A.get(m["away"], 1.0) * D.get(m["home"], 1.0))
+        tot_exp += lam
+        age = ref_date.toordinal() - m["date"].toordinal()
+        w = math.exp(-ln2 * age / half_life_days)
+        num += w * (m["fthg"] + m["ftag"])
+        den += w * lam
+    gbar = tot_exp / len(train)
+    f = (num + shrink_k * gbar) / (den + shrink_k * gbar) if (den + shrink_k * gbar) > 0 else 1.0
+    return min(max(f, 0.8), 1.25)
+
+
 def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_matches=120,
-        rho=RHO, shrink_k=0.0):
-    """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı Poisson MLE."""
+        rho=RHO, shrink_k=0.0, level_half_life_days=None, level_shrink_k=40.0):
+    """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı Poisson MLE.
+    level_half_life_days verilirse model["level"] = level_factor(...) (yoksa 1.0 → parite)."""
     train = [m for m in matches if m["date"] < ref_date]
     if window_days:
         cutoff = ref_date.toordinal() - window_days
@@ -104,19 +139,24 @@ def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_ma
             A[t] = (n * A[t] + shrink_k * 1.0) / (n + shrink_k)
             D[t] = (n * D[t] + shrink_k * 1.0) / (n + shrink_k)
 
-    return {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff}
+    mdl = {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff, "level": 1.0}
+    if level_half_life_days:
+        mdl["level"] = level_factor(mdl, matches, ref_date, level_half_life_days, level_shrink_k, window_days)
+    return mdl
 
 
-def predict(model, home, away):
-    """1X2 / Üst-Alt 2.5 / KG olasılıkları + beklenen goller."""
+def predict(model, home, away, level=None):
+    """1X2 / Üst-Alt 2.5 / KG olasılıkları + beklenen goller.
+    `level`: gol seviyesi çarpanı (None → model["level"], yoksa 1.0)."""
     if model is None:
         return None
     A, D, H, base = model["A"], model["D"], model["H"], model["base"]
     rho = model.get("rho", RHO)
+    lvl = level if level is not None else model.get("level", 1.0)
     ah = A.get(home, 1.0); dh = D.get(home, 1.0)
     aa = A.get(away, 1.0); da = D.get(away, 1.0)
-    lam_h = base * ah * da * H
-    lam_a = base * aa * dh
+    lam_h = base * ah * da * H * lvl
+    lam_a = base * aa * dh * lvl
     lam_h = min(max(lam_h, 0.05), 6.0)
     lam_a = min(max(lam_a, 0.05), 6.0)
 

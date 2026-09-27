@@ -84,6 +84,9 @@ def load_matches(league: str, start_year: int, end_year: int):
             oh = _f(row, "PSCH", "PSH", "B365H", "WHH", "AvgH")
             od = _f(row, "PSCD", "PSD", "B365D", "WHD", "AvgD")
             oa = _f(row, "PSCA", "PSA", "B365A", "WHA", "AvgA")
+            # Üst/Alt 2,5 (2026-09-27, gol seviyesi deneyi): kapanış > açılış; Pinnacle > B365 > ortalama
+            oo = _f(row, "PC>2.5", "P>2.5", "B365C>2.5", "B365>2.5", "AvgC>2.5", "Avg>2.5")
+            ou = _f(row, "PC<2.5", "P<2.5", "B365C<2.5", "B365<2.5", "AvgC<2.5", "Avg<2.5")
             try:
                 fh, fa = int(float(fthg)), int(float(ftag))
             except ValueError:
@@ -99,6 +102,8 @@ def load_matches(league: str, start_year: int, end_year: int):
                 "odds_home": oh,
                 "odds_draw": od,
                 "odds_away": oa,
+                "odds_over": oo,
+                "odds_under": ou,
             })
     matches.sort(key=lambda m: m["date"])
     return matches
