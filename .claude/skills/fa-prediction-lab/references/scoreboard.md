@@ -91,6 +91,7 @@ yayın ürünü tartışması için `methodology.md` §5.
 - 2026-09-05: 10.687 satır hepsi `dc-1.0`; 249 kickoff-sonrası yeniden yazım; ROI açılış
   ve kapanış artık ayrı, kapsam yüzdesiyle (`performance.ts`).
 - Canlı model = §1 baseline (gol-DC, FotMob deposu, 540g). §2–§3 kazanımları canlıda YOK.
+- 2026-09-27, 403 kapsam-içi maç ⨝ kapanış oranı: model LL 1.0335 / piyasa 0.9960 / harman-0.7 1.0025; isabet 45.7 / 48.1 / 47.6; model piyasa favorisinden ayrıştığı 65 maçta %27.7 isabet; λ toplamı 2.85 vs gerçek 3.14. Rapor: `reports/live-audit-2026-09-27.md`.
 
 ## 8. Referans sabitler (dış kaynak, projeye özgü değil)
 
@@ -100,6 +101,8 @@ gol/Elo puanı` (=0.46–0.56 / 100 Elo) ile uyumlu. Katsayıyı her Elo kaynağ
 kalibre et.
 
 ## Güncelleme günlüğü
+
+- 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.
 
 - 2026-09-05: tablo oluşturuldu (kaynak: reports/*.md, docs/audit-2026-09-05.md, kod yorumları).
 - 2026-09-05: §2b xG kapısı bootstrap aralığıyla yeniden ölçüldü (GEÇTİ); canlı entegrasyon kodu yazıldı (deploy bekliyor).
