@@ -1151,7 +1151,11 @@
   },
   "v3": {
     "predictions": {
-      "otherLeagues": "Other leagues"
+      "otherLeagues": "Other leagues",
+      "pickerPh": "Search country or league…",
+      "pickerModel": "Model leagues",
+      "pickerCountries": "Countries",
+      "pickerEmpty": "No country or league matches"
     },
     "home": {
       "todayTitle": "Today's matches",

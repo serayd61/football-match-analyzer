@@ -75,7 +75,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const all = day.rows;
   // Kapsam dışı maçlar artık ana ızgaraya karışmaz; aşağıda lig lig gruplanır (2026-09-23).
   const scoped = all.filter((r) => r.covered);
-  const inLeague = league ? scoped.filter((r) => r.league?.slug === league.slug) : scoped;
+  // v3: ülke seçimi kapsamdaki ligleri de daraltır (ör. "İngiltere" → Premier League + Championship + kapsam dışı alt ligler).
+  const inLeague = league ? scoped.filter((r) => r.league?.slug === league.slug) : country && uLeagueId == null ? scoped.filter((r) => r.league?.ccode === country) : scoped;
   // Denetim B10: filters.ts (arama/durum/hazır/sıralama) kart tasarımına geçişte sayfadan düşmüştü.
   const rows = applyFilters(inLeague, flt);
   const filtersOn = !!flt.q || flt.status !== 'all' || flt.ready || flt.sort !== 'time' || !!flt.market;
@@ -190,7 +191,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
       <PredictionsToolbar
         state={{ date, today, league: league?.slug ?? null, country, uLeagueId, scope, q: flt.q, status: flt.status, sort: flt.sort, ready: flt.ready, market: flt.market, minP: flt.minP, note: showNote }}
-        leagues={leaguesToday.map((l) => ({ slug: l.slug, name: l.name, n: scoped.filter((r) => r.league?.slug === l.slug).length }))}
+        leagues={leaguesToday.map((l) => ({ slug: l.slug, name: l.name, country: l.country, n: scoped.filter((r) => r.league?.slug === l.slug).length }))}
         uncoveredCount={uncoveredCount}
         countries={uCountryList}
         uLeagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
@@ -203,6 +204,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           sort: tc('sort'), sortTime: t('sortTime'), sortConfidence: t('sortConfidence'), ready: t('ready'),
           market: tc('market'), marketAll: t('marketAll'), markets: { x12: t('mkt1x2'), ou25: t('mktOver'), btts: t('mktBtts') }, minP: Object.fromEntries(MIN_P_STEPS.map((p) => [String(p), t('minP', { p })])),
           country: t('country'), countryAll: t('countryAll', { count: uCountryList.length }), league: tc('league'), leagueAll: t('leagueAll'), matches: tc('matches', { count: shownCount }),
+          picker: { placeholder: t3('pickerPh'), modelLeagues: t3('pickerModel'), countries: t3('pickerCountries'), otherLeagues: t3('otherLeagues'), noResults: t3('pickerEmpty') },
         }}
       />
 
@@ -228,7 +230,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       )}
 
       {/* ── Covered leagues ─────────────────────────────────────────── */}
-      {outsideMode || (flt.market && inLeague.length === 0) ? (
+      {uLeagueId != null || ((outsideMode || !!flt.market) && inLeague.length === 0) ? (
         uncoveredRows.length === 0 && (
           <div className="mt-6"><EmptyState title={t('outsideEmpty', { name: outsideTitle ?? '' })} lead={t('outsideEmptyLead')} action={<Link href={href({ league: undefined, country: undefined })} className="btn btn-secondary">{t('all')}</Link>} /></div>
         )

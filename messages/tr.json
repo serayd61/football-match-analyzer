@@ -1151,7 +1151,11 @@
   },
   "v3": {
     "predictions": {
-      "otherLeagues": "Diğer ligler"
+      "otherLeagues": "Diğer ligler",
+      "pickerPh": "Ülke veya lig ara…",
+      "pickerModel": "Model ligleri",
+      "pickerCountries": "Ülkeler",
+      "pickerEmpty": "Eşleşen ülke veya lig yok"
     },
     "home": {
       "todayTitle": "Bugünün maçları",

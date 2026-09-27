@@ -1151,7 +1151,11 @@
   },
   "v3": {
     "predictions": {
-      "otherLeagues": "Altre leghe"
+      "otherLeagues": "Altre leghe",
+      "pickerPh": "Cerca paese o lega…",
+      "pickerModel": "Leghe del modello",
+      "pickerCountries": "Paesi",
+      "pickerEmpty": "Nessun paese o lega trovato"
     },
     "home": {
       "todayTitle": "Partite di oggi",
