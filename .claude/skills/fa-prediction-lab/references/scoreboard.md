@@ -93,6 +93,13 @@ yayın ürünü tartışması için `methodology.md` §5.
 - Canlı model = §1 baseline (gol-DC, FotMob deposu, 540g). §2–§3 kazanımları canlıda YOK.
 - 2026-09-27, 403 kapsam-içi maç ⨝ kapanış oranı: model LL 1.0335 / piyasa 0.9960 / harman-0.7 1.0025; isabet 45.7 / 48.1 / 47.6; model piyasa favorisinden ayrıştığı 65 maçta %27.7 isabet; λ toplamı 2.85 vs gerçek 3.14. Rapor: `reports/live-audit-2026-09-27.md`.
 
+## 7b. Gol seviyesi çarpanı (`engine/backtest_goals.py`, 2026-09-27) — DÜŞTÜ (etki yok)
+
+5 lig, 2021-22+, yarı-ömür {30..90} × k {20..80}: ΔLL Ü2,5 −0,0003…+0,0006, KG −0,0019…+0,0022,
+çarpan 0,99–1,01. Tarihsel veride `base` yansız (λ ≈ gerçek gol ±0,05). Canlıdaki %8 fark = 2026-27
+sezon başı rejimi ya da Hetzner depo farkı; bkz. `reports/backtest-goal-level.md`. Yan bulgu: model
+Ü2,5 LL piyasadan 0,02–0,03 kötü (keskinlik), seviye değil.
+
 ## 8. Referans sabitler (dış kaynak, projeye özgü değil)
 
 `football-match-forecasting` skill'i uluslararası maçlarda Elo→gol katsayısını 0.32 yerine

@@ -121,7 +121,13 @@ function outcomeOf(r: EngineRowT): Outcome {
   return r.correct ? 'won' : 'lost';
 }
 
-interface Curves { pick: Knot[]; ou: Knot[]; btts: Knot[] }
+interface Curves { pick: Knot[]; /** kapsam dışı ligler için: 'all' segmenti (n≈10k, düz) */ pickAll: Knot[]; ou: Knot[]; btts: Knot[] }
+
+// 2026-09-27: kalibre güven ekranda %100 çıkıyordu (covered eğrisi n=422, üst düğüm y=1.0, kapsam dışı
+// maça uygulanıyordu). Kapsam dışı satır 'all' eğrisini alır; her iki eğri de [0.05, 0.95]'e kırpılır —
+// bir olasılık kestirimi asla %100/%0 gösterilmez.
+const CONF_MIN = 0.05, CONF_MAX = 0.95;
+const clampConf = (v: number | null) => (v == null ? null : Math.min(CONF_MAX, Math.max(CONF_MIN, v)));
 
 // Catalog + calibration curves read through the site client (the legacy
 // helpers use `no-store` fetches, which cannot run inside a static build).
@@ -134,7 +140,7 @@ async function readCatalog(): Promise<Map<number, { ccode: string; name: string 
 
 export interface CurveMeta { segment: string; fittedAt: string | null; nSamples: number | null }
 
-async function readCurve(market: '1x2' | 'ou25' | 'btts'): Promise<{ knots: Knot[]; meta: CurveMeta | null }> {
+async function readCurve(market: '1x2' | 'ou25' | 'btts' | 'all'): Promise<{ knots: Knot[]; meta: CurveMeta | null }> {
   const prefer = market === '1x2' ? ['covered', 'all'] : [market];
   const { data } = await db()
     .from('confidence_calibration')
@@ -157,13 +163,14 @@ export interface SiteContext {
 
 export async function loadContext(): Promise<SiteContext> {
   const empty = { knots: [] as Knot[], meta: null as CurveMeta | null };
-  const [catalog, pick, ou, btts] = await Promise.all([
+  const [catalog, pick, pickAll, ou, btts] = await Promise.all([
     readCatalog().catch(() => new Map<number, { ccode: string; name: string }>()),
     readCurve('1x2').catch(() => empty),
+    readCurve('all').catch(() => empty),
     readCurve('ou25').catch(() => empty),
     readCurve('btts').catch(() => empty),
   ]);
-  return { catalog, curves: { pick: pick.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta } };
+  return { catalog, curves: { pick: pick.knots, pickAll: pickAll.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta } };
 }
 
 /** Which calibration curves are live (segment, sample size, fit date) — for UI provenance labels. */
@@ -200,7 +207,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
     lambdaHome: r.lambda_home,
     lambdaAway: r.lambda_away,
     pick: r.pick,
-    confidence: applyCurve(r.confidence, ctx.curves.pick),
+    confidence: clampConf(applyCurve(r.confidence, league ? ctx.curves.pick : (ctx.curves.pickAll.length ? ctx.curves.pickAll : ctx.curves.pick))),
     confidenceRaw: r.confidence,
     doubleChance: deriveDoubleChance(r.p_home, r.p_draw, r.p_away),
     overUnder: ou,
