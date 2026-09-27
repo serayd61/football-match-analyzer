@@ -18,6 +18,7 @@ import { countryName } from '@/lib/site/countries';
 import { sectionId } from '@/lib/site/back-link';
 import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
 import { RiskNote } from '@/components/site/Risk';
+import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
@@ -175,6 +176,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   }
   const shownCount = outsideMode || (flt.market && inLeague.length === 0) ? uncoveredRows.length : rows.length + (scope === 'all' ? uncoveredRows.length : 0);
   const t3 = await getTranslations('v3.predictions');
+  // Piyasa koruması (27 Eyl): kapsamdaki satırlar için son 1X2 piyasa olasılığı tek sorguda.
+  const snaps = rows.length ? await getMarketSnapshots(rows.filter((r) => r.hasModel).map((r) => r.fixtureId)).catch(() => ({} as Record<number, never>)) : {};
+  const mkt = (id: number) => { const m = (snaps as Record<number, { pHome: number; pDraw: number; pAway: number } | undefined>)[id]; return m ? { pHome: m.pHome, pDraw: m.pDraw, pAway: m.pAway } : null; };
 
   return (
     <Page>
@@ -250,7 +254,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <div className="mt-5 flex flex-col gap-4">
           {[...covGroups.values()].map((g) => (
             <LeagueGroup key={g.slug ?? g.name} name={g.name} meta={g.country ?? undefined} href={g.slug ? `/leagues/${g.slug}` : undefined} count={g.rows.length}>
-              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} />)}
+              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} market={mkt(p.fixtureId)} />)}
             </LeagueGroup>
           ))}
           <p className="text-[12px] text-s-muted">{t('footnote')}</p>

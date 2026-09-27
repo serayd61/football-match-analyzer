@@ -61,3 +61,34 @@ hedef olmamalı.
 ## SQL (özet)
 Kapsam id'leri: 47, 938218, 87, 55, 54, 53, 937276, 61, 268, 1000001407, 71. Kapanış: `prediction_odds`
 `phase='closing'`, fixture başına son `captured_at`. LL = −ln(p[sonuç]); harman = 0.3·model + 0.7·piyasa.
+
+## 5. Aynı gün uygulanan / denenen
+
+### Piyasa koruması — UYGULANDI (site, `lib/site/risk.ts`)
+`riskWithMarket(conf, pick, market)`: seçim ≠ kapanış favorisi → `disagree`; favori < %45 → `tight`;
+her ikisi de etiketi **Yüksek**'e yükseltir (asla düşürmez). Liste satırında kısa not, maç sayfasında
+açıklama kutusu. Gerekçe (n=403):
+
+| Grup | n | İsabet |
+|---|--:|--:|
+| Anlaşıyor, favori ≥ %55 | 141 | 68.1% |
+| Anlaşıyor, favori %45–55 | 107 | 47.7% |
+| Anlaşıyor, favori < %45 (sıkı) | 111 | 27.9% |
+| Ayrışıyor (hepsi) | 65 | 27.7% |
+
+Ölçüm: bayraklı satırların isabeti karnede ayrı sütun olarak izlenmeli (yapılacak).
+
+### Gol seviyesi düzeltmesi (site tarafı) — KAPIDAN GEÇMEDİ
+Fikir: son 45–60 günün Σgol/Σλ oranıyla λ'yı ölçekle, Ü2,5/KG'yi yeniden türet. Walk-forward, n=522
+(Ağu–Eyl), stored p ile fark olarak uygulandı:
+
+| Ay | f (ort.) | Ü2,5 LL stored → düzeltilmiş | KG LL stored → düzeltilmiş |
+|---|--:|--:|--:|
+| Ağustos | 0.97 | 0.6760 → 0.6849 (+0.009) | 0.6787 → 0.6865 (+0.008) |
+| Eylül | 1.07 | 0.6856 → 0.6716 (−0.014) | 0.6847 → 0.6779 (−0.007) |
+
+Sapma gerçek (gol 3.05–3.07 vs λ 2.82, Üst oranı %61–63 vs p %52.5) ama trailing çarpan rejime
+duyarlı: Ağustos'ta Temmuz'un düşük skorlu Brezilya maçları çarpanı ters yöne çekti. Lig-başı
+çarpan için sezon başında veri yok. Sonuç: site tarafında yamamak yerine motorda çözülmeli —
+toplam-gol seviyesi için ayrı (daha kısa) yarı-ömür ya da sezon-içi lig intercept'i; kapı
+`engine/backtest.py`'ye Ü/A-KG log-loss kolonu eklenerek FD.co.uk'ta (roadmap #4).

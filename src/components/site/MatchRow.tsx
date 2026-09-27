@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SitePrediction } from '@/lib/site/predictions';
-import { riskOf } from '@/lib/site/risk';
+import { riskOf, riskWithMarket, type MarketProbs } from '@/lib/site/risk';
 import type { OutsideRisk } from './PredictionCard';
 import { RiskLabel } from './Risk';
 import LocalTime from './LocalTime';
@@ -23,7 +23,7 @@ function Crest({ src }: { src: string | null }) {
     : <span className="h-5 w-5 shrink-0 rounded-full bg-s-raised" aria-hidden />;
 }
 
-export default async function MatchRow({ p, outside = null, back = null, spot = null }: { p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null }) {
+export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null }: { p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null }) {
   const t = await getTranslations('v2.predictions');
   const tc = await getTranslations('common');
   const conf = p.confidence ?? p.confidenceRaw;
@@ -32,7 +32,9 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
   const done = p.status === 'finished';
   const score = p.homeScore != null && p.awayScore != null && (live || done);
   const pct = (x: number) => Math.round(x * 100);
-  const risk = p.hasModel ? (outside ? outside.risk : riskOf(conf)) : null;
+  const guard = p.hasModel && !outside ? riskWithMarket(conf, p.pick, market) : null;
+  const risk = p.hasModel ? (outside ? outside.risk : guard ? guard.risk : riskOf(conf)) : null;
+  const t3 = await getTranslations('v3.risk');
   const pickWon = done && p.outcome === 'won';
   const pickLost = done && p.outcome === 'lost';
 
@@ -83,7 +85,7 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
         {p.hasModel ? (
           <>
             <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}</span>
-            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && <RiskLabel risk={risk} short />}
+            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && <span className="flex flex-col items-end gap-1"><RiskLabel risk={risk} short />{guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : 'tightShort')}</span>}</span>}
           </>
         ) : <span className="text-[11.5px] font-semibold text-s-muted">–</span>}
       </div>

@@ -27,7 +27,7 @@ import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
 import { StatRow, StatCell } from '@/components/site/StatCell';
-import { riskOf, lossRate } from '@/lib/site/risk';
+import { riskOf, lossRate, riskWithMarket } from '@/lib/site/risk';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import FormStrip, { toFormItems } from '@/components/site/FormStrip';
@@ -199,7 +199,9 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   // Kapsam dışı: risk ve beklenen kayıp, beyaz liste eğrisinden değil lig dilim karnesinden.
   const outsideAcc = !p.covered ? (outsideStanding.find((r) => r.market === '1x2')?.acc ?? null) : null;
   const loss = p.covered ? lossRate(conf) : outsideAcc != null ? Math.round((1 - outsideAcc) * 100) : null;
-  const risk = p.covered ? riskOf(conf) : strongPick ? strongRisk(strongPick) : coverageRisk(outsideStanding);
+  // Piyasa koruması (27 Eyl): kapsamdaki maçta seçim piyasa favorisinden ayrışıyorsa ya da maç sıkıysa risk 'Yüksek'e yükselir.
+  const guard = p.covered ? riskWithMarket(conf, p.pick, market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null) : null;
+  const risk = p.covered ? guard!.risk : strongPick ? strongRisk(strongPick) : coverageRisk(outsideStanding);
   const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0;
   const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
   const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
@@ -209,6 +211,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
   const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
   const t3 = await getTranslations('v3.match');
+  const marketFavName = market ? (market.pHome >= market.pDraw && market.pHome >= market.pAway ? p.homeName : market.pAway >= market.pHome && market.pAway >= market.pDraw ? p.awayName : tc('draw')) : '';
   const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <div className="flex items-center gap-3">
       {crest ? <Image src={crest} alt="" width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
@@ -281,6 +284,14 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                   ) : t2('noConfidence')}
                 </p>
               </div>
+              {guard?.flag && (
+                <p className="rounded-lg border border-s-loss/30 bg-s-loss/10 px-3 py-2 text-[13px] text-s-ink">
+                  <strong className="text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeTitle' : 'tightTitle')}</strong>{' '}
+                  {guard.flag === 'disagree'
+                    ? t3('disagreeText', { fav: market ? (marketFavName) : '', acc: 28 })
+                    : t3('tightText', { fav: market ? Math.round(Math.max(market.pHome, market.pDraw, market.pAway) * 100) : 0, acc: 28 })}
+                </p>
+              )}
               <p className="num rounded-lg bg-s-raised px-3 py-2 text-[13px]">
                 {edgePts != null ? t2('fairValue', { fair: odds(pickP), value: `${edgePts >= 0 ? '+' : '−'}${Math.abs(edgePts)}%` }) : t2('fairOnly', { fair: odds(pickP) })}
               </p>

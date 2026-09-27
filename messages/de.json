@@ -1167,7 +1167,11 @@
       "tabMarkets": "Märkte & Quoten",
       "tabSquad": "Teamnews",
       "tabModel": "Modell",
-      "marketShort": "Markt"
+      "marketShort": "Markt",
+      "disagreeTitle": "Gegen den Markt.",
+      "disagreeText": "Die Buchmacher favorisieren {fav}. Wenn das Modell vom Schlussfavoriten abwich, lag es in rund {acc}% der Fälle richtig — diesen Tipp als spekulativ behandeln.",
+      "tightTitle": "Enges Spiel.",
+      "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz."
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
@@ -1199,6 +1203,10 @@
       "feat3": "Jede Prognose wird vor Anpfiff protokolliert und automatisch abgerechnet. Verlustserien bleiben auf der Seite — genau darum geht es.",
       "closeTitle": "Sieh die Tipps von morgen mit den Zahlen dahinter.",
       "closeNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar."
+    },
+    "risk": {
+      "disagreeShort": "gegen Markt",
+      "tightShort": "enges Spiel"
     }
   }
 }

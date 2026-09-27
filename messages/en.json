@@ -1167,7 +1167,11 @@
       "tabMarkets": "Markets & odds",
       "tabSquad": "Team news",
       "tabModel": "Model",
-      "marketShort": "Market"
+      "marketShort": "Market",
+      "disagreeTitle": "Against the market.",
+      "disagreeText": "The bookmakers favour {fav}. When the model has disagreed with the closing favourite, it has been right about {acc}% of the time — treat this pick as speculative.",
+      "tightTitle": "Tight match.",
+      "tightText": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model's confidence."
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
@@ -1199,6 +1203,10 @@
       "feat3": "Every prediction is logged before kick-off and settled automatically. Losing runs stay on the page — that is the point.",
       "closeTitle": "See tomorrow's picks with the numbers behind them.",
       "closeNote": "7 days of full access. No card, cancel any time."
+    },
+    "risk": {
+      "disagreeShort": "vs market",
+      "tightShort": "tight match"
     }
   }
 }

@@ -1167,7 +1167,11 @@
       "tabMarkets": "Mercati e quote",
       "tabSquad": "Formazioni",
       "tabModel": "Modello",
-      "marketShort": "Mercato"
+      "marketShort": "Mercato",
+      "disagreeTitle": "Contro il mercato.",
+      "disagreeText": "I bookmaker favoriscono {fav}. Quando il modello ha dissentito dal favorito di chiusura, ha avuto ragione circa il {acc}% delle volte — considera questo pronostico speculativo.",
+      "tightTitle": "Partita equilibrata.",
+      "tightText": "Il mercato non quota nessuna parte sopra il {fav}%. In queste partite i nostri pronostici sono andati a segno circa il {acc}% delle volte, qualunque fosse la confidenza del modello."
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
@@ -1199,6 +1203,10 @@
       "feat3": "Ogni pronostico è registrato prima del calcio d'inizio e chiuso automaticamente. Le serie negative restano in pagina — è proprio questo il punto.",
       "closeTitle": "Guarda i pronostici di domani con i numeri dietro.",
       "closeNote": "7 giorni di accesso completo. Nessuna carta, disdici quando vuoi."
+    },
+    "risk": {
+      "disagreeShort": "contro il mercato",
+      "tightShort": "partita equilibrata"
     }
   }
 }

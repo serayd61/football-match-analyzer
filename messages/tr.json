@@ -1167,7 +1167,11 @@
       "tabMarkets": "Pazarlar ve oranlar",
       "tabSquad": "Kadro",
       "tabModel": "Model",
-      "marketShort": "Piyasa"
+      "marketShort": "Piyasa",
+      "disagreeTitle": "Piyasaya karşı.",
+      "disagreeText": "Bahisçilerin favorisi {fav}. Model kapanış favorisinden ayrıştığında geçmişte yaklaşık %{acc} tuttu — bu seçimi spekülatif say.",
+      "tightTitle": "Sıkı maç.",
+      "tightText": "Piyasa hiçbir tarafa %{fav} üstü vermiyor. Böyle maçlarda seçimlerimiz, modelin güveni ne olursa olsun yaklaşık %{acc} tuttu."
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
@@ -1199,6 +1203,10 @@
       "feat3": "Her tahmin maçtan önce kaydedilir, otomatik sonuçlanır. Kayıp serileri sayfada kalır — mesele de bu.",
       "closeTitle": "Yarının seçimlerini arkasındaki sayılarla gör.",
       "closeNote": "7 gün tam erişim. Kart yok, istediğin an iptal."
+    },
+    "risk": {
+      "disagreeShort": "piyasaya karşı",
+      "tightShort": "sıkı maç"
     }
   }
 }
