@@ -83,6 +83,8 @@ const Params = z.object({
   min_team_matches: z.number().min(0).max(40).optional(),
   xg_weight: z.number().min(0).max(1).optional(),
   xg_min_coverage: z.number().min(0).max(1).optional(),
+  level_half_life_days: z.number().int().min(0).max(365).optional(),
+  level_shrink_k: z.number().min(0).max(500).optional(),
   leagues: z.record(z.string().regex(/^\d+$/), z.record(z.unknown())).optional(),
 }).strict();
 
