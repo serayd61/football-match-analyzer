@@ -54,3 +54,6 @@ public/swe-worker-*.js
 /test-results/
 /playwright-report/
 /blob-report/
+
+# geçici git bundle dosyaları
+*.bundle
