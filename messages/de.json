@@ -1171,7 +1171,8 @@
       "disagreeTitle": "Gegen den Markt.",
       "disagreeText": "Die Buchmacher favorisieren {fav}. Wenn das Modell vom Schlussfavoriten abwich, lag es in rund {acc}% der Fälle richtig — diesen Tipp als spekulativ behandeln.",
       "tightTitle": "Enges Spiel.",
-      "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz."
+      "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz.",
+      "standingHit": "Trefferquote bisher"
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",

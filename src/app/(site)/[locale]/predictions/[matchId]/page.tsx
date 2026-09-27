@@ -74,6 +74,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
+  const t3 = await getTranslations('v3.match');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
   const f = await getFormatter();
@@ -140,6 +141,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     scopeAll: (won, n) => t(p.covered ? 'scopeAll' : 'scopeOutside', { won, n, acc: Math.round((won / n) * 100) }),
     thin: t('standingThin'),
     model: t('standingModel'),
+    hit: t3('standingHit'),
+    sample: (n) => tc('matches', { count: n }),
   };
   const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
 
@@ -210,7 +213,6 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const locked = false; // `unlockAll` preview flag — the members-only model gates the whole page instead.
   const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
   const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
-  const t3 = await getTranslations('v3.match');
   const marketFavName = market ? (market.pHome >= market.pDraw && market.pHome >= market.pAway ? p.homeName : market.pAway >= market.pHome && market.pAway >= market.pDraw ? p.awayName : tc('draw')) : '';
   const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <div className="flex items-center gap-3">

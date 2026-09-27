@@ -1171,7 +1171,8 @@
       "disagreeTitle": "Contro il mercato.",
       "disagreeText": "I bookmaker favoriscono {fav}. Quando il modello ha dissentito dal favorito di chiusura, ha avuto ragione circa il {acc}% delle volte — considera questo pronostico speculativo.",
       "tightTitle": "Partita equilibrata.",
-      "tightText": "Il mercato non quota nessuna parte sopra il {fav}%. In queste partite i nostri pronostici sono andati a segno circa il {acc}% delle volte, qualunque fosse la confidenza del modello."
+      "tightText": "Il mercato non quota nessuna parte sopra il {fav}%. In queste partite i nostri pronostici sono andati a segno circa il {acc}% delle volte, qualunque fosse la confidenza del modello.",
+      "standingHit": "Successo passato"
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",

@@ -1171,7 +1171,8 @@
       "disagreeTitle": "Against the market.",
       "disagreeText": "The bookmakers favour {fav}. When the model has disagreed with the closing favourite, it has been right about {acc}% of the time — treat this pick as speculative.",
       "tightTitle": "Tight match.",
-      "tightText": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model's confidence."
+      "tightText": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model's confidence.",
+      "standingHit": "Past hit rate"
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",

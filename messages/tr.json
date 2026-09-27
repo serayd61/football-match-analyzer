@@ -1171,7 +1171,8 @@
       "disagreeTitle": "Piyasaya karşı.",
       "disagreeText": "Bahisçilerin favorisi {fav}. Model kapanış favorisinden ayrıştığında geçmişte yaklaşık %{acc} tuttu — bu seçimi spekülatif say.",
       "tightTitle": "Sıkı maç.",
-      "tightText": "Piyasa hiçbir tarafa %{fav} üstü vermiyor. Böyle maçlarda seçimlerimiz, modelin güveni ne olursa olsun yaklaşık %{acc} tuttu."
+      "tightText": "Piyasa hiçbir tarafa %{fav} üstü vermiyor. Böyle maçlarda seçimlerimiz, modelin güveni ne olursa olsun yaklaşık %{acc} tuttu.",
+      "standingHit": "Geçmişte tuttu"
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
