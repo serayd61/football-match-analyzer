@@ -852,7 +852,9 @@
       "line": "© {year} footballanalytics.pro · Prognosen sind statistische Schätzungen, keine Finanzberatung. 18+ · Spiele verantwortungsvoll.",
       "terms": "AGB",
       "privacy": "Datenschutz",
-      "contact": "Kontakt"
+      "contact": "Kontakt",
+      "compliance": "footballanalytics.pro ist ein unabhängiger statistischer Analysedienst. Wir bieten keine Wetten an, nehmen keine Einsätze entgegen, verwalten keine Spielergelder und sind mit keinem Buchmacher verbunden. Allfällige ausgehende Links führen ausschliesslich zu Glücksspielanbietern, die im jeweiligen Land lizenziert und zugelassen sind.",
+      "help": "Glücksspiel kann süchtig machen. Spiele verantwortungsvoll und nur, wenn du in deinem Land volljährig bist. Hilfe: Schweiz sos-spielsucht.ch · 0800 040 080 — Deutschland check-dein-spiel.de · 0800 137 27 00 — Österreich spielsuchthilfe.at · 01 544 13 57 — International gamblingtherapy.org"
     },
     "home": {
       "kickerLive": "Modell live · {count, plural, =1 {1 Tipp heute} other {# Tipps heute}}",

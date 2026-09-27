@@ -852,7 +852,9 @@
       "line": "© {year} footballanalytics.pro · Le previsioni sono stime statistiche, non consulenza finanziaria. 18+ · Gioca responsabilmente.",
       "terms": "Termini",
       "privacy": "Privacy",
-      "contact": "Contatti"
+      "contact": "Contatti",
+      "compliance": "footballanalytics.pro è un servizio indipendente di analisi statistica. Non offriamo scommesse, non accettiamo puntate, non custodiamo fondi dei giocatori e non siamo affiliati ad alcun bookmaker. Eventuali link in uscita rimandano esclusivamente a operatori di gioco autorizzati e licenziati nel relativo paese.",
+      "help": "Il gioco d'azzardo può causare dipendenza. Gioca responsabilmente e solo se hai l'età legale nel tuo paese. Aiuto: Svizzera sos-spielsucht.ch · 0800 040 080 — Germania check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — Internazionale gamblingtherapy.org"
     },
     "home": {
       "kickerLive": "Modello attivo · {count, plural, =1 {1 pronostico oggi} other {# pronostici oggi}}",

@@ -31,6 +31,12 @@ export default async function SiteFooter() {
           <div className="mt-2"><LocaleSwitcher /></div>
         </nav>
       </div>
+      <div className="border-t border-s-line">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-4 py-5 text-[12.5px] leading-relaxed sm:px-6">
+          <p>{t('compliance')}</p>
+          <p>{t('help')}</p>
+        </div>
+      </div>
     </footer>
   );
 }

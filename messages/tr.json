@@ -852,7 +852,9 @@
       "line": "© {year} footballanalytics.pro · Tahminler istatistiksel kestirimdir, finansal tavsiye değildir. 18+ · Sorumlu oynayın.",
       "terms": "Şartlar",
       "privacy": "Gizlilik",
-      "contact": "İletişim"
+      "contact": "İletişim",
+      "compliance": "footballanalytics.pro bağımsız bir istatistiksel analiz hizmetidir. Bahis sunmayız, bahis kabul etmeyiz, oyuncu parası tutmayız ve hiçbir bahis şirketiyle bağlantımız yoktur. Varsa dış bağlantılar yalnızca ilgili ülkede lisanslı ve yetkili şans oyunu kuruluşlarına verilir.",
+      "help": "Şans oyunları bağımlılık yapabilir. Lütfen sorumlu oynayın ve yalnızca ülkenizde yasal yaştaysanız oynayın. Yardım: İsviçre sos-spielsucht.ch · 0800 040 080 — Almanya check-dein-spiel.de · 0800 137 27 00 — Avusturya spielsuchthilfe.at · 01 544 13 57 — Uluslararası gamblingtherapy.org"
     },
     "home": {
       "kickerLive": "Model canlı · bugün {count, plural, =1 {1 tahmin} other {# tahmin}}",
