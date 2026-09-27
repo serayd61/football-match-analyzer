@@ -34,7 +34,12 @@ export default async function SiteFooter() {
       <div className="border-t border-s-line">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-4 py-5 text-[12.5px] leading-relaxed sm:px-6">
           <p>{t('compliance')}</p>
-          <p>{t('help')}</p>
+          <p>
+            {t('help')}{' '}
+            <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-s-ink">begambleaware.org</a>
+            {' · '}
+            <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-s-ink">gamcare.org.uk</a>
+          </p>
         </div>
       </div>
     </footer>
