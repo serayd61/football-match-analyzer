@@ -92,7 +92,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
     <>
       {/* ── Hero: dark product showcase ────────────────────────────── */}
       <section className="band-dark pitch-bg overflow-hidden">
-        <Page className="grid items-center gap-12 py-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
+        <Page className="grid items-center gap-12 pb-12 pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
           <div className="flex flex-col gap-6">
             <p className="kicker !text-s-accent-700">{tl('eyebrow')}</p>
             <h1 className="max-w-[15ch] text-[38px] leading-[1.04] sm:text-[52px] lg:text-[60px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{tl('title')}</h1>
@@ -127,7 +127,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
               </div>
             )}
             {perf.overall.n > 0 && (
-              <Link href="/performance" className="absolute -bottom-5 left-4 inline-flex items-center gap-2 rounded-full border border-s-line bg-s-surface px-3.5 py-2 text-[13px] font-semibold shadow-[var(--s-shadow)] hover:border-s-n400 lg:-left-6" data-cta="hero-record-chip">
+              <Link href="/performance" className="mt-4 inline-flex items-center gap-2 rounded-full border border-s-line bg-s-surface px-3.5 py-2 text-[13px] font-semibold shadow-[var(--s-shadow)] hover:border-s-n400 lg:absolute lg:-bottom-5 lg:-left-6 lg:mt-0" data-cta="hero-record-chip">
                 <span className="h-2 w-2 rounded-full bg-s-accent" aria-hidden />
                 {tl('recordChip', { n: f.number(perf.overall.n), acc: pct(perf.overall.acc) })}
               </Link>
@@ -195,7 +195,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
             <article className="card card-flat !gap-4 !bg-s-bg">
               <div className="rounded-xl border border-s-line bg-s-surface p-4">
                 <ul className="divide-rule text-[13px]">
-                  {[['won', 'Sat 20:45', '68%'], ['lost', 'Sat 18:00', '61%'], ['won', 'Sun 15:00', '74%']].map(([o, t, c], i) => (
+                  {[['won', 'Premier League · 20:45', '68%'], ['lost', 'LaLiga · 18:00', '61%'], ['won', 'Serie A · 15:00', '74%']].map(([o, t, c], i) => (
                     <li key={i} className="flex items-center gap-3 py-1.5"><span className={`tag ${o === 'won' ? 'tag-win' : 'tag-loss'}`}>{tc(o as 'won' | 'lost')}</span><span className="num flex-1 text-s-muted">{t}</span><span className="num font-semibold">{c}</span></li>
                   ))}
                 </ul>
