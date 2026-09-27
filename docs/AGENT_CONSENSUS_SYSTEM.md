@@ -94,7 +94,7 @@ Agent: odds (La Liga)
 
 Supabase'de şu SQL'i çalıştırın:
 ```sql
--- supabase/add_consensus_alignment_columns.sql
+-- supabase/legacy/add_consensus_alignment_columns.sql
 ALTER TABLE agent_predictions
 ADD COLUMN IF NOT EXISTS consensus_alignment INTEGER DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS consensus_match_result_alignment INTEGER DEFAULT NULL,

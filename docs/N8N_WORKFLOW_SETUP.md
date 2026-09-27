@@ -17,7 +17,7 @@ Eğer PostgreSQL bağlantısında `connect ENETUNREACH` hatası alıyorsanız, *
 
 1. **Önce Supabase'de view'ları oluşturun:**
    - Supabase Dashboard → SQL Editor
-   - `supabase/n8n_rest_api_views.sql` dosyasını çalıştırın
+   - `supabase/legacy/n8n_rest_api_views.sql` dosyasını çalıştırın
    
 2. n8n'de **"Add workflow"** → **"Import from File"** seçin
 3. `n8n/agent-learning-workflow-rest-api.json` dosyasını seçin

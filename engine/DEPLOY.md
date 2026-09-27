@@ -63,7 +63,7 @@ curl -s http://127.0.0.1:8000/status | head        # çalışıyor mu?
 ## 2) Site tarafı (Vercel) — 2 şey
 
 **a) Supabase tablosu** (Supabase SQL Editor'da çalıştır):
-`supabase/engine_predictions.sql` içeriğini yapıştır → Run. (Eski tablolara dokunmaz.)
+`supabase/legacy/engine_predictions.sql` içeriğini yapıştır → Run. (Eski tablolara dokunmaz.)
 
 **b) Env değişkeni** — Vercel'de zaten `PREDICTIONS_API_SECRET` varsa hazırsın. Yoksa ekle (uzun rastgele bir değer). Bu hem n8n'in Authorization header'ında hem sitede kullanılır.
 
@@ -144,7 +144,7 @@ Kontrol (ilk günden sonra): `engine_predictions` içinde `model_version='dc-2.0
 
 ## Sürümler ve parametreler (Faz 3, 2026-09-07) — gölge yayın, onaylı terfi
 
-Tek doğruluk kaynağı Supabase `engine_model_versions` (migration `2026-09-07_engine_model_versions.sql`;
+Tek doğruluk kaynağı Supabase `engine_model_versions` (migration `20260907010000_engine_model_versions.sql`;
 seed: `dc-1.0` **active**, `dc-2.0-xg` **shadow**). Servis bunu siteden okur:
 
 ```ini

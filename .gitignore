@@ -40,3 +40,20 @@ engine/*_output.json
 next-env.d.ts
 .playwright-mcp/
 engine/.cache/
+
+# Python
+__pycache__/
+*.pyc
+
+# serwist build çıktıları (next build üretir)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+
+# geçici git bundle dosyaları
+*.bundle

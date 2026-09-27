@@ -34,9 +34,11 @@ function isMemberApiPath(path: string): boolean {
 // Machine-to-machine callers (cron / QStash) authenticate with a shared secret
 // via `Authorization: Bearer <secret>` instead of a NextAuth session.
 function hasValidServiceSecret(req: { headers: { get(name: string): string | null } }): boolean {
-  const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
-  if (!secret) return false;
-  return req.headers.get('authorization') === `Bearer ${secret}`;
+  // İki sır da kabul edilir (lib/api/dev-only.hasServiceSecret ile aynı kural).
+  // Önceden ADMIN_SECRET tanımlıysa CRON_SECRET'lı cron çağrıları 403 alıyordu.
+  const secrets = [process.env.ADMIN_SECRET, process.env.CRON_SECRET].filter((s): s is string => !!s);
+  const auth = req.headers.get('authorization') || '';
+  return secrets.some((s) => auth === `Bearer ${s}`);
 }
 
 export default withAuth(

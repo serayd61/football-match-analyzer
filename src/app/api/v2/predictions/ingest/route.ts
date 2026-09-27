@@ -12,7 +12,7 @@
 //   • Kick-off'u geçmiş maç için pre-match tahmin (yeniden) yazılamaz;
 //     `allowPastKickoff: true` ile açıkça izin verilmedikçe reddedilir.
 //   • Yayın geçmişi: engine_predictions üzerindeki tetikleyici (bkz.
-//     supabase/migrations/2026-09-05_engine_prediction_history.sql) her
+//     supabase/migrations/20260905020000_engine_prediction_history.sql) her
 //     insert/update'i değişmez tarihçeye kopyalar — burada ek iş gerekmez.
 // ============================================================================
 

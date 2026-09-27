@@ -71,7 +71,7 @@ Her maç için agent tahminlerini saklar.
 
 ```bash
 # Supabase SQL Editor'da çalıştır:
-supabase/agent_performance_tracking.sql
+supabase/legacy/agent_performance_tracking.sql
 ```
 
 Bu script şunları oluşturur:
@@ -183,7 +183,7 @@ console.log(summary);
 
 ### Ağırlık Hesaplama Formülünü Değiştir
 
-`supabase/agent_performance_tracking.sql` dosyasındaki `update_agent_performance()` fonksiyonunu düzenle:
+`supabase/legacy/agent_performance_tracking.sql` dosyasındaki `update_agent_performance()` fonksiyonunu düzenle:
 
 ```sql
 -- Accuracy multiplier'ı değiştir
