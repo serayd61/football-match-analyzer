@@ -34,9 +34,13 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "min_team_matches": 6,
     "xg_weight": 0.75,
     "xg_min_coverage": 0.95,
+    # Gol seviyesi çarpanı (2026-09-27, model.level_factor): 0 → kapalı (parite).
+    # Gölge adayı: level_half_life_days=45, level_shrink_k=40.
+    "level_half_life_days": 0,
+    "level_shrink_k": 40,
 }
 _NUMERIC = {"half_life_days", "window_days", "rho", "iters", "min_matches", "shrink_k",
-            "min_team_matches", "xg_weight", "xg_min_coverage"}
+            "min_team_matches", "xg_weight", "xg_min_coverage", "level_half_life_days", "level_shrink_k"}
 
 
 def env_defaults() -> Dict[str, Any]:

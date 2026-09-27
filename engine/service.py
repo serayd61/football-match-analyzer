@@ -106,6 +106,11 @@ def _get_model(league_id: int, ref_ord: int, spec: Dict[str, Any]):
                 mdl = MX.fit(matches, ref_date, xg_weight=prm["xg_weight"], **common)
         else:
             mdl = M.fit(matches, ref_date, **common)
+        # Gol seviyesi çarpanı (2026-09-27): params'ta level_half_life_days > 0 ise model["level"]
+        # kısa yarı-ömürlü lig gol seviyesinden gelir; predict iki λ'yı da onunla ölçekler.
+        lvl_hl = float(prm.get("level_half_life_days") or 0)
+        if mdl is not None and lvl_hl > 0:
+            mdl["level"] = M.level_factor(mdl, matches, ref_date, lvl_hl, float(prm.get("level_shrink_k") or 40), prm["window_days"])
         if mdl is None and reason is None:
             reason = "fit_failed"
     _fit_cache[key] = (mdl, cov, reason)
