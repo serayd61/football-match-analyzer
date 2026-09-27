@@ -1168,6 +1168,37 @@
       "tabSquad": "Teamnews",
       "tabModel": "Modell",
       "marketShort": "Markt"
+    },
+    "landing": {
+      "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
+      "title": "Kenne die Quote, bevor der Buchmacher sie dir nennt.",
+      "lead": "Ein kalibriertes statistisches Modell bewertet jedes Spiel in {n} Ligen: Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairer Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
+      "cta": "7 Tage gratis starten",
+      "ctaDemo": "Beispielanalyse ansehen",
+      "noCard": "Keine Karte nötig",
+      "cancel": "Jederzeit kündbar",
+      "adult": "18+ · Verantwortungsvoll spielen",
+      "recordChip": "{n} Tipps abgerechnet · {acc} Trefferquote",
+      "trustSettled": "abgerechnete, veröffentlichte Prognosen",
+      "trustLeagues": "Ligen, auf denen das Modell trainiert ist",
+      "trustHit": "1X2-Trefferquote, Live-Bilanz",
+      "trustLoggedV": "Vor Anpfiff",
+      "trustLogged": "jeder Tipp vor dem Spiel mit Zeitstempel",
+      "featKicker": "Was du bekommst",
+      "featTitle": "Jedes Spiel so gelesen, wie ein Quant es liest.",
+      "featLead": "Kein Tipp mit Schulterzucken. Das ganze Wahrscheinlichkeitsbild, wie sicher das Modell ist und was der Markt denkt — auf einem Bildschirm.",
+      "vig1": "Wahrscheinlichkeiten · 1 X 2",
+      "vigOver": "Über 2,5",
+      "vigBtts": "Beide treffen",
+      "vig2": "in 71 von 100 Fällen richtig erwartet",
+      "feat1T": "Wahrscheinlichkeiten statt Versprechen",
+      "feat1": "Heim, Unentschieden, Auswärts plus Über/Unter und Beide treffen für jedes bewertete Spiel, mit fairer Quote und Vorteil gegenüber dem Buchmacher.",
+      "feat2T": "Wissen, wie sicher das Modell ist",
+      "feat2": "Die Konfidenz ist an vergangenen Ergebnissen kalibriert; ein Risikolabel Tief / Mittel / Hoch zeigt dir spekulative Tipps, bevor du handelst.",
+      "feat3T": "Eine Bilanz, die du prüfen kannst",
+      "feat3": "Jede Prognose wird vor Anpfiff protokolliert und automatisch abgerechnet. Verlustserien bleiben auf der Seite — genau darum geht es.",
+      "closeTitle": "Sieh die Tipps von morgen mit den Zahlen dahinter.",
+      "closeNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar."
     }
   }
 }

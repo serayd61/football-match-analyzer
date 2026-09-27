@@ -1168,6 +1168,37 @@
       "tabSquad": "Kadro",
       "tabModel": "Model",
       "marketShort": "Piyasa"
+    },
+    "landing": {
+      "eyebrow": "Açık karneli futbol tahminleri",
+      "title": "Oranı bahisçi söylemeden önce sen bil.",
+      "lead": "Kalibre edilmiş istatistiksel model {n} ligdeki her maçı puanlar: kazanma olasılıkları, güven, risk ve adil fiyat — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
+      "cta": "7 gün ücretsiz başla",
+      "ctaDemo": "Örnek analizi gör",
+      "noCard": "Kart gerekmez",
+      "cancel": "İstediğin an iptal",
+      "adult": "18+ · Sorumlu oyna",
+      "recordChip": "{n} seçim sonuçlandı · {acc} isabet",
+      "trustSettled": "sonuçlanmış, yayımlanmış tahmin",
+      "trustLeagues": "modelin eğitildiği lig",
+      "trustHit": "1X2 isabet oranı, canlı karne",
+      "trustLoggedV": "Maç öncesi",
+      "trustLogged": "her seçim maçtan önce zaman damgalı",
+      "featKicker": "Ne alırsın",
+      "featTitle": "Her maç, bir analistin okuduğu gibi.",
+      "featLead": "Omuz silkerek verilen bir tüyo değil. Tam olasılık tablosu, modelin ne kadar emin olduğu ve piyasanın ne düşündüğü — tek ekranda.",
+      "vig1": "Olasılık dağılımı · 1 X 2",
+      "vigOver": "Üst 2,5",
+      "vigBtts": "KG Var",
+      "vig2": "100'de 71 doğru bekleniyor",
+      "feat1T": "Vaat değil, olasılık",
+      "feat1": "Her puanlanan maç için ev, beraberlik, deplasman; üst/alt ve KG; adil oran ve bahisçiye karşı fark.",
+      "feat2T": "Modelin ne kadar emin olduğunu bil",
+      "feat2": "Güven geçmiş sonuçlarla kalibre edilir; Düşük / Orta / Yüksek risk etiketi hangi seçimlerin spekülatif olduğunu sen hareket etmeden gösterir.",
+      "feat3T": "Kontrol edebileceğin bir karne",
+      "feat3": "Her tahmin maçtan önce kaydedilir, otomatik sonuçlanır. Kayıp serileri sayfada kalır — mesele de bu.",
+      "closeTitle": "Yarının seçimlerini arkasındaki sayılarla gör.",
+      "closeNote": "7 gün tam erişim. Kart yok, istediğin an iptal."
     }
   }
 }

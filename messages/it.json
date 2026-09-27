@@ -1168,6 +1168,37 @@
       "tabSquad": "Formazioni",
       "tabModel": "Modello",
       "marketShort": "Mercato"
+    },
+    "landing": {
+      "eyebrow": "Pronostici calcio con registro pubblico",
+      "title": "Conosci la quota prima che te la dica il bookmaker.",
+      "lead": "Un modello statistico calibrato valuta ogni partita in {n} leghe: probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
+      "cta": "Inizia 7 giorni gratis",
+      "ctaDemo": "Guarda un'analisi di esempio",
+      "noCard": "Nessuna carta richiesta",
+      "cancel": "Disdici quando vuoi",
+      "adult": "18+ · Gioca responsabilmente",
+      "recordChip": "{n} pronostici chiusi · {acc} di successo",
+      "trustSettled": "pronostici chiusi e pubblicati",
+      "trustLeagues": "leghe su cui il modello è addestrato",
+      "trustHit": "tasso di successo 1X2, registro live",
+      "trustLoggedV": "Pre-partita",
+      "trustLogged": "ogni pronostico con timestamp prima del calcio d'inizio",
+      "featKicker": "Cosa ottieni",
+      "featTitle": "Ogni partita letta come la legge un quant.",
+      "featLead": "Non un consiglio e una scrollata di spalle. Il quadro completo delle probabilità, quanto è sicuro il modello e cosa pensa il mercato — in una schermata.",
+      "vig1": "Probabilità · 1 X 2",
+      "vigOver": "Over 2,5",
+      "vigBtts": "Gol entrambe",
+      "vig2": "atteso corretto 71 volte su 100",
+      "feat1T": "Probabilità, non promesse",
+      "feat1": "Casa, pareggio, trasferta più over/under e gol entrambe per ogni partita valutata, con quota equa e vantaggio rispetto al bookmaker.",
+      "feat2T": "Sai quanto è sicuro il modello",
+      "feat2": "La confidenza è calibrata sui risultati passati e un'etichetta di rischio Basso / Medio / Alto ti mostra i pronostici speculativi prima di agire.",
+      "feat3T": "Un registro che puoi verificare",
+      "feat3": "Ogni pronostico è registrato prima del calcio d'inizio e chiuso automaticamente. Le serie negative restano in pagina — è proprio questo il punto.",
+      "closeTitle": "Guarda i pronostici di domani con i numeri dietro.",
+      "closeNote": "7 giorni di accesso completo. Nessuna carta, disdici quando vuoi."
     }
   }
 }

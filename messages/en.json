@@ -1168,6 +1168,37 @@
       "tabSquad": "Team news",
       "tabModel": "Model",
       "marketShort": "Market"
+    },
+    "landing": {
+      "eyebrow": "Football predictions with a public record",
+      "title": "Know the odds before the bookmaker tells you.",
+      "lead": "A calibrated statistical model rates every match in {n} leagues: win probabilities, confidence, risk and the fair price — and every pick stays on a public record, won or lost.",
+      "cta": "Start 7 days free",
+      "ctaDemo": "See a sample analysis",
+      "noCard": "No card needed",
+      "cancel": "Cancel any time",
+      "adult": "18+ · Play responsibly",
+      "recordChip": "{n} picks settled · {acc} hit rate",
+      "trustSettled": "predictions settled and published",
+      "trustLeagues": "leagues the model is trained on",
+      "trustHit": "1X2 hit rate, live record",
+      "trustLoggedV": "Pre-kick-off",
+      "trustLogged": "every pick timestamped before the match",
+      "featKicker": "What you get",
+      "featTitle": "Every match, read the way a quant reads it.",
+      "featLead": "Not a tip and a shrug. The full probability picture, how sure the model is, and what the market thinks — on one screen.",
+      "vig1": "Probability split · 1 X 2",
+      "vigOver": "Over 2.5",
+      "vigBtts": "BTTS yes",
+      "vig2": "expected to be right 71 in 100",
+      "feat1T": "Probabilities, not promises",
+      "feat1": "Home, draw, away plus over/under and both-teams-to-score for every rated match, with the fair odds and the edge against the bookmaker.",
+      "feat2T": "Know how sure the model is",
+      "feat2": "Confidence is calibrated on past results, and a Low / Medium / High risk label tells you which picks are speculative before you act.",
+      "feat3T": "A record you can check",
+      "feat3": "Every prediction is logged before kick-off and settled automatically. Losing runs stay on the page — that is the point.",
+      "closeTitle": "See tomorrow's picks with the numbers behind them.",
+      "closeNote": "7 days of full access. No card, cancel any time."
     }
   }
 }

@@ -17,7 +17,10 @@ import DemoAnalysis from '@/components/site/DemoAnalysis';
 import MatchRow from '@/components/site/MatchRow';
 import { listDay } from '@/lib/site/fixtures';
 import { todayYmd } from '@/lib/site/time';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Clock3, Lock } from 'lucide-react';
+import ProbBar from '@/components/site/ProbBar';
+import ConfidenceRing from '@/components/site/ConfidenceRing';
+import { RiskLabel } from '@/components/site/Risk';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 
@@ -82,44 +85,65 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const faqs = (['1', '2', '3', '4', '5', '6'] as const).map((n) => ({ q: t(`q${n}`), a: t(`a${n}`) }));
 
   const t3 = await getTranslations('v3.home');
+  const tl = await getTranslations('v3.landing');
   const Icon = ArrowRight;
 
   return (
     <>
-      {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section className="border-b border-s-line bg-s-surface">
-        <Page className="grid items-center gap-10 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:py-16">
-          <div className="flex flex-col gap-5">
-            <p className="kicker !text-s-accent-600">{t('eyebrow')}</p>
-            <h1 className="max-w-[16ch] text-[36px] sm:text-[48px] lg:text-[54px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{t('title')}</h1>
-            <p className="max-w-[48ch] text-[17px] text-s-muted">{t('lead')}</p>
+      {/* ── Hero: dark product showcase ────────────────────────────── */}
+      <section className="band-dark pitch-bg overflow-hidden">
+        <Page className="grid items-center gap-12 py-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
+          <div className="flex flex-col gap-6">
+            <p className="kicker !text-s-accent-700">{tl('eyebrow')}</p>
+            <h1 className="max-w-[15ch] text-[38px] leading-[1.04] sm:text-[52px] lg:text-[60px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{tl('title')}</h1>
+            <p className="max-w-[46ch] text-[17px] leading-relaxed text-s-muted sm:text-[18px]">{tl('lead', { n: SITE_LEAGUES.length })}</p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href={primary.href} className="btn btn-primary btn-lg" data-cta="hero-primary">{primary.label} <Icon size={18} /></Link>
-              <Link href="/performance" className="btn btn-secondary btn-lg" data-cta="hero-record">{t('perfLink').replace(' →', '')}</Link>
+              <Link href={primary.href} className="btn btn-primary btn-lg !h-[54px] !px-7 !text-[17px]" data-cta="hero-primary">{unlocked ? primary.label : tl('cta')} <Icon size={18} /></Link>
+              <a href="#demo" className="btn btn-lg !h-[54px] border border-s-line bg-transparent text-s-ink hover:bg-s-raised/40" data-cta="hero-demo">{tl('ctaDemo')}</a>
             </div>
-            {!authed && <p className="text-[14px] text-s-muted">{t('noCard')}</p>}
-            {/* Inline record — the brand promise is transparency, so it sits in the first screen. */}
-            <dl className="mt-2 grid grid-cols-3 gap-4 border-t border-s-line pt-5">
-              <div><dt className="text-[12px] text-s-muted">{t('perfHit')}</dt><dd className="num text-[22px] font-bold leading-none sm:text-[26px]">{perf.overall.n ? pct(perf.overall.acc) : '–'}</dd></div>
-              <div><dt className="text-[12px] text-s-muted">{t('perfRoi')}</dt><dd className={`num text-[22px] font-bold leading-none sm:text-[26px] ${perf.roi && perf.roi.roi < 0 ? 'text-s-loss' : perf.roi ? 'text-s-win' : ''}`}>{perf.roi ? signed(perf.roi.roi) : '–'}</dd></div>
-              <div><dt className="text-[12px] text-s-muted">{t('perfSettled')}</dt><dd className="num text-[22px] font-bold leading-none sm:text-[26px]">{perf.overall.n ? f.number(perf.overall.n) : '–'}</dd></div>
-            </dl>
+            {!authed && (
+              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-s-muted">
+                <li className="inline-flex items-center gap-1.5"><ShieldCheck size={15} className="text-s-accent" aria-hidden />{tl('noCard')}</li>
+                <li className="inline-flex items-center gap-1.5"><Clock3 size={15} className="text-s-accent" aria-hidden />{tl('cancel')}</li>
+                <li className="inline-flex items-center gap-1.5"><Lock size={15} className="text-s-accent" aria-hidden />{tl('adult')}</li>
+              </ul>
+            )}
           </div>
 
-          {unlocked && todayRows.length > 0 ? (
-            <section className="overflow-hidden rounded-2xl border border-s-line bg-s-bg shadow-[var(--s-shadow)]" aria-label={t3('todayTitle')}>
-              <header className="flex items-center justify-between gap-3 border-b border-s-line px-4 py-3">
-                <h2 className="text-[15px] font-bold">{t3('todayTitle')} <span className="num ml-1 font-semibold text-s-muted">{todayTotal}</span></h2>
-                <Link href="/predictions" className="text-[13.5px] font-semibold text-s-accent-600 hover:underline">{t3('todayAll')} →</Link>
-              </header>
-              <div className="divide-rule">
-                {todayRows.map((p) => <MatchRow key={p.fixtureId} p={p} />)}
+          {/* Product on stage: the real analysis card, elevated, with a live record chip */}
+          <div className="relative mx-auto w-full max-w-[560px] lg:max-w-none">
+            <div className="absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(60%_60%_at_50%_40%,rgb(var(--s-accent)/0.22),transparent_70%)]" aria-hidden />
+            {unlocked && todayRows.length > 0 ? (
+              <section className="overflow-hidden rounded-2xl border border-s-line bg-s-surface shadow-[0_30px_80px_-30px_rgb(0_0_0/0.7)]" aria-label={t3('todayTitle')}>
+                <header className="flex items-center justify-between gap-3 border-b border-s-line px-4 py-3">
+                  <h2 className="text-[15px] font-bold">{t3('todayTitle')} <span className="num ml-1 font-semibold text-s-muted">{todayTotal}</span></h2>
+                  <Link href="/predictions" className="text-[13.5px] font-semibold text-s-accent-700 hover:underline">{t3('todayAll')} →</Link>
+                </header>
+                <div className="divide-rule">{todayRows.map((p) => <MatchRow key={p.fixtureId} p={p} />)}</div>
+              </section>
+            ) : (
+              <div className="lg:translate-x-4 lg:rotate-[-1.5deg] lg:transition-transform">
+                <div className="shadow-[0_40px_90px_-30px_rgb(0_0_0/0.75)] rounded-[16px]"><DemoAnalysis id="demo" /></div>
               </div>
-            </section>
-          ) : (
-            <DemoAnalysis id="demo" />
-          )}
+            )}
+            {perf.overall.n > 0 && (
+              <Link href="/performance" className="absolute -bottom-5 left-4 inline-flex items-center gap-2 rounded-full border border-s-line bg-s-surface px-3.5 py-2 text-[13px] font-semibold shadow-[var(--s-shadow)] hover:border-s-n400 lg:-left-6" data-cta="hero-record-chip">
+                <span className="h-2 w-2 rounded-full bg-s-accent" aria-hidden />
+                {tl('recordChip', { n: f.number(perf.overall.n), acc: pct(perf.overall.acc) })}
+              </Link>
+            )}
+          </div>
         </Page>
+
+        {/* Trust strip — real numbers only */}
+        <div className="border-t border-s-line/60">
+          <Page className="grid grid-cols-2 gap-6 py-6 sm:grid-cols-4">
+            <div><p className="num text-[24px] font-bold leading-none">{perf.overall.n ? f.number(perf.overall.n) : '–'}</p><p className="mt-1 text-[13px] text-s-muted">{tl('trustSettled')}</p></div>
+            <div><p className="num text-[24px] font-bold leading-none">{SITE_LEAGUES.length}</p><p className="mt-1 text-[13px] text-s-muted">{tl('trustLeagues')}</p></div>
+            <div><p className="num text-[24px] font-bold leading-none">{perf.overall.n ? pct(perf.overall.acc) : '–'}</p><p className="mt-1 text-[13px] text-s-muted">{tl('trustHit')}</p></div>
+            <div><p className="text-[24px] font-bold leading-none">{tl('trustLoggedV')}</p><p className="mt-1 text-[13px] text-s-muted">{tl('trustLogged')}</p></div>
+          </Page>
+        </div>
       </section>
 
       {/* ── Leagues ─────────────────────────────────────────────────── */}
@@ -139,23 +163,46 @@ export default async function HomePage({ params: { locale } }: { params: { local
         </Page>
       </section>
 
-      {/* ── What you see ────────────────────────────────────────────── */}
+      {/* ── Features with live UI vignettes ────────────────────────── */}
       <section id="how" className="scroll-mt-20 border-y border-s-line bg-s-surface">
         <Page className="py-14 lg:py-20">
-          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <h2 className="max-w-[18ch] text-[28px] sm:text-[36px]">{t('showTitle')}</h2>
-              <p className="mt-3 max-w-[44ch] text-[16px] text-s-muted">{t('leaguesNote')}</p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {(['1', '2', '3'] as const).map((n) => (
-                <article key={n} className="card card-flat !gap-2">
-                  <span className="num grid h-8 w-8 place-items-center rounded-full bg-s-accent-100 text-[14px] font-bold text-s-accent-800" aria-hidden>{n}</span>
-                  <h3 className="mt-1 text-[17px]">{t(`show${n}T`)}</h3>
-                  <p className="text-[14px] text-s-muted">{t(`show${n}`)}</p>
-                </article>
-              ))}
-            </div>
+          <div className="max-w-[640px]">
+            <p className="kicker">{tl('featKicker')}</p>
+            <h2 className="mt-2 text-[28px] sm:text-[36px]">{tl('featTitle')}</h2>
+            <p className="mt-3 text-[16px] text-s-muted">{tl('featLead')}</p>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <article className="card card-flat !gap-4 !bg-s-bg">
+              <div className="rounded-xl border border-s-line bg-s-surface p-4">
+                <p className="kicker mb-2 !text-[10.5px]">{tl('vig1')}</p>
+                <ProbBar home={0.54} draw={0.26} away={0.20} highlight="1" size="md" labels={{ home: tc('home'), draw: tc('draw'), away: tc('away') }} />
+                <dl className="num mt-3 grid grid-cols-2 gap-2 text-[12px] text-s-muted"><div><dt className="inline">{tl('vigOver')} </dt><dd className="inline font-semibold text-s-ink">58%</dd></div><div><dt className="inline">{tl('vigBtts')} </dt><dd className="inline font-semibold text-s-ink">47%</dd></div></dl>
+              </div>
+              <h3 className="text-[18px]">{tl('feat1T')}</h3>
+              <p className="text-[14.5px] text-s-muted">{tl('feat1')}</p>
+            </article>
+            <article className="card card-flat !gap-4 !bg-s-bg">
+              <div className="flex items-center gap-4 rounded-xl border border-s-line bg-s-surface p-4">
+                <ConfidenceRing conf={0.71} size={72} inner="surface" />
+                <div className="flex flex-col gap-2 text-[12.5px]">
+                  <RiskLabel risk="medium" />
+                  <span className="text-s-muted">{tl('vig2')}</span>
+                </div>
+              </div>
+              <h3 className="text-[18px]">{tl('feat2T')}</h3>
+              <p className="text-[14.5px] text-s-muted">{tl('feat2')}</p>
+            </article>
+            <article className="card card-flat !gap-4 !bg-s-bg">
+              <div className="rounded-xl border border-s-line bg-s-surface p-4">
+                <ul className="divide-rule text-[13px]">
+                  {[['won', 'Sat 20:45', '68%'], ['lost', 'Sat 18:00', '61%'], ['won', 'Sun 15:00', '74%']].map(([o, t, c], i) => (
+                    <li key={i} className="flex items-center gap-3 py-1.5"><span className={`tag ${o === 'won' ? 'tag-win' : 'tag-loss'}`}>{tc(o as 'won' | 'lost')}</span><span className="num flex-1 text-s-muted">{t}</span><span className="num font-semibold">{c}</span></li>
+                  ))}
+                </ul>
+              </div>
+              <h3 className="text-[18px]">{tl('feat3T')}</h3>
+              <p className="text-[14.5px] text-s-muted">{tl('feat3')}</p>
+            </article>
           </div>
           <ol className="mt-12 grid gap-6 border-t border-s-line pt-8 md:grid-cols-3">
             {steps.map(({ Icon: StepIcon, title, text }, i) => (
@@ -269,10 +316,10 @@ export default async function HomePage({ params: { locale } }: { params: { local
       <section className="band-dark pitch-bg">
         <Page className="flex flex-col items-start gap-5 py-14 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-[26px] sm:text-[32px]">{t('closeTitle')}</h2>
-            {!authed && <p className="mt-2 text-[15px] text-s-muted">{t('closeNote')}</p>}
+            <h2 className="text-[26px] sm:text-[34px]">{tl('closeTitle')}</h2>
+            {!authed && <p className="mt-2 text-[15px] text-s-muted">{tl('closeNote')}</p>}
           </div>
-          <Link href={primary.href} className="btn btn-primary btn-lg shrink-0" data-cta="home-close">{primary.label}</Link>
+          <Link href={primary.href} className="btn btn-primary btn-lg shrink-0 !h-[54px] !px-7" data-cta="home-close">{unlocked ? primary.label : tl('cta')} <Icon size={18} /></Link>
         </Page>
       </section>
     </>
