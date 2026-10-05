@@ -247,6 +247,8 @@
     "formW": "V",
     "formD": "N",
     "formL": "P",
+    "formHomeShort": "C",
+    "formAwayShort": "T",
     "noForm": "Non ci sono ancora abbastanza partite chiuse.",
     "secH2h": "Precedenti",
     "noH2h": "Nessun precedente nei nostri dati.",

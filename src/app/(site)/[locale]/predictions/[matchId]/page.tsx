@@ -30,7 +30,7 @@ import { StatRow, StatCell } from '@/components/site/StatCell';
 import { riskOf, lossRate, riskWithMarket } from '@/lib/site/risk';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
-import FormStrip, { toFormItems } from '@/components/site/FormStrip';
+import { FormList, toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice, LockedPick } from '@/components/site/Paywall';
@@ -107,8 +107,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
     p.homeId && p.awayId ? getHeadToHead(p.homeId, p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
-    p.homeId ? getTeamForm(p.homeId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
-    p.awayId ? getTeamForm(p.awayId, 6, p.kickoff) : Promise.resolve([] as SitePrediction[]),
+    p.homeId ? getTeamForm(p.homeId, 5, p.kickoff) : Promise.resolve([] as SitePrediction[]),
+    p.awayId ? getTeamForm(p.awayId, 5, p.kickoff) : Promise.resolve([] as SitePrediction[]),
     getCalibrationMeta(),
     afLeague ? getAfContext(p.fixtureId, p.homeName, p.awayName, p.kickoff).catch(() => null) : Promise.resolve(undefined),
     p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
@@ -155,7 +155,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
   const formH = p.homeId ? toFormItems(p.homeId, formHome) : [];
   const formA = p.awayId ? toFormItems(p.awayId, formAway) : [];
-  const formLabels = { W: t('formW'), D: t('formD'), L: t('formL'), vs: t('vs'), home: tc('home'), away: tc('away') };
+  const formLabels = { W: t('formW'), D: t('formD'), L: t('formL'), homeShort: t('formHomeShort'), awayShort: t('formAwayShort') };
   const record = (items: ReturnType<typeof toFormItems>) => ({
     w: items.filter((i) => i.res === 'W').length, d: items.filter((i) => i.res === 'D').length, l: items.filter((i) => i.res === 'L').length,
   });
@@ -363,7 +363,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                     </p>
                   )}
                   <div className="mt-1.5">
-                    {team.items.length ? <FormStrip items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
+                    {team.items.length ? <FormList items={team.items} labels={formLabels} /> : <span className="text-xs text-s-muted">{t('noForm')}</span>}
                   </div>
                   {/* Takım karnesi (24 Eyl): bu takımın maçlarında bizim seçimlerimiz; ≥5 maç, kayıt biçiminde */}
                   {team.rec && (

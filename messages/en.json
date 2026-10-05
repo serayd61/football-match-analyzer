@@ -247,6 +247,8 @@
     "formW": "W",
     "formD": "D",
     "formL": "L",
+    "formHomeShort": "H",
+    "formAwayShort": "A",
     "noForm": "Not enough settled matches yet.",
     "secH2h": "Head to head",
     "noH2h": "No previous meetings in our data.",
