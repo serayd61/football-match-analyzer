@@ -4,6 +4,7 @@ import { db, REVALIDATE } from './db';
 import { SITE_LEAGUES, resolveLeague, type SiteLeague } from './leagues';
 import { COLS, parseRows, mapRow, loadContext, type SitePrediction } from './predictions';
 import { zonedStartOfDay, addDays } from './time';
+import { resolveOfficialVersion, officialFilter } from './official';
 
 // ---------------------------------------------------------------------------
 // Covered league ids. Feed league ids are seasonal (Championship 2025/26 is
@@ -54,8 +55,10 @@ export interface ResultsPage {
 export const listResults = unstable_cache(
   async (q: ResultsQuery): Promise<ResultsPage> => {
     const ids = await idsForLeague(q.league ?? null);
+    // Yalnız resmi sürüm: gölge sürüm satırları sayımları ikiye katlıyordu (5 Eki).
+    const official = await resolveOfficialVersion();
     const base = () => {
-      let s = db().from('engine_predictions').select(COLS, { count: 'exact' }).eq('settled', true).in('league_id', ids);
+      let s = officialFilter(db().from('engine_predictions').select(COLS, { count: 'exact' }), official).eq('settled', true).in('league_id', ids);
       if (q.from) s = s.gte('kickoff', zonedStartOfDay(q.from).toISOString());
       if (q.to) s = s.lt('kickoff', zonedStartOfDay(q.to).toISOString());
       return s;
@@ -71,14 +74,14 @@ export const listResults = unstable_cache(
     if (list.error) throw new Error(list.error.message);
     const ctx = await loadContext();
     return {
-      rows: parseRows(list.data).map((r) => mapRow(r, ctx)),
+      rows: parseRows(list.data, official).map((r) => mapRow(r, ctx)),
       total: list.count ?? 0,
       won: won.count ?? 0,
       lost: lost.count ?? 0,
       unresolved: unresolved.count ?? 0,
     };
   },
-  ['site-results-v2'],
+  ['site-results-v3'],
   { revalidate: REVALIDATE.results },
 );
 
@@ -106,9 +109,10 @@ export const listUpcomingForLeague = unstable_cache(
     const map = await coveredLeagueIds();
     const ids = map[slug] || [];
     if (!ids.length) return [];
-    const { data, error } = await db()
+    const official = await resolveOfficialVersion();
+    const { data, error } = await officialFilter(db()
       .from('engine_predictions')
-      .select(COLS)
+      .select(COLS), official)
       .in('league_id', ids)
       .eq('settled', false)
       .gte('kickoff', new Date(Date.now() - 2 * 3600e3).toISOString())
@@ -116,9 +120,9 @@ export const listUpcomingForLeague = unstable_cache(
       .limit(limit);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data).map((r) => mapRow(r, ctx));
+    return parseRows(data, official).map((r) => mapRow(r, ctx));
   },
-  ['site-upcoming-league-v2'],
+  ['site-upcoming-league-v3'],
   { revalidate: REVALIDATE.fixtures },
 );
 

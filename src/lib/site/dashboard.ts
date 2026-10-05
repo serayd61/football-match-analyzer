@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getOrSet } from '@/lib/cache/redis';
 import { getLiveMatches } from '@/lib/data-sources/free-football';
 import { db, REVALIDATE } from './db';
+import { resolveOfficialVersion, officialFilter } from './official';
 import { supabaseAdmin } from '@/lib/supabase';
 import { SITE_LEAGUES } from './leagues';
 import { getStandings } from './standings';
@@ -186,15 +187,16 @@ export async function readWatchlist(email: string): Promise<{ items: WatchItem[]
 /** Next unsettled rated match of a club (either side), if the engine has one. */
 export const nextMatchForTeam = unstable_cache(
   async (teamId: number): Promise<SitePrediction | null> => {
-    const { data } = await db()
+    const official = await resolveOfficialVersion();
+    const { data } = await officialFilter(db()
       .from('engine_predictions')
-      .select(COLS)
+      .select(COLS), official)
       .eq('settled', false)
       .or(`home_id.eq.${teamId},away_id.eq.${teamId}`)
       .gte('kickoff', new Date(Date.now() - 2 * 3600e3).toISOString())
       .order('kickoff', { ascending: true })
       .limit(1);
-    const rows = parseRows(data);
+    const rows = parseRows(data, official);
     if (!rows.length) return null;
     const ctx = await loadContext();
     return mapRow(rows[0], ctx);

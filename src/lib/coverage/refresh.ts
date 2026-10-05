@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCatalogMap } from '@/lib/league-catalog';
 import { resolveLeague } from '@/lib/site/leagues';
+import { resolveOfficialVersion, officialFilter, pickOfficial } from '@/lib/site/official';
 import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
 
 // ============================================================================
 // KAPSAM SİCİLİ YENİLEME — haftalık inceleme adımı
 // ----------------------------------------------------------------------------
 // 1) Son WINDOW_DAYS günün sonuçlanmış satırlarını lig id'sine göre toplar.
+//    Yalnız resmi sürüm sayılır (5 Eki): gölge sürümler (dc-1.1-lvl, dc-2.0-xg)
+//    aynı maça ikinci satır yazar; filtresiz okuma karneyi çift sayıyordu.
 // 2) league_coverage'ı UPSERT eder: yeni görülen lig 'excluded' olarak açılır
 //    (durum yalnız eklemede yazılır; mevcut satırın durumu/kademe DOKUNULMAZ).
 // 3) Kurala göre öneri üretir → engine_learning_log (layer 'coverage', propose);
@@ -16,29 +19,31 @@ import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, 
 export const WINDOW_DAYS = 180;
 const PAGE = 1000;
 const ACTOR = 'cron:engine-weekly-review';
-const COLS = 'league_id, league_name, kickoff, p_over25, p_btts_yes, p_home, p_draw, p_away, home_score, away_score, correct, ll_1x2';
+const COLS = 'fixture_id, model_version, updated_at, league_id, league_name, kickoff, p_over25, p_btts_yes, p_home, p_draw, p_away, home_score, away_score, correct, ll_1x2';
 
 export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number; hidden: number; unhidden: number }
 
-export async function refreshCoverage(sb: SupabaseClient, now = new Date()): Promise<RefreshResult> {
+export async function refreshCoverage(sb: SupabaseClient, now = new Date(), official?: string | null): Promise<RefreshResult> {
+  const version = official === undefined ? await resolveOfficialVersion() : official;
   const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
   const byLeague = new Map<number, { name: string; rows: any[] }>();
   let total = 0;
   for (let from = 0; from < 200000; from += PAGE) {
-    const { data, error } = await sb.from('engine_predictions').select(COLS)
+    const { data, error } = await officialFilter(sb.from('engine_predictions').select(COLS), version)
       .eq('settled', true).not('result', 'is', null).gte('kickoff', since)
       .order('kickoff', { ascending: true }).order('id', { ascending: true }).range(from, from + PAGE - 1);
     if (error) throw new Error(`engine_predictions read: ${error.message}`);
     if (!data?.length) break;
     for (const r of data as any[]) {
       if (r.league_id == null) continue;
-      total++;
       const k = Number(r.league_id);
       if (!byLeague.has(k)) byLeague.set(k, { name: r.league_name || `League ${k}`, rows: [] });
       byLeague.get(k)!.rows.push(r);
     }
     if (data.length < PAGE) break;
   }
+  // Resmi sürüm yoksa (tablo boş/okunamadı) fixture başına tek satır — çift sayım yine olmaz.
+  for (const l of byLeague.values()) { l.rows = pickOfficial(l.rows, version); total += l.rows.length; }
 
   const [catalog, { data: existing }] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
