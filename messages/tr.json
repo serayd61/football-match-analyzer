@@ -247,6 +247,8 @@
     "formW": "G",
     "formD": "B",
     "formL": "M",
+    "formHomeShort": "İç",
+    "formAwayShort": "Dış",
     "noForm": "Henüz yeterli sonuçlanmış maç yok.",
     "secH2h": "Aralarındaki maçlar",
     "noH2h": "Verimizde önceki karşılaşma yok.",

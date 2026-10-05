@@ -247,6 +247,8 @@
     "formW": "S",
     "formD": "U",
     "formL": "N",
+    "formHomeShort": "H",
+    "formAwayShort": "A",
     "noForm": "Noch nicht genug abgerechnete Spiele.",
     "secH2h": "Direktvergleich",
     "noH2h": "Keine früheren Begegnungen in unseren Daten.",
