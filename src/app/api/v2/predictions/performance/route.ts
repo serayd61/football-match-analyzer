@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { resolveOfficialVersion, officialFilter } from '@/lib/site/official';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -28,12 +29,13 @@ export async function GET(request: NextRequest) {
   const leagueId = parseInt(searchParams.get('leagueId') || '', 10);
   const days = parseInt(searchParams.get('days') || '', 10);
 
-  let q = sb()
+  // Yalnız resmi sürüm: gölge sürüm satırları isabeti çift sayıyordu (5 Eki).
+  let q = officialFilter(sb()
     .from('engine_predictions')
     .select(
       'fixture_id, league_name, home_name, away_name, kickoff, pick, confidence, ' +
         'home_score, away_score, result, correct',
-    )
+    ), await resolveOfficialVersion())
     .eq('settled', true)
     .not('result', 'is', null)
     .order('kickoff', { ascending: false })

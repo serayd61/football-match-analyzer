@@ -25,6 +25,7 @@ import { getOrSet } from '@/lib/cache/redis';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { deriveDoubleChance, isDoubleChanceCorrect } from '@/lib/double-chance';
+import { resolveOfficialVersion, officialFilter } from '@/lib/site/official';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -82,12 +83,13 @@ async function build() {
 
   // ── 2) Dünün (en yakın sonuçlanmış günün) gerçek karnesi ─────────────────
   const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 3600 * 1000).toISOString();
-  const { data: rows, error: rowErr } = await sb()
+  // Yalnız resmi sürüm: gölge sürüm aynı maçı karnede ikinci kez gösteriyordu (5 Eki).
+  const { data: rows, error: rowErr } = await officialFilter(sb()
     .from('engine_predictions')
     .select(
       'fixture_id, league_id, league_name, home_name, away_name, kickoff, ' +
       'home_score, away_score, result, p_home, p_draw, p_away',
-    )
+    ), await resolveOfficialVersion())
     .eq('settled', true)
     .not('result', 'is', null)
     .gte('kickoff', since)
