@@ -60,6 +60,7 @@ const guarded: Array<[string, 'GET' | 'POST']> = [
   ['@/app/api/cron/settle-admin-predictions/route', 'GET'],
   ['@/app/api/cron/sync-predictions/route', 'GET'],
   ['@/app/api/cron/settle-engine/route', 'GET'],
+  ['@/app/api/cron/reco-picks/route', 'GET'],
   ['@/app/api/analyze/route', 'POST'],
   ['@/app/api/multi-agent/route', 'POST'],
   ['@/app/api/v2/analyze/route', 'POST'],

@@ -57,6 +57,10 @@
       "schedule": "20 * * * *"
     },
     {
+      "path": "/api/cron/reco-picks",
+      "schedule": "35 * * * *"
+    },
+    {
       "path": "/api/cron/af-context",
       "schedule": "25 * * * *"
     },

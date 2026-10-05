@@ -182,3 +182,38 @@ export class RecoMeta {
     }
   }
 }
+
+// ---- Geçmişten model kurulumu (walk-forward, backtest ile aynı sıra) ---------
+// Her UTC günü: önce o günün maçlarına seçim yapılır (yalnız önceki günlerle),
+// sonra o günün sonuçları kova sayaçlarına, seçimlerin sonucu RecoMeta'ya eklenir.
+// İlk burnInDays gün seçimleri meta'ya girmez (sayaçlar henüz boş).
+export interface RecoHistoryRow extends RecoInput { kickoff: string; h: number; a: number }
+export interface RecoModel { stats: RecoStats; meta: RecoMeta; days: number; rows: number; metaPicks: number }
+
+export function buildRecoModel(rows: RecoHistoryRow[], gate: RecoGate = RECO_GATE, burnInDays = 30): RecoModel {
+  const stats = new RecoStats();
+  const meta = new RecoMeta();
+  const byDay = new Map<string, RecoHistoryRow[]>();
+  for (const r of rows) {
+    const d = r.kickoff.slice(0, 10);
+    const list = byDay.get(d);
+    if (list) list.push(r); else byDay.set(d, [r]);
+  }
+  const days = [...byDay.keys()].sort();
+  const start = days.length ? new Date(Date.parse(days[0]) + burnInDays * 86_400_000).toISOString().slice(0, 10) : '';
+  let metaPicks = 0;
+  for (const d of days) {
+    const today = byDay.get(d)!;
+    const done: Array<[RecoScored, boolean]> = [];
+    if (d >= start) {
+      for (const r of today) {
+        const { pick } = recommend(r, stats, gate);
+        if (pick) done.push([pick, settleReco(pick.market, pick.selection, r.h, r.a)]);
+      }
+    }
+    for (const r of today) stats.add(r, r.h, r.a);
+    for (const [p, won] of done) meta.add(p, won);
+    metaPicks += done.length;
+  }
+  return { stats, meta, days: days.length, rows: rows.length, metaPicks };
+}
