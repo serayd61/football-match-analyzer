@@ -126,6 +126,17 @@ def build_team_map(fd_teams, us_teams):
     return mapping, unmatched_us
 
 
+def understat_results(sch):
+    """Understat takvimini oynanmış maçlara indirger; boş/sütunsuz çerçevede None döner."""
+    if sch is None or len(sch) == 0:
+        return None
+    if "is_result" in sch.columns:
+        sch = sch[sch["is_result"] == True]
+    if len(sch) == 0 or not {"home_team", "away_team"}.issubset(sch.columns):
+        return None
+    return sch
+
+
 def load_features(fd_code, start_year, end_year, verbose=True):
     """
     Sezon-sezon FD(gol+oran) + Understat(xG) birleştir. Provenance'lı kayıt listesi döndürür.
@@ -150,25 +161,29 @@ def load_features(fd_code, start_year, end_year, verbose=True):
             continue
         total_fd += len(fd)
 
-        # Understat schedule (tek sezon)
+        # Understat schedule (tek sezon). Çekilemez ya da boş gelirse (yeni sezon henüz
+        # Understat'ta yok / sütunsuz boş çerçeve) FD maçları xG=None ile yine de yazılır —
+        # sezonu atlamak gol verisini de kaybettiriyordu (2026-10-06: KeyError 'home_team').
         try:
             us = sd.Understat(leagues=us_league, seasons=season)
             sch = us.read_schedule().reset_index()
         except Exception as e:
             if verbose:
                 print(f"  [xg] {fd_code} {season} Understat çekilemedi: {e}")
-            continue
-        sch = sch[sch["is_result"] == True] if "is_result" in sch.columns else sch
+            sch = None
+        sch = understat_results(sch)
+        if sch is None and verbose:
+            print(f"  [xg] {fd_code} {season} Understat boş — xG'siz devam")
 
         fd_teams = sorted({m["home"] for m in fd} | {m["away"] for m in fd})
-        us_teams = sorted(set(sch["home_team"]) | set(sch["away_team"]))
-        tmap, unmatched = build_team_map(fd_teams, us_teams)
+        us_teams = sorted(set(sch["home_team"]) | set(sch["away_team"])) if sch is not None else []
+        tmap, unmatched = build_team_map(fd_teams, us_teams) if us_teams else ({}, [])
         if verbose and unmatched:
             print(f"  [xg] {fd_code} {season} EŞLEŞMEYEN Understat takım: {unmatched}")
 
         # (home_fd, away_fd) -> (home_xg, away_xg)
         xg_by_pair = {}
-        for _, r in sch.iterrows():
+        for _, r in (sch.iterrows() if sch is not None else ()):
             h = tmap.get(r["home_team"]); a = tmap.get(r["away_team"])
             if not h or not a:
                 continue
