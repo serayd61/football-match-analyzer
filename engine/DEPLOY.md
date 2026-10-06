@@ -184,6 +184,11 @@ cd /opt/football-match-analyzer/engine
 # ilk doldurma (birkaç kez; her koşu en fazla --max çağrı, en yeni maçtan geriye)
 FOOTBALL_API_KEY=... STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python store_xg_feed.py build --days 400 --max 600
 .venv/bin/python store_xg_feed.py stats
+# xG haftalık fit (scripts/run-xg-fit.sh → publish_xg.py --write): sezon penceresi ve referans
+# tarihi artık BUGÜNDEN türetilir (engine/season.py). engine/.xg-env dosyasında
+# FOOTBALL_DATA_API_KEY de OLMALI: bu sezonun takım listesi canlı çekilir, kapsama kuralı
+# "bu sezon takımları %100" olur. Anahtar yoksa statik listeye düşer ve yeni çıkan takımlar
+# eşleşmeyince lig YAZILMAZ (⏭️ temiz değil) — yani parametre sessizce bayatlar.
 # cron (04:00 sonuç güncellemesinden sonra)
 40 4 * * * cd /opt/football-match-analyzer/engine && FOOTBALL_API_KEY=... STORE_PATH=/var/lib/footy/results.jsonl .venv/bin/python store_xg_feed.py build --days 3 --max 200 >> /var/log/xg-feed.log 2>&1
 # kontrol

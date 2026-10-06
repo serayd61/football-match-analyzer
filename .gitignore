@@ -57,3 +57,4 @@ public/swe-worker-*.js
 
 # geçici git bundle dosyaları
 *.bundle
+.fdorg_teams_cache.json
