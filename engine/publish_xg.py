@@ -15,19 +15,23 @@ Python çarpımsal {A,D,H,base} → TS toplamsal {attack,defense,homeAdv,rho}:
 import json
 import math
 import os
+from datetime import datetime
 
 import difflib
 import re
 import unicodedata
+import urllib.request
 
 from features import load_features
 import model_xg as MX
+from season import season_window, now_naive_utc, coverage
 
 # FD.co.uk → football-data.org kesin override (fuzzy'nin yanıldığı/eksik kaldığı takımlar).
 OVERRIDES = {
-    # ENG
+    # ENG — "Man City" fuzzy'de "Leicester City" ile aynı puanı alıp greedy'de kaybediyordu (6 Eki)
     "Brighton": "Brighton & Hove Albion FC", "Leeds": "Leeds United FC",
     "Wolves": "Wolverhampton Wanderers FC",
+    "Man City": "Manchester City FC", "Man United": "Manchester United FC",
     # ESP — kısaltmalar fuzzy'de TAKAS oluyor, kesin sabitle
     "Ath Madrid": "Club Atlético de Madrid", "Ath Bilbao": "Athletic Club",
     "Real Madrid": "Real Madrid CF", "Espanol": "RCD Espanyol de Barcelona",
@@ -108,7 +112,75 @@ FDORG_TEAMS = {
 }
 
 XG_WEIGHT = 0.75
-START, END = 2024, 2025  # canlı modelle aynı 2 sezon
+# Referans tarihi ve sezon penceresi BUGÜNDEN türetilir (eski sabit 2024,2025 + 1 Tem 2026
+# referansı 2026/27'yi hiç görmüyordu — bkz. season.py). Testler için env ile sabitlenebilir:
+#   XG_REF=2026-07-01  XG_START=2024  XG_END=2025
+REF = datetime.fromisoformat(os.environ["XG_REF"]) if os.environ.get("XG_REF") else now_naive_utc()
+START, END = season_window(REF)
+if os.environ.get("XG_START") and os.environ.get("XG_END"):
+    START, END = int(os.environ["XG_START"]), int(os.environ["XG_END"])
+
+
+TEAMS_CACHE = os.environ.get("XG_TEAMS_CACHE", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".fdorg_teams_cache.json"))
+
+
+def _read_cache():
+    try:
+        with open(TEAMS_CACHE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def fetch_current_teams(fdorg, opener=None, cache_path=None, sleep=None):
+    """Bu sezonun takım adları (football-data.org, FOOTBALL_DATA_API_KEY).
+    Başarılı liste diske yazılır; istek düşerse (429/ağ) son başarılı liste kullanılır.
+    Ne canlı ne önbellek varsa None → statik FDORG_TEAMS + eski kapsama kuralı.
+    Neden (6 Eki): ilk denemede 5 ligin 5'i de 429'a düşüp statik listeye kaydı — yeni
+    çıkan takımlar eşleşmeyince HİÇBİR lig yazılmıyordu."""
+    import time
+    opener = opener or urllib.request.urlopen
+    cache_path = cache_path or TEAMS_CACHE
+    sleep = time.sleep if sleep is None else sleep
+    key = os.environ.get("FOOTBALL_DATA_API_KEY")
+    cache = {}
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except Exception:
+        pass
+    names = None
+    if key:
+        for attempt in range(2):
+            req = urllib.request.Request(f"https://api.football-data.org/v4/competitions/{fdorg}/teams",
+                                         headers={"X-Auth-Token": key})
+            try:
+                with opener(req, timeout=20) as resp:
+                    data = json.load(resp)
+                names = sorted(t["name"] for t in data.get("teams", []) if t.get("name")) or None
+                break
+            except Exception as e:
+                code = getattr(e, "code", None)
+                if code == 429 and attempt == 0:
+                    print(f"  [teams] {fdorg}: 429, 65 sn bekleyip yeniden deneniyor")
+                    sleep(65)
+                    continue
+                print(f"  [teams] {fdorg}: canlı takım listesi alınamadı ({e})")
+                break
+        sleep(6.5)  # ücretsiz kademe: 10 istek/dk
+    if names:
+        cache[fdorg] = {"teams": names, "fetched_at": datetime.utcnow().isoformat()}
+        try:
+            with open(cache_path, "w") as f:
+                json.dump(cache, f, ensure_ascii=False)
+        except Exception as e:
+            print(f"  [teams] önbellek yazılamadı: {e}")
+        return names
+    cached = cache.get(fdorg)
+    if cached:
+        print(f"  [teams] {fdorg}: önbellekteki liste ({cached.get('fetched_at', '?')[:10]})")
+        return cached["teams"]
+    return None
 
 
 def convert_params(m):
@@ -189,11 +261,11 @@ def write_to_supabase(rows):
 
 
 def main(dry_run=True):
-    from datetime import datetime, timezone
-    ref = datetime(2026, 7, 1)
+    ref = REF
     rows = []
     print("=" * 74)
     print("  xG-DC → dc_model_params DÖNÜŞÜM + İSİM EŞLEME (DRY-RUN)" if dry_run else "  YAYIN")
+    print(f"  ref={ref.date()}  sezonlar={START},{END}")
     print("=" * 74)
     for fd_code, fdorg in FD_TO_FDORG.items():
         recs, stats = load_features(fd_code, START, END, verbose=False)
@@ -211,14 +283,21 @@ def main(dry_run=True):
             th, td, ta = ts_probs(ts_params, h, a)  # dönüşüm öncesi FD.co.uk anahtarlı
             max_diff = max(max_diff, abs(pp["p_home"] - th), abs(pp["p_draw"] - td), abs(pp["p_away"] - ta))
 
-        # İSİM EŞLEME → football-data.org namespace
-        remapped, mapping, unmatched, mapped = remap_names(ts_params, fd_teams, FDORG_TEAMS[fdorg])
-        cov = mapped / len(fd_teams) * 100
+        # İSİM EŞLEME → football-data.org namespace. Canlı liste varsa hedef bu sezonun
+        # takımları + statik liste (eski sezon takımları da eşlensin); kapsama kuralı ise
+        # yalnız bu sezonun takımları üstünden (küme düşen eşleşmese de yazım durmaz).
+        current = fetch_current_teams(fdorg)
+        namespace = sorted(set(FDORG_TEAMS[fdorg]) | set(current or []))
+        remapped, mapping, _legacy_unmatched, mapped = remap_names(ts_params, fd_teams, namespace)
+        unmatched, dropped, cov, _ = coverage(mapping, fd_teams, current)
         flag = "✅" if (not unmatched and cov == 100.0 and max_diff < 1e-9) else "⚠️"
-        print(f"  {flag} {fdorg}: {len(fd_teams)} takım, isim-eşleşme {mapped}/{len(fd_teams)} (%{cov:.0f}), "
+        src = f"bu sezon {len(current)} takım (canlı)" if current else "statik liste"
+        print(f"  {flag} {fdorg}: {len(fd_teams)} FD takımı, eşlenen {mapped}, kapsama %{cov:.0f} ({src}), "
               f"parite Δ={max_diff:.2e}, xG kapsama %{stats['coverage_pct']}")
         if unmatched:
-            print(f"      EŞLEŞMEYEN (FD.co.uk→?): {unmatched}")
+            print(f"      EŞLEŞMEYEN ({'bu sezon takımı' if current else 'FD.co.uk'}): {unmatched}")
+        if dropped:
+            print(f"      düşürülen FD takımı (eski sezon, zararsız): {dropped}")
         if os.environ.get("SHOW_MAP"):
             for t in fd_teams:
                 print(f"        {t:<22} → {mapping.get(t, '❌ YOK')}")
