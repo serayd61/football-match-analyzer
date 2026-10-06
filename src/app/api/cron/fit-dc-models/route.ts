@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DixonColesModel } from '@/lib/statistical/dixon-coles';
-import { loadTwoSeasons, FD_CODES } from '@/lib/statistical/data-loader';
+import { loadTwoSeasons, FD_CODES, sleep } from '@/lib/statistical/data-loader';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -64,6 +64,9 @@ export async function GET(request: NextRequest) {
       continue;
     }
     try {
+      // Ligler ARASI bekleme (6 Eki): loadTwoSeasons yalnız kendi iki isteği arasında
+      // bekliyordu; ardışık liglerin istekleri sıkışıp 10. istek (BSA) 429 alıyordu.
+      if (results.some((r) => r.matches != null)) await sleep(6500);
       console.log(`\n📥 ${code}: 2 sezon çekiliyor...`);
       const { matches, seasons } = await loadTwoSeasons(code);
 
