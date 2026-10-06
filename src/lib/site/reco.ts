@@ -3,7 +3,9 @@ import { dbFresh } from './db';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { freezeState } from './showcase-rule';
 import { coverageById } from '@/lib/coverage/registry';
-import { buildRecoModel, recommend, settleReco, RECO_RULE_VERSION, type RecoHistoryRow, type RecoMarket, type RecoSelection } from './recommend-rule';
+import { buildRecoModel, recommend, settleReco, RECO_RULE_VERSION, RECO_GATE, type RecoHistoryRow, type RecoMarket, type RecoMarketInput, type RecoSelection } from './recommend-rule';
+import { latestPhase } from './odds-phases';
+import { marketYes } from './goal-blend';
 
 // ============================================================================
 // ÖNERİLEN SEÇİM — hesap + dondurma + karne. Kural recommend-rule.ts'te (saf).
@@ -23,22 +25,49 @@ type Cov = Awaited<ReturnType<typeof coverageById>>;
 const isHidden = (cov: Cov, id: number | null) => id != null && cov.get(Number(id))?.status === 'hidden';
 const isCovered = (cov: Cov, id: number | null) => id != null && cov.get(Number(id))?.status === 'whitelist';
 
+/** Fixture → son faz marjsız piyasa olasılıkları (prediction_odds; yalnız kapsanan liglerde var). */
+async function loadMarkets(ids: number[]): Promise<Map<number, RecoMarketInput>> {
+  const by = new Map<number, any[]>();
+  for (let i = 0; i < ids.length; i += 150) {
+    const { data } = await dbFresh().from('prediction_odds')
+      .select('fixture_id, phase, captured_at, p_home_market, p_draw_market, p_away_market, over25_odds, under25_odds, btts_yes_odds, btts_no_odds')
+      .in('fixture_id', ids.slice(i, i + 150)).limit(150 * 6);
+    for (const r of (data ?? []) as any[]) { const k = Number(r.fixture_id); if (!by.has(k)) by.set(k, []); by.get(k)!.push(r); }
+  }
+  const out = new Map<number, RecoMarketInput>();
+  for (const [k, rows] of by) {
+    const l = latestPhase(rows); if (!l) continue;
+    const num = (v: any) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+    const m: RecoMarketInput = {
+      pHome: num(l.p_home_market), pDraw: num(l.p_draw_market), pAway: num(l.p_away_market),
+      pOver25: marketYes(num(l.over25_odds), num(l.under25_odds)),
+      pBttsYes: marketYes(num(l.btts_yes_odds), num(l.btts_no_odds)),
+    };
+    if (m.pHome != null || m.pOver25 != null || m.pBttsYes != null) out.set(k, m);
+  }
+  return out;
+}
+
 async function loadHistory(official: string | null, cov: Cov, now: number): Promise<RecoHistoryRow[]> {
   const since = new Date(now - HISTORY_DAYS * 86_400_000).toISOString();
   const out: RecoHistoryRow[] = [];
   for (let from = 0; from < 100_000; from += PAGE) {
     const { data, error } = await officialFilter(dbFresh().from('engine_predictions')
-      .select('league_id, kickoff, p_home, p_draw, p_away, p_over25, p_btts_yes, home_score, away_score'), official)
+      .select('fixture_id, league_id, kickoff, p_home, p_draw, p_away, p_over25, p_btts_yes, home_score, away_score'), official)
       .eq('settled', true).not('home_score', 'is', null).not('away_score', 'is', null)
       .gte('kickoff', since).lt('kickoff', new Date(now).toISOString())
       .order('kickoff').order('id').range(from, from + PAGE - 1);
     if (error) throw new Error(`reco history: ${error.message}`);
     for (const r of (data ?? []) as any[]) {
       if (isHidden(cov, r.league_id)) continue;
-      out.push({ leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes, kickoff: r.kickoff, h: Number(r.home_score), a: Number(r.away_score) });
+      out.push({ leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes, kickoff: r.kickoff, h: Number(r.home_score), a: Number(r.away_score), fixtureId: Number(r.fixture_id) } as RecoHistoryRow & { fixtureId: number });
     }
     if (!data || data.length < PAGE) break;
   }
+  // Geçmişin oranlı maçları (kapsanan ligler) harmanlı kovaları beslesin — canlıyla aynı anahtar.
+  const covered = out.filter((r) => isCovered(cov, r.leagueId)).map((r) => (r as any).fixtureId as number);
+  const mk = await loadMarkets(covered);
+  for (const r of out) { const m = mk.get((r as any).fixtureId); if (m) r.market = m; }
   return out;
 }
 
@@ -65,6 +94,7 @@ export async function computeReco(days = 3, write = true, now = Date.now()) {
   const rows = ((up ?? []) as any[]).filter((r) => !isHidden(cov, r.league_id));
 
   const ids = rows.map((r) => Number(r.fixture_id));
+  const markets = await loadMarkets(rows.filter((r) => isCovered(cov, r.league_id)).map((r) => Number(r.fixture_id)));
   const frozen = new Set<number>();
   for (let i = 0; i < ids.length; i += 200) {
     const { data } = await dbFresh().from(TABLE).select('fixture_id').in('fixture_id', ids.slice(i, i + 200)).eq('frozen', true);
@@ -80,9 +110,9 @@ export async function computeReco(days = 3, write = true, now = Date.now()) {
     if (frozen.has(fid)) { skipped++; continue; }
     const state = freezeState(r.kickoff, now);
     if (state === 'late') { late++; continue; }
-    const input = { leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes };
-    const { pick, candidates } = recommend(input, model.stats);
-    const pDisplay = pick ? model.meta.displayP(pick) : null;
+    const input = { leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes, market: markets.get(fid) ?? null };
+    const { pick, candidates } = recommend(input, model.stats, RECO_GATE, model.meta);
+    const pDisplay = pick ? pick.pDisplay : null;
     if (!pick) noPick++;
     const freeze = state === 'freeze';
     if (freeze) froze++;
@@ -90,7 +120,7 @@ export async function computeReco(days = 3, write = true, now = Date.now()) {
     upserts.push({
       fixture_id: fid, kickoff: r.kickoff, league_id: r.league_id, league_name: r.league_name, home_name: r.home_name, away_name: r.away_name, covered,
       market: pick?.market ?? null, selection: pick?.selection ?? null, q: r4(pick?.q), p_display: r4(pDisplay), p_raw: r4(pick?.pRaw), base_rate: r4(pick?.base),
-      candidates: candidates.map((c) => ({ market: c.market, selection: c.selection, pRaw: r4(c.pRaw), q: r4(c.q), base: r4(c.base), passes: c.passes })),
+      candidates: candidates.map((c) => ({ market: c.market, selection: c.selection, pRaw: r4(c.pRaw), p: r4(c.p), blended: c.blended, q: r4(c.q), pDisplay: r4(c.pDisplay), base: r4(c.base), passes: c.passes })),
       rule_version: RECO_RULE_VERSION, model_version: r.model_version, frozen: freeze, frozen_at: freeze ? nowIso : null, computed_at: nowIso,
     });
     picks.push({ fixtureId: fid, kickoff: r.kickoff, leagueName: r.league_name, homeName: r.home_name, awayName: r.away_name, covered, market: pick?.market ?? null, selection: pick?.selection ?? null, q: r4(pick?.q), pDisplay: r4(pDisplay), pRaw: r4(pick?.pRaw), frozen: freeze });
@@ -103,7 +133,7 @@ export async function computeReco(days = 3, write = true, now = Date.now()) {
     }
   }
   return {
-    model: { historyRows: model.rows, historyDays: model.days, metaPicks: model.metaPicks },
+    model: { historyRows: model.rows, historyDays: model.days, metaPicks: model.metaPicks, withMarket: markets.size },
     considered: rows.length, written: write && !writeError ? upserts.length : 0, frozeNow: froze, alreadyFrozen: skipped, late, noPick,
     error: writeError, picks,
   };

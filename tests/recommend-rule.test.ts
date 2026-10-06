@@ -88,3 +88,30 @@ test('buildRecoModel learns walk-forward and fills the display record after burn
   const q = m.stats.honestP(candidatesFor(rows[0])[0], 1);
   assert.ok(Math.abs(q - 0.7) < 0.01, `q=${q}`);
 });
+
+test('market odds blend the trusted p (w=0.7), flip the side and use a separate bucket', () => {
+  const i: RecoInput = { leagueId: 1, pHome: 0.55, pDraw: 0.25, pAway: 0.20, pOver25: 0.55, pBttsYes: 0.5, market: { pHome: 0.25, pDraw: 0.25, pAway: 0.50, pOver25: 0.42 } };
+  const c = candidatesFor(i);
+  const x = c.find((k) => k.market === '1x2')!;
+  assert.equal(x.selection, '2'); // ev 0.3·0.55+0.7·0.25=0.34 < dep 0.3·0.20+0.7·0.50=0.41
+  assert.ok(Math.abs(x.p - 0.41) < 1e-9 && Math.abs(x.pRaw - 0.20) < 1e-9);
+  const ou = c.find((k) => k.market === 'ou25')!;
+  assert.equal(ou.selection, 'under'); // 0.3·0.55 + 0.7·0.42 = 0.459 → Alt
+  assert.ok(Math.abs(ou.p - 0.541) < 1e-9 && Math.abs(ou.pRaw - 0.45) < 1e-9);
+  assert.ok(ou.blended && ou.key.startsWith('mkt|'));
+  const bt = c.find((k) => k.market === 'btts')!;
+  assert.ok(!bt.blended && !bt.key.startsWith('mkt|')); // KG oranı yok → ham
+});
+
+test('gate applies to the displayed probability, not the raw q', () => {
+  const s = new RecoStats();
+  const m = new RecoMeta(50);
+  const i: RecoInput = { leagueId: null, pHome: 0.4, pDraw: 0.3, pAway: 0.3, pOver25: 0.63, pBttsYes: 0.3 };
+  const p = { market: 'ou25' as const, selection: 'over' as const, q: 0.63 };
+  for (let k = 0; k < 400; k++) m.add(p, k % 10 < 5); // kuralın kendi kaydı: %50
+  const r = recommend(i, s, RECO_GATE, m);
+  const ou = r.candidates.find((c) => c.market === 'ou25')!;
+  assert.ok(ou.q >= 0.6 && ou.pDisplay < 0.6 && !ou.passes, `q=${ou.q} disp=${ou.pDisplay}`);
+  const legacy = recommend(i, s, { ...RECO_GATE, onDisplay: false }, m);
+  assert.equal(legacy.pick?.market, 'ou25');
+});

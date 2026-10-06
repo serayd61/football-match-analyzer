@@ -9,6 +9,8 @@
 // ============================================================================
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { marketYes } from '../src/lib/site/goal-blend';
+import { latestPhase } from '../src/lib/site/odds-phases';
 import { RecoStats, RecoMeta, K_GLOBAL, K_LEAGUE, K_META, recommend, candidatesFor, settleReco, RECO_GATE, type RecoInput, type RecoGate } from '../src/lib/site/recommend-rule';
 
 const env = Object.fromEntries(readFileSync('.env.local', 'utf8').split('\n').filter((l) => /^[A-Z_]+=/.test(l)).map((l) => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^["']|["']$/g, '')]; }));
@@ -17,7 +19,7 @@ const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 const DAYS = Number(process.argv[2]) || 180;
 const BURN_IN = 30;
 
-interface Row extends RecoInput { kickoff: string; h: number; a: number; covered: boolean }
+interface Row extends RecoInput { kickoff: string; h: number; a: number; covered: boolean; fixtureId: number }
 
 async function load(): Promise<Row[]> {
   const { data: ver } = await sb.from('engine_model_versions').select('version').eq('status', 'active').limit(1);
@@ -35,11 +37,23 @@ async function load(): Promise<Row[]> {
     for (const r of data as any[]) {
       const st = r.league_id != null ? status.get(Number(r.league_id)) : undefined;
       if (st === 'hidden') continue;
-      out.push({ leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes, kickoff: r.kickoff, h: r.home_score, a: r.away_score, covered: st === 'whitelist' });
+      out.push({ fixtureId: Number(r.fixture_id), leagueId: r.league_id, pHome: r.p_home, pDraw: r.p_draw, pAway: r.p_away, pOver25: r.p_over25, pBttsYes: r.p_btts_yes, kickoff: r.kickoff, h: r.home_score, a: r.away_score, covered: st === 'whitelist' });
     }
     if (data.length < 1000) break;
   }
-  console.log(`resmi sürüm ${official} · ${out.length} maç (gizli ligler hariç) · ${DAYS} gün`);
+  // Oranlar (prediction_odds, yalnız kapsanan ligler): son faz, marjsız.
+  const { data: od } = await sb.from('prediction_odds').select('fixture_id, phase, captured_at, p_home_market, p_draw_market, p_away_market, over25_odds, under25_odds, btts_yes_odds, btts_no_odds').limit(10000);
+  const by = new Map<number, any[]>();
+  for (const r of (od ?? []) as any[]) { const k = Number(r.fixture_id); if (!by.has(k)) by.set(k, []); by.get(k)!.push(r); }
+  let withMkt = 0;
+  for (const r of out) {
+    const rows = by.get(r.fixtureId); if (!rows) continue;
+    const l = latestPhase(rows); if (!l) continue;
+    const num = (v: any) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+    r.market = { pHome: num(l.p_home_market), pDraw: num(l.p_draw_market), pAway: num(l.p_away_market), pOver25: marketYes(num(l.over25_odds), num(l.under25_odds)), pBttsYes: marketYes(num(l.btts_yes_odds), num(l.btts_no_odds)) };
+    withMkt++;
+  }
+  console.log(`resmi sürüm ${official} · ${out.length} maç (gizli ligler hariç) · ${DAYS} gün · oranlı ${withMkt}`);
   return out;
 }
 
@@ -51,7 +65,8 @@ const line = (label: string, x: T, of?: number) => x.n
   ? `${label.padEnd(30)} n=${String(x.n).padStart(5)}  tuttu ${pct(x.won / x.n).padStart(6)}  iddia ${pct(x.q / x.n).padStart(6)}  fark ${((x.won - x.q) / x.n * 100).toFixed(1).padStart(5)}${of ? `  kapsam ${pct(x.n / of)}` : ''}`
   : `${label.padEnd(30)} -`;
 
-function run(rows: Row[], gate: RecoGate, verbose: boolean, opts = { kGlobal: K_GLOBAL, kLeague: K_LEAGUE }, kMeta = K_META) {
+function run(rowsIn: Row[], gate: RecoGate, verbose: boolean, opts = { kGlobal: K_GLOBAL, kLeague: K_LEAGUE }, kMeta = K_META, useMarket = true) {
+  const rows = useMarket ? rowsIn : rowsIn.map((r) => ({ ...r, market: null }));
   const stats = new RecoStats(opts);
   const meta = new RecoMeta(kMeta);
   const shown = t(); const shownBy: Record<string, T> = {}; const pending: Array<{ p: { market: any; selection: any; q: number }; won: boolean }> = [];
@@ -69,16 +84,18 @@ function run(rows: Row[], gate: RecoGate, verbose: boolean, opts = { kGlobal: K_
         evaluated++;
         const seg = r.covered ? 'kapsanan' : 'kapsam dışı';
         segN[seg] = (segN[seg] ?? 0) + 1;
+        if (r.market) segN['oranlı (kapsanan)'] = (segN['oranlı (kapsanan)'] ?? 0) + 1;
         const cands = candidatesFor(r);
         const x = cands.find((c) => c.market === '1x2');
         if (x) add(x12, settleReco(x.market, x.selection, r.h, r.a), x.pRaw);
         const rm = cands.reduce<typeof cands[number] | null>((b, c) => (!b || c.pRaw > b.pRaw ? c : b), null);
         if (rm) add(rawMax, settleReco(rm.market, rm.selection, r.h, r.a), rm.pRaw);
-        const { pick } = recommend(r, stats, gate);
+        const { pick } = recommend(r, stats, gate, meta);
         if (!pick) continue;
         const won = settleReco(pick.market, pick.selection, r.h, r.a);
         add(all, won, pick.q);
-        const disp = meta.displayP(pick);
+        if (r.market) add(bySeg['oranlı (kapsanan)'] ??= t(), won, pick.pDisplay);
+        const disp = pick.pDisplay;
         add(shown, won, disp); add(shownBy[`${pick.market} ${pick.selection}`] ??= t(), won, disp);
         add(shownMonth[d.slice(0, 7)] ??= t(), won, disp);
         const db = disp < 0.60 ? '<60' : disp < 0.65 ? '60–65' : disp < 0.70 ? '65–70' : disp < 0.75 ? '70–75' : '≥75';
@@ -94,7 +111,7 @@ function run(rows: Row[], gate: RecoGate, verbose: boolean, opts = { kGlobal: K_
     for (const r of today) stats.add(r, r.h, r.a);
     for (const x of pending.splice(0)) meta.add(x.p, x.won);
   }
-  if (!verbose) return { all, evaluated, shown };
+  if (!verbose) return { all, evaluated, shown, bySeg, segN };
   console.log(`\nDeğerlendirme: ${start} → ${days[days.length - 1]} · ${evaluated} maç (ilk ${BURN_IN} gün yalnız öğrenme)`);
   console.log(`Kapı: q ≥ ${pct(gate.minQ)}, gol pazarında taban üstü ≥ ${(gate.minLift * 100).toFixed(0)} puan\n`);
   console.log('— KARŞILAŞTIRMA (aynı maçlar) —');
@@ -109,13 +126,24 @@ function run(rows: Row[], gate: RecoGate, verbose: boolean, opts = { kGlobal: K_
   console.log('\n— AY, GÖSTERİM KALİBRELİ —'); for (const k of Object.keys(shownMonth).sort()) console.log(line(k, shownMonth[k]));
   console.log('\n— KALİBRASYON, GÖSTERİLEN OLASILIK DİLİMİ —'); for (const k of ['<60', '60–65', '65–70', '70–75', '≥75']) if (shownCal[k]) console.log(line(k, shownCal[k]));
   console.log('\n— KALİBRASYON (ham q dilimi) —'); for (const k of ['60–65', '65–70', '70–75', '75–80', '≥80']) if (calib[k]) console.log(line(k, calib[k]));
-  return { all, evaluated, shown };
+  return { all, evaluated, shown, bySeg, segN };
 }
 
 (async () => {
   const rows = await load();
   const kg = Number(process.env.KG) || K_GLOBAL, kl = Number(process.env.KL) || K_LEAGUE;
   run(rows, RECO_GATE, true, { kGlobal: kg, kLeague: kl });
+  console.log('\n— SENARYOLAR (toplam | oranlı kapsanan alt küme: tuttu / gösterilen) —');
+  const S: Array<[string, RecoGate, boolean]> = [
+    ['A eski: oransız, kapı ham q', { ...RECO_GATE, onDisplay: false }, false],
+    ['B oransız, kapı gösterilen', { ...RECO_GATE, onDisplay: true }, false],
+    ['C oranlı, kapı gösterilen', { ...RECO_GATE, onDisplay: true }, true],
+  ];
+  for (const [name, g, um] of S) {
+    const r = run(rows, g, false, { kGlobal: kg, kLeague: kl }, K_META, um) as any;
+    const o = r.bySeg['oranlı (kapsanan)'];
+    console.log(line(name, r.all, r.evaluated) + `  | gösterim fark ${((r.shown.won - r.shown.q) / r.shown.n * 100).toFixed(1)}` + (o ? `  | oranlı: ${o.won}/${o.n} ${pct(o.won / o.n)} göst ${pct(o.q / o.n)} kapsam ${pct(o.n / r.segN['oranlı (kapsanan)'])}` : ''));
+  }
   console.log('\n— BÜZÜLME TARAMASI (kapı varsayılan) —');
   for (const kGlobal of [5, 15, 30]) for (const kLeague of [20, 50, 100, 1e9]) {
     const { all, evaluated, shown } = run(rows, RECO_GATE, false, { kGlobal, kLeague });

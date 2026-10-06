@@ -21,19 +21,35 @@ export const RECO_RULE_VERSION = 'best-1.0';
 export type RecoMarket = '1x2' | 'ou25' | 'btts';
 export type RecoSelection = '1' | 'X' | '2' | 'over' | 'under' | 'yes' | 'no';
 
+/** Marjsız piyasa olasılıkları (varsa). 1X2 üçlüsü toplamı 1; gol pazarları "Üst"/"Var" tarafı. */
+export interface RecoMarketInput {
+  pHome?: number | null; pDraw?: number | null; pAway?: number | null;
+  pOver25?: number | null;
+  pBttsYes?: number | null;
+}
+
 export interface RecoInput {
   leagueId: number | null;
   pHome: number | null; pDraw: number | null; pAway: number | null;
   pOver25: number | null;
   pBttsYes: number | null;
+  /** oran varsa (kapsanan ligler): model %30 + piyasa %70 harmanı adayın güvendiği p olur */
+  market?: RecoMarketInput | null;
 }
+
+/** Piyasa ağırlığı — lib/odds/blend.ts DEFAULT_MARKET_WEIGHT ve goal-blend ile aynı (backtest 2026-09-20). */
+export const RECO_MARKET_WEIGHT = 0.7;
 
 export interface RecoCandidate {
   market: RecoMarket;
   selection: RecoSelection;
   /** modelin ham olasılığı (seçilen taraf) */
   pRaw: number;
-  /** kova anahtarı: pazar:taraf-sınıfı:dilim */
+  /** kuralın güvendiği olasılık: oran varsa harman, yoksa ham */
+  p: number;
+  /** piyasa harmanı uygulandı mı */
+  blended: boolean;
+  /** kova anahtarı: [mkt|]pazar:taraf-sınıfı:dilim — harmanlı adaylar ayrı kovada */
   key: string;
 }
 
@@ -41,8 +57,12 @@ export interface RecoCandidate {
  *  KG Yok n=122 %52.5 (iddia %66). Kova sayaçlarına girerler, öneriye girmezler. */
 export const RECO_EXCLUDED: ReadonlySet<string> = new Set(['1x2:X', 'btts:no']);
 
-export interface RecoGate { minQ: number; minLift: number }
-export const RECO_GATE: RecoGate = { minQ: 0.60, minLift: 0.05 };
+export interface RecoGate {
+  minQ: number; minLift: number;
+  /** kapı gösterilen olasılığa (RecoMeta) uygulanır — varsayılan true (6 Eki: "≥%60" deyip %59 gösteriliyordu) */
+  onDisplay?: boolean;
+}
+export const RECO_GATE: RecoGate = { minQ: 0.60, minLift: 0.05, onDisplay: true };
 
 /** Büzülme ağırlıkları (sanal örnek sayısı). */
 export const K_GLOBAL = 30;
@@ -58,27 +78,39 @@ function sideClass(market: RecoMarket, selection: RecoSelection): string {
   return selection;
 }
 
-export function bucketKey(market: RecoMarket, selection: RecoSelection, p: number): string {
-  return `${market}:${sideClass(market, selection)}:${binOf(p)}`;
+export function bucketKey(market: RecoMarket, selection: RecoSelection, p: number, blended = false): string {
+  return `${blended ? 'mkt|' : ''}${market}:${sideClass(market, selection)}:${binOf(p)}`;
 }
 
-/** Her pazarın model tarafı (pazar başına bir aday). */
+const mix = (model: number, mkt: number | null | undefined, w = RECO_MARKET_WEIGHT) => (fin(mkt) ? (1 - w) * model + w * mkt : model);
+
+/** Her pazarın model (oran varsa harman) tarafı — pazar başına bir aday. */
 export function candidatesFor(i: RecoInput): RecoCandidate[] {
   const out: RecoCandidate[] = [];
+  const m = i.market ?? null;
   if (fin(i.pHome) && fin(i.pDraw) && fin(i.pAway)) {
-    const ps: Array<[RecoSelection, number]> = [['1', i.pHome], ['X', i.pDraw], ['2', i.pAway]];
-    const [sel, p] = ps.reduce((a, b) => (b[1] > a[1] ? b : a));
-    out.push({ market: '1x2', selection: sel, pRaw: p, key: bucketKey('1x2', sel, p) });
+    const has = !!m && fin(m.pHome) && fin(m.pDraw) && fin(m.pAway);
+    const raw: Array<[RecoSelection, number]> = [['1', i.pHome], ['X', i.pDraw], ['2', i.pAway]];
+    const bl: Array<[RecoSelection, number]> = has ? [['1', mix(i.pHome, m!.pHome)], ['X', mix(i.pDraw, m!.pDraw)], ['2', mix(i.pAway, m!.pAway)]] : raw;
+    const [sel, p] = bl.reduce((a, b) => (b[1] > a[1] ? b : a));
+    const pRaw = raw.find((x) => x[0] === sel)![1];
+    out.push({ market: '1x2', selection: sel, pRaw, p, blended: has, key: bucketKey('1x2', sel, p, has) });
   }
   if (fin(i.pOver25)) {
-    const sel: RecoSelection = i.pOver25 >= 0.5 ? 'over' : 'under';
-    const p = sel === 'over' ? i.pOver25 : 1 - i.pOver25;
-    out.push({ market: 'ou25', selection: sel, pRaw: p, key: bucketKey('ou25', sel, p) });
+    const has = !!m && fin(m.pOver25);
+    const over = has ? mix(i.pOver25, m!.pOver25) : i.pOver25;
+    const sel: RecoSelection = over >= 0.5 ? 'over' : 'under';
+    const p = sel === 'over' ? over : 1 - over;
+    const pRaw = sel === 'over' ? i.pOver25 : 1 - i.pOver25;
+    out.push({ market: 'ou25', selection: sel, pRaw, p, blended: has, key: bucketKey('ou25', sel, p, has) });
   }
   if (fin(i.pBttsYes)) {
-    const sel: RecoSelection = i.pBttsYes >= 0.5 ? 'yes' : 'no';
-    const p = sel === 'yes' ? i.pBttsYes : 1 - i.pBttsYes;
-    out.push({ market: 'btts', selection: sel, pRaw: p, key: bucketKey('btts', sel, p) });
+    const has = !!m && fin(m.pBttsYes);
+    const yes = has ? mix(i.pBttsYes, m!.pBttsYes) : i.pBttsYes;
+    const sel: RecoSelection = yes >= 0.5 ? 'yes' : 'no';
+    const p = sel === 'yes' ? yes : 1 - yes;
+    const pRaw = sel === 'yes' ? i.pBttsYes : 1 - i.pBttsYes;
+    out.push({ market: 'btts', selection: sel, pRaw, p, blended: has, key: bucketKey('btts', sel, p, has) });
   }
   return out;
 }
@@ -121,7 +153,7 @@ export class RecoStats {
 
   /** Dürüst olasılık: genel kova ham p'ye, lig kovası genele büzülür. */
   honestP(c: RecoCandidate, leagueId: number | null): number {
-    const g = shrink(this.global.get(c.key), c.pRaw, this.opts.kGlobal);
+    const g = shrink(this.global.get(c.key), c.p, this.opts.kGlobal);
     return leagueId == null ? g : shrink(this.league.get(`${leagueId}|${c.key}`), g, this.opts.kLeague);
   }
 
@@ -133,15 +165,17 @@ export class RecoStats {
   }
 }
 
-export interface RecoScored extends RecoCandidate { q: number; base: number | null; passes: boolean }
+export interface RecoScored extends RecoCandidate { q: number; /** gösterilen olasılık (meta yoksa q) */ pDisplay: number; base: number | null; passes: boolean }
 export interface RecoResult { pick: RecoScored | null; candidates: RecoScored[] }
 
-export function recommend(i: RecoInput, stats: RecoStats, gate: RecoGate = RECO_GATE): RecoResult {
+export function recommend(i: RecoInput, stats: RecoStats, gate: RecoGate = RECO_GATE, meta?: RecoMeta | null): RecoResult {
   const candidates = candidatesFor(i).map((c): RecoScored => {
     const q = stats.honestP(c, i.leagueId);
+    const pDisplay = meta ? meta.displayP({ market: c.market, selection: c.selection, q }) : q;
     const base = stats.baseRate(c.market, c.selection);
-    const passes = !RECO_EXCLUDED.has(`${c.market}:${c.selection}`) && q >= gate.minQ && (base == null || q - base >= gate.minLift);
-    return { ...c, q, base, passes };
+    const g = gate.onDisplay === false ? q : pDisplay;
+    const passes = !RECO_EXCLUDED.has(`${c.market}:${c.selection}`) && g >= gate.minQ && (base == null || g - base >= gate.minLift);
+    return { ...c, q, pDisplay, base, passes };
   });
   const pick = candidates.filter((c) => c.passes).reduce<RecoScored | null>((best, c) => (!best || c.q > best.q ? c : best), null);
   return { pick, candidates };
@@ -207,7 +241,7 @@ export function buildRecoModel(rows: RecoHistoryRow[], gate: RecoGate = RECO_GAT
     const done: Array<[RecoScored, boolean]> = [];
     if (d >= start) {
       for (const r of today) {
-        const { pick } = recommend(r, stats, gate);
+        const { pick } = recommend(r, stats, gate, meta);
         if (pick) done.push([pick, settleReco(pick.market, pick.selection, r.h, r.a)]);
       }
     }
