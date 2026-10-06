@@ -87,14 +87,23 @@ export async function fetchFinishedMatches(code: string, season: number): Promis
   }
 
   const url = `${BASE_URL}/competitions/${code}/matches?season=${season}&status=FINISHED`;
-  const res = await fetch(url, {
+  const get = () => fetch(url, {
     headers: { 'X-Auth-Token': apiKey },
     // Next.js fetch cache'ini kapat — cron her seferinde taze veri çeksin
     cache: 'no-store',
   });
+  let res = await get();
 
+  // 429: ücretsiz kademe 10 istek/dk. Dakika penceresi dolunca bekleyip BİR kez daha dene
+  // (6 Eki: fit-dc-models'ta 10. istek olan BSA haftalardır 429 ile düşüyordu).
   if (res.status === 429) {
-    throw new Error(`football-data.org rate limit (429) — ${code}/${season}. 6.5s beklemeyi kontrol et.`);
+    const hdr = res.headers.get('Retry-After');
+    const retryAfter = hdr != null && Number.isFinite(Number(hdr)) ? Number(hdr) : 60;
+    await sleep(Math.min(retryAfter, 90) * 1000 + 2000);
+    res = await get();
+  }
+  if (res.status === 429) {
+    throw new Error(`football-data.org rate limit (429) — ${code}/${season}, yeniden denemede de 429.`);
   }
   if (!res.ok) {
     throw new Error(`football-data.org ${res.status} — ${code}/${season}`);
