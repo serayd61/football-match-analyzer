@@ -28,6 +28,7 @@ import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
 import { StatRow, StatCell } from '@/components/site/StatCell';
 import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE } from '@/lib/site/risk';
+import { rawEdge } from '@/lib/site/goal-blend';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
@@ -75,6 +76,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
   const t3 = await getTranslations('v3.match');
+  const t3r = await getTranslations('v3.risk');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
   const f = await getFormatter();
@@ -503,6 +505,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                   {csMap.size > 0 && <p className="mt-1 text-xs text-s-muted">{t('csNote')}</p>}
                   <p className="mt-2 text-xs text-s-muted">
                     {t('sourceStored')}: {t('calibratedGoals', { ou: p.overUnder ? `${p.overUnder.pick === 'over' ? tc('over') : tc('under')} 2.5 ${pct(p.overUnder.p)}` : '–', btts: p.btts ? `${p.btts.pick === 'yes' ? tc('yes') : tc('no')} ${pct(p.btts.p)}` : '–' })}
+                    {/* Fark koruması (8 Eki): ham model piyasanın ≥5 puan üstündeyse — harman bunu zaten eritir, etiket 1X2 ile tutarlılık için */}
+                    {([['ou', p.overUnder], ['btts', p.btts]] as const).map(([k, c]) => { const e = rawEdge(c); return e != null && e >= OVER_EDGE - 1e-9 ? <span key={k} className="ml-1 font-semibold text-s-loss">· {k === 'ou' ? `${tc('over')}/${tc('under')}` : tc('btts')} {t3r('overShort')} (+{Math.round(e * 100)})</span> : null; })}
                   </p>
                 </div>
               </div>
@@ -565,7 +569,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                         <td className="num py-2 text-right text-s-muted">{odds(r.model)}</td>
                         <td className="num py-2 text-right">{r.mOdds.toFixed(2)}</td>
                         <td className="num py-2 text-right text-s-muted">{pct(r.mProb)}</td>
-                        <td className={`num py-2 text-right ${e > 0.03 ? 'text-s-win' : e < -0.03 ? 'text-s-loss' : ''}`}>{pp(e)}</td>
+                        <td className={`num py-2 text-right ${e >= OVER_EDGE - 1e-9 ? 'text-s-loss' : ''}`}>{pp(e)}{e >= OVER_EDGE - 1e-9 && <span className="ml-1 text-[10.5px] font-semibold">· {t3r('overShort')}</span>}</td>
                       </tr>
                     ); })}
                   </tbody>

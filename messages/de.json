@@ -301,7 +301,7 @@
     "mkDnb": "Unentschieden – Einsatz zurück",
     "modelVsBook": "Modell · Buchmacher",
     "csNote": "Spalte Buchmacher: implizite Wahrscheinlichkeit aus der gelisteten Resultat-Quote, Marge enthalten (nur die Preise, die der Buchmacher listet).",
-    "marketsNote": "Zweiweg-Märkte, Buchmachermarge herausgerechnet. Asian Handicap nutzt die Hauptlinie des Buchmachers; bei Viertellinien mittelt das Modell die beiden Nachbarlinien. «Einsatz zurück» ist die Heim/Auswärts-Aufteilung des Modells ohne Remis. Information, keine Empfehlung.",
+    "marketsNote": "Zweiweg-Märkte, Buchmachermarge herausgerechnet. Asian Handicap nutzt die Hauptlinie des Buchmachers; bei Viertellinien mittelt das Modell die beiden Nachbarlinien. «Einsatz zurück» ist die Heim/Auswärts-Aufteilung des Modells ohne Remis. Information, keine Empfehlung. Die Differenz-Spalte ist Modell minus Markt: ab +5 Punkten rot — in unserer Bilanz trafen Tipps seltener, wenn das Modell so weit über dem Markt lag (1X2 30%, BTTS 48%, Über/Unter 36%).",
     "secContext": "Teamkontext",
     "formAsOf": "vor diesem Spiel",
     "contextSource": "Quelle: das Engine-Archiv (vom Modell bewertete Spiele), nicht die vollständige Spielhistorie.",

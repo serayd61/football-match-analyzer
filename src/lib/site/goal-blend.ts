@@ -48,6 +48,13 @@ export function blendYes(pModelYes: number, pMarketYes: number | null, w = GOAL_
   return (1 - k) * pModelYes + k * pMarketYes;
 }
 
+/** Ham model − marjsız piyasa (seçilen taraf); oran yoksa null. 1X2'deki fark korumasıyla aynı
+ *  kanıt gollerde de geçerli (8 Eki, kapanış oranı): KG ≥+5 → %48 (−5…+5: %61), Ü/A ≥+5 → %36 (%75+). */
+export function rawEdge<P extends string>(c: GoalCall<P> | null | undefined): number | null {
+  if (!c || !c.blended || c.pMarket == null) return null;
+  return c.pRaw - c.pMarket;
+}
+
 /** "Var/Üst" tarafının kullanılacak olasılığı: harman varsa harman, yoksa model. */
 export function yesSideP<P extends string>(c: GoalCall<P> | null, yes: P): number | null {
   if (!c) return null;

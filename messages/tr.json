@@ -301,7 +301,7 @@
     "mkDnb": "Beraberlikte iade",
     "modelVsBook": "model · bahisçi",
     "csNote": "Bahisçi sütunu: listelenen doğru skor oranından örtük olasılık, marj dahil (yalnızca bahisçinin listelediği fiyatlar).",
-    "marketsNote": "İki yönlü pazarlar, bahisçi marjı çıkarılmış. Asya handikabı bahisçinin ana çizgisini kullanır; çeyrek çizgilerde model değeri iki komşu çizginin ortalamasıdır. Beraberlikte iade, modelin beraberlik çıkarılmış ev/deplasman dağılımıdır. Bilgi amaçlıdır, öneri değildir.",
+    "marketsNote": "İki yönlü pazarlar, bahisçi marjı çıkarılmış. Asya handikabı bahisçinin ana çizgisini kullanır; çeyrek çizgilerde model değeri iki komşu çizginin ortalamasıdır. Beraberlikte iade, modelin beraberlik çıkarılmış ev/deplasman dağılımıdır. Bilgi amaçlıdır, öneri değildir. Fark sütunu model eksi piyasa: +5 puan ve üstü kırmızı — kaydımızda model piyasanın bu kadar üstüne çıktığında seçimler daha az tuttu (1X2 %30, KG %48, Üst/Alt %36).",
     "secContext": "Takım bağlamı",
     "formAsOf": "bu maçtan önce",
     "contextSource": "Kaynak: motor arşivi (modelin puanladığı maçlar), tam fikstür geçmişi değil.",
