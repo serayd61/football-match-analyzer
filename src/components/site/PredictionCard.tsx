@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SitePrediction } from '@/lib/site/predictions';
-import { riskOf, type Risk } from '@/lib/site/risk';
+import { riskOf, OVER_EDGE, type Risk } from '@/lib/site/risk';
 import ProbBar from './ProbBar';
 import ConfidenceRing from './ConfidenceRing';
 import { RiskLabel } from './Risk';
@@ -27,6 +27,7 @@ export interface OutsideRisk { risk: Risk; note: string | null }
 
 export default async function PredictionCard({ p, locked = false, market, outside = null, back = null, spot = null }: { p: SitePrediction; locked?: boolean; market?: { pick: number | null } | null; outside?: OutsideRisk | null; /** listenin sorgusu (başında ? yok) → maç sayfası "geri" bağlantısı bunu korur */ back?: string | null; /** pazar eşiği filtresi açıkken kartta gösterilen olasılık */ spot?: { label: string; p: number } | null }) {
   const t = await getTranslations('v2.predictions');
+  const t3 = await getTranslations('v3.risk');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
   const conf = p.confidence ?? p.confidenceRaw;
@@ -34,6 +35,8 @@ export default async function PredictionCard({ p, locked = false, market, outsid
   const pickName = p.pick === '1' ? th('pickWin', { team: p.homeName }) : p.pick === '2' ? th('pickWin', { team: p.awayName }) : th('pickDraw');
   // Value = model probability minus the market's implied probability of the same pick, in points.
   const value = market?.pick != null ? Math.round((pickP - market.pick) * 100) : null;
+  // Fark koruması: model piyasanın ≥5 puan üstündeyse (isabet ~%30) etiket 'Yüksek'e yükselir — bkz. risk.ts
+  const over = value != null && value >= OVER_EDGE * 100;
   const showState = p.status !== 'scheduled' && p.status !== 'unknown';
   const score = p.homeScore != null && p.awayScore != null && (p.status === 'live' || p.status === 'finished');
 
@@ -46,7 +49,7 @@ export default async function PredictionCard({ p, locked = false, market, outsid
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           {spot && <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span>}
-          {p.hasModel ? <RiskLabel risk={outside ? outside.risk : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
+          {p.hasModel ? <RiskLabel risk={outside ? outside.risk : over ? 'high' : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
         </span>
       </div>
       <div className="flex items-center justify-between gap-3">
@@ -69,7 +72,7 @@ export default async function PredictionCard({ p, locked = false, market, outsid
           ) : (
             <>
               <span className="truncate text-[13px] font-semibold">{pickName}</span>
-              <span className="num shrink-0 text-[12px] text-s-muted">@{fair(pickP)}{value != null && <> · {t('value', { value: `${value >= 0 ? '+' : '−'}${Math.abs(value)}%` })}</>}</span>
+              <span className="num shrink-0 text-[12px] text-s-muted">@{fair(pickP)}{value != null && <> · <span className={over ? 'font-semibold text-s-loss' : undefined}>{t('value', { value: `${value >= 0 ? '+' : '−'}${Math.abs(value)}%` })}{over && <> · {t3('overShort')}</>}</span></>}</span>
             </>
           )}
         </div>

@@ -228,7 +228,7 @@
     "marketProb": "Piyasa",
     "edge": "Fark",
     "pickNote": "Seçim: {pick}. Kalibre olasılık {cal} (ham model çıktısı {raw}).",
-    "edgeNote": "Fark = model olasılığı eksi bahisçi marjından arındırılmış olasılık, yüzde puan olarak; pozitif değer modelin sonucu piyasadan daha olası gördüğü anlamına gelir.",
+    "edgeNote": "Fark = model olasılığı eksi bahisçi marjından arındırılmış olasılık, yüzde puan olarak. Kaydımızda pozitif fark lehimize değil: model piyasanın 5+ puan üstüne çıktığında isabet yaklaşık %30, −5…+1 bandında %50–56. Piyasanın sayısı daha iyi kalibre.",
     "dcNote": "Çifte şans {dc}: {p}.",
     "secGoals": "Goller",
     "lambdaMeta": "Beklenen gol λ {lh} – {la}",
@@ -906,7 +906,7 @@
       "howText": "Güven, modelin tahminin tutacağına dair kalibre olasılığıdır. %70'lik bir tahminin 10'da 3 kaybetmesi beklenir. Risk etiketleri: Düşük ≥ %74, Orta %65–73, Yüksek < %65.",
       "hide": "Gizle",
       "show": "Güven nasıl okunur",
-      "value": "değer {value}",
+      "value": "fark {value}",
       "pendingModel": "Model bekleniyor",
       "emptyTitle": "Bu gün için tahmin yok.",
       "emptyNext": "Sıradaki tahminler: {date}.",
@@ -966,7 +966,7 @@
       "xgAway": "Bekl. gol (dep)",
       "marketImplied": "Piyasa ima",
       "marketOdds": "Piyasa oranı · {side}",
-      "edge": "Piyasaya karşı avantaj",
+      "edge": "Piyasaya göre fark",
       "breakdownText": "Tahmin {pick}, kalibre %{conf} (ham model %{raw}). Beklenen gol {lh}–{la}.",
       "breakdownEdge": " Modelin olasılığı, {phase} oranlarındaki piyasa ima fiyatının {edge} puan {dir}{provider}.",
       "above": "üstünde",
@@ -979,7 +979,7 @@
       "lossRate": "Beklenen kayıp oranı: <b>%{loss}</b>",
       "noConfidence": "Bu maç için henüz kalibre güven yok — tahmini spekülatif kabul et.",
       "recommended": "Önerilen tahmin",
-      "fairValue": "Adil oran {fair} · değer {value}",
+      "fairValue": "Adil oran {fair} · fark {value}",
       "fairOnly": "Adil oran {fair}",
       "beforeTitle": "Harekete geçmeden önce.",
       "beforeText": "Tahminler olasılıksal kestirimdir, garanti değildir. Kaybı kovalama, kasanın sabit küçük bir yüzdesini oyna ve Yüksek riskli tahminleri spekülatif say. Yalnızca 18+.",
@@ -1176,7 +1176,9 @@
       "disagreeText": "Bahisçilerin favorisi {fav}. Model kapanış favorisinden ayrıştığında geçmişte yaklaşık %{acc} tuttu — bu seçimi spekülatif say.",
       "tightTitle": "Sıkı maç.",
       "tightText": "Piyasa hiçbir tarafa %{fav} üstü vermiyor. Böyle maçlarda seçimlerimiz, modelin güveni ne olursa olsun yaklaşık %{acc} tuttu.",
-      "standingHit": "Geçmişte tuttu"
+      "standingHit": "Geçmişte tuttu",
+      "overTitle": "Piyasanın üstünde.",
+      "overText": "Model bu seçimi piyasanın marjsız fiyatından {edge} puan daha olası görüyor. Geçmişte model piyasanın 5+ puan üstüne çıktığında seçimler yaklaşık %{acc} tuttu — pozitif fark değer değil, aşırı güven işareti."
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
@@ -1211,7 +1213,8 @@
     },
     "risk": {
       "disagreeShort": "piyasaya karşı",
-      "tightShort": "sıkı maç"
+      "tightShort": "sıkı maç",
+      "overShort": "piyasanın üstünde"
     }
   }
 }

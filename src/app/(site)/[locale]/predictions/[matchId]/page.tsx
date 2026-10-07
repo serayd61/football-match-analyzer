@@ -27,7 +27,7 @@ import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
 import { StatRow, StatCell } from '@/components/site/StatCell';
-import { riskOf, lossRate, riskWithMarket } from '@/lib/site/risk';
+import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE } from '@/lib/site/risk';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
@@ -203,9 +203,10 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const outsideAcc = !p.covered ? (outsideStanding.find((r) => r.market === '1x2')?.acc ?? null) : null;
   const loss = p.covered ? lossRate(conf) : outsideAcc != null ? Math.round((1 - outsideAcc) * 100) : null;
   // Piyasa koruması (27 Eyl): kapsamdaki maçta seçim piyasa favorisinden ayrışıyorsa ya da maç sıkıysa risk 'Yüksek'e yükselir.
-  const guard = p.covered ? riskWithMarket(conf, p.pick, market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null) : null;
-  const risk = p.covered ? guard!.risk : strongPick ? strongRisk(strongPick) : coverageRisk(outsideStanding);
   const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : 0;
+  // + fark koruması (8 Eki): seçim piyasanın ≥5 puan üstündeyse de 'Yüksek' — pozitif fark isabeti düşürüyor (%30).
+  const guard = p.covered ? riskWithMarket(conf, p.pick, market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null, pickP) : null;
+  const risk = p.covered ? guard!.risk : strongPick ? strongRisk(strongPick) : coverageRisk(outsideStanding);
   const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
   const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
   const edgePts = marketPickP != null ? Math.round((pickP - marketPickP) * 100) : null;
@@ -263,7 +264,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
             <div><dt className="text-[12px] text-s-muted">{t2('xgHome')}</dt><dd className="num font-semibold">{p.lambdaHome != null ? f.number(p.lambdaHome, 'fixed2') : '–'}</dd></div>
             <div><dt className="text-[12px] text-s-muted">{t2('xgAway')}</dt><dd className="num font-semibold">{p.lambdaAway != null ? f.number(p.lambdaAway, 'fixed2') : '–'}</dd></div>
             <div><dt className="text-[12px] text-s-muted">{t2('marketImplied')}</dt><dd className="num font-semibold">{marketPickP != null ? pct(marketPickP) : '–'}{marketPickOdds != null && <span className="ml-1 font-normal text-s-muted">@{marketPickOdds.toFixed(2)}</span>}</dd></div>
-            <div><dt className="text-[12px] text-s-muted">{t2('edge')}</dt><dd className={`num font-semibold ${edgePts != null && edgePts > 0 ? 'text-s-win' : edgePts != null && edgePts < 0 ? 'text-s-loss' : ''}`}>{edgePts == null ? '–' : `${edgePts > 0 ? '+' : edgePts < 0 ? '−' : ''}${Math.abs(edgePts)} pt`}</dd></div>
+            <div><dt className="text-[12px] text-s-muted">{t2('edge')}</dt><dd className={`num font-semibold ${edgePts != null && edgePts >= OVER_EDGE * 100 ? 'text-s-loss' : ''}`}>{edgePts == null ? '–' : `${edgePts > 0 ? '+' : edgePts < 0 ? '−' : ''}${Math.abs(edgePts)} pt`}</dd></div>
           </dl>
         </section>
 
@@ -288,10 +289,12 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
               </div>
               {guard?.flag && (
                 <p className="rounded-lg border border-s-loss/30 bg-s-loss/10 px-3 py-2 text-[13px] text-s-ink">
-                  <strong className="text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeTitle' : 'tightTitle')}</strong>{' '}
+                  <strong className="text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeTitle' : guard.flag === 'over' ? 'overTitle' : 'tightTitle')}</strong>{' '}
                   {guard.flag === 'disagree'
                     ? t3('disagreeText', { fav: market ? (marketFavName) : '', acc: 28 })
-                    : t3('tightText', { fav: market ? Math.round(Math.max(market.pHome, market.pDraw, market.pAway) * 100) : 0, acc: 28 })}
+                    : guard.flag === 'over'
+                      ? t3('overText', { edge: edgePts ?? 0, acc: OVER_ACC })
+                      : t3('tightText', { fav: market ? Math.round(Math.max(market.pHome, market.pDraw, market.pAway) * 100) : 0, acc: 28 })}
                 </p>
               )}
               <p className="num rounded-lg bg-s-raised px-3 py-2 text-[13px]">
