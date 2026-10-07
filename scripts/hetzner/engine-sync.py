@@ -8,7 +8,8 @@
 # engine_predictions'ta satırı OLMAYAN gelecekteki maçları yerel motora sorar,
 # sonucu sitenin ingest ucuna yazar (3 deneme, üstel bekleme). Var olan tahmin
 # ASLA yeniden yazılmaz: karne ve günün seçimleri sabah donan değerle ölçülür.
-# Ortam: /opt/football-match-analyzer/.env.hetzner (SUPABASE_*, INGEST_SECRET)
+# Ortam: /opt/football-match-analyzer/.env.hetzner (SUPABASE_*, INGEST_SECRET,
+#         PREDICT_SERVICE_TOKEN — motor 2026-09-30'dan beri Bearer token ister; yoksa 401)
 # Log: /var/log/engine-sync.log — cron: 5 * * * *
 # ============================================================================
 import json, os, sys, time, urllib.request, urllib.error
@@ -64,8 +65,14 @@ def main():
     env = load_env(ENV_FILE)
     sb_url, sb_key = env.get('NEXT_PUBLIC_SUPABASE_URL'), env.get('SUPABASE_SERVICE_ROLE_KEY')
     secret = env.get('INGEST_SECRET') or env.get('PREDICTIONS_API_SECRET') or env.get('CRON_SECRET')
+    # Motor token'ı: env dosyası ya da süreç ortamı (systemd unit'teki PREDICT_SERVICE_TOKEN ile aynı olmalı).
+    # 30 Eyl–7 Eki 2026: token servise eklendi ama bu betik göndermiyordu → 8 gün boyunca saat başı 401,
+    # D/D+1/D+2 boşlukları (ör. 7 Eki Brasileirão) dolmadı.
+    engine_token = env.get('PREDICT_SERVICE_TOKEN') or os.environ.get('PREDICT_SERVICE_TOKEN') or ''
     if not (sb_url and sb_key and secret):
         log('env eksik: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / INGEST_SECRET'); sys.exit(2)
+    if not engine_token:
+        log('UYARI: PREDICT_SERVICE_TOKEN yok — motor 401 dönecek (.env.hetzner\'e ekle)')
 
     now = datetime.now(timezone.utc)
     days = [(now + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(DAYS_AHEAD + 1)]
@@ -110,7 +117,7 @@ def main():
     total_pred = total_up = 0
     for i in range(0, len(missing), 200):
         chunk = missing[i:i + 200]
-        out = http(ENGINE, {'fixtures': chunk}, timeout=600, retries=2)
+        out = http(ENGINE, {'fixtures': chunk}, headers={'Authorization': f'Bearer {engine_token}'}, timeout=600, retries=2)
         preds = out.get('predictions') or []
         total_pred += len(preds)
         if not preds:

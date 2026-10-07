@@ -212,6 +212,24 @@ kimliksiz açıktı ve servis `0.0.0.0:8000` dinliyor. Bu sürümden itibaren to
    n8n'de **Execute Workflow** → ingest `{success:true}`.
 6. Port: `ufw deny 8000/tcp` (ve Hetzner Cloud Firewall'da 8000 kapalı). Dışarıdan
    `curl http://<sunucu-ip>:8000/health` zaman aşımına uğramalı.
+7. **Saatlik engine-sync de token ister** (2026-10-07 bulgusu: 30 Eyl'den beri her saat 401,
+   D/D+1/D+2 boşlukları dolmadı). Aynı token'ı `/opt/football-match-analyzer/.env.hetzner` içine
+   `PREDICT_SERVICE_TOKEN=<token>` olarak ekle; `python3 scripts/hetzner/engine-sync.py` →
+   log'da `motor N fikstür → M tahmin` görünmeli, 401 olmamalı.
+
+## Ek (2026-10-07) — sezonluk lig id'si eşik altındayken (Brasileirão)
+
+Depo yeni sezon id'sini eski id'yle **otomatik** birleştirir (takım kümesi Jaccard ≥0,5, takvim
+kesişmiyor) ama iki id'de de ≥ `MERGE_MIN_MATCHES` (30) maç ister. Sezon başında yeni id 1–3
+haftada eşiği geçer; o süre boyunca lig `league_too_small` ile atlanır (Brasileirão 268 →
+1000001407: 16 Eyl'de başladı, 7 Eki'de 13 maç → "Model bekleniyor"). Beklememek için unit'e
+elle alias ekle (yeni_id:kanonik_id, virgülle):
+
+```
+Environment=LEAGUE_ALIASES=943230:42,1000001407:268
+```
+`systemctl daemon-reload && systemctl restart footy-predict`. Yeni id'nin geçmişi ne olursa olsun
+kanonik gruba çözülür; eşik geçildiğinde alias zararsız kalır (silmek şart değil).
 
 Geçici kaçış (yalnız özel ağda, önerilmez): `Environment=PREDICT_ALLOW_ANON=1`.
 
