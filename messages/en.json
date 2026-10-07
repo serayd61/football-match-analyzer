@@ -228,7 +228,7 @@
     "marketProb": "Market",
     "edge": "Edge",
     "pickNote": "Pick: {pick}. Calibrated probability {cal} (raw model output {raw}).",
-    "edgeNote": "Edge = model probability minus the bookmaker's margin-free probability, in percentage points; positive means the model rates the outcome higher than the market.",
+    "edgeNote": "Edge = model probability minus the bookmaker's margin-free probability, in percentage points. In our record a positive edge has not been in our favour: when the model sat 5+ points above the market, picks landed about 30%; within −5…+1 points, 50–56%. The market's number is the better-calibrated one.",
     "dcNote": "Double chance {dc}: {p}.",
     "secGoals": "Goals",
     "lambdaMeta": "Expected goals λ {lh} – {la}",
@@ -906,7 +906,7 @@
       "howText": "Confidence is the model's calibrated probability that the pick wins. A 70% pick is expected to lose 3 times in 10. Risk labels: Low ≥ 74%, Medium 65–73%, High < 65%.",
       "hide": "Hide",
       "show": "How to read confidence",
-      "value": "value {value}",
+      "value": "edge {value}",
       "pendingModel": "Model pending",
       "emptyTitle": "No predictions for this day.",
       "emptyNext": "Next picks: {date}.",
@@ -979,7 +979,7 @@
       "lossRate": "Expected loss rate: <b>{loss}%</b>",
       "noConfidence": "No calibrated confidence for this match yet — treat the pick as speculative.",
       "recommended": "Recommended pick",
-      "fairValue": "Fair odds {fair} · value {value}",
+      "fairValue": "Fair odds {fair} · edge {value}",
       "fairOnly": "Fair odds {fair}",
       "beforeTitle": "Before you act.",
       "beforeText": "Predictions are probabilistic estimates, not guarantees. Never chase losses, stake a fixed small % of your bankroll, and treat High-risk picks as speculative. 18+ only.",
@@ -1176,7 +1176,9 @@
       "disagreeText": "The bookmakers favour {fav}. When the model has disagreed with the closing favourite, it has been right about {acc}% of the time — treat this pick as speculative.",
       "tightTitle": "Tight match.",
       "tightText": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model's confidence.",
-      "standingHit": "Past hit rate"
+      "standingHit": "Past hit rate",
+      "overTitle": "Above the market.",
+      "overText": "The model rates this pick {edge} points higher than the market's margin-free price. When the model has sat 5+ points above the market, picks landed about {acc}% of the time — a positive edge has been a sign of overconfidence, not value."
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
@@ -1211,7 +1213,8 @@
     },
     "risk": {
       "disagreeShort": "vs market",
-      "tightShort": "tight match"
+      "tightShort": "tight match",
+      "overShort": "above market"
     }
   }
 }

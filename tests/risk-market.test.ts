@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { marketFlag, riskWithMarket, marketFavourite, TIGHT_FAV } from '@/lib/site/risk';
+import { marketFlag, riskWithMarket, marketFavourite, TIGHT_FAV, OVER_EDGE } from '@/lib/site/risk';
 
 test('market favourite by argmax', () => {
   assert.equal(marketFavourite({ pHome: 0.5, pDraw: 0.25, pAway: 0.25 }), '1');
@@ -31,4 +31,14 @@ test('agreement on a clear favourite keeps the confidence label', () => {
 test('no market → unchanged', () => {
   assert.deepEqual(riskWithMarket(0.7, '1', null), { risk: 'medium', flag: null });
   assert.deepEqual(riskWithMarket(null, '1', undefined), { risk: 'high', flag: null });
+});
+
+test('model ≥5 points above the market escalates to high (positive edge = overconfidence)', () => {
+  const m = { pHome: 0.52, pDraw: 0.26, pAway: 0.22 };
+  assert.equal(marketFlag('1', m, 0.57), 'over');          // +5 tam sınır
+  assert.equal(marketFlag('1', m, 0.56), null);            // +4 → korumasız
+  assert.deepEqual(riskWithMarket(0.80, '1', m, 0.62), { risk: 'high', flag: 'over' });
+  assert.deepEqual(riskWithMarket(0.80, '1', m, 0.50), { risk: 'low', flag: null }); // piyasanın altında → etiket kalır
+  assert.equal(marketFlag('2', m, 0.40), 'disagree');      // ayrışma 'over'dan önce gelir
+  assert.ok(OVER_EDGE === 0.05);
 });

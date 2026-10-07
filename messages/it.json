@@ -228,7 +228,7 @@
     "marketProb": "Mercato",
     "edge": "Scarto",
     "pickNote": "Scelta: {pick}. Probabilità calibrata {cal} (output grezzo del modello {raw}).",
-    "edgeNote": "Scarto = probabilità del modello meno la probabilità del bookmaker al netto del margine, in punti percentuali; positivo significa che il modello valuta l'esito più del mercato.",
+    "edgeNote": "Scarto = probabilità del modello meno la probabilità del bookmaker al netto del margine, in punti percentuali. Nel nostro storico uno scarto positivo non ci ha favorito: con il modello 5+ punti sopra il mercato i pronostici hanno colto circa il 30%; nella fascia −5…+1 punti il 50–56%. Il numero del mercato è meglio calibrato.",
     "dcNote": "Doppia chance {dc}: {p}.",
     "secGoals": "Gol",
     "lambdaMeta": "Gol attesi λ {lh} – {la}",
@@ -906,7 +906,7 @@
       "howText": "La confidenza è la probabilità calibrata del modello che il pronostico vinca. Un pronostico al 70% dovrebbe perdere 3 volte su 10. Etichette di rischio: Basso ≥ 74%, Medio 65–73%, Alto < 65%.",
       "hide": "Nascondi",
       "show": "Come leggere la confidenza",
-      "value": "valore {value}",
+      "value": "scarto {value}",
       "pendingModel": "Modello in attesa",
       "emptyTitle": "Nessun pronostico per questo giorno.",
       "emptyNext": "Prossimi pronostici: {date}.",
@@ -966,7 +966,7 @@
       "xgAway": "Gol attesi (trasferta)",
       "marketImplied": "Implicita di mercato",
       "marketOdds": "Quota di mercato · {side}",
-      "edge": "Vantaggio sul mercato",
+      "edge": "Scarto dal mercato",
       "breakdownText": "Il pronostico è {pick} con confidenza calibrata {conf}% (modello grezzo {raw}%). Gol attesi {lh}–{la}.",
       "breakdownEdge": " La probabilità del modello è {edge} punti {dir} il prezzo implicito del mercato alla quota di {phase}{provider}.",
       "above": "sopra",
@@ -979,7 +979,7 @@
       "lossRate": "Tasso di perdita atteso: <b>{loss}%</b>",
       "noConfidence": "Nessuna confidenza calibrata per questa partita — considera il pronostico speculativo.",
       "recommended": "Pronostico consigliato",
-      "fairValue": "Quota equa {fair} · valore {value}",
+      "fairValue": "Quota equa {fair} · scarto {value}",
       "fairOnly": "Quota equa {fair}",
       "beforeTitle": "Prima di agire.",
       "beforeText": "Le previsioni sono stime probabilistiche, non garanzie. Non inseguire le perdite, punta una piccola percentuale fissa del bankroll e considera speculativi i pronostici ad alto rischio. Solo 18+.",
@@ -1176,7 +1176,9 @@
       "disagreeText": "I bookmaker favoriscono {fav}. Quando il modello ha dissentito dal favorito di chiusura, ha avuto ragione circa il {acc}% delle volte — considera questo pronostico speculativo.",
       "tightTitle": "Partita equilibrata.",
       "tightText": "Il mercato non quota nessuna parte sopra il {fav}%. In queste partite i nostri pronostici sono andati a segno circa il {acc}% delle volte, qualunque fosse la confidenza del modello.",
-      "standingHit": "Successo passato"
+      "standingHit": "Successo passato",
+      "overTitle": "Sopra il mercato.",
+      "overText": "Il modello valuta questo pronostico {edge} punti più del prezzo di mercato al netto del margine. Quando il modello è stato 5+ punti sopra il mercato, i pronostici sono andati a segno circa il {acc}% delle volte — uno scarto positivo è stato segno di eccesso di fiducia, non di valore."
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
@@ -1211,7 +1213,8 @@
     },
     "risk": {
       "disagreeShort": "contro il mercato",
-      "tightShort": "partita equilibrata"
+      "tightShort": "partita equilibrata",
+      "overShort": "sopra il mercato"
     }
   }
 }

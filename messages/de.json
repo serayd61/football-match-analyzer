@@ -228,7 +228,7 @@
     "marketProb": "Markt",
     "edge": "Differenz",
     "pickNote": "Tipp: {pick}. Kalibrierte Wahrscheinlichkeit {cal} (rohe Modellausgabe {raw}).",
-    "edgeNote": "Differenz = Modellwahrscheinlichkeit minus margenbereinigte Buchmacherwahrscheinlichkeit in Prozentpunkten; positiv heisst, das Modell bewertet den Ausgang höher als der Markt.",
+    "edgeNote": "Differenz = Modellwahrscheinlichkeit minus margenbereinigte Buchmacherwahrscheinlichkeit in Prozentpunkten. In unserer Bilanz war eine positive Differenz nicht zu unseren Gunsten: lag das Modell 5+ Punkte über dem Markt, trafen rund 30%; im Band −5…+1 Punkte 50–56%. Die Marktzahl ist besser kalibriert.",
     "dcNote": "Doppelte Chance {dc}: {p}.",
     "secGoals": "Tore",
     "lambdaMeta": "Erwartete Tore λ {lh} – {la}",
@@ -906,7 +906,7 @@
       "howText": "Die Konfidenz ist die kalibrierte Wahrscheinlichkeit des Modells, dass der Tipp gewinnt. Ein 70%-Tipp verliert erwartungsgemäss 3 von 10 Mal. Risikolabels: Gering ≥ 74%, Mittel 65–73%, Hoch < 65%.",
       "hide": "Ausblenden",
       "show": "So liest du die Konfidenz",
-      "value": "Value {value}",
+      "value": "Differenz {value}",
       "pendingModel": "Modell ausstehend",
       "emptyTitle": "Keine Prognosen für diesen Tag.",
       "emptyNext": "Nächste Tipps: {date}.",
@@ -966,7 +966,7 @@
       "xgAway": "Erw. Tore (Gast)",
       "marketImplied": "Markt impliziert",
       "marketOdds": "Marktquote · {side}",
-      "edge": "Vorsprung zum Markt",
+      "edge": "Differenz zum Markt",
       "breakdownText": "Der Tipp ist {pick} mit kalibrierten {conf}% (Rohmodell {raw}%). Erwartete Tore {lh}–{la}.",
       "breakdownEdge": " Die Modellwahrscheinlichkeit liegt {edge} Punkte {dir} dem vom Markt implizierten Preis zur {phase}{provider}.",
       "above": "über",
@@ -979,7 +979,7 @@
       "lossRate": "Erwartete Verlustrate: <b>{loss}%</b>",
       "noConfidence": "Für dieses Spiel gibt es noch keine kalibrierte Konfidenz — behandle den Tipp als spekulativ.",
       "recommended": "Empfohlener Tipp",
-      "fairValue": "Faire Quote {fair} · Value {value}",
+      "fairValue": "Faire Quote {fair} · Differenz {value}",
       "fairOnly": "Faire Quote {fair}",
       "beforeTitle": "Bevor du handelst.",
       "beforeText": "Prognosen sind probabilistische Schätzungen, keine Garantien. Jage Verlusten nie hinterher, setze einen festen kleinen Prozentsatz deiner Bankroll und behandle Tipps mit hohem Risiko als spekulativ. Nur 18+.",
@@ -1176,7 +1176,9 @@
       "disagreeText": "Die Buchmacher favorisieren {fav}. Wenn das Modell vom Schlussfavoriten abwich, lag es in rund {acc}% der Fälle richtig — diesen Tipp als spekulativ behandeln.",
       "tightTitle": "Enges Spiel.",
       "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz.",
-      "standingHit": "Trefferquote bisher"
+      "standingHit": "Trefferquote bisher",
+      "overTitle": "Über dem Markt.",
+      "overText": "Das Modell bewertet diesen Tipp {edge} Punkte höher als der margenbereinigte Marktpreis. Lag das Modell 5+ Punkte über dem Markt, trafen die Tipps in rund {acc}% der Fälle — ein positiver Vorsprung war ein Zeichen von Überschätzung, nicht von Value."
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
@@ -1211,7 +1213,8 @@
     },
     "risk": {
       "disagreeShort": "gegen Markt",
-      "tightShort": "enges Spiel"
+      "tightShort": "enges Spiel",
+      "overShort": "über dem Markt"
     }
   }
 }

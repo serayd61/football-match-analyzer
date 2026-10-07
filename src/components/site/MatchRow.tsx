@@ -32,7 +32,8 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
   const done = p.status === 'finished';
   const score = p.homeScore != null && p.awayScore != null && (live || done);
   const pct = (x: number) => Math.round(x * 100);
-  const guard = p.hasModel && !outside ? riskWithMarket(conf, p.pick, market) : null;
+  const pickP = p.pick === '1' ? p.pHome : p.pick === '2' ? p.pAway : p.pick === 'X' ? p.pDraw : null;
+  const guard = p.hasModel && !outside ? riskWithMarket(conf, p.pick, market, pickP) : null;
   const risk = p.hasModel ? (outside ? outside.risk : guard ? guard.risk : riskOf(conf)) : null;
   const t3 = await getTranslations('v3.risk');
   const pickWon = done && p.outcome === 'won';
@@ -85,7 +86,7 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
         {p.hasModel ? (
           <>
             <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}</span>
-            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && <span className="flex flex-col items-end gap-1"><RiskLabel risk={risk} short />{guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : 'tightShort')}</span>}</span>}
+            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && <span className="flex flex-col items-end gap-1"><RiskLabel risk={risk} short />{guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : guard.flag === 'over' ? 'overShort' : 'tightShort')}</span>}</span>}
           </>
         ) : <span className="text-[11.5px] font-semibold text-s-muted">–</span>}
       </div>
