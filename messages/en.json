@@ -301,7 +301,7 @@
     "mkDnb": "Draw no bet",
     "modelVsBook": "model · bookmaker",
     "csNote": "Bookmaker column: implied probability from the listed correct-score price, margin included (only the prices the book lists).",
-    "marketsNote": "Two-way markets with the bookmaker's margin removed. Asian handicap uses the book's main line; on quarter lines the model figure averages the two neighbouring lines. Draw no bet is the model's home/away split with the draw removed. Information, not a recommendation.",
+    "marketsNote": "Two-way markets with the bookmaker's margin removed. Asian handicap uses the book's main line; on quarter lines the model figure averages the two neighbouring lines. Draw no bet is the model's home/away split with the draw removed. Information, not a recommendation. The edge column is model minus market: +5 points or more is shown in red — in our record, picks landed less often when the model sat this far above the market (1X2 30%, BTTS 48%, O/U 36%).",
     "secContext": "Team context",
     "formAsOf": "before this match",
     "contextSource": "Source: the engine archive (matches the model rated), not the full fixture history.",

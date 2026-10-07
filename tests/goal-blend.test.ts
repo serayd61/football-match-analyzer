@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { marketYes, blendYes, blendCall, yesSideP, GOAL_BLEND_WEIGHT } from '@/lib/site/goal-blend';
+import { marketYes, blendYes, blendCall, yesSideP, rawEdge, GOAL_BLEND_WEIGHT } from '@/lib/site/goal-blend';
 
 const noCurve = (raw: number) => raw;
 
@@ -41,4 +41,12 @@ test('yesSideP returns the yes-side probability, blended when available', () => 
   assert.ok(y < 0.5 && y > 0.45);
   assert.equal(yesSideP(blendCall(0.40, null, null, 'yes', 'no', noCurve), 'yes'), 0.4);
   assert.equal(yesSideP(null, 'yes'), null);
+});
+
+test('rawEdge: ham model − marjsız piyasa; harman yoksa null', () => {
+  assert.equal(rawEdge(null), null);
+  assert.equal(rawEdge({ pick: 'over', p: 0.6, pRaw: 0.6, pMarket: null, blended: false }), null);
+  const e = rawEdge({ pick: 'yes', p: 0.57, pRaw: 0.64, pMarket: 0.54, blended: true });
+  assert.ok(e != null && Math.abs(e - 0.10) < 1e-9);
+  assert.ok(rawEdge({ pick: 'under', p: 0.5, pRaw: 0.48, pMarket: 0.51, blended: true })! < 0);
 });

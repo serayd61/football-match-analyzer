@@ -301,7 +301,7 @@
     "mkDnb": "Pareggio rimborso",
     "modelVsBook": "modello · bookmaker",
     "csNote": "Colonna bookmaker: probabilità implicita dalla quota del risultato esatto, margine incluso (solo i prezzi che il bookmaker elenca).",
-    "marketsNote": "Mercati a due esiti con il margine del bookmaker rimosso. L'handicap asiatico usa la linea principale del bookmaker; sulle linee a quarto il valore del modello è la media delle due linee vicine. Pareggio rimborso è la ripartizione casa/trasferta del modello senza il pareggio. Informazione, non un consiglio.",
+    "marketsNote": "Mercati a due esiti con il margine del bookmaker rimosso. L'handicap asiatico usa la linea principale del bookmaker; sulle linee a quarto il valore del modello è la media delle due linee vicine. Pareggio rimborso è la ripartizione casa/trasferta del modello senza il pareggio. Informazione, non un consiglio. La colonna scarto è modello meno mercato: da +5 punti in rosso — nel nostro storico i pronostici hanno colto meno spesso quando il modello era così sopra il mercato (1X2 30%, Goal 48%, Over/Under 36%).",
     "secContext": "Contesto squadre",
     "formAsOf": "prima di questa partita",
     "contextSource": "Fonte: l’archivio del motore (partite valutate dal modello), non lo storico completo.",
