@@ -18,7 +18,8 @@ test('coverageStanding uses the league cell at ≥10 matches, else the out-of-co
   const rows = coverageStanding({ pick: '1', pHome: 0.83, pDraw: 0.1, pAway: 0.07, over: { pick: 'over', pRaw: 0.9 }, btts: { pick: 'yes', pRaw: 0.82 } }, league, all);
   assert.deepEqual(rows.map((r) => [r.market, r.scope, r.n, r.verdict, r.primary.bucket]), [['1x2', 'league', 12, 'strong', '≥80'], ['ou25', 'all', 274, 'strong', '≥85'], ['btts', 'league', 20, 'mid', '≥80']]);
   assert.equal(coverageRisk(rows), 'low');                         // 10/12 = 83%
-  const under = coverageStanding({ pick: '2', pHome: 0.1, pDraw: 0.2, pAway: 0.7, over: { pick: 'under', pRaw: 0.2 }, btts: { pick: 'no', pRaw: 0.3 } }, null, all);
+  // pRaw = seçilen tarafın olasılığı (Alt %80, KG Yok %70) — GoalCall.pRaw ile aynı anlam
+  const under = coverageStanding({ pick: '2', pHome: 0.1, pDraw: 0.2, pAway: 0.7, over: { pick: 'under', pRaw: 0.8 }, btts: { pick: 'no', pRaw: 0.7 } }, null, all);
   assert.deepEqual(under.map((r) => [r.market, r.primary.bucket, r.acc]), [['1x2', '70–80', null], ['ou25', '≥75', 457 / 714]]); // 70–80 hücresi yok → veri az; KG Yok satırı yok
   assert.equal(coverageRisk(under), 'high');
   assert.equal(coverageRisk(coverageStanding({ pick: '1', pHome: 0.83, pDraw: 0.1, pAway: 0.07, over: null, btts: null }, null, all)), 'low'); // 298/398 = 75%

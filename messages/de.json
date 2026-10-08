@@ -22,7 +22,8 @@
     "home": "Start",
     "pricing": "Preise",
     "how": "So funktioniert's",
-    "tryFree": "7 Tage gratis testen"
+    "tryFree": "7 Tage gratis testen",
+    "picks": "Passende Spiele"
   },
   "locale": {
     "label": "Sprache"
@@ -767,6 +768,35 @@
     "boardLead": "Stärkste Ligen je Markt, 180 Tage. Montags aktualisiert.",
     "boardAll": "Volle Tabelle auf der Bilanzseite →"
   },
+  "picks": {
+    "metaTitle": "Spiele, die zu unserer Bilanz passen",
+    "metaDescription": "Spiele des Tages, deren 1X2-, Über/Unter-2.5- oder BTTS-Tipp in einen historisch starken Bereich unserer Bilanz fällt, mit der Differenz Modell–Markt.",
+    "eyebrow": "Tagesliste",
+    "title": "Spiele, die zu unserer Bilanz passen",
+    "lead": "Wir lassen die Skala \"Wo steht dieses Spiel in unserer Bilanz\" von jeder Spielseite über den ganzen Tag laufen. Gelistet sind nur Spiele, deren Tipp in einen Bereich fällt, den wir früher stark getroffen haben – die Differenz Modell–Markt steht daneben, nichts muss gesucht werden.",
+    "meta": "{scanned} Spiele geprüft · {matches} passen",
+    "emptyTitle": "Heute passt kein Spiel zur Bilanz",
+    "emptyLead": "Keines der {scanned} Spiele heute hat einen Tipp in einem starken Bereich. Versuchen Sie morgen oder sehen Sie alle Prognosen.",
+    "emptyNoMatches": "Für diesen Tag gibt es keine modellierten Spiele.",
+    "allPredictions": "Alle Prognosen",
+    "colMatch": "Spiel",
+    "colSelection": "Tipp",
+    "colModel": "Modell",
+    "colMarket": "Markt",
+    "colEdge": "Differenz",
+    "colHit": "Früher getroffen",
+    "scopeLeague": "Liga",
+    "scopeAll": "alle Ligen",
+    "noMarket": "keine Quote",
+    "marketMeta": "{n} Tipps",
+    "howTitle": "So entsteht diese Liste",
+    "howLevel": "Bei Über/Unter und BTTS zählt das Niveau des Modells: In welches Wahrscheinlichkeitsband der Tipp fällt, dort gilt unsere bisherige Trefferquote (Liga bei ≥10 Spielen, sonst alle Ligen).",
+    "howEdge": "Bei 1X2 zählt die Marktdifferenz: Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit. Große positive Differenzen trafen früher seltener; deshalb sortiert die Liste nach der Trefferquote dieses Differenzbereichs, nicht nach der Differenz selbst.",
+    "howStrong": "\"Stark\" heißt ≥55 % bisherige Trefferquote bei 1X2, ≥65 % bei Tormärkten, mit mindestens 10 Spielen im Bereich. Keine Garantie – eine Aufzeichnung dessen, was in derselben Lage passiert ist.",
+    "homeTitle": "Spiele, die zu unserer Bilanz passen",
+    "homeLead": "{matches} Spiele · 1X2-, Über/Unter- oder BTTS-Tipp in einem historisch starken Bereich",
+    "homeCta": "Liste öffnen"
+  },
   "paywall": {
     "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",
     "expiredLead": "Prognosen, Ergebnisse und Ligaseiten gehen mit einem Abo weiter. Monatsplan, jederzeit kündbar.",
@@ -958,6 +988,7 @@
     },
     "match": {
       "back": "← Alle Prognosen",
+      "backPicks": "← Passende Spiele",
       "today": "Heute",
       "win": "{team} gewinnt",
       "draw": "Unentschieden",

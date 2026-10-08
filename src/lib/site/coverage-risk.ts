@@ -54,7 +54,8 @@ export function coverageStanding(input: CoverageStandingInput, league: LeagueBuc
     if (e) out.push(finishStanding('1x2', input.pick, p, e, null));
   }
   if (input.over) {
-    const p = input.over.pick === 'over' ? input.over.pRaw : 1 - input.over.pRaw;
+    // pRaw seçilen tarafın olasılığı (≥0,5); Alt'ta 1−pRaw almak yanlış dilime düşürüyordu (düzeltme 2026-10-08).
+    const p = input.over.pRaw;
     const e = evidence(input.over.pick === 'over' ? 'ou25' : 'under25', p, league, all);
     if (e) out.push(finishStanding('ou25', input.over.pick, p, e, null));
   }
@@ -92,7 +93,7 @@ export function strongPickFor(input: CoverageStandingInput, strong: StrongMarket
   for (const m of order) {
     const sm = strong.find((x) => x.market === m); if (!sm) continue;
     if (m === 'ou25' && input.over?.pick === 'over' && input.over.pRaw >= sm.from) return { market: m, selection: 'over', p: input.over.pRaw, sm };
-    if (m === 'under25' && input.over?.pick === 'under' && 1 - input.over.pRaw >= sm.from) return { market: m, selection: 'under', p: 1 - input.over.pRaw, sm };
+    if (m === 'under25' && input.over?.pick === 'under' && input.over.pRaw >= sm.from) return { market: m, selection: 'under', p: input.over.pRaw, sm };
     if (m === 'btts' && input.btts?.pick === 'yes' && input.btts.pRaw >= sm.from) return { market: m, selection: 'yes', p: input.btts.pRaw, sm };
     if (m === 'x12' && input.pick) {
       const p = input.pick === '1' ? input.pHome : input.pick === '2' ? input.pAway : input.pDraw;
