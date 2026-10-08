@@ -24,6 +24,8 @@ const PAGE = 1000;
 type Cov = Awaited<ReturnType<typeof coverageById>>;
 const isHidden = (cov: Cov, id: number | null) => id != null && cov.get(Number(id))?.status === 'hidden';
 const isCovered = (cov: Cov, id: number | null) => id != null && cov.get(Number(id))?.status === 'whitelist';
+// Piyasa harmanı: beyaz liste + gözlem (oran kaydı snapshot-odds ile aynı küme; oran yoksa harman olmaz).
+const hasMarket = (cov: Cov, id: number | null) => id != null && ['whitelist', 'observe'].includes(cov.get(Number(id))?.status ?? '');
 
 /** Fixture → son faz marjsız piyasa olasılıkları (prediction_odds; yalnız kapsanan liglerde var). */
 async function loadMarkets(ids: number[]): Promise<Map<number, RecoMarketInput>> {
@@ -65,8 +67,8 @@ async function loadHistory(official: string | null, cov: Cov, now: number): Prom
     if (!data || data.length < PAGE) break;
   }
   // Geçmişin oranlı maçları (kapsanan ligler) harmanlı kovaları beslesin — canlıyla aynı anahtar.
-  const covered = out.filter((r) => isCovered(cov, r.leagueId)).map((r) => (r as any).fixtureId as number);
-  const mk = await loadMarkets(covered);
+  const withMkt = out.filter((r) => hasMarket(cov, r.leagueId)).map((r) => (r as any).fixtureId as number);
+  const mk = await loadMarkets(withMkt);
   for (const r of out) { const m = mk.get((r as any).fixtureId); if (m) r.market = m; }
   return out;
 }
@@ -94,7 +96,7 @@ export async function computeReco(days = 3, write = true, now = Date.now()) {
   const rows = ((up ?? []) as any[]).filter((r) => !isHidden(cov, r.league_id));
 
   const ids = rows.map((r) => Number(r.fixture_id));
-  const markets = await loadMarkets(rows.filter((r) => isCovered(cov, r.league_id)).map((r) => Number(r.fixture_id)));
+  const markets = await loadMarkets(rows.filter((r) => hasMarket(cov, r.league_id)).map((r) => Number(r.fixture_id)));
   const frozen = new Set<number>();
   for (let i = 0; i < ids.length; i += 200) {
     const { data } = await dbFresh().from(TABLE).select('fixture_id').in('fixture_id', ids.slice(i, i + 200)).eq('frozen', true);

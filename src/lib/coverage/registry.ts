@@ -32,6 +32,12 @@ export async function whitelistTiers(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((r) => [r.slug!, r.tier]));
 }
 
+/** Oran kaydı + piyasa harmanı yapılacak ligler: beyaz liste + gözlem (2026-10-08: 14 lig 180g sicille
+ *  gözleme alındı; harman/fark koruması ancak oran biriktikçe çalışır, terfi kararı 4 hafta sonra). */
+export async function marketLeagueIds(): Promise<Set<number>> {
+  return new Set((await loadCoverage()).filter((r) => r.status === 'whitelist' || r.status === 'observe').map((r) => Number(r.league_id)));
+}
+
 /** Motor kapsamı dışı (excluded) lig id'leri — fikstür ?scope=model bunları eler. */
 export async function excludedLeagueIds(): Promise<Set<number>> {
   return new Set((await loadCoverage()).filter((r) => r.status === 'excluded').map((r) => Number(r.league_id)));

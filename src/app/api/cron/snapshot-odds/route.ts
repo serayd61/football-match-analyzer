@@ -17,6 +17,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
+import { marketLeagueIds } from '@/lib/coverage/registry';
 import { parseMarkets } from '@/lib/site/markets';
 import { phaseForMinutes, type OddsPhase } from '@/lib/site/odds-phases';
 import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds } from '@/lib/data-sources/api-football';
@@ -93,6 +94,8 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = await getCatalogMap().catch(() => new Map());
+  // Gözlemdeki ligler de oran alır (8 Eki): harman ve fark koruması için sicil birikir.
+  const marketLeagues = await marketLeagueIds().catch(() => new Set<number>());
 
   // Kapsanan ligler + hangi faz gerekiyor
   type Job = { fixtureId: number; kickoff: string; phase: OddsPhase; ccode: string };
@@ -100,7 +103,7 @@ export async function GET(request: NextRequest) {
   for (const p of (preds || []) as any[]) {
     const cat = catalog.get(Number(p.league_id));
     const name = isUnresolvedLeagueName(p.league_name) && cat ? cat.name : p.league_name;
-    if (!isModelCovered(name, p.league_id, cat?.ccode)) continue;
+    if (!isModelCovered(name, p.league_id, cat?.ccode) && !marketLeagues.has(Number(p.league_id))) continue;
     const mins = (new Date(p.kickoff).getTime() - now.getTime()) / 60000;
     candidates.push({
       fixtureId: p.fixture_id,
