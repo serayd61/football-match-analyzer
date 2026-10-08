@@ -11,7 +11,7 @@
 import 'server-only';
 
 const HOST = 'https://v3.football.api-sports.io';
-export { AF_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, normTeam, teamSim, matchFixtures, parseAfInjuries, parseAfLineups, injuriesDue, lineupsDue, afToMatchOdds } from './api-football-pure';
+export { AF_LEAGUE, AF_OBSERVE_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, normTeam, teamSim, matchFixtures, parseAfInjuries, parseAfLineups, injuriesDue, lineupsDue, afToMatchOdds } from './api-football-pure';
 export type { AfFixture, AfOdds, MapCandidate, AfInjury, AfLineup, AfLineupPlayer, AfSide, AfMatchOdds } from './api-football-pure';
 import { parseAfOdds, parseAfInjuries, parseAfLineups, type AfFixture, type AfOdds, type AfInjury, type AfLineup } from './api-football-pure';
 

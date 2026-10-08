@@ -56,3 +56,10 @@ test('afToMatchOdds builds margin-free probabilities and tags the provider', () 
   assert.equal(afToMatchOdds(null), null);
   assert.equal(afToMatchOdds({ bookmaker: 'X', home: 2, draw: null, away: 3, over25: 1.8, under25: 2, bttsYes: null, bttsNo: null }), null);
 });
+
+test('afSeasonFor: explicit calendar flag overrides the slug table (observe leagues)', () => {
+  assert.equal(afSeasonFor('eliteserien', '2026-10-09T17:00:00Z', true), 2026);
+  assert.equal(afSeasonFor('eliteserien', '2027-03-01T17:00:00Z', true), 2027);
+  assert.equal(afSeasonFor('eerste-divisie', '2027-03-01T17:00:00Z', false), 2026);
+  assert.equal(afSeasonFor('eerste-divisie', '2027-03-01T17:00:00Z', undefined), 2026);
+});
