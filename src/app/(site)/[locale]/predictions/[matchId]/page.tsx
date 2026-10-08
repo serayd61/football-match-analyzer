@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ymdOf, todayYmd } from '@/lib/site/time';
-import { backHref } from '@/lib/site/back-link';
+import { backHref, fromPicks } from '@/lib/site/back-link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
@@ -226,7 +226,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     <Page>
       <div className="pt-5"><TrialNotice access={access} /></div>
       <p className="flex flex-wrap items-center gap-2 pt-2 text-[13px]">
-        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2('back')}</Link>
+        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>
         {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
         {strongPick && <span className="tag tag-accent">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-loss">{t('flagPostKickoff')}</span>}

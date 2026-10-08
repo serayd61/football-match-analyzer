@@ -22,7 +22,8 @@
     "home": "Home",
     "pricing": "Pricing",
     "how": "How it works",
-    "tryFree": "Try free for 7 days"
+    "tryFree": "Try free for 7 days",
+    "picks": "Fits record"
   },
   "locale": {
     "label": "Language"
@@ -765,6 +766,35 @@
     "boardLead": "Strongest leagues per market, 180 days. Refreshed on Mondays.",
     "boardAll": "Full table on the record page →"
   },
+  "picks": {
+    "metaTitle": "Matches that fit our record",
+    "metaDescription": "Today's matches whose 1X2, Over/Under 2.5 or BTTS call lands in a historically strong bucket of our track record, with the model-vs-market gap.",
+    "eyebrow": "Daily list",
+    "title": "Matches that fit our record",
+    "lead": "We run the \"Where this match sits in our record\" scale from every match page across the whole day. Only matches whose call lands in a bucket we have hit strongly before are listed, with the model–market gap next to each — nothing to hunt for.",
+    "meta": "{scanned} matches scanned · {matches} fit",
+    "emptyTitle": "No match fits the record today",
+    "emptyLead": "None of today's {scanned} matches has a call in a strong bucket. Try tomorrow or browse all predictions.",
+    "emptyNoMatches": "No modelled matches for this day.",
+    "allPredictions": "All predictions",
+    "colMatch": "Match",
+    "colSelection": "Call",
+    "colModel": "Model",
+    "colMarket": "Market",
+    "colEdge": "Gap",
+    "colHit": "Hit before",
+    "scopeLeague": "league",
+    "scopeAll": "all leagues",
+    "noMarket": "no odds",
+    "marketMeta": "{n} calls",
+    "howTitle": "How this list is built",
+    "howLevel": "For Over/Under and BTTS the evidence is the model's level: whichever probability band the call falls in, we use our past hit rate in that band (league if it has ≥10 matches, otherwise all leagues).",
+    "howEdge": "For 1X2 the evidence is the market gap: model probability minus the bookmaker's vig-free probability. Large positive gaps have hit less often in the past, so the list is sorted by that gap bucket's past hit rate, not by the gap itself.",
+    "howStrong": "\"Strong\" means ≥55% past hit rate for 1X2, ≥65% for goal markets, with at least 10 matches in the bucket. Not a guarantee — a record of what happened in the same situation.",
+    "homeTitle": "Matches that fit our record",
+    "homeLead": "{matches} matches · 1X2, Over/Under or BTTS call in a historically strong bucket",
+    "homeCta": "Open the list"
+  },
   "paywall": {
     "expiredTitle": "Your 7-day trial has ended",
     "expiredLead": "Predictions, results and league pages continue with a subscription. Monthly plan, cancel anytime.",
@@ -956,6 +986,7 @@
     },
     "match": {
       "back": "← All predictions",
+      "backPicks": "← Matches that fit",
       "today": "Today",
       "win": "{team} win",
       "draw": "Draw",

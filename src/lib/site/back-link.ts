@@ -21,6 +21,8 @@ const ALLOWED: Record<string, RegExp> = {
   sort: /^confidence$/,
   market: /^(x12|ou25|btts)$/,
   minp: /^(50|55|60|65|70|75|80|85|90)$/,
+  /** Karneye uyan maçlar listesinden gelindi (2026-10-08): dönüş /picks'e */
+  from: /^picks$/,
 };
 
 export function sanitizeBackQs(back: string | undefined | null): string | null {
@@ -30,6 +32,11 @@ export function sanitizeBackQs(back: string | undefined | null): string | null {
   for (const [k, v] of inp) if (ALLOWED[k]?.test(v) && !out.has(k)) out.set(k, v);
   const s = out.toString();
   return s || null;
+}
+
+/** `back` karneye-uyan-maçlar listesinden mi geliyor (etiket seçimi için). */
+export function fromPicks(back: string | undefined | null): boolean {
+  return new URLSearchParams(sanitizeBackQs(back) ?? '').get('from') === 'picks';
 }
 
 export function sectionId(leagueId: number | null | undefined): string | null {
@@ -46,5 +53,10 @@ export function backHref(opts: { back?: string | null; covered: boolean; leagueI
     qs = p.toString() || null;
   }
   const anchor = !opts.covered ? sectionId(opts.leagueId) : null;
+  const sp = new URLSearchParams(qs ?? '');
+  if (sp.get('from') === 'picks') {
+    const d = sp.get('date');
+    return `/picks${d ? `?date=${d}` : ''}`;
+  }
   return `/predictions${qs ? `?${qs}` : ''}${anchor ? `#${anchor}` : ''}`;
 }

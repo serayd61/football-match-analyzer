@@ -15,3 +15,9 @@ test('uncovered match returns to the list with scope=all and a league anchor; co
   assert.equal(backHref({ back: null, covered: true, leagueId: 47, kickoffYmd: '2026-09-25', todayYmd: '2026-09-25' }), '/predictions');
   assert.equal(backHref({ back: 'league=premier-league', covered: true, leagueId: 47, kickoffYmd: '2026-09-25', todayYmd: '2026-09-25' }), '/predictions?league=premier-league');
 });
+
+test('from=picks returns to the picks list (date kept, nothing else)', () => {
+  assert.equal(backHref({ back: 'from=picks', covered: true, leagueId: 47, kickoffYmd: '2026-10-08', todayYmd: '2026-10-08' }), '/picks');
+  assert.equal(backHref({ back: 'from=picks&date=2026-10-09&scope=all', covered: true, leagueId: 47, kickoffYmd: '2026-10-09', todayYmd: '2026-10-08' }), '/picks?date=2026-10-09');
+  assert.equal(backHref({ back: 'from=other', covered: true, leagueId: 47, kickoffYmd: '2026-10-08', todayYmd: '2026-10-08' }), '/predictions');
+});
