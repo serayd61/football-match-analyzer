@@ -11,9 +11,25 @@ export const AF_LEAGUE: Record<string, number> = {
 /** Takvim yılı sezonu olan ligler (Brezilya); diğerleri Ağustos–Mayıs (başlangıç yılı). */
 const CALENDAR_SEASON = new Set(['brasileirao']);
 
-export function afSeasonFor(slug: string, kickoffIso: string): number {
+/**
+ * Gözlem (kapsam dışı) ligleri: FotMob lig id → API-Football lig id (2026-10-08).
+ * Bu ligler `SiteLeague` slug'ı taşımaz; eşleme id ile. Yanlış id ad+saat
+ * eşleşmesinde boş döner (çağrı israfı dışında zarar yok). `key` af_fixture_map
+ * `league_slug` sütununa yazılır. Takvim yılı sezonu olanlar `calendar: true`.
+ */
+export const AF_OBSERVE_LEAGUE: Record<number, { af: number; key: string; calendar?: boolean }> = {
+  111: { af: 89, key: 'eerste-divisie' },
+  9195: { af: 90, key: 'tweede-divisie' },
+  59: { af: 103, key: 'eliteserien', calendar: true },
+  248: { af: 329, key: 'estonia-premium-liiga', calendar: true },
+  226: { af: 365, key: 'latvia-virsliga', calendar: true },
+  922739: { af: 389, key: 'kazakhstan-premier-league', calendar: true },
+  938776: { af: 110, key: 'wales-premier-league' },
+};
+
+export function afSeasonFor(slug: string, kickoffIso: string, calendar = CALENDAR_SEASON.has(slug)): number {
   const d = new Date(kickoffIso);
-  if (CALENDAR_SEASON.has(slug)) return d.getUTCFullYear();
+  if (calendar) return d.getUTCFullYear();
   return d.getUTCMonth() + 1 >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
 }
 
