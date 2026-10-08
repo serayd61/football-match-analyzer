@@ -27,6 +27,7 @@ export interface MarketStanding {
 export interface StandingInput {
   leagueSlug: string | null;
   pick: '1' | 'X' | '2' | null; pHome: number; pDraw: number; pAway: number;
+  /** pRaw = SEÇİLEN tarafın ham model olasılığı (GoalCall.pRaw / favored().p, ≥0,5) — Üst/Var tarafı değil */
   over: { pick: 'over' | 'under'; pRaw: number } | null;
   btts: { pick: 'yes' | 'no'; pRaw: number } | null;
   market: { pHome: number; pDraw: number; pAway: number } | null;
@@ -66,13 +67,15 @@ export function standingFor(input: StandingInput, tables: SignalTable[]): Market
     }
     if (level) out.push(finishStanding('1x2', input.pick, pickP, edge ?? level, edge ? level : null));
     if (input.over) {
-      const pSide = input.over.pick === 'over' ? input.over.pRaw : 1 - input.over.pRaw;
+      // Düzeltme 2026-10-08: pRaw zaten seçilen taraf; Alt seçiminde 1−pRaw almak kovayı
+      // '<50%'e düşürüp hükmü hep "veri az" yapıyordu.
+      const pSide = input.over.pRaw;
       const lv = evidence(tables, 'ou25', 'level', levelBucket(pSide), lg);
       const cl = clash != null && input.over.pick === 'over' && input.over.pRaw >= MIN_OVER ? evidence(tables, 'ou25', 'clash', clash, lg) : null;
       if (lv) out.push(finishStanding('ou25', input.over.pick, pSide, lv, cl));
     }
     if (input.btts) {
-      const pSide = input.btts.pick === 'yes' ? input.btts.pRaw : 1 - input.btts.pRaw;
+      const pSide = input.btts.pRaw;
       const lv = evidence(tables, 'btts', 'level', levelBucket(pSide), lg);
       let sec: StandingEvidence | null = null;
       if (input.bttsMarketYes != null) sec = evidence(tables, 'btts', 'edge', edgeBucket(pSide - (input.btts.pick === 'yes' ? input.bttsMarketYes : 1 - input.bttsMarketYes)), lg);

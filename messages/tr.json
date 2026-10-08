@@ -22,7 +22,8 @@
     "home": "Ana sayfa",
     "pricing": "Fiyatlar",
     "how": "Nasıl çalışır",
-    "tryFree": "7 gün ücretsiz dene"
+    "tryFree": "7 gün ücretsiz dene",
+    "picks": "Uyan maçlar"
   },
   "locale": {
     "label": "Dil"
@@ -767,6 +768,35 @@
     "boardLead": "Pazar başına en güçlü ligler, 180 gün. Pazartesi yenilenir.",
     "boardAll": "Tam tablo karnede →"
   },
+  "picks": {
+    "metaTitle": "Karneye uyan maçlar",
+    "metaDescription": "Günün maçları içinde 1X2, Üst/Alt 2,5 ve KG seçimi geçmiş karnemizde güçlü kovaya düşenler; model–piyasa farkıyla birlikte.",
+    "eyebrow": "Günlük liste",
+    "title": "Karneye uyan maçlar",
+    "lead": "Her maçın sayfasındaki \"Bu maç karnemizde nerede\" ölçeğini bütün gün için toplu çalıştırdık. Burada yalnız seçimi geçmişte güçlü tutan kovaya düşen maçlar var; model–piyasa farkı yanında yazılı, aramanıza gerek yok.",
+    "meta": "{scanned} maç tarandı · {matches} maç uyuyor",
+    "emptyTitle": "Bugün karneye uyan maç yok",
+    "emptyLead": "Günün {scanned} maçında hiçbir seçim güçlü kovaya düşmedi. Yarını deneyin ya da tüm tahminlere bakın.",
+    "emptyNoMatches": "Bu gün için modellenmiş maç yok.",
+    "allPredictions": "Tüm tahminler",
+    "colMatch": "Maç",
+    "colSelection": "Seçim",
+    "colModel": "Model",
+    "colMarket": "Piyasa",
+    "colEdge": "Fark",
+    "colHit": "Geçmişte tuttu",
+    "scopeLeague": "lig",
+    "scopeAll": "tüm ligler",
+    "noMarket": "oran yok",
+    "marketMeta": "{n} seçim",
+    "howTitle": "Bu liste nasıl oluşur",
+    "howLevel": "Üst/Alt ve KG'de kanıt modelin seviyesidir: seçim hangi olasılık dilimine düşüyorsa o dilimdeki geçmiş isabetimiz esas alınır (ligde ≥10 maç varsa lig, yoksa tüm ligler).",
+    "howEdge": "1X2'de kanıt piyasa farkıdır: model olasılığı eksi marjsız bahisçi olasılığı. Geçmişte büyük artı fark isabeti düşürdü; o yüzden liste farka göre değil, o fark kovasının geçmiş isabetine göre sıralanır.",
+    "howStrong": "\"Güçlü\" eşiği: 1X2'de ≥%55, gol pazarlarında ≥%65 geçmiş isabet ve kovada en az 10 maç. Garanti değil, aynı durumdaki maçlarda ne olduğunun kaydıdır.",
+    "homeTitle": "Karneye uyan maçlar",
+    "homeLead": "{matches} maç · 1X2, Üst/Alt, KG seçimi geçmişte güçlü tutan kovada",
+    "homeCta": "Listeyi aç"
+  },
   "paywall": {
     "expiredTitle": "7 günlük deneme süren doldu",
     "expiredLead": "Tahminler, sonuçlar ve lig sayfaları abonelikle devam eder. Aylık plan, istediğin zaman iptal.",
@@ -958,6 +988,7 @@
     },
     "match": {
       "back": "← Tüm tahminler",
+      "backPicks": "← Uyan maçlar",
       "today": "Bugün",
       "win": "{team} kazanır",
       "draw": "Beraberlik",

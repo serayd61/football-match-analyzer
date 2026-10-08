@@ -22,7 +22,8 @@
     "home": "Home",
     "pricing": "Prezzi",
     "how": "Come funziona",
-    "tryFree": "Prova gratis 7 giorni"
+    "tryFree": "Prova gratis 7 giorni",
+    "picks": "In linea"
   },
   "locale": {
     "label": "Lingua"
@@ -767,6 +768,35 @@
     "boardLead": "Campionati più forti per mercato, 180 giorni. Aggiornato il lunedì.",
     "boardAll": "Tabella completa nel registro →"
   },
+  "picks": {
+    "metaTitle": "Partite in linea con il nostro storico",
+    "metaDescription": "Le partite di oggi la cui scelta 1X2, Over/Under 2.5 o Goal cade in una fascia storicamente forte del nostro storico, con lo scarto modello–mercato.",
+    "eyebrow": "Lista del giorno",
+    "title": "Partite in linea con il nostro storico",
+    "lead": "Eseguiamo la scala \"Dove sta questa partita nel nostro storico\" di ogni pagina partita su tutta la giornata. Sono elencate solo le partite la cui scelta cade in una fascia che in passato abbiamo centrato con forza, con lo scarto modello–mercato accanto: niente da cercare.",
+    "meta": "{scanned} partite analizzate · {matches} in linea",
+    "emptyTitle": "Oggi nessuna partita in linea con lo storico",
+    "emptyLead": "Nessuna delle {scanned} partite di oggi ha una scelta in una fascia forte. Prova domani o guarda tutte le previsioni.",
+    "emptyNoMatches": "Nessuna partita modellata per questo giorno.",
+    "allPredictions": "Tutte le previsioni",
+    "colMatch": "Partita",
+    "colSelection": "Scelta",
+    "colModel": "Modello",
+    "colMarket": "Mercato",
+    "colEdge": "Scarto",
+    "colHit": "Centrato in passato",
+    "scopeLeague": "lega",
+    "scopeAll": "tutte le leghe",
+    "noMarket": "nessuna quota",
+    "marketMeta": "{n} scelte",
+    "howTitle": "Come nasce questa lista",
+    "howLevel": "Per Over/Under e Goal la prova è il livello del modello: in qualunque fascia di probabilità cada la scelta, usiamo la nostra percentuale di successo passata in quella fascia (lega se ha ≥10 partite, altrimenti tutte le leghe).",
+    "howEdge": "Per l'1X2 la prova è lo scarto di mercato: probabilità del modello meno probabilità del bookmaker senza margine. Scarti positivi ampi in passato hanno centrato meno; per questo la lista è ordinata per la percentuale di successo di quella fascia di scarto, non per lo scarto in sé.",
+    "howStrong": "\"Forte\" significa ≥55% di successo passato per l'1X2, ≥65% per i mercati gol, con almeno 10 partite nella fascia. Non è una garanzia: è il registro di cosa è successo nella stessa situazione.",
+    "homeTitle": "Partite in linea con il nostro storico",
+    "homeLead": "{matches} partite · scelta 1X2, Over/Under o Goal in una fascia storicamente forte",
+    "homeCta": "Apri la lista"
+  },
   "paywall": {
     "expiredTitle": "La tua prova di 7 giorni è finita",
     "expiredLead": "Pronostici, risultati e pagine dei campionati continuano con un abbonamento. Piano mensile, disdici quando vuoi.",
@@ -958,6 +988,7 @@
     },
     "match": {
       "back": "← Tutti i pronostici",
+      "backPicks": "← Partite in linea",
       "today": "Oggi",
       "win": "Vittoria {team}",
       "draw": "Pareggio",

@@ -53,3 +53,17 @@ test('no pick → no rows; no market → 1X2 falls back to level', () => {
   assert.equal(r.scope, 'all');
   assert.equal(r.verdict, 'strong'); // 31/41
 });
+
+test('under / no picks bucket the chosen side (pRaw ≥ 0.5), not 1−pRaw (regression 2026-10-08)', () => {
+  const rows = standingFor({ leagueSlug: 'eredivisie', pick: '1', pHome: 0.57, pDraw: 0.24, pAway: 0.19, over: { pick: 'under', pRaw: 0.72 }, btts: { pick: 'no', pRaw: 0.66 }, market: null, bttsMarketYes: 0.40 }, tables);
+  const ou = rows.find((r) => r.market === 'ou25')!, bt = rows.find((r) => r.market === 'btts')!;
+  assert.equal(ou.selection, 'under');
+  assert.equal(ou.modelP, 0.72);
+  assert.equal(ou.primary.bucket, '≥70%');
+  assert.equal(ou.verdict, 'strong');
+  assert.equal(bt.selection, 'no');
+  assert.equal(bt.primary.bucket, '60–70%');
+  // KG Yok: fark = 0,66 − (1 − 0,40) = +6 puan → '+5…+10' kovası ikincil kanıt
+  assert.equal(bt.secondary?.kind, 'edge');
+  assert.equal(bt.secondary?.bucket, '+5…+10');
+});

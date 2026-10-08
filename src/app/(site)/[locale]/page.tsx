@@ -16,6 +16,8 @@ import { Page } from '@/components/site/ui';
 import DemoAnalysis from '@/components/site/DemoAnalysis';
 import MatchRow from '@/components/site/MatchRow';
 import { listDay } from '@/lib/site/fixtures';
+import { getMarketSnapshots } from '@/lib/site/dashboard';
+import { dailyStandingBoard } from '@/lib/site/daily-standing';
 import { todayYmd } from '@/lib/site/time';
 import { ArrowRight, ShieldCheck, Clock3, Lock } from 'lucide-react';
 import ProbBar from '@/components/site/ProbBar';
@@ -68,6 +70,12 @@ export default async function HomePage({ params: { locale } }: { params: { local
   // v3: members see the day's first modelled fixtures right in the hero.
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
   const todayTotal = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).length;
+  // Karneye uyan maçlar (8 Eki): günün güçlü seçim sayısı; maç listesinin altında /picks bağlantısı.
+  const fitRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel);
+  const fitBoard = unlocked && fitRows.length > 0
+    ? dailyStandingBoard(fitRows, await getMarketSnapshots(fitRows.map((r) => r.fixtureId)).catch(() => ({})), perf.signals)
+    : null;
+  const tpk = await getTranslations('picks');
   // Seçmeden: en son sonuçlanan 5 tahmin (kazanan da kaybeden de). Yalnız erişimi olana.
   const recent = (latest?.rows ?? []).filter((r) => r.outcome === 'won' || r.outcome === 'lost').slice(0, 5);
   const pickName = (p: SitePrediction) => (p.pick === '1' ? th('pickWin', { team: p.homeName }) : p.pick === '2' ? th('pickWin', { team: p.awayName }) : th('pickDraw'));
@@ -120,6 +128,15 @@ export default async function HomePage({ params: { locale } }: { params: { local
                   <Link href="/predictions" className="text-[13.5px] font-semibold text-s-accent-700 hover:underline">{t3('todayAll')} →</Link>
                 </header>
                 <div className="divide-rule">{todayRows.map((p) => <MatchRow key={p.fixtureId} p={p} />)}</div>
+                {fitBoard && fitBoard.matches > 0 && (
+                  <Link href="/picks" className="flex items-center justify-between gap-3 border-t border-s-line bg-s-raised/50 px-4 py-3 hover:bg-s-raised" data-cta="hero-picks">
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-bold">{tpk('homeTitle')}</span>
+                      <span className="block truncate text-[12.5px] text-s-muted">{tpk('homeLead', { matches: fitBoard.matches })}</span>
+                    </span>
+                    <span className="shrink-0 text-[13.5px] font-semibold text-s-accent-700">{tpk('homeCta')} →</span>
+                  </Link>
+                )}
               </section>
             ) : (
               <div className="lg:translate-x-4 lg:rotate-[-1.5deg] lg:transition-transform">

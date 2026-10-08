@@ -12,8 +12,10 @@ import ThemeToggle from './ThemeToggle';
 // Header v3 (2026-09-26): 60px, sticky, translucent. Brand · Today's matches /
 // Record / Leagues / Pricing · right: language, theme, auth. On < lg the nav
 // collapses to a sheet; primary sections are also in the mobile tab bar.
-const NAV: Array<{ href: string; key: 'predictions' | 'performance' | 'leagues' | 'pricing' }> = [
+// "Uyan maçlar" (2026-10-08): günün karneye uyan seçimleri; üyelik ister, sayfa kendi yönlendirir.
+const NAV: Array<{ href: string; key: 'predictions' | 'picks' | 'performance' | 'leagues' | 'pricing' }> = [
   { href: '/predictions', key: 'predictions' },
+  { href: '/picks', key: 'picks' },
   { href: '/performance', key: 'performance' },
   { href: '/leagues', key: 'leagues' },
   { href: '/pricing', key: 'pricing' },
