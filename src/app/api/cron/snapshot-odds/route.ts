@@ -13,6 +13,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
@@ -20,6 +21,7 @@ import { isModelCovered } from '@/lib/model-coverage';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { oddsCandidates, pickOddsJobs } from '@/lib/site/odds-jobs';
 import { getRedisClient } from '@/lib/cache/redis';
+import { ODDS_TAG } from '@/lib/site/db';
 import { parseMarkets } from '@/lib/site/markets';
 import type { OddsPhase } from '@/lib/site/odds-phases';
 import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds } from '@/lib/data-sources/api-football';
@@ -251,6 +253,9 @@ export async function GET(request: NextRequest) {
       await sleep(SLEEP_MS);
     }
   }
+
+  // Yeni oran yazıldıysa siteyi hemen tazele (gün listesi, 1X2 anlık, pazar kitabı).
+  if (captured + afCaptured + afFilled > 0) { try { revalidateTag(ODDS_TAG); } catch (e: any) { console.warn('[snapshot-odds] revalidate:', e?.message); } }
 
   return NextResponse.json({
     ok: true,

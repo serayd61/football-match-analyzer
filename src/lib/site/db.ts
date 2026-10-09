@@ -21,6 +21,11 @@ export function db(): SupabaseClient {
 }
 
 /** Revalidation windows (seconds) per the product brief. */
+/** Oran okuyan önbellekler (gün listesi, 1X2 anlık, pazar kitabı): snapshot-odds yazınca
+ *  `revalidateTag(ODDS_TAG)` ile hemen tazelenir (2026-10-10: iç içe iki 15 dk önbellek,
+ *  yeni oran siteye 30 dk gecikiyordu). */
+export const ODDS_TAG = 'site-odds';
+
 export const REVALIDATE = {
   fixtures: 15 * 60,
   results: 5 * 60,

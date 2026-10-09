@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
 import { getOrSet } from '@/lib/cache/redis';
 import { getLiveMatches } from '@/lib/data-sources/free-football';
-import { db, REVALIDATE } from './db';
+import { db, REVALIDATE, ODDS_TAG } from './db';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { supabaseAdmin } from '@/lib/supabase';
 import { SITE_LEAGUES } from './leagues';
@@ -55,7 +55,7 @@ export const getMarketSnapshots = unstable_cache(
     return out;
   },
   ['site-market-batch'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] },
 );
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
-import { db, REVALIDATE } from './db';
+import { db, REVALIDATE, ODDS_TAG } from './db';
 
 // ---------------------------------------------------------------------------
 // Extra bookmaker markets, parsed from the raw odds payload the hourly
@@ -82,5 +82,5 @@ export const getMarketBook = unstable_cache(
     return { phase: (row as any).phase, provider: (row as any).provider ? String((row as any).provider).replace(/_default$/i, '') : null, capturedAt: (row as any).captured_at, ...parsed };
   },
   ['site-market-book'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] },
 );
