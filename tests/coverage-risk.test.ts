@@ -41,3 +41,19 @@ test('strongPickFor prefers goal markets and requires the pick to sit in the str
   assert.equal(strongPickFor({ pick: '2', pHome: 0.3, pDraw: 0.3, pAway: 0.4, over: null, btts: null }, strong), null);
   assert.equal(strongPickFor({ pick: '1', pHome: 0.9, pDraw: 0.05, pAway: 0.05, over: null, btts: null }, []), null);
 });
+
+test('coverageStanding with market + edge: 1X2 primary is the edge bucket, level secondary; goal markets get edge as secondary', () => {
+  const edge = { x12: { '>+10': { n: 20, won: 4 }, '0…+5': { n: 25, won: 15 } }, ou25: { '0…+5': { n: 12, won: 10 } }, btts: {} };
+  const all = { x12: { '>+10': { n: 68, won: 18 }, '0…+5': { n: 96, won: 47 } }, ou25: { '0…+5': { n: 19, won: 16 } }, btts: { '−5…0': { n: 85, won: 50 } } };
+  const lv = { x12: { '70–80': { n: 30, won: 20 } }, ou25: { '65–75': { n: 28, won: 19 } }, under25: {}, btts: { '60–70': { n: 30, won: 24 } } };
+  const input = { pick: '1' as const, pHome: 0.73, pDraw: 0.15, pAway: 0.12, over: { pick: 'over' as const, pRaw: 0.69 }, btts: { pick: 'yes' as const, pRaw: 0.66 } };
+  const rows = coverageStanding(input, lv, lv, { x12: { pHome: 0.61, pDraw: 0.22, pAway: 0.17 }, overYes: 0.65, bttsYes: 0.69 }, { league: edge, all });
+  const x = rows.find((r) => r.market === '1x2')!, o = rows.find((r) => r.market === 'ou25')!, b = rows.find((r) => r.market === 'btts')!;
+  assert.equal(x.primary.kind, 'edge'); assert.equal(x.primary.bucket, '>+10'); assert.equal(x.scope, 'league'); assert.equal(x.acc, 0.2); assert.equal(x.verdict, 'weak');
+  assert.equal(x.secondary?.kind, 'level'); assert.equal(x.secondary?.bucket, '70–80');
+  assert.equal(o.primary.kind, 'level'); assert.equal(o.secondary?.kind, 'edge'); assert.equal(o.secondary?.bucket, '0…+5'); assert.equal(o.secondary?.league?.n, 12);
+  assert.equal(b.secondary?.kind, 'edge'); assert.equal(b.secondary?.bucket, '−5…0'); assert.equal(b.secondary?.league?.n, 0); assert.equal(b.secondary?.all.n, 85);
+  // piyasa yoksa eski davranış
+  const plain = coverageStanding(input, lv, lv);
+  assert.equal(plain.find((r) => r.market === '1x2')!.primary.kind, 'level');
+});

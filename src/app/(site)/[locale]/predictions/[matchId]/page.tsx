@@ -18,6 +18,7 @@ import { standingFor } from '@/lib/site/match-standing';
 import { teamVerdict, fmtCell } from '@/lib/site/team-record';
 import { coverageById } from '@/lib/coverage/registry';
 import { sumBuckets, coverageStanding, coverageRisk, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
+import { sumEdge } from '@/lib/coverage/rules';
 import MatchStanding, { type StandingLabels } from '@/components/site/MatchStanding';
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
@@ -126,7 +127,10 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
     btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
   };
-  const outsideStanding = cov ? coverageStanding(outsideInput, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats))) : [];
+  // Fark kovası kanıtı (9 Eki): ligin kendi fark karnesi + tüm liglerin toplamı (bant bulgusu genel).
+  const ouMarketYes = goalBook ? marketYes(goalBook.over25, goalBook.under25) : null;
+  const outsideMarket = cov ? { x12: market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null, overYes: ouMarketYes, bttsYes: book?.btts ? book.btts.pA : null } : null;
+  const outsideStanding = cov ? coverageStanding(outsideInput, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats)), outsideMarket, { league: covRow?.stats?.edge ?? null, all: sumEdge([...cov.values()].map((c) => c.stats)) }) : [];
   const strongPick = cov ? strongPickFor(outsideInput, covRow?.stats?.strong) : null;
   const mktName: Record<string, string> = { x12: t('sec1x2'), ou25: t('standingOver'), under25: t('standingUnder'), btts: t('standingYes') };
   // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
@@ -143,7 +147,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     verdict: { strong: t('verdictStrong'), mid: t('verdictMid'), weak: t('verdictWeak'), thin: t('verdictThin') },
     evidence: (e) => e.kind === 'level' ? t('evidenceLevel', { bucket: e.bucket }) : e.kind === 'edge' ? t('evidenceEdge', { bucket: e.bucket }) : t('evidenceClash', { bucket: e.bucket }),
     scopeLeague: (won, n) => t('scopeLeague', { league: p.league?.name ?? p.leagueName, won, n, acc: Math.round((won / n) * 100) }),
-    scopeAll: (won, n) => t(p.covered ? 'scopeAll' : 'scopeOutside', { won, n, acc: Math.round((won / n) * 100) }),
+    scopeAll: (won, n, kind) => t(p.covered || kind === 'edge' ? 'scopeAll' : 'scopeOutside', { won, n, acc: Math.round((won / n) * 100) }),
     thin: t('standingThin'),
     model: t('standingModel'),
     hit: t3('standingHit'),
@@ -200,7 +204,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     mrows.push({ key: 'btts-n', market: tc('btts'), sel: tc('no'), model: 1 - by, mOdds: book.btts.b, mProb: book.btts.pB });
   }
   // Üst/Alt 2,5 (9 Eki): model = kayıtlı ham p_over25 (karne ve /picks ile aynı sayı), piyasa = marjsız Bet365/AF.
-  const ouMarket = goalBook ? marketYes(goalBook.over25, goalBook.under25) : null;
+  const ouMarket = ouMarketYes;
   if (p.overUnder && goalBook?.over25 && goalBook.under25 && ouMarket != null) {
     const pOver = p.overUnder.pick === 'over' ? p.overUnder.pRaw : 1 - p.overUnder.pRaw;
     mrows.push({ key: 'ou-o', market: tc('ou25'), sel: `${tc('over')} 2.5`, model: pOver, mOdds: goalBook.over25, mProb: ouMarket });

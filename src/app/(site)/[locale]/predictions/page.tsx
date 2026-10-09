@@ -17,6 +17,7 @@ import { coverageById } from '@/lib/coverage/registry';
 import { countryName } from '@/lib/site/countries';
 import { sectionId } from '@/lib/site/back-link';
 import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
+import { sumEdge, bandFor } from '@/lib/coverage/rules';
 import { RiskNote } from '@/components/site/Risk';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { requireSiteAccess } from '@/lib/site/access';
@@ -104,6 +105,14 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const uCountryList = [...uCountries.values()].sort((a, b) => a.country.localeCompare(b.country));
   const uncoveredRows = applyFilters(uncoveredAll.filter((p) => uLeagueId != null ? p.leagueId === uLeagueId : country ? (ccodeOf(p) ?? '') === country : true), flt);
   const outsideAll = sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats));
+  // Fark kovası kanıtı (9 Eki): kapsam dışı satırlar için de en geç 1X2 piyasası; gol pazarı piyasası satırda (GoalCall.pMarket).
+  const edgeAll = sumEdge([...cov.values()].map((c) => c.stats));
+  const uSnaps = uncoveredRows.length ? await getMarketSnapshots(uncoveredRows.map((r) => r.fixtureId)).catch(() => ({} as Record<number, never>)) : {};
+  const uMarket = (r: (typeof uncoveredRows)[number]) => {
+    const m = (uSnaps as Record<number, { pHome: number; pDraw: number; pAway: number } | undefined>)[r.fixtureId];
+    const side = <P extends string>(c: { pick: P; pMarket: number | null } | null, yes: P) => (c?.pMarket == null ? null : c.pick === yes ? c.pMarket : 1 - c.pMarket);
+    return { x12: m ? { pHome: m.pHome, pDraw: m.pDraw, pAway: m.pAway } : null, overYes: side(r.overUnder, 'over'), bttsYes: side(r.btts, 'yes') };
+  };
   const mktName: Record<string, string> = { x12: t('mkt1x2'), ou25: t('mktOver'), under25: t('mktUnder'), btts: t('mktBtts') };
   const groups = new Map<string, { id: string | undefined; name: string; ccode: string | null; n: number; strong: number; meta: string; strongMeta: string[]; rows: Array<{ p: (typeof uncoveredRows)[number]; outside: OutsideRisk }> }>();
   for (const p of uncoveredRows) {
@@ -113,7 +122,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
       btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
     };
-    const standing = coverageStanding(input, c?.stats?.buckets ?? null, outsideAll);
+    const standing = coverageStanding(input, c?.stats?.buckets ?? null, outsideAll, uMarket(p), { league: c?.stats?.edge ?? null, all: edgeAll });
     // Güçlü pazar (≥15 maç, ≥%70): seçim o bölgeye düşüyorsa risk ve not oradan (24 Eyl).
     const sp = strongPickFor(input, c?.stats?.strong);
     const x = standing.find((r) => r.market === '1x2');
@@ -125,6 +134,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       const sm = leagueSummary(c?.stats);
       const meta = sm.x12 != null ? t('leagueMeta', { n: sm.n, x12: sm.x12, ou: sm.ou ?? '–', btts: sm.btts ?? '–' }) : t('leagueMetaThin', { n: sm.n });
       const strongMeta = (c?.stats?.strong ?? []).map((m) => t('strongLeague', { market: mktName[m.market], from: Math.round(m.from * 100), won: m.won, n: m.n, acc: Math.round((m.won / m.n) * 100) }));
+      // Bant karnesi (9 Eki): ligin kendi fark kovaları ≥20 maçsa gösterilir (toplam değil — başlık lige ait).
+      const band = bandFor('x12', c?.stats?.edge, undefined);
+      if (band && band.scope === 'league' && band.inBand.acc != null && band.outPlus.n > 0) strongMeta.push(t(band.strong ? 'bandLeagueStrong' : 'bandLeague', { inW: band.inBand.won, inN: band.inBand.n, inAcc: Math.round(band.inBand.acc * 100), outW: band.outPlus.won, outN: band.outPlus.n, outAcc: Math.round((band.outPlus.acc ?? 0) * 100) }));
       groups.set(key, { id: sectionId(p.leagueId) ?? undefined, name: c?.name || p.leagueName, ccode: c?.ccode ?? null, n: sm.n, strong: strongMeta.length, meta, strongMeta, rows: [] });
     }
     groups.get(key)!.rows.push({ p, outside: { risk: sp ? strongRisk(sp) : coverageRisk(standing), note } });

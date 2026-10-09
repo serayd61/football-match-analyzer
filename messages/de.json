@@ -980,6 +980,8 @@
       "outsideEvidenceAll": "Nicht abgedeckte Ligen, 1X2 {bucket}: {won}/{n} getroffen ({acc}%)",
       "outsideThin": "Zu wenige Spiele in diesem Segment",
       "strongLeague": "Starker Markt: {market} ≥{from}% · {won}/{n} getroffen ({acc}%)",
+      "bandLeague": "1X2-Band: Differenz −5…+5 traf {inW}/{inN} ({inAcc} %) · über +5 {outW}/{outN} ({outAcc} %)",
+      "bandLeagueStrong": "1X2-Band hier trennscharf: Differenz −5…+5 traf {inW}/{inN} ({inAcc} %) · über +5 {outW}/{outN} ({outAcc} %)",
       "strongPick": "Starker Markt · {market} {p}% · diese Liga {won}/{n} ({acc}%)",
       "mkt1x2": "1X2",
       "mktOver": "Über 2,5",

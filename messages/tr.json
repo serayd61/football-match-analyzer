@@ -980,6 +980,8 @@
       "outsideEvidenceAll": "Kapsam dışı liglerde 1X2 {bucket}: {won}/{n} tuttu (%{acc})",
       "outsideThin": "Bu dilimde yeterli maç yok",
       "strongLeague": "Güçlü pazar: {market} ≥%{from} · {won}/{n} tuttu (%{acc})",
+      "bandLeague": "1X2 bandı: −5…+5 fark {inW}/{inN} tuttu (%{inAcc}) · +5 üstü {outW}/{outN} (%{outAcc})",
+      "bandLeagueStrong": "1X2 bandı ayırt edici: −5…+5 fark {inW}/{inN} tuttu (%{inAcc}) · +5 üstü {outW}/{outN} (%{outAcc})",
       "strongPick": "Güçlü pazar · {market} %{p} · bu ligde {won}/{n} (%{acc})",
       "mkt1x2": "1X2",
       "mktOver": "Üst 2,5",

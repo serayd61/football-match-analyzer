@@ -7,6 +7,7 @@ import { listDay } from '@/lib/site/fixtures';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { getPerformance } from '@/lib/site/performance';
 import { dailyStandingBoard, type StandingPick } from '@/lib/site/daily-standing';
+import { outsideStandingFor } from '@/lib/site/outside-standing';
 import { todayYmd, addDays, YMD_RE } from '@/lib/site/time';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
@@ -57,10 +58,11 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
     );
   }
 
-  const [day, perf] = await Promise.all([listDay(date), getPerformance(null).catch(() => null)]);
-  const rows = day.rows.filter((r) => r.covered && r.hasModel);
+  const [day, perf, outside] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor()]);
+  // Kapsanan ligler + gözlem ligleri (9 Eki): gözlemdekiler lig dilim + fark karnesiyle hükme girer.
+  const rows = day.rows.filter((r) => r.hasModel && (r.covered || outside.eligible(r)));
   const snaps = await getMarketSnapshots(rows.map((r) => r.fixtureId));
-  const board = perf ? dailyStandingBoard(rows, snaps, perf.signals) : { markets: [], scanned: rows.length, matches: 0 };
+  const board = perf ? dailyStandingBoard(rows, snaps, perf.signals, undefined, outside.standing) : { markets: [], scanned: rows.length, matches: 0 };
   const marketName = { '1x2': tv('mkt1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
   const verdictLabel = { strong: tm('verdictStrong'), mid: tm('verdictMid'), weak: tm('verdictWeak'), thin: tm('verdictThin') } as const;
   const selection = (p: StandingPick) =>
@@ -122,7 +124,7 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
                               <span className="flex shrink-0 -space-x-1"><Crest src={p.row.homeCrest} alt="" /><Crest src={p.row.awayCrest} alt="" /></span>
                               <span className="min-w-0"><span className={p.selection === '1' ? 'font-bold' : ''}>{p.row.homeName}</span> – <span className={p.selection === '2' ? 'font-bold' : ''}>{p.row.awayName}</span></span>
                             </Link>
-                            <span className="mt-0.5 block text-xs text-s-muted">{p.row.leagueName} · <LocalTime iso={p.row.kickoff} format="time" /></span>
+                            <span className="mt-0.5 block text-xs text-s-muted">{outside.label(p.row)} · <LocalTime iso={p.row.kickoff} format="time" /></span>
                           </td>
                           <td className="py-2.5 pr-3 font-semibold">{selection(p)}</td>
                           <td className="num py-2.5 text-right">{pct(p.modelP)}</td>

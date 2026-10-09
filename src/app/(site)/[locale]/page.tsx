@@ -18,6 +18,7 @@ import MatchRow from '@/components/site/MatchRow';
 import { listDay } from '@/lib/site/fixtures';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { dailyStandingBoard } from '@/lib/site/daily-standing';
+import { outsideStandingFor } from '@/lib/site/outside-standing';
 import { todayYmd } from '@/lib/site/time';
 import { ArrowRight, ShieldCheck, Clock3, Lock } from 'lucide-react';
 import ProbBar from '@/components/site/ProbBar';
@@ -71,9 +72,10 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
   const todayTotal = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).length;
   // Karneye uyan maçlar (8 Eki): günün güçlü seçim sayısı; maç listesinin altında /picks bağlantısı.
-  const fitRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel);
+  const outside = unlocked ? await outsideStandingFor().catch(() => null) : null;
+  const fitRows = (today?.rows ?? []).filter((r) => r.hasModel && (r.covered || !!outside?.eligible(r)));
   const fitBoard = unlocked && fitRows.length > 0
-    ? dailyStandingBoard(fitRows, await getMarketSnapshots(fitRows.map((r) => r.fixtureId)).catch(() => ({})), perf.signals)
+    ? dailyStandingBoard(fitRows, await getMarketSnapshots(fitRows.map((r) => r.fixtureId)).catch(() => ({})), perf.signals, undefined, outside?.standing)
     : null;
   const tpk = await getTranslations('picks');
   // Seçmeden: en son sonuçlanan 5 tahmin (kazanan da kaybeden de). Yalnız erişimi olana.

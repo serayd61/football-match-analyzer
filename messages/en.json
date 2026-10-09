@@ -980,6 +980,8 @@
       "outsideEvidenceAll": "Uncovered leagues, 1X2 {bucket}: {won}/{n} hit ({acc}%)",
       "outsideThin": "Not enough matches in this bucket",
       "strongLeague": "Strong market: {market} ≥{from}% · {won}/{n} hit ({acc}%)",
+      "bandLeague": "1X2 band: gap −5…+5 hit {inW}/{inN} ({inAcc}%) · above +5 {outW}/{outN} ({outAcc}%)",
+      "bandLeagueStrong": "1X2 band is decisive here: gap −5…+5 hit {inW}/{inN} ({inAcc}%) · above +5 {outW}/{outN} ({outAcc}%)",
       "strongPick": "Strong market · {market} {p}% · this league {won}/{n} ({acc}%)",
       "mkt1x2": "1X2",
       "mktOver": "Over 2.5",
