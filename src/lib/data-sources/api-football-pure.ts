@@ -25,6 +25,7 @@ export const AF_OBSERVE_LEAGUE: Record<number, { af: number; key: string; calend
   226: { af: 365, key: 'latvia-virsliga', calendar: true },
   922739: { af: 389, key: 'kazakhstan-premier-league', calendar: true },
   938776: { af: 110, key: 'wales-premier-league' },
+  110: { af: 62, key: 'ligue-2' }, // observe 2026-10-09 (kullanıcı kararı; 4 hafta sonra kapı)
 };
 
 export function afSeasonFor(slug: string, kickoffIso: string, calendar = CALENDAR_SEASON.has(slug)): number {
