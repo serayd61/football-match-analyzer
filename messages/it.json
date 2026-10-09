@@ -980,6 +980,8 @@
       "outsideEvidenceAll": "Campionati non coperti, 1X2 {bucket}: {won}/{n} centrate ({acc}%)",
       "outsideThin": "Partite insufficienti in questa fascia",
       "strongLeague": "Mercato forte: {market} ≥{from}% · {won}/{n} centrate ({acc}%)",
+      "bandLeague": "Banda 1X2: scarto −5…+5 centrato {inW}/{inN} ({inAcc}%) · oltre +5 {outW}/{outN} ({outAcc}%)",
+      "bandLeagueStrong": "Banda 1X2 decisiva qui: scarto −5…+5 centrato {inW}/{inN} ({inAcc}%) · oltre +5 {outW}/{outN} ({outAcc}%)",
       "strongPick": "Mercato forte · {market} {p}% · questo campionato {won}/{n} ({acc}%)",
       "mkt1x2": "1X2",
       "mktOver": "Over 2,5",

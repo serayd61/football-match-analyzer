@@ -9,7 +9,8 @@
 // tüm liglerin toplamı esas alınır; risk o dilimin geçmiş isabetinden gelir.
 // Müşteriye gösterilen şey bir garanti değil, aynı durumdaki maçların kaydı.
 // ============================================================================
-import { bucketOf, BUCKETS, type LeagueBuckets, type BucketCell, type LeagueStats, type StrongMarket } from '@/lib/coverage/rules';
+import { bucketOf, BUCKETS, EDGE_LABELS, type LeagueBuckets, type BucketCell, type LeagueStats, type StrongMarket, type LeagueEdge, type EdgeMarket } from '@/lib/coverage/rules';
+import { edgeBucket } from './signal-buckets';
 import { finishStanding, MIN_EVIDENCE, type MarketStanding, type StandingEvidence } from './match-standing';
 import { RISK_LOW, RISK_MEDIUM, type Risk } from './risk';
 
@@ -38,6 +39,17 @@ export interface CoverageStandingInput {
   over: { pick: 'over' | 'under'; pRaw: number } | null;
   btts: { pick: 'yes' | 'no'; pRaw: number } | null;
 }
+/** Marjsız piyasa (en geç faz): 1X2 üçlüsü, Üst 2,5 ve KG Var olasılığı; eksik pazar null. */
+export interface CoverageMarket { x12: { pHome: number; pDraw: number; pAway: number } | null; overYes: number | null; bttsYes: number | null }
+/** Fark kovası kanıtı: ligin kendi kovaları + toplam (sumEdge). */
+export interface CoverageEdge { league: LeagueEdge | null; all: LeagueEdge }
+
+/** Piyasa farkı kanıtı (2026-10-09): seçilen taraf − aynı tarafın marjsız piyasası → EDGE kovası. */
+function edgeEvidence(m: EdgeMarket, pModel: number, pMarket: number | null | undefined, edge: CoverageEdge | undefined): StandingEvidence | null {
+  if (!edge || pMarket == null || !Number.isFinite(pMarket)) return null;
+  const label = EDGE_LABELS[edgeBucket(pModel - pMarket)];
+  return { kind: 'edge', bucket: label, league: edge.league ? toSignal(edge.league[m]?.[label] ?? null) : null, all: toSignal(edge.all[m]?.[label] ?? null) };
+}
 
 function evidence(kind: BucketKind, p: number, league: LeagueBuckets | null, all: LeagueBuckets): StandingEvidence | null {
   const label = bucketOf(kind, p);
@@ -45,23 +57,30 @@ function evidence(kind: BucketKind, p: number, league: LeagueBuckets | null, all
   return { kind: 'level', bucket: label, league: league ? toSignal(cellOf(league, kind, label)) : null, all: toSignal(cellOf(all, kind, label)) };
 }
 
-/** Seçimleri lig / kapsam dışı dilim karnesine oturtur (MatchStanding bileşeniyle aynı şekil). */
-export function coverageStanding(input: CoverageStandingInput, league: LeagueBuckets | null, all: LeagueBuckets = EMPTY): MarketStanding[] {
+/**
+ * Seçimleri lig / kapsam dışı dilim karnesine oturtur (MatchStanding bileşeniyle aynı şekil).
+ * `market` + `edge` verilirse standingFor ile aynı mantık: 1X2'de birincil kanıt fark kovası
+ * (seviye ikincil), gol pazarlarında seviye birincil, fark ikincil (2026-10-09).
+ */
+export function coverageStanding(input: CoverageStandingInput, league: LeagueBuckets | null, all: LeagueBuckets = EMPTY, market?: CoverageMarket | null, edge?: CoverageEdge): MarketStanding[] {
   const out: MarketStanding[] = [];
   if (input.pick) {
     const p = input.pick === '1' ? input.pHome : input.pick === '2' ? input.pAway : input.pDraw;
-    const e = evidence('x12', p, league, all);
-    if (e) out.push(finishStanding('1x2', input.pick, p, e, null));
+    const lv = evidence('x12', p, league, all);
+    const mp = market?.x12 ? (input.pick === '1' ? market.x12.pHome : input.pick === '2' ? market.x12.pAway : market.x12.pDraw) : null;
+    const ed = edgeEvidence('x12', p, mp, edge);
+    if (lv) out.push(finishStanding('1x2', input.pick, p, ed ?? lv, ed ? lv : null));
   }
   if (input.over) {
     // pRaw seçilen tarafın olasılığı (≥0,5); Alt'ta 1−pRaw almak yanlış dilime düşürüyordu (düzeltme 2026-10-08).
     const p = input.over.pRaw;
-    const e = evidence(input.over.pick === 'over' ? 'ou25' : 'under25', p, league, all);
-    if (e) out.push(finishStanding('ou25', input.over.pick, p, e, null));
+    const lv = evidence(input.over.pick === 'over' ? 'ou25' : 'under25', p, league, all);
+    const mp = market?.overYes == null ? null : input.over.pick === 'over' ? market.overYes : 1 - market.overYes;
+    if (lv) out.push(finishStanding('ou25', input.over.pick, p, lv, edgeEvidence('ou25', p, mp, edge)));
   }
   if (input.btts && input.btts.pick === 'yes') { // KG Yok için dilim tutulmuyor
-    const e = evidence('btts', input.btts.pRaw, league, all);
-    if (e) out.push(finishStanding('btts', 'yes', input.btts.pRaw, e, null));
+    const lv = evidence('btts', input.btts.pRaw, league, all);
+    if (lv) out.push(finishStanding('btts', 'yes', input.btts.pRaw, lv, edgeEvidence('btts', input.btts.pRaw, market?.bttsYes, edge)));
   }
   return out;
 }

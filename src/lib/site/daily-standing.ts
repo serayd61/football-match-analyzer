@@ -59,14 +59,18 @@ export function dailyStandingBoard(
   markets1x2: Record<number, MarketProbs1x2 | undefined>,
   tables: SignalTable[],
   verdicts: ReadonlySet<Verdict> = new Set<Verdict>(['strong']),
+  /** Kapsam dışı (gözlem) satır için hüküm — lig dilim + fark karnesinden (coverageStanding); null → satır taranmaz (2026-10-09) */
+  outside?: (row: SitePrediction, market1x2: MarketProbs1x2 | null) => MarketStanding[] | null,
 ): DailyStandingBoard {
-  const eligible = rows.filter((r) => r.covered && r.hasModel && !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed');
+  const live = (r: SitePrediction) => r.hasModel && !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed';
+  const eligible = rows.filter((r) => live(r) && (r.covered || !!outside));
   const byMarket = new Map<SignalMarket, StandingPick[]>(MARKET_ORDER.map((m) => [m, []]));
   const matchIds = new Set<number>();
+  let scanned = 0;
   for (const row of eligible) {
     const m = markets1x2[row.fixtureId] ?? null;
     const bttsYes = row.btts?.pMarket == null ? null : row.btts.pick === 'yes' ? row.btts.pMarket : 1 - row.btts.pMarket;
-    const standing = standingFor({
+    const standing = !row.covered ? outside!(row, m) : standingFor({
       leagueSlug: row.league?.slug ?? null,
       pick: row.pick, pHome: row.pHome, pDraw: row.pDraw, pAway: row.pAway,
       over: row.overUnder ? { pick: row.overUnder.pick, pRaw: row.overUnder.pRaw } : null,
@@ -74,6 +78,8 @@ export function dailyStandingBoard(
       market: m,
       bttsMarketYes: bttsYes,
     }, tables);
+    if (!standing) continue;
+    scanned++;
     for (const s of standing) {
       if (!verdicts.has(s.verdict)) continue;
       const marketP = marketFor(row, s, m);
@@ -88,7 +94,7 @@ export function dailyStandingBoard(
     ((b.standing.acc ?? 0) - (a.standing.acc ?? 0)) || (b.standing.n - a.standing.n) || a.row.kickoff.localeCompare(b.row.kickoff);
   return {
     markets: MARKET_ORDER.map((market) => ({ market, picks: byMarket.get(market)!.sort(sortPicks) })),
-    scanned: eligible.length,
+    scanned,
     matches: matchIds.size,
   };
 }

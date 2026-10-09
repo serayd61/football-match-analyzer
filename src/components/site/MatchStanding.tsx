@@ -10,7 +10,8 @@ export interface StandingLabels {
   verdict: Record<MarketStanding['verdict'], string>;
   evidence: (e: MarketStanding['primary']) => string;
   scopeLeague: (won: number, n: number) => string;
-  scopeAll: (won: number, n: number) => string;
+  /** kind: kanıt türü — fark kovası toplamı tüm liglerden gelir, seviye dilimi kapsam dışı toplamdan (9 Eki) */
+  scopeAll: (won: number, n: number, kind: MarketStanding['primary']['kind']) => string;
   thin: string;
   model: string;
   /** "geçmişte tuttu" başlığı (v3) */
@@ -77,13 +78,13 @@ export default function MatchStanding({ rows, labels }: { rows: MarketStanding[]
             <p className="text-[12px] leading-snug text-s-muted">
               {labels.evidence(s.primary)}
               {' · '}
-              {acc == null ? labels.thin : s.scope === 'league' ? labels.scopeLeague(s.won, s.n) : labels.scopeAll(s.won, s.n)}
+              {acc == null ? labels.thin : s.scope === 'league' ? labels.scopeLeague(s.won, s.n) : labels.scopeAll(s.won, s.n, s.primary.kind)}
             </p>
             {s.secondary && s.secondary.all.n >= 10 && (
               <p className="text-[12px] leading-snug text-s-muted">
                 {labels.evidence(s.secondary)}
                 {' · '}
-                {s.secondary.league && s.secondary.league.n >= 10 ? labels.scopeLeague(s.secondary.league.won, s.secondary.league.n) : labels.scopeAll(s.secondary.all.won, s.secondary.all.n)}
+                {s.secondary.league && s.secondary.league.n >= 10 ? labels.scopeLeague(s.secondary.league.won, s.secondary.league.n) : labels.scopeAll(s.secondary.all.won, s.secondary.all.n, s.secondary.kind)}
               </p>
             )}
           </div>

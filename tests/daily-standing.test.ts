@@ -76,3 +76,16 @@ test('verdict set can widen to mid; picks sort by hit rate then sample size', ()
   assert.deepEqual(b.markets[1].picks.map((p) => p.fixtureId), [2, 1, 3]);
   assert.deepEqual(b.markets[1].picks.map((p) => p.verdict), ['strong', 'strong', 'mid']);
 });
+
+test('outside callback: observe-league rows are scanned through it; without it they are skipped', () => {
+  const obs = row(9, { pick: 'over', pRaw: 0.70, pMarket: 0.66 }, null, { covered: false, league: null, leagueId: 111 });
+  const cov = row(1, { pick: 'over', pRaw: 0.67, pMarket: 0.60 }, null);
+  const none = dailyStandingBoard([obs, cov], {}, tables);
+  assert.equal(none.scanned, 1);
+  const strongOver = (r: any) => [{ market: 'ou25', selection: 'over', modelP: r.overUnder.pRaw, primary: { kind: 'edge', bucket: '0…+5', league: null, all: { n: 30, won: 25, acc: 25 / 30 } }, secondary: null, acc: 25 / 30, n: 30, won: 25, scope: 'all', verdict: 'strong' }];
+  const b = dailyStandingBoard([obs, cov], {}, tables, undefined, (r) => (r.leagueId === 111 ? strongOver(r) as any : null));
+  assert.equal(b.scanned, 2);
+  assert.deepEqual(b.markets[1].picks.map((p) => p.fixtureId).sort(), [1, 9]);
+  const o = b.markets[1].picks.find((p) => p.fixtureId === 9)!;
+  assert.ok(Math.abs(o.edge! - 0.04) < 1e-9);
+});
