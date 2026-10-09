@@ -17,9 +17,11 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getMatchOdds, getMatchOddsRaw } from '@/lib/data-sources/free-football';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
-import { marketLeagueIds } from '@/lib/coverage/registry';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { oddsCandidates, pickOddsJobs } from '@/lib/site/odds-jobs';
+import { getRedisClient } from '@/lib/cache/redis';
 import { parseMarkets } from '@/lib/site/markets';
-import { phaseForMinutes, type OddsPhase } from '@/lib/site/odds-phases';
+import type { OddsPhase } from '@/lib/site/odds-phases';
 import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds } from '@/lib/data-sources/api-football';
 import { afIdsFor, buildAfMap } from '@/lib/site/af-map';
 
@@ -30,6 +32,10 @@ export const maxDuration = 120;
 // Tur başına maç başına tek çağrı: o anki faz yazılır, açılış yoksa aynı orandan açılış da yazılır.
 const MAX_CALLS = 40;            // tur başına üst sınır (maliyet freni)
 const SLEEP_MS = 400;
+// Akış boş döndüyse (alt lig, bahisçi yok) maç 4 saat yeniden denenmez; bütçe
+// oranı olan maçlara kalsın (2026-10-10: hafta sonu 40 çağrı alt liglerde eriyordu).
+const MISS_TTL_S = 4 * 3600;
+const missKey = (fid: number) => `odds:miss:${fid}`;
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -79,6 +85,8 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const horizon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+  // Not: model sürümü başına bir satır (dc-1.0, dc-1.1-lvl, dc-2.0-xg) → 500 sınırı
+  // Cumartesi 14:00Z'de bitiyordu, akşam maçları ve Pazar hiç oran almıyordu (10 Eki).
   const { data: preds, error } = await sb()
     .from('engine_predictions')
     .select('fixture_id, league_id, league_name, kickoff')
@@ -86,7 +94,7 @@ export async function GET(request: NextRequest) {
     .gte('kickoff', now.toISOString())
     .lte('kickoff', horizon.toISOString())
     .order('kickoff', { ascending: true })
-    .limit(500);
+    .limit(4000);
 
   if (error) {
     console.error('[snapshot-odds] read error:', error.message);
@@ -94,42 +102,44 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = await getCatalogMap().catch(() => new Map());
-  // Gözlemdeki ligler de oran alır (8 Eki): harman ve fark koruması için sicil birikir.
-  const marketLeagues = await marketLeagueIds().catch(() => new Set<number>());
+  // Gözlemdeki ligler de oran alır (8 Eki) ama beyaz liste/kapsanan önce gelir (10 Eki).
+  const coverage = await loadCoverage().catch(() => []);
+  const status = new Map(coverage.map((r) => [Number(r.league_id), r.status]));
+  const nameOf = new Map<number, string>();
+  for (const p of (preds || []) as any[]) if (!nameOf.has(Number(p.league_id))) nameOf.set(Number(p.league_id), p.league_name);
+  const tierOf = (leagueId: number): number | null => {
+    const cat = catalog.get(leagueId);
+    const raw = nameOf.get(leagueId) ?? '';
+    const name = isUnresolvedLeagueName(raw) && cat ? cat.name : raw;
+    const st = status.get(leagueId);
+    if (st === 'whitelist' || isModelCovered(name, leagueId, cat?.ccode)) return 0;
+    if (st === 'observe') return 1;
+    return null;
+  };
 
-  // Kapsanan ligler + hangi faz gerekiyor
-  type Job = { fixtureId: number; kickoff: string; phase: OddsPhase; ccode: string };
-  const candidates: Job[] = [];
-  for (const p of (preds || []) as any[]) {
-    const cat = catalog.get(Number(p.league_id));
-    const name = isUnresolvedLeagueName(p.league_name) && cat ? cat.name : p.league_name;
-    if (!isModelCovered(name, p.league_id, cat?.ccode) && !marketLeagues.has(Number(p.league_id))) continue;
-    const mins = (new Date(p.kickoff).getTime() - now.getTime()) / 60000;
-    candidates.push({
-      fixtureId: p.fixture_id,
-      kickoff: p.kickoff,
-      phase: phaseForMinutes(mins),
-      ccode: cat?.ccode || 'GB',
-    });
-  }
+  const candidates = oddsCandidates({ preds: (preds || []) as any[], now, tierOf, ccodeOf: (id) => catalog.get(id)?.ccode || 'GB' });
+  const ids = candidates.map((c) => c.fixtureId);
+
+  // Zaten yakalanmışları ele (aynı faz bir kez) — tek sorgu
+  const { data: existing } = ids.length
+    ? await sb().from('prediction_odds').select('fixture_id, phase').in('fixture_id', ids)
+    : { data: [] as any[] };
+  const done = new Set((existing || []).map((r: any) => `${r.fixture_id}:${r.phase}`));
+
+  // Son turlarda boş dönenler (Redis; önbellek yoksa hepsi denenir)
+  const missed = new Set<number>();
+  try {
+    if (ids.length) {
+      const hits = await getRedisClient().mget<(string | null)[]>(...ids.map(missKey));
+      hits.forEach((h, i) => { if (h != null) missed.add(ids[i]); });
+    }
+  } catch (e: any) { console.warn('[snapshot-odds] miss cache read:', e?.message); }
+
+  const todo = pickOddsJobs(candidates, { done, missed, max: MAX_CALLS });
 
   if (candidates.length === 0) {
     return NextResponse.json({ ok: true, covered: 0, captured: 0, note: 'kapsanan ligde yaklaşan maç yok' });
   }
-
-  // Zaten yakalanmışları ele (aynı faz bir kez) — tek sorgu
-  const ids = Array.from(new Set(candidates.map((c) => c.fixtureId)));
-  const { data: existing } = await sb()
-    .from('prediction_odds')
-    .select('fixture_id, phase')
-    .in('fixture_id', ids);
-  const done = new Set((existing || []).map((r: any) => `${r.fixture_id}:${r.phase}`));
-
-  const todo = candidates
-    .filter((c) => !done.has(`${c.fixtureId}:${c.phase}`))
-    // kapanış önceliklidir: kaçarsa bir daha yakalanamaz; sonra maça en yakın olan
-    .sort((a, b) => (a.phase === b.phase ? a.kickoff.localeCompare(b.kickoff) : a.phase === 'closing' ? -1 : b.phase === 'closing' ? 1 : 0))
-    .slice(0, MAX_CALLS);
 
   // Ülke kodu geri dönüşü (2026-09-13): oran akışı İtalya (ITA) ve Türkiye (TUR)
   // için boş dönüyor — Serie A 0/32, Süper Lig 0/39 maçta hiç oran yoktu.
@@ -145,7 +155,7 @@ export async function GET(request: NextRequest) {
   if (afOn) { try { afMapped = (await buildAfMap(3, 20)).mapped ?? 0; } catch (e: any) { console.error('[snapshot-odds] af map:', e?.message); } }
   const afIds = afOn ? await afIdsFor(todo.map((j) => j.fixtureId)) : new Map<number, number>();
 
-  let captured = 0, missed = 0, afFallback = 0;
+  let captured = 0, missedN = 0, afFallback = 0;
   for (const job of todo) {
     let odds: Awaited<ReturnType<typeof getMatchOdds>> = null;
     for (const cc of ccodesFor(job.ccode)) {
@@ -163,7 +173,11 @@ export async function GET(request: NextRequest) {
       const fb = afToMatchOdds(afPre);
       if (fb) { odds = fb; afFallback++; }
     }
-    if (!odds) { missed++; continue; }
+    if (!odds) {
+      missedN++;
+      try { await getRedisClient().set(missKey(job.fixtureId), '1', { ex: MISS_TTL_S }); } catch { /* önbellek yoksa her tur denenir */ }
+      continue;
+    }
 
     const mins = Math.round((new Date(job.kickoff).getTime() - Date.now()) / 60000);
     // KG oranı sütuna: karne raw'ı taramasın (2026-09-12 build timeout'u).
@@ -243,7 +257,8 @@ export async function GET(request: NextRequest) {
     coveredUpcoming: candidates.length,
     pending: todo.length,
     captured,
-    missed,
+    missed: missedN,
+    skippedMissed: missed.size,
     apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback } : null,
   });
 }

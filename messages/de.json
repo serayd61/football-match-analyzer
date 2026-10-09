@@ -778,6 +778,7 @@
     "emptyTitle": "Heute passt kein Spiel zur Bilanz",
     "emptyLead": "Keines der {scanned} Spiele heute hat einen Tipp in einem starken Bereich. Versuchen Sie morgen oder sehen Sie alle Prognosen.",
     "emptyNoMatches": "Für diesen Tag gibt es keine modellierten Spiele.",
+    "rolledOver": "Die heutigen Spiele sind vorbei, die Liste von morgen wird angezeigt",
     "allPredictions": "Alle Prognosen",
     "colMatch": "Spiel",
     "colSelection": "Tipp",
