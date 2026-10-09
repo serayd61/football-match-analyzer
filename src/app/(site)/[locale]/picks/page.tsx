@@ -43,8 +43,9 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   unstable_setRequestLocale(locale);
   const today = todayYmd();
   const tomorrow = addDays(today, 1);
-  const date = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : today;
-  const access = await requireSiteAccess(locale, `/picks${date !== today ? `?date=${date}` : ''}`);
+  const requested = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : null;
+  let date = requested ?? today;
+  const access = await requireSiteAccess(locale, `/picks${requested ? `?date=${requested}` : ''}`);
   const [t, tc, tm, tv, f] = await Promise.all([
     getTranslations('picks'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getFormatter(),
   ]);
@@ -58,9 +59,18 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
     );
   }
 
-  const [day, perf, outside] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor()]);
+  let [day, perf, outside] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor()]);
   // Kapsanan ligler + gözlem ligleri (9 Eki): gözlemdekiler lig dilim + fark karnesiyle hükme girer.
-  const rows = day.rows.filter((r) => r.hasModel && (r.covered || outside.eligible(r)));
+  const dayRows = (d: typeof day) => d.rows.filter((r) => r.hasModel && (r.covered || outside.eligible(r)));
+  const upcoming = (d: typeof day) => dayRows(d).some((r) => !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed');
+  // Tarih verilmediyse ve günün (Zürih) maçları bittiyse yarına geç (10 Eki: İstanbul'da
+  // 00:40'ta "Bugün" hâlâ bitmiş 9 Ekim'i gösteriyordu → boş sayfa).
+  let rolled = false;
+  if (!requested && !upcoming(day)) {
+    const next = await listDay(tomorrow);
+    if (upcoming(next)) { day = next; date = tomorrow; rolled = true; }
+  }
+  const rows = dayRows(day);
   const snaps = await getMarketSnapshots(rows.map((r) => r.fixtureId));
   const board = perf ? dailyStandingBoard(rows, snaps, perf.signals, undefined, outside.standing) : { markets: [], scanned: rows.length, matches: 0 };
   const marketName = { '1x2': tv('mkt1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
@@ -89,7 +99,10 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
         )}
       />
 
-      <p className="num -mt-2 pb-4 text-[13px] font-semibold text-s-muted">{t('meta', { scanned: board.scanned, matches: board.matches })}</p>
+      <p className="num -mt-2 pb-4 text-[13px] font-semibold text-s-muted">
+        {t('meta', { scanned: board.scanned, matches: board.matches })}
+        {rolled && <span className="ml-2 font-normal">· {t('rolledOver')}</span>}
+      </p>
 
       {nonEmpty.length === 0 ? (
         <EmptyState

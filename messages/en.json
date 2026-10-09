@@ -778,6 +778,7 @@
     "emptyTitle": "No match fits the record today",
     "emptyLead": "None of today's {scanned} matches has a call in a strong bucket. Try tomorrow or browse all predictions.",
     "emptyNoMatches": "No modelled matches for this day.",
+    "rolledOver": "Today's matches are over, showing tomorrow's list",
     "allPredictions": "All predictions",
     "colMatch": "Match",
     "colSelection": "Call",

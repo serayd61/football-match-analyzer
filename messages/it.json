@@ -778,6 +778,7 @@
     "emptyTitle": "Oggi nessuna partita in linea con lo storico",
     "emptyLead": "Nessuna delle {scanned} partite di oggi ha una scelta in una fascia forte. Prova domani o guarda tutte le previsioni.",
     "emptyNoMatches": "Nessuna partita modellata per questo giorno.",
+    "rolledOver": "Le partite di oggi sono finite, mostriamo la lista di domani",
     "allPredictions": "Tutte le previsioni",
     "colMatch": "Partita",
     "colSelection": "Scelta",

@@ -778,6 +778,7 @@
     "emptyTitle": "Bugün karneye uyan maç yok",
     "emptyLead": "Günün {scanned} maçında hiçbir seçim güçlü kovaya düşmedi. Yarını deneyin ya da tüm tahminlere bakın.",
     "emptyNoMatches": "Bu gün için modellenmiş maç yok.",
+    "rolledOver": "Bugünün maçları bitti, yarının listesi gösteriliyor",
     "allPredictions": "Tüm tahminler",
     "colMatch": "Maç",
     "colSelection": "Seçim",
