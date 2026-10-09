@@ -28,7 +28,8 @@ import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
 import { StatRow, StatCell } from '@/components/site/StatCell';
 import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE } from '@/lib/site/risk';
-import { rawEdge } from '@/lib/site/goal-blend';
+import { rawEdge, marketYes } from '@/lib/site/goal-blend';
+import { latestGoalBook } from '@/lib/site/goal-book';
 import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
@@ -104,7 +105,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     p.homeId ? getTeamRecord(p.homeId, p.kickoff) : Promise.resolve(null),
     p.awayId ? getTeamRecord(p.awayId, p.kickoff) : Promise.resolve(null),
   ]);
-  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf] = await Promise.all([
+  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf, goalBook] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
@@ -114,6 +115,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     getCalibrationMeta(),
     afLeague ? getAfContext(p.fixtureId, p.homeName, p.awayName, p.kickoff).catch(() => null) : Promise.resolve(undefined),
     p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
+    // Üst/Alt 2,5 oranı (API-Football, prediction_odds sütunları) — Pazarlar tablosu için (2026-10-09).
+    latestGoalBook([p.fixtureId]).then((m) => m.get(p.fixtureId) ?? null).catch(() => null),
   ]);
   // Kapsam dışı lig: sinyal karnesi yerine sicilin dilim karnesi (2026-09-23).
   const cov = !p.covered ? await coverageById() : null;
@@ -195,6 +198,13 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     const by = bttsProb(sm);
     mrows.push({ key: 'btts-y', market: tc('btts'), sel: tc('yes'), model: by, mOdds: book.btts.a, mProb: book.btts.pA });
     mrows.push({ key: 'btts-n', market: tc('btts'), sel: tc('no'), model: 1 - by, mOdds: book.btts.b, mProb: book.btts.pB });
+  }
+  // Üst/Alt 2,5 (9 Eki): model = kayıtlı ham p_over25 (karne ve /picks ile aynı sayı), piyasa = marjsız Bet365/AF.
+  const ouMarket = goalBook ? marketYes(goalBook.over25, goalBook.under25) : null;
+  if (p.overUnder && goalBook?.over25 && goalBook.under25 && ouMarket != null) {
+    const pOver = p.overUnder.pick === 'over' ? p.overUnder.pRaw : 1 - p.overUnder.pRaw;
+    mrows.push({ key: 'ou-o', market: tc('ou25'), sel: `${tc('over')} 2.5`, model: pOver, mOdds: goalBook.over25, mProb: ouMarket });
+    mrows.push({ key: 'ou-u', market: tc('ou25'), sel: `${tc('under')} 2.5`, model: 1 - pOver, mOdds: goalBook.under25, mProb: 1 - ouMarket });
   }
 
   // Modernist top (2026-09-11): the pick, its confidence and its risk first;
@@ -544,9 +554,9 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           )}
 
           {/* ── Other markets vs bookmaker ────────────────────────────── */}
-          {mrows.length > 0 && book && (
+          {mrows.length > 0 && (
             <section>
-              <SectionTitle title={t('secMarkets')} meta={t('marketMeta', { phase: book.phase === 'closing' ? t('closing') : t('opening'), provider: book.provider ?? '' })} />
+              <SectionTitle title={t('secMarkets')} meta={book ? t('marketMeta', { phase: book.phase === 'closing' ? t('closing') : t('opening'), provider: book.provider ?? '' }) : undefined} />
               <div className="tbl-scroll mt-3">
                 <table className="text-sm">
                   <thead className="text-xs uppercase tracking-wider text-s-muted">
