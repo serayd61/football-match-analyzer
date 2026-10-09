@@ -2,7 +2,7 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { getMatchesByDate } from '@/lib/data-sources/free-football';
-import { REVALIDATE } from './db';
+import { REVALIDATE, ODDS_TAG } from './db';
 import { listPredictionsForDay, fetchPredictionsForDay, loadContext, type SitePrediction } from './predictions';
 import { mergeFeed, type FeedRow } from './merge-feed';
 export { mergeFeed, fixtureRow, type FeedRow } from './merge-feed';
@@ -70,7 +70,7 @@ async function buildDay(ymd: string, predictions: SitePrediction[]): Promise<Day
 export const listDay = unstable_cache(
   async (ymd: string): Promise<DayRows> => buildDay(ymd, await listPredictionsForDay(ymd)),
   ['site-day-v2'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] },
 );
 
 /**

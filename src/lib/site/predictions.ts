@@ -2,7 +2,7 @@ import 'server-only';
 import { latestPhase } from './odds-phases';
 import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
-import { db, REVALIDATE } from './db';
+import { db, REVALIDATE, ODDS_TAG } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
 import { hiddenLeagueIds } from '@/lib/coverage/registry';
 import { zonedStartOfDay, addDays } from './time';
@@ -277,7 +277,7 @@ export async function fetchPredictionsForDay(ymd: string): Promise<SitePredictio
 }
 
 /** Predictions with kick-off on the given Zurich calendar day (15 min cache). */
-export const listPredictionsForDay = unstable_cache(fetchPredictionsForDay, ['site-predictions-day-v3'], { revalidate: REVALIDATE.fixtures });
+export const listPredictionsForDay = unstable_cache(fetchPredictionsForDay, ['site-predictions-day-v3'], { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] });
 
 /** Next calendar day (Zurich) after `ymd` that has any covered prediction, or null. */
 export const nextDayWithPredictions = unstable_cache(
@@ -317,7 +317,7 @@ export const getPrediction = unstable_cache(
     return mapRow(rows[0], ctx, Date.now(), book.get(fixtureId) ?? null);
   },
   ['site-prediction-v3'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] },
 );
 
 export interface MarketSnapshot {
@@ -361,7 +361,7 @@ export const getMarketSnapshot = unstable_cache(
     };
   },
   ['site-market'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] },
 );
 
 /**
