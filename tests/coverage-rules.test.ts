@@ -76,3 +76,46 @@ test('strongMarkets: top buckets combined, n>=15 and acc>=70%; a strong market b
   assert.equal(st('hidden', strongMarkets(b)), 'unhide');
   assert.equal(st('excluded', []), 'hide');
 });
+
+// ---- Piyasa farkı karnesi (2026-10-09) --------------------------------------
+import { bandFor, sumEdge, BAND } from '@/lib/coverage/rules';
+
+test('aggregateLeague fills edge buckets from the chosen side vs devigged market; rows without odds are skipped', () => {
+  const mk = (pHome: number, pDraw: number, pAway: number, pOver: number | null, pBttsYes: number | null) => ({ pHome, pDraw, pAway, pOver, pBttsYes });
+  const s = aggregateLeague([
+    // 1X2 ev %65 vs piyasa %61 → +4 → '0…+5', tuttu; Üst %50 vs %60 → seçim Üst, −10 → '≤−5', yattı (1 gol); KG %46 → KG Yok %54 vs piyasa KG Yok %42 → +12 → '>+10', tuttu
+    row({ p_home: 0.65, p_draw: 0.23, p_away: 0.12, p_over25: 0.50, p_btts_yes: 0.46, home_score: 1, away_score: 0, market: mk(0.61, 0.22, 0.17, 0.60, 0.58) }),
+    // 1X2 ev %52 vs %31 → +21 → '>+10', yattı (1-2); Üst %62 vs %58 → +4 → '0…+5', tuttu; KG %62 vs %64 → −2 → '−5…0', tuttu
+    row({ p_home: 0.52, p_draw: 0.24, p_away: 0.24, p_over25: 0.62, p_btts_yes: 0.62, home_score: 1, away_score: 2, market: mk(0.31, 0.27, 0.42, 0.58, 0.64) }),
+    // oran yok → fark kovasına girmez, seviye kovasına girer
+    row({ p_home: 0.70, p_draw: 0.18, p_away: 0.12, p_over25: 0.70, p_btts_yes: 0.60, home_score: 2, away_score: 1, market: null }),
+    // Üst oranı var, 1X2/KG yok
+    row({ p_home: 0.40, p_draw: 0.30, p_away: 0.30, p_over25: 0.69, p_btts_yes: 0.70, home_score: 2, away_score: 2, market: mk(null as any, null as any, null as any, 0.65, null) }),
+  ], 180);
+  assert.equal(s.n, 4);
+  assert.equal(s.oddsN, 3);
+  assert.deepEqual(s.edge!.x12, { '0…+5': { n: 1, won: 1 }, '>+10': { n: 1, won: 0 } });
+  assert.deepEqual(s.edge!.ou25, { '≤−5': { n: 1, won: 0 }, '0…+5': { n: 2, won: 2 } });
+  assert.deepEqual(s.edge!.btts, { '>+10': { n: 1, won: 1 }, '−5…0': { n: 1, won: 1 } });
+  assert.equal(s.buckets!.x12['70–80'].n, 1); // oransız maç seviye kovasında
+});
+
+test('bandFor: league scope when n ≥ 20, else all-league fallback; strong needs a ≥15-point gap', () => {
+  const edge = (inN: number, inW: number, outN: number, outW: number) => ({ x12: { '−5…0': { n: inN, won: inW }, '+5…+10': { n: outN, won: outW } }, ou25: {}, btts: {} });
+  const league = edge(30, 21, 12, 3);      // bant içi %70, bant dışı %25 → güçlü
+  const all = edge(400, 232, 120, 36);     // %58 vs %30
+  const b = bandFor('x12', league, all)!;
+  assert.equal(b.scope, 'league'); assert.equal(b.inBand.n, 30); assert.equal(b.outPlus.acc, 0.25); assert.equal(b.strong, true);
+  const thin = bandFor('x12', edge(8, 6, 2, 0), all)!;
+  assert.equal(thin.scope, 'all'); assert.equal(thin.inBand.n, 400); assert.equal(thin.strong, true);
+  const weak = bandFor('x12', edge(30, 18, 12, 7), all)!; // %60 vs %58 → ayırt etmiyor
+  assert.equal(weak.strong, false);
+  assert.equal(bandFor('ou25', league, undefined), null); // ligde ou25 kanıtı yok, toplam da yok → null
+});
+
+test('sumEdge adds per-bucket cells across leagues', () => {
+  const a: any = { edge: { x12: { '0…+5': { n: 3, won: 2 } }, ou25: {}, btts: {} } };
+  const b: any = { edge: { x12: { '0…+5': { n: 5, won: 1 }, '>+10': { n: 2, won: 0 } }, ou25: {}, btts: {} } };
+  assert.deepEqual(sumEdge([a, null, b]).x12, { '0…+5': { n: 8, won: 3 }, '>+10': { n: 2, won: 0 } });
+  assert.equal(BAND.minN, 20);
+});

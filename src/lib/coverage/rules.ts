@@ -6,6 +6,8 @@
 // Eşikler 12 Eyl backtest'i ve 20 Eyl λ analizinden; n ≥ 40 altında öneri yok.
 // ============================================================================
 
+import { EDGE_BUCKETS, edgeBucket } from '@/lib/site/signal-buckets';
+
 export type CoverageStatus = 'whitelist' | 'observe' | 'excluded' | 'hidden';
 
 /**
@@ -45,6 +47,16 @@ export function strongMarkets(b: LeagueBuckets | undefined, g = STRONG_GATE): St
   return out;
 }
 
+/**
+ * Piyasa farkı karnesi (2026-10-09): pazar → fark kovası (EDGE_BUCKETS: ≤−5 / −5…0 /
+ * 0…+5 / +5…+10 / >+10 puan) → n/won. Fark = seçilen tarafın model olasılığı − aynı
+ * tarafın marjsız EN GEÇ FAZ piyasa olasılığı. Oranı olmayan maç kovaya girmez.
+ */
+export type EdgeMarket = 'x12' | 'ou25' | 'btts';
+export interface LeagueEdge { x12: Record<string, BucketCell>; ou25: Record<string, BucketCell>; btts: Record<string, BucketCell> }
+/** Satıra iliştirilen marjsız piyasa olasılıkları (en geç faz). Eksik pazar null. */
+export interface RowMarket { pHome: number | null; pDraw: number | null; pAway: number | null; pOver: number | null; pBttsYes: number | null }
+
 export interface LeagueStats {
   n: number;                                   // sonuçlanmış satır (pencere)
   x12: { n: number; won: number; ll: number | null };
@@ -53,8 +65,47 @@ export interface LeagueStats {
   buckets?: LeagueBuckets;
   /** üst dilimlerde ≥15 maç, ≥%70 tutan pazarlar (strongMarkets) */
   strong?: StrongMarket[];
+  /** piyasa farkı kovaları (yalnız oranı olan maçlar) */
+  edge?: LeagueEdge;
+  /** oranı olan sonuçlanmış maç sayısı (fark karnesinin kapsamı) */
+  oddsN?: number;
   lastKickoff: string | null;
   windowDays: number;
+}
+
+export const EDGE_LABELS = EDGE_BUCKETS as readonly string[];
+export const emptyEdge = (): LeagueEdge => ({ x12: {}, ou25: {}, btts: {} });
+/** Birden çok ligin fark kovalarını toplar (kapsam dışı toplam vb.). */
+export function sumEdge(list: Array<LeagueStats | null | undefined>): LeagueEdge {
+  const out = emptyEdge();
+  for (const s of list) {
+    const e = s?.edge; if (!e) continue;
+    for (const k of Object.keys(out) as EdgeMarket[]) for (const [label, cell] of Object.entries(e[k] ?? {})) { const c = (out[k][label] ??= { n: 0, won: 0 }); c.n += cell.n; c.won += cell.won; }
+  }
+  return out;
+}
+
+/**
+ * Bant özeti: −5…+5 "bant içi" vs ≥+5 "bant dışı artı". Ligde toplam ≥ minN maç varsa
+ * lig, yoksa verilen toplam (tüm ligler). `strong` = bant içi ≥ minN, bant dışı ≥ minOut
+ * ve isabet farkı ≥ gap → bu ligde bant ayırt edici.
+ */
+export const BAND = { inBand: ['−5…0', '0…+5'], outPlus: ['+5…+10', '>+10'], outMinus: ['≤−5'], minN: 20, minOut: 10, gap: 0.15 } as const;
+export interface BandCell { n: number; won: number; acc: number | null }
+export interface BandSummary { market: EdgeMarket; inBand: BandCell; outPlus: BandCell; outMinus: BandCell; scope: 'league' | 'all'; strong: boolean }
+const cellSum = (b: Record<string, BucketCell> | undefined, labels: readonly string[]): BandCell => {
+  let n = 0, won = 0;
+  for (const l of labels) { const c = b?.[l]; if (c) { n += c.n; won += c.won; } }
+  return { n, won, acc: n ? won / n : null };
+};
+export function bandFor(market: EdgeMarket, league: LeagueEdge | undefined, all: LeagueEdge | undefined, g = BAND): BandSummary | null {
+  const pick = (e: LeagueEdge | undefined) => e ? { inBand: cellSum(e[market], g.inBand), outPlus: cellSum(e[market], g.outPlus), outMinus: cellSum(e[market], g.outMinus) } : null;
+  const lg = pick(league);
+  const useLeague = !!lg && lg.inBand.n + lg.outPlus.n + lg.outMinus.n >= g.minN;
+  const src = useLeague ? lg! : pick(all);
+  if (!src) return null;
+  const strong = src.inBand.n >= g.minN && src.outPlus.n >= g.minOut && src.inBand.acc != null && src.outPlus.acc != null && src.inBand.acc - src.outPlus.acc >= g.gap;
+  return { market, ...src, scope: useLeague ? 'league' : 'all', strong };
 }
 
 export const BUCKETS = {
@@ -91,23 +142,44 @@ const acc = (c: { n: number; won: number }) => (c.n ? c.won / c.n : null);
 const pct = (x: number | null) => (x == null ? '–' : `${Math.round(x * 100)}%`);
 
 /** Satır listesinden lig istatistiği. Satır: p_over25/p_btts_yes/skor/1X2 sonucu. */
-export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_yes: number | null; p_home?: number | null; p_draw?: number | null; p_away?: number | null; home_score: number | null; away_score: number | null; correct: boolean | null; ll_1x2: number | null; kickoff: string }>, windowDays: number, minOver = 0.65, minBtts = 0.60): LeagueStats {
-  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, buckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, lastKickoff: null, windowDays };
+export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_yes: number | null; p_home?: number | null; p_draw?: number | null; p_away?: number | null; home_score: number | null; away_score: number | null; correct: boolean | null; ll_1x2: number | null; kickoff: string; market?: RowMarket | null }>, windowDays: number, minOver = 0.65, minBtts = 0.60): LeagueStats {
+  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, buckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, edge: emptyEdge(), oddsN: 0, lastKickoff: null, windowDays };
   const hit = (kind: keyof LeagueBuckets, p: number, won: boolean) => {
     const b = bucketOf(kind, p); if (!b) return;
     const c = (s.buckets![kind][b] ??= { n: 0, won: 0 }); c.n++; if (won) c.won++;
+  };
+  // Fark kovası: seçilen taraf (model) − aynı taraf (marjsız piyasa); piyasa yoksa sayılmaz.
+  const edgeHit = (m: EdgeMarket, pModel: number, pMarket: number | null | undefined, won: boolean) => {
+    if (pMarket == null || !Number.isFinite(pMarket)) return;
+    const c = (s.edge![m][EDGE_LABELS[edgeBucket(pModel - pMarket)]] ??= { n: 0, won: 0 }); c.n++; if (won) c.won++;
   };
   let llSum = 0, llN = 0;
   for (const r of rows) {
     if (r.home_score == null || r.away_score == null) continue;
     s.n++;
+    const mk = r.market ?? null;
+    if (mk && (mk.pHome != null || mk.pOver != null || mk.pBttsYes != null)) s.oddsN!++;
     if (r.p_home != null && r.p_draw != null && r.p_away != null) {
       const ps = [r.p_home, r.p_draw, r.p_away]; const i = ps.indexOf(Math.max(...ps));
       const w = i === 0 ? r.home_score > r.away_score : i === 1 ? r.home_score === r.away_score : r.home_score < r.away_score;
       hit('x12', ps[i], w);
+      if (mk) edgeHit('x12', ps[i], [mk.pHome, mk.pDraw, mk.pAway][i], w);
     }
-    if (r.p_over25 != null) { hit('ou25', r.p_over25, r.home_score + r.away_score >= 3); hit('under25', 1 - r.p_over25, r.home_score + r.away_score <= 2); }
-    if (r.p_btts_yes != null) hit('btts', r.p_btts_yes, r.home_score > 0 && r.away_score > 0);
+    if (r.p_over25 != null) {
+      hit('ou25', r.p_over25, r.home_score + r.away_score >= 3); hit('under25', 1 - r.p_over25, r.home_score + r.away_score <= 2);
+      if (mk && mk.pOver != null) {
+        const over = r.p_over25 >= 0.5;
+        edgeHit('ou25', over ? r.p_over25 : 1 - r.p_over25, over ? mk.pOver : 1 - mk.pOver, over ? r.home_score + r.away_score >= 3 : r.home_score + r.away_score <= 2);
+      }
+    }
+    if (r.p_btts_yes != null) {
+      const both = r.home_score > 0 && r.away_score > 0;
+      hit('btts', r.p_btts_yes, both);
+      if (mk && mk.pBttsYes != null) {
+        const yes = r.p_btts_yes >= 0.5;
+        edgeHit('btts', yes ? r.p_btts_yes : 1 - r.p_btts_yes, yes ? mk.pBttsYes : 1 - mk.pBttsYes, yes ? both : !both);
+      }
+    }
     if (!s.lastKickoff || r.kickoff > s.lastKickoff) s.lastKickoff = r.kickoff;
     if (r.correct != null) { s.x12.n++; if (r.correct) s.x12.won++; }
     if (r.ll_1x2 != null && Number.isFinite(Number(r.ll_1x2))) { llSum += Number(r.ll_1x2); llN++; }

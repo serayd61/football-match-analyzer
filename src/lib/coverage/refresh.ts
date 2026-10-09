@@ -2,7 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCatalogMap } from '@/lib/league-catalog';
 import { resolveLeague } from '@/lib/site/leagues';
 import { resolveOfficialVersion, officialFilter, pickOfficial } from '@/lib/site/official';
-import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal } from './rules';
+import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal, type RowMarket } from './rules';
+import { PHASE_ORDER } from '@/lib/site/odds-phases';
+import { marketYes } from '@/lib/site/goal-blend';
 
 // ============================================================================
 // KAPSAM SİCİLİ YENİLEME — haftalık inceleme adımı
@@ -20,6 +22,34 @@ export const WINDOW_DAYS = 180;
 const PAGE = 1000;
 const ACTOR = 'cron:engine-weekly-review';
 const COLS = 'fixture_id, model_version, updated_at, league_id, league_name, kickoff, p_over25, p_btts_yes, p_home, p_draw, p_away, home_score, away_score, correct, ll_1x2';
+
+/**
+ * Piyasa farkı karnesi için (2026-10-09): her maçın EN GEÇ faz oran satırından
+ * marjsız 1X2 (p_*_market sütunları) + Üst/KG (iki yönlü devig). 150 id/sorgu,
+ * en fazla 6 faz → 900 satır (PostgREST max-rows altında). Oranı olmayan maç null.
+ */
+const ODDS_CHUNK = 150;
+export async function loadRowMarkets(sb: SupabaseClient, fixtureIds: number[]): Promise<Map<number, RowMarket>> {
+  const out = new Map<number, RowMarket>();
+  const best = new Map<number, number>();
+  const ids = [...new Set(fixtureIds)];
+  for (let i = 0; i < ids.length; i += ODDS_CHUNK) {
+    const chunk = ids.slice(i, i + ODDS_CHUNK);
+    const { data, error } = await sb.from('prediction_odds')
+      .select('fixture_id, phase, p_home_market, p_draw_market, p_away_market, over25_odds, under25_odds, btts_yes_odds, btts_no_odds')
+      .in('fixture_id', chunk).limit(ODDS_CHUNK * 6);
+    if (error) { console.error('[coverage] odds read:', error.message); continue; }
+    for (const r of (data ?? []) as any[]) {
+      const k = Number(r.fixture_id);
+      const rk = (PHASE_ORDER as Record<string, number>)[r.phase] ?? -1;
+      if (rk < (best.get(k) ?? -1)) continue;
+      best.set(k, rk);
+      const num = (x: any) => (x != null && Number.isFinite(Number(x)) ? Number(x) : null);
+      out.set(k, { pHome: num(r.p_home_market), pDraw: num(r.p_draw_market), pAway: num(r.p_away_market), pOver: marketYes(num(r.over25_odds), num(r.under25_odds)), pBttsYes: marketYes(num(r.btts_yes_odds), num(r.btts_no_odds)) });
+    }
+  }
+  return out;
+}
 
 export interface RefreshResult { leagues: number; inserted: number; repaired: number; proposals: Array<{ leagueId: number; name: string; type: string; to: CoverageStatus }>; skippedCooldown: number; rows: number; hidden: number; unhidden: number }
 
@@ -44,6 +74,9 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date(), offi
   }
   // Resmi sürüm yoksa (tablo boş/okunamadı) fixture başına tek satır — çift sayım yine olmaz.
   for (const l of byLeague.values()) { l.rows = pickOfficial(l.rows, version); total += l.rows.length; }
+  // Piyasa farkı karnesi: en geç faz marjsız oranı satıra iliştir (oranı olmayan maç kovaya girmez).
+  const markets = await loadRowMarkets(sb, [...byLeague.values()].flatMap((l) => l.rows.map((r) => Number(r.fixture_id)))).catch((e) => { console.error('[coverage] markets:', e?.message); return new Map<number, RowMarket>(); });
+  for (const l of byLeague.values()) for (const r of l.rows) r.market = markets.get(Number(r.fixture_id)) ?? null;
 
   const [catalog, { data: existing }] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
