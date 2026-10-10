@@ -8,7 +8,7 @@ import { useFormatter } from 'next-intl';
 // about the expected text difference.
 export default function LocalTime({
   iso, format = 'time', className = '',
-}: { iso: string; format?: 'time' | 'kickoff' | 'dayShort' | 'dayLong'; className?: string }) {
+}: { iso: string; format?: 'time' | 'kickoff' | 'kickoffZone' | 'dayShort' | 'dayLong'; className?: string }) {
   const f = useFormatter();
   const [zone, setZone] = useState<string | null>(null);
   useEffect(() => {
@@ -23,6 +23,8 @@ export default function LocalTime({
 const FORMATS = {
   time: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
   kickoff: { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+  // Public match pages (2026-10-10): the zone is printed so a visitor never guesses which clock the time is on.
+  kickoffZone: { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZoneName: 'short' },
   dayShort: { day: 'numeric', month: 'short' },
   dayLong: { weekday: 'long', day: 'numeric', month: 'long' },
 } as const;

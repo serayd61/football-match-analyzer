@@ -57,16 +57,34 @@ test('league country line is localised', () => {
   assert.equal(leagueCountryName(leagueBySlug('champions-league')!, 'tr'), 'Avrupa');
 });
 
-test('sitemap XML lists every locale with hreflang links and the content images', () => {
-  const xml = buildSitemapXml(new Date('2026-10-10T09:00:00Z'));
+test('sitemap XML lists every locale with hreflang links, the content images and the public match pages', () => {
+  const xml = buildSitemapXml({
+    dataUpdated: new Date('2026-10-10T09:00:00Z'),
+    matches: [{ path: '/matches/arsenal-vs-chelsea-1', lastmod: new Date('2026-10-09T18:30:00Z') }, { path: '/matches/x-vs-y-2', lastmod: null }],
+  });
   assert.match(xml, /^<\?xml version="1.0" encoding="UTF-8"\?>\n<urlset /);
   assert.ok(xml.includes('xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'));
   const urls = xml.match(/<loc>[^<]+<\/loc>/g)!;
-  assert.equal(urls.length, (8 + 11) * 4); // 8 static pages + 11 leagues, 4 locales
+  assert.equal(urls.length, (9 + 11 + 2) * 4); // 9 static pages + 11 leagues + 2 matches, 4 locales
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/leagues/super-lig</loc>'));
+  assert.ok(urls.includes('<loc>https://footballanalytics.pro/de/matches/arsenal-vs-chelsea-1</loc>'));
+  assert.ok(urls.includes('<loc>https://footballanalytics.pro/en/matches</loc>'));
   assert.ok(xml.includes('<xhtml:link rel="alternate" hreflang="x-default" href="https://footballanalytics.pro/en/methodology"/>'));
+  assert.ok(xml.includes('<xhtml:link rel="alternate" hreflang="it" href="https://footballanalytics.pro/it/matches/arsenal-vs-chelsea-1"/>'));
   assert.equal((xml.match(/<image:loc>https:\/\/footballanalytics\.pro\/images\/prediction-track-record-hit-rate-roi\.png<\/image:loc>/g) ?? []).length, 8); // home + methodology × 4 locales
-  assert.ok(xml.includes('<lastmod>2026-10-10T00:00:00.000Z</lastmod>'));
+  // lastmod: real data write for data pages, the row's updated_at for a match, the doc revision for docs — never "now"
+  assert.ok(xml.includes('<lastmod>2026-10-10T09:00:00.000Z</lastmod>'));
+  assert.ok(xml.includes('<lastmod>2026-10-09T18:30:00.000Z</lastmod>'));
   assert.ok(xml.includes('<lastmod>2026-09-04T12:00:00.000Z</lastmod>'));
+  const todayIso = new Date().toISOString().slice(0, 13);
+  assert.ok(!xml.includes(`<lastmod>${todayIso}`), 'lastmod must not be the request time');
   assert.ok(!xml.includes('/predictions'));
+  assert.ok(!xml.includes('/login'));
+  assert.ok(!xml.includes('/dashboard'));
+});
+
+test('sitemap without database input still lists the static pages, without lastmod on data pages', () => {
+  const xml = buildSitemapXml();
+  assert.equal(xml.match(/<loc>[^<]+<\/loc>/g)!.length, (9 + 11) * 4);
+  assert.ok(!xml.includes('<loc>https://footballanalytics.pro/en</loc>\n    <lastmod>'));
 });

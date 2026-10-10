@@ -23,7 +23,8 @@
     "pricing": "Prezzi",
     "how": "Come funziona",
     "tryFree": "Prova gratis 7 giorni",
-    "picks": "In linea"
+    "picks": "In linea",
+    "matches": "Partite"
   },
   "locale": {
     "label": "Lingua"
@@ -105,8 +106,8 @@
     "home": "Vai alla home"
   },
   "home": {
-    "metaTitle": "Pronostici calcio da un modello statistico",
-    "metaDescription": "Probabilità Dixon-Coles per {count} campionati, chiuse e pubblicate dopo ogni partita. Percentuale di successo, calibrazione e rendimento sono a registro.",
+    "metaTitle": "Pronostici calcio e analisi statistica delle partite",
+    "metaDescription": "Probabilità da un modello Dixon-Coles per {count} campionati, chiuse e pubblicate dopo ogni partita. Anteprime gratuite con classifica, forma e precedenti; probabilità e rischio per i membri.",
     "eyebrow": "Pronostici calcio statistici",
     "title": "Probabilità prima del fischio d'inizio, pagella dopo quello finale.",
     "lead": "Il nostro modello valuta ogni partita in {count} campionati: 1X2, over/under 2,5 e gol entrambe le squadre. Quando arriva il risultato, ogni pronostico viene valutato e resta com'era. Con l'account gratuito vedi i pronostici del giorno, con il piano a pagamento le partite in cui il modello si discosta dal bookmaker.",
@@ -479,7 +480,11 @@
       "super-lig": "La Süper Lig è la massima divisione turca: 18 club, 34 giornate. È stata aggiunta nel settembre 2026 e il campione è ancora piccolo, quindi il suo registro è mostrato a parte e le sue partite non entrano nella selezione del giorno finché il campione non cresce."
     },
     "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento assume una puntata fissa di un'unità al prezzo di chiusura. Nulla viene rimosso a posteriori.",
-    "eventDescription": "Partita di {league}: {home} contro {away}."
+    "eventDescription": "Partita di {league}: {home} contro {away}.",
+    "updated": "Dati di partite e risultati aggiornati il {time}",
+    "methodLink": "Come nascono questi numeri",
+    "matchesHint": "Apri una gara per l'anteprima pubblica: orario, classifica, forma e precedenti.",
+    "matchesHub": "Tutte le partite della settimana"
   },
   "docs": {
     "methodology": {
@@ -506,14 +511,36 @@
           ]
         },
         {
-          "h": "3. Copertura",
+          "h": "3. Probabilità, non certezza",
+          "p": [
+            "Ogni numero in una pagina partita è una probabilità: la quota di volte in cui un esito si verificherebbe se la stessa partita fosse giocata molte volte nelle stesse condizioni. Un 60% di vittoria in casa non è una previsione che la squadra di casa vincerà. Dice che dovrebbe vincere circa sei volte su dieci, e le altre quattro sono attese, non errori.",
+            "Per questo il registro si giudica con la calibrazione e il punteggio di Brier, non contando solo i successi. Un modello che dà il 60% a scelte che si avverano il 60% delle volte sta facendo il suo lavoro anche quando perde due volte su cinque. La confidenza accanto a una scelta è la versione calibrata di quella probabilità; l'etichetta di rischio Basso / Medio / Alto riassume quanto spesso le scelte a quel livello hanno perso.",
+            "Niente in questo sito garantisce un esito e nessuna pagina è un consiglio di scommessa. Tratta i numeri come una stima con margine d'errore, confrontali con il mercato e tieni ogni puntata entro ciò che puoi permetterti di perdere."
+          ]
+        },
+        {
+          "h": "4. I mercati: 1X2, over/under 2,5, goal/no goal",
+          "p": [
+            "- 1X2 (esito finale): 1 = vittoria in casa, X = pareggio, 2 = vittoria in trasferta dopo 90 minuti più recupero; supplementari e rigori non contano. Le tre probabilità sommano al 100%.\n- Over/under 2,5 gol: se la partita ha tre o più gol (over) oppure due o meno (under). La linea 2,5 non può essere centrata, quindi non c'è rimborso.\n- Goal/no goal (BTTS): goal se entrambe segnano almeno una volta, no goal altrimenti, a prescindere dal risultato.\n- Doppia chance (1X, X2, 12) si ricava dai valori 1X2 sommandone due.",
+            "Tutti e tre si leggono dalla stessa griglia dei risultati. La scelta in ogni mercato è il lato con la probabilità del modello più alta; la confidenza calibrata accanto usa una curva distinta per mercato, perché il modello non è ugualmente bravo in tutti e tre."
+          ]
+        },
+        {
+          "h": "5. I gol attesi del modello non sono xG",
+          "p": [
+            "Una pagina partita mostra un numero atteso di gol per ciascuna squadra (λ, lambda). È la media della distribuzione di Poisson che il modello assegna ai gol di quella squadra, derivata dalle forze di attacco e difesa e dal vantaggio casalingo. È una stima pre-partita basata solo sui risultati passati.",
+            "Gli expected goals (xG) pubblicati dai fornitori di dati sono un'altra grandezza: sommano la qualità dei tiri che una squadra ha davvero effettuato in una partita, in base a posizione, tipo e costruzione. L'xG si misura a posteriori dai dati evento; il λ del modello si prevede prima del calcio d'inizio dai risultati. I due spesso concordano nella direzione e differiscono nel livello; il modello non usa l'xG come input."
+          ]
+        },
+        {
+          "h": "6. Copertura",
           "p": [
             "I pronostici sono pubblicati solo per i campionati su cui il modello è stato stimato. Un campionato viene aggiunto quando ha abbastanza risultati nella finestra di addestramento (almeno 120 partite) e resta fuori altrimenti. Le partite fuori dai campionati coperti possono comparire nel calendario ma non hanno valutazione del modello e non entrano mai nel registro.",
             "Gli identificativi dei campionati nel feed cambiano ogni stagione, quindi un campionato viene riconosciuto da nome e codice paese, con una lista fissa di identificativi canonici come riserva."
           ]
         },
         {
-          "h": "4. Scelte, confidenza e calibrazione",
+          "h": "7. Scelte, confidenza e calibrazione",
           "p": [
             "La scelta è l'esito con la probabilità più alta secondo il modello. La confidenza mostrata accanto è quella probabilità dopo la calibrazione.",
             "La calibrazione è una regressione isotonica (pool-adjacent-violators) stimata sulle scelte chiuse: associa la probabilità grezza del modello alla quota di scelte che a quel livello si sono davvero realizzate. La curva è monotona, usa al massimo 40 nodi e viene applicata solo quando esistono almeno 30 scelte chiuse. Viene ristimata man mano che arrivano i risultati, quindi la stessa probabilità grezza può corrispondere nel tempo a valori calibrati leggermente diversi. Le pagine delle partite mostrano entrambi i numeri.",
@@ -525,27 +552,28 @@
           }
         },
         {
-          "h": "5. Chiusura",
+          "h": "8. Chiusura",
           "p": [
             "Un processo orario confronta ogni pronostico pubblicato con il risultato finale non appena il feed segnala la partita conclusa. Una scelta 1X2 è vinta quando l'esito reale coincide; le scelte sui mercati gol sono chiuse in base al risultato finale. I pronostici non vengono mai modificati dopo il calcio d'inizio né rimossi dopo la chiusura.",
             "Le partite segnate come concluse ma senza un risultato utilizzabile (rinviate, sospese o assenti dal feed) restano fuori dal registro e sono indicate a parte, con il loro numero, nella pagina dei risultati."
           ]
         },
         {
-          "h": "6. Come viene valutato il registro",
+          "h": "9. Come viene valutato il registro",
           "p": [
             "- Percentuale di successo: quota delle scelte 1X2 chiuse che hanno vinto.\n- Brier score (1X2): media sulle partite della somma degli errori quadratici sui tre esiti; 0 è perfetto, 0.667 è un tiro a caso, e i prezzi di mercato al netto del margine ottengono di norma circa 0.60 nei campionati maggiori.\n- Brier score (mercati gol): versione binaria, dove 0.25 è un lancio di moneta.\n- Tabella di calibrazione: scelte chiuse raggruppate per confidenza calibrata, con la probabilità media prevista a confronto con il successo osservato.\n- ROI a puntata fissa: un'unità sulla scelta del modello all'ultima quota registrata prima del calcio d'inizio (chiusura, altrimenti apertura), sommata sulle partite con quota registrata. I rendimenti sono mostrati al lordo dei limiti dei bookmaker o delle restrizioni sui conti che gli scommettitori reali incontrano.",
             "Tutti i valori sono calcolati dalle stesse righe chiuse mostrate nella pagina dei risultati, ricalcolati ogni ora, e includono i mesi in perdita."
           ]
         },
         {
-          "h": "7. Fonti dei dati e tempi",
+          "h": "10. Fonti dei dati e tempi",
           "p": [
-            "Calendari, risultati e dati delle squadre provengono da un feed calcistico di terze parti. Le quote provengono da un feed di bookmaker e sono registrate all'apertura e poco prima del calcio d'inizio. Il sito pubblico legge dal nostro database e aggiorna i pronostici ogni 15 minuti, i risultati ogni 5 minuti e gli aggregati ogni ora. Gli orari sono mostrati nel fuso orario del tuo browser, con Europe/Zurich come riserva."
+            "Calendari, risultati e dati delle squadre provengono da un feed calcistico di terze parti. Le quote provengono da un feed di bookmaker e sono registrate all'apertura e poco prima del calcio d'inizio. Il sito pubblico legge dal nostro database e aggiorna i pronostici ogni 15 minuti, i risultati ogni 5 minuti e gli aggregati ogni ora. Gli orari sono mostrati nel fuso orario del tuo browser, con Europe/Zurich come riserva.",
+            "Aggiornamento in parole semplici: una partita compare nelle pagine pubbliche quando il motore l'ha valutata, di solito la sera prima; le classifiche si rinnovano ogni sei ore; i risultati vengono verificati ogni ora dopo che il feed segnala la fine della gara. Ogni pagina partita stampa l'ora dell'ultima scrittura dei dati per quella gara, così una pagina non aggiornata si riconosce come tale."
           ]
         },
         {
-          "h": "8. Limiti noti",
+          "h": "11. Limiti noti",
           "p": [
             "- Il registro pubblico parte da fine luglio 2026; il campione chiuso è ancora piccolo e i valori per campionato oscillano.\n- Le quote esistono solo da metà agosto 2026 e non per ogni partita, quindi la finestra del ROI è più corta del registro.\n- Il feed a volte ritarda o omette un risultato; quelle partite restano aperte finché non arriva.\n- Le probabilità sono stime. Una scelta al 60% è attesa perdere due volte su cinque."
           ]
@@ -1227,7 +1255,11 @@
     },
     "home": {
       "todayTitle": "Partite di oggi",
-      "todayAll": "Tutte le partite"
+      "todayAll": "Tutte le partite",
+      "publicTodayTitle": "Le partite di oggi",
+      "publicTodayLead": "Gare nei campionati valutati dal modello. Apri una partita per classifica, forma e precedenti.",
+      "publicTodayAll": "Tutte le partite della settimana",
+      "publicTodayEmpty": "Nessuna gara valutata oggi. L'elenco settimanale mostra le prossime."
     },
     "match": {
       "tabs": "Sezioni partita",
@@ -1246,7 +1278,7 @@
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
-      "title": "Conosci la quota prima che te la dica il bookmaker.",
+      "title": "Pronostici calcio e analisi statistica delle partite",
       "lead": "Un modello statistico calibrato valuta ogni partita in {n} leghe: probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
       "cta": "Inizia 7 giorni gratis",
       "ctaDemo": "Guarda un'analisi di esempio",
@@ -1278,12 +1310,88 @@
       "shot1Alt": "Classifica della Premier League su footballanalytics.pro con giocate, vinte, pareggiate, perse, differenza reti e punti",
       "shot1Cap": "Pagina campionato: classifica aggiornata, calendario e registro chiuso di quel campionato.",
       "shot2Alt": "Pagina dello storico con pronostici chiusi, percentuale 1X2, Brier score e rendimento al prezzo di chiusura",
-      "shot2Cap": "Pagina storico: ogni pronostico chiuso al fischio finale, percentuale e rendimento pubblici."
+      "shot2Cap": "Pagina storico: ogni pronostico chiuso al fischio finale, percentuale e rendimento pubblici.",
+      "tagline": "Conosci la quota prima che te la dica il bookmaker."
     },
     "risk": {
       "disagreeShort": "contro il mercato",
       "tightShort": "partita equilibrata",
       "overShort": "sopra il mercato"
+    }
+  },
+  "matches": {
+    "hub": {
+      "metaTitle": "Partite di calcio oggi e le gare della settimana: analisi pre-partita",
+      "metaDescription": "Orari, posizioni in classifica, forma recente e precedenti per ogni partita dei {count} campionati coperti dal modello, con l'archivio dei risultati. Le probabilità del modello sono pubblicate per i membri.",
+      "title": "Le partite di questa settimana",
+      "lead": "Ogni gara dei prossimi sette giorni nei {count} campionati valutati dal modello. Ogni pagina partita mostra orario, posizione in classifica, forma e precedenti; probabilità, confidenza e rischio del modello sono per i membri.",
+      "tzNote": "Gli orari seguono il fuso orario del tuo browser (Europe/Zurich finché la pagina non è del tutto caricata).",
+      "updated": "Dati partite aggiornati il {time}",
+      "upcomingH": "Prossime partite",
+      "upcomingSub": "Raggruppate per giorno. Apri una partita per l'anteprima.",
+      "empty": "Nessuna partita pubblicata per i prossimi sette giorni",
+      "emptyLead": "Il modello pubblica l'elenco delle gare man mano che i calendari vengono confermati. Classifiche e risultati aggiornati sono nelle pagine dei campionati.",
+      "lockedLead": "Ogni pagina partita mostra i fatti pubblici: classifica, forma e precedenti. Le probabilità 1X2, i gol attesi, la confidenza e l'etichetta di rischio del modello sono pubblicati per i membri prima del calcio d'inizio.",
+      "recentH": "Risultati recenti",
+      "recentSub": "Punteggi finali degli ultimi tre giorni. Il registro chiuso è nella pagina del rendimento.",
+      "moreNav": "Altro",
+      "linkLeagues": "Pagine dei campionati: classifiche e registro chiuso",
+      "linkMethod": "Come funziona il modello",
+      "linkRecord": "Registro pubblico"
+    },
+    "match": {
+      "metaTitle": "{home} – {away} anteprima: forma, precedenti e calcio d'inizio ({date})",
+      "metaTitleSettled": "{home} {hs}-{as} {away}: risultato, forma e precedenti ({date})",
+      "metaDescription": "{league}, {date}: {home} – {away}. Orario, posizioni in classifica, forma recente e precedenti dall'archivio dei risultati. Le probabilità del modello sono disponibili per i membri.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}-{as} {away}. Risultato finale, posizioni in classifica, forma prima della gara e precedenti. Il pronostico pre-partita è nel registro dei membri.",
+      "eyebrow": "Anteprima partita",
+      "vs": "–",
+      "kickoff": "Calcio d'inizio",
+      "venue": "Stadio",
+      "tzNote": "Orari nel fuso del tuo browser con la sigla del fuso; prima del caricamento degli script sono in Europe/Zurich.",
+      "backHub": "Tutte le partite",
+      "previewH": "Prima della partita",
+      "reviewH": "Riepilogo della partita",
+      "noData": "Il feed non ha ancora fornito classifica o risultati per questi club; non c'è un riepilogo da mostrare.",
+      "sourceNote": "Tutti i numeri vengono dall'archivio dei risultati e dalla classifica nei nostri dati; in questa pagina nulla è stimato.",
+      "methodLink": "Come nascono le probabilità",
+      "sFinal": "Risultato finale: {home} {hs}-{as} {away}.",
+      "sTable": "{home} è {hpos}º nella classifica di {league} con {hpts} punti in {hp} partite; {away} è {apos}º con {apts} punti in {ap}.",
+      "sForm": "Ultimi {n} risultati nel nostro archivio, dal più recente: {home} {hform}; {away} {aform}.",
+      "sH2h": "{n, plural, one {Un precedente} other {# precedenti}} nel nostro archivio: {home} {hw}, pareggi {d}, {away} {aw}.",
+      "sNoH2h": "Nessun precedente tra questi club nel nostro archivio dei risultati, che parte da luglio 2026.",
+      "sVenue": "La partita si gioca al {venue}.",
+      "tableH": "Classifica {league}: i due club",
+      "fullTable": "Classifica completa",
+      "colTeam": "Club",
+      "colPlayed": "G",
+      "colWdl": "V-N-P",
+      "colGoals": "Gol",
+      "colPts": "Pt",
+      "formH": "Forma recente",
+      "formSub": "Le ultime cinque partite chiuse prima di questa gara, dalla più recente.",
+      "formNone": "Nessuna partita chiusa nel nostro archivio.",
+      "formW": "V",
+      "formD": "N",
+      "formL": "P",
+      "formHomeShort": "C",
+      "formAwayShort": "T",
+      "h2hH": "Precedenti",
+      "h2hSub": "Incontri prima di questa gara, dall'archivio dei risultati (da luglio 2026).",
+      "modelKicker": "Per i membri",
+      "modelH": "Il pronostico del modello per questa partita",
+      "modelLockedLead": "Pubblicato prima del calcio d'inizio e chiuso dopo il fischio finale:",
+      "modelLockedSettled": "Il pronostico è stato registrato prima del calcio d'inizio e chiuso con questo risultato. I membri vedono la scelta e il suo esito:",
+      "bullet1x2": "Probabilità 1X2 e quota equa, a confronto con il bookmaker",
+      "bulletGoals": "Gol attesi, risultati probabili, over/under 2,5 e goal/no goal",
+      "bulletConf": "Confidenza calibrata ed etichetta di rischio Basso / Medio / Alto",
+      "bulletRecord": "Dove si colloca la scelta nel registro pubblico",
+      "modelOpen": "Apri il pronostico completo",
+      "updated": "Dati aggiornati il {time}",
+      "relatedH": "Altre partite di {league}",
+      "leaguePage": "Pagina {league}",
+      "moreNav": "Altro",
+      "eventDescription": "{league}: {home} – {away}. Orario, classifica, forma e precedenti; probabilità del modello per i membri."
     }
   }
 }

@@ -50,8 +50,11 @@ const EVENT_STATUS: Partial<Record<SitePrediction['status'], string>> = {
  * than emitted with an error. Finished matches are not events any more.
  * The venue is also printed in the fixture list, so the markup matches the page.
  */
-export function sportsEventsJsonLd(locale: Locale, league: SiteLeague, rows: SitePrediction[], describe: (r: SitePrediction) => string) {
-  const page = `${SITE_URL}/${locale}/leagues/${league.slug}`;
+export type EventRow = Pick<SitePrediction, 'fixtureId' | 'homeId' | 'homeName' | 'awayName' | 'kickoff' | 'status'>;
+
+export function sportsEventsJsonLd<R extends EventRow>(locale: Locale, league: SiteLeague, rows: R[], describe: (r: R) => string, pageUrl?: string) {
+  // Default: the league page; a public match page passes its own URL (2026-10-10).
+  const page = pageUrl ?? `${SITE_URL}/${locale}/leagues/${league.slug}`;
   const out = [];
   for (const r of rows) {
     const status = EVENT_STATUS[r.status];

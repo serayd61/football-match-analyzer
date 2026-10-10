@@ -23,7 +23,8 @@
     "pricing": "Pricing",
     "how": "How it works",
     "tryFree": "Try free for 7 days",
-    "picks": "Fits record"
+    "picks": "Fits record",
+    "matches": "Matches"
   },
   "locale": {
     "label": "Language"
@@ -105,8 +106,8 @@
     "home": "Go to the home page"
   },
   "home": {
-    "metaTitle": "Football predictions from a statistical model",
-    "metaDescription": "Dixon-Coles match probabilities for {count} leagues, settled and published after every match. Hit rate, calibration and returns are on the record.",
+    "metaTitle": "Football predictions & statistical match analysis",
+    "metaDescription": "Match probabilities from a Dixon-Coles model for {count} leagues, settled and published after every match. Free match previews with standings, form and head-to-head; probabilities and risk for members.",
     "eyebrow": "Statistical football predictions",
     "title": "Probabilities before kick-off, a scorecard after the final whistle.",
     "lead": "Our model prices every match in {count} leagues: 1X2, over/under 2.5 and both teams to score. When the result comes in, each prediction is scored and left exactly as it was. A free account gets you the day's predictions; the paid plan shows where the model disagrees with the bookmaker.",
@@ -479,7 +480,11 @@
       "super-lig": "The Süper Lig is Türkiye's top division: 18 clubs and 34 rounds. It was added in September 2026 and the sample is still small, so its record is shown separately and its matches are not in the daily shortlist until the sample grows."
     },
     "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return assumes a flat one-unit stake at the closing price. Nothing is removed after the fact.",
-    "eventDescription": "{league} match: {home} vs {away}."
+    "eventDescription": "{league} match: {home} vs {away}.",
+    "updated": "Fixture and result data last updated {time}",
+    "methodLink": "How these figures are produced",
+    "matchesHint": "Open a fixture for its public pre-match overview: kick-off, standings, form and head-to-head.",
+    "matchesHub": "All matches this week"
   },
   "docs": {
     "methodology": {
@@ -506,14 +511,36 @@
           ]
         },
         {
-          "h": "3. Coverage",
+          "h": "3. Probability, not certainty",
+          "p": [
+            "Every figure on a match page is a probability: the share of times an outcome would happen if the same match were played many times under the same conditions. A 60% home win is not a forecast that the home side will win. It says the home side should win about six times in ten, and the other four are expected, not errors.",
+            "That is why the record is judged with calibration and the Brier score rather than by counting hits alone. A model that gives 60% to picks that land 60% of the time is doing its job even while it loses two in five. The confidence next to a pick is the calibrated version of that probability, and the Low / Medium / High risk label summarises how often picks at that level have lost.",
+            "Nothing on this site guarantees an outcome, and no page is advice to bet. Treat the numbers as an estimate with an error bar, compare them with the market, and keep any stake within what you can afford to lose."
+          ]
+        },
+        {
+          "h": "4. The markets: 1X2, over/under 2.5, both teams to score",
+          "p": [
+            "- 1X2 (match result): 1 = home win, X = draw, 2 = away win after 90 minutes plus stoppage time; extra time and penalties do not count. The three probabilities add up to 100%.\n- Over/under 2.5 goals: whether the match has three or more goals (over) or two or fewer (under). The 2.5 line cannot be hit exactly, so there is no push.\n- Both teams to score (BTTS): yes if each side scores at least once, no otherwise, regardless of the result.\n- Double chance (1X, X2, 12) is derived from the 1X2 figures by adding two of them.",
+            "All three are read from the same score grid. The pick in each market is the side with the higher model probability; the calibrated confidence next to it uses a separate curve per market, because the model is not equally good at all three."
+          ]
+        },
+        {
+          "h": "5. Model expected goals are not xG",
+          "p": [
+            "A match page shows an expected number of goals for each side (λ, lambda). It is the mean of the Poisson distribution the model assigns to that team's goals, derived from attack and defence strengths and home advantage. It is a pre-match estimate from past scorelines only.",
+            "Expected goals (xG) as published by data providers is a different quantity: it sums the quality of the shots a team actually took in a match, from shot location, type and build-up. xG is measured after the fact from event data; the model's λ is predicted before kick-off from results. The two often agree in direction and differ in level, and the model does not use xG as an input."
+          ]
+        },
+        {
+          "h": "6. Coverage",
           "p": [
             "Predictions are published only for leagues the model has been fitted on. A league is added when it has enough results in the training window (at least 120 matches) and is left out otherwise. Fixtures outside covered leagues can appear in the schedule but carry no model rating and are never counted in the record.",
             "Feed league identifiers change every season, so a league is matched by its name and country code, with a fixed list of canonical identifiers as a fallback."
           ]
         },
         {
-          "h": "4. Picks, confidence and calibration",
+          "h": "7. Picks, confidence and calibration",
           "p": [
             "The pick is the outcome with the highest model probability. The confidence shown next to it is that probability after calibration.",
             "Calibration is an isotonic regression (pool-adjacent-violators) fitted on settled picks: it maps the raw model probability to the share of picks that actually landed at that level. The curve is monotone, uses at most 40 knots and is only applied once at least 30 settled picks exist. It is refitted as results come in, so the same raw probability can map to slightly different calibrated values over time. Match pages show both numbers.",
@@ -525,27 +552,28 @@
           }
         },
         {
-          "h": "5. Settlement",
+          "h": "8. Settlement",
           "p": [
             "An hourly job compares every published prediction with the final score once the feed reports the match finished. A 1X2 pick is won when the actual outcome matches; goal-market picks are settled from the final score. Predictions are never edited after kick-off and never removed after settlement.",
             "Matches marked as finished without a usable score (postponed, abandoned or missing from the feed) are kept out of the record and listed separately on the results page with a count."
           ]
         },
         {
-          "h": "6. How the record is scored",
+          "h": "9. How the record is scored",
           "p": [
             "- Hit rate: share of settled 1X2 picks that won.\n- Brier score (1X2): mean over matches of the sum of squared errors across the three outcomes; 0 is perfect, 0.667 is a uniform guess, and the market's margin-free prices typically score about 0.60 in top leagues.\n- Brier score (goal markets): binary version, where 0.25 is a coin flip.\n- Calibration table: settled picks grouped by calibrated confidence, comparing the mean predicted probability with the observed hit rate.\n- Flat-stake ROI: one unit on the model pick at the last odds captured before kick-off (closing, otherwise opening), summed over matches that have an odds snapshot. Returns are shown before any bookmaker limits or account restrictions, which real bettors face.",
             "All figures are computed from the same settled rows shown on the results page, recomputed hourly, and include losing months."
           ]
         },
         {
-          "h": "7. Data sources and timing",
+          "h": "10. Data sources and timing",
           "p": [
-            "Fixtures, results and team data come from a third-party football data feed. Odds snapshots come from a bookmaker feed and are captured at opening and shortly before kick-off. The public site reads from our own database and refreshes predictions every 15 minutes, results every 5 minutes and aggregates every hour. Kick-off times are shown in your browser's time zone, with Europe/Zurich as the fallback."
+            "Fixtures, results and team data come from a third-party football data feed. Odds snapshots come from a bookmaker feed and are captured at opening and shortly before kick-off. The public site reads from our own database and refreshes predictions every 15 minutes, results every 5 minutes and aggregates every hour. Kick-off times are shown in your browser's time zone, with Europe/Zurich as the fallback.",
+            "Freshness in plain terms: a fixture appears on the public match pages once the engine has rated it, usually the evening before; league tables refresh every six hours; results are checked hourly once the feed reports full time. Each match page prints the time of the last data write for that match, so a stale page is recognisable as such."
           ]
         },
         {
-          "h": "8. Known limitations",
+          "h": "11. Known limitations",
           "p": [
             "- The public record starts in late July 2026; the settled sample is still small and league-level figures swing.\n- Odds snapshots exist only from mid-August 2026 and not for every match, so the ROI window is shorter than the record.\n- The feed occasionally lags or omits a result; such matches stay unsettled until it arrives.\n- Probabilities are estimates. A 60% pick is expected to lose two times in five."
           ]
@@ -1227,7 +1255,11 @@
     },
     "home": {
       "todayTitle": "Today's matches",
-      "todayAll": "All matches"
+      "todayAll": "All matches",
+      "publicTodayTitle": "Today's matches",
+      "publicTodayLead": "Fixtures in the leagues the model rates. Open a match for standings, form and head-to-head.",
+      "publicTodayAll": "All matches this week",
+      "publicTodayEmpty": "No rated fixtures today. The weekly list shows what is coming up."
     },
     "match": {
       "tabs": "Match sections",
@@ -1246,7 +1278,7 @@
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
-      "title": "Know the odds before the bookmaker tells you.",
+      "title": "Football predictions & statistical match analysis",
       "lead": "A calibrated statistical model rates every match in {n} leagues: win probabilities, confidence, risk and the fair price — and every pick stays on a public record, won or lost.",
       "cta": "Start 7 days free",
       "ctaDemo": "See a sample analysis",
@@ -1278,12 +1310,88 @@
       "shot1Alt": "Premier League standings table on footballanalytics.pro with played, won, drawn, lost, goal difference and points",
       "shot1Cap": "League page: live table, fixtures and the settled record for that league.",
       "shot2Alt": "Prediction track record page showing settled picks, 1X2 hit rate, Brier score and return at closing odds",
-      "shot2Cap": "Record page: every pick settled after the final whistle, hit rate and return in public."
+      "shot2Cap": "Record page: every pick settled after the final whistle, hit rate and return in public.",
+      "tagline": "Know the odds before the bookmaker tells you."
     },
     "risk": {
       "disagreeShort": "vs market",
       "tightShort": "tight match",
       "overShort": "above market"
+    }
+  },
+  "matches": {
+    "hub": {
+      "metaTitle": "Today's football matches and this week's fixtures: pre-match analysis",
+      "metaDescription": "Kick-off times, league positions, recent form and head-to-head for every fixture in the {count} leagues the model covers, plus a results archive. Model probabilities are published for members.",
+      "title": "Matches this week",
+      "lead": "Every fixture in the {count} leagues the model rates, for the next seven days. Each match page shows kick-off, league position, form and head-to-head; the model's probabilities, confidence and risk are for members.",
+      "tzNote": "Kick-off times follow your browser's time zone (Europe/Zurich until the page has fully loaded).",
+      "updated": "Fixture data last updated {time}",
+      "upcomingH": "Upcoming matches",
+      "upcomingSub": "Grouped by day. Open a match for the pre-match overview.",
+      "empty": "No fixtures published for the next seven days",
+      "emptyLead": "The model publishes its fixture list as the leagues' schedules are confirmed. The league pages carry the latest tables and results.",
+      "lockedLead": "Each match page shows the facts that are public: standings, form and head-to-head. The model's 1X2 probabilities, expected goals, confidence and risk label are published for members before kick-off.",
+      "recentH": "Recent results",
+      "recentSub": "Final scores from the last three days. The settled record is on the performance page.",
+      "moreNav": "More",
+      "linkLeagues": "League pages: tables and settled record",
+      "linkMethod": "How the model works",
+      "linkRecord": "Public track record"
+    },
+    "match": {
+      "metaTitle": "{home} vs {away} preview: form, head-to-head and kick-off ({date})",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: result, form and head-to-head ({date})",
+      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off time, league positions, recent form and head-to-head from the results archive. The model's probabilities are available to members.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, form before the match and head-to-head. The pre-match prediction is in the members' record.",
+      "eyebrow": "Match preview",
+      "vs": "vs",
+      "kickoff": "Kick-off",
+      "venue": "Venue",
+      "tzNote": "Times are shown in your browser's time zone with the zone name; before scripts load they are in Europe/Zurich.",
+      "backHub": "All matches",
+      "previewH": "Pre-match overview",
+      "reviewH": "Match overview",
+      "noData": "The feed has not delivered standings or results for these clubs yet, so there is no overview to show.",
+      "sourceNote": "All figures come from the results archive and the league table in our data; nothing on this page is estimated.",
+      "methodLink": "How the probabilities are produced",
+      "sFinal": "Final score: {home} {hs}–{as} {away}.",
+      "sTable": "{home} are {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} in the {league} table with {hpts} points from {hp} matches; {away} are {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} with {apts} points from {ap}.",
+      "sForm": "Last {n} results in our archive, newest first: {home} {hform}; {away} {aform}.",
+      "sH2h": "{n, plural, one {One previous meeting} other {# previous meetings}} in our archive: {home} {hw}, draws {d}, {away} {aw}.",
+      "sNoH2h": "No previous meeting between these clubs in our results archive, which starts in July 2026.",
+      "sVenue": "The match is played at {venue}.",
+      "tableH": "{league} table: the two clubs",
+      "fullTable": "Full table",
+      "colTeam": "Club",
+      "colPlayed": "P",
+      "colWdl": "W-D-L",
+      "colGoals": "Goals",
+      "colPts": "Pts",
+      "formH": "Recent form",
+      "formSub": "Last five settled matches before this fixture, newest first.",
+      "formNone": "No settled matches in our archive yet.",
+      "formW": "W",
+      "formD": "D",
+      "formL": "L",
+      "formHomeShort": "H",
+      "formAwayShort": "A",
+      "h2hH": "Head-to-head",
+      "h2hSub": "Meetings before this fixture, from the results archive (July 2026 onwards).",
+      "modelKicker": "For members",
+      "modelH": "The model's prediction for this match",
+      "modelLockedLead": "Published before kick-off and settled after the final whistle:",
+      "modelLockedSettled": "The prediction was logged before kick-off and settled against this score. Members can see the pick and its outcome:",
+      "bullet1x2": "1X2 probabilities and the fair odds, compared with the bookmaker",
+      "bulletGoals": "Expected goals, likely scores, over/under 2.5 and both teams to score",
+      "bulletConf": "Calibrated confidence and a Low / Medium / High risk label",
+      "bulletRecord": "Where the pick sits in the public track record",
+      "modelOpen": "Open the full prediction",
+      "updated": "Data last updated {time}",
+      "relatedH": "More {league} matches",
+      "leaguePage": "{league} page",
+      "moreNav": "More",
+      "eventDescription": "{league}: {home} vs {away}. Kick-off, standings, form and head-to-head; model probabilities for members."
     }
   }
 }

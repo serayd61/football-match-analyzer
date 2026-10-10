@@ -23,7 +23,8 @@
     "pricing": "Preise",
     "how": "So funktioniert's",
     "tryFree": "7 Tage gratis testen",
-    "picks": "Passende Spiele"
+    "picks": "Passende Spiele",
+    "matches": "Spiele"
   },
   "locale": {
     "label": "Sprache"
@@ -105,8 +106,8 @@
     "home": "Zur Startseite"
   },
   "home": {
-    "metaTitle": "Fussballprognosen aus einem statistischen Modell",
-    "metaDescription": "Dixon-Coles-Spielwahrscheinlichkeiten für {count} Ligen, nach jedem Spiel abgerechnet und veröffentlicht. Trefferquote, Kalibrierung und Rendite sind einsehbar.",
+    "metaTitle": "Fussball-Prognosen und statistische Spielanalyse",
+    "metaDescription": "Spielwahrscheinlichkeiten aus einem Dixon-Coles-Modell für {count} Ligen, nach jedem Spiel abgerechnet und veröffentlicht. Gratis Spielvorschauen mit Tabelle, Form und direktem Vergleich; Wahrscheinlichkeiten und Risiko für Mitglieder.",
     "eyebrow": "Statistische Fussballprognosen",
     "title": "Wahrscheinlichkeiten vor dem Anpfiff, Bilanz nach dem Abpfiff.",
     "lead": "Unser Modell bewertet jedes Spiel in {count} Ligen: 1X2, Über/Unter 2,5 und beide Teams treffen. Sobald das Ergebnis feststeht, wird jede Prognose benotet und bleibt unverändert stehen. Mit dem Gratiskonto siehst du die Prognosen des Tages, mit dem Bezahlplan die Spiele, bei denen das Modell vom Buchmacher abweicht.",
@@ -479,7 +480,11 @@
       "super-lig": "Die Süper Lig ist die höchste Liga der Türkei: 18 Klubs, 34 Runden. Sie kam im September 2026 dazu, die Stichprobe ist noch klein; ihre Bilanz wird deshalb separat gezeigt, und ihre Spiele stehen erst auf der Tagesliste, wenn die Stichprobe wächst."
     },
     "howToRead": "Die Zahlen auf dieser Seite sind die abgerechnete {league}-Bilanz des Modells: die Trefferquote ist der Anteil der eingetroffenen 1X2-Tipps, der Brier-Score misst, wie gut die Wahrscheinlichkeiten zu den Resultaten passten (tiefer ist besser), und die Rendite nimmt einen flachen Einsatz von einer Einheit zum Schlusskurs an. Nachträglich wird nichts entfernt.",
-    "eventDescription": "{league}-Spiel: {home} gegen {away}."
+    "eventDescription": "{league}-Spiel: {home} gegen {away}.",
+    "updated": "Spiel- und Resultatdaten zuletzt aktualisiert {time}",
+    "methodLink": "So entstehen diese Zahlen",
+    "matchesHint": "Öffne eine Partie für die öffentliche Vorschau: Anstoss, Tabelle, Form und direkter Vergleich.",
+    "matchesHub": "Alle Spiele dieser Woche"
   },
   "docs": {
     "methodology": {
@@ -506,14 +511,36 @@
           ]
         },
         {
-          "h": "3. Abdeckung",
+          "h": "3. Wahrscheinlichkeit, nicht Gewissheit",
+          "p": [
+            "Jede Zahl auf einer Spielseite ist eine Wahrscheinlichkeit: der Anteil, mit dem ein Ausgang einträte, würde dasselbe Spiel unter denselben Bedingungen sehr oft ausgetragen. 60 Prozent Heimsieg ist keine Vorhersage, dass das Heimteam gewinnt. Es heisst, das Heimteam sollte etwa sechs von zehn Mal gewinnen; die anderen vier sind erwartet, keine Fehler.",
+            "Darum wird die Bilanz mit Kalibrierung und Brier-Score beurteilt und nicht nur mit der Zahl der Treffer. Ein Modell, das Tipps 60 Prozent gibt, die in 60 Prozent der Fälle eintreffen, tut seine Arbeit, auch wenn es zwei von fünf verliert. Die Konfidenz neben einem Tipp ist die kalibrierte Form dieser Wahrscheinlichkeit; das Risikolabel Tief / Mittel / Hoch fasst zusammen, wie oft Tipps auf diesem Niveau verloren haben.",
+            "Nichts auf dieser Seite garantiert einen Ausgang, und keine Seite ist eine Wettempfehlung. Behandle die Zahlen als Schätzung mit Fehlerbalken, vergleiche sie mit dem Markt und halte jeden Einsatz in dem Rahmen, dessen Verlust du dir leisten kannst."
+          ]
+        },
+        {
+          "h": "4. Die Märkte: 1X2, Über/Unter 2,5, beide Teams treffen",
+          "p": [
+            "- 1X2 (Spielausgang): 1 = Heimsieg, X = Unentschieden, 2 = Auswärtssieg nach 90 Minuten plus Nachspielzeit; Verlängerung und Penaltyschiessen zählen nicht. Die drei Wahrscheinlichkeiten ergeben zusammen 100 Prozent.\n- Über/Unter 2,5 Tore: ob das Spiel drei oder mehr Tore hat (über) oder zwei oder weniger (unter). Die Linie 2,5 kann nicht genau getroffen werden, es gibt also keine Rückzahlung.\n- Beide Teams treffen (BTTS): ja, wenn jede Seite mindestens einmal trifft, sonst nein, unabhängig vom Ausgang.\n- Doppelte Chance (1X, X2, 12) ergibt sich aus den 1X2-Werten durch Addition von zweien.",
+            "Alle drei werden aus demselben Resultatgitter gelesen. Der Tipp in jedem Markt ist die Seite mit der höheren Modellwahrscheinlichkeit; die kalibrierte Konfidenz daneben nutzt pro Markt eine eigene Kurve, weil das Modell nicht in allen dreien gleich gut ist."
+          ]
+        },
+        {
+          "h": "5. Die erwarteten Tore des Modells sind kein xG",
+          "p": [
+            "Eine Spielseite zeigt für jede Seite eine erwartete Torzahl (λ, Lambda). Sie ist der Mittelwert der Poisson-Verteilung, die das Modell den Toren dieses Teams zuweist, abgeleitet aus Angriffs- und Abwehrstärke und Heimvorteil. Es ist eine Schätzung vor dem Spiel, allein aus früheren Resultaten.",
+            "Expected Goals (xG), wie Datenanbieter sie veröffentlichen, sind eine andere Grösse: Sie summieren die Qualität der Schüsse, die ein Team in einem Spiel tatsächlich abgegeben hat, nach Position, Art und Entstehung. xG wird im Nachhinein aus Ereignisdaten gemessen; das λ des Modells wird vor dem Anpfiff aus Resultaten vorhergesagt. Beide stimmen oft in der Richtung überein und unterscheiden sich im Niveau; das Modell nutzt xG nicht als Eingabe."
+          ]
+        },
+        {
+          "h": "6. Abdeckung",
           "p": [
             "Prognosen erscheinen nur für Ligen, auf denen das Modell gefittet wurde. Eine Liga kommt dazu, wenn im Trainingsfenster genug Resultate vorliegen (mindestens 120 Spiele), sonst bleibt sie draussen. Spiele ausserhalb der abgedeckten Ligen können im Spielplan auftauchen, tragen aber keine Modellbewertung und zählen nie zur Bilanz.",
             "Die Liga-Kennungen des Feeds wechseln jede Saison, darum wird eine Liga über Name und Ländercode erkannt, mit einer festen Liste kanonischer Kennungen als Rückfallebene."
           ]
         },
         {
-          "h": "4. Tipps, Konfidenz und Kalibrierung",
+          "h": "7. Tipps, Konfidenz und Kalibrierung",
           "p": [
             "Der Tipp ist der Ausgang mit der höchsten Modellwahrscheinlichkeit. Die daneben gezeigte Konfidenz ist diese Wahrscheinlichkeit nach der Kalibrierung.",
             "Die Kalibrierung ist eine isotonische Regression (Pool-Adjacent-Violators) auf abgerechneten Tipps: Sie bildet die rohe Modellwahrscheinlichkeit auf den Anteil der Tipps ab, die auf diesem Niveau tatsächlich eintrafen. Die Kurve ist monoton, hat höchstens 40 Stützstellen und wird erst angewendet, wenn mindestens 30 abgerechnete Tipps vorliegen. Sie wird laufend neu gefittet, sodass dieselbe rohe Wahrscheinlichkeit mit der Zeit leicht andere kalibrierte Werte ergeben kann. Spielseiten zeigen beide Zahlen.",
@@ -525,27 +552,28 @@
           }
         },
         {
-          "h": "5. Abrechnung",
+          "h": "8. Abrechnung",
           "p": [
             "Ein stündlicher Job vergleicht jede veröffentlichte Prognose mit dem Endresultat, sobald der Feed das Spiel als beendet meldet. Ein 1X2-Tipp gilt als gewonnen, wenn der tatsächliche Ausgang übereinstimmt; Tormarkt-Tipps werden am Endresultat abgerechnet. Prognosen werden nach dem Anpfiff nie bearbeitet und nach der Abrechnung nie entfernt.",
             "Spiele, die als beendet gelten, aber kein brauchbares Resultat haben (verschoben, abgebrochen oder im Feed fehlend), bleiben aus der Bilanz und werden auf der Resultatseite separat mit ihrer Anzahl ausgewiesen."
           ]
         },
         {
-          "h": "6. Wie die Bilanz bewertet wird",
+          "h": "9. Wie die Bilanz bewertet wird",
           "p": [
             "- Trefferquote: Anteil der abgerechneten 1X2-Tipps, die gewonnen haben.\n- Brier-Score (1X2): Mittel über alle Spiele der Summe der quadrierten Fehler über die drei Ausgänge; 0 ist perfekt, 0.667 ist Zufall, und margenbereinigte Marktpreise erreichen in Topligen typischerweise etwa 0.60.\n- Brier-Score (Tormärkte): binäre Variante, bei der 0.25 einem Münzwurf entspricht.\n- Kalibrierungstabelle: abgerechnete Tipps nach kalibrierter Konfidenz gruppiert, mittlere vorhergesagte Wahrscheinlichkeit gegen beobachtete Trefferquote.\n- ROI bei fixem Einsatz: eine Einheit auf den Modelltipp zur letzten vor Anpfiff erfassten Quote (Schluss-, sonst Eröffnungsquote), summiert über Spiele mit Quotenerfassung. Renditen werden vor Buchmacherlimiten oder Kontobeschränkungen gezeigt, mit denen reale Wetter konfrontiert sind.",
             "Alle Kennzahlen werden aus denselben abgerechneten Zeilen berechnet, die auf der Resultatseite stehen, stündlich neu, und schliessen Verlustmonate ein."
           ]
         },
         {
-          "h": "7. Datenquellen und Aktualität",
+          "h": "10. Datenquellen und Aktualität",
           "p": [
-            "Spielpläne, Resultate und Teamdaten stammen aus einem Fussball-Datenfeed eines Drittanbieters. Quotenerfassungen stammen aus einem Buchmacher-Feed und werden bei Eröffnung und kurz vor Anpfiff aufgezeichnet. Die öffentliche Seite liest aus unserer eigenen Datenbank und aktualisiert Prognosen alle 15 Minuten, Resultate alle 5 Minuten und Aggregate stündlich. Anpfiffzeiten erscheinen in der Zeitzone Ihres Browsers, mit Europe/Zurich als Rückfall."
+            "Spielpläne, Resultate und Teamdaten stammen aus einem Fussball-Datenfeed eines Drittanbieters. Quotenerfassungen stammen aus einem Buchmacher-Feed und werden bei Eröffnung und kurz vor Anpfiff aufgezeichnet. Die öffentliche Seite liest aus unserer eigenen Datenbank und aktualisiert Prognosen alle 15 Minuten, Resultate alle 5 Minuten und Aggregate stündlich. Anpfiffzeiten erscheinen in der Zeitzone Ihres Browsers, mit Europe/Zurich als Rückfall.",
+            "Aktualität in einfachen Worten: Eine Partie erscheint auf den öffentlichen Spielseiten, sobald die Engine sie bewertet hat, meist am Vorabend; Ligatabellen werden alle sechs Stunden erneuert; Resultate werden stündlich geprüft, sobald der Feed den Schlusspfiff meldet. Jede Spielseite druckt die Zeit des letzten Datenschreibens für dieses Spiel, sodass eine veraltete Seite als solche erkennbar ist."
           ]
         },
         {
-          "h": "8. Bekannte Grenzen",
+          "h": "11. Bekannte Grenzen",
           "p": [
             "- Die öffentliche Bilanz beginnt Ende Juli 2026; die abgerechnete Stichprobe ist noch klein, und Werte einzelner Ligen schwanken.\n- Quotenerfassungen gibt es erst ab Mitte August 2026 und nicht für jedes Spiel, darum ist das ROI-Fenster kürzer als die Bilanz.\n- Der Feed hinkt gelegentlich hinterher oder lässt ein Resultat aus; solche Spiele bleiben offen, bis es eintrifft.\n- Wahrscheinlichkeiten sind Schätzungen. Ein 60-Prozent-Tipp verliert erwartungsgemäss zwei von fünf Mal."
           ]
@@ -1227,7 +1255,11 @@
     },
     "home": {
       "todayTitle": "Heutige Spiele",
-      "todayAll": "Alle Spiele"
+      "todayAll": "Alle Spiele",
+      "publicTodayTitle": "Die Spiele von heute",
+      "publicTodayLead": "Partien in den Ligen, die das Modell bewertet. Öffne ein Spiel für Tabelle, Form und direkten Vergleich.",
+      "publicTodayAll": "Alle Spiele dieser Woche",
+      "publicTodayEmpty": "Heute keine bewerteten Partien. Die Wochenliste zeigt, was ansteht."
     },
     "match": {
       "tabs": "Spielabschnitte",
@@ -1246,7 +1278,7 @@
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
-      "title": "Kenne die Quote, bevor der Buchmacher sie dir nennt.",
+      "title": "Fussball-Prognosen und statistische Spielanalyse",
       "lead": "Ein kalibriertes statistisches Modell bewertet jedes Spiel in {n} Ligen: Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairer Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
       "cta": "7 Tage gratis starten",
       "ctaDemo": "Beispielanalyse ansehen",
@@ -1278,12 +1310,88 @@
       "shot1Alt": "Premier-League-Tabelle auf footballanalytics.pro mit Spielen, Siegen, Remis, Niederlagen, Tordifferenz und Punkten",
       "shot1Cap": "Ligaseite: aktuelle Tabelle, Spielplan und die abgerechnete Bilanz dieser Liga.",
       "shot2Alt": "Bilanzseite mit abgerechneten Tipps, 1X2-Trefferquote, Brier-Score und Rendite zum Schlusskurs",
-      "shot2Cap": "Bilanzseite: jeder Tipp nach dem Schlusspfiff abgerechnet, Trefferquote und Rendite öffentlich."
+      "shot2Cap": "Bilanzseite: jeder Tipp nach dem Schlusspfiff abgerechnet, Trefferquote und Rendite öffentlich.",
+      "tagline": "Kenne die Quote, bevor der Buchmacher sie dir nennt."
     },
     "risk": {
       "disagreeShort": "gegen Markt",
       "tightShort": "enges Spiel",
       "overShort": "über dem Markt"
+    }
+  },
+  "matches": {
+    "hub": {
+      "metaTitle": "Fussballspiele heute und die Partien der Woche: Analyse vor dem Anpfiff",
+      "metaDescription": "Anstosszeiten, Tabellenplätze, Form und direkter Vergleich für jede Partie in den {count} Ligen, die das Modell abdeckt, plus Resultatarchiv. Modellwahrscheinlichkeiten erscheinen für Mitglieder.",
+      "title": "Die Spiele dieser Woche",
+      "lead": "Jede Partie der nächsten sieben Tage in den {count} Ligen, die das Modell bewertet. Jede Spielseite zeigt Anstoss, Tabellenplatz, Form und direkten Vergleich; Wahrscheinlichkeiten, Konfidenz und Risiko des Modells sind für Mitglieder.",
+      "tzNote": "Anstosszeiten folgen der Zeitzone deines Browsers (Europe/Zurich, bis die Seite vollständig geladen ist).",
+      "updated": "Spieldaten zuletzt aktualisiert {time}",
+      "upcomingH": "Kommende Spiele",
+      "upcomingSub": "Nach Tag gruppiert. Öffne ein Spiel für die Vorschau.",
+      "empty": "Für die nächsten sieben Tage sind keine Partien veröffentlicht",
+      "emptyLead": "Das Modell veröffentlicht seine Spielliste, sobald die Spielpläne der Ligen feststehen. Aktuelle Tabellen und Resultate stehen auf den Ligaseiten.",
+      "lockedLead": "Jede Spielseite zeigt die öffentlichen Fakten: Tabelle, Form und direkter Vergleich. Die 1X2-Wahrscheinlichkeiten, erwarteten Tore, Konfidenz und das Risikolabel des Modells erscheinen vor dem Anpfiff für Mitglieder.",
+      "recentH": "Letzte Resultate",
+      "recentSub": "Endstände der letzten drei Tage. Die abgerechnete Bilanz steht auf der Bilanzseite.",
+      "moreNav": "Mehr",
+      "linkLeagues": "Ligaseiten: Tabellen und abgerechnete Bilanz",
+      "linkMethod": "So funktioniert das Modell",
+      "linkRecord": "Öffentliche Bilanz"
+    },
+    "match": {
+      "metaTitle": "{home} – {away} Vorschau: Form, direkter Vergleich und Anstoss ({date})",
+      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat, Form und direkter Vergleich ({date})",
+      "metaDescription": "{league}, {date}: {home} – {away}. Anstosszeit, Tabellenplätze, aktuelle Form und direkter Vergleich aus dem Resultatarchiv. Die Wahrscheinlichkeiten des Modells sind für Mitglieder verfügbar.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabellenplätze, Form vor dem Spiel und direkter Vergleich. Die Prognose vor dem Anpfiff steht in der Bilanz der Mitglieder.",
+      "eyebrow": "Spielvorschau",
+      "vs": "–",
+      "kickoff": "Anstoss",
+      "venue": "Stadion",
+      "tzNote": "Zeiten in der Zeitzone deines Browsers mit Zonenkürzel; bevor Skripte laden, in Europe/Zurich.",
+      "backHub": "Alle Spiele",
+      "previewH": "Vor dem Spiel",
+      "reviewH": "Spielüberblick",
+      "noData": "Der Feed hat für diese Klubs noch keine Tabelle oder Resultate geliefert; es gibt keinen Überblick zu zeigen.",
+      "sourceNote": "Alle Zahlen stammen aus dem Resultatarchiv und der Ligatabelle in unseren Daten; auf dieser Seite wird nichts geschätzt.",
+      "methodLink": "So entstehen die Wahrscheinlichkeiten",
+      "sFinal": "Endstand: {home} {hs}:{as} {away}.",
+      "sTable": "{home} steht in der {league}-Tabelle mit {hpts} Punkten aus {hp} Spielen auf Platz {hpos}; {away} mit {apts} Punkten aus {ap} Spielen auf Platz {apos}.",
+      "sForm": "Die letzten {n} Resultate in unserem Archiv, neueste zuerst: {home} {hform}; {away} {aform}.",
+      "sH2h": "{n, plural, one {Ein früheres Duell} other {# frühere Duelle}} in unserem Archiv: {home} {hw}, Unentschieden {d}, {away} {aw}.",
+      "sNoH2h": "In unserem Resultatarchiv, das im Juli 2026 beginnt, gibt es kein früheres Duell dieser Klubs.",
+      "sVenue": "Gespielt wird im {venue}.",
+      "tableH": "{league}-Tabelle: die beiden Klubs",
+      "fullTable": "Ganze Tabelle",
+      "colTeam": "Klub",
+      "colPlayed": "Sp",
+      "colWdl": "S-U-N",
+      "colGoals": "Tore",
+      "colPts": "Pkt",
+      "formH": "Aktuelle Form",
+      "formSub": "Die letzten fünf abgerechneten Spiele vor dieser Partie, neueste zuerst.",
+      "formNone": "Noch keine abgerechneten Spiele in unserem Archiv.",
+      "formW": "S",
+      "formD": "U",
+      "formL": "N",
+      "formHomeShort": "H",
+      "formAwayShort": "A",
+      "h2hH": "Direkter Vergleich",
+      "h2hSub": "Duelle vor dieser Partie, aus dem Resultatarchiv (ab Juli 2026).",
+      "modelKicker": "Für Mitglieder",
+      "modelH": "Die Prognose des Modells für dieses Spiel",
+      "modelLockedLead": "Vor dem Anpfiff veröffentlicht, nach dem Schlusspfiff abgerechnet:",
+      "modelLockedSettled": "Die Prognose wurde vor dem Anpfiff festgehalten und mit diesem Resultat abgerechnet. Mitglieder sehen den Tipp und sein Ergebnis:",
+      "bullet1x2": "1X2-Wahrscheinlichkeiten und faire Quote, verglichen mit dem Buchmacher",
+      "bulletGoals": "Erwartete Tore, wahrscheinliche Resultate, Über/Unter 2,5 und beide Teams treffen",
+      "bulletConf": "Kalibrierte Konfidenz und ein Risikolabel Tief / Mittel / Hoch",
+      "bulletRecord": "Wo der Tipp in der öffentlichen Bilanz steht",
+      "modelOpen": "Ganze Prognose öffnen",
+      "updated": "Daten zuletzt aktualisiert {time}",
+      "relatedH": "Weitere {league}-Spiele",
+      "leaguePage": "{league}-Seite",
+      "moreNav": "Mehr",
+      "eventDescription": "{league}: {home} – {away}. Anstoss, Tabelle, Form und direkter Vergleich; Modellwahrscheinlichkeiten für Mitglieder."
     }
   }
 }

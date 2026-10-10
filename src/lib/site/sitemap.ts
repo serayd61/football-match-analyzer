@@ -14,23 +14,43 @@ import { CONTENT_IMAGES, type ContentImageId } from '@/lib/site/content-images';
 // listed. Everything members-only (/predictions, /predictions/[id], the legacy
 // /analysis pages) 307s to /login for Googlebot and was filling Search Console
 // with "discovered, not indexed" and "page with redirect" entries.
+//
+// Public match pages (2026-10-10): /matches and /matches/{slug} are listed
+// with the engine row's updated_at as lastmod. Data pages (home, leagues,
+// performance) take the latest engine write instead of "today": a lastmod
+// that changes on every request tells Google nothing.
 
-interface Entry { path: string; lastmod?: Date; changefreq: string; priority: number; images?: ContentImageId[] }
+export interface Entry { path: string; lastmod?: Date | null; changefreq: string; priority: number; images?: ContentImageId[] }
 
-// Real revision date of the long-form docs; data pages change daily.
-const DOCS_UPDATED = new Date('2026-09-04T12:00:00Z');
+/** Real revision dates of the long-form docs (bump when the text changes). */
+export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms', Date> = {
+  methodology: new Date('2026-10-10T12:00:00Z'),
+  about: new Date('2026-09-04T12:00:00Z'),
+  privacy: new Date('2026-09-04T12:00:00Z'),
+  terms: new Date('2026-09-04T12:00:00Z'),
+};
 
-function entries(today: Date): Entry[] {
+export interface SitemapInput {
+  /** latest engine write in covered leagues; null → no lastmod on data pages */
+  dataUpdated: Date | null;
+  /** public match pages (locale-free paths) with their own lastmod */
+  matches: Array<{ path: string; lastmod: Date | null }>;
+}
+
+export function entries(input: SitemapInput): Entry[] {
+  const data = input.dataUpdated;
   return [
-    { path: '', changefreq: 'hourly', priority: 1, lastmod: today, images: ['standings', 'track-record'] },
+    { path: '', changefreq: 'hourly', priority: 1, lastmod: data, images: ['standings', 'track-record'] },
+    { path: '/matches', changefreq: 'hourly', priority: 0.9, lastmod: data },
     { path: '/pricing', changefreq: 'monthly', priority: 0.6 },
-    { path: '/performance', changefreq: 'daily', priority: 0.8, lastmod: today },
-    { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: today },
-    { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED, images: ['sample-analysis', 'track-record'] },
-    { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED },
+    { path: '/performance', changefreq: 'daily', priority: 0.8, lastmod: data },
+    { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
+    { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
+    { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
     { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
     { path: '/terms', changefreq: 'yearly', priority: 0.2 },
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: today })),
+    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
+    ...input.matches.map((m): Entry => ({ path: m.path, changefreq: 'daily', priority: 0.6, lastmod: m.lastmod })),
   ];
 }
 
@@ -55,12 +75,11 @@ function urlBlocks(e: Entry): string[] {
   ].filter(Boolean).join('\n'));
 }
 
-export function buildSitemapXml(today = new Date()): string {
-  const day = new Date(today); day.setUTCHours(0, 0, 0, 0);
+export function buildSitemapXml(input: SitemapInput = { dataUpdated: null, matches: [] }): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
-    ...entries(day).flatMap(urlBlocks),
+    ...entries(input).flatMap(urlBlocks),
     '</urlset>',
     '',
   ].join('\n');

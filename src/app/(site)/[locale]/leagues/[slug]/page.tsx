@@ -61,6 +61,8 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   const tn = await getTranslations('nav');
   const o = perf.overall;
   const pct = (x: number | null) => (x == null ? '–' : f.number(x, 'percent1'));
+  // Son gerçek veri yazımı (satır updated_at'i) — "şimdi" değil (SEO 2026-10-10).
+  const lastWrite = [...upcoming, ...recent.rows].reduce<string | null>((m, r) => (r.updatedAt && (!m || r.updatedAt > m) ? r.updatedAt : m), null);
 
   return (
     <Page>
@@ -77,7 +79,8 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       {/* SEO denetimi 2026-10-10: unique, factual intro per league + how the record is read. */}
       <div className="max-w-3xl space-y-3 pb-6 text-[15px] leading-relaxed">
         <p>{t(`intro.${league.slug}`)}</p>
-        <p className="text-s-muted">{t('howToRead', { league: league.name })}</p>
+        <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link></p>
+        {lastWrite && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(lastWrite), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
       </div>
 
       <TrialNotice access={access} />
@@ -97,7 +100,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       )}
 
       <section className="mt-10">
-        <SectionTitle title={t('upcoming')} meta={unlocked ? <Link href={`/predictions?league=${league.slug}`} className="underline underline-offset-4">{t('upcomingAll')}</Link> : undefined} />
+        <SectionTitle title={t('upcoming')} sub={unlocked ? undefined : t('matchesHint')} meta={unlocked ? <Link href={`/predictions?league=${league.slug}`} className="underline underline-offset-4">{t('upcomingAll')}</Link> : <Link href="/matches" className="underline underline-offset-4">{t('matchesHub')}</Link>} />
         {!upcoming.length ? (
           <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>
         ) : unlocked ? (
