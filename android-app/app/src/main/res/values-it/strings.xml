@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_title">Sei offline</string>
+    <string name="offline_body">Football Analytics Pro ha bisogno di una connessione a internet. Controlla la connessione e riprova.</string>
+    <string name="offline_retry">Riprova</string>
+</resources>
