@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
 import { isAdminEmail } from '@/lib/admin/emails';
 import { routing } from '@/i18n/routing';
+import { isTwaRequest, TWA_COOKIE, TWA_COOKIE_MAX_AGE } from '@/lib/site/twa';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
 // a `src/` directory — Next.js only picks up `src/middleware.ts` in that case.
@@ -71,7 +72,13 @@ export default withAuth(
     }
 
     // Public site: locale detection + prefixing (/ → /en, /predictions → /de/predictions …).
-    return intlMiddleware(req);
+    const res = intlMiddleware(req);
+    // Google Play app (TWA) opens `/?src=twa`: remember it for a year so every
+    // render hides checkout / prices (Play payments policy). See lib/site/twa.ts.
+    if (isTwaRequest(req)) {
+      res.cookies.set(TWA_COOKIE, '1', { maxAge: TWA_COOKIE_MAX_AGE, path: '/', sameSite: 'lax', secure: true });
+    }
+    return res;
   },
   {
     callbacks: {

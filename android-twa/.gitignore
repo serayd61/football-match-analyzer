@@ -1,0 +1,6 @@
+# Bubblewrap regenerates the Android project from twa-manifest.json
+# (`bubblewrap update`); only the manifest and this README are tracked.
+*
+!.gitignore
+!twa-manifest.json
+!README.md

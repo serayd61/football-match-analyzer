@@ -9,6 +9,7 @@ import LocaleSwitcher from '@/components/site/LocaleSwitcher';
 import ThemeToggle from '@/components/site/ThemeToggle';
 import { StripeButton, SignOutButton } from '@/components/site/account/BillingActions';
 import { legacyHref } from '@/lib/site/legacy';
+import { isTwa } from '@/lib/site/twa';
 
 // Account (2026-09-08): one page for who you are, what your access is and
 // where it comes from, and the billing/settings actions. Replaces the legacy
@@ -34,6 +35,8 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
   const day = (iso: string | null) => (iso ? f.dateTime(new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`), 'dateFull') : '–');
   const b = acct.billing;
   const stripeLive = b.hasStripe && (b.status === 'active' || b.status === 'trialing' || b.status === 'past_due');
+  // Google Play app: no checkout / Stripe portal buttons (Play payments policy, lib/site/twa.ts).
+  const twa = isTwa();
 
   // Plan headline + one-line explanation per state.
   const state = access.state;
@@ -68,17 +71,19 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
             {state === 'trial' ? t('chipTrial', { days: access.trialDaysLeft }) : state === 'pro' ? t('chipPro') : t('chipExpired')}
           </span>
         </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          {stripeLive ? (
-            <StripeButton kind="portal" />
-          ) : (
-            <>
-              <StripeButton kind="checkout" />
-              <a href={PRICING_HREF} className="text-sm underline underline-offset-4">{t('seePlans')}</a>
-            </>
-          )}
-        </div>
-        <p className="mt-4 text-xs text-s-muted">{stripeLive ? t('portalNote') : t('checkoutNote')}</p>
+        {!twa && (
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            {stripeLive ? (
+              <StripeButton kind="portal" />
+            ) : (
+              <>
+                <StripeButton kind="checkout" />
+                <a href={PRICING_HREF} className="text-sm underline underline-offset-4">{t('seePlans')}</a>
+              </>
+            )}
+          </div>
+        )}
+        <p className="mt-4 text-xs text-s-muted">{twa ? t('twaNote') : stripeLive ? t('portalNote') : t('checkoutNote')}</p>
       </section>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
@@ -100,7 +105,7 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
             <dl className="divide-y divide-s-line">
               <div className={row}><dt className={dt}>{t('stripeStatus')}</dt><dd>{b.status ? t(`status_${b.status}` as any) : '–'}</dd></div>
               <div className={row}><dt className={dt}>{b.cancelAtPeriodEnd ? t('endsOn') : t('renewsOn')}</dt><dd>{day(b.periodEnd)}</dd></div>
-              <div className={row}><dt className={dt}>{t('invoices')}</dt><dd><StripeButton kind="portal" variant="secondary" /></dd></div>
+              {!twa && <div className={row}><dt className={dt}>{t('invoices')}</dt><dd><StripeButton kind="portal" variant="secondary" /></dd></div>}
             </dl>
           ) : (
             <p className="py-3 text-sm text-s-muted">{t('noBilling')}</p>

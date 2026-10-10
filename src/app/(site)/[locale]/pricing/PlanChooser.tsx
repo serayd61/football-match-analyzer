@@ -10,11 +10,15 @@ type Labels = {
   freeName: string; freeSub: string; freePrice: string; freeFor: string; free: string[]; freeNot: string; freeCta: string;
   proName: string; proSub: string; mostPopular: string; perMonth: string; perWeek: string; noteMonthly: string; noteWeekly: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
+  twaNote: string; twaSignIn: string;
 };
 
 // Client half of the pricing page: the billing toggle and the checkout call.
-export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, prices, offerLine = null, labels: l }: {
-  locale: string; signedIn: boolean; isPro: boolean; weeklyAvailable: boolean;
+// `purchasable=false` is the Google Play (TWA) build: the plan comparison stays,
+// but prices, the toggle, the offer line and the checkout button are not
+// rendered (Play payments policy — see src/lib/site/twa.ts).
+export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, weeklyAvailable, prices, offerLine = null, labels: l }: {
+  locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean; weeklyAvailable: boolean;
   prices: { monthly: string; weekly: string }; /** lansman teklifi satırı (yalnız aylık) */ offerLine?: string | null; labels: Labels;
 }) {
   const router = useRouter();
@@ -83,25 +87,32 @@ export default function PlanChooser({ locale, signedIn, isPro, weeklyAvailable, 
             </div>
             <span className="tag tag-accent">{l.mostPopular}</span>
           </div>
-          <div>
-            <p className="flex items-baseline gap-2">
-              <span className="num text-[48px] font-extrabold leading-none">{billing === 'weekly' ? prices.weekly : prices.monthly}</span>
-              <span className="text-[14px] text-s-muted">{billing === 'weekly' ? l.perWeek : l.perMonth}</span>
-            </p>
-            <p className="mt-2 text-[14px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
-            {offerLine && billing === 'monthly' && <p className="mt-2 inline-block rounded-[6px] bg-s-win/10 px-2 py-1 text-[13px] font-semibold text-s-win">{offerLine}</p>}
-          </div>
+          {purchasable && (
+            <div>
+              <p className="flex items-baseline gap-2">
+                <span className="num text-[48px] font-extrabold leading-none">{billing === 'weekly' ? prices.weekly : prices.monthly}</span>
+                <span className="text-[14px] text-s-muted">{billing === 'weekly' ? l.perWeek : l.perMonth}</span>
+              </p>
+              <p className="mt-2 text-[14px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
+              {offerLine && billing === 'monthly' && <p className="mt-2 inline-block rounded-[6px] bg-s-win/10 px-2 py-1 text-[13px] font-semibold text-s-win">{offerLine}</p>}
+            </div>
+          )}
           <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
             {l.pro.map((f) => <li key={f} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{f}</li>)}
           </ul>
-          {isPro ? (
+          {!purchasable ? (
+            <>
+              <p className="mt-auto text-[14px] text-s-muted">{l.twaNote}</p>
+              {!signedIn && <Link href="/login" className="btn btn-secondary btn-block">{l.twaSignIn}</Link>}
+            </>
+          ) : isPro ? (
             <Link href="/account" className="btn btn-secondary btn-block">{l.proCtaSignedIn}</Link>
           ) : (
             <button type="button" onClick={subscribe} disabled={loading} className="btn btn-primary btn-lg btn-block mt-auto">
               {loading ? l.loading : signedIn ? l.proCtaSignedIn : l.proCta}
             </button>
           )}
-          {!signedIn && <p className="text-[13px] text-s-muted">{l.signInFirst}</p>}
+          {purchasable && !signedIn && <p className="text-[13px] text-s-muted">{l.signInFirst}</p>}
           {error && <p role="alert" className="risk-note">{error}</p>}
         </section>
       </div>

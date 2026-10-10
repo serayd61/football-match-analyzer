@@ -8,6 +8,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SiteAccess } from '@/lib/site/access';
+import { isTwa } from '@/lib/site/twa';
 import { RiskNote } from './Risk';
 
 // Account and billing now live on the localized site.
@@ -15,17 +16,21 @@ export const REGISTER_HREF = '/login?mode=register';
 export const SIGNIN_HREF = '/login';
 export const PRICING_HREF = '/pricing';
 
+// Inside the Google Play app (TWA) nothing may point at a purchase (Play
+// payments policy, see lib/site/twa.ts): the CTA becomes the scorecard and
+// the lead explains that subscriptions are not available in the app.
 export async function Paywall() {
   const t = await getTranslations('paywall');
+  const twa = isTwa();
   return (
     <section className="my-8 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 shadow-[var(--s-shadow)] lg:grid-cols-[1fr_1fr] lg:p-8" aria-labelledby="paywall-title">
       <div>
         <p className="kicker">{t('expiredKicker')}</p>
         <h2 id="paywall-title" className="mt-2 text-[30px]">{t('expiredTitle')}</h2>
-        <p className="mt-3 max-w-xl text-[15px] text-s-muted">{t('expiredLead')}</p>
+        <p className="mt-3 max-w-xl text-[15px] text-s-muted">{twa ? t('twaLead') : t('expiredLead')}</p>
         <div className="mt-6 flex flex-wrap gap-2">
-          <Link href={PRICING_HREF} className="btn btn-primary">{t('expiredCta')}</Link>
-          <Link href="/performance" className="btn btn-secondary">{t('expiredAlt')}</Link>
+          {!twa && <Link href={PRICING_HREF} className="btn btn-primary">{t('expiredCta')}</Link>}
+          <Link href="/performance" className={`btn ${twa ? 'btn-primary' : 'btn-secondary'}`}>{t('expiredAlt')}</Link>
         </div>
       </div>
       <RiskNote className="max-w-md self-end lg:justify-self-end">{t('expiredNote')}</RiskNote>
@@ -39,7 +44,7 @@ export async function TrialNotice({ access }: { access: SiteAccess }) {
   return (
     <p role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-s-line bg-s-surface px-4 py-2.5 text-[14px]">
       <span>{t('trialLeft', { days: access.trialDaysLeft })}</span>
-      <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>
+      {!isTwa() && <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>}
     </p>
   );
 }
@@ -66,7 +71,7 @@ export async function LockedPick({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
     <span className="flex flex-col gap-1">
       <span aria-hidden className={`blur-locked ${size === 'lg' ? 'text-[24px] font-extrabold' : 'text-[13px] font-semibold'}`} style={size === 'lg' ? { filter: 'blur(6px)' } : undefined}>{t('hiddenPick')}</span>
       <span className="sr-only">{t('hiddenPick')}</span>
-      <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong') : t('unlock')}</Link>
+      {!isTwa() && <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong') : t('unlock')}</Link>}
     </span>
   );
 }

@@ -1,0 +1,47 @@
+{
+  "packageId": "pro.footballanalytics",
+  "host": "footballanalytics.pro",
+  "name": "Football Analytics Pro",
+  "launcherName": "Football Analytics",
+  "display": "standalone",
+  "themeColor": "#f6f7f5",
+  "themeColorDark": "#0e1311",
+  "navigationColor": "#f6f7f5",
+  "navigationColorDark": "#0e1311",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#0f9f6e",
+  "enableNotifications": false,
+  "startUrl": "/?src=twa",
+  "iconUrl": "https://footballanalytics.pro/icons/icon-512x512.png",
+  "maskableIconUrl": "https://footballanalytics.pro/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/Users/serkanaydin/AndroidKeys/footballanalytics-upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://footballanalytics.pro/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://footballanalytics.pro/",
+  "minSdkVersion": 24,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "upload-key",
+      "value": "6B:41:39:6A:0E:C6:CA:D4:2C:8C:3C:86:5D:F6:09:F5:E3:E2:95:B9:0F:5E:EA:D0:D4:3E:94:F5:AE:B9:8D:81"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}
