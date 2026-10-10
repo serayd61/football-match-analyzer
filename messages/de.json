@@ -478,7 +478,8 @@
       "brasileirao": "Die Brasileirão ist Brasiliens höchste Liga: 20 Klubs, 38 Runden über eine Kalenderjahr-Saison. Lange Reisen und ein ungewöhnlich starker Heimvorteil machen sie zum Sonderfall; ihre Parameter werden auf den eigenen Resultaten gefittet.",
       "super-lig": "Die Süper Lig ist die höchste Liga der Türkei: 18 Klubs, 34 Runden. Sie kam im September 2026 dazu, die Stichprobe ist noch klein; ihre Bilanz wird deshalb separat gezeigt, und ihre Spiele stehen erst auf der Tagesliste, wenn die Stichprobe wächst."
     },
-    "howToRead": "Die Zahlen auf dieser Seite sind die abgerechnete {league}-Bilanz des Modells: die Trefferquote ist der Anteil der eingetroffenen 1X2-Tipps, der Brier-Score misst, wie gut die Wahrscheinlichkeiten zu den Resultaten passten (tiefer ist besser), und die Rendite nimmt einen flachen Einsatz von einer Einheit zum Schlusskurs an. Nachträglich wird nichts entfernt."
+    "howToRead": "Die Zahlen auf dieser Seite sind die abgerechnete {league}-Bilanz des Modells: die Trefferquote ist der Anteil der eingetroffenen 1X2-Tipps, der Brier-Score misst, wie gut die Wahrscheinlichkeiten zu den Resultaten passten (tiefer ist besser), und die Rendite nimmt einen flachen Einsatz von einer Einheit zum Schlusskurs an. Nachträglich wird nichts entfernt.",
+    "eventDescription": "{league}-Spiel: {home} gegen {away}."
   },
   "docs": {
     "methodology": {

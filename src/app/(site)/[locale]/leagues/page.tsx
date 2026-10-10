@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
+import { leagueCountryName } from '@/lib/site/countries';
 import { getPerformance } from '@/lib/site/performance';
 import { Page, PageTitle } from '@/components/site/ui';
 
@@ -40,7 +41,7 @@ export default async function LeaguesPage({ params: { locale } }: { params: { lo
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="truncate text-[17px]">{l.name}</h2>
-                    <p className="text-[13px] text-s-muted">{l.country}</p>
+                    <p className="text-[13px] text-s-muted">{leagueCountryName(l, locale)}</p>
                   </div>
                   <span className={`num shrink-0 text-[24px] font-bold leading-none ${tone}`}>{acc != null ? f.number(acc, 'percent1') : '–'}</span>
                 </div>

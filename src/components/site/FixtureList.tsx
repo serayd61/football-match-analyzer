@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SitePrediction, MatchStatus } from '@/lib/site/predictions';
 import { standingsIndex, type StandingRow } from '@/lib/site/standings';
+import { venueFor } from '@/lib/site/stadiums';
 import LocalTime from './LocalTime';
 import { Crest, StatusChip } from './PredictionTable';
 
@@ -63,6 +64,8 @@ export default async function FixtureList({ rows }: { rows: SitePrediction[] }) 
                     <span className="truncate">{p.awayName}</span><Pos n={pos(g.slug, p.awayId)} />
                     {showScore(p) && <span className="num ml-auto font-semibold">{p.awayScore}</span>}
                   </span>
+                  {/* SEO denetimi 2026-10-10: the venue is visible so the SportsEvent markup matches the page. */}
+                  {venueFor(p.homeId) && <span className="truncate text-xs text-s-muted">{venueFor(p.homeId)!.venue}</span>}
                 </span>
               </li>
             ))}

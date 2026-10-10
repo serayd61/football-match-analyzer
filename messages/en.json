@@ -478,7 +478,8 @@
       "brasileirao": "The Brasileirão is Brazil's top flight: 20 clubs and 38 rounds played across a calendar-year season. Long travel and an unusually strong home advantage make it a distinct case, and its parameters are fitted on its own results.",
       "super-lig": "The Süper Lig is Türkiye's top division: 18 clubs and 34 rounds. It was added in September 2026 and the sample is still small, so its record is shown separately and its matches are not in the daily shortlist until the sample grows."
     },
-    "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return assumes a flat one-unit stake at the closing price. Nothing is removed after the fact."
+    "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return assumes a flat one-unit stake at the closing price. Nothing is removed after the fact.",
+    "eventDescription": "{league} match: {home} vs {away}."
   },
   "docs": {
     "methodology": {

@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { ogCard, OG_SIZE, OG_CONTENT_TYPE } from '@/lib/site/og';
 import { leagueBySlug } from '@/lib/site/leagues';
+import { leagueCountryName } from '@/lib/site/countries';
 
 // League page og:image: "{League} predictions and record" in the page's language.
 export const runtime = 'nodejs';
@@ -13,5 +14,6 @@ export default async function Image({ params }: { params: { locale: string; slug
   const t = await getTranslations({ locale: params.locale, namespace: 'league' });
   const tm = await getTranslations({ locale: params.locale, namespace: 'meta' });
   if (!league) return ogCard({ eyebrow: tm('siteName'), title: tm('tagline') });
-  return ogCard({ eyebrow: league.country, title: t('metaTitle', { league: league.name }), subtitle: t('metaDescription', { league: league.name, country: league.country }) });
+  const country = leagueCountryName(league, params.locale);
+  return ogCard({ eyebrow: country, title: t('metaTitle', { league: league.name }), subtitle: t('metaDescription', { league: league.name, country }) });
 }

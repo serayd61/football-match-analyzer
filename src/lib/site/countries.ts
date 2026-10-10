@@ -37,3 +37,13 @@ export function countryName(ccode: string | null | undefined, locale: string): s
   if (!iso) return ccode;
   try { return new Intl.DisplayNames([locale], { type: 'region' }).of(iso) ?? ccode; } catch { return ccode; }
 }
+
+// SEO denetimi 2026-10-10: lig sayfalarında ülke adı her dilde İngilizce ("Germany") çıkıyordu.
+// Kıta kupaları (Champions League) ülke yerine "Avrupa" bölgesini taşır; gerisi countryName'den gelir.
+const EUROPE: Record<string, string> = { tr: 'Avrupa', en: 'Europe', de: 'Europa', it: 'Europa' };
+
+/** Localised country/region line for a covered league (falls back to the English `country` field). */
+export function leagueCountryName(league: { ccode: string; country: string }, locale: string): string {
+  if (league.ccode === 'INT') return EUROPE[locale] ?? league.country;
+  return countryName(league.ccode, locale) ?? league.country;
+}

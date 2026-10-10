@@ -478,7 +478,8 @@
       "brasileirao": "Il Brasileirão è la massima serie brasiliana: 20 club, 38 giornate in una stagione che segue l'anno solare. Le lunghe trasferte e un fattore campo insolitamente forte ne fanno un caso a sé; i suoi parametri sono stimati sui suoi risultati.",
       "super-lig": "La Süper Lig è la massima divisione turca: 18 club, 34 giornate. È stata aggiunta nel settembre 2026 e il campione è ancora piccolo, quindi il suo registro è mostrato a parte e le sue partite non entrano nella selezione del giorno finché il campione non cresce."
     },
-    "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento assume una puntata fissa di un'unità al prezzo di chiusura. Nulla viene rimosso a posteriori."
+    "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento assume una puntata fissa di un'unità al prezzo di chiusura. Nulla viene rimosso a posteriori.",
+    "eventDescription": "Partita di {league}: {home} contro {away}."
   },
   "docs": {
     "methodology": {

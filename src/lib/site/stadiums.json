@@ -1,0 +1,1252 @@
+{
+  "generatedAt": "2026-10-10",
+  "source": "football-data.org v4 /competitions/{code}/teams",
+  "teams": {
+    "1567": {
+      "team": "Santa Clara",
+      "venue": "Cidade do Futebol",
+      "address": "Rua Comandante Jaime de Sousa, 21 Ponta Delgada 9500",
+      "country": "PT",
+      "fd": 5530
+    },
+    "1626": {
+      "team": "Remo",
+      "venue": "Estádio Estadual Jornalista Edgar Augusto Proença",
+      "address": "Avenida Nazaré, 962, Bairro Nazaré Belém, PA 66035-170",
+      "country": "BR",
+      "fd": 4287
+    },
+    "1634": {
+      "team": "Famalicão",
+      "venue": "Estádio Municipal 22 de Junho",
+      "address": "Vila Nova de Famalicão",
+      "country": "PT",
+      "fd": 5531
+    },
+    "1786": {
+      "team": "Academico Viseu",
+      "venue": "Estádio Municipal do Fontelo",
+      "address": "Rua Sra. do Postigo nº 10 Viseu 3500-200",
+      "country": "PT",
+      "fd": 5527
+    },
+    "6379": {
+      "team": "Paris FC",
+      "venue": "Stade Sébastien Charléty",
+      "address": "17 rue Neuve Tolbiac Paris 75013",
+      "country": "FR",
+      "fd": 1045
+    },
+    "6413": {
+      "team": "PEC Zwolle",
+      "venue": "MAC³PARK Stadion",
+      "address": "Stadionplein 1 Zwolle 8025 CP",
+      "country": "NL",
+      "fd": 684
+    },
+    "6414": {
+      "team": "Telstar",
+      "venue": "Rabobank IJmond Stadion",
+      "address": "Postbus 90 IJmuiden 1970 AB",
+      "country": "NL",
+      "fd": 1912
+    },
+    "6422": {
+      "team": "Fortuna Sittard",
+      "venue": "Fortuna Sittard Stadion",
+      "address": "Milaanstraat 120 Sittard 6135 LH",
+      "country": "NL",
+      "fd": 1920
+    },
+    "6433": {
+      "team": "Go Ahead Eagles",
+      "venue": "De Adelaarshorst",
+      "address": "Vetkampstraat 1 Deventer 7416 WK",
+      "country": "NL",
+      "fd": 718
+    },
+    "6504": {
+      "team": "Monza",
+      "venue": "Stadio Comunale Brianteo",
+      "address": "Via Ragazzi del '99, 14 Monza 20900",
+      "country": "IT",
+      "fd": 5911
+    },
+    "7733": {
+      "team": "Vitória",
+      "venue": "Estádio Manoel Barradas",
+      "address": "Rua Artêmio Castro Valente, Nossa Senhora da Vitória Salvador, BA 41750-240",
+      "country": "BR",
+      "fd": 1782
+    },
+    "7788": {
+      "team": "Cambuur",
+      "venue": "Cambuurstadion",
+      "address": "Cambuurplein 44 Leeuwarden 8921 RG",
+      "country": "NL",
+      "fd": 1909
+    },
+    "7841": {
+      "team": "Rio Ave",
+      "venue": "Estádio do Rio Ave Futebol Clube",
+      "address": "Praça da República, n.º35, Apartado 42 Vila do Conde 4481-909",
+      "country": "PT",
+      "fd": 496
+    },
+    "7842": {
+      "team": "Estoril",
+      "venue": "Estádio António Coimbra da Mota",
+      "address": "Estádio António Coimbra da Mota Estoril 2765",
+      "country": "PT",
+      "fd": 582
+    },
+    "7844": {
+      "team": "Vitória de Guimarães",
+      "venue": "Estádio Dom Afonso Henriques",
+      "address": "Dr. António Pimenta Machado, Apartado 505 Guimarães 4802-914",
+      "country": "PT",
+      "fd": 5543
+    },
+    "7877": {
+      "team": "Bahia",
+      "venue": "Estádio Governador Roberto Santos",
+      "address": "Rua Antônio Fernandes S/N, Jardim das Margaridas Salvador, BA 41502-590",
+      "country": "BR",
+      "fd": 1777
+    },
+    "7881": {
+      "team": "Venezia",
+      "venue": "Stadio Pierluigi Penzo",
+      "address": "Viale Ancona, 43 Venezia 30172",
+      "country": "IT",
+      "fd": 454
+    },
+    "7943": {
+      "team": "Sassuolo",
+      "venue": "Mapei Stadium - Città del Tricolore",
+      "address": "Piazza Risorgimento, 47 Sassuolo 41049",
+      "country": "IT",
+      "fd": 471
+    },
+    "8121": {
+      "team": "Angers",
+      "venue": "Stade Raymond Kopa",
+      "address": "73 boulevard Jacques Portet, BP 20212 Angers 49002",
+      "country": "FR",
+      "fd": 532
+    },
+    "8149": {
+      "team": "Union Berlin",
+      "venue": "Stadion An der Alten Försterei",
+      "address": "An der Wuhlheide 263 Berlin 12555",
+      "country": "DE",
+      "fd": 28
+    },
+    "8178": {
+      "team": "Bayer Leverkusen",
+      "venue": "BayArena",
+      "address": "Bismarckstr. 122-124 Leverkusen 51373",
+      "country": "DE",
+      "fd": 3
+    },
+    "8191": {
+      "team": "Burnley",
+      "venue": "Turf Moor",
+      "address": "Harry Potts Way Burnley BB10 4BX",
+      "country": "GB",
+      "fd": 328
+    },
+    "8226": {
+      "team": "Hoffenheim",
+      "venue": "PreZero Arena",
+      "address": "Horrenberger Straße 58 Zuzenhausen 74939",
+      "country": "DE",
+      "fd": 2
+    },
+    "8232": {
+      "team": "Elversberg",
+      "venue": "Ursapharm-Arena an der Kaiserlinde",
+      "address": "St. Ingberter Straße 8 Spiesen-Elversberg 66583",
+      "country": "DE",
+      "fd": 719
+    },
+    "8302": {
+      "team": "Sevilla",
+      "venue": "Estadio Ramón Sánchez Pizjuán",
+      "address": "Calle Sevilla Fútbol Club, s/n Sevilla 41005",
+      "country": "ES",
+      "fd": 559
+    },
+    "8305": {
+      "team": "Getafe",
+      "venue": "Coliseum Alfonso Pérez",
+      "address": "Avenida Teresa de Calcuta, s/n Getafe 28903",
+      "country": "ES",
+      "fd": 82
+    },
+    "8315": {
+      "team": "Athletic Club",
+      "venue": "San Mamés",
+      "address": "Ibaigane, Alameda Mazarredo, 23 Bilbao 48009",
+      "country": "ES",
+      "fd": 77
+    },
+    "8344": {
+      "team": "Cardiff City",
+      "venue": "Cardiff City Stadium",
+      "address": "Cardiff City Stadium, Leckwith Road Cardiff CF11 8AZ",
+      "country": "GB",
+      "fd": 715
+    },
+    "8348": {
+      "team": "Moreirense",
+      "venue": "P.D. Comendador Joaquim de Almeida Freitas",
+      "address": "Avenida Comendador Joaquim de Almeida Freitas Moreira de Cónegos 4815-270",
+      "country": "PT",
+      "fd": 583
+    },
+    "8358": {
+      "team": "Freiburg",
+      "venue": "Schwarzwald-Stadion",
+      "address": "Schwarzwaldstraße 193 Freiburg 79117",
+      "country": "DE",
+      "fd": 17
+    },
+    "8370": {
+      "team": "Rayo Vallecano",
+      "venue": "Estadio del Rayo Vallecano",
+      "address": "Calle del Payaso Fofó, s/n Madrid 28018",
+      "country": "ES",
+      "fd": 87
+    },
+    "8371": {
+      "team": "Osasuna",
+      "venue": "Estadio El Sadar",
+      "address": "Calle del Sadar, s/n Pamplona 31006",
+      "country": "ES",
+      "fd": 79
+    },
+    "8406": {
+      "team": "Augsburg",
+      "venue": "WWK Arena",
+      "address": "Donauwörther Straße 170 Augsburg 86154",
+      "country": "DE",
+      "fd": 16
+    },
+    "8411": {
+      "team": "Preston North End",
+      "venue": "Deepdale Stadium",
+      "address": "Sir Tom Finney Way Preston PR1 6RU",
+      "country": "GB",
+      "fd": 1081
+    },
+    "8427": {
+      "team": "Bristol City",
+      "venue": "Ashton Gate Stadium",
+      "address": "Ashton Gate Bristol BS3 2EJ",
+      "country": "GB",
+      "fd": 387
+    },
+    "8430": {
+      "team": "Lincoln City",
+      "venue": "Sincil Bank Stadium",
+      "address": "Sincil Bank Lincoln LN5 8LD",
+      "country": "GB",
+      "fd": 1126
+    },
+    "8451": {
+      "team": "Charlton Athletic",
+      "venue": "The Valley",
+      "address": "Floyd Road, Charlton London SE7 8BL",
+      "country": "GB",
+      "fd": 348
+    },
+    "8455": {
+      "team": "Chelsea",
+      "venue": "Stamford Bridge",
+      "address": "Fulham Road London SW6 1HS",
+      "country": "GB",
+      "fd": 61
+    },
+    "8456": {
+      "team": "Manchester City",
+      "venue": "Etihad Stadium",
+      "address": "SportCity Manchester M11 3FF",
+      "country": "GB",
+      "fd": 65
+    },
+    "8460": {
+      "team": "Paderborn",
+      "venue": "Benteler-Arena",
+      "address": "Paderborner Str. 89 Paderborn 33104",
+      "country": "DE",
+      "fd": 29
+    },
+    "8462": {
+      "team": "Portsmouth",
+      "venue": "Fratton Park",
+      "address": "Frogmore Road Portsmouth PO4 8RA",
+      "country": "GB",
+      "fd": 325
+    },
+    "8463": {
+      "team": "Leeds United",
+      "venue": "Elland Road",
+      "address": "Elland Road Leeds LS11 0ES",
+      "country": "GB",
+      "fd": 341
+    },
+    "8464": {
+      "team": "NEC Nijmegen",
+      "venue": "Goffertstadion",
+      "address": "Stadionplein 1 Nijmegen 6532 AJ",
+      "country": "NL",
+      "fd": 1915
+    },
+    "8466": {
+      "team": "Southampton",
+      "venue": "St. Mary's Stadium",
+      "address": "Britannia Road Southampton SO14 5FP",
+      "country": "GB",
+      "fd": 340
+    },
+    "8472": {
+      "team": "Sunderland",
+      "venue": "Stadium of Light",
+      "address": "The Sunderland Stadium of Light Sunderland SR5 1SU",
+      "country": "GB",
+      "fd": 71
+    },
+    "8514": {
+      "team": "Santos",
+      "venue": "Estádio Urbano Caldeira",
+      "address": "Rua Princesa Isabel S/N, Vila Belmiro Santos, SP 11075-501",
+      "country": "BR",
+      "fd": 6685
+    },
+    "8517": {
+      "team": "Botafogo",
+      "venue": "Estádio Nilton Santos",
+      "address": "Avenida Venceslau Brás 72, Bairro Botafago Rio de Janeiro, RJ 22290-140",
+      "country": "BR",
+      "fd": 1770
+    },
+    "8521": {
+      "team": "Brest",
+      "venue": "Stade Francis-Le Blé",
+      "address": "Port de Plaisance, 470 bis rue Alain Colas Brest 29200",
+      "country": "FR",
+      "fd": 512
+    },
+    "8524": {
+      "team": "Atalanta",
+      "venue": "Stadio Atleti Azzurri d'Italia",
+      "address": "Corso Europa, 46, Zingonia Ciserano 24040",
+      "country": "IT",
+      "fd": 102
+    },
+    "8525": {
+      "team": "Willem II",
+      "venue": "Koning Willem II Stadion",
+      "address": "Goirleseweg 34 Tilburg 5026 PC",
+      "country": "NL",
+      "fd": 672
+    },
+    "8529": {
+      "team": "Cagliari",
+      "venue": "Sardegna Arena",
+      "address": "Viale la Plaia 15 Cagliari 09123",
+      "country": "IT",
+      "fd": 104
+    },
+    "8535": {
+      "team": "Fiorentina",
+      "venue": "Stadio Artemio Franchi",
+      "address": "Viale Manfredo Fanti 4 Firenze 50137",
+      "country": "IT",
+      "fd": 99
+    },
+    "8543": {
+      "team": "Lazio",
+      "venue": "Stadio Olimpico",
+      "address": "Via di Santa Cornelia, 1000 Formello 00060",
+      "country": "IT",
+      "fd": 110
+    },
+    "8549": {
+      "team": "Middlesbrough",
+      "venue": "Riverside Stadium",
+      "address": "Riverside Stadium Middlesbrough TS3 6RS",
+      "country": "GB",
+      "fd": 343
+    },
+    "8558": {
+      "team": "Espanyol",
+      "venue": "RCDE Stadium",
+      "address": "Avenida Baix Llobregat, 100 Cornellà de Llobregat 08940",
+      "country": "ES",
+      "fd": 80
+    },
+    "8559": {
+      "team": "Bolton Wanderers",
+      "venue": "University of Bolton Stadium",
+      "address": "Burnden Way Bolton BL6 6JW",
+      "country": "GB",
+      "fd": 60
+    },
+    "8560": {
+      "team": "Real Sociedad",
+      "venue": "Estadio Municipal de Anoeta",
+      "address": "Anoeta Pasalekua, 1 San Sebastián 20014",
+      "country": "ES",
+      "fd": 92
+    },
+    "8564": {
+      "team": "Milan",
+      "venue": "Stadio Giuseppe Meazza",
+      "address": "Via Filippo Turati 3 Milano 20121",
+      "country": "IT",
+      "fd": 98
+    },
+    "8581": {
+      "team": "Levante",
+      "venue": "Estadio Ciudad de Valencia",
+      "address": "Calle San Vicente de Paúl, 44 Valencia 46019",
+      "country": "ES",
+      "fd": 88
+    },
+    "8583": {
+      "team": "Auxerre",
+      "venue": "Stade de l'Abbé Deschamps",
+      "address": "Route de Vaux BP 349 Auxerre 89006",
+      "country": "FR",
+      "fd": 519
+    },
+    "8586": {
+      "team": "Tottenham Hotspur",
+      "venue": "Tottenham Hotspur Stadium",
+      "address": "Bill Nicholson Way, 748 High Road London N17 0AP",
+      "country": "GB",
+      "fd": 73
+    },
+    "8588": {
+      "team": "Lens",
+      "venue": "Stade Bollaert-Delelis",
+      "address": "33 rue Arthur Lamendin Avion 62210",
+      "country": "FR",
+      "fd": 546
+    },
+    "8592": {
+      "team": "Marseille",
+      "venue": "Orange Vélodrome",
+      "address": "La Commanderie, 33, traverse de La Martine Marseille 13012",
+      "country": "FR",
+      "fd": 516
+    },
+    "8593": {
+      "team": "Ajax",
+      "venue": "Johan Cruyff ArenA",
+      "address": "ArenA Boulevard 29 Amsterdam 1101 AX",
+      "country": "NL",
+      "fd": 678
+    },
+    "8600": {
+      "team": "Udinese",
+      "venue": "Dacia Arena",
+      "address": "Via Agostino e Angelo Candolini 2 Udine 33100",
+      "country": "IT",
+      "fd": 115
+    },
+    "8602": {
+      "team": "Wolverhampton Wanderers",
+      "venue": "Molineux Stadium",
+      "address": "Waterloo Road Wolverhampton WV1 4QR",
+      "country": "GB",
+      "fd": 76
+    },
+    "8603": {
+      "team": "Real Betis",
+      "venue": "Estadio Benito Villamarín",
+      "address": "Avenida de Heliópolis, s/n Sevilla 41012",
+      "country": "ES",
+      "fd": 90
+    },
+    "8611": {
+      "team": "FC Twente",
+      "venue": "De Grolsch Veste",
+      "address": "Colosseum 65 Enschede 7521 PP",
+      "country": "NL",
+      "fd": 666
+    },
+    "8614": {
+      "team": "Sparta Rotterdam",
+      "venue": "Sparta-Stadion Het Kasteel",
+      "address": "Spartapark Noord 1 Rotterdam 3027 VW",
+      "country": "NL",
+      "fd": 6806
+    },
+    "8633": {
+      "team": "Real Madrid",
+      "venue": "Estadio Santiago Bernabéu",
+      "address": "Avenida Concha Espina, 1 Madrid 28036",
+      "country": "ES",
+      "fd": 86
+    },
+    "8634": {
+      "team": "Barcelona",
+      "venue": "Camp Nou",
+      "address": "Avenida Arístides Maillol s/n Barcelona 08028",
+      "country": "ES",
+      "fd": 81
+    },
+    "8636": {
+      "team": "Inter",
+      "venue": "Stadio Giuseppe Meazza",
+      "address": "Corso Vittorio Emanuele II 9 Milano 20122",
+      "country": "IT",
+      "fd": 108
+    },
+    "8637": {
+      "team": "Galatasaray",
+      "venue": "Türk Telekom Arena",
+      "address": "Türk Telekom Arena Stadyumu, Huzur Mahallesi, Şişli İstanbul 34415",
+      "country": "TR",
+      "fd": 610
+    },
+    "8639": {
+      "team": "Lille",
+      "venue": "Stade Pierre-Mauroy",
+      "address": "Grand Rue 59, 780 Camphin-en-Pévèle Lille",
+      "country": "FR",
+      "fd": 521
+    },
+    "8640": {
+      "team": "PSV Eindhoven",
+      "venue": "Philips Stadion",
+      "address": "Fredriklaan 10a Eindhoven 5616 NH",
+      "country": "NL",
+      "fd": 674
+    },
+    "8650": {
+      "team": "Liverpool",
+      "venue": "Anfield",
+      "address": "Anfield Road Liverpool L4 0TH",
+      "country": "GB",
+      "fd": 64
+    },
+    "8654": {
+      "team": "West Ham United",
+      "venue": "London Stadium",
+      "address": "Queen Elizabeth Olympic Park, London London E20 2ST",
+      "country": "GB",
+      "fd": 563
+    },
+    "8655": {
+      "team": "Blackburn Rovers",
+      "venue": "Ewood Park",
+      "address": "Ewood Park Blackburn BB2 4JF",
+      "country": "GB",
+      "fd": 59
+    },
+    "8657": {
+      "team": "Sheffield United",
+      "venue": "Bramall Lane",
+      "address": "Bramall Lane Sheffield, Yorkshire S2 4SU",
+      "country": "GB",
+      "fd": 356
+    },
+    "8658": {
+      "team": "Birmingham City",
+      "venue": "St Andrew's Trillion Trophy Stadium",
+      "address": "St. Andrew's Stadium Birmingham B9 4RL",
+      "country": "GB",
+      "fd": 332
+    },
+    "8659": {
+      "team": "West Bromwich Albion",
+      "venue": "The Hawthorns",
+      "address": "The Hawthorns West Bromwich B71 4LF",
+      "country": "GB",
+      "fd": 74
+    },
+    "8667": {
+      "team": "Hull City",
+      "venue": "Kingston Communications Stadium",
+      "address": "Walton Street Hull HU3 6HU",
+      "country": "GB",
+      "fd": 322
+    },
+    "8668": {
+      "team": "Everton",
+      "venue": "Goodison Park",
+      "address": "Goodison Park Liverpool L4 4EL",
+      "country": "GB",
+      "fd": 62
+    },
+    "8669": {
+      "team": "Coventry City",
+      "venue": "Coventry Building Society Arena",
+      "address": "Judds Lane Coventry CV6 6GE",
+      "country": "GB",
+      "fd": 1076
+    },
+    "8674": {
+      "team": "FC Groningen",
+      "venue": "Hitachi Capital Mobility Stadion",
+      "address": "Boumaboulevard 41 Groningen 9701 BJ",
+      "country": "NL",
+      "fd": 677
+    },
+    "8678": {
+      "team": "AFC Bournemouth",
+      "venue": "Vitality Stadium",
+      "address": "Dean Court, Kings Park Bournemouth BH7 7AF",
+      "country": "GB",
+      "fd": 1044
+    },
+    "8682": {
+      "team": "Le Mans",
+      "venue": "MMArena",
+      "address": "La Pincenardière Le Mans 72230",
+      "country": "FR",
+      "fd": 535
+    },
+    "8686": {
+      "team": "Roma",
+      "venue": "Stadio Olimpico",
+      "address": "Via di Trigoria km. 3,600 Roma 00128",
+      "country": "IT",
+      "fd": 100
+    },
+    "8689": {
+      "team": "Lorient",
+      "venue": "Stade Yves Allainmat - Le Moustoir",
+      "address": "Tade Yves Allainmat Rue Du Tour Des Portes, BP 404 Lorient 56104",
+      "country": "FR",
+      "fd": 525
+    },
+    "8695": {
+      "team": "Fenerbahçe",
+      "venue": "Ülker Stadyumu Fenerbahçe Şükrü Saracoğlu Spor Kompleksi",
+      "address": "Fenerbahçe Şükrü Saracoğlu Stadyumu, Bağdat Caddesi, Kadıköy İstanbul 34724",
+      "country": "TR",
+      "fd": 613
+    },
+    "8696": {
+      "team": "Racing Santander",
+      "venue": "Campos de Sport de El Sardinero",
+      "address": "Calle Real Racing Club, s/n Santander 39005",
+      "country": "ES",
+      "fd": 5335
+    },
+    "8697": {
+      "team": "Werder Bremen",
+      "venue": "Weserstadion",
+      "address": "Franz-Böhmert-Str. 1c Bremen 28205",
+      "country": "DE",
+      "fd": 12
+    },
+    "8702": {
+      "team": "Internacional",
+      "venue": "Estádio José Pinheiro Borba",
+      "address": "Avenida Padre Cacique 891, Bairro Menino Deus Porto Alegre, RS 90810-240",
+      "country": "BR",
+      "fd": 6684
+    },
+    "8722": {
+      "team": "1. FC Köln",
+      "venue": "RheinEnergieSTADION",
+      "address": "Franz-Kremer-Allee 1 Köln 50937",
+      "country": "DE",
+      "fd": 1
+    },
+    "9746": {
+      "team": "Le Havre",
+      "venue": "Stade Océane",
+      "address": "2 route du château BP 90 Saint-Laurent-de-Brèvedent 76700",
+      "country": "FR",
+      "fd": 533
+    },
+    "9748": {
+      "team": "Lyon",
+      "venue": "Groupama Stadium",
+      "address": "350 avenue Jean Jaurès Lyon 69007",
+      "country": "FR",
+      "fd": 523
+    },
+    "9764": {
+      "team": "Gil Vicente",
+      "venue": "Estádio Cidade de Barcelos",
+      "address": "Rua D. Diogo Pinheiro n.º 25, Apartado 197 Barcelos 4750-282",
+      "country": "PT",
+      "fd": 5533
+    },
+    "9767": {
+      "team": "Coritiba",
+      "venue": "Estádio Major Antônio Couto Pereira",
+      "address": "Rua Ubaldino do Amaral 37, Alto da Glória Curitiba, PR 80060-195",
+      "country": "BR",
+      "fd": 4241
+    },
+    "9768": {
+      "team": "Sporting CP",
+      "venue": "Estádio José Alvalade",
+      "address": "Edifício Visconde de Alvalade, Apartado 42099 Lisboa 1601-801",
+      "country": "PT",
+      "fd": 498
+    },
+    "9769": {
+      "team": "Gremio",
+      "venue": "Arena do Grêmio",
+      "address": "Avenida Padre Leopoldo Bretano, 110, Humaitá Porto Alegre, RS 90250-590",
+      "country": "BR",
+      "fd": 1767
+    },
+    "9770": {
+      "team": "Flamengo",
+      "venue": "Estadio Jornalista Mário Filho",
+      "address": "Rio de Janeiro, RJ",
+      "country": "BR",
+      "fd": 1783
+    },
+    "9772": {
+      "team": "Benfica",
+      "venue": "Estádio do Sport Lisboa e Benfica",
+      "address": "Avenida General Norton de Matos 1500 Lissabon",
+      "country": "PT",
+      "fd": 1903
+    },
+    "9773": {
+      "team": "FC Porto",
+      "venue": "Estádio Do Dragão",
+      "address": "Estádio do Dragão, Entrada Poente - Piso 3 Porto 4350-451",
+      "country": "PT",
+      "fd": 503
+    },
+    "9780": {
+      "team": "Alverca",
+      "venue": "Campo Futebol Clube Alverca",
+      "address": "Alverca do Ribatejo",
+      "country": "PT",
+      "fd": 7822
+    },
+    "9781": {
+      "team": "Cruzeiro",
+      "venue": "Estádio Governador Magalhães Pinto",
+      "address": "Rua Timbiras 2903, Bairro Preto Belo Horizonte, MG 30140-062",
+      "country": "BR",
+      "fd": 1771
+    },
+    "9783": {
+      "team": "Deportivo A Coruña",
+      "venue": "Estadio Abanca-Riazor",
+      "address": "Plaza de Pontevedra, 19 A Coruña 15003",
+      "country": "ES",
+      "fd": 560
+    },
+    "9788": {
+      "team": "Borussia Mönchengladbach",
+      "venue": "Stadion im Borussia-Park",
+      "address": "Hennes-Weisweiler-Allee 1 Mönchengladbach 41179",
+      "country": "DE",
+      "fd": 18
+    },
+    "9789": {
+      "team": "Borussia Dortmund",
+      "venue": "Signal Iduna Park",
+      "address": "Rheinlanddamm 207-209 Dortmund 44137",
+      "country": "DE",
+      "fd": 4
+    },
+    "9790": {
+      "team": "Hamburger SV",
+      "venue": "Volksparkstadion",
+      "address": "Sylvesterallee 7 Hamburg 22525",
+      "country": "DE",
+      "fd": 7
+    },
+    "9804": {
+      "team": "Torino",
+      "venue": "Stadio Olimpico di Torino",
+      "address": "Via Arcivescovado 1 Torino 10122",
+      "country": "IT",
+      "fd": 586
+    },
+    "9808": {
+      "team": "Corinthians",
+      "venue": "Neo Química Arena",
+      "address": "Rua São Jorge 777, Tatuapé São Paulo, SP 03087-000",
+      "country": "BR",
+      "fd": 1779
+    },
+    "9810": {
+      "team": "Eintracht Frankfurt",
+      "venue": "Deutsche Bank Park",
+      "address": "Mörfelder Landstraße 362 Frankfurt am Main 60528",
+      "country": "DE",
+      "fd": 19
+    },
+    "9817": {
+      "team": "Watford",
+      "venue": "Vicarage Road Stadium",
+      "address": "Vicarage Road Watford WD18 0ER",
+      "country": "GB",
+      "fd": 346
+    },
+    "9823": {
+      "team": "Bayern München",
+      "venue": "Allianz Arena",
+      "address": "Säbenerstr. 51 München 81547",
+      "country": "DE",
+      "fd": 5
+    },
+    "9825": {
+      "team": "Arsenal",
+      "venue": "Emirates Stadium",
+      "address": "75 Drayton Park London N5 1BU",
+      "country": "GB",
+      "fd": 57
+    },
+    "9826": {
+      "team": "Crystal Palace",
+      "venue": "Selhurst Park",
+      "address": "Whitehorse Lane London SE25 6PU",
+      "country": "GB",
+      "fd": 354
+    },
+    "9829": {
+      "team": "Monaco",
+      "venue": "Stade Louis II.",
+      "address": "Avenue des Castellans Monaco 98000",
+      "country": "MC",
+      "fd": 548
+    },
+    "9831": {
+      "team": "Nice",
+      "venue": "Stade de Nice",
+      "address": "35, avenue du Ray Nice 06100",
+      "country": "FR",
+      "fd": 522
+    },
+    "9841": {
+      "team": "Wrexham",
+      "venue": "Racecourse Ground",
+      "address": "Racecourse Ground, Mold Road Wrexham LL11 2AH",
+      "country": "GB",
+      "fd": 404
+    },
+    "9847": {
+      "team": "Paris Saint-Germain",
+      "venue": "Parc des Princes",
+      "address": "24, rue de Commandant Guibaud Paris 7501",
+      "country": "FR",
+      "fd": 524
+    },
+    "9848": {
+      "team": "Strasbourg",
+      "venue": "Stade de la Meinau",
+      "address": "12 Rue Extenwoerth Strasbourg 67000",
+      "country": "FR",
+      "fd": 576
+    },
+    "9850": {
+      "team": "Norwich City",
+      "venue": "Carrow Road",
+      "address": "Carrow Road Norwich NR1 1JE",
+      "country": "GB",
+      "fd": 68
+    },
+    "9851": {
+      "team": "Rennes",
+      "venue": "Roazhon Park",
+      "address": "La Piverdière - Chemin de la Taupinais CS 5390 Rennes 35039",
+      "country": "FR",
+      "fd": 529
+    },
+    "9857": {
+      "team": "Bologna",
+      "venue": "Stadio Renato Dall'Ara",
+      "address": "Via Casteldebole 10 Bologna 40132",
+      "country": "IT",
+      "fd": 103
+    },
+    "9863": {
+      "team": "Fluminense",
+      "venue": "Estadio Jornalista Mário Filho",
+      "address": "Rua Álvaro Chaves 41, Bairro Laranjeiras Rio de Janeiro, RJ 22231-220",
+      "country": "BR",
+      "fd": 1765
+    },
+    "9864": {
+      "team": "Málaga",
+      "venue": "Estadio La Rosaleda",
+      "address": "Paseo de Martiricos, s/n Málaga 29011",
+      "country": "ES",
+      "fd": 84
+    },
+    "9866": {
+      "team": "Deportivo Alavés",
+      "venue": "Estadio de Mendizorroza",
+      "address": "Mendizorroza, Paseo Cervantes, s/n Vitoria 01007",
+      "country": "ES",
+      "fd": 263
+    },
+    "9875": {
+      "team": "Napoli",
+      "venue": "Stadio San Paolo",
+      "address": "Centro Tecnico di Castel Volturno, Via S.S. Domitana, Km 35 Castel Volturno 81030",
+      "country": "IT",
+      "fd": 113
+    },
+    "9879": {
+      "team": "Fulham",
+      "venue": "Craven Cottage",
+      "address": "Craven Cottage, Stevenage Road London SW6 6HH",
+      "country": "GB",
+      "fd": 63
+    },
+    "9885": {
+      "team": "Juventus",
+      "venue": "Allianz Stadium",
+      "address": "Corso Galileo Ferraris, 32 Torino 10128",
+      "country": "IT",
+      "fd": 109
+    },
+    "9888": {
+      "team": "Lecce",
+      "venue": "Stadio Comunale Via Del Mare",
+      "address": "Via Templari 11 Lecce 73100",
+      "country": "IT",
+      "fd": 5890
+    },
+    "9891": {
+      "team": "Frosinone",
+      "venue": "Stadio Benito Stirpe",
+      "address": "Via Marittima, 2 Frosinone 03100",
+      "country": "IT",
+      "fd": 470
+    },
+    "9902": {
+      "team": "Ipswich Town",
+      "venue": "Portman Road Stadium",
+      "address": "Portman Road Ipswich IP1 2DA",
+      "country": "GB",
+      "fd": 349
+    },
+    "9905": {
+      "team": "Mainz 05",
+      "venue": "Opel Arena",
+      "address": "Dr.-Martin-Luther-King-Weg 20 Mainz 55122",
+      "country": "DE",
+      "fd": 15
+    },
+    "9906": {
+      "team": "Atlético Madrid",
+      "venue": "Estadio Wanda Metropolitano",
+      "address": "Paseo Virgen del Puerto, 67 Madrid 28005",
+      "country": "ES",
+      "fd": 78
+    },
+    "9908": {
+      "team": "FC Utrecht",
+      "venue": "Stadion Galgenwaard",
+      "address": "Postbus 85159 Utrecht 3508 AD",
+      "country": "NL",
+      "fd": 676
+    },
+    "9910": {
+      "team": "Celta Vigo",
+      "venue": "Estadio de Balaídos",
+      "address": "Calle del Conde de Gondomar, 1 Vigo 36203",
+      "country": "ES",
+      "fd": 558
+    },
+    "9937": {
+      "team": "Brentford",
+      "venue": "Griffin Park",
+      "address": "Braemar Road Brentford TW8 0NT",
+      "country": "GB",
+      "fd": 402
+    },
+    "9941": {
+      "team": "Toulouse",
+      "venue": "Stadium Municipal",
+      "address": "1 allée Gabriel Biénèsm, BP 54023 Toulouse 31028",
+      "country": "FR",
+      "fd": 511
+    },
+    "10003": {
+      "team": "Swansea City",
+      "venue": "Liberty Stadium",
+      "address": "Liberty Stadium, Landore Swansea, Glamorgan SA1 2FA",
+      "country": "GB",
+      "fd": 72
+    },
+    "10004": {
+      "team": "Millwall",
+      "venue": "The Den",
+      "address": "Zampa Road London SE16 3LN",
+      "country": "GB",
+      "fd": 384
+    },
+    "10167": {
+      "team": "Parma",
+      "venue": "Stadio Ennio Tardini",
+      "address": "Strada Carlo Pisacane, 4 Parma 43121",
+      "country": "IT",
+      "fd": 112
+    },
+    "10170": {
+      "team": "Derby County",
+      "venue": "iPro Stadium",
+      "address": "Pride Park Derby DE24 8XL",
+      "country": "GB",
+      "fd": 342
+    },
+    "10171": {
+      "team": "Como",
+      "venue": "Stadio Giuseppe Sinigaglia",
+      "address": "Viale Sinigaglia 2 Como 22100",
+      "country": "IT",
+      "fd": 7397
+    },
+    "10172": {
+      "team": "Queens Park Rangers",
+      "venue": "Kiyan Prince Foundation Stadium",
+      "address": "South Africa Road, Shepherds Bush London W12 7PA",
+      "country": "GB",
+      "fd": 69
+    },
+    "10189": {
+      "team": "Schalke 04",
+      "venue": "Veltins-Arena",
+      "address": "Ernst-Kuzorra-Weg 1 Gelsenkirchen 45891",
+      "country": "DE",
+      "fd": 6
+    },
+    "10194": {
+      "team": "Stoke City",
+      "venue": "Bet365 Stadium",
+      "address": "Stanley Matthews Way Stoke-on-Trent ST4 4EG",
+      "country": "GB",
+      "fd": 70
+    },
+    "10203": {
+      "team": "Nottingham Forest",
+      "venue": "The City Ground",
+      "address": "Pavilion Road, West Bridgeford Nottingham NG2 5GJ",
+      "country": "GB",
+      "fd": 351
+    },
+    "10204": {
+      "team": "Brighton & Hove Albion",
+      "venue": "The American Express Community Stadium",
+      "address": "44 North Road Brighton & Hove BN1 1YR",
+      "country": "GB",
+      "fd": 397
+    },
+    "10205": {
+      "team": "Villarreal",
+      "venue": "Estadio de la Cerámica",
+      "address": "Camino Miralcamp, s/n Villarreal 12540",
+      "country": "ES",
+      "fd": 94
+    },
+    "10212": {
+      "team": "Marítimo",
+      "venue": "Estádio dos Barreiros",
+      "address": "Rua Campo do Marítimo, Santo António Funchal 9020-073",
+      "country": "PT",
+      "fd": 5575
+    },
+    "10214": {
+      "team": "Nacional",
+      "venue": "Estádio da Madeira",
+      "address": "Rua do Esmeraldo, n.º 46 Funchal 9060",
+      "country": "PT",
+      "fd": 5529
+    },
+    "10217": {
+      "team": "ADO Den Haag",
+      "venue": "Cars Jeans Stadion",
+      "address": "Haags Kwartier 55 Den Haag 2491 BM",
+      "country": "NL",
+      "fd": 680
+    },
+    "10218": {
+      "team": "Excelsior",
+      "venue": "Van Donge & De Roo Stadion",
+      "address": "Honingerdijk 110 Rotterdam 3062 NX",
+      "country": "NL",
+      "fd": 670
+    },
+    "10228": {
+      "team": "SC Heerenveen",
+      "venue": "Abe Lenstra Stadion",
+      "address": "Abe Lenstra Boulevard 19 Heerenveen 8448 JA",
+      "country": "NL",
+      "fd": 673
+    },
+    "10229": {
+      "team": "AZ Alkmaar",
+      "venue": "AFAS Stadion",
+      "address": "Stadionweg 1 Alkmaar 1812 AZ",
+      "country": "NL",
+      "fd": 682
+    },
+    "10233": {
+      "team": "Genoa",
+      "venue": "Stadio Comunale Luigi Ferraris",
+      "address": "Via Ronchi, 67 Genova 16155",
+      "country": "IT",
+      "fd": 107
+    },
+    "10235": {
+      "team": "Feyenoord",
+      "venue": "Stadion Feijenoord",
+      "address": "Van Zandvlietplein 3 Rotterdam 3007 AP",
+      "country": "NL",
+      "fd": 675
+    },
+    "10242": {
+      "team": "Troyes",
+      "venue": "Stade de l'Aube",
+      "address": "29bis Rue Saint-Exupéry Pont-Sainte-Marie 10158",
+      "country": "FR",
+      "fd": 531
+    },
+    "10252": {
+      "team": "Aston Villa",
+      "venue": "Villa Park",
+      "address": "Villa Park Birmingham B6 6HE",
+      "country": "GB",
+      "fd": 58
+    },
+    "10260": {
+      "team": "Manchester United",
+      "venue": "Old Trafford",
+      "address": "Sir Matt Busby Way Manchester M16 0RA",
+      "country": "GB",
+      "fd": 66
+    },
+    "10261": {
+      "team": "Newcastle United",
+      "venue": "St. James' Park",
+      "address": "Sports Direct Arena Newcastle upon Tyne NE1 4ST",
+      "country": "GB",
+      "fd": 67
+    },
+    "10264": {
+      "team": "Braga",
+      "venue": "Estádio Municipal de Braga",
+      "address": "Parque Norte, Monte Crasto, Apartado 12 Braga 4700-087",
+      "country": "PT",
+      "fd": 5613
+    },
+    "10267": {
+      "team": "Valencia",
+      "venue": "Estadio de Mestalla",
+      "address": "Plaza del Valencia Club de Fútbol, 2 Valencia 46010",
+      "country": "ES",
+      "fd": 95
+    },
+    "10268": {
+      "team": "Elche",
+      "venue": "Estadio Manuel Martínez Valero",
+      "address": "Avenida Manuel Martínez Valero, 3 Elche 03208",
+      "country": "ES",
+      "fd": 285
+    },
+    "10269": {
+      "team": "VfB Stuttgart",
+      "venue": "Mercedes-Benz Arena",
+      "address": "Mercedesstraße 109 Stuttgart 70372",
+      "country": "DE",
+      "fd": 10
+    },
+    "10272": {
+      "team": "Atlético-MG",
+      "venue": "Estádio Raimundo Sampaio",
+      "address": "Av. Olegário Maciel 1516, Lourdes Belo Horizonte, MG 30180-111",
+      "country": "BR",
+      "fd": 1766
+    },
+    "10273": {
+      "team": "Athletico Paranaense",
+      "venue": "Estádio Joaquim Américo Guimarães",
+      "address": "Estrada do Ganchinho 1451, Umbará Curitiba, PR 81930-160",
+      "country": "BR",
+      "fd": 1768
+    },
+    "10276": {
+      "team": "Vasco da Gama",
+      "venue": "Estádio Club de Regatas Vasco da Gama",
+      "address": "Rua Gen. Almério de Moura 131, Bairro Vasco da Gama Rio de Janeiro, RJ 20921-060",
+      "country": "BR",
+      "fd": 1780
+    },
+    "10277": {
+      "team": "São Paulo",
+      "venue": "Estádio do Morumbi",
+      "address": "São Paulo, SP",
+      "country": "BR",
+      "fd": 1776
+    },
+    "10283": {
+      "team": "Palmeiras",
+      "venue": "Allianz Parque",
+      "address": "Rua Palestra Italia nº 214, Perdizes São Paulo, SP 05005-030",
+      "country": "BR",
+      "fd": 1769
+    },
+    "109705": {
+      "team": "Red Bull Bragantino",
+      "venue": "Estádio Nabi Abi Chedid",
+      "address": "Rua Emílio Colela S/N, Jd. Nova Bragança Bragança Paulista, SP 12914-410",
+      "country": "BR",
+      "fd": 4286
+    },
+    "158085": {
+      "team": "Arouca",
+      "venue": "Estádio Municipal de Arouca",
+      "address": "Rua Doutor Ângelo Miranda Arouca 4540-140",
+      "country": "PT",
+      "fd": 712
+    },
+    "163782": {
+      "team": "Mirassol",
+      "venue": "Estádio José Maria de Campos Maia",
+      "address": "Mirassol, SP",
+      "country": "BR",
+      "fd": 4364
+    },
+    "178475": {
+      "team": "RB Leipzig",
+      "venue": "Red Bull Arena",
+      "address": "Neumarkt 29-33 Leipzig 04109",
+      "country": "DE",
+      "fd": 721
+    },
+    "197693": {
+      "team": "Chapecoense",
+      "venue": "Arena Condá",
+      "address": "Rua Clevelândia S/N, Centro Chapecó, SC 89801-445",
+      "country": "BR",
+      "fd": 1772
+    },
+    "212821": {
+      "team": "Casa Pia AC",
+      "venue": "Estádio Pina Manique",
+      "address": "Estádio Pina Manique Lisboa 1500-462",
+      "country": "PT",
+      "fd": 6618
+    },
+    "1074320": {
+      "team": "Estrela da Amadora",
+      "venue": "Estádio Nacional",
+      "address": "",
+      "country": "PT",
+      "fd": 9136
+    }
+  }
+}
