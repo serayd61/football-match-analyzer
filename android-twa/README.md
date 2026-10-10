@@ -1,3 +1,13 @@
+# Google Play build — superseded (2026-10-10)
+
+**The Play app is now the WebView project in [`../android-app/`](../android-app/README.md).**
+This folder only keeps the old Bubblewrap `twa-manifest.json` for reference
+(package id, colours, upload-key alias). Do not build or upload from here:
+a TWA renders the site inside Chrome, so Google's closed-test engagement check
+(12 testers / 14 days) saw no usage inside the app and tester services refuse TWAs.
+
+---
+
 # Google Play build (Trusted Web Activity)
 
 The Play Store app is a Bubblewrap TWA that opens `https://footballanalytics.pro/?src=twa`.
