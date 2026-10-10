@@ -848,7 +848,17 @@
     "howStrong": "\"Stark\" heißt ≥55 % bisherige Trefferquote bei 1X2, ≥65 % bei Tormärkten, mit mindestens 10 Spielen im Bereich. Keine Garantie – eine Aufzeichnung dessen, was in derselben Lage passiert ist.",
     "homeTitle": "Spiele, die zu unserer Bilanz passen",
     "homeLead": "{matches} Spiele · 1X2-, Über/Unter- oder BTTS-Tipp in einem historisch starken Bereich",
-    "homeCta": "Liste öffnen"
+    "homeCta": "Liste öffnen",
+    "historyTitle": "Vergangene Tage",
+    "historyLead": "Jede Auswahl wurde drei Stunden vor Anpfiff festgehalten und mit dem Endstand abgerechnet. Treffer und Fehlgriffe stehen zusammen; nichts wird nach Ausgang entfernt.",
+    "historyEmpty": "Noch keine abgerechneten festgehaltenen Auswahlen. Die Aufzeichnung füllt sich ab dem nächsten Spieltag.",
+    "historyDayMeta": "{won}/{n} getroffen",
+    "historyPending": "{n} offen",
+    "colMarketName": "Markt",
+    "colScore": "Ergebnis",
+    "resultWon": "getroffen",
+    "resultLost": "verfehlt",
+    "resultPending": "offen"
   },
   "paywall": {
     "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",

@@ -848,7 +848,17 @@
     "howStrong": "\"Güçlü\" eşiği: 1X2'de ≥%55, gol pazarlarında ≥%65 geçmiş isabet ve kovada en az 10 maç. Garanti değil, aynı durumdaki maçlarda ne olduğunun kaydıdır.",
     "homeTitle": "Karneye uyan maçlar",
     "homeLead": "{matches} maç · 1X2, Üst/Alt, KG seçimi geçmişte güçlü tutan kovada",
-    "homeCta": "Listeyi aç"
+    "homeCta": "Listeyi aç",
+    "historyTitle": "Geçmiş günler",
+    "historyLead": "Her seçim başlamaya 3 saat kala kaydedildi ve skorla sonuçlandı. Kazanan da kaybeden de burada; sonuca göre satır silinmez.",
+    "historyEmpty": "Henüz sonuçlanmış kayıtlı seçim yok. Kayıt bir sonraki maç gününden itibaren birikir.",
+    "historyDayMeta": "{won}/{n} tuttu",
+    "historyPending": "{n} bekliyor",
+    "colMarketName": "Pazar",
+    "colScore": "Skor",
+    "resultWon": "tuttu",
+    "resultLost": "tutmadı",
+    "resultPending": "bekliyor"
   },
   "paywall": {
     "expiredTitle": "7 günlük deneme süren doldu",
