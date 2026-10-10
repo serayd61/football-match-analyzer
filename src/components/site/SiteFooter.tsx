@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
+import FooterPricingLink from './FooterPricingLink';
 
 // Footer v3: brand + one-line disclaimer, link columns, language.
 export default async function SiteFooter() {
@@ -21,7 +22,7 @@ export default async function SiteFooter() {
           <Link href="/performance" className="hover:text-s-ink">{nav('performance')}</Link>
           <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>
           <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
-          <Link href="/pricing" className="hover:text-s-ink">{nav('pricing')}</Link>
+          <FooterPricingLink label={nav('pricing')} />
         </nav>
         <nav className="flex flex-col gap-2" aria-label="Company">
           <Link href="/about" className="hover:text-s-ink">{nav('about')}</Link>

@@ -8,6 +8,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
 import ThemeToggle from './ThemeToggle';
+import { useIsTwa } from '@/lib/site/twa-client';
 
 // Header v3 (2026-09-26): 60px, sticky, translucent. Brand · Today's matches /
 // Record / Leagues / Pricing · right: language, theme, auth. On < lg the nav
@@ -27,6 +28,9 @@ export default function SiteHeader() {
   const { status } = useSession();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  // Google Play app: no "Pricing" entry (Play payments policy, lib/site/twa.ts).
+  const twa = useIsTwa();
+  const nav = twa ? NAV.filter((n) => n.key !== 'pricing') : NAV;
 
   useEffect(() => { setOpen(false); setMenu(false); }, [pathname]);
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <Link
               key={n.href}
               href={n.href}
@@ -98,7 +102,7 @@ export default function SiteHeader() {
       {open && (
         <div id="site-mobile-nav" className="border-t border-s-line bg-s-bg lg:hidden">
           <nav className="flex flex-col gap-1 px-4 py-3" aria-label="Primary">
-            {NAV.map((n) => (
+            {nav.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}

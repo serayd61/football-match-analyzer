@@ -1,0 +1,17 @@
+# Google Play build (Trusted Web Activity)
+
+The Play Store app is a Bubblewrap TWA that opens `https://footballanalytics.pro/?src=twa`.
+Only `twa-manifest.json` is tracked; the Android project is regenerated from it.
+
+```bash
+npm i -g @bubblewrap/cli            # once; JDK + Android cmdline-tools via `bubblewrap doctor`
+cd android-twa
+bubblewrap update --skipVersionUpgrade   # regenerate the project from twa-manifest.json
+BUBBLEWRAP_KEYSTORE_PASSWORD=… BUBBLEWRAP_KEY_PASSWORD=… bubblewrap build
+```
+
+* Upload key: `~/AndroidKeys/footballanalytics-upload.keystore` (alias `upload`, password next to it). Never commit it.
+* New release: bump `appVersionCode` (+1) and `appVersionName`, then `bubblewrap update && bubblewrap build`, upload `app-release-bundle.aab`.
+* `public/.well-known/assetlinks.json` must list the SHA-256 of the certificate the installed APK is signed with.
+  With Play App Signing that is **Play's** certificate (Play Console → Test and release → App integrity), not the upload key — add it there after the first upload.
+* Inside the app the site hides checkout, prices and "Unlock with Pro" (Play payments policy) — see `src/lib/site/twa.ts`.

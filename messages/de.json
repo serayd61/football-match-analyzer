@@ -814,7 +814,8 @@
     "expiredNote": "Pro liefert kalibrierte Wahrscheinlichkeiten, keine Garantien. Verlustserien von 5–7 Tipps kommen mehrmals pro Saison vor. 18+ · Spiele verantwortungsvoll.",
     "hiddenPick": "Premium-Tipp verborgen",
     "unlock": "Mit Pro freischalten →",
-    "unlockLong": "Mit Pro freischalten — ab $6.99"
+    "unlockLong": "Mit Pro freischalten — ab $6.99",
+    "twaLead": "Ihre 7-tägige Testphase ist beendet. In dieser App können keine Abos abgeschlossen werden; wenn Sie bereits eines haben, melden Sie sich mit demselben Konto an, der Zugang wird automatisch übernommen. Die öffentliche Bilanz bleibt offen."
   },
   "account": {
     "metaTitle": "Konto",
@@ -870,7 +871,8 @@
     "session": "Sitzung",
     "signOut": "Abmelden",
     "legacyNote": "Benachrichtigungs- und Analyse-Einstellungen liegen noch in der alten Ansicht:",
-    "legacyLink": "alte Einstellungen"
+    "legacyLink": "alte Einstellungen",
+    "twaNote": "Abo-Änderungen sind in dieser App nicht möglich."
   },
   "v2": {
     "risk": {
@@ -1060,7 +1062,9 @@
       "buyTitle": "Was du kaufst — und was nicht.",
       "buyText": "Pro gibt dir kalibrierte Wahrscheinlichkeiten und eine öffentliche, abgerechnete Bilanz — die aktuelle Rendite gegen die Schlussquote steht auf der Performance-Seite. Gewinn ist nicht garantiert; Verlustserien von 5–7 Tipps kommen mehrmals pro Saison vor. Abonniere nur, wenn du dir Gebühr und Einsätze leisten kannst. Jederzeit im Konto kündbar.",
       "trackLink": "Bilanz ansehen →",
-      "error": "Die Kasse konnte nicht gestartet werden. Bitte erneut versuchen."
+      "error": "Die Kasse konnte nicht gestartet werden. Bitte erneut versuchen.",
+      "twaNote": "In dieser App können keine Abos abgeschlossen werden. Wenn Sie bereits ein Pro-Abo haben, melden Sie sich mit demselben Konto an; es wird automatisch übernommen.",
+      "twaSignIn": "Anmelden"
     },
     "performance": {
       "title": "Bilanz",
@@ -1184,7 +1188,8 @@
       "closeTitle": "Das nächste Spiel in Daten lesen.",
       "closeNote": "7 Tage voller Zugang. Keine Karte nötig.",
       "strongLine": "In {n} Ligen traf ein Markt in den letzten 180 Tagen bei mindestens 15 Spielen ≥70 %.",
-      "strongCta": "Welche →"
+      "strongCta": "Welche →",
+      "ctaRecord": "Zur Bilanz →"
     }
   },
   "v3": {
