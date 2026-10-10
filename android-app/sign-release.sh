@@ -14,6 +14,9 @@ ALIAS="${KEY_ALIAS:-upload}"
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 JDK="${JAVA_HOME:-$HOME/.bubblewrap/jdk17/jdk-17.0.20.1+1/Contents/Home}"
 BUILD_TOOLS="$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)"
+# apksigner/zipalign are launcher scripts that call `java` from PATH.
+export JAVA_HOME="$JDK"
+export PATH="$JDK/bin:$PATH"
 
 AAB_IN=app/build/outputs/bundle/release/app-release.aab
 APK_IN=app/build/outputs/apk/release/app-release-unsigned.apk
@@ -21,7 +24,7 @@ APK_IN=app/build/outputs/apk/release/app-release-unsigned.apk
 [ -f "$APK_IN" ] || { echo "missing $APK_IN — run ./gradlew bundleRelease assembleRelease first"; exit 1; }
 [ -f "$KEYSTORE" ] || { echo "keystore not found: $KEYSTORE"; exit 1; }
 
-VC="$(grep -E '^\s*versionCode' app/build.gradle.kts | grep -oE '[0-9]+')"
+VC="$(grep -E '^\s*versionCode' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)"
 OUT=app/build/outputs/signed
 mkdir -p "$OUT"
 
