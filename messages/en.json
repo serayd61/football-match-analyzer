@@ -837,7 +837,8 @@
     "expiredNote": "Pro gives you calibrated probabilities, not guarantees. Losing streaks of 5–7 picks happen several times a season. 18+ · Play responsibly.",
     "hiddenPick": "Premium pick hidden",
     "unlock": "Unlock with Pro →",
-    "unlockLong": "Unlock with Pro — from $6.99"
+    "unlockLong": "Unlock with Pro — from $6.99",
+    "twaLead": "Your 7-day trial has ended. Subscriptions are not available in this app; if you already have one, sign in with the same account and your access is applied automatically. The public scorecard stays open."
   },
   "account": {
     "metaTitle": "Account",
@@ -893,7 +894,8 @@
     "session": "Session",
     "signOut": "Sign out",
     "legacyNote": "Notification and analysis preferences still live in the legacy view:",
-    "legacyLink": "legacy settings"
+    "legacyLink": "legacy settings",
+    "twaNote": "Subscription changes are not available in this app."
   },
   "v2": {
     "risk": {
@@ -1084,7 +1086,9 @@
       "buyText": "Pro gives you calibrated probabilities and a public, settled track record — see the Performance page for the current return against closing odds. It does not guarantee profit; losing streaks of 5–7 picks happen several times a season. Only subscribe if you can afford both the fee and the stakes. Cancel any time from your account.",
       "trackLink": "See the track record →",
       "error": "Checkout could not be started. Please try again.",
-      "metaTitle": "Pricing: 7 days free, then Pro"
+      "metaTitle": "Pricing: 7 days free, then Pro",
+      "twaNote": "Subscriptions are not available in this app. If you already have a Pro subscription, sign in with the same account and it is applied automatically.",
+      "twaSignIn": "Sign in"
     },
     "performance": {
       "title": "Track record",
@@ -1208,7 +1212,8 @@
       "closeTitle": "Read your next match in data.",
       "closeNote": "7 days of full access. No card needed.",
       "strongLine": "In {n} leagues a market hit ≥70% over at least 15 matches in the last 180 days.",
-      "strongCta": "Which ones →"
+      "strongCta": "Which ones →",
+      "ctaRecord": "See the scorecard →"
     }
   },
   "v3": {

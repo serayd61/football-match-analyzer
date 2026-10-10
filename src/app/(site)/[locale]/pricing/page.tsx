@@ -7,6 +7,7 @@ import { Page } from '@/components/site/ui';
 import { getSiteAccess } from '@/lib/site/access';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { launchOffer } from '@/lib/site/offer';
+import { isTwa } from '@/lib/site/twa';
 import PlanChooser from './PlanChooser';
 
 // Pricing (Modernist redesign 2026-09-11), localized. Top grid: H1 + intro
@@ -25,6 +26,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
   unstable_setRequestLocale(locale);
   const t = await getTranslations('v2.pricing');
   const access = await getSiteAccess();
+  // Google Play app: no checkout, no prices (Play payments policy, lib/site/twa.ts).
+  const purchasable = !isTwa();
   const weeklyAvailable = !!process.env.STRIPE_PRICE_ID_WEEKLY;
   const offer = launchOffer();
   const offerLine = offer ? (offer.until ? t('offerUntil', { price: money(offer.price), full: money(PLAN_PRICES.monthly.amount), until: offer.until }) : t('offer', { price: money(offer.price), full: money(PLAN_PRICES.monthly.amount) })) : null;
@@ -35,7 +38,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
         locale={locale}
         signedIn={access.state !== 'anon'}
         isPro={access.state === 'pro'}
-        weeklyAvailable={weeklyAvailable}
+        purchasable={purchasable}
+        weeklyAvailable={purchasable && weeklyAvailable}
         prices={{ monthly: money(PLAN_PRICES.monthly.amount), weekly: money(PLAN_PRICES.weekly.amount) }}
         offerLine={offerLine}
         labels={{
@@ -46,6 +50,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           noteMonthly: t('noteMonthly'), noteWeekly: t('noteWeekly'),
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
+          twaNote: t('twaNote'), twaSignIn: t('twaSignIn'),
         }}
       />
       <div className="mb-16 mt-10 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:p-8">

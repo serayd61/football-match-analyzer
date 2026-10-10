@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "pro.footballanalytics",
+      "sha256_cert_fingerprints": [
+        "6B:41:39:6A:0E:C6:CA:D4:2C:8C:3C:86:5D:F6:09:F5:E3:E2:95:B9:0F:5E:EA:D0:D4:3E:94:F5:AE:B9:8D:81"
+      ]
+    }
+  }
+]

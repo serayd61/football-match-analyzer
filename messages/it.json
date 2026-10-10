@@ -837,7 +837,8 @@
     "expiredNote": "Pro ti dà probabilità calibrate, non garanzie. Serie di 5–7 pronostici persi capitano più volte a stagione. 18+ · Gioca responsabilmente.",
     "hiddenPick": "Pronostico premium nascosto",
     "unlock": "Sblocca con Pro →",
-    "unlockLong": "Sblocca con Pro — da $6.99"
+    "unlockLong": "Sblocca con Pro — da $6.99",
+    "twaLead": "La prova di 7 giorni è terminata. In questa app non è possibile sottoscrivere abbonamenti; se ne hai già uno, accedi con lo stesso account e l'accesso viene applicato automaticamente. Il registro pubblico resta aperto."
   },
   "account": {
     "metaTitle": "Account",
@@ -893,7 +894,8 @@
     "session": "Sessione",
     "signOut": "Esci",
     "legacyNote": "Le preferenze di notifica e analisi restano nella vista precedente:",
-    "legacyLink": "impostazioni precedenti"
+    "legacyLink": "impostazioni precedenti",
+    "twaNote": "Le modifiche all'abbonamento non sono disponibili in questa app."
   },
   "v2": {
     "risk": {
@@ -1084,7 +1086,9 @@
       "buyText": "Pro ti dà probabilità calibrate e uno storico pubblico e regolato — il rendimento attuale contro la quota di chiusura è nella pagina Performance. Non garantisce profitto; serie di 5–7 pronostici persi capitano più volte a stagione. Abbonati solo se puoi permetterti sia la quota sia le puntate. Disdici quando vuoi dal tuo account.",
       "trackLink": "Vedi lo storico →",
       "error": "Impossibile avviare il pagamento. Riprova.",
-      "metaTitle": "Prezzi: 7 giorni gratis, poi Pro"
+      "metaTitle": "Prezzi: 7 giorni gratis, poi Pro",
+      "twaNote": "In questa app non è possibile sottoscrivere abbonamenti. Se hai già un abbonamento Pro, accedi con lo stesso account: viene applicato automaticamente.",
+      "twaSignIn": "Accedi"
     },
     "performance": {
       "title": "Storico",
@@ -1208,7 +1212,8 @@
       "closeTitle": "Leggi la prossima partita nei dati.",
       "closeNote": "7 giorni di accesso completo. Nessuna carta.",
       "strongLine": "In {n} campionati un mercato ha centrato ≥70% su almeno 15 partite negli ultimi 180 giorni.",
-      "strongCta": "Quali →"
+      "strongCta": "Quali →",
+      "ctaRecord": "Vedi il registro →"
     }
   },
   "v3": {

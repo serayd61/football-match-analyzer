@@ -837,7 +837,8 @@
     "expiredNote": "Pro sana garanti değil, kalibre olasılık verir. 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. 18+ · Sorumlu oyna.",
     "hiddenPick": "Premium tahmin gizli",
     "unlock": "Pro ile aç →",
-    "unlockLong": "Pro ile aç — $6.99'dan başlayan fiyatla"
+    "unlockLong": "Pro ile aç — $6.99'dan başlayan fiyatla",
+    "twaLead": "7 günlük deneme süren bitti. Bu uygulamada abonelik satın alınamaz; zaten aboneliğin varsa aynı hesapla giriş yap, erişimin otomatik tanınır. Herkese açık karne açık kalır."
   },
   "account": {
     "metaTitle": "Hesap",
@@ -893,7 +894,8 @@
     "session": "Oturum",
     "signOut": "Çıkış yap",
     "legacyNote": "Bildirim ve analiz tercihleri şimdilik eski görünümde:",
-    "legacyLink": "eski ayarlar"
+    "legacyLink": "eski ayarlar",
+    "twaNote": "Abonelik değişiklikleri bu uygulamada yapılamaz."
   },
   "v2": {
     "risk": {
@@ -1084,7 +1086,9 @@
       "buyText": "Pro sana kalibre olasılıklar ve herkese açık, sonuçlanmış bir karne verir — kapanış oranına karşı güncel getiri için Performans sayfasına bak. Kâr garantisi yoktur; 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. Yalnızca hem ücreti hem bahisleri karşılayabiliyorsan abone ol. Hesabından istediğin zaman iptal et.",
       "trackLink": "Karneyi gör →",
       "error": "Ödeme başlatılamadı. Lütfen tekrar dene.",
-      "metaTitle": "Fiyatlar: 7 gün ücretsiz, sonra Pro"
+      "metaTitle": "Fiyatlar: 7 gün ücretsiz, sonra Pro",
+      "twaNote": "Bu uygulamada abonelik satın alınamaz. Zaten Pro aboneliğin varsa aynı hesapla giriş yap, otomatik tanınır.",
+      "twaSignIn": "Giriş yap"
     },
     "performance": {
       "title": "Karne",
@@ -1208,7 +1212,8 @@
       "closeTitle": "Bir sonraki maçı verilerle incele.",
       "closeNote": "7 gün tam erişim. Kart gerekmez.",
       "strongLine": "{n} ligde bir pazar son 180 günde en az 15 maçta ≥%70 tuttu.",
-      "strongCta": "Hangileri →"
+      "strongCta": "Hangileri →",
+      "ctaRecord": "Karneye bak →"
     }
   },
   "v3": {

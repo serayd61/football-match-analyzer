@@ -25,6 +25,7 @@ import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel } from '@/components/site/Risk';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { isTwa } from '@/lib/site/twa';
 import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import Image from 'next/image';
 import JsonLd from '@/components/site/JsonLd';
@@ -87,9 +88,11 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const pickName = (p: SitePrediction) => (p.pick === '1' ? th('pickWin', { team: p.homeName }) : p.pick === '2' ? th('pickWin', { team: p.awayName }) : th('pickDraw'));
   const day = (iso: string | null) => (iso ? f.dateTime(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' }) : '–');
 
+  // Google Play app: never point at the checkout (Play payments policy, lib/site/twa.ts).
+  const twa = isTwa();
   const primary = unlocked
     ? { href: '/predictions', label: t('ctaToday') }
-    : authed ? { href: PRICING_HREF, label: tp('proCta') } : { href: REGISTER_HREF, label: t('ctaTry') };
+    : authed ? (twa ? { href: '/performance', label: t('ctaRecord') } : { href: PRICING_HREF, label: tp('proCta') }) : { href: REGISTER_HREF, label: t('ctaTry') };
 
   const steps = [
     { Icon: UserPlus, title: t('step1T'), text: t('step1') },
@@ -313,8 +316,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
         </div>
       </Page>
 
-      {/* ── Pricing ─────────────────────────────────────────────────── */}
-      <section className="border-y border-s-line bg-s-surface">
+      {/* ── Pricing ── (hidden in the Google Play app: no prices there) ── */}
+      {!twa && <section className="border-y border-s-line bg-s-surface">
         <Page className="py-14 lg:py-20">
           <h2 className="max-w-[20ch] text-[28px] sm:text-[36px]">{t('priceTitle')}</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -335,7 +338,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
             </div>
           </div>
         </Page>
-      </section>
+      </section>}
 
       {/* ── FAQ ─────────────────────────────────────────────────────── */}
       <Page className="py-14 lg:py-20">
