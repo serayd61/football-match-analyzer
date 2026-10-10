@@ -19,6 +19,7 @@ import { breadcrumbJsonLd, sportsEventsJsonLd } from '@/lib/site/jsonld';
 import PublicMatchList from '@/components/site/PublicMatchList';
 import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
 import { SITE_URL } from '@/lib/seo';
+import MountEvent from '@/components/analytics/MountEvent';
 
 // ============================================================================
 // Herkese açık maç ön izlemesi (SEO, 2026-10-10)
@@ -138,6 +139,8 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, { name: league.name, path: `/leagues/${league.slug}` }, { name: `${m.homeName} – ${m.awayName}`, path: matchPath(m) }])} />
+      {/* Huni: herkese açık analiz görüntülemesi (kişisel veri yok). */}
+      <MountEvent name="view_analysis" params={{ fixture_id: String(m.fixtureId), surface: 'public_match', league: league.slug }} />
       {!played && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, [m], () => t('eventDescription', { league: league.name, home: m.homeName, away: m.awayName }), pageUrl)} />}
 
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-[13px]">

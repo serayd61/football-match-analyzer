@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Analytics } from '@vercel/analytics/react';
 import UtmTracker from '@/components/site/UtmTracker';
+import CtaTracker from '@/components/site/CtaTracker';
 import '../site.css';
 import AuthProvider from '@/components/AuthProvider';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
@@ -105,6 +106,7 @@ export default async function LocaleLayout({
         </div>
         <Analytics />
         <UtmTracker />
+        <CtaTracker />
         {process.env.NEXT_PUBLIC_GOOGLE_ADS_ID && <GoogleAdsTag adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID} />}
       </body>
     </html>
