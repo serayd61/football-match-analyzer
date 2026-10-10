@@ -45,6 +45,8 @@ with sig(version, name, applied) as (values
      exists (select 1 from pg_constraint where conname='league_coverage_status_check'
              and pg_get_constraintdef(oid) like '%hidden%')),
   ('20261005010000', 'site_reco_picks',
-     exists (select 1 from pg_trigger where tgname='trg_reco_frozen_guard'))
+     exists (select 1 from pg_trigger where tgname='trg_reco_frozen_guard')),
+  ('20261010010000', 'site_standing_picks',
+     exists (select 1 from pg_trigger where tgname='trg_standing_frozen_guard'))
 )
 select version, name, applied from sig order by version;

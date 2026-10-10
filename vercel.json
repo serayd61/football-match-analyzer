@@ -61,6 +61,10 @@
       "schedule": "35 * * * *"
     },
     {
+      "path": "/api/cron/standing-picks",
+      "schedule": "45 * * * *"
+    },
+    {
       "path": "/api/cron/af-context",
       "schedule": "25 * * * *"
     },

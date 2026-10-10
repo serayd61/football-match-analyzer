@@ -848,7 +848,17 @@
     "howStrong": "\"Forte\" significa ≥55% di successo passato per l'1X2, ≥65% per i mercati gol, con almeno 10 partite nella fascia. Non è una garanzia: è il registro di cosa è successo nella stessa situazione.",
     "homeTitle": "Partite in linea con il nostro storico",
     "homeLead": "{matches} partite · scelta 1X2, Over/Under o Goal in una fascia storicamente forte",
-    "homeCta": "Apri la lista"
+    "homeCta": "Apri la lista",
+    "historyTitle": "Giorni passati",
+    "historyLead": "Ogni selezione è stata registrata tre ore prima del calcio d'inizio e regolata sul risultato finale. Centrate e sbagliate sono elencate insieme; nulla viene rimosso in base all'esito.",
+    "historyEmpty": "Nessuna selezione registrata ancora regolata. Lo storico si accumula dalla prossima giornata.",
+    "historyDayMeta": "{won}/{n} centrate",
+    "historyPending": "{n} in attesa",
+    "colMarketName": "Mercato",
+    "colScore": "Risultato",
+    "resultWon": "centrata",
+    "resultLost": "sbagliata",
+    "resultPending": "in attesa"
   },
   "paywall": {
     "expiredTitle": "La tua prova di 7 giorni è finita",

@@ -848,7 +848,17 @@
     "howStrong": "\"Strong\" means ≥55% past hit rate for 1X2, ≥65% for goal markets, with at least 10 matches in the bucket. Not a guarantee — a record of what happened in the same situation.",
     "homeTitle": "Matches that fit our record",
     "homeLead": "{matches} matches · 1X2, Over/Under or BTTS call in a historically strong bucket",
-    "homeCta": "Open the list"
+    "homeCta": "Open the list",
+    "historyTitle": "Past days",
+    "historyLead": "Every selection was recorded three hours before kick-off and settled from the final score. Winners and losers are listed together; nothing is removed by outcome.",
+    "historyEmpty": "No settled recorded selections yet. The record builds up from the next match day.",
+    "historyDayMeta": "{won}/{n} hit",
+    "historyPending": "{n} pending",
+    "colMarketName": "Market",
+    "colScore": "Score",
+    "resultWon": "hit",
+    "resultLost": "missed",
+    "resultPending": "pending"
   },
   "paywall": {
     "expiredTitle": "Your 7-day trial has ended",

@@ -8,6 +8,8 @@ import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { getPerformance } from '@/lib/site/performance';
 import { dailyStandingBoard, type StandingPick } from '@/lib/site/daily-standing';
 import { outsideStandingFor } from '@/lib/site/outside-standing';
+import { standingHistory } from '@/lib/site/standing-picks';
+import type { SettledStandingPick } from '@/lib/site/standing-picks-rule';
 import { todayYmd, addDays, YMD_RE } from '@/lib/site/time';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
@@ -59,7 +61,8 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
     );
   }
 
-  let [day, perf, outside] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor()]);
+  // Geçmiş günler (10 Eki): dondurulmuş seçimler, skorla sonuçlanmış; kazanan–kaybeden birlikte (standing-picks.ts).
+  let [day, perf, outside, history] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor(), standingHistory(14).catch(() => [])]);
   // Kapsanan ligler + gözlem ligleri (9 Eki): gözlemdekiler lig dilim + fark karnesiyle hükme girer.
   const dayRows = (d: typeof day) => d.rows.filter((r) => r.hasModel && (r.covered || outside.eligible(r)));
   const upcoming = (d: typeof day) => dayRows(d).some((r) => !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed');
@@ -75,10 +78,14 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   const board = perf ? dailyStandingBoard(rows, snaps, perf.signals, undefined, outside.standing) : { markets: [], scanned: rows.length, matches: 0 };
   const marketName = { '1x2': tv('mkt1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
   const verdictLabel = { strong: tm('verdictStrong'), mid: tm('verdictMid'), weak: tm('verdictWeak'), thin: tm('verdictThin') } as const;
-  const selection = (p: StandingPick) =>
-    p.market === '1x2' ? (p.selection === '1' ? p.row.homeName : p.selection === '2' ? p.row.awayName : tc('draw'))
-      : p.market === 'ou25' ? (p.selection === 'over' ? tm('standingOver') : tm('standingUnder'))
-        : (p.selection === 'yes' ? tm('standingYes') : tm('standingNo'));
+  const selectionName = (market: StandingPick['market'], sel: string, homeName: string, awayName: string) =>
+    market === '1x2' ? (sel === '1' ? homeName : sel === '2' ? awayName : tc('draw'))
+      : market === 'ou25' ? (sel === 'over' ? tm('standingOver') : tm('standingUnder'))
+        : (sel === 'yes' ? tm('standingYes') : tm('standingNo'));
+  const selection = (p: StandingPick) => selectionName(p.market, p.selection, p.row.homeName, p.row.awayName);
+  const resultTone = (won: boolean | null) => (won == null ? 'border border-s-line text-s-muted' : won ? 'bg-s-win text-white' : 'bg-s-loss text-white');
+  const resultLabel = (won: boolean | null) => (won == null ? t('resultPending') : won ? t('resultWon') : t('resultLost'));
+  const historyDays = history.filter((d) => d.n > 0 || d.pending > 0).slice(0, 7);
   // Maç sayfasındaki "geri" bağlantısı buraya dönsün (back-link.ts `from=picks`).
   const back = `from=picks${date !== today ? `&date=${date}` : ''}`;
   const dateLabel = f.dateTime(new Date(`${date}T12:00:00Z`), { weekday: 'long', day: 'numeric', month: 'long' });
@@ -159,6 +166,71 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
           ))}
         </div>
       )}
+
+      <section className="mt-14" aria-labelledby="picks-history">
+        <SectionTitle id="picks-history" title={t('historyTitle')} sub={t('historyLead')} />
+        {historyDays.length === 0 ? (
+          <p className="mt-3 text-[13.5px] text-s-muted">{t('historyEmpty')}</p>
+        ) : (
+          <div className="mt-4 flex flex-col gap-8">
+            {historyDays.map((d) => {
+              const dayLabel = f.dateTime(new Date(`${d.day}T12:00:00Z`), { weekday: 'long', day: 'numeric', month: 'long' });
+              const marketsMeta = (['1x2', 'ou25', 'btts'] as const).filter((m) => d.byMarket[m].n > 0).map((m) => `${marketName[m]} ${d.byMarket[m].won}/${d.byMarket[m].n}`).join(' · ');
+              return (
+                <section key={d.day}>
+                  <h3 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-s-line pb-2 text-[15px] font-bold text-s-ink">
+                    <span>{dayLabel}</span>
+                    <span className="num text-[13px] font-semibold text-s-muted">
+                      {t('historyDayMeta', { won: d.won, n: d.n })}
+                      {marketsMeta && <span className="font-normal"> · {marketsMeta}</span>}
+                      {d.pending > 0 && <span className="font-normal"> · {t('historyPending', { n: d.pending })}</span>}
+                    </span>
+                  </h3>
+                  <div className="tbl-scroll">
+                    <table className="text-sm">
+                      <thead className="text-xs uppercase tracking-wider text-s-muted">
+                        <tr className="border-b border-s-line">
+                          <th className="py-1.5 text-left font-medium">{t('colMatch')}</th>
+                          <th className="py-1.5 text-left font-medium">{t('colMarketName')}</th>
+                          <th className="py-1.5 text-left font-medium">{t('colSelection')}</th>
+                          <th className="py-1.5 text-right font-medium">{t('colModel')}</th>
+                          <th className="py-1.5 text-right font-medium">{t('colEdge')}</th>
+                          <th className="py-1.5 text-right font-medium">{t('colScore')}</th>
+                          <th className="py-1.5 text-right font-medium">{t('colHit')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {d.picks.map((p: SettledStandingPick) => (
+                          <tr key={`${p.fixtureId}-${p.market}`} className="border-b border-s-line">
+                            <td className="py-2.5 pr-3">
+                              <Link href={`/predictions/${p.fixtureId}?back=${encodeURIComponent('from=picks')}`} className="group flex items-center gap-2 hover:underline">
+                                <span className="flex shrink-0 -space-x-1"><Crest src={p.homeCrest} alt="" /><Crest src={p.awayCrest} alt="" /></span>
+                                <span className="min-w-0"><span className={p.market === '1x2' && p.selection === '1' ? 'font-bold' : ''}>{p.homeName}</span> – <span className={p.market === '1x2' && p.selection === '2' ? 'font-bold' : ''}>{p.awayName}</span></span>
+                              </Link>
+                              <span className="mt-0.5 block text-xs text-s-muted">{p.leagueLabel} · <LocalTime iso={p.kickoff} format="time" /></span>
+                            </td>
+                            <td className="py-2.5 pr-3 text-s-muted">{marketName[p.market]}</td>
+                            <td className="py-2.5 pr-3 font-semibold">{selectionName(p.market, p.selection, p.homeName, p.awayName)}</td>
+                            <td className="num py-2.5 text-right">{pct(p.modelP)}</td>
+                            <td className={`num py-2.5 text-right font-semibold ${p.edge == null ? 'text-s-muted' : p.edge > 0.03 ? 'text-s-win' : p.edge < -0.03 ? 'text-s-loss' : ''}`}>{p.edge == null ? '–' : pp(p.edge)}</td>
+                            <td className="num py-2.5 text-right">{p.homeScore == null || p.awayScore == null ? '–' : `${p.homeScore}–${p.awayScore}`}</td>
+                            <td className="py-2.5 text-right">
+                              <span className="inline-flex items-center justify-end gap-2">
+                                <span className="num text-xs text-s-muted">{pct(p.acc)} · {p.evidenceWon}/{p.evidenceN}</span>
+                                <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${resultTone(p.won)}`}>{resultLabel(p.won)}</span>
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <section className="card mt-10 !gap-2 text-[13.5px] text-s-muted">
         <h2 className="text-[15px] font-bold text-s-ink">{t('howTitle')}</h2>
