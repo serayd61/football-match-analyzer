@@ -5,8 +5,9 @@ import { Link } from '@/i18n/navigation';
 import { routing, type Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import JsonLd from '@/components/site/JsonLd';
-import { breadcrumbJsonLd } from '@/lib/site/jsonld';
+import { breadcrumbJsonLd, sportsEventsJsonLd } from '@/lib/site/jsonld';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
+import { leagueCountryName } from '@/lib/site/countries';
 import { getPerformance } from '@/lib/site/performance';
 import { listResults, listUpcomingForLeague } from '@/lib/site/results';
 import { getStandings } from '@/lib/site/standings';
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: { params: { locale: string; s
   const t = await getTranslations({ locale: params.locale, namespace: 'league' });
   return {
     title: t('metaTitle', { league: league.name }),
-    description: t('metaDescription', { league: league.name, country: league.country }),
+    description: t('metaDescription', { league: league.name, country: leagueCountryName(league, params.locale) }),
     alternates: alternatesFor(params.locale as Locale, `/leagues/${league.slug}`),
   };
 }
@@ -64,8 +65,10 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, { name: league.name, path: `/leagues/${league.slug}` }])} />
+      {/* SEO denetimi 2026-10-10: one SportsEvent per listed fixture with a known home venue (Google Event rich result). */}
+      {upcoming.length > 0 && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, upcoming, (r) => t('eventDescription', { league: league.name, home: r.homeName, away: r.awayName }))} />}
       <PageTitle
-        eyebrow={league.country}
+        eyebrow={leagueCountryName(league, params.locale)}
         title={league.name}
         lead={t('lead', { league: league.name })}
         aside={<Link href="/leagues" className="text-xs underline underline-offset-4">{t('allLeagues')}</Link>}

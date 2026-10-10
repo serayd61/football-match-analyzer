@@ -478,7 +478,8 @@
       "brasileirao": "Brasileirão Brezilya'nın en üst ligidir: 20 kulüp, takvim yılına yayılan 38 hafta. Uzun seyahatler ve alışılmadık ölçüde güçlü ev sahibi avantajı onu ayrı bir vaka yapar; parametreleri kendi sonuçlarıyla fit edilir.",
       "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez."
     },
-    "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış oranında sabit 1 birimlik bahis varsayımıdır. Sonradan hiçbir kayıt silinmez."
+    "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış oranında sabit 1 birimlik bahis varsayımıdır. Sonradan hiçbir kayıt silinmez.",
+    "eventDescription": "{league} maçı: {home} – {away}."
   },
   "docs": {
     "methodology": {

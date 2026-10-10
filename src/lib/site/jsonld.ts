@@ -1,5 +1,8 @@
 import { SITE_URL } from '@/lib/seo';
 import type { Locale } from '@/i18n/routing';
+import type { SiteLeague } from '@/lib/site/leagues';
+import type { SitePrediction } from '@/lib/site/predictions';
+import { venueFor } from '@/lib/site/stadiums';
 
 // Structured data (schema.org JSON-LD) for the public site — SEO denetimi 2026-10-10.
 // Google reads it from any <script type="application/ld+json">; `JsonLd` renders it.
@@ -31,6 +34,56 @@ export function organizationJsonLd(locale: Locale, description: string) {
       publisher: { '@id': `${SITE_URL}/#organization` },
     },
   ];
+}
+
+const EVENT_STATUS: Partial<Record<SitePrediction['status'], string>> = {
+  scheduled: 'https://schema.org/EventScheduled',
+  live: 'https://schema.org/EventScheduled',
+  postponed: 'https://schema.org/EventPostponed',
+  cancelled: 'https://schema.org/EventCancelled',
+};
+
+/**
+ * SportsEvent per upcoming fixture on a league page. Google's Event rich result
+ * requires name, startDate and a location with a postal address, so fixtures
+ * whose home venue is unknown (see lib/site/stadiums.ts) are left out rather
+ * than emitted with an error. Finished matches are not events any more.
+ * The venue is also printed in the fixture list, so the markup matches the page.
+ */
+export function sportsEventsJsonLd(locale: Locale, league: SiteLeague, rows: SitePrediction[], describe: (r: SitePrediction) => string) {
+  const page = `${SITE_URL}/${locale}/leagues/${league.slug}`;
+  const out = [];
+  for (const r of rows) {
+    const status = EVENT_STATUS[r.status];
+    const venue = venueFor(r.homeId);
+    if (!status || !venue) continue;
+    const start = new Date(r.kickoff);
+    if (Number.isNaN(start.getTime())) continue;
+    const address: Record<string, string> = { '@type': 'PostalAddress', addressCountry: venue.country };
+    if (venue.address) address.streetAddress = venue.address;
+    if (venue.city) address.addressLocality = venue.city;
+    const team = (name: string) => ({ '@type': 'SportsTeam', name });
+    out.push({
+      '@context': 'https://schema.org',
+      '@type': 'SportsEvent',
+      '@id': `${page}#fixture-${r.fixtureId}`,
+      name: `${r.homeName} vs ${r.awayName}`,
+      description: describe(r),
+      startDate: start.toISOString(),
+      endDate: new Date(start.getTime() + 115 * 60_000).toISOString(),
+      eventStatus: status,
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      location: { '@type': 'Place', name: venue.venue, address },
+      homeTeam: team(r.homeName),
+      awayTeam: team(r.awayName),
+      competitor: [team(r.homeName), team(r.awayName)],
+      performer: [team(r.homeName), team(r.awayName)],
+      organizer: { '@type': 'Organization', name: league.name },
+      // no `image`: Next serves the league OG card under a hashed URL that is not known here (recommended field, not required)
+      url: page,
+    });
+  }
+  return out;
 }
 
 /** BreadcrumbList — `items` are (label, locale-free path) pairs; the last one is the current page. */
