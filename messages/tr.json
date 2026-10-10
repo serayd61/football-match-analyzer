@@ -93,7 +93,8 @@
     "statusUnknown": "Sonuç bekleniyor",
     "search": "Ara",
     "clear": "Temizle",
-    "sort": "Sırala"
+    "sort": "Sırala",
+    "crestAlt": "{team} kulüp arması"
   },
   "errors": {
     "title": "Bir şeyler ters gitti",
@@ -463,7 +464,21 @@
     "recentEmpty": "Henüz sonuçlanmış maç yok.",
     "lockedUpcoming": "Bu {league} maçlarının tahminleri (seçim, olasılıklar ve gol pazarları) üyelere özel. Ücretsiz hesap aç, 7 gün boyunca gör.",
     "lockedRecent": "{n, plural, =1 {Sonuçlanmış # {league} seçimi} other {Sonuçlanmış # {league} seçimi}} sonuç ve skoruyla üyelere özel. Ücretsiz hesap aç, 7 gün boyunca tüm karneyi gör.",
-    "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır."
+    "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır.",
+    "intro": {
+      "premier-league": "Premier League İngiltere'nin en üst ligidir: 20 kulüp, Ağustos'tan Mayıs'a 38 hafta; son üç takım Championship'e düşer. Model yalnız bu ligin sonuçlarıyla fit edilir ve her maç için 1X2, 2,5 gol üst/alt ve karşılıklı gol olasılığı üretir.",
+      "championship": "Championship İngiltere'nin ikinci ligidir ve Avrupa'nın en yoğun takvimlerinden biridir: 24 kulüp, 46 hafta, iki doğrudan yükselme ve üçüncüsü için play-off. Uzun sezon ve dar farklar, modelin beraberliği nasıl ele aldığını görmek için iyi bir sınavdır.",
+      "la-liga": "LaLiga İspanya'nın en üst ligidir: 20 kulüp, 38 hafta. Ev sahibi avantajı burada tarihsel olarak güçlüdür; ligin hücum ve savunma katsayıları sonuçlar geldikçe her hafta yeniden fit edilir.",
+      "serie-a": "Serie A İtalya'nın en üst ligidir; 20 kulüp, 38 hafta. Diğer büyük liglere göre daha az gol üretir ve bu, her maç sayfasındaki 2,5 gol üst/alt olasılıklarına doğrudan yansır.",
+      "bundesliga": "Bundesliga Almanya'nın en üst ligidir: 18 kulüp, 34 hafta; 16. sıra küme düşme play-off'una gider. En çok gol atılan büyük liglerden biri olduğu için gol pazarları burada karnede daha fazla ağırlık taşır.",
+      "ligue-1": "Ligue 1 Fransa'nın en üst ligidir. 2023-24'ten beri 18 kulüp ve 34 hafta ile oynanır; 16. sıra küme düşme play-off'una gider. Her maç sayfasında modelin 1X2 dağılımı, gol çizgileri ve piyasanın yanında adil oran gösterilir.",
+      "eredivisie": "Eredivisie Hollanda'nın en üst ligidir: 18 kulüp, 34 hafta; ardından Avrupa ve küme düşme play-off'ları gelir. Ligin açık ve gollü oyunu gol pazarı olasılıklarına yansır.",
+      "liga-portugal": "Liga Portugal Portekiz'in en üst ligidir; 18 kulüp, 34 hafta. Öndeki kulüplerle geri kalanlar arasındaki fark geniştir; hücum ve savunma katsayıları bunu yakalar, güven değeri de raporlar.",
+      "champions-league": "UEFA Şampiyonlar Ligi Avrupa'nın kulüp turnuvasıdır: kulüp başına sekiz maçlık 36 takımlı lig aşaması, ardından eleme turları. Takımlar farklı liglerden geldiği için modelin ortak geçmişi daha azdır ve bu maçlarda güven genellikle daha düşüktür.",
+      "brasileirao": "Brasileirão Brezilya'nın en üst ligidir: 20 kulüp, takvim yılına yayılan 38 hafta. Uzun seyahatler ve alışılmadık ölçüde güçlü ev sahibi avantajı onu ayrı bir vaka yapar; parametreleri kendi sonuçlarıyla fit edilir.",
+      "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez."
+    },
+    "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış oranında sabit 1 birimlik bahis varsayımıdır. Sonradan hiçbir kayıt silinmez."
   },
   "docs": {
     "methodology": {
@@ -476,7 +491,11 @@
             "Maç olasılıkları bir Dixon-Coles modelinden gelir. Her takımın bir hücum ve bir savunma gücü, her ligin bir ev sahibi avantajı terimi vardır. İki tarafın beklenen golleri bu parametrelerden türer; skor dağılımı, düz Poisson'un yanlış tahmin ettiği 0-0, 1-0, 0-1 ve 1-1 olasılıklarını düzelten Dixon-Coles düzeltmesiyle iki Poisson sayımından oluşur.",
             "Parametreler lig bazında, son 540 günün sonuçları üzerinde maksimum olabilirlikle fit edilir. Eski maçlar daha az sayılır: bir sonuç her 180 günde ağırlığının yarısını kaybeder; böylece güncel form fiti belirler ama geçen sezon tamamen kaybolmaz.",
             "Skor ızgarası taraf başına 10 gole kadar uzanır. Buradan 1X2, üst/alt çizgileri, karşılıklı gol, en olası skorlar ve Asya handikabı geçme olasılıkları okunur. Ana 1X2 değerleri Dixon-Coles düzeltmesini kullanır; maç sayfasındaki gol ızgarası ham Poisson ızgarasıdır, bu yüzden 1X2 dağılımı bir iki puan farklı olabilir."
-          ]
+          ],
+          "img": {
+            "id": "sample-analysis",
+            "alt": "Örnek maç analizi kartı: 1X2 olasılıkları, güven halkası, risk etiketi ve gol pazarları"
+          }
         },
         {
           "h": "2. Modelde olmayanlar",
@@ -498,7 +517,11 @@
             "Seçim, model olasılığı en yüksek sonuçtur. Yanında gösterilen güven, kalibrasyon sonrası bu olasılıktır.",
             "Kalibrasyon, sonuçlanmış seçimler üzerinde fit edilen izotonik regresyondur (pool-adjacent-violators): ham model olasılığını, o seviyede gerçekten tutan seçimlerin payına eşler. Eğri monotondur, en fazla 40 düğüm kullanır ve yalnızca en az 30 sonuçlanmış seçim varken uygulanır. Sonuçlar geldikçe yeniden fit edilir; bu yüzden aynı ham olasılık zamanla biraz farklı kalibre değerlere eşlenebilir. Maç sayfaları iki sayıyı da gösterir.",
             "Üst/Alt 2,5 ve karşılıklı gol seçimleri modelin ağırlık verdiği taraftır; kalibre olasılıkları pazar bazında fit edilen ayrı eğriler kullanır."
-          ]
+          ],
+          "img": {
+            "id": "track-record",
+            "alt": "Herkese açık karne: sonuçlanmış seçimler, isabet oranı, Brier skoru ve kapanış oranında getiri"
+          }
         },
         {
           "h": "5. Sonuçlandırma",
@@ -1063,6 +1086,7 @@
       "buyText": "Pro sana kalibre olasılıklar ve herkese açık, sonuçlanmış bir karne verir — kapanış oranına karşı güncel getiri için Performans sayfasına bak. Kâr garantisi yoktur; 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. Yalnızca hem ücreti hem bahisleri karşılayabiliyorsan abone ol. Hesabından istediğin zaman iptal et.",
       "trackLink": "Karneyi gör →",
       "error": "Ödeme başlatılamadı. Lütfen tekrar dene.",
+      "metaTitle": "Fiyatlar: 7 gün ücretsiz, sonra Pro",
       "twaNote": "Bu uygulamada abonelik satın alınamaz. Zaten Pro aboneliğin varsa aynı hesapla giriş yap, otomatik tanınır.",
       "twaSignIn": "Giriş yap"
     },
@@ -1248,7 +1272,12 @@
       "feat3T": "Kontrol edebileceğin bir karne",
       "feat3": "Her tahmin maçtan önce kaydedilir, otomatik sonuçlanır. Kayıp serileri sayfada kalır — mesele de bu.",
       "closeTitle": "Yarının seçimlerini arkasındaki sayılarla gör.",
-      "closeNote": "7 gün tam erişim. Kart yok, istediğin an iptal."
+      "closeNote": "7 gün tam erişim. Kart yok, istediğin an iptal.",
+      "shotsTitle": "Sayfalar nasıl görünür",
+      "shot1Alt": "footballanalytics.pro Premier League puan tablosu: oynanan, galibiyet, beraberlik, mağlubiyet, averaj ve puan",
+      "shot1Cap": "Lig sayfası: canlı puan tablosu, fikstür ve o ligin sonuçlanmış karnesi.",
+      "shot2Alt": "Tahmin karnesi sayfası: sonuçlanmış seçimler, 1X2 isabet oranı, Brier skoru ve kapanış oranında getiri",
+      "shot2Cap": "Karne sayfası: her seçim maç bitince sonuçlandırılır; isabet ve getiri herkese açık."
     },
     "risk": {
       "disagreeShort": "piyasaya karşı",

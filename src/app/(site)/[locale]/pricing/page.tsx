@@ -18,7 +18,8 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'v2.pricing' });
-  return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/pricing') };
+  // SEO denetimi 2026-10-10: the <title> is the descriptive metaTitle; the slogan stays as the H1.
+  return { title: t('metaTitle'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/pricing') };
 }
 
 export default async function PricingPage({ params: { locale } }: { params: { locale: string } }) {

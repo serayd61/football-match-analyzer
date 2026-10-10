@@ -71,12 +71,12 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
   const Teams = ({ p, slug }: { p: SitePrediction; slug: string | null }) => (
     <span className="flex min-w-0 flex-col gap-0.5 text-[15px] leading-tight">
       <span className="flex items-center gap-2">
-        <Crest src={p.homeCrest} alt="" />
+        <Crest src={p.homeCrest} alt={t('crestAlt', { team: p.homeName })} />
         <span className={`truncate ${p.pick === '1' ? 'font-semibold' : ''}`}>{p.homeName}</span><Pos n={pos(slug, p.homeId)} />
         {showScore(p) && <span className="num ml-auto font-semibold">{p.homeScore}</span>}
       </span>
       <span className="flex items-center gap-2">
-        <Crest src={p.awayCrest} alt="" />
+        <Crest src={p.awayCrest} alt={t('crestAlt', { team: p.awayName })} />
         <span className={`truncate ${p.pick === '2' ? 'font-semibold' : ''}`}>{p.awayName}</span><Pos n={pos(slug, p.awayId)} />
         {showScore(p) && <span className="num ml-auto font-semibold">{p.awayScore}</span>}
       </span>

@@ -21,17 +21,23 @@ function localized(path: string, extra: Omit<MetadataRoute.Sitemap[number], 'url
   return routing.locales.map((l) => ({ url: `${SITE_URL}/${l}${path}`, alternates: { languages }, ...extra }));
 }
 
+// SEO denetimi 2026-10-10: Google uses <lastmod> (and ignores changefreq /
+// priority). Data pages change daily, so they carry today's date; the long-form
+// docs carry their real revision date.
+const DOCS_UPDATED = new Date('2026-09-04T12:00:00Z');
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
   const site: MetadataRoute.Sitemap = [
-    ...localized('', { changeFrequency: 'hourly', priority: 1 }),
+    ...localized('', { changeFrequency: 'hourly', priority: 1, lastModified: today }),
     ...localized('/pricing', { changeFrequency: 'monthly', priority: 0.6 }),
-    ...localized('/performance', { changeFrequency: 'daily', priority: 0.8 }),
-    ...localized('/leagues', { changeFrequency: 'weekly', priority: 0.6 }),
-    ...localized('/methodology', { changeFrequency: 'monthly', priority: 0.6 }),
-    ...localized('/about', { changeFrequency: 'monthly', priority: 0.4 }),
+    ...localized('/performance', { changeFrequency: 'daily', priority: 0.8, lastModified: today }),
+    ...localized('/leagues', { changeFrequency: 'weekly', priority: 0.6, lastModified: today }),
+    ...localized('/methodology', { changeFrequency: 'monthly', priority: 0.6, lastModified: DOCS_UPDATED }),
+    ...localized('/about', { changeFrequency: 'monthly', priority: 0.4, lastModified: DOCS_UPDATED }),
     ...localized('/privacy', { changeFrequency: 'yearly', priority: 0.2 }),
     ...localized('/terms', { changeFrequency: 'yearly', priority: 0.2 }),
-    ...SITE_LEAGUES.flatMap((l) => localized(`/leagues/${l.slug}`, { changeFrequency: 'daily', priority: 0.7 })),
+    ...SITE_LEAGUES.flatMap((l) => localized(`/leagues/${l.slug}`, { changeFrequency: 'daily', priority: 0.7, lastModified: today })),
   ];
 
   return site;

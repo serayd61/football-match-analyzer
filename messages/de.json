@@ -93,7 +93,8 @@
     "statusUnknown": "Ergebnis ausstehend",
     "search": "Suchen",
     "clear": "Zurücksetzen",
-    "sort": "Sortieren"
+    "sort": "Sortieren",
+    "crestAlt": "{team} Vereinswappen"
   },
   "errors": {
     "title": "Etwas ist schiefgelaufen",
@@ -463,7 +464,21 @@
     "recentEmpty": "Noch keine abgerechneten Spiele.",
     "lockedUpcoming": "Die Prognosen zu diesen {league}-Spielen — Tipp, Wahrscheinlichkeiten und Tormärkte — sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang alles sehen.",
     "lockedRecent": "{n, plural, =1 {# abgerechneter {league}-Tipp} other {# abgerechnete {league}-Tipps}} mit Ausgang und Resultat sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang die ganze Bilanz sehen.",
-    "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung."
+    "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung.",
+    "intro": {
+      "premier-league": "Die Premier League ist Englands höchste Spielklasse: 20 Klubs, 38 Runden von August bis Mai, die letzten drei steigen in die Championship ab. Das Modell wird allein auf ihren Resultaten gefittet und bewertet jedes Spiel für 1X2, Über/Unter 2,5 Tore und «Beide Teams treffen».",
+      "championship": "Die Championship ist Englands zweite Liga und einer der dichtesten Spielpläne Europas: 24 Klubs, 46 Runden, zwei direkte Aufstiegsplätze und ein Play-off um den dritten. Die lange Saison und die knappen Abstände zeigen gut, wie das Modell mit Remis umgeht.",
+      "la-liga": "LaLiga ist Spaniens höchste Liga: 20 Klubs, 38 Runden. Der Heimvorteil ist hier historisch stark; die Angriffs- und Abwehrstärken der Liga werden jede Woche mit den neuen Resultaten neu gefittet.",
+      "serie-a": "Die Serie A ist Italiens höchste Spielklasse mit 20 Klubs und 38 Runden. Sie bringt weniger Tore hervor als die anderen grossen Ligen, was sich direkt in den Über/Unter-2,5-Wahrscheinlichkeiten auf jeder Spielseite zeigt.",
+      "bundesliga": "Die Bundesliga ist Deutschlands höchste Liga: 18 Klubs, 34 Runden, der 16. geht in die Relegation. Sie gehört zu den torreichsten grossen Ligen, deshalb haben die Tormärkte in der Bilanz hier mehr Gewicht.",
+      "ligue-1": "Die Ligue 1 ist Frankreichs höchste Spielklasse. Seit 2023/24 hat sie 18 Klubs und 34 Runden, der 16. spielt Relegation. Jede Spielseite zeigt die 1X2-Verteilung des Modells, die Torlinien und den fairen Preis neben dem Markt.",
+      "eredivisie": "Die Eredivisie ist die höchste Liga der Niederlande: 18 Klubs, 34 Runden, danach Europa- und Abstiegs-Play-offs. Der offene, torreiche Stil der Liga spiegelt sich in den Wahrscheinlichkeiten der Tormärkte.",
+      "liga-portugal": "Die Liga Portugal ist Portugals höchste Liga mit 18 Klubs und 34 Runden. Der Abstand zwischen den Spitzenklubs und dem Rest ist gross; die Angriffs- und Abwehrstärken erfassen das, und der Konfidenzwert weist es aus.",
+      "champions-league": "Die UEFA Champions League ist Europas Klubwettbewerb: eine Ligaphase mit 36 Teams und acht Spielen pro Klub, dann K.-o.-Runden. Die Teams kommen aus verschiedenen Ligen, das Modell hat weniger gemeinsame Historie, und die Konfidenz ist bei diesen Spielen meist tiefer.",
+      "brasileirao": "Die Brasileirão ist Brasiliens höchste Liga: 20 Klubs, 38 Runden über eine Kalenderjahr-Saison. Lange Reisen und ein ungewöhnlich starker Heimvorteil machen sie zum Sonderfall; ihre Parameter werden auf den eigenen Resultaten gefittet.",
+      "super-lig": "Die Süper Lig ist die höchste Liga der Türkei: 18 Klubs, 34 Runden. Sie kam im September 2026 dazu, die Stichprobe ist noch klein; ihre Bilanz wird deshalb separat gezeigt, und ihre Spiele stehen erst auf der Tagesliste, wenn die Stichprobe wächst."
+    },
+    "howToRead": "Die Zahlen auf dieser Seite sind die abgerechnete {league}-Bilanz des Modells: die Trefferquote ist der Anteil der eingetroffenen 1X2-Tipps, der Brier-Score misst, wie gut die Wahrscheinlichkeiten zu den Resultaten passten (tiefer ist besser), und die Rendite nimmt einen flachen Einsatz von einer Einheit zum Schlusskurs an. Nachträglich wird nichts entfernt."
   },
   "docs": {
     "methodology": {
@@ -476,7 +491,11 @@
             "Die Spielwahrscheinlichkeiten stammen aus einem Dixon-Coles-Modell. Jedes Team erhält eine Angriffs- und eine Abwehrstärke, dazu kommt ein Heimvorteil pro Liga. Aus diesen Parametern folgen die erwarteten Tore beider Seiten; die Resultatverteilung besteht aus zwei Poisson-Zählungen mit der Dixon-Coles-Korrektur, die die Wahrscheinlichkeiten von 0:0, 1:0, 0:1 und 1:1 richtigstellt, welche reines Poisson falsch schätzt.",
             "Die Parameter werden pro Liga per Maximum-Likelihood auf Resultaten der letzten 540 Tage gefittet. Ältere Spiele zählen weniger: Ein Resultat verliert alle 180 Tage die Hälfte seines Gewichts, sodass die aktuelle Form dominiert, ohne dass die letzte Saison ganz verschwindet.",
             "Das Resultatraster reicht bis 10 Tore pro Seite. Daraus lesen wir 1X2, Über/Unter-Linien, «beide Teams treffen», die wahrscheinlichsten Resultate und die Deckungswahrscheinlichkeiten für Asian Handicaps ab. Die 1X2-Hauptwerte nutzen die Dixon-Coles-Korrektur; das Torraster auf einer Spielseite ist das rohe Poisson-Raster, weshalb dessen 1X2-Verteilung um ein bis zwei Punkte abweichen kann."
-          ]
+          ],
+          "img": {
+            "id": "sample-analysis",
+            "alt": "Beispiel-Analysekarte: 1X2-Wahrscheinlichkeiten, Konfidenzring, Risikolabel und Tormärkte"
+          }
         },
         {
           "h": "2. Was nicht im Modell steckt",
@@ -498,7 +517,11 @@
             "Der Tipp ist der Ausgang mit der höchsten Modellwahrscheinlichkeit. Die daneben gezeigte Konfidenz ist diese Wahrscheinlichkeit nach der Kalibrierung.",
             "Die Kalibrierung ist eine isotonische Regression (Pool-Adjacent-Violators) auf abgerechneten Tipps: Sie bildet die rohe Modellwahrscheinlichkeit auf den Anteil der Tipps ab, die auf diesem Niveau tatsächlich eintrafen. Die Kurve ist monoton, hat höchstens 40 Stützstellen und wird erst angewendet, wenn mindestens 30 abgerechnete Tipps vorliegen. Sie wird laufend neu gefittet, sodass dieselbe rohe Wahrscheinlichkeit mit der Zeit leicht andere kalibrierte Werte ergeben kann. Spielseiten zeigen beide Zahlen.",
             "Bei Über/Unter 2.5 und «beide Teams treffen» ist der Tipp die vom Modell bevorzugte Seite; ihre kalibrierten Wahrscheinlichkeiten nutzen eigene, pro Markt gefittete Kurven."
-          ]
+          ],
+          "img": {
+            "id": "track-record",
+            "alt": "Öffentliche Bilanz: abgerechnete Tipps mit Trefferquote, Brier-Score und Rendite zum Schlusskurs"
+          }
         },
         {
           "h": "5. Abrechnung",
@@ -1063,6 +1086,7 @@
       "buyText": "Pro gibt dir kalibrierte Wahrscheinlichkeiten und eine öffentliche, abgerechnete Bilanz — die aktuelle Rendite gegen die Schlussquote steht auf der Performance-Seite. Gewinn ist nicht garantiert; Verlustserien von 5–7 Tipps kommen mehrmals pro Saison vor. Abonniere nur, wenn du dir Gebühr und Einsätze leisten kannst. Jederzeit im Konto kündbar.",
       "trackLink": "Bilanz ansehen →",
       "error": "Die Kasse konnte nicht gestartet werden. Bitte erneut versuchen.",
+      "metaTitle": "Preise: 7 Tage gratis, danach Pro",
       "twaNote": "In dieser App können keine Abos abgeschlossen werden. Wenn Sie bereits ein Pro-Abo haben, melden Sie sich mit demselben Konto an; es wird automatisch übernommen.",
       "twaSignIn": "Anmelden"
     },
@@ -1248,7 +1272,12 @@
       "feat3T": "Eine Bilanz, die du prüfen kannst",
       "feat3": "Jede Prognose wird vor Anpfiff protokolliert und automatisch abgerechnet. Verlustserien bleiben auf der Seite — genau darum geht es.",
       "closeTitle": "Sieh die Tipps von morgen mit den Zahlen dahinter.",
-      "closeNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar."
+      "closeNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar.",
+      "shotsTitle": "So sehen die Seiten aus",
+      "shot1Alt": "Premier-League-Tabelle auf footballanalytics.pro mit Spielen, Siegen, Remis, Niederlagen, Tordifferenz und Punkten",
+      "shot1Cap": "Ligaseite: aktuelle Tabelle, Spielplan und die abgerechnete Bilanz dieser Liga.",
+      "shot2Alt": "Bilanzseite mit abgerechneten Tipps, 1X2-Trefferquote, Brier-Score und Rendite zum Schlusskurs",
+      "shot2Cap": "Bilanzseite: jeder Tipp nach dem Schlusspfiff abgerechnet, Trefferquote und Rendite öffentlich."
     },
     "risk": {
       "disagreeShort": "gegen Markt",

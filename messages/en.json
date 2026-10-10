@@ -93,7 +93,8 @@
     "statusUnknown": "Awaiting result",
     "search": "Search",
     "clear": "Clear",
-    "sort": "Sort"
+    "sort": "Sort",
+    "crestAlt": "{team} club crest"
   },
   "errors": {
     "title": "Something went wrong",
@@ -463,7 +464,21 @@
     "recentEmpty": "No settled matches yet.",
     "lockedUpcoming": "Predictions for these {league} fixtures — pick, probabilities and goal markets — are for members. Create a free account and see them for 7 days.",
     "lockedRecent": "{n, plural, =1 {# settled {league} pick} other {# settled {league} picks}} with outcome and score are for members. Create a free account and see the full record for 7 days.",
-    "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time."
+    "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time.",
+    "intro": {
+      "premier-league": "The Premier League is England's top division: 20 clubs, 38 rounds from August to May, with the bottom three relegated to the Championship. The model is fitted on its results alone and prices every fixture for 1X2, over/under 2.5 goals and both teams to score.",
+      "championship": "The Championship is England's second tier and one of the densest calendars in Europe: 24 clubs and 46 rounds, with two automatic promotion places and a play-off for the third. The long season and tight margins make it a useful test of how the model handles draws.",
+      "la-liga": "LaLiga is Spain's top flight: 20 clubs and 38 rounds. Home advantage has historically been strong here, and the league's attack and defence ratings are refitted every week as results come in.",
+      "serie-a": "Serie A is Italy's top division with 20 clubs over 38 rounds. It tends to produce fewer goals than the other big leagues, which shows up directly in the over/under 2.5 probabilities on each match page.",
+      "bundesliga": "The Bundesliga is Germany's top flight: 18 clubs and 34 rounds, with the 16th-placed side going into a relegation play-off. It is one of the highest-scoring major leagues, so the goal markets carry more weight in the record here.",
+      "ligue-1": "Ligue 1 is France's top division. Since 2023-24 it has 18 clubs and 34 rounds, with a relegation play-off for the 16th place. Each match page shows the model's 1X2 split, goal lines and the fair price next to the market.",
+      "eredivisie": "The Eredivisie is the top flight of the Netherlands: 18 clubs and 34 rounds, followed by European and relegation play-offs. The league's open, high-scoring style is reflected in the goal-market probabilities.",
+      "liga-portugal": "Liga Portugal is Portugal's top division with 18 clubs and 34 rounds. The gap between the leading clubs and the rest is wide, which the attack and defence ratings capture and the confidence figure reports.",
+      "champions-league": "The UEFA Champions League is Europe's club competition: a 36-team league phase of eight matches per club, then knock-out rounds. Teams come from different domestic leagues, so the model has less shared history to work with and the confidence on these matches is usually lower.",
+      "brasileirao": "The Brasileirão is Brazil's top flight: 20 clubs and 38 rounds played across a calendar-year season. Long travel and an unusually strong home advantage make it a distinct case, and its parameters are fitted on its own results.",
+      "super-lig": "The Süper Lig is Türkiye's top division: 18 clubs and 34 rounds. It was added in September 2026 and the sample is still small, so its record is shown separately and its matches are not in the daily shortlist until the sample grows."
+    },
+    "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return assumes a flat one-unit stake at the closing price. Nothing is removed after the fact."
   },
   "docs": {
     "methodology": {
@@ -476,7 +491,11 @@
             "Match probabilities come from a Dixon-Coles model. Each team gets an attack and a defence strength, and there is one home-advantage term per league. The expected goals of the two sides follow from those parameters; the score distribution is a pair of Poisson counts with the Dixon-Coles adjustment that corrects the probability of 0–0, 1–0, 0–1 and 1–1, which plain Poisson gets wrong.",
             "Parameters are fitted per league by maximum likelihood on results from the last 540 days. Older matches count less: a result loses half its weight every 180 days, so the current form of a squad dominates the fit without last season disappearing entirely.",
             "The score grid runs to 10 goals per side. From it we read 1X2, over/under lines, both-teams-to-score, the most likely scores and Asian handicap cover probabilities. The headline 1X2 figures use the Dixon-Coles adjustment; the goal grid shown on a match page is the raw Poisson grid, which is why its 1X2 split can differ by a point or two."
-          ]
+          ],
+          "img": {
+            "id": "sample-analysis",
+            "alt": "Sample match analysis card: 1X2 probabilities, confidence ring, risk label and goal markets"
+          }
         },
         {
           "h": "2. What is not in the model",
@@ -498,7 +517,11 @@
             "The pick is the outcome with the highest model probability. The confidence shown next to it is that probability after calibration.",
             "Calibration is an isotonic regression (pool-adjacent-violators) fitted on settled picks: it maps the raw model probability to the share of picks that actually landed at that level. The curve is monotone, uses at most 40 knots and is only applied once at least 30 settled picks exist. It is refitted as results come in, so the same raw probability can map to slightly different calibrated values over time. Match pages show both numbers.",
             "Over/under 2.5 and both-teams-to-score picks are the side the model favours; their calibrated probabilities use separate curves fitted per market."
-          ]
+          ],
+          "img": {
+            "id": "track-record",
+            "alt": "Public track record: settled picks with hit rate, Brier score and return at closing odds"
+          }
         },
         {
           "h": "5. Settlement",
@@ -1063,6 +1086,7 @@
       "buyText": "Pro gives you calibrated probabilities and a public, settled track record — see the Performance page for the current return against closing odds. It does not guarantee profit; losing streaks of 5–7 picks happen several times a season. Only subscribe if you can afford both the fee and the stakes. Cancel any time from your account.",
       "trackLink": "See the track record →",
       "error": "Checkout could not be started. Please try again.",
+      "metaTitle": "Pricing: 7 days free, then Pro",
       "twaNote": "Subscriptions are not available in this app. If you already have a Pro subscription, sign in with the same account and it is applied automatically.",
       "twaSignIn": "Sign in"
     },
@@ -1248,7 +1272,12 @@
       "feat3T": "A record you can check",
       "feat3": "Every prediction is logged before kick-off and settled automatically. Losing runs stay on the page — that is the point.",
       "closeTitle": "See tomorrow's picks with the numbers behind them.",
-      "closeNote": "7 days of full access. No card, cancel any time."
+      "closeNote": "7 days of full access. No card, cancel any time.",
+      "shotsTitle": "What the pages look like",
+      "shot1Alt": "Premier League standings table on footballanalytics.pro with played, won, drawn, lost, goal difference and points",
+      "shot1Cap": "League page: live table, fixtures and the settled record for that league.",
+      "shot2Alt": "Prediction track record page showing settled picks, 1X2 hit rate, Brier score and return at closing odds",
+      "shot2Cap": "Record page: every pick settled after the final whistle, hit rate and return in public."
     },
     "risk": {
       "disagreeShort": "vs market",

@@ -8,7 +8,7 @@ import UtmTracker from '@/components/site/UtmTracker';
 import '../site.css';
 import AuthProvider from '@/components/AuthProvider';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
-import { routing, type Locale } from '@/i18n/routing';
+import { routing, INTL_TAGS, type Locale } from '@/i18n/routing';
 import { alternatesFor, SITE_URL } from '@/lib/site/seo';
 import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
@@ -44,16 +44,33 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: 'meta' });
+  // generateMetadata runs before the layout's notFound() guard, so an unknown
+  // first segment (e.g. /images/x.png before the file exists) must not throw.
+  const safeLocale: Locale = routing.locales.includes(locale as Locale) ? (locale as Locale) : routing.defaultLocale;
+  const t = await getTranslations({ locale: safeLocale, namespace: 'meta' });
   return {
     metadataBase: new URL(SITE_URL),
     title: { absolute: t('siteName'), template: `%s · ${t('siteName')}` },
     description: t('description'),
     alternates: alternatesFor(locale as Locale, '/'),
-    openGraph: { siteName: t('siteName'), type: 'website', locale },
+    // SEO denetimi 2026-10-10: og:locale must be ll_CC (was the bare "en"), the
+    // other locales go in og:locale:alternate, and the card is "large image"
+    // now that every page has an og:image (opengraph-image.tsx).
+    openGraph: {
+      siteName: t('siteName'),
+      type: 'website',
+      locale: INTL_TAGS[safeLocale].replace('-', '_'),
+      alternateLocale: routing.locales.filter((l) => l !== safeLocale).map((l) => INTL_TAGS[l].replace('-', '_')),
+    },
+    twitter: { card: 'summary_large_image' },
     icons: {
-      icon: [{ url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' }],
-      apple: [{ url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' }],
+      icon: [
+        { url: '/favicon.ico', sizes: '48x48' },
+        { url: '/icons/favicon.svg', type: 'image/svg+xml' },
+        { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+        { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      ],
+      apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     },
   };
 }

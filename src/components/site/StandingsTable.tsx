@@ -6,6 +6,7 @@ const crest = (id: number) => `https://images.fotmob.com/image_resources/logo/te
 
 export default async function StandingsTable({ rows, highlight }: { rows: StandingRow[]; highlight?: number[] }) {
   const t = await getTranslations('standings');
+  const tc = await getTranslations('common');
   const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
   const hl = new Set(highlight || []);
   return (
@@ -28,7 +29,7 @@ export default async function StandingsTable({ rows, highlight }: { rows: Standi
           {rows.map((r) => (
             <tr key={r.teamId} className={`border-b border-s-line ${hl.has(r.teamId) ? 'bg-s-raised/60 font-medium' : ''}`}>
               <td className="num py-1.5 text-right text-s-muted" style={r.qualColor ? { boxShadow: `inset 3px 0 0 ${r.qualColor}` } : undefined}>{r.pos}</td>
-              <td className="py-1.5"><span className="flex items-center gap-2"><Crest src={crest(r.teamId)} alt="" />{r.name}{r.deduction ? <span className="text-xs text-s-loss">({r.deduction})</span> : null}</span></td>
+              <td className="py-1.5"><span className="flex items-center gap-2"><Crest src={crest(r.teamId)} alt={tc('crestAlt', { team: r.name })} />{r.name}{r.deduction ? <span className="text-xs text-s-loss">({r.deduction})</span> : null}</span></td>
               <td className="num py-1.5 text-right">{r.played}</td>
               <td className="num hidden py-1.5 text-right sm:table-cell">{r.won}</td>
               <td className="num hidden py-1.5 text-right sm:table-cell">{r.drawn}</td>

@@ -17,9 +17,11 @@ const STATUS_KEY = {
   postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown',
 } as const;
 
-function Crest({ src }: { src: string | null }) {
+// SEO denetimi 2026-10-10: crests carry a descriptive alt ("{team} club crest")
+// instead of alt="" — Google calls alt text the most important image signal.
+function Crest({ src, alt }: { src: string | null; alt: string }) {
   return src
-    ? <Image src={src} alt="" width={20} height={20} className="h-5 w-5 shrink-0 object-contain" unoptimized />
+    ? <Image src={src} alt={alt} width={20} height={20} className="h-5 w-5 shrink-0 object-contain" unoptimized />
     : <span className="h-5 w-5 shrink-0 rounded-full bg-s-raised" aria-hidden />;
 }
 
@@ -50,12 +52,12 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
       {/* teams */}
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-[14.5px] leading-tight">
-          <Crest src={p.homeCrest} />
+          <Crest src={p.homeCrest} alt={tc('crestAlt', { team: p.homeName })} />
           <span className={`min-w-0 truncate ${p.pick === '1' ? 'font-bold' : 'font-medium'}`}>{p.homeName}</span>
           {score && <span className="num ml-auto pl-2 text-[14px] font-bold">{p.homeScore}</span>}
         </div>
         <div className="mt-1.5 flex items-center gap-2 text-[14.5px] leading-tight">
-          <Crest src={p.awayCrest} />
+          <Crest src={p.awayCrest} alt={tc('crestAlt', { team: p.awayName })} />
           <span className={`min-w-0 truncate ${p.pick === '2' ? 'font-bold' : 'font-medium'}`}>{p.awayName}</span>
           {score && <span className="num ml-auto pl-2 text-[14px] font-bold">{p.awayScore}</span>}
         </div>

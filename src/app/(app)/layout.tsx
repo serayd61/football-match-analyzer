@@ -33,19 +33,16 @@ const siteJsonLd = {
   '@type': 'WebSite',
   name: 'Football Analytics Pro',
   url: SITE_URL,
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${SITE_URL}/analysis?q={search_term_string}`,
-    'query-input': 'required name=search_term_string',
-  },
+  // SearchAction removed 2026-10-10: /analysis is members-only, so the sitelinks
+  // search box target would have 307'd Googlebot to /login.
 };
 
 export const viewport: Viewport = {
   themeColor: '#10b981',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // maximumScale/userScalable removed 2026-10-10: blocking pinch-zoom fails
+  // Lighthouse / Search Console mobile-usability and WCAG 1.4.4.
   viewportFit: 'cover',
 };
 

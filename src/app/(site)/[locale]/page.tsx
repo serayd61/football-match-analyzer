@@ -27,6 +27,10 @@ import { RiskLabel } from '@/components/site/Risk';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
 import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
+import Image from 'next/image';
+import JsonLd from '@/components/site/JsonLd';
+import { CONTENT_IMAGES } from '@/lib/site/content-images';
+import { organizationJsonLd } from '@/lib/site/jsonld';
 
 // Members-only site (2026-09-08): reading the session makes this dynamic.
 export const dynamic = 'force-dynamic';
@@ -100,9 +104,12 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const t3 = await getTranslations('v3.home');
   const tl = await getTranslations('v3.landing');
   const Icon = ArrowRight;
+  const tm = await getTranslations('meta');
 
   return (
     <>
+      {/* SEO denetimi 2026-10-10: Organization + WebSite structured data (home only). */}
+      <JsonLd data={organizationJsonLd(locale as Locale, tm('description'))} />
       {/* ── Hero: dark product showcase ────────────────────────────── */}
       <section className="band-dark pitch-bg overflow-hidden">
         <Page className="grid items-center gap-12 pb-12 pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
@@ -237,6 +244,21 @@ export default async function HomePage({ params: { locale } }: { params: { local
               </li>
             ))}
           </ol>
+
+          {/* SEO denetimi 2026-10-10: real product screenshots with descriptive file names + alt text. */}
+          <div className="mt-12 border-t border-s-line pt-8">
+            <h3 className="kicker">{tl('shotsTitle')}</h3>
+            <div className="mt-4 grid gap-4 md:grid-cols-2 md:items-start">
+              <figure className="overflow-hidden rounded-xl border border-s-line bg-s-bg">
+                <Image src={CONTENT_IMAGES.standings} alt={tl('shot1Alt')} sizes="(min-width: 768px) 50vw, 100vw" className="h-auto w-full" />
+                <figcaption className="border-t border-s-line px-3 py-2 text-[13px] text-s-muted">{tl('shot1Cap')}</figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-xl border border-s-line bg-s-bg">
+                <Image src={CONTENT_IMAGES['track-record']} alt={tl('shot2Alt')} sizes="(min-width: 768px) 50vw, 100vw" className="h-auto w-full" />
+                <figcaption className="border-t border-s-line px-3 py-2 text-[13px] text-s-muted">{tl('shot2Cap')}</figcaption>
+              </figure>
+            </div>
+          </div>
         </Page>
       </section>
 
