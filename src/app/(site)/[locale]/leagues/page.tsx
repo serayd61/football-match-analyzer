@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import JsonLd from '@/components/site/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/site/jsonld';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -22,8 +24,10 @@ export default async function LeaguesPage({ params: { locale } }: { params: { lo
   const stats = new Map(perf.leagues.map((l) => [l.league.slug, l]));
 
   // v3: one card per league (name, country, hit rate, W–L, sample bar). Grouped by country order of SITE_LEAGUES.
+  const tn = await getTranslations('nav');
   return (
     <Page>
+      <JsonLd data={breadcrumbJsonLd(locale as Locale, [{ name: tn('home'), path: '/' }, { name: t('title'), path: '/leagues' }])} />
       <PageTitle title={t('title')} lead={t('lead', { count: SITE_LEAGUES.length })} />
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SITE_LEAGUES.map((l) => {

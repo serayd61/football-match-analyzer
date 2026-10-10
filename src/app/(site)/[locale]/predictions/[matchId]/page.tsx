@@ -233,7 +233,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const marketFavName = market ? (market.pHome >= market.pDraw && market.pHome >= market.pAway ? p.homeName : market.pAway >= market.pHome && market.pAway >= market.pDraw ? p.awayName : tc('draw')) : '';
   const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <div className="flex items-center gap-3">
-      {crest ? <Image src={crest} alt="" width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
+      {crest ? <Image src={crest} alt={tc('crestAlt', { team: name })} width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
       <span className={`min-w-0 truncate text-[22px] leading-tight sm:text-[28px] ${bold ? 'font-bold' : 'font-semibold text-s-ink/80'}`}>{name}</span>
       {score != null && <span className="num ml-auto pl-3 text-[26px] font-bold leading-none sm:text-[32px]">{score}</span>}
     </div>

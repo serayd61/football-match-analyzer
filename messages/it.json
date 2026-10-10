@@ -93,7 +93,8 @@
     "statusUnknown": "In attesa del risultato",
     "search": "Cerca",
     "clear": "Azzera",
-    "sort": "Ordina"
+    "sort": "Ordina",
+    "crestAlt": "Stemma del club {team}"
   },
   "errors": {
     "title": "Qualcosa è andato storto",
@@ -463,7 +464,21 @@
     "recentEmpty": "Nessuna partita chiusa.",
     "lockedUpcoming": "I pronostici per queste partite di {league} — scelta, probabilità e mercati gol — sono per i membri. Crea un account gratuito e vedili per 7 giorni.",
     "lockedRecent": "{n, plural, =1 {# scelta chiusa di {league}} other {# scelte chiuse di {league}}} con esito e risultato sono per i membri. Crea un account gratuito e vedi tutto il registro per 7 giorni.",
-    "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione."
+    "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione.",
+    "intro": {
+      "premier-league": "La Premier League è la massima divisione inglese: 20 club, 38 giornate da agosto a maggio, le ultime tre retrocedono in Championship. Il modello è stimato solo sui suoi risultati e valuta ogni partita per 1X2, over/under 2,5 gol e Goal/No Goal.",
+      "championship": "La Championship è la seconda divisione inglese e uno dei calendari più fitti d'Europa: 24 club, 46 giornate, due promozioni dirette e un play-off per la terza. La stagione lunga e i margini stretti mostrano bene come il modello gestisce i pareggi.",
+      "la-liga": "LaLiga è la massima serie spagnola: 20 club, 38 giornate. Il fattore campo qui è storicamente forte; le forze di attacco e difesa del campionato vengono ristimate ogni settimana con i nuovi risultati.",
+      "serie-a": "La Serie A è la massima divisione italiana con 20 club e 38 giornate. Produce meno gol degli altri grandi campionati, e questo si vede direttamente nelle probabilità over/under 2,5 di ogni pagina partita.",
+      "bundesliga": "La Bundesliga è la massima serie tedesca: 18 club, 34 giornate, la sedicesima va allo spareggio retrocessione. È tra i grandi campionati con più gol, quindi i mercati gol pesano di più nel registro.",
+      "ligue-1": "La Ligue 1 è la massima divisione francese. Dal 2023-24 ha 18 club e 34 giornate, con spareggio retrocessione per la sedicesima. Ogni pagina partita mostra la ripartizione 1X2 del modello, le linee gol e il prezzo equo accanto al mercato.",
+      "eredivisie": "L'Eredivisie è la massima serie dei Paesi Bassi: 18 club, 34 giornate, poi i play-off europei e retrocessione. Lo stile aperto e ricco di gol del campionato si riflette nelle probabilità dei mercati gol.",
+      "liga-portugal": "La Liga Portugal è la massima divisione portoghese con 18 club e 34 giornate. Il divario tra i club di vertice e il resto è ampio; le forze di attacco e difesa lo catturano e il valore di confidenza lo segnala.",
+      "champions-league": "La UEFA Champions League è la competizione europea per club: una fase campionato a 36 squadre con otto partite per club, poi le fasi a eliminazione. Le squadre arrivano da campionati diversi, il modello ha meno storia in comune e la confidenza su queste partite è di solito più bassa.",
+      "brasileirao": "Il Brasileirão è la massima serie brasiliana: 20 club, 38 giornate in una stagione che segue l'anno solare. Le lunghe trasferte e un fattore campo insolitamente forte ne fanno un caso a sé; i suoi parametri sono stimati sui suoi risultati.",
+      "super-lig": "La Süper Lig è la massima divisione turca: 18 club, 34 giornate. È stata aggiunta nel settembre 2026 e il campione è ancora piccolo, quindi il suo registro è mostrato a parte e le sue partite non entrano nella selezione del giorno finché il campione non cresce."
+    },
+    "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento assume una puntata fissa di un'unità al prezzo di chiusura. Nulla viene rimosso a posteriori."
   },
   "docs": {
     "methodology": {
@@ -476,7 +491,11 @@
             "Le probabilità di partita provengono da un modello Dixon-Coles. Ogni squadra ha una forza d'attacco e una di difesa, e c'è un termine di vantaggio casalingo per campionato. Da questi parametri derivano i gol attesi delle due squadre; la distribuzione dei risultati è una coppia di conteggi di Poisson con la correzione Dixon-Coles, che sistema le probabilità di 0-0, 1-0, 0-1 e 1-1, che il Poisson semplice sbaglia.",
             "I parametri sono stimati per campionato con la massima verosimiglianza sui risultati degli ultimi 540 giorni. Le partite più vecchie pesano meno: un risultato perde metà del suo peso ogni 180 giorni, così la forma attuale domina la stima senza che la stagione scorsa sparisca del tutto.",
             "La griglia dei risultati arriva a 10 gol per squadra. Da essa leggiamo 1X2, linee over/under, Goal/No Goal, i risultati più probabili e le probabilità di copertura degli handicap asiatici. I valori 1X2 principali usano la correzione Dixon-Coles; la griglia dei gol nella pagina di una partita è la griglia di Poisson grezza, ed è per questo che la sua ripartizione 1X2 può differire di uno o due punti."
-          ]
+          ],
+          "img": {
+            "id": "sample-analysis",
+            "alt": "Scheda di analisi di esempio: probabilità 1X2, anello di confidenza, etichetta di rischio e mercati gol"
+          }
         },
         {
           "h": "2. Cosa non c'è nel modello",
@@ -498,7 +517,11 @@
             "La scelta è l'esito con la probabilità più alta secondo il modello. La confidenza mostrata accanto è quella probabilità dopo la calibrazione.",
             "La calibrazione è una regressione isotonica (pool-adjacent-violators) stimata sulle scelte chiuse: associa la probabilità grezza del modello alla quota di scelte che a quel livello si sono davvero realizzate. La curva è monotona, usa al massimo 40 nodi e viene applicata solo quando esistono almeno 30 scelte chiuse. Viene ristimata man mano che arrivano i risultati, quindi la stessa probabilità grezza può corrispondere nel tempo a valori calibrati leggermente diversi. Le pagine delle partite mostrano entrambi i numeri.",
             "Per Over/Under 2.5 e Goal/No Goal la scelta è il lato favorito dal modello; le loro probabilità calibrate usano curve separate stimate per mercato."
-          ]
+          ],
+          "img": {
+            "id": "track-record",
+            "alt": "Storico pubblico: pronostici chiusi con percentuale di successo, Brier score e rendimento al prezzo di chiusura"
+          }
         },
         {
           "h": "5. Chiusura",
@@ -1060,7 +1083,8 @@
       "buyTitle": "Cosa compri — e cosa no.",
       "buyText": "Pro ti dà probabilità calibrate e uno storico pubblico e regolato — il rendimento attuale contro la quota di chiusura è nella pagina Performance. Non garantisce profitto; serie di 5–7 pronostici persi capitano più volte a stagione. Abbonati solo se puoi permetterti sia la quota sia le puntate. Disdici quando vuoi dal tuo account.",
       "trackLink": "Vedi lo storico →",
-      "error": "Impossibile avviare il pagamento. Riprova."
+      "error": "Impossibile avviare il pagamento. Riprova.",
+      "metaTitle": "Prezzi: 7 giorni gratis, poi Pro"
     },
     "performance": {
       "title": "Storico",
@@ -1243,7 +1267,12 @@
       "feat3T": "Un registro che puoi verificare",
       "feat3": "Ogni pronostico è registrato prima del calcio d'inizio e chiuso automaticamente. Le serie negative restano in pagina — è proprio questo il punto.",
       "closeTitle": "Guarda i pronostici di domani con i numeri dietro.",
-      "closeNote": "7 giorni di accesso completo. Nessuna carta, disdici quando vuoi."
+      "closeNote": "7 giorni di accesso completo. Nessuna carta, disdici quando vuoi.",
+      "shotsTitle": "Come sono fatte le pagine",
+      "shot1Alt": "Classifica della Premier League su footballanalytics.pro con giocate, vinte, pareggiate, perse, differenza reti e punti",
+      "shot1Cap": "Pagina campionato: classifica aggiornata, calendario e registro chiuso di quel campionato.",
+      "shot2Alt": "Pagina dello storico con pronostici chiusi, percentuale 1X2, Brier score e rendimento al prezzo di chiusura",
+      "shot2Cap": "Pagina storico: ogni pronostico chiuso al fischio finale, percentuale e rendimento pubblici."
     },
     "risk": {
       "disagreeShort": "contro il mercato",

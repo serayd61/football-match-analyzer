@@ -1,7 +1,7 @@
 {
-  "name": "Football Analytics Pro",
-  "short_name": "FootballAI",
-  "description": "AI-Powered Football Predictions - Quad-Brain & Agent System",
+  "name": "Football Analytics",
+  "short_name": "FootballAnalytics",
+  "description": "Football match probabilities from a statistical model, with every prediction settled and published.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "scope": "/",
   "dir": "ltr",
-  "lang": "tr",
+  "lang": "en",
   "prefer_related_applications": false,
   "icons": [
     {
@@ -70,21 +70,34 @@
       "label": "Home Screen"
     }
   ],
-  "categories": ["sports", "entertainment", "utilities"],
+  "categories": [
+    "sports",
+    "entertainment",
+    "utilities"
+  ],
   "shortcuts": [
     {
       "name": "Today's Matches",
       "short_name": "Matches",
       "url": "/dashboard",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Live Scores",
       "short_name": "Live",
       "url": "/live",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
-  "related_applications": [],
-  "prefer_related_applications": false
+  "related_applications": []
 }

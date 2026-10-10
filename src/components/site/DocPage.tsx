@@ -2,13 +2,17 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import type { Metadata } from 'next';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
+import Image from 'next/image';
 import { Page, PageTitle } from '@/components/site/ui';
+import { CONTENT_IMAGES, type ContentImageId } from '@/lib/site/content-images';
+import JsonLd from '@/components/site/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/site/jsonld';
 
 // Long-form pages (methodology, about, privacy, terms). Content lives in
 // messages/*.json as { title, lead, updated?, sections: [{ h, p: [] }] } so
 // every locale carries a complete, independently reviewable text.
 export type DocKey = 'methodology' | 'about' | 'privacy' | 'terms';
-export interface DocSection { h: string; p: string[] }
+export interface DocSection { h: string; p: string[]; /** optional product screenshot, alt localized in messages */ img?: { id: ContentImageId; alt: string } }
 
 export async function docMetadata(locale: string, key: DocKey): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: `docs.${key}` });
@@ -21,9 +25,11 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
   const tc = await getTranslations('common');
   const f = await getFormatter();
   const sections = t.raw('sections') as DocSection[];
+  const tn = await getTranslations('nav');
 
   return (
     <Page>
+      <JsonLd data={breadcrumbJsonLd(locale as Locale, [{ name: tn('home'), path: '/' }, { name: t('title'), path: `/${doc}` }])} />
       <div className="max-w-3xl">
       <PageTitle title={t('title')} lead={t('lead')} />
       {updated && <p className="text-xs text-s-muted">{tc('lastUpdated')}: {f.dateTime(new Date(`${updated}T12:00:00Z`), { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
@@ -38,6 +44,12 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
         {sections.map((s, i) => (
           <section key={i} id={`s${i + 1}`} className="scroll-mt-20">
             <h2 className="text-2xl">{s.h}</h2>
+            {s.img && CONTENT_IMAGES[s.img.id] && (
+              <figure className="mt-4 overflow-hidden rounded-xl border border-s-line bg-s-surface">
+                <Image src={CONTENT_IMAGES[s.img.id]} alt={s.img.alt} sizes="(min-width: 768px) 768px, 100vw" className="h-auto w-full" />
+                <figcaption className="border-t border-s-line px-3 py-2 text-xs text-s-muted">{s.img.alt}</figcaption>
+              </figure>
+            )}
             <div className="mt-3 space-y-3 text-[15px] leading-relaxed">
               {s.p.map((para, j) => (
                 para.startsWith('- ') ? (

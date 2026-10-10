@@ -100,6 +100,7 @@ export const config = {
     '/predictions/:path*',
     '/results',
     '/performance',
+    '/pricing',
     '/leagues/:path*',
     '/methodology',
     '/about',

@@ -4,6 +4,8 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import { Link } from '@/i18n/navigation';
 import { routing, type Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
+import JsonLd from '@/components/site/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/site/jsonld';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { getPerformance } from '@/lib/site/performance';
 import { listResults, listUpcomingForLeague } from '@/lib/site/results';
@@ -55,17 +57,25 @@ export default async function LeaguePage({ params }: { params: { locale: string;
     getStandings(league.slug),
   ]);
   const ts = await getTranslations('standings');
+  const tn = await getTranslations('nav');
   const o = perf.overall;
   const pct = (x: number | null) => (x == null ? '–' : f.number(x, 'percent1'));
 
   return (
     <Page>
+      <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, { name: league.name, path: `/leagues/${league.slug}` }])} />
       <PageTitle
         eyebrow={league.country}
         title={league.name}
         lead={t('lead', { league: league.name })}
         aside={<Link href="/leagues" className="text-xs underline underline-offset-4">{t('allLeagues')}</Link>}
       />
+
+      {/* SEO denetimi 2026-10-10: unique, factual intro per league + how the record is read. */}
+      <div className="max-w-3xl space-y-3 pb-6 text-[15px] leading-relaxed">
+        <p>{t(`intro.${league.slug}`)}</p>
+        <p className="text-s-muted">{t('howToRead', { league: league.name })}</p>
+      </div>
 
       <TrialNotice access={access} />
       {access.state === 'expired' && <Paywall />}
