@@ -23,7 +23,8 @@
     "pricing": "Fiyatlar",
     "how": "Nasıl çalışır",
     "tryFree": "7 gün ücretsiz dene",
-    "picks": "Uyan maçlar"
+    "picks": "Uyan maçlar",
+    "matches": "Maçlar"
   },
   "locale": {
     "label": "Dil"
@@ -105,8 +106,8 @@
     "home": "Ana sayfaya git"
   },
   "home": {
-    "metaTitle": "İstatistiksel modelden futbol tahminleri",
-    "metaDescription": "{count} lig için Dixon-Coles maç olasılıkları; her maçtan sonra sonuçlandırılıp yayınlanır. İsabet, kalibrasyon ve getiri kayıt altındadır.",
+    "metaTitle": "Futbol tahminleri ve istatistiksel maç analizi",
+    "metaDescription": "{count} lig için Dixon-Coles modelinden maç olasılıkları; her maçtan sonra sonuçlandırılıp yayınlanır. Puan durumu, form ve geçmiş karşılaşmalarla ücretsiz maç önü; olasılık ve risk üyelere.",
     "eyebrow": "İstatistiksel futbol tahminleri",
     "title": "Maç başlamadan olasılık, bittikten sonra karne.",
     "lead": "Modelimiz {count} ligde her maç için 1X2, üst/alt 2,5 ve karşılıklı gol olasılığı üretir. Sonuç geldiğinde her tahmin puanlanır ve olduğu gibi kalır. Ücretsiz hesapla günün tahminlerini, ücretli planla modelin bahisçiden ayrıştığı maçları görürsün.",
@@ -479,7 +480,11 @@
       "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez."
     },
     "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış oranında sabit 1 birimlik bahis varsayımıdır. Sonradan hiçbir kayıt silinmez.",
-    "eventDescription": "{league} maçı: {home} – {away}."
+    "eventDescription": "{league} maçı: {home} – {away}.",
+    "updated": "Fikstür ve sonuç verisi son güncelleme: {time}",
+    "methodLink": "Bu değerler nasıl üretilir",
+    "matchesHint": "Herkese açık maç önü için bir maçı aç: başlama, puan durumu, form ve geçmiş karşılaşmalar.",
+    "matchesHub": "Bu haftanın tüm maçları"
   },
   "docs": {
     "methodology": {
@@ -506,14 +511,36 @@
           ]
         },
         {
-          "h": "3. Kapsam",
+          "h": "3. Olasılık, kesinlik değil",
+          "p": [
+            "Maç sayfasındaki her değer bir olasılıktır: aynı maç aynı koşullarda çok kez oynansa bir sonucun kaç kez gerçekleşeceğinin payı. %60 ev sahibi galibiyeti, ev sahibinin kazanacağı öngörüsü değildir. Ev sahibinin on maçta yaklaşık altısını kazanması gerektiğini söyler; kalan dördü hata değil, beklenen sonuçtur.",
+            "Karnenin yalnızca isabet sayısıyla değil kalibrasyon ve Brier puanıyla değerlendirilmesinin nedeni budur. %60 verdiği seçimler %60 oranında tutan bir model, beşte iki kaybederken de işini yapıyordur. Seçimin yanındaki güven bu olasılığın kalibre edilmiş hâlidir; Düşük / Orta / Yüksek risk etiketi o düzeydeki seçimlerin ne sıklıkla kaybettiğini özetler.",
+            "Bu sitedeki hiçbir şey bir sonucu garanti etmez ve hiçbir sayfa bahis tavsiyesi değildir. Sayıları hata payı olan bir tahmin olarak ele al, piyasayla karşılaştır ve olası her bahsi kaybetmeyi göze alabileceğin sınırda tut."
+          ]
+        },
+        {
+          "h": "4. Pazarlar: 1X2, 2,5 üst/alt, karşılıklı gol",
+          "p": [
+            "- 1X2 (maç sonucu): 1 = ev sahibi galibiyeti, X = beraberlik, 2 = deplasman galibiyeti; 90 dakika artı uzatma dakikaları sayılır, uzatma devreleri ve penaltılar sayılmaz. Üç olasılığın toplamı %100'dür.\n- 2,5 üst/alt: maçta üç ya da daha fazla gol (üst) mü, iki ya da daha az (alt) mı olacağı. 2,5 çizgisi tam tutturulamaz, bu yüzden iade yoktur.\n- Karşılıklı gol (KG): iki taraf da en az bir gol atarsa var, aksi hâlde yok; sonuçtan bağımsızdır.\n- Çifte şans (1X, X2, 12) 1X2 değerlerinden ikisinin toplanmasıyla türetilir.",
+            "Üçü de aynı skor ızgarasından okunur. Her pazardaki seçim, model olasılığı daha yüksek olan taraftır; yanındaki kalibre güven pazar başına ayrı bir eğri kullanır, çünkü model üçünde eşit derecede iyi değildir."
+          ]
+        },
+        {
+          "h": "5. Modelin gol beklentisi xG değildir",
+          "p": [
+            "Maç sayfası her taraf için beklenen gol sayısı (λ, lambda) gösterir. Bu, modelin o takımın gollerine atadığı Poisson dağılımının ortalamasıdır; hücum ve savunma güçleriyle ev avantajından türetilir. Yalnızca geçmiş skorlardan üretilen maç öncesi bir kestirimdir.",
+            "Veri sağlayıcıların yayınladığı beklenen gol (xG) farklı bir büyüklüktür: bir takımın maçta gerçekten çektiği şutların kalitesini şut konumu, türü ve kurgusundan toplar. xG olay verisinden maç sonrasında ölçülür; modelin λ'sı maç öncesinde sonuçlardan tahmin edilir. İkisi çoğu zaman yönde uyuşur, düzeyde ayrışır; model xG'yi girdi olarak kullanmaz."
+          ]
+        },
+        {
+          "h": "6. Kapsam",
           "p": [
             "Tahminler yalnızca modelin fit edildiği ligler için yayınlanır. Bir lig, eğitim penceresinde yeterli sonucu (en az 120 maç) olduğunda eklenir; aksi halde dışarıda kalır. Kapsanan liglerin dışındaki maçlar programda görünebilir ama model değerlendirmesi taşımaz ve karneye asla sayılmaz.",
             "Beslemedeki lig kimlikleri her sezon değişir; bu yüzden lig, ad ve ülke koduyla eşleştirilir, sabit bir kanonik kimlik listesi yedek olarak tutulur."
           ]
         },
         {
-          "h": "4. Seçim, güven ve kalibrasyon",
+          "h": "7. Seçim, güven ve kalibrasyon",
           "p": [
             "Seçim, model olasılığı en yüksek sonuçtur. Yanında gösterilen güven, kalibrasyon sonrası bu olasılıktır.",
             "Kalibrasyon, sonuçlanmış seçimler üzerinde fit edilen izotonik regresyondur (pool-adjacent-violators): ham model olasılığını, o seviyede gerçekten tutan seçimlerin payına eşler. Eğri monotondur, en fazla 40 düğüm kullanır ve yalnızca en az 30 sonuçlanmış seçim varken uygulanır. Sonuçlar geldikçe yeniden fit edilir; bu yüzden aynı ham olasılık zamanla biraz farklı kalibre değerlere eşlenebilir. Maç sayfaları iki sayıyı da gösterir.",
@@ -525,27 +552,28 @@
           }
         },
         {
-          "h": "5. Sonuçlandırma",
+          "h": "8. Sonuçlandırma",
           "p": [
             "Saatlik bir görev, besleme maçı bitmiş bildirdiğinde her yayınlanmış tahmini maç skoruyla karşılaştırır. 1X2 seçimi gerçek sonuçla eşleşince tutmuş sayılır; gol pazarı seçimleri skordan sonuçlandırılır. Tahminler başlama vuruşundan sonra asla düzenlenmez, sonuçlandıktan sonra asla silinmez.",
             "Bitmiş işaretlenen ama kullanılabilir skoru olmayan maçlar (ertelenen, yarıda kalan veya beslemede eksik) karnenin dışında tutulur ve sonuçlar sayfasında sayısıyla ayrıca belirtilir."
           ]
         },
         {
-          "h": "6. Karne nasıl puanlanır",
+          "h": "9. Karne nasıl puanlanır",
           "p": [
             "- İsabet: tutan sonuçlanmış 1X2 seçimlerinin payı.\n- Brier skoru (1X2): üç sonuç üzerindeki kare hataların toplamının maç ortalaması; 0 mükemmel, 0,667 rastgele tahmin, büyük liglerde marjdan arındırılmış piyasa fiyatları tipik olarak yaklaşık 0,60 alır.\n- Brier skoru (gol pazarları): ikili sürüm; 0,25 yazı tura demektir.\n- Kalibrasyon tablosu: sonuçlanmış seçimler kalibre güvene göre gruplanır; ortalama öngörülen olasılık gözlenen isabetle karşılaştırılır.\n- Sabit bahis ROI: modelin seçimine, başlama vuruşundan önce kaydedilen son oranla (kapanış, yoksa açılış) bir birim; oran kaydı olan maçlar üzerinden toplanır. Getiriler, gerçek bahisçilerin karşılaştığı limit ve hesap kısıtlamalarından önce gösterilir.",
             "Tüm değerler sonuçlar sayfasındaki aynı sonuçlanmış satırlardan hesaplanır, saatte bir yenilenir ve kayıp aylar dahildir."
           ]
         },
         {
-          "h": "7. Veri kaynakları ve zamanlama",
+          "h": "10. Veri kaynakları ve zamanlama",
           "p": [
-            "Fikstür, sonuç ve takım verileri üçüncü taraf bir futbol veri beslemesinden gelir. Oran kayıtları bir bahisçi beslemesinden alınır; açılışta ve başlama vuruşundan kısa süre önce kaydedilir. Halka açık site kendi veritabanımızdan okur; tahminleri 15 dakikada, sonuçları 5 dakikada, toplu değerleri saatte bir yeniler. Maç saatleri tarayıcınızın saat diliminde, yedek olarak Europe/Zurich ile gösterilir."
+            "Fikstür, sonuç ve takım verileri üçüncü taraf bir futbol veri beslemesinden gelir. Oran kayıtları bir bahisçi beslemesinden alınır; açılışta ve başlama vuruşundan kısa süre önce kaydedilir. Halka açık site kendi veritabanımızdan okur; tahminleri 15 dakikada, sonuçları 5 dakikada, toplu değerleri saatte bir yeniler. Maç saatleri tarayıcınızın saat diliminde, yedek olarak Europe/Zurich ile gösterilir.",
+            "Güncellik, açık ifadeyle: bir maç, motor onu puanladığında herkese açık maç sayfalarında görünür, genellikle bir önceki akşam; puan tabloları altı saatte bir yenilenir; sonuçlar besleme maçın bittiğini bildirdikten sonra saat başı denetlenir. Her maç sayfası o maç için son veri yazımının saatini basar; bayat bir sayfa böyle anlaşılır."
           ]
         },
         {
-          "h": "8. Bilinen sınırlar",
+          "h": "11. Bilinen sınırlar",
           "p": [
             "- Halka açık karne Temmuz 2026 sonunda başlar; sonuçlanmış örneklem hâlâ küçüktür ve lig bazlı değerler dalgalanır.\n- Oran kayıtları yalnızca Ağustos 2026 ortasından itibaren ve her maç için değil; bu yüzden ROI penceresi karneden kısadır.\n- Besleme zaman zaman gecikir veya bir sonucu atlar; bu maçlar sonuç gelene kadar açık kalır.\n- Olasılıklar tahmindir. %60'lık bir seçimin beşte iki kaybetmesi beklenir."
           ]
@@ -1227,7 +1255,11 @@
     },
     "home": {
       "todayTitle": "Bugünün maçları",
-      "todayAll": "Tüm maçlar"
+      "todayAll": "Tüm maçlar",
+      "publicTodayTitle": "Bugünün maçları",
+      "publicTodayLead": "Modelin puanladığı liglerdeki maçlar. Puan durumu, form ve geçmiş karşılaşmalar için bir maçı aç.",
+      "publicTodayAll": "Bu haftanın tüm maçları",
+      "publicTodayEmpty": "Bugün puanlanmış maç yok. Haftalık listede yaklaşan maçlar var."
     },
     "match": {
       "tabs": "Maç bölümleri",
@@ -1246,7 +1278,7 @@
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
-      "title": "Oranı bahisçi söylemeden önce sen bil.",
+      "title": "Futbol tahminleri ve istatistiksel maç analizi",
       "lead": "Kalibre edilmiş istatistiksel model {n} ligdeki her maçı puanlar: kazanma olasılıkları, güven, risk ve adil fiyat — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
       "cta": "7 gün ücretsiz başla",
       "ctaDemo": "Örnek analizi gör",
@@ -1278,12 +1310,88 @@
       "shot1Alt": "footballanalytics.pro Premier League puan tablosu: oynanan, galibiyet, beraberlik, mağlubiyet, averaj ve puan",
       "shot1Cap": "Lig sayfası: canlı puan tablosu, fikstür ve o ligin sonuçlanmış karnesi.",
       "shot2Alt": "Tahmin karnesi sayfası: sonuçlanmış seçimler, 1X2 isabet oranı, Brier skoru ve kapanış oranında getiri",
-      "shot2Cap": "Karne sayfası: her seçim maç bitince sonuçlandırılır; isabet ve getiri herkese açık."
+      "shot2Cap": "Karne sayfası: her seçim maç bitince sonuçlandırılır; isabet ve getiri herkese açık.",
+      "tagline": "Oranı bahisçi söylemeden önce sen bil."
     },
     "risk": {
       "disagreeShort": "piyasaya karşı",
       "tightShort": "sıkı maç",
       "overShort": "piyasanın üstünde"
+    }
+  },
+  "matches": {
+    "hub": {
+      "metaTitle": "Bugünün maçları ve haftanın fikstürü: maç öncesi analiz",
+      "metaDescription": "Modelin kapsadığı {count} ligdeki her maç için başlama saati, puan durumu, son form ve geçmiş karşılaşmalar; sonuç arşiviyle birlikte. Model olasılıkları üyelere yayınlanır.",
+      "title": "Bu haftanın maçları",
+      "lead": "Modelin puanladığı {count} ligdeki önümüzdeki yedi günün tüm maçları. Her maç sayfasında başlama saati, puan durumu, form ve geçmiş karşılaşmalar var; modelin olasılıkları, güveni ve riski üyelere açıktır.",
+      "tzNote": "Başlama saatleri tarayıcının saat dilimine göre gösterilir (sayfa tam yüklenene kadar Europe/Zurich).",
+      "updated": "Fikstür verisi son güncelleme: {time}",
+      "upcomingH": "Yaklaşan maçlar",
+      "upcomingSub": "Güne göre gruplanmıştır. Maç öncesi özeti için bir maçı aç.",
+      "empty": "Önümüzdeki yedi gün için yayınlanmış fikstür yok",
+      "emptyLead": "Model, liglerin programı kesinleştikçe fikstür listesini yayınlar. Güncel puan durumu ve sonuçlar lig sayfalarında.",
+      "lockedLead": "Her maç sayfası herkese açık olguları gösterir: puan durumu, form ve geçmiş karşılaşmalar. Modelin 1X2 olasılıkları, gol beklentisi, güven ve risk etiketi maç başlamadan önce üyelere yayınlanır.",
+      "recentH": "Son sonuçlar",
+      "recentSub": "Son üç günün maç sonuçları. Sonuçlanmış karne karne sayfasındadır.",
+      "moreNav": "Daha fazla",
+      "linkLeagues": "Lig sayfaları: puan durumu ve sonuçlanmış karne",
+      "linkMethod": "Model nasıl çalışır",
+      "linkRecord": "Açık karne"
+    },
+    "match": {
+      "metaTitle": "{home} – {away} maç önü: form, geçmiş karşılaşmalar ve başlama saati ({date})",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: sonuç, form ve geçmiş karşılaşmalar ({date})",
+      "metaDescription": "{league}, {date}: {home} – {away}. Başlama saati, puan durumu, son form ve sonuç arşivinden geçmiş karşılaşmalar. Modelin olasılıkları üyelere açıktır.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Maç sonucu, puan durumu, maç öncesi form ve geçmiş karşılaşmalar. Maç öncesi tahmin üyelerin karnesindedir.",
+      "eyebrow": "Maç önü",
+      "vs": "–",
+      "kickoff": "Başlama",
+      "venue": "Stat",
+      "tzNote": "Saatler tarayıcının saat dilimiyle ve dilim adıyla gösterilir; betikler yüklenmeden önce Europe/Zurich'tir.",
+      "backHub": "Tüm maçlar",
+      "previewH": "Maç öncesi özet",
+      "reviewH": "Maç özeti",
+      "noData": "Besleme bu kulüpler için henüz puan durumu ya da sonuç vermedi; gösterilecek özet yok.",
+      "sourceNote": "Buradaki tüm değerler verimizdeki sonuç arşivinden ve puan tablosundan gelir; bu sayfada tahmin edilmiş bir sayı yoktur.",
+      "methodLink": "Olasılıklar nasıl üretilir",
+      "sFinal": "Maç sonucu: {home} {hs}–{as} {away}.",
+      "sTable": "{home}, {league} tablosunda {hp} maçta {hpts} puanla {hpos}. sırada; {away} ise {ap} maçta {apts} puanla {apos}. sırada.",
+      "sForm": "Arşivimizdeki son {n} sonuç, en yeniden eskiye: {home} {hform}; {away} {aform}.",
+      "sH2h": "Arşivimizde {n, plural, one {bir önceki karşılaşma} other {# önceki karşılaşma}}: {home} {hw}, beraberlik {d}, {away} {aw}.",
+      "sNoH2h": "Temmuz 2026'da başlayan sonuç arşivimizde bu iki kulüp arasında önceki karşılaşma yok.",
+      "sVenue": "Maç {venue} sahasında oynanır.",
+      "tableH": "{league} tablosu: iki kulüp",
+      "fullTable": "Tam tablo",
+      "colTeam": "Kulüp",
+      "colPlayed": "O",
+      "colWdl": "G-B-M",
+      "colGoals": "Gol",
+      "colPts": "P",
+      "formH": "Son form",
+      "formSub": "Bu maçtan önceki son beş sonuçlanmış maç, en yeniden eskiye.",
+      "formNone": "Arşivimizde henüz sonuçlanmış maç yok.",
+      "formW": "G",
+      "formD": "B",
+      "formL": "M",
+      "formHomeShort": "İ",
+      "formAwayShort": "D",
+      "h2hH": "Geçmiş karşılaşmalar",
+      "h2hSub": "Bu maçtan önceki karşılaşmalar, sonuç arşivinden (Temmuz 2026'dan itibaren).",
+      "modelKicker": "Üyelere",
+      "modelH": "Modelin bu maç için tahmini",
+      "modelLockedLead": "Maç başlamadan önce yayınlanır, bitiş düdüğünden sonra sonuçlandırılır:",
+      "modelLockedSettled": "Tahmin maç başlamadan önce kaydedildi ve bu skora göre sonuçlandırıldı. Seçimi ve sonucunu üyeler görür:",
+      "bullet1x2": "1X2 olasılıkları ve adil oran, bahisçiyle karşılaştırmalı",
+      "bulletGoals": "Gol beklentisi, olası skorlar, 2,5 üst/alt ve karşılıklı gol",
+      "bulletConf": "Kalibre güven ve Düşük / Orta / Yüksek risk etiketi",
+      "bulletRecord": "Seçimin açık karnedeki yeri",
+      "modelOpen": "Tam tahmini aç",
+      "updated": "Veri son güncelleme: {time}",
+      "relatedH": "Diğer {league} maçları",
+      "leaguePage": "{league} sayfası",
+      "moreNav": "Daha fazla",
+      "eventDescription": "{league}: {home} – {away}. Başlama, puan durumu, form ve geçmiş karşılaşmalar; model olasılıkları üyelere."
     }
   }
 }

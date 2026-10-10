@@ -19,11 +19,11 @@ export function PageTitle({ eyebrow, title, lead, aside }: { eyebrow?: string; t
   );
 }
 
-export function SectionTitle({ title, meta, sub, children }: { title: string; meta?: ReactNode; sub?: ReactNode; children?: ReactNode }) {
+export function SectionTitle({ title, meta, sub, children, id }: { title: string; meta?: ReactNode; sub?: ReactNode; children?: ReactNode; /** heading id for aria-labelledby */ id?: string }) {
   return (
     <div className="rule-b flex flex-wrap items-end justify-between gap-x-4 gap-y-1 pb-3">
       <div>
-        <h2 className="text-[20px] sm:text-[24px]">{title}</h2>
+        <h2 id={id} className="text-[20px] sm:text-[24px]">{title}</h2>
         {sub && <p className="mt-1 text-[14px] text-s-muted">{sub}</p>}
       </div>
       {meta && <span className="text-[13px] font-semibold">{meta}</span>}

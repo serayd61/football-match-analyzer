@@ -16,6 +16,9 @@ import { Page } from '@/components/site/ui';
 import DemoAnalysis from '@/components/site/DemoAnalysis';
 import MatchRow from '@/components/site/MatchRow';
 import { listDay } from '@/lib/site/fixtures';
+import { listPublicUpcoming } from '@/lib/site/match-public-data';
+import PublicMatchList from '@/components/site/PublicMatchList';
+import { ymdOf } from '@/lib/site/time';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { dailyStandingBoard } from '@/lib/site/daily-standing';
 import { outsideStandingFor } from '@/lib/site/outside-standing';
@@ -68,11 +71,14 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const unlocked = canSeeMatches(access);
   const authed = access.state !== 'anon';
 
-  const [perf, latest, today] = await Promise.all([
+  const [perf, latest, today, publicWeek] = await Promise.all([
     getPerformance(null),
     unlocked ? listResults({ league: null, from: null, to: null, page: 1, pageSize: 12 }) : Promise.resolve(null),
     unlocked ? listDay(todayYmd()).catch(() => null) : Promise.resolve(null),
+    // SEO 2026-10-10: ziyaretçiye günün maçları (olasılıksız, /matches ön izlemelerine bağlı).
+    unlocked ? Promise.resolve([]) : listPublicUpcoming(2).catch(() => []),
   ]);
+  const publicToday = publicWeek.filter((r) => ymdOf(r.kickoff) === todayYmd()).slice(0, 8);
   // v3: members see the day's first modelled fixtures right in the hero.
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
   const todayTotal = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).length;
@@ -115,7 +121,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
         <Page className="grid items-center gap-12 pb-12 pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
           <div className="flex flex-col gap-6">
             <p className="kicker !text-s-accent-700">{tl('eyebrow')}</p>
+            {/* SEO 2026-10-10: H1 names the service; the slogan stays as a secondary line. */}
             <h1 className="max-w-[15ch] text-[38px] leading-[1.04] sm:text-[52px] lg:text-[60px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{tl('title')}</h1>
+            <p className="max-w-[30ch] text-[20px] font-semibold leading-snug sm:text-[22px]">{tl('tagline')}</p>
             <p className="max-w-[46ch] text-[17px] leading-relaxed text-s-muted sm:text-[18px]">{tl('lead', { n: SITE_LEAGUES.length })}</p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={primary.href} className="btn btn-primary btn-lg !h-[54px] !px-7 !text-[17px]" data-cta="hero-primary">{unlocked ? primary.label : tl('cta')} <Icon size={18} /></Link>
@@ -174,6 +182,24 @@ export default async function HomePage({ params: { locale } }: { params: { local
           </Page>
         </div>
       </section>
+
+      {/* ── Today's matches for visitors (public previews, no model figures) ── */}
+      {!unlocked && (
+        <section aria-labelledby="today-public-title" className="border-b border-s-line">
+          <Page className="py-10">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 id="today-public-title" className="text-[24px] sm:text-[28px]">{t3('publicTodayTitle')}</h2>
+                <p className="mt-1 text-[14.5px] text-s-muted">{t3('publicTodayLead')}</p>
+              </div>
+              <Link href="/matches" className="btn btn-secondary btn-sm" data-cta="home-matches-hub">{t3('publicTodayAll')} →</Link>
+            </div>
+            <div className="mt-5">
+              {publicToday.length ? <PublicMatchList rows={publicToday} groupBy="league" /> : <p className="text-[14px] text-s-muted">{t3('publicTodayEmpty')}</p>}
+            </div>
+          </Page>
+        </section>
+      )}
 
       {/* ── Leagues ─────────────────────────────────────────────────── */}
       <section aria-labelledby="cov-title">

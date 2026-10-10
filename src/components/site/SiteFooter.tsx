@@ -18,6 +18,7 @@ export default async function SiteFooter() {
           <p className="max-w-[46ch] leading-relaxed">{t('line', { year })}</p>
         </div>
         <nav className="flex flex-col gap-2" aria-label="Product">
+          <Link href="/matches" className="hover:text-s-ink">{nav('matches')}</Link>
           <Link href="/predictions" className="hover:text-s-ink">{nav('predictions')}</Link>
           <Link href="/performance" className="hover:text-s-ink">{nav('performance')}</Link>
           <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>

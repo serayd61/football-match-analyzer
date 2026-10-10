@@ -5,12 +5,14 @@ import { standingsIndex, type StandingRow } from '@/lib/site/standings';
 import { venueFor } from '@/lib/site/stadiums';
 import LocalTime from './LocalTime';
 import { Crest, StatusChip } from './PredictionTable';
+import { matchPath } from '@/lib/site/match-public';
 
 // Freemium SEO (2026-09-24): the public, prediction-free fixture list shown to
 // anonymous visitors on league pages. Same grouping and row layout as
 // PredictionTable, but no pick, probability bar or goal markets — only
 // kickoff, teams (with crest and league position) and the match state. Rows
-// do not link to /predictions/[id] because that page is members-only.
+// link to the public /matches/{slug} preview (SEO 2026-10-10), never to the
+// members-only /predictions/[id].
 
 const STATUS_KEY: Record<MatchStatus, string> = {
   scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished',
@@ -48,7 +50,8 @@ export default async function FixtureList({ rows }: { rows: SitePrediction[] }) 
           </div>
           <ul className="divide-y divide-s-line border-b border-s-line">
             {g.rows.map((p) => (
-              <li key={p.fixtureId} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 px-1 py-2.5">
+              <li key={p.fixtureId}>
+               <Link href={matchPath(p)} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 px-1 py-2.5 hover:bg-s-raised/60" title={`${p.homeName} – ${p.awayName}`}>
                 <span className="flex flex-col gap-1 text-sm text-s-muted">
                   <LocalTime iso={p.kickoff} format="time" />
                   {showState(p) && <StatusChip status={p.status} label={t(STATUS_KEY[p.status])} />}
@@ -67,6 +70,7 @@ export default async function FixtureList({ rows }: { rows: SitePrediction[] }) 
                   {/* SEO denetimi 2026-10-10: the venue is visible so the SportsEvent markup matches the page. */}
                   {venueFor(p.homeId) && <span className="truncate text-xs text-s-muted">{venueFor(p.homeId)!.venue}</span>}
                 </span>
+               </Link>
               </li>
             ))}
           </ul>

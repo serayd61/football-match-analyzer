@@ -12,8 +12,9 @@ export default function MobileTabBar() {
   const { status } = useSession();
   const is = (h: string) => pathname === h || pathname.startsWith(h + '/');
   const account = status === 'authenticated' ? '/dashboard' : '/login';
+  // SEO 2026-10-10: ziyaretçi sekmesi herkese açık /matches; üyeye /predictions.
   const items = [
-    { href: '/predictions', label: t('predictions'), Icon: CalendarDays },
+    status === 'authenticated' ? { href: '/predictions', label: t('predictions'), Icon: CalendarDays } : { href: '/matches', label: t('matches'), Icon: CalendarDays },
     { href: '/performance', label: t('performance'), Icon: ClipboardCheck },
     { href: '/leagues', label: t('leagues'), Icon: Trophy },
     { href: account, label: t('account'), Icon: UserRound },
