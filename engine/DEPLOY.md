@@ -233,6 +233,30 @@ kanonik gruba çözülür; eşik geçildiğinde alias zararsız kalır (silmek �
 
 Geçici kaçış (yalnız özel ağda, önerilmez): `Environment=PREDICT_ALLOW_ANON=1`.
 
+## Ek (2026-10-12) — sezon içi id değişimi otomatik bağlanır + pazar kalibrasyonu (gölge)
+
+**Kapsama kuralı (`store.merge_season_ids`).** Akış id'yi sezon İÇİNDE de değiştiriyor
+(Championship 938218 → 1000001801 9 Ekim'de, Estonya 248 → 1000001181, Türkiye 1. Lig,
+Suudi 1. Lig…). Yeni id `MERGE_MIN_MATCHES`'e (30) ulaşana kadar 2–4 hafta "Model bekleniyor"
+görünüyor, oran da çekilmiyordu (oran işi tahminli maçtan türer). Artık yeni id'nin satırı
+≥ `MERGE_MIN_NEW` (6) ise, takımlarının ≥ `MERGE_MIN_CONTAIN` (0,9) oranı büyük bir grupta
+varsa ve takvimler kesişmiyorsa o gruba hemen bağlanır (kanonik = en geç biten parça).
+Kupalar ligle aynı takvimde → kesişim kuralı onları yine dışarıda tutar. Kupalar (UCL gibi
+takım kümesi yarı yarıya değişenler) için `LEAGUE_ALIASES` hâlâ gerekir.
+Deploy: `cd /opt/football-match-analyzer && git pull && systemctl restart footy-predict`;
+bir sonraki saatlik engine-sync'te `league_too_small` sayısı düşmeli.
+
+**Pazar kalibrasyonu (`model.apply_calib`, params `calib`).** 30 günlük canlı denetim:
+Alt 2,5 ve KG Yok sistematik aşırı güvenli (iddia %65–85 → gerçek %50–60), Üst ≥%80 → %69;
+1X2 kalibre. 180 günlük dc-1.0 çıktısında Platt uydurma (zaman ayrımlı sınama LL Ü/A
+0,694→0,668, KG 0,703→0,682). Gölge sürüm `dc-1.2-cal` engine_model_versions'a eklenir:
+```json
+{"kind":"goals","calib":{"ou25":[0.233,0.440],"btts":[0.176,0.360]},"shrink_k":10,"min_team_matches":4}
+```
+`shrink_k`/`min_team_matches`: yeni çıkan takımlar (Venezia, Coventry, Dijon 12 Ekim) 6 etkin maç
+kapısına takılıyordu; 4 maçla ve lig ortalamasına büzülerek tahmin üretilir. Bir hafta gölge
+kayıt → kovalar ±5 içindeyse aktif yapılır (`status` değişimi yeter, kod değişmez).
+
 ---
 
 ## Ek (2026-09-18) — tahminden önce depo yenileme (B08)
