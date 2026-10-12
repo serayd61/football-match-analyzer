@@ -158,13 +158,13 @@ Football Analytics Pro è un servizio di informazione e statistica. Non offre sc
 | Sağlık | Yok |
 | Gerçek para kumarı, oyunlar ve yarışmalar | "Uygulamam gerçek parayla kumar içermiyor" + "kumarla ilgili içerik" → bilgi/istatistik; lisans gerekmez (operatör değiliz) |
 
-## 5. Android paketi (AAB) – TAMAMLANDI (2026-10-10, dal `feat/play-twa`)
+## 5. Android paketi (AAB) – TAMAMLANDI (2026-10-10, dal `feat/play-twa`; TWA → WebView geçişi `feat/play-webview`, bkz. `android-app/README.md`)
 
 - TWA projesi: `android-twa/` (yalnız `twa-manifest.json` + README takip edilir; `bubblewrap update` projeyi yeniden üretir).
 - Araçlar: Bubblewrap CLI 1.27 (global npm), Temurin JDK 17 `~/.bubblewrap/jdk17/`, Android SDK `~/Library/Android/sdk` (`bin`/`lib` sembolik bağları cmdline-tools'a).
 - Upload anahtarı: `~/AndroidKeys/footballanalytics-upload.keystore` (alias `upload`; şifre yanındaki `.password.txt`). SHA-256: `6B:41:39:6A:0E:C6:CA:D4:2C:8C:3C:86:5D:F6:09:F5:E3:E2:95:B9:0F:5E:EA:D0:D4:3E:94:F5:AE:B9:8D:81`
 - Çıktı: `android-twa/app-release-bundle.aab` (kopyası `~/AndroidKeys/footballanalytics-v1-1.0.0.aab`). Start URL `https://footballanalytics.pro/?src=twa`.
-- `public/.well-known/assetlinks.json` eklendi (şimdilik upload anahtarı). **İlk AAB yüklendikten sonra** Console → Test ve yayınlama → Uygulama bütünlüğü'ndeki *Play uygulama imzalama* SHA-256'sını da listeye ekle; yoksa uygulama Chrome adres çubuğuyla açılır.
+- `public/.well-known/assetlinks.json` eklendi (upload anahtarı; Play App Signing anahtarı 2026-10-10'da PR #115 ile eklendi). **İlk AAB yüklendikten sonra** Console → Test ve yayınlama → Uygulama bütünlüğü'ndeki *Play uygulama imzalama* SHA-256'sını da listeye ekle; yoksa uygulama Chrome adres çubuğuyla açılır.
 - Yeni sürüm: `appVersionCode` +1, `appVersionName` güncelle → `bubblewrap update && bubblewrap build`.
 
 ## 6. Riskler / kararlar
@@ -181,3 +181,18 @@ Hesap "Kişisel hesap" olduğu için üretime çıkmadan önce:
 3. "Üretime başvur" – kapalı testle ilgili sorular yanıtlanır, Google onaylar.
 
 Yani bugün başlatılsa bile mağazada görünmesi en erken ~3 hafta sonra.
+
+## 8. Console kurulum durumu (2026-10-10, Claude ile dolduruldu)
+
+| Bölüm | Durum |
+|---|---|
+| Gizlilik politikası, Reklamlar (Hayır), Devlet uygulaması (Hayır), Finansal özellikler (Yok), Sağlık (Yok), Reklam kimliği (Hayır) | ✔ kaydedildi |
+| Veri güvenliği | ✔ Gönderildi (2026-10-10; yanlışlıkla eklenen 'Yaklaşık konum' kaldırılıp yeniden kaydedildi). Toplanan: Ad (isteğe bağlı, hesap yönetimi), E-posta (zorunlu; uygulama işlevselliği + hesap yönetimi), Kullanıcı kimlikleri (zorunlu; uygulama işlevselliği + hesap yönetimi), Uygulama işlemleri (zorunlu; analiz), Cihaz/diğer kimlikler (zorunlu; analiz + reklam/pazarlama). Paylaşım yok, kısa süreli işleme yok, aktarım şifreli, hesap silme + veri silme URL'si = /en/privacy. |
+| Oturum açma bilgileri (uygulama erişimi) | ✔ Kullanıcı tamamladı: Pro açık test hesabı e-posta + şifre (şifre Console'a Claude tarafından girilmez). |
+| Hedef kitle ve içerik | ✔ Kullanıcı tamamladı. Cevap: 18+; çocuklara yönelik değil; haber uygulaması değil. |
+| İçerik derecelendirmesi (IARC) | ✔ Gönderildi (2026-10-10): e-posta support@footballanalyzer.com, kategori Diğer; indirilen içerik/UGC/şiddet/cinsellik/dil/madde: Hayır; online içerik: Evet; yaş kısıtlı ürün tanıtımı: Evet → alkol/tütün Hayır, diğer (kumarla ilgili) Evet; konum paylaşımı/dijital satın alma/nakit ödül/tarayıcı/haber: Hayır. Sonuç: PEGI 18, ESRB 17+, USK 18, ClassInd 18, IARC 18+, Kore 19+. |
+| Mağaza ayarları | ✔ Kategori Spor; e-posta `support@footballanalyzer.com`; web sitesi https://footballanalytics.pro |
+| Varsayılan mağaza girişi (en-US) | Taslak kaydedildi: kısa + tam açıklama, simge: 3D render `marketing/play/icon-512-3d.png` (ElevenLabs gpt-image-2.5 ile üretildi, kaynak `icon-3d-render-1280x720.png`; düz `icon-512.png` slottan çıkarıldı, kitaplıkta duruyor) (1/1), öne çıkan grafik 1024×500 (1/1), 4 telefon ekran görüntüsü en (4/8) — Chrome uzantısıyla öğe kitaplığına yüklenip slotlara eklendi. Tablet görselleri yok; tr/de/it çevirileri eklenmedi. |
+| AAB | ✔ v1 (TWA) Kapalı test "Alpha" 2026-10-10 15:05 yayına alındı (Google onayladı). ✔ **v2 WebView** (`android-app/`, sürüm kodu 2 / 1.1.0) `sign-release.sh` ile imzalandı (yükleme anahtarı SHA eşleşti), Alpha kanalına yüklendi ve 2026-10-10 ~15:30 incelemeye gönderildi (Yayın özeti: "İncelenmekte olan değişiklikler"). İnceleme bitince Testers Community formu yeniden gönderilecek (TWA sorusuna artık "No"). Neden WebView: Testers Community TWA kabul etmiyor, Google Chrome içindeki etkinliği saymıyor. |
+
+Açık soru: `support@footballanalyzer.com` posta kutusunun çalıştığı doğrulanmadı (alan adı footballanaly**zer**.com, site footballanaly**tics**.pro).

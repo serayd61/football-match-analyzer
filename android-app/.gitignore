@@ -1,0 +1,11 @@
+# Build output and local tool state. Source, resources and the Gradle wrapper are tracked.
+build/
+app/build/
+.gradle/
+local.properties
+*.keystore
+*.jks
+*.aab
+*.apk
+*.idea/
+.kotlin/
