@@ -11,7 +11,9 @@ Dönen yapı:
 
 `params` anahtarları (bilinmeyenler yok sayılır):
     half_life_days, window_days, rho, iters, min_matches, shrink_k, min_team_matches,
-    xg_weight, xg_min_coverage, leagues: {"<league_id>": {...override...}}
+    xg_weight, xg_min_coverage, level_half_life_days, level_shrink_k,
+    calib: {"ou25": [a, b], "btts": [a, b]}  (Platt, model.apply_calib; yoksa parite),
+    leagues: {"<league_id>": {...override...}}
 Bağımlılık yok (stdlib). Ağ hatası asla /predict'i düşürmez.
 """
 import json

@@ -267,6 +267,15 @@ def _parse_dt(v):
 
 MERGE_MIN_MATCHES = int(os.environ.get("MERGE_MIN_MATCHES", "30"))
 MERGE_MIN_JACCARD = float(os.environ.get("MERGE_MIN_JACCARD", "0.5"))
+# KÜÇÜK YENİ ID (2026-10-12 bulgusu): akış ligin id'sini SEZON İÇİNDE de değiştiriyor
+# (Championship 938218 → 1000001801, 9 Ekim; Estonya 248 → 1000001181). Yeni id
+# MERGE_MIN_MATCHES'e ulaşana kadar (2–4 hafta) lig "league_too_small" kalıyor, site
+# "Model bekleniyor" gösteriyor, oran da çekilmiyor (oran işi tahminli maçtan türer).
+# Kural: yeni id'nin satırı ≥ MERGE_MIN_NEW ise ve takımlarının ≥ MERGE_MIN_CONTAIN'i
+# büyük bir grupta zaten varsa ve takvimler KESİŞMİYORSA o gruba bağlanır. Kupalar
+# ligle aynı takvimde oynandığı için kesişim kuralı onları yine dışarıda tutar.
+MERGE_MIN_NEW = int(os.environ.get("MERGE_MIN_NEW", "6"))
+MERGE_MIN_CONTAIN = float(os.environ.get("MERGE_MIN_CONTAIN", "0.9"))
 
 
 def parse_league_aliases(raw: str | None) -> dict:
@@ -356,9 +365,45 @@ def merge_season_ids(by_league: dict):
     clusters = {}
     for lid in info:
         clusters.setdefault(find(lid), []).append(lid)
+
+    # Küçük yeni id'ler (MERGE_MIN_NEW ≤ n < MERGE_MIN_MATCHES): kapsama kuralı.
+    small = {}
+    for lid, rows in by_league.items():
+        if lid is None or lid in info or len(rows) < MERGE_MIN_NEW:
+            continue
+        teams, lo, hi = set(), None, None
+        for r in rows:
+            d = _parse_dt(r.get("date"))
+            if d is None:
+                continue
+            teams.add(r.get("homeId")); teams.add(r.get("awayId"))
+            lo = d if lo is None or d < lo else lo
+            hi = d if hi is None or d > hi else hi
+        if lo is not None and teams:
+            small[lid] = (teams, lo, hi)
+    cluster_info = {}
+    for root, members in clusters.items():
+        teams = set().union(*(info[m][0] for m in members))
+        lo = min(info[m][1] for m in members)
+        hi = max(info[m][2] for m in members)
+        cluster_info[root] = (teams, lo, hi)
+    attached = {}   # küçük id → küme kökü
+    for lid, (teams, lo, hi) in small.items():
+        best, best_c = None, 0.0
+        for root, (t2, lo2, hi2) in cluster_info.items():
+            if not (hi < lo2 or hi2 < lo):      # takvim kesişiyor → kupa/paralel turnuva
+                continue
+            c = len(teams & t2) / len(teams)
+            if c >= MERGE_MIN_CONTAIN and (c > best_c or (c == best_c and hi2 > cluster_info[best][2])):
+                best, best_c = root, c
+        if best is not None:
+            attached[lid] = best
+
     groups, alias = {}, {}
-    for members in clusters.values():
-        canon = max(members, key=lambda l: info[l][2])   # en geç biten sezon
+    for root, members in clusters.items():
+        members = members + [l for l, r in attached.items() if r == root]
+        ends = {l: (info[l][2] if l in info else small[l][2]) for l in members}
+        canon = max(members, key=lambda l: ends[l])      # en geç biten sezon/parça
         rows = []
         for l in members:
             rows.extend(by_league[l]); alias[l] = canon
