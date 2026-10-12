@@ -15,8 +15,8 @@ android {
         applicationId = "pro.footballanalytics"   // never change: Play identity
         minSdk = 24
         targetSdk = 36
-        versionCode = 2          // TWA release was 1
-        versionName = "1.1.0"
+        versionCode = 3          // 1 = TWA, 2 = first WebView
+        versionName = "1.1.1"
     }
 
     buildTypes {
@@ -45,4 +45,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.webkit:webkit:1.14.0")      // force-dark on Android 10–12
+    implementation("androidx.browser:browser:1.10.0")    // Chrome Custom Tabs for external links
 }

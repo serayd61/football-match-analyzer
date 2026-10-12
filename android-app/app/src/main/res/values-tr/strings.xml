@@ -3,4 +3,6 @@
     <string name="offline_title">Çevrimdışısınız</string>
     <string name="offline_body">Football Analytics Pro için internet bağlantısı gerekiyor. Bağlantınızı kontrol edip tekrar deneyin.</string>
     <string name="offline_retry">Tekrar dene</string>
+    <string name="error_title">Sayfa yüklenemedi</string>
+    <string name="error_body">Sunucu yanıt vermedi. Lütfen biraz sonra tekrar deneyin.</string>
 </resources>

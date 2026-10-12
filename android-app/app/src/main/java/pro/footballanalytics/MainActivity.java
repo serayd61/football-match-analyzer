@@ -3,6 +3,7 @@ package pro.footballanalytics;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,19 +13,25 @@ import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 
 /**
  * Football Analytics Pro — Google Play build.
@@ -45,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     private SwipeRefreshLayout swipe;
     private ProgressBar progress;
     private View offline;
+    private TextView offlineTitle;
+    private TextView offlineBody;
     private boolean loadFailed;
     private boolean firstPageShown;
 
@@ -62,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
         web = findViewById(R.id.web);
         progress = findViewById(R.id.progress);
         offline = findViewById(R.id.offline);
+        offlineTitle = findViewById(R.id.offline_title);
+        offlineBody = findViewById(R.id.offline_body);
 
         // Edge-to-edge is mandatory from targetSdk 35: keep content out from
         // under the status / navigation bars.
@@ -83,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.retry).setOnClickListener(v -> {
             loadFailed = false;
-            showOffline(false);
+            showError(false, false);
             if (web.getUrl() == null) web.loadUrl(HOME_URL); else web.reload();
         });
 
@@ -137,10 +148,15 @@ public class MainActivity extends AppCompatActivity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setUserAgentString(s.getUserAgentString() + UA_SUFFIX);
+        applyDarkMode(s);
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(web, false);
+
+        // Downloads (CSV exports, PDFs) cannot be handled by the WebView itself;
+        // hand them to the browser instead of failing silently.
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> openExternal(Uri.parse(url)));
 
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -158,12 +174,7 @@ public class MainActivity extends AppCompatActivity {
                 if (("https".equals(scheme) || "http".equals(scheme)) && isOwnHost(url.getHost())) {
                     return false; // our own pages stay inside the app
                 }
-                // Anything else (other sites, mailto:, tel:, intent:) goes to the system.
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, url));
-                } catch (ActivityNotFoundException ignored) {
-                    // no handler installed; swallow rather than crash
-                }
+                openExternal(url);
                 return true;
             }
 
@@ -176,16 +187,21 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 swipe.setRefreshing(false);
                 firstPageShown = true;
-                if (!loadFailed) showOffline(false);
+                if (!loadFailed) showError(false, false);
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (!request.isForMainFrame()) return; // a failed image/script is not "offline"
-                loadFailed = true;
-                firstPageShown = true;
-                swipe.setRefreshing(false);
-                showOffline(true);
+                fail(true);
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                // Only a server failure on the page itself (5xx) gets the error
+                // screen; 4xx pages (e.g. a 404) render the site's own page.
+                if (!request.isForMainFrame() || response.getStatusCode() < 500) return;
+                fail(false);
             }
 
             @Override
@@ -198,7 +214,57 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void showOffline(boolean show) {
+    /**
+     * Dark mode: on Android 13+ the WebView follows the app theme by itself. On
+     * Android 10–12 it has to be told, otherwise the site renders light inside
+     * a dark app. The site ships its own dark palette (prefers-color-scheme),
+     * so only web-theme darkening is requested, never algorithmic inversion.
+     */
+    @SuppressWarnings("deprecation")
+    private void applyDarkMode(WebSettings s) {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) return;
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) return;
+        boolean night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+        WebSettingsCompat.setForceDark(s, night ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY)) {
+            WebSettingsCompat.setForceDarkStrategy(s, WebSettingsCompat.DARK_STRATEGY_WEB_THEME_DARKENING_ONLY);
+        }
+    }
+
+    /** Other sites open in a Chrome Custom Tab (falls back to any browser); mailto:/tel:/intent: go to the system. */
+    private void openExternal(Uri url) {
+        String scheme = url.getScheme();
+        if ("https".equals(scheme) || "http".equals(scheme)) {
+            try {
+                CustomTabColorSchemeParams colors = new CustomTabColorSchemeParams.Builder()
+                        .setToolbarColor(getColor(R.color.brand)).build();
+                new CustomTabsIntent.Builder().setDefaultColorSchemeParams(colors).setShowTitle(true)
+                        .build().launchUrl(this, url);
+                return;
+            } catch (ActivityNotFoundException ignored) {
+                // no browser that supports Custom Tabs; fall through
+            }
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, url));
+        } catch (ActivityNotFoundException ignored) {
+            // no handler installed; swallow rather than crash
+        }
+    }
+
+    private void fail(boolean offlineLikely) {
+        loadFailed = true;
+        firstPageShown = true;
+        swipe.setRefreshing(false);
+        showError(true, offlineLikely);
+    }
+
+    private void showError(boolean show, boolean offlineLikely) {
+        if (show) {
+            offlineTitle.setText(offlineLikely ? R.string.offline_title : R.string.error_title);
+            offlineBody.setText(offlineLikely ? R.string.offline_body : R.string.error_body);
+        }
         offline.setVisibility(show ? View.VISIBLE : View.GONE);
         swipe.setVisibility(show ? View.INVISIBLE : View.VISIBLE);
     }
