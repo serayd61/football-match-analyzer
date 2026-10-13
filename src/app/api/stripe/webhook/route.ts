@@ -176,13 +176,26 @@ export async function POST(request: NextRequest) {
         let userId = session.metadata?.userId || null;
         if (!userId) userId = await resolveUserId(customerId, email);
 
+        // Gerçek abonelik durumunu Stripe'tan oku. 2026-10-13'ten beri trial yok:
+        // Checkout'ta ödeme hemen alınır, abonelik 'active' doğar. Sabit
+        // 'trialing' yazmak, bu olay invoice.payment_succeeded'dan SONRA
+        // gelirse doğru durumu ezerdi.
+        let status = 'active';
+        if (subscriptionId) {
+          try {
+            status = (await stripe.subscriptions.retrieve(subscriptionId)).status;
+          } catch (e) {
+            console.error('[stripe-webhook] subscriptions.retrieve failed', subscriptionId, e);
+          }
+        }
+
         if (userId) {
           await upsertSubscription(userId, {
             stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
-            status: 'trialing',
+            status,
           });
-          await syncProfileStatus(await getCustomerEmail(customerId, email), 'active');
+          await syncProfileStatus(await getCustomerEmail(customerId, email), mapStatusToProfile(status));
         } else {
           console.warn('[stripe-webhook] checkout.session.completed: no user match', customerId, email);
         }

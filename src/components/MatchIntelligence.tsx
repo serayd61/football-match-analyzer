@@ -60,7 +60,7 @@ const STR = {
     statsNote: 'Olasılıklar istatistik modelinden gelir — yapay zekâ tahmin üretmez.',
     gateAuthTitle: 'Görmek için giriş yapın', gateAuthDesc: 'Match Intelligence yalnızca üyelere açıktır.',
     gateAuthCta: 'Giriş yap / Üye ol', gateSubTitle: 'Aktif abonelik gerekli',
-    gateSubDesc: '7 gün ücretsiz deneyin, dilediğiniz zaman iptal edin.', gateSubCta: '7 gün ücretsiz dene',
+    gateSubDesc: 'Pro ayda $9.90, dilediğiniz zaman iptal edin.', gateSubCta: "Pro'ya geç",
     teaserLink: 'Şeffaf sonuç kaydını gör →',
   },
   en: {
@@ -75,7 +75,7 @@ const STR = {
     statsNote: 'Probabilities come from a statistical model — the AI does not produce predictions.',
     gateAuthTitle: 'Sign in to view', gateAuthDesc: 'Match Intelligence is available to members only.',
     gateAuthCta: 'Sign in / Sign up', gateSubTitle: 'Active subscription required',
-    gateSubDesc: 'Try free for 7 days, cancel anytime.', gateSubCta: 'Start 7-day free trial',
+    gateSubDesc: 'Pro is $9.90/month, cancel anytime.', gateSubCta: 'Go Pro',
     teaserLink: 'See the transparent track record →',
   },
   de: {
@@ -90,7 +90,7 @@ const STR = {
     statsNote: 'Wahrscheinlichkeiten stammen aus einem statistischen Modell — die KI erstellt keine Vorhersagen.',
     gateAuthTitle: 'Zum Ansehen anmelden', gateAuthDesc: 'Match Intelligence ist nur für Mitglieder verfügbar.',
     gateAuthCta: 'Anmelden / Registrieren', gateSubTitle: 'Aktives Abo erforderlich',
-    gateSubDesc: '7 Tage kostenlos testen, jederzeit kündbar.', gateSubCta: '7 Tage kostenlos testen',
+    gateSubDesc: 'Pro kostet $9.90/Monat, jederzeit kündbar.', gateSubCta: 'Pro holen',
     teaserLink: 'Transparente Erfolgsbilanz ansehen →',
   },
 };

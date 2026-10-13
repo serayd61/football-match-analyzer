@@ -3,6 +3,10 @@
 // ============================================================================
 import { Resend } from 'resend';
 import { SITE_URL } from '@/lib/seo';
+import { PLAN_PRICES } from '@/lib/site/plans';
+
+// Fiyat metinleri tek kaynaktan (lib/site/plans.ts); e-postalarda sabit yazma.
+const MONTHLY_PRICE = `$${PLAN_PRICES.monthly.amount.toFixed(2)}`;
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Use a verified domain sender in production; falls back to Resend's shared
@@ -210,8 +214,8 @@ export async function sendWelcomeEmail(
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
 
-    <p><strong>Want more?</strong> Go <strong>Pro</strong> for <strong>unlimited analyses</strong> plus our daily <strong>prediction engine</strong> — a Dixon-Coles model with expected goals and club ELO across the top-5 leagues. <strong>7-day free trial</strong>, cancel anytime.</p>
-    ${btn(pricingUrl, 'Start your 7-day free trial →')}
+    <p><strong>Want more?</strong> Go <strong>Pro</strong> for <strong>unlimited analyses</strong> plus our daily <strong>prediction engine</strong> — a Dixon-Coles model with expected goals and club ELO across the top-5 leagues. <strong>${MONTHLY_PRICE}/month</strong>, cancel anytime.</p>
+    ${btn(pricingUrl, 'Go Pro →')}
 
     <p style="font-size:12px;color:#64748b;text-align:center;margin:18px 0 0">Informational only — not betting advice.</p>
 
@@ -230,7 +234,7 @@ Each analysis: an AI-powered breakdown (Claude + DeepSeek) + statistical modelin
 
 Analyze your first match: ${ctaUrl}
 
-Want more? Go Pro for unlimited analyses plus our daily prediction engine (Dixon-Coles + expected goals + club ELO) across the top-5 leagues. 7-day free trial, cancel anytime: ${pricingUrl}
+Want more? Go Pro for unlimited analyses plus our daily prediction engine (Dixon-Coles + expected goals + club ELO) across the top-5 leagues. ${MONTHLY_PRICE}/month, cancel anytime: ${pricingUrl}
 
 Informational only — not betting advice.
 Unsubscribe: ${unsubscribeUrl}`;
@@ -299,7 +303,7 @@ export async function sendReengagementEmail(
     <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
       Curious how accurate it really is? <a href="${trackUrl}" style="color:#059669;font-weight:600">See our honest track record →</a>
     </p>
-    <p style="font-size:13px;color:#64748b">Your first <strong>7 days are free</strong>, cancel anytime. Informational only — not betting advice.</p>
+    <p style="font-size:13px;color:#64748b">Your first <strong>7 days are free</strong>, then Pro is ${MONTHLY_PRICE}/month — cancel anytime. Informational only — not betting advice.</p>
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
     <p style="font-size:11px;color:#94a3b8">
@@ -317,7 +321,7 @@ We rebuilt the prediction engine from scratch. Match probabilities now come from
 Explore the new site: ${ctaUrl}
 See our honest track record: ${trackUrl}
 
-Your first 7 days are free, cancel anytime. Informational only — not betting advice.
+Your first 7 days are free, then Pro is ${MONTHLY_PRICE}/month — cancel anytime. Informational only — not betting advice.
 
 Unsubscribe: ${unsubscribeUrl}`;
 
@@ -325,87 +329,6 @@ Unsubscribe: ${unsubscribeUrl}`;
     from: EMAIL_FROM,
     to,
     subject: 'We rebuilt Football Analytics — worth another look?',
-    html,
-    text,
-    headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
-  });
-}
-
-// ── TEKLİF (offer) — haftalık $6.99 lansmanı, kanıt (son 7 gün karnesi) ile.
-// stats gönderim anında hesaplanır (route); null ise rakam bloğu gizlenir —
-// asla bayat/uydurma rakam gösterilmez.
-export async function sendOfferEmail(
-  to: string,
-  opts: {
-    pricingUrl: string;
-    dashboardUrl: string;
-    unsubscribeUrl: string;
-    name?: string | null;
-    stats: { total: number; correct: number; accuracy: number } | null;
-  }
-): Promise<void> {
-  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
-  const resend = new Resend(RESEND_API_KEY);
-  const { pricingUrl, dashboardUrl, unsubscribeUrl, stats } = opts;
-  const hi = opts.name ? ` ${opts.name}` : '';
-
-  const subject = stats
-    ? `Last 7 days: ${stats.correct} of ${stats.total} engine picks correct — Pro is now $6.99/week`
-    : 'New: try Pro for $6.99/week — no commitment';
-
-  const statsBlock = stats
-    ? `
-    <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:0 0 22px;text-align:center">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">Last 7 days — public record</div>
-      <div style="font-size:34px;font-weight:800;color:#e7eaf0;margin:8px 0 2px">${stats.correct} / ${stats.total}</div>
-      <div style="font-size:13px;color:#9aa3b2">high-confidence engine picks correct · ${stats.accuracy}%</div>
-      <div style="font-size:11px;color:#646c7d;margin-top:8px">Wins AND losses published daily — nothing hidden.</div>
-    </div>`
-    : '';
-
-  const html = `
-  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
-    <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
-    <p style="font-size:13px;color:#64748b;margin:0 0 18px">The receipts are public. The price just dropped.</p>
-    ${statsBlock}
-    <p>Hi${hi}, every morning our prediction engine posts its receipt on the dashboard: yesterday's picks with final scores — the wins and the losses, nothing cherry-picked.</p>
-    <p>Until now, full access meant <strong>$19.99/month</strong>. We just added a lower-commitment way in: <strong>Pro Weekly — $6.99/week</strong>. Cancel anytime, no long-term commitment. You get today's high-confidence engine picks, unlimited AI analyses and all expert agents.</p>
-    <p style="text-align:center;margin:28px 0 10px">
-      <a href="${pricingUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Try Pro Weekly — $6.99/week →</a>
-    </p>
-    <p style="font-size:13px;color:#64748b;text-align:center;margin:0 0 24px">Prefer monthly? $19.99/mo with a 7-day free trial.</p>
-    <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
-      Want proof first? <a href="${dashboardUrl}" style="color:#059669;font-weight:600">See yesterday's scorecard on your dashboard →</a>
-    </p>
-    <p style="font-size:12px;color:#94a3b8">Probabilities come from a statistical model (Dixon-Coles + xG + ELO), not guesses. Informational only — not betting advice. No outcome is guaranteed.</p>
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
-    <p style="font-size:11px;color:#94a3b8">
-      You received this because you signed up at footballanalytics.pro.<br/>
-      <a href="${unsubscribeUrl}" style="color:#94a3b8">Unsubscribe</a>
-    </p>
-  </div>`;
-
-  const statsText = stats
-    ? `Last 7 days — public record: ${stats.correct} of ${stats.total} high-confidence engine picks correct (${stats.accuracy}%). Wins AND losses published daily — nothing hidden.\n\n`
-    : '';
-  const text = `Football Analytics Pro — the receipts are public, the price just dropped
-
-Hi${hi}, every morning our prediction engine posts its receipt on the dashboard: yesterday's picks with final scores — the wins and the losses, nothing cherry-picked.
-
-${statsText}Until now, full access meant $19.99/month. We just added a lower-commitment way in: Pro Weekly — $6.99/week. Cancel anytime, no long-term commitment. You get today's high-confidence engine picks, unlimited AI analyses and all expert agents.
-
-Try Pro Weekly: ${pricingUrl}
-Prefer monthly? $19.99/mo with a 7-day free trial.
-See yesterday's scorecard: ${dashboardUrl}
-
-Informational only — not betting advice. No outcome is guaranteed.
-
-Unsubscribe: ${unsubscribeUrl}`;
-
-  await resend.emails.send({
-    from: EMAIL_FROM,
-    to,
-    subject,
     html,
     text,
     headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
@@ -461,7 +384,7 @@ export async function sendUnfinishedSignupEmail(
     <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:22px 0">
       <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">What changed since</div>
       <div style="font-size:14px;color:#cbd3e1;margin-top:12px;line-height:1.7">
-        • A <strong>weekly plan at $6.99</strong> — you no longer have to commit to a month.<br/>
+        • Pro is now <strong>${MONTHLY_PRICE}/month</strong>, charged only when you subscribe — no trial card hold.<br/>
         • Predictions are now limited to the leagues our model is actually fitted on
           (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Eredivisie, Championship and more),
           instead of padding the list with lower divisions.<br/>
@@ -471,9 +394,9 @@ export async function sendUnfinishedSignupEmail(
     </div>
 
     <p style="text-align:center;margin:28px 0 10px">
-      <a href="${pricingUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Pick up where you left off — from $6.99/week →</a>
+      <a href="${pricingUrl}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">Pick up where you left off — ${MONTHLY_PRICE}/month →</a>
     </p>
-    <p style="font-size:13px;color:#64748b;text-align:center;margin:0 0 24px">Monthly is $19.99 with a 7-day free trial. Cancel anytime.</p>
+    <p style="font-size:13px;color:#64748b;text-align:center;margin:0 0 24px">Monthly is ${MONTHLY_PRICE}. Cancel anytime.</p>
 
     <p style="font-size:14px;color:#475569;text-align:center;margin:0 0 24px">
       Not ready to pay? Your free account gives you <strong>3 AI match analyses every day</strong> —
@@ -493,12 +416,12 @@ export async function sendUnfinishedSignupEmail(
 Hi${hi} — you began upgrading to Pro at footballanalytics.pro and stopped before checkout completed. Nothing was ever charged, and there is no subscription on your account.
 
 What changed since:
-- A weekly plan at $6.99 — no month-long commitment.
+- Pro is now ${MONTHLY_PRICE}/month, charged only when you subscribe.
 - Predictions are limited to the leagues our model is actually fitted on (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Eredivisie, Championship and more) instead of padding the list with lower divisions.
 - Confidence numbers are recalibrated weekly against how those calls actually landed.
 
 Pick up where you left off: ${pricingUrl}
-Monthly is $19.99 with a 7-day free trial. Cancel anytime.
+Monthly is ${MONTHLY_PRICE}. Cancel anytime.
 
 Not ready to pay? Your free account gives you 3 AI match analyses every day: ${dashboardUrl}
 
@@ -530,8 +453,6 @@ export interface TrialEmailOpts {
   predictionsUrl: string;
   pricingUrl: string;
   unsubscribeUrl: string;
-  /** süreli lansman teklifi (ilk ay fiyatı, son gün) */
-  offer: { price: number; until: string | null } | null;
   fullPrice: number;
 }
 
@@ -555,9 +476,6 @@ const trialStats = (stats: { n: number; won: number } | null) => stats && stats.
       <div style="font-size:13px;color:#9aa3b2">showcase picks correct · ${Math.round((stats.won / stats.n) * 100)}%</div>
       <div style="font-size:11px;color:#646c7d;margin-top:8px">Wins and losses published daily — nothing hidden.</div>
     </div>` : '';
-const trialOffer = (o: TrialEmailOpts['offer'], full: number) => o
-  ? `<p style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;font-size:14px"><strong>Launch offer:</strong> first month <strong>$${o.price.toFixed(2)}</strong> instead of $${full.toFixed(2)}${o.until ? ` — until ${o.until}` : ''}. Applied automatically at checkout.</p>`
-  : '';
 
 export async function sendTrialMidEmail(to: string, o: TrialEmailOpts): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
@@ -571,12 +489,11 @@ export async function sendTrialMidEmail(to: string, o: TrialEmailOpts): Promise<
     ${trialStats(o.stats)}
     <p>Every match page shows where the pick sits in our own track record — the same probability bucket, the same league, how often it landed before. Use the rest of your trial to check the goal markets (Over 2.5, Both teams to score): that's where the record is strongest.</p>
     ${trialBtn(o.predictionsUrl, "See today's predictions →")}
-    ${trialOffer(o.offer, o.fullPrice)}
-    <p style="font-size:13px;color:#64748b;text-align:center">Keep full access after the trial: <a href="${o.pricingUrl}" style="color:#059669">Pro plans</a></p>`;
+    <p style="font-size:13px;color:#64748b;text-align:center">Keep full access after the trial ($${o.fullPrice.toFixed(2)}/month, cancel any time): <a href="${o.pricingUrl}" style="color:#059669">Pro plans</a></p>`;
   const html = trialShell('Your trial, day by day', `Trial check-in · ${o.daysLeft} days left`, body, o.unsubscribeUrl);
   const text = `Hi${hi}, ${o.daysLeft} trial days left.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
 Today's predictions: ${o.predictionsUrl}
-${o.offer ? `Launch offer: first month $${o.offer.price.toFixed(2)} instead of $${o.fullPrice.toFixed(2)}${o.offer.until ? ` until ${o.offer.until}` : ''}.\n` : ''}Pro plans: ${o.pricingUrl}
+Pro plans ($${o.fullPrice.toFixed(2)}/month, cancel any time): ${o.pricingUrl}
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
   if (error) throw new Error(error.message);
@@ -587,19 +504,16 @@ export async function sendTrialEndingEmail(to: string, o: TrialEmailOpts): Promi
   const resend = new Resend(RESEND_API_KEY);
   const hi = o.name ? ` ${o.name}` : '';
   const when = o.daysLeft <= 1 ? 'tomorrow' : `in ${o.daysLeft} days`;
-  const subject = o.offer
-    ? `Your trial ends ${when} — keep access for $${o.offer.price.toFixed(2)} the first month`
-    : `Your trial ends ${when} — keep full access`;
+  const subject = `Your trial ends ${when} — keep full access`;
   const body = `
     <p>Hi${hi}, your free trial ends <strong>${when}</strong>. After that the predictions, the goal-model details and the value radar close for your account; the public track record stays open.</p>
     ${trialStats(o.stats)}
-    ${trialOffer(o.offer, o.fullPrice)}
-    <p>Pro is <strong>$${o.fullPrice.toFixed(2)}/month</strong>, cancel any time. There is also a weekly plan if you prefer no commitment.</p>
-    ${trialBtn(o.pricingUrl, o.offer ? `Keep access — $${o.offer.price.toFixed(2)} first month →` : 'Keep full access →')}
+    <p>Pro is <strong>$${o.fullPrice.toFixed(2)}/month</strong>, cancel any time.</p>
+    ${trialBtn(o.pricingUrl, 'Keep full access →')}
     <p style="font-size:13px;color:#64748b;text-align:center">Not for you? No action needed — the account simply drops to the free view.</p>`;
   const html = trialShell(`Your trial ends ${when}`, 'Trial ending', body, o.unsubscribeUrl);
   const text = `Hi${hi}, your free trial ends ${when}.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
-${o.offer ? `Launch offer: first month $${o.offer.price.toFixed(2)} instead of $${o.fullPrice.toFixed(2)}${o.offer.until ? ` until ${o.offer.until}` : ''}.\n` : ''}Keep access: ${o.pricingUrl}
+Pro is $${o.fullPrice.toFixed(2)}/month, cancel any time. Keep access: ${o.pricingUrl}
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
   if (error) throw new Error(error.message);

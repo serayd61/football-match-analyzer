@@ -1,16 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { launchOffer } from '@/lib/site/offer';
 import { selectTrialRecipients } from '@/lib/site/trial-emails';
-
-test('launch offer needs a coupon, respects the end date, defaults the price', () => {
-  assert.equal(launchOffer({}), null);
-  assert.deepEqual(launchOffer({ LAUNCH_OFFER_COUPON: 'launch-990' }, new Date('2026-10-01T00:00:00Z')), { coupon: 'launch-990', price: 9.9, until: null });
-  assert.equal(launchOffer({ LAUNCH_OFFER_COUPON: 'x', LAUNCH_OFFER_UNTIL: '2026-10-31' }, new Date('2026-10-31T20:00:00Z'))?.until, '2026-10-31');
-  assert.equal(launchOffer({ LAUNCH_OFFER_COUPON: 'x', LAUNCH_OFFER_UNTIL: '2026-10-31' }, new Date('2026-11-01T01:00:00Z')), null);
-  assert.equal(launchOffer({ LAUNCH_OFFER_COUPON: 'x', LAUNCH_OFFER_UNTIL: 'bad' }), null);
-  assert.equal(launchOffer({ LAUNCH_OFFER_COUPON: 'x', LAUNCH_OFFER_PRICE: '12.50' })?.price, 12.5);
-});
 
 const now = Date.parse('2026-10-10T09:00:00Z');
 const d = (daysAgo: number) => new Date(now - daysAgo * 86_400_000).toISOString();

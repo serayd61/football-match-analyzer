@@ -7,7 +7,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const PLANS = {
   PRO: {
     name: 'Pro Plan',
-    price: 19.99,
+    price: 9.90,
     currency: 'USD',
     interval: 'month' as const,
     features: [
@@ -17,20 +17,11 @@ export const PLANS = {
       'Günlük maç tahminleri',
       'Kupon oluşturma',
     ],
-    trialDays: 7,
-    stripePriceId: process.env.STRIPE_PRICE_ID!,
-  },
-  // Haftalık düşük-eşik giriş: trial YOK (haftalık zaten deneme işlevi görür;
-  // trial+haftalık birleşince ilk ödeme 2 hafta sonraya kayar ve kötüye
-  // kullanılır). Webhook değişmez: mapStatusToProfile interval'den bağımsız.
-  PRO_WEEKLY: {
-    name: 'Pro Weekly',
-    price: 6.99,
-    currency: 'USD',
-    interval: 'week' as const,
-    features: [] as string[],
+    // Stripe trial YOK (2026-10-13): 7 günlük ücretsiz dönem kayıtta kartsız
+    // veriliyor (profiles.trial_ends_at). Checkout'ta ikinci bir 7 gün daha
+    // vermek toplam 14 gün bedava ediyordu; artık kart girilince hemen çekilir.
     trialDays: 0,
-    stripePriceId: process.env.STRIPE_PRICE_ID_WEEKLY || '',
+    stripePriceId: process.env.STRIPE_PRICE_ID!,
   },
 };
 
@@ -40,40 +31,31 @@ export async function createCheckoutSession({
   priceId,
   successUrl,
   cancelUrl,
-  isUpgrade = false,
   trialDays,
-  coupon,
 }: {
   userId: string;
   userEmail: string;
   priceId: string;
   successUrl: string;
   cancelUrl: string;
-  isUpgrade?: boolean;
-  // Plan bazlı trial: verilmezse eski davranış (yeni kullanıcıya 7 gün).
-  // 0 → trial yok (haftalık plan).
+  // Stripe tarafı trial günü; varsayılan 0 (hiçbir planda trial yok).
   trialDays?: number;
-  // Lansman teklifi kuponu (lib/site/offer.ts): verilirse otomatik uygulanır.
-  // Stripe kuralı: discounts ile allow_promotion_codes aynı oturumda olamaz.
-  coupon?: string | null;
 }) {
+  // Müşteri önceden YARATILMAZ (2026-10-13): Checkout'u açıp kart girmeden
+  // çıkan herkes Stripe'ta boş "müşteri" olarak birikiyordu ve abonelik
+  // sanılıyordu. Daha önce abone olmuş (müşterisi olan) kullanıcı için mevcut
+  // kayıt yeniden kullanılır ki fatura geçmişi/portal tek müşteride kalsın;
+  // yeni kullanıcıda yalnız customer_email verilir, müşteriyi ödeme
+  // tamamlanınca Stripe oluşturur. Stripe kuralı: customer ile customer_email
+  // aynı oturumda olamaz.
   const customers = await stripe.customers.list({
     email: userEmail,
     limit: 1,
   });
-
-  let customerId = customers.data[0]?.id;
-
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: userEmail,
-      metadata: { userId },
-    });
-    customerId = customer.id;
-  }
+  const existingCustomerId = customers.data[0]?.id;
 
  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
-  customer: customerId,
+  ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: userEmail }),
   payment_method_types: ['card'],
   line_items: [{ price: priceId, quantity: 1 }],
   mode: 'subscription',
@@ -93,9 +75,8 @@ export async function createCheckoutSession({
   },
 };
 
-  // Sadece yeni kullanıcılar için trial ver; plan bazlı override mümkün
-  // (haftalık planda trialDays=0 gelir → trial hiç eklenmez)
-  const effectiveTrialDays = trialDays ?? (!isUpgrade ? 7 : 0);
+  // trialDays > 0 verilmedikçe trial eklenmez: ödeme Checkout'ta hemen alınır.
+  const effectiveTrialDays = trialDays ?? 0;
   if (effectiveTrialDays > 0) {
     sessionConfig.subscription_data = {
       trial_period_days: effectiveTrialDays,
@@ -105,11 +86,6 @@ export async function createCheckoutSession({
     sessionConfig.subscription_data = {
       metadata: { userId },
     };
-  }
-
-  if (coupon) {
-    sessionConfig.discounts = [{ coupon }];
-    delete sessionConfig.allow_promotion_codes;
   }
 
   const session = await stripe.checkout.sessions.create(sessionConfig);
