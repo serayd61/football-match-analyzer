@@ -13,7 +13,6 @@ import { unsubscribeUrl, SITE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, type TrialKind, type TrialUser } from '@/lib/site/trial-emails';
 import { showcaseRecord } from '@/lib/site/showcase';
-import { launchOffer } from '@/lib/site/offer';
 import { PLAN_PRICES } from '@/lib/site/plans';
 
 export const dynamic = 'force-dynamic';
@@ -67,10 +66,9 @@ export async function GET(req: NextRequest) {
 
   const rec = await showcaseRecord(7).catch(() => null);
   const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
-  const offer = launchOffer();
-  const common = { stats, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, offer: offer ? { price: offer.price, until: offer.until } : null, fullPrice: PLAN_PRICES.monthly.amount };
+  const common = { stats, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, fullPrice: PLAN_PRICES.monthly.amount };
 
-  if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, offer, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft })) });
+  if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft })) });
 
   let ok = 0, failed = 0;
   for (const r of recipients) {
@@ -86,5 +84,5 @@ export async function GET(req: NextRequest) {
     }
     await sleep(150); // Resend hız sınırı
   }
-  return NextResponse.json({ ok: failed === 0, kind, key, total, sent: ok, failed, canary, stats, offer: !!offer });
+  return NextResponse.json({ ok: failed === 0, kind, key, total, sent: ok, failed, canary, stats });
 }

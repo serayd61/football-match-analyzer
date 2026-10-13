@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createCheckoutSession, PLANS } from '@/lib/stripe';
-import { launchOffer } from '@/lib/site/offer';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -13,20 +12,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 });
     }
 
-    // Plan seçimi: 'PRO' (aylık, 7 gün trial) | 'PRO_WEEKLY' (haftalık, trial yok)
-    let planKey: 'PRO' | 'PRO_WEEKLY' = 'PRO';
-    try {
-      const body = await request.json();
-      if (body?.plan === 'PRO_WEEKLY') planKey = 'PRO_WEEKLY';
-    } catch {
-      // body yok/boş → aylık varsayılan (eski istemciler böyle çağırır)
-    }
-    const plan = PLANS[planKey];
-
+    // Tek plan: aylık Pro (2026-10-13'ten beri haftalık yok). Stripe trial yok;
+    // 7 ücretsiz gün kayıtta kartsız verilir (lib/site/access.ts).
+    const plan = PLANS.PRO;
     if (!plan.stripePriceId) {
-      // STRIPE_PRICE_ID_WEEKLY env'i henüz ayarlanmadıysa haftalık satılamaz;
-      // sessizce aylığa düşürmek yanlış tutar tahsil eder — açık hata dön.
-      console.error(`[create-checkout] ${planKey} price id missing (env not set)`);
+      console.error('[create-checkout] STRIPE_PRICE_ID missing (env not set)');
       return NextResponse.json({ error: 'Bu plan şu an kullanılamıyor' }, { status: 503 });
     }
 
@@ -41,8 +31,6 @@ export async function POST(request: NextRequest) {
       successUrl: `${baseUrl}/dashboard?payment=success`,
       cancelUrl: `${baseUrl}/pricing?payment=cancelled`,
       trialDays: plan.trialDays,
-      // Lansman teklifi yalnız aylık plana (ilk ay indirimi); haftalıkta yok.
-      coupon: planKey === 'PRO' ? launchOffer()?.coupon ?? null : null,
     });
 
     return NextResponse.json({ success: true, url: checkoutSession.url });

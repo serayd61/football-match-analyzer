@@ -37,7 +37,7 @@ export const translations = {
     registerButton: 'Kayıt Ol ve Devam Et',
     invalidCredentials: 'Geçersiz email veya şifre',
     backToHome: '← Ana Sayfaya Dön',
-    trialInfo: 'Kredi kartı bilgilerinizi girin, 7 gün ücretsiz kullanın. İptal etmezseniz ayda $19.99 USD çekilir.',
+    trialInfo: 'İlk 7 gün kartsız ve ücretsiz. Devam etmek için Pro ayda $9.90 USD.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -47,8 +47,8 @@ export const translations = {
     startNow: 'Hemen Başla',
     cardRequired: 'Kredi kartı gerekli',
     cancelAnytime: 'İstediğiniz zaman iptal',
-    noCancelCharge: '7 gün içinde iptal ederseniz hiçbir ücret alınmaz.',
-    autoCharge: 'İptal etmezseniz ayda $19.99 USD otomatik çekilir.',
+    noCancelCharge: 'Dilediğiniz zaman iptal edebilirsiniz.',
+    autoCharge: 'Abonelikte ayda $9.90 USD çekilir.',
     
     // Features List
     allLeagues: 'Tüm liglere erişim',
@@ -409,7 +409,7 @@ export const translations = {
     registerButton: 'Register and Continue',
     invalidCredentials: 'Invalid email or password',
     backToHome: '← Back to Home',
-    trialInfo: 'Enter your card details, use free for 7 days. $19.99 USD/month if not cancelled.',
+    trialInfo: 'The first 7 days are free, no card. Pro is $9.90 USD/month after that.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -419,8 +419,8 @@ export const translations = {
     startNow: 'Start Now',
     cardRequired: 'Credit card required',
     cancelAnytime: 'Cancel anytime',
-    noCancelCharge: 'Cancel within 7 days and pay nothing.',
-    autoCharge: '$19.99 USD charged monthly if not cancelled.',
+    noCancelCharge: 'Cancel any time.',
+    autoCharge: '$9.90 USD charged monthly while subscribed.',
     
     // Features List
     allLeagues: 'Access to all leagues',
@@ -781,7 +781,7 @@ export const translations = {
     registerButton: 'Registrieren und fortfahren',
     invalidCredentials: 'Ungültige E-Mail oder Passwort',
     backToHome: '← Zurück zur Startseite',
-    trialInfo: 'Geben Sie Ihre Kartendaten ein, 7 Tage kostenlos nutzen. $19.99 USD/Monat wenn nicht gekündigt.',
+    trialInfo: 'Die ersten 7 Tage sind kostenlos, ohne Karte. Danach kostet Pro $9.90 USD/Monat.',
     
     // Pricing Page
     proPlan: 'Pro Plan',
@@ -791,8 +791,8 @@ export const translations = {
     startNow: 'Jetzt starten',
     cardRequired: 'Kreditkarte erforderlich',
     cancelAnytime: 'Jederzeit kündbar',
-    noCancelCharge: 'Innerhalb von 7 Tagen kündigen und nichts zahlen.',
-    autoCharge: '$19.99 USD monatlich, wenn nicht gekündigt.',
+    noCancelCharge: 'Jederzeit kündbar.',
+    autoCharge: '$9.90 USD monatlich, solange das Abo läuft.',
     
     // Features List
     allLeagues: 'Zugang zu allen Ligen',
