@@ -1295,7 +1295,16 @@
       "tightText": "Il mercato non quota nessuna parte sopra il {fav}%. In queste partite i nostri pronostici sono andati a segno circa il {acc}% delle volte, qualunque fosse la confidenza del modello.",
       "standingHit": "Successo passato",
       "overTitle": "Sopra il mercato.",
-      "overText": "Il modello valuta questo pronostico {edge} punti più del prezzo di mercato al netto del margine. Quando il modello è stato 5+ punti sopra il mercato, i pronostici sono andati a segno circa il {acc}% delle volte — uno scarto positivo è stato segno di eccesso di fiducia, non di valore."
+      "overText": "Il modello valuta questo pronostico {edge} punti più del prezzo di mercato al netto del margine. Quando il modello è stato 5+ punti sopra il mercato, i pronostici sono andati a segno circa il {acc}% delle volte — uno scarto positivo è stato segno di eccesso di fiducia, non di valore.",
+      "sampleKicker": "Analisi di esempio",
+      "sampleTitle": "La stessa pagina che gli abbonati hanno visto prima del match — ora con il risultato finale.",
+      "sampleLead": "Questa analisi è stata pubblicata prima della partita del {date}; è finita {score}. Gli abbonati vedono la stessa pagina per ogni partita in {n} campionati, prima del calcio d'inizio.",
+      "sampleCta": "Inizia 7 giorni gratis",
+      "sampleCtaPro": "Passa a Pro",
+      "sampleBack": "← Home",
+      "sampleCloseTitle": "La stessa analisi è pronta per le partite di oggi.",
+      "sampleCloseNote": "7 giorni di accesso completo. Nessuna carta, disdici quando vuoi. Ogni scelta resta nel registro, vinta o persa.",
+      "sampleRecord": "Vedi il registro"
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
@@ -1332,7 +1341,10 @@
       "shot1Cap": "Pagina campionato: classifica aggiornata, calendario e registro chiuso di quel campionato.",
       "shot2Alt": "Pagina dello storico con pronostici chiusi, percentuale 1X2, Brier score e rendimento al prezzo di chiusura",
       "shot2Cap": "Pagina storico: ogni pronostico chiuso al fischio finale, percentuale e rendimento pubblici.",
-      "tagline": "Conosci la quota prima che te la dica il bookmaker."
+      "tagline": "Conosci la quota prima che te la dica il bookmaker.",
+      "sampleTag": "Analisi reale · conclusa",
+      "sampleNote": "Pubblicata prima del calcio d'inizio, chiusa automaticamente al fischio finale.",
+      "sampleOpen": "Vedi l'analisi completa"
     },
     "risk": {
       "disagreeShort": "contro il mercato",

@@ -1295,7 +1295,16 @@
       "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz.",
       "standingHit": "Trefferquote bisher",
       "overTitle": "Über dem Markt.",
-      "overText": "Das Modell bewertet diesen Tipp {edge} Punkte höher als der margenbereinigte Marktpreis. Lag das Modell 5+ Punkte über dem Markt, trafen die Tipps in rund {acc}% der Fälle — ein positiver Vorsprung war ein Zeichen von Überschätzung, nicht von Value."
+      "overText": "Das Modell bewertet diesen Tipp {edge} Punkte höher als der margenbereinigte Marktpreis. Lag das Modell 5+ Punkte über dem Markt, trafen die Tipps in rund {acc}% der Fälle — ein positiver Vorsprung war ein Zeichen von Überschätzung, nicht von Value.",
+      "sampleKicker": "Beispielanalyse",
+      "sampleTitle": "Genau die Seite, die Mitglieder vor dem Anpfiff sahen — jetzt mit Endstand.",
+      "sampleLead": "Diese Analyse wurde vor dem Spiel am {date} veröffentlicht; es endete {score}. Mitglieder sehen dieselbe Seite für jedes Spiel in {n} Ligen — vor dem Anpfiff.",
+      "sampleCta": "7 Tage gratis starten",
+      "sampleCtaPro": "Pro werden",
+      "sampleBack": "← Startseite",
+      "sampleCloseTitle": "Dieselbe Analyse liegt für die heutigen Spiele bereit.",
+      "sampleCloseNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar. Jeder Tipp bleibt in der Bilanz — gewonnen oder verloren.",
+      "sampleRecord": "Bilanz ansehen"
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
@@ -1332,7 +1341,10 @@
       "shot1Cap": "Ligaseite: aktuelle Tabelle, Spielplan und die abgerechnete Bilanz dieser Liga.",
       "shot2Alt": "Bilanzseite mit abgerechneten Tipps, 1X2-Trefferquote, Brier-Score und Rendite zum Schlusskurs",
       "shot2Cap": "Bilanzseite: jeder Tipp nach dem Schlusspfiff abgerechnet, Trefferquote und Rendite öffentlich.",
-      "tagline": "Kenne die Quote, bevor der Buchmacher sie dir nennt."
+      "tagline": "Kenne die Quote, bevor der Buchmacher sie dir nennt.",
+      "sampleTag": "Echte Analyse · abgerechnet",
+      "sampleNote": "Vor dem Anpfiff veröffentlicht, nach Abpfiff automatisch abgerechnet.",
+      "sampleOpen": "Ganze Analyse ansehen"
     },
     "risk": {
       "disagreeShort": "gegen Markt",

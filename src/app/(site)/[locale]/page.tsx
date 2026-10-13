@@ -13,6 +13,8 @@ import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { launchOffer } from '@/lib/site/offer';
 import { Page } from '@/components/site/ui';
+import SampleAnalysis, { sampleHref } from '@/components/site/SampleAnalysis';
+import { getSampleAnalysis } from '@/lib/site/sample-analysis';
 import DemoAnalysis from '@/components/site/DemoAnalysis';
 import MatchRow from '@/components/site/MatchRow';
 import { listDay } from '@/lib/site/fixtures';
@@ -39,7 +41,8 @@ import { organizationJsonLd } from '@/lib/site/jsonld';
 export const dynamic = 'force-dynamic';
 
 // Ana sayfa v3 (2026-09-26): açık zemin, veri önce. Üyeye günün maçları hero'da;
-// ziyaretçiye etiketli örnek analiz. Sonra şeffaf karne, kapsam, 3 adım, fiyat, SSS.
+// ziyaretçiye GERÇEK bir geçmiş analiz (2026-10-13, lib/site/sample-analysis.ts:
+// sonuçlanmış, kazanmış, herkese açık maç sayfasına bağlı); havuz boşsa temsili kart. Sonra şeffaf karne, kapsam, 3 adım, fiyat, SSS.
 // Eski not (2026-09-19): Sıra: koyu ilk ekran (tek ana CTA + okunabilir,
 // açıkça etiketli ÖRNEK analiz) → kapsam şeridi → ürün anlatımı → 3 adım → şeffaf performans
 // → fiyat özeti → SSS → kompakt kapanış. Tüm sayılar canlı karneden; sabit pazarlama
@@ -78,6 +81,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
     // SEO 2026-10-10: ziyaretçiye günün maçları (olasılıksız, /matches ön izlemelerine bağlı).
     unlocked ? Promise.resolve([]) : listPublicUpcoming(2).catch(() => []),
   ]);
+  // Örnek analiz (2026-10-13): ziyaretçiye geçmişte yayımlanmış, sonuçlanmış gerçek bir maç.
+  const sample = unlocked ? null : await getSampleAnalysis().catch(() => null);
   const publicToday = publicWeek.filter((r) => ymdOf(r.kickoff) === todayYmd()).slice(0, 8);
   // v3: members see the day's first modelled fixtures right in the hero.
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
@@ -127,7 +132,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
             <p className="max-w-[46ch] text-[17px] leading-relaxed text-s-muted sm:text-[18px]">{tl('lead', { n: SITE_LEAGUES.length })}</p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={primary.href} className="btn btn-primary btn-lg !h-[54px] !px-7 !text-[17px]" data-cta="hero-primary">{unlocked ? primary.label : tl('cta')} <Icon size={18} /></Link>
-              <a href="#demo" className="btn btn-lg !h-[54px] border border-s-line bg-transparent text-s-ink hover:bg-s-raised/40" data-cta="hero-demo">{tl('ctaDemo')}</a>
+              {sample
+                ? <Link href={sampleHref(sample)} className="btn btn-lg !h-[54px] border border-s-line bg-transparent text-s-ink hover:bg-s-raised/40" data-cta="hero-demo">{tl('ctaDemo')}</Link>
+                : <a href="#demo" className="btn btn-lg !h-[54px] border border-s-line bg-transparent text-s-ink hover:bg-s-raised/40" data-cta="hero-demo">{tl('ctaDemo')}</a>}
             </div>
             {!authed && (
               <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-s-muted">
@@ -160,7 +167,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
               </section>
             ) : (
               <div className="lg:translate-x-4 lg:rotate-[-1.5deg] lg:transition-transform">
-                <div className="shadow-[0_40px_90px_-30px_rgb(0_0_0/0.75)] rounded-[16px]"><DemoAnalysis id="demo" /></div>
+                <div className="shadow-[0_40px_90px_-30px_rgb(0_0_0/0.75)] rounded-[16px]">{sample ? <SampleAnalysis p={sample} id="demo" /> : <DemoAnalysis id="demo" />}</div>
               </div>
             )}
             {perf.overall.n > 0 && (
