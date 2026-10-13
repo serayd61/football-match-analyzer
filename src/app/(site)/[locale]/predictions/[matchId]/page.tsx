@@ -35,8 +35,10 @@ import LocalTime from '@/components/site/LocalTime';
 import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
-import { requireSiteAccess } from '@/lib/site/access';
-import { Paywall, TrialNotice, LockedPick } from '@/components/site/Paywall';
+import { requireSiteAccess, getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { Paywall, TrialNotice, LockedPick, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
+import { isSampleFixture } from '@/lib/site/sample-analysis';
+import { SITE_LEAGUES } from '@/lib/site/leagues';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -73,7 +75,12 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   if (!id) notFound();
   const p = await getPrediction(id);
   if (!p) notFound();
-  const access = await requireSiteAccess(params.locale, `/predictions/${id}`);
+  // Örnek analiz (2026-10-13): sonuçlanmış örnek havuzundaki maç (lib/site/sample-analysis.ts)
+  // ziyaretçiye ve süresi dolmuş üyeye açık — ana sayfadaki "Örnek analizi gör" buraya gelir.
+  const sample = await isSampleFixture(id);
+  const access = sample ? await getSiteAccess() : await requireSiteAccess(params.locale, `/predictions/${id}`);
+  const publicSample = sample && !canSeeMatches(access);
+  const sampleCta = access.state === 'expired' ? { href: PRICING_HREF, key: 'sampleCtaPro' as const } : { href: REGISTER_HREF, key: 'sampleCta' as const };
 
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
@@ -83,7 +90,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
-  if (access.state === 'expired') {
+  if (access.state === 'expired' && !publicSample) {
     return (
       <Page>
         <div className="rule-b pb-4 pt-8">
@@ -241,9 +248,20 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
   return (
     <Page>
-      <div className="pt-5"><TrialNotice access={access} /></div>
+      {publicSample ? (
+        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-s-accent/40 bg-s-accent-100/40 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div>
+            <p className="kicker !text-s-accent-700">{t3('sampleKicker')}</p>
+            <p className="mt-1 text-[15px] font-semibold">{t3('sampleTitle')}</p>
+            <p className="mt-1 text-[13.5px] text-s-muted">{t3('sampleLead', { date: f.dateTime(new Date(p.kickoff), { day: 'numeric', month: 'long', year: 'numeric' }), score: `${p.homeScore}–${p.awayScore}`, n: SITE_LEAGUES.length })}</p>
+          </div>
+          <Link href={sampleCta.href} className="btn btn-primary shrink-0" data-cta="sample-top">{t3(sampleCta.key)}</Link>
+        </div>
+      ) : <div className="pt-5"><TrialNotice access={access} /></div>}
       <p className="flex flex-wrap items-center gap-2 pt-2 text-[13px]">
-        <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>
+        {publicSample
+          ? <Link href="/" className="font-semibold text-s-muted hover:text-s-ink">{t3('sampleBack')}</Link>
+          : <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>}
         {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
         {strongPick && <span className="tag tag-accent">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-loss">{t('flagPostKickoff')}</span>}
@@ -671,6 +689,19 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           ]}
         />
       </div>
+
+      {publicSample && (
+        <section className="mt-12 flex flex-col items-start gap-4 rounded-2xl border border-s-line bg-s-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 className="text-[22px]">{t3('sampleCloseTitle')}</h2>
+            <p className="mt-1 max-w-[56ch] text-[14px] text-s-muted">{t3('sampleCloseNote')}</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link href={sampleCta.href} className="btn btn-primary" data-cta="sample-close">{t3(sampleCta.key)}</Link>
+            <Link href="/performance" className="btn btn-secondary" data-cta="sample-record">{t3('sampleRecord')}</Link>
+          </div>
+        </section>
+      )}
 
       <p className="rule-t mt-12 pt-4 text-xs text-s-muted">{t('disclaimer')}</p>
     </Page>

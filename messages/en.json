@@ -858,7 +858,20 @@
     "colScore": "Score",
     "resultWon": "hit",
     "resultLost": "missed",
-    "resultPending": "pending"
+    "resultPending": "pending",
+    "focusTitle": "Where to focus",
+    "focusLead": "League × market: the ranges that have hit strongly in the evidence this list is judged on (market gap for 1X2, model level for goal markets). A green cell means at least one bucket cleared the strong threshold with 10+ matches; the range label names those buckets.",
+    "focusColLeague": "League",
+    "focusAll": "All leagues",
+    "focusNoZone": "no strong range",
+    "focusBest": "best",
+    "focusRecord": "record {won}/{n}",
+    "focusKindEdge": "gap, points",
+    "focusKindLevel": "model level",
+    "focusObserveTitle": "Watched leagues: strong market",
+    "focusObserveLead": "For leagues outside coverage, the league's own band record; only upper bands with 15+ matches and 70%+ hits. The model threshold is the probability a selection must exceed.",
+    "focusObserveFrom": "model ≥ {p}",
+    "focusNote": "\"Record\" is the real score of frozen selections: how many hit in that league-market since the list went live. Do not read much into small counts; the range record (10+ matches) is the firmer ground."
   },
   "paywall": {
     "expiredTitle": "Your 7-day trial has ended",
@@ -1277,7 +1290,16 @@
       "tightText": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model's confidence.",
       "standingHit": "Past hit rate",
       "overTitle": "Above the market.",
-      "overText": "The model rates this pick {edge} points higher than the market's margin-free price. When the model has sat 5+ points above the market, picks landed about {acc}% of the time — a positive edge has been a sign of overconfidence, not value."
+      "overText": "The model rates this pick {edge} points higher than the market's margin-free price. When the model has sat 5+ points above the market, picks landed about {acc}% of the time — a positive edge has been a sign of overconfidence, not value.",
+      "sampleKicker": "Sample analysis",
+      "sampleTitle": "The exact page members saw before kick-off — now with the final score.",
+      "sampleLead": "This analysis was published before the match on {date}; it finished {score}. Members get the same page for every match across {n} leagues, before kick-off.",
+      "sampleCta": "Start 7 days free",
+      "sampleCtaPro": "Go Pro",
+      "sampleBack": "← Home",
+      "sampleCloseTitle": "The same analysis is ready for today's matches.",
+      "sampleCloseNote": "7 days of full access. No card, cancel anytime. Every pick stays on the record, win or lose.",
+      "sampleRecord": "See the record"
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
@@ -1314,7 +1336,10 @@
       "shot1Cap": "League page: live table, fixtures and the settled record for that league.",
       "shot2Alt": "Prediction track record page showing settled picks, 1X2 hit rate, Brier score and return at closing odds",
       "shot2Cap": "Record page: every pick settled after the final whistle, hit rate and return in public.",
-      "tagline": "Know the odds before the bookmaker tells you."
+      "tagline": "Know the odds before the bookmaker tells you.",
+      "sampleTag": "Real analysis · settled",
+      "sampleNote": "Published before kick-off, settled automatically at full time.",
+      "sampleOpen": "See the full analysis"
     },
     "risk": {
       "disagreeShort": "vs market",

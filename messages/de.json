@@ -858,7 +858,20 @@
     "colScore": "Ergebnis",
     "resultWon": "getroffen",
     "resultLost": "verfehlt",
-    "resultPending": "offen"
+    "resultPending": "offen",
+    "focusTitle": "Worauf fokussieren",
+    "focusLead": "Liga × Markt: die Bereiche, die in der Evidenz dieser Liste (Marktabstand bei 1X2, Modellniveau bei Tormärkten) bisher stark getroffen haben. Grüne Zelle = mindestens ein Korb hat mit 10+ Spielen die Stark-Schwelle überschritten; das Bereichslabel nennt diese Körbe.",
+    "focusColLeague": "Liga",
+    "focusAll": "Alle Ligen",
+    "focusNoZone": "kein starker Bereich",
+    "focusBest": "bester",
+    "focusRecord": "Bilanz {won}/{n}",
+    "focusKindEdge": "Abstand, Punkte",
+    "focusKindLevel": "Modellniveau",
+    "focusObserveTitle": "Beobachtete Ligen: starker Markt",
+    "focusObserveLead": "Für Ligen außerhalb der Abdeckung die eigene Bandbilanz der Liga; nur obere Bänder mit 15+ Spielen und 70%+ Treffern. Die Modellschwelle ist die Wahrscheinlichkeit, die eine Auswahl überschreiten muss.",
+    "focusObserveFrom": "Modell ≥ {p}",
+    "focusNote": "\"Bilanz\" ist das echte Ergebnis der eingefrorenen Auswahlen: wie viele in diesem Liga-Markt seit Start der Liste getroffen haben. Kleine Zahlen nicht überinterpretieren; die Bereichsbilanz (10+ Spiele) ist der festere Boden."
   },
   "paywall": {
     "expiredTitle": "Deine 7-tägige Testphase ist abgelaufen",
@@ -1277,7 +1290,16 @@
       "tightText": "Der Markt gibt keiner Seite mehr als {fav}%. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, unabhängig von der Modellkonfidenz.",
       "standingHit": "Trefferquote bisher",
       "overTitle": "Über dem Markt.",
-      "overText": "Das Modell bewertet diesen Tipp {edge} Punkte höher als der margenbereinigte Marktpreis. Lag das Modell 5+ Punkte über dem Markt, trafen die Tipps in rund {acc}% der Fälle — ein positiver Vorsprung war ein Zeichen von Überschätzung, nicht von Value."
+      "overText": "Das Modell bewertet diesen Tipp {edge} Punkte höher als der margenbereinigte Marktpreis. Lag das Modell 5+ Punkte über dem Markt, trafen die Tipps in rund {acc}% der Fälle — ein positiver Vorsprung war ein Zeichen von Überschätzung, nicht von Value.",
+      "sampleKicker": "Beispielanalyse",
+      "sampleTitle": "Genau die Seite, die Mitglieder vor dem Anpfiff sahen — jetzt mit Endstand.",
+      "sampleLead": "Diese Analyse wurde vor dem Spiel am {date} veröffentlicht; es endete {score}. Mitglieder sehen dieselbe Seite für jedes Spiel in {n} Ligen — vor dem Anpfiff.",
+      "sampleCta": "7 Tage gratis starten",
+      "sampleCtaPro": "Pro werden",
+      "sampleBack": "← Startseite",
+      "sampleCloseTitle": "Dieselbe Analyse liegt für die heutigen Spiele bereit.",
+      "sampleCloseNote": "7 Tage voller Zugang. Keine Karte, jederzeit kündbar. Jeder Tipp bleibt in der Bilanz — gewonnen oder verloren.",
+      "sampleRecord": "Bilanz ansehen"
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
@@ -1314,7 +1336,10 @@
       "shot1Cap": "Ligaseite: aktuelle Tabelle, Spielplan und die abgerechnete Bilanz dieser Liga.",
       "shot2Alt": "Bilanzseite mit abgerechneten Tipps, 1X2-Trefferquote, Brier-Score und Rendite zum Schlusskurs",
       "shot2Cap": "Bilanzseite: jeder Tipp nach dem Schlusspfiff abgerechnet, Trefferquote und Rendite öffentlich.",
-      "tagline": "Kenne die Quote, bevor der Buchmacher sie dir nennt."
+      "tagline": "Kenne die Quote, bevor der Buchmacher sie dir nennt.",
+      "sampleTag": "Echte Analyse · abgerechnet",
+      "sampleNote": "Vor dem Anpfiff veröffentlicht, nach Abpfiff automatisch abgerechnet.",
+      "sampleOpen": "Ganze Analyse ansehen"
     },
     "risk": {
       "disagreeShort": "gegen Markt",

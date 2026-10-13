@@ -858,7 +858,20 @@
     "colScore": "Skor",
     "resultWon": "tuttu",
     "resultLost": "tutmadı",
-    "resultPending": "bekliyor"
+    "resultPending": "bekliyor",
+    "focusTitle": "Nereye odaklanmalı",
+    "focusLead": "Lig × pazar: bu listenin hüküm verdiği kanıtta (1X2'de piyasa farkı, gol pazarlarında model seviyesi) geçmişte güçlü tutan aralıklar. Yeşil hücre = en az bir kova 10+ maçla güçlü eşiği geçti; aralık etiketi o kovaları gösterir.",
+    "focusColLeague": "Lig",
+    "focusAll": "Tüm ligler",
+    "focusNoZone": "güçlü aralık yok",
+    "focusBest": "en iyi",
+    "focusRecord": "kayıt {won}/{n}",
+    "focusKindEdge": "fark, puan",
+    "focusKindLevel": "model seviyesi",
+    "focusObserveTitle": "Gözlem ligleri: güçlü pazar",
+    "focusObserveLead": "Kapsam dışı liglerde ligin kendi dilim karnesi; yalnız 15+ maç ve %70+ tutan üst dilimler. Model eşiği, seçimin bu olasılığın üstünde olması gerektiğini söyler.",
+    "focusObserveFrom": "model ≥ {p}",
+    "focusNote": "\"Kayıt\" dondurulmuş seçimlerin gerçek skoru: liste yayına girdiğinden beri o lig-pazarda kaç seçim tuttu. Küçük sayılara yorum yükleme; aralık karnesi (10+ maç) daha sağlam zemindir."
   },
   "paywall": {
     "expiredTitle": "7 günlük deneme süren doldu",
@@ -1277,7 +1290,16 @@
       "tightText": "Piyasa hiçbir tarafa %{fav} üstü vermiyor. Böyle maçlarda seçimlerimiz, modelin güveni ne olursa olsun yaklaşık %{acc} tuttu.",
       "standingHit": "Geçmişte tuttu",
       "overTitle": "Piyasanın üstünde.",
-      "overText": "Model bu seçimi piyasanın marjsız fiyatından {edge} puan daha olası görüyor. Geçmişte model piyasanın 5+ puan üstüne çıktığında seçimler yaklaşık %{acc} tuttu — pozitif fark değer değil, aşırı güven işareti."
+      "overText": "Model bu seçimi piyasanın marjsız fiyatından {edge} puan daha olası görüyor. Geçmişte model piyasanın 5+ puan üstüne çıktığında seçimler yaklaşık %{acc} tuttu — pozitif fark değer değil, aşırı güven işareti.",
+      "sampleKicker": "Örnek analiz",
+      "sampleTitle": "Üyelerin maçtan önce gördüğü sayfanın aynısı — şimdi skoruyla birlikte.",
+      "sampleLead": "Bu analiz {date} tarihindeki maçtan önce yayımlandı; maç {score} bitti. Üyeler {n} ligdeki her maç için aynı sayfayı maçtan önce görür.",
+      "sampleCta": "7 gün ücretsiz başla",
+      "sampleCtaPro": "Pro'ya geç",
+      "sampleBack": "← Ana sayfa",
+      "sampleCloseTitle": "Bugünün maçları için aynı analiz hazır.",
+      "sampleCloseNote": "7 gün tam erişim. Kart yok, istediğin an iptal. Her seçim karnede kalır — kazansa da kaybetse de.",
+      "sampleRecord": "Karneye bak"
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
@@ -1314,7 +1336,10 @@
       "shot1Cap": "Lig sayfası: canlı puan tablosu, fikstür ve o ligin sonuçlanmış karnesi.",
       "shot2Alt": "Tahmin karnesi sayfası: sonuçlanmış seçimler, 1X2 isabet oranı, Brier skoru ve kapanış oranında getiri",
       "shot2Cap": "Karne sayfası: her seçim maç bitince sonuçlandırılır; isabet ve getiri herkese açık.",
-      "tagline": "Oranı bahisçi söylemeden önce sen bil."
+      "tagline": "Oranı bahisçi söylemeden önce sen bil.",
+      "sampleTag": "Gerçek analiz · sonuçlandı",
+      "sampleNote": "Maçtan önce yayımlandı, maç bitince otomatik sonuçlandı.",
+      "sampleOpen": "Tam analizi gör"
     },
     "risk": {
       "disagreeShort": "piyasaya karşı",
