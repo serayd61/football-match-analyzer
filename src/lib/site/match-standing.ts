@@ -44,12 +44,19 @@ function evidence(tables: SignalTable[], market: SignalMarket, kind: StandingEvi
   return { kind, bucket: t.buckets[bucket], league: row ? row.cells[bucket] : null, all: t.all[bucket] };
 }
 
+/** "Güçlü" eşiği: 1X2 ≥ %55, gol pazarları ≥ %65 geçmiş isabet (kovada ≥ MIN_EVIDENCE maç). */
+export const STRONG_ACC: Record<SignalMarket, number> = { '1x2': 0.55, ou25: 0.65, btts: 0.65 };
+
+/** Kova isabetinden hüküm; acc null (örneklem küçük) → 'thin'. focus-board.ts de kullanır. */
+export function verdictFor(market: SignalMarket, acc: number | null): Verdict {
+  return acc == null ? 'thin' : acc >= STRONG_ACC[market] ? 'strong' : acc < 0.5 ? 'weak' : 'mid';
+}
+
 export function finishStanding(market: SignalMarket, selection: string, modelP: number, primary: StandingEvidence, secondary: StandingEvidence | null): MarketStanding {
   const useLeague = !!primary.league && primary.league.n >= MIN_EVIDENCE;
   const cell = useLeague ? primary.league! : primary.all;
   const acc = cell.n >= MIN_EVIDENCE ? cell.acc : null;
-  const strong = market === '1x2' ? 0.55 : 0.65;
-  const verdict: Verdict = acc == null ? 'thin' : acc >= strong ? 'strong' : acc < 0.5 ? 'weak' : 'mid';
+  const verdict = verdictFor(market, acc);
   return { market, selection, modelP, primary, secondary, acc, n: cell.n, won: cell.won, scope: useLeague ? 'league' : 'all', verdict };
 }
 

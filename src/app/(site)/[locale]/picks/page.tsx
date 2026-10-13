@@ -9,6 +9,9 @@ import { getPerformance } from '@/lib/site/performance';
 import { dailyStandingBoard, type StandingPick } from '@/lib/site/daily-standing';
 import { outsideStandingFor } from '@/lib/site/outside-standing';
 import { standingHistory } from '@/lib/site/standing-picks';
+import { focusBoard, focusRecord, FOCUS_MARKETS, type FocusCell } from '@/lib/site/focus-board';
+import { strongBoard } from '@/lib/site/strong-markets';
+import { loadCoverage } from '@/lib/coverage/registry';
 import type { SettledStandingPick } from '@/lib/site/standing-picks-rule';
 import { todayYmd, addDays, YMD_RE } from '@/lib/site/time';
 import { requireSiteAccess } from '@/lib/site/access';
@@ -62,7 +65,7 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   }
 
   // Geçmiş günler (10 Eki): dondurulmuş seçimler, skorla sonuçlanmış; kazanan–kaybeden birlikte (standing-picks.ts).
-  let [day, perf, outside, history] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor(), standingHistory(14).catch(() => [])]);
+  let [day, perf, outside, history, coverage] = await Promise.all([listDay(date), getPerformance(null).catch(() => null), outsideStandingFor(), standingHistory(90).catch(() => []), loadCoverage().catch(() => [])]);
   // Kapsanan ligler + gözlem ligleri (9 Eki): gözlemdekiler lig dilim + fark karnesiyle hükme girer.
   const dayRows = (d: typeof day) => d.rows.filter((r) => r.hasModel && (r.covered || outside.eligible(r)));
   const upcoming = (d: typeof day) => dayRows(d).some((r) => !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed');
@@ -86,6 +89,32 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   const resultTone = (won: boolean | null) => (won == null ? 'border border-s-line text-s-muted' : won ? 'bg-s-win text-white' : 'bg-s-loss text-white');
   const resultLabel = (won: boolean | null) => (won == null ? t('resultPending') : won ? t('resultWon') : t('resultLost'));
   const historyDays = history.filter((d) => d.n > 0 || d.pending > 0).slice(0, 7);
+  // Odak tablosu (13 Eki): lig × pazar güçlü aralıklar (perf.signals) + dondurulmuş seçimlerin 90 günlük kaydı;
+  // gözlem ligleri için sicilin güçlü pazarları (strongBoard, /performance ile aynı).
+  const focus = perf ? focusBoard(perf.signals, focusRecord(history)) : null;
+  const observeStrong = strongBoard(coverage.filter((c) => c.status === 'observe'), 4).flatMap((b) => b.rows).sort((a, b) => b.acc - a.acc || b.n - a.n).slice(0, 8);
+  const strongMarketName: Record<string, string> = { x12: tv('mkt1x2'), ou25: tv('mktOver'), under25: tv('mktUnder'), btts: tv('mktBtts') };
+  const FocusTd = ({ c }: { c: FocusCell | null }) => {
+    if (!c) return <td className="py-2.5 pr-3 text-right text-s-muted">–</td>;
+    const strong = c.verdict === 'strong';
+    const kind = c.kind === 'edge' ? t('focusKindEdge') : t('focusKindLevel');
+    return (
+      <td className="py-2.5 pr-3 text-right align-top">
+        {strong ? (
+          <>
+            <span className="num font-bold text-s-win">{pct(c.acc)}</span> <span className="num text-xs text-s-muted">{c.won}/{c.n}</span>
+            <span className="mt-0.5 block text-xs text-s-ink">{c.zones.map((z) => z.bucket).join(' · ')} <span className="text-s-muted">· {kind}</span></span>
+          </>
+        ) : c.best ? (
+          <>
+            <span className="text-xs text-s-muted">{t('focusNoZone')}</span>
+            <span className="num mt-0.5 block text-xs text-s-muted">{t('focusBest')}: {c.best.bucket} {pct(c.best.acc)} ({c.best.won}/{c.best.n})</span>
+          </>
+        ) : <span className="text-xs text-s-muted">{t('focusNoZone')}</span>}
+        {c.record && <span className="num mt-0.5 block text-xs text-s-muted">{t('focusRecord', { won: c.record.won, n: c.record.n })}</span>}
+      </td>
+    );
+  };
   // Maç sayfasındaki "geri" bağlantısı buraya dönsün (back-link.ts `from=picks`).
   const back = `from=picks${date !== today ? `&date=${date}` : ''}`;
   const dateLabel = f.dateTime(new Date(`${date}T12:00:00Z`), { weekday: 'long', day: 'numeric', month: 'long' });
@@ -165,6 +194,66 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
             </section>
           ))}
         </div>
+      )}
+
+      {focus && (focus.leagues.length > 0 || focus.all.strong > 0) && (
+        <section className="mt-14" aria-labelledby="picks-focus">
+          <SectionTitle id="picks-focus" title={t('focusTitle')} sub={t('focusLead')} />
+          <div className="tbl-scroll mt-4">
+            <table className="text-sm">
+              <thead className="text-xs uppercase tracking-wider text-s-muted">
+                <tr className="border-b border-s-line">
+                  <th className="py-1.5 text-left font-medium">{t('focusColLeague')}</th>
+                  {FOCUS_MARKETS.map((m) => <th key={m} className="py-1.5 pr-3 text-right font-medium">{marketName[m]}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-s-line font-semibold">
+                  <td className="py-2.5 pr-3">{t('focusAll')}</td>
+                  {FOCUS_MARKETS.map((m) => <FocusTd key={m} c={focus.all.cells[m]} />)}
+                </tr>
+                {focus.leagues.map((r) => (
+                  <tr key={r.league!.slug} className="border-b border-s-line">
+                    <td className="py-2.5 pr-3 align-top">
+                      <Link href={`/leagues/${r.league!.slug}`} className="font-semibold hover:underline">{r.league!.name}</Link>
+                      <span className="num mt-0.5 block text-xs text-s-muted">{r.strong}/3</span>
+                    </td>
+                    {FOCUS_MARKETS.map((m) => <FocusTd key={m} c={r.cells[m]} />)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {observeStrong.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-[15px] font-bold text-s-ink">{t('focusObserveTitle')}</h3>
+              <p className="mt-1 max-w-3xl text-[13.5px] text-s-muted">{t('focusObserveLead')}</p>
+              <div className="tbl-scroll mt-3">
+                <table className="text-sm">
+                  <thead className="text-xs uppercase tracking-wider text-s-muted">
+                    <tr className="border-b border-s-line">
+                      <th className="py-1.5 text-left font-medium">{t('focusColLeague')}</th>
+                      <th className="py-1.5 text-left font-medium">{t('colMarketName')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('colModel')}</th>
+                      <th className="py-1.5 text-right font-medium">{t('colHit')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {observeStrong.map((r) => (
+                      <tr key={`${r.leagueId}-${r.market}`} className="border-b border-s-line">
+                        <td className="py-2 pr-3">{r.ccode ? `${r.ccode} · ${r.name}` : r.name}</td>
+                        <td className="py-2 pr-3 font-semibold">{strongMarketName[r.market]}</td>
+                        <td className="num py-2 text-right text-s-muted">{t('focusObserveFrom', { p: pct(r.from) })}</td>
+                        <td className="num py-2 text-right"><span className="font-bold text-s-win">{pct(r.acc)}</span> <span className="text-xs text-s-muted">{r.won}/{r.n}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          <p className="mt-3 max-w-3xl text-xs text-s-muted">{t('focusNote')}</p>
+        </section>
       )}
 
       <section className="mt-14" aria-labelledby="picks-history">
