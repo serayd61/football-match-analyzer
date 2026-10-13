@@ -889,7 +889,7 @@
     "expiredNote": "Pro ti dà probabilità calibrate, non garanzie. Serie di 5–7 pronostici persi capitano più volte a stagione. 18+ · Gioca responsabilmente.",
     "hiddenPick": "Pronostico premium nascosto",
     "unlock": "Sblocca con Pro →",
-    "unlockLong": "Sblocca con Pro — da $6.99",
+    "unlockLong": "Sblocca con Pro — {price}/mese",
     "twaLead": "La prova di 7 giorni è terminata. In questa app non è possibile sottoscrivere abbonamenti; se ne hai già uno, accedi con lo stesso account e l'accesso viene applicato automaticamente. Il registro pubblico resta aperto."
   },
   "account": {
@@ -1105,8 +1105,6 @@
     "pricing": {
       "title": "Paga il vantaggio, conosci il rischio.",
       "lead": "Ogni nuovo account ha 7 giorni di accesso completo, senza carta. Pro mantiene sbloccati ogni pronostico, il dettaglio completo del modello e il radar del valore anche dopo.",
-      "weekly": "Settimanale",
-      "monthly": "Mensile · risparmia 65%",
       "freeName": "Prova gratuita",
       "freeSub": "Per seguire",
       "freePrice": "$0",
@@ -1120,9 +1118,7 @@
       "proSub": "Ogni pronostico, ogni campionato",
       "mostPopular": "Accesso completo",
       "perMonth": "/mese",
-      "perWeek": "/settimana",
       "noteMonthly": "Fatturazione mensile · disdici quando vuoi",
-      "noteWeekly": "Nessuna prova · fatturazione settimanale",
       "pro1": "Tutti i pronostici giornalieri sbloccati",
       "pro2": "Confidenza, etichetta di rischio e valore su ogni pronostico",
       "pro3": "Dettaglio del modello di gol, handicap e risultati probabili",
@@ -1242,7 +1238,6 @@
       "priceTrialAfter": "Finita la prova, pronostici e dettagli del modello si chiudono; lo storico pubblico resta aperto.",
       "pricePro": "Pro",
       "priceProSub": "Tutti i pronostici, dettaglio completo del modello, radar del valore",
-      "priceWeekly": "oppure {price} a settimana",
       "priceCancel": "Disdici quando vuoi dal tuo account.",
       "priceLink": "Confronta i piani →",
       "perMonth": "/mese",

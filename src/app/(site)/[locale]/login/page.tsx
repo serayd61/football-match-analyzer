@@ -9,6 +9,8 @@ import { Page } from '@/components/site/ui';
 import { RiskNote } from '@/components/site/Risk';
 import { getSiteAccess } from '@/lib/site/access';
 import { legacyHref } from '@/lib/site/legacy';
+import { googleEnabled } from '@/lib/auth';
+import { isTwa } from '@/lib/site/twa';
 import LoginForm from './LoginForm';
 
 // Sign in (Modernist redesign 2026-09-11), localized. Grid 1fr / 1fr with a
@@ -51,6 +53,8 @@ export default async function LoginPage({ params: { locale }, searchParams }: { 
             locale={locale}
             callbackUrl={callbackUrl}
             initialMode={register ? 'register' : 'signin'}
+            googleEnabled={googleEnabled() && !isTwa()} // Google, gömülü WebView'da OAuth'u engeller (disallowed_useragent)
+            initialError={searchParams.error ? t('errorGeneral') : ''}
             forgotHref={legacyHref('/forgot-password', locale)}
             labels={{
               name: t('name'), email: t('email'), password: t('password'), signIn: t('signIn'), register: t('register'), google: t('google'),

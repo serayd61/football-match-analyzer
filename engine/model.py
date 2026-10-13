@@ -197,3 +197,29 @@ def predict(model, home, away, level=None):
         "p_btts_yes": p_btts, "p_btts_no": 1 - p_btts,
         "lambda_home": lam_h, "lambda_away": lam_a,
     }
+
+def apply_calib(pr, calib):
+    """
+    PAZAR KALİBRASYONU (Platt, 2026-10-12). 30 günlük canlı denetim (3.512 maç): 1X2 favorisi
+    kalibre (±5) ama Alt 2,5 ve KG Yok sistematik aşırı güvenli (iddia %65–85 → gerçek
+    %50–60), Üst ≥%80 → %69. Poisson kuyruğu fazla sivri: logit 2,2 kat geniş.
+    180 günlük dc-1.0 çıktısında lojistik uydurma (zaman ayrımlı sınama: LL Ü/A 0,694→0,668,
+    KG 0,703→0,682; kalibre kovalar ±4). Yalnız p_over25 / p_btts_yes dokunur; λ ve 1X2 aynı.
+    calib = {"ou25": [a, b], "btts": [a, b]}  →  p' = σ(a + b·logit(p)). Yoksa/bozuksa parite.
+    """
+    if not pr or not isinstance(calib, dict):
+        return pr
+    out = dict(pr)
+    for key, field in (("ou25", "p_over25"), ("btts", "p_btts_yes")):
+        ab = calib.get(key)
+        p = out.get(field)
+        if not (isinstance(ab, (list, tuple)) and len(ab) == 2) or p is None:
+            continue
+        try:
+            a, b = float(ab[0]), float(ab[1])
+        except (TypeError, ValueError):
+            continue
+        q = min(max(float(p), 1e-4), 1 - 1e-4)
+        z = a + b * math.log(q / (1 - q))
+        out[field] = 1.0 / (1.0 + math.exp(-z))
+    return out

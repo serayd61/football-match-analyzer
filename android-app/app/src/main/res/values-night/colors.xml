@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="page_bg">#0E1311</color>
+    <color name="page_fg">#F6F7F5</color>
+    <color name="page_muted">#9AA39E</color>
+</resources>

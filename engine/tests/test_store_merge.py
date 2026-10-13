@@ -94,10 +94,11 @@ class ManualAliases(unittest.TestCase):
         import store
         self._store = store
         self._saved = dict(store.LEAGUE_ALIASES)
-        # UCL: sezondan sezona takım kümesi yarı yarıya değişir → Jaccard birleştirmez
+        # UCL: sezondan sezona takım kümesi yarı yarıya değişir → Jaccard birleştirmez;
+        # ilk 18 maç yeni takımlarla (37–54) oynanır → kapsama kuralı da bağlamaz.
         self.by = {
             42: season(42, list(range(1, 37)), datetime(2025, 9, 16), 144, 0),
-            943230: season(943230, list(range(19, 55)), datetime(2026, 9, 15), 18, 10000),
+            943230: season(943230, list(range(37, 55)) + list(range(19, 37)), datetime(2026, 9, 15), 18, 10000),
         }
 
     def tearDown(self):
@@ -128,3 +129,40 @@ class ManualAliases(unittest.TestCase):
         groups, alias = merge_season_ids({42: self.by[42]})
         self.assertEqual(alias[943230], 42)
         self.assertEqual(len(groups[42]), 144)
+
+
+class SmallNewId(unittest.TestCase):
+    """Kapsama kuralı (2026-10-12): akış ligin id'sini sezon içinde değiştirdi (Championship
+    938218 → 1000001801, 9 Ekim). Yeni id ≥ MERGE_MIN_NEW maçla, takımları eski grupta ve
+    takvim kesişmiyorsa hemen bağlanır; kupa/az maç/yabancı takımlar bağlanmaz."""
+
+    def setUp(self):
+        self.teams = list(range(100, 124))                      # 24 takım
+        self.old = season(938218, self.teams, datetime(2026, 8, 14), 95, 0)   # 14 Ağu – ~7 Eyl
+        self.new = season(1000001801, self.teams, datetime(2026, 10, 9), 12, 5000)
+
+    def test_rekeyed_mid_season_attaches_to_old_group(self):
+        groups, alias = merge_season_ids({938218: self.old, 1000001801: self.new})
+        self.assertEqual(alias[1000001801], 1000001801)        # kanonik = en geç biten parça
+        self.assertEqual(alias[938218], 1000001801)
+        self.assertEqual(len(groups[1000001801]), 107)
+        self.assertNotIn(938218, groups)
+
+    def test_below_min_new_rows_untouched(self):
+        tiny = season(1000001801, self.teams, datetime(2026, 10, 9), 4, 5000)
+        groups, alias = merge_season_ids({938218: self.old, 1000001801: tiny})
+        self.assertEqual(alias[1000001801], 1000001801)
+        self.assertEqual(len(groups[1000001801]), 4)
+        self.assertEqual(len(groups[938218]), 95)
+
+    def test_cup_in_same_calendar_not_attached(self):
+        cup = season(777001, self.teams[:12], datetime(2026, 8, 25), 12, 7000)   # lig takvimiyle kesişir
+        groups, alias = merge_season_ids({938218: self.old, 777001: cup})
+        self.assertEqual(alias[777001], 777001)
+        self.assertEqual(len(groups[938218]), 95)
+
+    def test_foreign_teams_not_attached(self):
+        other = season(888001, list(range(100, 106)) + list(range(900, 918)), datetime(2026, 10, 9), 12, 8000)
+        groups, alias = merge_season_ids({938218: self.old, 888001: other})
+        self.assertEqual(alias[888001], 888001)
+        self.assertEqual(len(groups[938218]), 95)

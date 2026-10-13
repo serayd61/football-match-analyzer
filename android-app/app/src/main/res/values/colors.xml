@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors twa-manifest.json / the site's light theme tokens. -->
+    <color name="brand">#0F9F6E</color>
+    <color name="page_bg">#F6F7F5</color>
+    <color name="page_fg">#0E1311</color>
+    <color name="page_muted">#5E6763</color>
+    <color name="ic_launcher_background">#0F9F6E</color>
+</resources>

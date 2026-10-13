@@ -6,24 +6,23 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { track } from '@/lib/analytics';
 
 type Labels = {
-  title: string; lead: string; weekly: string; monthly: string;
+  title: string; lead: string;
   freeName: string; freeSub: string; freePrice: string; freeFor: string; free: string[]; freeNot: string; freeCta: string;
-  proName: string; proSub: string; mostPopular: string; perMonth: string; perWeek: string; noteMonthly: string; noteWeekly: string;
+  proName: string; proSub: string; mostPopular: string; perMonth: string; noteMonthly: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
   twaNote: string; twaSignIn: string;
 };
 
-// Client half of the pricing page: the billing toggle and the checkout call.
+// Client half of the pricing page: the plan columns and the checkout call.
 // `purchasable=false` is the Google Play (TWA) build: the plan comparison stays,
-// but prices, the toggle, the offer line and the checkout button are not
+// but the price and the checkout button are not
 // rendered (Play payments policy — see src/lib/site/twa.ts).
-export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, weeklyAvailable, prices, offerLine = null, labels: l }: {
-  locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean; weeklyAvailable: boolean;
-  prices: { monthly: string; weekly: string }; /** lansman teklifi satırı (yalnız aylık) */ offerLine?: string | null; labels: Labels;
+export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, price, labels: l }: {
+  locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean;
+  /** monthly Pro price, formatted */ price: string; labels: Labels;
 }) {
   const router = useRouter();
-  // Monthly is the default (7-day trial); weekly is the low-threshold entry when configured.
-  const [billing, setBilling] = useState<'weekly' | 'monthly'>('monthly');
+  // Single plan: monthly Pro, no Stripe trial (weekly removed 2026-10-13).
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,7 +39,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: billing === 'weekly' ? 'PRO_WEEKLY' : 'PRO' }),
+        body: JSON.stringify({ plan: 'PRO' }),
       });
       const data = await res.json();
       if (data?.url) { window.location.href = data.url; return; }
@@ -49,10 +48,6 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
     setLoading(false);
   };
 
-  const seg = (key: 'weekly' | 'monthly', label: string) => (
-    <button type="button" onClick={() => setBilling(key)} aria-pressed={billing === key} className={`btn ${billing === key ? 'btn-primary' : 'btn-secondary'}`}>{label}</button>
-  );
-
   return (
     <>
       {/* Top grid */}
@@ -60,7 +55,6 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
         <h1 className="max-w-[16ch] text-[36px] sm:text-[48px]">{l.title}</h1>
         <div>
           <p className="max-w-[440px] text-[16px] text-s-muted">{l.lead}</p>
-          {weeklyAvailable && <div className="mt-4 flex flex-wrap gap-1">{seg('weekly', l.weekly)}{seg('monthly', l.monthly)}</div>}
         </div>
       </div>
 
@@ -90,11 +84,10 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
           {purchasable && (
             <div>
               <p className="flex items-baseline gap-2">
-                <span className="num text-[48px] font-extrabold leading-none">{billing === 'weekly' ? prices.weekly : prices.monthly}</span>
-                <span className="text-[14px] text-s-muted">{billing === 'weekly' ? l.perWeek : l.perMonth}</span>
+                <span className="num text-[48px] font-extrabold leading-none">{price}</span>
+                <span className="text-[14px] text-s-muted">{l.perMonth}</span>
               </p>
-              <p className="mt-2 text-[14px] text-s-accent-700">{billing === 'weekly' ? l.noteWeekly : l.noteMonthly}</p>
-              {offerLine && billing === 'monthly' && <p className="mt-2 inline-block rounded-[6px] bg-s-win/10 px-2 py-1 text-[13px] font-semibold text-s-win">{offerLine}</p>}
+              <p className="mt-2 text-[14px] text-s-accent-700">{l.noteMonthly}</p>
             </div>
           )}
           <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">

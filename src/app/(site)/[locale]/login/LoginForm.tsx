@@ -10,17 +10,17 @@ type Labels = {
   processing: string; errorInvalid: string; errorGeneral: string; or: string;
 };
 
-// Credentials + Google sign-in, and registration (POST /api/auth/register,
-// then sign-in). Fields: `.field` label 12px + `.input` 40px, 0 radius.
-export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref, labels: l }: {
-  locale: string; callbackUrl: string; initialMode: 'signin' | 'register'; forgotHref: string; labels: Labels;
+// Credentials + Google sign-in (button only when the provider is configured —
+// lib/auth googleEnabled), and registration (POST /api/auth/register, then sign-in). Fields: `.field` label 12px + `.input` 40px, 0 radius.
+export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref, googleEnabled = false, initialError = '', labels: l }: {
+  locale: string; callbackUrl: string; initialMode: 'signin' | 'register'; forgotHref: string; googleEnabled?: boolean; initialError?: string; labels: Labels;
 }) {
   const [mode, setMode] = useState<'signin' | 'register'>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +65,7 @@ export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref
         </label>
         <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block mt-1">{loading ? l.processing : mode === 'register' ? l.register : l.signIn}</button>
       </form>
-      <button type="button" onClick={() => { track.login('google'); signIn('google', { callbackUrl }); }} className="btn btn-secondary btn-lg btn-block">{l.google}</button>
+      {googleEnabled && <button type="button" onClick={() => { track.login('google'); signIn('google', { callbackUrl }); }} className="btn btn-secondary btn-lg btn-block">{l.google}</button>}
       <p className="text-[13px] text-s-muted">
         {mode === 'signin' ? (
           <>{l.noAccount} <button type="button" onClick={() => { setMode('register'); setError(''); }} className="font-semibold text-s-ink hover:text-s-accent-600">{l.startFree}</button>

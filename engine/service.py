@@ -314,6 +314,8 @@ def predict(req: PredictRequest, background: BackgroundTasks, authorization: Opt
                 if spec is specs[0]:
                     _skip("predict_failed")
                 continue
+            # Pazar kalibrasyonu (params.calib, bkz. model.apply_calib): yoksa parite.
+            pr = M.apply_calib(pr, P.params_for_league(spec, lid).get("calib"))
 
             pick, conf = _pick_and_conf(pr)
             per_version[spec["version"]] += 1

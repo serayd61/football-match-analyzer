@@ -101,7 +101,7 @@ export function trackAdsConversion(
 
 // Convenience helpers for the key funnel steps -------------------------------
 
-export const PRO_PRICE_USD = 19.99;
+export const PRO_PRICE_USD = 9.90;
 
 export const track = {
   ctaClick: (location: string, label?: string) =>

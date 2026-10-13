@@ -9,6 +9,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
+import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { RiskNote } from './Risk';
 
 // Account and billing now live on the localized site.
@@ -71,7 +72,7 @@ export async function LockedPick({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
     <span className="flex flex-col gap-1">
       <span aria-hidden className={`blur-locked ${size === 'lg' ? 'text-[24px] font-extrabold' : 'text-[13px] font-semibold'}`} style={size === 'lg' ? { filter: 'blur(6px)' } : undefined}>{t('hiddenPick')}</span>
       <span className="sr-only">{t('hiddenPick')}</span>
-      {!isTwa() && <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong') : t('unlock')}</Link>}
+      {!isTwa() && <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) }) : t('unlock')}</Link>}
     </span>
   );
 }

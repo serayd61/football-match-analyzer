@@ -889,7 +889,7 @@
     "expiredNote": "Pro liefert kalibrierte Wahrscheinlichkeiten, keine Garantien. Verlustserien von 5–7 Tipps kommen mehrmals pro Saison vor. 18+ · Spiele verantwortungsvoll.",
     "hiddenPick": "Premium-Tipp verborgen",
     "unlock": "Mit Pro freischalten →",
-    "unlockLong": "Mit Pro freischalten — ab $6.99",
+    "unlockLong": "Mit Pro freischalten — {price}/Monat",
     "twaLead": "Ihre 7-tägige Testphase ist beendet. In dieser App können keine Abos abgeschlossen werden; wenn Sie bereits eines haben, melden Sie sich mit demselben Konto an, der Zugang wird automatisch übernommen. Die öffentliche Bilanz bleibt offen."
   },
   "account": {
@@ -1105,8 +1105,6 @@
     "pricing": {
       "title": "Zahle für den Vorsprung, kenne das Risiko.",
       "lead": "Jedes neue Konto erhält 7 Tage vollen Zugang, ohne Karte. Pro hält danach jede Prognose, die volle Modellaufschlüsselung und das Value-Radar offen.",
-      "weekly": "Wöchentlich",
-      "monthly": "Monatlich · 65% sparen",
       "freeName": "Gratis testen",
       "freeSub": "Zum Mitverfolgen",
       "freePrice": "$0",
@@ -1120,9 +1118,7 @@
       "proSub": "Jeder Tipp, jede Liga",
       "mostPopular": "Voller Zugang",
       "perMonth": "/Monat",
-      "perWeek": "/Woche",
       "noteMonthly": "Monatlich abgerechnet · jederzeit kündbar",
-      "noteWeekly": "Kein Test · wöchentliche Abrechnung",
       "pro1": "Alle täglichen Prognosen freigeschaltet",
       "pro2": "Konfidenz, Risikolabel & Value bei jedem Tipp",
       "pro3": "Tormodell-Aufschlüsselung, Handicaps und wahrscheinliche Resultate",
@@ -1242,7 +1238,6 @@
       "priceTrialAfter": "Nach dem Test schließen Prognosen und Modelldetails; die öffentliche Bilanz bleibt offen.",
       "pricePro": "Pro",
       "priceProSub": "Alle Prognosen, volle Modelldetails, Value-Radar",
-      "priceWeekly": "oder {price} wöchentlich",
       "priceCancel": "Jederzeit im Konto kündbar.",
       "priceLink": "Pläne vergleichen →",
       "perMonth": "/Monat",

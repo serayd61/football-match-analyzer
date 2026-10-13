@@ -889,7 +889,7 @@
     "expiredNote": "Pro gives you calibrated probabilities, not guarantees. Losing streaks of 5–7 picks happen several times a season. 18+ · Play responsibly.",
     "hiddenPick": "Premium pick hidden",
     "unlock": "Unlock with Pro →",
-    "unlockLong": "Unlock with Pro — from $6.99",
+    "unlockLong": "Unlock with Pro — {price}/month",
     "twaLead": "Your 7-day trial has ended. Subscriptions are not available in this app; if you already have one, sign in with the same account and your access is applied automatically. The public scorecard stays open."
   },
   "account": {
@@ -1105,8 +1105,6 @@
     "pricing": {
       "title": "Pay for the edge, know the risk.",
       "lead": "Every new account gets 7 days of full access, no card required. Pro keeps every prediction, the full model breakdown and the value radar unlocked after that.",
-      "weekly": "Weekly",
-      "monthly": "Monthly · save 65%",
       "freeName": "Free trial",
       "freeSub": "For following along",
       "freePrice": "$0",
@@ -1120,9 +1118,7 @@
       "proSub": "Every pick, every league",
       "mostPopular": "Full access",
       "perMonth": "/month",
-      "perWeek": "/week",
       "noteMonthly": "Billed monthly · cancel anytime",
-      "noteWeekly": "No trial · billed weekly",
       "pro1": "All daily predictions unlocked",
       "pro2": "Confidence, risk label & value on each pick",
       "pro3": "Goal model breakdown, handicaps and likely scores",
@@ -1242,7 +1238,6 @@
       "priceTrialAfter": "When the trial ends, predictions and model detail close; the public record stays open.",
       "pricePro": "Pro",
       "priceProSub": "Every prediction, full model detail, value radar",
-      "priceWeekly": "or {price} weekly",
       "priceCancel": "Cancel any time from your account.",
       "priceLink": "Compare plans →",
       "perMonth": "/month",

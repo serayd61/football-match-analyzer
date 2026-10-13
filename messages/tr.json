@@ -889,7 +889,7 @@
     "expiredNote": "Pro sana garanti değil, kalibre olasılık verir. 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. 18+ · Sorumlu oyna.",
     "hiddenPick": "Premium tahmin gizli",
     "unlock": "Pro ile aç →",
-    "unlockLong": "Pro ile aç — $6.99'dan başlayan fiyatla",
+    "unlockLong": "Pro ile aç — ayda {price}",
     "twaLead": "7 günlük deneme süren bitti. Bu uygulamada abonelik satın alınamaz; zaten aboneliğin varsa aynı hesapla giriş yap, erişimin otomatik tanınır. Herkese açık karne açık kalır."
   },
   "account": {
@@ -1105,8 +1105,6 @@
     "pricing": {
       "title": "Avantaj için öde, riski bil.",
       "lead": "Her yeni hesap kart gerekmeden 7 gün tam erişim alır. Pro, sonrasında her tahmini, tam model ayrıntısını ve değer radarını açık tutar.",
-      "weekly": "Haftalık",
-      "monthly": "Aylık · %65 tasarruf",
       "freeName": "Ücretsiz deneme",
       "freeSub": "Takip etmek için",
       "freePrice": "$0",
@@ -1120,9 +1118,7 @@
       "proSub": "Her tahmin, her lig",
       "mostPopular": "Tam erişim",
       "perMonth": "/ay",
-      "perWeek": "/hafta",
       "noteMonthly": "Aylık faturalanır · istediğin zaman iptal",
-      "noteWeekly": "Deneme yok · haftalık faturalanır",
       "pro1": "Tüm günlük tahminler açık",
       "pro2": "Her tahminde güven, risk etiketi ve değer",
       "pro3": "Gol modeli ayrıntısı, handikaplar ve olası skorlar",
@@ -1242,7 +1238,6 @@
       "priceTrialAfter": "Deneme bitince tahminler ve model ayrıntısı kapanır; herkese açık karne açık kalır.",
       "pricePro": "Pro",
       "priceProSub": "Tüm tahminler, tam model ayrıntısı, değer radarı",
-      "priceWeekly": "haftalık {price}",
       "priceCancel": "Hesabından istediğin zaman iptal.",
       "priceLink": "Planları karşılaştır →",
       "perMonth": "/ay",
