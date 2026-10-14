@@ -25,7 +25,8 @@
     "tryFree": "7 Tage gratis testen",
     "picks": "Passende Spiele",
     "matches": "Spiele",
-    "scores": "Ergebnistipps"
+    "scores": "Ergebnistipps",
+    "coupon": "Tageskupon"
   },
   "locale": {
     "label": "Sprache"
@@ -1473,5 +1474,42 @@
     "howModel": "Das Modell veröffentlicht pro Spiel zwei erwartete Torzahlen. Daraus leiten wir eine Poisson-Verteilung der Ergebnisse ab (mit Dixon-Coles-Korrektur für niedrige Ergebnisse); das wahrscheinlichste Ergebnis kommt ab 15% in die Liste. Meist sind das 0:0 und 1:0, weil nur torarme Spiele so viel Wahrscheinlichkeit auf ein Ergebnis bündeln.",
     "howRecord": "\"Bilanz Spanne\" ist die echte 30-Tage-Trefferquote der Tipps in derselben Spanne (z.B. 18–20%); \"Bilanz Ergebnis\" die Quote desselben Ergebnisses (z.B. 1:0). Grün = die echte Quote erreichte den Modellanspruch.",
     "howHonest": "Das genaue Ergebnis ist ein schwerer Markt: über 180 Tage trafen 15% der Tipps ab 15%, das Modell behauptete im Schnitt 21%. Das Modell ist an den Rändern zu sicher; deshalb gibt es die Bilanzspalten."
+  },
+  "coupon": {
+    "metaTitle": "Kupon des Tages",
+    "metaDescription": "Täglich ein Kupon mit zwei Tipps aus den empfohlenen Auswahlen, Gesamtquote 2,0–2,6; jeder Kupon wird erfasst, Treffer wie Fehlschlag.",
+    "eyebrow": "Täglich",
+    "title": "Kupon des Tages",
+    "lead": "Jeden Morgen zwei Tipps aus den empfohlenen Auswahlen: das Paar mit den höchsten Wahrscheinlichkeiten, dessen Gesamtquote im Band {min}–{max} bleibt. Der Kupon wird bei Erstellung eingefroren und nach dem Endstand abgerechnet. Die Bilanz rechnet mit flachem 1-Einheit-Einsatz.",
+    "statCoupons": "Letzte 30 Tage",
+    "statCouponsNote": "abgerechnete Kupons · {pending} offen",
+    "statHit": "Getroffen",
+    "statHitNote": "{won} von {n} Kupons",
+    "statRoi": "ROI",
+    "statRoiNote": "flacher 1-Einheit-Einsatz, Buchmacherquote",
+    "statLegs": "Trefferquote Tipps",
+    "statLegsNote": "{won}/{n} Tipps",
+    "todayTitle": "Heutiger Kupon",
+    "totalOdds": "Gesamtquote",
+    "emptyTitle": "Heute kein Kupon",
+    "emptyLead": "Zwei Auswahlen mit Quote und ≥60% erreichten keine Gesamtquote von 2,0, oder der Kupon wurde noch nicht erstellt (jeden Morgen 09:30 MEZ).",
+    "toPicks": "Passende Spiele",
+    "todayNote": "Der Kupon wird um 09:30 MEZ erstellt und ändert sich nicht. Er bleibt auch nach Anpfiff hier.",
+    "historyTitle": "Frühere Kupons",
+    "historyLead": "Letzte 30 Tage. Treffer und Fehlschläge werden beide gelistet; keine Zeile wird wegen des Ergebnisses entfernt.",
+    "historyEmpty": "Noch keine abgerechneten Kupons. Der erste Kupon entsteht am nächsten Morgen.",
+    "colMatch": "Spiel",
+    "colSelection": "Auswahl",
+    "colModel": "Modell",
+    "colOdds": "Quote",
+    "colResult": "Resultat",
+    "statusPending": "offen",
+    "statusWon": "getroffen",
+    "statusLost": "verfehlt",
+    "statusVoid": "annulliert",
+    "howTitle": "So entsteht der Kupon",
+    "howRule": "Kandidaten sind die empfohlenen Auswahlen des Tages (angezeigte Wahrscheinlichkeit ≥60%) mit Buchmacherquote. Ein Tipp pro Spiel. Unter den Paaren mit Gesamtquote im Band {min}–{max} wird das mit dem höchsten Wahrscheinlichkeitsprodukt gewählt; erreicht nichts das Band, gibt es an dem Tag keinen Kupon.",
+    "howRecord": "Warum zwei Tipps: empfohlene Auswahlen mit Quote treffen zu etwa 65%. Zwei Tipps ≈ 42–50%, drei Tipps (Quote ~3,5) ≈ 27%. Die Bilanz zeigt Trefferquote und ROI zusammen; ein Protokoll, keine Behauptung.",
+    "howTelegram": "Derselbe Kupon geht jeden Morgen in unseren Telegram-Kanal:"
   }
 }

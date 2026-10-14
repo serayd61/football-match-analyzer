@@ -103,6 +103,14 @@
     {
       "path": "/api/cron/trial-emails?kind=ending",
       "schedule": "40 8 * * *"
+    },
+    {
+      "path": "/api/cron/daily-coupon",
+      "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/daily-coupon?settle=1",
+      "schedule": "50 * * * *"
     }
   ]
 }

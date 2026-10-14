@@ -25,7 +25,8 @@
     "tryFree": "Try free for 7 days",
     "picks": "Fits record",
     "matches": "Matches",
-    "scores": "Score tips"
+    "scores": "Score tips",
+    "coupon": "Daily coupon"
   },
   "locale": {
     "label": "Language"
@@ -1473,5 +1474,42 @@
     "howModel": "The model publishes two expected goal figures per match. From those we derive a Poisson score distribution (with the Dixon-Coles low-score correction); the most likely score enters the list when it is 15% or more. The usual scores are 0-0 and 1-0, because only low-scoring matches concentrate that much probability on one score.",
     "howRecord": "\"Band record\" is the real 30-day hit rate of tips in the same probability band (e.g. 18–20%); \"score record\" is the hit rate of the same score (e.g. 1-0). Green = the real hit rate reached the model's claim.",
     "howHonest": "Correct score is a hard market: over 180 days, 15% of the 15%+ tips hit while the model claimed 21% on average. The model is overconfident at the extremes, which is why the record columns exist."
+  },
+  "coupon": {
+    "metaTitle": "Coupon of the day",
+    "metaDescription": "One two-leg coupon a day from the recommended picks, total odds 2.0–2.6; every coupon is recorded, hit or miss.",
+    "eyebrow": "Daily",
+    "title": "Coupon of the day",
+    "lead": "Two legs from the recommended picks every morning: the pair with the highest probabilities whose total odds stay within {min}–{max}. The coupon is frozen when created and settled by the final score. The record uses a flat 1-unit stake.",
+    "statCoupons": "Last 30 days",
+    "statCouponsNote": "settled coupons · {pending} pending",
+    "statHit": "Hit",
+    "statHitNote": "{won} of {n} coupons",
+    "statRoi": "ROI",
+    "statRoiNote": "flat 1-unit stake, bookmaker odds",
+    "statLegs": "Leg hit rate",
+    "statLegsNote": "{won}/{n} legs",
+    "todayTitle": "Today's coupon",
+    "totalOdds": "Total odds",
+    "emptyTitle": "No coupon today",
+    "emptyLead": "Two picks with odds and ≥60% did not reach 2.0 total odds, or the coupon has not been created yet (every morning 08:30 UK).",
+    "toPicks": "Picks that fit the record",
+    "todayNote": "The coupon is created at 08:30 UK and never changes. It stays here after kick-off too.",
+    "historyTitle": "Past coupons",
+    "historyLead": "Last 30 days. Hits and misses both listed; no row is removed because of its result.",
+    "historyEmpty": "No settled coupons yet. The first coupon is created next morning.",
+    "colMatch": "Match",
+    "colSelection": "Selection",
+    "colModel": "Model",
+    "colOdds": "Odds",
+    "colResult": "Result",
+    "statusPending": "pending",
+    "statusWon": "hit",
+    "statusLost": "missed",
+    "statusVoid": "void",
+    "howTitle": "How the coupon is built",
+    "howRule": "Candidates are the day's recommended picks (displayed probability ≥60%) that have bookmaker odds. One leg per match. Among pairs whose total odds stay within {min}–{max}, the pair with the highest product of probabilities is chosen; if nothing reaches the band, there is no coupon that day.",
+    "howRecord": "Why two legs: recommended picks with odds hit about 65%. Two legs ≈ 42–50%, three legs (odds ~3.5) ≈ 27%. The record shows coupon hit rate and ROI together; it is a log, not a claim.",
+    "howTelegram": "The same coupon goes to our Telegram channel every morning:"
   }
 }

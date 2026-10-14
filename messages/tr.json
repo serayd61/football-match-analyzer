@@ -25,7 +25,8 @@
     "tryFree": "7 gün ücretsiz dene",
     "picks": "Uyan maçlar",
     "matches": "Maçlar",
-    "scores": "Skor tahminleri"
+    "scores": "Skor tahminleri",
+    "coupon": "Günün kuponu"
   },
   "locale": {
     "label": "Dil"
@@ -1473,5 +1474,42 @@
     "howModel": "Model her maç için iki beklenen gol sayısı yayımlar. Buradan Poisson skor dağılımı (düşük skorlar için Dixon-Coles düzeltmesiyle) çıkar; en olası skor %15 ve üzerindeyse listeye girer. En sık görülen skorlar 0-0 ve 1-0'dır, çünkü yalnız az gollü maçlarda tek bir skor bu kadar olasılık toplar.",
     "howRecord": "\"Dilim geçmişi\" aynı olasılık dilimindeki (ör. %18–20) son 30 günlük tahminlerin gerçek isabeti; \"skor geçmişi\" aynı skorun (ör. 1-0) isabeti. Yeşil = gerçek isabet modelin iddiasına ulaştı.",
     "howHonest": "Kesin skor zor bir pazardır: 180 günlük denetimde %15+ tahminlerin %15'i tuttu, modelin ortalama iddiası ise %21'di. Yani model uçlarda fazla iddialı; sayfadaki geçmiş sütunları bu yüzden var."
+  },
+  "coupon": {
+    "metaTitle": "Günün kuponu",
+    "metaDescription": "Önerilen seçimlerden her gün iki bacaklı bir kupon, toplam oran 2,0–2,6; her kupon kayda geçer, tutan da tutmayan da.",
+    "eyebrow": "Günlük",
+    "title": "Günün kuponu",
+    "lead": "Önerilen seçimlerden her sabah iki bacak: olasılıkları en yüksek, toplam oranı {min}–{max} bandında kalan çift. Kupon üretildiği anda donar, skorla sonuçlanır. Karne 1 birim sabit bahisle ölçülür.",
+    "statCoupons": "Son 30 gün",
+    "statCouponsNote": "sonuçlanan kupon · {pending} bekliyor",
+    "statHit": "Tuttu",
+    "statHitNote": "{n} kupondan {won}",
+    "statRoi": "ROI",
+    "statRoiNote": "1 birim sabit bahis, bahisçi oranı",
+    "statLegs": "Bacak isabeti",
+    "statLegsNote": "{won}/{n} bacak",
+    "todayTitle": "Bugünün kuponu",
+    "totalOdds": "Toplam oran",
+    "emptyTitle": "Bugün kupon yok",
+    "emptyLead": "Oranlı ve %60 üzeri iki seçim toplam 2,0 orana ulaşmadı ya da kupon henüz üretilmedi (her sabah 09:30 TSİ).",
+    "toPicks": "Karneye uyan maçlar",
+    "todayNote": "Kupon 09:30 TSİ'de üretilir ve değişmez. Maç başladıktan sonra bile burada kalır.",
+    "historyTitle": "Geçmiş kuponlar",
+    "historyLead": "Son 30 gün. Tutan da tutmayan da listelenir; sonuca göre satır silinmez.",
+    "historyEmpty": "Henüz sonuçlanmış kupon yok. İlk kupon bir sonraki sabah üretilir.",
+    "colMatch": "Maç",
+    "colSelection": "Seçim",
+    "colModel": "Model",
+    "colOdds": "Oran",
+    "colResult": "Sonuç",
+    "statusPending": "bekliyor",
+    "statusWon": "tuttu",
+    "statusLost": "tutmadı",
+    "statusVoid": "iptal",
+    "howTitle": "Bu kupon nasıl oluşur",
+    "howRule": "Adaylar, \"önerilen seçim\" kuralının o güne yazdığı seçimler (gösterilen olasılık ≥%60) ve bahisçi oranı olanlar. Aynı maçtan tek bacak. Toplam oranı {min}–{max} arasında kalan çiftler içinde olasılık çarpımı en yüksek olan seçilir; bant altında kalıyorsa o gün kupon yok.",
+    "howRecord": "Neden iki bacak: oranlı önerilen seçimler yaklaşık %65 tutuyor. İki bacak ≈ %42–50, üç bacak (oran ~3,5) ≈ %27 tutar. Karnede kupon isabeti ve ROI birlikte yazılır; iddia değil, kayıt.",
+    "howTelegram": "Aynı kupon her sabah Telegram kanalımıza gider:"
   }
 }
