@@ -22,7 +22,7 @@ const ALLOWED: Record<string, RegExp> = {
   market: /^(x12|ou25|btts)$/,
   minp: /^(50|55|60|65|70|75|80|85|90)$/,
   /** Karneye uyan maçlar (2026-10-08) ya da skor tahminleri (2026-10-14) listesinden gelindi: dönüş oraya */
-  from: /^(picks|scores)$/,
+  from: /^(picks|scores|coupon)$/,
 };
 
 export function sanitizeBackQs(back: string | undefined | null): string | null {
@@ -55,7 +55,7 @@ export function backHref(opts: { back?: string | null; covered: boolean; leagueI
   const anchor = !opts.covered ? sectionId(opts.leagueId) : null;
   const sp = new URLSearchParams(qs ?? '');
   const from = sp.get('from');
-  if (from === 'picks' || from === 'scores') {
+  if (from === 'picks' || from === 'scores' || from === 'coupon') {
     const d = sp.get('date');
     return `/${from}${d ? `?date=${d}` : ''}`;
   }

@@ -25,7 +25,8 @@
     "tryFree": "Prova gratis 7 giorni",
     "picks": "In linea",
     "matches": "Partite",
-    "scores": "Risultati esatti"
+    "scores": "Risultati esatti",
+    "coupon": "Schedina del giorno"
   },
   "locale": {
     "label": "Lingua"
@@ -1473,5 +1474,42 @@
     "howModel": "Il modello pubblica due valori di gol attesi per partita. Da questi deriviamo una distribuzione di Poisson dei risultati (con la correzione Dixon-Coles per i punteggi bassi); il risultato più probabile entra in lista se è almeno al 15%. I più frequenti sono 0-0 e 1-0, perché solo le partite con pochi gol concentrano tanta probabilità su un solo risultato.",
     "howRecord": "\"Storico fascia\" è la reale percentuale a 30 giorni dei pronostici nella stessa fascia (es. 18–20%); \"storico risultato\" quella dello stesso risultato (es. 1-0). Verde = la percentuale reale ha raggiunto la stima del modello.",
     "howHonest": "Il risultato esatto è un mercato difficile: in 180 giorni il 15% dei pronostici ≥15% si è avverato mentre il modello stimava in media il 21%. Il modello è troppo sicuro agli estremi; per questo esistono le colonne dello storico."
+  },
+  "coupon": {
+    "metaTitle": "Schedina del giorno",
+    "metaDescription": "Ogni giorno una schedina a due eventi dai pronostici consigliati, quota totale 2,0–2,6; ogni schedina viene registrata, vinta o persa.",
+    "eyebrow": "Giornaliera",
+    "title": "Schedina del giorno",
+    "lead": "Ogni mattina due eventi dai pronostici consigliati: la coppia con le probabilità più alte la cui quota totale resta tra {min} e {max}. La schedina si congela alla creazione e si chiude col risultato finale. Il rendimento usa una puntata fissa di 1 unità.",
+    "statCoupons": "Ultimi 30 giorni",
+    "statCouponsNote": "schedine chiuse · {pending} in attesa",
+    "statHit": "Vinte",
+    "statHitNote": "{won} su {n} schedine",
+    "statRoi": "ROI",
+    "statRoiNote": "puntata fissa di 1 unità, quota del bookmaker",
+    "statLegs": "Eventi centrati",
+    "statLegsNote": "{won}/{n} eventi",
+    "todayTitle": "Schedina di oggi",
+    "totalOdds": "Quota totale",
+    "emptyTitle": "Oggi nessuna schedina",
+    "emptyLead": "Due pronostici con quota e ≥60% non hanno raggiunto quota 2,0, oppure la schedina non è ancora stata creata (ogni mattina alle 09:30 CET).",
+    "toPicks": "Partite in linea",
+    "todayNote": "La schedina viene creata alle 09:30 CET e non cambia. Resta qui anche dopo il calcio d'inizio.",
+    "historyTitle": "Schedine passate",
+    "historyLead": "Ultimi 30 giorni. Vinte e perse insieme; nessuna riga viene rimossa per il risultato.",
+    "historyEmpty": "Ancora nessuna schedina chiusa. La prima viene creata domani mattina.",
+    "colMatch": "Partita",
+    "colSelection": "Scelta",
+    "colModel": "Modello",
+    "colOdds": "Quota",
+    "colResult": "Esito",
+    "statusPending": "in attesa",
+    "statusWon": "vinta",
+    "statusLost": "persa",
+    "statusVoid": "annullata",
+    "howTitle": "Come nasce la schedina",
+    "howRule": "I candidati sono i pronostici consigliati del giorno (probabilità mostrata ≥60%) con quota del bookmaker. Un evento per partita. Tra le coppie con quota totale tra {min} e {max} si sceglie quella col prodotto di probabilità più alto; se nulla raggiunge la fascia, quel giorno non c'è schedina.",
+    "howRecord": "Perché due eventi: i pronostici consigliati con quota si avverano circa al 65%. Due eventi ≈ 42–50%, tre eventi (quota ~3,5) ≈ 27%. Il rendimento mostra insieme percentuale di schedine vinte e ROI; è un registro, non una promessa.",
+    "howTelegram": "La stessa schedina va ogni mattina sul nostro canale Telegram:"
   }
 }
