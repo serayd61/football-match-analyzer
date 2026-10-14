@@ -965,7 +965,8 @@
       "privacy": "Privacy",
       "contact": "Contact",
       "compliance": "footballanalytics.pro is an independent statistical analysis service. We do not offer betting, accept wagers or hold player funds, and we are not affiliated with any bookmaker. Any outbound links are exclusively to gambling entities licensed and authorized in the relevant geographic location.",
-      "help": "Gambling can be addictive. Please play responsibly and only if you are of legal age in your country. Help: Switzerland sos-spielsucht.ch · 0800 040 080 — Germany check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org"
+      "help": "Gambling can be addictive. Please play responsibly and only if you are of legal age in your country. Help: Switzerland sos-spielsucht.ch · 0800 040 080 — Germany check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org",
+      "telegram": "Telegram"
     },
     "home": {
       "kickerLive": "Model live · {count, plural, =1 {1 pick today} other {# picks today}}",
@@ -1259,7 +1260,10 @@
       "closeNote": "7 days of full access. No card needed.",
       "strongLine": "In {n} leagues a market hit ≥70% over at least 15 matches in the last 180 days.",
       "strongCta": "Which ones →",
-      "ctaRecord": "See the scorecard →"
+      "ctaRecord": "See the scorecard →",
+      "telegramTitle": "Our Telegram channel: @fanalytics_pro",
+      "telegramLead": "The coupon of the day is posted every morning and its result is added under the same message in the evening. Hits and misses alike; the full record lives on the site.",
+      "telegramCta": "Join the channel"
     }
   },
   "v3": {
