@@ -348,6 +348,19 @@ export default async function HomePage({ params: { locale } }: { params: { local
         </div>
       </Page>
 
+      {/* ── Telegram ── (2026-10-14: günün kuponu + sonuçları kanala gider; Play uygulamasında gizli) ── */}
+      {!twa && <section className="border-t border-s-line" aria-labelledby="tg-title">
+        <Page className="py-10">
+          <div className="flex flex-col gap-4 rounded-2xl border border-s-line bg-s-surface px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div>
+              <h2 id="tg-title" className="text-[20px] sm:text-[22px]">{t('telegramTitle')}</h2>
+              <p className="mt-1 max-w-[60ch] text-[14.5px] text-s-muted">{t('telegramLead')}</p>
+            </div>
+            <a href="https://t.me/fanalytics_pro" target="_blank" rel="noopener noreferrer" className="btn btn-secondary shrink-0 self-start sm:self-auto" data-cta="home-telegram">{t('telegramCta')} <ArrowRight size={16} /></a>
+          </div>
+        </Page>
+      </section>}
+
       {/* ── Pricing ── (hidden in the Google Play app: no prices there) ── */}
       {!twa && <section className="border-y border-s-line bg-s-surface">
         <Page className="py-14 lg:py-20">

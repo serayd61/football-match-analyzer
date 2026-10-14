@@ -30,6 +30,7 @@ export default async function SiteFooter() {
           <Link href="/terms" className="hover:text-s-ink">{t('terms')}</Link>
           <Link href="/privacy" className="hover:text-s-ink">{t('privacy')}</Link>
           <a href="/contact" className="hover:text-s-ink">{t('contact')}</a>
+          <a href="https://t.me/fanalytics_pro" target="_blank" rel="noopener noreferrer" className="hover:text-s-ink">{t('telegram')}</a>
           <div className="mt-2"><LocaleSwitcher /></div>
         </nav>
       </div>
