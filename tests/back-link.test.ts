@@ -21,3 +21,10 @@ test('from=picks returns to the picks list (date kept, nothing else)', () => {
   assert.equal(backHref({ back: 'from=picks&date=2026-10-09&scope=all', covered: true, leagueId: 47, kickoffYmd: '2026-10-09', todayYmd: '2026-10-08' }), '/picks?date=2026-10-09');
   assert.equal(backHref({ back: 'from=other', covered: true, leagueId: 47, kickoffYmd: '2026-10-08', todayYmd: '2026-10-08' }), '/predictions');
 });
+
+test('from=scores returns to the score tips list (with date)', () => {
+  const base = { covered: true, leagueId: 55, kickoffYmd: '2026-10-14', todayYmd: '2026-10-14' };
+  assert.equal(backHref({ ...base, back: 'from=scores' }), '/scores');
+  assert.equal(backHref({ ...base, back: 'from=scores&date=2026-10-15' }), '/scores?date=2026-10-15');
+  assert.equal(backHref({ ...base, back: 'from=nope' }), '/predictions');
+});
