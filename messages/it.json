@@ -965,7 +965,8 @@
       "privacy": "Privacy",
       "contact": "Contatti",
       "compliance": "footballanalytics.pro è un servizio indipendente di analisi statistica. Non offriamo scommesse, non accettiamo puntate, non custodiamo fondi dei giocatori e non siamo affiliati ad alcun bookmaker. Eventuali link in uscita rimandano esclusivamente a operatori di gioco autorizzati e licenziati nel relativo paese.",
-      "help": "Il gioco d'azzardo può causare dipendenza. Gioca responsabilmente e solo se hai l'età legale nel tuo paese. Aiuto: Svizzera sos-spielsucht.ch · 0800 040 080 — Germania check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — Regno Unito begambleaware.org · 0808 8020 133 — Internazionale gamblingtherapy.org"
+      "help": "Il gioco d'azzardo può causare dipendenza. Gioca responsabilmente e solo se hai l'età legale nel tuo paese. Aiuto: Svizzera sos-spielsucht.ch · 0800 040 080 — Germania check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — Regno Unito begambleaware.org · 0808 8020 133 — Internazionale gamblingtherapy.org",
+      "telegram": "Telegram"
     },
     "home": {
       "kickerLive": "Modello attivo · {count, plural, =1 {1 pronostico oggi} other {# pronostici oggi}}",
@@ -1259,7 +1260,10 @@
       "closeNote": "7 giorni di accesso completo. Nessuna carta.",
       "strongLine": "In {n} campionati un mercato ha centrato ≥70% su almeno 15 partite negli ultimi 180 giorni.",
       "strongCta": "Quali →",
-      "ctaRecord": "Vedi il registro →"
+      "ctaRecord": "Vedi il registro →",
+      "telegramTitle": "Il nostro canale Telegram: @fanalytics_pro",
+      "telegramLead": "La schedina del giorno viene pubblicata ogni mattina e la sera il risultato compare sotto lo stesso messaggio. Vinte e perse insieme; il rendimento completo è sul sito.",
+      "telegramCta": "Entra nel canale"
     }
   },
   "v3": {

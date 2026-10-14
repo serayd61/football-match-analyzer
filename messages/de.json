@@ -965,7 +965,8 @@
       "privacy": "Datenschutz",
       "contact": "Kontakt",
       "compliance": "footballanalytics.pro ist ein unabhängiger statistischer Analysedienst. Wir bieten keine Wetten an, nehmen keine Einsätze entgegen, verwalten keine Spielergelder und sind mit keinem Buchmacher verbunden. Allfällige ausgehende Links führen ausschliesslich zu Glücksspielanbietern, die im jeweiligen Land lizenziert und zugelassen sind.",
-      "help": "Glücksspiel kann süchtig machen. Spiele verantwortungsvoll und nur, wenn du in deinem Land volljährig bist. Hilfe: Schweiz sos-spielsucht.ch · 0800 040 080 — Deutschland check-dein-spiel.de · 0800 137 27 00 — Österreich spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org"
+      "help": "Glücksspiel kann süchtig machen. Spiele verantwortungsvoll und nur, wenn du in deinem Land volljährig bist. Hilfe: Schweiz sos-spielsucht.ch · 0800 040 080 — Deutschland check-dein-spiel.de · 0800 137 27 00 — Österreich spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org",
+      "telegram": "Telegram"
     },
     "home": {
       "kickerLive": "Modell live · {count, plural, =1 {1 Tipp heute} other {# Tipps heute}}",
@@ -1259,7 +1260,10 @@
       "closeNote": "7 Tage voller Zugang. Keine Karte nötig.",
       "strongLine": "In {n} Ligen traf ein Markt in den letzten 180 Tagen bei mindestens 15 Spielen ≥70 %.",
       "strongCta": "Welche →",
-      "ctaRecord": "Zur Bilanz →"
+      "ctaRecord": "Zur Bilanz →",
+      "telegramTitle": "Unser Telegram-Kanal: @fanalytics_pro",
+      "telegramLead": "Der Kupon des Tages geht jeden Morgen in den Kanal, das Resultat folgt abends unter derselben Nachricht. Treffer wie Fehlschläge; die vollständige Bilanz steht auf der Website.",
+      "telegramCta": "Kanal beitreten"
     }
   },
   "v3": {

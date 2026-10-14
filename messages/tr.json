@@ -965,7 +965,8 @@
       "privacy": "Gizlilik",
       "contact": "İletişim",
       "compliance": "footballanalytics.pro bağımsız bir istatistiksel analiz hizmetidir. Bahis sunmayız, bahis kabul etmeyiz, oyuncu parası tutmayız ve hiçbir bahis şirketiyle bağlantımız yoktur. Varsa dış bağlantılar yalnızca ilgili ülkede lisanslı ve yetkili şans oyunu kuruluşlarına verilir.",
-      "help": "Şans oyunları bağımlılık yapabilir. Lütfen sorumlu oynayın ve yalnızca ülkenizde yasal yaştaysanız oynayın. Yardım: İsviçre sos-spielsucht.ch · 0800 040 080 — Almanya check-dein-spiel.de · 0800 137 27 00 — Avusturya spielsuchthilfe.at · 01 544 13 57 — Birleşik Krallık begambleaware.org · 0808 8020 133 — Uluslararası gamblingtherapy.org"
+      "help": "Şans oyunları bağımlılık yapabilir. Lütfen sorumlu oynayın ve yalnızca ülkenizde yasal yaştaysanız oynayın. Yardım: İsviçre sos-spielsucht.ch · 0800 040 080 — Almanya check-dein-spiel.de · 0800 137 27 00 — Avusturya spielsuchthilfe.at · 01 544 13 57 — Birleşik Krallık begambleaware.org · 0808 8020 133 — Uluslararası gamblingtherapy.org",
+      "telegram": "Telegram"
     },
     "home": {
       "kickerLive": "Model canlı · bugün {count, plural, =1 {1 tahmin} other {# tahmin}}",
@@ -1259,7 +1260,10 @@
       "closeNote": "7 gün tam erişim. Kart gerekmez.",
       "strongLine": "{n} ligde bir pazar son 180 günde en az 15 maçta ≥%70 tuttu.",
       "strongCta": "Hangileri →",
-      "ctaRecord": "Karneye bak →"
+      "ctaRecord": "Karneye bak →",
+      "telegramTitle": "Telegram kanalımız: @fanalytics_pro",
+      "telegramLead": "Günün kuponu her sabah kanala gider, akşam sonucu aynı mesajın altına yazılır. Tutan da tutmayan da orada; karnenin tamamı sitede.",
+      "telegramCta": "Kanala katıl"
     }
   },
   "v3": {
