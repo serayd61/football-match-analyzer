@@ -66,6 +66,7 @@ module.exports = {
           'accent-700': 'rgb(var(--s-accent-700) / <alpha-value>)',
           'accent-800': 'rgb(var(--s-accent-800) / <alpha-value>)',
           'accent2-700': 'rgb(var(--s-accent2-700) / <alpha-value>)',
+          claude: 'rgb(var(--s-claude) / <alpha-value>)', // İstihbarat satırı (Claude turuncusu)
           n200: 'rgb(var(--s-n200) / <alpha-value>)',
           n300: 'rgb(var(--s-n300) / <alpha-value>)',
           n400: 'rgb(var(--s-n400) / <alpha-value>)',

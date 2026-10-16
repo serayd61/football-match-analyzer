@@ -32,6 +32,8 @@ const labels: IntelLabels = {
 test('IntelBlock: rozet, faktör, kaydırma, kaynak bağlantısı ve olasılık satırı render edilir; serbest metin yok', () => {
   const html = renderToStaticMarkup(createElement(IntelBlock, { intel: view, labels }));
   assert.ok(html.includes('Claude ile kontrol edildi'));
+  assert.ok(html.includes('tag-claude'));
+  assert.ok(html.includes('<svg'), 'Claude işareti rozetin içinde');
   assert.ok(html.includes('Reece James (RB, kaptan) diz ameliyatı: kesin yok'));
   assert.ok(html.includes('kilit eksik'));
   assert.ok(html.includes('Chelsea'));
@@ -50,4 +52,19 @@ test('IntelBlock: sapma yoksa "etken bulunmadı" metni, olasılık satırı yok'
   const html = renderToStaticMarkup(createElement(IntelBlock, { intel: empty, labels: { ...labels, goalsLine: null } }));
   assert.ok(html.includes('İsimli etken bulunmadı.'));
   assert.ok(!html.includes('istihbarat sonrası'));
+});
+
+test('AssessmentCard: istihbarat bloğu pazar listesinden ÖNCE gelir (sayfanın altında kalmasın)', async () => {
+  const { default: AssessmentCard } = await import('@/components/site/Assessment');
+  const assessment = { version: 'assess-1.0', markets: [{ market: '1x2', selection: 'home', status: 'insufficient', model: { p: 0.75 }, price: { p: null }, calibration: { available: false, p: null }, record: null, reasons: [] }] } as unknown as Parameters<typeof AssessmentCard>[0]['assessment'];
+  const al = {
+    title: 'Değerlendirme', lead: 'lead', market: { '1x2': '1X2', ou25: 'Ü/A', btts: 'KG' }, selection: () => 'Ev', status: { supported: 'd', conflicting: 'ç', insufficient: 'y' },
+    model: 'MODEL', marketCol: 'PİYASA', recordCol: 'KAYIT', calibrated: () => 'k', rawOnly: 'r', noMarket: 'yok', marketSub: () => null, recordSub: () => null,
+    reason: () => 'sebep', notes: () => [], noRecord: 'kayıt yok', thinRecord: () => 'ince', footer: 'footer',
+  } as unknown as Parameters<typeof AssessmentCard>[0]['labels'];
+  const html = renderToStaticMarkup(createElement(AssessmentCard, { assessment, labels: al, intel: view, intelLabels: labels }));
+  const iIntel = html.indexOf('data-testid="intel-block"');
+  const iMarkets = html.indexOf('>1X2<');
+  assert.ok(iIntel > 0 && iMarkets > 0);
+  assert.ok(iIntel < iMarkets, `intel (${iIntel}) pazarlardan (${iMarkets}) önce olmalı`);
 });
