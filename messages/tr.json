@@ -1576,31 +1576,68 @@
     "radarLockedLead": "Modelin kendi seçiminde bahisçinin 4+ puan üstünde olduğu her maç, maç sayfasındaki değerlendirmeyle birlikte.",
     "radarNote": "Ham model olasılığı eksi bahisçinin marjsız olasılığı, puan olarak; fark büyüklüğüne göre sıralı. Bu bir fırsat sıralaması değildir: geriye dönük testte büyük 1X2 farkları kârlı çıkmadı (fark ≥ +5 → ROI −23) ve 5+ puanlık fark çelişki olarak işaretlenir.",
     "colStatus": "Değerlendirme",
-    "confNote": "%{p}, bu seçim için modelin kalibre değeridir. Aşağıdaki değerlendirme onu kanıt saymadan önce piyasa ve kayıtla tartar.",
-    "intel": {
-      "title": "İstihbarat",
-      "badge": "Claude ile kontrol edildi",
-      "lead": "Kadro, sakatlık, ceza ve rotasyon haberleri maçtan önce tarandı. Yalnız isimli ve kaynaklı etkenler sayılır; form ve piyasa sayılmaz.",
-      "noFactors": "Modelin dışında isimli bir etken bulunmadı; olasılıklar modelin çıktısıyla aynı.",
-      "probLine": "Model %{bh} / %{bd} / %{ba} → istihbarat sonrası %{fh} / %{fd} / %{fa}",
-      "goalsLine": "Üst 2,5 %{of} → %{ot} · KG Var %{bf} → %{bt}",
-      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} puan",
-      "source": "Kaynak:",
-      "asOf": "{date} itibarıyla",
-      "team": {
-        "both": "iki takım"
-      },
-      "category": {
-        "key_absence": "kilit eksik",
-        "multiple_absences": "çoklu eksik",
-        "rotation": "rotasyon",
-        "tactical_mismatch": "taktik uyumsuzluk",
-        "travel_congestion": "fikstür/seyahat yükü",
-        "weather_pitch": "hava/saha",
-        "motivation": "motivasyon",
-        "other": "diğer"
-      },
-      "note": "Bu satır değerlendirme durumunu değiştirmez. Katkısı, sonuçlanan maçlarda modelin kendi olasılığıyla karşılaştırılarak ölçülür; tek maç kanıt değildir."
-    }
+    "confNote": "%{p}, bu seçim için modelin kalibre değeridir. Aşağıdaki değerlendirme onu kanıt saymadan önce piyasa ve kayıtla tartar."
+  },
+  "evidence": {
+    "title": "Geçmiş kanıt analizi",
+    "meta": "{n} sonuçlanmış maç · {asOf} itibarıyla",
+    "lead": "Kayıtlı model, kalibrasyon eğrisi, bahisçi fiyatı ve karşılaştırılabilir geçmiş maçlar her seçim için yan yana. Sayılar kayıtlı veriden kodla hesaplanır; buradaki hiçbir değer yeni bir kazanma olasılığı değildir.",
+    "noStatus": "durum yok",
+    "cols": {
+      "model": "Model",
+      "market": "Bahisçi",
+      "similar": "Benzer maçlar",
+      "home": "{home} iç saha",
+      "away": "{away} deplasman"
+    },
+    "calibrated": "kalibre %{p}",
+    "rawOnly": "ham çıktı · eğri yok",
+    "marketAt": "{phase} · {date}",
+    "marketNone": "oran kaydedilmedi",
+    "marketAfter": "oran analiz zamanından yeni",
+    "rateSub": "{won}/{n} · %95 {lower}–{upper}",
+    "rateNone": "çok az maç",
+    "finding": {
+      "similar_insufficient": "Benzerlik yarıçapı içinde {min}'den az karşılaştırılabilir maç var ({n} bulundu): gerçekleşme oranı gösterilmiyor. Bu eksik veridir, başarısızlık değil.",
+      "similar_agrees": "{n} benzer maçta seçim %{p} oranında tuttu (%95 {lower}–{upper}); modelin %{model} değeri bu aralığın içinde. Komşular modelin kendi beklenen golleriyle seçildiği için bu bir kalibrasyon kontrolüdür, bağımsız kanıt değil.",
+      "similar_below": "{n} benzer maçta seçim yalnız %{p} oranında tuttu (%95 {lower}–{upper}), modelin %{model} değerinin altında. Komşular modelin kendi beklenen golleriyle seçilir; bu ayrı bir sinyal değil, kalibrasyona işaret eder.",
+      "similar_above": "{n} benzer maçta seçim %{p} oranında tuttu (%95 {lower}–{upper}), modelin %{model} değerinin üstünde. Kalibrasyon kontrolü olarak okuyun: komşular modelin kendi beklenen gollerinden gelir.",
+      "own_home_thin": "{home}'ın havuzdaki iç saha kaydı ince ({n} maç, {min}'den az); oran gösterilmiyor.",
+      "own_away_thin": "{away}'ın havuzdaki deplasman kaydı ince ({n} maç, {min}'den az); oran gösterilmiyor.",
+      "market_missing": "Bu maç için bahisçi oranı kaydedilmedi; model piyasayla karşılaştırılamıyor.",
+      "market_after_asof": "Kayıtlı bahisçi oranı analiz zamanından sonra alınmış; karşılaştırmaya girmedi.",
+      "market_agrees": "Model %{model} ile bahisçi %{market} birbirinin 5 puan içinde.",
+      "market_above": "Model %{model}, bahisçinin %{market} değerinin {edge} puan üstünde. Büyük fark değer kanıtı değildir: geriye dönük testte bu farklar kazandırmadı ve değerlendirme 5+ puanı çelişki sayar.",
+      "market_below": "Model %{model}, bahisçinin %{market} değerinin {edge} puan altında.",
+      "calibration_missing": "Bu pazar için kalibrasyon eğrisi yüklü değil: model değeri ham çıktıdır, kalibre olasılık değil."
+    },
+    "groupsTitle": "Takımların kendi geçmişi (havuzda)",
+    "homeGroup": "{home} iç saha",
+    "awayGroup": "{away} deplasman",
+    "groupLine": "{n} maç · {from}–{to} · ev %{h} / beraberlik %{d} / deplasman %{a} · Üst 2,5 %{o} · KG Var %{b}",
+    "groupModelLine": "bu maçlarda model ortalaması: ev %{h} / beraberlik %{d} / deplasman %{a}",
+    "overlap": "Ev sahibi maçlarının {home}'i ve deplasman maçlarının {away}'i benzer maç kümesinde de var; gruplar örtüşür, toplanmaz.",
+    "similarTitle": "Karşılaştırılabilir geçmiş maçlar",
+    "similarMeta": "modelin beklenen gollerine en yakın ({lh} / {la}) · yarıçap {radius} · kapsam: {scope} · yarıçap içindeki {within} maçtan {n}",
+    "scopeLeague": "bu lig",
+    "scopeAll": "tüm ligler (ligde yeterli maç yoktu)",
+    "similarEmpty": "Havuzda yeterli karşılaştırılabilir maç yok.",
+    "similarRowMeta": "λ {lh}/{la} · u {d}",
+    "missingTitle": "Hesaplanamıyor",
+    "missing": {
+      "xg": "xG: canlı modelin parçası değil (dc-2.0-xg gölge sürüm); maç başına zaman damgalı geçmiş kaydı yok, hesaplanmadı.",
+      "elo": "Elo: yalnız araştırma; veritabanında maç-öncesi snapshot yok, hesaplanmadı.",
+      "market": "Bahisçi oranı: bu maç için kayıt yok.",
+      "market_after": "Bahisçi oranı: yalnız analiz zamanından sonraki kayıt var.",
+      "calibration": "Kalibrasyon eğrisi: yüklü değil; model değeri ham.",
+      "similar": "Karşılaştırılabilir maç: yarıçap içinde {n}, alt sınır {min}.",
+      "own_home": "Ev sahibinin iç saha kaydı: {n} maç, {min}'in altında.",
+      "own_away": "Deplasmanın dış saha kaydı: {n} maç, {min}'in altında.",
+      "league_scope": "Bu ligde yarıçap içinde yeterli maç olmadığı için benzer maçlar tüm liglerden alındı.",
+      "league_scope_covered": "Bu ligde yarıçap içinde yeterli maç olmadığı için benzer maçlar kapsanan liglerden alındı."
+    },
+    "featuresAfterAsOf": "Bu maçın model değerleri analiz zamanından sonra yazılmış; geçmiş tarihli analiz güncel satırı kullanır.",
+    "footer": "Kural {rule} · model {model} · değerlendirme {assess} · keşifsel. Durum yalnız yukarıdaki değerlendirmeden gelir; bu bölüm onu açıklar ve arkasındaki maçları listeler. Benzer maçlar modelin kendi beklenen golleriyle seçildiği için gerçekleşme oranı kalibrasyon eğrisi ve kova kaydıyla örtüşür, ayrı bir oy eklemez. LLM yoktur; her sayı kayıtlı veriden hesaplanır.",
+    "scopeCovered": "kapsanan ligler (ligde yeterli maç yoktu)"
   }
 }

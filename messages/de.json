@@ -1576,31 +1576,68 @@
     "radarLockedLead": "Jedes Spiel, in dem das Modell beim eigenen Tipp 4+ Punkte über dem Buchmacher liegt, mit derselben Einschätzung wie auf der Spielseite.",
     "radarNote": "Rohe Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit, in Punkten, nach Grösse des Abstands sortiert. Das ist keine Chancenrangliste: Im Backtest waren grosse 1X2-Abstände nicht profitabel (Abstand ≥ +5 → ROI −23), und Abstände von 5+ Punkten gelten als Widerspruch.",
     "colStatus": "Einschätzung",
-    "confNote": "{p}% ist der kalibrierte Modellwert für diesen Tipp. Die Einschätzung unten wägt ihn gegen Markt und Bilanz ab, bevor er als Beleg zählt.",
-    "intel": {
-      "title": "Aufklärung",
-      "badge": "Mit Claude geprüft",
-      "lead": "Kader-, Verletzungs-, Sperren- und Rotationsmeldungen wurden vor dem Anpfiff durchsucht. Nur benannte Faktoren mit Quelle zählen; Form und Marktpreise nicht.",
-      "noFactors": "Kein benannter Faktor ausserhalb des Modells gefunden; die Wahrscheinlichkeiten entsprechen der Modellausgabe.",
-      "probLine": "Modell {bh}% / {bd}% / {ba}% → nach Aufklärung {fh}% / {fd}% / {fa}%",
-      "goalsLine": "Über 2,5 {of}% → {ot}% · Beide treffen {bf}% → {bt}%",
-      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} Pkt.",
-      "source": "Quelle:",
-      "asOf": "Stand {date}",
-      "team": {
-        "both": "beide Teams"
-      },
-      "category": {
-        "key_absence": "Schlüsselausfall",
-        "multiple_absences": "mehrere Ausfälle",
-        "rotation": "Rotation",
-        "tactical_mismatch": "taktisches Ungleichgewicht",
-        "travel_congestion": "Spielplan-/Reisebelastung",
-        "weather_pitch": "Wetter/Platz",
-        "motivation": "Motivation",
-        "other": "sonstiges"
-      },
-      "note": "Diese Zeile ändert den Bewertungsstatus nicht. Ihr Beitrag wird an abgeschlossenen Spielen gegen die Modellwahrscheinlichkeit gemessen; ein einzelnes Spiel ist kein Beleg."
-    }
+    "confNote": "{p}% ist der kalibrierte Modellwert für diesen Tipp. Die Einschätzung unten wägt ihn gegen Markt und Bilanz ab, bevor er als Beleg zählt."
+  },
+  "evidence": {
+    "title": "Historische Evidenzanalyse",
+    "meta": "{n} abgerechnete Spiele · Stand {asOf}",
+    "lead": "Was gespeichertes Modell, Kalibrierungskurve, Buchmacherpreis und vergleichbare frühere Spiele zu jeder Auswahl sagen, nebeneinander. Die Zahlen werden per Code aus gespeicherten Daten berechnet; nichts hiervon ist eine neue Gewinnwahrscheinlichkeit.",
+    "noStatus": "kein Status",
+    "cols": {
+      "model": "Modell",
+      "market": "Buchmacher",
+      "similar": "Ähnliche Spiele",
+      "home": "{home} zu Hause",
+      "away": "{away} auswärts"
+    },
+    "calibrated": "kalibriert {p} %",
+    "rawOnly": "Rohwert · keine Kurve",
+    "marketAt": "{phase} · {date}",
+    "marketNone": "keine Quote erfasst",
+    "marketAfter": "Quote jünger als Analysezeit",
+    "rateSub": "{won}/{n} · 95 % {lower}–{upper} %",
+    "rateNone": "zu wenige Spiele",
+    "finding": {
+      "similar_insufficient": "Weniger als {min} vergleichbare Spiele im Ähnlichkeitsradius ({n} gefunden): keine Trefferquote wird gezeigt. Das sind fehlende Daten, kein Misserfolg.",
+      "similar_agrees": "In {n} vergleichbaren Spielen traf die Auswahl in {p} % ein (95 % {lower}–{upper} %); die {model} % des Modells liegen in diesem Bereich. Da die Nachbarn über die erwarteten Tore des Modells gewählt werden, ist das eine Kalibrierungsprüfung, keine unabhängige Evidenz.",
+      "similar_below": "In {n} vergleichbaren Spielen traf die Auswahl nur in {p} % ein (95 % {lower}–{upper} %), unter den {model} % des Modells. Die Nachbarn kommen aus den erwarteten Toren des Modells; das weist auf die Kalibrierung hin, nicht auf ein separates Signal.",
+      "similar_above": "In {n} vergleichbaren Spielen traf die Auswahl in {p} % ein (95 % {lower}–{upper} %), über den {model} % des Modells. Als Kalibrierungsprüfung lesen: die Nachbarn stammen aus den erwarteten Toren des Modells.",
+      "own_home_thin": "Die Heimbilanz von {home} im Pool ist dünn ({n} Spiele, weniger als {min}); keine Quote wird gezeigt.",
+      "own_away_thin": "Die Auswärtsbilanz von {away} im Pool ist dünn ({n} Spiele, weniger als {min}); keine Quote wird gezeigt.",
+      "market_missing": "Für dieses Spiel wurde keine Buchmacherquote erfasst; das Modell kann nicht mit dem Markt verglichen werden.",
+      "market_after_asof": "Die gespeicherte Buchmacherquote wurde nach der Analysezeit erfasst und bleibt außen vor.",
+      "market_agrees": "Modell {model} % und Buchmacher {market} % liegen innerhalb von 5 Punkten.",
+      "market_above": "Modell {model} % liegt {edge} Punkte über den {market} % des Buchmachers. Ein großer Abstand ist kein Beleg für Value: im Backtest haben sich solche Abstände nicht ausgezahlt, und die Bewertung behandelt 5+ Punkte als Widerspruch.",
+      "market_below": "Modell {model} % liegt {edge} Punkte unter den {market} % des Buchmachers.",
+      "calibration_missing": "Für diesen Markt ist keine Kalibrierungskurve geladen: der Modellwert ist Rohausgabe, keine kalibrierte Wahrscheinlichkeit."
+    },
+    "groupsTitle": "Eigene Historie der Teams (im Pool)",
+    "homeGroup": "{home} zu Hause",
+    "awayGroup": "{away} auswärts",
+    "groupLine": "{n} Spiele · {from}–{to} · Heim {h} % / Remis {d} % / Auswärts {a} % · Über 2,5 {o} % · BTTS {b} %",
+    "groupModelLine": "Modellmittel in diesen Spielen: Heim {h} % / Remis {d} % / Auswärts {a} %",
+    "overlap": "{home} der Heimteam-Spiele und {away} der Auswärtsteam-Spiele sind auch in der Menge ähnlicher Spiele; die Gruppen überlappen und werden nicht addiert.",
+    "similarTitle": "Vergleichbare frühere Spiele",
+    "similarMeta": "am nächsten nach den erwarteten Toren des Modells ({lh} / {la}) · Radius {radius} · Umfang: {scope} · {n} von {within} im Radius",
+    "scopeLeague": "diese Liga",
+    "scopeAll": "alle Ligen (Liga hatte zu wenige)",
+    "similarEmpty": "Nicht genug vergleichbare Spiele im Pool.",
+    "similarRowMeta": "λ {lh}/{la} · d {d}",
+    "missingTitle": "Nicht verfügbar",
+    "missing": {
+      "xg": "xG: nicht Teil des Live-Modells (dc-2.0-xg ist eine Schattenversion); keine zeitgestempelte Historie je Spiel, daher nicht berechnet.",
+      "elo": "Elo: nur Forschung; kein Vorspiel-Snapshot je Spiel in der Datenbank, daher nicht berechnet.",
+      "market": "Buchmacherquote: keine für dieses Spiel erfasst.",
+      "market_after": "Buchmacherquote: nur eine Erfassung nach der Analysezeit vorhanden.",
+      "calibration": "Kalibrierungskurve: nicht geladen; der Modellwert ist roh.",
+      "similar": "Vergleichbare Spiele: {n} im Radius, unter dem Minimum von {min}.",
+      "own_home": "Heimbilanz des Heimteams: {n} Spiele, unter {min}.",
+      "own_away": "Auswärtsbilanz des Auswärtsteams: {n} Spiele, unter {min}.",
+      "league_scope": "Vergleichbare Spiele wurden aus allen Ligen gezogen, weil diese Liga zu wenige im Radius hatte.",
+      "league_scope_covered": "Vergleichbare Spiele wurden aus allen abgedeckten Ligen gezogen, weil diese Liga zu wenige im Radius hatte."
+    },
+    "featuresAfterAsOf": "Die Modellwerte dieses Spiels wurden zuletzt nach der Analysezeit geschrieben; eine rückdatierte Analyse verwendet die aktuelle Zeile.",
+    "footer": "Regel {rule} · Modell {model} · Bewertung {assess} · explorativ. Der Status kommt nur aus der Bewertung oben; dieser Abschnitt erklärt ihn und listet die Spiele dahinter. Vergleichbare Spiele werden über die erwarteten Tore des Modells gewählt, daher überlappt ihre Trefferquote mit Kalibrierungskurve und Bucket-Bilanz statt eine eigene Stimme zu ergänzen. Kein LLM beteiligt; jede Zahl wird aus gespeicherten Daten berechnet.",
+    "scopeCovered": "abgedeckte Ligen (Liga hatte zu wenige)"
   }
 }

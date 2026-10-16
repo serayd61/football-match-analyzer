@@ -164,8 +164,7 @@ def predict(model, home, away, level=None):
 
 def markets_from_lambdas(lam_h, lam_a, rho=RHO):
     """İki λ + rho → 1X2 / Üst-Alt 2.5 / KG (Dixon-Coles skor ızgarası).
-    predict() bunu çağırır; intel_agent.py λ düzeltmesi sonrası pazarları buradan yeniden hesaplar.
-    2026-10-16: predict gövdesinden çıkarıldı, çıktı birebir aynı (tests/test_intel_agent.py parite)."""
+    predict() bunu çağırır; 2026-10-16: predict gövdesinden çıkarıldı, çıktı birebir aynı."""
     ph = [_pois(i, lam_h) for i in range(MAX_GOALS + 1)]
     pa = [_pois(j, lam_a) for j in range(MAX_GOALS + 1)]
 

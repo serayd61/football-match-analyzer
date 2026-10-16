@@ -1576,31 +1576,68 @@
     "radarLockedLead": "Ogni partita in cui il modello è 4+ punti sopra il bookmaker sul proprio pronostico, con la stessa valutazione della pagina partita.",
     "radarNote": "Probabilità grezza del modello meno probabilità del bookmaker al netto del margine, in punti, ordinate per ampiezza dello scarto. Non è una classifica di opportunità: nel backtest i grandi scarti 1X2 non sono stati redditizi (scarto ≥ +5 → ROI −23), e scarti di 5+ punti sono segnalati come conflitto.",
     "colStatus": "Valutazione",
-    "confNote": "{p}% è il valore calibrato del modello per questo pronostico. La valutazione sotto lo confronta con mercato e storico prima di contarlo come prova.",
-    "intel": {
-      "title": "Intelligence",
-      "badge": "Verificato con Claude",
-      "lead": "Notizie su rosa, infortuni, squalifiche e turnover controllate prima del calcio d'inizio. Contano solo fattori nominati e con fonte; forma e quote no.",
-      "noFactors": "Nessun fattore nominato oltre il modello; le probabilità coincidono con l'output del modello.",
-      "probLine": "Modello {bh}% / {bd}% / {ba}% → dopo l'intelligence {fh}% / {fd}% / {fa}%",
-      "goalsLine": "Over 2,5 {of}% → {ot}% · Gol sì {bf}% → {bt}%",
-      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} pt",
-      "source": "Fonte:",
-      "asOf": "al {date}",
-      "team": {
-        "both": "entrambe"
-      },
-      "category": {
-        "key_absence": "assenza chiave",
-        "multiple_absences": "assenze multiple",
-        "rotation": "turnover",
-        "tactical_mismatch": "squilibrio tattico",
-        "travel_congestion": "carico calendario/viaggi",
-        "weather_pitch": "meteo/campo",
-        "motivation": "motivazione",
-        "other": "altro"
-      },
-      "note": "Questa riga non cambia lo stato della valutazione. Il suo contributo si misura sulle partite concluse rispetto alla probabilità del modello; una singola partita non è una prova."
-    }
+    "confNote": "{p}% è il valore calibrato del modello per questo pronostico. La valutazione sotto lo confronta con mercato e storico prima di contarlo come prova."
+  },
+  "evidence": {
+    "title": "Analisi delle evidenze storiche",
+    "meta": "{n} partite concluse · al {asOf}",
+    "lead": "Cosa dicono il modello salvato, la curva di calibrazione, il prezzo del bookmaker e le partite passate comparabili su ogni selezione, fianco a fianco. Le cifre sono calcolate dal codice sui dati registrati; nulla qui è una nuova probabilità di vittoria.",
+    "noStatus": "nessuno stato",
+    "cols": {
+      "model": "Modello",
+      "market": "Bookmaker",
+      "similar": "Partite simili",
+      "home": "{home} in casa",
+      "away": "{away} in trasferta"
+    },
+    "calibrated": "calibrato {p}%",
+    "rawOnly": "valore grezzo · nessuna curva",
+    "marketAt": "{phase} · {date}",
+    "marketNone": "nessuna quota registrata",
+    "marketAfter": "quota più recente dell'analisi",
+    "rateSub": "{won}/{n} · 95% {lower}–{upper}%",
+    "rateNone": "troppo poche partite",
+    "finding": {
+      "similar_insufficient": "Meno di {min} partite comparabili entro il raggio di similarità ({n} trovate): nessuna frequenza mostrata. È un dato mancante, non un fallimento.",
+      "similar_agrees": "In {n} partite comparabili la selezione si è verificata nel {p}% dei casi (95% {lower}–{upper}%); il {model}% del modello rientra in quell'intervallo. Poiché i vicini sono scelti dai gol attesi del modello stesso, è un controllo di calibrazione, non un'evidenza indipendente.",
+      "similar_below": "In {n} partite comparabili la selezione si è verificata solo nel {p}% dei casi (95% {lower}–{upper}%), sotto il {model}% del modello. I vicini vengono dai gol attesi del modello: indica la calibrazione, non un segnale separato.",
+      "similar_above": "In {n} partite comparabili la selezione si è verificata nel {p}% dei casi (95% {lower}–{upper}%), sopra il {model}% del modello. Da leggere come controllo di calibrazione: i vicini vengono dai gol attesi del modello.",
+      "own_home_thin": "Il record casalingo di {home} nel pool è scarso ({n} partite, meno di {min}); nessuna frequenza mostrata.",
+      "own_away_thin": "Il record in trasferta di {away} nel pool è scarso ({n} partite, meno di {min}); nessuna frequenza mostrata.",
+      "market_missing": "Nessuna quota del bookmaker registrata per questa partita; il modello non può essere confrontato col mercato.",
+      "market_after_asof": "La quota registrata è stata catturata dopo il momento dell'analisi ed è esclusa dal confronto.",
+      "market_agrees": "Modello {model}% e bookmaker {market}% sono entro 5 punti l'uno dall'altro.",
+      "market_above": "Il modello ({model}%) è {edge} punti sopra il {market}% del bookmaker. Un grande divario non è prova di valore: nel backtest questi divari non hanno pagato e la valutazione tratta 5+ punti come conflitto.",
+      "market_below": "Il modello ({model}%) è {edge} punti sotto il {market}% del bookmaker.",
+      "calibration_missing": "Nessuna curva di calibrazione caricata per questo mercato: il valore del modello è output grezzo, non una probabilità calibrata."
+    },
+    "groupsTitle": "Storia delle squadre (nel pool)",
+    "homeGroup": "{home} in casa",
+    "awayGroup": "{away} in trasferta",
+    "groupLine": "{n} partite · {from}–{to} · casa {h}% / pareggio {d}% / trasferta {a}% · over 2,5 {o}% · GG {b}%",
+    "groupModelLine": "media del modello in queste partite: casa {h}% / pareggio {d}% / trasferta {a}%",
+    "overlap": "{home} partite della squadra di casa e {away} della squadra ospite sono anche nell'insieme delle partite simili; i gruppi si sovrappongono e non si sommano.",
+    "similarTitle": "Partite passate comparabili",
+    "similarMeta": "più vicine per gol attesi del modello ({lh} / {la}) · raggio {radius} · ambito: {scope} · {n} di {within} nel raggio",
+    "scopeLeague": "questo campionato",
+    "scopeAll": "tutti i campionati (il campionato ne aveva troppo poche)",
+    "similarEmpty": "Non ci sono abbastanza partite comparabili nel pool.",
+    "similarRowMeta": "λ {lh}/{la} · d {d}",
+    "missingTitle": "Non disponibile",
+    "missing": {
+      "xg": "xG: non fa parte del modello live (dc-2.0-xg è una versione ombra); nessuno storico con timestamp per partita, quindi non calcolato.",
+      "elo": "Elo: solo ricerca; nessuno snapshot pre-partita nel database, quindi non calcolato.",
+      "market": "Quota del bookmaker: nessuna registrata per questa partita.",
+      "market_after": "Quota del bookmaker: esiste solo una cattura successiva al momento dell'analisi.",
+      "calibration": "Curva di calibrazione: non caricata; il valore del modello è grezzo.",
+      "similar": "Partite comparabili: {n} nel raggio, sotto il minimo di {min}.",
+      "own_home": "Record casalingo della squadra di casa: {n} partite, sotto {min}.",
+      "own_away": "Record in trasferta della squadra ospite: {n} partite, sotto {min}.",
+      "league_scope": "Le partite comparabili sono state prese da tutti i campionati perché questo ne aveva troppo poche nel raggio.",
+      "league_scope_covered": "Le partite comparabili sono state prese dai campionati coperti perché questo ne aveva troppo poche nel raggio."
+    },
+    "featuresAfterAsOf": "I valori del modello per questa partita sono stati scritti dopo il momento dell'analisi; l'analisi retrodatata usa la riga attuale.",
+    "footer": "Regola {rule} · modello {model} · valutazione {assess} · esplorativo. Lo stato viene solo dalla valutazione sopra; questa sezione lo spiega ed elenca le partite dietro di esso. Le partite comparabili sono scelte dai gol attesi del modello stesso, quindi la loro frequenza si sovrappone alla curva di calibrazione e al record dei bucket invece di aggiungere un voto separato. Nessun LLM coinvolto; ogni numero è calcolato dai dati registrati.",
+    "scopeCovered": "campionati coperti (il campionato ne aveva troppo poche)"
   }
 }

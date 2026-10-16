@@ -32,9 +32,10 @@ import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE, DISAGREE_ACC, TI
 import { rowStanding } from '@/lib/site/daily-standing';
 import { assessWithDeps } from '@/lib/site/assess';
 import { marketOf, type MarketAssessment } from '@/lib/site/assessment';
-import AssessmentCard, { type AssessmentLabels, type IntelLabels } from '@/components/site/Assessment';
-import { getMatchIntel } from '@/lib/site/intel';
-import { fmtPts } from '@/lib/site/intel-view';
+import AssessmentCard, { type AssessmentLabels } from '@/components/site/Assessment';
+import EvidenceSection, { type EvidenceLabels } from '@/components/site/Evidence';
+import { getEvidence } from '@/lib/site/evidence';
+import { SIMILARITY, OWN_THIN_N, type GroupStats } from '@/lib/site/evidence-rule';
 import { rawEdge, marketYes } from '@/lib/site/goal-blend';
 import { latestGoalBook } from '@/lib/site/goal-book';
 import LocalTime from '@/components/site/LocalTime';
@@ -119,7 +120,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     p.homeId ? getTeamRecord(p.homeId, p.kickoff) : Promise.resolve(null),
     p.awayId ? getTeamRecord(p.awayId, p.kickoff) : Promise.resolve(null),
   ]);
-  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf, goalBook, intel] = await Promise.all([
+  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf, goalBook] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
@@ -131,8 +132,6 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
     // Üst/Alt 2,5 oranı (API-Football, prediction_odds sütunları) — Pazarlar tablosu için (2026-10-09).
     latestGoalBook([p.fixtureId]).then((m) => m.get(p.fixtureId) ?? null).catch(() => null),
-    // İstihbarat katmanı (engine_intel, 2026-10-16): en son kickoff-öncesi analiz; yoksa null → satır gizli.
-    getMatchIntel(p.fixtureId).catch(() => null),
   ]);
   // Kapsam dışı lig: sinyal karnesi yerine sicilin dilim karnesi (2026-09-23).
   const cov = !p.covered ? await coverageById() : null;
@@ -155,6 +154,9 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const assessed = assessWithDeps(p, { perf, outside: null, snapshots: market ? { [p.fixtureId]: market } : {}, now: Date.now() }, standing);
   const assessment = assessed?.assessment ?? null;
   const a1x2 = marketOf(assessment, '1x2');
+  // Geçmiş kanıt analizi (evidence-1.0): durum değişmez, aynı değerlendirme açıklanır + benzer maçlar.
+  // asOf = başlamamış maçta şimdi, başlamış/bitmiş maçta kickoff (lib/site/evidence.ts). Havuz hatası bölümü gizler.
+  const evidence = assessed ? await getEvidence(p, assessment).catch((e) => { console.error('[match/evidence] failed', e); return null; }) : null;
   const standingLabels: StandingLabels = {
     market: { '1x2': t('sec1x2'), ou25: t('standingOu'), btts: t('standingBtts') },
     selection: (s) => s.market === '1x2' ? (s.selection === '1' ? p.homeName : s.selection === '2' ? p.awayName : tc('draw')) : s.market === 'ou25' ? (s.selection === 'over' ? t('standingOver') : t('standingUnder')) : (s.selection === 'yes' ? t('standingYes') : t('standingNo')),
@@ -199,30 +201,49 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     noRecord: ta('noRecord'), thinRecord: (n) => tx('thinRecord', { n }),
     footer: <>{ta('footer')} <Link href="/performance" className="underline">{t('standingLink')}</Link></>,
   };
-  // ── İstihbarat satırı metinleri (assessment.intel) ─────────────────────────
-  // Üye sayfası; örnek maç ziyaretçisine (publicSample) LLM katmanı gösterilmez.
-  const intelLabels: IntelLabels | null = intel ? {
-    title: ta('intel.title'),
-    badge: ta('intel.badge'),
-    checkedAt: f.dateTime(new Date(intel.analyzedAt), 'kickoff'),
-    lead: ta('intel.lead'),
-    noFactors: ta('intel.noFactors'),
-    probLine: tx('intel.probLine', { bh: r100(intel.baseline.home), bd: r100(intel.baseline.draw), ba: r100(intel.baseline.away), fh: r100(intel.final.home), fd: r100(intel.final.draw), fa: r100(intel.final.away) }),
-    goalsLine: intel.goals.adjusted && intel.goals.over25 && intel.goals.btts
-      ? tx('intel.goalsLine', { of: r100(intel.goals.over25.from), ot: r100(intel.goals.over25.to), bf: r100(intel.goals.btts.from), bt: r100(intel.goals.btts.to) })
-      : null,
-    team: { home: p.homeName, away: p.awayName, both: tx('intel.team.both') },
-    category: {
-      key_absence: ta('intel.category.key_absence'), multiple_absences: ta('intel.category.multiple_absences'), rotation: ta('intel.category.rotation'),
-      tactical_mismatch: ta('intel.category.tactical_mismatch'), travel_congestion: ta('intel.category.travel_congestion'), weather_pitch: ta('intel.category.weather_pitch'),
-      motivation: ta('intel.category.motivation'), other: ta('intel.category.other'),
-    },
-    shift: (fx) => tx('intel.shift', { home: p.homeName, sh: fmtPts(fx.shiftPts.home), draw: tc('draw'), sd: fmtPts(fx.shiftPts.draw), away: p.awayName, sa: fmtPts(fx.shiftPts.away) }),
-    source: ta('intel.source'),
-    asOf: (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : tx('intel.asOf', { date: f.dateTime(d, 'dayShort') }); },
-    note: ta('intel.note'),
-  } : null;
 
+  // ── Geçmiş kanıt analizi metinleri (evidence ad alanı) ────────────────────
+  const te = await getTranslations('evidence');
+  const tev = te as unknown as (k: string, v?: Record<string, string | number>) => string;
+  const pctN = (k: number, n: number) => (n ? Math.round((k / n) * 100) : '–');
+  const groupLine = (g: GroupStats) => tev('groupLine', { n: g.n, from: g.from ? f.dateTime(new Date(g.from), 'dayShort') : '–', to: g.to ? f.dateTime(new Date(g.to), 'dayShort') : '–', h: pctN(g.x12.home, g.n), d: pctN(g.x12.draw, g.n), a: pctN(g.x12.away, g.n), o: pctN(g.over25, g.n), b: pctN(g.btts, g.n) });
+  const evidenceLabels: EvidenceLabels | null = evidence ? {
+    title: te('title'),
+    meta: tev('meta', { n: evidence.report.pool.n, asOf: f.dateTime(new Date(evidence.report.asOf), 'kickoff') }),
+    lead: te('lead'),
+    market: { '1x2': t('sec1x2'), ou25: t('standingOu'), btts: t('standingBtts') },
+    selection: (m) => m.market === '1x2' ? (m.selection === '1' ? p.homeName : m.selection === '2' ? p.awayName : tc('draw')) : m.market === 'ou25' ? (m.selection === 'over' ? t('standingOver') : t('standingUnder')) : (m.selection === 'yes' ? t('standingYes') : t('standingNo')),
+    status: { supported: ta('status.supported'), conflicting: ta('status.conflicting'), insufficient: ta('status.insufficient') },
+    noStatus: te('noStatus'),
+    cols: { model: te('cols.model'), market: te('cols.market'), similar: te('cols.similar'), home: tev('cols.home', { home: p.homeName }), away: tev('cols.away', { away: p.awayName }) },
+    modelSub: (m) => (m.calibratedP != null ? tev('calibrated', { p: r100(m.calibratedP) }) : te('rawOnly')),
+    marketSub: (m) => (m.marketP == null
+      ? (m.findings.includes('market_after_asof') ? te('marketAfter') : te('marketNone'))
+      : tev('marketAt', { phase: phaseLabel(marketOf(assessment, m.market)?.price.phase ?? null), date: m.marketCapturedAt ? f.dateTime(new Date(m.marketCapturedAt), 'kickoff') : '–' })),
+    rateSub: (r) => tev('rateSub', { won: r.won, n: r.n, lower: r100(r.lower), upper: r100(r.upper) }),
+    rateNone: te('rateNone'),
+    finding: (code, m) => {
+      const s = m.rates.similar; const g = evidence.report.groups;
+      const v = { min: SIMILARITY.minN, n: g.similar?.n ?? 0, p: r100(s?.p), lower: r100(s?.lower), upper: r100(s?.upper), model: r100(m.modelP), market: r100(m.marketP), edge: Math.abs(Math.round((m.modelP - (m.marketP ?? 0)) * 100)), home: p.homeName, away: p.awayName };
+      if (code === 'own_home_thin') return tev('finding.own_home_thin', { ...v, n: g.homeAtHome?.n ?? 0, min: OWN_THIN_N });
+      if (code === 'own_away_thin') return tev('finding.own_away_thin', { ...v, n: g.awayAtAway?.n ?? 0, min: OWN_THIN_N });
+      return tev(`finding.${code}`, s && code !== 'similar_insufficient' ? { ...v, n: s.n } : v);
+    },
+    groupsTitle: te('groupsTitle'),
+    homeGroup: tev('homeGroup', { home: p.homeName }), awayGroup: tev('awayGroup', { away: p.awayName }),
+    groupLine,
+    groupModelLine: (g) => tev('groupModelLine', { h: r100(g.modelMean.home), d: r100(g.modelMean.draw), a: r100(g.modelMean.away) }),
+    overlap: (h, a) => (h || a ? tev('overlap', { home: h, away: a }) : null),
+    similarTitle: te('similarTitle'),
+    similarMeta: (r) => (r.groups.similar ? tev('similarMeta', { lh: f.number(r.features.lambdaHome ?? 0, 'fixed2'), la: f.number(r.features.lambdaAway ?? 0, 'fixed2'), radius: f.number(SIMILARITY.radius, 'fixed2'), scope: r.groups.similar.scope === 'league' ? te('scopeLeague') : r.groups.similar.scope === 'covered' ? te('scopeCovered') : te('scopeAll'), n: r.groups.similar.n, within: r.groups.similar.withinRadius }) : ''),
+    similarEmpty: te('similarEmpty'),
+    similarRowMeta: (fx) => tev('similarRowMeta', { lh: f.number(fx.lambdaHome, 'fixed2'), la: f.number(fx.lambdaAway, 'fixed2'), d: fx.distance == null ? '–' : f.number(fx.distance, 'fixed2') }),
+    kickoff: (iso) => f.dateTime(new Date(iso), 'dayShort'),
+    missingTitle: te('missingTitle'),
+    missing: (item) => (item.key === 'market' && item.reason === 'after_asof' ? te('missing.market_after') : item.key === 'league_scope' && item.reason === 'fallback_covered' ? te('missing.league_scope_covered') : tev(`missing.${item.key}`, { n: item.n ?? 0, min: item.key === 'similar' ? SIMILARITY.minN : OWN_THIN_N })),
+    featuresAfterAsOf: te('featuresAfterAsOf'),
+    footer: tev('footer', { rule: evidence.report.ruleVersion, model: evidence.report.modelVersion ?? '–', assess: evidence.report.assessmentRuleVersion ?? '–' }),
+  } : null;
 
   const sm = p.lambdaHome != null && p.lambdaAway != null ? scoreMatrix(p.lambdaHome, p.lambdaAway) : null;
   const derived = sm ? outcomeProbs(sm) : null;
@@ -408,7 +429,14 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
       {/* ── Bu maç için değerlendirme (assess-1.0, 2026-10-16) ──────── */}
       {assessment && assessment.markets.length > 0 && (
         <div className="mt-4">
-          <AssessmentCard assessment={assessment} labels={assessmentLabels} intel={publicSample ? null : intel} intelLabels={intelLabels ?? undefined} />
+          <AssessmentCard assessment={assessment} labels={assessmentLabels} />
+        </div>
+      )}
+
+      {/* ── Geçmiş kanıt analizi (evidence-1.0, 2026-10-16): durumu açıklar, değiştirmez ── */}
+      {evidence && evidenceLabels && evidence.report.markets.length > 0 && (
+        <div className="mt-4">
+          <EvidenceSection report={evidence.report} labels={evidenceLabels} />
         </div>
       )}
 

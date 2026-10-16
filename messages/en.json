@@ -1576,31 +1576,68 @@
     "radarLockedLead": "Every match where the model sits 4+ points above the bookmaker on its own pick, with the same assessment as the match page.",
     "radarNote": "Raw model probability minus the bookmaker's margin-free probability, in points, sorted by the size of the gap. This is not an opportunity ranking: in the backtest large 1X2 gaps were not profitable (gap ≥ +5 → ROI −23), and gaps of 5+ points are flagged as a conflict.",
     "colStatus": "Assessment",
-    "confNote": "{p}% is the calibrated model figure for this pick. The assessment below weighs it against the market and our record before it counts as evidence.",
-    "intel": {
-      "title": "Intelligence",
-      "badge": "Checked with Claude",
-      "lead": "Squad, injury, suspension and rotation news was scanned before kick-off. Only named, sourced factors count; form and market prices do not.",
-      "noFactors": "No named factor outside the model was found; the probabilities equal the model output.",
-      "probLine": "Model {bh}% / {bd}% / {ba}% → after intelligence {fh}% / {fd}% / {fa}%",
-      "goalsLine": "Over 2.5 {of}% → {ot}% · BTTS Yes {bf}% → {bt}%",
-      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} pts",
-      "source": "Source:",
-      "asOf": "as of {date}",
-      "team": {
-        "both": "both teams"
-      },
-      "category": {
-        "key_absence": "key absence",
-        "multiple_absences": "multiple absences",
-        "rotation": "rotation",
-        "tactical_mismatch": "tactical mismatch",
-        "travel_congestion": "fixture/travel load",
-        "weather_pitch": "weather/pitch",
-        "motivation": "motivation",
-        "other": "other"
-      },
-      "note": "This row does not change the assessment status. Its contribution is measured on settled matches against the model's own probability; a single match is not evidence."
-    }
+    "confNote": "{p}% is the calibrated model figure for this pick. The assessment below weighs it against the market and our record before it counts as evidence."
+  },
+  "evidence": {
+    "title": "Historical evidence analysis",
+    "meta": "{n} settled matches · as of {asOf}",
+    "lead": "What the stored model, the calibration curve, the bookmaker price and comparable past matches say about each selection, side by side. Figures are computed by code from recorded data; nothing here is a new win probability.",
+    "noStatus": "no status",
+    "cols": {
+      "model": "Model",
+      "market": "Bookmaker",
+      "similar": "Similar matches",
+      "home": "{home} at home",
+      "away": "{away} away"
+    },
+    "calibrated": "calibrated {p}%",
+    "rawOnly": "raw output · no curve",
+    "marketAt": "{phase} · {date}",
+    "marketNone": "no price recorded",
+    "marketAfter": "price newer than analysis time",
+    "rateSub": "{won}/{n} · 95% {lower}–{upper}%",
+    "rateNone": "too few matches",
+    "finding": {
+      "similar_insufficient": "Fewer than {min} comparable matches within the similarity radius ({n} found): no realised rate is shown. This is missing data, not a failure.",
+      "similar_agrees": "In {n} comparable matches the selection came in {p}% of the time (95% {lower}–{upper}%); the model's {model}% sits inside that range. Because neighbours are chosen by the model's own expected goals, this is a calibration check, not independent evidence.",
+      "similar_below": "In {n} comparable matches the selection came in only {p}% of the time (95% {lower}–{upper}%), below the model's {model}%. Neighbours are chosen by the model's own expected goals, so this points at calibration rather than at a separate signal.",
+      "similar_above": "In {n} comparable matches the selection came in {p}% of the time (95% {lower}–{upper}%), above the model's {model}%. Read as a calibration check: neighbours come from the model's own expected goals.",
+      "own_home_thin": "{home}'s home record in the pool is thin ({n} matches, fewer than {min}); no rate is shown.",
+      "own_away_thin": "{away}'s away record in the pool is thin ({n} matches, fewer than {min}); no rate is shown.",
+      "market_missing": "No bookmaker price was recorded for this match, so the model cannot be compared with the market.",
+      "market_after_asof": "The stored bookmaker price was captured after the analysis time and is left out of the comparison.",
+      "market_agrees": "Model {model}% and bookmaker {market}% are within 5 points of each other.",
+      "market_above": "Model {model}% is {edge} points above the bookmaker's {market}%. A large gap is not evidence of value: in the back-test such gaps did not pay, and the assessment treats 5+ points as a conflict.",
+      "market_below": "Model {model}% is {edge} points below the bookmaker's {market}%.",
+      "calibration_missing": "No calibration curve is loaded for this market: the model figure is raw output, not a calibrated probability."
+    },
+    "groupsTitle": "Teams' own history (in the pool)",
+    "homeGroup": "{home} at home",
+    "awayGroup": "{away} away",
+    "groupLine": "{n} matches · {from}–{to} · home {h}% / draw {d}% / away {a}% · over 2.5 {o}% · BTTS {b}%",
+    "groupModelLine": "model average in these matches: home {h}% / draw {d}% / away {a}%",
+    "overlap": "{home} of the home-team matches and {away} of the away-team matches are also in the similar-match set; the groups overlap and are not added together.",
+    "similarTitle": "Comparable past matches",
+    "similarMeta": "nearest by the model's expected goals ({lh} / {la}) · radius {radius} · scope: {scope} · {n} of {within} within radius",
+    "scopeLeague": "this league",
+    "scopeAll": "all leagues (league had too few)",
+    "similarEmpty": "Not enough comparable matches in the pool.",
+    "similarRowMeta": "λ {lh}/{la} · d {d}",
+    "missingTitle": "Not available",
+    "missing": {
+      "xg": "xG: not part of the live model (dc-2.0-xg is a shadow version); no timestamped per-match history, so not computed.",
+      "elo": "Elo: research only; no per-match pre-match snapshot in the database, so not computed.",
+      "market": "Bookmaker price: none recorded for this match.",
+      "market_after": "Bookmaker price: only a capture after the analysis time exists.",
+      "calibration": "Calibration curve: not loaded; the model figure is raw.",
+      "similar": "Comparable matches: {n} within radius, below the {min} minimum.",
+      "own_home": "Home team's home record: {n} matches, below {min}.",
+      "own_away": "Away team's away record: {n} matches, below {min}.",
+      "league_scope": "Comparable matches were drawn from all leagues because this league had too few within the radius.",
+      "league_scope_covered": "Comparable matches were drawn from all covered leagues because this league had too few within the radius."
+    },
+    "featuresAfterAsOf": "The model figures for this match were last written after the analysis time; past-dated analysis uses the current row.",
+    "footer": "Rule {rule} · model {model} · assessment {assess} · exploratory. Status comes only from the assessment above; this section explains it and lists the matches behind it. Comparable matches are chosen by the model's own expected goals, so their realised rate overlaps with the calibration curve and the bucket record rather than adding a separate vote. No LLM is involved; every number is computed from stored records.",
+    "scopeCovered": "covered leagues (this league had too few)"
   }
 }
