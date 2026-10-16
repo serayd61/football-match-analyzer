@@ -62,13 +62,22 @@ export interface IntelLabels {
   note: string;
 }
 
+/** Claude işareti: markaya ait logo değil, Claude turuncusunda (#D97757) genel bir yıldız imi. */
+export function ClaudeMark({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden className={`inline-block shrink-0 ${className}`} fill="currentColor">
+      <path d="M8 0.8c.5 2.9 1.4 4.6 2.6 5.3 1.2.7 3 1 4.6 1.9-1.6.9-3.4 1.2-4.6 1.9-1.2.7-2.1 2.4-2.6 5.3-.5-2.9-1.4-4.6-2.6-5.3C4.2 9.2 2.4 8.9.8 8c1.6-.9 3.4-1.2 4.6-1.9C6.6 5.4 7.5 3.7 8 .8Z" />
+    </svg>
+  );
+}
+
 export function IntelBlock({ intel, labels }: { intel: IntelView; labels: IntelLabels }) {
   return (
-    <div className="rounded-lg border border-s-line px-3.5 py-3 sm:px-4" data-testid="intel-block">
+    <div className="rounded-lg border border-s-line border-l-[3px] border-l-s-claude bg-s-claude/[0.05] px-3.5 py-3 sm:px-4" data-testid="intel-block">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[12px] font-semibold uppercase tracking-wide text-s-muted">{labels.title}</span>
-          <span className="tag tag-outline">{labels.badge}</span>
+          <span className="tag tag-claude"><ClaudeMark className="mr-1.5" />{labels.badge}</span>
         </div>
         <span className="num text-[11px] text-s-muted">{labels.checkedAt}</span>
       </div>
@@ -119,6 +128,8 @@ export default function AssessmentCard({ assessment, labels, aside, intel, intel
         </div>
         {aside}
       </div>
+      {/* İstihbarat en üstte: kadro haberi, piyasa/kayıt kutularından önce okunur (2026-10-16 geri bildirimi). */}
+      {intel && intelLabels && <IntelBlock intel={intel} labels={intelLabels} />}
       <ul className="divide-y divide-s-line">
         {assessment.markets.map((m) => {
           const rec = m.record;
@@ -159,7 +170,6 @@ export default function AssessmentCard({ assessment, labels, aside, intel, intel
           );
         })}
       </ul>
-      {intel && intelLabels && <IntelBlock intel={intel} labels={intelLabels} />}
       <div className="text-[12px] leading-snug text-s-muted">{labels.footer}</div>
     </section>
   );

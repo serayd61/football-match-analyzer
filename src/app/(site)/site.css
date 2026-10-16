@@ -29,6 +29,7 @@
   --s-accent-800: 7 45 30;
   --s-accent-100: 227 243 234;
   --s-accent2-700: 158 98 20;
+  --s-claude: 217 119 87;
   --s-away: 47 95 158;
   --s-n200: 238 242 239;
   --s-n300: 225 230 227;
@@ -73,6 +74,7 @@
   --s-accent-800: 200 240 218;
   --s-accent-100: 20 54 38;
   --s-accent2-700: 235 178 80;
+  --s-claude: 232 144 111;
   --s-away: 120 168 230;
   --s-n200: 32 41 37;
   --s-n300: 44 55 49;
@@ -103,6 +105,7 @@
     --s-accent-800: 200 240 218;
     --s-accent-100: 20 54 38;
     --s-accent2-700: 235 178 80;
+    --s-claude: 232 144 111;
     --s-away: 120 168 230;
     --s-n200: 32 41 37;
     --s-n300: 44 55 49;
@@ -218,6 +221,7 @@
 .site .tag-accent { background: rgb(var(--s-accent-100)); color: rgb(var(--s-accent-800)); }
 .site .tag-outline { background: transparent; border: 1px solid var(--s-divider); color: rgb(var(--s-muted)); }
 .site .tag-win { background: rgb(var(--s-win) / 0.14); color: rgb(var(--s-win)); }
+.site .tag-claude { background: rgb(var(--s-claude) / 0.14); color: rgb(var(--s-claude)); font-weight: 700; }
 .site .tag-loss { background: rgb(var(--s-loss) / 0.14); color: rgb(var(--s-loss)); }
 .site .tag-live { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss)); }
 .site .tag-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; animation: sitePulse 1.4s infinite; }

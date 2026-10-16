@@ -64,7 +64,7 @@ durumlar kaydedilir. Skor sonradan `engine_predictions`'tan eşlenir
 
 ## İstihbarat satırı (2026-10-16, engine_intel)
 
-Kartın pazar satırlarının altında ayrı blok: `src/lib/site/intel.ts` (okuyucu, 5 dk önbellek) →
+Kartın başlığının hemen altında, pazar satırlarından **önce** gelen ayrı blok (Claude turuncusu `--s-claude` rozetli; 2026-10-16 geri bildirimi: altta kalıyordu): `src/lib/site/intel.ts` (okuyucu, 5 dk önbellek) →
 `intel-view.ts` (saf görünüm, testli) → `Assessment.tsx` `IntelBlock`. Kaynak `engine_intel`
 (`engine/intel_agent.py`): motorun çıpa olasılığı + Claude'un web aramasıyla bulduğu İSİMLİ
 faktörler (sakat/ceza/rotasyon…), sapma kodda kırpılmış (faktör başına ≤ ±0,08).
