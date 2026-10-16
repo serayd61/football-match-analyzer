@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type { MarketAssessment, MatchAssessment, AssessmentStatus, AssessmentMarket } from '@/lib/site/assessment';
-import { fmtPts, type IntelView, type IntelFactor, type IntelCategory } from '@/lib/site/intel-view';
 
 // ============================================================================
 // "Bu maç için değerlendirme" — ortak değerlendirme çıktısının kartı ve çipi.
@@ -8,9 +7,6 @@ import { fmtPts, type IntelView, type IntelFactor, type IntelCategory } from '@/
 // Durum rengi yalnız durumdan: supported = win, conflicting = loss, insufficient = outline.
 // Pazarlar ayrı satırlar; hiçbir pazar diğerini gizlemez. Model / piyasa / kayıt üç
 // ayrı hücre: üçü aynı şeyi ölçmez, yan yana ama ayrı durur.
-// İstihbarat satırı (2026-10-16, engine_intel): Claude'un web aramasıyla bulduğu İSİMLİ
-// faktörler ve kodda kırpılmış sapma. Durumu DEĞİŞTİRMEZ; pazar satırlarının altında ayrı
-// blok. LLM serbest metni yok: faktör başlığı, kategori, taraf, sapma, kaynak, tarih.
 // ============================================================================
 
 export const STATUS_TAG: Record<AssessmentStatus, string> = { supported: 'tag-win', conflicting: 'tag-loss', insufficient: 'tag-outline' };
@@ -42,83 +38,9 @@ export interface AssessmentLabels {
   footer: ReactNode;
 }
 
-export interface IntelLabels {
-  title: string;
-  /** rozet: "Claude ile kontrol edildi" */
-  badge: string;
-  /** analiz zamanı, biçimlenmiş */
-  checkedAt: string;
-  lead: string;
-  noFactors: string;
-  /** "Model %40 / %26 / %34 → istihbarat sonrası %42 / %26 / %32" */
-  probLine: string;
-  goalsLine: string | null;
-  team: Record<'home' | 'away' | 'both', string>;
-  category: Record<IntelCategory, string>;
-  /** faktörün 1X2 kaydırması: "Everton +2 · X 0 · Chelsea −2 puan" */
-  shift: (f: IntelFactor) => string;
-  source: string;
-  asOf: (iso: string) => string;
-  note: string;
-}
-
-/** Claude işareti: markaya ait logo değil, Claude turuncusunda (#D97757) genel bir yıldız imi. */
-export function ClaudeMark({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden className={`inline-block shrink-0 ${className}`} fill="currentColor">
-      <path d="M8 0.8c.5 2.9 1.4 4.6 2.6 5.3 1.2.7 3 1 4.6 1.9-1.6.9-3.4 1.2-4.6 1.9-1.2.7-2.1 2.4-2.6 5.3-.5-2.9-1.4-4.6-2.6-5.3C4.2 9.2 2.4 8.9.8 8c1.6-.9 3.4-1.2 4.6-1.9C6.6 5.4 7.5 3.7 8 .8Z" />
-    </svg>
-  );
-}
-
-export function IntelBlock({ intel, labels }: { intel: IntelView; labels: IntelLabels }) {
-  return (
-    <div className="rounded-lg border border-s-line border-l-[3px] border-l-s-claude bg-s-claude/[0.05] px-3.5 py-3 sm:px-4" data-testid="intel-block">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-s-muted">{labels.title}</span>
-          <span className="tag tag-claude"><ClaudeMark className="mr-1.5" />{labels.badge}</span>
-        </div>
-        <span className="num text-[11px] text-s-muted">{labels.checkedAt}</span>
-      </div>
-      <p className="mt-1.5 text-[12.5px] leading-snug text-s-muted">{labels.lead}</p>
-      {intel.factors.length === 0 ? (
-        <p className="mt-2.5 text-[13px] leading-snug">{labels.noFactors}</p>
-      ) : (
-        <ul className="mt-2.5 space-y-2.5">
-          {intel.factors.map((f, i) => (
-            <li key={i} className="text-[13px] leading-snug">
-              <p className="font-semibold">{f.factor}</p>
-              <p className="num mt-0.5 text-[12px] text-s-muted">
-                <span>{labels.category[f.category]}</span>
-                <span className="mx-1.5" aria-hidden>·</span>
-                <span>{labels.team[f.team]}</span>
-                <span className="mx-1.5" aria-hidden>·</span>
-                <span>{labels.shift(f)}</span>
-                {(f.sourceLabel || f.asOf) && <span className="mx-1.5" aria-hidden>·</span>}
-                {f.sourceLabel && (
-                  <>
-                    {labels.source}{' '}
-                    {f.sourceUrl ? <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="underline">{f.sourceLabel}</a> : <span>{f.sourceLabel}</span>}
-                  </>
-                )}
-                {f.asOf && <>{f.sourceLabel ? ', ' : ''}{labels.asOf(f.asOf)}</>}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-      {intel.factors.length > 0 && (
-        <p className="num mt-2.5 text-[13px] font-semibold">{labels.probLine}{labels.goalsLine ? <span className="ml-2 font-normal text-s-muted">{labels.goalsLine}</span> : null}</p>
-      )}
-      <p className="mt-2 text-[12px] leading-snug text-s-muted">{labels.note}</p>
-    </div>
-  );
-}
-
 const pct = (p: number | null | undefined) => (p == null ? '–' : `${Math.round(p * 100)}%`);
 
-export default function AssessmentCard({ assessment, labels, aside, intel, intelLabels }: { assessment: MatchAssessment; labels: AssessmentLabels; aside?: ReactNode; intel?: IntelView | null; intelLabels?: IntelLabels }) {
+export default function AssessmentCard({ assessment, labels, aside }: { assessment: MatchAssessment; labels: AssessmentLabels; aside?: ReactNode }) {
   return (
     <section className="card !gap-4 !p-5 sm:!p-6" aria-labelledby="assessment-title">
       <div className="flex items-start justify-between gap-3">
@@ -128,8 +50,6 @@ export default function AssessmentCard({ assessment, labels, aside, intel, intel
         </div>
         {aside}
       </div>
-      {/* İstihbarat en üstte: kadro haberi, piyasa/kayıt kutularından önce okunur (2026-10-16 geri bildirimi). */}
-      {intel && intelLabels && <IntelBlock intel={intel} labels={intelLabels} />}
       <ul className="divide-y divide-s-line">
         {assessment.markets.map((m) => {
           const rec = m.record;
