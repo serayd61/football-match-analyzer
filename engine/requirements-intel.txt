@@ -1,0 +1,3 @@
+# intel_agent.py (Claude API istihbarat ajanı) — servis bağımlılıklarından AYRI tutulur.
+# Kur: engine/.venv/bin/pip install -r requirements-intel.txt
+anthropic>=1.15,<2

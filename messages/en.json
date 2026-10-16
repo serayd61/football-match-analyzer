@@ -1576,6 +1576,31 @@
     "radarLockedLead": "Every match where the model sits 4+ points above the bookmaker on its own pick, with the same assessment as the match page.",
     "radarNote": "Raw model probability minus the bookmaker's margin-free probability, in points, sorted by the size of the gap. This is not an opportunity ranking: in the backtest large 1X2 gaps were not profitable (gap ≥ +5 → ROI −23), and gaps of 5+ points are flagged as a conflict.",
     "colStatus": "Assessment",
-    "confNote": "{p}% is the calibrated model figure for this pick. The assessment below weighs it against the market and our record before it counts as evidence."
+    "confNote": "{p}% is the calibrated model figure for this pick. The assessment below weighs it against the market and our record before it counts as evidence.",
+    "intel": {
+      "title": "Intelligence",
+      "badge": "Checked with Claude",
+      "lead": "Squad, injury, suspension and rotation news was scanned before kick-off. Only named, sourced factors count; form and market prices do not.",
+      "noFactors": "No named factor outside the model was found; the probabilities equal the model output.",
+      "probLine": "Model {bh}% / {bd}% / {ba}% → after intelligence {fh}% / {fd}% / {fa}%",
+      "goalsLine": "Over 2.5 {of}% → {ot}% · BTTS Yes {bf}% → {bt}%",
+      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} pts",
+      "source": "Source:",
+      "asOf": "as of {date}",
+      "team": {
+        "both": "both teams"
+      },
+      "category": {
+        "key_absence": "key absence",
+        "multiple_absences": "multiple absences",
+        "rotation": "rotation",
+        "tactical_mismatch": "tactical mismatch",
+        "travel_congestion": "fixture/travel load",
+        "weather_pitch": "weather/pitch",
+        "motivation": "motivation",
+        "other": "other"
+      },
+      "note": "This row does not change the assessment status. Its contribution is measured on settled matches against the model's own probability; a single match is not evidence."
+    }
   }
 }
