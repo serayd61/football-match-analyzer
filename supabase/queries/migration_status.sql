@@ -53,6 +53,8 @@ with sig(version, name, applied) as (values
   ('20261016010000', 'engine_intel',
      to_regclass('public.engine_intel') is not null),
   ('20261016020000', 'site_assessment_snapshots',
-     exists (select 1 from pg_trigger where tgname='trg_assessment_snapshot_immutable'))
+     exists (select 1 from pg_trigger where tgname='trg_assessment_snapshot_immutable')),
+  ('20261016030000', 'site_match_grades',
+     exists (select 1 from pg_trigger where tgname='trg_match_grade_immutable'))
 )
 select version, name, applied from sig order by version;

@@ -1639,5 +1639,45 @@
     "featuresAfterAsOf": "The model figures for this match were last written after the analysis time; past-dated analysis uses the current row.",
     "footer": "Rule {rule} · model {model} · assessment {assess} · exploratory. Status comes only from the assessment above; this section explains it and lists the matches behind it. Comparable matches are chosen by the model's own expected goals, so their realised rate overlaps with the calibration curve and the bucket record rather than adding a separate vote. No LLM is involved; every number is computed from stored records.",
     "scopeCovered": "covered leagues (this league had too few)"
+  },
+  "grades": {
+    "title": "Weekly lessons (shadow)",
+    "meta": "graded from settled matches · {week} · exploratory",
+    "lead": "Every settled match gets a grade card per market: did the model's selection come in, what the bookmaker's pre-match favourite did, who was right when they disagreed, and how the pre-match assessment status fared. The week's cards are summed into cells below. This changes nothing yet: picks, model and assessment rules stay as they are until at least four weeks of shadow record justify a versioned change.",
+    "empty": "Lessons appear after the first Monday run once grade cards exist.",
+    "cards": "{n} cards from {fixtures} matches",
+    "coverage": "Assessment status known pre-match for {with} cards; {without} cards had no pre-match snapshot and are excluded from the status rows.",
+    "colCell": "Cell",
+    "colN": "n",
+    "colHit": "Hit",
+    "colCi": "95%",
+    "colModel": "Model avg",
+    "status": {
+      "supported": "Status: supported",
+      "conflicting": "Status: conflicting",
+      "insufficient": "Status: insufficient"
+    },
+    "clash": {
+      "agree": "Model and bookmaker agreed",
+      "model_right": "Disagreed, model right",
+      "market_right": "Disagreed, bookmaker right",
+      "both_wrong": "Disagreed, both wrong"
+    },
+    "level": "Model level {bucket}",
+    "edge": "Model − bookmaker {bucket} pts",
+    "lessonsTitle": "Lessons this week",
+    "noLessons": "No cell cleared the 20-match bar with a clear signal this week. That is normal; lessons need volume.",
+    "lesson": {
+      "status_order_holds": "{market}: supported picks hit {sup}% vs conflicting {con}% ({n} cards). The assessment ordering held this week.",
+      "status_order_inverted": "{market}: conflicting picks hit {con}% vs supported {sup}% ({n} cards) and the intervals do not overlap. The ordering was inverted this week; worth watching, not acting on.",
+      "disagreements_market_led": "{market}: when model and bookmaker disagreed, the bookmaker was right more often ({marketRight} vs {modelRight}, {bothWrong} both wrong).",
+      "disagreements_model_led": "{market}: when model and bookmaker disagreed, the model was right more often ({modelRight} vs {marketRight}, {bothWrong} both wrong).",
+      "level_overconfident": "{market}, level {subject}: hit {acc}% with the 95% upper bound below the bucket's floor ({n} cards). The model ran hot here this week.",
+      "level_underconfident": "{market}, level {subject}: hit {acc}% with the 95% lower bound above the bucket's ceiling ({n} cards). The model ran cold here this week.",
+      "over_edge_not_paying": "{market}: with the model 5+ points above the bookmaker, picks hit {acc}% against a model average of {model}% ({n} cards)."
+    },
+    "note": "Cells with fewer than 20 cards are shown in grey and never produce a lesson. Status rows use only snapshots written before kick-off; nothing is graded retrospectively with today's rules. Lessons are exploratory and feed a versioned rule change only after a multi-week shadow record.",
+    "scopeCovered": "covered leagues",
+    "scopeAll": "all leagues"
   }
 }

@@ -65,6 +65,14 @@
       "schedule": "45 * * * *"
     },
     {
+      "path": "/api/cron/match-grades",
+      "schedule": "50 * * * *"
+    },
+    {
+      "path": "/api/cron/match-grades?lessons=1",
+      "schedule": "30 5 * * 1"
+    },
+    {
       "path": "/api/cron/af-context",
       "schedule": "25 * * * *"
     },
