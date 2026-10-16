@@ -11,6 +11,14 @@ external links open in the system browser. Inside the app the site hides
 checkout / prices (`?src=twa` → `fa_twa` cookie, plus the `FootballAnalyticsPro/`
 user-agent token) — see `src/lib/site/twa.ts`.
 
+Since versionCode 4 (1.2.0, 2026-10-16) the app also injects a small JS bridge
+as `window.FootballAnalyticsApp` (`MainActivity.AppBridge`): `share(title, text,
+url)` opens the Android share sheet, `requestReview()` runs the Google Play
+In-App Review flow (falls back to the Store listing when Play cannot provide
+it), `version()` returns the app version. The site's "Share" / "Rate" buttons
+(`src/lib/site/app-links.ts`) use it when present and keep their web fallback
+otherwise. Only our own host can reach the bridge (host re-checked per call).
+
 ## Build
 
 ```bash

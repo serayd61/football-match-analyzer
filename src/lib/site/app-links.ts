@@ -27,8 +27,33 @@ export function rateUrl(inApp: boolean): string {
   return inApp ? PLAY_MARKET_URL : PLAY_STORE_URL;
 }
 
+/**
+ * Play app ≥ v4: ask the In-App Review flow (Google decides whether to show
+ * it); returns true when the bridge handled it so the caller skips the link.
+ */
+export function requestNativeReview(bridge: NativeBridge | null): boolean {
+  if (!bridge || typeof bridge.requestReview !== 'function') return false;
+  try { bridge.requestReview(); return true; } catch { return false; }
+}
+
 export function buildShareTarget(locale: string, inApp: boolean, title: string, text: string): ShareTarget {
   return { title, text, url: shareUrl(locale, inApp) };
+}
+
+/**
+ * JS bridge injected by the Play app (android-app/ MainActivity.AppBridge,
+ * versionCode ≥ 4) as `window.FootballAnalyticsApp`. Absent on the web and in
+ * older app versions, so every caller must keep its fallback.
+ */
+export type NativeBridge = {
+  share?: (title: string, text: string, url: string) => void;
+  requestReview?: () => void;
+  version?: () => string;
+};
+export function nativeBridge(): NativeBridge | null {
+  if (typeof window === 'undefined') return null;
+  const b = (window as unknown as { FootballAnalyticsApp?: NativeBridge }).FootballAnalyticsApp;
+  return b && typeof b === 'object' ? b : null;
 }
 
 /** Result of a share attempt — what the UI should tell the user. */
@@ -41,7 +66,12 @@ export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 export async function shareOrCopy(
   target: ShareTarget,
   nav: { share?: (d: ShareTarget) => Promise<void>; canShare?: (d: ShareTarget) => boolean; clipboard?: { writeText(s: string): Promise<void> } },
+  bridge: NativeBridge | null = null,
 ): Promise<ShareOutcome> {
+  // Play app ≥ v4: native share sheet (Intent.ACTION_SEND) via the JS bridge.
+  if (bridge && typeof bridge.share === 'function') {
+    try { bridge.share(target.title, target.text, target.url); return 'shared'; } catch { /* fall through */ }
+  }
   if (typeof nav.share === 'function' && (typeof nav.canShare !== 'function' || nav.canShare(target))) {
     try {
       await nav.share(target);

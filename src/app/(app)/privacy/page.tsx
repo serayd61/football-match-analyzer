@@ -232,7 +232,7 @@ export default function PrivacyPage() {
               <Mail size={18} className="text-brand-400" /> {l.contactTitle}
             </h2>
             <p className="text-content-muted text-sm mb-2">{l.contactText}</p>
-            <a href="mailto:info@swissdigital.life" className="text-brand-400 hover:text-brand-300 text-sm">info@swissdigital.life</a>
+            <a href="mailto:support@footballanalyzer.com" className="text-brand-400 hover:text-brand-300 text-sm">support@footballanalyzer.com</a>
           </div>
         </div>
 

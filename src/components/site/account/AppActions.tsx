@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Share2, Star, MessageSquare, Compass } from 'lucide-react';
 import { useIsTwa } from '@/lib/site/twa-client';
-import { buildShareTarget, rateUrl, shareOrCopy } from '@/lib/site/app-links';
+import { buildShareTarget, rateUrl, shareOrCopy, nativeBridge, requestNativeReview } from '@/lib/site/app-links';
 import { trackEvent, Events } from '@/lib/analytics';
 import { legacyHref } from '@/lib/site/legacy';
 import { requestOnboarding } from '@/components/site/Onboarding';
@@ -25,7 +25,7 @@ export function ShareAppButton({ location = 'account' }: { location?: string }) 
   async function share() {
     trackEvent(Events.APP_SHARE_CLICKED, { location, in_app: inApp });
     const target = buildShareTarget(locale, inApp, t('shareTitle'), t('shareText'));
-    const out = await shareOrCopy(target, typeof navigator !== 'undefined' ? (navigator as any) : {});
+    const out = await shareOrCopy(target, typeof navigator !== 'undefined' ? (navigator as any) : {}, nativeBridge());
     setStatus(out === 'copied' ? 'copied' : out === 'failed' ? 'failed' : '');
     if (out === 'copied' || out === 'failed') setTimeout(() => setStatus(''), 4000);
   }
@@ -50,7 +50,11 @@ export function RateAppLink({ location = 'account' }: { location?: string }) {
       href={rateUrl(inApp)}
       target={inApp ? undefined : '_blank'}
       rel="noopener noreferrer"
-      onClick={() => trackEvent(Events.APP_REVIEW_CLICKED, { location, in_app: inApp })}
+      onClick={(e) => {
+        trackEvent(Events.APP_REVIEW_CLICKED, { location, in_app: inApp });
+        // Play app ≥ v4: In-App Review dialog instead of leaving for the Store.
+        if (requestNativeReview(nativeBridge())) e.preventDefault();
+      }}
       className={secondary}
       data-testid="rate-app"
     >

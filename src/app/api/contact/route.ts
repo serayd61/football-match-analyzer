@@ -164,7 +164,7 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({
             from: 'Football AI <onboarding@resend.dev>',
-            to: ['info@swissdigital.life'],
+            to: ['support@footballanalyzer.com'],
             subject: `${typeEmoji} [Football AI] ${type === 'general' ? 'Yeni Mesaj' : type === 'bug' ? 'Hata Bildirimi' : type === 'feature' ? 'Özellik Önerisi' : type === 'complaint' ? 'Şikayet' : 'Övgü'}: ${subject}`,
             html: emailHtml,
             reply_to: email,
