@@ -21,7 +21,8 @@ Her yayın öncesi (web PR'ı veya Android sürümü) işaretlenir. Otomatik ad�
 - [ ] Emülatör (android-36) veya cihazda `?src=twa` ile açılış; ilk açılışta tur geliyor, ikinci açılışta gelmiyor
 - [ ] Footer'da Paylaş / Puanla / Geri bildirim görünüyor (yalnız uygulamada)
 - [ ] Puanla → Play Store uygulaması açılıyor (`market://`); kapalı testte "bulunamadı" görülebilir, üretim sonrası normal
-- [ ] Paylaş → WebView'da `navigator.share` yok, "Bağlantı panoya kopyalandı" görünüyor (v4'te yerel paylaşım köprüsü planlı)
+- [ ] Paylaş → v4+ uygulamada Android paylaşım sayfası açılıyor (`window.FootballAnalyticsApp.share`); v2–v3'te "Bağlantı panoya kopyalandı"
+- [ ] Puanla → v4+ In-App Review diyaloğu (Play kotası nedeniyle her seferinde görünmeyebilir); kapalı testte Play Store'a düşebilir
 - [ ] Koyu tema: Android 10–12'de force-dark (v3) ile site koyu açılıyor; Android 13+ sistem temasıyla
 - [ ] Çevrimdışı ekranı ve "Tekrar dene" çalışıyor; geri tuşu geçmişte geriye gidiyor
 - [ ] Fiyat/checkout hiçbir yerde görünmüyor (Play ödeme politikası)

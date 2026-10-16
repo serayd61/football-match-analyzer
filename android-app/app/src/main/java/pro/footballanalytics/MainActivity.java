@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -33,6 +34,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 
+import com.google.android.play.core.review.ReviewInfo;
+import com.google.android.play.core.review.ReviewManager;
+import com.google.android.play.core.review.ReviewManagerFactory;
+
 /**
  * Football Analytics Pro — Google Play build.
  *
@@ -47,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     static final String HOST = "footballanalytics.pro";
     static final String HOME_URL = "https://" + HOST + "/?src=twa";
     static final String UA_SUFFIX = " FootballAnalyticsPro/" + BuildConfig.VERSION_NAME + " (Android WebView)";
+    /** window.<BRIDGE_NAME> in the page — see src/lib/site/app-links.ts (NativeBridge). */
+    static final String BRIDGE_NAME = "FootballAnalyticsApp";
 
     private WebView web;
     private SwipeRefreshLayout swipe;
@@ -137,6 +144,8 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
+        // Debug builds only: chrome://inspect / CDP access to the WebView (used to exercise AppBridge in tests).
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -153,6 +162,12 @@ public class MainActivity extends AppCompatActivity {
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(web, false);
+
+        // v4: share sheet + In-App Review for the site's "Share" / "Rate"
+        // buttons. Only @JavascriptInterface methods are reachable from JS
+        // (API 17+), and shouldOverrideUrlLoading keeps foreign origins out of
+        // this WebView; each method still re-checks the current host.
+        web.addJavascriptInterface(new AppBridge(), BRIDGE_NAME);
 
         // Downloads (CSV exports, PDFs) cannot be handled by the WebView itself;
         // hand them to the browser instead of failing silently.
@@ -250,6 +265,57 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW, url));
         } catch (ActivityNotFoundException ignored) {
             // no handler installed; swallow rather than crash
+        }
+    }
+
+    /** JS → native bridge (window.FootballAnalyticsApp). Methods run on the JS thread; UI work is posted. */
+    private final class AppBridge {
+        /** True only while the WebView shows one of our own pages. Must run on the UI thread. */
+        private boolean onOwnPage() {
+            String url = web.getUrl();
+            return url != null && isOwnHost(Uri.parse(url).getHost());
+        }
+
+        @JavascriptInterface
+        public String version() {
+            return BuildConfig.VERSION_NAME;
+        }
+
+        /** Android share sheet with the site's title/text/url (replaces navigator.share, absent in WebView). */
+        @JavascriptInterface
+        public void share(String title, String text, String url) {
+            runOnUiThread(() -> {
+                if (!onOwnPage() || url == null) return;
+                Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain");
+                if (title != null) send.putExtra(Intent.EXTRA_SUBJECT, title);
+                send.putExtra(Intent.EXTRA_TEXT, (text == null || text.isEmpty()) ? url : text + "\n" + url);
+                try {
+                    startActivity(Intent.createChooser(send, title));
+                } catch (ActivityNotFoundException ignored) {
+                    // nothing can share text; the page already copied the link as a fallback
+                }
+            });
+        }
+
+        /**
+         * Google Play In-App Review. Play decides whether the dialog actually
+         * appears (quota); when the flow cannot even be requested (no Play
+         * Store, sideloaded build) fall back to the Store listing.
+         */
+        @JavascriptInterface
+        public void requestReview() {
+            runOnUiThread(() -> {
+                if (!onOwnPage()) return;
+                ReviewManager manager = ReviewManagerFactory.create(MainActivity.this);
+                manager.requestReviewFlow().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        ReviewInfo info = task.getResult();
+                        manager.launchReviewFlow(MainActivity.this, info);
+                    } else {
+                        openExternal(Uri.parse("market://details?id=" + getPackageName()));
+                    }
+                });
+            });
         }
     }
 

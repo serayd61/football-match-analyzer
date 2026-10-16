@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { shareUrl, rateUrl, buildShareTarget, shareOrCopy, PLAY_STORE_URL, PLAY_MARKET_URL } from '@/lib/site/app-links';
+import { shareUrl, rateUrl, buildShareTarget, shareOrCopy, requestNativeReview, PLAY_STORE_URL, PLAY_MARKET_URL } from '@/lib/site/app-links';
 
 test('shareUrl: localized site on the web, Play listing inside the app, both UTM-tagged', () => {
   assert.equal(shareUrl('tr', false), 'https://footballanalytics.pro/tr?utm_source=share&utm_medium=app_share');
@@ -30,4 +30,16 @@ test('shareOrCopy: uses navigator.share when present, reports cancel, falls back
   assert.equal(await shareOrCopy(target, {}), 'failed');
   assert.equal(await shareOrCopy(target, { clipboard: { writeText: async () => { throw new Error('denied'); } } }), 'failed');
   assert.deepEqual(calls, ['share', `copy:${target.url}`]);
+});
+
+test('native bridge (Play app ≥ v4) wins over navigator.share; review falls back to the link without it', async () => {
+  const target = buildShareTarget('en', true, 'T', 'X');
+  const calls: string[] = [];
+  const bridge = { share: (t: string, x: string, u: string) => { calls.push(`native:${t}|${x}|${u}`); }, requestReview: () => { calls.push('review'); } };
+  assert.equal(await shareOrCopy(target, { share: async () => { calls.push('web'); } }, bridge), 'shared');
+  assert.equal(await shareOrCopy(target, { share: async () => { calls.push('web'); } }, { share: () => { throw new Error('x'); } }), 'shared'); // broken bridge → web share
+  assert.equal(requestNativeReview(bridge), true);
+  assert.equal(requestNativeReview(null), false);
+  assert.equal(requestNativeReview({}), false);
+  assert.deepEqual(calls, [`native:T|X|${target.url}`, 'web', 'review']);
 });
