@@ -304,4 +304,23 @@ Model/efor: varsayılan `claude-haiku-5-5` (2026-10-16 ölçümü: $0.029/maç; 
 `--model claude-opus-5-5` ile Opus; `--effort medium`; `--max-searches 3`. `--agent-version intel-1.0-haiku` gibi etiketle aynı
 maçta modeller karşılaştırılır; `report` zaten (agent_version, llm_model) bazında ayırır. Maliyet satıra `usage`/`cost_usd` yazılır. Kickoff geçmişse üretmez (`--force` ile üretir, `issued_after_kickoff=true`,
 karneye girmez). Kapı: ≥50 (tercihen ≥200) sonuçlanmış maçta `mean(brier_final) − mean(brier_baseline)` negatif değilse
-sapma sınırı ±0.05'e çekilir ya da faktör türü yasaklanır. Adım 2 (gece cron) ve 3 (Batch retrospektif) henüz yok.
+sapma sınırı ±0.05'e çekilir ya da faktör türü yasaklanır. Adım 3 (Batch retrospektif) henüz yok.
+
+### Günlük cron (adım 2) — `intel_agent.py daily`, 06:30 UTC
+
+Tek turda: (1) `settle --write` (dünkü maçları skorlar), (2) `league_coverage.status='whitelist'`
+liglerinde kickoff'u +2…+30 saat içinde olan ve henüz `engine_intel` satırı olmayan maçları analiz eder.
+Neden 24 sa önce: n8n tahminleri 06:00'da yazar, beyaz liste o anda bellidir, kullanıcı sabahtan bakar
+(kullanıcı kararı 2026-10-16). Güvenlik: tur başına bütçe tavanı `--budget-usd 3` (Haiku ~$0.03/maç),
+`--max-fixtures 40`; bir maçın hatası turu durdurmaz. Observe ligleri de istenirse `--statuses whitelist,observe`.
+
+```bash
+# önce adayları gör (API çağrısı yok)
+.venv/bin/python intel_agent.py daily --plan
+# systemd timer (footy-update ile aynı desen)
+sudo install -d -m 750 /etc/footy && sudo nano /etc/footy/intel.env     # ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, STORE_PATH
+sudo cp deploy/footy-intel.service deploy/footy-intel.timer /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now footy-intel.timer
+systemctl list-timers footy-intel.timer; journalctl -u footy-intel.service -n 50
+```
+Çıkış kodu 1 = planlanan maç vardı ama hiçbiri analiz edilemedi (anahtar/ağ); journalctl'e bak.
