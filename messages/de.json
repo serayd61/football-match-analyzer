@@ -1576,6 +1576,31 @@
     "radarLockedLead": "Jedes Spiel, in dem das Modell beim eigenen Tipp 4+ Punkte über dem Buchmacher liegt, mit derselben Einschätzung wie auf der Spielseite.",
     "radarNote": "Rohe Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit, in Punkten, nach Grösse des Abstands sortiert. Das ist keine Chancenrangliste: Im Backtest waren grosse 1X2-Abstände nicht profitabel (Abstand ≥ +5 → ROI −23), und Abstände von 5+ Punkten gelten als Widerspruch.",
     "colStatus": "Einschätzung",
-    "confNote": "{p}% ist der kalibrierte Modellwert für diesen Tipp. Die Einschätzung unten wägt ihn gegen Markt und Bilanz ab, bevor er als Beleg zählt."
+    "confNote": "{p}% ist der kalibrierte Modellwert für diesen Tipp. Die Einschätzung unten wägt ihn gegen Markt und Bilanz ab, bevor er als Beleg zählt.",
+    "intel": {
+      "title": "Aufklärung",
+      "badge": "Mit Claude geprüft",
+      "lead": "Kader-, Verletzungs-, Sperren- und Rotationsmeldungen wurden vor dem Anpfiff durchsucht. Nur benannte Faktoren mit Quelle zählen; Form und Marktpreise nicht.",
+      "noFactors": "Kein benannter Faktor ausserhalb des Modells gefunden; die Wahrscheinlichkeiten entsprechen der Modellausgabe.",
+      "probLine": "Modell {bh}% / {bd}% / {ba}% → nach Aufklärung {fh}% / {fd}% / {fa}%",
+      "goalsLine": "Über 2,5 {of}% → {ot}% · Beide treffen {bf}% → {bt}%",
+      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} Pkt.",
+      "source": "Quelle:",
+      "asOf": "Stand {date}",
+      "team": {
+        "both": "beide Teams"
+      },
+      "category": {
+        "key_absence": "Schlüsselausfall",
+        "multiple_absences": "mehrere Ausfälle",
+        "rotation": "Rotation",
+        "tactical_mismatch": "taktisches Ungleichgewicht",
+        "travel_congestion": "Spielplan-/Reisebelastung",
+        "weather_pitch": "Wetter/Platz",
+        "motivation": "Motivation",
+        "other": "sonstiges"
+      },
+      "note": "Diese Zeile ändert den Bewertungsstatus nicht. Ihr Beitrag wird an abgeschlossenen Spielen gegen die Modellwahrscheinlichkeit gemessen; ein einzelnes Spiel ist kein Beleg."
+    }
   }
 }

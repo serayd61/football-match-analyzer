@@ -61,3 +61,23 @@ kickoff` zorunlu, UPDATE/DELETE tetikleyiciyle yok sayılır. Yazan: `cron/stand
 (:45) aynı turda, başlamaya ≤180 dk kala, `ignoreDuplicates` ile (ilk yazan kalır). Tüm
 durumlar kaydedilir. Skor sonradan `engine_predictions`'tan eşlenir
 (`?assessment=history&days=N`, keşifsel). Geçmiş günlere bugünkü kuralla kayıt üretilmez.
+
+## İstihbarat satırı (2026-10-16, engine_intel)
+
+Kartın pazar satırlarının altında ayrı blok: `src/lib/site/intel.ts` (okuyucu, 5 dk önbellek) →
+`intel-view.ts` (saf görünüm, testli) → `Assessment.tsx` `IntelBlock`. Kaynak `engine_intel`
+(`engine/intel_agent.py`): motorun çıpa olasılığı + Claude'un web aramasıyla bulduğu İSİMLİ
+faktörler (sakat/ceza/rotasyon…), sapma kodda kırpılmış (faktör başına ≤ ±0,08).
+
+Kurallar:
+- **Durumu değiştirmez.** `supported / conflicting / insufficient` yalnız assess-1.0'dan gelir;
+  istihbarat satırı bilgi katmanıdır. Katkısı `engine_intel` settle karnesinde ölçülür
+  (baseline vs final Brier, kapı ≥200 maç); ölçüm geçmeden kurala girmez.
+- **LLM serbest metni yok:** faktör başlığı, kategori, taraf, sapma (puan), kaynak (alan adı +
+  bağlantı), tarih. `reason`/`narrative` alanları siteye taşınmaz.
+- Aynı maçta birden çok analiz (model karşılaştırması `intel-1.0` / `intel-1.0-haiku`) varsa
+  **en son kickoff-öncesi** analiz gösterilir; `issued_after_kickoff=true` satır gizlenir.
+- Sapma yoksa blok yine gösterilir: "isimli etken bulunmadı" — tarandığı bilgisi de değerlidir.
+- Yalnız üye sayfasında; örnek maç ziyaretçisine (`publicSample`) gösterilmez. Public/SEO
+  yüzeylerine girmez ("istatistiksel model" dili korunur).
+- Rozet: "Claude ile kontrol edildi" (4 dil, `assessment.intel.*`).

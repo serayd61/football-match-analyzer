@@ -278,3 +278,30 @@ Doğrulama: 06:00 koşusundan sonra n8n "Tahmin et" çıktısında `store_stale:
 "04:00 sonuç güncellemesi" cron'u depoda hiç yoktu; xG cron'u (04:40) bu timer'dan
 bağımsız çalışmaya devam eder.
 
+
+## İstihbarat ajanı (intel_agent.py, Claude API) — 2026-10-16, adım 1
+
+Çıpa + isimli sapma protokolü (`.claude/skills/fa-prediction-lab/references/match-analysis.md`): motorun
+`engine_predictions` resmi satırı çıpadır; Claude yalnız web aramasıyla isimli faktör (sakat/ceza/rotasyon…) bulur;
+sapma sınırı (±0.08, ezici ±0.12) KODDA uygulanır; `engine_intel` tablosuna baseline ve final yan yana yazılır.
+Public site'a LLM metni girmez; dashboard/karne içindir.
+
+```bash
+# 1) Tablo (bir kez, Supabase SQL editörü): supabase/migrations/20261016010000_engine_intel.sql
+# 2) Bağımlılık (servis venv'inden ayrı tutmak istersen ayrı venv aç)
+cd /opt/football-match-analyzer/engine
+.venv/bin/pip install -r requirements-intel.txt
+# 3) Env: ANTHROPIC_API_KEY (platform.claude.com, $200 kredili hesap), SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+#    İsteğe bağlı: STORE_PATH=/var/lib/footy/results.jsonl (son maçlar + H2H bağlamı), SITE_MODEL_VERSION
+# 4) Tek maç — önce dry-run, sonra --write
+.venv/bin/python intel_agent.py analyze <fixtureId>            # yazmaz, JSON basar (--json tamamı)
+.venv/bin/python intel_agent.py analyze <fixtureId> --write    # engine_intel upsert (fixture_id, agent_version)
+.venv/bin/python intel_agent.py settle --write                 # biten maçlar: Brier/LL baseline vs final
+.venv/bin/python intel_agent.py report                         # n, ΔBrier, ΔLL, bootstrap %95; n<50'de yorum yok
+```
+
+Model/efor: varsayılan `claude-haiku-5-5` (2026-10-16 ölçümü: $0.029/maç; Opus $0.15/maç, 5 ortak maçta 4'ünde aynı faktör),
+`--model claude-opus-5-5` ile Opus; `--effort medium`; `--max-searches 3`. `--agent-version intel-1.0-haiku` gibi etiketle aynı
+maçta modeller karşılaştırılır; `report` zaten (agent_version, llm_model) bazında ayırır. Maliyet satıra `usage`/`cost_usd` yazılır. Kickoff geçmişse üretmez (`--force` ile üretir, `issued_after_kickoff=true`,
+karneye girmez). Kapı: ≥50 (tercihen ≥200) sonuçlanmış maçta `mean(brier_final) − mean(brier_baseline)` negatif değilse
+sapma sınırı ±0.05'e çekilir ya da faktör türü yasaklanır. Adım 2 (gece cron) ve 3 (Batch retrospektif) henüz yok.

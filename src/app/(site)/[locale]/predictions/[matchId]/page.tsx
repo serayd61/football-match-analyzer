@@ -32,7 +32,9 @@ import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE, DISAGREE_ACC, TI
 import { rowStanding } from '@/lib/site/daily-standing';
 import { assessWithDeps } from '@/lib/site/assess';
 import { marketOf, type MarketAssessment } from '@/lib/site/assessment';
-import AssessmentCard, { type AssessmentLabels } from '@/components/site/Assessment';
+import AssessmentCard, { type AssessmentLabels, type IntelLabels } from '@/components/site/Assessment';
+import { getMatchIntel } from '@/lib/site/intel';
+import { fmtPts } from '@/lib/site/intel-view';
 import { rawEdge, marketYes } from '@/lib/site/goal-blend';
 import { latestGoalBook } from '@/lib/site/goal-book';
 import LocalTime from '@/components/site/LocalTime';
@@ -117,7 +119,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     p.homeId ? getTeamRecord(p.homeId, p.kickoff) : Promise.resolve(null),
     p.awayId ? getTeamRecord(p.awayId, p.kickoff) : Promise.resolve(null),
   ]);
-  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf, goalBook] = await Promise.all([
+  const [market, book, drift, h2h, formHome, formAway, curves, squad, perf, goalBook, intel] = await Promise.all([
     getMarketSnapshot(p.fixtureId),
     getMarketBook(p.fixtureId),
     getOddsDrift(p.fixtureId).catch(() => null),
@@ -129,6 +131,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     p.covered ? getPerformance(null).catch(() => null) : Promise.resolve(null),
     // Üst/Alt 2,5 oranı (API-Football, prediction_odds sütunları) — Pazarlar tablosu için (2026-10-09).
     latestGoalBook([p.fixtureId]).then((m) => m.get(p.fixtureId) ?? null).catch(() => null),
+    // İstihbarat katmanı (engine_intel, 2026-10-16): en son kickoff-öncesi analiz; yoksa null → satır gizli.
+    getMatchIntel(p.fixtureId).catch(() => null),
   ]);
   // Kapsam dışı lig: sinyal karnesi yerine sicilin dilim karnesi (2026-09-23).
   const cov = !p.covered ? await coverageById() : null;
@@ -195,6 +199,30 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     noRecord: ta('noRecord'), thinRecord: (n) => tx('thinRecord', { n }),
     footer: <>{ta('footer')} <Link href="/performance" className="underline">{t('standingLink')}</Link></>,
   };
+  // ── İstihbarat satırı metinleri (assessment.intel) ─────────────────────────
+  // Üye sayfası; örnek maç ziyaretçisine (publicSample) LLM katmanı gösterilmez.
+  const intelLabels: IntelLabels | null = intel ? {
+    title: ta('intel.title'),
+    badge: ta('intel.badge'),
+    checkedAt: f.dateTime(new Date(intel.analyzedAt), 'kickoff'),
+    lead: ta('intel.lead'),
+    noFactors: ta('intel.noFactors'),
+    probLine: tx('intel.probLine', { bh: r100(intel.baseline.home), bd: r100(intel.baseline.draw), ba: r100(intel.baseline.away), fh: r100(intel.final.home), fd: r100(intel.final.draw), fa: r100(intel.final.away) }),
+    goalsLine: intel.goals.adjusted && intel.goals.over25 && intel.goals.btts
+      ? tx('intel.goalsLine', { of: r100(intel.goals.over25.from), ot: r100(intel.goals.over25.to), bf: r100(intel.goals.btts.from), bt: r100(intel.goals.btts.to) })
+      : null,
+    team: { home: p.homeName, away: p.awayName, both: tx('intel.team.both') },
+    category: {
+      key_absence: ta('intel.category.key_absence'), multiple_absences: ta('intel.category.multiple_absences'), rotation: ta('intel.category.rotation'),
+      tactical_mismatch: ta('intel.category.tactical_mismatch'), travel_congestion: ta('intel.category.travel_congestion'), weather_pitch: ta('intel.category.weather_pitch'),
+      motivation: ta('intel.category.motivation'), other: ta('intel.category.other'),
+    },
+    shift: (fx) => tx('intel.shift', { home: p.homeName, sh: fmtPts(fx.shiftPts.home), draw: tc('draw'), sd: fmtPts(fx.shiftPts.draw), away: p.awayName, sa: fmtPts(fx.shiftPts.away) }),
+    source: ta('intel.source'),
+    asOf: (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : tx('intel.asOf', { date: f.dateTime(d, 'dayShort') }); },
+    note: ta('intel.note'),
+  } : null;
+
 
   const sm = p.lambdaHome != null && p.lambdaAway != null ? scoreMatrix(p.lambdaHome, p.lambdaAway) : null;
   const derived = sm ? outcomeProbs(sm) : null;
@@ -380,7 +408,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
       {/* ── Bu maç için değerlendirme (assess-1.0, 2026-10-16) ──────── */}
       {assessment && assessment.markets.length > 0 && (
         <div className="mt-4">
-          <AssessmentCard assessment={assessment} labels={assessmentLabels} />
+          <AssessmentCard assessment={assessment} labels={assessmentLabels} intel={publicSample ? null : intel} intelLabels={intelLabels ?? undefined} />
         </div>
       )}
 

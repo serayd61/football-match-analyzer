@@ -1576,6 +1576,31 @@
     "radarLockedLead": "Modelin kendi seçiminde bahisçinin 4+ puan üstünde olduğu her maç, maç sayfasındaki değerlendirmeyle birlikte.",
     "radarNote": "Ham model olasılığı eksi bahisçinin marjsız olasılığı, puan olarak; fark büyüklüğüne göre sıralı. Bu bir fırsat sıralaması değildir: geriye dönük testte büyük 1X2 farkları kârlı çıkmadı (fark ≥ +5 → ROI −23) ve 5+ puanlık fark çelişki olarak işaretlenir.",
     "colStatus": "Değerlendirme",
-    "confNote": "%{p}, bu seçim için modelin kalibre değeridir. Aşağıdaki değerlendirme onu kanıt saymadan önce piyasa ve kayıtla tartar."
+    "confNote": "%{p}, bu seçim için modelin kalibre değeridir. Aşağıdaki değerlendirme onu kanıt saymadan önce piyasa ve kayıtla tartar.",
+    "intel": {
+      "title": "İstihbarat",
+      "badge": "Claude ile kontrol edildi",
+      "lead": "Kadro, sakatlık, ceza ve rotasyon haberleri maçtan önce tarandı. Yalnız isimli ve kaynaklı etkenler sayılır; form ve piyasa sayılmaz.",
+      "noFactors": "Modelin dışında isimli bir etken bulunmadı; olasılıklar modelin çıktısıyla aynı.",
+      "probLine": "Model %{bh} / %{bd} / %{ba} → istihbarat sonrası %{fh} / %{fd} / %{fa}",
+      "goalsLine": "Üst 2,5 %{of} → %{ot} · KG Var %{bf} → %{bt}",
+      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} puan",
+      "source": "Kaynak:",
+      "asOf": "{date} itibarıyla",
+      "team": {
+        "both": "iki takım"
+      },
+      "category": {
+        "key_absence": "kilit eksik",
+        "multiple_absences": "çoklu eksik",
+        "rotation": "rotasyon",
+        "tactical_mismatch": "taktik uyumsuzluk",
+        "travel_congestion": "fikstür/seyahat yükü",
+        "weather_pitch": "hava/saha",
+        "motivation": "motivasyon",
+        "other": "diğer"
+      },
+      "note": "Bu satır değerlendirme durumunu değiştirmez. Katkısı, sonuçlanan maçlarda modelin kendi olasılığıyla karşılaştırılarak ölçülür; tek maç kanıt değildir."
+    }
   }
 }

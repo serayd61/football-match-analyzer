@@ -1576,6 +1576,31 @@
     "radarLockedLead": "Ogni partita in cui il modello è 4+ punti sopra il bookmaker sul proprio pronostico, con la stessa valutazione della pagina partita.",
     "radarNote": "Probabilità grezza del modello meno probabilità del bookmaker al netto del margine, in punti, ordinate per ampiezza dello scarto. Non è una classifica di opportunità: nel backtest i grandi scarti 1X2 non sono stati redditizi (scarto ≥ +5 → ROI −23), e scarti di 5+ punti sono segnalati come conflitto.",
     "colStatus": "Valutazione",
-    "confNote": "{p}% è il valore calibrato del modello per questo pronostico. La valutazione sotto lo confronta con mercato e storico prima di contarlo come prova."
+    "confNote": "{p}% è il valore calibrato del modello per questo pronostico. La valutazione sotto lo confronta con mercato e storico prima di contarlo come prova.",
+    "intel": {
+      "title": "Intelligence",
+      "badge": "Verificato con Claude",
+      "lead": "Notizie su rosa, infortuni, squalifiche e turnover controllate prima del calcio d'inizio. Contano solo fattori nominati e con fonte; forma e quote no.",
+      "noFactors": "Nessun fattore nominato oltre il modello; le probabilità coincidono con l'output del modello.",
+      "probLine": "Modello {bh}% / {bd}% / {ba}% → dopo l'intelligence {fh}% / {fd}% / {fa}%",
+      "goalsLine": "Over 2,5 {of}% → {ot}% · Gol sì {bf}% → {bt}%",
+      "shift": "{home} {sh} · {draw} {sd} · {away} {sa} pt",
+      "source": "Fonte:",
+      "asOf": "al {date}",
+      "team": {
+        "both": "entrambe"
+      },
+      "category": {
+        "key_absence": "assenza chiave",
+        "multiple_absences": "assenze multiple",
+        "rotation": "turnover",
+        "tactical_mismatch": "squilibrio tattico",
+        "travel_congestion": "carico calendario/viaggi",
+        "weather_pitch": "meteo/campo",
+        "motivation": "motivazione",
+        "other": "altro"
+      },
+      "note": "Questa riga non cambia lo stato della valutazione. Il suo contributo si misura sulle partite concluse rispetto alla probabilità del modello; una singola partita non è una prova."
+    }
   }
 }

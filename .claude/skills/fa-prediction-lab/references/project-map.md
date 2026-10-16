@@ -32,6 +32,7 @@ Sonuç: `reports/backtest-xg.md` ve `backtest-elo.md`'deki kazanımlar yalnız *
 | `publish_elo.py` | `team_elo` JSONB `{a,b,total,lambda,ratings}`; `ELO_MAP` lig-başı sabitler |
 | `service.py` | `/predict`, `/backfill`, `/update`, `/reload`, `/status`; `MIN_LEAGUE_MATCHES=150`. Faz 3: fixture başına AKTİF + GÖLGE sürümlerin hepsini üretir (`modelVersion` satır başına); `n_eff < min_team_matches` (6) takımı atlar; xG sürümü kapsam eşiğini geçmeyen ligde satır üretmez; depo 20 saatten eskiyse arka planda `update_recent(4)` (Hetzner'a cron yok); fit cache günlük anahtarlı |
 | `store.py` | RapidAPI Free API Live Football Data bitmiş maç deposu; takım id = fikstür id (ad eşleme yok) |
+| `intel_agent.py` (2026-10-16) | Claude API istihbarat ajanı: çıpa `engine_predictions` → web araması → isimli sapma (kod sınırlar ±0.08/±0.12, λ çarpanı → `model.markets_from_lambdas`) → `engine_intel` (baseline+final); `settle`/`report` ile ΔBrier karnesi. Bağımlılık `requirements-intel.txt`; testler `tests/test_intel_agent.py` (anthropic'siz) |
 
 ## 3. Site veri katmanı (`src/lib/site/`)
 
@@ -68,6 +69,7 @@ public `v2/engine/weekly` ve `v2/engine/params`, admin `engine-report` (GET/reco
 
 | Tablo | İçerik | Yazan |
 |---|---|---|
+| `engine_intel` | fixture_id+agent_version unique; baseline/final/goals jsonb, deviations (kırpılmış), usage/cost_usd, issued_after_kickoff; settle: brier/ll baseline-final, grade | `engine/intel_agent.py` (migration 20261016010000, 2026-10-16 itibarıyla prod'da UYGULANMADI) |
 | `engine_predictions` | fixture_id+model_version unique; p_home/draw/away, p_over25, p_btts_yes, λ, pick, confidence, settled/result/correct; Faz 1: ou_pick/ou_correct, btts_pick/btts_correct, ll_1x2/brier_1x2, ll_ou25/brier_ou25, ll_btts/brier_btts, settled_at | ingest (n8n), `cron/settle-engine` (saatlik; 7 gün sonra void; `?backfill=1` eski satırları skorlar) |
 | `engine_weekly_metrics` / `engine_calibration_bins` / `engine_version_pairs` / `engine_weekly_reports` | ISO hafta × lig (0 = kapsanan toplam) × pazar (1x2/dc/ou25/btts) × sürüm ('official' dahil) karne; 10 kova n/Σp/Σy; sürüm çifti n/Σd/Σd²; rapor jsonb (uyarı+öneri) | `cron/engine-weekly-review` (Pazartesi 05:00 UTC) |
 | `engine_learning_log` | Yalnız insert: alert/report/propose/approve/activate/retire; actor cron ya da admin | weekly-review, admin `engine-versions` |
