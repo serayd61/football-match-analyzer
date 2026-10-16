@@ -17,6 +17,8 @@ Kullanım (repo kökü ya da engine/):
     python3 intel_agent.py analyze 5881691 --env ../.env.local --write    # engine_intel'e upsert
     python3 intel_agent.py settle  --env ../.env.local --write            # biten maçları skorla
     python3 intel_agent.py report  --env ../.env.local                    # baseline vs final karne
+    python3 intel_agent.py daily   --env ../.env.local --plan             # cron adayları (API çağrısı yok)
+    python3 intel_agent.py daily   --env ../.env.local --write            # cron: settle + beyaz liste maçları (≤30 sa)
 
 Env: ANTHROPIC_API_KEY, SUPABASE_URL (ya da NEXT_PUBLIC_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY.
      İsteğe bağlı: SITE_MODEL_VERSION (çıpa sürümü), STORE_PATH (FotMob deposu → son maçlar/H2H),
@@ -721,6 +723,119 @@ def settle(write: bool, grace_hours: float = 2.5) -> List[Dict[str, Any]]:
     return done
 
 
+# ---------------------------------------------------------------------------
+# Günlük cron (adım 2, 2026-10-16): beyaz liste maçlarını ~24 sa önceden analiz et
+# ---------------------------------------------------------------------------
+# Zamanlama gerekçesi (kullanıcı kararı 2026-10-16): n8n tahminleri 06:00 UTC'de yazar,
+# beyaz liste maçları o anda bellidir ve kullanıcı sabahtan itibaren sayfaya bakar.
+# Kickoff'a 6 sa kala çalışmak kartı günün büyük kısmında boş bırakır. Kaynak tarihi
+# (asOf) kartta göründüğü için 24 sa öncesinin bayatlayabileceği kullanıcıya açıktır.
+# Maç günü ikinci tur (−3 sa) retrospektifler gerek gösterirse eklenir.
+DAILY_HOURS_AHEAD = 30.0      # kickoff ≤ now + 30 sa (ertesi günün tüm maçları)
+DAILY_MIN_LEAD_H = 2.0        # kickoff ≥ now + 2 sa (çok yakın maçı atla; kickoff-sonrası üretim olmasın)
+DAILY_BUDGET_USD = 3.0        # bir turda harcanacak tavan (Haiku ~$0.03/maç → ~100 maç)
+DAILY_MAX_FIXTURES = 40
+DAILY_STATUSES = ("whitelist",)
+
+
+def coverage_league_ids(statuses=DAILY_STATUSES) -> set:
+    """league_coverage: beyaz liste (ve istenirse observe) lig id'leri. Sezonluk id'ler de tabloda."""
+    rows = sb_select("league_coverage", {"select": "league_id,status", "status": f"in.({','.join(statuses)})", "limit": "1000"})
+    return {int(r["league_id"]) for r in rows if r.get("league_id") is not None}
+
+
+def plan_daily(candidates: List[Dict[str, Any]], existing: set, league_ids: set, now: datetime,
+               min_lead_h: float = DAILY_MIN_LEAD_H, hours_ahead: float = DAILY_HOURS_AHEAD) -> List[Dict[str, Any]]:
+    """Saf: aday satırlar → analiz edilecekler (pencere içinde, ligi listede, daha önce analiz edilmemiş), kickoff sırasıyla."""
+    lo = now + timedelta(hours=min_lead_h)
+    hi = now + timedelta(hours=hours_ahead)
+    out = []
+    seen = set()
+    for c in candidates:
+        fid = c.get("fixture_id")
+        if fid is None or fid in seen or fid in existing:
+            continue
+        try:
+            ko = datetime.fromisoformat(str(c["kickoff"]).replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        if ko.tzinfo is None:
+            ko = ko.replace(tzinfo=timezone.utc)
+        if not (lo <= ko <= hi):
+            continue
+        if c.get("league_id") not in league_ids:
+            continue
+        seen.add(fid)
+        out.append({**c, "kickoff_dt": ko})
+    out.sort(key=lambda x: x["kickoff_dt"])
+    return out
+
+
+def daily(write: bool, plan_only: bool, model_id: str, effort: str, lang: str, max_searches: int,
+          agent_version: str, statuses=DAILY_STATUSES, hours_ahead: float = DAILY_HOURS_AHEAD,
+          min_lead_h: float = DAILY_MIN_LEAD_H, budget_usd: float = DAILY_BUDGET_USD,
+          max_fixtures: int = DAILY_MAX_FIXTURES, do_settle: bool = True, use_fallbacks: bool = True) -> Dict[str, Any]:
+    """Cron gövdesi: (1) dünkü maçları skorla, (2) beyaz liste maçlarını analiz et. Hata bir maçı atlar, turu durdurmaz."""
+    now = datetime.now(timezone.utc)
+    print(f"daily {now.isoformat(timespec='minutes')} agent={agent_version} model={model_id} statuses={','.join(statuses)} "
+          f"pencere +{min_lead_h:g}…+{hours_ahead:g} sa bütçe ${budget_usd:.2f}")
+    summary: Dict[str, Any] = {"planned": 0, "done": 0, "failed": 0, "skipped_budget": 0, "cost_usd": 0.0, "settled": 0, "fixtures": []}
+    if do_settle and not plan_only:
+        try:
+            summary["settled"] = len(settle(write))
+        except Exception as e:  # noqa: BLE001
+            print(f"  [uyarı] settle başarısız: {e}", file=sys.stderr)
+
+    version = official_version()
+    league_ids = coverage_league_ids(statuses)
+    hi = (now + timedelta(hours=hours_ahead)).isoformat()
+    lo = (now + timedelta(hours=min_lead_h)).isoformat()
+    if not league_ids:
+        print("  [uyarı] league_coverage'da seçilen durumda lig yok; tur boş", file=sys.stderr)
+        return summary
+    # Lig filtresi SORGUDA: cumartesi 30 saatte 500'den çok maç olabiliyor (2026-10-16 plan: limit doldu);
+    # sıralı kesme pencerenin sonundaki beyaz liste maçlarını düşürürdü.
+    cands = sb_select("engine_predictions", {
+        "select": "fixture_id,league_id,league_name,home_name,away_name,kickoff",
+        "model_version": f"eq.{version}", "kickoff": f"gte.{lo}", "and": f"(kickoff.lte.{hi})",
+        "league_id": f"in.({','.join(str(i) for i in sorted(league_ids))})",
+        "order": "kickoff.asc", "limit": "1000"})
+    ids = sorted({c["fixture_id"] for c in cands})
+    existing: set = set()
+    if ids:
+        ex = sb_select("engine_intel", {"select": "fixture_id", "agent_version": f"eq.{agent_version}",
+                                        "fixture_id": f"in.({','.join(str(i) for i in ids)})", "limit": "1000"})
+        existing = {r["fixture_id"] for r in ex}
+    plan = plan_daily(cands, existing, league_ids, now, min_lead_h, hours_ahead)
+    summary["planned"] = len(plan)
+    print(f"  aday {len(cands)} → lig/pencere/yeni filtresi → {len(plan)} maç (mevcut {len(existing & {c['fixture_id'] for c in cands})} atlandı)")
+    for c in plan[:max_fixtures]:
+        print(f"   - {c['fixture_id']} {c['league_name']} | {c['home_name']} – {c['away_name']} | {c['kickoff']}")
+    if len(plan) > max_fixtures:
+        print(f"   … {len(plan) - max_fixtures} maç max_fixtures sınırı dışında")
+    if plan_only:
+        return summary
+
+    for c in plan[:max_fixtures]:
+        if summary["cost_usd"] >= budget_usd:
+            summary["skipped_budget"] += 1
+            continue
+        try:
+            res = analyze(c["fixture_id"], write, model_id, effort, lang, max_searches, False, version, use_fallbacks, agent_version)
+            summary["done"] += 1
+            summary["cost_usd"] += float(res["usage"].get("cost_usd") or 0)
+            summary["fixtures"].append({"fixture_id": c["fixture_id"], "deviations": len(res["deviations"]), "cost": res["usage"].get("cost_usd")})
+        except SystemExit as e:        # çıpa yok / kickoff geçti gibi beklenen atlamalar
+            summary["failed"] += 1
+            print(f"  [atlandı] {c['fixture_id']}: {e}", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001
+            summary["failed"] += 1
+            print(f"  [hata] {c['fixture_id']}: {type(e).__name__}: {e}", file=sys.stderr)
+    print(f"daily özet: planlanan {summary['planned']}, analiz {summary['done']}, hata {summary['failed']}, "
+          f"bütçe-atlama {summary['skipped_budget']}, maliyet ${summary['cost_usd']:.3f}, skorlanan {summary['settled']}")
+    return summary
+
+
 def report(min_n: int = 50, agent_version: Optional[str] = None, llm_model: Optional[str] = None) -> Dict[str, Any]:
     """Sonuçlanmış engine_intel satırlarında baseline vs final: ΔBrier, ΔLL, eşleştirilmiş bootstrap %95.
     Filtre yoksa önce (agent_version, llm_model) grup başına özet, sonra toplam — modeller karıştırılmaz."""
@@ -801,6 +916,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     a.add_argument("--json", action="store_true", help="tam analiz JSON'unu stdout'a bas")
     s = sub.add_parser("settle", help="biten maçları engine_predictions sonucuyla skorla")
     s.add_argument("--write", action="store_true")
+    d = sub.add_parser("daily", help="cron: settle + beyaz liste maçlarını ~24 sa önceden analiz et")
+    d.add_argument("--write", action="store_true", help="engine_intel'e yaz (varsayılan dry-run: API çağrılır, yazılmaz)")
+    d.add_argument("--plan", action="store_true", help="yalnız adayları listele; API çağrısı ve yazım yok")
+    d.add_argument("--model", default=DEFAULT_MODEL)
+    d.add_argument("--effort", default=DEFAULT_EFFORT, choices=["low", "medium", "high", "xhigh", "max"])
+    d.add_argument("--lang", default=DEFAULT_LANG, choices=["tr", "en", "de", "it"])
+    d.add_argument("--max-searches", type=int, default=3)
+    d.add_argument("--agent-version", default=AGENT_VERSION)
+    d.add_argument("--statuses", default=",".join(DAILY_STATUSES), help="league_coverage durumları, virgülle (whitelist[,observe])")
+    d.add_argument("--hours-ahead", type=float, default=DAILY_HOURS_AHEAD)
+    d.add_argument("--min-lead", type=float, default=DAILY_MIN_LEAD_H)
+    d.add_argument("--budget-usd", type=float, default=DAILY_BUDGET_USD)
+    d.add_argument("--max-fixtures", type=int, default=DAILY_MAX_FIXTURES)
+    d.add_argument("--no-settle", action="store_true")
+    d.add_argument("--no-fallbacks", action="store_true")
     r = sub.add_parser("report", help="baseline vs final karne")
     r.add_argument("--min-n", type=int, default=50)
     r.add_argument("--agent-version", default=None)
@@ -816,6 +946,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(json.dumps(res, ensure_ascii=False, indent=2, default=str))
     elif args.cmd == "settle":
         settle(args.write)
+    elif args.cmd == "daily":
+        res = daily(args.write, args.plan, args.model, args.effort, args.lang, args.max_searches, args.agent_version,
+                    tuple(x.strip() for x in args.statuses.split(",") if x.strip()), args.hours_ahead, args.min_lead,
+                    args.budget_usd, args.max_fixtures, not args.no_settle, not args.no_fallbacks)
+        if not args.plan and res["planned"] > 0 and res["done"] == 0:
+            return 1
     elif args.cmd == "report":
         report(args.min_n, args.agent_version, args.llm_model)
     return 0

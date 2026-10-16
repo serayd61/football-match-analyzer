@@ -239,3 +239,67 @@ class AnalyzeEndToEnd(unittest.TestCase):
             IA.analyze(1, False, "claude-opus-5-5", "medium", "tr", 2, False, None, True)
         res = IA.analyze(1, False, "claude-opus-5-5", "medium", "tr", 2, True, None, True)
         self.assertTrue(res["issuedAfterKickoff"])
+
+
+class DailyPlan(unittest.TestCase):
+    NOW = datetime(2026, 10, 16, 6, 30, tzinfo=timezone.utc)
+
+    def cand(self, fid, hours, league=47):
+        ko = self.NOW + __import__("datetime").timedelta(hours=hours)
+        return {"fixture_id": fid, "league_id": league, "league_name": "PL", "home_name": "A", "away_name": "B", "kickoff": ko.isoformat()}
+
+    def test_window_league_and_existing_filters_and_order(self):
+        cands = [self.cand(1, 10), self.cand(2, 1), self.cand(3, 31), self.cand(4, 20, league=999),
+                 self.cand(5, 5), self.cand(5, 5), self.cand(6, 29.5), {"fixture_id": 7, "league_id": 47, "kickoff": "bozuk"}]
+        plan = IA.plan_daily(cands, existing={6}, league_ids={47}, now=self.NOW)
+        self.assertEqual([c["fixture_id"] for c in plan], [5, 1])   # 2 çok yakın, 3 pencere dışı, 4 lig dışı, 6 mevcut, 7 bozuk, 5 tekrar tek
+
+    def test_naive_kickoff_treated_as_utc(self):
+        c = self.cand(9, 12); c["kickoff"] = c["kickoff"].replace("+00:00", "")
+        self.assertEqual(len(IA.plan_daily([c], set(), {47}, self.NOW)), 1)
+
+
+class DailyRun(unittest.TestCase):
+    """daily(): settle + plan + analyze döngüsü sahte; bütçe tavanı ve hata izolasyonu."""
+
+    def setUp(self):
+        self.calls = []
+        self._orig = (IA.settle, IA.official_version, IA.coverage_league_ids, IA.sb_select, IA.analyze)
+        now = datetime.now(timezone.utc)
+        ko = (now + __import__("datetime").timedelta(hours=12)).isoformat()
+        self.cands = [{"fixture_id": i, "league_id": 47, "league_name": "PL", "home_name": "A", "away_name": "B", "kickoff": ko} for i in (1, 2, 3, 4)]
+        IA.settle = lambda write: [{"fixture_id": 99}]
+        IA.official_version = lambda: "dc-1.0"
+        IA.coverage_league_ids = lambda statuses=None: {47}
+        def fake_select(table, params):
+            if table == "engine_predictions": return list(self.cands)
+            if table == "engine_intel": return [{"fixture_id": 4}]
+            raise AssertionError(table)
+        IA.sb_select = fake_select
+        def fake_analyze(fid, write, *a, **k):
+            self.calls.append(fid)
+            if fid == 2: raise RuntimeError("API düştü")
+            return {"usage": {"cost_usd": 0.6}, "deviations": []}
+        IA.analyze = fake_analyze
+
+    def tearDown(self):
+        (IA.settle, IA.official_version, IA.coverage_league_ids, IA.sb_select, IA.analyze) = self._orig
+
+    def test_plan_only_makes_no_api_calls(self):
+        res = IA.daily(False, True, "m", "medium", "tr", 3, "intel-1.0")
+        self.assertEqual(res["planned"], 3)      # 4 mevcut → atlandı
+        self.assertEqual(self.calls, [])
+
+    def test_errors_isolated_and_budget_cap(self):
+        res = IA.daily(True, False, "m", "medium", "tr", 3, "intel-1.0", budget_usd=1.0)
+        self.assertEqual(res["settled"], 1)
+        self.assertEqual(self.calls, [1, 2, 3])   # 2 hata verdi, 3 yine denendi
+        self.assertEqual(res["done"], 2)
+        self.assertEqual(res["failed"], 1)
+        self.assertAlmostEqual(res["cost_usd"], 1.2)
+        # bütçe 1.0: 1 → 0.6, 2 hata (0), 3 → 1.2; dördüncü olsaydı atlanırdı
+        self.cands.append({**self.cands[0], "fixture_id": 5})
+        self.calls.clear()
+        res2 = IA.daily(True, False, "m", "medium", "tr", 3, "intel-1.0", budget_usd=1.0)
+        self.assertEqual(res2["skipped_budget"], 1)
+        self.assertEqual(self.calls, [1, 2, 3])
