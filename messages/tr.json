@@ -948,7 +948,12 @@
     "signOut": "Çıkış yap",
     "legacyNote": "Bildirim ve analiz tercihleri şimdilik eski görünümde:",
     "legacyLink": "eski ayarlar",
-    "twaNote": "Abonelik değişiklikleri bu uygulamada yapılamaz."
+    "twaNote": "Abonelik değişiklikleri bu uygulamada yapılamaz.",
+    "app": "Uygulama",
+    "share": "Paylaş",
+    "rate": "Puanla",
+    "feedback": "Geri bildirim",
+    "tour": "Tur"
   },
   "v2": {
     "risk": {
@@ -1179,7 +1184,9 @@
       "processing": "İşleniyor…",
       "errorInvalid": "Geçersiz e-posta veya şifre.",
       "errorGeneral": "Bir şeyler ters gitti. Lütfen tekrar dene.",
-      "or": "veya"
+      "or": "veya",
+      "showPassword": "Şifreyi göster",
+      "hidePassword": "Şifreyi gizle"
     },
     "landing": {
       "eyebrow": "FUTBOL ANALİZ PLATFORMU",
@@ -1463,5 +1470,45 @@
     "howRule": "Adaylar, \"önerilen seçim\" kuralının o güne yazdığı seçimler (gösterilen olasılık ≥%60) ve bahisçi oranı olanlar. Aynı maçtan tek bacak. Toplam oranı {min}–{max} arasında kalan çiftler içinde olasılık çarpımı en yüksek olan seçilir; bant altında kalıyorsa o gün kupon yok.",
     "howRecord": "Neden iki bacak: oranlı önerilen seçimler yaklaşık %65 tutuyor. İki bacak ≈ %42–50, üç bacak (oran ~3,5) ≈ %27 tutar. Karnede kupon isabeti ve ROI birlikte yazılır; iddia değil, kayıt.",
     "howTelegram": "Aynı kupon her sabah Telegram kanalımıza gider:"
+  },
+  "app": {
+    "shareApp": "Football Analytics'i paylaş",
+    "shareTitle": "Football Analytics Pro",
+    "shareText": "Football Analytics Pro: olasılık temelli futbol maç analizi, herkese açık ve zaman damgalı karne ile.",
+    "copied": "Bağlantı panoya kopyalandı.",
+    "copyFailed": "Bağlantı kopyalanamadı.",
+    "rateApp": "Google Play'de puanla",
+    "sendFeedback": "Geri bildirim gönder",
+    "showTour": "Turu yeniden göster"
+  },
+  "onboarding": {
+    "stepOf": "Adım {n} / {total}",
+    "skip": "Atla",
+    "back": "Geri",
+    "next": "İleri",
+    "done": "Bitti",
+    "cta": "Bugünün maçlarını gör",
+    "steps": {
+      "welcome": {
+        "title": "Football Analytics Pro'ya hoş geldin",
+        "body": "Eğitildiği ligler için istatistiksel bir modelden maç öncesi olasılıklar; her tahmin herkese açık, zaman damgalı bir karnede. Bu tur yaklaşık bir dakika sürer."
+      },
+      "matches": {
+        "title": "Maçlar ve olasılıklar",
+        "body": "Derecelendirilmiş bir maçı aç: modelin 1 / X / 2, 2,5 alt-üst ve karşılıklı gol olasılıklarını görürsün. Güven halkası modelin ne kadar emin olduğunu, Düşük / Orta / Yüksek etiketi riski gösterir."
+      },
+      "edge": {
+        "title": "Edge = model − piyasa",
+        "body": "Edge, modelin olasılığı ile bahis şirketinin ima ettiği fiyat arasındaki farktır. Bunu bir söz değil, daha yakından bakma nedeni olarak oku: piyasalar iyi kalibredir ve küçük edge'ler çoğunlukla gürültüdür."
+      },
+      "record": {
+        "title": "Herkese açık, dürüst karne",
+        "body": "Her tahmin maçtan önce zaman damgası alır ve otomatik sonuçlanır. Kazananlar da kaybedenler de Performans sayfasında kalır; kalibrasyon ve sabit birim getirisi ile birlikte."
+      },
+      "start": {
+        "title": "Hazırsın",
+        "body": "Bugünün maçlarına göz at, birini açıp tam analizi gör; dil ve görünümü üst çubuktan ya da Hesap → Ayarlar'dan değiştir. Bu turu Ayarlar'dan istediğin zaman yeniden açabilirsin."
+      }
+    }
   }
 }

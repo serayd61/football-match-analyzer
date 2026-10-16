@@ -8,6 +8,7 @@ import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import LocaleSwitcher from '@/components/site/LocaleSwitcher';
 import ThemeToggle from '@/components/site/ThemeToggle';
 import { StripeButton, SignOutButton } from '@/components/site/account/BillingActions';
+import { ShareAppButton, RateAppLink, FeedbackLink, ShowTourButton } from '@/components/site/account/AppActions';
 import { legacyHref } from '@/lib/site/legacy';
 import { isTwa } from '@/lib/site/twa';
 
@@ -120,6 +121,14 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
             <div className={row}><dt className={dt}>{t('theme')}</dt><dd><ThemeToggle /></dd></div>
             <div className={row}><dt className={dt}>{t('password')}</dt><dd><a href={RESET_HREF} className="underline underline-offset-4">{t('resetPassword')}</a></dd></div>
             <div className={row}><dt className={dt}>{t('session')}</dt><dd><SignOutButton /></dd></div>
+          </dl>
+          {/* App actions — Testers Community feedback 2026-10-16 (share / rate / feedback / tour). */}
+          <div className="mt-8"><SectionTitle title={t('app')} /></div>
+          <dl className="divide-y divide-s-line">
+            <div className={row}><dt className={dt}>{t('share')}</dt><dd><ShareAppButton /></dd></div>
+            <div className={row}><dt className={dt}>{t('rate')}</dt><dd><RateAppLink /></dd></div>
+            <div className={row}><dt className={dt}>{t('feedback')}</dt><dd><FeedbackLink /></dd></div>
+            <div className={row}><dt className={dt}>{t('tour')}</dt><dd><ShowTourButton /></dd></div>
           </dl>
           <p className="mt-3 text-xs text-s-muted">{t('legacyNote')} <a href={SETTINGS_HREF} className="underline underline-offset-4">{t('legacyLink')}</a></p>
         </section>

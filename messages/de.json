@@ -948,7 +948,12 @@
     "signOut": "Abmelden",
     "legacyNote": "Benachrichtigungs- und Analyse-Einstellungen liegen noch in der alten Ansicht:",
     "legacyLink": "alte Einstellungen",
-    "twaNote": "Abo-Änderungen sind in dieser App nicht möglich."
+    "twaNote": "Abo-Änderungen sind in dieser App nicht möglich.",
+    "app": "App",
+    "share": "Teilen",
+    "rate": "Bewerten",
+    "feedback": "Feedback",
+    "tour": "Tour"
   },
   "v2": {
     "risk": {
@@ -1179,7 +1184,9 @@
       "processing": "Wird verarbeitet…",
       "errorInvalid": "Ungültige E-Mail oder ungültiges Passwort.",
       "errorGeneral": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-      "or": "oder"
+      "or": "oder",
+      "showPassword": "Passwort anzeigen",
+      "hidePassword": "Passwort verbergen"
     },
     "landing": {
       "eyebrow": "FUSSBALL-ANALYSEPLATTFORM",
@@ -1463,5 +1470,45 @@
     "howRule": "Kandidaten sind die empfohlenen Auswahlen des Tages (angezeigte Wahrscheinlichkeit ≥60%) mit Buchmacherquote. Ein Tipp pro Spiel. Unter den Paaren mit Gesamtquote im Band {min}–{max} wird das mit dem höchsten Wahrscheinlichkeitsprodukt gewählt; erreicht nichts das Band, gibt es an dem Tag keinen Kupon.",
     "howRecord": "Warum zwei Tipps: empfohlene Auswahlen mit Quote treffen zu etwa 65%. Zwei Tipps ≈ 42–50%, drei Tipps (Quote ~3,5) ≈ 27%. Die Bilanz zeigt Trefferquote und ROI zusammen; ein Protokoll, keine Behauptung.",
     "howTelegram": "Derselbe Kupon geht jeden Morgen in unseren Telegram-Kanal:"
+  },
+  "app": {
+    "shareApp": "Football Analytics teilen",
+    "shareTitle": "Football Analytics Pro",
+    "shareText": "Football Analytics Pro: wahrscheinlichkeitsbasierte Fußball-Spielanalysen mit öffentlicher, zeitgestempelter Bilanz.",
+    "copied": "Link in die Zwischenablage kopiert.",
+    "copyFailed": "Der Link konnte nicht kopiert werden.",
+    "rateApp": "Bei Google Play bewerten",
+    "sendFeedback": "Feedback senden",
+    "showTour": "Tour erneut anzeigen"
+  },
+  "onboarding": {
+    "stepOf": "Schritt {n} von {total}",
+    "skip": "Überspringen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "done": "Fertig",
+    "cta": "Heutige Spiele ansehen",
+    "steps": {
+      "welcome": {
+        "title": "Willkommen bei Football Analytics Pro",
+        "body": "Wahrscheinlichkeiten vor dem Anpfiff aus einem statistischen Modell für die Ligen, auf denen es trainiert ist – mit einer öffentlichen, zeitgestempelten Bilanz jeder Einschätzung. Die Tour dauert etwa eine Minute."
+      },
+      "matches": {
+        "title": "Spiele und Wahrscheinlichkeiten",
+        "body": "Öffne ein bewertetes Spiel für die Modell-Wahrscheinlichkeiten für Heim / Remis / Auswärts, Über/Unter 2,5 und Beide treffen. Der Konfidenzring zeigt, wie sicher das Modell ist; Niedrig / Mittel / Hoch beschreibt das Risiko."
+      },
+      "edge": {
+        "title": "Edge = Modell minus Markt",
+        "body": "Der Edge ist der Abstand zwischen der Modell-Wahrscheinlichkeit und dem impliziten Preis des Buchmachers. Verstehe ihn als Anlass, genauer hinzusehen, nicht als Versprechen: Märkte sind gut kalibriert, kleine Edges sind meist Rauschen."
+      },
+      "record": {
+        "title": "Eine öffentliche, ehrliche Bilanz",
+        "body": "Jede Vorhersage wird vor dem Anpfiff zeitgestempelt und automatisch abgerechnet. Treffer und Fehlschläge bleiben auf der Seite Performance, mit Kalibrierung und Flat-Stake-Rendite."
+      },
+      "start": {
+        "title": "Alles bereit",
+        "body": "Sieh dir die heutigen Spiele an, öffne eines für die vollständige Aufschlüsselung und wechsle Sprache oder Darstellung über die Kopfzeile oder Konto → Einstellungen. Die Tour kannst du dort jederzeit erneut öffnen."
+      }
+    }
   }
 }

@@ -36,6 +36,15 @@ export const Events = {
   PURCHASE: 'purchase',
   // Product engagement
   RUN_ANALYSIS: 'run_analysis',
+  // App UX (Testers Community feedback, 2026-10-16) — see docs/TESTERS_COMMUNITY_IMPLEMENTATION_REPORT.md
+  ONBOARDING_STARTED: 'onboarding_started',
+  ONBOARDING_COMPLETED: 'onboarding_completed',
+  ONBOARDING_SKIPPED: 'onboarding_skipped',
+  TUTORIAL_REOPENED: 'tutorial_reopened',
+  THEME_CHANGED: 'theme_changed',
+  APP_SHARE_CLICKED: 'app_share_clicked',
+  APP_REVIEW_CLICKED: 'app_review_clicked',
+  FEEDBACK_OPENED: 'feedback_opened',
 } as const;
 
 export type EventName = (typeof Events)[keyof typeof Events];

@@ -948,7 +948,12 @@
     "signOut": "Esci",
     "legacyNote": "Le preferenze di notifica e analisi restano nella vista precedente:",
     "legacyLink": "impostazioni precedenti",
-    "twaNote": "Le modifiche all'abbonamento non sono disponibili in questa app."
+    "twaNote": "Le modifiche all'abbonamento non sono disponibili in questa app.",
+    "app": "App",
+    "share": "Condividi",
+    "rate": "Valuta",
+    "feedback": "Feedback",
+    "tour": "Tour"
   },
   "v2": {
     "risk": {
@@ -1179,7 +1184,9 @@
       "processing": "Elaborazione…",
       "errorInvalid": "Email o password non validi.",
       "errorGeneral": "Qualcosa è andato storto. Riprova.",
-      "or": "oppure"
+      "or": "oppure",
+      "showPassword": "Mostra password",
+      "hidePassword": "Nascondi password"
     },
     "landing": {
       "eyebrow": "PIATTAFORMA DI ANALISI CALCISTICA",
@@ -1463,5 +1470,45 @@
     "howRule": "I candidati sono i pronostici consigliati del giorno (probabilità mostrata ≥60%) con quota del bookmaker. Un evento per partita. Tra le coppie con quota totale tra {min} e {max} si sceglie quella col prodotto di probabilità più alto; se nulla raggiunge la fascia, quel giorno non c'è schedina.",
     "howRecord": "Perché due eventi: i pronostici consigliati con quota si avverano circa al 65%. Due eventi ≈ 42–50%, tre eventi (quota ~3,5) ≈ 27%. Il rendimento mostra insieme percentuale di schedine vinte e ROI; è un registro, non una promessa.",
     "howTelegram": "La stessa schedina va ogni mattina sul nostro canale Telegram:"
+  },
+  "app": {
+    "shareApp": "Condividi Football Analytics",
+    "shareTitle": "Football Analytics Pro",
+    "shareText": "Football Analytics Pro: analisi delle partite di calcio basate sulle probabilità, con uno storico pubblico e marcato temporalmente.",
+    "copied": "Link copiato negli appunti.",
+    "copyFailed": "Impossibile copiare il link.",
+    "rateApp": "Valuta su Google Play",
+    "sendFeedback": "Invia feedback",
+    "showTour": "Rivedi il tour"
+  },
+  "onboarding": {
+    "stepOf": "Passo {n} di {total}",
+    "skip": "Salta",
+    "back": "Indietro",
+    "next": "Avanti",
+    "done": "Fine",
+    "cta": "Vedi le partite di oggi",
+    "steps": {
+      "welcome": {
+        "title": "Benvenuto in Football Analytics Pro",
+        "body": "Probabilità pre-partita da un modello statistico per i campionati su cui è addestrato, con uno storico pubblico e marcato temporalmente di ogni valutazione. Il tour dura circa un minuto."
+      },
+      "matches": {
+        "title": "Partite e probabilità",
+        "body": "Apri una partita valutata per le probabilità del modello su 1 / X / 2, Over/Under 2,5 e Goal entrambe. L'anello di confidenza mostra quanto è sicuro il modello; Basso / Medio / Alto indica il rischio."
+      },
+      "edge": {
+        "title": "Edge = modello meno mercato",
+        "body": "L'edge è la differenza tra la probabilità del modello e il prezzo implicito del bookmaker. Leggilo come un motivo per approfondire, non come una promessa: i mercati sono ben calibrati e gli edge piccoli sono per lo più rumore."
+      },
+      "record": {
+        "title": "Uno storico pubblico e onesto",
+        "body": "Ogni previsione è marcata temporalmente prima del calcio d'inizio e regolata automaticamente. Vittorie e sconfitte restano nella pagina Performance, con calibrazione e rendimento a puntata fissa."
+      },
+      "start": {
+        "title": "Tutto pronto",
+        "body": "Sfoglia le partite di oggi, aprine una per l'analisi completa e cambia lingua o tema dall'intestazione o da Account → Impostazioni. Da lì puoi riaprire questo tour quando vuoi."
+      }
+    }
   }
 }
