@@ -5,6 +5,9 @@ import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { listDay } from '@/lib/site/fixtures';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
+import { assessRows } from '@/lib/site/assess';
+import { marketOf } from '@/lib/site/assessment';
+import { AssessmentChip } from '@/components/site/Assessment';
 import { getPerformance } from '@/lib/site/performance';
 import { dailyStandingBoard, type StandingPick } from '@/lib/site/daily-standing';
 import { outsideStandingFor } from '@/lib/site/outside-standing';
@@ -51,8 +54,8 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   const requested = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : null;
   let date = requested ?? today;
   const access = await requireSiteAccess(locale, `/picks${requested ? `?date=${requested}` : ''}`);
-  const [t, tc, tm, tv, f] = await Promise.all([
-    getTranslations('picks'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getFormatter(),
+  const [t, tc, tm, tv, ta, f] = await Promise.all([
+    getTranslations('picks'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getTranslations('assessment'), getFormatter(),
   ]);
 
   if (access.state === 'expired') {
@@ -79,6 +82,10 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   const rows = dayRows(day);
   const snaps = await getMarketSnapshots(rows.map((r) => r.fixtureId));
   const board = perf ? dailyStandingBoard(rows, snaps, perf.signals, undefined, outside.standing) : { markets: [], scanned: rows.length, matches: 0 };
+  // Ortak değerlendirme (assess-1.0, 2026-10-16): liste üyeliği ve sıralama değişmez ('strong' hükmü, standing-1.0);
+  // her satır maç sayfasıyla aynı kanıt durumunu taşır.
+  const assessed = await assessRows(rows, { snapshots: snaps }).catch(() => new Map());
+  const statusOf = (fixtureId: number, market: StandingPick['market']) => marketOf(assessed.get(fixtureId)?.assessment, market);
   const marketName = { '1x2': tv('mkt1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
   const verdictLabel = { strong: tm('verdictStrong'), mid: tm('verdictMid'), weak: tm('verdictWeak'), thin: tm('verdictThin') } as const;
   const selectionName = (market: StandingPick['market'], sel: string, homeName: string, awayName: string) =>
@@ -161,11 +168,13 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
                       <th className="py-1.5 text-right font-medium">{t('colMarket')}</th>
                       <th className="py-1.5 text-right font-medium">{t('colEdge')}</th>
                       <th className="py-1.5 text-right font-medium">{t('colHit')}</th>
+                      <th className="py-1.5 text-right font-medium">{ta('colStatus')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {picks.map((p) => {
                       const s = p.standing;
+                      const a = statusOf(p.fixtureId, p.market);
                       return (
                         <tr key={`${market}-${p.fixtureId}`} className="border-b border-s-line">
                           <td className="py-2.5 pr-3">
@@ -178,13 +187,14 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
                           <td className="py-2.5 pr-3 font-semibold">{selection(p)}</td>
                           <td className="num py-2.5 text-right">{pct(p.modelP)}</td>
                           <td className="num py-2.5 text-right text-s-muted">{p.marketP == null ? <span className="text-xs">{t('noMarket')}</span> : pct(p.marketP)}</td>
-                          <td className={`num py-2.5 text-right font-semibold ${p.edge == null ? 'text-s-muted' : p.edge > 0.03 ? 'text-s-win' : p.edge < -0.03 ? 'text-s-loss' : ''}`}>{p.edge == null ? '–' : pp(p.edge)}</td>
+                          <td className={`num py-2.5 text-right font-semibold ${p.edge == null ? 'text-s-muted' : p.edge >= 0.05 ? 'text-s-loss' : ''}`}>{p.edge == null ? '–' : pp(p.edge)}</td>
                           <td className="py-2.5 text-right">
                             <span className="inline-flex items-center justify-end gap-2">
                               <span className="num"><span className="font-bold text-s-win">{pct(s.acc)}</span> <span className="text-xs text-s-muted">{s.won}/{s.n} · {s.scope === 'league' ? t('scopeLeague') : t('scopeAll')}</span></span>
                               <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${verdictTone[s.verdict]}`}>{verdictLabel[s.verdict]}</span>
                             </span>
                           </td>
+                          <td className="py-2.5 text-right">{a ? <AssessmentChip status={a.status} label={ta(`statusShort.${a.status}`)} /> : <span className="text-s-muted">–</span>}</td>
                         </tr>
                       );
                     })}
@@ -301,7 +311,7 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
                             <td className="py-2.5 pr-3 text-s-muted">{marketName[p.market]}</td>
                             <td className="py-2.5 pr-3 font-semibold">{selectionName(p.market, p.selection, p.homeName, p.awayName)}</td>
                             <td className="num py-2.5 text-right">{pct(p.modelP)}</td>
-                            <td className={`num py-2.5 text-right font-semibold ${p.edge == null ? 'text-s-muted' : p.edge > 0.03 ? 'text-s-win' : p.edge < -0.03 ? 'text-s-loss' : ''}`}>{p.edge == null ? '–' : pp(p.edge)}</td>
+                            <td className={`num py-2.5 text-right font-semibold ${p.edge == null ? 'text-s-muted' : p.edge >= 0.05 ? 'text-s-loss' : ''}`}>{p.edge == null ? '–' : pp(p.edge)}</td>
                             <td className="num py-2.5 text-right">{p.homeScore == null || p.awayScore == null ? '–' : `${p.homeScore}–${p.awayScore}`}</td>
                             <td className="py-2.5 text-right">
                               <span className="inline-flex items-center justify-end gap-2">

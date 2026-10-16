@@ -13,7 +13,7 @@ const row = (over: Partial<SitePrediction>): SitePrediction => ({
   fixtureId: 1, league: leagueBySlug('premier-league'), leagueName: 'Premier League', leagueId: 47, covered: true,
   homeId: 9825, homeName: 'Arsenal', awayId: 8455, awayName: 'Chelsea', homeCrest: null, awayCrest: null,
   kickoff: '2026-10-18T15:30:00Z', pHome: 0.5, pDraw: 0.25, pAway: 0.25, lambdaHome: null, lambdaAway: null, pick: '1',
-  confidence: null, confidenceRaw: null, doubleChance: null as any, overUnder: null, btts: null, rationale: null,
+  confidence: null, confidenceRaw: null, confidenceCalibrated: false, calibrationSegment: null, doubleChance: null as any, overUnder: null, btts: null, rationale: null,
   settled: false, homeScore: null, awayScore: null, result: null, outcome: 'pending', modelVersion: null, updatedAt: null,
   hasModel: true, status: 'scheduled', modelStatus: 'rated' as any, publishedAfterKickoff: false, ...over,
 });

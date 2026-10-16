@@ -7,6 +7,8 @@ import type { OutsideRisk } from './PredictionCard';
 import { RiskLabel } from './Risk';
 import LocalTime from './LocalTime';
 import { StatusChip } from './PredictionTable';
+import { AssessmentChip } from './Assessment';
+import type { MarketAssessment } from '@/lib/site/assessment';
 
 // Match row v3 — one fixture per line inside a league group:
 //   time | crests + names (+ score) | 1·X·2 mini bar (pick bold) | confidence + risk
@@ -25,9 +27,10 @@ function Crest({ src, alt }: { src: string | null; alt: string }) {
     : <span className="h-5 w-5 shrink-0 rounded-full bg-s-raised" aria-hidden />;
 }
 
-export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null }: { p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null }) {
+export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null, assessment = null }: { p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null; /** ortak değerlendirme, 1X2 pazarı (assess-1.0) — maç sayfasıyla aynı çıktı */ assessment?: MarketAssessment | null }) {
   const t = await getTranslations('v2.predictions');
   const tc = await getTranslations('common');
+  const ta = await getTranslations('assessment');
   const conf = p.confidence ?? p.confidenceRaw;
   const confPct = conf == null ? null : Math.round(conf * 100);
   const live = p.status === 'live';
@@ -87,8 +90,14 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
         {spot ? <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span> : null}
         {p.hasModel ? (
           <>
-            <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}</span>
-            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && <span className="flex flex-col items-end gap-1"><RiskLabel risk={risk} short />{guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : guard.flag === 'over' ? 'overShort' : 'tightShort')}</span>}</span>}
+            <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}{confPct != null && !p.confidenceCalibrated && <span className="ml-1 text-[10px] font-semibold uppercase text-s-muted">{ta('rawShort')}</span>}</span>
+            {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && (
+              <span className="flex flex-col items-end gap-1">
+                <RiskLabel risk={risk} short />
+                {/* Ortak değerlendirme çipi (2026-10-16): varsa bayrak metninin yerini alır — aynı çıktı, tek karar yolu */}
+                {assessment ? <AssessmentChip status={assessment.status} label={ta(`statusShort.${assessment.status}`)} /> : guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : guard.flag === 'over' ? 'overShort' : 'tightShort')}</span>}
+              </span>
+            )}
           </>
         ) : <span className="text-[11.5px] font-semibold text-s-muted">–</span>}
       </div>

@@ -20,6 +20,8 @@ import { sumBuckets, coverageStanding, coverageRisk, leagueSummary, strongPickFo
 import { sumEdge, bandFor } from '@/lib/coverage/rules';
 import { RiskNote } from '@/components/site/Risk';
 import { getMarketSnapshots } from '@/lib/site/dashboard';
+import { assessRows } from '@/lib/site/assess';
+import { marketOf } from '@/lib/site/assessment';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
 
@@ -191,6 +193,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   // Piyasa koruması (27 Eyl): kapsamdaki satırlar için son 1X2 piyasa olasılığı tek sorguda.
   const snaps = rows.length ? await getMarketSnapshots(rows.filter((r) => r.hasModel).map((r) => r.fixtureId)).catch(() => ({} as Record<number, never>)) : {};
   const mkt = (id: number) => { const m = (snaps as Record<number, { pHome: number; pDraw: number; pAway: number } | undefined>)[id]; return m ? { pHome: m.pHome, pDraw: m.pDraw, pAway: m.pAway } : null; };
+  // Ortak değerlendirme (assess-1.0, 2026-10-16): maç sayfasıyla aynı çıktı, satırda 1X2 çipi.
+  const assessed = await assessRows([...rows, ...uncoveredRows], { snapshots: { ...(uSnaps as Record<number, any>), ...(snaps as Record<number, any>) } }).catch(() => new Map());
+  const a1x2 = (id: number) => marketOf(assessed.get(id)?.assessment, '1x2');
 
   return (
     <Page>
@@ -266,7 +271,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <div className="mt-5 flex flex-col gap-4">
           {[...covGroups.values()].map((g) => (
             <LeagueGroup key={g.slug ?? g.name} name={g.name} meta={g.country ?? undefined} href={g.slug ? `/leagues/${g.slug}` : undefined} count={g.rows.length}>
-              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} market={mkt(p.fixtureId)} />)}
+              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} back={listQs} spot={spotOf(p)} market={mkt(p.fixtureId)} assessment={a1x2(p.fixtureId)} />)}
             </LeagueGroup>
           ))}
           <p className="text-[12px] text-s-muted">{t('footnote')}</p>
@@ -286,7 +291,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
           <div className="flex flex-col gap-4">
             {uncoveredGroups.map((g) => (
               <LeagueGroup key={g.name + (g.ccode ?? '')} id={g.id} name={g.name} meta={[g.ccode, g.meta].filter(Boolean).join(' · ')} count={g.rows.length} tags={g.strongMeta} muted>
-                {g.rows.map(({ p, outside }) => <MatchRow key={p.fixtureId} p={p} outside={outside} back={listQs} spot={spotOf(p)} />)}
+                {g.rows.map(({ p, outside }) => <MatchRow key={p.fixtureId} p={p} outside={outside} back={listQs} spot={spotOf(p)} assessment={a1x2(p.fixtureId)} />)}
               </LeagueGroup>
             ))}
           </div>

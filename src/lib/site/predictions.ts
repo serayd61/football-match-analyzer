@@ -90,9 +90,13 @@ export interface SitePrediction {
   lambdaHome: number | null;
   lambdaAway: number | null;
   pick: '1' | 'X' | '2' | null;
-  /** calibrated pick probability (isotonic curve), null if not available */
+  /** calibrated pick probability (isotonic curve); equals the raw figure when no curve is loaded — see `confidenceCalibrated` */
   confidence: number | null;
   confidenceRaw: number | null;
+  /** true only when a calibration curve (≥2 knots) was actually applied; false → `confidence` is the RAW model output (2026-10-16) */
+  confidenceCalibrated: boolean;
+  /** curve segment used for the pick ('covered' | 'all'), null when none */
+  calibrationSegment: string | null;
   doubleChance: ReturnType<typeof deriveDoubleChance>;
   /** p: harman (oran varsa) ya da kalibrasyon eğrisi; pRaw: model hamı — bkz. goal-blend.ts */
   overUnder: GoalCall<'over' | 'under'> | null;
@@ -184,8 +188,15 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   // Gol pazarları: oran varsa piyasa çıpası (w=0,7), yoksa kalibrasyon eğrisi.
-  const ou = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ctx.curves.ou));
-  const bt = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts));
+  const ou0 = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ctx.curves.ou));
+  const bt0 = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts));
+  // Kalibrasyon bayrağı (2026-10-16): eğri yoksa applyCurve ham değeri aynen döndürür; bu
+  // "kalibre" diye sunulmasın. pCal harmandan bağımsız, yalnız eğriden.
+  const hasOuCurve = ctx.curves.ou.length >= 2, hasBtCurve = ctx.curves.btts.length >= 2;
+  const ou = ou0 ? { ...ou0, calibrated: hasOuCurve, pCal: hasOuCurve ? applyCurve(ou0.pRaw, ctx.curves.ou) : null } : null;
+  const bt = bt0 ? { ...bt0, calibrated: hasBtCurve, pCal: hasBtCurve ? applyCurve(bt0.pRaw, ctx.curves.btts) : null } : null;
+  const pickCurve = league ? ctx.curves.pick : (ctx.curves.pickAll.length ? ctx.curves.pickAll : ctx.curves.pick);
+  const pickSegment = league ? ctx.curveMeta.pick?.segment ?? null : (ctx.curves.pickAll.length ? 'all' : ctx.curveMeta.pick?.segment ?? null);
   const leagueName = r.league_name && !/^League \d+$/.test(r.league_name) ? r.league_name : cat?.name || r.league_name || '';
   const publishedAfterKickoff = !!r.updated_at && !r.settled && Date.parse(r.updated_at) > Date.parse(r.kickoff);
   return {
@@ -207,8 +218,10 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
     lambdaHome: r.lambda_home,
     lambdaAway: r.lambda_away,
     pick: r.pick,
-    confidence: clampConf(applyCurve(r.confidence, league ? ctx.curves.pick : (ctx.curves.pickAll.length ? ctx.curves.pickAll : ctx.curves.pick))),
+    confidence: clampConf(applyCurve(r.confidence, pickCurve)),
     confidenceRaw: r.confidence,
+    confidenceCalibrated: pickCurve.length >= 2,
+    calibrationSegment: pickCurve.length >= 2 ? pickSegment : null,
     doubleChance: deriveDoubleChance(r.p_home, r.p_draw, r.p_away),
     overUnder: ou,
     btts: bt,

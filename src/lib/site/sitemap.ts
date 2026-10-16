@@ -20,7 +20,9 @@ import { CONTENT_IMAGES, type ContentImageId } from '@/lib/site/content-images';
 // performance) take the latest engine write instead of "today": a lastmod
 // that changes on every request tells Google nothing.
 
-export interface Entry { path: string; lastmod?: Date | null; changefreq: string; priority: number; images?: ContentImageId[] }
+/** `lastmod`: Date ya da ISO string — unstable_cache Date'i JSON'a çevirip string döndürür (build 2026-10-16: toISOString hatası). */
+export interface Entry { path: string; lastmod?: Date | string | null; changefreq: string; priority: number; images?: ContentImageId[] }
+const isoOf = (d: Date | string): string | null => { const t = new Date(d); return Number.isNaN(t.getTime()) ? null : t.toISOString(); };
 
 /** Real revision dates of the long-form docs (bump when the text changes). */
 export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms', Date> = {
@@ -66,7 +68,7 @@ function urlBlocks(e: Entry): string[] {
   return routing.locales.map((l) => [
     '  <url>',
     `    <loc>${esc(`${SITE_URL}/${l}${e.path}`)}</loc>`,
-    e.lastmod ? `    <lastmod>${e.lastmod.toISOString()}</lastmod>` : '',
+    e.lastmod && isoOf(e.lastmod) ? `    <lastmod>${isoOf(e.lastmod)}</lastmod>` : '',
     `    <changefreq>${e.changefreq}</changefreq>`,
     `    <priority>${e.priority}</priority>`,
     alternates,

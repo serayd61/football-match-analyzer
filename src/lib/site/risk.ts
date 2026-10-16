@@ -35,6 +35,9 @@ export type MarketFlag = 'disagree' | 'over' | 'tight' | null;
 export const OVER_EDGE = 0.05;
 /** 'over' kovasının canlı sicili (yüzde) — uyarı metinlerinde kullanılır. */
 export const OVER_ACC = 30;
+/** 'disagree' ve 'tight' kovalarının canlı sicili (yüzde, 2026-09-27 denetimi: %27,7 / %27,9) — metinlerde. */
+export const DISAGREE_ACC = 28;
+export const TIGHT_ACC = 28;
 /** Piyasa favorisi bu olasılığın altındaysa maç "sıkı" sayılır. */
 export const TIGHT_FAV = 0.45;
 

@@ -12,6 +12,7 @@ import { getMarketBook } from './markets';
 import { PHASE_ORDER, type OddsPhase } from './odds-phases';
 import { scoreMatrix, bttsProb } from './poisson';
 import { loadContext, mapRow, parseRows, COLS, type SitePrediction, type MarketSnapshot } from './predictions';
+import { marketOf, type MatchAssessment, type MarketAssessment } from './assessment';
 
 // ---------------------------------------------------------------------------
 // Data for the signed-in dashboard: batch market snapshots, live scores,
@@ -79,13 +80,16 @@ export async function getLiveNow(): Promise<Map<number, LiveScore>> {
 }
 
 // ---------------------------------------------------------------------------
-// Value radar: largest model-vs-market gaps across a set of rated fixtures.
-// 1X2 comes from the snapshot (margin removed by the odds cron); BTTS from the
-// bookmaker's own market where captured. Edges are raw model minus market.
+// Model–market divergences (eski adı "value radar", 2026-10-16): modelin KENDİ
+// seçiminde piyasanın üstünde kaldığı maçlar. 1X2 anlık görüntüden (marj oran
+// cron'unda alınmış), KG bahisçinin kendi pazarından. Fark = ham model − piyasa.
+// Pozitif fark fırsat DEĞİL: canlı denetim (+5 üstü %30) ve backtest (≥+5 → ROI
+// −23) bunu aşırı güven bandı olarak ölçtü; her satır ortak değerlendirme
+// durumunu taşır (assess-1.0) ve sıralama yalnız fark büyüklüğüdür.
 // Denetim 2026-09-05: the BTTS model figure is the STORED p_btts_yes (the same
 // record the list and the calibration use); the Poisson grid is only a
 // fallback when the row has no stored value, and every line says which
-// (`source`). A model-vs-market gap is a hypothesis, not a realised return.
+// (`source`).
 // ---------------------------------------------------------------------------
 
 export interface ValueRow {
@@ -98,6 +102,8 @@ export interface ValueRow {
   odds: number;
   edge: number;
   source: 'stored' | 'derived';
+  /** ortak değerlendirme (o pazar için); değerlendirme yoksa null */
+  assessment: MarketAssessment | null;
 }
 
 /** BTTS "yes" probability with provenance: stored record first, Poisson grid as fallback. */
@@ -107,7 +113,7 @@ export function bttsYesProb(r: Pick<SitePrediction, 'btts' | 'lambdaHome' | 'lam
   return null;
 }
 
-export async function valueRadar(rows: SitePrediction[], minEdge = 0.04, limit = 12): Promise<ValueRow[]> {
+export async function valueRadar(rows: SitePrediction[], assessmentOf: (fixtureId: number) => MatchAssessment | null = () => null, minEdge = 0.04, limit = 12): Promise<ValueRow[]> {
   const rated = rows.filter((r) => r.hasModel && !r.settled);
   if (!rated.length) return [];
   const snaps = await getMarketSnapshots(rated.map((r) => r.fixtureId));
@@ -116,20 +122,26 @@ export async function valueRadar(rows: SitePrediction[], minEdge = 0.04, limit =
   rated.forEach((r, i) => {
     const s = snaps[r.fixtureId];
     if (!s) return;
-    const cands: Array<Omit<ValueRow, 'fixtureId' | 'row' | 'edge'>> = [
-      { market: '1x2', selection: '1', model: r.pHome, market_p: s.pHome, odds: s.homeOdds, source: 'stored' },
-      { market: '1x2', selection: 'X', model: r.pDraw, market_p: s.pDraw, odds: s.drawOdds, source: 'stored' },
-      { market: '1x2', selection: '2', model: r.pAway, market_p: s.pAway, odds: s.awayOdds, source: 'stored' },
-    ];
+    const a = assessmentOf(r.fixtureId);
+    // Yalnız modelin KENDİ seçimleri: değerlendirme o seçim için var; seçim dışı taraflar listeye girmez.
+    const cands: Array<Omit<ValueRow, 'fixtureId' | 'row' | 'edge'>> = [];
+    if (r.pick) {
+      const model = r.pick === '1' ? r.pHome : r.pick === '2' ? r.pAway : r.pDraw;
+      const market_p = r.pick === '1' ? s.pHome : r.pick === '2' ? s.pAway : s.pDraw;
+      const odds = r.pick === '1' ? s.homeOdds : r.pick === '2' ? s.awayOdds : s.drawOdds;
+      cands.push({ market: '1x2', selection: r.pick, model, market_p, odds, source: 'stored', assessment: marketOf(a, '1x2') });
+    }
     const book = books[i];
     if (book?.btts) {
       const by = bttsYesProb(r);
       if (by) {
-        cands.push({ market: 'btts', selection: 'yes', model: by.p, market_p: book.btts.pA, odds: book.btts.a, source: by.source });
-        cands.push({ market: 'btts', selection: 'no', model: 1 - by.p, market_p: book.btts.pB, odds: book.btts.b, source: by.source });
+        const yes = r.btts ? r.btts.pick === 'yes' : by.p >= 0.5;
+        cands.push(yes
+          ? { market: 'btts', selection: 'yes', model: by.p, market_p: book.btts.pA, odds: book.btts.a, source: by.source, assessment: marketOf(a, 'btts') }
+          : { market: 'btts', selection: 'no', model: 1 - by.p, market_p: book.btts.pB, odds: book.btts.b, source: by.source, assessment: marketOf(a, 'btts') });
       }
     }
-    // One line per fixture: its largest positive gap.
+    // One line per fixture: its largest positive gap (a divergence to inspect, not a ranking of opportunity).
     const best = cands.map((c) => ({ ...c, edge: c.model - c.market_p })).sort((a, b) => b.edge - a.edge)[0];
     if (best && best.edge >= minEdge) out.push({ fixtureId: r.fixtureId, row: r, ...best });
   });

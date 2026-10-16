@@ -31,6 +31,10 @@ export interface GoalCall<P extends string> {
   pMarket: number | null;
   /** p piyasa ile harmanlandı mı */
   blended: boolean;
+  /** kalibrasyon eğrisi (ou25/btts segmenti) var mı — predictions.ts mapRow doldurur (2026-10-16) */
+  calibrated?: boolean;
+  /** eğriden geçmiş olasılık (seçilen taraf); eğri yoksa null — harmandan bağımsız */
+  pCal?: number | null;
 }
 
 const valid = (o: number | null | undefined): o is number => o != null && Number.isFinite(o) && o > 1;

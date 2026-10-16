@@ -26,6 +26,9 @@ import { strongBoard, strongToday } from '@/lib/site/strong-markets';
 import { strongRisk } from '@/lib/site/coverage-risk';
 import { fmtCell } from '@/lib/site/team-record';
 import { RiskLabel } from '@/components/site/Risk';
+import { assessRows } from '@/lib/site/assess';
+import { AssessmentChip } from '@/components/site/Assessment';
+import { OVER_EDGE } from '@/lib/site/risk';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -51,8 +54,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const email = session?.user?.email;
   if (!email) redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/dashboard`)}`);
 
-  const [t, tc, tm, tv, f] = await Promise.all([
-    getTranslations('dashboard'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getFormatter(),
+  const [t, tc, tm, tv, ta, f] = await Promise.all([
+    getTranslations('dashboard'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getTranslations('assessment'), getFormatter(),
   ]);
   const mktName: Record<string, string> = { x12: tv('mkt1x2'), ou25: tv('mktOver'), under25: tv('mktUnder'), btts: tv('mktBtts') };
 
@@ -73,8 +76,10 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const todayRows = todayAll.filter((r) => r.covered);
   const tomorrowRows = tomorrowAll.filter((r) => r.covered);
   const snaps = await getMarketSnapshots([...todayRows, ...tomorrowRows].filter((r) => r.hasModel).map((r) => r.fixtureId));
+  // Ortak değerlendirme (assess-1.0): maç sayfasıyla aynı çıktı; ayrışma satırları durumunu buradan alır.
+  const assessed = await assessRows([...todayRows, ...tomorrowRows], { snapshots: snaps }).catch(() => new Map());
   // Computed for everyone: free users see the count behind a locked overlay.
-  const radar = await valueRadar([...todayRows, ...tomorrowRows]);
+  const radar = await valueRadar([...todayRows, ...tomorrowRows], (id) => assessed.get(id)?.assessment ?? null);
   // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
   const [picks, picksRec] = await Promise.all([readDailyPicks(today), dailyPicksRecord(30)]);
   // Güçlü pazarlar (24 Eyl): sicil stats.strong; bugün o bölgeye düşen maçlar + pazar karnesi.
@@ -93,7 +98,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   // bulanık tablo yalnız yer tutucudur, sayı (n) gerçek kalır.
   const MASK = '██████';
   const shownPicks = paid ? picks : picks.map((p, i) => ({ ...p, fixtureId: -(i + 1), homeName: MASK, awayName: MASK, leagueSlug: MASK, modelP: 0.5, odds: 2, kickoff: today + 'T12:00:00Z' }));
-  const shownRadar = paid ? radar : radar.slice(0, 4).map((v, i) => ({ ...v, fixtureId: -(i + 1), model: 0.5, market_p: 0.5, odds: 2, edge: 0, row: { ...v.row, homeName: MASK, awayName: MASK, kickoff: today + 'T12:00:00Z' } }));
+  const shownRadar = paid ? radar : radar.slice(0, 4).map((v, i) => ({ ...v, fixtureId: -(i + 1), model: 0.5, market_p: 0.5, odds: 2, edge: 0, assessment: null, row: { ...v.row, homeName: MASK, awayName: MASK, kickoff: today + 'T12:00:00Z' } }));
 
   // Followed clubs: position, form and next rated match, in parallel.
   const followed = await Promise.all(watch.items.map(async (w) => {
@@ -145,7 +150,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
             <div className="col-start-2 flex min-w-0 items-baseline gap-1.5 text-xs text-s-muted md:col-start-auto md:text-sm md:text-s-ink">
               {r.hasModel ? <><span className="truncate">{pickLabel(r, tc)}</span><span className="num shrink-0 text-s-muted">{pct(r.confidence ?? r.confidenceRaw)}</span></> : <span className="text-s-muted">{t('pending')}</span>}
             </div>
-            <div className="num hidden text-right text-sm md:block">{e == null ? <span className="text-s-muted">–</span> : <span className={e >= 0.03 ? 'text-s-win' : e <= -0.03 ? 'text-s-loss' : ''}>{pp(e)}</span>}</div>
+            <div className="num hidden text-right text-sm md:block">{e == null ? <span className="text-s-muted">–</span> : <span className={e >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}>{pp(e)}</span>}</div>
             <div className="hidden truncate text-right text-xs text-s-muted md:block">{r.leagueName}</div>
           </div>
         );
@@ -296,11 +301,11 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
             <p className="mt-2 text-xs text-s-muted">{t('picksNote')}</p>
           </section>
 
-          {/* ── Value radar ───────────────────────────────────────────── */}
+          {/* ── Model–piyasa ayrışmaları (eski "value radar", 2026-10-16) ── */}
           <section>
-            <SectionTitle title={t('valueTitle')} meta={t('valueMeta')} />
+            <SectionTitle title={ta('radarTitle')} meta={ta('radarMeta')} />
             {radar.length === 0 ? (
-              <p className="mt-3 text-sm text-s-muted">{t('valueEmpty')}</p>
+              <p className="mt-3 text-sm text-s-muted">{ta('radarEmpty')}</p>
             ) : (
               <div className="relative mt-3">
                 <div className={`tbl-scroll ${paid ? '' : 'pointer-events-none select-none blur-[5px]'}`} aria-hidden={!paid}>
@@ -313,6 +318,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                         <th className="py-1.5 text-right font-medium">{tc('market')}</th>
                         <th className="py-1.5 text-right font-medium">{t('colOdds')}</th>
                         <th className="py-1.5 text-right font-medium">{t('edge')}</th>
+                        <th className="py-1.5 text-right font-medium">{ta('colStatus')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -326,7 +332,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                           <td className="num py-2 text-right">{pct(v.model)}</td>
                           <td className="num py-2 text-right text-s-muted">{pct(v.market_p)}</td>
                           <td className="num py-2 text-right">{v.odds.toFixed(2)}</td>
-                          <td className="num py-2 text-right text-s-win">{pp(v.edge)}</td>
+                          <td className={`num py-2 text-right ${v.edge >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}`}>{pp(v.edge)}</td>
+                          <td className="py-2 text-right">{v.assessment ? <AssessmentChip status={v.assessment.status} label={ta(`statusShort.${v.assessment.status}`)} /> : <span className="text-s-muted">–</span>}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -335,15 +342,15 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
                 {!paid && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="max-w-sm rounded-sm border border-s-line bg-s-surface p-5 text-center shadow-sm">
-                      <p className="font-medium">{t('valueLocked', { n: radar.length })}</p>
-                      <p className="mt-1 text-sm text-s-muted">{t('valueLockedLead')}</p>
+                      <p className="font-medium">{ta('radarLocked', { n: radar.length })}</p>
+                      <p className="mt-1 text-sm text-s-muted">{ta('radarLockedLead')}</p>
                       <a href={`/${locale}/pricing`} className="mt-4 inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('upgrade')}</a>
                     </div>
                   </div>
                 )}
               </div>
             )}
-            <p className="mt-2 text-xs text-s-muted">{t('valueNote')}</p>
+            <p className="mt-2 text-xs text-s-muted">{ta('radarNote')}</p>
           </section>
 
           <IntelCard locale={locale} />

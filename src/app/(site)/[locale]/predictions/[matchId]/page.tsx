@@ -14,7 +14,7 @@ import { getMarketBook } from '@/lib/site/markets';
 import { getOddsDrift } from '@/lib/site/odds-drift';
 import { getAfContext } from '@/lib/site/af-context';
 import { getPerformance } from '@/lib/site/performance';
-import { standingFor } from '@/lib/site/match-standing';
+import { STRONG_ACC } from '@/lib/site/match-standing';
 import { teamVerdict, fmtCell } from '@/lib/site/team-record';
 import { coverageById } from '@/lib/coverage/registry';
 import { sumBuckets, coverageStanding, coverageRisk, strongPickFor, strongRisk } from '@/lib/site/coverage-risk';
@@ -28,7 +28,11 @@ import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel, RiskNote } from '@/components/site/Risk';
 import { StatRow, StatCell } from '@/components/site/StatCell';
-import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE } from '@/lib/site/risk';
+import { riskOf, lossRate, riskWithMarket, OVER_ACC, OVER_EDGE, DISAGREE_ACC, TIGHT_ACC, TIGHT_FAV } from '@/lib/site/risk';
+import { rowStanding } from '@/lib/site/daily-standing';
+import { assessWithDeps } from '@/lib/site/assess';
+import { marketOf, type MarketAssessment } from '@/lib/site/assessment';
+import AssessmentCard, { type AssessmentLabels } from '@/components/site/Assessment';
 import { rawEdge, marketYes } from '@/lib/site/goal-blend';
 import { latestGoalBook } from '@/lib/site/goal-book';
 import LocalTime from '@/components/site/LocalTime';
@@ -141,13 +145,12 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const strongPick = cov ? strongPickFor(outsideInput, covRow?.stats?.strong) : null;
   const mktName: Record<string, string> = { x12: t('sec1x2'), ou25: t('standingOver'), under25: t('standingUnder'), btts: t('standingYes') };
   // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
-  const standing = cov ? outsideStanding : perf ? standingFor({
-    leagueSlug: p.league?.slug ?? null, pick: p.pick, pHome: p.pHome, pDraw: p.pDraw, pAway: p.pAway,
-    over: p.overUnder ? { pick: p.overUnder.pick, pRaw: p.overUnder.pRaw } : null,
-    btts: p.btts ? { pick: p.btts.pick, pRaw: p.btts.pRaw } : null,
-    market: market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null,
-    bttsMarketYes: book?.btts ? book.btts.pA : null,
-  }, perf.signals) : [];
+  // Kapsanan lig: liste / picks / gölge kayıt ile AYNI yol (rowStanding → standingFor, 2026-10-16).
+  const standing = cov ? outsideStanding : perf ? (rowStanding(p, market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null, perf.signals) ?? []) : [];
+  // Ortak değerlendirme (assess-1.0): pazar başına kanıt durumu; karar assessment.ts'te.
+  const assessed = assessWithDeps(p, { perf, outside: null, snapshots: market ? { [p.fixtureId]: market } : {}, now: Date.now() }, standing);
+  const assessment = assessed?.assessment ?? null;
+  const a1x2 = marketOf(assessment, '1x2');
   const standingLabels: StandingLabels = {
     market: { '1x2': t('sec1x2'), ou25: t('standingOu'), btts: t('standingBtts') },
     selection: (s) => s.market === '1x2' ? (s.selection === '1' ? p.homeName : s.selection === '2' ? p.awayName : tc('draw')) : s.market === 'ou25' ? (s.selection === 'over' ? t('standingOver') : t('standingUnder')) : (s.selection === 'yes' ? t('standingYes') : t('standingNo')),
@@ -161,6 +164,37 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
     sample: (n) => tc('matches', { count: n }),
   };
   const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
+  // ── Değerlendirme kartı metinleri (assessment ad alanı) ───────────────────
+  const ta = await getTranslations('assessment');
+  const tx = ta as unknown as (k: string, v?: Record<string, string | number>) => string;
+  const r100 = (x: number | null | undefined) => (x == null ? '–' : Math.round(x * 100));
+  const phaseLabel = (ph: string | null) => (ph === 'closing' ? ta('phaseClosing') : ph === 'opening' ? ta('phaseOpening') : ta('phaseLatest'));
+  const kindLabel = (r: NonNullable<MarketAssessment['record']>) => tx(r.kind === 'level' ? 'kindLevel' : r.kind === 'edge' ? 'kindEdge' : 'kindClash', { bucket: r.bucket });
+  const marketFavOf = (m: MarketAssessment) => (market ? (market.pHome >= market.pDraw && market.pHome >= market.pAway ? p.homeName : market.pAway >= market.pHome && market.pAway >= market.pDraw ? p.awayName : tc('draw')) : '');
+  const reasonText = (m: MarketAssessment): string => {
+    const code = m.reasons[0]; const r = m.record;
+    const v = { won: r?.won ?? 0, n: r?.n ?? 0, acc: r100(r?.acc), lower: r100(r?.lower), upper: r100(r?.upper), thr: Math.round((r?.threshold ?? STRONG_ACC[m.market]) * 100), model: r100(m.model.p) };
+    if (code === 'market_disagrees') return m.market === '1x2' ? tx('reason.market_disagrees', { fav: marketFavOf(m), acc: DISAGREE_ACC }) : tx('reason.market_disagrees_goal', { model: r100(m.model.p) });
+    if (code === 'market_above') return tx('reason.market_above', { edge: Math.round((m.model.p - (m.price.p ?? 0)) * 100), acc: OVER_ACC });
+    if (code === 'market_tight') return tx('reason.market_tight', { fav: Math.round(TIGHT_FAV * 100), acc: TIGHT_ACC });
+    return tx(`reason.${code ?? 'record_missing'}`, v);
+  };
+  const assessmentLabels: AssessmentLabels = {
+    title: ta('title'), lead: ta('lead'),
+    status: { supported: ta('status.supported'), conflicting: ta('status.conflicting'), insufficient: ta('status.insufficient') },
+    market: { '1x2': t('sec1x2'), ou25: t('standingOu'), btts: t('standingBtts') },
+    selection: (m) => m.market === '1x2' ? (m.selection === '1' ? p.homeName : m.selection === '2' ? p.awayName : tc('draw')) : m.market === 'ou25' ? (m.selection === 'over' ? t('standingOver') : t('standingUnder')) : (m.selection === 'yes' ? t('standingYes') : t('standingNo')),
+    reason: reasonText,
+    notes: (m) => m.reasons.slice(1).filter((c) => c === 'market_missing' || c === 'market_stale' || c === 'calibration_missing').map((c) => tx(`note.${c}`)),
+    model: ta('model'), calibrated: (pc) => tx('calibrated', { p: Math.round(pc * 100) }), rawOnly: ta('rawOnly'),
+    marketCol: ta('market'),
+    marketSub: (m) => (m.price.odds != null ? tx('marketSub', { odds: m.price.odds.toFixed(2), phase: phaseLabel(m.price.phase) }) : m.price.phase ? tx('marketSubNoOdds', { phase: phaseLabel(m.price.phase) }) : null),
+    noMarket: ta('noMarket'),
+    recordCol: ta('record'),
+    recordSub: (m) => (m.record ? tx('recordSub', { won: m.record.won, n: m.record.n, bucket: kindLabel(m.record), scope: m.record.scope === 'league' ? ta('scopeLeague') : ta('scopeAll') }) : null),
+    noRecord: ta('noRecord'), thinRecord: (n) => tx('thinRecord', { n }),
+    footer: <>{ta('footer')} <Link href="/performance" className="underline">{t('standingLink')}</Link></>,
+  };
 
   const sm = p.lambdaHome != null && p.lambdaAway != null ? scoreMatrix(p.lambdaHome, p.lambdaAway) : null;
   const derived = sm ? outcomeProbs(sm) : null;
@@ -289,7 +323,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                 <div key={o.key} className={`rounded-xl border px-3 py-2.5 ${p.pick === o.key ? 'border-s-accent/50 bg-s-accent-100/50' : 'border-s-line'}`}>
                   <dt className="truncate text-[12px] text-s-muted"><span className="num mr-1 font-semibold text-s-ink">{o.key}</span>{o.label}</dt>
                   <dd className={`num mt-0.5 text-[22px] font-bold leading-none sm:text-[26px] ${o.key === '1' ? 'text-s-accent-700' : o.key === '2' ? 'text-s-away' : ''}`}>{pct(o.p)}</dd>
-                  {o.o != null && <dd className="num mt-1 text-[11.5px] text-s-muted">{t3('marketShort')} {o.o.toFixed(2)}{o.e != null && <span className={o.e > 0.03 ? 'text-s-win' : o.e < -0.03 ? 'text-s-loss' : ''}> · {pp(o.e)}</span>}</dd>}
+                  {o.o != null && <dd className="num mt-1 text-[11.5px] text-s-muted">{t3('marketShort')} {o.o.toFixed(2)}{o.e != null && <span className={o.e >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}> · {pp(o.e)}</span>}</dd>}
                 </div>
               ))}
             </dl>
@@ -304,24 +338,26 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
         <aside className="card card-accent !gap-4 !p-5 sm:!p-6">
           <div className="flex items-center justify-between gap-2">
-            <p className="kicker">{t2('recommended')}</p>
+            <p className="kicker">{a1x2 ? ta(`pickHeading.${a1x2.status}`) : t2('recommended')}</p>
             <RiskLabel risk={risk} />
           </div>
           {locked ? <LockedPick size="lg" /> : (
             <>
               <p className="text-[26px] font-bold leading-[1.05]">{pickTitle}</p>
               <div className="flex items-center gap-4">
-                <ConfidenceRing conf={conf} size={96} inner="surface" label={t2('confidence')} />
+                <ConfidenceRing conf={conf} size={96} inner="surface" label={p.confidenceCalibrated ? t2('confidence') : `${t2('confidence')} · ${ta('rawShort')}`} />
                 <p className="text-[13.5px] leading-snug text-s-muted">
-                  {confPct != null ? (
+                  {/* "100'de 74 kez doğru" iddiası yalnız kalibre VE değerlendirme destekliyorsa; aksi hâlde kalibre değer model çıktısı olarak etiketlenir (2026-10-16) */}
+                  {confPct != null && p.confidenceCalibrated && (!a1x2 || a1x2.status === 'supported') ? (
                     <>
                       {t2.rich('expected', { conf: confPct, b: (c) => <strong className="text-[15px] text-s-ink">{c}</strong> })}<br />
                       {t2.rich('lossRate', { loss: loss ?? 0, b: (c) => <strong className="text-[15px] text-s-loss">{c}</strong> })}
                     </>
-                  ) : t2('noConfidence')}
+                  ) : confPct != null && p.confidenceCalibrated ? ta('confNote', { p: confPct }) : t2('noConfidence')}
                 </p>
               </div>
-              {guard?.flag && (
+              {/* Piyasa koruması metni: değerlendirme kartı aynı gerekçeyi taşıdığında burada yinelenmez */}
+              {guard?.flag && !a1x2 && (
                 <p className="rounded-lg border border-s-loss/30 bg-s-loss/10 px-3 py-2 text-[13px] text-s-ink">
                   <strong className="text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeTitle' : guard.flag === 'over' ? 'overTitle' : 'tightTitle')}</strong>{' '}
                   {guard.flag === 'disagree'
@@ -340,6 +376,13 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           <RiskNote className="mt-auto text-s-muted"><strong className="text-s-ink">{t2('beforeTitle')}</strong> {t2('beforeText')}</RiskNote>
         </aside>
       </div>
+
+      {/* ── Bu maç için değerlendirme (assess-1.0, 2026-10-16) ──────── */}
+      {assessment && assessment.markets.length > 0 && (
+        <div className="mt-4">
+          <AssessmentCard assessment={assessment} labels={assessmentLabels} />
+        </div>
+      )}
 
       {/* ── Tabs ───────────────────────────────────────────────────── */}
       <div className="mt-8">
@@ -475,7 +518,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                       <td className="num py-2 text-right text-s-muted">{odds(o.p)}</td>
                       <td className="num py-2 text-right">{o.o != null ? o.o.toFixed(2) : '–'}</td>
                       <td className="num py-2 text-right text-s-muted">{o.m != null ? pct(o.m) : '–'}</td>
-                      <td className={`num py-2 text-right ${o.e == null ? 'text-s-muted' : o.e > 0.03 ? 'text-s-win' : o.e < -0.03 ? 'text-s-loss' : ''}`}>{o.e != null ? pp(o.e) : '–'}</td>
+                      <td className={`num py-2 text-right ${o.e == null ? 'text-s-muted' : o.e >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}`}>{o.e != null ? pp(o.e) : '–'}</td>
                     </tr>
                   ))}
                 </tbody>

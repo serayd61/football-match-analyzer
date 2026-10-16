@@ -21,7 +21,7 @@ export function fixtureRow(f: FeedRow, catalog: Catalog): SitePrediction {
     fixtureId: f.id, league, leagueName: league?.name || f.league, leagueId: f.leagueId, covered: !!league,
     homeId: f.homeTeamId, homeName: f.homeTeam, awayId: f.awayTeamId, awayName: f.awayTeam,
     homeCrest: crest(f.homeTeamId), awayCrest: crest(f.awayTeamId), kickoff: f.date,
-    pHome: 0, pDraw: 0, pAway: 0, lambdaHome: null, lambdaAway: null, pick: null, confidence: null, confidenceRaw: null,
+    pHome: 0, pDraw: 0, pAway: 0, lambdaHome: null, lambdaAway: null, pick: null, confidence: null, confidenceRaw: null, confidenceCalibrated: false, calibrationSegment: null,
     doubleChance: null, overUnder: null, btts: null, rationale: null,
     settled: false, homeScore: f.homeScore ?? null, awayScore: f.awayScore ?? null, result: null,
     outcome: 'pending', modelVersion: null, updatedAt: null, hasModel: false,

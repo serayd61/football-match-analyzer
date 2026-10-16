@@ -1510,5 +1510,72 @@
         "body": "Sfoglia le partite di oggi, aprine una per l'analisi completa e cambia lingua o tema dall'intestazione o da Account → Impostazioni. Da lì puoi riaprire questo tour quando vuoi."
       }
     }
+  },
+  "assessment": {
+    "title": "Valutazione per questa partita",
+    "lead": "Modello, mercato e il nostro storico, giudicati separatamente per ogni mercato. Lo stato descrive le prove, non una nuova probabilità di vittoria.",
+    "status": {
+      "supported": "Le prove sostengono",
+      "conflicting": "Segnali in conflitto",
+      "insufficient": "Prove insufficienti"
+    },
+    "statusShort": {
+      "supported": "sostenuto",
+      "conflicting": "conflitto",
+      "insufficient": "insufficiente"
+    },
+    "pickHeading": {
+      "supported": "Pronostico con prove a sostegno",
+      "conflicting": "Pronostico del modello · segnali in conflitto",
+      "insufficient": "Pronostico del modello · prove insufficienti"
+    },
+    "model": "Modello",
+    "calibrated": "calibrato {p}%",
+    "rawOnly": "valore grezzo · nessuna curva di calibrazione",
+    "rawShort": "grezzo",
+    "market": "Mercato",
+    "marketSub": "@{odds} · {phase}",
+    "marketSubNoOdds": "{phase}",
+    "noMarket": "nessuna quota rilevata",
+    "record": "Storico",
+    "recordSub": "{won}/{n} · {bucket} · {scope}",
+    "noRecord": "nessuno storico per questo mercato",
+    "thinRecord": "{n} pronostici simili · meno di 10",
+    "scopeLeague": "campionato",
+    "scopeAll": "tutti i campionati",
+    "kindLevel": "modello {bucket}",
+    "kindEdge": "scarto {bucket} pt",
+    "kindClash": "divergenza {bucket} pt",
+    "phaseOpening": "apertura",
+    "phaseClosing": "chiusura",
+    "phaseLatest": "ultima",
+    "reason": {
+      "market_disagrees": "Il mercato favorisce {fav}, non questo pronostico. Quando il modello ha contraddetto il favorito del mercato, i suoi pronostici si sono avverati circa il {acc}% delle volte.",
+      "market_disagrees_goal": "Il modello grezzo pende dall'altra parte ({model}% per questo lato); la scelta segue la miscela con il mercato. Una divergenza così non è una prova a favore.",
+      "market_above": "Il modello è {edge} punti sopra il prezzo del mercato al netto del margine. In quella fascia i nostri pronostici si sono avverati circa il {acc}% delle volte: uno scarto positivo è stato segno di eccesso di fiducia, non di valore.",
+      "market_tight": "Nessuna parte è quotata sopra il {fav}% dal mercato. In partite così i nostri pronostici si sono avverati circa il {acc}% delle volte, qualunque cosa dica il modello.",
+      "record_contradicts": "Pronostici simili centrati {won}/{n} ({acc}%). Il limite superiore dell'intervallo al 95% è {upper}%, sotto sia la soglia forte ({thr}%) sia il {model}% del modello.",
+      "record_supports": "Pronostici simili centrati {won}/{n} ({acc}%); anche il limite inferiore dell'intervallo al 95% ({lower}%) supera la soglia del {thr}%. Uno storico della stessa situazione, non una garanzia.",
+      "record_uncertain": "Pronostici simili centrati {won}/{n} ({acc}%), ma l'intervallo al 95% ({lower}–{upper}%) non supera la soglia del {thr}% né esclude il pronostico.",
+      "record_thin": "Solo {n} pronostici simili nello storico (meno di 10): troppo pochi per giudicare. Dati mancanti, non un segno di fallimento.",
+      "record_missing": "Nessuno storico per questo mercato: non c'è nulla con cui confrontare il valore del modello.",
+      "market_missing": "Nessuna quota del bookmaker rilevata per questa partita; giudizio basato solo sullo storico.",
+      "market_stale": "L'ultima quota di mercato ha più di 24 ore.",
+      "calibration_missing": "Nessuna curva di calibrazione caricata: il valore del modello è grezzo, non una probabilità calibrata."
+    },
+    "note": {
+      "market_missing": "Nessuna quota rilevata.",
+      "market_stale": "Quota di mercato più vecchia di 24 h.",
+      "calibration_missing": "Nessuna curva di calibrazione: il valore del modello è grezzo."
+    },
+    "footer": "I valori del modello sono l'output del modello statistico. Lo «storico» mostra come sono andati i nostri pronostici passati nella stessa fascia; i confini delle fasce vengono da dati passati e non sono ancora validati in avanti, quindi vanno letti come esplorativi. Non è una garanzia.",
+    "radarTitle": "Divergenze modello–mercato",
+    "radarMeta": "oggi e domani · modello sopra il bookmaker sul proprio pronostico",
+    "radarEmpty": "Al momento nessuna divergenza di 4 punti o più tra modello e bookmaker.",
+    "radarLocked": "{n} divergenze trovate",
+    "radarLockedLead": "Ogni partita in cui il modello è 4+ punti sopra il bookmaker sul proprio pronostico, con la stessa valutazione della pagina partita.",
+    "radarNote": "Probabilità grezza del modello meno probabilità del bookmaker al netto del margine, in punti, ordinate per ampiezza dello scarto. Non è una classifica di opportunità: nel backtest i grandi scarti 1X2 non sono stati redditizi (scarto ≥ +5 → ROI −23), e scarti di 5+ punti sono segnalati come conflitto.",
+    "colStatus": "Valutazione",
+    "confNote": "{p}% è il valore calibrato del modello per questo pronostico. La valutazione sotto lo confronta con mercato e storico prima di contarlo come prova."
   }
 }
