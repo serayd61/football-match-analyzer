@@ -948,7 +948,12 @@
     "signOut": "Sign out",
     "legacyNote": "Notification and analysis preferences still live in the legacy view:",
     "legacyLink": "legacy settings",
-    "twaNote": "Subscription changes are not available in this app."
+    "twaNote": "Subscription changes are not available in this app.",
+    "app": "App",
+    "share": "Share",
+    "rate": "Rate",
+    "feedback": "Feedback",
+    "tour": "Tour"
   },
   "v2": {
     "risk": {
@@ -1179,7 +1184,9 @@
       "processing": "Processing…",
       "errorInvalid": "Invalid email or password.",
       "errorGeneral": "Something went wrong. Please try again.",
-      "or": "or"
+      "or": "or",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
     },
     "landing": {
       "eyebrow": "FOOTBALL ANALYSIS PLATFORM",
@@ -1463,5 +1470,45 @@
     "howRule": "Candidates are the day's recommended picks (displayed probability ≥60%) that have bookmaker odds. One leg per match. Among pairs whose total odds stay within {min}–{max}, the pair with the highest product of probabilities is chosen; if nothing reaches the band, there is no coupon that day.",
     "howRecord": "Why two legs: recommended picks with odds hit about 65%. Two legs ≈ 42–50%, three legs (odds ~3.5) ≈ 27%. The record shows coupon hit rate and ROI together; it is a log, not a claim.",
     "howTelegram": "The same coupon goes to our Telegram channel every morning:"
+  },
+  "app": {
+    "shareApp": "Share Football Analytics",
+    "shareTitle": "Football Analytics Pro",
+    "shareText": "Football Analytics Pro: probability-based football match analysis with a public, time-stamped track record.",
+    "copied": "Link copied to clipboard.",
+    "copyFailed": "Could not copy the link.",
+    "rateApp": "Rate on Google Play",
+    "sendFeedback": "Send feedback",
+    "showTour": "Show the tour again"
+  },
+  "onboarding": {
+    "stepOf": "Step {n} of {total}",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "cta": "See today's matches",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to Football Analytics Pro",
+        "body": "Pre-match probabilities from a statistical model for the leagues it is trained on, with a public, time-stamped record of every call. This tour takes about a minute."
+      },
+      "matches": {
+        "title": "Matches and probabilities",
+        "body": "Open any rated match for the model's home / draw / away, over-under 2.5 and both-teams-to-score probabilities. The confidence ring shows how sure the model is; Low / Medium / High tells you the risk."
+      },
+      "edge": {
+        "title": "Edge = model minus market",
+        "body": "The edge is the gap between the model's probability and the bookmaker's implied price. Read it as a reason to look closer, not a promise: markets are well calibrated and small edges are mostly noise."
+      },
+      "record": {
+        "title": "A public, honest record",
+        "body": "Every prediction is timestamped before kick-off and settled automatically. Wins and losses stay on the Performance page, with calibration and flat-stake returns."
+      },
+      "start": {
+        "title": "You're set",
+        "body": "Browse today's matches, open one for the full breakdown, and switch language or theme from the header or Account → Settings. You can reopen this tour from Settings at any time."
+      }
+    }
   }
 }

@@ -60,6 +60,7 @@ export default async function LoginPage({ params: { locale }, searchParams }: { 
               name: t('name'), email: t('email'), password: t('password'), signIn: t('signIn'), register: t('register'), google: t('google'),
               noAccount: t('noAccount'), startFree: t('startFree'), hasAccount: t('hasAccount'), signInLink: t('signInLink'), forgot: t('forgot'),
               processing: t('processing'), errorInvalid: t('errorInvalid'), errorGeneral: t('errorGeneral'), or: t('or'),
+              showPassword: t('showPassword'), hidePassword: t('hidePassword'),
             }}
           />
         </div>

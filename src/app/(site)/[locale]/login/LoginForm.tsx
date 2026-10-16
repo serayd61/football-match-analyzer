@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { track } from '@/lib/analytics';
+import PasswordInput from '@/components/site/PasswordInput';
 
 type Labels = {
   name: string; email: string; password: string; signIn: string; register: string; google: string;
   noAccount: string; startFree: string; hasAccount: string; signInLink: string; forgot: string;
   processing: string; errorInvalid: string; errorGeneral: string; or: string;
+  showPassword: string; hidePassword: string;
 };
 
 // Credentials + Google sign-in (button only when the provider is configured —
@@ -61,7 +63,7 @@ export default function LoginForm({ locale, callbackUrl, initialMode, forgotHref
         </label>
         <label className="field">
           <span>{l.password}</span>
-          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === 'register' ? 'new-password' : 'current-password'} minLength={6} />
+          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={mode === 'register' ? 'new-password' : 'current-password'} minLength={6} showLabel={l.showPassword} hideLabel={l.hidePassword} />
         </label>
         <button type="submit" disabled={loading} className="btn btn-primary btn-lg btn-block mt-1">{loading ? l.processing : mode === 'register' ? l.register : l.signIn}</button>
       </form>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sun, Moon, Monitor } from 'lucide-react';
+import { trackEvent, Events } from '@/lib/analytics';
 
 type Mode = 'system' | 'light' | 'dark';
 const KEY = 'site-theme';
@@ -29,6 +30,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     const next: Mode = mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system';
     setMode(next);
     apply(next);
+    trackEvent(Events.THEME_CHANGED, { theme: next });
     try {
       if (next === 'system') localStorage.removeItem(KEY);
       else localStorage.setItem(KEY, next);

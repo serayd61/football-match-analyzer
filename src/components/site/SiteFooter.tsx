@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
 import FooterPricingLink from './FooterPricingLink';
+import FooterAppActions from './FooterAppActions';
 
 // Footer v3: brand + one-line disclaimer, link columns, language.
 export default async function SiteFooter() {
@@ -34,6 +35,7 @@ export default async function SiteFooter() {
           <div className="mt-2"><LocaleSwitcher /></div>
         </nav>
       </div>
+      <FooterAppActions />
       <div className="border-t border-s-line">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-4 py-5 text-[12.5px] leading-relaxed sm:px-6">
           <p>{t('compliance')}</p>

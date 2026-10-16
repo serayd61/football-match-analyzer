@@ -14,6 +14,7 @@ import { alternatesFor, SITE_URL } from '@/lib/site/seo';
 import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
 import MobileTabBar from '@/components/site/MobileTabBar';
+import Onboarding from '@/components/site/Onboarding';
 
 // Root layout of the public site (route group `(site)`). It is deliberately
 // separate from the legacy app root: no LanguageProvider mount gate, no
@@ -101,6 +102,7 @@ export default async function LocaleLayout({
               <main id="main" className="flex-1">{children}</main>
               <SiteFooter />
               <MobileTabBar />
+              <Onboarding />
             </NextIntlClientProvider>
           </AuthProvider>
         </div>

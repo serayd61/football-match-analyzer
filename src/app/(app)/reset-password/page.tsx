@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Activity } from 'lucide-react';
+import { Activity, Eye, EyeOff } from 'lucide-react';
 import { Spinner } from '@/components/ui';
 import { useLanguage } from '@/components/LanguageProvider';
 
@@ -15,18 +15,21 @@ const L = {
     submit: 'Şifreyi Güncelle', saving: 'Güncelleniyor...', short: 'Şifre en az 8 karakter olmalı.', mismatch: 'Şifreler eşleşmiyor.',
     error: 'Bir hata oluştu. Lütfen tekrar deneyin.', done: 'Şifren güncellendi! Giriş sayfasına yönlendiriliyorsun...', login: 'Hemen giriş yap →',
     invalid: 'Geçersiz bağlantı. Lütfen', invalidLink: 'yeni bir sıfırlama isteyin', loading: 'Yükleniyor...',
+    show: 'Şifreyi göster', hide: 'Şifreyi gizle',
   },
   en: {
     title: 'Reset password', lead: 'Choose your new password.', pw: 'New password', pw2: 'New password (again)',
     submit: 'Update password', saving: 'Updating...', short: 'The password must be at least 8 characters.', mismatch: 'The passwords do not match.',
     error: 'Something went wrong. Please try again.', done: 'Your password has been updated. Redirecting you to sign in...', login: 'Sign in now →',
     invalid: 'Invalid link. Please', invalidLink: 'request a new reset link', loading: 'Loading...',
+    show: 'Show password', hide: 'Hide password',
   },
   de: {
     title: 'Passwort zurücksetzen', lead: 'Lege dein neues Passwort fest.', pw: 'Neues Passwort', pw2: 'Neues Passwort (wiederholen)',
     submit: 'Passwort aktualisieren', saving: 'Wird aktualisiert...', short: 'Das Passwort muss mindestens 8 Zeichen haben.', mismatch: 'Die Passwörter stimmen nicht überein.',
     error: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', done: 'Dein Passwort wurde aktualisiert. Du wirst zur Anmeldung weitergeleitet...', login: 'Jetzt anmelden →',
     invalid: 'Ungültiger Link. Bitte', invalidLink: 'fordere einen neuen Link an', loading: 'Wird geladen...',
+    show: 'Passwort anzeigen', hide: 'Passwort verbergen',
   },
 } as const;
 
@@ -37,6 +40,7 @@ function ResetPasswordForm({ l }: { l: (typeof L)[keyof typeof L] }) {
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false); // show/hide toggle — Testers Community feedback 2026-10-16
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -87,11 +91,16 @@ function ResetPasswordForm({ l }: { l: (typeof L)[keyof typeof L] }) {
       <p className="text-sm text-content-muted">{l.lead}</p>
       <div>
         <label className="block text-sm font-medium text-content-muted mb-2">{l.pw}</label>
-        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="fa-input w-full" />
+        <div className="relative">
+          <input type={show ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="fa-input w-full pr-11" />
+          <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? l.hide : l.show} aria-pressed={show} title={show ? l.hide : l.show} className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-content-muted hover:text-content">
+            {show ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+          </button>
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-content-muted mb-2">{l.pw2}</label>
-        <input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="fa-input w-full" />
+        <input type={show ? 'text' : 'password'} required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="fa-input w-full" />
       </div>
       {error && <div className="p-4 rounded-xl bg-negative/10 border border-negative/30 text-negative text-sm">{error}</div>}
       <button type="submit" disabled={loading} className="fa-btn fa-btn-primary fa-btn-lg w-full">
