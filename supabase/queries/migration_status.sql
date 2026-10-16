@@ -49,6 +49,8 @@ with sig(version, name, applied) as (values
   ('20261010010000', 'site_standing_picks',
      exists (select 1 from pg_trigger where tgname='trg_standing_frozen_guard')),
   ('20261014010000', 'site_coupons',
-     to_regclass('public.site_coupons') is not null)
+     to_regclass('public.site_coupons') is not null),
+  ('20261016020000', 'site_assessment_snapshots',
+     exists (select 1 from pg_trigger where tgname='trg_assessment_snapshot_immutable'))
 )
 select version, name, applied from sig order by version;

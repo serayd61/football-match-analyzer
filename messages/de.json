@@ -1510,5 +1510,72 @@
         "body": "Sieh dir die heutigen Spiele an, öffne eines für die vollständige Aufschlüsselung und wechsle Sprache oder Darstellung über die Kopfzeile oder Konto → Einstellungen. Die Tour kannst du dort jederzeit erneut öffnen."
       }
     }
+  },
+  "assessment": {
+    "title": "Einschätzung für dieses Spiel",
+    "lead": "Modell, Markt und unsere eigene Bilanz, je Markt getrennt beurteilt. Der Status beschreibt die Beweislage, keine neue Gewinnwahrscheinlichkeit.",
+    "status": {
+      "supported": "Belege stützen",
+      "conflicting": "Signale widersprechen sich",
+      "insufficient": "Belege reichen nicht"
+    },
+    "statusShort": {
+      "supported": "gestützt",
+      "conflicting": "Widerspruch",
+      "insufficient": "unzureichend"
+    },
+    "pickHeading": {
+      "supported": "Tipp mit stützenden Belegen",
+      "conflicting": "Modelltipp · Signale widersprechen sich",
+      "insufficient": "Modelltipp · Belege reichen nicht"
+    },
+    "model": "Modell",
+    "calibrated": "kalibriert {p}%",
+    "rawOnly": "Rohwert · keine Kalibrierkurve",
+    "rawShort": "roh",
+    "market": "Markt",
+    "marketSub": "@{odds} · {phase}",
+    "marketSubNoOdds": "{phase}",
+    "noMarket": "kein Kurs erfasst",
+    "record": "Bilanz",
+    "recordSub": "{won}/{n} · {bucket} · {scope}",
+    "noRecord": "keine Bilanz für diesen Markt",
+    "thinRecord": "{n} ähnliche Tipps · unter 10",
+    "scopeLeague": "Liga",
+    "scopeAll": "alle Ligen",
+    "kindLevel": "Modell {bucket}",
+    "kindEdge": "Abstand {bucket} Pkt.",
+    "kindClash": "Differenz {bucket} Pkt.",
+    "phaseOpening": "Eröffnung",
+    "phaseClosing": "Schluss",
+    "phaseLatest": "aktuell",
+    "reason": {
+      "market_disagrees": "Der Markt favorisiert {fav}, nicht diesen Tipp. Wenn das Modell dem Marktfavoriten widersprach, trafen seine Tipps in rund {acc}% der Fälle.",
+      "market_disagrees_goal": "Das Rohmodell neigt zur anderen Seite ({model}% für diese Seite); der Tipp folgt der Marktmischung. Eine solche Spaltung ist kein Beleg für den Tipp.",
+      "market_above": "Das Modell liegt {edge} Punkte über dem margenfreien Marktpreis. In diesem Band trafen unsere Tipps in rund {acc}% der Fälle: Ein positiver Abstand war ein Zeichen von Überzuversicht, nicht von Wert.",
+      "market_tight": "Keine Seite wird vom Markt über {fav}% bewertet. In solchen Spielen trafen unsere Tipps in rund {acc}% der Fälle, egal was das Modell sagt.",
+      "record_contradicts": "Ähnliche Tipps trafen {won}/{n} ({acc}%). Das obere Ende des 95%-Bereichs liegt bei {upper}%, unter der Schwelle ({thr}%) und unter den {model}% des Modells.",
+      "record_supports": "Ähnliche Tipps trafen {won}/{n} ({acc}%); selbst das untere Ende des 95%-Bereichs ({lower}%) liegt über der Schwelle von {thr}%. Eine Bilanz derselben Lage, keine Garantie.",
+      "record_uncertain": "Ähnliche Tipps trafen {won}/{n} ({acc}%), doch der 95%-Bereich ({lower}–{upper}%) erreicht weder die Schwelle von {thr}% noch schliesst er den Tipp aus.",
+      "record_thin": "Nur {n} ähnliche Tipps in der Bilanz (unter 10): zu wenige für ein Urteil. Fehlende Daten, kein Zeichen von Misserfolg.",
+      "record_missing": "Für diesen Markt gibt es noch keine Bilanz, also nichts, woran sich der Modellwert messen liesse.",
+      "market_missing": "Kein Buchmacherkurs für dieses Spiel erfasst; Urteil allein nach der Bilanz.",
+      "market_stale": "Der letzte Marktkurs ist älter als 24 Stunden.",
+      "calibration_missing": "Keine Kalibrierkurve geladen: Der Modellwert ist ein Rohwert, keine kalibrierte Wahrscheinlichkeit."
+    },
+    "note": {
+      "market_missing": "Kein Buchmacherkurs erfasst.",
+      "market_stale": "Marktkurs älter als 24 h.",
+      "calibration_missing": "Keine Kalibrierkurve: Der Modellwert ist roh."
+    },
+    "footer": "Modellwerte sind die Ausgabe des statistischen Modells. «Bilanz» zeigt, wie unsere früheren Tipps im selben Bereich abschnitten; die Bereichsgrenzen stammen aus Vergangenheitsdaten und sind noch nicht vorwärts geprüft, also als explorativ zu lesen. Keine Garantie.",
+    "radarTitle": "Modell-Markt-Abweichungen",
+    "radarMeta": "heute und morgen · Modell über dem Buchmacher beim eigenen Tipp",
+    "radarEmpty": "Derzeit keine Abweichung von 4 Punkten oder mehr zwischen Modell und Buchmacher.",
+    "radarLocked": "{n} Abweichungen gefunden",
+    "radarLockedLead": "Jedes Spiel, in dem das Modell beim eigenen Tipp 4+ Punkte über dem Buchmacher liegt, mit derselben Einschätzung wie auf der Spielseite.",
+    "radarNote": "Rohe Modellwahrscheinlichkeit minus margenfreie Buchmacherwahrscheinlichkeit, in Punkten, nach Grösse des Abstands sortiert. Das ist keine Chancenrangliste: Im Backtest waren grosse 1X2-Abstände nicht profitabel (Abstand ≥ +5 → ROI −23), und Abstände von 5+ Punkten gelten als Widerspruch.",
+    "colStatus": "Einschätzung",
+    "confNote": "{p}% ist der kalibrierte Modellwert für diesen Tipp. Die Einschätzung unten wägt ihn gegen Markt und Bilanz ab, bevor er als Beleg zählt."
   }
 }

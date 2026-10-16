@@ -1510,5 +1510,72 @@
         "body": "Bugünün maçlarına göz at, birini açıp tam analizi gör; dil ve görünümü üst çubuktan ya da Hesap → Ayarlar'dan değiştir. Bu turu Ayarlar'dan istediğin zaman yeniden açabilirsin."
       }
     }
+  },
+  "assessment": {
+    "title": "Bu maç için değerlendirme",
+    "lead": "Model, piyasa ve kendi kaydımız; her pazar için ayrı ayrı. Durum kanıtı anlatır, yeni bir kazanma olasılığı değildir.",
+    "status": {
+      "supported": "Kanıt destekliyor",
+      "conflicting": "Sinyaller çelişiyor",
+      "insufficient": "Kanıt yetersiz"
+    },
+    "statusShort": {
+      "supported": "destekli",
+      "conflicting": "çelişki",
+      "insufficient": "yetersiz kanıt"
+    },
+    "pickHeading": {
+      "supported": "Kanıtla desteklenen seçim",
+      "conflicting": "Model seçimi · sinyaller çelişiyor",
+      "insufficient": "Model seçimi · kanıt yetersiz"
+    },
+    "model": "Model",
+    "calibrated": "kalibre %{p}",
+    "rawOnly": "ham çıktı · kalibrasyon eğrisi yok",
+    "rawShort": "ham",
+    "market": "Piyasa",
+    "marketSub": "@{odds} · {phase}",
+    "marketSubNoOdds": "{phase}",
+    "noMarket": "oran kaydı yok",
+    "record": "Kayıt",
+    "recordSub": "{won}/{n} · {bucket} · {scope}",
+    "noRecord": "bu pazar için kayıt yok",
+    "thinRecord": "{n} benzer seçim · 10'dan az",
+    "scopeLeague": "lig",
+    "scopeAll": "tüm ligler",
+    "kindLevel": "model {bucket}",
+    "kindEdge": "fark {bucket} puan",
+    "kindClash": "ayrışma {bucket} puan",
+    "phaseOpening": "açılış",
+    "phaseClosing": "kapanış",
+    "phaseLatest": "son görüş",
+    "reason": {
+      "market_disagrees": "Piyasa bu seçimi değil {fav} tarafını favori görüyor. Model piyasa favorisinden ayrıştığında seçimleri yaklaşık %{acc} tuttu.",
+      "market_disagrees_goal": "Ham model öbür tarafa eğilimli (bu taraf için %{model}); seçim piyasa harmanından geliyor. Böyle bir ayrışma seçimin lehine kanıt değildir.",
+      "market_above": "Model, piyasanın marjsız fiyatının {edge} puan üstünde. Bu bantta seçimlerimiz yaklaşık %{acc} tuttu: pozitif fark değer değil, aşırı güven işareti oldu.",
+      "market_tight": "Piyasa hiçbir tarafı %{fav} üstünde fiyatlamıyor. Böyle maçlarda model ne derse desin seçimlerimiz yaklaşık %{acc} tuttu.",
+      "record_contradicts": "Benzer seçimler {won}/{n} tuttu (%{acc}). %95 aralığının üst sınırı %{upper}; hem güçlü eşiğin (%{thr}) hem modelin %{model} değerinin altında.",
+      "record_supports": "Benzer seçimler {won}/{n} tuttu (%{acc}); %95 aralığının alt sınırı bile (%{lower}) %{thr} eşiğini geçiyor. Aynı durumun kaydıdır, garanti değildir.",
+      "record_uncertain": "Benzer seçimler {won}/{n} tuttu (%{acc}), ama %95 aralığı (%{lower}–%{upper}) ne %{thr} eşiğini geçiyor ne de seçimi dışlıyor.",
+      "record_thin": "Kayıtta yalnız {n} benzer seçim var (10'dan az): hüküm için çok az. Bu eksik veridir, başarısızlık işareti değil.",
+      "record_missing": "Bu pazar için henüz kayıt yok; model değerini ölçecek bir şey yok.",
+      "market_missing": "Bu maç için bahisçi oranı kaydedilmedi; yalnız kayda göre değerlendirildi.",
+      "market_stale": "Son piyasa oranı 24 saatten eski.",
+      "calibration_missing": "Kalibrasyon eğrisi yüklü değil: model değeri ham çıktıdır, kalibre olasılık değil."
+    },
+    "note": {
+      "market_missing": "Bahisçi oranı kaydedilmedi.",
+      "market_stale": "Piyasa oranı 24 saatten eski.",
+      "calibration_missing": "Kalibrasyon eğrisi yok: model değeri ham."
+    },
+    "footer": "Model değerleri istatistiksel modelin kendi çıktısıdır. \"Kayıt\", aynı kovadaki geçmiş seçimlerimizin nasıl gittiğidir; kova sınırları geçmiş veride bulundu ve henüz ileriye dönük doğrulanmadı, bu yüzden keşifsel okuyun. Garanti değildir.",
+    "radarTitle": "Model–piyasa ayrışmaları",
+    "radarMeta": "bugün ve yarın · model kendi seçiminde bahisçinin üstünde",
+    "radarEmpty": "Şu anda model ile bahisçi arasında 4 puan ve üstü ayrışma yok.",
+    "radarLocked": "{n} ayrışma bulundu",
+    "radarLockedLead": "Modelin kendi seçiminde bahisçinin 4+ puan üstünde olduğu her maç, maç sayfasındaki değerlendirmeyle birlikte.",
+    "radarNote": "Ham model olasılığı eksi bahisçinin marjsız olasılığı, puan olarak; fark büyüklüğüne göre sıralı. Bu bir fırsat sıralaması değildir: geriye dönük testte büyük 1X2 farkları kârlı çıkmadı (fark ≥ +5 → ROI −23) ve 5+ puanlık fark çelişki olarak işaretlenir.",
+    "colStatus": "Değerlendirme",
+    "confNote": "%{p}, bu seçim için modelin kalibre değeridir. Aşağıdaki değerlendirme onu kanıt saymadan önce piyasa ve kayıtla tartar."
   }
 }

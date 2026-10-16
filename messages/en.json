@@ -1510,5 +1510,72 @@
         "body": "Browse today's matches, open one for the full breakdown, and switch language or theme from the header or Account → Settings. You can reopen this tour from Settings at any time."
       }
     }
+  },
+  "assessment": {
+    "title": "Assessment for this match",
+    "lead": "Model, market and our own record, judged separately for each market. A status describes the evidence, not a new win probability.",
+    "status": {
+      "supported": "Evidence supports",
+      "conflicting": "Signals conflict",
+      "insufficient": "Evidence insufficient"
+    },
+    "statusShort": {
+      "supported": "supported",
+      "conflicting": "conflict",
+      "insufficient": "insufficient"
+    },
+    "pickHeading": {
+      "supported": "Pick with supporting evidence",
+      "conflicting": "Model pick · signals conflict",
+      "insufficient": "Model pick · evidence insufficient"
+    },
+    "model": "Model",
+    "calibrated": "calibrated {p}%",
+    "rawOnly": "raw output · no calibration curve",
+    "rawShort": "raw",
+    "market": "Market",
+    "marketSub": "@{odds} · {phase}",
+    "marketSubNoOdds": "{phase}",
+    "noMarket": "no price captured",
+    "record": "Record",
+    "recordSub": "{won}/{n} · {bucket} · {scope}",
+    "noRecord": "no record for this market",
+    "thinRecord": "{n} similar picks · fewer than 10",
+    "scopeLeague": "league",
+    "scopeAll": "all leagues",
+    "kindLevel": "model {bucket}",
+    "kindEdge": "gap {bucket} pts",
+    "kindClash": "split {bucket} pts",
+    "phaseOpening": "opening",
+    "phaseClosing": "closing",
+    "phaseLatest": "latest",
+    "reason": {
+      "market_disagrees": "The market favours {fav}, not this pick. When the model has disagreed with the market favourite, its picks have landed about {acc}% of the time.",
+      "market_disagrees_goal": "The raw model leans the other way ({model}% for this side); the call follows the market blend. A split like this is not evidence for the pick.",
+      "market_above": "The model sits {edge} points above the market's margin-free price. In that band our picks have landed about {acc}% of the time: a positive gap has been a sign of overconfidence, not value.",
+      "market_tight": "No side is priced above {fav}% by the market. In such matches our picks have landed about {acc}% of the time, whatever the model says.",
+      "record_contradicts": "Similar picks hit {won}/{n} ({acc}%). The top of the 95% range is {upper}%, below both the strong bar ({thr}%) and the model's {model}%.",
+      "record_supports": "Similar picks hit {won}/{n} ({acc}%); even the low end of the 95% range ({lower}%) clears the {thr}% bar. A record of the same situation, not a guarantee.",
+      "record_uncertain": "Similar picks hit {won}/{n} ({acc}%), but the 95% range ({lower}–{upper}%) neither clears the {thr}% bar nor rules the pick out.",
+      "record_thin": "Only {n} similar picks on record (fewer than 10): too few to judge. This is missing data, not a sign of failure.",
+      "record_missing": "No record for this market yet, so there is nothing to judge the model figure against.",
+      "market_missing": "No bookmaker price captured for this match; judged on the record alone.",
+      "market_stale": "The last market price is older than 24 hours.",
+      "calibration_missing": "No calibration curve is loaded: the model figure is raw output, not a calibrated probability."
+    },
+    "note": {
+      "market_missing": "No bookmaker price captured.",
+      "market_stale": "Market price older than 24 h.",
+      "calibration_missing": "No calibration curve: the model figure is raw."
+    },
+    "footer": "Model figures are the statistical model's own output. \"Record\" is how our past picks in the same bucket fared; the bucket borders were found in past data and are not validated forward yet, so treat them as exploratory. Not a guarantee.",
+    "radarTitle": "Model–market divergences",
+    "radarMeta": "today and tomorrow · model above the bookmaker on its own pick",
+    "radarEmpty": "No divergence of 4 points or more between the model and the bookmaker right now.",
+    "radarLocked": "{n} divergences found",
+    "radarLockedLead": "Every match where the model sits 4+ points above the bookmaker on its own pick, with the same assessment as the match page.",
+    "radarNote": "Raw model probability minus the bookmaker's margin-free probability, in points, sorted by the size of the gap. This is not an opportunity ranking: in the backtest large 1X2 gaps were not profitable (gap ≥ +5 → ROI −23), and gaps of 5+ points are flagged as a conflict.",
+    "colStatus": "Assessment",
+    "confNote": "{p}% is the calibrated model figure for this pick. The assessment below weighs it against the market and our record before it counts as evidence."
   }
 }

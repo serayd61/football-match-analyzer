@@ -42,6 +42,32 @@ export interface DailyStandingBoard {
 
 export const MARKET_ORDER: SignalMarket[] = ['1x2', 'ou25', 'btts'];
 
+/** Oynanmamış, modelli satır (bitmiş / iptal / ertelenen dışarıda). */
+export const isLiveRow = (r: SitePrediction) => r.hasModel && !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed';
+
+/**
+ * Tek satırın pazar hükümleri — kapsanan ligde standingFor (sinyal karnesi), gözlem
+ * liginde `outside` (sicil dilim karnesi); ikisi de yoksa null. /picks, ana sayfa ve
+ * ortak değerlendirme (assess.ts) AYNI yoldan geçer (2026-10-16).
+ */
+export function rowStanding(
+  row: SitePrediction,
+  m: MarketProbs1x2 | null,
+  tables: SignalTable[],
+  outside?: (row: SitePrediction, market1x2: MarketProbs1x2 | null) => MarketStanding[] | null,
+): MarketStanding[] | null {
+  if (!row.covered) return outside ? outside(row, m) : null;
+  const bttsYes = row.btts?.pMarket == null ? null : row.btts.pick === 'yes' ? row.btts.pMarket : 1 - row.btts.pMarket;
+  return standingFor({
+    leagueSlug: row.league?.slug ?? null,
+    pick: row.pick, pHome: row.pHome, pDraw: row.pDraw, pAway: row.pAway,
+    over: row.overUnder ? { pick: row.overUnder.pick, pRaw: row.overUnder.pRaw } : null,
+    btts: row.btts ? { pick: row.btts.pick, pRaw: row.btts.pRaw } : null,
+    market: m,
+    bttsMarketYes: bttsYes,
+  }, tables);
+}
+
 /** Seçilen tarafın marjsız piyasa olasılığı; GoalCall.pMarket zaten seçilen taraf için. */
 function marketFor(row: SitePrediction, s: MarketStanding, m: MarketProbs1x2 | null): number | null {
   if (s.market === '1x2') return m ? (s.selection === '1' ? m.pHome : s.selection === '2' ? m.pAway : m.pDraw) : null;
@@ -62,22 +88,13 @@ export function dailyStandingBoard(
   /** Kapsam dışı (gözlem) satır için hüküm — lig dilim + fark karnesinden (coverageStanding); null → satır taranmaz (2026-10-09) */
   outside?: (row: SitePrediction, market1x2: MarketProbs1x2 | null) => MarketStanding[] | null,
 ): DailyStandingBoard {
-  const live = (r: SitePrediction) => r.hasModel && !r.settled && r.status !== 'finished' && r.status !== 'cancelled' && r.status !== 'postponed';
-  const eligible = rows.filter((r) => live(r) && (r.covered || !!outside));
+  const eligible = rows.filter((r) => isLiveRow(r) && (r.covered || !!outside));
   const byMarket = new Map<SignalMarket, StandingPick[]>(MARKET_ORDER.map((m) => [m, []]));
   const matchIds = new Set<number>();
   let scanned = 0;
   for (const row of eligible) {
     const m = markets1x2[row.fixtureId] ?? null;
-    const bttsYes = row.btts?.pMarket == null ? null : row.btts.pick === 'yes' ? row.btts.pMarket : 1 - row.btts.pMarket;
-    const standing = !row.covered ? outside!(row, m) : standingFor({
-      leagueSlug: row.league?.slug ?? null,
-      pick: row.pick, pHome: row.pHome, pDraw: row.pDraw, pAway: row.pAway,
-      over: row.overUnder ? { pick: row.overUnder.pick, pRaw: row.overUnder.pRaw } : null,
-      btts: row.btts ? { pick: row.btts.pick, pRaw: row.btts.pRaw } : null,
-      market: m,
-      bttsMarketYes: bttsYes,
-    }, tables);
+    const standing = rowStanding(row, m, tables, outside);
     if (!standing) continue;
     scanned++;
     for (const s of standing) {
