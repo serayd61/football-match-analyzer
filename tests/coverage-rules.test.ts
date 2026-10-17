@@ -119,3 +119,30 @@ test('sumEdge adds per-bucket cells across leagues', () => {
   assert.deepEqual(sumEdge([a, null, b]).x12, { '0…+5': { n: 8, won: 3 }, '>+10': { n: 2, won: 0 } });
   assert.equal(BAND.minN, 20);
 });
+
+// 17 Eki eleme kuralı: uzak ülke / alt kademe / kadın-genç / yerel eleme turu sitede görünmez
+test('pruneReason hides far countries, low tiers, women/youth and qualifiers but keeps bookmaker leagues', () => {
+  const { pruneReason } = require('@/lib/coverage/rules') as typeof import('@/lib/coverage/rules');
+  assert.ok(pruneReason('Ligue 1', 'ALG'));                       // Cezayir
+  assert.ok(pruneReason('Premier League', 'TAN'));
+  assert.ok(pruneReason('Regionalliga West', 'GER'));             // Almanya 4. lig
+  assert.ok(pruneReason('Segunda Federacion - Group 1', 'ESP'));
+  assert.ok(pruneReason('Isthmian Premier Division', 'ENG'));
+  assert.ok(pruneReason('3. Divisjon Avd. 4', 'NOR'));
+  assert.ok(pruneReason('Premier League U18', 'ENG'));
+  assert.ok(pruneReason("Women's Premier Division", 'IRL'));
+  assert.ok(pruneReason('Toppserien', 'NOR'));
+  assert.ok(pruneReason('FA Cup Qualification', 'ENG'));
+  assert.ok(pruneReason('CAF Confederation Cup', 'INT'));
+  assert.ok(pruneReason('AFC Challenge League Grp. A', 'INT-2'));
+  // kalanlar
+  assert.equal(pruneReason('3. Liga', 'GER'), null);
+  assert.equal(pruneReason('2. Liga', 'AUT'), null);
+  assert.equal(pruneReason('Serie C Grp. A', 'ITA'), null);
+  assert.equal(pruneReason('Premier League', 'ENG'), null);
+  assert.equal(pruneReason('Champions League Qualification', 'INT-2'), null); // Avrupa elemeleri kalır
+  assert.equal(pruneReason('Champions League', 'INT-2'), null);
+  assert.equal(pruneReason('Eliteserien', 'NOR'), null);
+  assert.equal(pruneReason('Saudi Pro League', 'KSA'), null);
+  assert.equal(pruneReason('', 'ALG'), null);
+});

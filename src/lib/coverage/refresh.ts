@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getCatalogMap } from '@/lib/league-catalog';
 import { resolveLeague } from '@/lib/site/leagues';
 import { resolveOfficialVersion, officialFilter, pickOfficial } from '@/lib/site/official';
-import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal, type RowMarket } from './rules';
+import { aggregateLeague, evaluateLeague, hideDecision, isProposalEligibleName, pruneReason, PROPOSAL_COOLDOWN_DAYS, type CoverageStatus, type CoverageProposal, type RowMarket } from './rules';
 import { PHASE_ORDER } from '@/lib/site/odds-phases';
 import { marketYes } from '@/lib/site/goal-blend';
 
@@ -114,8 +114,13 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date(), offi
     if (repair || alias) { repaired++; console.log(`[coverage] alias ${leagueId} ${resolveName} (${ccode ?? '-'}) → ${(repair ?? alias).slug} ${(repair ?? alias).status}${repair ? ' (onarım)' : ''}`); }
     // Gizleme kuralı (otomatik, admin kararlı 'hidden' satırına dokunmaz): excluded ↔ hidden
     const auto = !known || String(known.reason || '').startsWith('otomatik');
-    const hd = !repair && !alias && auto ? hideDecision(status, stats) : null;
-    const hidePatch = hd === 'hide'
+    // Eleme kuralı (17 Eki): uzak ülke / alt kademe / kadın-genç ligi, beyaz liste veya
+    // gözlemde değilse kalıcı 'hidden' — log-loss düzelse de geri açılmaz.
+    const prune = !repair && !alias && auto && status !== 'whitelist' && status !== 'observe' ? pruneReason(resolveName, ccode) : null;
+    const hd = prune ? null : !repair && !alias && auto ? hideDecision(status, stats) : null;
+    const hidePatch = prune
+      ? (status === 'hidden' && String(known?.reason || '').startsWith('otomatik: eleme') ? null : { status: 'hidden' as const, reason: `otomatik: eleme: ${prune}`, decided_at: nowIso, decided_by: ACTOR })
+      : hd === 'hide'
       ? { status: 'hidden' as const, reason: `otomatik: 1X2 log-loss ${stats.x12.ll} ≥ rastgele (n=${stats.x12.n})`, decided_at: nowIso, decided_by: ACTOR }
       : hd === 'unhide' ? { status: 'excluded' as const, reason: `otomatik: 1X2 log-loss ${stats.x12.ll} düzeldi (n=${stats.x12.n})`, decided_at: nowIso, decided_by: ACTOR } : null;
     if (hidePatch) hideLog.push({ layer: 'coverage', action: 'apply', subject: `league:${leagueId}`, before: { status }, after: { status: hidePatch.status, type: hd }, evidence: { league: resolveName, x12: stats.x12, n: stats.n }, actor: ACTOR, note: hidePatch.reason });
@@ -126,7 +131,7 @@ export async function refreshCoverage(sb: SupabaseClient, now = new Date(), offi
       : alias
         ? { league_id: leagueId, slug: null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: alias.country ?? null, status: alias.status, tier: alias.tier, reason: `alias: ${alias.slug} (mevsimlik id ${leagueId})`, stats, decided_at: nowIso, decided_by: ACTOR, review_at: null, updated_at: nowIso }
         : { league_id: leagueId, slug: site?.slug ?? null, name: cat?.name || name, ccode: cat?.ccode ?? null, country: site?.country ?? null, tier: 9, stats, review_at: null, updated_at: nowIso, ...(hidePatch ?? { status: 'excluded', reason: 'otomatik: akışta görüldü, kapsam dışı', decided_at: nowIso, decided_by: ACTOR }) });
-    if (alias || repair || hidePatch || status === 'hidden') continue; // alias'ın önerisi ana satırdan gelir; gizli lig öneri üretmez
+    if (alias || repair || hidePatch || prune || status === 'hidden') continue; // alias'ın önerisi ana satırdan gelir; gizli/elenmiş lig öneri üretmez
     if (status === 'excluded' && !isProposalEligibleName(cat?.name || name)) continue;
     const p = evaluateLeague(status, stats);
     if (p) evaluated.push({ leagueId, name: known?.name ?? (cat?.name || name), status, proposal: p });

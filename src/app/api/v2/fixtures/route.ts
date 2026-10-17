@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
 import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
-import { excludedLeagueIds } from '@/lib/coverage/registry';
+import { excludedLeagueIds, hiddenLeagueIds } from '@/lib/coverage/registry';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -112,8 +112,11 @@ async function getFixturesHandler(request: NextRequest) {
       CACHE_TTL.FIXTURES
     );
     
+    // Sicilde 'hidden' (sinyalsiz lig veya 17 Eki eleme kuralı: uzak ülke / alt kademe /
+    // kadın-genç) hiçbir yüzeyde listelenmez; 'excluded' yalnızca scope=model'de düşer.
+    const hidden = await hiddenLeagueIds().catch(() => new Set<number>());
     const excluded = scopeModel ? await excludedLeagueIds() : null;
-    const allFixtures = excluded ? allFixturesRaw.filter((f) => !excluded.has(Number(f.leagueId))) : allFixturesRaw;
+    const allFixtures = allFixturesRaw.filter((f) => !hidden.has(Number(f.leagueId)) && !(excluded && excluded.has(Number(f.leagueId))));
 
     // Ligleri çıkar
     const leagues = extractLeagues(allFixtures);
