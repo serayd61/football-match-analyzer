@@ -27,7 +27,8 @@
     "matches": "Maçlar",
     "coupon": "Günün kuponu",
     "teams": "Takımlar",
-    "glossary": "Sözlük"
+    "glossary": "Sözlük",
+    "data": "Açık veri"
   },
   "locale": {
     "label": "Dil"
@@ -511,7 +512,8 @@
     "recordPage": "Tam {league} karnesi.",
     "dataPages": "Lig veri sayfaları",
     "xgTable": "xG ve xPTS tablosu",
-    "goalsStats": "Gol istatistikleri"
+    "goalsStats": "Gol istatistikleri",
+    "downloadCsv": "Bu ligi CSV olarak indir"
   },
   "docs": {
     "methodology": {
@@ -2113,5 +2115,82 @@
     "faqOverQ": "Hangi {league} takımının 2,5 üst maçı en fazla?",
     "faqBttsQ": "Hangi {league} takımının maçlarında karşılıklı gol en sık?",
     "otherLeagues": "Diğer liglerin gol istatistikleri"
+  },
+  "openData": {
+    "metaTitle": "Futbol tahmin veri seti (CSV/JSON)",
+    "metaDescription": "Ücretsiz, CC BY 4.0: 11 ligde sonuçlanmış her maç için modelin maç öncesi 1X2 olasılıkları, gol beklentisi, seçim ve maç sonu skoru. CSV ve JSON, saatte bir güncellenir.",
+    "eyebrow": "Açık veri",
+    "title": "Açık veri",
+    "h1": "Açık veri: sonuçlanmış her model tahmini",
+    "lead": "Tüm karne düz dosyalar hâlinde: kapsanan liglerdeki her bitmiş maç için modelin maçtan önce kaydettiği olasılıklar, seçimi ve gerçekte ne olduğu. Kaynak göstererek indirmek, incelemek ve yeniden yayımlamak serbest.",
+    "recordLink": "Karne",
+    "statsLine": "{leagues} ligde {n} sonuçlanmış maç, {from} – {to}. Dosyalar maçlar sonuçlandıkça saatte bir yenilenir.",
+    "empty": "Veri setinde henüz sonuçlanmış maç yok.",
+    "intro": "Hiçbir şey sonuca göre ayıklanmaz: kaybeden seçimler de dosyada tutanların yanındadır. Oynanmamış maçlar asla yer almaz; bir tahmin ancak maç skorla sonuçlandığında herkese açık olur.",
+    "downloadsH": "İndirmeler",
+    "colFile": "Dosya",
+    "colRows": "Maç",
+    "allLeagues": "Tüm ligler",
+    "downloadsNote": "Maç başına bir satır, UTF-8, virgülle ayrılmış, başlama sırasına göre. JSON dosyaları aynı satırları bir kaynak başlığıyla taşır. Doğrudan bağlantılar sabittir ve betiklerle çekilebilir; çapraz kaynaklı isteklere izin verilir.",
+    "columnsH": "Sütunlar",
+    "colName": "Sütun",
+    "colDesc": "Anlamı",
+    "cols": {
+      "fixture_id": "Maç kimliği (sabit; maç adresinin sonundaki sayı).",
+      "kickoff_utc": "Başlama saati, UTC, ISO 8601.",
+      "league": "Lig adı.",
+      "league_slug": "Site adreslerinde ve lig dosyalarında kullanılan lig kısa adı.",
+      "country": "Ligin ülkesi ya da konfederasyonu.",
+      "home_team": "Ev sahibi takım.",
+      "away_team": "Deplasman takımı.",
+      "home_score": "Ev sahibinin maç sonu golü (90 dakika + uzatma; uzatma devreleri hariç).",
+      "away_score": "Deplasmanın maç sonu golü.",
+      "result": "Skordan türetilen sonuç: 1 ev sahibi, X beraberlik, 2 deplasman.",
+      "p_home": "Modelin ev sahibi galibiyeti olasılığı, maçtan önce kaydedilmiş (0–1).",
+      "p_draw": "Modelin beraberlik olasılığı.",
+      "p_away": "Modelin deplasman galibiyeti olasılığı. Üçünün toplamı yuvarlama payıyla 1’dir.",
+      "lambda_home": "Modelin ev sahibi gol beklentisi (Poisson oranı), eski satırlarda boş.",
+      "lambda_away": "Modelin deplasman gol beklentisi.",
+      "pick": "Modelin maç öncesi 1X2 seçimi (en olası sonuç); seçim yoksa boş.",
+      "pick_correct": "Seçim tuttuysa 1, tutmadıysa 0, seçim yoksa boş.",
+      "model_version": "Satırı üreten model sürümü (bkz. yöntem).",
+      "match_url": "Sonuçlanmış karneyi gösteren herkese açık maç sayfası."
+    },
+    "useH": "Veriyi okumak",
+    "useP": "Dosyalar doğrudan pandas, R ya da bir hesap tablosuna yüklenir. Lig başına tek satırda Brier skoru:",
+    "licenseH": "Lisans ve atıf",
+    "licenseP1": "Veri seti şu lisansla yayımlanır:",
+    "licenseP2": "Football Analytics’i anıp bu sayfaya bağlantı verdiğiniz sürece ticari kullanım dâhil her amaçla kopyalayabilir, dağıtabilir, dönüştürebilir ve üzerine inşa edebilirsiniz. “Veri: Football Analytics açık veri (footballanalytics.pro/data)” gibi bir cümle yeterlidir.",
+    "citeLabel": "Önerilen atıf",
+    "citation": "Football Analytics ({year}). Sonuçlanmış model tahminleri veri seti: maç öncesi 1X2 olasılıkları ve sonuçlar, 11 lig. {url}. Lisans: CC BY 4.0.",
+    "caveatsH": "Bu veri nedir, ne değildir",
+    "caveats": [
+      "Yalnızca maç öncesi değerler. Her olasılık maçtan önce yazılmış, sonradan hiç düzeltilmemiştir; maç sayfası aynı sayıları gösterir.",
+      "Yalnızca sonuçlanmış maçlar. Bir maç maç sonu skoru olduğunda görünür; ertelenen ya da tatil edilen maçlar dosyada yoktur, işaretlenmez.",
+      "Yalnızca kapsanan ligler. Model lig başına fit edilir; kapsam dışı turnuvalar site fikstürlerini gösterse bile dosyada yer almaz.",
+      "Gol beklentileri modelin hücum ve savunma kestirimleridir (Dixon-Coles / Poisson), olay verisinden üretilen şut tabanlı xG değildir.",
+      "Bahis oranı yok. Karne sayfası modeli kapanış piyasasına göre ölçer; oranlar üçüncü taraf verisidir ve yeniden dağıtılmaz.",
+      "Maç başlangıcındaki resmî model sürümü kullanılır. Değerlendirmedeki gölge sürümler asla yayımlanmaz."
+    ],
+    "faqH": "Sorular",
+    "faqs": [
+      {
+        "q": "Bu veriyi makale, blog yazısı ya da not defterinde kullanabilir miyim?",
+        "a": "Evet. Lisans CC BY 4.0: ticari iş dâhil her şey için kullanın, Football Analytics’i footballanalytics.pro/data bağlantısıyla anın."
+      },
+      {
+        "q": "Neden oynanmamış maçlar yok?",
+        "a": "Gelecek tahminler üyeler içindir. Bir maç açık dosyaya ancak maç sonu skoruyla sonuçlandığında girer; bu dosyayı aynı zamanda dürüst bir karne yapar: sonuç bilindikten sonra hiçbir şey değiştirilemez."
+      },
+      {
+        "q": "Veri ne kadar geriye gidiyor, ne sıklıkla güncelleniyor?",
+        "a": "Mevcut modelin canlıya alındığı 2026-27 sezonu başından (Temmuz 2026) itibaren. Dosyalar saatte bir yeniden üretilir; bir maç genelde bitiş düdüğünden sonraki bir saat içinde dosyadadır."
+      },
+      {
+        "q": "Olasılıklar ile seçim nasıl ilişkili?",
+        "a": "Seçim üç sonucun en olasıdır. pick_correct onu result ile karşılaştırır. p_home, p_draw ve p_away üzerinden hesaplanan Brier skoru olasılıkların kendisini ölçer; karne sayfası aynı değerleri kalibrasyonla gösterir."
+      }
+    ],
+    "moreNav": "İlgili"
   }
 }

@@ -70,7 +70,7 @@ test('sitemap XML lists every locale with hreflang links, the content images and
   assert.equal(urls.length, (STATIC_PATHS.length + 11 * 5 + 3 + 2) * 4);
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/de/leagues/bundesliga/xg-table</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/leagues/super-lig/goals</loc>'));
-  assert.equal(STATIC_PATHS.length, 15);
+  assert.equal(STATIC_PATHS.length, 16);
   for (const p of STATIC_PATHS) assert.ok(entries({ dataUpdated: null, matches: [] }).some((e) => e.path === p), `static path ${p} missing`);
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/en/matches/today</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/performance/super-lig</loc>'));
@@ -87,8 +87,9 @@ test('sitemap XML lists every locale with hreflang links, the content images and
   assert.ok(xml.includes('<lastmod>2026-10-10T09:00:00.000Z</lastmod>'));
   assert.ok(xml.includes('<lastmod>2026-10-09T18:30:00.000Z</lastmod>'));
   assert.ok(xml.includes('<lastmod>2026-09-04T12:00:00.000Z</lastmod>'));
-  const todayIso = new Date().toISOString().slice(0, 13);
-  assert.ok(!xml.includes(`<lastmod>${todayIso}`), 'lastmod must not be the request time');
+  // second precision: a doc revised today (DOCS_UPDATED → noon UTC) is a real date, not the request time (flaked 2026-10-17 12:xx UTC)
+  const nowIso = new Date().toISOString().slice(0, 19);
+  assert.ok(!xml.includes(`<lastmod>${nowIso}`), 'lastmod must not be the request time');
   assert.ok(!xml.includes('/predictions'));
   assert.ok(!xml.includes('/login'));
   assert.ok(!xml.includes('/dashboard'));

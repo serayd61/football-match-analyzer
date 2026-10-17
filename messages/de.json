@@ -27,7 +27,8 @@
     "matches": "Spiele",
     "coupon": "Tageskupon",
     "teams": "Vereine",
-    "glossary": "Glossar"
+    "glossary": "Glossar",
+    "data": "Open Data"
   },
   "locale": {
     "label": "Sprache"
@@ -511,7 +512,8 @@
     "recordPage": "Ganze {league}-Bilanz.",
     "dataPages": "Datenseiten der Liga",
     "xgTable": "xG- & xPTS-Tabelle",
-    "goalsStats": "Torstatistik"
+    "goalsStats": "Torstatistik",
+    "downloadCsv": "Diese Liga als CSV herunterladen"
   },
   "docs": {
     "methodology": {
@@ -2113,5 +2115,82 @@
     "faqOverQ": "Welcher {league}-Verein hat am meisten Spiele mit über 2,5 Toren?",
     "faqBttsQ": "Bei welchem {league}-Verein treffen am häufigsten beide Teams?",
     "otherLeagues": "Torstatistik anderer Ligen"
+  },
+  "openData": {
+    "metaTitle": "Fussball-Prognose-Datensatz (CSV/JSON)",
+    "metaDescription": "Kostenlos, CC BY 4.0: jedes abgerechnete Spiel aus 11 Ligen mit 1X2-Wahrscheinlichkeiten des Modells vor Anstoss, Torerwartung, Tipp und Endstand. CSV/JSON, stündlich.",
+    "eyebrow": "Open Data",
+    "title": "Open Data",
+    "h1": "Open Data: jede abgerechnete Modellprognose",
+    "lead": "Die gesamte Bilanz als flache Dateien: für jedes beendete Spiel einer abgedeckten Liga die vor Anstoss gespeicherten Wahrscheinlichkeiten, der Tipp des Modells und das tatsächliche Resultat. Frei zum Herunterladen, Auswerten und Weiterveröffentlichen mit Quellenangabe.",
+    "recordLink": "Bilanz",
+    "statsLine": "{n} abgerechnete Spiele aus {leagues} Ligen, {from} bis {to}. Die Dateien werden stündlich aktualisiert, sobald Spiele abgerechnet sind.",
+    "empty": "Noch keine abgerechneten Spiele im Datensatz.",
+    "intro": "Nichts wird nach Ausgang gefiltert: die verlorenen Tipps stehen neben den gewonnenen in der Datei. Kommende Spiele sind nie enthalten – eine Prognose wird erst öffentlich, wenn das Spiel mit Endstand abgerechnet ist.",
+    "downloadsH": "Downloads",
+    "colFile": "Datei",
+    "colRows": "Spiele",
+    "allLeagues": "Alle Ligen",
+    "downloadsNote": "Eine Zeile pro Spiel, UTF-8, kommagetrennt, in Anstossreihenfolge. Die JSON-Dateien enthalten dieselben Zeilen plus einen Herkunftsblock. Die Direktlinks sind stabil und dürfen per Skript abgerufen werden; Cross-Origin-Anfragen sind erlaubt.",
+    "columnsH": "Spalten",
+    "colName": "Spalte",
+    "colDesc": "Bedeutung",
+    "cols": {
+      "fixture_id": "Spielkennung (stabil; die Zahl am Ende der Spiel-URL).",
+      "kickoff_utc": "Anstoss in UTC, ISO 8601.",
+      "league": "Name des Wettbewerbs.",
+      "league_slug": "Wettbewerbs-Slug wie in den Site-URLs und in den Dateien pro Liga.",
+      "country": "Land oder Verband des Wettbewerbs.",
+      "home_team": "Heimverein.",
+      "away_team": "Auswärtsverein.",
+      "home_score": "Endstand Heimtore (nach 90 Minuten plus Nachspielzeit; ohne Verlängerung).",
+      "away_score": "Endstand Auswärtstore.",
+      "result": "Resultat aus dem Endstand: 1 Heimsieg, X Unentschieden, 2 Auswärtssieg.",
+      "p_home": "Modellwahrscheinlichkeit Heimsieg, vor Anstoss gespeichert (0–1).",
+      "p_draw": "Modellwahrscheinlichkeit Unentschieden.",
+      "p_away": "Modellwahrscheinlichkeit Auswärtssieg. Die drei Werte summieren sich bis auf Rundung zu 1.",
+      "lambda_home": "Torerwartung des Modells für das Heimteam (Poisson-Rate), bei älteren Zeilen leer.",
+      "lambda_away": "Torerwartung des Modells für das Auswärtsteam.",
+      "pick": "Der 1X2-Tipp des Modells vor Anstoss (wahrscheinlichster Ausgang); leer, wenn keiner ausgegeben wurde.",
+      "pick_correct": "1 wenn der Tipp eingetroffen ist, 0 wenn nicht, leer ohne Tipp.",
+      "model_version": "Modellversion, die die Zeile erzeugt hat (siehe Methodik).",
+      "match_url": "Öffentliche Spielseite mit dem abgerechneten Urteil."
+    },
+    "useH": "Daten einlesen",
+    "useP": "Die Dateien lassen sich direkt in pandas, R oder eine Tabellenkalkulation laden. Brier-Score pro Liga in einer Zeile:",
+    "licenseH": "Lizenz und Zitierweise",
+    "licenseP1": "Der Datensatz steht unter",
+    "licenseP2": "Sie dürfen ihn für jeden Zweck kopieren, weitergeben, umwandeln und darauf aufbauen, auch kommerziell, solange Sie Football Analytics nennen und auf diese Seite verlinken. Ein Satz wie «Daten: Football Analytics Open Data (footballanalytics.pro/data)» genügt.",
+    "citeLabel": "Zitiervorschlag",
+    "citation": "Football Analytics ({year}). Datensatz abgerechneter Modellprognosen: 1X2-Wahrscheinlichkeiten vor Anstoss und Resultate, 11 Ligen. {url}. Lizenz: CC BY 4.0.",
+    "caveatsH": "Was die Daten sind – und was nicht",
+    "caveats": [
+      "Nur Werte vor Anstoss. Jede Wahrscheinlichkeit wurde vor dem Spiel geschrieben und nie revidiert; die Spielseite zeigt dieselben Zahlen.",
+      "Nur abgerechnete Spiele. Eine Partie erscheint, sobald ein Endstand vorliegt; verschobene oder abgebrochene Spiele fehlen und werden nicht markiert.",
+      "Nur abgedeckte Ligen. Das Modell wird pro Liga angepasst; Wettbewerbe ausserhalb des abgedeckten Sets stehen nicht in der Datei, auch wenn die Site Spiele dazu zeigt.",
+      "Die Torerwartungen sind Angriffs- und Abwehrschätzungen des Modells (Dixon-Coles / Poisson), kein schussbasiertes xG aus Eventdaten.",
+      "Keine Buchmacherquoten. Die Bilanzseite misst das Modell am Schlusskurs des Marktes; die Quoten selbst sind Drittdaten und werden nicht weiterverbreitet.",
+      "Verwendet wird die zum Anstoss offizielle Modellversion. Schattenversionen in der Erprobung werden nie veröffentlicht."
+    ],
+    "faqH": "Fragen",
+    "faqs": [
+      {
+        "q": "Darf ich die Daten in einer Arbeit, einem Blogbeitrag oder Notebook verwenden?",
+        "a": "Ja. Die Lizenz ist CC BY 4.0: Nutzung für alles, auch kommerziell, mit Nennung von Football Analytics und Link auf footballanalytics.pro/data."
+      },
+      {
+        "q": "Warum fehlen kommende Spiele?",
+        "a": "Kommende Prognosen sind für Mitglieder. Ein Spiel kommt erst mit Endstand in die offene Datei – das macht sie zugleich zu einer fairen Bilanz: Nach bekanntem Resultat kann nichts mehr geändert werden."
+      },
+      {
+        "q": "Wie weit zurück reichen die Daten und wie oft werden sie aktualisiert?",
+        "a": "Ab Saisonstart 2026/27 (Juli 2026), als das aktuelle Modell live ging. Die Dateien werden stündlich neu erzeugt; ein Spiel steht meist innerhalb einer Stunde nach Abpfiff darin."
+      },
+      {
+        "q": "Wie hängen Wahrscheinlichkeiten und Tipp zusammen?",
+        "a": "Der Tipp ist der wahrscheinlichste der drei Ausgänge. pick_correct vergleicht ihn mit result. Ein Brier-Score über p_home, p_draw und p_away misst die Wahrscheinlichkeiten selbst; die Bilanzseite zeigt dieselben Werte mit Kalibrierung."
+      }
+    ],
+    "moreNav": "Weiterführend"
   }
 }

@@ -605,7 +605,7 @@ export default async function PerformancePage({ params: { locale }, searchParams
       </details>
 
       <p className="mt-8 text-[13px] text-s-muted">
-        {t('footer', { at: f.dateTime(new Date(r.computedAt), 'kickoff') })} <Link href="/methodology" className="underline underline-offset-4">{t('footerLink')}</Link>
+        {t('footer', { at: f.dateTime(new Date(r.computedAt), 'kickoff') })} <Link href="/methodology" className="underline underline-offset-4">{t('footerLink')}</Link> · <Link href="/data" className="underline underline-offset-4">{tn('data')}</Link>
       </p>
     </Page>
   );

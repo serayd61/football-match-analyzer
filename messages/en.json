@@ -27,7 +27,8 @@
     "matches": "Matches",
     "coupon": "Daily coupon",
     "teams": "Clubs",
-    "glossary": "Glossary"
+    "glossary": "Glossary",
+    "data": "Open data"
   },
   "locale": {
     "label": "Language"
@@ -511,7 +512,8 @@
     "recordPage": "Full {league} track record.",
     "dataPages": "League data pages",
     "xgTable": "xG & xPTS table",
-    "goalsStats": "Goal statistics"
+    "goalsStats": "Goal statistics",
+    "downloadCsv": "Download this league as CSV"
   },
   "docs": {
     "methodology": {
@@ -2113,5 +2115,82 @@
     "faqOverQ": "Which {league} club has the most over-2.5 matches?",
     "faqBttsQ": "Which {league} club is involved in both-teams-to-score most often?",
     "otherLeagues": "Goal statistics of other leagues"
+  },
+  "openData": {
+    "metaTitle": "Football prediction dataset (CSV/JSON)",
+    "metaDescription": "Free, CC BY 4.0: every settled match in 11 leagues with the model’s pre-match 1X2 probabilities, goal expectations, pick and final score. CSV and JSON, updated hourly.",
+    "eyebrow": "Open data",
+    "title": "Open data",
+    "h1": "Open data: every settled model prediction",
+    "lead": "The whole track record as flat files: for each finished match in a covered league, the probabilities the model stored before kick-off, its pick and what actually happened. Free to download, analyse and republish with attribution.",
+    "recordLink": "Track record",
+    "statsLine": "{n} settled matches across {leagues} leagues, {from} to {to}. Files refresh hourly as matches are settled.",
+    "empty": "No settled matches in the dataset yet.",
+    "intro": "Nothing is filtered by outcome: the losing picks are in the file next to the winners. Upcoming matches are never included — a prediction only becomes public once the match is settled with a score.",
+    "downloadsH": "Downloads",
+    "colFile": "File",
+    "colRows": "Matches",
+    "allLeagues": "All leagues",
+    "downloadsNote": "One row per match, UTF-8, comma-separated, kick-off order. The JSON files carry the same rows plus a provenance header. Direct links are stable and may be fetched by scripts; cross-origin requests are allowed.",
+    "columnsH": "Columns",
+    "colName": "Column",
+    "colDesc": "Meaning",
+    "cols": {
+      "fixture_id": "Match identifier (stable; the trailing number of the match URL).",
+      "kickoff_utc": "Kick-off in UTC, ISO 8601.",
+      "league": "Competition name.",
+      "league_slug": "Competition slug as used in the site URLs and the per-league files.",
+      "country": "Country or confederation of the competition.",
+      "home_team": "Home club.",
+      "away_team": "Away club.",
+      "home_score": "Final home goals (after 90 minutes plus stoppage; no extra time).",
+      "away_score": "Final away goals.",
+      "result": "Final result derived from the score: 1 home win, X draw, 2 away win.",
+      "p_home": "Model probability of a home win, stored before kick-off (0–1).",
+      "p_draw": "Model probability of a draw.",
+      "p_away": "Model probability of an away win. The three sum to 1 within rounding.",
+      "lambda_home": "Model goal expectation for the home side (Poisson rate), empty for older rows.",
+      "lambda_away": "Model goal expectation for the away side.",
+      "pick": "The model’s pre-match 1X2 pick (the most likely outcome); empty when none was issued.",
+      "pick_correct": "1 if the pick matched the result, 0 if not, empty without a pick.",
+      "model_version": "Version of the model that produced the row (see methodology).",
+      "match_url": "Public match page with the settled verdict."
+    },
+    "useH": "Reading the data",
+    "useP": "The files load straight into pandas, R or a spreadsheet. A one-line Brier score per league:",
+    "licenseH": "Licence and citation",
+    "licenseP1": "The dataset is published under",
+    "licenseP2": "You may copy, redistribute, transform and build on it for any purpose, including commercially, as long as you credit Football Analytics and link to this page. A sentence such as “Data: Football Analytics open data (footballanalytics.pro/data)” is enough.",
+    "citeLabel": "Suggested citation",
+    "citation": "Football Analytics ({year}). Settled model predictions dataset: pre-match 1X2 probabilities and results, 11 leagues. {url}. Licence: CC BY 4.0.",
+    "caveatsH": "What the data is, and is not",
+    "caveats": [
+      "Pre-match figures only. Every probability was written before kick-off and never revised; the match page shows the same numbers.",
+      "Settled matches only. A fixture appears once it has a final score; postponed or abandoned matches are absent, not marked.",
+      "Covered leagues only. The model is fitted per league; competitions outside the covered set are not in the file even where the site shows fixtures for them.",
+      "The goal expectations are the model’s attack-and-defence estimates (Dixon-Coles / Poisson), not shot-based xG from event data.",
+      "No bookmaker odds. The track record page measures the model against the closing market; the odds themselves are third-party data and are not redistributed.",
+      "The official model version at kick-off is used. Shadow versions under evaluation are never published."
+    ],
+    "faqH": "Questions",
+    "faqs": [
+      {
+        "q": "Can I use this data in a paper, blog post or notebook?",
+        "a": "Yes. The licence is CC BY 4.0: use it for anything, including commercial work, and credit Football Analytics with a link to footballanalytics.pro/data."
+      },
+      {
+        "q": "Why are there no upcoming matches?",
+        "a": "Upcoming predictions are for members. A match enters the open file only once it is settled with a final score, which also makes the file a fair record: nothing can be edited after the result is known."
+      },
+      {
+        "q": "How far back does it go and how often is it updated?",
+        "a": "From the start of the 2026-27 season (July 2026), when the current model went live. The files are regenerated every hour; a match is usually in them within an hour of the final whistle."
+      },
+      {
+        "q": "How do the probabilities relate to the pick?",
+        "a": "The pick is the most likely of the three outcomes. pick_correct compares it with result. A Brier score across p_home, p_draw and p_away measures the probabilities themselves; the track record page shows the same figures with calibration."
+      }
+    ],
+    "moreNav": "Related"
   }
 }

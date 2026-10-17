@@ -27,7 +27,8 @@
     "matches": "Partite",
     "coupon": "Schedina del giorno",
     "teams": "Squadre",
-    "glossary": "Glossario"
+    "glossary": "Glossario",
+    "data": "Open data"
   },
   "locale": {
     "label": "Lingua"
@@ -511,7 +512,8 @@
     "recordPage": "Rendimento completo in {league}.",
     "dataPages": "Pagine dati del campionato",
     "xgTable": "Tabella xG e xPTS",
-    "goalsStats": "Statistiche gol"
+    "goalsStats": "Statistiche gol",
+    "downloadCsv": "Scarica questo campionato in CSV"
   },
   "docs": {
     "methodology": {
@@ -2113,5 +2115,82 @@
     "faqOverQ": "Quale squadra di {league} ha più partite over 2,5?",
     "faqBttsQ": "In quale squadra di {league} segnano entrambe più spesso?",
     "otherLeagues": "Statistiche gol degli altri campionati"
+  },
+  "openData": {
+    "metaTitle": "Dataset pronostici calcio (CSV/JSON)",
+    "metaDescription": "Gratis, CC BY 4.0: ogni partita liquidata in 11 campionati con probabilità 1X2 pre-partita del modello, gol attesi, pronostico e risultato. CSV e JSON, ogni ora.",
+    "eyebrow": "Open data",
+    "title": "Open data",
+    "h1": "Open data: ogni pronostico liquidato del modello",
+    "lead": "L’intero storico come file piatti: per ogni partita conclusa di un campionato coperto, le probabilità salvate dal modello prima del calcio d’inizio, il suo pronostico e ciò che è davvero successo. Liberi da scaricare, analizzare e ripubblicare con attribuzione.",
+    "recordLink": "Storico",
+    "statsLine": "{n} partite liquidate in {leagues} campionati, dal {from} al {to}. I file si aggiornano ogni ora man mano che le partite vengono liquidate.",
+    "empty": "Nessuna partita liquidata nel dataset per ora.",
+    "intro": "Nulla è filtrato per esito: i pronostici persi stanno nel file accanto a quelli vinti. Le partite future non sono mai incluse: un pronostico diventa pubblico solo quando la partita è liquidata con un punteggio.",
+    "downloadsH": "Download",
+    "colFile": "File",
+    "colRows": "Partite",
+    "allLeagues": "Tutti i campionati",
+    "downloadsNote": "Una riga per partita, UTF-8, separata da virgole, in ordine di calcio d’inizio. I file JSON contengono le stesse righe più un’intestazione di provenienza. I link diretti sono stabili e possono essere letti da script; le richieste cross-origin sono permesse.",
+    "columnsH": "Colonne",
+    "colName": "Colonna",
+    "colDesc": "Significato",
+    "cols": {
+      "fixture_id": "Identificativo della partita (stabile; il numero finale dell’URL della partita).",
+      "kickoff_utc": "Calcio d’inizio in UTC, ISO 8601.",
+      "league": "Nome della competizione.",
+      "league_slug": "Slug della competizione come negli URL del sito e nei file per lega.",
+      "country": "Paese o confederazione della competizione.",
+      "home_team": "Squadra di casa.",
+      "away_team": "Squadra ospite.",
+      "home_score": "Gol finali della squadra di casa (dopo 90 minuti più recupero; senza supplementari).",
+      "away_score": "Gol finali della squadra ospite.",
+      "result": "Risultato ricavato dal punteggio: 1 vittoria casa, X pareggio, 2 vittoria ospite.",
+      "p_home": "Probabilità del modello di vittoria in casa, salvata prima del calcio d’inizio (0–1).",
+      "p_draw": "Probabilità del modello di pareggio.",
+      "p_away": "Probabilità del modello di vittoria esterna. Le tre sommano a 1 a meno di arrotondamenti.",
+      "lambda_home": "Gol attesi dal modello per la squadra di casa (tasso di Poisson), vuoto nelle righe più vecchie.",
+      "lambda_away": "Gol attesi dal modello per la squadra ospite.",
+      "pick": "Il pronostico 1X2 del modello prima della partita (esito più probabile); vuoto se non emesso.",
+      "pick_correct": "1 se il pronostico è stato centrato, 0 se no, vuoto senza pronostico.",
+      "model_version": "Versione del modello che ha prodotto la riga (vedi metodologia).",
+      "match_url": "Pagina pubblica della partita con il verdetto liquidato."
+    },
+    "useH": "Leggere i dati",
+    "useP": "I file si caricano direttamente in pandas, R o un foglio di calcolo. Brier score per campionato in una riga:",
+    "licenseH": "Licenza e citazione",
+    "licenseP1": "Il dataset è pubblicato con licenza",
+    "licenseP2": "Puoi copiarlo, ridistribuirlo, trasformarlo e costruirci sopra per qualsiasi scopo, anche commerciale, purché citi Football Analytics con un link a questa pagina. Basta una frase come “Dati: Football Analytics open data (footballanalytics.pro/data)”.",
+    "citeLabel": "Citazione suggerita",
+    "citation": "Football Analytics ({year}). Dataset dei pronostici liquidati del modello: probabilità 1X2 pre-partita e risultati, 11 campionati. {url}. Licenza: CC BY 4.0.",
+    "caveatsH": "Cosa sono questi dati, e cosa non sono",
+    "caveats": [
+      "Solo valori pre-partita. Ogni probabilità è stata scritta prima del calcio d’inizio e mai rivista; la pagina della partita mostra gli stessi numeri.",
+      "Solo partite liquidate. Una gara compare quando ha un punteggio finale; le partite rinviate o sospese mancano, non sono segnalate.",
+      "Solo campionati coperti. Il modello è stimato per campionato; le competizioni fuori dall’insieme coperto non sono nel file anche se il sito ne mostra le partite.",
+      "I gol attesi sono le stime di attacco e difesa del modello (Dixon-Coles / Poisson), non xG basati sui tiri da dati evento.",
+      "Nessuna quota dei bookmaker. La pagina dello storico misura il modello contro la quota di chiusura; le quote sono dati di terzi e non vengono ridistribuite.",
+      "Si usa la versione ufficiale del modello al calcio d’inizio. Le versioni ombra in valutazione non vengono mai pubblicate."
+    ],
+    "faqH": "Domande",
+    "faqs": [
+      {
+        "q": "Posso usare questi dati in un articolo, un post o un notebook?",
+        "a": "Sì. La licenza è CC BY 4.0: usali per qualsiasi cosa, anche a fini commerciali, citando Football Analytics con un link a footballanalytics.pro/data."
+      },
+      {
+        "q": "Perché non ci sono partite future?",
+        "a": "I pronostici futuri sono per gli abbonati. Una partita entra nel file aperto solo una volta liquidata con il punteggio finale, il che rende il file anche uno storico onesto: nulla può essere modificato a risultato noto."
+      },
+      {
+        "q": "Da quando partono i dati e ogni quanto si aggiornano?",
+        "a": "Dall’inizio della stagione 2026-27 (luglio 2026), quando il modello attuale è entrato in produzione. I file vengono rigenerati ogni ora; una partita di solito compare entro un’ora dal fischio finale."
+      },
+      {
+        "q": "Che rapporto c’è tra probabilità e pronostico?",
+        "a": "Il pronostico è il più probabile dei tre esiti. pick_correct lo confronta con result. Un Brier score su p_home, p_draw e p_away misura le probabilità stesse; la pagina dello storico mostra gli stessi valori con la calibrazione."
+      }
+    ],
+    "moreNav": "Correlati"
   }
 }
