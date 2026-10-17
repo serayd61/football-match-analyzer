@@ -98,6 +98,13 @@ export default async function LeaguePage({ params }: { params: { locale: string;
         )}
         <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link> <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('recordPage', { league: league.name })}</Link></p>
         {lastWrite && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(lastWrite), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
+        {/* SEO Faz 1c: the league's data pages */}
+        <nav className="flex flex-wrap gap-2 pt-1 text-sm" aria-label={t('dataPages')}>
+          <Link href={`/leagues/${league.slug}/xg-table`} className="chip chip-sm">{t('xgTable')}</Link>
+          <Link href={`/leagues/${league.slug}/goals`} className="chip chip-sm">{t('goalsStats')}</Link>
+          <Link href={`/leagues/${league.slug}/results`} className="chip chip-sm">{t('resultsArchive')}</Link>
+          <Link href={`/performance/${league.slug}`} className="chip chip-sm">{t('recordPage', { league: league.name })}</Link>
+        </nav>
       </div>
 
       <TrialNotice access={access} />
