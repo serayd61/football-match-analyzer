@@ -1679,5 +1679,43 @@
     "note": "Cells with fewer than 20 cards are shown in grey and never produce a lesson. Status rows use only snapshots written before kick-off; nothing is graded retrospectively with today's rules. Lessons are exploratory and feed a versioned rule change only after a multi-week shadow record.",
     "scopeCovered": "covered leagues",
     "scopeAll": "all leagues"
+  },
+  "slip": {
+    "title": "My slip",
+    "add": "Add to slip",
+    "inSlip": "On slip",
+    "remove": "Remove from slip",
+    "started": "Match has started, cannot be added",
+    "full": "Slip is full (max {max} matches)",
+    "replaced": "Selection for this match was replaced",
+    "colSlip": "Slip",
+    "legs": "Matches",
+    "totalOdds": "Total odds",
+    "totalOddsShort": "Odds",
+    "jointP": "Model probability",
+    "missingOdds": "{n} legs without odds",
+    "open": "Open slip",
+    "close": "Close",
+    "clear": "Clear",
+    "clearConfirm": "Remove all selections from the slip?",
+    "copy": "Copy",
+    "copied": "Copied",
+    "empty": "Your slip is empty. Click \"Add to slip\" on a market row of a match page; one selection per match, up to {max} matches.",
+    "toMatches": "Go to matches",
+    "live": "in play",
+    "over": "Over 2.5",
+    "under": "Under 2.5",
+    "bttsYes": "BTTS Yes",
+    "bttsNo": "BTTS No",
+    "status": {
+      "pending": "pending",
+      "won": "won",
+      "lost": "lost",
+      "empty": "empty"
+    },
+    "note": "The selections are yours; the probabilities are the statistical model's estimates, not betting advice. The model probability multiplies the legs as if independent. The slip is stored only in this browser.",
+    "shareNote": "Statistical model probabilities; not betting advice.",
+    "pageTitle": "My slip",
+    "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser."
   }
 }
