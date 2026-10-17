@@ -1246,7 +1246,8 @@
       "driftLine": "Odds movement ({n} snapshots): {side} {from} → {to} ({pp} pts).",
       "driftToward": "The market is moving toward the model's pick.",
       "driftAway": "The market is moving away from the model's pick; caution.",
-      "driftFlat": "No notable movement since opening."
+      "driftFlat": "No notable movement since opening.",
+      "vs": "vs"
     },
     "pricing": {
       "title": "Pay for the edge, know the risk.",

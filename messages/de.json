@@ -1246,7 +1246,8 @@
       "driftLine": "Quotenbewegung ({n} Erfassungen): {side} {from} → {to} ({pp} Punkte).",
       "driftToward": "Der Markt bewegt sich zur Modellwahl hin.",
       "driftAway": "Der Markt bewegt sich von der Modellwahl weg; Vorsicht.",
-      "driftFlat": "Seit der Eröffnung keine nennenswerte Bewegung."
+      "driftFlat": "Seit der Eröffnung keine nennenswerte Bewegung.",
+      "vs": "vs."
     },
     "pricing": {
       "title": "Zahle für den Vorsprung, kenne das Risiko.",
