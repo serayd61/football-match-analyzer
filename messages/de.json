@@ -1716,6 +1716,21 @@
     "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig. Der Schein wird nur in diesem Browser gespeichert.",
     "shareNote": "Wahrscheinlichkeiten des statistischen Modells; keine Wettempfehlung.",
     "pageTitle": "Mein Schein",
-    "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser."
+    "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser.",
+    "dnbShort": "Unentschieden: Einsatz zurück",
+    "gridTitle": "Auf den Schein",
+    "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Eine Auswahl pro Spiel; eine neue ersetzt die alte. Modell % · Buchmacherquote (– falls keine).",
+    "g1x2": "Spielausgang (1X2)",
+    "gOu": "Über/Unter 2,5",
+    "gBtts": "Beide treffen",
+    "gAh": "Asian Handicap",
+    "gDnb": "Draw no Bet",
+    "lineBook": "Buchmacherlinie",
+    "lineModel": "faire Modelllinie",
+    "outcome": {
+      "void": "zurück",
+      "half_won": "halb gewonnen",
+      "half_lost": "halb verloren"
+    }
   }
 }
