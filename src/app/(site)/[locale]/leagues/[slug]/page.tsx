@@ -11,6 +11,8 @@ import { leagueCountryName } from '@/lib/site/countries';
 import { getPerformance } from '@/lib/site/performance';
 import { listResults, listUpcomingForLeague } from '@/lib/site/results';
 import { getStandings } from '@/lib/site/standings';
+import { listPublicResultsForLeague } from '@/lib/site/match-public-data';
+import PublicMatchList from '@/components/site/PublicMatchList';
 import StandingsTable from '@/components/site/StandingsTable';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import PredictionTable from '@/components/site/PredictionTable';
@@ -51,12 +53,19 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   const tp = await getTranslations('performance');
   const f = await getFormatter();
 
-  const [perf, upcoming, recent, table] = await Promise.all([
+  const [perf, upcoming, recent, table, publicRecent] = await Promise.all([
     getPerformance(league.slug),
     listUpcomingForLeague(league.slug, 30),
     listResults({ league, from: null, to: null, page: 1, pageSize: 20 }),
     getStandings(league.slug),
+    // SEO Faz 1a: the last scores are public (no pick); the members' table keeps the picks.
+    unlocked ? Promise.resolve([]) : listPublicResultsForLeague(league.slug, 60, 10).catch(() => []),
   ]);
+  // SEO Faz 1a: an auto-written "this week" line from live data — leader + next fixture — so every
+  // league page carries text that changes with the season, not only a static intro.
+  const leader = table[0];
+  const nextFixture = upcoming.find((r) => Date.parse(r.kickoff) > Date.now()) ?? null;
+  const siblings = SITE_LEAGUES.filter((l) => l.slug !== league.slug);
   const ts = await getTranslations('standings');
   const tn = await getTranslations('nav');
   const o = perf.overall;
@@ -79,6 +88,12 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       {/* SEO denetimi 2026-10-10: unique, factual intro per league + how the record is read. */}
       <div className="max-w-3xl space-y-3 pb-6 text-[15px] leading-relaxed">
         <p>{t(`intro.${league.slug}`)}</p>
+        {leader && table.length > 2 && (
+          <p>
+            {t('thisWeekLeader', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name, gap: leader.pts - table[1].pts })}
+            {nextFixture && <> {t('thisWeekNext', { home: nextFixture.homeName, away: nextFixture.awayName, date: f.dateTime(new Date(nextFixture.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) })}</>}
+          </p>
+        )}
         <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link></p>
         {lastWrite && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(lastWrite), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
       </div>
@@ -121,14 +136,23 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       )}
 
       <section className="mt-12">
-        <SectionTitle title={t('recent')} meta={<Link href={`/performance?league=${league.slug}#results`} className="underline underline-offset-4">{t('recentAll')}</Link>} />
-        {!recent.rows.length ? (
-          <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p>
-        ) : unlocked ? (
-          <div className="mt-2"><ResultsTable rows={recent.rows} /></div>
+        <SectionTitle title={t('recent')} sub={unlocked ? undefined : t('recentPublicSub')} meta={unlocked ? <Link href={`/performance?league=${league.slug}#results`} className="underline underline-offset-4">{t('recentAll')}</Link> : <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{t('resultsArchive')}</Link>} />
+        {unlocked ? (
+          !recent.rows.length ? <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p> : <div className="mt-2"><ResultsTable rows={recent.rows} /></div>
         ) : (
-          <LockedBlock count={0} lead={t('lockedRecent', { league: league.name, n: recent.total })} />
+          <>
+            {publicRecent.length ? <div className="mt-2"><PublicMatchList rows={publicRecent} groupBy="none" showLeague={false} /></div> : <p className="mt-3 text-sm text-s-muted">{t('recentEmpty')}</p>}
+            <LockedBlock count={0} lead={t('lockedRecent', { league: league.name, n: recent.total })} />
+          </>
         )}
+      </section>
+
+      {/* SEO Faz 1a: sibling leagues — the only cross-league links used to be the index page. */}
+      <section className="mt-12">
+        <SectionTitle title={t('otherLeagues')} />
+        <ul className="mt-3 flex flex-wrap gap-2 text-sm">
+          {siblings.map((l) => <li key={l.slug}><Link href={`/leagues/${l.slug}`} className="chip chip-sm !font-medium">{l.name}</Link></li>)}
+        </ul>
       </section>
 
       <p className="mt-12 border-t border-s-line pt-4 text-xs text-s-muted">{t('note', { league: league.name })}</p>

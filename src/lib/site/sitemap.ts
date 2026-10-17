@@ -53,6 +53,8 @@ export function entries(input: SitemapInput): Entry[] {
     { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
     { path: '/terms', changefreq: 'yearly', priority: 0.2 },
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
+    // SEO Faz 1a: per-league results archive (settled matches, public scores)
+    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/results`, changefreq: 'daily', priority: 0.5, lastmod: data })),
     ...input.matches.map((m): Entry => ({ path: m.path, changefreq: 'daily', priority: 0.6, lastmod: m.lastmod })),
   ];
 }

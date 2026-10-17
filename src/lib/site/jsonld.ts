@@ -143,3 +143,18 @@ export function datasetJsonLd(locale: Locale, input: { name: string; description
     ...(input.settled > 0 ? { size: `${input.settled} settled predictions` } : {}),
   };
 }
+
+/** WebPage with a real dateModified (the engine row's updated_at) — SEO Faz 1a. */
+export function webPageJsonLd(locale: Locale, input: { url: string; name: string; dateModified: string | null }) {
+  const d = input.dateModified ? new Date(input.dateModified) : null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${input.url}#webpage`,
+    url: input.url,
+    name: input.name,
+    inLanguage: locale,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    ...(d && !Number.isNaN(d.getTime()) ? { dateModified: d.toISOString() } : {}),
+  };
+}

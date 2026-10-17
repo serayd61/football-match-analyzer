@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { getPublicMatch, listPublicUpcoming } from '@/lib/site/match-public-data';
-import { fixtureIdFromSlug, isCanonicalSlug, matchPath, formLetters, h2hTally, type PublicMatch } from '@/lib/site/match-public';
+import { fixtureIdFromSlug, isCanonicalSlug, matchPath, formLetters, h2hTally, type PublicMatch, teamGoalStats, h2hGoalStats, leagueGoalsPerMatch } from '@/lib/site/match-public';
 import { getHeadToHead, getTeamForm, type SitePrediction } from '@/lib/site/predictions';
 import { getStandings, type StandingRow } from '@/lib/site/standings';
 import { venueFor } from '@/lib/site/stadiums';
@@ -15,7 +15,7 @@ import { Page, SectionTitle } from '@/components/site/ui';
 import { Crest, StatusChip } from '@/components/site/PredictionTable';
 import LocalTime from '@/components/site/LocalTime';
 import JsonLd from '@/components/site/JsonLd';
-import { breadcrumbJsonLd, sportsEventsJsonLd } from '@/lib/site/jsonld';
+import { breadcrumbJsonLd, sportsEventsJsonLd, faqPageJsonLd, webPageJsonLd } from '@/lib/site/jsonld';
 import PublicMatchList from '@/components/site/PublicMatchList';
 import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
 import { SITE_URL } from '@/lib/seo';
@@ -105,6 +105,33 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   else if (!played) sentences.push(t('sNoH2h'));
   if (venue && !played) sentences.push(t('sVenue', { home: m.homeName, venue: venue.venue, city: venue.city ?? '' }));
 
+  // SEO Faz 1a: goal facts from scores only (no model figure) — team averages, market shares, H2H goals, league average.
+  const gsHome = m.homeId ? teamGoalStats(m.homeId, formHome) : null;
+  const gsAway = m.awayId ? teamGoalStats(m.awayId, formAway) : null;
+  const h2hGoals = h2hGoalStats(h2h);
+  const leagueAvg = leagueGoalsPerMatch(table);
+  const pct0 = (x: number) => f.number(x, 'percent0');
+  const dec = (x: number) => f.number(x, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+  if (gsHome && gsAway && gsHome.n >= 3 && gsAway.n >= 3) {
+    sentences.push(t('sGoals', { home: m.homeName, hn: gsHome.n, hgf: dec(gsHome.gfAvg), hga: dec(gsHome.gaAvg), away: m.awayName, an: gsAway.n, agf: dec(gsAway.gfAvg), aga: dec(gsAway.gaAvg) }));
+    const combined = (gsHome.gfAvg + gsHome.gaAvg + gsAway.gfAvg + gsAway.gaAvg) / 2;
+    if (leagueAvg != null) sentences.push(t('sLeagueAvg', { league: league.name, avg: dec(leagueAvg), combined: dec(combined), over: pct0((gsHome.over25 + gsAway.over25) / 2), btts: pct0((gsHome.btts + gsAway.btts) / 2) }));
+  }
+  if (h2hGoals && h2hGoals.n >= 2) sentences.push(t('sH2hGoals', { n: h2hGoals.n, avg: dec(h2hGoals.avgGoals), over: pct0(h2hGoals.over25), btts: pct0(h2hGoals.btts) }));
+  // Settled: the model's pre-match verdict is public (match-public.ts settledVerdict).
+  const v = m.verdict;
+  const pickLabel = v ? (v.pick === '1' ? t('pickHome', { team: m.homeName }) : v.pick === '2' ? t('pickAway', { team: m.awayName }) : t('pickDraw')) : null;
+  if (v && pickLabel) sentences.push(t(v.outcome === 'won' ? 'sVerdictWon' : 'sVerdictLost', { pick: pickLabel, p: pct0(v.p) }));
+
+  // FAQPage: only questions the page actually answers with real data (Google: match the content).
+  const faqs: Array<{ q: string; a: string }> = [];
+  if (!played) faqs.push({ q: t('faqKickoffQ', { home: m.homeName, away: m.awayName }), a: t('faqKickoffA', { home: m.homeName, away: m.awayName, time: f.dateTime(new Date(m.kickoff), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }), league: league.name }) });
+  if (venue) faqs.push({ q: t('faqVenueQ', { home: m.homeName, away: m.awayName }), a: t('faqVenueA', { venue: venue.venue, city: venue.city ?? '', home: m.homeName }) });
+  if (tally && tally.n > 0) faqs.push({ q: t('faqH2hQ', { home: m.homeName, away: m.awayName }), a: t('sH2h', { n: tally.n, home: m.homeName, away: m.awayName, hw: tally.homeWins, d: tally.draws, aw: tally.awayWins }) });
+  if (lh.length >= 3 && la.length >= 3) faqs.push({ q: t('faqFormQ', { home: m.homeName, away: m.awayName }), a: t('sForm', { home: m.homeName, away: m.awayName, hform: fmtLetters(lh), aform: fmtLetters(la), n: Math.min(lh.length, la.length) }) });
+  if (played) faqs.push({ q: t('faqScoreQ', { home: m.homeName, away: m.awayName }), a: t('sFinal', { home: m.homeName, away: m.awayName, hs: m.homeScore!, as: m.awayScore! }) });
+  if (v && pickLabel) faqs.push({ q: t('faqVerdictQ', { home: m.homeName, away: m.awayName }), a: t(v.outcome === 'won' ? 'sVerdictWon' : 'sVerdictLost', { pick: pickLabel, p: pct0(v.p) }) });
+
   const formList = (teamId: number | null, rows: SitePrediction[]) => (
     <ul className="divide-y divide-s-line border-b border-s-line">
       {rows.filter((r) => r.homeScore != null && r.awayScore != null).map((r) => {
@@ -143,6 +170,9 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
       {/* Huni: herkese açık analiz görüntülemesi (kişisel veri yok). */}
       <MountEvent name="view_analysis" params={{ fixture_id: String(m.fixtureId), surface: 'public_match', league: league.slug }} />
       {!played && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, [m], () => t('eventDescription', { league: league.name, home: m.homeName, away: m.awayName }), pageUrl)} />}
+      {/* SEO Faz 1a: dateModified from the engine row (a real write) + the answered questions as FAQPage. */}
+      <JsonLd data={webPageJsonLd(params.locale as Locale, { url: pageUrl, name: `${m.homeName} – ${m.awayName}`, dateModified: m.updatedAt })} />
+      {faqs.length > 0 && <JsonLd data={faqPageJsonLd(faqs)} />}
 
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-[13px]">
         <Link href="/matches" className="font-semibold text-s-muted hover:text-s-ink">← {t('backHub')}</Link>
@@ -175,6 +205,44 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
               <p className="text-s-muted">{t('sourceNote')} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link></p>
             </div>
           </section>
+
+          {/* ── Sonuçlanmış maç: modelin maç öncesi kararı (SEO Faz 1a) ── */}
+          {v && pickLabel && (
+            <section aria-labelledby="verdict-h" className={`rounded-[14px] border p-5 ${v.outcome === 'won' ? 'border-s-win/40 bg-s-win/5' : 'border-s-loss/40 bg-s-loss/5'}`}>
+              <p className="kicker">{t('verdictKicker')}</p>
+              <h2 id="verdict-h" className="mt-1 text-[22px]">{t('verdictH')}</h2>
+              <dl className="mt-3 grid gap-x-8 gap-y-2 text-[14px] sm:grid-cols-3">
+                <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictPick')}</dt><dd className="mt-0.5 font-semibold">{pickLabel}</dd></div>
+                <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictProb')}</dt><dd className="num mt-0.5 font-semibold">{pct0(v.p)}</dd></div>
+                <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictOutcome')}</dt><dd className={`mt-0.5 font-semibold ${v.outcome === 'won' ? 'text-s-win' : 'text-s-loss'}`}>{v.outcome === 'won' ? t('verdictWon') : t('verdictLost')}</dd></div>
+              </dl>
+              <p className="mt-3 text-[13.5px] text-s-muted">{t('verdictNote')} <Link href={`/performance?league=${league.slug}`} className="underline underline-offset-4">{t('verdictRecord', { league: league.name })}</Link></p>
+            </section>
+          )}
+
+          {/* ── Gol istatistikleri (SEO Faz 1a) ───────────────────── */}
+          {gsHome && gsAway && (
+            <section aria-labelledby="goals-h">
+              <SectionTitle id="goals-h" title={t('goalsH')} sub={t('goalsSub')} />
+              <table className="num mt-3 w-full text-[14px]">
+                <thead><tr className="text-left text-xs uppercase tracking-wider text-s-muted"><th className="pb-1 pr-2 font-medium">{t('colTeam')}</th><th className="pb-1 text-right font-medium">{t('colPlayed')}</th><th className="pb-1 text-right font-medium">{t('colGf')}</th><th className="pb-1 text-right font-medium">{t('colGa')}</th><th className="pb-1 text-right font-medium">{t('colOver25')}</th><th className="pb-1 text-right font-medium">{t('colBtts')}</th><th className="pb-1 text-right font-medium">{t('colCs')}</th></tr></thead>
+                <tbody>
+                  {[[m.homeName, gsHome], [m.awayName, gsAway]].map(([name, g]) => (
+                    <tr key={name as string} className="border-t border-s-line">
+                      <td className="py-2 pr-2 font-medium">{name as string}</td>
+                      <td className="py-2 text-right">{(g as typeof gsHome)!.n}</td>
+                      <td className="py-2 text-right">{dec((g as typeof gsHome)!.gfAvg)}</td>
+                      <td className="py-2 text-right">{dec((g as typeof gsHome)!.gaAvg)}</td>
+                      <td className="py-2 text-right">{pct0((g as typeof gsHome)!.over25)}</td>
+                      <td className="py-2 text-right">{pct0((g as typeof gsHome)!.btts)}</td>
+                      <td className="py-2 text-right">{pct0((g as typeof gsHome)!.cleanSheets)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {leagueAvg != null && <p className="mt-2 text-xs text-s-muted">{t('leagueAvgNote', { league: league.name, avg: dec(leagueAvg) })}</p>}
+            </section>
+          )}
 
           {/* ── Puan durumu (iki kulüp) ─────────────────────────────── */}
           {(stHome || stAway) && (
@@ -216,7 +284,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
         <aside className="h-fit rounded-[14px] border border-s-line bg-s-surface p-5 shadow-[var(--s-shadow)] lg:sticky lg:top-20" aria-labelledby="model-h">
           <p className="kicker">{t('modelKicker')}</p>
           <h2 id="model-h" className="mt-2 text-[22px]">{t('modelH')}</h2>
-          <p className="mt-2 text-[14px] text-s-muted">{isPast ? t('modelLockedSettled') : t('modelLockedLead')}</p>
+          <p className="mt-2 text-[14px] text-s-muted">{v ? t('modelLockedVerdict') : isPast ? t('modelLockedSettled') : t('modelLockedLead')}</p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-[13.5px]">
             <li>{t('bullet1x2')}</li><li>{t('bulletGoals')}</li><li>{t('bulletConf')}</li><li>{t('bulletRecord')}</li>
           </ul>
@@ -245,6 +313,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
       <nav className="flex flex-wrap gap-x-5 gap-y-2 border-t border-s-line py-5 text-sm" aria-label={t('moreNav')}>
         <Link href="/matches" className="underline underline-offset-4">{t('backHub')}</Link>
         <Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>
+        <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{t('resultsArchive', { league: league.name })}</Link>
         <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link>
         <Link href="/performance" className="underline underline-offset-4">{tn('performance')}</Link>
       </nav>

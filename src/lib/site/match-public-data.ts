@@ -5,6 +5,7 @@ import { COLS, parseRows, mapRow, loadContext, getPrediction } from './predictio
 import { idsForLeague } from './results';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { publicMatchView, type PublicMatch } from './match-public';
+import { leagueBySlug } from './leagues';
 
 // Server-side reads for the public match pages and the sitemap. Every row
 // goes through publicMatchView() so no model figure leaves this module.
@@ -57,15 +58,42 @@ export const listPublicRecent = unstable_cache(
   { revalidate: REVALIDATE.results },
 );
 
+/**
+ * Settled matches of one covered league with a final score, newest first
+ * (results archive page, SEO Faz 1a). No session read → cacheable.
+ */
+export const listPublicResultsForLeague = unstable_cache(
+  async (slug: string, days = 120, limit = 400): Promise<PublicMatch[]> => {
+    const league = leagueBySlug(slug);
+    if (!league) return [];
+    const ids = await idsForLeague(league);
+    if (!ids.length) return [];
+    const official = await resolveOfficialVersion();
+    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS), official)
+      .in('league_id', ids)
+      .eq('settled', true)
+      .not('home_score', 'is', null)
+      .gte('kickoff', new Date(Date.now() - days * 86400e3).toISOString())
+      .order('kickoff', { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    const ctx = await loadContext();
+    return parseRows(data, official).map((r) => publicMatchView(mapRow(r, ctx))).filter((m) => m.league);
+  },
+  ['site-public-results-league-v1'],
+  { revalidate: REVALIDATE.results },
+);
+
 export interface SitemapMatch { path: string; lastmod: Date | null }
 
 /**
  * Public match URLs for the sitemap: covered fixtures from `pastDays` back to
  * `futureDays` ahead. `lastmod` is the engine row's updated_at (a real write),
- * never "now".
+ * never "now". SEO Faz 1a: settled matches stay listed for 90 days (was 14) —
+ * result pages are where "X vs Y" queries land weeks after the match.
  */
 export const listSitemapMatches = unstable_cache(
-  async (pastDays = 14, futureDays = 21): Promise<SitemapMatch[]> => {
+  async (pastDays = 90, futureDays = 21): Promise<SitemapMatch[]> => {
     const ids = await idsForLeague(null);
     const official = await resolveOfficialVersion();
     const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS), official)
