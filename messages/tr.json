@@ -1732,6 +1732,24 @@
       "half_won": "yarı tuttu",
       "half_lost": "yarı tutmadı"
     },
-    "fixtures": "{n} maç"
+    "fixtures": "{n} maç",
+    "share": "Paylaş",
+    "shareWhatsapp": "WhatsApp",
+    "shareTelegram": "Telegram",
+    "copyLink": "Bağlantıyı kopyala",
+    "linkCopied": "Bağlantı kopyalandı",
+    "shareHint": "Bağlantıyı WhatsApp, Instagram ya da istediğin yere yapıştır; açan kişi kuponu görür.",
+    "sharedEyebrow": "Paylaşılan kupon",
+    "sharedTitle": "Arkadaşının kuponu",
+    "sharedLead": "Bu kupon footballanalytics.pro üyesinin maç sayfalarından derlediği seçimlerdir. Sonuçlar maç bitince burada işlenir.",
+    "sharedMeta": "{n} bacaklı kupon · footballanalytics.pro",
+    "sharedMetaOdds": "{n} bacak · toplam oran {odds} · footballanalytics.pro",
+    "sharedEmpty": "Kupon bulunamadı",
+    "sharedEmptyLead": "Bağlantı eksik ya da bozuk. Gönderen kişiden yeniden paylaşmasını iste.",
+    "sharedMissing": "{n} bacak artık bulunamadı ve listeden düştü.",
+    "sharedCta": "Kendi kuponunu kur · 7 gün ücretsiz",
+    "importBtn": "Kuponuma al",
+    "imported": "{n} bacak kuponuna eklendi",
+    "sharedNote": "Seçimler paylaşan üyeye ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Oranlar ekleme anındaki bahisçi oranıdır. Yalnızca 18+."
   }
 }

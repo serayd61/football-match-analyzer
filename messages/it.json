@@ -1732,6 +1732,24 @@
       "half_won": "mezza vinta",
       "half_lost": "mezza persa"
     },
-    "fixtures": "{n} partite"
+    "fixtures": "{n} partite",
+    "share": "Condividi",
+    "shareWhatsapp": "WhatsApp",
+    "shareTelegram": "Telegram",
+    "copyLink": "Copia link",
+    "linkCopied": "Link copiato",
+    "shareHint": "Incolla il link su WhatsApp, Instagram o dove vuoi; chi lo apre vede la schedina.",
+    "sharedEyebrow": "Schedina condivisa",
+    "sharedTitle": "La schedina del tuo amico",
+    "sharedLead": "Sono selezioni che un membro di footballanalytics.pro ha composto dalle pagine partita. I risultati vengono segnati qui a fine partita.",
+    "sharedMeta": "Schedina da {n} eventi · footballanalytics.pro",
+    "sharedMetaOdds": "{n} eventi · quota totale {odds} · footballanalytics.pro",
+    "sharedEmpty": "Schedina non trovata",
+    "sharedEmptyLead": "Il link è incompleto o rotto. Chiedi a chi l'ha inviato di condividerlo di nuovo.",
+    "sharedMissing": "{n} eventi non sono più disponibili e sono stati tolti.",
+    "sharedCta": "Crea la tua schedina · 7 giorni gratis",
+    "importBtn": "Metti nella mia schedina",
+    "imported": "{n} eventi aggiunti alla tua schedina",
+    "sharedNote": "Le selezioni sono del membro che le ha condivise; le probabilità sono stime del modello statistico, non consigli di scommessa. Le quote sono quelle del bookmaker al momento dell'aggiunta. Solo 18+."
   }
 }

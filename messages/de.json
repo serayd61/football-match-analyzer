@@ -1732,6 +1732,24 @@
       "half_won": "halb gewonnen",
       "half_lost": "halb verloren"
     },
-    "fixtures": "{n} Spiele"
+    "fixtures": "{n} Spiele",
+    "share": "Teilen",
+    "shareWhatsapp": "WhatsApp",
+    "shareTelegram": "Telegram",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "shareHint": "Link in WhatsApp, Instagram oder anderswo einfügen; wer ihn öffnet, sieht den Schein.",
+    "sharedEyebrow": "Geteilter Schein",
+    "sharedTitle": "Der Schein deines Freundes",
+    "sharedLead": "Das sind Auswahlen, die ein footballanalytics.pro-Mitglied auf Spielseiten zusammengestellt hat. Ergebnisse werden hier nach Spielende markiert.",
+    "sharedMeta": "Schein mit {n} Positionen · footballanalytics.pro",
+    "sharedMetaOdds": "{n} Positionen · Gesamtquote {odds} · footballanalytics.pro",
+    "sharedEmpty": "Schein nicht gefunden",
+    "sharedEmptyLead": "Der Link ist unvollständig oder defekt. Bitte den Absender, ihn erneut zu teilen.",
+    "sharedMissing": "{n} Positionen wurden nicht mehr gefunden und entfernt.",
+    "sharedCta": "Eigenen Schein bauen · 7 Tage gratis",
+    "importBtn": "Auf meinen Schein",
+    "imported": "{n} Positionen auf deinen Schein gesetzt",
+    "sharedNote": "Die Auswahl gehört dem teilenden Mitglied; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Quoten sind die Buchmacherquoten zum Zeitpunkt des Hinzufügens. Nur 18+."
   }
 }

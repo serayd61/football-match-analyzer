@@ -1732,6 +1732,24 @@
       "half_won": "half won",
       "half_lost": "half lost"
     },
-    "fixtures": "{n} matches"
+    "fixtures": "{n} matches",
+    "share": "Share",
+    "shareWhatsapp": "WhatsApp",
+    "shareTelegram": "Telegram",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "shareHint": "Paste the link into WhatsApp, Instagram or anywhere; whoever opens it sees the slip.",
+    "sharedEyebrow": "Shared slip",
+    "sharedTitle": "Your friend's slip",
+    "sharedLead": "These are selections a footballanalytics.pro member compiled from match pages. Results are marked here once matches finish.",
+    "sharedMeta": "{n}-leg slip · footballanalytics.pro",
+    "sharedMetaOdds": "{n} legs · total odds {odds} · footballanalytics.pro",
+    "sharedEmpty": "Slip not found",
+    "sharedEmptyLead": "The link is incomplete or broken. Ask the sender to share it again.",
+    "sharedMissing": "{n} legs could no longer be found and were dropped.",
+    "sharedCta": "Build your own slip · 7 days free",
+    "importBtn": "Add to my slip",
+    "imported": "{n} legs added to your slip",
+    "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model's estimates, not betting advice. Odds are the bookmaker odds at the time of adding. 18+ only."
   }
 }
