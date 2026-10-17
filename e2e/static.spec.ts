@@ -26,16 +26,25 @@ test.describe('@static site', () => {
     }
   }
 
-  test('dil seçici aynı sayfada dili değiştirir', async ({ page, isMobile }) => {
+  test('dil seçici aynı sayfada dili değiştirir', async ({ page }) => {
     await page.goto('/en/methodology');
-    if (isMobile) {
-      const menu = page.getByRole('button', { name: /menu/i });
-      if (await menu.isVisible()) await menu.click();
-    }
+    // Below the lg breakpoint (tablet + mobile) the switcher sits in the hamburger
+    // menu. The footer used to hold a second <select>; SEO Faz 0 replaced it with
+    // crawlable hreflang links (see the test below), so open the menu whenever the
+    // header's own switcher is not visible — not only on `isMobile` devices.
+    const menu = page.getByRole('button', { name: /menu/i });
+    if (await menu.isVisible()) await menu.click();
     const select = page.getByRole('combobox').first();
     await select.selectOption('de');
     await expect(page).toHaveURL(/\/de\/methodology$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  });
+
+  test('footer her dil için hreflang bağlantısı taşır', async ({ page }) => {
+    await page.goto('/en/methodology');
+    for (const l of LOCALES) {
+      await expect(page.locator(`footer a[hreflang="${l}"]`), l).toHaveAttribute('href', new RegExp(`/${l}/methodology$`));
+    }
   });
 
   test('bilinmeyen sayfa 404 döner', async ({ page }) => {
