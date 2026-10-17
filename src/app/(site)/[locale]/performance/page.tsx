@@ -20,7 +20,7 @@ import ResultsTable from '@/components/site/ResultsTable';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { LockedBlock, TrialNotice } from '@/components/site/Paywall';
 import JsonLd from '@/components/site/JsonLd';
-import { breadcrumbJsonLd } from '@/lib/site/jsonld';
+import { breadcrumbJsonLd, datasetJsonLd } from '@/lib/site/jsonld';
 
 // Performance (Modernist redesign 2026-09-11) — replaces /results. Track
 // record first: four stat cells, the monthly hit-rate bars and the latest
@@ -34,7 +34,8 @@ const PAGE_SIZE = 25;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'v2.performance' });
-  return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/performance') };
+  // SEO Faz 0: keyword-bearing title ("Track record" alone said nothing to a searcher).
+  return { title: t('metaTitle'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/performance') };
 }
 
 const pct = (x: number | null, digits = 1) => (x == null ? '–' : `${(x * 100).toFixed(digits)}%`);
@@ -145,6 +146,8 @@ export default async function PerformancePage({ params: { locale }, searchParams
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(locale as Locale, [{ name: tn('home'), path: '/' }, { name: t2('title'), path: '/performance' }])} />
+      {/* SEO Faz 0: the settled record as a Dataset (public, free). */}
+      <JsonLd data={datasetJsonLd(locale as Locale, { name: t2('metaTitle'), description: t2('lead'), settled: r.overall.n, dateModified: r.to ? new Date(r.to) : null })} />
       <div className="flex flex-wrap items-end justify-between gap-4 pb-6 pt-7">
         <div>
           <h1 className="text-[28px] sm:text-[36px]">{t2('title')}</h1>

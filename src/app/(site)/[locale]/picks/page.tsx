@@ -19,7 +19,7 @@ import type { SettledStandingPick } from '@/lib/site/standing-picks-rule';
 import { todayYmd, addDays, YMD_RE } from '@/lib/site/time';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
-import { Paywall, TrialNotice } from '@/components/site/Paywall';
+import { Paywall, AnonWall, TrialNotice } from '@/components/site/Paywall';
 import { Crest } from '@/components/site/PredictionTable';
 import LocalTime from '@/components/site/LocalTime';
 
@@ -53,11 +53,20 @@ export default async function PicksPage({ params: { locale }, searchParams }: { 
   const tomorrow = addDays(today, 1);
   const requested = searchParams.date && YMD_RE.test(searchParams.date) ? searchParams.date : null;
   let date = requested ?? today;
-  const access = await requireSiteAccess(locale, `/picks${requested ? `?date=${requested}` : ''}`);
+  const backPath = `/picks${requested ? `?date=${requested}` : ''}`;
+  const access = await requireSiteAccess(locale, backPath);
   const [t, tc, tm, tv, ta, f] = await Promise.all([
     getTranslations('picks'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getTranslations('assessment'), getFormatter(),
   ]);
 
+  if (access.state === 'anon') {
+    return (
+      <Page>
+        <div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div>
+        <AnonWall locale={locale} path={backPath} title={t('title')} />
+      </Page>
+    );
+  }
   if (access.state === 'expired') {
     return (
       <Page>

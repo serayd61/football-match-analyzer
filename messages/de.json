@@ -107,8 +107,8 @@
     "home": "Zur Startseite"
   },
   "home": {
-    "metaTitle": "Fussball-Prognosen und statistische Spielanalyse",
-    "metaDescription": "Spielwahrscheinlichkeiten aus einem Dixon-Coles-Modell für {count} Ligen, nach jedem Spiel abgerechnet und veröffentlicht. Gratis Spielvorschauen mit Tabelle, Form und direktem Vergleich; Wahrscheinlichkeiten und Risiko für Mitglieder.",
+    "metaTitle": "Fussball-Prognosen & xG-Analyse",
+    "metaDescription": "Dixon-Coles-Wahrscheinlichkeiten für {count} Ligen, nach jedem Spiel abgerechnet und veröffentlicht. Gratis Vorschauen mit Tabelle, Form und Bilanz.",
     "eyebrow": "Statistische Fussballprognosen",
     "title": "Wahrscheinlichkeiten vor dem Anpfiff, Bilanz nach dem Abpfiff.",
     "lead": "Unser Modell bewertet jedes Spiel in {count} Ligen: 1X2, Über/Unter 2,5 und beide Teams treffen. Sobald das Ergebnis feststeht, wird jede Prognose benotet und bleibt unverändert stehen. Mit dem Gratiskonto siehst du die Prognosen des Tages, mit dem Bezahlplan die Spiele, bei denen das Modell vom Buchmacher abweicht.",
@@ -450,11 +450,12 @@
     "record": "S–N",
     "hitRate": "Trefferquote",
     "brier": "Brier",
-    "note": "Ligen kommen erst dazu, wenn das Modell auf ihren Resultaten gefittet wurde. Kleine Stichproben schwanken; die Trefferquote immer mit der Anzahl daneben lesen."
+    "note": "Ligen kommen erst dazu, wenn das Modell auf ihren Resultaten gefittet wurde. Kleine Stichproben schwanken; die Trefferquote immer mit der Anzahl daneben lesen.",
+    "metaTitle": "Liga-Prognosen & xG-Bilanzen"
   },
   "league": {
-    "metaTitle": "{league}: Prognosen und Bilanz",
-    "metaDescription": "Dixon-Coles-Spielwahrscheinlichkeiten für die {league} ({country}): kommende Tipps, abgerechnete Resultate, Trefferquote und Brier-Score.",
+    "metaTitle": "{league} Prognose & xG-Bilanz",
+    "metaDescription": "Dixon-Coles-Wahrscheinlichkeiten und xG für die {league} ({country}): kommende Spiele, abgerechnete Resultate, Trefferquote und Brier-Score.",
     "lead": "Modellwahrscheinlichkeiten und die abgerechnete Bilanz für die {league}.",
     "allLeagues": "Alle Ligen",
     "monthly": "Nach Monat:",
@@ -579,7 +580,8 @@
             "- Die öffentliche Bilanz beginnt Ende Juli 2026; die abgerechnete Stichprobe ist noch klein, und Werte einzelner Ligen schwanken.\n- Quotenerfassungen gibt es erst ab Mitte August 2026 und nicht für jedes Spiel, darum ist das ROI-Fenster kürzer als die Bilanz.\n- Der Feed hinkt gelegentlich hinterher oder lässt ein Resultat aus; solche Spiele bleiben offen, bis es eintrifft.\n- Wahrscheinlichkeiten sind Schätzungen. Ein 60-Prozent-Tipp verliert erwartungsgemäss zwei von fünf Mal."
           ]
         }
-      ]
+      ],
+      "metaTitle": "So funktioniert das Prognosemodell"
     },
     "about": {
       "title": "Über uns",
@@ -617,7 +619,8 @@
             "Sportwetten bergen ein reales Verlustrisiko. Diese Seite ist für Erwachsene (ab 18 Jahren) gedacht. Wer wettet, setzt nur ein, was er sich leisten kann zu verlieren, und holt sich Hilfe, wenn Spielen keine freie Wahl mehr ist: In der Schweiz ist die Helpline von Sucht Schweiz unter 0800 040 080 erreichbar."
           ]
         }
-      ]
+      ],
+      "metaTitle": "Über Football Analytics"
     },
     "privacy": {
       "title": "Datenschutzerklärung",
@@ -970,8 +973,8 @@
       "privacy": "Datenschutz",
       "contact": "Kontakt",
       "compliance": "footballanalytics.pro ist ein unabhängiger statistischer Analysedienst. Wir bieten keine Wetten an, nehmen keine Einsätze entgegen, verwalten keine Spielergelder und sind mit keinem Buchmacher verbunden. Allfällige ausgehende Links führen ausschliesslich zu Glücksspielanbietern, die im jeweiligen Land lizenziert und zugelassen sind.",
-      "help": "Glücksspiel kann süchtig machen. Spiele verantwortungsvoll und nur, wenn du in deinem Land volljährig bist. Hilfe: Schweiz sos-spielsucht.ch · 0800 040 080 — Deutschland check-dein-spiel.de · 0800 137 27 00 — Österreich spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "help": "Glücksspiel kann süchtig machen. Spiele verantwortungsvoll und nur, wenn du in deinem Land volljährig bist. Hilfe: Schweiz sos-spielsucht.ch · 0800 040 080 — Deutschland check-dein-spiel.de · 0800 137 27 00 — Österreich spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org"
     },
     "home": {
       "kickerLive": "Modell live · {count, plural, =1 {1 Tipp heute} other {# Tipps heute}}",
@@ -1162,7 +1165,8 @@
       "colResult": "Ausgang",
       "detailsTitle": "Kalibrierung, Ligen und Märkte",
       "detailsLead": "Der volle Bericht — Kalibrierungskurven, Bilanz je Liga und Markt, ROI zur Eröffnungs- und Schlussquote, Wochenrückblick.",
-      "window": "Zeitraum {from} – {to}"
+      "window": "Zeitraum {from} – {to}",
+      "metaTitle": "Trefferquote & Bilanz der Prognosen"
     },
     "login": {
       "title": "Willkommen zurück.",
@@ -1361,8 +1365,8 @@
   },
   "matches": {
     "hub": {
-      "metaTitle": "Fussballspiele heute und die Partien der Woche: Analyse vor dem Anpfiff",
-      "metaDescription": "Anstosszeiten, Tabellenplätze, Form und direkter Vergleich für jede Partie in den {count} Ligen, die das Modell abdeckt, plus Resultatarchiv. Modellwahrscheinlichkeiten erscheinen für Mitglieder.",
+      "metaTitle": "Fussballspiele heute & Spielplan",
+      "metaDescription": "Anstoss, Tabellenplatz, Form und direkter Vergleich für jede Partie in {count} Ligen, plus Resultatarchiv. Modellwahrscheinlichkeiten für Mitglieder.",
       "title": "Die Spiele dieser Woche",
       "lead": "Jede Partie der nächsten sieben Tage in den {count} Ligen, die das Modell bewertet. Jede Spielseite zeigt Anstoss, Tabellenplatz, Form und direkten Vergleich; Wahrscheinlichkeiten, Konfidenz und Risiko des Modells sind für Mitglieder.",
       "tzNote": "Anstosszeiten folgen der Zeitzone deines Browsers (Europe/Zurich, bis die Seite vollständig geladen ist).",
@@ -1380,10 +1384,10 @@
       "linkRecord": "Öffentliche Bilanz"
     },
     "match": {
-      "metaTitle": "{home} – {away} Vorschau: Form, direkter Vergleich und Anstoss ({date})",
-      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat, Form und direkter Vergleich ({date})",
-      "metaDescription": "{league}, {date}: {home} – {away}. Anstosszeit, Tabellenplätze, aktuelle Form und direkter Vergleich aus dem Resultatarchiv. Die Wahrscheinlichkeiten des Modells sind für Mitglieder verfügbar.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabellenplätze, Form vor dem Spiel und direkter Vergleich. Die Prognose vor dem Anpfiff steht in der Bilanz der Mitglieder.",
+      "metaTitle": "{home} – {away}: Statistik, Bilanz & Prognose, {date}",
+      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat & Statistik, {date}",
+      "metaDescription": "{league}, {date}: {home} – {away}. Anstoss, Tabellenplätze, Form und direkter Vergleich. Modellwahrscheinlichkeiten für Mitglieder.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabellenplätze, Form vor dem Spiel und direkter Vergleich. Prognose in der Mitglieder-Bilanz.",
       "eyebrow": "Spielvorschau",
       "vs": "–",
       "kickoff": "Anstoss",
@@ -1751,5 +1755,15 @@
     "importBtn": "Auf meinen Schein",
     "imported": "{n} Positionen auf deinen Schein gesetzt",
     "sharedNote": "Die Auswahl gehört dem teilenden Mitglied; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Quoten sind die Buchmacherquoten zum Zeitpunkt des Hinzufügens. Nur 18+."
+  },
+  "contact": {
+    "title": "Kontakt",
+    "metaTitle": "Kontakt zu Football Analytics",
+    "lead": "Fragen zum Modell, zu einer Prognose, zum Konto oder zur Abrechnung: schreib uns, wir antworten innert eines Tages.",
+    "emailLabel": "E-Mail",
+    "emailNote": "Konto- und Abrechnungsfragen hierhin; bitte die registrierte E-Mail-Adresse angeben.",
+    "telegramLabel": "Telegram",
+    "telegramNote": "Tägliche Auswahl und Ankündigungen; der schnellste Weg zu uns.",
+    "moreLead": "Bevor du schreibst: Die Antwort steht vielleicht schon hier:"
   }
 }

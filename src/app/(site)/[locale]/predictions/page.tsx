@@ -23,7 +23,7 @@ import { getMarketSnapshots } from '@/lib/site/dashboard';
 import { assessRows } from '@/lib/site/assess';
 import { marketOf } from '@/lib/site/assessment';
 import { requireSiteAccess } from '@/lib/site/access';
-import { Paywall, TrialNotice } from '@/components/site/Paywall';
+import { Paywall, TrialNotice, AnonWall } from '@/components/site/Paywall';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -42,19 +42,29 @@ const CCODE_RE = /^[A-Z]{2,3}$/;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'predictions' });
-  return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/predictions') };
+  // Members-only: never in the index (SEO Faz 0); the public equivalent is /matches.
+  return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, '/predictions'), robots: { index: false, follow: true } };
 }
 
 export default async function PredictionsPage({ params: { locale }, searchParams }: { params: { locale: string }; searchParams: Search }) {
   unstable_setRequestLocale(locale);
   // Giriş dönüşünde filtreler korunur: callbackUrl tam sorguyu taşır.
   const backQs = new URLSearchParams(Object.entries(searchParams).filter((e): e is [string, string] => typeof e[1] === 'string')).toString();
-  const access = await requireSiteAccess(locale, `/predictions${backQs ? `?${backQs}` : ''}`);
+  const backPath = `/predictions${backQs ? `?${backQs}` : ''}`;
+  const access = await requireSiteAccess(locale, backPath);
   const t = await getTranslations('v2.predictions');
   const tp = await getTranslations('predictions');
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
+  if (access.state === 'anon') {
+    return (
+      <Page>
+        <div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div>
+        <AnonWall locale={locale} path={backPath} title={tp('title')} lead={tp('lead')} />
+      </Page>
+    );
+  }
   if (access.state === 'expired') {
     return (
       <Page>

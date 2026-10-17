@@ -107,8 +107,8 @@
     "home": "Go to the home page"
   },
   "home": {
-    "metaTitle": "Football predictions & statistical match analysis",
-    "metaDescription": "Match probabilities from a Dixon-Coles model for {count} leagues, settled and published after every match. Free match previews with standings, form and head-to-head; probabilities and risk for members.",
+    "metaTitle": "Football predictions & xG analysis",
+    "metaDescription": "Dixon-Coles match probabilities for {count} leagues, settled and published after every match. Free previews with standings, form and head-to-head.",
     "eyebrow": "Statistical football predictions",
     "title": "Probabilities before kick-off, a scorecard after the final whistle.",
     "lead": "Our model prices every match in {count} leagues: 1X2, over/under 2.5 and both teams to score. When the result comes in, each prediction is scored and left exactly as it was. A free account gets you the day's predictions; the paid plan shows where the model disagrees with the bookmaker.",
@@ -450,11 +450,12 @@
     "record": "W–L",
     "hitRate": "Hit rate",
     "brier": "Brier",
-    "note": "Leagues are added only after the model has been fitted on their results. Small samples swing; read the hit rate with the count beside it."
+    "note": "Leagues are added only after the model has been fitted on their results. Small samples swing; read the hit rate with the count beside it.",
+    "metaTitle": "League predictions & xG records"
   },
   "league": {
-    "metaTitle": "{league} predictions and record",
-    "metaDescription": "Dixon-Coles match probabilities for the {league} ({country}): upcoming picks, settled results, hit rate and Brier score.",
+    "metaTitle": "{league} predictions & xG record",
+    "metaDescription": "Dixon-Coles match probabilities and xG for the {league} ({country}): upcoming fixtures, settled results, hit rate and Brier score.",
     "lead": "Model probabilities and the settled record for the {league}.",
     "allLeagues": "All leagues",
     "monthly": "By month:",
@@ -579,7 +580,8 @@
             "- The public record starts in late July 2026; the settled sample is still small and league-level figures swing.\n- Odds snapshots exist only from mid-August 2026 and not for every match, so the ROI window is shorter than the record.\n- The feed occasionally lags or omits a result; such matches stay unsettled until it arrives.\n- Probabilities are estimates. A 60% pick is expected to lose two times in five."
           ]
         }
-      ]
+      ],
+      "metaTitle": "How the football prediction model works"
     },
     "about": {
       "title": "About",
@@ -617,7 +619,8 @@
             "Sports betting carries a real risk of financial loss. This site is intended for adults (18+). If you gamble, only stake what you can afford to lose, and seek help if gambling stops being a choice: in Switzerland, the Sucht Schweiz helpline is available at 0800 040 080."
           ]
         }
-      ]
+      ],
+      "metaTitle": "About Football Analytics"
     },
     "privacy": {
       "title": "Privacy policy",
@@ -970,8 +973,8 @@
       "privacy": "Privacy",
       "contact": "Contact",
       "compliance": "footballanalytics.pro is an independent statistical analysis service. We do not offer betting, accept wagers or hold player funds, and we are not affiliated with any bookmaker. Any outbound links are exclusively to gambling entities licensed and authorized in the relevant geographic location.",
-      "help": "Gambling can be addictive. Please play responsibly and only if you are of legal age in your country. Help: Switzerland sos-spielsucht.ch · 0800 040 080 — Germany check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "help": "Gambling can be addictive. Please play responsibly and only if you are of legal age in your country. Help: Switzerland sos-spielsucht.ch · 0800 040 080 — Germany check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org"
     },
     "home": {
       "kickerLive": "Model live · {count, plural, =1 {1 pick today} other {# picks today}}",
@@ -1162,7 +1165,8 @@
       "colResult": "Result",
       "detailsTitle": "Calibration, leagues and markets",
       "detailsLead": "The full report — calibration curves, per-league and per-market records, ROI at opening and closing odds, weekly review.",
-      "window": "Window {from} – {to}"
+      "window": "Window {from} – {to}",
+      "metaTitle": "Prediction accuracy & track record"
     },
     "login": {
       "title": "Welcome back.",
@@ -1361,8 +1365,8 @@
   },
   "matches": {
     "hub": {
-      "metaTitle": "Today's football matches and this week's fixtures: pre-match analysis",
-      "metaDescription": "Kick-off times, league positions, recent form and head-to-head for every fixture in the {count} leagues the model covers, plus a results archive. Model probabilities are published for members.",
+      "metaTitle": "Today's football matches & fixtures",
+      "metaDescription": "Kick-off times, league positions, form and head-to-head for every fixture in {count} leagues, plus a results archive. Model probabilities for members.",
       "title": "Matches this week",
       "lead": "Every fixture in the {count} leagues the model rates, for the next seven days. Each match page shows kick-off, league position, form and head-to-head; the model's probabilities, confidence and risk are for members.",
       "tzNote": "Kick-off times follow your browser's time zone (Europe/Zurich until the page has fully loaded).",
@@ -1380,10 +1384,10 @@
       "linkRecord": "Public track record"
     },
     "match": {
-      "metaTitle": "{home} vs {away} preview: form, head-to-head and kick-off ({date})",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: result, form and head-to-head ({date})",
-      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off time, league positions, recent form and head-to-head from the results archive. The model's probabilities are available to members.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, form before the match and head-to-head. The pre-match prediction is in the members' record.",
+      "metaTitle": "{home} vs {away}: stats, H2H & prediction, {date}",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: result & stats, {date}",
+      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off, league positions, recent form and head-to-head. Model probabilities are published for members.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, pre-match form and head-to-head. The prediction is in the members’ record.",
       "eyebrow": "Match preview",
       "vs": "vs",
       "kickoff": "Kick-off",
@@ -1751,5 +1755,15 @@
     "importBtn": "Add to my slip",
     "imported": "{n} legs added to your slip",
     "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model's estimates, not betting advice. Odds are the bookmaker odds at the time of adding. 18+ only."
+  },
+  "contact": {
+    "title": "Contact",
+    "metaTitle": "Contact Football Analytics",
+    "lead": "Questions about the model, a prediction, your account or billing: write to us, we answer within a day.",
+    "emailLabel": "E-mail",
+    "emailNote": "Account and billing questions go here; include the e-mail you registered with.",
+    "telegramLabel": "Telegram",
+    "telegramNote": "Daily selections and announcements; quickest way to reach us.",
+    "moreLead": "Before you write, the answer may already be on these pages:"
   }
 }

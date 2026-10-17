@@ -3,11 +3,10 @@
 // (profiles.trial_ends_at, written by /api/auth/register); after that the
 // paid plan is required. Admins and live Stripe subscribers are always in.
 //
-// Pages call `requireSiteAccess` (anonymous → /login redirect) and render
+// Pages call `requireSiteAccess` and render <AnonWall/> for `anon` and
 // <Paywall/> when the result is `expired`. Reading the session makes the page
 // dynamic, which is intended: gated HTML must never be cached for everyone.
 import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin/emails';
@@ -63,10 +62,21 @@ export async function getSiteAccess(): Promise<SiteAccess> {
   return { state: 'expired', email, trialEndsAt, trialDaysLeft: 0 };
 }
 
-/** Anonymous visitors are sent to sign-in and come back to `path` afterwards. */
-export async function requireSiteAccess(locale: string, path: string): Promise<SiteAccess> {
-  const access = await getSiteAccess();
-  // Sign-in lives on the localized site (2026-09-11); callbackUrl brings the visitor back.
-  if (access.state === 'anon') redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}${path}`)}`);
-  return access;
+/**
+ * Access for a members-only page. SEO Faz 0 (2026-10-17): anonymous visitors are
+ * NOT redirected any more — every distinct `/login?callbackUrl=…` used to become
+ * its own noindexed URL (343 in Search Console) and /login the most-linked page
+ * on the site (4,718 internal links). Pages render <AnonWall/> (200, noindex)
+ * instead; `signInHref(locale, path)` gives the wall's sign-in link.
+ */
+export async function requireSiteAccess(_locale: string, _path: string): Promise<SiteAccess> {
+  return getSiteAccess();
+}
+
+/** Sign-in link that brings the visitor back to `path` (locale-free) afterwards. */
+export function signInHref(locale: string, path: string, register = false): string {
+  const qs = new URLSearchParams();
+  if (register) qs.set('mode', 'register');
+  qs.set('callbackUrl', `/${locale}${path}`);
+  return `/login?${qs.toString()}`;
 }

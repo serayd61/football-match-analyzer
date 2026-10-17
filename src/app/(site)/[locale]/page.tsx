@@ -34,7 +34,7 @@ import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import Image from 'next/image';
 import JsonLd from '@/components/site/JsonLd';
 import { CONTENT_IMAGES } from '@/lib/site/content-images';
-import { organizationJsonLd } from '@/lib/site/jsonld';
+import { organizationJsonLd, faqPageJsonLd } from '@/lib/site/jsonld';
 
 // Members-only site (2026-09-08): reading the session makes this dynamic.
 export const dynamic = 'force-dynamic';
@@ -120,6 +120,8 @@ export default async function HomePage({ params: { locale } }: { params: { local
     <>
       {/* SEO denetimi 2026-10-10: Organization + WebSite structured data (home only). */}
       <JsonLd data={organizationJsonLd(locale as Locale, tm('description'))} />
+      {/* SEO Faz 0: the six FAQ entries below are also exposed as FAQPage. */}
+      <JsonLd data={faqPageJsonLd(faqs)} />
       {/* ── Hero: dark product showcase ────────────────────────────── */}
       <section className="band-dark pitch-bg overflow-hidden">
         <Page className="grid items-center gap-12 pb-12 pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
@@ -371,7 +373,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
               <p className="num text-[34px] font-bold leading-none">{money(0)} <span className="text-[15px] font-medium text-s-muted">· {tp('freeFor')}</span></p>
               <p className="text-[15px]">{t('priceTrialSub')}</p>
               <p className="text-[14px] text-s-muted">{t('priceTrialAfter')}</p>
-              {!authed && <Link href={REGISTER_HREF} className="btn btn-secondary mt-auto self-start" data-cta="home-price-trial">{t('ctaTry')}</Link>}
+              {!authed && <Link href={REGISTER_HREF} rel="nofollow" className="btn btn-secondary mt-auto self-start" data-cta="home-price-trial">{t('ctaTry')}</Link>}
             </div>
             <div className="card card-accent">
               <h3 className="text-[18px]">{t('pricePro')}</h3>

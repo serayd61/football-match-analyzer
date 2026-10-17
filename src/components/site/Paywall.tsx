@@ -5,9 +5,14 @@
 //                     must not see (count only, sign-up CTA).
 //   <LockedPick/>   — the blurred pick text + "Unlock with Pro →" link used on
 //                     prediction cards and the match page.
+//   <AnonWall/>     — SEO Faz 0 (2026-10-17): the page body for an anonymous
+//                     visitor on a members-only page (200 + noindex instead of
+//                     a 307 to /login?callbackUrl=…).
+// Sign-in / register links carry rel="nofollow": /login is noindex and was the
+// most internally linked URL on the site.
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import type { SiteAccess } from '@/lib/site/access';
+import { signInHref, type SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { RiskNote } from './Risk';
@@ -59,8 +64,8 @@ export async function LockedBlock({ count, lead }: { count: number; lead?: strin
         <p className="mt-1 max-w-lg text-[14px] text-s-muted">{lead ?? t('lockedLead')}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={REGISTER_HREF} className="btn btn-primary">{t('lockedCta')}</Link>
-        <Link href={SIGNIN_HREF} className="text-sm font-semibold hover:text-s-accent-600">{t('lockedSignIn')}</Link>
+        <Link href={REGISTER_HREF} rel="nofollow" className="btn btn-primary">{t('lockedCta')}</Link>
+        <Link href={SIGNIN_HREF} rel="nofollow" className="text-sm font-semibold hover:text-s-accent-600">{t('lockedSignIn')}</Link>
       </div>
     </div>
   );
@@ -74,5 +79,24 @@ export async function LockedPick({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
       <span className="sr-only">{t('hiddenPick')}</span>
       {!isTwa() && <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) }) : t('unlock')}</Link>}
     </span>
+  );
+}
+
+/** Anonymous visitor on a members-only page: title, the locked copy and sign-up / sign-in that return to `path`. */
+export async function AnonWall({ locale, path, title, lead }: { locale: string; path: string; title: string; lead?: string }) {
+  const t = await getTranslations('paywall');
+  return (
+    <section className="my-8 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 shadow-[var(--s-shadow)] lg:grid-cols-[1fr_1fr] lg:p-8" aria-labelledby="anon-wall-title">
+      <div>
+        <p className="kicker">{t('lockedTitle')}</p>
+        <h2 id="anon-wall-title" className="mt-2 text-[30px]">{title}</h2>
+        <p className="mt-3 max-w-xl text-[15px] text-s-muted">{lead ?? t('lockedLead')}</p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Link href={signInHref(locale, path, true)} rel="nofollow" className="btn btn-primary">{t('lockedCta')}</Link>
+          <Link href={signInHref(locale, path)} rel="nofollow" className="text-sm font-semibold hover:text-s-accent-600">{t('lockedSignIn')}</Link>
+        </div>
+      </div>
+      <RiskNote className="max-w-md self-end lg:justify-self-end">{t('expiredNote')}</RiskNote>
+    </section>
   );
 }

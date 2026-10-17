@@ -86,8 +86,8 @@ export default function SiteHeader() {
             </div>
           ) : (
             <>
-              <Link href="/login" className="btn btn-ghost btn-sm">{t('signIn')}</Link>
-              <Link href="/login?mode=register" className="btn btn-primary btn-sm" data-cta="header">{t('tryFree')}</Link>
+              <Link href="/login" rel="nofollow" className="btn btn-ghost btn-sm">{t('signIn')}</Link>
+              <Link href="/login?mode=register" rel="nofollow" className="btn btn-primary btn-sm" data-cta="header">{t('tryFree')}</Link>
             </>
           )}
         </div>
@@ -132,8 +132,8 @@ export default function SiteHeader() {
                 <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="btn btn-sm btn-secondary">{t('signOut')}</button>
               ) : (
                 <>
-                  <Link href="/login" className="btn btn-sm btn-secondary">{t('signIn')}</Link>
-                  <Link href="/login?mode=register" className="btn btn-sm btn-primary">{t('tryFree')}</Link>
+                  <Link href="/login" rel="nofollow" className="btn btn-sm btn-secondary">{t('signIn')}</Link>
+                  <Link href="/login?mode=register" rel="nofollow" className="btn btn-sm btn-primary">{t('tryFree')}</Link>
                 </>
               )}
             </span>

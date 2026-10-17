@@ -2,10 +2,10 @@
   "name": "Football Analytics",
   "short_name": "FootballAnalytics",
   "description": "Football match probabilities from a statistical model, with every prediction settled and published.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#10b981",
+  "background_color": "#0e1311",
+  "theme_color": "#0e1311",
   "orientation": "portrait",
   "scope": "/",
   "dir": "ltr",
@@ -77,9 +77,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Today's Matches",
+      "name": "Today's matches",
       "short_name": "Matches",
-      "url": "/dashboard",
+      "url": "/en/matches",
       "icons": [
         {
           "src": "/icons/icon-96x96.png",
@@ -88,9 +88,9 @@
       ]
     },
     {
-      "name": "Live Scores",
-      "short_name": "Live",
-      "url": "/live",
+      "name": "Track record",
+      "short_name": "Record",
+      "url": "/en/performance",
       "icons": [
         {
           "src": "/icons/icon-96x96.png",

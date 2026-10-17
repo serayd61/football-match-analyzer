@@ -61,8 +61,8 @@ export default async function MatchesHubPage({ params: { locale } }: { params: {
           <p className="mt-1 max-w-lg text-[14px] text-s-muted">{t('lockedLead')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Link href={REGISTER_HREF} className="btn btn-primary" data-cta="matches-hub-trial">{tp('lockedCta')}</Link>
-          <Link href={SIGNIN_HREF} className="text-sm font-semibold hover:text-s-accent-600">{tp('lockedSignIn')}</Link>
+          <Link href={REGISTER_HREF} rel="nofollow" className="btn btn-primary" data-cta="matches-hub-trial">{tp('lockedCta')}</Link>
+          <Link href={SIGNIN_HREF} rel="nofollow" className="text-sm font-semibold hover:text-s-accent-600">{tp('lockedSignIn')}</Link>
         </div>
       </aside>
 
