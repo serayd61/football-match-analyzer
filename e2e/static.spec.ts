@@ -26,16 +26,25 @@ test.describe('@static site', () => {
     }
   }
 
-  test('dil seçici aynı sayfada dili değiştirir', async ({ page, isMobile }) => {
+  test('dil seçici aynı sayfada dili değiştirir', async ({ page }) => {
     await page.goto('/en/methodology');
-    if (isMobile) {
-      const menu = page.getByRole('button', { name: /menu/i });
-      if (await menu.isVisible()) await menu.click();
-    }
+    // Below the lg breakpoint (tablet + mobile) the switcher sits in the hamburger
+    // menu. The footer used to hold a second <select>; SEO Faz 0 replaced it with
+    // crawlable hreflang links (see the test below), so open the menu whenever the
+    // header's own switcher is not visible — not only on `isMobile` devices.
+    const menu = page.getByRole('button', { name: /menu/i });
+    if (await menu.isVisible()) await menu.click();
     const select = page.getByRole('combobox').first();
     await select.selectOption('de');
     await expect(page).toHaveURL(/\/de\/methodology$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  });
+
+  test('footer her dil için hreflang bağlantısı taşır', async ({ page }) => {
+    await page.goto('/en/methodology');
+    for (const l of LOCALES) {
+      await expect(page.locator(`footer a[hreflang="${l}"]`), l).toHaveAttribute('href', new RegExp(`/${l}/methodology$`));
+    }
   });
 
   test('bilinmeyen sayfa 404 döner', async ({ page }) => {
@@ -45,12 +54,31 @@ test.describe('@static site', () => {
 });
 
 test.describe('@static erişim kuralları', () => {
+  // SEO Faz 0 (2026-10-17): account pages still bounce anonymous visitors to the
+  // sign-in; the members' prediction pages answer 200 with a noindex login wall
+  // (Google keeps the URL, no 307 chain); legacy public paths 301 to the site.
   test('üye sayfaları oturumsuz girişe yönlendirir', async ({ request }) => {
-    for (const path of ['/en/predictions', '/en/dashboard', '/live', '/match/1']) {
+    for (const path of ['/en/dashboard', '/en/account', '/favorites']) {
       const res = await request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBeGreaterThanOrEqual(300);
       expect(res.status(), path).toBeLessThan(400);
       expect(res.headers()['location'] || '', path).toMatch(/\/login\?callbackUrl=/);
+    }
+  });
+
+  test('tahmin sayfaları oturumsuz 200 + noindex giriş duvarı döner', async ({ request }) => {
+    const res = await request.get('/en/predictions', { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toMatch(/<meta name="robots" content="noindex/);
+    expect(html).toMatch(/href="\/en\/login[^"]*"[^>]*rel="nofollow"|rel="nofollow"[^>]*href="\/en\/login/);
+  });
+
+  test('eski herkese açık yollar yerelleştirilmiş siteye 301 gider', async ({ request }) => {
+    for (const [path, to] of [['/live', '/en/matches'], ['/match/1', '/en/predictions/1'], ['/analysis/arsenal-vs-chelsea-123', '/en/matches/arsenal-vs-chelsea-123'], ['/leaderboard', '/en/performance']]) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(301);
+      expect(res.headers()['location'] || '', path).toMatch(new RegExp(to.replace(/\//g, '\\/') + '$'));
     }
   });
 

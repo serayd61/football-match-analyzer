@@ -25,10 +25,36 @@ export const OFFICIAL_MODEL_VERSION: string | null = (process.env.SITE_MODEL_VER
 // ---------------------------------------------------------------------------
 export async function resolveOfficialVersion(): Promise<string | null> {
   if (OFFICIAL_MODEL_VERSION) return OFFICIAL_MODEL_VERSION;
+  // SEO Faz 1a (2026-10-17): lib/engine/versions.ts reads with `cache: 'no-store'`, which
+  // throws DynamicServerError while an ISR page (/matches, /leagues/{slug}/results) is
+  // prerendered or regenerated — the catch below then returned null, the version filter was
+  // skipped and shadow-version rows (dc-1.2-cal) leaked into public lists whose match pages
+  // 404 (getPrediction does filter). The site reads the active version through its own
+  // cacheable client first; the no-store reader stays for ingest / the params route.
+  try {
+    const v = await siteActiveVersion();
+    if (v) return v;
+  } catch { /* fall through */ }
   try {
     const { loadEngineVersions } = await import('@/lib/engine/versions');
     return (await loadEngineVersions()).active?.version ?? null;
   } catch { return null; }
+}
+
+/** Active engine version via the site's revalidating client (60 s cache); null when the table is empty. */
+async function siteActiveVersion(): Promise<string | null> {
+  const [{ unstable_cache }, { db }] = await Promise.all([import('next/cache'), import('./db')]);
+  const read = unstable_cache(
+    async (): Promise<string | null> => {
+      const { data, error } = await db().from('engine_model_versions').select('version').eq('status', 'active').order('created_at').limit(1);
+      if (error) { console.error('[site/official] active version read failed:', error.message); return null; }
+      const v = (data as Array<{ version: string }> | null)?.[0]?.version;
+      return v ? String(v) : null;
+    },
+    ['site-official-version-v1'],
+    { revalidate: 60 },
+  );
+  return read();
 }
 
 export async function invalidateOfficialCache(): Promise<void> {

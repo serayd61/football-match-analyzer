@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { publicMatchView, PREMIUM_FIELDS, matchPath, fixtureIdFromSlug, isCanonicalSlug, formLetters, h2hTally } from '@/lib/site/match-public';
+import { publicMatchView, PREMIUM_FIELDS, matchPath, fixtureIdFromSlug, isCanonicalSlug, formLetters, h2hTally, settledVerdict, teamGoalStats, h2hGoalStats, leagueGoalsPerMatch } from '@/lib/site/match-public';
 import { leagueBySlug } from '@/lib/site/leagues';
 import type { SitePrediction } from '@/lib/site/predictions';
 
@@ -15,15 +15,47 @@ const row = (over: Partial<SitePrediction> = {}): SitePrediction => ({
   hasModel: true, status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, ...over,
 });
 
-test('publicMatchView carries no model figure, pick, confidence or outcome', () => {
-  const v = publicMatchView(row({ settled: true, homeScore: 2, awayScore: 1, result: 'H', outcome: 'won', status: 'finished' }));
+test('publicMatchView of an UPCOMING match carries no model figure, pick, confidence or outcome', () => {
+  const v = publicMatchView(row());
   for (const k of PREMIUM_FIELDS) assert.ok(!(k in v), `premium field leaked: ${k}`);
   const json = JSON.stringify(v);
   for (const needle of ['0.52', '0.26', '0.22', 'secret', 'won', '"pick"', 'lambda', 'dc-2.0']) assert.ok(!json.includes(needle), `serialised view contains ${needle}`);
-  // Olgular kalır: skor, durum, takımlar, lig, veri zamanı.
-  assert.equal(v.homeScore, 2); assert.equal(v.awayScore, 1); assert.equal(v.status, 'finished');
+  assert.equal(v.verdict, null);
   assert.equal(v.league?.slug, 'premier-league'); assert.equal(v.updatedAt, '2026-10-17T20:00:00Z');
   assert.equal(v.slug, 'arsenal-vs-chelsea-4193188');
+});
+
+test('a SETTLED match exposes only the pick, its probability and the outcome (SEO Faz 1a)', () => {
+  const v = publicMatchView(row({ settled: true, homeScore: 2, awayScore: 1, result: 'H', outcome: 'won', status: 'finished' }));
+  for (const k of PREMIUM_FIELDS) assert.ok(!(k in v), `premium field leaked: ${k}`);
+  assert.deepEqual(v.verdict, { pick: '1', p: 0.52, outcome: 'won' });
+  const json = JSON.stringify(v);
+  for (const needle of ['0.26', '0.22', 'secret', 'lambda', 'dc-2.0', 'confidence']) assert.ok(!json.includes(needle), `serialised view contains ${needle}`);
+  // Olgular kalır: skor, durum, takımlar, lig, veri zamanı.
+  assert.equal(v.homeScore, 2); assert.equal(v.awayScore, 1); assert.equal(v.status, 'finished');
+  // No verdict without a score, without a model, when void, or before settlement.
+  assert.equal(settledVerdict(row({ settled: true, outcome: 'won' })), null);
+  assert.equal(settledVerdict(row({ settled: true, homeScore: 1, awayScore: 1, outcome: 'void' })), null);
+  assert.equal(settledVerdict(row({ settled: true, homeScore: 1, awayScore: 1, outcome: 'lost', hasModel: false })), null);
+  assert.deepEqual(settledVerdict(row({ settled: true, homeScore: 0, awayScore: 0, outcome: 'lost', pick: 'X', pDraw: 0.261 })), { pick: 'X', p: 0.26, outcome: 'lost' });
+});
+
+test('goal facts come from scores only', () => {
+  const rows = [
+    { homeId: 1, awayId: 2, homeScore: 2, awayScore: 1 }, // team 1: 2-1 → over, btts
+    { homeId: 3, awayId: 1, homeScore: 0, awayScore: 1 }, // team 1: 1-0 → clean sheet
+    { homeId: 1, awayId: 4, homeScore: 3, awayScore: 3 }, // team 1: 3-3 → over, btts
+    { homeId: 1, awayId: 2, homeScore: null, awayScore: null },
+  ];
+  const g = teamGoalStats(1, rows)!;
+  assert.equal(g.n, 3);
+  assert.equal(g.gfAvg, 2); assert.equal(+g.gaAvg.toFixed(3), 1.333);
+  assert.equal(+g.over25.toFixed(3), 0.667); assert.equal(+g.btts.toFixed(3), 0.667); assert.equal(+g.cleanSheets.toFixed(3), 0.333);
+  assert.equal(teamGoalStats(9, rows), null);
+  const h = h2hGoalStats(rows)!;
+  assert.equal(h.n, 3); assert.equal(+h.avgGoals.toFixed(3), 3.333); assert.equal(+h.over25.toFixed(3), 0.667);
+  assert.equal(leagueGoalsPerMatch([{ gf: 10, played: 5 }, { gf: 6, played: 5 }]), 3.2); // 16 goals in 5 matches
+  assert.equal(leagueGoalsPerMatch([]), null);
 });
 
 test('match URL: slug round-trips, diacritics are folded, canonical check and redirect input', () => {

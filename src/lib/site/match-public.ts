@@ -33,6 +33,25 @@ export interface PublicMatch {
   awayScore: number | null;
   /** engine row's updated_at — "data last updated" on the page and sitemap lastmod */
   updatedAt: string | null;
+  /**
+   * SEO Faz 1a (2026-10-17): once a match is settled with a score, the model's
+   * pre-match 1X2 pick, its probability and whether it came in are public — the
+   * settled record is the site's proof (forebet keeps the prediction on the result
+   * page; it is also where "X vs Y" long-tail queries land weeks later). Always
+   * null before the final whistle: upcoming predictions stay members-only.
+   */
+  verdict: SettledVerdict | null;
+}
+
+export interface SettledVerdict { pick: '1' | 'X' | '2'; p: number; outcome: 'won' | 'lost' }
+
+/** Public verdict of a settled match, or null (upcoming, void, no model, no score). */
+export function settledVerdict(p: SitePrediction): SettledVerdict | null {
+  if (!p.settled || p.homeScore == null || p.awayScore == null || !p.hasModel || !p.pick) return null;
+  if (p.outcome !== 'won' && p.outcome !== 'lost') return null;
+  const prob = p.pick === '1' ? p.pHome : p.pick === 'X' ? p.pDraw : p.pAway;
+  if (!(prob > 0)) return null;
+  return { pick: p.pick, p: Math.round(prob * 100) / 100, outcome: p.outcome };
 }
 
 /** Fields of SitePrediction that must never reach a public page (test-checked). */
@@ -60,6 +79,7 @@ export function publicMatchView(p: SitePrediction): PublicMatch {
     homeScore: p.homeScore,
     awayScore: p.awayScore,
     updatedAt: p.updatedAt,
+    verdict: settledVerdict(p),
   };
 }
 
@@ -105,4 +125,45 @@ export function h2hTally(homeId: number, rows: Array<{ homeId: number | null; aw
     if (gf > ga) t.homeWins++; else if (gf === ga) t.draws++; else t.awayWins++;
   }
   return t;
+}
+
+type ScoredRow = { homeId: number | null; awayId: number | null; homeScore: number | null; awayScore: number | null };
+
+/** Goal facts for one team over its settled matches (SEO Faz 1a): averages and market shares, from scores only. */
+export interface TeamGoalStats { n: number; gfAvg: number; gaAvg: number; over25: number; btts: number; cleanSheets: number }
+export function teamGoalStats(teamId: number, rows: ScoredRow[]): TeamGoalStats | null {
+  let n = 0, gf = 0, ga = 0, over = 0, btts = 0, cs = 0;
+  for (const r of rows) {
+    if (r.homeScore == null || r.awayScore == null) continue;
+    if (r.homeId !== teamId && r.awayId !== teamId) continue;
+    const home = r.homeId === teamId;
+    const f = home ? r.homeScore : r.awayScore, a = home ? r.awayScore : r.homeScore;
+    n++; gf += f; ga += a;
+    if (f + a > 2.5) over++;
+    if (f > 0 && a > 0) btts++;
+    if (a === 0) cs++;
+  }
+  if (!n) return null;
+  return { n, gfAvg: gf / n, gaAvg: ga / n, over25: over / n, btts: btts / n, cleanSheets: cs / n };
+}
+
+/** Goal facts across the settled meetings of two clubs. */
+export interface H2hGoalStats { n: number; avgGoals: number; over25: number; btts: number }
+export function h2hGoalStats(rows: ScoredRow[]): H2hGoalStats | null {
+  let n = 0, goals = 0, over = 0, btts = 0;
+  for (const r of rows) {
+    if (r.homeScore == null || r.awayScore == null) continue;
+    n++; goals += r.homeScore + r.awayScore;
+    if (r.homeScore + r.awayScore > 2.5) over++;
+    if (r.homeScore > 0 && r.awayScore > 0) btts++;
+  }
+  if (!n) return null;
+  return { n, avgGoals: goals / n, over25: over / n, btts: btts / n };
+}
+
+/** League average goals per match this season, from the standings (every goal is counted once: goals for / matches). */
+export function leagueGoalsPerMatch(rows: Array<{ gf: number; played: number }>): number | null {
+  const gf = rows.reduce((a, r) => a + r.gf, 0);
+  const played = rows.reduce((a, r) => a + r.played, 0) / 2; // each match appears in two rows
+  return played > 0 ? gf / played : null;
 }
