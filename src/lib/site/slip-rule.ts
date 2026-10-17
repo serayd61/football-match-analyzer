@@ -14,8 +14,10 @@ export const SLIP_RULE_VERSION = 'slip-1.0';
 export const SLIP_STORAGE_KEY = 'fa.slip.v1';
 export const MAX_LEGS = 10;
 
-export type SlipMarket = '1x2' | 'ou25' | 'btts';
-export type SlipSelection = '1' | 'X' | '2' | 'over' | 'under' | 'yes' | 'no';
+// slip-1.1 (2026-10-17): Asya handikapı ('ah', çizgi ev perspektifinden; +0.5 = ev 0,5 alır) ve
+// beraberlikte iade ('dnb') eklendi. Çeyrek çizgi iki yarım bahis gibi sonuçlanır (yarı tuttu / yarı tutmadı).
+export type SlipMarket = '1x2' | 'ou25' | 'btts' | 'ah' | 'dnb';
+export type SlipSelection = '1' | 'X' | '2' | 'over' | 'under' | 'yes' | 'no' | 'home' | 'away';
 
 export interface SlipLeg {
   fixtureId: number;
@@ -25,6 +27,8 @@ export interface SlipLeg {
   awayName: string;
   market: SlipMarket;
   selection: SlipSelection;
+  /** yalnız 'ah': handikap çizgisi, ev perspektifinden, 0,25 katı */
+  line?: number;
   /** eklendiği anda gösterilen model olasılığı (0–1) */
   p: number;
   /** eklendiği anda gösterilen bahisçi ondalık oranı; yoksa null */
@@ -34,9 +38,12 @@ export interface SlipLeg {
 
 export interface SlipResult { homeScore: number | null; awayScore: number | null; settled: boolean; status: string }
 
-export const legKey = (l: Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'>) => `${l.fixtureId}:${l.market}:${l.selection}`;
+export type LegId = Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'> & { line?: number };
+export const legKey = (l: LegId) => `${l.fixtureId}:${l.market}:${l.selection}${l.market === 'ah' ? `:${l.line}` : ''}`;
+const sameLeg = (a: LegId, b: LegId) => legKey(a) === legKey(b);
 
-const VALID_SEL: Record<SlipMarket, SlipSelection[]> = { '1x2': ['1', 'X', '2'], ou25: ['over', 'under'], btts: ['yes', 'no'] };
+const VALID_SEL: Record<SlipMarket, SlipSelection[]> = { '1x2': ['1', 'X', '2'], ou25: ['over', 'under'], btts: ['yes', 'no'], ah: ['home', 'away'], dnb: ['home', 'away'] };
+const validLine = (x: unknown) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 4 && Math.abs(x * 4 - Math.round(x * 4)) < 1e-9;
 
 export function isValidLeg(x: unknown): x is SlipLeg {
   if (!x || typeof x !== 'object') return false;
@@ -46,6 +53,7 @@ export function isValidLeg(x: unknown): x is SlipLeg {
     && typeof l.homeName === 'string' && typeof l.awayName === 'string' && typeof l.leagueLabel === 'string'
     && typeof l.market === 'string' && (l.market in VALID_SEL)
     && typeof l.selection === 'string' && VALID_SEL[l.market as SlipMarket].includes(l.selection as SlipSelection)
+    && (l.market === 'ah' ? validLine(l.line) : l.line === undefined)
     && typeof l.p === 'number' && l.p >= 0 && l.p <= 1
     && (l.odds === null || (typeof l.odds === 'number' && l.odds > 1))
     && typeof l.addedAt === 'string';
@@ -74,7 +82,7 @@ export type AddOutcome = 'added' | 'replaced' | 'removed' | 'full' | 'started';
  */
 export function toggleLeg(legs: SlipLeg[], leg: SlipLeg, now = Date.now()): { legs: SlipLeg[]; outcome: AddOutcome } {
   const same = legs.find((l) => l.fixtureId === leg.fixtureId);
-  if (same && same.market === leg.market && same.selection === leg.selection) return { legs: legs.filter((l) => l.fixtureId !== leg.fixtureId), outcome: 'removed' };
+  if (same && sameLeg(same, leg)) return { legs: legs.filter((l) => l.fixtureId !== leg.fixtureId), outcome: 'removed' };
   if (Date.parse(leg.kickoff) <= now) return { legs, outcome: 'started' };
   if (same) return { legs: legs.map((l) => (l.fixtureId === leg.fixtureId ? leg : l)), outcome: 'replaced' };
   if (legs.length >= MAX_LEGS) return { legs, outcome: 'full' };
@@ -83,8 +91,8 @@ export function toggleLeg(legs: SlipLeg[], leg: SlipLeg, now = Date.now()): { le
 
 export const removeLeg = (legs: SlipLeg[], fixtureId: number) => legs.filter((l) => l.fixtureId !== fixtureId);
 
-export function hasLeg(legs: SlipLeg[], leg: Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'>): boolean {
-  return legs.some((l) => l.fixtureId === leg.fixtureId && l.market === leg.market && l.selection === leg.selection);
+export function hasLeg(legs: SlipLeg[], leg: LegId): boolean {
+  return legs.some((l) => sameLeg(l, leg));
 }
 
 export interface SlipTotals {
@@ -106,15 +114,40 @@ export function slipTotals(legs: SlipLeg[]): SlipTotals {
   return { n: legs.length, totalOdds, missingOdds, jointP, firstKickoff: kos[0] ?? null };
 }
 
-/** Bacak sonucu: skor yoksa null. */
-export function legHit(leg: Pick<SlipLeg, 'market' | 'selection'>, r: SlipResult | null | undefined): boolean | null {
+export type LegOutcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
+
+/** Yarım çizgi için tek sonuç; ev perspektifinden (d = ev + çizgi − dep). */
+const halfLine = (h: number, a: number, line: number): 'won' | 'lost' | 'void' => { const d = h + line - a; return d > 1e-9 ? 'won' : Math.abs(d) < 1e-9 ? 'void' : 'lost'; };
+const invert = (o: LegOutcome): LegOutcome => (o === 'won' ? 'lost' : o === 'lost' ? 'won' : o === 'half_won' ? 'half_lost' : o === 'half_lost' ? 'half_won' : 'void');
+
+/** Asya handikapı sonucu (ev perspektifinden); çeyrek çizgi = iki yarım bahis. */
+export function asianOutcome(h: number, a: number, line: number): LegOutcome {
+  const q = Math.abs(line * 4 - Math.round(line * 4)) < 1e-9 && Math.abs(line * 2 - Math.round(line * 2)) > 1e-9; // x.25 / x.75
+  if (!q) return halfLine(h, a, line);
+  const [x, y] = [halfLine(h, a, line - 0.25), halfLine(h, a, line + 0.25)];
+  const wins = [x, y].filter((o) => o === 'won').length, voids = [x, y].filter((o) => o === 'void').length;
+  if (wins === 2) return 'won'; if (wins === 1 && voids === 1) return 'half_won'; if (voids === 2) return 'void';
+  if (voids === 1) return 'half_lost'; return 'lost';
+}
+
+/** Bacak sonucu; skor yoksa null. */
+export function legOutcome(leg: Pick<SlipLeg, 'market' | 'selection' | 'line'>, r: SlipResult | null | undefined): LegOutcome | null {
   if (!r || r.homeScore == null || r.awayScore == null || !r.settled) return null;
   const h = r.homeScore, a = r.awayScore;
-  switch (leg.selection) {
-    case '1': return h > a; case 'X': return h === a; case '2': return h < a;
-    case 'over': return h + a >= 3; case 'under': return h + a < 3;
-    case 'yes': return h > 0 && a > 0; case 'no': return !(h > 0 && a > 0);
+  const b = (x: boolean): LegOutcome => (x ? 'won' : 'lost');
+  switch (leg.market) {
+    case '1x2': return b(leg.selection === '1' ? h > a : leg.selection === 'X' ? h === a : h < a);
+    case 'ou25': return b(leg.selection === 'over' ? h + a >= 3 : h + a < 3);
+    case 'btts': return b(leg.selection === 'yes' ? h > 0 && a > 0 : !(h > 0 && a > 0));
+    case 'dnb': return h === a ? 'void' : b(leg.selection === 'home' ? h > a : h < a);
+    case 'ah': { const o = asianOutcome(h, a, leg.line ?? 0); return leg.selection === 'home' ? o : invert(o); }
   }
+}
+
+/** Geriye dönük: tuttu (tam/yarı/iade) → true, tutmadı (tam/yarı) → false, skor yoksa null. */
+export function legHit(leg: Pick<SlipLeg, 'market' | 'selection' | 'line'>, r: SlipResult | null | undefined): boolean | null {
+  const o = legOutcome(leg, r);
+  return o == null ? null : o === 'won' || o === 'half_won' || o === 'void';
 }
 
 export type SlipStatus = 'pending' | 'won' | 'lost' | 'empty';

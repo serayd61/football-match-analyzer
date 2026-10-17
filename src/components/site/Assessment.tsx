@@ -40,7 +40,7 @@ export interface AssessmentLabels {
 
 const pct = (p: number | null | undefined) => (p == null ? '–' : `${Math.round(p * 100)}%`);
 
-export default function AssessmentCard({ assessment, labels, aside }: { assessment: MatchAssessment; labels: AssessmentLabels; aside?: ReactNode }) {
+export default function AssessmentCard({ assessment, labels, aside, action }: { assessment: MatchAssessment; labels: AssessmentLabels; aside?: ReactNode; /** pazar satırı eylemi, ör. "Kupona ekle" (slip-1.1) */ action?: (m: MarketAssessment) => ReactNode }) {
   return (
     <section className="card !gap-4 !p-5 sm:!p-6" aria-labelledby="assessment-title">
       <div className="flex items-start justify-between gap-3">
@@ -63,7 +63,10 @@ export default function AssessmentCard({ assessment, labels, aside }: { assessme
                   <span className="mx-1.5 text-s-muted" aria-hidden>·</span>
                   <span className="text-[16px] font-bold">{labels.selection(m)}</span>
                 </div>
-                <AssessmentChip status={m.status} label={labels.status[m.status]} />
+                <div className="flex items-center gap-2">
+                  {action?.(m)}
+                  <AssessmentChip status={m.status} label={labels.status[m.status]} />
+                </div>
               </div>
               <dl className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-s-raised/60 px-2.5 py-2">

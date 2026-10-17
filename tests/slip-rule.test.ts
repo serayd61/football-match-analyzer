@@ -77,3 +77,29 @@ test('paylaşım metni: başlık, bacaklar, toplam oran (varsa), not', () => {
   const noOdds = slipText([leg({ odds: null })], () => 'x', { time: () => 't', odds: (o) => String(o), pct: () => 'p', title: 'T', total: 'Toplam', note: 'n' });
   assert.ok(!noOdds.includes('Toplam'));
 });
+
+test('slip-1.1: Asya handikapı ve beraberlikte iade sonuçları', async () => {
+  const { asianOutcome, legOutcome } = await import('@/lib/site/slip-rule');
+  const fin = (h: number, a: number) => ({ homeScore: h, awayScore: a, settled: true, status: 'finished' });
+  assert.equal(asianOutcome(2, 1, -0.5), 'won'); assert.equal(asianOutcome(1, 1, -0.5), 'lost');
+  assert.equal(asianOutcome(1, 1, 0), 'void'); assert.equal(asianOutcome(2, 1, -1), 'void');
+  assert.equal(asianOutcome(2, 1, -0.75), 'half_won'); assert.equal(asianOutcome(2, 1, -1.25), 'half_lost');
+  assert.equal(asianOutcome(2, 1, -0.25), 'won'); assert.equal(asianOutcome(1, 1, -0.25), 'half_lost'); assert.equal(asianOutcome(1, 1, 0.25), 'half_won');
+  assert.equal(asianOutcome(3, 1, -1.75), 'half_won');
+  assert.equal(legOutcome({ market: 'ah', selection: 'away', line: -0.75 }, fin(2, 1)), 'half_lost');
+  assert.equal(legOutcome({ market: 'ah', selection: 'away', line: 0 }, fin(1, 1)), 'void');
+  assert.equal(legOutcome({ market: 'dnb', selection: 'home' }, fin(1, 1)), 'void');
+  assert.equal(legOutcome({ market: 'dnb', selection: 'away' }, fin(0, 1)), 'won');
+  assert.equal(legHit({ market: 'dnb', selection: 'away' }, fin(1, 1)), true);
+  assert.equal(slipStatus([leg({ market: 'dnb', selection: 'home' })], { 5781774: fin(1, 1) }), 'won');
+  // aynı maçta farklı çizgi = farklı seçim (değiştirir), aynı çizgi = çıkarır
+  const a = toggleLeg([], leg({ market: 'ah', selection: 'home', line: -0.5 }), NOW);
+  assert.equal(toggleLeg(a.legs, leg({ market: 'ah', selection: 'home', line: -0.75 }), NOW).outcome, 'replaced');
+  assert.equal(toggleLeg(a.legs, leg({ market: 'ah', selection: 'home', line: -0.5 }), NOW).outcome, 'removed');
+  assert.ok(hasLeg(a.legs, { fixtureId: 5781774, market: 'ah', selection: 'home', line: -0.5 }));
+  assert.ok(!hasLeg(a.legs, { fixtureId: 5781774, market: 'ah', selection: 'home', line: -1 }));
+  // depo: ah çizgisiz / 1x2 çizgili geçersiz
+  assert.deepEqual(parseStoredSlip(JSON.stringify([leg({ market: 'ah', selection: 'home' })])), []);
+  assert.deepEqual(parseStoredSlip(JSON.stringify([leg({ line: 0.5 })])), []);
+  assert.equal(parseStoredSlip(JSON.stringify([leg({ market: 'ah', selection: 'away', line: 1.25 })])).length, 1);
+});

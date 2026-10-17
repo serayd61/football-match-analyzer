@@ -1716,6 +1716,21 @@
     "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti. La schedina è salvata solo in questo browser.",
     "shareNote": "Probabilità del modello statistico; non è un consiglio di scommessa.",
     "pageTitle": "La mia schedina",
-    "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser."
+    "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser.",
+    "dnbShort": "rimborso in caso di pareggio",
+    "gridTitle": "Aggiungi alla schedina",
+    "gridLead": "Clicca una selezione per metterla in schedina. Una selezione per partita; la nuova sostituisce la vecchia. Modello % · quota bookmaker (– se assente).",
+    "g1x2": "Esito finale (1X2)",
+    "gOu": "Over/Under 2,5",
+    "gBtts": "Goal / No goal",
+    "gAh": "Handicap asiatico",
+    "gDnb": "Draw no bet",
+    "lineBook": "linea bookmaker",
+    "lineModel": "linea equa del modello",
+    "outcome": {
+      "void": "rimborsata",
+      "half_won": "mezza vinta",
+      "half_lost": "mezza persa"
+    }
   }
 }

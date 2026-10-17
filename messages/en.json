@@ -1716,6 +1716,21 @@
     "note": "The selections are yours; the probabilities are the statistical model's estimates, not betting advice. The model probability multiplies the legs as if independent. The slip is stored only in this browser.",
     "shareNote": "Statistical model probabilities; not betting advice.",
     "pageTitle": "My slip",
-    "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser."
+    "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser.",
+    "dnbShort": "draw no bet",
+    "gridTitle": "Add to slip",
+    "gridLead": "Click a selection to put it on the slip. One selection per match; a new one replaces the old. Model % · bookmaker odds (– if none).",
+    "g1x2": "Match result (1X2)",
+    "gOu": "Over/Under 2.5",
+    "gBtts": "Both teams to score",
+    "gAh": "Asian handicap",
+    "gDnb": "Draw no bet",
+    "lineBook": "bookmaker line",
+    "lineModel": "model fair line",
+    "outcome": {
+      "void": "void",
+      "half_won": "half won",
+      "half_lost": "half lost"
+    }
   }
 }

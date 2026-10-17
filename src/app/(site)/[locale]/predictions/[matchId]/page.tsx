@@ -47,6 +47,7 @@ import { Paywall, TrialNotice, LockedPick, REGISTER_HREF, PRICING_HREF } from '@
 import { isSampleFixture } from '@/lib/site/sample-analysis';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import AddToSlipButton, { type SlipLegInput } from '@/components/site/slip/AddToSlipButton';
+import SlipMarkets, { type SlipGroup } from '@/components/site/slip/SlipMarkets';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -325,11 +326,46 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   // Kuponum (slip-1.0): üye görünümünde, başlamamış maçta pazar satırlarına "Kupona ekle". Oran = tablodaki bahisçi oranı.
   const slipOn = !publicSample && !isPast;
   const slipBase = { fixtureId: p.fixtureId, kickoff: p.kickoff, leagueLabel: p.leagueName, homeName: p.homeName, awayName: p.awayName };
-  const slipFor = (key: string, model: number, odds: number | null): SlipLegInput | null => {
-    const ms: Record<string, [SlipLegInput['market'], SlipLegInput['selection']]> = { '1': ['1x2', '1'], X: ['1x2', 'X'], '2': ['1x2', '2'], 'ou-o': ['ou25', 'over'], 'ou-u': ['ou25', 'under'], 'btts-y': ['btts', 'yes'], 'btts-n': ['btts', 'no'] };
-    const m = ms[key]; return m ? { ...slipBase, market: m[0], selection: m[1], p: model, odds } : null;
+  const slipFor = (key: string, model: number, odds: number | null, line?: number): SlipLegInput | null => {
+    const ms: Record<string, [SlipLegInput['market'], SlipLegInput['selection']]> = { '1': ['1x2', '1'], X: ['1x2', 'X'], '2': ['1x2', '2'], 'ou-o': ['ou25', 'over'], 'ou-u': ['ou25', 'under'], 'btts-y': ['btts', 'yes'], 'btts-n': ['btts', 'no'], 'ah-h': ['ah', 'home'], 'ah-a': ['ah', 'away'], 'dnb-h': ['dnb', 'home'], 'dnb-a': ['dnb', 'away'] };
+    const m = ms[key]; return m ? { ...slipBase, market: m[0], selection: m[1], p: model, odds, ...(m[0] === 'ah' ? { line } : {}) } : null;
   };
   const tsl = await getTranslations('slip');
+  // slip-1.1: pazar ızgarası — hero'nun altında, tüm pazarlar tek bakışta. Oran yoksa model % ile; handikap çizgisi
+  // bahisçiden, yoksa modelin adil çizgisi (oran yok). mrows ile aynı sayılar.
+  const slipMeta = (model: number, o: number | null) => `${pct(model)} · ${o != null ? o.toFixed(2) : '–'}`;
+  const slipGroups: SlipGroup[] = [];
+  if (slipOn) {
+    slipGroups.push({ key: '1x2', title: tsl('g1x2'), options: outcomes.map((o) => ({ leg: slipFor(o.key, o.p, o.o ?? null)!, label: o.label, meta: slipMeta(o.p, o.o ?? null) })) });
+    const pOverAny = p.overUnder ? (p.overUnder.pick === 'over' ? p.overUnder.pRaw : 1 - p.overUnder.pRaw) : sm ? overProb(sm, 2.5) : null;
+    if (pOverAny != null) slipGroups.push({ key: 'ou25', title: tsl('gOu'), options: [
+      { leg: slipFor('ou-o', pOverAny, goalBook?.over25 ?? null)!, label: tsl('over'), meta: slipMeta(pOverAny, goalBook?.over25 ?? null) },
+      { leg: slipFor('ou-u', 1 - pOverAny, goalBook?.under25 ?? null)!, label: tsl('under'), meta: slipMeta(1 - pOverAny, goalBook?.under25 ?? null) },
+    ] });
+    if (sm) { const by = bttsProb(sm); slipGroups.push({ key: 'btts', title: tsl('gBtts'), options: [
+      { leg: slipFor('btts-y', by, book?.btts?.a ?? null)!, label: tsl('bttsYes'), meta: slipMeta(by, book?.btts?.a ?? null) },
+      { leg: slipFor('btts-n', 1 - by, book?.btts?.b ?? null)!, label: tsl('bttsNo'), meta: slipMeta(1 - by, book?.btts?.b ?? null) },
+    ] }); }
+    if (sm && (book?.asian || fair)) {
+      const line = book?.asian ? book.asian.line : fair!.line;
+      const h = handicapAt(sm, line); const mh = h.pHomeCover / (h.pHomeCover + h.pAwayCover);
+      const fl = (l: number) => (l > 0 ? `+${l}` : `${l}`);
+      slipGroups.push({ key: 'ah', title: tsl('gAh'), note: book?.asian ? tsl('lineBook') : tsl('lineModel'), options: [
+        { leg: slipFor('ah-h', mh, book?.asian?.home ?? null, line)!, label: `${p.homeName} ${fl(line)}`, meta: slipMeta(mh, book?.asian?.home ?? null) },
+        { leg: slipFor('ah-a', 1 - mh, book?.asian?.away ?? null, line)!, label: `${p.awayName} ${fl(-line)}`, meta: slipMeta(1 - mh, book?.asian?.away ?? null) },
+      ] });
+    }
+    { const dh = p.pHome / (p.pHome + p.pAway); slipGroups.push({ key: 'dnb', title: tsl('gDnb'), options: [
+      { leg: slipFor('dnb-h', dh, book?.drawNoBet?.a ?? null)!, label: p.homeName, meta: slipMeta(dh, book?.drawNoBet?.a ?? null) },
+      { leg: slipFor('dnb-a', 1 - dh, book?.drawNoBet?.b ?? null)!, label: p.awayName, meta: slipMeta(1 - dh, book?.drawNoBet?.b ?? null) },
+    ] }); }
+  }
+  // Değerlendirme kartındaki pazar satırına düğme (değerlendirilen seçim için).
+  const slipAction = (m: MarketAssessment) => {
+    const key = m.market === '1x2' ? m.selection : m.market === 'ou25' ? (m.selection === 'over' ? 'ou-o' : 'ou-u') : (m.selection === 'yes' ? 'btts-y' : 'btts-n');
+    const leg = slipOn ? slipFor(key, m.model.p, m.price.odds ?? null) : null;
+    return leg ? <AddToSlipButton leg={leg} /> : null;
+  };
   const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <div className="flex items-center gap-3">
       {crest ? <Image src={crest} alt={tc('crestAlt', { team: name })} width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
@@ -436,10 +472,13 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         </aside>
       </div>
 
+      {/* ── Kupona ekle: pazar ızgarası (slip-1.1, 2026-10-17) ──────── */}
+      {slipGroups.length > 0 && <div className="mt-4"><SlipMarkets groups={slipGroups} labels={{ title: tsl('gridTitle'), lead: tsl('gridLead') }} /></div>}
+
       {/* ── Bu maç için değerlendirme (assess-1.0, 2026-10-16) ──────── */}
       {assessment && assessment.markets.length > 0 && (
         <div className="mt-4">
-          <AssessmentCard assessment={assessment} labels={assessmentLabels} />
+          <AssessmentCard assessment={assessment} labels={assessmentLabels} action={slipAction} />
         </div>
       )}
 
@@ -705,7 +744,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                     </tr>
                   </thead>
                   <tbody>
-                    {mrows.map((r) => { const e = r.model - r.mProb; const sl = slipOn ? slipFor(r.key, r.model, r.mOdds) : null; return (
+                    {mrows.map((r) => { const e = r.model - r.mProb; const sl = slipOn ? slipFor(r.key, r.model, r.mOdds, book?.asian?.line) : null; return (
                       <tr key={r.key} className="border-b border-s-line">
                         <td className="py-2 pr-3 text-s-muted">{r.market}</td>
                         <td className="py-2 pr-3">{r.sel}</td>
