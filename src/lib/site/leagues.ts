@@ -41,6 +41,8 @@ const NAME_ALIASES: Record<string, string> = {
   'La Liga': 'LaLiga',
   'UEFA Champions League': 'Champions League',
   'EFL Championship': 'Championship',
+  // 2026-10-13: FotMob 2026-27 Championship'ı yeni mevsimlik id (1000001801) ve uzun adla veriyor
+  'English Football League - Championship': 'Championship',
   'Primeira Liga': 'Liga Portugal',
   'Super Lig': 'Süper Lig',
   'Trendyol Süper Lig': 'Süper Lig',
