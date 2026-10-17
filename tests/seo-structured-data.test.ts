@@ -65,7 +65,7 @@ test('sitemap XML lists every locale with hreflang links, the content images and
   assert.match(xml, /^<\?xml version="1.0" encoding="UTF-8"\?>\n<urlset /);
   assert.ok(xml.includes('xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'));
   const urls = xml.match(/<loc>[^<]+<\/loc>/g)!;
-  assert.equal(urls.length, (9 + 11 + 2) * 4); // 9 static pages + 11 leagues + 2 matches, 4 locales
+  assert.equal(urls.length, (10 + 11 + 2) * 4); // 10 static pages (incl. /contact) + 11 leagues + 2 matches, 4 locales
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/leagues/super-lig</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/de/matches/arsenal-vs-chelsea-1</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/en/matches</loc>'));
@@ -85,6 +85,6 @@ test('sitemap XML lists every locale with hreflang links, the content images and
 
 test('sitemap without database input still lists the static pages, without lastmod on data pages', () => {
   const xml = buildSitemapXml();
-  assert.equal(xml.match(/<loc>[^<]+<\/loc>/g)!.length, (9 + 11) * 4);
+  assert.equal(xml.match(/<loc>[^<]+<\/loc>/g)!.length, (10 + 11) * 4);
   assert.ok(!xml.includes('<loc>https://footballanalytics.pro/en</loc>\n    <lastmod>'));
 });

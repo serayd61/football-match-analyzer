@@ -107,8 +107,8 @@
     "home": "Ana sayfaya git"
   },
   "home": {
-    "metaTitle": "Futbol tahminleri ve istatistiksel maç analizi",
-    "metaDescription": "{count} lig için Dixon-Coles modelinden maç olasılıkları; her maçtan sonra sonuçlandırılıp yayınlanır. Puan durumu, form ve geçmiş karşılaşmalarla ücretsiz maç önü; olasılık ve risk üyelere.",
+    "metaTitle": "Futbol tahminleri ve xG analizi",
+    "metaDescription": "{count} lig için Dixon-Coles maç olasılıkları; her maçtan sonra sonuçlandırılıp yayınlanır. Puan durumu, form ve H2H ile ücretsiz maç önü.",
     "eyebrow": "İstatistiksel futbol tahminleri",
     "title": "Maç başlamadan olasılık, bittikten sonra karne.",
     "lead": "Modelimiz {count} ligde her maç için 1X2, üst/alt 2,5 ve karşılıklı gol olasılığı üretir. Sonuç geldiğinde her tahmin puanlanır ve olduğu gibi kalır. Ücretsiz hesapla günün tahminlerini, ücretli planla modelin bahisçiden ayrıştığı maçları görürsün.",
@@ -450,11 +450,12 @@
     "record": "T–K",
     "hitRate": "İsabet",
     "brier": "Brier",
-    "note": "Bir lig ancak model o ligin sonuçlarıyla fit edildikten sonra eklenir. Küçük örneklemler dalgalanır; isabeti yanındaki sayıyla birlikte okuyun."
+    "note": "Bir lig ancak model o ligin sonuçlarıyla fit edildikten sonra eklenir. Küçük örneklemler dalgalanır; isabeti yanındaki sayıyla birlikte okuyun.",
+    "metaTitle": "Lig tahminleri ve xG karneleri"
   },
   "league": {
-    "metaTitle": "{league} tahminleri ve karnesi",
-    "metaDescription": "{league} ({country}) için Dixon-Coles maç olasılıkları: yaklaşan seçimler, sonuçlanmış maçlar, isabet ve Brier skoru.",
+    "metaTitle": "{league} tahminleri ve xG karnesi",
+    "metaDescription": "{league} ({country}) için Dixon-Coles olasılıkları ve xG: yaklaşan maçlar, sonuçlanmış maçlar, isabet ve Brier skoru.",
     "lead": "{league} için model olasılıkları ve sonuçlanmış karne.",
     "allLeagues": "Tüm ligler",
     "monthly": "Aya göre:",
@@ -480,7 +481,7 @@
       "brasileirao": "Brasileirão Brezilya'nın en üst ligidir: 20 kulüp, takvim yılına yayılan 38 hafta. Uzun seyahatler ve alışılmadık ölçüde güçlü ev sahibi avantajı onu ayrı bir vaka yapar; parametreleri kendi sonuçlarıyla fit edilir.",
       "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez."
     },
-    "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış oranında sabit 1 birimlik bahis varsayımıdır. Sonradan hiçbir kayıt silinmez.",
+    "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış fiyatına göre maç başına bir birimle ölçülür. Sonradan hiçbir kayıt silinmez.",
     "eventDescription": "{league} maçı: {home} – {away}.",
     "updated": "Fikstür ve sonuç verisi son güncelleme: {time}",
     "methodLink": "Bu değerler nasıl üretilir",
@@ -579,7 +580,8 @@
             "- Halka açık karne Temmuz 2026 sonunda başlar; sonuçlanmış örneklem hâlâ küçüktür ve lig bazlı değerler dalgalanır.\n- Oran kayıtları yalnızca Ağustos 2026 ortasından itibaren ve her maç için değil; bu yüzden ROI penceresi karneden kısadır.\n- Besleme zaman zaman gecikir veya bir sonucu atlar; bu maçlar sonuç gelene kadar açık kalır.\n- Olasılıklar tahmindir. %60'lık bir seçimin beşte iki kaybetmesi beklenir."
           ]
         }
-      ]
+      ],
+      "metaTitle": "Tahmin modeli nasıl çalışır"
     },
     "about": {
       "title": "Hakkında",
@@ -617,7 +619,8 @@
             "Spor bahisleri gerçek bir maddi kayıp riski taşır. Bu site yetişkinler (18+) içindir. Bahis oynuyorsanız yalnızca kaybetmeyi göze alabileceğiniz kadar oynayın ve oyun bir tercih olmaktan çıktıysa yardım isteyin: İsviçre'de Sucht Schweiz yardım hattı 0800 040 080."
           ]
         }
-      ]
+      ],
+      "metaTitle": "Football Analytics hakkında"
     },
     "privacy": {
       "title": "Gizlilik politikası",
@@ -887,7 +890,7 @@
     "lockedSignIn": "Zaten üyeyim, giriş yap",
     "lockedCount": "{n, plural, =1 {Bugün # maç değerlendirildi} other {Bugün # maç değerlendirildi}}",
     "expiredKicker": "Üyelere özel",
-    "expiredNote": "Pro sana garanti değil, kalibre olasılık verir. 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. 18+ · Sorumlu oyna.",
+    "expiredNote": "Pro sana garanti değil, kalibre olasılık verir. 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır.",
     "hiddenPick": "Premium tahmin gizli",
     "unlock": "Pro ile aç →",
     "unlockLong": "Pro ile aç — ayda {price}",
@@ -965,12 +968,11 @@
       "highShort": "Yüksek"
     },
     "footer": {
-      "line": "© {year} footballanalytics.pro · Tahminler istatistiksel kestirimdir, finansal tavsiye değildir. 18+ · Sorumlu oynayın.",
+      "line": "© {year} footballanalytics.pro · Tahminler istatistiksel kestirimdir, finansal tavsiye değildir.",
       "terms": "Şartlar",
       "privacy": "Gizlilik",
       "contact": "İletişim",
-      "compliance": "footballanalytics.pro bağımsız bir istatistiksel analiz hizmetidir. Bahis sunmayız, bahis kabul etmeyiz, oyuncu parası tutmayız ve hiçbir bahis şirketiyle bağlantımız yoktur. Varsa dış bağlantılar yalnızca ilgili ülkede lisanslı ve yetkili şans oyunu kuruluşlarına verilir.",
-      "help": "Şans oyunları bağımlılık yapabilir. Lütfen sorumlu oynayın ve yalnızca ülkenizde yasal yaştaysanız oynayın. Yardım: İsviçre sos-spielsucht.ch · 0800 040 080 — Almanya check-dein-spiel.de · 0800 137 27 00 — Avusturya spielsuchthilfe.at · 01 544 13 57 — Birleşik Krallık begambleaware.org · 0808 8020 133 — Uluslararası gamblingtherapy.org",
+      "compliance": "footballanalytics.pro bağımsız bir istatistiksel analiz hizmetidir. Bahis sunmayız, bahis kabul etmeyiz, oyuncu parası tutmayız ve hiçbir bahis şirketiyle bağlantımız yoktur. Olasılıklar tahmindir, tavsiye değildir.",
       "telegram": "Telegram"
     },
     "home": {
@@ -1129,14 +1131,14 @@
       "pro1": "Tüm günlük tahminler açık",
       "pro2": "Her tahminde güven, risk etiketi ve değer",
       "pro3": "Gol modeli ayrıntısı, handikaplar ve olası skorlar",
-      "pro4": "Değer radarı: modelin bahisçiden ayrıştığı maçlar",
+      "pro4": "Değer radarı: modelin piyasadan ayrıştığı maçlar",
       "pro5": "Hesabından istediğin zaman iptal",
       "proCta": "Pro'ya başla →",
       "proCtaSignedIn": "Ödemeye devam et →",
       "loading": "Yükleniyor…",
       "signInFirst": "Abone olmak için giriş yap",
       "buyTitle": "Ne alıyorsun — ne almıyorsun.",
-      "buyText": "Pro sana kalibre olasılıklar ve herkese açık, sonuçlanmış bir karne verir — kapanış oranına karşı güncel getiri için Performans sayfasına bak. Kâr garantisi yoktur; 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. Yalnızca hem ücreti hem bahisleri karşılayabiliyorsan abone ol. Hesabından istediğin zaman iptal et.",
+      "buyText": "Pro sana kalibre olasılıklar ve herkese açık, sonuçlanmış bir karne verir — kapanış fiyatına karşı güncel getiri için Performans sayfasına bak. Kâr garantisi yoktur; 5–7 tahminlik kayıp serileri sezonda birkaç kez yaşanır. Hesabından istediğin zaman iptal et.",
       "trackLink": "Karneyi gör →",
       "error": "Ödeme başlatılamadı. Lütfen tekrar dene.",
       "metaTitle": "Fiyatlar: 7 gün ücretsiz, sonra Pro",
@@ -1145,9 +1147,9 @@
     },
     "performance": {
       "title": "Karne",
-      "lead": "Her tahmin maç öncesi zaman damgalı ve otomatik sonuçlandırılır. Kapanış oranında sabit 1 birim bahis.",
+      "lead": "Her tahmin maç öncesi zaman damgalı ve otomatik sonuçlandırılır. İsabet, kalibrasyon ve getiri kapanış fiyatına göre ölçülür.",
       "hitRate": "İsabet",
-      "roi": "ROI",
+      "roi": "Getiri",
       "settled": "Sonuçlanan",
       "losingRun": "En uzun kayıp serisi",
       "monthlyTitle": "Aylık isabet oranı",
@@ -1157,12 +1159,13 @@
       "colMatch": "Maç",
       "colPick": "Tahmin",
       "colConf": "Güven",
-      "colOdds": "Oran",
+      "colOdds": "Fiyat",
       "colScore": "Skor",
       "colResult": "Sonuç",
       "detailsTitle": "Kalibrasyon, ligler ve pazarlar",
-      "detailsLead": "Tam rapor — kalibrasyon eğrileri, lig ve pazar bazında kayıt, açılış ve kapanış oranında ROI, haftalık değerlendirme.",
-      "window": "Aralık {from} – {to}"
+      "detailsLead": "Tam rapor — kalibrasyon eğrileri, lig ve pazar bazında kayıt, açılış ve kapanış fiyatında getiri, haftalık değerlendirme.",
+      "window": "Aralık {from} – {to}",
+      "metaTitle": "Tahmin isabeti ve karne"
     },
     "login": {
       "title": "Tekrar hoş geldin.",
@@ -1226,14 +1229,14 @@
       "step2T": "Maçını seç",
       "step2": "Tahminler üyelere açıktır: günün maçlarını lig ve duruma göre süz.",
       "step3T": "Analizi incele",
-      "step3": "Olasılıklar, güven, risk ve oran karşılaştırması tek sayfada.",
+      "step3": "Olasılıklar, güven, risk ve piyasa karşılaştırması tek sayfada.",
       "perfTitle": "Sonuçları açıkça incele.",
       "perfLead": "Aşağıdaki sayılar canlı karneden gelir; olumsuz sonuçlar da dahildir.",
       "perfHit": "1X2 isabet",
       "perfHitNote": "{n} sonuçlanmış tahmin · {from} – {to}",
-      "perfRoi": "Sabit bahis getirisi",
-      "perfRoiNote": "Kapanış oranı bulunan {bets} maç üzerinden (1 birim/maç)",
-      "perfRoiNone": "Henüz yeterli oran kaydı yok",
+      "perfRoi": "Piyasaya karşı getiri",
+      "perfRoiNote": "Kapanış fiyatı bulunan {bets} maç üzerinden (1 birim/maç)",
+      "perfRoiNone": "Henüz yeterli piyasa fiyatı kaydı yok",
       "perfSettled": "Sonuçlanan tahmin",
       "perfSettledNote": "Kapsanan ligler, 1X2 pazarı",
       "perfLink": "Tüm performansı incele →",
@@ -1336,7 +1339,7 @@
       "vigBtts": "KG Var",
       "vig2": "100'de 71 doğru bekleniyor",
       "feat1T": "Vaat değil, olasılık",
-      "feat1": "Her puanlanan maç için ev, beraberlik, deplasman; üst/alt ve KG; adil oran ve bahisçiye karşı fark.",
+      "feat1": "Her puanlanan maç için ev, beraberlik, deplasman; üst/alt ve KG; adil fiyat ve piyasaya karşı fark.",
       "feat2T": "Modelin ne kadar emin olduğunu bil",
       "feat2": "Güven geçmiş sonuçlarla kalibre edilir; Düşük / Orta / Yüksek risk etiketi hangi seçimlerin spekülatif olduğunu sen hareket etmeden gösterir.",
       "feat3T": "Kontrol edebileceğin bir karne",
@@ -1346,9 +1349,9 @@
       "shotsTitle": "Sayfalar nasıl görünür",
       "shot1Alt": "footballanalytics.pro Premier League puan tablosu: oynanan, galibiyet, beraberlik, mağlubiyet, averaj ve puan",
       "shot1Cap": "Lig sayfası: canlı puan tablosu, fikstür ve o ligin sonuçlanmış karnesi.",
-      "shot2Alt": "Tahmin karnesi sayfası: sonuçlanmış seçimler, 1X2 isabet oranı, Brier skoru ve kapanış oranında getiri",
+      "shot2Alt": "Tahmin karnesi sayfası: sonuçlanmış seçimler, 1X2 isabet oranı, Brier skoru ve kapanış fiyatına karşı getiri",
       "shot2Cap": "Karne sayfası: her seçim maç bitince sonuçlandırılır; isabet ve getiri herkese açık.",
-      "tagline": "Oranı bahisçi söylemeden önce sen bil.",
+      "tagline": "Olasılıkları maç başlamadan bil.",
       "sampleTag": "Gerçek analiz · sonuçlandı",
       "sampleNote": "Maçtan önce yayımlandı, maç bitince otomatik sonuçlandı.",
       "sampleOpen": "Tam analizi gör"
@@ -1361,8 +1364,8 @@
   },
   "matches": {
     "hub": {
-      "metaTitle": "Bugünün maçları ve haftanın fikstürü: maç öncesi analiz",
-      "metaDescription": "Modelin kapsadığı {count} ligdeki her maç için başlama saati, puan durumu, son form ve geçmiş karşılaşmalar; sonuç arşiviyle birlikte. Model olasılıkları üyelere yayınlanır.",
+      "metaTitle": "Bugünün maçları ve haftanın fikstürü",
+      "metaDescription": "{count} ligdeki her maç için başlama saati, puan durumu, form ve geçmiş karşılaşmalar; sonuç arşiviyle. Model olasılıkları üyelere.",
       "title": "Bu haftanın maçları",
       "lead": "Modelin puanladığı {count} ligdeki önümüzdeki yedi günün tüm maçları. Her maç sayfasında başlama saati, puan durumu, form ve geçmiş karşılaşmalar var; modelin olasılıkları, güveni ve riski üyelere açıktır.",
       "tzNote": "Başlama saatleri tarayıcının saat dilimine göre gösterilir (sayfa tam yüklenene kadar Europe/Zurich).",
@@ -1380,10 +1383,10 @@
       "linkRecord": "Açık karne"
     },
     "match": {
-      "metaTitle": "{home} – {away} maç önü: form, geçmiş karşılaşmalar ve başlama saati ({date})",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: sonuç, form ve geçmiş karşılaşmalar ({date})",
-      "metaDescription": "{league}, {date}: {home} – {away}. Başlama saati, puan durumu, son form ve sonuç arşivinden geçmiş karşılaşmalar. Modelin olasılıkları üyelere açıktır.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Maç sonucu, puan durumu, maç öncesi form ve geçmiş karşılaşmalar. Maç öncesi tahmin üyelerin karnesindedir.",
+      "metaTitle": "{home} – {away}: istatistik, H2H ve tahmin, {date}",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: sonuç ve istatistik, {date}",
+      "metaDescription": "{league}, {date}: {home} – {away}. Başlama saati, puan durumu, son form ve geçmiş karşılaşmalar. Model olasılıkları üyelere açıktır.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Maç sonucu, puan durumu, maç öncesi form ve geçmiş karşılaşmalar. Tahmin üyelerin karnesinde.",
       "eyebrow": "Maç önü",
       "vs": "–",
       "kickoff": "Başlama",
@@ -1422,7 +1425,7 @@
       "modelH": "Modelin bu maç için tahmini",
       "modelLockedLead": "Maç başlamadan önce yayınlanır, bitiş düdüğünden sonra sonuçlandırılır:",
       "modelLockedSettled": "Tahmin maç başlamadan önce kaydedildi ve bu skora göre sonuçlandırıldı. Seçimi ve sonucunu üyeler görür:",
-      "bullet1x2": "1X2 olasılıkları ve adil oran, bahisçiyle karşılaştırmalı",
+      "bullet1x2": "1X2 olasılıkları ve adil fiyat, piyasayla karşılaştırmalı",
       "bulletGoals": "Gol beklentisi, olası skorlar, 2,5 üst/alt ve karşılıklı gol",
       "bulletConf": "Kalibre güven ve Düşük / Orta / Yüksek risk etiketi",
       "bulletRecord": "Seçimin açık karnedeki yeri",
@@ -1719,13 +1722,13 @@
     "pageLead": "Maç sayfalarından seçtiğin pazarlar başlama saatine göre sıralı. Biten maçlar skorla işaretlenir; kupon bu tarayıcıda saklanır.",
     "dnbShort": "beraberlikte iade",
     "gridTitle": "Kupona ekle",
-    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · bahisçi oranı (yoksa –).",
+    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · piyasa fiyatı (yoksa –).",
     "g1x2": "Maç sonucu (1X2)",
     "gOu": "Üst/Alt 2,5",
     "gBtts": "Karşılıklı gol",
     "gAh": "Asya handikapı",
     "gDnb": "Beraberlikte iade",
-    "lineBook": "bahisçi çizgisi",
+    "lineBook": "piyasa çizgisi",
     "lineModel": "model adil çizgisi",
     "outcome": {
       "void": "iade",
@@ -1750,6 +1753,16 @@
     "sharedCta": "Kendi kuponunu kur · 7 gün ücretsiz",
     "importBtn": "Kuponuma al",
     "imported": "{n} bacak kuponuna eklendi",
-    "sharedNote": "Seçimler paylaşan üyeye ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Oranlar ekleme anındaki bahisçi oranıdır. Yalnızca 18+."
+    "sharedNote": "Seçimler paylaşan üyeye ait; olasılıklar istatistiksel modelin tahminidir, tavsiye değildir. Fiyatlar ekleme anındaki piyasa fiyatıdır."
+  },
+  "contact": {
+    "title": "İletişim",
+    "metaTitle": "Football Analytics ile iletişim",
+    "lead": "Model, bir tahmin, hesabın veya ödeme hakkında soru: yaz, bir gün içinde yanıtlıyoruz.",
+    "emailLabel": "E-posta",
+    "emailNote": "Hesap ve ödeme soruları buraya; kayıt olduğun e-posta adresini ekle.",
+    "telegramLabel": "Telegram",
+    "telegramNote": "Günlük seçimler ve duyurular; bize en hızlı ulaşma yolu.",
+    "moreLead": "Yazmadan önce yanıt şu sayfalarda olabilir:"
   }
 }

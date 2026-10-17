@@ -107,8 +107,8 @@
     "home": "Go to the home page"
   },
   "home": {
-    "metaTitle": "Football predictions & statistical match analysis",
-    "metaDescription": "Match probabilities from a Dixon-Coles model for {count} leagues, settled and published after every match. Free match previews with standings, form and head-to-head; probabilities and risk for members.",
+    "metaTitle": "Football predictions & xG analysis",
+    "metaDescription": "Dixon-Coles match probabilities for {count} leagues, settled and published after every match. Free previews with standings, form and head-to-head.",
     "eyebrow": "Statistical football predictions",
     "title": "Probabilities before kick-off, a scorecard after the final whistle.",
     "lead": "Our model prices every match in {count} leagues: 1X2, over/under 2.5 and both teams to score. When the result comes in, each prediction is scored and left exactly as it was. A free account gets you the day's predictions; the paid plan shows where the model disagrees with the bookmaker.",
@@ -450,11 +450,12 @@
     "record": "W–L",
     "hitRate": "Hit rate",
     "brier": "Brier",
-    "note": "Leagues are added only after the model has been fitted on their results. Small samples swing; read the hit rate with the count beside it."
+    "note": "Leagues are added only after the model has been fitted on their results. Small samples swing; read the hit rate with the count beside it.",
+    "metaTitle": "League predictions & xG records"
   },
   "league": {
-    "metaTitle": "{league} predictions and record",
-    "metaDescription": "Dixon-Coles match probabilities for the {league} ({country}): upcoming picks, settled results, hit rate and Brier score.",
+    "metaTitle": "{league} predictions & xG record",
+    "metaDescription": "Dixon-Coles match probabilities and xG for the {league} ({country}): upcoming fixtures, settled results, hit rate and Brier score.",
     "lead": "Model probabilities and the settled record for the {league}.",
     "allLeagues": "All leagues",
     "monthly": "By month:",
@@ -480,7 +481,7 @@
       "brasileirao": "The Brasileirão is Brazil's top flight: 20 clubs and 38 rounds played across a calendar-year season. Long travel and an unusually strong home advantage make it a distinct case, and its parameters are fitted on its own results.",
       "super-lig": "The Süper Lig is Türkiye's top division: 18 clubs and 34 rounds. It was added in September 2026 and the sample is still small, so its record is shown separately and its matches are not in the daily shortlist until the sample grows."
     },
-    "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return assumes a flat one-unit stake at the closing price. Nothing is removed after the fact.",
+    "howToRead": "The figures on this page are the settled {league} record of the model: the hit rate is the share of 1X2 picks that came in, the Brier score measures how well the probabilities matched the results (lower is better), and the return is measured against the closing market price with one unit per match. Nothing is removed after the fact.",
     "eventDescription": "{league} match: {home} vs {away}.",
     "updated": "Fixture and result data last updated {time}",
     "methodLink": "How these figures are produced",
@@ -579,7 +580,8 @@
             "- The public record starts in late July 2026; the settled sample is still small and league-level figures swing.\n- Odds snapshots exist only from mid-August 2026 and not for every match, so the ROI window is shorter than the record.\n- The feed occasionally lags or omits a result; such matches stay unsettled until it arrives.\n- Probabilities are estimates. A 60% pick is expected to lose two times in five."
           ]
         }
-      ]
+      ],
+      "metaTitle": "How the football prediction model works"
     },
     "about": {
       "title": "About",
@@ -617,7 +619,8 @@
             "Sports betting carries a real risk of financial loss. This site is intended for adults (18+). If you gamble, only stake what you can afford to lose, and seek help if gambling stops being a choice: in Switzerland, the Sucht Schweiz helpline is available at 0800 040 080."
           ]
         }
-      ]
+      ],
+      "metaTitle": "About Football Analytics"
     },
     "privacy": {
       "title": "Privacy policy",
@@ -887,7 +890,7 @@
     "lockedSignIn": "Already a member? Sign in",
     "lockedCount": "{n, plural, =1 {# match rated today} other {# matches rated today}}",
     "expiredKicker": "Members only",
-    "expiredNote": "Pro gives you calibrated probabilities, not guarantees. Losing streaks of 5–7 picks happen several times a season. 18+ · Play responsibly.",
+    "expiredNote": "Pro gives you calibrated probabilities, not guarantees. Losing streaks of 5–7 picks happen several times a season.",
     "hiddenPick": "Premium pick hidden",
     "unlock": "Unlock with Pro →",
     "unlockLong": "Unlock with Pro — {price}/month",
@@ -965,12 +968,11 @@
       "highShort": "High"
     },
     "footer": {
-      "line": "© {year} footballanalytics.pro · Predictions are statistical estimates, not financial advice. 18+ · Play responsibly.",
+      "line": "© {year} footballanalytics.pro · Predictions are statistical estimates, not financial advice.",
       "terms": "Terms",
       "privacy": "Privacy",
       "contact": "Contact",
-      "compliance": "footballanalytics.pro is an independent statistical analysis service. We do not offer betting, accept wagers or hold player funds, and we are not affiliated with any bookmaker. Any outbound links are exclusively to gambling entities licensed and authorized in the relevant geographic location.",
-      "help": "Gambling can be addictive. Please play responsibly and only if you are of legal age in your country. Help: Switzerland sos-spielsucht.ch · 0800 040 080 — Germany check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — UK begambleaware.org · 0808 8020 133 — International gamblingtherapy.org",
+      "compliance": "footballanalytics.pro is an independent statistical analysis service. We do not offer betting, accept wagers or hold player funds, and we are not affiliated with any bookmaker. Probabilities are estimates, not advice.",
       "telegram": "Telegram"
     },
     "home": {
@@ -1129,14 +1131,14 @@
       "pro1": "All daily predictions unlocked",
       "pro2": "Confidence, risk label & value on each pick",
       "pro3": "Goal model breakdown, handicaps and likely scores",
-      "pro4": "Value radar: where the model disagrees with the bookmaker",
+      "pro4": "Value radar: where the model disagrees with the market",
       "pro5": "Cancel any time from your account",
       "proCta": "Start Pro →",
       "proCtaSignedIn": "Continue to checkout →",
       "loading": "Loading…",
       "signInFirst": "Sign in to subscribe",
       "buyTitle": "What you are buying — and what you're not.",
-      "buyText": "Pro gives you calibrated probabilities and a public, settled track record — see the Performance page for the current return against closing odds. It does not guarantee profit; losing streaks of 5–7 picks happen several times a season. Only subscribe if you can afford both the fee and the stakes. Cancel any time from your account.",
+      "buyText": "Pro gives you calibrated probabilities and a public, settled track record — see the Performance page for the current return against the closing market price. It does not guarantee profit; losing streaks of 5–7 picks happen several times a season. Cancel any time from your account.",
       "trackLink": "See the track record →",
       "error": "Checkout could not be started. Please try again.",
       "metaTitle": "Pricing: 7 days free, then Pro",
@@ -1145,9 +1147,9 @@
     },
     "performance": {
       "title": "Track record",
-      "lead": "Every prediction timestamped before kick-off and settled automatically. Flat 1-unit stakes at closing odds.",
+      "lead": "Every prediction timestamped before kick-off and settled automatically. Hit rate, calibration and return are measured against the closing market price.",
       "hitRate": "Hit rate",
-      "roi": "ROI",
+      "roi": "Return",
       "settled": "Settled",
       "losingRun": "Longest losing run",
       "monthlyTitle": "Monthly hit rate",
@@ -1157,12 +1159,13 @@
       "colMatch": "Match",
       "colPick": "Pick",
       "colConf": "Conf",
-      "colOdds": "Odds",
+      "colOdds": "Price",
       "colScore": "Score",
       "colResult": "Result",
       "detailsTitle": "Calibration, leagues and markets",
-      "detailsLead": "The full report — calibration curves, per-league and per-market records, ROI at opening and closing odds, weekly review.",
-      "window": "Window {from} – {to}"
+      "detailsLead": "The full report — calibration curves, per-league and per-market records, return at opening and closing market prices, weekly review.",
+      "window": "Window {from} – {to}",
+      "metaTitle": "Prediction accuracy & track record"
     },
     "login": {
       "title": "Welcome back.",
@@ -1226,14 +1229,14 @@
       "step2T": "Pick your match",
       "step2": "Predictions are for members: filter the day by league and status.",
       "step3T": "Read the analysis",
-      "step3": "Probabilities, confidence, risk and odds comparison on one page.",
+      "step3": "Probabilities, confidence, risk and market comparison on one page.",
       "perfTitle": "See the results in the open.",
       "perfLead": "These numbers come from the live record, unfavourable ones included.",
       "perfHit": "1X2 hit rate",
       "perfHitNote": "{n} settled predictions · {from} – {to}",
-      "perfRoi": "Flat-stake return",
-      "perfRoiNote": "Across the {bets} matches with a closing price (1 unit per match)",
-      "perfRoiNone": "Not enough odds on record yet",
+      "perfRoi": "Return vs market",
+      "perfRoiNote": "Across the {bets} matches with a closing market price (1 unit per match)",
+      "perfRoiNone": "Not enough market prices on record yet",
       "perfSettled": "Settled predictions",
       "perfSettledNote": "Covered leagues, 1X2 market",
       "perfLink": "See the full record →",
@@ -1336,7 +1339,7 @@
       "vigBtts": "BTTS yes",
       "vig2": "expected to be right 71 in 100",
       "feat1T": "Probabilities, not promises",
-      "feat1": "Home, draw, away plus over/under and both-teams-to-score for every rated match, with the fair odds and the edge against the bookmaker.",
+      "feat1": "Home, draw, away plus over/under and both-teams-to-score for every rated match, with the fair price and the edge against the market.",
       "feat2T": "Know how sure the model is",
       "feat2": "Confidence is calibrated on past results, and a Low / Medium / High risk label tells you which picks are speculative before you act.",
       "feat3T": "A record you can check",
@@ -1346,9 +1349,9 @@
       "shotsTitle": "What the pages look like",
       "shot1Alt": "Premier League standings table on footballanalytics.pro with played, won, drawn, lost, goal difference and points",
       "shot1Cap": "League page: live table, fixtures and the settled record for that league.",
-      "shot2Alt": "Prediction track record page showing settled picks, 1X2 hit rate, Brier score and return at closing odds",
+      "shot2Alt": "Prediction track record page showing settled picks, 1X2 hit rate, Brier score and return against the closing market price",
       "shot2Cap": "Record page: every pick settled after the final whistle, hit rate and return in public.",
-      "tagline": "Know the odds before the bookmaker tells you.",
+      "tagline": "Know the probabilities before kick-off.",
       "sampleTag": "Real analysis · settled",
       "sampleNote": "Published before kick-off, settled automatically at full time.",
       "sampleOpen": "See the full analysis"
@@ -1361,8 +1364,8 @@
   },
   "matches": {
     "hub": {
-      "metaTitle": "Today's football matches and this week's fixtures: pre-match analysis",
-      "metaDescription": "Kick-off times, league positions, recent form and head-to-head for every fixture in the {count} leagues the model covers, plus a results archive. Model probabilities are published for members.",
+      "metaTitle": "Today's football matches & fixtures",
+      "metaDescription": "Kick-off times, league positions, form and head-to-head for every fixture in {count} leagues, plus a results archive. Model probabilities for members.",
       "title": "Matches this week",
       "lead": "Every fixture in the {count} leagues the model rates, for the next seven days. Each match page shows kick-off, league position, form and head-to-head; the model's probabilities, confidence and risk are for members.",
       "tzNote": "Kick-off times follow your browser's time zone (Europe/Zurich until the page has fully loaded).",
@@ -1380,10 +1383,10 @@
       "linkRecord": "Public track record"
     },
     "match": {
-      "metaTitle": "{home} vs {away} preview: form, head-to-head and kick-off ({date})",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: result, form and head-to-head ({date})",
-      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off time, league positions, recent form and head-to-head from the results archive. The model's probabilities are available to members.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, form before the match and head-to-head. The pre-match prediction is in the members' record.",
+      "metaTitle": "{home} vs {away}: stats, H2H & prediction, {date}",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: result & stats, {date}",
+      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off, league positions, recent form and head-to-head. Model probabilities are published for members.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, pre-match form and head-to-head. The prediction is in the members’ record.",
       "eyebrow": "Match preview",
       "vs": "vs",
       "kickoff": "Kick-off",
@@ -1422,7 +1425,7 @@
       "modelH": "The model's prediction for this match",
       "modelLockedLead": "Published before kick-off and settled after the final whistle:",
       "modelLockedSettled": "The prediction was logged before kick-off and settled against this score. Members can see the pick and its outcome:",
-      "bullet1x2": "1X2 probabilities and the fair odds, compared with the bookmaker",
+      "bullet1x2": "1X2 probabilities and the fair price, compared with the market",
       "bulletGoals": "Expected goals, likely scores, over/under 2.5 and both teams to score",
       "bulletConf": "Calibrated confidence and a Low / Medium / High risk label",
       "bulletRecord": "Where the pick sits in the public track record",
@@ -1719,13 +1722,13 @@
     "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser.",
     "dnbShort": "draw no bet",
     "gridTitle": "Add to slip",
-    "gridLead": "Click a selection to put it on the slip. You can pick several markets from one match (e.g. 1 + Over 2.5 + BTTS); within a market the new one replaces the old. Model % · bookmaker odds (– if none).",
+    "gridLead": "Click a selection to put it on the slip. You can pick several markets from one match (e.g. 1 + Over 2.5 + BTTS); within a market the new one replaces the old. Model % · market price (– if none).",
     "g1x2": "Match result (1X2)",
     "gOu": "Over/Under 2.5",
     "gBtts": "Both teams to score",
     "gAh": "Asian handicap",
     "gDnb": "Draw no bet",
-    "lineBook": "bookmaker line",
+    "lineBook": "market line",
     "lineModel": "model fair line",
     "outcome": {
       "void": "void",
@@ -1750,6 +1753,16 @@
     "sharedCta": "Build your own slip · 7 days free",
     "importBtn": "Add to my slip",
     "imported": "{n} legs added to your slip",
-    "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model's estimates, not betting advice. Odds are the bookmaker odds at the time of adding. 18+ only."
+    "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model’s estimates, not advice. Prices are the market prices at the time of adding."
+  },
+  "contact": {
+    "title": "Contact",
+    "metaTitle": "Contact Football Analytics",
+    "lead": "Questions about the model, a prediction, your account or billing: write to us, we answer within a day.",
+    "emailLabel": "E-mail",
+    "emailNote": "Account and billing questions go here; include the e-mail you registered with.",
+    "telegramLabel": "Telegram",
+    "telegramNote": "Daily selections and announcements; quickest way to reach us.",
+    "moreLead": "Before you write, the answer may already be on these pages:"
   }
 }

@@ -9,7 +9,7 @@ import { todayYmd } from '@/lib/site/time';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui';
 import { StatRow, StatCell } from '@/components/site/StatCell';
-import { Paywall, TrialNotice } from '@/components/site/Paywall';
+import { Paywall, AnonWall, TrialNotice } from '@/components/site/Paywall';
 import LocalTime from '@/components/site/LocalTime';
 import SlipPanel from '@/components/site/slip/SlipPanel';
 
@@ -30,6 +30,9 @@ export default async function CouponPage({ params: { locale } }: { params: { loc
   const today = todayYmd();
   const access = await requireSiteAccess(locale, '/coupon');
   const [t, f, ts] = await Promise.all([getTranslations('coupon'), getFormatter(), getTranslations('slip')]);
+  if (access.state === 'anon') {
+    return (<Page><div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div><AnonWall locale={locale} path="/coupon" title={t('title')} /></Page>);
+  }
   if (access.state === 'expired') {
     return (<Page><div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div><Paywall /></Page>);
   }

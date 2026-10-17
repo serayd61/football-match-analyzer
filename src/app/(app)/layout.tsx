@@ -12,6 +12,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import QueryProvider from '@/components/QueryProvider';
 import { SITE_URL } from '@/lib/seo';
+import { ORG_NAME } from '@/lib/site/jsonld';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,10 +20,12 @@ const inter = Inter({
   display: 'swap',
 });
 
+// SEO Faz 0 (2026-10-17): one organisation name site-wide (lib/site/jsonld.ts).
 const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Football Analytics Pro',
+  '@id': `${SITE_URL}/#organization`,
+  name: ORG_NAME,
   url: SITE_URL,
   logo: `${SITE_URL}/icons/icon-512x512.png`,
   description: 'Statistical football match probabilities with a public, settled track record.',
@@ -31,7 +34,7 @@ const orgJsonLd = {
 const siteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'Football Analytics Pro',
+  name: ORG_NAME,
   url: SITE_URL,
   // SearchAction removed 2026-10-10: /analysis is members-only, so the sitelinks
   // search box target would have 307'd Googlebot to /login.

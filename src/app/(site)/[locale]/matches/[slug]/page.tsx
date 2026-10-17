@@ -49,7 +49,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const played = m.settled && m.homeScore != null && m.awayScore != null;
   const vars = { home: m.homeName, away: m.awayName, league: m.leagueName, date, hs: m.homeScore ?? 0, as: m.awayScore ?? 0 };
   return {
-    title: played ? t('metaTitleSettled', vars) : t('metaTitle', vars),
+    // SEO Faz 0: no " · Football Analytics" suffix — two team names already fill the title.
+    title: { absolute: played ? t('metaTitleSettled', vars) : t('metaTitle', vars) },
     description: played ? t('metaDescriptionSettled', vars) : t('metaDescription', vars),
     alternates: alternatesFor(params.locale as Locale, matchPath(m)),
     openGraph: { title: `${m.homeName} – ${m.awayName}`, images: [`/api/og/match/${m.fixtureId}`] },
@@ -224,8 +225,8 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
               <Link href={`/predictions/${m.fixtureId}`} className="btn btn-primary" data-cta="match-preview-open">{t('modelOpen')} →</Link>
             ) : (
               <>
-                <Link href={`${REGISTER_HREF}&callbackUrl=${encodeURIComponent(`/${params.locale}/predictions/${m.fixtureId}`)}`} className="btn btn-primary" data-cta="match-preview-trial">{twa ? tn('signUp') : tp('lockedCta')}</Link>
-                <Link href={`${SIGNIN_HREF}?callbackUrl=${encodeURIComponent(`/${params.locale}/predictions/${m.fixtureId}`)}`} className="text-center text-sm font-semibold hover:text-s-accent-600">{tp('lockedSignIn')}</Link>
+                <Link href={`${REGISTER_HREF}&callbackUrl=${encodeURIComponent(`/${params.locale}/predictions/${m.fixtureId}`)}`} rel="nofollow" className="btn btn-primary" data-cta="match-preview-trial">{twa ? tn('signUp') : tp('lockedCta')}</Link>
+                <Link href={`${SIGNIN_HREF}?callbackUrl=${encodeURIComponent(`/${params.locale}/predictions/${m.fixtureId}`)}`} rel="nofollow" className="text-center text-sm font-semibold hover:text-s-accent-600">{tp('lockedSignIn')}</Link>
                 {!twa && <p className="text-center text-xs text-s-muted">{tp('lockedLead')}</p>}
               </>
             )}

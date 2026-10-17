@@ -107,8 +107,8 @@
     "home": "Vai alla home"
   },
   "home": {
-    "metaTitle": "Pronostici calcio e analisi statistica delle partite",
-    "metaDescription": "Probabilità da un modello Dixon-Coles per {count} campionati, chiuse e pubblicate dopo ogni partita. Anteprime gratuite con classifica, forma e precedenti; probabilità e rischio per i membri.",
+    "metaTitle": "Pronostici calcio e analisi xG",
+    "metaDescription": "Probabilità Dixon-Coles per {count} campionati, chiuse e pubblicate dopo ogni partita. Anteprime gratuite con classifica, forma e precedenti.",
     "eyebrow": "Pronostici calcio statistici",
     "title": "Probabilità prima del fischio d'inizio, pagella dopo quello finale.",
     "lead": "Il nostro modello valuta ogni partita in {count} campionati: 1X2, over/under 2,5 e gol entrambe le squadre. Quando arriva il risultato, ogni pronostico viene valutato e resta com'era. Con l'account gratuito vedi i pronostici del giorno, con il piano a pagamento le partite in cui il modello si discosta dal bookmaker.",
@@ -450,11 +450,12 @@
     "record": "V–P",
     "hitRate": "Successo",
     "brier": "Brier",
-    "note": "Un campionato viene aggiunto solo dopo che il modello è stato stimato sui suoi risultati. I campioni piccoli oscillano; leggi la percentuale insieme al numero accanto."
+    "note": "Un campionato viene aggiunto solo dopo che il modello è stato stimato sui suoi risultati. I campioni piccoli oscillano; leggi la percentuale insieme al numero accanto.",
+    "metaTitle": "Pronostici per campionato e xG"
   },
   "league": {
-    "metaTitle": "{league}: pronostici e registro",
-    "metaDescription": "Probabilità Dixon-Coles per la {league} ({country}): prossime scelte, risultati chiusi, percentuale di successo e Brier score.",
+    "metaTitle": "{league}: pronostici e xG",
+    "metaDescription": "Probabilità Dixon-Coles e xG per la {league} ({country}): prossime partite, risultati chiusi, percentuale di successo e Brier score.",
     "lead": "Probabilità del modello e registro chiuso per la {league}.",
     "allLeagues": "Tutti i campionati",
     "monthly": "Per mese:",
@@ -480,7 +481,7 @@
       "brasileirao": "Il Brasileirão è la massima serie brasiliana: 20 club, 38 giornate in una stagione che segue l'anno solare. Le lunghe trasferte e un fattore campo insolitamente forte ne fanno un caso a sé; i suoi parametri sono stimati sui suoi risultati.",
       "super-lig": "La Süper Lig è la massima divisione turca: 18 club, 34 giornate. È stata aggiunta nel settembre 2026 e il campione è ancora piccolo, quindi il suo registro è mostrato a parte e le sue partite non entrano nella selezione del giorno finché il campione non cresce."
     },
-    "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento assume una puntata fissa di un'unità al prezzo di chiusura. Nulla viene rimosso a posteriori.",
+    "howToRead": "I numeri in questa pagina sono il registro chiuso del modello per {league}: la percentuale di successo è la quota di pronostici 1X2 azzeccati, il Brier score misura quanto le probabilità hanno rispecchiato i risultati (più basso è meglio) e il rendimento è misurato sul prezzo di chiusura con un’unità a partita. Nulla viene rimosso a posteriori.",
     "eventDescription": "Partita di {league}: {home} contro {away}.",
     "updated": "Dati di partite e risultati aggiornati il {time}",
     "methodLink": "Come nascono questi numeri",
@@ -579,7 +580,8 @@
             "- Il registro pubblico parte da fine luglio 2026; il campione chiuso è ancora piccolo e i valori per campionato oscillano.\n- Le quote esistono solo da metà agosto 2026 e non per ogni partita, quindi la finestra del ROI è più corta del registro.\n- Il feed a volte ritarda o omette un risultato; quelle partite restano aperte finché non arriva.\n- Le probabilità sono stime. Una scelta al 60% è attesa perdere due volte su cinque."
           ]
         }
-      ]
+      ],
+      "metaTitle": "Come funziona il modello di pronostico"
     },
     "about": {
       "title": "Chi siamo",
@@ -617,7 +619,8 @@
             "Le scommesse sportive comportano un rischio reale di perdita economica. Questo sito è destinato agli adulti (18+). Se scommetti, punta solo ciò che puoi permetterti di perdere e chiedi aiuto se il gioco smette di essere una scelta: in Svizzera la linea di Dipendenze Svizzera risponde allo 0800 040 080."
           ]
         }
-      ]
+      ],
+      "metaTitle": "Chi è Football Analytics"
     },
     "privacy": {
       "title": "Informativa sulla privacy",
@@ -887,7 +890,7 @@
     "lockedSignIn": "Sei già membro? Accedi",
     "lockedCount": "{n, plural, =1 {Oggi # partita valutata} other {Oggi # partite valutate}}",
     "expiredKicker": "Solo membri",
-    "expiredNote": "Pro ti dà probabilità calibrate, non garanzie. Serie di 5–7 pronostici persi capitano più volte a stagione. 18+ · Gioca responsabilmente.",
+    "expiredNote": "Pro ti dà probabilità calibrate, non garanzie. Serie di 5–7 pronostici persi capitano più volte a stagione.",
     "hiddenPick": "Pronostico premium nascosto",
     "unlock": "Sblocca con Pro →",
     "unlockLong": "Sblocca con Pro — {price}/mese",
@@ -965,12 +968,11 @@
       "highShort": "Alto"
     },
     "footer": {
-      "line": "© {year} footballanalytics.pro · Le previsioni sono stime statistiche, non consulenza finanziaria. 18+ · Gioca responsabilmente.",
+      "line": "© {year} footballanalytics.pro · Le previsioni sono stime statistiche, non consulenza finanziaria.",
       "terms": "Termini",
       "privacy": "Privacy",
       "contact": "Contatti",
-      "compliance": "footballanalytics.pro è un servizio indipendente di analisi statistica. Non offriamo scommesse, non accettiamo puntate, non custodiamo fondi dei giocatori e non siamo affiliati ad alcun bookmaker. Eventuali link in uscita rimandano esclusivamente a operatori di gioco autorizzati e licenziati nel relativo paese.",
-      "help": "Il gioco d'azzardo può causare dipendenza. Gioca responsabilmente e solo se hai l'età legale nel tuo paese. Aiuto: Svizzera sos-spielsucht.ch · 0800 040 080 — Germania check-dein-spiel.de · 0800 137 27 00 — Austria spielsuchthilfe.at · 01 544 13 57 — Regno Unito begambleaware.org · 0808 8020 133 — Internazionale gamblingtherapy.org",
+      "compliance": "footballanalytics.pro è un servizio indipendente di analisi statistica. Non offriamo scommesse, non accettiamo puntate, non custodiamo fondi dei giocatori e non siamo affiliati ad alcun bookmaker. Le probabilità sono stime, non consigli.",
       "telegram": "Telegram"
     },
     "home": {
@@ -1129,14 +1131,14 @@
       "pro1": "Tutti i pronostici giornalieri sbloccati",
       "pro2": "Confidenza, etichetta di rischio e valore su ogni pronostico",
       "pro3": "Dettaglio del modello di gol, handicap e risultati probabili",
-      "pro4": "Radar del valore: dove il modello diverge dal bookmaker",
+      "pro4": "Radar del valore: dove il modello diverge dal mercato",
       "pro5": "Disdici quando vuoi dal tuo account",
       "proCta": "Inizia Pro →",
       "proCtaSignedIn": "Vai al pagamento →",
       "loading": "Caricamento…",
       "signInFirst": "Accedi per abbonarti",
       "buyTitle": "Cosa compri — e cosa no.",
-      "buyText": "Pro ti dà probabilità calibrate e uno storico pubblico e regolato — il rendimento attuale contro la quota di chiusura è nella pagina Performance. Non garantisce profitto; serie di 5–7 pronostici persi capitano più volte a stagione. Abbonati solo se puoi permetterti sia la quota sia le puntate. Disdici quando vuoi dal tuo account.",
+      "buyText": "Pro ti dà probabilità calibrate e uno storico pubblico e regolato — il rendimento attuale al prezzo di chiusura è nella pagina Performance. Non garantisce profitto; serie di 5–7 pronostici persi capitano più volte a stagione. Disdici quando vuoi dal tuo account.",
       "trackLink": "Vedi lo storico →",
       "error": "Impossibile avviare il pagamento. Riprova.",
       "metaTitle": "Prezzi: 7 giorni gratis, poi Pro",
@@ -1145,9 +1147,9 @@
     },
     "performance": {
       "title": "Storico",
-      "lead": "Ogni previsione con marca temporale prima del calcio d'inizio e regolata automaticamente. Puntate fisse da 1 unità alla quota di chiusura.",
+      "lead": "Ogni previsione con marca temporale prima del calcio d’inizio e regolata automaticamente. Successo, calibrazione e rendimento misurati sul prezzo di chiusura.",
       "hitRate": "Precisione",
-      "roi": "ROI",
+      "roi": "Rendimento",
       "settled": "Regolati",
       "losingRun": "Serie negativa più lunga",
       "monthlyTitle": "Precisione mensile",
@@ -1157,12 +1159,13 @@
       "colMatch": "Partita",
       "colPick": "Pronostico",
       "colConf": "Conf.",
-      "colOdds": "Quota",
+      "colOdds": "Prezzo",
       "colScore": "Risultato",
       "colResult": "Esito",
       "detailsTitle": "Calibrazione, campionati e mercati",
-      "detailsLead": "Il rapporto completo — curve di calibrazione, record per campionato e mercato, ROI a quota di apertura e chiusura, revisione settimanale.",
-      "window": "Periodo {from} – {to}"
+      "detailsLead": "Il rapporto completo — curve di calibrazione, record per campionato e mercato, rendimento a prezzo di apertura e chiusura, revisione settimanale.",
+      "window": "Periodo {from} – {to}",
+      "metaTitle": "Accuratezza dei pronostici e storico"
     },
     "login": {
       "title": "Bentornato.",
@@ -1226,14 +1229,14 @@
       "step2T": "Scegli la partita",
       "step2": "I pronostici sono per i membri: filtra la giornata per campionato e stato.",
       "step3T": "Leggi l'analisi",
-      "step3": "Probabilità, confidenza, rischio e confronto quote in una pagina.",
+      "step3": "Probabilità, confidenza, rischio e confronto con il mercato in una pagina.",
       "perfTitle": "Risultati alla luce del sole.",
       "perfLead": "Questi numeri arrivano dallo storico live, compresi quelli sfavorevoli.",
       "perfHit": "Precisione 1X2",
       "perfHitNote": "{n} pronostici regolati · {from} – {to}",
-      "perfRoi": "Rendimento a puntata fissa",
-      "perfRoiNote": "Sulle {bets} partite con quota di chiusura (1 unità a partita)",
-      "perfRoiNone": "Quote registrate ancora insufficienti",
+      "perfRoi": "Rendimento vs mercato",
+      "perfRoiNote": "Sulle {bets} partite con prezzo di chiusura (1 unità a partita)",
+      "perfRoiNone": "Prezzi di mercato registrati ancora insufficienti",
       "perfSettled": "Pronostici regolati",
       "perfSettledNote": "Campionati coperti, mercato 1X2",
       "perfLink": "Vedi tutto lo storico →",
@@ -1336,7 +1339,7 @@
       "vigBtts": "Gol entrambe",
       "vig2": "atteso corretto 71 volte su 100",
       "feat1T": "Probabilità, non promesse",
-      "feat1": "Casa, pareggio, trasferta più over/under e gol entrambe per ogni partita valutata, con quota equa e vantaggio rispetto al bookmaker.",
+      "feat1": "Casa, pareggio, trasferta più over/under e gol entrambe per ogni partita valutata, con prezzo equo e vantaggio rispetto al mercato.",
       "feat2T": "Sai quanto è sicuro il modello",
       "feat2": "La confidenza è calibrata sui risultati passati e un'etichetta di rischio Basso / Medio / Alto ti mostra i pronostici speculativi prima di agire.",
       "feat3T": "Un registro che puoi verificare",
@@ -1348,7 +1351,7 @@
       "shot1Cap": "Pagina campionato: classifica aggiornata, calendario e registro chiuso di quel campionato.",
       "shot2Alt": "Pagina dello storico con pronostici chiusi, percentuale 1X2, Brier score e rendimento al prezzo di chiusura",
       "shot2Cap": "Pagina storico: ogni pronostico chiuso al fischio finale, percentuale e rendimento pubblici.",
-      "tagline": "Conosci la quota prima che te la dica il bookmaker.",
+      "tagline": "Conosci le probabilità prima del calcio d’inizio.",
       "sampleTag": "Analisi reale · conclusa",
       "sampleNote": "Pubblicata prima del calcio d'inizio, chiusa automaticamente al fischio finale.",
       "sampleOpen": "Vedi l'analisi completa"
@@ -1361,8 +1364,8 @@
   },
   "matches": {
     "hub": {
-      "metaTitle": "Partite di calcio oggi e le gare della settimana: analisi pre-partita",
-      "metaDescription": "Orari, posizioni in classifica, forma recente e precedenti per ogni partita dei {count} campionati coperti dal modello, con l'archivio dei risultati. Le probabilità del modello sono pubblicate per i membri.",
+      "metaTitle": "Partite di calcio oggi e calendario",
+      "metaDescription": "Orari, classifica, forma e precedenti per ogni partita di {count} campionati, con archivio risultati. Probabilità del modello per i membri.",
       "title": "Le partite di questa settimana",
       "lead": "Ogni gara dei prossimi sette giorni nei {count} campionati valutati dal modello. Ogni pagina partita mostra orario, posizione in classifica, forma e precedenti; probabilità, confidenza e rischio del modello sono per i membri.",
       "tzNote": "Gli orari seguono il fuso orario del tuo browser (Europe/Zurich finché la pagina non è del tutto caricata).",
@@ -1380,10 +1383,10 @@
       "linkRecord": "Registro pubblico"
     },
     "match": {
-      "metaTitle": "{home} – {away} anteprima: forma, precedenti e calcio d'inizio ({date})",
-      "metaTitleSettled": "{home} {hs}-{as} {away}: risultato, forma e precedenti ({date})",
-      "metaDescription": "{league}, {date}: {home} – {away}. Orario, posizioni in classifica, forma recente e precedenti dall'archivio dei risultati. Le probabilità del modello sono disponibili per i membri.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}-{as} {away}. Risultato finale, posizioni in classifica, forma prima della gara e precedenti. Il pronostico pre-partita è nel registro dei membri.",
+      "metaTitle": "{home} – {away}: statistiche, precedenti e pronostico, {date}",
+      "metaTitleSettled": "{home} {hs}-{as} {away}: risultato e statistiche, {date}",
+      "metaDescription": "{league}, {date}: {home} – {away}. Orario, classifica, forma recente e precedenti. Le probabilità del modello sono per i membri.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}-{as} {away}. Risultato finale, classifica, forma pre-partita e precedenti. Il pronostico è nel registro dei membri.",
       "eyebrow": "Anteprima partita",
       "vs": "–",
       "kickoff": "Calcio d'inizio",
@@ -1422,7 +1425,7 @@
       "modelH": "Il pronostico del modello per questa partita",
       "modelLockedLead": "Pubblicato prima del calcio d'inizio e chiuso dopo il fischio finale:",
       "modelLockedSettled": "Il pronostico è stato registrato prima del calcio d'inizio e chiuso con questo risultato. I membri vedono la scelta e il suo esito:",
-      "bullet1x2": "Probabilità 1X2 e quota equa, a confronto con il bookmaker",
+      "bullet1x2": "Probabilità 1X2 e prezzo equo, a confronto con il mercato",
       "bulletGoals": "Gol attesi, risultati probabili, over/under 2,5 e goal/no goal",
       "bulletConf": "Confidenza calibrata ed etichetta di rischio Basso / Medio / Alto",
       "bulletRecord": "Dove si colloca la scelta nel registro pubblico",
@@ -1719,13 +1722,13 @@
     "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser.",
     "dnbShort": "rimborso in caso di pareggio",
     "gridTitle": "Aggiungi alla schedina",
-    "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · quota bookmaker (– se assente).",
+    "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · prezzo di mercato (– se assente).",
     "g1x2": "Esito finale (1X2)",
     "gOu": "Over/Under 2,5",
     "gBtts": "Goal / No goal",
     "gAh": "Handicap asiatico",
     "gDnb": "Draw no bet",
-    "lineBook": "linea bookmaker",
+    "lineBook": "linea di mercato",
     "lineModel": "linea equa del modello",
     "outcome": {
       "void": "rimborsata",
@@ -1750,6 +1753,16 @@
     "sharedCta": "Crea la tua schedina · 7 giorni gratis",
     "importBtn": "Metti nella mia schedina",
     "imported": "{n} eventi aggiunti alla tua schedina",
-    "sharedNote": "Le selezioni sono del membro che le ha condivise; le probabilità sono stime del modello statistico, non consigli di scommessa. Le quote sono quelle del bookmaker al momento dell'aggiunta. Solo 18+."
+    "sharedNote": "Le selezioni sono del membro che le ha condivise; le probabilità sono stime del modello statistico, non consigli. I prezzi sono quelli di mercato al momento dell’aggiunta."
+  },
+  "contact": {
+    "title": "Contatti",
+    "metaTitle": "Contatta Football Analytics",
+    "lead": "Domande sul modello, su un pronostico, sul tuo account o sulla fatturazione: scrivici, rispondiamo entro un giorno.",
+    "emailLabel": "E-mail",
+    "emailNote": "Per account e fatturazione; indica l’e-mail con cui ti sei registrato.",
+    "telegramLabel": "Telegram",
+    "telegramNote": "Selezioni giornaliere e annunci; il modo più rapido per raggiungerci.",
+    "moreLead": "Prima di scrivere, la risposta potrebbe già essere qui:"
   }
 }

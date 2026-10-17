@@ -22,7 +22,7 @@ export default function MobileTabBar() {
   return (
     <nav className="tabbar lg:hidden" aria-label="Primary (mobile)">
       {items.map(({ href, label, Icon }) => (
-        <Link key={href} href={href} aria-current={is(href) || (href === account && (is('/dashboard') || is('/account') || is('/login'))) ? 'page' : undefined}>
+        <Link key={href} href={href} rel={href === '/login' ? 'nofollow' : undefined} aria-current={is(href) || (href === account && (is('/dashboard') || is('/account') || is('/login'))) ? 'page' : undefined}>
           <Icon size={20} strokeWidth={2} aria-hidden />
           <span>{label}</span>
         </Link>

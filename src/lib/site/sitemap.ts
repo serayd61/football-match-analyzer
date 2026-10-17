@@ -49,6 +49,7 @@ export function entries(input: SitemapInput): Entry[] {
     { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
     { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
     { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
+    { path: '/contact', changefreq: 'yearly', priority: 0.3 },
     { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
     { path: '/terms', changefreq: 'yearly', priority: 0.2 },
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),

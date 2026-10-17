@@ -4,6 +4,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { isAdminEmail } from '@/lib/admin/emails';
 import { routing } from '@/i18n/routing';
 import { isTwaRequest, TWA_COOKIE, TWA_COOKIE_MAX_AGE } from '@/lib/site/twa';
+import { legacyLocale, legacyRedirectTarget } from '@/lib/site/legacy-paths';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
 // a `src/` directory — Next.js only picks up `src/middleware.ts` in that case.
@@ -19,10 +20,11 @@ function isAdminPath(path: string): boolean {
 // anonymous visitor could still see matches on /live, /match/[id], /analysis/…
 // after the localized site was gated. They now require a session here; the
 // 7-day-trial / paid rule is enforced inside the pages' own API calls.
+// SEO Faz 0 (2026-10-17): the public ones (/analysis, /live, /match, /leaderboard,
+// /stats …) now 301 to their localized replacement first (lib/site/legacy-paths.ts);
+// only the account pages and the odds tools remain gated here.
 const LEGACY_MEMBER_PREFIXES = [
-  '/live', '/tahminler', '/match', '/analysis', '/odds-analysis', '/odds-patterns',
-  '/league-stats', '/stats', '/track-record', '/ai-performance', '/favorites',
-  '/leaderboard', '/profile', '/settings',
+  '/odds-analysis', '/odds-patterns', '/favorites', '/profile', '/settings',
 ];
 function isLegacyMemberPath(path: string): boolean {
   return LEGACY_MEMBER_PREFIXES.some((p) => path === p || path.startsWith(p + '/'));
@@ -58,13 +60,18 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Legacy public pages → localized site, permanently (SEO Faz 0).
+    const legacyTarget = legacyRedirectTarget(path, legacyLocale(req.cookies.get('NEXT_LOCALE')?.value));
+    if (legacyTarget) return NextResponse.redirect(new URL(legacyTarget, req.url), 301);
+
     if (isLegacyMemberPath(path) || isMemberApiPath(path)) {
       const email = req.nextauth?.token?.email as string | undefined;
       if (!email) {
         if (path.startsWith('/api/')) {
           return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 });
         }
-        const login = new URL('/login', req.url);
+        // Straight to the localized sign-in (was /login → /{locale}/login, a double hop).
+        const login = new URL(`/${legacyLocale(req.cookies.get('NEXT_LOCALE')?.value)}/login`, req.url);
         login.searchParams.set('callbackUrl', path + req.nextUrl.search);
         return NextResponse.redirect(login);
       }
@@ -95,16 +102,18 @@ export const config = {
     // Admin surface (unchanged behaviour)
     '/api/admin/:path*',
     '/admin/:path*',
-    // Legacy app pages that show matches (members only, 2026-09-08)
+    // Legacy app pages: public ones 301 to the localized site, account pages stay members-only
     '/live', '/tahminler', '/match/:path*', '/analysis', '/analysis/:path*',
     '/odds-analysis', '/odds-patterns', '/league-stats', '/stats', '/track-record',
-    '/ai-performance', '/favorites', '/leaderboard', '/profile', '/settings',
+    '/ai-performance', '/favorites', '/leaderboard', '/profile', '/settings', '/contact',
     '/api/livescores',
     // Localized public site
     '/',
     '/(en|de|it|tr)/:path*',
     '/dashboard',
     '/predictions/:path*',
+    // SEO Faz 0: these were missing, so unprefixed /matches 404'd instead of 307'ing to /{locale}/matches
+    '/matches/:path*', '/picks', '/coupon', '/account', '/s/:path*',
     '/results',
     '/performance',
     '/pricing',

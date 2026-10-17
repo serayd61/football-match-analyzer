@@ -14,7 +14,8 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'leagues' });
-  return { title: t('title'), description: t('lead', { count: SITE_LEAGUES.length }), alternates: alternatesFor(locale as Locale, '/leagues') };
+  // SEO Faz 0: keyword-bearing title; the H1 stays "Leagues".
+  return { title: t('metaTitle'), description: t('lead', { count: SITE_LEAGUES.length }), alternates: alternatesFor(locale as Locale, '/leagues') };
 }
 
 export default async function LeaguesPage({ params: { locale } }: { params: { locale: string } }) {

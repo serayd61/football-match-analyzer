@@ -43,7 +43,7 @@ import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
 import { requireSiteAccess, getSiteAccess, canSeeMatches } from '@/lib/site/access';
-import { Paywall, TrialNotice, LockedPick, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
+import { Paywall, TrialNotice, LockedPick, AnonWall, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import { isSampleFixture } from '@/lib/site/sample-analysis';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import AddToSlipButton, { type SlipLegInput } from '@/components/site/slip/AddToSlipButton';
@@ -65,12 +65,16 @@ export async function generateMetadata({ params }: { params: { locale: string; m
   if (!p) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: 'match' });
   const title = `${p.homeName} – ${p.awayName}`;
-  // Members-only: the description and OG card carry no model numbers.
+  // Members-only: the description and OG card carry no model numbers. Not indexed
+  // (SEO Faz 0) — the public preview of the same fixture is /matches/{slug}; the
+  // sample analyses are the exception and stay indexable.
+  const sample = await isSampleFixture(id!);
   return {
     title,
     description: t('metaLocked', { home: p.homeName, away: p.awayName, league: p.leagueName }),
     alternates: alternatesFor(params.locale as Locale, `/predictions/${p.fixtureId}`),
     openGraph: { title, images: [`/api/og/match/${p.fixtureId}`] },
+    robots: sample ? undefined : { index: false, follow: true },
   };
 }
 
@@ -99,14 +103,16 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const tc = await getTranslations('common');
   const f = await getFormatter();
 
-  if (access.state === 'expired' && !publicSample) {
+  if ((access.state === 'expired' || access.state === 'anon') && !publicSample) {
     return (
       <Page>
         <div className="rule-b pb-4 pt-8">
           <p className="kicker">{p.leagueName}</p>
           <h1 className="mt-2 text-[32px] sm:text-[40px] hyphens-auto [overflow-wrap:anywhere]">{p.homeName} <span className="text-s-muted">{t2('vs')}</span> {p.awayName}</h1>
         </div>
-        <Paywall />
+        {access.state === 'anon'
+          ? <AnonWall locale={params.locale} path={`/predictions/${id}`} title={`${p.homeName} – ${p.awayName}`} lead={t('metaLocked', { home: p.homeName, away: p.awayName, league: p.leagueName })} />
+          : <Paywall />}
       </Page>
     );
   }

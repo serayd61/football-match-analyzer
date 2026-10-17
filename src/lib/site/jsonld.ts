@@ -10,6 +10,12 @@ import { venueFor } from '@/lib/site/stadiums';
 
 export const ORG_NAME = 'Football Analytics';
 export const ORG_LOGO = `${SITE_URL}/icons/icon-512x512.png`;
+/** Public profiles of the organisation (schema.org sameAs) — SEO Faz 0. */
+export const ORG_SAME_AS = [
+  'https://t.me/fanalytics_pro',
+  'https://x.com/fanalytics_pro',
+  'https://play.google.com/store/apps/details?id=pro.footballanalytics',
+];
 
 /** Organization + WebSite — home page only (Google: "place it on your home page"). */
 export function organizationJsonLd(locale: Locale, description: string) {
@@ -23,6 +29,7 @@ export function organizationJsonLd(locale: Locale, description: string) {
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: ORG_LOGO, width: 512, height: 512 },
       description,
+      sameAs: ORG_SAME_AS,
     },
     {
       '@context': 'https://schema.org',
@@ -75,6 +82,7 @@ export function sportsEventsJsonLd<R extends EventRow>(locale: Locale, league: S
       startDate: start.toISOString(),
       endDate: new Date(start.getTime() + 115 * 60_000).toISOString(),
       eventStatus: status,
+      sport: 'Soccer',
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       location: { '@type': 'Place', name: venue.venue, address },
       homeTeam: team(r.homeName),
@@ -100,5 +108,38 @@ export function breadcrumbJsonLd(locale: Locale, items: Array<{ name: string; pa
       name: it.name,
       item: `${SITE_URL}/${locale}${it.path === '/' ? '' : it.path}`,
     })),
+  };
+}
+
+/** FAQPage — the landing page's question/answer list (SEO Faz 0, 2026-10-17). */
+export function faqPageJsonLd(faqs: Array<{ q: string; a: string }>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+}
+
+/** Dataset — the public, settled prediction record on /performance (SEO Faz 0). */
+export function datasetJsonLd(locale: Locale, input: { name: string; description: string; settled: number; dateModified: Date | null }) {
+  const url = `${SITE_URL}/${locale}/performance`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    '@id': `${url}#dataset`,
+    name: input.name,
+    description: input.description,
+    url,
+    inLanguage: locale,
+    isAccessibleForFree: true,
+    creator: { '@id': `${SITE_URL}/#organization` },
+    keywords: ['football predictions', 'expected goals', 'Dixon-Coles', 'prediction accuracy', 'Brier score'],
+    variableMeasured: ['hit rate', 'Brier score', 'calibration'],
+    ...(input.dateModified ? { dateModified: input.dateModified.toISOString() } : {}),
+    ...(input.settled > 0 ? { size: `${input.settled} settled predictions` } : {}),
   };
 }

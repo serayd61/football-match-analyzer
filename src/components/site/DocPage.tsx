@@ -16,7 +16,9 @@ export interface DocSection { h: string; p: string[]; /** optional product scree
 
 export async function docMetadata(locale: string, key: DocKey): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: `docs.${key}` });
-  return { title: t('title'), description: t('lead'), alternates: alternatesFor(locale as Locale, `/${key}`) };
+  // SEO Faz 0: a doc may carry a keyword-bearing metaTitle ("Methodology" alone says nothing to a searcher).
+  const title = t.has('metaTitle') ? t('metaTitle') : t('title');
+  return { title, description: t('lead'), alternates: alternatesFor(locale as Locale, `/${key}`) };
 }
 
 export default async function DocPage({ locale, doc, updated }: { locale: string; doc: DocKey; updated?: string }) {

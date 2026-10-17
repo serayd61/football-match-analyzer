@@ -11,6 +11,7 @@ import AuthProvider from '@/components/AuthProvider';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
 import { routing, INTL_TAGS, type Locale } from '@/i18n/routing';
 import { alternatesFor, SITE_URL } from '@/lib/site/seo';
+import { pickMessages } from '@/lib/site/messages';
 import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
 import MobileTabBar from '@/components/site/MobileTabBar';
@@ -66,7 +67,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
       locale: INTL_TAGS[safeLocale].replace('-', '_'),
       alternateLocale: routing.locales.filter((l) => l !== safeLocale).map((l) => INTL_TAGS[l].replace('-', '_')),
     },
-    twitter: { card: 'summary_large_image' },
+    twitter: { card: 'summary_large_image', site: '@fanalytics_pro' },
+    manifest: '/manifest.json',
     icons: {
       icon: [
         { url: '/favicon.ico', sizes: '48x48' },
@@ -88,7 +90,8 @@ export default async function LocaleLayout({
 }) {
   if (!routing.locales.includes(locale as Locale)) notFound();
   unstable_setRequestLocale(locale);
-  const messages = await getMessages();
+  // Only the namespaces client components read (lib/site/messages.ts) — SEO Faz 0.
+  const messages = pickMessages(await getMessages());
   const timeZone = await getTimeZone();
   const t = await getTranslations('nav');
 
