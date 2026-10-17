@@ -14,6 +14,8 @@ test('anonymous surfaces carry no gambling-coded wording', () => {
       const v = (key.split('.').reduce((o, k) => o[k], m) as string).toLowerCase();
       assert.ok(!/18\+|begambleaware|gamcare/.test(v), `${name} ${key} carries gambling-coded wording`);
     }
+    // The slip namespace ships to the client on every page (lib/site/messages.ts), so it must be clean too.
+    assert.ok(!/18\+|bookmaker|buchmacher|bahisçi/i.test(JSON.stringify(m.slip)), `${name}: slip strings carry gambling-coded wording`);
     assert.equal(m.v2.footer.help, undefined, `${name}: responsible-gambling footer paragraph must be gone`);
   }
 });

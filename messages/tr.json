@@ -1722,13 +1722,13 @@
     "pageLead": "Maç sayfalarından seçtiğin pazarlar başlama saatine göre sıralı. Biten maçlar skorla işaretlenir; kupon bu tarayıcıda saklanır.",
     "dnbShort": "beraberlikte iade",
     "gridTitle": "Kupona ekle",
-    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · bahisçi oranı (yoksa –).",
+    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · piyasa fiyatı (yoksa –).",
     "g1x2": "Maç sonucu (1X2)",
     "gOu": "Üst/Alt 2,5",
     "gBtts": "Karşılıklı gol",
     "gAh": "Asya handikapı",
     "gDnb": "Beraberlikte iade",
-    "lineBook": "bahisçi çizgisi",
+    "lineBook": "piyasa çizgisi",
     "lineModel": "model adil çizgisi",
     "outcome": {
       "void": "iade",
@@ -1753,7 +1753,7 @@
     "sharedCta": "Kendi kuponunu kur · 7 gün ücretsiz",
     "importBtn": "Kuponuma al",
     "imported": "{n} bacak kuponuna eklendi",
-    "sharedNote": "Seçimler paylaşan üyeye ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Oranlar ekleme anındaki bahisçi oranıdır. Yalnızca 18+."
+    "sharedNote": "Seçimler paylaşan üyeye ait; olasılıklar istatistiksel modelin tahminidir, tavsiye değildir. Fiyatlar ekleme anındaki piyasa fiyatıdır."
   },
   "contact": {
     "title": "İletişim",

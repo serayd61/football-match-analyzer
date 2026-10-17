@@ -1722,13 +1722,13 @@
     "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser.",
     "dnbShort": "rimborso in caso di pareggio",
     "gridTitle": "Aggiungi alla schedina",
-    "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · quota bookmaker (– se assente).",
+    "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · prezzo di mercato (– se assente).",
     "g1x2": "Esito finale (1X2)",
     "gOu": "Over/Under 2,5",
     "gBtts": "Goal / No goal",
     "gAh": "Handicap asiatico",
     "gDnb": "Draw no bet",
-    "lineBook": "linea bookmaker",
+    "lineBook": "linea di mercato",
     "lineModel": "linea equa del modello",
     "outcome": {
       "void": "rimborsata",
@@ -1753,7 +1753,7 @@
     "sharedCta": "Crea la tua schedina · 7 giorni gratis",
     "importBtn": "Metti nella mia schedina",
     "imported": "{n} eventi aggiunti alla tua schedina",
-    "sharedNote": "Le selezioni sono del membro che le ha condivise; le probabilità sono stime del modello statistico, non consigli di scommessa. Le quote sono quelle del bookmaker al momento dell'aggiunta. Solo 18+."
+    "sharedNote": "Le selezioni sono del membro che le ha condivise; le probabilità sono stime del modello statistico, non consigli. I prezzi sono quelli di mercato al momento dell’aggiunta."
   },
   "contact": {
     "title": "Contatti",

@@ -1722,13 +1722,13 @@
     "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser.",
     "dnbShort": "Unentschieden: Einsatz zurück",
     "gridTitle": "Auf den Schein",
-    "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Mehrere Märkte eines Spiels sind möglich (z. B. 1 + Über 2,5 + Beide treffen); im selben Markt ersetzt die neue die alte. Modell % · Buchmacherquote (– falls keine).",
+    "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Mehrere Märkte eines Spiels sind möglich (z. B. 1 + Über 2,5 + Beide treffen); im selben Markt ersetzt die neue die alte. Modell % · Marktkurs (– falls keiner).",
     "g1x2": "Spielausgang (1X2)",
     "gOu": "Über/Unter 2,5",
     "gBtts": "Beide treffen",
     "gAh": "Asian Handicap",
     "gDnb": "Draw no Bet",
-    "lineBook": "Buchmacherlinie",
+    "lineBook": "Marktlinie",
     "lineModel": "faire Modelllinie",
     "outcome": {
       "void": "zurück",
@@ -1753,7 +1753,7 @@
     "sharedCta": "Eigenen Schein bauen · 7 Tage gratis",
     "importBtn": "Auf meinen Schein",
     "imported": "{n} Positionen auf deinen Schein gesetzt",
-    "sharedNote": "Die Auswahl gehört dem teilenden Mitglied; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Quoten sind die Buchmacherquoten zum Zeitpunkt des Hinzufügens. Nur 18+."
+    "sharedNote": "Die Auswahl gehört dem teilenden Mitglied; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Empfehlung. Kurse sind die Marktkurse zum Zeitpunkt des Hinzufügens."
   },
   "contact": {
     "title": "Kontakt",

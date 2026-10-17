@@ -1722,13 +1722,13 @@
     "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser.",
     "dnbShort": "draw no bet",
     "gridTitle": "Add to slip",
-    "gridLead": "Click a selection to put it on the slip. You can pick several markets from one match (e.g. 1 + Over 2.5 + BTTS); within a market the new one replaces the old. Model % · bookmaker odds (– if none).",
+    "gridLead": "Click a selection to put it on the slip. You can pick several markets from one match (e.g. 1 + Over 2.5 + BTTS); within a market the new one replaces the old. Model % · market price (– if none).",
     "g1x2": "Match result (1X2)",
     "gOu": "Over/Under 2.5",
     "gBtts": "Both teams to score",
     "gAh": "Asian handicap",
     "gDnb": "Draw no bet",
-    "lineBook": "bookmaker line",
+    "lineBook": "market line",
     "lineModel": "model fair line",
     "outcome": {
       "void": "void",
@@ -1753,7 +1753,7 @@
     "sharedCta": "Build your own slip · 7 days free",
     "importBtn": "Add to my slip",
     "imported": "{n} legs added to your slip",
-    "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model's estimates, not betting advice. Odds are the bookmaker odds at the time of adding. 18+ only."
+    "sharedNote": "The selections belong to the member who shared them; the probabilities are the statistical model’s estimates, not advice. Prices are the market prices at the time of adding."
   },
   "contact": {
     "title": "Contact",
