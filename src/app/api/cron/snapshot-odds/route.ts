@@ -32,6 +32,8 @@ export const maxDuration = 120;
 
 // Fazlar: opening (ilk görüş) → h24 → h12 → h6 → h3 → closing (≤90 dk); bkz. odds-phases.ts.
 // Tur başına maç başına tek çağrı: o anki faz yazılır, açılış yoksa aynı orandan açılış da yazılır.
+const PAGE = 1000;               // PostgREST tek istek üst sınırı
+const MAX_ROWS = 20000;          // güvenlik freni (≈5000 maç × 4 sürüm)
 const MAX_CALLS = 40;            // tur başına üst sınır (maliyet freni)
 const SLEEP_MS = 400;
 // Akış boş döndüyse (alt lig, bahisçi yok) maç 4 saat yeniden denenmez; bütçe
@@ -87,20 +89,28 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const horizon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // Not: model sürümü başına bir satır (dc-1.0, dc-1.1-lvl, dc-2.0-xg) → 500 sınırı
-  // Cumartesi 14:00Z'de bitiyordu, akşam maçları ve Pazar hiç oran almıyordu (10 Eki).
-  const { data: preds, error } = await sb()
-    .from('engine_predictions')
-    .select('fixture_id, league_id, league_name, kickoff')
-    .eq('settled', false)
-    .gte('kickoff', now.toISOString())
-    .lte('kickoff', horizon.toISOString())
-    .order('kickoff', { ascending: true })
-    .limit(4000);
-
-  if (error) {
-    console.error('[snapshot-odds] read error:', error.message);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  // Not: model sürümü başına bir satır (dc-1.0, dc-1.1-lvl, dc-1.2-cal, dc-2.0-xg).
+  // 10 Eki: 500 sınırı Cumartesi 14:00Z'de bitiyordu → 4000 yapıldı; ama PostgREST
+  // tek istekte en çok 1000 satır verir (limit(4000) sessizce 1000'e iner). 17 Eki:
+  // 3055 satırlık hafta sonunda Championship 14:00Z maçları kesildi, hiç oran almadı.
+  // Çözüm: 1000'lik sayfalarla oku.
+  const preds: Array<{ fixture_id: number; league_id: number; league_name: string; kickoff: string }> = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb()
+      .from('engine_predictions')
+      .select('fixture_id, league_id, league_name, kickoff')
+      .eq('settled', false)
+      .gte('kickoff', now.toISOString())
+      .lte('kickoff', horizon.toISOString())
+      .order('kickoff', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) {
+      console.error('[snapshot-odds] read error:', error.message);
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+    preds.push(...((data ?? []) as any[]));
+    if (!data || data.length < PAGE || preds.length >= MAX_ROWS) break;
   }
 
   const catalog = await getCatalogMap().catch(() => new Map());
