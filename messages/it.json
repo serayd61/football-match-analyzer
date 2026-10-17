@@ -1639,5 +1639,45 @@
     "featuresAfterAsOf": "I valori del modello per questa partita sono stati scritti dopo il momento dell'analisi; l'analisi retrodatata usa la riga attuale.",
     "footer": "Regola {rule} · modello {model} · valutazione {assess} · esplorativo. Lo stato viene solo dalla valutazione sopra; questa sezione lo spiega ed elenca le partite dietro di esso. Le partite comparabili sono scelte dai gol attesi del modello stesso, quindi la loro frequenza si sovrappone alla curva di calibrazione e al record dei bucket invece di aggiungere un voto separato. Nessun LLM coinvolto; ogni numero è calcolato dai dati registrati.",
     "scopeCovered": "campionati coperti (il campionato ne aveva troppo poche)"
+  },
+  "grades": {
+    "title": "Lezioni settimanali (ombra)",
+    "meta": "valutate dalle partite concluse · {week} · esplorativo",
+    "lead": "Ogni partita conclusa riceve una scheda di valutazione per mercato: la selezione del modello si è verificata, cosa ha fatto il favorito pre-partita del bookmaker, chi aveva ragione in caso di disaccordo e come è andato lo stato di valutazione pre-partita. Le schede della settimana sono sommate nelle celle sotto. Questo non cambia ancora nulla: selezioni, modello e regola di valutazione restano tali finché almeno quattro settimane di registro ombra non giustificano una modifica versionata.",
+    "empty": "Le lezioni compaiono dopo la prima esecuzione del lunedì, quando esistono schede di valutazione.",
+    "cards": "{n} schede da {fixtures} partite",
+    "coverage": "Per {with} schede lo stato di valutazione era noto prima del calcio d'inizio; {without} schede non avevano uno snapshot pre-partita e sono escluse dalle righe di stato.",
+    "colCell": "Cella",
+    "colN": "n",
+    "colHit": "Centrate",
+    "colCi": "95%",
+    "colModel": "Media modello",
+    "status": {
+      "supported": "Stato: supportato",
+      "conflicting": "Stato: in conflitto",
+      "insufficient": "Stato: insufficiente"
+    },
+    "clash": {
+      "agree": "Modello e bookmaker concordi",
+      "model_right": "Discordi, modello corretto",
+      "market_right": "Discordi, bookmaker corretto",
+      "both_wrong": "Discordi, entrambi errati"
+    },
+    "level": "Livello modello {bucket}",
+    "edge": "Modello − bookmaker {bucket} punti",
+    "lessonsTitle": "Lezioni di questa settimana",
+    "noLessons": "Nessuna cella ha superato la soglia di 20 partite con un segnale chiaro questa settimana. È normale; le lezioni richiedono volume.",
+    "lesson": {
+      "status_order_holds": "{market}: le selezioni supportate hanno centrato il {sup}%, quelle in conflitto il {con}% ({n} schede). L'ordine della valutazione ha retto questa settimana.",
+      "status_order_inverted": "{market}: le selezioni in conflitto hanno centrato il {con}%, quelle supportate il {sup}% ({n} schede) e gli intervalli non si sovrappongono. L'ordine si è invertito questa settimana; da osservare, non da agire.",
+      "disagreements_market_led": "{market}: in caso di disaccordo il bookmaker ha avuto ragione più spesso ({marketRight} vs {modelRight}, {bothWrong} entrambi errati).",
+      "disagreements_model_led": "{market}: in caso di disaccordo il modello ha avuto ragione più spesso ({modelRight} vs {marketRight}, {bothWrong} entrambi errati).",
+      "level_overconfident": "{market}, livello {subject}: centrate il {acc}% con il limite superiore al 95% sotto la base della cella ({n} schede). Il modello è stato troppo sicuro qui questa settimana.",
+      "level_underconfident": "{market}, livello {subject}: centrate il {acc}% con il limite inferiore al 95% sopra il tetto della cella ({n} schede). Il modello è stato troppo prudente qui questa settimana.",
+      "over_edge_not_paying": "{market}: con il modello 5+ punti sopra il bookmaker, le selezioni hanno centrato il {acc}% contro una media del modello del {model}% ({n} schede)."
+    },
+    "note": "Le celle con meno di 20 schede sono in grigio e non producono mai una lezione. Le righe di stato usano solo snapshot scritti prima del calcio d'inizio; nulla viene valutato retroattivamente con le regole di oggi. Le lezioni sono esplorative e entrano in una modifica versionata solo dopo un registro ombra di più settimane.",
+    "scopeCovered": "campionati coperti",
+    "scopeAll": "tutti i campionati"
   }
 }

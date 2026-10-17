@@ -1639,5 +1639,45 @@
     "featuresAfterAsOf": "Bu maçın model değerleri analiz zamanından sonra yazılmış; geçmiş tarihli analiz güncel satırı kullanır.",
     "footer": "Kural {rule} · model {model} · değerlendirme {assess} · keşifsel. Durum yalnız yukarıdaki değerlendirmeden gelir; bu bölüm onu açıklar ve arkasındaki maçları listeler. Benzer maçlar modelin kendi beklenen golleriyle seçildiği için gerçekleşme oranı kalibrasyon eğrisi ve kova kaydıyla örtüşür, ayrı bir oy eklemez. LLM yoktur; her sayı kayıtlı veriden hesaplanır.",
     "scopeCovered": "kapsanan ligler (ligde yeterli maç yoktu)"
+  },
+  "grades": {
+    "title": "Haftalık dersler (gölge)",
+    "meta": "sonuçlanan maçlardan derecelendi · {week} · keşifsel",
+    "lead": "Her sonuçlanan maç pazar başına bir derece kartı alır: modelin seçimi tuttu mu, bahisçinin maç-öncesi favorisi ne yaptı, ayrıştıklarında kim haklıydı ve maç-öncesi değerlendirme durumu nasıl gitti. Haftanın kartları aşağıdaki hücrelerde toplanır. Bu henüz hiçbir şeyi değiştirmez: seçimler, model ve değerlendirme kuralı, en az dört haftalık gölge karne sürümlü bir değişikliği haklı çıkarana kadar olduğu gibi kalır.",
+    "empty": "Dersler, derece kartları oluştuktan sonra ilk Pazartesi turunda görünür.",
+    "cards": "{fixtures} maçtan {n} kart",
+    "coverage": "{with} kartta değerlendirme durumu maçtan önce biliniyordu; {without} kartın maç-öncesi kaydı yok, durum satırlarına girmez.",
+    "colCell": "Hücre",
+    "colN": "n",
+    "colHit": "İsabet",
+    "colCi": "%95",
+    "colModel": "Model ort.",
+    "status": {
+      "supported": "Durum: kanıt destekliyor",
+      "conflicting": "Durum: çelişkili",
+      "insufficient": "Durum: kanıt yetersiz"
+    },
+    "clash": {
+      "agree": "Model ve bahisçi aynı tarafta",
+      "model_right": "Ayrıştı, model haklı",
+      "market_right": "Ayrıştı, bahisçi haklı",
+      "both_wrong": "Ayrıştı, ikisi de yanlış"
+    },
+    "level": "Model seviyesi {bucket}",
+    "edge": "Model − bahisçi {bucket} puan",
+    "lessonsTitle": "Bu haftanın dersleri",
+    "noLessons": "Bu hafta hiçbir hücre 20 maç barajını net bir sinyalle geçmedi. Bu normaldir; ders için hacim gerekir.",
+    "lesson": {
+      "status_order_holds": "{market}: destekli seçimler %{sup}, çelişkili seçimler %{con} tuttu ({n} kart). Değerlendirme sırası bu hafta tuttu.",
+      "status_order_inverted": "{market}: çelişkili seçimler %{con}, destekli seçimler %{sup} tuttu ({n} kart) ve aralıklar örtüşmüyor. Sıra bu hafta tersine döndü; izlenmeli, henüz kurala dokunulmamalı.",
+      "disagreements_market_led": "{market}: model ile bahisçi ayrıştığında bahisçi daha sık haklıydı ({marketRight} / {modelRight}, {bothWrong} ikisi de yanlış).",
+      "disagreements_model_led": "{market}: model ile bahisçi ayrıştığında model daha sık haklıydı ({modelRight} / {marketRight}, {bothWrong} ikisi de yanlış).",
+      "level_overconfident": "{market}, seviye {subject}: %{acc} tuttu, %95 üst sınır kova tabanının altında ({n} kart). Model bu hafta burada fazla güvenliydi.",
+      "level_underconfident": "{market}, seviye {subject}: %{acc} tuttu, %95 alt sınır kova tavanının üstünde ({n} kart). Model bu hafta burada fazla temkinliydi.",
+      "over_edge_not_paying": "{market}: model bahisçinin 5+ puan üstündeyken seçimler %{acc} tuttu, model ortalaması %{model} ({n} kart)."
+    },
+    "note": "20 karttan az hücreler gri gösterilir ve asla ders üretmez. Durum satırları yalnız kickoff'tan önce yazılmış kayıtları kullanır; hiçbir şey bugünkü kuralla geriye dönük derecelenmez. Dersler keşifseldir; sürümlü bir kural değişikliğine ancak çok haftalık gölge karneden sonra girer.",
+    "scopeCovered": "kapsanan ligler",
+    "scopeAll": "tüm ligler"
   }
 }

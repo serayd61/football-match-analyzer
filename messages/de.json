@@ -1639,5 +1639,45 @@
     "featuresAfterAsOf": "Die Modellwerte dieses Spiels wurden zuletzt nach der Analysezeit geschrieben; eine rückdatierte Analyse verwendet die aktuelle Zeile.",
     "footer": "Regel {rule} · Modell {model} · Bewertung {assess} · explorativ. Der Status kommt nur aus der Bewertung oben; dieser Abschnitt erklärt ihn und listet die Spiele dahinter. Vergleichbare Spiele werden über die erwarteten Tore des Modells gewählt, daher überlappt ihre Trefferquote mit Kalibrierungskurve und Bucket-Bilanz statt eine eigene Stimme zu ergänzen. Kein LLM beteiligt; jede Zahl wird aus gespeicherten Daten berechnet.",
     "scopeCovered": "abgedeckte Ligen (Liga hatte zu wenige)"
+  },
+  "grades": {
+    "title": "Wochenlektionen (Schatten)",
+    "meta": "aus abgerechneten Spielen bewertet · {week} · explorativ",
+    "lead": "Jedes abgerechnete Spiel bekommt pro Markt eine Bewertungskarte: Traf die Modellauswahl, was tat der Vorspiel-Favorit des Buchmachers, wer hatte bei Uneinigkeit recht, und wie schnitt der Vorspiel-Bewertungsstatus ab. Die Karten der Woche werden unten in Zellen summiert. Das ändert noch nichts: Picks, Modell und Bewertungsregel bleiben, bis mindestens vier Wochen Schattenbilanz eine versionierte Änderung rechtfertigen.",
+    "empty": "Lektionen erscheinen nach dem ersten Montagslauf, sobald Bewertungskarten vorliegen.",
+    "cards": "{n} Karten aus {fixtures} Spielen",
+    "coverage": "Bei {with} Karten war der Bewertungsstatus vor dem Anpfiff bekannt; {without} Karten hatten keinen Vorspiel-Snapshot und fehlen in den Statuszeilen.",
+    "colCell": "Zelle",
+    "colN": "n",
+    "colHit": "Treffer",
+    "colCi": "95 %",
+    "colModel": "Modell-Ø",
+    "status": {
+      "supported": "Status: gestützt",
+      "conflicting": "Status: widersprüchlich",
+      "insufficient": "Status: unzureichend"
+    },
+    "clash": {
+      "agree": "Modell und Buchmacher einig",
+      "model_right": "Uneinig, Modell richtig",
+      "market_right": "Uneinig, Buchmacher richtig",
+      "both_wrong": "Uneinig, beide falsch"
+    },
+    "level": "Modellniveau {bucket}",
+    "edge": "Modell − Buchmacher {bucket} Punkte",
+    "lessonsTitle": "Lektionen dieser Woche",
+    "noLessons": "Keine Zelle hat diese Woche die 20-Spiele-Hürde mit klarem Signal genommen. Das ist normal; Lektionen brauchen Volumen.",
+    "lesson": {
+      "status_order_holds": "{market}: gestützte Picks trafen {sup} %, widersprüchliche {con} % ({n} Karten). Die Bewertungsreihenfolge hielt diese Woche.",
+      "status_order_inverted": "{market}: widersprüchliche Picks trafen {con} %, gestützte {sup} % ({n} Karten), und die Intervalle überlappen nicht. Die Reihenfolge war diese Woche umgekehrt; beobachten, nicht handeln.",
+      "disagreements_market_led": "{market}: bei Uneinigkeit lag der Buchmacher öfter richtig ({marketRight} vs {modelRight}, {bothWrong} beide falsch).",
+      "disagreements_model_led": "{market}: bei Uneinigkeit lag das Modell öfter richtig ({modelRight} vs {marketRight}, {bothWrong} beide falsch).",
+      "level_overconfident": "{market}, Niveau {subject}: {acc} % Treffer, obere 95 %-Grenze unter dem Zellenboden ({n} Karten). Das Modell war hier diese Woche zu sicher.",
+      "level_underconfident": "{market}, Niveau {subject}: {acc} % Treffer, untere 95 %-Grenze über der Zellendecke ({n} Karten). Das Modell war hier diese Woche zu vorsichtig.",
+      "over_edge_not_paying": "{market}: lag das Modell 5+ Punkte über dem Buchmacher, trafen Picks {acc} % bei einem Modellmittel von {model} % ({n} Karten)."
+    },
+    "note": "Zellen mit weniger als 20 Karten werden grau gezeigt und erzeugen nie eine Lektion. Statuszeilen nutzen nur vor dem Anpfiff geschriebene Snapshots; nichts wird rückwirkend mit heutigen Regeln bewertet. Lektionen sind explorativ und fließen erst nach mehrwöchiger Schattenbilanz in eine versionierte Regeländerung.",
+    "scopeCovered": "abgedeckte Ligen",
+    "scopeAll": "alle Ligen"
   }
 }

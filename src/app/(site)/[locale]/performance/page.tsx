@@ -9,6 +9,8 @@ import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard } from '@/lib/site/strong-markets';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { getWeeklyProgress } from '@/lib/site/weekly-progress';
+import { getStoredLessons } from '@/lib/site/grades';
+import { MIN_LESSON_N, type LessonCell, type Lesson } from '@/lib/site/grade-rule';
 import { listResults } from '@/lib/site/results';
 import { leagueBySlug, SITE_LEAGUES } from '@/lib/site/leagues';
 import { Page, SectionTitle, EmptyState } from '@/components/site/ui';
@@ -77,13 +79,39 @@ export default async function PerformancePage({ params: { locale }, searchParams
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
 
   const showcase = await showcaseRecord(30).catch(() => null);
-  const [r, w, res, recent] = await Promise.all([
+  const [r, w, res, recent, lessons] = await Promise.all([
     getPerformance(null),
     getWeeklyProgress(12),
     listResults({ league, from: null, to: null, page, pageSize: PAGE_SIZE }),
     // Longest losing run over the last 400 settled 1X2 picks (newest first → reversed).
     listResults({ league: null, from: null, to: null, page: 1, pageSize: 400 }),
+    // Haftalık dersler (grade-1.0): engine_learning_log'daki kayıt, yeniden hesaplanmaz; okunamazsa boş.
+    getStoredLessons(4).catch(() => []),
   ]);
+  const tg = await getTranslations('grades');
+  const tgx = tg as unknown as (k: string, v?: Record<string, string | number>) => string;
+  const latestLessons = lessons[0] ?? null;
+  const r100 = (x: number | null) => (x == null ? '–' : Math.round(x * 100));
+  const cellRow = (label: string, c: LessonCell | undefined, key: string) => {
+    if (!c) return null;
+    const thin = c.n < MIN_LESSON_N;
+    return (
+      <tr key={key} className={`border-b border-s-line ${thin ? 'text-s-muted' : ''}`}>
+        <td className="py-1.5">{label}</td>
+        <td className="num py-1.5 text-right">{c.n}</td>
+        <td className="num py-1.5 text-right">{c.acc == null ? '–' : `${r100(c.acc)}%`}</td>
+        <td className="num py-1.5 text-right">{c.lower == null ? '–' : `${r100(c.lower)}–${r100(c.upper)}%`}</td>
+        <td className="num py-1.5 text-right">{c.meanModelP == null ? '–' : `${r100(c.meanModelP)}%`}</td>
+      </tr>
+    );
+  };
+  const lessonText = (l: Lesson) => {
+    const d = l.detail;
+    const v = { market: ({ '1x2': tc('market1x2'), ou25: tc('ou25'), btts: tc('btts') } as Record<string, string>)[l.market] ?? l.market, subject: l.subject, n: l.n,
+      sup: r100((d.supportedAcc as number | null) ?? null), con: r100((d.conflictingAcc as number | null) ?? null), acc: r100((d.acc as number | null) ?? null), model: r100((d.meanModelP as number | null) ?? null),
+      modelRight: Number(d.modelRight ?? 0), marketRight: Number(d.marketRight ?? 0), bothWrong: Number(d.bothWrong ?? 0) };
+    return tgx(`lesson.${l.code}`, v);
+  };
   let losingRun = 0, run = 0;
   for (const row of [...recent.rows].reverse()) {
     if (row.outcome === 'lost') { run += 1; losingRun = Math.max(losingRun, run); } else if (row.outcome === 'won') run = 0;
@@ -520,6 +548,53 @@ export default async function PerformancePage({ params: { locale }, searchParams
           </>
         ) : (
           <p className="mt-3 text-sm text-s-muted">{t('weeklyEmpty')}</p>
+        )}
+      </section>
+
+      {/* Haftalık dersler (grade-1.0, 2026-10-16) — gölge: hiçbir seçimi/kuralı değiştirmez */}
+      <section className="mt-12">
+        <SectionTitle title={tg('title')} meta={latestLessons ? tgx('meta', { week: latestLessons.week }) : undefined} />
+        <p className="mt-3 max-w-[72ch] text-sm text-s-muted">{tg('lead')}</p>
+        {latestLessons ? (
+          <>
+            <p className="num mt-3 text-xs text-s-muted">
+              {tgx('cards', { n: latestLessons.summary.grades, fixtures: latestLessons.summary.fixtures })} · {tg(latestLessons.summary.scope === 'all' ? 'scopeAll' : 'scopeCovered')} · {tgx('coverage', { with: latestLessons.summary.statusCoverage.withSnapshot, without: latestLessons.summary.statusCoverage.without })}
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr className="border-b border-s-line text-left">
+                    <th className={th}>{tg('colCell')}</th>
+                    <th className={`${th} text-right`}>{tg('colN')}</th>
+                    <th className={`${th} text-right`}>{tg('colHit')}</th>
+                    <th className={`${th} text-right`}>{tg('colCi')}</th>
+                    <th className={`${th} text-right`}>{tg('colModel')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(['1x2', 'ou25', 'btts'] as const).flatMap((m) => [
+                    cellRow(marketName[m], latestLessons.summary.byMarket[m], `m:${m}`),
+                    ...(['supported', 'conflicting', 'insufficient'] as const).map((st) => cellRow(`${marketName[m]} · ${tg(`status.${st}`)}`, latestLessons.summary.byStatus[`${m}|${st}`], `s:${m}:${st}`)),
+                    ...(m === '1x2' ? (['agree', 'model_right', 'market_right', 'both_wrong'] as const).map((c) => cellRow(`${marketName[m]} · ${tg(`clash.${c}`)}`, latestLessons.summary.byClash[`${m}|${c}`], `c:${m}:${c}`)) : []),
+                    ...Object.keys(latestLessons.summary.byLevel).filter((k) => k.startsWith(`${m}|`)).map((k) => cellRow(`${marketName[m]} · ${tgx('level', { bucket: k.split('|')[1] })}`, latestLessons.summary.byLevel[k], `l:${k}`)),
+                  ])}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 text-sm">
+              <span className="font-medium text-s-ink">{tg('lessonsTitle')}</span>
+              {latestLessons.summary.lessons.length ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-s-muted">
+                  {latestLessons.summary.lessons.map((l) => <li key={`${l.code}:${l.market}:${l.subject}`}>{lessonText(l)}</li>)}
+                </ul>
+              ) : (
+                <p className="mt-1 text-s-muted">{tg('noLessons')}</p>
+              )}
+            </div>
+            <p className="mt-3 text-xs text-s-muted">{tg('note')}</p>
+          </>
+        ) : (
+          <p className="mt-3 text-sm text-s-muted">{tg('empty')}</p>
         )}
       </section>
 
