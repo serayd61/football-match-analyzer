@@ -46,6 +46,7 @@ import { requireSiteAccess, getSiteAccess, canSeeMatches } from '@/lib/site/acce
 import { Paywall, TrialNotice, LockedPick, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import { isSampleFixture } from '@/lib/site/sample-analysis';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
+import AddToSlipButton, { type SlipLegInput } from '@/components/site/slip/AddToSlipButton';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -321,6 +322,14 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
   const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
   const marketFavName = market ? (market.pHome >= market.pDraw && market.pHome >= market.pAway ? p.homeName : market.pAway >= market.pHome && market.pAway >= market.pDraw ? p.awayName : tc('draw')) : '';
+  // Kuponum (slip-1.0): üye görünümünde, başlamamış maçta pazar satırlarına "Kupona ekle". Oran = tablodaki bahisçi oranı.
+  const slipOn = !publicSample && !isPast;
+  const slipBase = { fixtureId: p.fixtureId, kickoff: p.kickoff, leagueLabel: p.leagueName, homeName: p.homeName, awayName: p.awayName };
+  const slipFor = (key: string, model: number, odds: number | null): SlipLegInput | null => {
+    const ms: Record<string, [SlipLegInput['market'], SlipLegInput['selection']]> = { '1': ['1x2', '1'], X: ['1x2', 'X'], '2': ['1x2', '2'], 'ou-o': ['ou25', 'over'], 'ou-u': ['ou25', 'under'], 'btts-y': ['btts', 'yes'], 'btts-n': ['btts', 'no'] };
+    const m = ms[key]; return m ? { ...slipBase, market: m[0], selection: m[1], p: model, odds } : null;
+  };
+  const tsl = await getTranslations('slip');
   const teamRow = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <div className="flex items-center gap-3">
       {crest ? <Image src={crest} alt={tc('crestAlt', { team: name })} width={36} height={36} className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" unoptimized /> : <span className="h-8 w-8 shrink-0 rounded-full bg-s-raised" aria-hidden />}
@@ -393,6 +402,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           {locked ? <LockedPick size="lg" /> : (
             <>
               <p className="text-[26px] font-bold leading-[1.05]">{pickTitle}</p>
+              {slipOn && p.pick && <div><AddToSlipButton leg={slipFor(p.pick, pickP, marketPickOdds ?? null)!} size="sm" /></div>}
               <div className="flex items-center gap-4">
                 <ConfidenceRing conf={conf} size={96} inner="surface" label={p.confidenceCalibrated ? t2('confidence') : `${t2('confidence')} · ${ta('rawShort')}`} />
                 <p className="text-[13.5px] leading-snug text-s-muted">
@@ -564,6 +574,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                     <th className="py-1.5 text-right font-medium">{t('marketOdds')}</th>
                     <th className="py-1.5 text-right font-medium">{t('marketProb')}</th>
                     <th className="py-1.5 text-right font-medium">{t('edge')}</th>
+                    {slipOn && <th className="py-1.5 text-right font-medium">{tsl('colSlip')}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -575,6 +586,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                       <td className="num py-2 text-right">{o.o != null ? o.o.toFixed(2) : '–'}</td>
                       <td className="num py-2 text-right text-s-muted">{o.m != null ? pct(o.m) : '–'}</td>
                       <td className={`num py-2 text-right ${o.e == null ? 'text-s-muted' : o.e >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}`}>{o.e != null ? pp(o.e) : '–'}</td>
+                      {slipOn && <td className="py-1.5 pl-3 text-right"><AddToSlipButton leg={slipFor(o.key, o.p, o.o ?? null)!} /></td>}
                     </tr>
                   ))}
                 </tbody>
@@ -689,10 +701,11 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                       <th className="py-1.5 text-right font-medium">{t('marketOdds')}</th>
                       <th className="py-1.5 text-right font-medium">{t('marketProb')}</th>
                       <th className="py-1.5 text-right font-medium">{t('edge')}</th>
+                      {slipOn && <th className="py-1.5 text-right font-medium">{tsl('colSlip')}</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {mrows.map((r) => { const e = r.model - r.mProb; return (
+                    {mrows.map((r) => { const e = r.model - r.mProb; const sl = slipOn ? slipFor(r.key, r.model, r.mOdds) : null; return (
                       <tr key={r.key} className="border-b border-s-line">
                         <td className="py-2 pr-3 text-s-muted">{r.market}</td>
                         <td className="py-2 pr-3">{r.sel}</td>
@@ -701,6 +714,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
                         <td className="num py-2 text-right">{r.mOdds.toFixed(2)}</td>
                         <td className="num py-2 text-right text-s-muted">{pct(r.mProb)}</td>
                         <td className={`num py-2 text-right ${e >= OVER_EDGE - 1e-9 ? 'text-s-loss' : ''}`}>{pp(e)}{e >= OVER_EDGE - 1e-9 && <span className="ml-1 text-[10.5px] font-semibold">· {t3r('overShort')}</span>}</td>
+                        {slipOn && <td className="py-1.5 pl-3 text-right">{sl && <AddToSlipButton leg={sl} />}</td>}
                       </tr>
                     ); })}
                   </tbody>

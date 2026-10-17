@@ -11,6 +11,7 @@ import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui'
 import { StatRow, StatCell } from '@/components/site/StatCell';
 import { Paywall, TrialNotice } from '@/components/site/Paywall';
 import LocalTime from '@/components/site/LocalTime';
+import SlipPanel from '@/components/site/slip/SlipPanel';
 
 // Günün kuponu (2026-10-14): önerilen seçimlerden iki bacak, toplam oran 2,0–2,6;
 // 07:30 UTC'de üretilir ve donar, skorla sonuçlanır, Telegram'a gider. Üyelere özel.
@@ -28,7 +29,7 @@ export default async function CouponPage({ params: { locale } }: { params: { loc
   unstable_setRequestLocale(locale);
   const today = todayYmd();
   const access = await requireSiteAccess(locale, '/coupon');
-  const [t, f] = await Promise.all([getTranslations('coupon'), getFormatter()]);
+  const [t, f, ts] = await Promise.all([getTranslations('coupon'), getFormatter(), getTranslations('slip')]);
   if (access.state === 'expired') {
     return (<Page><div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div><Paywall /></Page>);
   }
@@ -81,6 +82,12 @@ export default async function CouponPage({ params: { locale } }: { params: { loc
         <StatCell label={t('statRoi')} value={pp(roi)} note={t('statRoiNote')} tone={roi == null ? 'muted' : roi >= 0 ? 'accent' : undefined} />
         <StatCell label={t('statLegs')} value={pct(record.legsN ? record.legsWon / record.legsN : null)} note={t('statLegsNote', { won: record.legsWon, n: record.legsN })} tone="muted" />
       </StatRow>
+
+      {/* Kuponum (slip-1.0, 2026-10-17): üyenin maç sayfalarından derlediği kupon; tarayıcıda durur, sunucu önermez. */}
+      <section className="mb-14" aria-labelledby="my-slip">
+        <SectionTitle id="my-slip" title={ts('pageTitle')} sub={ts('pageLead')} />
+        <div className="max-w-[640px]"><SlipPanel variant="page" from="from=coupon" /></div>
+      </section>
 
       <section aria-labelledby="coupon-today">
         <SectionTitle id="coupon-today" title={t('todayTitle')} meta={coupon ? <span className="num">{t('totalOdds')} {fo(coupon.totalOdds)} · <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${statusTone(coupon.status)}`}>{statusLabel(coupon.status)}</span></span> : undefined} />

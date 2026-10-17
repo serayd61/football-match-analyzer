@@ -1679,5 +1679,43 @@
     "note": "Le celle con meno di 20 schede sono in grigio e non producono mai una lezione. Le righe di stato usano solo snapshot scritti prima del calcio d'inizio; nulla viene valutato retroattivamente con le regole di oggi. Le lezioni sono esplorative e entrano in una modifica versionata solo dopo un registro ombra di più settimane.",
     "scopeCovered": "campionati coperti",
     "scopeAll": "tutti i campionati"
+  },
+  "slip": {
+    "title": "La mia schedina",
+    "add": "Aggiungi alla schedina",
+    "inSlip": "In schedina",
+    "remove": "Togli dalla schedina",
+    "started": "Partita iniziata, non si può aggiungere",
+    "full": "Schedina piena (max {max} partite)",
+    "replaced": "Selezione di questa partita sostituita",
+    "colSlip": "Schedina",
+    "legs": "Partite",
+    "totalOdds": "Quota totale",
+    "totalOddsShort": "Quota",
+    "jointP": "Probabilità del modello",
+    "missingOdds": "{n} eventi senza quota",
+    "open": "Apri schedina",
+    "close": "Chiudi",
+    "clear": "Svuota",
+    "clearConfirm": "Togliere tutte le selezioni dalla schedina?",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "empty": "La schedina è vuota. Clicca \"Aggiungi alla schedina\" su una riga di mercato della pagina partita; una selezione per partita, al massimo {max} partite.",
+    "toMatches": "Vai alle partite",
+    "live": "in corso",
+    "over": "Over 2,5",
+    "under": "Under 2,5",
+    "bttsYes": "Goal sì",
+    "bttsNo": "Goal no",
+    "status": {
+      "pending": "in attesa",
+      "won": "vinta",
+      "lost": "persa",
+      "empty": "vuota"
+    },
+    "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti. La schedina è salvata solo in questo browser.",
+    "shareNote": "Probabilità del modello statistico; non è un consiglio di scommessa.",
+    "pageTitle": "La mia schedina",
+    "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser."
   }
 }

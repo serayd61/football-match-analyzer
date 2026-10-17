@@ -1679,5 +1679,43 @@
     "note": "Zellen mit weniger als 20 Karten werden grau gezeigt und erzeugen nie eine Lektion. Statuszeilen nutzen nur vor dem Anpfiff geschriebene Snapshots; nichts wird rückwirkend mit heutigen Regeln bewertet. Lektionen sind explorativ und fließen erst nach mehrwöchiger Schattenbilanz in eine versionierte Regeländerung.",
     "scopeCovered": "abgedeckte Ligen",
     "scopeAll": "alle Ligen"
+  },
+  "slip": {
+    "title": "Mein Schein",
+    "add": "Auf den Schein",
+    "inSlip": "Auf dem Schein",
+    "remove": "Vom Schein entfernen",
+    "started": "Spiel läuft bereits, kann nicht hinzugefügt werden",
+    "full": "Schein ist voll (max. {max} Spiele)",
+    "replaced": "Auswahl für dieses Spiel wurde ersetzt",
+    "colSlip": "Schein",
+    "legs": "Spiele",
+    "totalOdds": "Gesamtquote",
+    "totalOddsShort": "Quote",
+    "jointP": "Modellwahrscheinlichkeit",
+    "missingOdds": "{n} Positionen ohne Quote",
+    "open": "Schein öffnen",
+    "close": "Schließen",
+    "clear": "Leeren",
+    "clearConfirm": "Alle Auswahlen vom Schein entfernen?",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "empty": "Dein Schein ist leer. Klicke auf einer Spielseite in einer Marktzeile auf „Auf den Schein“; eine Auswahl pro Spiel, höchstens {max} Spiele.",
+    "toMatches": "Zu den Spielen",
+    "live": "läuft",
+    "over": "Über 2,5",
+    "under": "Unter 2,5",
+    "bttsYes": "Beide treffen: Ja",
+    "bttsNo": "Beide treffen: Nein",
+    "status": {
+      "pending": "offen",
+      "won": "gewonnen",
+      "lost": "verloren",
+      "empty": "leer"
+    },
+    "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig. Der Schein wird nur in diesem Browser gespeichert.",
+    "shareNote": "Wahrscheinlichkeiten des statistischen Modells; keine Wettempfehlung.",
+    "pageTitle": "Mein Schein",
+    "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser."
   }
 }
