@@ -45,12 +45,31 @@ test.describe('@static site', () => {
 });
 
 test.describe('@static erişim kuralları', () => {
+  // SEO Faz 0 (2026-10-17): account pages still bounce anonymous visitors to the
+  // sign-in; the members' prediction pages answer 200 with a noindex login wall
+  // (Google keeps the URL, no 307 chain); legacy public paths 301 to the site.
   test('üye sayfaları oturumsuz girişe yönlendirir', async ({ request }) => {
-    for (const path of ['/en/predictions', '/en/dashboard', '/live', '/match/1']) {
+    for (const path of ['/en/dashboard', '/en/account', '/favorites']) {
       const res = await request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBeGreaterThanOrEqual(300);
       expect(res.status(), path).toBeLessThan(400);
       expect(res.headers()['location'] || '', path).toMatch(/\/login\?callbackUrl=/);
+    }
+  });
+
+  test('tahmin sayfaları oturumsuz 200 + noindex giriş duvarı döner', async ({ request }) => {
+    const res = await request.get('/en/predictions', { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toMatch(/<meta name="robots" content="noindex/);
+    expect(html).toMatch(/href="\/en\/login[^"]*"[^>]*rel="nofollow"|rel="nofollow"[^>]*href="\/en\/login/);
+  });
+
+  test('eski herkese açık yollar yerelleştirilmiş siteye 301 gider', async ({ request }) => {
+    for (const [path, to] of [['/live', '/en/matches'], ['/match/1', '/en/predictions/1'], ['/analysis/arsenal-vs-chelsea-123', '/en/matches/arsenal-vs-chelsea-123'], ['/leaderboard', '/en/performance']]) {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(301);
+      expect(res.headers()['location'] || '', path).toMatch(new RegExp(to.replace(/\//g, '\\/') + '$'));
     }
   });
 
