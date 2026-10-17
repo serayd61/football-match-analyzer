@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { SLIP_STORAGE_KEY, parseStoredSlip, serializeSlip, toggleLeg, removeLeg, hasLeg, type SlipLeg, type AddOutcome } from '@/lib/site/slip-rule';
+import { SLIP_STORAGE_KEY, parseStoredSlip, serializeSlip, toggleLeg, removeLeg, hasLeg, type SlipLeg, type AddOutcome, type LegId } from '@/lib/site/slip-rule';
 
 // ============================================================================
 // Kuponum — istemci durumu (slip-1.0). localStorage'da durur; sekme/pencere arası
@@ -15,7 +15,7 @@ interface SlipCtx {
   open: boolean;
   setOpen: (v: boolean) => void;
   toggle: (leg: SlipLeg) => AddOutcome;
-  remove: (fixtureId: number) => void;
+  remove: (leg: LegId) => void;
   clear: () => void;
   has: (leg: Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'>) => boolean;
   /** son işlem geri bildirimi (kısa süreli) */
@@ -52,7 +52,7 @@ export function SlipProvider({ children }: { children: ReactNode }) {
     setFlash({ outcome: r.outcome, at: Date.now() });
     return r.outcome;
   }, [commit]);
-  const remove = useCallback((fixtureId: number) => commit(removeLeg(read(), fixtureId)), [commit]);
+  const remove = useCallback((leg: LegId) => commit(removeLeg(read(), leg)), [commit]);
   const clear = useCallback(() => commit([]), [commit]);
   const has = useCallback((leg: Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'>) => hasLeg(legs, leg), [legs]);
 

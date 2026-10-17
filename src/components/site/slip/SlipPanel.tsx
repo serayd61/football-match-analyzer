@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Copy, Check, Trash2, X } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { useSlip } from './SlipProvider';
-import { slipTotals, slipText, legOutcome, slipStatus, MAX_LEGS, type SlipLeg, type SlipResult } from '@/lib/site/slip-rule';
+import { slipTotals, slipText, legOutcome, slipStatus, legKey, MAX_LEGS, type SlipLeg, type SlipResult } from '@/lib/site/slip-rule';
 
 // ============================================================================
 // Kuponum — bacak listesi (slip-1.0). Çubuğun çekmecesinde ve /coupon sayfasında
@@ -35,7 +35,7 @@ export default function SlipPanel({ variant = 'drawer', from = 'from=slip' }: { 
   const [results, setResults] = useState<Record<number, SlipResult>>({});
   const [copied, setCopied] = useState(false);
 
-  const sorted = useMemo(() => [...legs].sort((a, b) => a.kickoff.localeCompare(b.kickoff) || a.fixtureId - b.fixtureId), [legs]);
+  const sorted = useMemo(() => [...legs].sort((a, b) => a.kickoff.localeCompare(b.kickoff) || a.fixtureId - b.fixtureId || legKey(a).localeCompare(legKey(b))), [legs]);
   const totals = useMemo(() => slipTotals(legs), [legs]);
   const status = slipStatus(legs, results);
 
@@ -87,7 +87,7 @@ export default function SlipPanel({ variant = 'drawer', from = 'from=slip' }: { 
           const hit = out == null ? null : out === 'won' || out === 'half_won' || out === 'void';
           const outLabel = out === 'void' ? t('outcome.void') : out === 'half_won' ? t('outcome.half_won') : out === 'half_lost' ? t('outcome.half_lost') : null;
           return (
-            <li key={l.fixtureId} className="flex items-start gap-3 py-2.5">
+            <li key={legKey(l)} className="flex items-start gap-3 py-2.5">
               <span className="num mt-0.5 w-5 shrink-0 text-center text-[12px] font-semibold text-s-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <Link href={`/predictions/${l.fixtureId}?back=${encodeURIComponent(from)}`} className="block truncate text-[14px] font-semibold hover:underline" onClick={() => setOpen(false)}>{l.homeName} – {l.awayName}</Link>
@@ -97,13 +97,13 @@ export default function SlipPanel({ variant = 'drawer', from = 'from=slip' }: { 
                   {hit == null && r?.status === 'started' && <span className="text-[12px] text-s-muted"> · {t('live')}</span>}
                 </p>
               </div>
-              <button type="button" onClick={() => remove(l.fixtureId)} className="btn btn-ghost btn-xs !px-1.5 shrink-0" aria-label={t('remove')} title={t('remove')}><X size={14} aria-hidden /></button>
+              <button type="button" onClick={() => remove(l)} className="btn btn-ghost btn-xs !px-1.5 shrink-0" aria-label={t('remove')} title={t('remove')}><X size={14} aria-hidden /></button>
             </li>
           );
         })}
       </ol>
       <dl className="mt-3 grid grid-cols-3 gap-3 border-t border-s-line pt-3 text-[13px]">
-        <div><dt className="text-[11.5px] text-s-muted">{t('legs')}</dt><dd className="num font-semibold">{totals.n}/{MAX_LEGS}</dd></div>
+        <div><dt className="text-[11.5px] text-s-muted">{t('legs')}</dt><dd className="num font-semibold">{totals.n}/{MAX_LEGS}</dd>{totals.fixtures < totals.n && <dd className="text-[11px] text-s-muted">{t('fixtures', { n: totals.fixtures })}</dd>}</div>
         <div><dt className="text-[11.5px] text-s-muted">{t('totalOdds')}</dt><dd className="num font-semibold">{totals.totalOdds != null ? fo(totals.totalOdds) : '–'}</dd>{totals.missingOdds > 0 && <dd className="text-[11px] text-s-muted">{t('missingOdds', { n: totals.missingOdds })}</dd>}</div>
         <div><dt className="text-[11.5px] text-s-muted">{t('jointP')}</dt><dd className="num font-semibold">{pct(totals.jointP)}</dd></div>
       </dl>

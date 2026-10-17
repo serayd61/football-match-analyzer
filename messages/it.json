@@ -1687,9 +1687,9 @@
     "remove": "Togli dalla schedina",
     "started": "Partita iniziata, non si può aggiungere",
     "full": "Schedina piena (max {max} partite)",
-    "replaced": "Selezione di questa partita sostituita",
+    "replaced": "Selezione in questo mercato sostituita",
     "colSlip": "Schedina",
-    "legs": "Partite",
+    "legs": "Eventi",
     "totalOdds": "Quota totale",
     "totalOddsShort": "Quota",
     "jointP": "Probabilità del modello",
@@ -1700,7 +1700,7 @@
     "clearConfirm": "Togliere tutte le selezioni dalla schedina?",
     "copy": "Copia",
     "copied": "Copiato",
-    "empty": "La schedina è vuota. Clicca \"Aggiungi alla schedina\" su una riga di mercato della pagina partita; una selezione per partita, al massimo {max} partite.",
+    "empty": "La schedina è vuota. Scegli dall'area \"Aggiungi alla schedina\" di una pagina partita; puoi scegliere più mercati della stessa partita, al massimo {max} eventi.",
     "toMatches": "Vai alle partite",
     "live": "in corso",
     "over": "Over 2,5",
@@ -1713,13 +1713,13 @@
       "lost": "persa",
       "empty": "vuota"
     },
-    "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti. La schedina è salvata solo in questo browser.",
+    "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti; eventi della stessa partita non sono indipendenti. La schedina è salvata solo in questo browser.",
     "shareNote": "Probabilità del modello statistico; non è un consiglio di scommessa.",
     "pageTitle": "La mia schedina",
     "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser.",
     "dnbShort": "rimborso in caso di pareggio",
     "gridTitle": "Aggiungi alla schedina",
-    "gridLead": "Clicca una selezione per metterla in schedina. Una selezione per partita; la nuova sostituisce la vecchia. Modello % · quota bookmaker (– se assente).",
+    "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · quota bookmaker (– se assente).",
     "g1x2": "Esito finale (1X2)",
     "gOu": "Over/Under 2,5",
     "gBtts": "Goal / No goal",
@@ -1731,6 +1731,7 @@
       "void": "rimborsata",
       "half_won": "mezza vinta",
       "half_lost": "mezza persa"
-    }
+    },
+    "fixtures": "{n} partite"
   }
 }

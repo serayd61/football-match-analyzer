@@ -1687,9 +1687,9 @@
     "remove": "Vom Schein entfernen",
     "started": "Spiel läuft bereits, kann nicht hinzugefügt werden",
     "full": "Schein ist voll (max. {max} Spiele)",
-    "replaced": "Auswahl für dieses Spiel wurde ersetzt",
+    "replaced": "Auswahl in diesem Markt wurde ersetzt",
     "colSlip": "Schein",
-    "legs": "Spiele",
+    "legs": "Positionen",
     "totalOdds": "Gesamtquote",
     "totalOddsShort": "Quote",
     "jointP": "Modellwahrscheinlichkeit",
@@ -1700,7 +1700,7 @@
     "clearConfirm": "Alle Auswahlen vom Schein entfernen?",
     "copy": "Kopieren",
     "copied": "Kopiert",
-    "empty": "Dein Schein ist leer. Klicke auf einer Spielseite in einer Marktzeile auf „Auf den Schein“; eine Auswahl pro Spiel, höchstens {max} Spiele.",
+    "empty": "Dein Schein ist leer. Wähle im Bereich „Auf den Schein“ einer Spielseite; mehrere Märkte eines Spiels sind möglich, höchstens {max} Positionen.",
     "toMatches": "Zu den Spielen",
     "live": "läuft",
     "over": "Über 2,5",
@@ -1713,13 +1713,13 @@
       "lost": "verloren",
       "empty": "leer"
     },
-    "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig. Der Schein wird nur in diesem Browser gespeichert.",
+    "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig; Positionen desselben Spiels sind nicht unabhängig. Der Schein wird nur in diesem Browser gespeichert.",
     "shareNote": "Wahrscheinlichkeiten des statistischen Modells; keine Wettempfehlung.",
     "pageTitle": "Mein Schein",
     "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser.",
     "dnbShort": "Unentschieden: Einsatz zurück",
     "gridTitle": "Auf den Schein",
-    "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Eine Auswahl pro Spiel; eine neue ersetzt die alte. Modell % · Buchmacherquote (– falls keine).",
+    "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Mehrere Märkte eines Spiels sind möglich (z. B. 1 + Über 2,5 + Beide treffen); im selben Markt ersetzt die neue die alte. Modell % · Buchmacherquote (– falls keine).",
     "g1x2": "Spielausgang (1X2)",
     "gOu": "Über/Unter 2,5",
     "gBtts": "Beide treffen",
@@ -1731,6 +1731,7 @@
       "void": "zurück",
       "half_won": "halb gewonnen",
       "half_lost": "halb verloren"
-    }
+    },
+    "fixtures": "{n} Spiele"
   }
 }

@@ -10,15 +10,26 @@ const leg = (over: Partial<SlipLeg> = {}): SlipLeg => ({
   market: '1x2', selection: '2', p: 0.65, odds: 1.55, addedAt: '2026-10-17T11:00:00.000Z', ...over,
 });
 
-test('ekle / aynı seçimi tekrar ekle (çıkar) / aynı maçın başka seçimi (değiştir)', () => {
+test('ekle / aynı seçimi tekrar ekle (çıkar) / aynı pazarın başka seçimi (değiştir) / aynı maçın başka pazarı (ekle)', () => {
   const a = toggleLeg([], leg(), NOW);
   assert.equal(a.outcome, 'added'); assert.equal(a.legs.length, 1);
   const b = toggleLeg(a.legs, leg(), NOW);
   assert.equal(b.outcome, 'removed'); assert.equal(b.legs.length, 0);
-  const c = toggleLeg(a.legs, leg({ market: 'ou25', selection: 'over', p: 0.61, odds: 1.7 }), NOW);
-  assert.equal(c.outcome, 'replaced'); assert.equal(c.legs.length, 1); assert.equal(c.legs[0].market, 'ou25');
-  assert.ok(hasLeg(c.legs, { fixtureId: 5781774, market: 'ou25', selection: 'over' }));
-  assert.ok(!hasLeg(c.legs, { fixtureId: 5781774, market: '1x2', selection: '2' }));
+  const c = toggleLeg(a.legs, leg({ selection: '1', p: 0.14 }), NOW);
+  assert.equal(c.outcome, 'replaced'); assert.equal(c.legs.length, 1); assert.equal(c.legs[0].selection, '1');
+  // slip-1.2: aynı maçtan 1 + Üst 2,5 + KG Var üç ayrı bacak
+  const d = toggleLeg(a.legs, leg({ market: 'ou25', selection: 'over', p: 0.61, odds: 1.7 }), NOW);
+  assert.equal(d.outcome, 'added'); assert.equal(d.legs.length, 2);
+  const e = toggleLeg(d.legs, leg({ market: 'btts', selection: 'yes', p: 0.56, odds: null }), NOW);
+  assert.equal(e.outcome, 'added'); assert.equal(e.legs.length, 3);
+  assert.ok(hasLeg(e.legs, { fixtureId: 5781774, market: '1x2', selection: '2' }));
+  assert.ok(hasLeg(e.legs, { fixtureId: 5781774, market: 'ou25', selection: 'over' }));
+  const f = toggleLeg(e.legs, leg({ market: 'ou25', selection: 'under', p: 0.39, odds: 2.1 }), NOW);
+  assert.equal(f.outcome, 'replaced'); assert.equal(f.legs.length, 3);
+  assert.ok(!hasLeg(f.legs, { fixtureId: 5781774, market: 'ou25', selection: 'over' }));
+  assert.equal(slipTotals(f.legs).fixtures, 1);
+  assert.equal(removeLeg(f.legs, { fixtureId: 5781774, market: 'btts', selection: 'yes' }).length, 2);
+  assert.equal(removeLeg(f.legs, 5781774).length, 0);
 });
 
 test('başlamış maç eklenmez; kupon doluysa yeni maç girmez', () => {
@@ -63,6 +74,7 @@ test('depo okuma: bozuk / eksik / yinelenen / fazla kayıt güvenle süzülür; 
   assert.deepEqual(parseStoredSlip(JSON.stringify([leg({ market: '1x2', selection: 'over' as any })])), []);
   const dup = parseStoredSlip(JSON.stringify([leg(), leg({ selection: '1' })]));
   assert.equal(dup.length, 1);
+  assert.equal(parseStoredSlip(JSON.stringify([leg(), leg({ market: 'ou25', selection: 'over' })])).length, 2);
   const many = parseStoredSlip(JSON.stringify(Array.from({ length: MAX_LEGS + 5 }, (_, i) => leg({ fixtureId: 1 + i }))));
   assert.equal(many.length, MAX_LEGS);
   const legs = [leg(), leg({ fixtureId: 2, odds: null })];
