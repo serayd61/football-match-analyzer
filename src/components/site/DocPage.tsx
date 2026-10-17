@@ -1,3 +1,4 @@
+import type React from 'react';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import type { Locale } from '@/i18n/routing';
@@ -11,8 +12,8 @@ import { breadcrumbJsonLd } from '@/lib/site/jsonld';
 // Long-form pages (methodology, about, privacy, terms). Content lives in
 // messages/*.json as { title, lead, updated?, sections: [{ h, p: [] }] } so
 // every locale carries a complete, independently reviewable text.
-export type DocKey = 'methodology' | 'about' | 'privacy' | 'terms';
-export interface DocSection { h: string; p: string[]; /** optional product screenshot, alt localized in messages */ img?: { id: ContentImageId; alt: string } }
+export type DocKey = 'methodology' | 'about' | 'privacy' | 'terms' | 'glossary';
+export interface DocSection { h: string; p: string[]; /** optional product screenshot, alt localized in messages */ img?: { id: ContentImageId; alt: string }; /** stable anchor (glossary terms); defaults to s{n} */ id?: string }
 
 export async function docMetadata(locale: string, key: DocKey): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: `docs.${key}` });
@@ -21,7 +22,7 @@ export async function docMetadata(locale: string, key: DocKey): Promise<Metadata
   return { title, description: t('lead'), alternates: alternatesFor(locale as Locale, `/${key}`) };
 }
 
-export default async function DocPage({ locale, doc, updated }: { locale: string; doc: DocKey; updated?: string }) {
+export default async function DocPage({ locale, doc, updated, extra, children }: { locale: string; doc: DocKey; updated?: string; /** extra JSON-LD blocks */ extra?: React.ReactNode; /** rendered after the sections (related links) */ children?: React.ReactNode }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations(`docs.${doc}`);
   const tc = await getTranslations('common');
@@ -32,19 +33,20 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(locale as Locale, [{ name: tn('home'), path: '/' }, { name: t('title'), path: `/${doc}` }])} />
+      {extra}
       <div className="max-w-3xl">
       <PageTitle title={t('title')} lead={t('lead')} />
       {updated && <p className="text-xs text-s-muted">{tc('lastUpdated')}: {f.dateTime(new Date(`${updated}T12:00:00Z`), { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
       <nav aria-label={tc('contents')} className="mt-6 border-y border-s-line py-3 text-sm">
         <ol className="grid gap-1 sm:grid-cols-2">
           {sections.map((s, i) => (
-            <li key={i}><a href={`#s${i + 1}`} className="text-s-muted hover:text-s-ink hover:underline underline-offset-4">{s.h}</a></li>
+            <li key={i}><a href={`#${s.id ?? `s${i + 1}`}`} className="text-s-muted hover:text-s-ink hover:underline underline-offset-4">{s.h}</a></li>
           ))}
         </ol>
       </nav>
       <div className="mt-8 space-y-10">
         {sections.map((s, i) => (
-          <section key={i} id={`s${i + 1}`} className="scroll-mt-20">
+          <section key={i} id={s.id ?? `s${i + 1}`} className="scroll-mt-20">
             <h2 className="text-2xl">{s.h}</h2>
             {s.img && CONTENT_IMAGES[s.img.id] && (
               <figure className="mt-4 overflow-hidden rounded-xl border border-s-line bg-s-surface">
@@ -66,6 +68,7 @@ export default async function DocPage({ locale, doc, updated }: { locale: string
           </section>
         ))}
       </div>
+      {children}
       </div>
     </Page>
   );

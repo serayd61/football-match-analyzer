@@ -25,7 +25,9 @@
     "tryFree": "Try free for 7 days",
     "picks": "Fits record",
     "matches": "Matches",
-    "coupon": "Daily coupon"
+    "coupon": "Daily coupon",
+    "teams": "Clubs",
+    "glossary": "Glossary"
   },
   "locale": {
     "label": "Language"
@@ -505,7 +507,8 @@
       "empty": "No settled matches in this window yet.",
       "otherLeagues": "Results in other leagues"
     },
-    "thisWeekLeaderLevel": "{leader} lead the {league} on goal difference, level on {pts} points with {second} after {played} matches."
+    "thisWeekLeaderLevel": "{leader} lead the {league} on goal difference, level on {pts} points with {second} after {played} matches.",
+    "recordPage": "Full {league} track record."
   },
   "docs": {
     "methodology": {
@@ -758,6 +761,121 @@
           "h": "9. Governing law",
           "p": [
             "These terms are governed by Swiss law. Place of jurisdiction is the seat of the operator in Switzerland, subject to mandatory consumer-protection rules that give you a different forum. We may update these terms; the current version with its date is always published on this page."
+          ]
+        }
+      ]
+    },
+    "glossary": {
+      "title": "Glossary",
+      "metaTitle": "Glossary: xG, xPTS, Brier & more",
+      "lead": "The terms behind the predictions in plain language: expected goals, expected points, ELO, Dixon-Coles, Poisson, Brier score, calibration and the three markets.",
+      "moreNav": "Related",
+      "linkToday": "Today's matches",
+      "sections": [
+        {
+          "id": "xg",
+          "h": "Expected goals (xG)",
+          "p": [
+            "Expected goals measure the quality of chances rather than the goals that happened to go in. Every shot gets a probability of scoring from its position, angle, assist type and body part; adding up those probabilities over a match gives each team's xG. A team with 2.1 xG created chances worth about two goals, whatever the final score.",
+            "xG is a better guide to future results than goals because it strips out finishing luck and goalkeeping variance. Over a season a team's goal difference tends to move towards its xG difference.",
+            "On this site, the goal expectations on a match page are the model's own attack-and-defence estimates, not shot-based xG. The methodology page explains the difference."
+          ]
+        },
+        {
+          "id": "xg-table",
+          "h": "xG table",
+          "p": [
+            "An xG table re-orders a league by expected goals for and against instead of goals scored and conceded. It shows which teams are over- or under-performing their chance quality: a side sitting 3rd with the 8th-best xG difference is riding good finishing or a goalkeeper in form, and is likely to drift back.",
+            "Read it together with the real table. Big gaps between actual and expected goal difference usually close over the next ten to fifteen matches."
+          ]
+        },
+        {
+          "id": "xpts",
+          "h": "Expected points (xPTS)",
+          "p": [
+            "Expected points convert a match's probabilities into a points figure: win probability × 3 plus draw probability × 1. A team with a 50% win chance and a 25% draw chance has 1.75 expected points from that fixture.",
+            "Summed over a season, xPTS says how many points a team's performances merited. A club with 20 points and 15 xPTS has been fortunate; one with 15 points and 20 xPTS has been playing better than its position suggests."
+          ]
+        },
+        {
+          "id": "elo",
+          "h": "ELO rating",
+          "p": [
+            "ELO is a rating that moves after every match: the winner takes points from the loser, and the amount depends on how surprising the result was. Beating a much stronger side moves the ratings a lot; beating a weaker one barely moves them. The rating difference between two teams maps directly to a win probability.",
+            "ELO is simple and robust, which is why it is the usual baseline for football models. Our model uses a team-strength rating in the same spirit as one of its inputs; the methodology page lists them all."
+          ]
+        },
+        {
+          "id": "dixon-coles",
+          "h": "Dixon-Coles model",
+          "p": [
+            "Dixon-Coles (1997) is a statistical model that gives every team an attack rating and a defence rating, plus a home advantage term. The expected goals of a fixture follow from those ratings, and a Poisson distribution turns them into probabilities for every scoreline.",
+            "Its two refinements over a plain Poisson model are a correction for low-scoring draws (0–0 and 1–1 happen more often than independence predicts) and time decay, so recent matches weigh more than old ones.",
+            "This is the model behind the 1X2 probabilities on this site. The ratings are refitted as results come in."
+          ]
+        },
+        {
+          "id": "poisson",
+          "h": "Poisson distribution",
+          "p": [
+            "The Poisson distribution describes how many times a rare event happens in a fixed window when it has a known average rate. Goals fit it well: if a team is expected to score 1.5 goals, Poisson gives the probability of exactly 0, 1, 2, 3 or more goals.",
+            "Combining the two teams' goal distributions gives a probability for every scoreline, and adding scorelines up gives the home win, draw and away win probabilities, the over/under 2.5 line and both teams to score."
+          ]
+        },
+        {
+          "id": "probability",
+          "h": "Probability, not prediction",
+          "p": [
+            "A probability says how often an outcome happens across many similar matches, not what will happen in this one. A 60% pick is expected to lose four times in ten; a run of five losses in a row is normal, not a sign that the model is broken.",
+            "The useful question is not whether a single pick came in but whether picks published at 60% land about 60% of the time over hundreds of matches. That is what calibration and the Brier score measure."
+          ]
+        },
+        {
+          "id": "1x2",
+          "h": "1X2",
+          "p": [
+            "1X2 is the full-time result market: 1 for a home win, X for a draw, 2 for an away win. The three probabilities on a match page add up to 100%, and the model's pick is the most likely of the three.",
+            "Draws are the hardest outcome to call; a model rarely makes a draw its pick even when the draw probability is close to 30%."
+          ]
+        },
+        {
+          "id": "over-under",
+          "h": "Over/under 2.5 goals",
+          "p": [
+            "The over/under 2.5 line asks whether a match will have three or more goals (over) or two or fewer (under). It is scored on the final score and does not depend on who wins.",
+            "The probability comes straight from the scoreline distribution. Leagues differ: Serie A sits below the big-league average, the Bundesliga above it, and the match page shows how the two teams' recent matches have gone against the line."
+          ]
+        },
+        {
+          "id": "btts",
+          "h": "Both teams to score",
+          "p": [
+            "Both teams to score asks whether each side scores at least once. A 2–1 or 1–1 is a yes; a 2–0 or 0–0 is a no. It is settled from the final score.",
+            "The probability is the share of scorelines in which neither team is kept to zero. It rises when both attacks are rated well and both defences poorly."
+          ]
+        },
+        {
+          "id": "brier",
+          "h": "Brier score",
+          "p": [
+            "The Brier score measures how good a set of probabilities was, not just whether the pick won. For each match the published probabilities are compared with the outcome (1 for what happened, 0 for the rest) and the squared differences are added; the Brier score is the average over all matches.",
+            "0 is perfect, 0.667 is a uniform one-third guess across three outcomes, and a typical well-fitted football model lands around 0.60. Lower is better. It is shown on the performance page and on every league's track record."
+          ]
+        },
+        {
+          "id": "calibration",
+          "h": "Calibration",
+          "p": [
+            "A model is calibrated when its probabilities match reality: picks published at 55% should land about 55% of the time, those at 70% about 70%. The calibration chart on the performance page groups settled picks by published confidence and plots the observed hit rate against it.",
+            "Points above the diagonal mean the model was too modest, points below mean it was overconfident. Our confidence figures pass through a calibration curve fitted on the settled record, so the shown confidence is the calibrated one."
+          ]
+        },
+        {
+          "id": "algorithm",
+          "h": "How a football prediction algorithm works",
+          "p": [
+            "A prediction algorithm turns past results into probabilities for future matches in four steps. First it rates every team's attack and defence from its results, weighting recent matches more. Second it combines the two teams' ratings with home advantage into an expected number of goals for each side. Third it turns those expectations into a probability for every scoreline, usually with a Poisson distribution. Fourth it sums the scorelines into the markets: 1X2, over/under 2.5 and both teams to score.",
+            "What makes the output trustworthy is not the model itself but the record: every probability stored with a timestamp before kick-off, settled automatically, and measured with hit rate, Brier score and calibration. That record is public on this site."
           ]
         }
       ]
@@ -1488,7 +1606,8 @@
       "colCs": "Clean sheet",
       "leagueAvgNote": "{league} average this season: {avg} goals per match.",
       "modelLockedVerdict": "The pick above is settled. Members also see the full probability split, expected goals, the goal markets and the risk label as they stood before kick-off:",
-      "resultsArchive": "{league} results"
+      "resultsArchive": "{league} results",
+      "teamPage": "{team}: fixtures & form"
     }
   },
   "coupon": {
@@ -1818,5 +1937,110 @@
     "telegramLabel": "Telegram",
     "telegramNote": "Daily selections and announcements; quickest way to reach us.",
     "moreLead": "Before you write, the answer may already be on these pages:"
+  },
+  "dayHub": {
+    "metaTitleToday": "Today's football matches & form",
+    "metaTitleTomorrow": "Tomorrow's football matches & form",
+    "metaTitleYesterday": "Yesterday's football results & verdicts",
+    "metaTitleDate": "Football matches on {date}",
+    "metaDescription": "{count, plural, =0 {No covered fixtures} =1 {# covered fixture} other {# covered fixtures}} in {leagues, plural, =1 {# league} other {# leagues}} on {date}: kick-off times, league positions, form and head-to-head. Model probabilities for members.",
+    "eyebrow": "Day view",
+    "titleToday": "Today's matches",
+    "titleTomorrow": "Tomorrow's matches",
+    "titleYesterday": "Yesterday's results",
+    "titleDate": "Matches on {date}",
+    "lead": "Every fixture of {date} in the leagues the model rates. Open a match for kick-off, league position, form and head-to-head.",
+    "weekHub": "All matches this week",
+    "dayNav": "Day navigation",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "sCount": "{count, plural, =1 {# covered match} other {# covered matches}} across {leagues, plural, =1 {# league} other {# leagues}} on {date}.",
+    "sFirstLast": "The first kick-off is {home} vs {away} ({league}) at {time}; the last is {lhome} vs {laway} at {ltime}.",
+    "sSingle": "The only fixture is {home} vs {away} ({league}) at {time}.",
+    "sSettled": "{settled, plural, =1 {# of them is settled} other {# of them are settled}}; the model’s 1X2 pick came in {won} of {n}.",
+    "sSettledNoVerdict": "{settled, plural, =1 {# of them is settled} other {# of them are settled}}.",
+    "empty": "No covered fixtures on this day",
+    "emptyLead": "The model rates eleven leagues; on free days there is nothing to list. Use the day links to move on.",
+    "faqH": "Questions about this day",
+    "faqCountQ": "How many matches are there on {date}?",
+    "faqCountA": "Leagues with fixtures: {leagues}.",
+    "faqFirstQ": "When is the first kick-off on {date}?",
+    "faqFirstA": "{home} vs {away} in the {league} kicks off at {time}.",
+    "faqProbQ": "Where are the probabilities for these matches?",
+    "faqProbA": "Each match page shows the public facts: table, form and head-to-head. The model’s 1X2 probabilities, expected goals and confidence are published for members before kick-off; once a match is settled, the pick and its outcome are public."
+  },
+  "teams": {
+    "metaTitle": "Club pages: fixtures, form & results",
+    "metaDescription": "Every club in the {leagues} leagues the model rates: next fixtures, latest results, form, goals per match and the model’s settled record on its matches.",
+    "title": "Clubs",
+    "lead": "{count} clubs in the {leagues} leagues the model rates. Each club page carries the next fixtures, the latest results, form, goals per match and how the model’s settled predictions on that club have gone.",
+    "leaguePage": "League page"
+  },
+  "team": {
+    "metaTitle": "{team}: fixtures, results & form",
+    "metaDescription": "{team} ({league}): next match, latest results, form, goals per match and how the model’s predictions on {team} matches have gone.",
+    "h1": "{team}",
+    "lead": "Fixtures, results and form of {team} in the {league}, plus the model’s settled record on the club’s matches.",
+    "homeVenue": "Home ground: {venue}",
+    "sPosition": "{team} sit {pos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} in the {league} after {played} matches with {pts} points ({w, plural, =1 {# win} other {# wins}}, {d, plural, =1 {# draw} other {# draws}}, {l, plural, =1 {# defeat} other {# defeats}}, goals {gf}–{ga}).",
+    "sForm": "Last {n} results: {form}.",
+    "sNext": "Next: {home} vs {away} ({league}) on {date}{venue}.",
+    "venueAt": " at {venue}",
+    "sGoals": "In the last {n} matches {team} averaged {gf} goals scored and {ga} conceded; {over} ended over 2.5 goals and {btts} saw both teams score.",
+    "sRecord": "The model’s 1X2 pick on {team} matches came in {won} of {n} settled matches ({acc}).",
+    "sRecordNone": "The model’s settled record on {team} matches is still too small to summarise.",
+    "statPos": "Position",
+    "statPts": "Points",
+    "statWdl": "W–D–L",
+    "statGoals": "Goals",
+    "statForm": "Form",
+    "upcomingH": "Upcoming fixtures",
+    "upcomingSub": "Open a match for the pre-match overview.",
+    "upcomingEmpty": "No upcoming fixtures published yet.",
+    "membersLead": "The model’s 1X2 probabilities, expected goals and confidence for {team} matches are published for members before kick-off.",
+    "resultsH": "Latest results",
+    "resultsSub": "Final score and the model’s settled pick, newest first.",
+    "archive": "{league} results archive",
+    "colDate": "Date",
+    "colMatch": "Match",
+    "colScore": "Score",
+    "colPick": "Model pick",
+    "colOutcome": "Outcome",
+    "recordNote": "Settled picks are public; upcoming predictions are for members.",
+    "recordLink": "{league} track record",
+    "faqH": "Frequently asked",
+    "faqNextQ": "When is {team}'s next match?",
+    "faqFormQ": "How are {team} in form?",
+    "faqPosQ": "Where are {team} in the {league} table?",
+    "faqRecordQ": "How accurate has the model been on {team} matches?",
+    "otherTeams": "Other {league} clubs",
+    "leaguePage": "{league} page"
+  },
+  "perfLeague": {
+    "metaTitle": "{league} prediction accuracy",
+    "metaDescription": "The model’s settled {league} ({country}) record: hit rate, Brier score, return at closing price, by month and market, and the latest settled matches with their verdicts.",
+    "eyebrow": "Track record",
+    "h1": "{league} track record",
+    "lead": "Every {league} prediction timestamped before kick-off and settled against the final score. Nothing is removed afterwards.",
+    "allLeagues": "All leagues",
+    "methodLink": "How the numbers are defined",
+    "glossaryLink": "Brier score explained",
+    "sSummary": "Since {from} the model’s 1X2 pick came in {won} of {n} settled {league} matches ({acc}), with a Brier score of {brier}.",
+    "sMarkets": "Over/under 2.5 goals landed {ou} of the time ({ouN} matches) and both-teams-to-score {btts} ({bttsN}).",
+    "sRoi": "One unit on every 1X2 pick at the closing market price would have returned {roi} over {bets} matches.",
+    "sMonths": "By month: {list}.",
+    "recentH": "Latest settled {league} matches",
+    "recentSub": "Score and the model’s pre-match pick, newest first. Open a match for the full overview.",
+    "archive": "Results archive",
+    "membersH": "Every pick, with confidence and price",
+    "membersLead": "Members see each upcoming {league} prediction with its calibrated confidence, the market price and the goal markets.",
+    "faqH": "Frequently asked",
+    "faqAccQ": "How accurate are the {league} predictions?",
+    "faqBrierQ": "What is a Brier score?",
+    "faqBrierA": "The Brier score is the mean squared error of the published probabilities against what happened: 0 is perfect, 0.667 is a uniform guess across three outcomes. Lower is better.",
+    "faqHowQ": "How is the {league} record computed?",
+    "faqHowA": "Every {league} prediction is stored with a timestamp before kick-off and settled automatically from the final score. The hit rate counts the 1X2 pick, the Brier score the full probability split, and the return assumes one unit on each pick at the last captured market price.",
+    "leaguePage": "{league} page",
+    "otherLeagues": "Other leagues"
   }
 }

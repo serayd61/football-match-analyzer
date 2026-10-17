@@ -20,6 +20,10 @@ import PublicMatchList from '@/components/site/PublicMatchList';
 import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
 import { SITE_URL } from '@/lib/seo';
 import MountEvent from '@/components/analytics/MountEvent';
+import { parseDayHub } from '@/lib/site/day-hub';
+import { listTeams } from '@/lib/site/team-data';
+import type { TeamEntry } from '@/lib/site/teams';
+import DayHub, { dayHubMetadata } from '@/components/site/DayHub';
 
 // ============================================================================
 // Herkese açık maç ön izlemesi (SEO, 2026-10-10)
@@ -41,6 +45,9 @@ async function load(slug: string): Promise<PublicMatch | null> {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  // SEO Faz 1b: /matches/today|tomorrow|yesterday|yyyy-mm-dd share this segment with the match slugs.
+  const hub = parseDayHub(params.slug);
+  if (hub) return dayHubMetadata(params.locale, hub);
   const m = await load(params.slug);
   if (!m) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: 'matches.match' });
@@ -61,6 +68,8 @@ const score = (r: { homeScore: number | null; awayScore: number | null }) => (r.
 
 export default async function PublicMatchPage({ params }: { params: Params }) {
   unstable_setRequestLocale(params.locale);
+  const hub = parseDayHub(params.slug);
+  if (hub) return <DayHub locale={params.locale} hub={hub} />;
   const m = await load(params.slug);
   if (!m) notFound();
   if (!isCanonicalSlug(params.slug, m)) permanentRedirect(`/${params.locale}${matchPath(m)}`);
@@ -72,14 +81,17 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const tp = await getTranslations('paywall');
   const f = await getFormatter();
 
-  const [access, table, formHome, formAway, h2h, leagueUpcoming] = await Promise.all([
+  const [access, table, formHome, formAway, h2h, leagueUpcoming, teams] = await Promise.all([
     getSiteAccess(),
     getStandings(league.slug).catch(() => [] as StandingRow[]),
     m.homeId ? getTeamForm(m.homeId, 5, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
     m.awayId ? getTeamForm(m.awayId, 5, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
     m.homeId && m.awayId ? getHeadToHead(m.homeId, m.awayId, 6, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
     listPublicUpcoming(10).catch(() => [] as PublicMatch[]),
+    // SEO Faz 1b: links to both club pages
+    listTeams().catch(() => [] as TeamEntry[]),
   ]);
+  const teamLinks = teams.filter((x) => x.id === m.homeId || x.id === m.awayId);
   const unlocked = canSeeMatches(access);
   const twa = isTwa();
 
@@ -216,7 +228,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
                 <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictProb')}</dt><dd className="num mt-0.5 font-semibold">{pct0(v.p)}</dd></div>
                 <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictOutcome')}</dt><dd className={`mt-0.5 font-semibold ${v.outcome === 'won' ? 'text-s-win' : 'text-s-loss'}`}>{v.outcome === 'won' ? t('verdictWon') : t('verdictLost')}</dd></div>
               </dl>
-              <p className="mt-3 text-[13.5px] text-s-muted">{t('verdictNote')} <Link href={`/performance?league=${league.slug}`} className="underline underline-offset-4">{t('verdictRecord', { league: league.name })}</Link></p>
+              <p className="mt-3 text-[13.5px] text-s-muted">{t('verdictNote')} <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('verdictRecord', { league: league.name })}</Link></p>
             </section>
           )}
 
@@ -314,6 +326,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
         <Link href="/matches" className="underline underline-offset-4">{t('backHub')}</Link>
         <Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>
         <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{t('resultsArchive', { league: league.name })}</Link>
+        {teamLinks.map((tl) => <Link key={tl.slug} href={`/teams/${tl.slug}`} className="underline underline-offset-4">{t('teamPage', { team: tl.name })}</Link>)}
         <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link>
         <Link href="/performance" className="underline underline-offset-4">{tn('performance')}</Link>
       </nav>

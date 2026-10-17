@@ -25,7 +25,9 @@
     "tryFree": "7 Tage gratis testen",
     "picks": "Passende Spiele",
     "matches": "Spiele",
-    "coupon": "Tageskupon"
+    "coupon": "Tageskupon",
+    "teams": "Vereine",
+    "glossary": "Glossar"
   },
   "locale": {
     "label": "Sprache"
@@ -505,7 +507,8 @@
       "empty": "Noch keine abgerechneten Spiele in diesem Zeitraum.",
       "otherLeagues": "Resultate anderer Ligen"
     },
-    "thisWeekLeaderLevel": "{leader} führt die {league} nach {played} Spielen dank der Tordifferenz, punktgleich ({pts}) mit {second}."
+    "thisWeekLeaderLevel": "{leader} führt die {league} nach {played} Spielen dank der Tordifferenz, punktgleich ({pts}) mit {second}.",
+    "recordPage": "Ganze {league}-Bilanz."
   },
   "docs": {
     "methodology": {
@@ -758,6 +761,121 @@
           "h": "9. Anwendbares Recht",
           "p": [
             "Diese Bedingungen unterstehen Schweizer Recht. Gerichtsstand ist der Sitz des Betreibers in der Schweiz, vorbehältlich zwingender Konsumentenschutzvorschriften, die Ihnen einen anderen Gerichtsstand einräumen. Wir können diese Bedingungen aktualisieren; die aktuelle Fassung mit Datum steht immer auf dieser Seite."
+          ]
+        }
+      ]
+    },
+    "glossary": {
+      "title": "Glossar",
+      "metaTitle": "Glossar: xG, xPTS, Brier & mehr",
+      "lead": "Die Begriffe hinter den Prognosen, verständlich erklärt: Expected Goals, Expected Points, ELO, Dixon-Coles, Poisson, Brier-Score, Kalibrierung und die drei Märkte.",
+      "moreNav": "Weiterführend",
+      "linkToday": "Die Spiele von heute",
+      "sections": [
+        {
+          "id": "xg",
+          "h": "Expected Goals (xG)",
+          "p": [
+            "Expected Goals messen die Qualität der Torchancen statt der Tore, die zufällig gefallen sind. Jeder Schuss erhält aus Position, Winkel, Vorlagenart und Körperteil eine Torwahrscheinlichkeit; die Summe über ein Spiel ergibt den xG-Wert jedes Teams. Ein Team mit 2,1 xG hat Chancen im Wert von rund zwei Toren erspielt, egal wie es ausging.",
+            "xG sagt künftige Resultate besser voraus als Tore, weil Abschlussglück und Torhüterform herausgerechnet sind. Über eine Saison nähert sich die Tordifferenz eines Teams seiner xG-Differenz an.",
+            "Auf dieser Seite sind die Torerwartungen einer Spielseite die eigenen Angriffs- und Abwehrschätzungen des Modells, keine schussbasierten xG. Die Methodik-Seite erklärt den Unterschied."
+          ]
+        },
+        {
+          "id": "xg-table",
+          "h": "xG-Tabelle",
+          "p": [
+            "Eine xG-Tabelle ordnet eine Liga nach erwarteten statt nach erzielten und kassierten Toren. Sie zeigt, welche Teams über oder unter ihrer Chancenqualität liegen: Wer Dritter ist, aber nur die achtbeste xG-Differenz hat, lebt von guter Chancenverwertung oder einem starken Torhüter und fällt meist zurück.",
+            "Lies sie zusammen mit der echten Tabelle. Grosse Lücken zwischen tatsächlicher und erwarteter Tordifferenz schliessen sich in der Regel innerhalb von zehn bis fünfzehn Spielen."
+          ]
+        },
+        {
+          "id": "xpts",
+          "h": "Expected Points (xPTS)",
+          "p": [
+            "Expected Points übersetzen die Wahrscheinlichkeiten eines Spiels in Punkte: Siegwahrscheinlichkeit × 3 plus Remiswahrscheinlichkeit × 1. Ein Team mit 50 % Siegchance und 25 % Remischance hat aus dieser Partie 1,75 erwartete Punkte.",
+            "Über eine Saison summiert zeigt xPTS, wie viele Punkte die Leistungen eines Teams wert waren. Ein Verein mit 20 Punkten und 15 xPTS hatte Glück; einer mit 15 Punkten und 20 xPTS spielt besser, als sein Platz vermuten lässt."
+          ]
+        },
+        {
+          "id": "elo",
+          "h": "ELO-Rating",
+          "p": [
+            "ELO ist eine Bewertung, die sich nach jedem Spiel verschiebt: Der Sieger nimmt dem Verlierer Punkte ab, und zwar umso mehr, je überraschender das Resultat war. Ein Sieg gegen ein viel stärkeres Team bewegt die Ratings stark, einer gegen ein schwächeres kaum. Aus der Rating-Differenz zweier Teams folgt direkt eine Siegwahrscheinlichkeit.",
+            "ELO ist einfach und robust, darum ist es die übliche Referenz für Fussballmodelle. Unser Modell nutzt eine Teamstärke im gleichen Sinn als einen seiner Inputs; die Methodik-Seite listet alle auf."
+          ]
+        },
+        {
+          "id": "dixon-coles",
+          "h": "Dixon-Coles-Modell",
+          "p": [
+            "Dixon-Coles (1997) ist ein statistisches Modell, das jedem Team eine Angriffs- und eine Abwehrstärke sowie einen Heimvorteil zuweist. Daraus folgen die erwarteten Tore einer Partie, und eine Poisson-Verteilung macht daraus Wahrscheinlichkeiten für jedes Resultat.",
+            "Seine zwei Verbesserungen gegenüber einem reinen Poisson-Modell: eine Korrektur für torarme Unentschieden (0:0 und 1:1 kommen häufiger vor, als Unabhängigkeit erwarten liesse) und eine zeitliche Gewichtung, damit jüngere Spiele mehr zählen als alte.",
+            "Dieses Modell steht hinter den 1X2-Wahrscheinlichkeiten auf dieser Seite. Die Stärken werden mit jedem Resultat neu gefittet."
+          ]
+        },
+        {
+          "id": "poisson",
+          "h": "Poisson-Verteilung",
+          "p": [
+            "Die Poisson-Verteilung beschreibt, wie oft ein seltenes Ereignis in einem festen Zeitraum eintritt, wenn seine mittlere Rate bekannt ist. Tore passen gut dazu: Erwartet ein Team 1,5 Tore, liefert Poisson die Wahrscheinlichkeit für genau 0, 1, 2, 3 oder mehr Treffer.",
+            "Kombiniert man die Torverteilungen beider Teams, erhält man eine Wahrscheinlichkeit für jedes Resultat; summiert ergeben sich Heimsieg, Remis und Auswärtssieg, die Linie über/unter 2,5 Tore und «beide Teams treffen»."
+          ]
+        },
+        {
+          "id": "probability",
+          "h": "Wahrscheinlichkeit statt Vorhersage",
+          "p": [
+            "Eine Wahrscheinlichkeit sagt, wie oft ein Ausgang über viele ähnliche Spiele eintritt, nicht, was in diesem einen passiert. Ein 60-%-Tipp geht erwartungsgemäss vier von zehn Mal daneben; fünf Fehltipps in Folge sind normal, kein Zeichen eines kaputten Modells.",
+            "Die richtige Frage ist nicht, ob ein einzelner Tipp traf, sondern ob Tipps mit 60 % über hunderte Spiele in rund 60 % der Fälle eintreffen. Genau das messen Kalibrierung und Brier-Score."
+          ]
+        },
+        {
+          "id": "1x2",
+          "h": "1X2",
+          "p": [
+            "1X2 ist der Markt auf das Endresultat: 1 für Heimsieg, X für Unentschieden, 2 für Auswärtssieg. Die drei Wahrscheinlichkeiten auf einer Spielseite ergeben zusammen 100 %, und der Tipp des Modells ist der wahrscheinlichste der drei Ausgänge.",
+            "Unentschieden sind am schwersten zu treffen; ein Modell macht das Remis selten zum Tipp, selbst wenn seine Wahrscheinlichkeit nahe 30 % liegt."
+          ]
+        },
+        {
+          "id": "over-under",
+          "h": "Über/unter 2,5 Tore",
+          "p": [
+            "Die Linie über/unter 2,5 fragt, ob ein Spiel drei oder mehr Tore hat (über) oder höchstens zwei (unter). Sie wird am Endstand abgerechnet und hängt nicht davon ab, wer gewinnt.",
+            "Die Wahrscheinlichkeit folgt direkt aus der Resultatverteilung. Ligen unterscheiden sich: Die Serie A liegt unter dem Schnitt der grossen Ligen, die Bundesliga darüber, und die Spielseite zeigt, wie die letzten Partien beider Teams gegen die Linie ausgingen."
+          ]
+        },
+        {
+          "id": "btts",
+          "h": "Beide Teams treffen",
+          "p": [
+            "«Beide Teams treffen» fragt, ob jede Seite mindestens einmal trifft. Ein 2:1 oder 1:1 ist ein Ja, ein 2:0 oder 0:0 ein Nein. Abgerechnet wird am Endstand.",
+            "Die Wahrscheinlichkeit ist der Anteil der Resultate, in denen kein Team ohne Tor bleibt. Sie steigt, wenn beide Angriffe stark und beide Abwehrreihen schwach bewertet sind."
+          ]
+        },
+        {
+          "id": "brier",
+          "h": "Brier-Score",
+          "p": [
+            "Der Brier-Score misst, wie gut eine Reihe von Wahrscheinlichkeiten war, nicht nur, ob der Tipp traf. Für jedes Spiel werden die veröffentlichten Wahrscheinlichkeiten mit dem Ausgang verglichen (1 für das Eingetretene, 0 für den Rest), die quadrierten Abweichungen addiert; der Brier-Score ist der Durchschnitt über alle Spiele.",
+            "0 ist perfekt, 0,667 entspricht Raten mit je einem Drittel auf drei Ausgänge, ein gut gefittetes Fussballmodell landet typischerweise um 0,60. Tiefer ist besser. Er steht auf der Bilanz-Seite und in jeder Liga-Bilanz."
+          ]
+        },
+        {
+          "id": "calibration",
+          "h": "Kalibrierung",
+          "p": [
+            "Ein Modell ist kalibriert, wenn seine Wahrscheinlichkeiten der Realität entsprechen: Tipps mit 55 % sollten in rund 55 % der Fälle eintreffen, solche mit 70 % in rund 70 %. Das Kalibrierungsdiagramm auf der Bilanz-Seite gruppiert abgerechnete Tipps nach veröffentlichter Konfidenz und trägt die beobachtete Trefferquote dagegen auf.",
+            "Punkte über der Diagonalen heissen: Das Modell war zu bescheiden; Punkte darunter: zu selbstsicher. Unsere Konfidenzwerte laufen durch eine auf der Bilanz gefittete Kalibrierungskurve, die angezeigte Konfidenz ist also die kalibrierte."
+          ]
+        },
+        {
+          "id": "algorithm",
+          "h": "Wie ein Fussball-Prognosealgorithmus funktioniert",
+          "p": [
+            "Ein Prognosealgorithmus macht aus vergangenen Resultaten in vier Schritten Wahrscheinlichkeiten für künftige Spiele. Erstens bewertet er Angriff und Abwehr jedes Teams aus dessen Resultaten, jüngere stärker gewichtet. Zweitens verbindet er die Stärken beider Teams mit dem Heimvorteil zu einer erwarteten Torzahl pro Seite. Drittens macht er aus diesen Erwartungen eine Wahrscheinlichkeit für jedes Resultat, meist per Poisson-Verteilung. Viertens summiert er die Resultate zu den Märkten: 1X2, über/unter 2,5 und «beide Teams treffen».",
+            "Vertrauenswürdig macht das Ergebnis nicht das Modell, sondern die Bilanz: jede Wahrscheinlichkeit mit Zeitstempel vor dem Anstoss gespeichert, automatisch abgerechnet und mit Trefferquote, Brier-Score und Kalibrierung gemessen. Diese Bilanz ist auf dieser Seite öffentlich."
           ]
         }
       ]
@@ -1488,7 +1606,8 @@
       "colCs": "Zu null",
       "leagueAvgNote": "{league}-Schnitt diese Saison: {avg} Tore pro Spiel.",
       "modelLockedVerdict": "Der Tipp oben ist abgerechnet. Mitglieder sehen zusätzlich die ganze Wahrscheinlichkeitsverteilung, Expected Goals, Tormärkte und das Risikolabel, wie sie vor dem Anpfiff standen:",
-      "resultsArchive": "{league}-Resultate"
+      "resultsArchive": "{league}-Resultate",
+      "teamPage": "{team}: Spiele & Form"
     }
   },
   "coupon": {
@@ -1818,5 +1937,110 @@
     "telegramLabel": "Telegram",
     "telegramNote": "Tägliche Auswahl und Ankündigungen; der schnellste Weg zu uns.",
     "moreLead": "Bevor du schreibst: Die Antwort steht vielleicht schon hier:"
+  },
+  "dayHub": {
+    "metaTitleToday": "Fussball heute: Spiele & Form",
+    "metaTitleTomorrow": "Fussball morgen: Spiele & Form",
+    "metaTitleYesterday": "Fussball gestern: Resultate & Tipps",
+    "metaTitleDate": "Fussballspiele am {date}",
+    "metaDescription": "{count, plural, =0 {Keine Partien} =1 {# Partie} other {# Partien}} in {leagues, plural, =1 {# Liga} other {# Ligen}} am {date}: Anstosszeiten, Tabellenplatz, Form und direkter Vergleich. Modellwahrscheinlichkeiten für Mitglieder.",
+    "eyebrow": "Tagesansicht",
+    "titleToday": "Die Spiele von heute",
+    "titleTomorrow": "Die Spiele von morgen",
+    "titleYesterday": "Die Resultate von gestern",
+    "titleDate": "Spiele am {date}",
+    "lead": "Jede Partie des {date} in den Ligen, die das Modell bewertet. Öffne ein Spiel für Anstoss, Tabellenplatz, Form und direkten Vergleich.",
+    "weekHub": "Alle Spiele dieser Woche",
+    "dayNav": "Tagesnavigation",
+    "prevDay": "Vortag",
+    "nextDay": "Folgetag",
+    "sCount": "{count, plural, =1 {# Partie} other {# Partien}} in {leagues, plural, =1 {# Liga} other {# Ligen}} am {date}.",
+    "sFirstLast": "Den Anfang macht {home} – {away} ({league}) um {time}; den Schluss {lhome} – {laway} um {ltime}.",
+    "sSingle": "Die einzige Partie ist {home} – {away} ({league}) um {time}.",
+    "sSettled": "{settled, plural, =1 {# davon ist abgerechnet} other {# davon sind abgerechnet}}; der 1X2-Tipp des Modells traf in {won} von {n} Fällen.",
+    "sSettledNoVerdict": "{settled, plural, =1 {# davon ist abgerechnet} other {# davon sind abgerechnet}}.",
+    "empty": "An diesem Tag keine Partien im Modell",
+    "emptyLead": "Das Modell bewertet elf Ligen; an spielfreien Tagen gibt es nichts zu listen. Über die Tageslinks geht es weiter.",
+    "faqH": "Fragen zu diesem Tag",
+    "faqCountQ": "Wie viele Spiele finden am {date} statt?",
+    "faqCountA": "Ligen mit Partien: {leagues}.",
+    "faqFirstQ": "Wann ist am {date} der erste Anstoss?",
+    "faqFirstA": "{home} – {away} in der {league} beginnt um {time}.",
+    "faqProbQ": "Wo stehen die Wahrscheinlichkeiten zu diesen Spielen?",
+    "faqProbA": "Jede Spielseite zeigt die öffentlichen Fakten: Tabelle, Form und direkter Vergleich. Die 1X2-Wahrscheinlichkeiten, Torerwartung und Konfidenz des Modells erscheinen vor dem Anstoss für Mitglieder; nach der Abrechnung sind Tipp und Ausgang öffentlich."
+  },
+  "teams": {
+    "metaTitle": "Vereinsseiten: Spiele, Form & Resultate",
+    "metaDescription": "Jeder Verein der {leagues} Ligen im Modell: nächste Spiele, letzte Resultate, Form, Tore pro Spiel und die abgerechnete Bilanz des Modells zu seinen Partien.",
+    "title": "Vereine",
+    "lead": "{count} Vereine in den {leagues} Ligen, die das Modell bewertet. Jede Vereinsseite zeigt die nächsten Spiele, die letzten Resultate, die Form, Tore pro Spiel und wie die abgerechneten Tipps des Modells zu diesem Verein ausgingen.",
+    "leaguePage": "Ligaseite"
+  },
+  "team": {
+    "metaTitle": "{team}: Spiele, Resultate & Form",
+    "metaDescription": "{team} ({league}): nächstes Spiel, letzte Resultate, Form, Tore pro Spiel und wie die Tipps des Modells zu {team}-Spielen ausgingen.",
+    "h1": "{team}",
+    "lead": "Spiele, Resultate und Form von {team} in der {league}, dazu die abgerechnete Bilanz des Modells zu den Partien des Vereins.",
+    "homeVenue": "Heimstadion: {venue}",
+    "sPosition": "{team} steht nach {played} Spielen mit {pts} Punkten auf Platz {pos} der {league} ({w} Siege, {d} Unentschieden, {l} Niederlagen, Tore {gf}–{ga}).",
+    "sForm": "Die letzten {n} Resultate: {form}.",
+    "sNext": "Als Nächstes: {home} – {away} ({league}) am {date}{venue}.",
+    "venueAt": " im {venue}",
+    "sGoals": "In den letzten {n} Spielen erzielte {team} im Schnitt {gf} Tore und kassierte {ga}; {over} endeten mit über 2,5 Toren, in {btts} trafen beide Teams.",
+    "sRecord": "Der 1X2-Tipp des Modells zu {team}-Spielen traf in {won} von {n} abgerechneten Partien ({acc}).",
+    "sRecordNone": "Die abgerechnete Bilanz des Modells zu {team}-Spielen ist noch zu klein für eine Aussage.",
+    "statPos": "Platz",
+    "statPts": "Punkte",
+    "statWdl": "S–U–N",
+    "statGoals": "Tore",
+    "statForm": "Form",
+    "upcomingH": "Nächste Spiele",
+    "upcomingSub": "Öffne eine Partie für die Vorschau.",
+    "upcomingEmpty": "Noch keine kommenden Spiele veröffentlicht.",
+    "membersLead": "Die 1X2-Wahrscheinlichkeiten, Torerwartung und Konfidenz des Modells zu {team}-Spielen erscheinen vor dem Anstoss für Mitglieder.",
+    "resultsH": "Letzte Resultate",
+    "resultsSub": "Endstand und abgerechneter Tipp des Modells, neueste zuerst.",
+    "archive": "{league}-Resultatarchiv",
+    "colDate": "Datum",
+    "colMatch": "Spiel",
+    "colScore": "Resultat",
+    "colPick": "Tipp des Modells",
+    "colOutcome": "Ausgang",
+    "recordNote": "Abgerechnete Tipps sind öffentlich; kommende Prognosen sind für Mitglieder.",
+    "recordLink": "{league}-Bilanz",
+    "faqH": "Häufige Fragen",
+    "faqNextQ": "Wann spielt {team} das nächste Mal?",
+    "faqFormQ": "Wie ist die Form von {team}?",
+    "faqPosQ": "Wo steht {team} in der {league}-Tabelle?",
+    "faqRecordQ": "Wie treffsicher war das Modell bei {team}-Spielen?",
+    "otherTeams": "Weitere Vereine der {league}",
+    "leaguePage": "{league}-Seite"
+  },
+  "perfLeague": {
+    "metaTitle": "{league} Prognose: Trefferquote & Bilanz",
+    "metaDescription": "Die abgerechnete {league}-Bilanz ({country}): Trefferquote, Brier-Score, Rendite zum Schlusskurs nach Monat und Markt, dazu die letzten Spiele mit Ausgang.",
+    "eyebrow": "Bilanz",
+    "h1": "{league}-Bilanz",
+    "lead": "Jede {league}-Prognose mit Zeitstempel vor dem Anstoss, abgerechnet am Endstand. Nachträglich wird nichts entfernt.",
+    "allLeagues": "Alle Ligen",
+    "methodLink": "So sind die Zahlen definiert",
+    "glossaryLink": "Brier-Score erklärt",
+    "sSummary": "Seit dem {from} traf der 1X2-Tipp des Modells in {won} von {n} abgerechneten {league}-Spielen ({acc}), bei einem Brier-Score von {brier}.",
+    "sMarkets": "Über/unter 2,5 Tore traf in {ou} der Fälle ({ouN} Spiele), «beide Teams treffen» in {btts} ({bttsN}).",
+    "sRoi": "Eine Einheit auf jeden 1X2-Tipp zum Schlusskurs hätte über {bets} Spiele {roi} gebracht.",
+    "sMonths": "Nach Monat: {list}.",
+    "recentH": "Zuletzt abgerechnete {league}-Spiele",
+    "recentSub": "Resultat und Tipp des Modells vor dem Spiel, neueste zuerst. Öffne eine Partie für die ganze Übersicht.",
+    "archive": "Resultatarchiv",
+    "membersH": "Jeder Tipp, mit Konfidenz und Kurs",
+    "membersLead": "Mitglieder sehen jede kommende {league}-Prognose mit kalibrierter Konfidenz, Marktkurs und Tormärkten.",
+    "faqH": "Häufige Fragen",
+    "faqAccQ": "Wie treffsicher sind die {league}-Prognosen?",
+    "faqBrierQ": "Was ist der Brier-Score?",
+    "faqBrierA": "Der Brier-Score ist der mittlere quadratische Fehler der veröffentlichten Wahrscheinlichkeiten gegenüber dem Ausgang: 0 ist perfekt, 0,667 entspricht Raten mit je einem Drittel auf drei Ausgänge. Tiefer ist besser.",
+    "faqHowQ": "Wie wird die {league}-Bilanz berechnet?",
+    "faqHowA": "Jede {league}-Prognose wird mit Zeitstempel vor dem Anstoss gespeichert und automatisch am Endstand abgerechnet. Die Trefferquote zählt den 1X2-Tipp, der Brier-Score bewertet die ganze Wahrscheinlichkeitsverteilung, und die Rendite rechnet mit einer Einheit pro Tipp zum zuletzt erfassten Marktkurs.",
+    "leaguePage": "{league}-Seite",
+    "otherLeagues": "Weitere Ligen"
   }
 }

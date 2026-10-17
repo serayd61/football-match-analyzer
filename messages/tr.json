@@ -25,7 +25,9 @@
     "tryFree": "7 gün ücretsiz dene",
     "picks": "Uyan maçlar",
     "matches": "Maçlar",
-    "coupon": "Günün kuponu"
+    "coupon": "Günün kuponu",
+    "teams": "Takımlar",
+    "glossary": "Sözlük"
   },
   "locale": {
     "label": "Dil"
@@ -505,7 +507,8 @@
       "empty": "Bu dönemde henüz sonuçlanmış maç yok.",
       "otherLeagues": "Diğer liglerin sonuçları"
     },
-    "thisWeekLeaderLevel": "{leader}, {played} maç sonunda {second} ile aynı puanda ({pts}) averajla {league} lideri."
+    "thisWeekLeaderLevel": "{leader}, {played} maç sonunda {second} ile aynı puanda ({pts}) averajla {league} lideri.",
+    "recordPage": "Tam {league} karnesi."
   },
   "docs": {
     "methodology": {
@@ -758,6 +761,121 @@
           "h": "9. Uygulanacak hukuk",
           "p": [
             "Bu şartlar İsviçre hukukuna tabidir. Yetkili yer, size farklı bir yer tanıyan zorunlu tüketici koruma kuralları saklı kalmak üzere, işletmecinin İsviçre'deki merkezidir. Bu şartları güncelleyebiliriz; tarihli güncel sürüm her zaman bu sayfada yayınlanır."
+          ]
+        }
+      ]
+    },
+    "glossary": {
+      "title": "Sözlük",
+      "metaTitle": "Sözlük: xG, xPTS, Brier ve daha fazlası",
+      "lead": "Tahminlerin arkasındaki terimler, sade dille: gol beklentisi, puan beklentisi, ELO, Dixon-Coles, Poisson, Brier skoru, kalibrasyon ve üç pazar.",
+      "moreNav": "İlgili",
+      "linkToday": "Bugünkü maçlar",
+      "sections": [
+        {
+          "id": "xg",
+          "h": "Gol beklentisi (xG)",
+          "p": [
+            "Gol beklentisi, tesadüfen giren golleri değil pozisyonların kalitesini ölçer. Her şut; konumu, açısı, asist türü ve vurulan uzva göre bir gol olasılığı alır; bir maçtaki bu olasılıkların toplamı her takımın xG değerini verir. 2,1 xG üreten bir takım, skor ne olursa olsun yaklaşık iki gol değerinde pozisyon yaratmıştır.",
+            "xG, bitiricilik şansını ve kaleci performansındaki dalgalanmayı dışarıda bıraktığı için gelecekteki sonuçları gollerden daha iyi öngörür. Bir sezon boyunca bir takımın averajı xG farkına yaklaşma eğilimindedir.",
+            "Bu sitede maç sayfasındaki gol beklentileri modelin kendi hücum ve savunma kestirimleridir, şut bazlı xG değildir. Farkı yöntem sayfası açıklar."
+          ]
+        },
+        {
+          "id": "xg-table",
+          "h": "xG tablosu",
+          "p": [
+            "xG tablosu bir ligi atılan ve yenilen gole göre değil, beklenen gole göre yeniden sıralar. Hangi takımların pozisyon kalitesinin üstünde ya da altında olduğunu gösterir: üçüncü sırada olup xG farkı sekizinci olan bir takım iyi bitiricilikle ya da formda bir kaleciyle gidiyordur ve genellikle geriler.",
+            "Gerçek tabloyla birlikte okunmalı. Gerçek averaj ile beklenen averaj arasındaki büyük farklar çoğunlukla sonraki on-on beş maçta kapanır."
+          ]
+        },
+        {
+          "id": "xpts",
+          "h": "Puan beklentisi (xPTS)",
+          "p": [
+            "Puan beklentisi bir maçın olasılıklarını puana çevirir: galibiyet olasılığı × 3 artı beraberlik olasılığı × 1. %50 galibiyet ve %25 beraberlik olasılığı olan bir takımın o maçtan puan beklentisi 1,75'tir.",
+            "Sezon boyunca toplandığında xPTS, bir takımın performansının kaç puanı hak ettiğini söyler. 20 puanı ve 15 xPTS'i olan bir kulüp şanslıdır; 15 puanı ve 20 xPTS'i olan ise sıralamasının gösterdiğinden iyi oynamaktadır."
+          ]
+        },
+        {
+          "id": "elo",
+          "h": "ELO derecesi",
+          "p": [
+            "ELO her maçtan sonra hareket eden bir derecedir: kazanan kaybedenden puan alır ve miktar sonucun ne kadar sürpriz olduğuna bağlıdır. Çok daha güçlü bir takımı yenmek dereceleri çok oynatır; zayıf bir takımı yenmek neredeyse hiç. İki takım arasındaki derece farkı doğrudan bir galibiyet olasılığına karşılık gelir.",
+            "ELO basit ve sağlamdır; bu yüzden futbol modellerinin alışılmış referansıdır. Modelimiz aynı mantıkta bir takım gücü derecesini girdilerinden biri olarak kullanır; yöntem sayfası hepsini listeler."
+          ]
+        },
+        {
+          "id": "dixon-coles",
+          "h": "Dixon-Coles modeli",
+          "p": [
+            "Dixon-Coles (1997), her takıma bir hücum ve bir savunma gücü ile bir iç saha avantajı veren istatistiksel bir modeldir. Bir maçın gol beklentileri bu güçlerden türer; Poisson dağılımı bunları her skor için olasılığa çevirir.",
+            "Düz Poisson modeline göre iki iyileştirmesi vardır: az gollü beraberlikler için düzeltme (0-0 ve 1-1, bağımsızlığın öngördüğünden daha sık olur) ve zaman ağırlığı; böylece yakın tarihli maçlar eskilerden daha çok sayılır.",
+            "Bu sitedeki 1X2 olasılıklarının arkasındaki model budur. Güçler her sonuçla yeniden hesaplanır."
+          ]
+        },
+        {
+          "id": "poisson",
+          "h": "Poisson dağılımı",
+          "p": [
+            "Poisson dağılımı, ortalama hızı bilinen seyrek bir olayın sabit bir sürede kaç kez olacağını tanımlar. Goller buna iyi uyar: bir takımın gol beklentisi 1,5 ise Poisson tam olarak 0, 1, 2, 3 veya daha fazla gol olasılığını verir.",
+            "İki takımın gol dağılımları birleştirilince her skor için bir olasılık çıkar; skorlar toplanınca ev sahibi galibiyeti, beraberlik ve deplasman galibiyeti, 2,5 alt/üst çizgisi ve karşılıklı gol olasılıkları elde edilir."
+          ]
+        },
+        {
+          "id": "probability",
+          "h": "Olasılık, kehanet değil",
+          "p": [
+            "Bir olasılık, bir sonucun benzer pek çok maçta ne sıklıkla gerçekleştiğini söyler; bu maçta ne olacağını değil. %60'lık bir seçimin on maçın dördünde tutmaması beklenir; art arda beş tutmayan seçim normaldir, modelin bozulduğunun işareti değildir.",
+            "Asıl soru tek bir seçimin tutup tutmadığı değil, %60 ile yayınlanan seçimlerin yüzlerce maçta yaklaşık %60 oranında tutup tutmadığıdır. Kalibrasyon ve Brier skoru tam olarak bunu ölçer."
+          ]
+        },
+        {
+          "id": "1x2",
+          "h": "1X2",
+          "p": [
+            "1X2 maç sonucu pazarıdır: 1 ev sahibi galibiyeti, X beraberlik, 2 deplasman galibiyeti. Maç sayfasındaki üç olasılık toplamda %100 eder ve modelin seçimi üçünün en olasısıdır.",
+            "Beraberlik en zor tahmin edilen sonuçtur; olasılığı %30'a yakın olsa bile bir model beraberliği nadiren seçim yapar."
+          ]
+        },
+        {
+          "id": "over-under",
+          "h": "2,5 alt/üst",
+          "p": [
+            "2,5 alt/üst çizgisi bir maçta üç ya da daha fazla gol olup olmayacağını (üst) ya da en fazla iki gol olup olmayacağını (alt) sorar. Nihai skora göre sonuçlandırılır ve kimin kazandığından bağımsızdır.",
+            "Olasılık doğrudan skor dağılımından gelir. Ligler farklıdır: Serie A büyük liglerin ortalamasının altında, Bundesliga üstündedir; maç sayfası iki takımın son maçlarının çizgiye göre nasıl gittiğini gösterir."
+          ]
+        },
+        {
+          "id": "btts",
+          "h": "Karşılıklı gol",
+          "p": [
+            "Karşılıklı gol, iki takımın da en az bir gol atıp atmayacağını sorar. 2-1 ya da 1-1 evet; 2-0 ya da 0-0 hayırdır. Nihai skora göre sonuçlandırılır.",
+            "Olasılık, hiçbir takımın golsüz kalmadığı skorların payıdır. İki hücum da güçlü, iki savunma da zayıf değerlendirildiğinde yükselir."
+          ]
+        },
+        {
+          "id": "brier",
+          "h": "Brier skoru",
+          "p": [
+            "Brier skoru yalnızca seçimin tutup tutmadığını değil, bir olasılık kümesinin ne kadar iyi olduğunu ölçer. Her maçta yayınlanan olasılıklar sonuçla karşılaştırılır (gerçekleşen için 1, diğerleri için 0), farkların kareleri toplanır; Brier skoru tüm maçların ortalamasıdır.",
+            "0 mükemmel, 0,667 üç sonuca eşit üçte bir vermekle aynıdır; iyi kurulmuş bir futbol modeli genellikle 0,60 civarına düşer. Düşük olan iyidir. Karne sayfasında ve her ligin karnesinde gösterilir."
+          ]
+        },
+        {
+          "id": "calibration",
+          "h": "Kalibrasyon",
+          "p": [
+            "Bir model, olasılıkları gerçekle örtüştüğünde kalibredir: %55 ile yayınlanan seçimler yaklaşık %55, %70 ile yayınlananlar yaklaşık %70 oranında tutmalıdır. Karne sayfasındaki kalibrasyon grafiği sonuçlanmış seçimleri yayınlanan güvene göre gruplar ve gözlenen isabet oranıyla karşılaştırır.",
+            "Köşegenin üstündeki noktalar modelin fazla çekingen, altındakiler fazla özgüvenli olduğunu gösterir. Güven değerlerimiz sonuçlanmış karne üzerinde kurulan bir kalibrasyon eğrisinden geçer; gösterilen güven kalibre olandır."
+          ]
+        },
+        {
+          "id": "algorithm",
+          "h": "Futbol tahmin algoritması nasıl çalışır",
+          "p": [
+            "Bir tahmin algoritması geçmiş sonuçları dört adımda gelecek maçların olasılıklarına çevirir. Önce her takımın hücum ve savunmasını sonuçlarından derecelendirir; yakın tarihli maçlara daha çok ağırlık verir. Sonra iki takımın derecelerini iç saha avantajıyla birleştirip her taraf için bir gol beklentisi çıkarır. Üçüncü olarak bu beklentileri, genellikle Poisson dağılımıyla, her skor için bir olasılığa çevirir. Son olarak skorları pazarlarda toplar: 1X2, 2,5 alt/üst ve karşılıklı gol.",
+            "Çıktıyı güvenilir kılan modelin kendisi değil karnedir: her olasılık maç öncesi zaman damgasıyla saklanır, otomatik sonuçlandırılır ve isabet oranı, Brier skoru ve kalibrasyonla ölçülür. Bu karne bu sitede herkese açıktır."
           ]
         }
       ]
@@ -1488,7 +1606,8 @@
       "colCs": "Gol yemedi",
       "leagueAvgNote": "{league} bu sezon ortalaması: maç başına {avg} gol.",
       "modelLockedVerdict": "Yukarıdaki seçim sonuçlandı. Üyeler ayrıca maç öncesi tam olasılık dağılımını, beklenen golü, gol pazarlarını ve risk etiketini görür:",
-      "resultsArchive": "{league} sonuçları"
+      "resultsArchive": "{league} sonuçları",
+      "teamPage": "{team}: maçlar ve form"
     }
   },
   "coupon": {
@@ -1818,5 +1937,110 @@
     "telegramLabel": "Telegram",
     "telegramNote": "Günlük seçimler ve duyurular; bize en hızlı ulaşma yolu.",
     "moreLead": "Yazmadan önce yanıt şu sayfalarda olabilir:"
+  },
+  "dayHub": {
+    "metaTitleToday": "Bugünkü maçlar: fikstür ve form",
+    "metaTitleTomorrow": "Yarınki maçlar: fikstür ve form",
+    "metaTitleYesterday": "Dünkü sonuçlar ve model kararları",
+    "metaTitleDate": "{date} maçları",
+    "metaDescription": "{date}: {leagues, plural, =1 {# ligde} other {# ligde}} {count, plural, =0 {kapsamda maç yok} =1 {# kapsamdaki maç} other {# kapsamdaki maç}}. Başlama saatleri, puan durumu, form ve geçmiş karşılaşmalar. Model olasılıkları üyelere.",
+    "eyebrow": "Gün görünümü",
+    "titleToday": "Bugünkü maçlar",
+    "titleTomorrow": "Yarınki maçlar",
+    "titleYesterday": "Dünkü sonuçlar",
+    "titleDate": "{date} maçları",
+    "lead": "Modelin puanladığı liglerde {date} tarihli tüm maçlar. Başlama saati, puan durumu, form ve geçmiş karşılaşmalar için bir maçı aç.",
+    "weekHub": "Bu haftanın tüm maçları",
+    "dayNav": "Gün gezintisi",
+    "prevDay": "Önceki gün",
+    "nextDay": "Sonraki gün",
+    "sCount": "{date}: {leagues, plural, =1 {# ligde} other {# ligde}} {count, plural, =1 {# kapsamdaki maç} other {# kapsamdaki maç}}.",
+    "sFirstLast": "İlk maç {time} saatinde {home} – {away} ({league}); son maç {ltime} saatinde {lhome} – {laway}.",
+    "sSingle": "Günün tek maçı {time} saatinde {home} – {away} ({league}).",
+    "sSettled": "{settled, plural, =1 {Bunların # tanesi} other {Bunların # tanesi}} sonuçlandı; modelin 1X2 seçimi {n} maçın {won} tanesinde tuttu.",
+    "sSettledNoVerdict": "{settled, plural, =1 {Bunların # tanesi} other {Bunların # tanesi}} sonuçlandı.",
+    "empty": "Bu gün kapsamda maç yok",
+    "emptyLead": "Model on bir ligi puanlıyor; maç olmayan günlerde listelenecek bir şey yok. Gün bağlantılarıyla ilerleyebilirsin.",
+    "faqH": "Bu günle ilgili sorular",
+    "faqCountQ": "{date} tarihinde kaç maç var?",
+    "faqCountA": "Maçı olan ligler: {leagues}.",
+    "faqFirstQ": "{date} tarihinde ilk maç saat kaçta?",
+    "faqFirstA": "{league} maçı {home} – {away} saat {time} başlıyor.",
+    "faqProbQ": "Bu maçların olasılıkları nerede?",
+    "faqProbA": "Her maç sayfası herkese açık verileri gösterir: puan durumu, form ve geçmiş karşılaşmalar. Modelin 1X2 olasılıkları, gol beklentisi ve güveni maç öncesi üyelere yayınlanır; maç sonuçlanınca seçim ve sonucu herkese açılır."
+  },
+  "teams": {
+    "metaTitle": "Takımlar: fikstür, form ve sonuçlar",
+    "metaDescription": "Modelin puanladığı {leagues} ligdeki her takım: sonraki maçlar, son sonuçlar, form, maç başına gol ve modelin o takımın maçlarındaki sonuçlanmış karnesi.",
+    "title": "Takımlar",
+    "lead": "Modelin puanladığı {leagues} ligde {count} takım. Her takım sayfasında sonraki maçlar, son sonuçlar, form, maç başına gol ve modelin o takımla ilgili sonuçlanmış seçimlerinin nasıl gittiği var.",
+    "leaguePage": "Lig sayfası"
+  },
+  "team": {
+    "metaTitle": "{team}: fikstür, sonuçlar ve form",
+    "metaDescription": "{team} ({league}): sonraki maç, son sonuçlar, form, maç başına gol ve modelin {team} maçlarındaki tahminlerinin nasıl gittiği.",
+    "h1": "{team}",
+    "lead": "{team} takımının {league} fikstürü, sonuçları ve formu; ayrıca modelin takımın maçlarındaki sonuçlanmış karnesi.",
+    "homeVenue": "İç saha: {venue}",
+    "sPosition": "{team}, {played} maç sonunda {pts} puanla {league} sıralamasında {pos}. sırada ({w} galibiyet, {d} beraberlik, {l} mağlubiyet, gol {gf}–{ga}).",
+    "sForm": "Son {n} sonuç: {form}.",
+    "sNext": "Sıradaki maç: {date}, {home} – {away} ({league}){venue}.",
+    "venueAt": ", {venue}",
+    "sGoals": "{team} son {n} maçta maç başına ortalama {gf} gol attı, {ga} gol yedi; maçların {over} kadarı 2,5 üstle bitti, {btts} kadarında iki takım da gol attı.",
+    "sRecord": "Modelin {team} maçlarındaki 1X2 seçimi sonuçlanan {n} maçın {won} tanesinde tuttu ({acc}).",
+    "sRecordNone": "Modelin {team} maçlarındaki sonuçlanmış karnesi henüz yorum için çok küçük.",
+    "statPos": "Sıra",
+    "statPts": "Puan",
+    "statWdl": "G–B–M",
+    "statGoals": "Gol",
+    "statForm": "Form",
+    "upcomingH": "Sıradaki maçlar",
+    "upcomingSub": "Maç öncesi özet için bir maçı aç.",
+    "upcomingEmpty": "Henüz yayınlanmış sıradaki maç yok.",
+    "membersLead": "Modelin {team} maçları için 1X2 olasılıkları, gol beklentisi ve güveni maç öncesi üyelere yayınlanır.",
+    "resultsH": "Son sonuçlar",
+    "resultsSub": "Maç sonucu ve modelin sonuçlanmış seçimi, yeniden eskiye.",
+    "archive": "{league} sonuç arşivi",
+    "colDate": "Tarih",
+    "colMatch": "Maç",
+    "colScore": "Skor",
+    "colPick": "Model seçimi",
+    "colOutcome": "Sonuç",
+    "recordNote": "Sonuçlanmış seçimler herkese açık; gelecek tahminler üyelere.",
+    "recordLink": "{league} karnesi",
+    "faqH": "Sık sorulanlar",
+    "faqNextQ": "{team} bir sonraki maçını ne zaman oynuyor?",
+    "faqFormQ": "{team} nasıl formda?",
+    "faqPosQ": "{team} {league} puan durumunda kaçıncı sırada?",
+    "faqRecordQ": "Model {team} maçlarında ne kadar isabetliydi?",
+    "otherTeams": "Diğer {league} takımları",
+    "leaguePage": "{league} sayfası"
+  },
+  "perfLeague": {
+    "metaTitle": "{league} tahmin isabeti ve karnesi",
+    "metaDescription": "Modelin sonuçlanmış {league} ({country}) karnesi: isabet oranı, Brier skoru, kapanış fiyatıyla getiri, aya ve pazara göre dağılım ve kararlarıyla son sonuçlanmış maçlar.",
+    "eyebrow": "Karne",
+    "h1": "{league} karnesi",
+    "lead": "Her {league} tahmini maç öncesi zaman damgalı kaydedilir ve nihai skora göre sonuçlandırılır. Sonradan hiçbir şey silinmez.",
+    "allLeagues": "Tüm ligler",
+    "methodLink": "Sayılar nasıl tanımlanıyor",
+    "glossaryLink": "Brier skoru nedir",
+    "sSummary": "{from} tarihinden beri modelin 1X2 seçimi sonuçlanan {n} {league} maçının {won} tanesinde tuttu ({acc}); Brier skoru {brier}.",
+    "sMarkets": "2,5 alt/üst seçimi maçların {ou} kadarında ({ouN} maç), karşılıklı gol seçimi {btts} kadarında ({bttsN}) tuttu.",
+    "sRoi": "Her 1X2 seçimine kapanış fiyatından bir birim, {bets} maçta {roi} getirirdi.",
+    "sMonths": "Aya göre: {list}.",
+    "recentH": "Son sonuçlanan {league} maçları",
+    "recentSub": "Skor ve modelin maç öncesi seçimi, yeniden eskiye. Tam özet için bir maçı aç.",
+    "archive": "Sonuç arşivi",
+    "membersH": "Her seçim, güven ve fiyatıyla",
+    "membersLead": "Üyeler her gelecek {league} tahminini kalibre güveni, piyasa fiyatı ve gol pazarlarıyla görür.",
+    "faqH": "Sık sorulanlar",
+    "faqAccQ": "{league} tahminleri ne kadar isabetli?",
+    "faqBrierQ": "Brier skoru nedir?",
+    "faqBrierA": "Brier skoru, yayınlanan olasılıkların gerçekleşen sonuca göre ortalama kare hatasıdır: 0 mükemmel, 0,667 üç sonuca eşit üçte bir vermekle aynı. Düşük olan iyidir.",
+    "faqHowQ": "{league} karnesi nasıl hesaplanıyor?",
+    "faqHowA": "Her {league} tahmini maç öncesi zaman damgasıyla saklanır ve nihai skora göre otomatik sonuçlandırılır. İsabet oranı 1X2 seçimini sayar, Brier skoru olasılık dağılımının tamamını puanlar, getiri ise her seçime son kaydedilen piyasa fiyatından bir birim varsayar.",
+    "leaguePage": "{league} sayfası",
+    "otherLeagues": "Diğer ligler"
   }
 }

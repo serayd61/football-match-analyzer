@@ -25,8 +25,9 @@ export interface Entry { path: string; lastmod?: Date | string | null; changefre
 const isoOf = (d: Date | string): string | null => { const t = new Date(d); return Number.isNaN(t.getTime()) ? null : t.toISOString(); };
 
 /** Real revision dates of the long-form docs (bump when the text changes). */
-export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms', Date> = {
+export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms' | 'glossary', Date> = {
   methodology: new Date('2026-10-10T12:00:00Z'),
+  glossary: new Date('2026-10-17T12:00:00Z'),
   about: new Date('2026-09-04T12:00:00Z'),
   privacy: new Date('2026-09-04T12:00:00Z'),
   terms: new Date('2026-09-04T12:00:00Z'),
@@ -37,17 +38,28 @@ export interface SitemapInput {
   dataUpdated: Date | null;
   /** public match pages (locale-free paths) with their own lastmod */
   matches: Array<{ path: string; lastmod: Date | null }>;
+  /** team pages (SEO Faz 1b), locale-free paths */
+  teams?: string[];
 }
+
+/** Static public paths (one entry each; tests count them). */
+export const STATIC_PATHS = ['', '/matches', '/matches/today', '/matches/tomorrow', '/matches/yesterday', '/teams', '/pricing', '/performance', '/leagues', '/methodology', '/glossary', '/about', '/contact', '/privacy', '/terms'] as const;
 
 export function entries(input: SitemapInput): Entry[] {
   const data = input.dataUpdated;
   return [
     { path: '', changefreq: 'hourly', priority: 1, lastmod: data, images: ['standings', 'track-record'] },
     { path: '/matches', changefreq: 'hourly', priority: 0.9, lastmod: data },
+    // SEO Faz 1b: evergreen day hubs — the URL stays, the day rolls (lastmod = latest engine write)
+    { path: '/matches/today', changefreq: 'hourly', priority: 0.8, lastmod: data },
+    { path: '/matches/tomorrow', changefreq: 'hourly', priority: 0.7, lastmod: data },
+    { path: '/matches/yesterday', changefreq: 'daily', priority: 0.6, lastmod: data },
+    { path: '/teams', changefreq: 'weekly', priority: 0.5, lastmod: data },
     { path: '/pricing', changefreq: 'monthly', priority: 0.6 },
     { path: '/performance', changefreq: 'daily', priority: 0.8, lastmod: data },
     { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
     { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
+    { path: '/glossary', changefreq: 'monthly', priority: 0.5, lastmod: DOCS_UPDATED.glossary },
     { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
     { path: '/contact', changefreq: 'yearly', priority: 0.3 },
     { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
@@ -55,6 +67,9 @@ export function entries(input: SitemapInput): Entry[] {
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
     // SEO Faz 1a: per-league results archive (settled matches, public scores)
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/results`, changefreq: 'daily', priority: 0.5, lastmod: data })),
+    // SEO Faz 1b: per-league track record (public settled record, no session)
+    ...SITE_LEAGUES.map((l): Entry => ({ path: `/performance/${l.slug}`, changefreq: 'daily', priority: 0.6, lastmod: data })),
+    ...(input.teams ?? []).map((p): Entry => ({ path: p, changefreq: 'daily', priority: 0.5, lastmod: data })),
     ...input.matches.map((m): Entry => ({ path: m.path, changefreq: 'daily', priority: 0.6, lastmod: m.lastmod })),
   ];
 }

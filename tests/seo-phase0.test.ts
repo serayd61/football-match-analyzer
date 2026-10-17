@@ -45,11 +45,11 @@ test('sign-in href returns to the gated page without a redirect hop', () => {
 test('titles fit in 60 characters with the site-name suffix, descriptions in 160', () => {
   const suffix = ' · Football Analytics'.length;
   for (const [name, m] of Object.entries({ en, de, it, tr }) as Array<[string, any]>) {
-    for (const key of ['home.metaTitle', 'leagues.metaTitle', 'matches.hub.metaTitle', 'v2.performance.metaTitle', 'docs.methodology.metaTitle']) {
+    for (const key of ['home.metaTitle', 'leagues.metaTitle', 'matches.hub.metaTitle', 'v2.performance.metaTitle', 'docs.methodology.metaTitle', 'docs.glossary.metaTitle', 'teams.metaTitle', 'dayHub.metaTitleToday', 'dayHub.metaTitleTomorrow', 'dayHub.metaTitleYesterday']) {
       const v = key.split('.').reduce((o, k) => o[k], m) as string;
       assert.ok(v.length + suffix <= 60, `${name} ${key} too long: ${v.length + suffix}`);
     }
-    for (const key of ['home.metaDescription', 'matches.hub.metaDescription', 'matches.match.metaDescription', 'matches.match.metaDescriptionSettled', 'league.metaDescription', 'meta.description']) {
+    for (const key of ['home.metaDescription', 'matches.hub.metaDescription', 'matches.match.metaDescription', 'matches.match.metaDescriptionSettled', 'league.metaDescription', 'meta.description', 'teams.metaDescription', 'team.metaDescription', 'perfLeague.metaDescription', 'docs.glossary.lead']) {
       const v = key.split('.').reduce((o, k) => o[k], m) as string;
       assert.ok(v.length <= 170, `${name} ${key} too long: ${v.length}`); // placeholders ({count}) are shorter than their values
     }
