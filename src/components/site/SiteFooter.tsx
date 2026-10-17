@@ -30,6 +30,7 @@ export default async function SiteFooter() {
           <Link href="/teams" className="hover:text-s-ink">{nav('teams')}</Link>
           <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
           <Link href="/glossary" className="hover:text-s-ink">{nav('glossary')}</Link>
+          <Link href="/data" className="hover:text-s-ink">{nav('data')}</Link>
           <FooterPricingLink label={nav('pricing')} />
         </nav>
         <nav className="flex flex-col gap-2" aria-label="Company">

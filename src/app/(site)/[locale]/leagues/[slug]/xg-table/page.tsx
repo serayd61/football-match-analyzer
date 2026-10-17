@@ -141,6 +141,7 @@ export default async function XgTablePage({ params }: { params: { locale: string
         <Link href={`/leagues/${league.slug}/goals`} className="underline underline-offset-4">{tl('goalsStats')}</Link>
         <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{tl('resultsArchive')}</Link>
         <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{tl('recordPage', { league: league.name })}</Link>
+        <a href={`/data/${league.slug}.csv`} className="underline underline-offset-4" download>{tl('downloadCsv')}</a>
       </nav>
     </Page>
   );

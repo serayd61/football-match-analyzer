@@ -119,6 +119,7 @@ export const config = {
     '/pricing',
     '/leagues/:path*',
     '/methodology',
+    '/data', // SEO Faz 2.1: the page only — /data/{file}.csv|json are unlocalized route handlers
     '/about',
     '/privacy',
     '/terms',

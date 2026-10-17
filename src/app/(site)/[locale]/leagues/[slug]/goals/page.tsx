@@ -167,6 +167,7 @@ export default async function GoalsStatsPage({ params }: { params: { locale: str
         <Link href={`/leagues/${league.slug}/xg-table`} className="underline underline-offset-4">{tl('xgTable')}</Link>
         <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{tl('resultsArchive')}</Link>
         <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{tl('recordPage', { league: league.name })}</Link>
+        <a href={`/data/${league.slug}.csv`} className="underline underline-offset-4" download>{tl('downloadCsv')}</a>
       </nav>
     </Page>
   );

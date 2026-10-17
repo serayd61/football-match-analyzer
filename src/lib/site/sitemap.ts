@@ -43,7 +43,7 @@ export interface SitemapInput {
 }
 
 /** Static public paths (one entry each; tests count them). */
-export const STATIC_PATHS = ['', '/matches', '/matches/today', '/matches/tomorrow', '/matches/yesterday', '/teams', '/pricing', '/performance', '/leagues', '/methodology', '/glossary', '/about', '/contact', '/privacy', '/terms'] as const;
+export const STATIC_PATHS = ['', '/matches', '/matches/today', '/matches/tomorrow', '/matches/yesterday', '/teams', '/pricing', '/performance', '/leagues', '/methodology', '/glossary', '/data', '/about', '/contact', '/privacy', '/terms'] as const;
 
 export function entries(input: SitemapInput): Entry[] {
   const data = input.dataUpdated;
@@ -60,6 +60,8 @@ export function entries(input: SitemapInput): Entry[] {
     { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
     { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
     { path: '/glossary', changefreq: 'monthly', priority: 0.5, lastmod: DOCS_UPDATED.glossary },
+    // SEO Faz 2.1: open-data page (files refresh hourly; lastmod = latest engine write)
+    { path: '/data', changefreq: 'daily', priority: 0.6, lastmod: data },
     { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
     { path: '/contact', changefreq: 'yearly', priority: 0.3 },
     { path: '/privacy', changefreq: 'yearly', priority: 0.2 },

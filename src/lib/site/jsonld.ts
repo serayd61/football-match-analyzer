@@ -194,3 +194,38 @@ export function definedTermSetJsonLd(locale: Locale, input: { url: string; name:
     })),
   };
 }
+
+/**
+ * Dataset with downloadable distributions — the open-data page (SEO Faz 2.1).
+ * Google Dataset Search needs `distribution` with a contentUrl per file and a
+ * machine-readable `license`; `isBasedOn` ties it to the track record.
+ */
+export function openDatasetJsonLd(locale: Locale, input: {
+  name: string; description: string; rows: number; dateModified: Date | null;
+  files: Array<{ name: string; csv: string; json: string }>; license: string; since: string;
+}) {
+  const url = `${SITE_URL}/${locale}/data`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    '@id': `${url}#dataset`,
+    name: input.name,
+    description: input.description,
+    url,
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    license: input.license,
+    creator: { '@id': `${SITE_URL}/#organization` },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    keywords: ['football predictions dataset', 'match outcome probabilities', 'expected goals', 'Dixon-Coles', 'open data', 'CSV'],
+    variableMeasured: ['p_home', 'p_draw', 'p_away', 'lambda_home', 'lambda_away', 'home_score', 'away_score'],
+    temporalCoverage: `${input.since}/..`,
+    isBasedOn: `${SITE_URL}/${locale}/performance`,
+    ...(input.dateModified ? { dateModified: input.dateModified.toISOString() } : {}),
+    ...(input.rows > 0 ? { size: `${input.rows} settled matches` } : {}),
+    distribution: input.files.flatMap((f) => [
+      { '@type': 'DataDownload', name: `${f.name} (CSV)`, encodingFormat: 'text/csv', contentUrl: `${SITE_URL}${f.csv}` },
+      { '@type': 'DataDownload', name: `${f.name} (JSON)`, encodingFormat: 'application/json', contentUrl: `${SITE_URL}${f.json}` },
+    ]),
+  };
+}
