@@ -214,3 +214,61 @@ export function evaluateLeague(status: CoverageStatus, s: LeagueStats, g = COVER
 
 /** Aynı lig için son `days` günde aynı tip öneri varsa tekrar yazma. */
 export const PROPOSAL_COOLDOWN_DAYS = 28;
+
+// ============================================================================
+// ELEME (17 Eki): bahis bürolarında olmayan / kimsenin aramadığı ligler sitede
+// hiç görünmesin — uzak ülkeler (Afrika, küçük Asya/Orta Amerika), 4. kademe ve
+// altı, amatör/bölgesel, kadın/genç/rezerv ligleri, yerel kupa elemeleri.
+// Yalnızca sicilde beyaz liste/gözlem OLMAYAN ligleri etkiler: kullanıcı bir
+// ligi gözleme/beyaz listeye aldıysa kural ona dokunmaz (NPFL, Damallsvenskan,
+// Regionalliga North, 2./3. Divisjon Avd. 2, Ettan Södra, MLS Next Pro ...).
+// ============================================================================
+
+/** Sitede gösterilmeyecek ülkeler (FotMob ccode). */
+export const PRUNE_COUNTRIES = new Set([
+  // Afrika
+  'ALG', 'ANG', 'BEN', 'BFA', 'BOT', 'BDI', 'CMR', 'CPV', 'CTA', 'CHA', 'COM', 'CGO', 'COD', 'CIV', 'DJI', 'EGY', 'EQG', 'ERI', 'ETH',
+  'GAB', 'GAM', 'GHA', 'GUI', 'GNB', 'KEN', 'LES', 'LBR', 'LBY', 'MAD', 'MWI', 'MLI', 'MTN', 'MRI', 'MAR', 'MOZ', 'NAM', 'NIG', 'NGA',
+  'RWA', 'STP', 'SEN', 'SEY', 'SLE', 'SOM', 'RSA', 'SSD', 'SDN', 'SWZ', 'TAN', 'TOG', 'TUN', 'UGA', 'ZAM', 'ZIM',
+  // Küçük / uzak Asya-Okyanusya
+  'BAN', 'BHU', 'BRU', 'CAM', 'HKG', 'IDN', 'IND', 'IRN', 'IRQ', 'JOR', 'KUW', 'KGZ', 'LAO', 'LIB', 'MAC', 'MAS', 'MDV', 'MNG', 'MYA',
+  'NEP', 'OMA', 'PAK', 'PLE', 'PHI', 'SIN', 'SRI', 'SYR', 'TJK', 'THA', 'TKM', 'UZB', 'VIE', 'YEM', 'AFG', 'BHR',
+  'NZL', 'FIJ', 'PNG', 'SOL', 'TAH', 'VAN', 'NCL', 'SAM',
+  // Orta Amerika / Karayipler / küçük Güney Amerika
+  'SLV', 'HON', 'NCA', 'CRC', 'PAN', 'BLZ', 'CUB', 'DOM', 'HAI', 'JAM', 'TRI', 'PUR', 'GUA', 'BOL', 'VEN',
+  // Küçük Avrupa
+  'AND', 'ARM', 'AZE', 'BLR', 'FRO', 'GEO', 'GIB', 'KOS', 'LIE', 'MLT', 'MDA', 'MNE', 'MKD', 'SMR', 'ALB', 'BIH',
+]);
+
+/** Ad kalıpları (ülke fark etmez): alt kademe, amatör, kadın/genç/rezerv, yerel kupa elemesi. */
+const PRUNE_NAME: Array<[RegExp, string]> = [
+  [/\b(U1\d|U2\d|U-1\d|U-2\d|Youth|Reserves?|Premier League 2|Academy)\b/i, 'genç/rezerv'],
+  [/\b(Women|Women's|Womens|Kvinner|Femminile|F[ée]minin[ae]?|Femenil|Femenina|Feminino|Frauen|Vrouwen|Ladies|Damallsvenskan|Elitettan|Toppserien|Liga F|WSL|NWSL|SWPL|Kansallinen|WE League|Premiere Ligue|Super League Women|USL Super League|Northern Super League|Liga MX Femenil|A-Liga|Kvindeliga)\b/i, 'kadın ligi'],
+  [/\b(Regionalliga|Oberliga|Landesliga|Verbandsliga|Bayernliga)\b/i, 'Almanya 4. kademe ve altı'],
+  [/\b(Segunda Federaci[oó]n|Tercera|Segunda RFEF|Tercera RFEF)\b/i, 'İspanya 4. kademe ve altı'],
+  [/\b(Serie D|Eccellenza|Promozione)\b/i, 'İtalya 4. kademe ve altı'],
+  [/\b(National League North|National League South|Isthmian|Northern Premier|Southern Premier|Highland League|Lowland League|FA Trophy|FA Vase)\b/i, 'İngiltere/İskoçya amatör'],
+  // Not: Almanya 3. Liga, Avusturya 2. Liga, İtalya Serie C bahis bürolarında var → kalır.
+  [/\b(3\. Divisjon|2\. Divisjon|2\. Division|3\. Division|4\. Division|2\. Deild|3\. Deild|Ettan|Division 2|Kakkonen|Kolmonen|Ykkonen|III Liga|II Liga|1\. Deild)\b/i, 'İskandinav/Doğu Avrupa alt kademe'],
+  [/\b(Liga 3|Liga 3 Zona|J\. League 3|K3 League|USL League Two|Federal A|Primera B Metropolitana|Primera C|Torneo Federal|Copa Paulista|Highland \/ Lowland)\b/i, 'alt kademe'],
+  [/\b(CAF|AFC Challenge|AFC Cup|ASEAN|OFC|COSAFA|CECAFA|WAFU|Arab Club|Gulf Cup)\b/i, 'uzak kıta kupası'],
+  [/\b(Qualification|Qualifying|Preliminary|Preliminary Round)\b/i, 'eleme turu'],
+];
+
+/**
+ * Ligin sitede gösterilmeme gerekçesi; null = gösterilir. Yalnızca ad + ülkeye
+ * bakar; beyaz liste/gözlem koruması çağıranda (refreshCoverage) uygulanır.
+ * INT/INT-2 kupalarında ülke kuralı yok, sadece ad kalıbı (eleme turu, kadın).
+ */
+export function pruneReason(name: string | null | undefined, ccode: string | null | undefined): string | null {
+  const cc = String(ccode || '').trim().toUpperCase().replace(/-\d+$/, '');
+  const n = String(name || '').trim();
+  if (!n) return null;
+  for (const [re, why] of PRUNE_NAME) {
+    if (!re.test(n)) continue;
+    if (why === 'eleme turu' && cc === 'INT') continue; // Şampiyonlar/Avrupa Ligi elemeleri bürolarda var → kalır
+    return why;
+  }
+  if (cc && cc !== 'INT' && PRUNE_COUNTRIES.has(cc)) return `uzak ülke (${cc})`;
+  return null;
+}
