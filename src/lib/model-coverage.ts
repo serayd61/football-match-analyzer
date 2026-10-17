@@ -37,14 +37,28 @@ const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268, 71]);
  * Bu maç, parametreleri fit edilmiş bir ligde mi?
  * leagueName katalogdan onarılmış ad olmalı ("League 12345" değil).
  */
+// Akış/katalog adları kanonik ada katlanır (ör. 'English Football League - Championship').
+const NAME_ALIASES: Record<string, string> = {
+  'Brasileirão': 'Brazilian Serie A',
+  'Brasileirao': 'Brazilian Serie A',
+  'Campeonato Brasileiro Série A': 'Brazilian Serie A',
+  'Primera División': 'LaLiga',
+  'La Liga': 'LaLiga',
+  'UEFA Champions League': 'Champions League',
+  'EFL Championship': 'Championship',
+  'English Football League - Championship': 'Championship', // FotMob 2026-27 mevsimlik id 1000001801
+  'Primeira Liga': 'Liga Portugal',
+};
+
 export function isModelCovered(
   leagueName?: string | null,
   leagueId?: number | null,
   ccode?: string | null,
 ): boolean {
   if (leagueId != null && COVERED_IDS.has(Number(leagueId))) return true;
-  const name = (leagueName || '').trim();
-  const cc = (ccode || '').trim().toUpperCase();
+  const raw = (leagueName || '').trim();
+  const name = NAME_ALIASES[raw] || raw;
+  const cc = (ccode || '').trim().toUpperCase().replace(/-\d+$/, '');
   if (!name || !cc) return false;
   return COVERED_NAME_CCODE.has(`${name}|${cc}`);
 }
@@ -58,16 +72,6 @@ export function isModelCovered(
 const COVERED_NAMES = new Set(
   Array.from(COVERED_NAME_CCODE).map((k) => k.split('|')[0]),
 );
-const NAME_ALIASES: Record<string, string> = {
-  'Brasileirão': 'Brazilian Serie A',
-  'Brasileirao': 'Brazilian Serie A',
-  'Campeonato Brasileiro Série A': 'Brazilian Serie A',
-  'Primera División': 'LaLiga',
-  'La Liga': 'LaLiga',
-  'UEFA Champions League': 'Champions League',
-  'EFL Championship': 'Championship',
-  'Primeira Liga': 'Liga Portugal',
-};
 export function isCoveredLeagueName(leagueName?: string | null): boolean {
   const raw = (leagueName || '').trim();
   if (!raw) return false;

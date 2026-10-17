@@ -20,3 +20,11 @@ test('seasonal ids still resolve by name + country', () => {
   assert.equal(resolveLeague('Eredivisie', 937276, 'NED')?.slug, 'eredivisie');
   assert.equal(resolveLeague('Championship', 937668, 'SCO'), null);
 });
+
+// 2026-10-13: FotMob re-keyed the 2026-27 Championship to 1000001801 with the
+// long feed/catalog name. Site coverage must fold it onto the championship slug.
+test('championship resolves under the 2026-27 seasonal id and long feed name', () => {
+  assert.equal(resolveLeague('English Football League - Championship', 1000001801, 'ENG')?.slug, 'championship');
+  // other EFL divisions stay outside coverage
+  assert.equal(resolveLeague('English Football League - League One', 1000001802, 'ENG'), null);
+});
