@@ -504,7 +504,8 @@
       "updated": "Resultate zuletzt aktualisiert {time}",
       "empty": "Noch keine abgerechneten Spiele in diesem Zeitraum.",
       "otherLeagues": "Resultate anderer Ligen"
-    }
+    },
+    "thisWeekLeaderLevel": "{leader} führt die {league} nach {played} Spielen dank der Tordifferenz, punktgleich ({pts}) mit {second}."
   },
   "docs": {
     "methodology": {

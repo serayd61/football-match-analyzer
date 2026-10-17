@@ -90,7 +90,9 @@ export default async function LeaguePage({ params }: { params: { locale: string;
         <p>{t(`intro.${league.slug}`)}</p>
         {leader && table.length > 2 && (
           <p>
-            {t('thisWeekLeader', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name, gap: leader.pts - table[1].pts })}
+            {leader.pts - table[1].pts > 0
+              ? t('thisWeekLeader', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name, gap: leader.pts - table[1].pts })
+              : t('thisWeekLeaderLevel', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name })}
             {nextFixture && <> {t('thisWeekNext', { home: nextFixture.homeName, away: nextFixture.awayName, date: f.dateTime(new Date(nextFixture.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) })}</>}
           </p>
         )}

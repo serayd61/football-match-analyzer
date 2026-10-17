@@ -504,7 +504,8 @@
       "updated": "Sonuçlar son güncelleme {time}",
       "empty": "Bu dönemde henüz sonuçlanmış maç yok.",
       "otherLeagues": "Diğer liglerin sonuçları"
-    }
+    },
+    "thisWeekLeaderLevel": "{leader}, {played} maç sonunda {second} ile aynı puanda ({pts}) averajla {league} lideri."
   },
   "docs": {
     "methodology": {

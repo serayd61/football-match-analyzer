@@ -504,7 +504,8 @@
       "updated": "Results last updated {time}",
       "empty": "No settled matches in this window yet.",
       "otherLeagues": "Results in other leagues"
-    }
+    },
+    "thisWeekLeaderLevel": "{leader} lead the {league} on goal difference, level on {pts} points with {second} after {played} matches."
   },
   "docs": {
     "methodology": {

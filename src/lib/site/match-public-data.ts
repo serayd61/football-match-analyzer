@@ -32,7 +32,9 @@ export const listPublicUpcoming = unstable_cache(
       .limit(limit);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data, official).map((r) => publicMatchView(mapRow(r, ctx))).filter((m) => m.league);
+    // `covered` as well as a known league: a cup tie stored under a league id (e.g. a League Cup
+    // match in the Premier League rows) has no public page — getPublicMatch() returns null for it.
+    return parseRows(data, official).map((r) => mapRow(r, ctx)).filter((p) => p.covered && p.league).map(publicMatchView);
   },
   ['site-public-upcoming-v1'],
   { revalidate: REVALIDATE.fixtures },
@@ -52,7 +54,9 @@ export const listPublicRecent = unstable_cache(
       .limit(limit);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data, official).map((r) => publicMatchView(mapRow(r, ctx))).filter((m) => m.league);
+    // `covered` as well as a known league: a cup tie stored under a league id (e.g. a League Cup
+    // match in the Premier League rows) has no public page — getPublicMatch() returns null for it.
+    return parseRows(data, official).map((r) => mapRow(r, ctx)).filter((p) => p.covered && p.league).map(publicMatchView);
   },
   ['site-public-recent-v1'],
   { revalidate: REVALIDATE.results },
@@ -78,7 +82,9 @@ export const listPublicResultsForLeague = unstable_cache(
       .limit(limit);
     if (error) throw new Error(error.message);
     const ctx = await loadContext();
-    return parseRows(data, official).map((r) => publicMatchView(mapRow(r, ctx))).filter((m) => m.league);
+    // `covered` as well as a known league: a cup tie stored under a league id (e.g. a League Cup
+    // match in the Premier League rows) has no public page — getPublicMatch() returns null for it.
+    return parseRows(data, official).map((r) => mapRow(r, ctx)).filter((p) => p.covered && p.league).map(publicMatchView);
   },
   ['site-public-results-league-v1'],
   { revalidate: REVALIDATE.results },

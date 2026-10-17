@@ -504,7 +504,8 @@
       "updated": "Risultati aggiornati {time}",
       "empty": "Nessuna partita chiusa in questo periodo.",
       "otherLeagues": "Risultati di altri campionati"
-    }
+    },
+    "thisWeekLeaderLevel": "{leader} guida la {league} per differenza reti, a pari punti ({pts}) con {second} dopo {played} partite."
   },
   "docs": {
     "methodology": {
