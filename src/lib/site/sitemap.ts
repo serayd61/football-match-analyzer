@@ -67,6 +67,9 @@ export function entries(input: SitemapInput): Entry[] {
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
     // SEO Faz 1a: per-league results archive (settled matches, public scores)
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/results`, changefreq: 'daily', priority: 0.5, lastmod: data })),
+    // SEO Faz 1c: per-league xG/xPTS table and goal statistics
+    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/xg-table`, changefreq: 'daily', priority: 0.6, lastmod: data })),
+    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/goals`, changefreq: 'daily', priority: 0.6, lastmod: data })),
     // SEO Faz 1b: per-league track record (public settled record, no session)
     ...SITE_LEAGUES.map((l): Entry => ({ path: `/performance/${l.slug}`, changefreq: 'daily', priority: 0.6, lastmod: data })),
     ...(input.teams ?? []).map((p): Entry => ({ path: p, changefreq: 'daily', priority: 0.5, lastmod: data })),

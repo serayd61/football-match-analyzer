@@ -40,6 +40,7 @@ export default async function LeagueResultsPage({ params }: { params: { locale: 
   if (!league) notFound();
   const t = await getTranslations('league.results');
   const tn = await getTranslations('nav');
+  const tl = await getTranslations('league');
   const f = await getFormatter();
   const rows = await listPublicResultsForLeague(league.slug).catch(() => []);
   const updated = rows.reduce<string | null>((m, r) => (r.updatedAt && (!m || r.updatedAt > m) ? r.updatedAt : m), null);
@@ -55,6 +56,11 @@ export default async function LeagueResultsPage({ params }: { params: { locale: 
         lead={t('lead', { league: league.name })}
         aside={<Link href={`/leagues/${league.slug}`} className="text-xs underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>}
       />
+      <nav className="flex flex-wrap gap-2 pb-4 text-sm" aria-label={tl('dataPages')}>
+        <Link href={`/leagues/${league.slug}/xg-table`} className="chip chip-sm">{tl('xgTable')}</Link>
+        <Link href={`/leagues/${league.slug}/goals`} className="chip chip-sm">{tl('goalsStats')}</Link>
+        <Link href={`/performance/${league.slug}`} className="chip chip-sm">{tl('recordPage', { league: league.name })}</Link>
+      </nav>
       <div className="max-w-3xl space-y-2 pb-6 text-[15px] leading-relaxed">
         {verdicts.length > 0 && <p>{t('recordLine', { league: league.name, n: verdicts.length, won, acc: f.number(won / verdicts.length, 'percent0') })} <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('recordLink')}</Link></p>}
         {updated && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(updated), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}

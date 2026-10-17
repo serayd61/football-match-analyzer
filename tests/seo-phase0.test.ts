@@ -49,7 +49,7 @@ test('titles fit in 60 characters with the site-name suffix, descriptions in 160
       const v = key.split('.').reduce((o, k) => o[k], m) as string;
       assert.ok(v.length + suffix <= 60, `${name} ${key} too long: ${v.length + suffix}`);
     }
-    for (const key of ['home.metaDescription', 'matches.hub.metaDescription', 'matches.match.metaDescription', 'matches.match.metaDescriptionSettled', 'league.metaDescription', 'meta.description', 'teams.metaDescription', 'team.metaDescription', 'perfLeague.metaDescription', 'docs.glossary.lead']) {
+    for (const key of ['home.metaDescription', 'matches.hub.metaDescription', 'matches.match.metaDescription', 'matches.match.metaDescriptionSettled', 'league.metaDescription', 'meta.description', 'teams.metaDescription', 'team.metaDescription', 'perfLeague.metaDescription', 'docs.glossary.lead', 'xgTable.metaDescription', 'goalsStats.metaDescription']) {
       const v = key.split('.').reduce((o, k) => o[k], m) as string;
       assert.ok(v.length <= 170, `${name} ${key} too long: ${v.length}`); // placeholders ({count}) are shorter than their values
     }
