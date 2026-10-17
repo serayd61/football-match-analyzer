@@ -5,14 +5,14 @@
 // ekleyip kendi kuponunu derler. Günün kuponundan (coupon-rule.ts, sunucu üretir)
 // AYRIDIR: burada seçim kullanıcınındır, sunucu hiçbir şey önermez. Kupon istemcide
 // (localStorage) durur; sonuçlar skor API'sinden bacak bazında eşlenir.
-// Kurallar: aynı maçtan tek bacak (yenisi eskisini değiştirir), en çok MAX_LEGS,
-// başlamış maç eklenmez. Toplam oran yalnız her bacağın oranı varsa; olasılık
+// Kurallar (slip-1.2, 2026-10-17): aynı maçtan birden çok pazar seçilebilir (1 + Üst 2,5 + KG);
+// aynı maçın aynı pazarında yenisi eskisini değiştirir. En çok MAX_LEGS bacak, başlamış maç eklenmez. Toplam oran yalnız her bacağın oranı varsa; olasılık
 // çarpımı bağımsızlık varsayımıyla "model tahmini"dir, garanti değildir.
 // ============================================================================
 
 export const SLIP_RULE_VERSION = 'slip-1.0';
 export const SLIP_STORAGE_KEY = 'fa.slip.v1';
-export const MAX_LEGS = 10;
+export const MAX_LEGS = 15;
 
 // slip-1.1 (2026-10-17): Asya handikapı ('ah', çizgi ev perspektifinden; +0.5 = ev 0,5 alır) ve
 // beraberlikte iade ('dnb') eklendi. Çeyrek çizgi iki yarım bahis gibi sonuçlanır (yarı tuttu / yarı tutmadı).
@@ -41,6 +41,8 @@ export interface SlipResult { homeScore: number | null; awayScore: number | null
 export type LegId = Pick<SlipLeg, 'fixtureId' | 'market' | 'selection'> & { line?: number };
 export const legKey = (l: LegId) => `${l.fixtureId}:${l.market}:${l.selection}${l.market === 'ah' ? `:${l.line}` : ''}`;
 const sameLeg = (a: LegId, b: LegId) => legKey(a) === legKey(b);
+/** aynı maçın aynı pazarı (handikapta çizgiden bağımsız): kuponda tek yer tutar */
+export const slotKey = (l: Pick<SlipLeg, 'fixtureId' | 'market'>) => `${l.fixtureId}:${l.market}`;
 
 const VALID_SEL: Record<SlipMarket, SlipSelection[]> = { '1x2': ['1', 'X', '2'], ou25: ['over', 'under'], btts: ['yes', 'no'], ah: ['home', 'away'], dnb: ['home', 'away'] };
 const validLine = (x: unknown) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 4 && Math.abs(x * 4 - Math.round(x * 4)) < 1e-9;
@@ -66,8 +68,8 @@ export function parseStoredSlip(raw: string | null | undefined): SlipLeg[] {
     const v = JSON.parse(raw);
     const legs: unknown[] = Array.isArray(v) ? v : Array.isArray(v?.legs) ? v.legs : [];
     const out: SlipLeg[] = [];
-    const seen = new Set<number>();
-    for (const l of legs) { if (isValidLeg(l) && !seen.has(l.fixtureId)) { seen.add(l.fixtureId); out.push(l); } }
+    const seen = new Set<string>();
+    for (const l of legs) { if (isValidLeg(l) && !seen.has(slotKey(l))) { seen.add(slotKey(l)); out.push(l); } }
     return out.slice(0, MAX_LEGS);
   } catch { return []; }
 }
@@ -77,19 +79,20 @@ export function serializeSlip(legs: SlipLeg[]): string { return JSON.stringify({
 export type AddOutcome = 'added' | 'replaced' | 'removed' | 'full' | 'started';
 
 /**
- * Aynı seçim tekrar eklenirse çıkarılır (toggle); aynı maçın başka seçimi eskisini değiştirir;
- * başlamış maç eklenmez; dolu kupona yeni maç girmez.
+ * Aynı seçim tekrar eklenirse çıkarılır (toggle); aynı maçın aynı pazarındaki başka seçim eskisini
+ * değiştirir; aynı maçın başka pazarı ayrı bacak olarak eklenir; başlamış maç eklenmez; dolu kupona yeni bacak girmez.
  */
 export function toggleLeg(legs: SlipLeg[], leg: SlipLeg, now = Date.now()): { legs: SlipLeg[]; outcome: AddOutcome } {
-  const same = legs.find((l) => l.fixtureId === leg.fixtureId);
-  if (same && sameLeg(same, leg)) return { legs: legs.filter((l) => l.fixtureId !== leg.fixtureId), outcome: 'removed' };
+  const same = legs.find((l) => slotKey(l) === slotKey(leg));
+  if (same && sameLeg(same, leg)) return { legs: legs.filter((l) => !sameLeg(l, leg)), outcome: 'removed' };
   if (Date.parse(leg.kickoff) <= now) return { legs, outcome: 'started' };
-  if (same) return { legs: legs.map((l) => (l.fixtureId === leg.fixtureId ? leg : l)), outcome: 'replaced' };
+  if (same) return { legs: legs.map((l) => (slotKey(l) === slotKey(leg) ? leg : l)), outcome: 'replaced' };
   if (legs.length >= MAX_LEGS) return { legs, outcome: 'full' };
   return { legs: [...legs, leg], outcome: 'added' };
 }
 
-export const removeLeg = (legs: SlipLeg[], fixtureId: number) => legs.filter((l) => l.fixtureId !== fixtureId);
+/** Tek bacağı çıkarır (legKey ile); yalnız sayı verilirse o maçın tüm bacakları. */
+export const removeLeg = (legs: SlipLeg[], id: number | LegId) => (typeof id === 'number' ? legs.filter((l) => l.fixtureId !== id) : legs.filter((l) => !sameLeg(l, id)));
 
 export function hasLeg(legs: SlipLeg[], leg: LegId): boolean {
   return legs.some((l) => sameLeg(l, leg));
@@ -100,8 +103,10 @@ export interface SlipTotals {
   /** her bacağın oranı varsa çarpım; yoksa null */
   totalOdds: number | null;
   missingOdds: number;
-  /** model olasılıkları çarpımı (bağımsızlık varsayımı) */
+  /** model olasılıkları çarpımı (bağımsızlık varsayımı; aynı maçın bacakları bağımsız değildir) */
   jointP: number;
+  /** farklı maç sayısı */
+  fixtures: number;
   /** ilk başlayan maç */
   firstKickoff: string | null;
 }
@@ -111,7 +116,7 @@ export function slipTotals(legs: SlipLeg[]): SlipTotals {
   const totalOdds = legs.length && !missingOdds ? Math.round(legs.reduce((a, l) => a * (l.odds as number), 1) * 100) / 100 : null;
   const jointP = legs.length ? legs.reduce((a, l) => a * l.p, 1) : 0;
   const kos = legs.map((l) => l.kickoff).sort();
-  return { n: legs.length, totalOdds, missingOdds, jointP, firstKickoff: kos[0] ?? null };
+  return { n: legs.length, totalOdds, missingOdds, jointP, fixtures: new Set(legs.map((l) => l.fixtureId)).size, firstKickoff: kos[0] ?? null };
 }
 
 export type LegOutcome = 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';

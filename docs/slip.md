@@ -1,4 +1,4 @@
-# Kuponum (slip-1.1) — kullanıcı kuponu
+# Kuponum (slip-1.2) — kullanıcı kuponu
 
 **Ne:** Üye, maç sayfasında hero'nun hemen altındaki **"Kupona ekle" ızgarasından** (1X2, Üst/Alt 2,5, KG,
 Asya handikapı, beraberlikte iade; her seçim model % · bahisçi oranı) ya da değerlendirme kartındaki pazar
@@ -7,8 +7,10 @@ tıklayınca çekmece açılır. `/coupon` sayfasının başında da aynı liste
 **Günün kuponundan (duo-1.0) ayrıdır:** burada seçim kullanıcınındır, sunucu hiçbir şey önermez.
 
 ## Kurallar (`src/lib/site/slip-rule.ts`, saf, testli)
-- Aynı maçtan tek bacak; aynı maçın başka seçimi eskisini **değiştirir**, aynı seçim ikinci tıkta **çıkar**.
-- En çok `MAX_LEGS = 10` maç; başlamış maç eklenmez (`toggleLeg` → `started`).
+- **slip-1.2:** aynı maçtan birden çok pazar seçilebilir (1 + Üst 2,5 + KG). Aynı maçın aynı pazarında (`slotKey`)
+  yenisi eskisini **değiştirir**; aynı seçim ikinci tıkta **çıkar**. Olasılık çarpımı aynı maçın bacakları için
+  bağımsızlık varsaymaz diye uyarılır.
+- En çok `MAX_LEGS = 15` bacak; başlamış maç eklenmez (`toggleLeg` → `started`).
 - Bacak, eklendiği andaki model olasılığı `p` ve tablodaki bahisçi oranı `odds` (yoksa `null`) ile donar.
 - `slipTotals`: toplam oran yalnız **her** bacağın oranı varsa çarpım; model olasılığı bağımsızlık varsayımıyla çarpım.
 - `legHit` / `slipStatus`: bir bacak kaybettiyse `lost`, hepsi tuttuysa `won`, aksi `pending`.

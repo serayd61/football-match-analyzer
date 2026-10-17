@@ -1687,9 +1687,9 @@
     "remove": "Kupondan çıkar",
     "started": "Maç başladı, kupona eklenemez",
     "full": "Kupon dolu (en çok {max} maç)",
-    "replaced": "Aynı maçtaki seçim değiştirildi",
+    "replaced": "Aynı pazardaki seçim değiştirildi",
     "colSlip": "Kupon",
-    "legs": "Maç",
+    "legs": "Bacak",
     "totalOdds": "Toplam oran",
     "totalOddsShort": "Oran",
     "jointP": "Model olasılığı",
@@ -1700,7 +1700,7 @@
     "clearConfirm": "Kupondaki tüm seçimler silinsin mi?",
     "copy": "Kopyala",
     "copied": "Kopyalandı",
-    "empty": "Kuponun boş. Maç sayfasındaki pazar satırlarından \"Kupona ekle\"ye tıkla; aynı maçtan tek seçim, en çok {max} maç.",
+    "empty": "Kuponun boş. Maç sayfasındaki \"Kupona ekle\" alanından seçim yap; aynı maçtan birden çok pazar seçebilirsin, en çok {max} bacak.",
     "toMatches": "Maçlara git",
     "live": "oynanıyor",
     "over": "Üst 2,5",
@@ -1713,13 +1713,13 @@
       "lost": "tutmadı",
       "empty": "boş"
     },
-    "note": "Seçimler sana ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Model olasılığı bacakların bağımsız sayıldığı çarpımdır. Kupon yalnız bu tarayıcıda saklanır.",
+    "note": "Seçimler sana ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Model olasılığı bacakların bağımsız sayıldığı çarpımdır; aynı maçın bacakları bağımsız değildir. Kupon yalnız bu tarayıcıda saklanır.",
     "shareNote": "İstatistiksel model olasılıkları; bahis tavsiyesi değildir.",
     "pageTitle": "Kuponum",
     "pageLead": "Maç sayfalarından seçtiğin pazarlar başlama saatine göre sıralı. Biten maçlar skorla işaretlenir; kupon bu tarayıcıda saklanır.",
     "dnbShort": "beraberlikte iade",
     "gridTitle": "Kupona ekle",
-    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan tek seçim kalır; yenisi eskisini değiştirir. Model % · bahisçi oranı (yoksa –).",
+    "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · bahisçi oranı (yoksa –).",
     "g1x2": "Maç sonucu (1X2)",
     "gOu": "Üst/Alt 2,5",
     "gBtts": "Karşılıklı gol",
@@ -1731,6 +1731,7 @@
       "void": "iade",
       "half_won": "yarı tuttu",
       "half_lost": "yarı tutmadı"
-    }
+    },
+    "fixtures": "{n} maç"
   }
 }
