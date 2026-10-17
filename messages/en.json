@@ -1982,7 +1982,7 @@
     "h1": "{team}",
     "lead": "Fixtures, results and form of {team} in the {league}, plus the model’s settled record on the club’s matches.",
     "homeVenue": "Home ground: {venue}",
-    "sPosition": "{team} sit {pos}. in the {league} after {played} matches with {pts} points ({w} wins, {d} draws, {l} defeats, goals {gf}–{ga}).",
+    "sPosition": "{team} sit {pos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} in the {league} after {played} matches with {pts} points ({w, plural, =1 {# win} other {# wins}}, {d, plural, =1 {# draw} other {# draws}}, {l, plural, =1 {# defeat} other {# defeats}}, goals {gf}–{ga}).",
     "sForm": "Last {n} results: {form}.",
     "sNext": "Next: {home} vs {away} ({league}) on {date}{venue}.",
     "venueAt": " at {venue}",
