@@ -1,4 +1,4 @@
-# Kuponum (slip-1.2) — kullanıcı kuponu
+# Kuponum (slip-1.3) — kullanıcı kuponu
 
 **Ne:** Üye, maç sayfasında hero'nun hemen altındaki **"Kupona ekle" ızgarasından** (1X2, Üst/Alt 2,5, KG,
 Asya handikapı, beraberlikte iade; her seçim model % · bahisçi oranı) ya da değerlendirme kartındaki pazar
@@ -30,6 +30,16 @@ tıklayınca çekmece açılır. `/coupon` sayfasının başında da aynı liste
 ## Bileşenler
 `SlipProvider` (bağlam, layout'ta), `AddToSlipButton` (maç sayfası: 1X2 tablosu, "Diğer pazarlar" KG/Üst-Alt satırları, öne çıkan seçim),
 `SlipMarkets` + `SlipOptionButton` (pazar ızgarası), `SlipBar` (yüzen çubuk + çekmece), `SlipPanel` (liste; çekmece ve `/coupon`). Metinler `slip` ad alanı (4 dil).
+
+## Paylaşım (slip-1.3)
+- Çekmecedeki **Paylaş**: telefonda sistem paylaşım menüsü (`navigator.share`: WhatsApp, Instagram DM, vb.);
+  yoksa WhatsApp (`wa.me`) / Telegram (`t.me/share`) bağlantısı + "bağlantıyı kopyala". Metin = `slipText` + bağlantı.
+- Bağlantı `/{locale}/s/{kod}`; kod `src/lib/site/slip-share.ts` ile saf kodlanır
+  (`v1~<fid>_<pazar+seçim>[_l<çizgi>]_p<yüzde>[_o<oran>]~…`, yalnız `[0-9A-Za-z._~-]`, ≤ 15 bacak). Takım/lig/saat/skor
+  sayfada `getPrediction` ile okunur (`src/lib/site/slip-shared.ts`), sunucu kupon saklamaz.
+- Sayfa herkese açık, `noindex`; OG görseli (`opengraph-image.tsx`) bacakları listeler, WhatsApp/Instagram'da kart çıkar.
+  Üye **"Kuponuma al"** ile bacakları kendi kuponuna kopyalar (başlamış maçlar atlanır); ziyaretçiye kayıt bağlantısı.
+- Paylaşılan içerik üyenin kendi seçimidir (model % ve ekleme anındaki oran); katalog sızmaz.
 
 ## Dil
 Public site dili korunur: "istatistiksel modelin olasılıkları; bahis tavsiyesi değildir" notu her listede.
