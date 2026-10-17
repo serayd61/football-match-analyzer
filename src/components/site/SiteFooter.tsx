@@ -8,7 +8,9 @@ import FooterAppActions from './FooterAppActions';
 // Footer v3: brand + one-line disclaimer, link columns, language.
 // SEO Faz 0 (2026-10-17): the product column links the public /matches hub (not the
 // members-only /predictions, which 307'd every crawler to /login), /contact is on the
-// localized site, the language switch is a row of crawlable <a hreflang> links.
+// localized site, the language switch is a row of crawlable <a hreflang> links, and the
+// responsible-gambling block is gone — the site offers no betting and links to no
+// bookmaker, and that copy is exactly what classifies a site as "gambling".
 export default async function SiteFooter() {
   const t = await getTranslations('v2.footer');
   const nav = await getTranslations('nav');
@@ -41,12 +43,6 @@ export default async function SiteFooter() {
       <div className="border-t border-s-line">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-4 py-5 text-[12.5px] leading-relaxed sm:px-6">
           <p>{t('compliance')}</p>
-          <p>
-            {t('help')}{' '}
-            <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-s-ink">begambleaware.org</a>
-            {' · '}
-            <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener noreferrer" className="underline hover:text-s-ink">gamcare.org.uk</a>
-          </p>
         </div>
       </div>
     </footer>
