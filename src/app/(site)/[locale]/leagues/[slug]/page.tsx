@@ -96,7 +96,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
             {nextFixture && <> {t('thisWeekNext', { home: nextFixture.homeName, away: nextFixture.awayName, date: f.dateTime(new Date(nextFixture.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) })}</>}
           </p>
         )}
-        <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link></p>
+        <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link> <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('recordPage', { league: league.name })}</Link></p>
         {lastWrite && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(lastWrite), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
       </div>
 

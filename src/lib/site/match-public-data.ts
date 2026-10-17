@@ -6,6 +6,7 @@ import { idsForLeague } from './results';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { publicMatchView, type PublicMatch } from './match-public';
 import { leagueBySlug } from './leagues';
+import { zonedStartOfDay, addDays } from './time';
 
 // Server-side reads for the public match pages and the sitemap. Every row
 // goes through publicMatchView() so no model figure leaves this module.
@@ -88,6 +89,29 @@ export const listPublicResultsForLeague = unstable_cache(
   },
   ['site-public-results-league-v1'],
   { revalidate: REVALIDATE.results },
+);
+
+/**
+ * Every covered fixture of one Zurich calendar day — upcoming, live and settled
+ * (SEO Faz 1b day hubs). Engine rows only, like the weekly hub: a fixture the
+ * model has not rated yet is not listed.
+ */
+export const listPublicForDay = unstable_cache(
+  async (ymd: string): Promise<PublicMatch[]> => {
+    const ids = await idsForLeague(null);
+    const official = await resolveOfficialVersion();
+    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS), official)
+      .in('league_id', ids)
+      .gte('kickoff', zonedStartOfDay(ymd).toISOString())
+      .lt('kickoff', zonedStartOfDay(addDays(ymd, 1)).toISOString())
+      .order('kickoff', { ascending: true })
+      .limit(300);
+    if (error) throw new Error(error.message);
+    const ctx = await loadContext();
+    return parseRows(data, official).map((r) => mapRow(r, ctx)).filter((p) => p.covered && p.league).map(publicMatchView);
+  },
+  ['site-public-day-v1'],
+  { revalidate: REVALIDATE.fixtures },
 );
 
 export interface SitemapMatch { path: string; lastmod: Date | null }

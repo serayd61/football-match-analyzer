@@ -158,3 +158,39 @@ export function webPageJsonLd(locale: Locale, input: { url: string; name: string
     ...(d && !Number.isNaN(d.getTime()) ? { dateModified: d.toISOString() } : {}),
   };
 }
+
+/** SportsTeam — a club page (SEO Faz 1b). `url` is the localized team page. */
+export function sportsTeamJsonLd(locale: Locale, input: { url: string; name: string; crest: string; league: SiteLeague; venue?: { name: string; city?: string | null } | null }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SportsTeam',
+    '@id': `${input.url}#team`,
+    name: input.name,
+    sport: 'Soccer',
+    url: input.url,
+    logo: input.crest,
+    inLanguage: locale,
+    memberOf: { '@type': 'SportsOrganization', name: input.league.name },
+    ...(input.venue ? { location: { '@type': 'Place', name: input.venue.name, ...(input.venue.city ? { address: { '@type': 'PostalAddress', addressLocality: input.venue.city } } : {}) } } : {}),
+  };
+}
+
+/** DefinedTermSet — the glossary (SEO Faz 1b): one DefinedTerm per entry, each with its anchor URL. */
+export function definedTermSetJsonLd(locale: Locale, input: { url: string; name: string; terms: Array<{ id: string; term: string; description: string }> }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    '@id': `${input.url}#terms`,
+    name: input.name,
+    url: input.url,
+    inLanguage: locale,
+    hasDefinedTerm: input.terms.map((t) => ({
+      '@type': 'DefinedTerm',
+      '@id': `${input.url}#${t.id}`,
+      name: t.term,
+      description: t.description,
+      url: `${input.url}#${t.id}`,
+      inDefinedTermSet: `${input.url}#terms`,
+    })),
+  };
+}

@@ -25,7 +25,9 @@
     "tryFree": "Prova gratis 7 giorni",
     "picks": "In linea",
     "matches": "Partite",
-    "coupon": "Schedina del giorno"
+    "coupon": "Schedina del giorno",
+    "teams": "Squadre",
+    "glossary": "Glossario"
   },
   "locale": {
     "label": "Lingua"
@@ -505,7 +507,8 @@
       "empty": "Nessuna partita chiusa in questo periodo.",
       "otherLeagues": "Risultati di altri campionati"
     },
-    "thisWeekLeaderLevel": "{leader} guida la {league} per differenza reti, a pari punti ({pts}) con {second} dopo {played} partite."
+    "thisWeekLeaderLevel": "{leader} guida la {league} per differenza reti, a pari punti ({pts}) con {second} dopo {played} partite.",
+    "recordPage": "Rendimento completo in {league}."
   },
   "docs": {
     "methodology": {
@@ -758,6 +761,121 @@
           "h": "9. Legge applicabile",
           "p": [
             "Queste condizioni sono regolate dal diritto svizzero. Il foro competente è la sede del gestore in Svizzera, fatte salve le norme inderogabili a tutela dei consumatori che ti riconoscono un foro diverso. Possiamo aggiornare queste condizioni; la versione corrente con la sua data è sempre pubblicata in questa pagina."
+          ]
+        }
+      ]
+    },
+    "glossary": {
+      "title": "Glossario",
+      "metaTitle": "Glossario: xG, xPTS, Brier e altro",
+      "lead": "I termini dietro le previsioni, spiegati in modo semplice: gol attesi, punti attesi, ELO, Dixon-Coles, Poisson, Brier, calibrazione e i tre mercati.",
+      "moreNav": "Collegati",
+      "linkToday": "Le partite di oggi",
+      "sections": [
+        {
+          "id": "xg",
+          "h": "Gol attesi (xG)",
+          "p": [
+            "I gol attesi misurano la qualità delle occasioni, non i gol che per caso sono entrati. Ogni tiro riceve una probabilità di segnare in base a posizione, angolo, tipo di assist e parte del corpo; la somma di queste probabilità in una partita dà gli xG di ciascuna squadra. Una squadra con 2,1 xG ha creato occasioni che valgono circa due gol, qualunque sia il risultato finale.",
+            "Gli xG anticipano i risultati futuri meglio dei gol perché tolgono la fortuna nella finalizzazione e la varianza del portiere. Nell’arco di una stagione la differenza reti di una squadra tende ad avvicinarsi alla sua differenza xG.",
+            "Su questo sito i gol attesi di una pagina partita sono le stime di attacco e difesa del modello, non xG basati sui tiri. La pagina della metodologia spiega la differenza."
+          ]
+        },
+        {
+          "id": "xg-table",
+          "h": "Classifica xG",
+          "p": [
+            "Una classifica xG riordina un campionato per gol attesi fatti e subiti invece che per gol segnati e incassati. Mostra quali squadre stanno sopra o sotto la qualità delle loro occasioni: chi è terzo con l’ottava differenza xG vive di finalizzazione o di un portiere in forma, e di solito arretra.",
+            "Va letta insieme alla classifica reale. Scarti ampi tra differenza reti reale e attesa si chiudono quasi sempre nelle dieci-quindici partite successive."
+          ]
+        },
+        {
+          "id": "xpts",
+          "h": "Punti attesi (xPTS)",
+          "p": [
+            "I punti attesi convertono le probabilità di una partita in punti: probabilità di vittoria × 3 più probabilità di pareggio × 1. Una squadra con il 50 % di vittoria e il 25 % di pareggio ha 1,75 punti attesi da quella gara.",
+            "Sommati in una stagione, gli xPTS dicono quanti punti meritavano le prestazioni di una squadra. Un club con 20 punti e 15 xPTS è stato fortunato; uno con 15 punti e 20 xPTS gioca meglio di quanto dica la sua posizione."
+          ]
+        },
+        {
+          "id": "elo",
+          "h": "Rating ELO",
+          "p": [
+            "L’ELO è un punteggio che si muove dopo ogni partita: chi vince toglie punti a chi perde, e la quantità dipende da quanto il risultato era sorprendente. Battere una squadra molto più forte sposta molto i rating; battere una più debole quasi nulla. La differenza di rating tra due squadre si traduce direttamente in una probabilità di vittoria.",
+            "L’ELO è semplice e robusto, per questo è il riferimento abituale dei modelli calcistici. Il nostro modello usa una forza di squadra nello stesso spirito come uno dei suoi input; la pagina della metodologia li elenca tutti."
+          ]
+        },
+        {
+          "id": "dixon-coles",
+          "h": "Modello Dixon-Coles",
+          "p": [
+            "Dixon-Coles (1997) è un modello statistico che assegna a ogni squadra un valore di attacco e uno di difesa, più un fattore campo. Da questi derivano i gol attesi di una gara, e una distribuzione di Poisson li trasforma in probabilità per ogni risultato esatto.",
+            "Le sue due migliorie rispetto a un Poisson semplice sono una correzione per i pareggi a basso punteggio (0-0 e 1-1 capitano più spesso di quanto preveda l’indipendenza) e un peso temporale, così le partite recenti contano più di quelle vecchie.",
+            "È il modello dietro le probabilità 1X2 di questo sito. I valori vengono ristimati a ogni risultato."
+          ]
+        },
+        {
+          "id": "poisson",
+          "h": "Distribuzione di Poisson",
+          "p": [
+            "La distribuzione di Poisson descrive quante volte un evento raro accade in un intervallo fisso quando se ne conosce la frequenza media. I gol la seguono bene: se una squadra ha 1,5 gol attesi, Poisson dà la probabilità di esattamente 0, 1, 2, 3 o più gol.",
+            "Combinando le distribuzioni delle due squadre si ottiene una probabilità per ogni risultato esatto; sommando i risultati si hanno vittoria in casa, pareggio e vittoria esterna, la linea over/under 2,5 e «segnano entrambe»."
+          ]
+        },
+        {
+          "id": "probability",
+          "h": "Probabilità, non pronostico",
+          "p": [
+            "Una probabilità dice quante volte un esito si verifica in molte partite simili, non cosa succederà in questa. Una scelta al 60 % è destinata a perdere quattro volte su dieci; una serie di cinque sconfitte di fila è normale, non il segno di un modello rotto.",
+            "La domanda utile non è se una singola scelta sia andata bene, ma se le scelte pubblicate al 60 % si realizzano circa nel 60 % dei casi su centinaia di partite. È ciò che misurano calibrazione e Brier."
+          ]
+        },
+        {
+          "id": "1x2",
+          "h": "1X2",
+          "p": [
+            "L’1X2 è il mercato sul risultato finale: 1 vittoria in casa, X pareggio, 2 vittoria esterna. Le tre probabilità di una pagina partita sommano a 100 % e la scelta del modello è l’esito più probabile dei tre.",
+            "Il pareggio è l’esito più difficile da indicare; un modello lo sceglie di rado anche quando la sua probabilità è vicina al 30 %."
+          ]
+        },
+        {
+          "id": "over-under",
+          "h": "Over/under 2,5 gol",
+          "p": [
+            "La linea over/under 2,5 chiede se una partita avrà tre o più gol (over) oppure due o meno (under). Si chiude sul risultato finale e non dipende da chi vince.",
+            "La probabilità arriva direttamente dalla distribuzione dei risultati. I campionati differiscono: la Serie A sta sotto la media dei grandi campionati, la Bundesliga sopra, e la pagina partita mostra come sono andate le ultime gare delle due squadre rispetto alla linea."
+          ]
+        },
+        {
+          "id": "btts",
+          "h": "Segnano entrambe",
+          "p": [
+            "«Segnano entrambe» chiede se ciascuna squadra segna almeno una volta. Un 2-1 o un 1-1 è un sì; un 2-0 o uno 0-0 è un no. Si chiude sul risultato finale.",
+            "La probabilità è la quota dei risultati in cui nessuna squadra resta a zero. Sale quando entrambi gli attacchi sono valutati bene ed entrambe le difese male."
+          ]
+        },
+        {
+          "id": "brier",
+          "h": "Brier score",
+          "p": [
+            "Il Brier score misura quanto era buono un insieme di probabilità, non solo se la scelta ha vinto. Per ogni partita le probabilità pubblicate si confrontano con l’esito (1 per ciò che è accaduto, 0 per il resto) e si sommano gli scarti al quadrato; il Brier è la media su tutte le partite.",
+            "0 è perfetto, 0,667 equivale a tirare a indovinare con un terzo su tre esiti, e un buon modello calcistico si colloca intorno a 0,60. Più basso è, meglio è. Compare nella pagina del rendimento e nel rendimento di ogni campionato."
+          ]
+        },
+        {
+          "id": "calibration",
+          "h": "Calibrazione",
+          "p": [
+            "Un modello è calibrato quando le sue probabilità corrispondono alla realtà: le scelte pubblicate al 55 % dovrebbero realizzarsi circa nel 55 % dei casi, quelle al 70 % circa nel 70 %. Il grafico di calibrazione nella pagina del rendimento raggruppa le scelte chiuse per confidenza pubblicata e confronta la percentuale di successo osservata.",
+            "Punti sopra la diagonale significano che il modello era troppo prudente, punti sotto che era troppo sicuro. I nostri valori di confidenza passano per una curva di calibrazione stimata sul rendimento chiuso, quindi la confidenza mostrata è quella calibrata."
+          ]
+        },
+        {
+          "id": "algorithm",
+          "h": "Come funziona un algoritmo di previsione calcistica",
+          "p": [
+            "Un algoritmo di previsione trasforma i risultati passati in probabilità per le partite future in quattro passi. Primo, valuta attacco e difesa di ogni squadra dai suoi risultati, pesando di più quelli recenti. Secondo, combina i valori delle due squadre con il fattore campo in un numero di gol attesi per ciascuna. Terzo, trasforma quelle attese in una probabilità per ogni risultato esatto, di solito con una distribuzione di Poisson. Quarto, somma i risultati nei mercati: 1X2, over/under 2,5 e «segnano entrambe».",
+            "Ciò che rende affidabile il risultato non è il modello in sé ma il rendimento: ogni probabilità salvata con marca temporale prima del calcio d’inizio, chiusa automaticamente e misurata con percentuale di successo, Brier e calibrazione. Quel rendimento è pubblico su questo sito."
           ]
         }
       ]
@@ -1488,7 +1606,8 @@
       "colCs": "Porta inviolata",
       "leagueAvgNote": "Media {league} in questa stagione: {avg} gol a partita.",
       "modelLockedVerdict": "La scelta qui sopra è chiusa. I membri vedono anche la distribuzione completa delle probabilità, gli expected goals, i mercati gol e l’etichetta di rischio com’erano prima del calcio d’inizio:",
-      "resultsArchive": "Risultati {league}"
+      "resultsArchive": "Risultati {league}",
+      "teamPage": "{team}: partite e forma"
     }
   },
   "coupon": {
@@ -1818,5 +1937,110 @@
     "telegramLabel": "Telegram",
     "telegramNote": "Selezioni giornaliere e annunci; il modo più rapido per raggiungerci.",
     "moreLead": "Prima di scrivere, la risposta potrebbe già essere qui:"
+  },
+  "dayHub": {
+    "metaTitleToday": "Partite di calcio oggi: gare e forma",
+    "metaTitleTomorrow": "Partite di calcio domani: gare e forma",
+    "metaTitleYesterday": "Risultati di ieri e verdetti",
+    "metaTitleDate": "Partite di calcio del {date}",
+    "metaDescription": "{count, plural, =0 {Nessuna partita coperta} =1 {# partita coperta} other {# partite coperte}} in {leagues, plural, =1 {# campionato} other {# campionati}} il {date}: orari, classifica, forma e precedenti. Probabilità del modello per i membri.",
+    "eyebrow": "Vista giornaliera",
+    "titleToday": "Le partite di oggi",
+    "titleTomorrow": "Le partite di domani",
+    "titleYesterday": "I risultati di ieri",
+    "titleDate": "Partite del {date}",
+    "lead": "Ogni gara del {date} nei campionati valutati dal modello. Apri una partita per orario, posizione in classifica, forma e precedenti.",
+    "weekHub": "Tutte le partite della settimana",
+    "dayNav": "Navigazione per giorno",
+    "prevDay": "Giorno precedente",
+    "nextDay": "Giorno successivo",
+    "sCount": "{count, plural, =1 {# partita coperta} other {# partite coperte}} in {leagues, plural, =1 {# campionato} other {# campionati}} il {date}.",
+    "sFirstLast": "Si parte con {home} – {away} ({league}) alle {time}; l’ultima è {lhome} – {laway} alle {ltime}.",
+    "sSingle": "L’unica gara è {home} – {away} ({league}) alle {time}.",
+    "sSettled": "{settled, plural, =1 {# di queste è chiusa} other {# di queste sono chiuse}}; la scelta 1X2 del modello è stata azzeccata in {won} su {n}.",
+    "sSettledNoVerdict": "{settled, plural, =1 {# di queste è chiusa} other {# di queste sono chiuse}}.",
+    "empty": "Nessuna partita coperta in questo giorno",
+    "emptyLead": "Il modello valuta undici campionati; nei giorni senza gare non c’è nulla da elencare. Usa i collegamenti ai giorni vicini.",
+    "faqH": "Domande su questo giorno",
+    "faqCountQ": "Quante partite ci sono il {date}?",
+    "faqCountA": "Campionati con gare: {leagues}.",
+    "faqFirstQ": "A che ora è la prima partita del {date}?",
+    "faqFirstA": "{home} – {away} in {league} inizia alle {time}.",
+    "faqProbQ": "Dove sono le probabilità di queste partite?",
+    "faqProbA": "Ogni pagina partita mostra i fatti pubblici: classifica, forma e precedenti. Le probabilità 1X2, i gol attesi e la confidenza del modello sono pubblicati per i membri prima del calcio d’inizio; a partita chiusa, scelta ed esito diventano pubblici."
+  },
+  "teams": {
+    "metaTitle": "Squadre: partite, forma e risultati",
+    "metaDescription": "Ogni squadra dei {leagues} campionati valutati dal modello: prossime partite, ultimi risultati, forma, gol a partita e il rendimento chiuso del modello sulle sue gare.",
+    "title": "Squadre",
+    "lead": "{count} squadre nei {leagues} campionati valutati dal modello. Ogni pagina squadra mostra le prossime partite, gli ultimi risultati, la forma, i gol a partita e com’è andata con le scelte chiuse del modello su quella squadra.",
+    "leaguePage": "Pagina del campionato"
+  },
+  "team": {
+    "metaTitle": "{team}: partite, risultati e forma",
+    "metaDescription": "{team} ({league}): prossima partita, ultimi risultati, forma, gol a partita e com’è andata con le scelte del modello sulle gare del {team}.",
+    "h1": "{team}",
+    "lead": "Partite, risultati e forma del {team} in {league}, più il rendimento chiuso del modello sulle gare della squadra.",
+    "homeVenue": "Stadio di casa: {venue}",
+    "sPosition": "Il {team} è {pos}° in {league} dopo {played} partite con {pts} punti ({w} vittorie, {d} pareggi, {l} sconfitte, gol {gf}–{ga}).",
+    "sForm": "Ultimi {n} risultati: {form}.",
+    "sNext": "Prossima: {home} – {away} ({league}) {date}{venue}.",
+    "venueAt": " allo stadio {venue}",
+    "sGoals": "Nelle ultime {n} partite il {team} ha segnato in media {gf} gol e ne ha subiti {ga}; {over} sono finite con più di 2,5 gol e in {btts} hanno segnato entrambe.",
+    "sRecord": "La scelta 1X2 del modello sulle gare del {team} è stata azzeccata in {won} su {n} partite chiuse ({acc}).",
+    "sRecordNone": "Il rendimento chiuso del modello sulle gare del {team} è ancora troppo piccolo per un giudizio.",
+    "statPos": "Posizione",
+    "statPts": "Punti",
+    "statWdl": "V–N–P",
+    "statGoals": "Gol",
+    "statForm": "Forma",
+    "upcomingH": "Prossime partite",
+    "upcomingSub": "Apri una gara per l’anteprima.",
+    "upcomingEmpty": "Nessuna partita in programma pubblicata.",
+    "membersLead": "Le probabilità 1X2, i gol attesi e la confidenza del modello per le gare del {team} sono pubblicati per i membri prima del calcio d’inizio.",
+    "resultsH": "Ultimi risultati",
+    "resultsSub": "Risultato finale e scelta chiusa del modello, dalla più recente.",
+    "archive": "Archivio risultati {league}",
+    "colDate": "Data",
+    "colMatch": "Partita",
+    "colScore": "Risultato",
+    "colPick": "Scelta del modello",
+    "colOutcome": "Esito",
+    "recordNote": "Le scelte chiuse sono pubbliche; le previsioni future sono per i membri.",
+    "recordLink": "Rendimento in {league}",
+    "faqH": "Domande frequenti",
+    "faqNextQ": "Quando gioca il {team}?",
+    "faqFormQ": "Com’è la forma del {team}?",
+    "faqPosQ": "Dov’è il {team} nella classifica di {league}?",
+    "faqRecordQ": "Quanto è stato preciso il modello sulle gare del {team}?",
+    "otherTeams": "Altre squadre di {league}",
+    "leaguePage": "Pagina {league}"
+  },
+  "perfLeague": {
+    "metaTitle": "Precisione delle previsioni {league}",
+    "metaDescription": "Il rendimento chiuso del modello in {league} ({country}): successo, Brier, resa al prezzo di chiusura per mese e mercato, più le ultime partite con verdetto.",
+    "eyebrow": "Rendimento",
+    "h1": "Rendimento in {league}",
+    "lead": "Ogni previsione di {league} con marca temporale prima del calcio d’inizio e chiusa sul risultato finale. Nulla viene rimosso a posteriori.",
+    "allLeagues": "Tutti i campionati",
+    "methodLink": "Come sono definiti i numeri",
+    "glossaryLink": "Il Brier spiegato",
+    "sSummary": "Dal {from} la scelta 1X2 del modello è stata azzeccata in {won} su {n} partite chiuse di {league} ({acc}), con un Brier di {brier}.",
+    "sMarkets": "Over/under 2,5 gol ha centrato {ou} dei casi ({ouN} partite) e «segnano entrambe» {btts} ({bttsN}).",
+    "sRoi": "Un’unità su ogni scelta 1X2 al prezzo di chiusura avrebbe reso {roi} in {bets} partite.",
+    "sMonths": "Per mese: {list}.",
+    "recentH": "Ultime partite chiuse di {league}",
+    "recentSub": "Risultato e scelta del modello prima della gara, dalla più recente. Apri una partita per la panoramica completa.",
+    "archive": "Archivio risultati",
+    "membersH": "Ogni scelta, con confidenza e prezzo",
+    "membersLead": "I membri vedono ogni previsione futura di {league} con confidenza calibrata, prezzo di mercato e mercati gol.",
+    "faqH": "Domande frequenti",
+    "faqAccQ": "Quanto sono precise le previsioni di {league}?",
+    "faqBrierQ": "Cos’è il Brier score?",
+    "faqBrierA": "Il Brier score è l’errore quadratico medio delle probabilità pubblicate rispetto a ciò che è accaduto: 0 è perfetto, 0,667 equivale a tirare a indovinare con un terzo su tre esiti. Più basso è, meglio è.",
+    "faqHowQ": "Come si calcola il rendimento in {league}?",
+    "faqHowA": "Ogni previsione di {league} viene salvata con marca temporale prima del calcio d’inizio e chiusa automaticamente sul risultato finale. La percentuale di successo conta la scelta 1X2, il Brier valuta l’intera distribuzione di probabilità e la resa ipotizza un’unità su ogni scelta all’ultimo prezzo di mercato rilevato.",
+    "leaguePage": "Pagina {league}",
+    "otherLeagues": "Altri campionati"
   }
 }

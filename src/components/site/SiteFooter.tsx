@@ -27,7 +27,9 @@ export default async function SiteFooter() {
           <Link href="/matches" className="hover:text-s-ink">{nav('matches')}</Link>
           <Link href="/performance" className="hover:text-s-ink">{nav('performance')}</Link>
           <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>
+          <Link href="/teams" className="hover:text-s-ink">{nav('teams')}</Link>
           <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
+          <Link href="/glossary" className="hover:text-s-ink">{nav('glossary')}</Link>
           <FooterPricingLink label={nav('pricing')} />
         </nav>
         <nav className="flex flex-col gap-2" aria-label="Company">

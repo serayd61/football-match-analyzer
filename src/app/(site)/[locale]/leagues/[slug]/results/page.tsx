@@ -56,7 +56,7 @@ export default async function LeagueResultsPage({ params }: { params: { locale: 
         aside={<Link href={`/leagues/${league.slug}`} className="text-xs underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>}
       />
       <div className="max-w-3xl space-y-2 pb-6 text-[15px] leading-relaxed">
-        {verdicts.length > 0 && <p>{t('recordLine', { league: league.name, n: verdicts.length, won, acc: f.number(won / verdicts.length, 'percent0') })} <Link href={`/performance?league=${league.slug}`} className="underline underline-offset-4">{t('recordLink')}</Link></p>}
+        {verdicts.length > 0 && <p>{t('recordLine', { league: league.name, n: verdicts.length, won, acc: f.number(won / verdicts.length, 'percent0') })} <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('recordLink')}</Link></p>}
         {updated && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(updated), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
       </div>
       {rows.length ? (
