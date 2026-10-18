@@ -72,7 +72,7 @@ def context_factors(table, home, away, ctx):
     → (f_home, f_away, tags): λ_ev ve λ_dep çarpanları + açıklama etiketleri.
     ctx yoksa/boşsa veya tablo yetersizse (1.0, 1.0, []).
     """
-    if not isinstance(ctx, dict) or table is None:
+    if not isinstance(ctx, dict) or not ctx or table is None:  # {} = kapalı (parite)
         return 1.0, 1.0, []
     p = {**DEFAULTS, **{k: v for k, v in ctx.items() if v is not None}}
     try:
