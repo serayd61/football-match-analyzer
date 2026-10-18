@@ -1,7 +1,8 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
-import { getMatchesByDate } from '@/lib/data-sources/free-football';
+import { getMatchesByDateStrict, FeedUnavailableError, type FFMatch } from '@/lib/data-sources/free-football';
+import { fallbackDay } from './feed-fallback';
 import { REVALIDATE, ODDS_TAG } from './db';
 import { listPredictionsForDay, fetchPredictionsForDay, loadContext, type SitePrediction } from './predictions';
 import { mergeFeed, type FeedRow } from './merge-feed';
@@ -31,22 +32,28 @@ export type FeedState = 'ok' | 'error' | 'skipped';
 
 export interface DayRows { rows: SitePrediction[]; feed: FeedState; fetchedAt: string }
 
+function toFeedRows(list: FFMatch[]): FeedRow[] {
+  return list
+    .map((f) => ({
+      id: f.id, homeTeam: f.homeName || 'Unknown', awayTeam: f.awayName || 'Unknown', homeTeamId: f.homeId, awayTeamId: f.awayId,
+      homeTeamLogo: f.homeLogo, awayTeamLogo: f.awayLogo, league: f.leagueName || 'Unknown League', leagueId: f.leagueId, leagueLogo: f.leagueLogo,
+      leagueCountry: f.leagueCountry || '', date: f.utcTime, status: f.cancelled ? 'CANC' : f.finished ? 'FT' : f.started ? 'LIVE' : 'NS',
+      homeScore: f.homeScore ?? undefined, awayScore: f.awayScore ?? undefined,
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+// Kaynak hatası (502/429) boş gün sayılmaz: önbelleğe yazılmaz, football-data.org
+// yedeğiyle (büyük ligler, 60 sn Redis) canlı/bitmiş durumu tamamlanır (2026-10-18 kesintisi).
 async function feedForDay(ymd: string): Promise<FeedRow[]> {
-  return getOrSet<FeedRow[]>(
-    CACHE_KEYS.FIXTURES_DATE(ymd),
-    async () => {
-      const list = await getMatchesByDate(ymd);
-      return list
-        .map((f) => ({
-          id: f.id, homeTeam: f.homeName || 'Unknown', awayTeam: f.awayName || 'Unknown', homeTeamId: f.homeId, awayTeamId: f.awayId,
-          homeTeamLogo: f.homeLogo, awayTeamLogo: f.awayLogo, league: f.leagueName || 'Unknown League', leagueId: f.leagueId, leagueLogo: f.leagueLogo,
-          leagueCountry: f.leagueCountry || '', date: f.utcTime, status: f.cancelled ? 'CANC' : f.finished ? 'FT' : f.started ? 'LIVE' : 'NS',
-          homeScore: f.homeScore ?? undefined, awayScore: f.awayScore ?? undefined,
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    },
-    CACHE_TTL.FIXTURES,
-  );
+  try {
+    return await getOrSet<FeedRow[]>(CACHE_KEYS.FIXTURES_DATE(ymd), async () => toFeedRows(await getMatchesByDateStrict(ymd)), CACHE_TTL.FIXTURES);
+  } catch (e) {
+    if (!(e instanceof FeedUnavailableError)) throw e;
+    const day = await fallbackDay(ymd);
+    console.error(`[site/fixtures] feed unavailable for ${ymd}; fallback ${day.source}: ${day.matches.length} rows, ${day.scored} scored`);
+    return toFeedRows(day.matches);
+  }
 }
 
 /**

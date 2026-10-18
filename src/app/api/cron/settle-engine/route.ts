@@ -56,7 +56,10 @@ export async function GET(request: NextRequest) {
     }
 
     const limit = parseInt(searchParams.get('limit') || '900', 10) || 900;
-    const res = await settleEnginePredictions(sb(), { limit });
+    // Akış kesintisinde football-data.org yedeği (yalnız büyük ligler, void yok).
+    // Dinamik import: modül 'server-only' çeker, rota koruma testleri handler'ı yükleyebilsin.
+    const { fallbackDay } = await import('@/lib/site/feed-fallback');
+    const res = await settleEnginePredictions(sb(), { limit, fallback: async (d) => (await fallbackDay(d, true)).matches });
     if (res.checked === 0 && res.dates === 0) {
       return NextResponse.json({ ok: true, ...res, note: 'no pending past matches' });
     }
