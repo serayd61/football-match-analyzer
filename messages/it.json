@@ -678,14 +678,14 @@
         {
           "h": "4. Responsabili del trattamento",
           "p": [
-            "- Vercel: hosting e statistiche senza cookie\n- Supabase: database e autenticazione\n- Stripe: pagamenti\n- Resend: email transazionali\n- Google: misurazione delle conversioni Ads, se attiva",
+            "- Vercel: hosting e statistiche senza cookie\n- Supabase: database e autenticazione\n- Stripe: pagamenti\n- Resend: email transazionali\n- Google: Analytics (visite e pagine viste, IP anonimizzato) e misurazione delle conversioni Ads, se attivi",
             "Questi fornitori trattano i dati per nostro conto su base contrattuale. Alcuni hanno sede fuori dalla Svizzera e dall'UE; i trasferimenti si basano su decisioni di adeguatezza o clausole contrattuali standard. Non vendiamo dati personali."
           ]
         },
         {
           "h": "5. Cookie e archiviazione locale",
           "p": [
-            "Il sito pubblico salva tema e lingua scelti nell'archiviazione locale del tuo browser; questo dato non lascia mai il tuo dispositivo. Le aree con accesso usano un cookie di sessione. La misurazione Google Ads, se attiva, usa cookie che puoi rifiutare o cancellare nel browser."
+            "Il sito pubblico salva tema e lingua scelti nell'archiviazione locale del tuo browser; questo dato non lascia mai il tuo dispositivo. Le aree con accesso usano un cookie di sessione. Google Analytics e la misurazione Google Ads, se attivi, usano cookie che puoi rifiutare o cancellare nel browser."
           ]
         },
         {

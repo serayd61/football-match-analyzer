@@ -29,7 +29,7 @@ export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms' 
   methodology: new Date('2026-10-10T12:00:00Z'),
   glossary: new Date('2026-10-17T12:00:00Z'),
   about: new Date('2026-09-04T12:00:00Z'),
-  privacy: new Date('2026-09-04T12:00:00Z'),
+  privacy: new Date('2026-10-18T12:00:00Z'),
   terms: new Date('2026-09-04T12:00:00Z'),
 };
 

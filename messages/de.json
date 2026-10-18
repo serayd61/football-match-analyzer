@@ -678,14 +678,14 @@
         {
           "h": "4. Auftragsverarbeiter",
           "p": [
-            "- Vercel: Hosting und cookielose Statistik\n- Supabase: Datenbank und Authentifizierung\n- Stripe: Zahlungen\n- Resend: Transaktions-E-Mails\n- Google: Ads-Conversion-Messung, sofern aktiv",
+            "- Vercel: Hosting und cookielose Statistik\n- Supabase: Datenbank und Authentifizierung\n- Stripe: Zahlungen\n- Resend: Transaktions-E-Mails\n- Google: Analytics (Besuche und aufgerufene Seiten, IP anonymisiert) und Ads-Conversion-Messung, sofern aktiv",
             "Diese Anbieter verarbeiten Daten in unserem Auftrag auf vertraglicher Grundlage. Einige sitzen ausserhalb der Schweiz und der EU; Übermittlungen stützen sich auf Angemessenheitsbeschlüsse oder Standardvertragsklauseln. Wir verkaufen keine personenbezogenen Daten."
           ]
         },
         {
           "h": "5. Cookies und lokaler Speicher",
           "p": [
-            "Die öffentliche Seite speichert Ihr gewähltes Farbschema und Ihre Sprache im lokalen Speicher Ihres Browsers; das verlässt Ihr Gerät nie. Angemeldete Bereiche nutzen ein Sitzungs-Cookie. Die Google-Ads-Messung verwendet, sofern aktiv, Cookies, die Sie im Browser ablehnen oder löschen können."
+            "Die öffentliche Seite speichert Ihr gewähltes Farbschema und Ihre Sprache im lokalen Speicher Ihres Browsers; das verlässt Ihr Gerät nie. Angemeldete Bereiche nutzen ein Sitzungs-Cookie. Google Analytics und die Google-Ads-Messung verwenden, sofern aktiv, Cookies, die Sie im Browser ablehnen oder löschen können."
           ]
         },
         {
