@@ -277,3 +277,16 @@ Doğrulama: 06:00 koşusundan sonra n8n "Tahmin et" çıktısında `store_stale:
 `curl 127.0.0.1:8000/status` → `store_age_hours` < 1. Bu belgede daha önce geçen
 "04:00 sonuç güncellemesi" cron'u depoda hiç yoktu; xG cron'u (04:40) bu timer'dan
 bağımsız çalışmaya devam eder.
+
+## 2026-10-18 — dc-1.3-ctx gölgesi (puan durumu bağlamı)
+
+`engine/context.py`: store maçlarından sızıntısız sezon tablosu; `params.ctx` varsa zirve
+yarışındaki ev sahibine λ_ev ×(1+title_home), iki takım da düşme hattına ≤gap_pts puan ise
+λ_dep ×(1+releg_both). dc-1.0 çıktısı değişmez (params'ta ctx yok → parite).
+Sürüm satırı `engine_model_versions` içinde (shadow). Deploy:
+
+    cd /opt/football-match-analyzer && git pull && sudo systemctl restart footy-predict
+    curl -s 127.0.0.1:8000/status | python3 -m json.tool | grep -A6 '"versions"'   # dc-1.3-ctx görünmeli
+
+Testler: `cd engine && python3 -m unittest tests.test_context -v`.
+Karar kuralı: 2–3 hafta gölge; 1X2 kovaları ±5 ve LL dc-1.0'dan kötü değilse aktif.
