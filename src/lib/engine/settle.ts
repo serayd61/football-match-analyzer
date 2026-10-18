@@ -42,6 +42,12 @@ export interface SettleOptions {
   now?: Date;
   /** test için kaynak enjeksiyonu (varsayılan getMatchesByDateStrict) */
   fetch?: FeedFetch;
+  /**
+   * Ana kaynak hata verince denenen KISMİ yedek (2026-10-18: football-data.org
+   * üzerinden yalnız büyük ligler). Yedekle sonuçlanan tarihte "bulunamadı"
+   * satırlar VOID EDİLMEZ — yedek tüm ligleri kapsamaz.
+   */
+  fallback?: FeedFetch;
 }
 
 export interface SettleResult {
@@ -51,6 +57,8 @@ export interface SettleResult {
   skipped: { notFound: number; notFinished: number; noScore: number; updateError: number };
   dates: number;
   failedDates: string[];
+  /** yedek kaynakla (kısmi) işlenen tarihler */
+  fallbackDates: string[];
 }
 
 const ymd = (iso: string) => new Date(iso).toISOString().split('T')[0];
@@ -67,7 +75,7 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
   const empty: SettleResult = {
     checked: 0, settled: 0, voided: 0,
     skipped: { notFound: 0, notFinished: 0, noScore: 0, updateError: 0 },
-    dates: 0, failedDates: [],
+    dates: 0, failedDates: [], fallbackDates: [],
   };
 
   const { data: rows, error } = await sb
@@ -92,17 +100,24 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
   }
 
   const voidCutoff = new Date(now.getTime() - VOID_AFTER_DAYS * 24 * 60 * 60 * 1000);
-  const out: SettleResult = { ...empty, skipped: { ...empty.skipped }, dates: byDate.size, failedDates: [] };
+  const out: SettleResult = { ...empty, skipped: { ...empty.skipped }, dates: byDate.size, failedDates: [], fallbackDates: [] };
   const voidIds: number[] = [];
   const settledAt = now.toISOString();
 
   const fetchFeed = opts.fetch ?? getMatchesByDateStrict; // kaynak hatası → throw → ertele, void etme
-  const cache = new Map<string, FFMatch[] | null>(); // null = kaynak hatası
-  const fetchCached = async (d: string): Promise<FFMatch[] | null> => {
+  type Feed = { list: FFMatch[]; partial: boolean } | null; // null = kaynak hatası
+  const cache = new Map<string, Feed>();
+  const fetchCached = async (d: string): Promise<Feed> => {
     if (cache.has(d)) return cache.get(d)!;
-    let res: FFMatch[] | null = null;
-    try { res = await fetchFeed(d); }
-    catch (e: any) { console.error(`[settle-engine] ${d}: getMatchesByDate failed:`, e?.message); }
+    let res: Feed = null;
+    try { res = { list: await fetchFeed(d), partial: false }; }
+    catch (e: any) {
+      console.error(`[settle-engine] ${d}: getMatchesByDate failed:`, e?.message);
+      if (opts.fallback) {
+        try { res = { list: await opts.fallback(d), partial: true }; console.log(`[settle-engine] ${d}: fallback feed (${res.list.length} rows)`); }
+        catch (e2: any) { console.error(`[settle-engine] ${d}: fallback failed:`, e2?.message); }
+      }
+    }
     cache.set(d, res);
     return res;
   };
@@ -114,13 +129,14 @@ export async function settleEnginePredictions(sb: SupabaseClient, opts: SettleOp
       console.error(`[settle-engine] ${date}: source unavailable (${items.length} rows deferred)`);
       continue;
     }
+    if (primary.partial) out.fallbackDates.push(date);
     // Tarih kayması: geç saatte başlayan maçlar ertesi günün kovasında.
     const next = await fetchCached(nextDay(date));
     const map = new Map<number, FFMatch>();
-    for (const m of primary) map.set(Number(m.id), m);
-    for (const m of next ?? []) if (!map.has(Number(m.id))) map.set(Number(m.id), m);
-    // Ertesi gün çekilemediyse "bulunamadı" güvenilir değil → void etme.
-    const canVoid = next != null;
+    for (const m of primary.list) map.set(Number(m.id), m);
+    for (const m of next?.list ?? []) if (!map.has(Number(m.id))) map.set(Number(m.id), m);
+    // Ertesi gün çekilemediyse ya da kaynak kısmi (yedek) ise "bulunamadı" güvenilir değil → void etme.
+    const canVoid = next != null && !primary.partial && !next.partial;
 
     for (const r of items) {
       out.checked++;

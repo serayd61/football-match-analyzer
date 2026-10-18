@@ -8,6 +8,7 @@ import { getOrSet, getRedisClient, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/red
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
 import { getMatchesByDateStrict, FeedUnavailableError, FFMatch } from '@/lib/data-sources/free-football';
 import { excludedLeagueIds, hiddenLeagueIds } from '@/lib/coverage/registry';
+import { fallbackDay } from '@/lib/site/feed-fallback';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -119,10 +120,26 @@ async function getFixturesHandler(request: NextRequest) {
     } catch (e) {
       if (!(e instanceof FeedUnavailableError)) throw e;
       feedUnavailable = true;
-      let lastGood: ReturnType<typeof transformFixtures> | null = null;
-      try { lastGood = await getRedisClient().get<ReturnType<typeof transformFixtures>>(`${cacheKey}:last-good`); } catch { /* opsiyonel */ }
-      allFixturesRaw = lastGood ?? [];
-      console.error(`[fixtures] feed unavailable for ${date}; serving ${lastGood ? 'last-good copy' : 'empty'} (not cached)`);
+      // Yedek (2026-10-18): motor tahminlerindeki günün maçları + football-data.org
+      // skorları (büyük ligler). 60 sn önbellek: football-data 10 istek/dk.
+      const fbKey = `${cacheKey}:fallback`;
+      let fb: ReturnType<typeof transformFixtures> | null = null;
+      try { fb = await getRedisClient().get<ReturnType<typeof transformFixtures>>(fbKey); } catch { /* opsiyonel */ }
+      if (!fb) {
+        try {
+          const day = await fallbackDay(date);
+          fb = transformFixtures(day.matches);
+          console.error(`[fixtures] feed unavailable for ${date}; fallback ${day.source}: ${fb.length} rows, ${day.scored} scored`);
+          try { await getRedisClient().set(fbKey, fb, { ex: 60 }); } catch { /* opsiyonel */ }
+        } catch (e2: any) { console.error(`[fixtures] fallback failed for ${date}:`, e2?.message); }
+      }
+      if (fb && fb.length) allFixturesRaw = fb;
+      else {
+        let lastGood: ReturnType<typeof transformFixtures> | null = null;
+        try { lastGood = await getRedisClient().get<ReturnType<typeof transformFixtures>>(`${cacheKey}:last-good`); } catch { /* opsiyonel */ }
+        allFixturesRaw = lastGood ?? [];
+        console.error(`[fixtures] feed unavailable for ${date}; serving ${lastGood ? 'last-good copy' : 'empty'} (not cached)`);
+      }
     }
     
     // Sicilde 'hidden' (sinyalsiz lig veya 17 Eki eleme kuralı: uzak ülke / alt kademe /

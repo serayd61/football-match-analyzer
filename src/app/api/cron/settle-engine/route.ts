@@ -16,6 +16,7 @@ export const maxDuration = 300;
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settleEnginePredictions, backfillRowScores } from '@/lib/engine/settle';
+import { fallbackDay } from '@/lib/site/feed-fallback';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
     }
 
     const limit = parseInt(searchParams.get('limit') || '900', 10) || 900;
-    const res = await settleEnginePredictions(sb(), { limit });
+    // Akış kesintisinde football-data.org yedeği (yalnız büyük ligler, void yok).
+    const res = await settleEnginePredictions(sb(), { limit, fallback: async (d) => (await fallbackDay(d, true)).matches });
     if (res.checked === 0 && res.dates === 0) {
       return NextResponse.json({ ok: true, ...res, note: 'no pending past matches' });
     }
