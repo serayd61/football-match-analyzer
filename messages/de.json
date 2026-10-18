@@ -1240,7 +1240,8 @@
       "mkt1x2": "1X2",
       "mktOver": "Über 2,5",
       "mktUnder": "Unter 2,5",
-      "mktBtts": "BTTS Ja"
+      "mktBtts": "BTTS Ja",
+      "aiBadge": "KI-Einschätzung verfügbar"
     },
     "match": {
       "back": "← Alle Prognosen",

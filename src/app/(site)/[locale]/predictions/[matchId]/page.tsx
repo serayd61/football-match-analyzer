@@ -492,6 +492,9 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         </div>
       )}
 
+      {/* ── Yapay zeka görüşü (18 Eki): sayfanın üstünde, sekmelerin dışında ── */}
+      {ai && <div className="mt-6 rounded-2xl border border-s-accent/30 bg-s-accent/5 p-5"><AiOpinion ai={ai} homeName={p.homeName} awayName={p.awayName} /></div>}
+
       {/* ── Geçmiş kanıt analizi (evidence-1.0, 2026-10-16): durumu açıklar, değiştirmez ── */}
       {evidence && evidenceLabels && evidence.report.markets.length > 0 && (
         <div className="mt-4">
@@ -539,7 +542,6 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           <p className="mt-6 text-xs text-s-muted">{t('standingNote')} <Link href="/performance" className="underline">{t('standingLink')}</Link></p>
         </section>
       )}
-                    {ai && <AiOpinion ai={ai} homeName={p.homeName} awayName={p.awayName} />}
                   </div>
                   <aside className="space-y-10">
           {/* ── Form ──────────────────────────────────────────────────── */}

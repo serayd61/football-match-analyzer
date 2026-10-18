@@ -1240,7 +1240,8 @@
       "mkt1x2": "1X2",
       "mktOver": "Üst 2,5",
       "mktUnder": "Alt 2,5",
-      "mktBtts": "KG Var"
+      "mktBtts": "KG Var",
+      "aiBadge": "Yapay zeka görüşü hazır"
     },
     "match": {
       "back": "← Tüm tahminler",

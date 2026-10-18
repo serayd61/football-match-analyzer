@@ -1240,7 +1240,8 @@
       "mkt1x2": "1X2",
       "mktOver": "Over 2.5",
       "mktUnder": "Under 2.5",
-      "mktBtts": "BTTS Yes"
+      "mktBtts": "BTTS Yes",
+      "aiBadge": "AI opinion ready"
     },
     "match": {
       "back": "← All predictions",

@@ -16,6 +16,7 @@ import SampleAnalysis, { sampleHref } from '@/components/site/SampleAnalysis';
 import { getSampleAnalysis } from '@/lib/site/sample-analysis';
 import DemoAnalysis from '@/components/site/DemoAnalysis';
 import MatchRow from '@/components/site/MatchRow';
+import { aiFixtureIds } from '@/lib/site/ai-analysis';
 import { listDay } from '@/lib/site/fixtures';
 import { listPublicUpcoming } from '@/lib/site/match-public-data';
 import PublicMatchList from '@/components/site/PublicMatchList';
@@ -86,6 +87,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
   // v3: members see the day's first modelled fixtures right in the hero.
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
   const todayTotal = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).length;
+  const aiIds = await aiFixtureIds(todayRows.map((r) => r.fixtureId)).catch(() => new Set<number>());
   // Karneye uyan maçlar (8 Eki): günün güçlü seçim sayısı; maç listesinin altında /picks bağlantısı.
   const outside = unlocked ? await outsideStandingFor().catch(() => null) : null;
   const fitRows = (today?.rows ?? []).filter((r) => r.hasModel && (r.covered || !!outside?.eligible(r)));
@@ -155,7 +157,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
                   <h2 className="text-[15px] font-bold">{t3('todayTitle')} <span className="num ml-1 font-semibold text-s-muted">{todayTotal}</span></h2>
                   <Link href="/predictions" className="text-[13.5px] font-semibold text-s-accent-700 hover:underline">{t3('todayAll')} →</Link>
                 </header>
-                <div className="divide-rule">{todayRows.map((p) => <MatchRow key={p.fixtureId} p={p} />)}</div>
+                <div className="divide-rule">{todayRows.map((p) => <MatchRow key={p.fixtureId} p={p} ai={aiIds.has(p.fixtureId)} />)}</div>
                 {fitBoard && fitBoard.matches > 0 && (
                   <Link href="/picks" className="flex items-center justify-between gap-3 border-t border-s-line bg-s-raised/50 px-4 py-3 hover:bg-s-raised" data-cta="hero-picks">
                     <span className="min-w-0">

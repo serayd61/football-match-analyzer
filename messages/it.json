@@ -1240,7 +1240,8 @@
       "mkt1x2": "1X2",
       "mktOver": "Over 2,5",
       "mktUnder": "Under 2,5",
-      "mktBtts": "Gol Sì"
+      "mktBtts": "Gol Sì",
+      "aiBadge": "Parere dell'IA disponibile"
     },
     "match": {
       "back": "← Tutti i pronostici",
