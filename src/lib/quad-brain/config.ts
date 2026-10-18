@@ -334,7 +334,7 @@ export const API_ENDPOINTS = {
 // =========================
 
 export const MODEL_VERSIONS = {
-  claude: 'claude-3-5-haiku-20241022', // En ucuz Claude modeli
+  claude: 'claude-haiku-5-5', // En ucuz Claude modeli
   gpt4: 'gpt-4o-mini', // En ucuz GPT-4 modeli
   gemini: 'gemini-2.0-flash', // En ucuz Gemini modeli
   mistral: 'mistralai/mistral-small' // En ucuz Mistral modeli

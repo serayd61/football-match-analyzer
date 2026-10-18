@@ -1423,7 +1423,7 @@ async function callClaude(prompt: string): Promise<string | null> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-5-5',
         max_tokens: 2000,
         temperature: AI_BRAIN_CONFIG.claude.temperature,
         messages: [{ role: 'user', content: prompt }],

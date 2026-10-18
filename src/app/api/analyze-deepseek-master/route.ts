@@ -75,7 +75,7 @@ async function callClaude(prompt: string): Promise<string> {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022', // En ucuz Claude modeli
+        model: 'claude-haiku-5-5', // En ucuz Claude modeli
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -328,8 +328,8 @@ async function analyzeWithAgents(match: MatchInput): Promise<SystemAnalysis> {
   const [agent1, agent2, agent3, agent4, agent5] = await Promise.all([
     callGemini(agentPrompts[0]),
     callGemini(agentPrompts[1]),
-    callOpenRouter('anthropic/claude-3-haiku', agentPrompts[2]),
-    callOpenRouter('anthropic/claude-3-haiku', agentPrompts[3]),
+    callOpenRouter('anthropic/claude-haiku-5-5', agentPrompts[2]),
+    callOpenRouter('anthropic/claude-haiku-5-5', agentPrompts[3]),
     callOpenRouter('mistralai/mistral-small', agentPrompts[4])
   ]);
 

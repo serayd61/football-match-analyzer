@@ -92,7 +92,7 @@ export class AIClient {
     }
 
     // Claude 3 Haiku - hızlı ve ekonomik model
-    const model = 'claude-3-haiku-20240307';
+    const model = 'claude-haiku-5-5';
     
     const temperature = options.temperature ?? 0.15;
     const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı

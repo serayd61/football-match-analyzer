@@ -8,7 +8,7 @@
 // :35'te tazelenir), her maç bir kez analiz edilir, günlük tavan var.
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { dbFresh } from '@/lib/site/db';
 import { runUnifiedConsensus, saveUnifiedAnalysis } from '@/lib/unified-consensus';
 
 export const dynamic = 'force-dynamic';
@@ -20,9 +20,9 @@ const TIME_BUDGET_MS = 240_000;
 const HORIZON_H = 36;          // bugün + yarın sabah
 const MIN_LEAD_MS = 60 * 60_000; // başlamaya ≥1 saat (oran/kadro otursun)
 
-function sb() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
+// Önbelleksiz istemci ŞART: ilk yerel koşuda normal istemcinin GET'i 5 dk Next fetch
+// önbelleğinde kaldı, ikinci tur aynı 12 maçı yeniden analiz etti (24 LLM çağrısı boşa).
+const sb = dbFresh;
 
 /** Tam analiz = survival/dixonColes/marketModel içeren satır; salt 'smart' satırı sayılmaz. */
 const isFull = (r: any) => Array.isArray(r.systems_used) && r.systems_used.some((s: string) => s !== 'smart');
