@@ -4,9 +4,9 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrSet, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
+import { getOrSet, getRedisClient, CACHE_KEYS, CACHE_TTL } from '@/lib/cache/redis';
 import { withApiMiddleware, successResponse, Errors, RATE_LIMIT_PRESETS } from '@/lib/middleware/error-handler';
-import { getMatchesByDate, FFMatch } from '@/lib/data-sources/free-football';
+import { getMatchesByDateStrict, FeedUnavailableError, FFMatch } from '@/lib/data-sources/free-football';
 import { excludedLeagueIds, hiddenLeagueIds } from '@/lib/coverage/registry';
 
 export const dynamic = 'force-dynamic';
@@ -16,15 +16,11 @@ export const maxDuration = 30;
 // FETCH (Free API Live Football Data)
 // ============================================================================
 
+// Kaynak hatası (502/429/ağ) → FeedUnavailableError yukarı çıkar; boş gün ([]) ile karışmaz.
 async function fetchFixturesFromAPI(date: string): Promise<FFMatch[]> {
-  try {
-    const matches = await getMatchesByDate(date);
-    console.log(`📊 Fetched ${matches.length} fixtures for ${date}`);
-    return matches;
-  } catch (error) {
-    console.error('Free-football fetch error:', error);
-    return [];
-  }
+  const matches = await getMatchesByDateStrict(date);
+  console.log(`📊 Fetched ${matches.length} fixtures for ${date}`);
+  return matches;
 }
 
 // ============================================================================
@@ -102,15 +98,32 @@ async function getFixturesHandler(request: NextRequest) {
     // Cache key
     const cacheKey = CACHE_KEYS.FIXTURES_DATE(date);
     
-    // Get from cache or fetch
-    const allFixturesRaw = await getOrSet(
-      cacheKey,
-      async () => {
-        const rawFixtures = await fetchFixturesFromAPI(date);
-        return transformFixtures(rawFixtures);
-      },
-      CACHE_TTL.FIXTURES
-    );
+    // Get from cache or fetch. 2026-10-18: sağlayıcı 502 verince boş liste 5 dk önbelleğe
+    // yazılıyor, site "bugün maç yok" gösteriyordu (17 Eki sabahı da aynı). Kaynak hatasında
+    // ÖNBELLEĞE YAZMA: varsa bayat kopya (önbelleksiz uzun tutulan son iyi liste), yoksa
+    // boş + meta.feedUnavailable — istemci "veri kaynağı geçici olarak ulaşılamıyor" der.
+    let feedUnavailable = false;
+    let allFixturesRaw: ReturnType<typeof transformFixtures>;
+    try {
+      allFixturesRaw = await getOrSet(
+        cacheKey,
+        async () => {
+          const rawFixtures = await fetchFixturesFromAPI(date);
+          const out = transformFixtures(rawFixtures);
+          // son iyi kopya: 24 saat (yalnız dolu listeler)
+          if (out.length) { try { await getRedisClient().set(`${cacheKey}:last-good`, out, { ex: 24 * 3600 }); } catch { /* opsiyonel */ } }
+          return out;
+        },
+        CACHE_TTL.FIXTURES
+      );
+    } catch (e) {
+      if (!(e instanceof FeedUnavailableError)) throw e;
+      feedUnavailable = true;
+      let lastGood: ReturnType<typeof transformFixtures> | null = null;
+      try { lastGood = await getRedisClient().get<ReturnType<typeof transformFixtures>>(`${cacheKey}:last-good`); } catch { /* opsiyonel */ }
+      allFixturesRaw = lastGood ?? [];
+      console.error(`[fixtures] feed unavailable for ${date}; serving ${lastGood ? 'last-good copy' : 'empty'} (not cached)`);
+    }
     
     // Sicilde 'hidden' (sinyalsiz lig veya 17 Eki eleme kuralı: uzak ülke / alt kademe /
     // kadın-genç) hiçbir yüzeyde listelenmez; 'excluded' yalnızca scope=model'de düşer.
@@ -140,6 +153,7 @@ async function getFixturesHandler(request: NextRequest) {
     {
       cached: processingTime < 50,
       processingTime,
+      ...(feedUnavailable ? { feedUnavailable: true } : {}),
     }
   );
 }
