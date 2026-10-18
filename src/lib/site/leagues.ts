@@ -31,6 +31,13 @@ export const SITE_LEAGUES: SiteLeague[] = [
   // verisinden fit ediyor (dc-1.0, 39 sonuçlanmış maç). Günün seçimi beyaz
   // listesine GİRMEZ (1X2 13/39; gol pazarları henüz küçük örneklem).
   { slug: 'super-lig', name: 'Süper Lig', ccode: 'TUR', fdCode: 'TSL', ids: [71], country: 'Türkiye' },
+  // 2026-10-18: kullanıcı kararıyla beyaz listeye alınan ligler slug kazandı; sicil beyaz listesi
+  // tek başına 'covered' yapmıyor (ana sayfa/dashboard/tahminler r.covered filtreler). ids[0]
+  // kanonik FotMob kimliği (puan durumu akışı onu ister), ikincisi 2026-27 mevsimlik kimlik.
+  { slug: 'ekstraklasa', name: 'Ekstraklasa', ccode: 'POL', fdCode: 'PEK', ids: [196, 937879], country: 'Poland' },
+  { slug: 'eliteserien', name: 'Eliteserien', ccode: 'NOR', fdCode: 'NEL', ids: [59], country: 'Norway' },
+  { slug: 'superligaen', name: 'Superligaen', ccode: 'DEN', fdCode: 'DSL', ids: [85, 935487], country: 'Denmark' },
+  { slug: '1-divisjon', name: '1. Divisjon', ccode: 'NOR', fdCode: 'NOB', ids: [203], country: 'Norway' },
 ];
 
 const NAME_ALIASES: Record<string, string> = {

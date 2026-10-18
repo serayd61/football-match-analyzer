@@ -482,7 +482,11 @@
       "liga-portugal": "Liga Portugal Portekiz'in en üst ligidir; 18 kulüp, 34 hafta. Öndeki kulüplerle geri kalanlar arasındaki fark geniştir; hücum ve savunma katsayıları bunu yakalar, güven değeri de raporlar.",
       "champions-league": "UEFA Şampiyonlar Ligi Avrupa'nın kulüp turnuvasıdır: kulüp başına sekiz maçlık 36 takımlı lig aşaması, ardından eleme turları. Takımlar farklı liglerden geldiği için modelin ortak geçmişi daha azdır ve bu maçlarda güven genellikle daha düşüktür.",
       "brasileirao": "Brasileirão Brezilya'nın en üst ligidir: 20 kulüp, takvim yılına yayılan 38 hafta. Uzun seyahatler ve alışılmadık ölçüde güçlü ev sahibi avantajı onu ayrı bir vaka yapar; parametreleri kendi sonuçlarıyla fit edilir.",
-      "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez."
+      "super-lig": "Süper Lig Türkiye'nin en üst ligidir: 18 kulüp, 34 hafta. Eylül 2026'da eklendi ve örneklem hâlâ küçük; bu yüzden karnesi ayrı gösterilir ve örneklem büyüyene kadar maçları günün kısa listesine girmez.",
+      "ekstraklasa": "Ekstraklasa Polonya'nın en üst ligidir: 18 kulüp, 33 hafta ve ardından şampiyonluk/küme düşme grupları olmadan düz sıralama. Ekim 2026'da beyaz listeye alındı; örneklem henüz 80-90 maç, karnesi ayrı izlenir.",
+      "eliteserien": "Eliteserien Norveç'in en üst ligidir: 16 kulüp, 30 hafta, Nisan'dan Aralık'a takvim yılı sezonu. Gollü bir lig; modelin 2,5 gol üst sinyali burada güçlüdür ve Ekim 2026'da bu yüzden beyaz listeye alındı.",
+      "superligaen": "Superligaen Danimarka'nın en üst ligidir: 12 kulüp, 22 haftalık normal sezon, sonra şampiyonluk ve küme düşme grupları. Ekim 2026'da beyaz listeye alındı; 1X2 karnesi henüz zayıf, örneklem büyüyene kadar güven değerleri temkinli okunmalı.",
+      "1-divisjon": "1. Divisjon (OBOS-ligaen) Norveç'in ikinci ligidir: 16 kulüp, 30 hafta, takvim yılı sezonu. Eylül 2026'da beyaz listeye alındı; gol pazarlarında (2,5 üst, karşılıklı gol) modelin isabeti yüksek olduğu için öne çıkar."
     },
     "howToRead": "Bu sayfadaki değerler modelin sonuçlanmış {league} karnesidir: isabet, tutan 1X2 seçimlerinin payı; Brier skoru olasılıkların sonuçlarla ne kadar örtüştüğü (düşük olan iyidir); getiri ise kapanış fiyatına göre maç başına bir birimle ölçülür. Sonradan hiçbir kayıt silinmez.",
     "eventDescription": "{league} maçı: {home} – {away}.",
