@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { sportsEventsJsonLd } from '@/lib/site/jsonld';
 import { venueFor } from '@/lib/site/stadiums';
 import { leagueCountryName } from '@/lib/site/countries';
