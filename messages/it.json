@@ -1277,7 +1277,8 @@
       "driftLine": "Movimento delle quote ({n} rilevazioni): {side} {from} → {to} ({pp} punti).",
       "driftToward": "Il mercato si sta avvicinando alla scelta del modello.",
       "driftAway": "Il mercato si sta allontanando dalla scelta del modello; attenzione.",
-      "driftFlat": "Nessun movimento rilevante dall'apertura."
+      "driftFlat": "Nessun movimento rilevante dall'apertura.",
+      "vs": "vs"
     },
     "pricing": {
       "title": "Paga il vantaggio, conosci il rischio.",
