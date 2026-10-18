@@ -41,3 +41,10 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
     systems: Array.isArray(data.systems_used) ? data.systems_used : [],
   };
 }
+
+/** Listeler için: tam AI görüşü olan maç kimlikleri (rozet). Tek sorgu, satır başına ek maliyet yok. */
+export async function aiFixtureIds(ids: number[]): Promise<Set<number>> {
+  if (!ids.length) return new Set();
+  const { data } = await db().from('unified_analysis').select('fixture_id, systems_used').in('fixture_id', ids);
+  return new Set((data || []).filter((r: any) => isFull(r.systems_used)).map((r: any) => Number(r.fixture_id)));
+}
