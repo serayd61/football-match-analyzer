@@ -28,3 +28,13 @@ test('championship resolves under the 2026-27 seasonal id and long feed name', (
   // other EFL divisions stay outside coverage
   assert.equal(resolveLeague('English Football League - League One', 1000001802, 'ENG'), null);
 });
+
+// 2026-10-18: whitelisted leagues gained slugs so the site treats them as covered.
+test('whitelisted leagues resolve by canonical and seasonal ids and by name', () => {
+  assert.equal(resolveLeague('Ekstraklasa', 937879, 'POL')?.slug, 'ekstraklasa');
+  assert.equal(resolveLeague('Ekstraklasa', 196, 'POL')?.slug, 'ekstraklasa');
+  assert.equal(resolveLeague('Eliteserien', 59, 'NOR')?.slug, 'eliteserien');
+  assert.equal(resolveLeague('Superligaen', 935487, 'DEN')?.slug, 'superligaen');
+  assert.equal(resolveLeague('1. Divisjon', 203, 'NOR')?.slug, '1-divisjon');
+  assert.equal(resolveLeague('1. Division', 936592, 'DEN'), null); // Danish second tier stays out
+});

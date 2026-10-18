@@ -28,10 +28,14 @@ const COVERED_NAME_CCODE = new Set([
   'Brazilian Serie A|BRA', // BSA
   'Super Lig|TUR',        // TSL — feed adı; katalog 'Süper Lig' de olabilir
   'Süper Lig|TUR',
+  'Ekstraklasa|POL',      // 18 Eki beyaz liste
+  'Eliteserien|NOR',
+  'Superligaen|DEN',
+  '1. Divisjon|NOR',
 ]);
 
 /** Kanonik FotMob id'leri — ad çözümlenemediğinde yedek eşleşme. */
-const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268, 71]);
+const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268, 71, 196, 937879, 59, 85, 935487, 203]); // +18 Eki: Ekstraklasa, Eliteserien, Superligaen, 1. Divisjon
 
 /**
  * Bu maç, parametreleri fit edilmiş bir ligde mi?
