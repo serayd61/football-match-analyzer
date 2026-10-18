@@ -16,7 +16,6 @@ export const maxDuration = 300;
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settleEnginePredictions, backfillRowScores } from '@/lib/engine/settle';
-import { fallbackDay } from '@/lib/site/feed-fallback';
 
 let _sb: SupabaseClient | null = null;
 function sb(): SupabaseClient {
@@ -58,6 +57,8 @@ export async function GET(request: NextRequest) {
 
     const limit = parseInt(searchParams.get('limit') || '900', 10) || 900;
     // Akış kesintisinde football-data.org yedeği (yalnız büyük ligler, void yok).
+    // Dinamik import: modül 'server-only' çeker, rota koruma testleri handler'ı yükleyebilsin.
+    const { fallbackDay } = await import('@/lib/site/feed-fallback');
     const res = await settleEnginePredictions(sb(), { limit, fallback: async (d) => (await fallbackDay(d, true)).matches });
     if (res.checked === 0 && res.dates === 0) {
       return NextResponse.json({ ok: true, ...res, note: 'no pending past matches' });
