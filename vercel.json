@@ -119,6 +119,10 @@
     {
       "path": "/api/cron/daily-coupon?settle=1",
       "schedule": "50 * * * *"
+    },
+    {
+      "path": "/api/cron/ai-picks",
+      "schedule": "40 * * * *"
     }
   ]
 }

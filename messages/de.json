@@ -326,7 +326,28 @@
     "teamRecTitle": "Unsere Bilanz bei diesem Team",
     "teamRecLine": "1X2 {x12} · als Sieger getippt {toWin} · Über {over} · BTTS {btts}",
     "teamRecThin": "weniger als 5 entschiedene Spiele in 180 Tagen",
-    "teamRecMeta": "180 Tage · {n} Spiele"
+    "teamRecMeta": "180 Tage · {n} Spiele",
+    "ai": {
+      "title": "KI-Einschätzung",
+      "meta": "Erstellt {time}",
+      "lead": "Sechs spezialisierte Agenten (Statistik, Quoten, Tiefenanalyse, Strategie, Advocatus Diaboli, Survival) haben dieses Spiel diskutiert. Die Einschätzung wird täglich automatisch für Spiele erstellt, die die Bilanzregel erfüllen; nicht auf Abruf.",
+      "m1x2": "Spielausgang",
+      "mOu": "2,5 Tore",
+      "mBtts": "Beide treffen",
+      "over": "Über",
+      "under": "Unter",
+      "yes": "Ja",
+      "no": "Nein",
+      "conf": "{pct} % Vertrauen",
+      "verdict": "Gemeinsames Urteil der Agenten",
+      "agreement": "Systemübereinstimmung {pct} %",
+      "risk": "Risiko {level}",
+      "risk_low": "niedrig",
+      "risk_medium": "mittel",
+      "risk_high": "hoch",
+      "systems": "Quellen: {list}",
+      "note": "Die KI-Einschätzung ist unabhängig von der statistischen Prognose des Modells; weichen beide ab, ist das eine Warnung, keine Stärke."
+    }
   },
   "results": {
     "title": "Resultate",

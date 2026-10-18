@@ -23,6 +23,8 @@ import MatchStanding, { type StandingLabels } from '@/components/site/MatchStand
 import { AF_LEAGUE } from '@/lib/data-sources/api-football-pure';
 import { driftVsPick } from '@/lib/site/odds-drift-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
+import AiOpinion from '@/components/site/AiOpinion';
+import { getAiAnalysis } from '@/lib/site/ai-analysis';
 import SectionTabs from '@/components/site/SectionTabs';
 import ProbBar from '@/components/site/ProbBar';
 import ConfidenceRing from '@/components/site/ConfidenceRing';
@@ -118,6 +120,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   }
 
   const ts = await getTranslations('standings');
+  // Yapay zeka görüşü (18 Eki): ai-picks cron'u karneye uyan maçlar için üretir; sayfa salt okur.
+  const ai = publicSample ? null : await getAiAnalysis(id, params.locale).catch(() => null);
   const table = p.league ? await standingsIndex(p.league.slug) : new Map();
   const stRow = (id: number | null) => (id ? table.get(id) : undefined);
   // Form and H2H are bounded to matches that kicked off before this one, so a
@@ -535,7 +539,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
           <p className="mt-6 text-xs text-s-muted">{t('standingNote')} <Link href="/performance" className="underline">{t('standingLink')}</Link></p>
         </section>
       )}
-
+                    {ai && <AiOpinion ai={ai} homeName={p.homeName} awayName={p.awayName} />}
                   </div>
                   <aside className="space-y-10">
           {/* ── Form ──────────────────────────────────────────────────── */}

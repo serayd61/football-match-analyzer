@@ -326,7 +326,28 @@
     "teamRecTitle": "Our record on this team",
     "teamRecLine": "1X2 {x12} · picked to win {toWin} · Over {over} · BTTS {btts}",
     "teamRecThin": "fewer than 5 decided matches in 180 days",
-    "teamRecMeta": "180 days · {n} matches"
+    "teamRecMeta": "180 days · {n} matches",
+    "ai": {
+      "title": "AI opinion",
+      "meta": "Generated {time}",
+      "lead": "Six specialist agents (stats, odds, deep analysis, strategy, devil's advocate, survival) debated this match. The opinion is prepared automatically every day for matches that pass the record rule; it is not generated on demand.",
+      "m1x2": "Match result",
+      "mOu": "2.5 goals",
+      "mBtts": "Both teams to score",
+      "over": "Over",
+      "under": "Under",
+      "yes": "Yes",
+      "no": "No",
+      "conf": "{pct}% confidence",
+      "verdict": "Agents' joint verdict",
+      "agreement": "system agreement {pct}%",
+      "risk": "risk {level}",
+      "risk_low": "low",
+      "risk_medium": "medium",
+      "risk_high": "high",
+      "systems": "sources: {list}",
+      "note": "The AI opinion is independent of the model's statistical forecast; when the two diverge, treat it as a warning, not as strength."
+    }
   },
   "results": {
     "title": "Results",

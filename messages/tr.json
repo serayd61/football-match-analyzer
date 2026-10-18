@@ -326,7 +326,28 @@
     "teamRecTitle": "Karnemiz bu takımda",
     "teamRecLine": "1X2 {x12} · kazanır dedik {toWin} · Üst {over} · KG {btts}",
     "teamRecThin": "180 günde 5'ten az sonuçlanmış maç",
-    "teamRecMeta": "180 gün · {n} maç"
+    "teamRecMeta": "180 gün · {n} maç",
+    "ai": {
+      "title": "Yapay zeka görüşü",
+      "meta": "Üretildi: {time}",
+      "lead": "Altı uzman ajan (istatistik, oran, derin analiz, strateji, şeytanın avukatı, hayatta kalma) bu maçı tartıştı. Görüş, karneye uyan maçlar için her gün otomatik hazırlanır; isteğe bağlı üretilmez.",
+      "m1x2": "Maç sonucu",
+      "mOu": "2,5 gol",
+      "mBtts": "Karşılıklı gol",
+      "over": "Üst",
+      "under": "Alt",
+      "yes": "Var",
+      "no": "Yok",
+      "conf": "güven %{pct}",
+      "verdict": "Ajanların ortak kararı",
+      "agreement": "sistem uyumu %{pct}",
+      "risk": "risk {level}",
+      "risk_low": "düşük",
+      "risk_medium": "orta",
+      "risk_high": "yüksek",
+      "systems": "kaynaklar: {list}",
+      "note": "Yapay zeka görüşü modelin istatistiksel tahmininden bağımsızdır; ikisi ayrışıyorsa bu bir uyarıdır, güç değil."
+    }
   },
   "results": {
     "title": "Sonuçlar",
