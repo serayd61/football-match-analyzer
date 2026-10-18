@@ -678,14 +678,14 @@
         {
           "h": "4. Processors",
           "p": [
-            "- Vercel: hosting and cookieless analytics\n- Supabase: database and authentication\n- Stripe: payments\n- Resend: transactional email\n- Google: Ads conversion measurement, when enabled",
+            "- Vercel: hosting and cookieless analytics\n- Supabase: database and authentication\n- Stripe: payments\n- Resend: transactional email\n- Google: Analytics (visits and pages viewed, IP anonymised) and Ads conversion measurement, when enabled",
             "These providers process data on our behalf under contract. Some are located outside Switzerland and the EU; transfers rely on adequacy decisions or standard contractual clauses. We do not sell personal data."
           ]
         },
         {
           "h": "5. Cookies and local storage",
           "p": [
-            "The public site stores your chosen theme and language in your browser's local storage; this never leaves your device. Signed-in areas use a session cookie. Google Ads measurement, when enabled, uses cookies you can refuse or delete in your browser."
+            "The public site stores your chosen theme and language in your browser's local storage; this never leaves your device. Signed-in areas use a session cookie. Google Analytics and Google Ads measurement, when enabled, use cookies you can refuse or delete in your browser."
           ]
         },
         {

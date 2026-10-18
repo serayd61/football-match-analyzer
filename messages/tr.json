@@ -678,14 +678,14 @@
         {
           "h": "4. Veri işleyenler",
           "p": [
-            "- Vercel: barındırma ve çerezsiz istatistik\n- Supabase: veritabanı ve kimlik doğrulama\n- Stripe: ödemeler\n- Resend: işlem e-postaları\n- Google: etkinse Ads dönüşüm ölçümü",
+            "- Vercel: barındırma ve çerezsiz istatistik\n- Supabase: veritabanı ve kimlik doğrulama\n- Stripe: ödemeler\n- Resend: işlem e-postaları\n- Google: etkinse Analytics (ziyaret ve görüntülenen sayfalar, IP anonim) ve Ads dönüşüm ölçümü",
             "Bu sağlayıcılar verileri sözleşme kapsamında bizim adımıza işler. Bazıları İsviçre ve AB dışındadır; aktarımlar yeterlilik kararlarına veya standart sözleşme maddelerine dayanır. Kişisel veri satmayız."
           ]
         },
         {
           "h": "5. Çerezler ve yerel depolama",
           "p": [
-            "Halka açık site, seçtiğiniz tema ve dili tarayıcınızın yerel depolamasında tutar; bu bilgi cihazınızdan asla çıkmaz. Oturum açılan alanlar bir oturum çerezi kullanır. Google Ads ölçümü etkinse tarayıcınızdan reddedebileceğiniz veya silebileceğiniz çerezler kullanır."
+            "Halka açık site, seçtiğiniz tema ve dili tarayıcınızın yerel depolamasında tutar; bu bilgi cihazınızdan asla çıkmaz. Oturum açılan alanlar bir oturum çerezi kullanır. Google Analytics ve Google Ads ölçümü etkinse tarayıcınızdan reddedebileceğiniz veya silebileceğiniz çerezler kullanır."
           ]
         },
         {

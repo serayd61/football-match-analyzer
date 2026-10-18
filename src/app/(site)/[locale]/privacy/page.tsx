@@ -9,5 +9,5 @@ export function generateMetadata({ params: { locale } }: { params: { locale: str
 }
 
 export default function Page({ params: { locale } }: { params: { locale: string } }) {
-  return <DocPage locale={locale} doc="privacy" updated="2026-09-04" />;
+  return <DocPage locale={locale} doc="privacy" updated="2026-10-18" />;
 }
