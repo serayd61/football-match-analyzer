@@ -70,8 +70,9 @@ const BATCH_LEAGUE_NAMES = new Set([
 function isBatchWorthy(f: FFMatch): boolean {
   const ccode = (f.leagueCountry || '').toUpperCase();
   return (
+    // 18 Eki: `ccode === 'INT'` battaniyesi kaldırıldı — katalog Türkiye 1. Lig, Libertadores
+    // Femenina gibi ligleri INT altında veriyordu; haftada 130+ gereksiz smart analiz (00:00).
     BATCH_LEAGUE_IDS.has(f.leagueId) ||
-    ccode === 'INT' ||
     BATCH_LEAGUE_NAMES.has(`${f.leagueName}|${ccode}`)
   );
 }

@@ -224,6 +224,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 18 Eki: AI analizi müşteri tetiklemez (kredi koruması). Karneye uyan maçlar
+    // ai-picks cron'uyla otomatik üretilir; burada yalnızca önbellek servis edilir.
+    // Admin anahtarı (Bearer ADMIN_SECRET) ile elle üretim hâlâ mümkün.
+    const adminHdr = request.headers.get('x-admin-secret');
+    const isAdmin = !!process.env.ADMIN_SECRET && adminHdr === process.env.ADMIN_SECRET;
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, code: 'NOT_AVAILABLE', error: 'Bu maç için yapay zeka analizi otomatik üretilmedi. Analizler yalnızca karneye uyan maçlar için günlük olarak hazırlanır.' },
+        { status: 404 },
+      );
+    }
     console.log(`🎯 Starting Unified Analysis: ${homeTeam} vs ${awayTeam}`);
 
     // Unified consensus datası
