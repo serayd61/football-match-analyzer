@@ -13,6 +13,8 @@ Dönen yapı:
     half_life_days, window_days, rho, iters, min_matches, shrink_k, min_team_matches,
     xg_weight, xg_min_coverage, level_half_life_days, level_shrink_k,
     calib: {"ou25": [a, b], "btts": [a, b]}  (Platt, model.apply_calib; yoksa parite),
+    ctx: {"title_home": 0.10, "releg_both": 0.10, "min_played": 6, "top_pos": 3, "gap_pts": 3}
+         (puan durumu bağlamı λ çarpanı, context.py; yoksa parite),
     leagues: {"<league_id>": {...override...}}
 Bağımlılık yok (stdlib). Ağ hatası asla /predict'i düşürmez.
 """

@@ -35,6 +35,7 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 import model as M
+import context as CTX
 import model_xg as MX
 import params as P
 from store import ResultStore, STORE_PATH, backfill, update_recent, _parse_dt, league_name
@@ -80,6 +81,19 @@ def _evict_old(ref_ord: int):
     stale = [k for k in _fit_cache if k[1] < ref_ord - 1]
     for k in stale:
         _fit_cache.pop(k, None)
+
+
+_table_cache: Dict[Any, Any] = {}
+
+
+def _season_table(league_id: int, ref_ord: int):
+    """context.season_table — (lig, gün) başına önbellek; store satırları load_for_fit'ten."""
+    key = (league_id, ref_ord)
+    if key not in _table_cache:
+        if len(_table_cache) > 400:
+            _table_cache.clear()
+        _table_cache[key] = CTX.season_table(store.load_for_fit(league_id), datetime.fromordinal(ref_ord))
+    return _table_cache[key]
 
 
 def _get_model(league_id: int, ref_ord: int, spec: Dict[str, Any]):
@@ -314,6 +328,16 @@ def predict(req: PredictRequest, background: BackgroundTasks, authorization: Opt
                 if spec is specs[0]:
                     _skip("predict_failed")
                 continue
+            # Puan durumu bağlamı (params.ctx, bkz. context.py): zirve yarışındaki ev sahibi /
+            # çift düşme baskısı λ çarpanı. Yoksa parite. Tablo (lig, gün) başına bir kez kurulur.
+            ctx_prm = P.params_for_league(spec, lid).get("ctx")
+            if isinstance(ctx_prm, dict):
+                tbl = _season_table(int(lid), ref_ord)
+                fh, fa, _tags = CTX.context_factors(tbl, hk, ak, ctx_prm)
+                if fh != 1.0 or fa != 1.0:
+                    pr = M.markets_from_lambdas(min(max(pr["lambda_home"] * fh, 0.05), 6.0),
+                                                min(max(pr["lambda_away"] * fa, 0.05), 6.0),
+                                                mdl.get("rho", M.RHO))
             # Pazar kalibrasyonu (params.calib, bkz. model.apply_calib): yoksa parite.
             pr = M.apply_calib(pr, P.params_for_league(spec, lid).get("calib"))
 
