@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { candidatesFor, recommend, settleReco, bucketKey, buildRecoModel, RecoStats, RecoMeta, RECO_GATE, type RecoInput } from '@/lib/site/recommend-rule';
+import { candidatesFor, recommend, settleReco, bucketKey, buildRecoModel, RecoStats, RecoMeta, RECO_GATE, RECO_RULE_VERSION, type RecoInput } from '@/lib/site/recommend-rule';
 
 const base: RecoInput = { leagueId: 7, pHome: 0.35, pDraw: 0.30, pAway: 0.35 - 0.001, pOver25: 0.66, pBttsYes: 0.42 };
 
@@ -114,4 +114,47 @@ test('gate applies to the displayed probability, not the raw q', () => {
   assert.ok(ou.q >= 0.6 && ou.pDisplay < 0.6 && !ou.passes, `q=${ou.q} disp=${ou.pDisplay}`);
   const legacy = recommend(i, s, { ...RECO_GATE, onDisplay: false }, m);
   assert.equal(legacy.pick?.market, 'ou25');
+});
+
+// ---- best-1.1: kaba öncelik + pazar bazlı lift ------------------------------
+test('best-1.1: sparse inflated bin shrinks toward the coarse market record, not raw p', () => {
+  const s = new RecoStats(); // varsayılan: coarse, k=60
+  // Üst tarafının kaba kaydı (p ≥ 0.6 havuzu) 300 maçta %62 tutmuş; %85 dilimi boş.
+  const seed: RecoInput = { leagueId: 7, pHome: 0.4, pDraw: 0.3, pAway: 0.3, pOver25: 0.66, pBttsYes: null };
+  for (let k = 0; k < 300; k++) s.add({ ...seed, leagueId: 8 }, k % 100 < 62 ? 2 : 1, k % 100 < 62 ? 1 : 0);
+  const hot = candidatesFor({ ...seed, pOver25: 0.85 }).find((c) => c.market === 'ou25')!;
+  const qCoarse = s.honestP(hot, null);
+  const qRaw = new RecoStats({ kGlobal: 60, kLeague: 20, prior: 'raw' }).honestP(hot, null);
+  assert.ok(qCoarse < 0.70 && qCoarse > 0.62, `coarse q=${qCoarse}`); // %85 → kaba %62'ye doğru
+  assert.ok(Math.abs(qRaw - 0.85) < 1e-9, `raw q=${qRaw}`);           // boş dilim ham p'yi aynen geçirir
+});
+
+test('best-1.1: coarse record only feeds candidates at or above the pool floor', () => {
+  const s = new RecoStats();
+  const seed: RecoInput = { leagueId: 1, pHome: 0.4, pDraw: 0.3, pAway: 0.3, pOver25: 0.70, pBttsYes: null };
+  for (let k = 0; k < 120; k++) s.add({ ...seed, leagueId: 2 }, 1, 0); // Üst %70 kovası hep Alt bitti
+  const low = candidatesFor({ ...seed, pOver25: 0.55 }).find((c) => c.market === 'ou25')!; // p < 0.6: kaba öncelik yok
+  assert.ok(Math.abs(s.honestP(low, null) - 0.55) < 1e-9);
+});
+
+test('best-1.1: per-market lift threshold overrides minLift', () => {
+  const s = new RecoStats();
+  const inp: RecoInput = { leagueId: 1, pHome: 0.4, pDraw: 0.3, pAway: 0.3, pOver25: 0.68, pBttsYes: null };
+  // Kazanan dönüşümlü (1X2 favori kovası %50 → kapıyı geçmez); Üst %68 kovası %72 tutuyor,
+  // Alt adaylı maçlar tabanı %66'ya çeker.
+  const sc = (over: boolean, k: number): [number, number] => (over ? (k % 2 ? [2, 1] : [1, 2]) : (k % 2 ? [1, 0] : [0, 1]));
+  for (let k = 0; k < 400; k++) s.add({ ...inp, leagueId: 2 }, ...sc(k % 100 < 72, k));
+  for (let k = 0; k < 400; k++) s.add({ ...inp, leagueId: 2, pOver25: 0.3 }, ...sc(k % 100 < 60, k));
+  const r0 = recommend(inp, s, { minQ: 0.6, minLift: 0, onDisplay: false });
+  const ou = r0.candidates.find((c) => c.market === 'ou25')!;
+  assert.ok(ou.q - ou.base! > 0.02 && ou.q - ou.base! < 0.10, `q=${ou.q} base=${ou.base}`);
+  assert.ok(r0.pick, 'lift 0 → geçer');
+  assert.equal(recommend(inp, s, { minQ: 0.6, minLift: 0, minLiftBy: { ou25: 0.10 }, onDisplay: false }).pick, null);
+});
+
+test('best-1.1 defaults: version bumped, gate 0.60/0.08 with coarse stats', () => {
+  assert.equal(RECO_RULE_VERSION, 'best-1.1');
+  assert.equal(RECO_GATE.minLift, 0.08);
+  assert.equal(RECO_GATE.stats?.prior, 'coarse');
+  assert.equal(new RecoStats().opts.kGlobal, 60);
 });

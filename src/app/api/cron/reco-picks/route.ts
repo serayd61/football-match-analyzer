@@ -1,7 +1,7 @@
 // ============================================================================
 // CRON — ÖNERİLEN SEÇİM (saat başı :35)
 // ----------------------------------------------------------------------------
-// Son 180 günden modeli kurar, önümüzdeki 3 günün maçlarına kural best-1.0 ile
+// Son 180 günden modeli kurar, önümüzdeki 3 günün maçlarına kural best-1.1 ile
 // seçim yazar (site_reco_picks); başlamaya ≤3 saat kala dondurur.
 // ?preview=1 yazmaz; ?days=N pencere (1–5); ?record=1 yalnız karne (?days=gün).
 // Faz 2: yalnız kayıt, sitede gösterilmez.

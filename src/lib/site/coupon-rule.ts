@@ -1,7 +1,7 @@
 // ============================================================================
 // GÜNÜN KUPONU — kural (saf, testli) · duo-1.0 (2026-10-14)
 // ----------------------------------------------------------------------------
-// Önerilen seçimlerden (best-1.0, site_reco_picks) günde BİR kupon: iki bacak,
+// Önerilen seçimlerden (best-1.1, site_reco_picks) günde BİR kupon: iki bacak,
 // toplam oran 2,0–2,6 bandında, bacak olasılıkları çarpımı en yüksek çift.
 // Neden iki bacak ve 2,0–2,6: dondurulmuş oranlı seçimler %65 tutuyor; üç bacak
 // (~3,5 oran) 0,65³ ≈ %27 tutar, iki bacak ≈ %42–50. Kupon isabeti + ROI birlikte

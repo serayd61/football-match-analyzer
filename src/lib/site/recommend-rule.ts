@@ -14,9 +14,18 @@
 // arasında en yüksek q. Hiçbiri geçmezse "net seçim yok".
 // Neden ham p değil (90g ölçüm): Ü/A seçildiğinde ham %68.8 → gerçek %57.9,
 // KG %61.1 → %57.3; ham p ile seçilirse şişik pazar hep öne çıkar.
+//
+// best-1.1 (19 Eki): seyrek dilim kovası artık ham p'ye değil, aynı pazar/tarafın
+// KABA kaydına (p ≥ %60 havuzu) büzülür; büzülme daha güçlü (k=60) ve gol
+// pazarlarında taban oran farkı eşiği 0,08. Neden: Üst 2,5 %80+ dilimi az
+// örnekli, ham p şişik (sezon: model %78 → gerçek %66); 5–18 Eki'de Üst
+// gösterilen %70, gerçek %61. 90 gün walk-forward backtest, kapsanan ligler:
+//   best-1.0  n=315 isabet %71,4  gösterilen %68,6  kapsama %42
+//   best-1.1  n=276 isabet %74,3  gösterilen %73,0  kapsama %37
+// Son 4 hafta %66,3 → %69,9; son 1 hafta %66,7 → %70,8 (iki yarıda da tutarlı).
 // ============================================================================
 
-export const RECO_RULE_VERSION = 'best-1.0';
+export const RECO_RULE_VERSION = 'best-1.1';
 
 export type RecoMarket = '1x2' | 'ou25' | 'btts';
 export type RecoSelection = '1' | 'X' | '2' | 'over' | 'under' | 'yes' | 'no';
@@ -59,14 +68,19 @@ export const RECO_EXCLUDED: ReadonlySet<string> = new Set(['1x2:X', 'btts:no']);
 
 export interface RecoGate {
   minQ: number; minLift: number;
+  /** pazar bazlı taban-oran farkı eşiği (yoksa minLift) */
+  minLiftBy?: Partial<Record<RecoMarket, number>>;
+  /** kova istatistik seçenekleri (varsayılan RECO_STATS_OPTS) */
+  stats?: RecoStatsOpts;
   /** kapı gösterilen olasılığa (RecoMeta) uygulanır — varsayılan true (6 Eki: "≥%60" deyip %59 gösteriliyordu) */
   onDisplay?: boolean;
 }
-export const RECO_GATE: RecoGate = { minQ: 0.60, minLift: 0.05, onDisplay: true };
-
-/** Büzülme ağırlıkları (sanal örnek sayısı). */
-export const K_GLOBAL = 30;
+/** Büzülme ağırlıkları (sanal örnek sayısı). best-1.1: K_GLOBAL 30 → 60, kaba kova 60. */
+export const K_GLOBAL = 60;
 export const K_LEAGUE = 20;
+export const K_COARSE = 60;
+export const RECO_STATS_OPTS: RecoStatsOpts = { kGlobal: K_GLOBAL, kLeague: K_LEAGUE, prior: 'coarse', kCoarse: K_COARSE };
+export const RECO_GATE: RecoGate = { minQ: 0.60, minLift: 0.08, onDisplay: true, stats: RECO_STATS_OPTS };
 
 const fin = (x: number | null | undefined): x is number => x != null && Number.isFinite(x);
 const BIN = 0.05;
@@ -80,6 +94,11 @@ function sideClass(market: RecoMarket, selection: RecoSelection): string {
 
 export function bucketKey(market: RecoMarket, selection: RecoSelection, p: number, blended = false): string {
   return `${blended ? 'mkt|' : ''}${market}:${sideClass(market, selection)}:${binOf(p)}`;
+}
+/** Kaba kova: aynı pazar/taraf/harman, p ≥ COARSE_MIN olan tüm dilimler birlikte (seyrek dilimin önceliği). */
+export const COARSE_MIN = 0.6;
+export function coarseKey(market: RecoMarket, selection: RecoSelection, blended = false): string {
+  return `${blended ? 'mkt|' : ''}${market}:${sideClass(market, selection)}:hi`;
 }
 
 const mix = (model: number, mkt: number | null | undefined, w = RECO_MARKET_WEIGHT) => (fin(mkt) ? (1 - w) * model + w * mkt : model);
@@ -125,11 +144,21 @@ interface Cell { n: number; won: number }
 const shrink = (c: Cell | undefined, prior: number, k: number) => (c && c.n ? (c.won + k * prior) / (c.n + k) : prior);
 
 /** Geçmiş maçlardan öğrenilen kova ve taban oran sayaçları (yalnız ileriye dönük beslenir). */
-export interface RecoStatsOpts { kGlobal: number; kLeague: number }
+export interface RecoStatsOpts {
+  kGlobal: number; kLeague: number;
+  /**
+   * Seyrek dilim kovasının önceliği: 'raw' = ham p (best-1.0), 'coarse' = aynı pazar/tarafın
+   * kaba (p ≥ %60 havuz) kaydı, o da ham p'ye büzülür. Üst 2,5 %80+ gibi az örnekli, şişik
+   * dilimlerde ham p sızıyordu (5–18 Eki: Üst gösterilen %70, gerçek %61).
+   */
+  prior?: 'raw' | 'coarse';
+  kCoarse?: number;
+}
 
 export class RecoStats {
-  constructor(readonly opts: RecoStatsOpts = { kGlobal: K_GLOBAL, kLeague: K_LEAGUE }) {}
+  constructor(readonly opts: RecoStatsOpts = RECO_STATS_OPTS) {}
   readonly global = new Map<string, Cell>();
+  readonly coarse = new Map<string, Cell>();
   readonly league = new Map<string, Cell>();
   readonly base = new Map<string, Cell>();
 
@@ -144,6 +173,7 @@ export class RecoStats {
     for (const c of candidatesFor(i)) {
       const won = settleReco(c.market, c.selection, h, a);
       this.bump(this.global, c.key, won);
+      if (c.p >= COARSE_MIN) this.bump(this.coarse, coarseKey(c.market, c.selection, c.blended), won);
       if (i.leagueId != null) this.bump(this.league, `${i.leagueId}|${c.key}`, won);
     }
     // Taban oran: modelden bağımsız, her maçta her gol tarafı.
@@ -153,7 +183,10 @@ export class RecoStats {
 
   /** Dürüst olasılık: genel kova ham p'ye, lig kovası genele büzülür. */
   honestP(c: RecoCandidate, leagueId: number | null): number {
-    const g = shrink(this.global.get(c.key), c.p, this.opts.kGlobal);
+    const prior = this.opts.prior === 'coarse' && c.p >= COARSE_MIN
+      ? shrink(this.coarse.get(coarseKey(c.market, c.selection, c.blended)), c.p, this.opts.kCoarse ?? this.opts.kGlobal)
+      : c.p;
+    const g = shrink(this.global.get(c.key), prior, this.opts.kGlobal);
     return leagueId == null ? g : shrink(this.league.get(`${leagueId}|${c.key}`), g, this.opts.kLeague);
   }
 
@@ -174,7 +207,8 @@ export function recommend(i: RecoInput, stats: RecoStats, gate: RecoGate = RECO_
     const pDisplay = meta ? meta.displayP({ market: c.market, selection: c.selection, q }) : q;
     const base = stats.baseRate(c.market, c.selection);
     const g = gate.onDisplay === false ? q : pDisplay;
-    const passes = !RECO_EXCLUDED.has(`${c.market}:${c.selection}`) && g >= gate.minQ && (base == null || g - base >= gate.minLift);
+    const lift = gate.minLiftBy?.[c.market] ?? gate.minLift;
+    const passes = !RECO_EXCLUDED.has(`${c.market}:${c.selection}`) && g >= gate.minQ && (base == null || g - base >= lift);
     return { ...c, q, pDisplay, base, passes };
   });
   const pick = candidates.filter((c) => c.passes).reduce<RecoScored | null>((best, c) => (!best || c.q > best.q ? c : best), null);
@@ -225,7 +259,7 @@ export interface RecoHistoryRow extends RecoInput { kickoff: string; h: number; 
 export interface RecoModel { stats: RecoStats; meta: RecoMeta; days: number; rows: number; metaPicks: number }
 
 export function buildRecoModel(rows: RecoHistoryRow[], gate: RecoGate = RECO_GATE, burnInDays = 30): RecoModel {
-  const stats = new RecoStats();
+  const stats = new RecoStats(gate.stats ?? RECO_STATS_OPTS);
   const meta = new RecoMeta();
   const byDay = new Map<string, RecoHistoryRow[]>();
   for (const r of rows) {
