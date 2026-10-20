@@ -17,6 +17,14 @@ export const ORG_SAME_AS = [
   'https://play.google.com/store/apps/details?id=pro.footballanalytics',
 ];
 
+/**
+ * Typed reference to the organisation for creator/publisher fields. A bare
+ * `{ "@id" }` only resolves when the Organization node is on the same page
+ * (it is on the home page only); Search Console flagged the /data Dataset's
+ * publisher as "invalid object type" on 2026-10-19.
+ */
+export const ORG_REF = { '@type': 'Organization', '@id': `${SITE_URL}/#organization`, name: ORG_NAME, url: SITE_URL } as const;
+
 /** Organization + WebSite — home page only (Google: "place it on your home page"). */
 export function organizationJsonLd(locale: Locale, description: string) {
   return [
@@ -38,7 +46,7 @@ export function organizationJsonLd(locale: Locale, description: string) {
       name: ORG_NAME,
       url: `${SITE_URL}/${locale}`,
       inLanguage: locale,
-      publisher: { '@id': `${SITE_URL}/#organization` },
+      publisher: ORG_REF,
     },
   ];
 }
@@ -136,7 +144,7 @@ export function datasetJsonLd(locale: Locale, input: { name: string; description
     url,
     inLanguage: locale,
     isAccessibleForFree: true,
-    creator: { '@id': `${SITE_URL}/#organization` },
+    creator: ORG_REF,
     keywords: ['football predictions', 'expected goals', 'Dixon-Coles', 'prediction accuracy', 'Brier score'],
     variableMeasured: ['hit rate', 'Brier score', 'calibration'],
     ...(input.dateModified ? { dateModified: input.dateModified.toISOString() } : {}),
@@ -215,8 +223,8 @@ export function openDatasetJsonLd(locale: Locale, input: {
     inLanguage: 'en',
     isAccessibleForFree: true,
     license: input.license,
-    creator: { '@id': `${SITE_URL}/#organization` },
-    publisher: { '@id': `${SITE_URL}/#organization` },
+    creator: ORG_REF,
+    publisher: ORG_REF,
     keywords: ['football predictions dataset', 'match outcome probabilities', 'expected goals', 'Dixon-Coles', 'open data', 'CSV'],
     variableMeasured: ['p_home', 'p_draw', 'p_away', 'lambda_home', 'lambda_away', 'home_score', 'away_score'],
     temporalCoverage: `${input.since}/..`,

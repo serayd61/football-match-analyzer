@@ -21,6 +21,7 @@ test('Dataset points at the performance page and the organisation', () => {
   const ld = datasetJsonLd('de', { name: 'Bilanz', description: 'x', settled: 1234, dateModified: new Date('2026-10-16T00:00:00Z') });
   assert.equal(ld.url, 'https://footballanalytics.pro/de/performance');
   assert.equal(ld.creator['@id'], 'https://footballanalytics.pro/#organization');
+  assert.equal(ld.creator['@type'], 'Organization'); // SC 2026-10-19: a bare @id is an "invalid object type" off the home page
   assert.equal(ld.dateModified, '2026-10-16T00:00:00.000Z');
   assert.equal(ld.isAccessibleForFree, true);
 });
