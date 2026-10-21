@@ -1425,7 +1425,6 @@ async function callClaude(prompt: string): Promise<string | null> {
       body: JSON.stringify({
         model: 'claude-haiku-5-5',
         max_tokens: 2000,
-        temperature: AI_BRAIN_CONFIG.claude.temperature,
         messages: [{ role: 'user', content: prompt }],
       }),
     });

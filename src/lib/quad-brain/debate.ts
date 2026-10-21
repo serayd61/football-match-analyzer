@@ -321,7 +321,6 @@ export async function runDebate(input: DebateInput): Promise<DebateResult | null
       body: JSON.stringify({
         model: MODEL_VERSIONS.claude,
         max_tokens: 2000,
-        temperature: 0.2, // Düşük temperature = daha analitik karar
         messages: [{ role: 'user', content: prompt }]
       })
     });
