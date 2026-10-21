@@ -93,8 +93,7 @@ export class AIClient {
 
     // Claude 3 Haiku - hızlı ve ekonomik model
     const model = 'claude-haiku-5-5';
-    
-    const temperature = options.temperature ?? 0.15;
+    // No `temperature`: Claude 5.x rejects it (400 "temperature is deprecated for this model").
     const maxTokens = options.maxTokens ?? 1500; // Daha düşük token = daha hızlı
     const timeout = options.timeout ?? 10000; // 10 saniye default
 
@@ -130,7 +129,6 @@ export class AIClient {
         body: JSON.stringify({
           model,
           max_tokens: maxTokens,
-          temperature,
           ...(systemMessage && { system: systemMessage }),
           messages: userMessages,
         }),

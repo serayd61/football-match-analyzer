@@ -453,11 +453,11 @@ export default async function PerformancePage({ params: { locale }, searchParams
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-s-line text-left"><th className={th}>{tc('market')}</th><th className={`${th} text-right`}>n</th><th className={`${th} text-right`}>{t('showcaseAcc')}</th></tr></thead>
                 <tbody>
-                  <tr className="border-b border-s-line font-medium"><td className="py-1.5">{t('showcaseAll')}</td><td className="py-1.5 text-right tabular-nums">{showcase.n}</td><td className="py-1.5 text-right tabular-nums">{showcase.n ? f.number(showcase.won / showcase.n, 'percent') : '—'}</td></tr>
+                  <tr className="border-b border-s-line font-medium"><td className="py-1.5">{t('showcaseAll')}</td><td className="py-1.5 text-right tabular-nums">{showcase.n}</td><td className="py-1.5 text-right tabular-nums">{showcase.n ? f.number(showcase.won / showcase.n, 'percent0') : '—'}</td></tr>
                   {(['1x2', 'ou25', 'btts'] as const).map((m) => (
-                    <tr key={m} className="border-b border-s-line"><td className="py-1.5">{marketName[m]}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n ? f.number(showcase.byMarket[m].won / showcase.byMarket[m].n, 'percent') : '—'}</td></tr>
+                    <tr key={m} className="border-b border-s-line"><td className="py-1.5">{marketName[m]}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n}</td><td className="py-1.5 text-right tabular-nums">{showcase.byMarket[m].n ? f.number(showcase.byMarket[m].won / showcase.byMarket[m].n, 'percent0') : '—'}</td></tr>
                   ))}
-                  <tr className="text-s-muted"><td className="py-1.5">{t('showcaseNoPick')}</td><td className="py-1.5 text-right tabular-nums">{showcase.noPick}</td><td className="py-1.5 text-right tabular-nums">{f.number(showcase.noPick / (showcase.n + showcase.noPick), 'percent')}</td></tr>
+                  <tr className="text-s-muted"><td className="py-1.5">{t('showcaseNoPick')}</td><td className="py-1.5 text-right tabular-nums">{showcase.noPick}</td><td className="py-1.5 text-right tabular-nums">{f.number(showcase.noPick / (showcase.n + showcase.noPick), 'percent0')}</td></tr>
                 </tbody>
               </table>
             </div>
@@ -466,7 +466,7 @@ export default async function PerformancePage({ params: { locale }, searchParams
                 <thead><tr className="border-b border-s-line text-left"><th className={th}>{tc('league')}</th><th className={`${th} text-right`}>n</th><th className={`${th} text-right`}>{t('showcaseAcc')}</th><th className={`${th} text-right`}>{t('showcaseNoPick')}</th></tr></thead>
                 <tbody>
                   {showcase.byLeague.map((L) => (
-                    <tr key={L.slug} className="border-b border-s-line"><td className="py-1.5"><Link href={`/leagues/${L.slug}`} className="hover:underline underline-offset-4">{L.name}</Link></td><td className="py-1.5 text-right tabular-nums">{L.n}</td><td className="py-1.5 text-right tabular-nums">{L.n ? f.number(L.won / L.n, 'percent') : '—'}</td><td className="py-1.5 text-right tabular-nums">{L.noPick}</td></tr>
+                    <tr key={L.slug} className="border-b border-s-line"><td className="py-1.5"><Link href={`/leagues/${L.slug}`} className="hover:underline underline-offset-4">{L.name}</Link></td><td className="py-1.5 text-right tabular-nums">{L.n}</td><td className="py-1.5 text-right tabular-nums">{L.n ? f.number(L.won / L.n, 'percent0') : '—'}</td><td className="py-1.5 text-right tabular-nums">{L.noPick}</td></tr>
                   ))}
                 </tbody>
               </table>

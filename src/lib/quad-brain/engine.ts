@@ -57,7 +57,6 @@ async function runClaudeTactical(
       body: JSON.stringify({
         model: MODEL_VERSIONS.claude,
         max_tokens: AI_MODEL_CONFIGS.claude.maxTokens,
-        temperature: AI_MODEL_CONFIGS.claude.temperature,
         messages: [{ role: 'user', content: prompt }]
       })
     });
