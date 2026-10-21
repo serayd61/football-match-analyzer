@@ -81,8 +81,9 @@ export default async function HomePage({ params: { locale } }: { params: { local
     // SEO 2026-10-10: ziyaretçiye günün maçları (olasılıksız, /matches ön izlemelerine bağlı).
     unlocked ? Promise.resolve([]) : listPublicUpcoming(2).catch(() => []),
   ]);
-  // Örnek analiz (2026-10-13): ziyaretçiye geçmişte yayımlanmış, sonuçlanmış gerçek bir maç.
-  const sample = unlocked ? null : await getSampleAnalysis().catch(() => null);
+  // Örnek analiz (2026-10-13): geçmişte yayımlanmış, sonuçlanmış gerçek bir maç. Üyede de hesaplanır:
+  // hero bugünün maçlarını gösterirken "Örnek analizi gör" boş bir #demo çıpasına değil, maça gider.
+  const sample = await getSampleAnalysis().catch(() => null);
   const publicToday = publicWeek.filter((r) => ymdOf(r.kickoff) === todayYmd()).slice(0, 8);
   // v3: members see the day's first modelled fixtures right in the hero.
   const todayRows = (today?.rows ?? []).filter((r) => r.covered && r.hasModel).sort((a, b) => a.kickoff.localeCompare(b.kickoff)).slice(0, 5);
