@@ -117,6 +117,7 @@ export const config = {
     '/results',
     '/performance',
     '/pricing',
+    '/login', // 2026-10-22: legacy /login streamed a 200 shell to crawlers; 307 to /{locale}/login like /pricing
     '/leagues/:path*',
     '/methodology',
     '/data', // SEO Faz 2.1: the page only — /data/{file}.csv|json are unlocalized route handlers

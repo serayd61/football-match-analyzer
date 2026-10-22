@@ -26,9 +26,9 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 export default async function AccountPage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
   const access = await getSiteAccess();
-  if (access.state === 'anon') redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
+  if (access.state === 'anon') redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
   const [t, f, acct] = await Promise.all([getTranslations('account'), getFormatter(), getAccountSummary(access)]);
-  if (!acct) redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
+  if (!acct) redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
   const PRICING_HREF = `/${locale}/pricing`;
   const RESET_HREF = legacyHref('/forgot-password', locale);
   const SETTINGS_HREF = legacyHref('/settings', locale);
