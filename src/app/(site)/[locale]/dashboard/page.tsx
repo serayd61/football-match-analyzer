@@ -52,7 +52,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   unstable_setRequestLocale(locale);
   const session = await getServerSession(authOptions);
   const email = session?.user?.email;
-  if (!email) redirect(`/login?callbackUrl=${encodeURIComponent(`/${locale}/dashboard`)}`);
+  if (!email) redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}/dashboard`)}`);
 
   const [t, tc, tm, tv, ta, f] = await Promise.all([
     getTranslations('dashboard'), getTranslations('common'), getTranslations('match'), getTranslations('v2.predictions'), getTranslations('assessment'), getFormatter(),

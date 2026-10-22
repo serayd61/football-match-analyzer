@@ -73,10 +73,15 @@ export async function requireSiteAccess(_locale: string, _path: string): Promise
   return getSiteAccess();
 }
 
-/** Sign-in link that brings the visitor back to `path` (locale-free) afterwards. */
+/**
+ * Sign-in link that brings the visitor back to `path` (locale-free) afterwards.
+ * Localized (2026-10-22): the unprefixed /login is the legacy app route, whose
+ * server redirect fires mid-stream — Googlebot got a 200 shell with no canonical
+ * and Search Console listed 70 `/login?callbackUrl=…` URLs as duplicates.
+ */
 export function signInHref(locale: string, path: string, register = false): string {
   const qs = new URLSearchParams();
   if (register) qs.set('mode', 'register');
   qs.set('callbackUrl', `/${locale}${path}`);
-  return `/login?${qs.toString()}`;
+  return `/${locale}/login?${qs.toString()}`;
 }

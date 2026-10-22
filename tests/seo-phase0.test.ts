@@ -39,8 +39,8 @@ test('client bundle keeps only the namespaces client components read', () => {
 });
 
 test('sign-in href returns to the gated page without a redirect hop', () => {
-  assert.equal(signInHref('tr', '/predictions/5'), '/login?callbackUrl=%2Ftr%2Fpredictions%2F5');
-  assert.equal(signInHref('en', '/picks?date=2026-10-18', true), '/login?mode=register&callbackUrl=%2Fen%2Fpicks%3Fdate%3D2026-10-18');
+  assert.equal(signInHref('tr', '/predictions/5'), '/tr/login?callbackUrl=%2Ftr%2Fpredictions%2F5');
+  assert.equal(signInHref('en', '/picks?date=2026-10-18', true), '/en/login?mode=register&callbackUrl=%2Fen%2Fpicks%3Fdate%3D2026-10-18');
 });
 
 test('titles fit in 60 characters with the site-name suffix, descriptions in 160', () => {
