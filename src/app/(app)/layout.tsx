@@ -5,7 +5,7 @@ import AuthProvider from '@/components/AuthProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import FloatingBackButton from '@/components/FloatingBackButton';
 import { Analytics } from '@vercel/analytics/react';
-import { GoogleAnalytics } from '@next/third-parties/google';
+import GoogleAnalyticsTag from '@/components/GoogleAnalyticsTag';
 import GoogleAdsTag from '@/components/GoogleAdsTag';
 import Navigation from '@/components/Navigation';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
@@ -117,7 +117,7 @@ export default function RootLayout({
         </QueryProvider>
         <Analytics />
         {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+          <GoogleAnalyticsTag gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
         {process.env.NEXT_PUBLIC_GOOGLE_ADS_ID && (
           <GoogleAdsTag adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID} />

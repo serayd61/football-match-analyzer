@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTimeZone, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Analytics } from '@vercel/analytics/react';
-import { GoogleAnalytics } from '@next/third-parties/google';
+import GoogleAnalyticsTag from '@/components/GoogleAnalyticsTag';
 import UtmTracker from '@/components/site/UtmTracker';
 import CtaTracker from '@/components/site/CtaTracker';
 import '../site.css';
@@ -119,7 +119,7 @@ export default async function LocaleLayout({
         <Analytics />
         {/* GA4 on the public site too (2026-10-18): until now only the members' app layout loaded it, so
             organic visits to match/league/data pages were invisible. Same property, same env var. */}
-        {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
+        {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalyticsTag gaId={process.env.NEXT_PUBLIC_GA_ID} />}
         <UtmTracker />
         <CtaTracker />
         {process.env.NEXT_PUBLIC_GOOGLE_ADS_ID && <GoogleAdsTag adsId={process.env.NEXT_PUBLIC_GOOGLE_ADS_ID} />}
