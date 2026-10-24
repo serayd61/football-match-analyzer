@@ -330,7 +330,7 @@
     "ai": {
       "title": "KI-Einschätzung",
       "meta": "Erstellt {time}",
-      "lead": "Sechs spezialisierte Agenten (Statistik, Quoten, Tiefenanalyse, Strategie, Advocatus Diaboli, Survival) haben dieses Spiel diskutiert. Die Einschätzung wird täglich automatisch für Spiele erstellt, die die Bilanzregel erfüllen; nicht auf Abruf.",
+      "lead": "Sechs spezialisierte Agenten (Statistik, Quoten, Tiefenanalyse, Strategie, Advocatus Diaboli, Survival) haben dieses Spiel diskutiert. Die Einschätzung wird täglich automatisch für jedes Spiel der abgedeckten Ligen erstellt; nicht auf Abruf.",
       "m1x2": "Spielausgang",
       "mOu": "2,5 Tore",
       "mBtts": "Beide treffen",

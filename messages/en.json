@@ -330,7 +330,7 @@
     "ai": {
       "title": "AI opinion",
       "meta": "Generated {time}",
-      "lead": "Six specialist agents (stats, odds, deep analysis, strategy, devil's advocate, survival) debated this match. The opinion is prepared automatically every day for matches that pass the record rule; it is not generated on demand.",
+      "lead": "Six specialist agents (stats, odds, deep analysis, strategy, devil's advocate, survival) debated this match. The opinion is prepared automatically every day for every match in the covered leagues; it is not generated on demand.",
       "m1x2": "Match result",
       "mOu": "2.5 goals",
       "mBtts": "Both teams to score",

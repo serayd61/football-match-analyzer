@@ -330,7 +330,7 @@
     "ai": {
       "title": "Parere dell'IA",
       "meta": "Generato {time}",
-      "lead": "Sei agenti specializzati (statistiche, quote, analisi approfondita, strategia, avvocato del diavolo, sopravvivenza) hanno discusso questa partita. Il parere è preparato automaticamente ogni giorno per le partite che superano la regola del rendimento; non su richiesta.",
+      "lead": "Sei agenti specializzati (statistiche, quote, analisi approfondita, strategia, avvocato del diavolo, sopravvivenza) hanno discusso questa partita. Il parere è preparato automaticamente ogni giorno per ogni partita dei campionati coperti; non su richiesta.",
       "m1x2": "Risultato",
       "mOu": "2,5 gol",
       "mBtts": "Entrambe segnano",

@@ -330,7 +330,7 @@
     "ai": {
       "title": "Yapay zeka görüşü",
       "meta": "Üretildi: {time}",
-      "lead": "Altı uzman ajan (istatistik, oran, derin analiz, strateji, şeytanın avukatı, hayatta kalma) bu maçı tartıştı. Görüş, karneye uyan maçlar için her gün otomatik hazırlanır; isteğe bağlı üretilmez.",
+      "lead": "Altı uzman ajan (istatistik, oran, derin analiz, strateji, şeytanın avukatı, hayatta kalma) bu maçı tartıştı. Görüş, kapsamlı liglerdeki her maç için her gün otomatik hazırlanır; isteğe bağlı üretilmez.",
       "m1x2": "Maç sonucu",
       "mOu": "2,5 gol",
       "mBtts": "Karşılıklı gol",
