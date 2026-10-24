@@ -1,12 +1,20 @@
 // ============================================================================
 // Analytics — GA4 event helper (conversion funnel)
 // ============================================================================
-// Thin, type-safe wrapper over @next/third-parties' sendGAEvent. Safe to call
+// Pushes straight to window.dataLayer (what gtag.js reads). Safe to call
 // anywhere: if GA isn't configured (no NEXT_PUBLIC_GA_ID) the events queue
-// harmlessly to dataLayer and are dropped.
+// harmlessly to dataLayer and are dropped. 2026-10-24: no longer goes through
+// @next/third-parties' sendGAEvent — that helper only works after ITS
+// <GoogleAnalytics> mounted, and the layouts now use GoogleAnalyticsTag
+// (lazyOnload, no <head> preload) for Core Web Vitals.
 
-import { sendGAEvent } from '@next/third-parties/google';
 import { track as vercelTrack } from '@vercel/analytics';
+
+type DataLayerWindow = Window & { dataLayer?: unknown[] };
+function sendGAEvent(...args: unknown[]): void {
+  const w = window as DataLayerWindow;
+  (w.dataLayer = w.dataLayer || []).push(args);
+}
 
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 

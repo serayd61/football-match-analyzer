@@ -7,6 +7,7 @@
 // gtag.js'i yükler + `config` çağırır. GA4 (@next/third-parties) ile birlikte
 // çalışır: ikisi de aynı window.dataLayer / window.gtag'i paylaşır.
 // Dönüşüm olayları src/lib/analytics.ts > trackAdsConversion() ile atılır.
+// 2026-10-24: lazyOnload — afterInteractive <head>'e preload bastırıyordu (bkz. GoogleAnalyticsTag).
 
 import Script from 'next/script';
 
@@ -16,10 +17,10 @@ export default function GoogleAdsTag({ adsId }: { adsId: string }) {
     <>
       <Script
         id="google-ads-gtag-src"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         src={`https://www.googletagmanager.com/gtag/js?id=${adsId}`}
       />
-      <Script id="google-ads-gtag-init" strategy="afterInteractive">
+      <Script id="google-ads-gtag-init" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
