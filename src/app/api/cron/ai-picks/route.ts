@@ -1,11 +1,13 @@
 // ============================================================================
-// CRON — AI ANALİZİ: YALNIZCA KARNEYE UYAN MAÇLAR (18 Eki)
+// CRON — AI ANALİZİ: KAPSAMLI LİGDEKİ HER MAÇ (18 Eki → 24 Eki genişletildi)
 // ----------------------------------------------------------------------------
 // Kullanıcı kararı: AI analizi müşteriye bırakılmaz (kredi tükenir); her gün
-// motorun önerilen seçim kuralını geçen (site_reco_picks: covered + seçimli)
-// maçlar için TAM unified consensus otomatik koşar ve unified_analysis'e
-// yazılır. Maç sayfası bunu salt-okunur gösterir. Saatlik koşar (reco-picks
-// :35'te tazelenir), her maç bir kez analiz edilir, günlük tavan var.
+// kapsamlı ligdeki (site_reco_picks.covered) maçlar için TAM unified consensus
+// otomatik koşar ve unified_analysis'e yazılır. 24 Eki'ye kadar yalnız öneri
+// kuralını geçen (seçimli) maçlar analiz ediliyordu (~%40 kapsama); kullanıcı
+// kararıyla pazar filtresi kaldırıldı, günlük tavan 40 → 77 (36 sa pencerede
+// kapsamlı maç sayısı). Maç sayfası bunu salt-okunur gösterir. Saatlik koşar
+// (reco-picks :35'te tazelenir), her maç bir kez analiz edilir.
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { dbFresh } from '@/lib/site/db';
@@ -15,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 const MAX_PER_RUN = 12;        // tur başına (≈6-10 sn/maç)
-const DAILY_CAP = 40;          // günde en çok bu kadar yeni tam analiz (maliyet freni)
+const DAILY_CAP = 77;          // günde en çok bu kadar yeni tam analiz (maliyet freni; 24 Eki: 40 → 77)
 const TIME_BUDGET_MS = 240_000;
 const HORIZON_H = 36;          // bugün + yarın sabah
 const MIN_LEAD_MS = 60 * 60_000; // başlamaya ≥1 saat (oran/kadro otursun)
@@ -38,15 +40,15 @@ export async function GET(request: NextRequest) {
   const to = new Date(now.getTime() + HORIZON_H * 3600_000).toISOString();
   const db = sb();
 
-  // 1) Karneye uyan maçlar: kapsamlı lig + net seçim
+  // 1) Kapsamlı ligdeki tüm maçlar (24 Eki: seçim şartı kaldırıldı; market null olabilir)
   const { data: picks, error } = await db
     .from('site_reco_picks')
     .select('fixture_id, kickoff, league_name, home_name, away_name, market, selection, p_display')
-    .eq('covered', true).not('market', 'is', null)
+    .eq('covered', true)
     .gte('kickoff', from).lte('kickoff', to)
     .order('kickoff', { ascending: true }).limit(200);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  if (!picks?.length) return NextResponse.json({ ok: true, candidates: 0, analyzed: [], reason: 'karneye uyan maç yok' });
+  if (!picks?.length) return NextResponse.json({ ok: true, candidates: 0, analyzed: [], reason: 'kapsamlı ligde maç yok' });
 
   const ids = picks.map((p) => Number(p.fixture_id));
   // 2) Zaten tam analizi olanlar + günlük tavan
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
     try {
       const result = await runUnifiedConsensus(input);
       await saveUnifiedAnalysis(input, result);
-      analyzed.push({ fixtureId: p.fixture_id, match: `${p.home_name} – ${p.away_name}`, league: p.league_name, pick: `${p.market}:${p.selection}`, consensus: result.predictions?.matchResult?.prediction, conf: result.systemPerformance?.overallConfidence, systems: result.metadata?.systemsUsed });
+      analyzed.push({ fixtureId: p.fixture_id, match: `${p.home_name} – ${p.away_name}`, league: p.league_name, pick: p.market ? `${p.market}:${p.selection}` : null, consensus: result.predictions?.matchResult?.prediction, conf: result.systemPerformance?.overallConfidence, systems: result.metadata?.systemsUsed });
     } catch (e: any) {
       console.error(`[ai-picks] ${p.home_name} – ${p.away_name} failed:`, e?.message);
       skipped.push({ fixtureId: p.fixture_id, reason: e?.message || 'error' });
