@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -226,7 +227,8 @@ async function callClaude(prompt: string): Promise<any> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-5-5',
+        ...CLAUDE_NO_THINKING,
         max_tokens: 500,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -235,7 +237,7 @@ async function callClaude(prompt: string): Promise<any> {
     if (!response.ok) return null;
     
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text = claudeText(data) || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
   } catch (error) {

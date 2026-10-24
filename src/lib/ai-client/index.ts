@@ -4,6 +4,7 @@
 // ============================================================================
 
 export type AIModel = 'claude' | 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'deepseek' | 'dolphin';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -128,6 +129,7 @@ export class AIClient {
         },
         body: JSON.stringify({
           model,
+          ...CLAUDE_NO_THINKING,
           max_tokens: maxTokens,
           ...(systemMessage && { system: systemMessage }),
           messages: userMessages,
@@ -153,7 +155,7 @@ export class AIClient {
       }
 
       const data = await response.json();
-      const content = data.content?.[0]?.text || null;
+      const content = claudeText(data);
       
       if (content) {
         console.log(`✅ Claude response: ${content.length} chars`);

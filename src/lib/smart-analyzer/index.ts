@@ -18,6 +18,7 @@ import {
   MatchDetails,
   CombinedPrediction
 } from '../smart-prompt';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 let _sb: SupabaseClient | null = null;
 function getSupabase() {
@@ -73,6 +74,7 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-haiku-5-5',
+        ...CLAUDE_NO_THINKING,
         max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -85,7 +87,7 @@ async function callClaude(prompt: string): Promise<string> {
     }
     
     const data = await res.json();
-    return data.content?.[0]?.text || '';
+    return claudeText(data) || '';
   } catch (error: any) {
     console.error('❌ Claude exception:', error.message || error);
     return '';

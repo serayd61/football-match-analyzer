@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -41,6 +42,7 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-haiku-5-5',
+        ...CLAUDE_NO_THINKING,
         max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -48,7 +50,7 @@ async function callClaude(prompt: string): Promise<string> {
     
     if (!res.ok) return '';
     const data = await res.json();
-    return data.content?.[0]?.text || '';
+    return claudeText(data) || '';
   } catch {
     return '';
   }

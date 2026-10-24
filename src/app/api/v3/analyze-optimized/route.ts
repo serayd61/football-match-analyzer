@@ -21,6 +21,7 @@ import {
   getSystemPromptByAgent,
   getMatchTypePromptAddendum,
 } from '@/lib/agent-learning/improved-prompts';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -181,13 +182,14 @@ async function callOptimizedAgent(
         } as HeadersInit,
         body: JSON.stringify({
           model: 'claude-sonnet-5-5',
+          ...CLAUDE_NO_THINKING,
           max_tokens: 1024,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPromptWithAddendum }],
         }),
       });
       const data = await response.json();
-      return JSON.parse(data.content[0]?.text || '{}');
+      return JSON.parse(claudeText(data) || '{}');
     }
 
     if (provider === 'gemini' && GEMINI_API_KEY) {
