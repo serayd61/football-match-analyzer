@@ -1,6 +1,9 @@
 import 'server-only';
 import { db } from './db';
 import { localizeCachedAnalysis } from '@/lib/i18n/analysis-l10n';
+import { toAiListFlag, type AiListFlag, type AiListRow } from './ai-list';
+
+export type { AiListFlag } from './ai-list';
 
 // Maç sayfasındaki "Yapay zeka görüşü" bölümü (18 Eki): ai-picks cron'unun
 // karneye uyan maçlar için ÜRETTİĞİ unified_analysis satırı salt-okunur
@@ -42,21 +45,23 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
   };
 }
 
-/** Liste rozeti bilgisi: görüş hazır mı, ajanların ortak kararı (survivalVerdict) var mı. */
-export interface AiListFlag { verdict: boolean }
-
 /**
- * Listeler için: tam AI görüşü olan maçlar → { verdict } (24 Eki: rozet "ajan kararı var"
- * bilgisini de taşır; blok eşik altında bilerek susar, bkz. survival-agent/verdict.ts).
- * Tek sorgu; survivalVerdict.market JSON yolundan okunur, analiz gövdesi taşınmaz.
+ * Listeler için: tam AI görüşü olan maçlar → { verdict, pick, agent } (24 Eki: rozet "ajan kararı
+ * var" bilgisini taşır; aynı gün akşamı satır altı özet eklendi — AI en iyi bahis + ajan kararı).
+ * Tek sorgu; yalnız gereken JSON yolları okunur, analiz gövdesi taşınmaz. Blok eşik altında
+ * bilerek susar, bkz. survival-agent/verdict.ts.
  */
 export async function aiFixtureFlags(ids: number[]): Promise<Map<number, AiListFlag>> {
   const out = new Map<number, AiListFlag>();
   if (!ids.length) return out;
-  const { data } = await db().from('unified_analysis').select('fixture_id, systems_used, verdict_market:analysis->survivalVerdict->>market').in('fixture_id', ids);
+  const { data } = await db().from('unified_analysis').select([
+    'fixture_id', 'systems_used',
+    'b_market:analysis->bestBet->>market', 'b_sel:analysis->bestBet->>selection', 'b_conf:analysis->bestBet->>confidence',
+    'v_market:analysis->survivalVerdict->>market', 'v_sel:analysis->survivalVerdict->>selection', 'v_conf:analysis->survivalVerdict->>confidence', 'v_agents:analysis->survivalVerdict->>agentAgreement',
+  ].join(', ')).in('fixture_id', ids);
   for (const r of (data || []) as any[]) {
     if (!isFull(r.systems_used)) continue;
-    out.set(Number(r.fixture_id), { verdict: typeof r.verdict_market === 'string' && r.verdict_market.length > 0 });
+    out.set(Number(r.fixture_id), toAiListFlag(r as AiListRow));
   }
   return out;
 }

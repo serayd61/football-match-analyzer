@@ -1242,7 +1242,13 @@
       "mktUnder": "Under 2.5",
       "mktBtts": "BTTS Yes",
       "aiBadge": "AI opinion ready",
-      "aiBadgeVerdict": "Agent verdict"
+      "aiBadgeVerdict": "Agent verdict",
+      "aiToggle": "AI · Agents",
+      "aiToggleHint": "Show the AI's best bet and the agents' verdict under each row",
+      "aiLead": "AI",
+      "aiAgentLead": "Agents",
+      "aiAgents": "agents",
+      "mktBttsNo": "BTTS No"
     },
     "match": {
       "back": "← All predictions",
