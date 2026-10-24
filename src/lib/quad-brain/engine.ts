@@ -28,6 +28,7 @@ import { detectConflicts, runBatchDebates } from './debate';
 import { assessDataQuality, calculateDynamicWeights, applyWeights, formatWeightsSummary } from './weighting';
 import { fetchNewsContext } from './news';
 import { recordPrediction, getAllModelPerformance } from './tracking';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 // =========================
 // AI MODEL CALLERS
@@ -56,6 +57,7 @@ async function runClaudeTactical(
       },
       body: JSON.stringify({
         model: MODEL_VERSIONS.claude,
+        ...CLAUDE_NO_THINKING,
         max_tokens: AI_MODEL_CONFIGS.claude.maxTokens,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -75,7 +77,7 @@ async function runClaudeTactical(
     }
 
     const data = await response.json();
-    const content = data.content?.[0]?.text;
+    const content = claudeText(data);
     
     if (!content) {
       console.error('❌ Claude returned empty response');

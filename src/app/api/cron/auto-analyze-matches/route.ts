@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceOnlyGuard } from '@/lib/api/dev-only';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 dakika - çok maç olabilir
@@ -78,6 +79,7 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-haiku-5-5', // En ucuz Claude modeli
+        ...CLAUDE_NO_THINKING,
         max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -97,7 +99,7 @@ async function callClaude(prompt: string): Promise<string> {
     }
     
     const data = await res.json();
-    const result = data.content?.[0]?.text || '';
+    const result = claudeText(data) || '';
     console.log(`   ✅ Claude responded (${result.length} chars)`);
     return result;
   } catch (error: any) {

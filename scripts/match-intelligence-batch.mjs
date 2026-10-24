@@ -248,11 +248,11 @@ async function callClaudeFrontier(system, user, { maxTokens = 700 } = {}) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
+      body: JSON.stringify({ model: 'claude-haiku-5-5', thinking: { type: 'disabled' }, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json.content?.[0]?.text || null;
+    return (Array.isArray(json.content) ? json.content.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('') : '') || null;
   } catch { return null; }
 }
 

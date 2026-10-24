@@ -19,6 +19,7 @@ import {
   API_ENDPOINTS,
   MODEL_VERSIONS
 } from './config';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 // =========================
 // CONFLICT DETECTION
@@ -320,6 +321,7 @@ export async function runDebate(input: DebateInput): Promise<DebateResult | null
       },
       body: JSON.stringify({
         model: MODEL_VERSIONS.claude,
+        ...CLAUDE_NO_THINKING,
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -331,7 +333,7 @@ export async function runDebate(input: DebateInput): Promise<DebateResult | null
     }
 
     const data = await response.json();
-    const content = data.content?.[0]?.text;
+    const content = claudeText(data);
 
     if (!content) {
       console.error('❌ No content in debate response');

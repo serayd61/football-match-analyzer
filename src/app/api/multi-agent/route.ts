@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { serviceOnlyGuard } from '@/lib/api/dev-only';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 const SPORTMONKS_API_KEY = process.env.SPORTMONKS_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -34,14 +35,15 @@ async function claudeAgent(prompt: string, systemPrompt: string): Promise<string
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-5-5',
+      ...CLAUDE_NO_THINKING,
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
       system: systemPrompt
     })
   });
   const data = await res.json();
-  return data.content?.[0]?.text || '';
+  return claudeText(data) || '';
 }
 
 // OpenAI Agent

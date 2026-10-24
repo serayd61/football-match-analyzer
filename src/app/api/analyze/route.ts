@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache';
 import { serviceOnlyGuard } from '@/lib/api/dev-only';
+import { claudeText, CLAUDE_NO_THINKING } from '@/lib/ai/claude-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -1424,6 +1425,7 @@ async function callClaude(prompt: string): Promise<string | null> {
       },
       body: JSON.stringify({
         model: 'claude-haiku-5-5',
+        ...CLAUDE_NO_THINKING,
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -1432,7 +1434,7 @@ async function callClaude(prompt: string): Promise<string | null> {
     if (!response.ok) return null;
 
     const data = await response.json();
-    return data.content?.[0]?.text || null;
+    return claudeText(data);
   } catch (error) {
     return null;
   }
