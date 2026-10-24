@@ -42,9 +42,26 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
   };
 }
 
-/** Listeler için: tam AI görüşü olan maç kimlikleri (rozet). Tek sorgu, satır başına ek maliyet yok. */
+/** Liste rozeti bilgisi: görüş hazır mı, ajanların ortak kararı (survivalVerdict) var mı. */
+export interface AiListFlag { verdict: boolean }
+
+/**
+ * Listeler için: tam AI görüşü olan maçlar → { verdict } (24 Eki: rozet "ajan kararı var"
+ * bilgisini de taşır; blok eşik altında bilerek susar, bkz. survival-agent/verdict.ts).
+ * Tek sorgu; survivalVerdict.market JSON yolundan okunur, analiz gövdesi taşınmaz.
+ */
+export async function aiFixtureFlags(ids: number[]): Promise<Map<number, AiListFlag>> {
+  const out = new Map<number, AiListFlag>();
+  if (!ids.length) return out;
+  const { data } = await db().from('unified_analysis').select('fixture_id, systems_used, verdict_market:analysis->survivalVerdict->>market').in('fixture_id', ids);
+  for (const r of (data || []) as any[]) {
+    if (!isFull(r.systems_used)) continue;
+    out.set(Number(r.fixture_id), { verdict: typeof r.verdict_market === 'string' && r.verdict_market.length > 0 });
+  }
+  return out;
+}
+
+/** Geriye uyumluluk: yalnız kimlik kümesi. */
 export async function aiFixtureIds(ids: number[]): Promise<Set<number>> {
-  if (!ids.length) return new Set();
-  const { data } = await db().from('unified_analysis').select('fixture_id, systems_used').in('fixture_id', ids);
-  return new Set((data || []).filter((r: any) => isFull(r.systems_used)).map((r: any) => Number(r.fixture_id)));
+  return new Set((await aiFixtureFlags(ids)).keys());
 }

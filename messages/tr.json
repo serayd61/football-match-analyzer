@@ -1241,7 +1241,8 @@
       "mktOver": "Üst 2,5",
       "mktUnder": "Alt 2,5",
       "mktBtts": "KG Var",
-      "aiBadge": "Yapay zeka görüşü hazır"
+      "aiBadge": "Yapay zeka görüşü hazır",
+      "aiBadgeVerdict": "Ajan kararı var"
     },
     "match": {
       "back": "← Tüm tahminler",

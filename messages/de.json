@@ -1241,7 +1241,8 @@
       "mktOver": "Über 2,5",
       "mktUnder": "Unter 2,5",
       "mktBtts": "BTTS Ja",
-      "aiBadge": "KI-Einschätzung verfügbar"
+      "aiBadge": "KI-Einschätzung verfügbar",
+      "aiBadgeVerdict": "Agenten-Urteil"
     },
     "match": {
       "back": "← Alle Prognosen",
