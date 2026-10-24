@@ -1,5 +1,5 @@
 import 'server-only';
-import { db } from './db';
+import { dbFresh } from './db';
 import { localizeCachedAnalysis } from '@/lib/i18n/analysis-l10n';
 import { toAiListFlag, type AiListFlag, type AiListRow } from './ai-list';
 
@@ -8,6 +8,12 @@ export type { AiListFlag } from './ai-list';
 // Maç sayfasındaki "Yapay zeka görüşü" bölümü (18 Eki): ai-picks cron'unun
 // karneye uyan maçlar için ÜRETTİĞİ unified_analysis satırı salt-okunur
 // gösterilir. Sayfa asla yeni analiz tetiklemez (kredi kontrolü kullanıcıda değil).
+//
+// Önbelleksiz okuma (24 Eki akşamı): db() GET yanıtları 5 dk Next fetch önbelleğinde
+// kalır ve süresi dolunca BİR kez bayat servis edilir (stale-while-revalidate). Analiz
+// üretilmeden önce ziyaret edilen maç sayfası "görüş yok"u önbelleğe alıyor, listede rozet
+// göründüğü hâlde maça girince bölüm boş çıkıyordu (canlıda 55 kararlı maçın 24'ü; yenileyince
+// doluyordu). İki çağırıcı da force-dynamic sayfalarda → no-store güvenli.
 
 export interface AiView {
   createdAt: string;
@@ -24,7 +30,7 @@ export interface AiView {
 const isFull = (systems: unknown) => Array.isArray(systems) && systems.some((s) => s !== 'smart');
 
 export async function getAiAnalysis(fixtureId: number, locale: string): Promise<AiView | null> {
-  const { data } = await db().from('unified_analysis').select('analysis, systems_used, created_at').eq('fixture_id', fixtureId).maybeSingle();
+  const { data } = await dbFresh().from('unified_analysis').select('analysis, systems_used, created_at').eq('fixture_id', fixtureId).maybeSingle();
   if (!data?.analysis || !isFull(data.systems_used)) return null;
   const lang = locale === 'tr' || locale === 'de' ? locale : 'en';
   let a: any = data.analysis;
@@ -54,7 +60,7 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
 export async function aiFixtureFlags(ids: number[]): Promise<Map<number, AiListFlag>> {
   const out = new Map<number, AiListFlag>();
   if (!ids.length) return out;
-  const { data } = await db().from('unified_analysis').select([
+  const { data } = await dbFresh().from('unified_analysis').select([
     'fixture_id', 'systems_used',
     'b_market:analysis->bestBet->>market', 'b_sel:analysis->bestBet->>selection', 'b_conf:analysis->bestBet->>confidence',
     'v_market:analysis->survivalVerdict->>market', 'v_sel:analysis->survivalVerdict->>selection', 'v_conf:analysis->survivalVerdict->>confidence', 'v_agents:analysis->survivalVerdict->>agentAgreement',

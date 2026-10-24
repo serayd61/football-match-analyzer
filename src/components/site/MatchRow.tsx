@@ -11,6 +11,7 @@ import { AssessmentChip } from './Assessment';
 import AiBadge, { AiDetail } from './AiBadge';
 import type { AiListFlag } from '@/lib/site/ai-list';
 import type { MarketAssessment } from '@/lib/site/assessment';
+import { rowId } from '@/lib/site/back-link';
 
 // Match row v3 — one fixture per line inside a league group:
 //   time | crests + names (+ score) | 1·X·2 mini bar (pick bold) | confidence + risk
@@ -108,7 +109,9 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
     </>
   );
 
+  // Satır çıpası (24 Eki): maç sayfasının "geri" bağlantısı #m-<id> ile bu satıra iner;
+  // scroll-mt yapışkan başlığın (60px) altında kalmasın diye.
   return p.hasModel
-    ? <Link href={`/predictions/${p.fixtureId}${back ? `?back=${encodeURIComponent(back)}` : ''}`} className="mrow">{body}</Link>
-    : <div className="mrow">{body}</div>;
+    ? <Link id={rowId(p.fixtureId)} href={`/predictions/${p.fixtureId}${back ? `?back=${encodeURIComponent(back)}` : ''}`} className="mrow scroll-mt-20">{body}</Link>
+    : <div id={rowId(p.fixtureId)} className="mrow scroll-mt-20">{body}</div>;
 }

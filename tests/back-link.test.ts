@@ -27,3 +27,11 @@ test('from=coupon returns to the coupon page; unknown origin falls back', () => 
   assert.equal(backHref({ ...base, back: 'from=coupon' }), '/coupon');
   assert.equal(backHref({ ...base, back: 'from=nope' }), '/predictions');
 });
+
+// Satır çıpası (24 Eki): maçtan dönüşte tıklanan satıra inilir; lig çıpasının önüne geçer.
+test('fixtureId given → #m-<id> anchor (covered and uncovered alike)', () => {
+  assert.equal(backHref({ back: 'league=bundesliga', covered: true, leagueId: 54, kickoffYmd: '2026-10-24', todayYmd: '2026-10-24', fixtureId: 5881197 }), '/predictions?league=bundesliga#m-5881197');
+  assert.equal(backHref({ back: 'date=2026-10-25&scope=all', covered: false, leagueId: 111, kickoffYmd: '2026-10-25', todayYmd: '2026-10-24', fixtureId: 42 }), '/predictions?date=2026-10-25&scope=all#m-42');
+  // karne / kupon dönüşleri çıpa taşımaz (o sayfalarda satır kimliği yok)
+  assert.equal(backHref({ back: 'from=picks', covered: true, leagueId: 47, kickoffYmd: '2026-10-24', todayYmd: '2026-10-24', fixtureId: 42 }), '/picks');
+});
