@@ -1241,7 +1241,8 @@
       "mktOver": "Over 2,5",
       "mktUnder": "Under 2,5",
       "mktBtts": "Gol Sì",
-      "aiBadge": "Parere dell'IA disponibile"
+      "aiBadge": "Parere dell'IA disponibile",
+      "aiBadgeVerdict": "Verdetto agenti"
     },
     "match": {
       "back": "← Tutti i pronostici",

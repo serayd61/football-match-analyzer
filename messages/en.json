@@ -1241,7 +1241,8 @@
       "mktOver": "Over 2.5",
       "mktUnder": "Under 2.5",
       "mktBtts": "BTTS Yes",
-      "aiBadge": "AI opinion ready"
+      "aiBadge": "AI opinion ready",
+      "aiBadgeVerdict": "Agent verdict"
     },
     "match": {
       "back": "← All predictions",

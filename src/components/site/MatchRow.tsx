@@ -28,7 +28,7 @@ function Crest({ src, alt }: { src: string | null; alt: string }) {
     : <span className="h-5 w-5 shrink-0 rounded-full bg-s-raised" aria-hidden />;
 }
 
-export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null, assessment = null, ai = false }: { ai?: boolean; p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null; /** ortak değerlendirme, 1X2 pazarı (assess-1.0) — maç sayfasıyla aynı çıktı */ assessment?: MarketAssessment | null }) {
+export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null, assessment = null, ai = false, aiVerdict = false }: { ai?: boolean; /** ajanların ortak kararı var (survival verdict) → rozet "karar" etiketi */ aiVerdict?: boolean; p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null; /** ortak değerlendirme, 1X2 pazarı (assess-1.0) — maç sayfasıyla aynı çıktı */ assessment?: MarketAssessment | null }) {
   const t = await getTranslations('v2.predictions');
   const tc = await getTranslations('common');
   const ta = await getTranslations('assessment');
@@ -66,7 +66,7 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
           {score && <span className="num ml-auto pl-2 text-[14px] font-bold">{p.awayScore}</span>}
         </div>
         {outside?.note && <p className="mt-1.5 truncate text-[11.5px] text-s-muted">{outside.note}</p>}
-        {ai && <p className="mt-1.5"><AiBadge label={t('aiBadge')} /></p>}
+        {ai && <p className="mt-1.5"><AiBadge label={t('aiBadge')} verdict={aiVerdict} verdictLabel={t('aiBadgeVerdict')} /></p>}
       </div>
 
       {/* probabilities */}
