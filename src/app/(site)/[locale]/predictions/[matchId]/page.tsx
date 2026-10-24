@@ -399,7 +399,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
       <p className="flex flex-wrap items-center gap-2 pt-2 text-[13px]">
         {publicSample
           ? <Link href="/" className="font-semibold text-s-muted hover:text-s-ink">{t3('sampleBack')}</Link>
-          : <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd() })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>}
+          : <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd(), fixtureId: id })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>}
         {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
         {strongPick && <span className="tag tag-accent">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-loss">{t('flagPostKickoff')}</span>}

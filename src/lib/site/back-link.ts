@@ -43,8 +43,13 @@ export function sectionId(leagueId: number | null | undefined): string | null {
   return leagueId != null ? `lg-${leagueId}` : null;
 }
 
+/** Liste satırının çıpası (24 Eki): maçtan dönüşte sayfa en üste değil, tıklanan satıra iner. */
+export function rowId(fixtureId: number): string {
+  return `m-${fixtureId}`;
+}
+
 /** Liste sayfasına dönüş: `back` sorgusu (temizlenmiş) ya da maçtan türetilen varsayılan. */
-export function backHref(opts: { back?: string | null; covered: boolean; leagueId: number | null; kickoffYmd: string; todayYmd: string }): string {
+export function backHref(opts: { back?: string | null; covered: boolean; leagueId: number | null; kickoffYmd: string; todayYmd: string; /** dönüşte bu satıra in (24 Eki) */ fixtureId?: number | null }): string {
   let qs = sanitizeBackQs(opts.back);
   if (qs == null) {
     const p = new URLSearchParams();
@@ -52,7 +57,9 @@ export function backHref(opts: { back?: string | null; covered: boolean; leagueI
     if (!opts.covered) p.set('scope', 'all');
     qs = p.toString() || null;
   }
-  const anchor = !opts.covered ? sectionId(opts.leagueId) : null;
+  // Satır çıpası varsa lig çıpasının önüne geçer: kapsam dışı maçta da satıra iner (liste
+  // grubu zaten o satırı içerir). Satır listede yoksa (başka gün/filtre) tarayıcı kaydırmaz.
+  const anchor = opts.fixtureId != null ? rowId(opts.fixtureId) : !opts.covered ? sectionId(opts.leagueId) : null;
   const sp = new URLSearchParams(qs ?? '');
   const from = sp.get('from');
   if (from === 'picks' || from === 'coupon') {
