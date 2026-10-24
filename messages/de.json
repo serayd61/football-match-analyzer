@@ -1242,7 +1242,13 @@
       "mktUnder": "Unter 2,5",
       "mktBtts": "BTTS Ja",
       "aiBadge": "KI-Einschätzung verfügbar",
-      "aiBadgeVerdict": "Agenten-Urteil"
+      "aiBadgeVerdict": "Agenten-Urteil",
+      "aiToggle": "KI · Agenten",
+      "aiToggleHint": "KI-Top-Tipp und Agenten-Urteil unter jeder Zeile anzeigen",
+      "aiLead": "KI",
+      "aiAgentLead": "Agenten",
+      "aiAgents": "Agenten",
+      "mktBttsNo": "BTTS Nein"
     },
     "match": {
       "back": "← Alle Prognosen",

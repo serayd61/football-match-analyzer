@@ -1242,7 +1242,13 @@
       "mktUnder": "Under 2,5",
       "mktBtts": "Gol Sì",
       "aiBadge": "Parere dell'IA disponibile",
-      "aiBadgeVerdict": "Verdetto agenti"
+      "aiBadgeVerdict": "Verdetto agenti",
+      "aiToggle": "IA · Agenti",
+      "aiToggleHint": "Mostra sotto ogni riga la scommessa migliore dell'IA e il verdetto degli agenti",
+      "aiLead": "IA",
+      "aiAgentLead": "Agenti",
+      "aiAgents": "agenti",
+      "mktBttsNo": "Gol No"
     },
     "match": {
       "back": "← Tutti i pronostici",

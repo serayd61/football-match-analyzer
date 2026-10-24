@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { ChevronLeft, ChevronRight, SlidersHorizontal, Search, X } from 'lucide-react';
+import { useTransition } from 'react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import LeaguePicker from './LeaguePicker';
 
 // Predictions toolbar v3 (2026-09-26). ONE control surface for the day list:
 //   row 1 · day strip (‹ yesterday · today · tomorrow ›) + native date input + match count
 //   row 2 · league chips (only leagues with matches that day) + "other leagues" toggle
-//   row 3 · collapsible filters: search · status · sort · market ≥ p · ready · country/league
+//   row 2 (right) · "AI · Ajan" toggle (24 Eki): satır altında AI en iyi bahis + ajan kararı
+// özeti. Eski 3. satır (arama · durum · sıralama · pazar eşiği · hazır) kaldırıldı; sorgu
+// anahtarları (q/status/sort/market/minp/ready) hâlâ çözülür, dış bağlantılar kırılmaz.
 // State lives in the URL exactly as before (same query keys), so links, back/forward and
 // the match page's "back" keep working. Every change navigates immediately — no Apply.
 
@@ -18,26 +20,24 @@ export interface ToolbarULeague { id: number; name: string; ccode: string | null
 export interface ToolbarState {
   date: string; today: string; league: string | null; country: string | null; uLeagueId: number | null; scope: 'covered' | 'all';
   q: string; status: string; sort: string; ready: boolean; market: string | null; minP: number | null; note: boolean;
+  /** satır altı AI · ajan özeti açık (varsayılan açık; `ai=0` kapatır) */
+  ai: boolean;
 }
 export interface ToolbarLabels {
   yesterday: string; today: string; tomorrow: string; prevDay: string; nextDay: string; pickDate: string;
-  all: string; otherLeagues: string; filters: string; clear: string; search: string; searchPh: string;
-  status: string; statusAll: string; statusUpcoming: string; statusLive: string; statusFinished: string;
-  sort: string; sortTime: string; sortConfidence: string; ready: string;
-  market: string; marketAll: string; markets: Record<string, string>; minP: Record<string, string>;
+  all: string; otherLeagues: string; clear: string;
+  /** "AI · Ajan" düğmesi ve erişilebilirlik açıklaması */
+  ai: string; aiHint: string;
   country: string; countryAll: string; league: string; leagueAll: string; matches: string;
   picker: { placeholder: string; modelLeagues: string; countries: string; otherLeagues: string; noResults: string };
 }
 
-export default function PredictionsToolbar({ state, leagues, uncoveredCount, countries, uLeagues, minPSteps, labels, dayLabel }: {
+export default function PredictionsToolbar({ state, leagues, uncoveredCount, countries, uLeagues, aiCount, labels, dayLabel }: {
   state: ToolbarState; leagues: ToolbarLeague[]; uncoveredCount: number; countries: ToolbarCountry[]; uLeagues: ToolbarULeague[];
-  minPSteps: readonly number[]; labels: ToolbarLabels; /** yesterday/today/tomorrow rendered by the server (locale) */ dayLabel: { prev: string; cur: string; next: string };
+  /** listede AI görüşü hazır maç sayısı (düğme sayacı) */ aiCount: number; labels: ToolbarLabels; /** yesterday/today/tomorrow rendered by the server (locale) */ dayLabel: { prev: string; cur: string; next: string };
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [open, setOpen] = useState(!!(state.q || state.status !== 'all' || state.sort !== 'time' || state.ready || state.market));
-  const [q, setQ] = useState(state.q);
-  const first = useRef(true);
 
   const addDays = (ymd: string, n: number) => { const d = new Date(`${ymd}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
@@ -54,6 +54,7 @@ export default function PredictionsToolbar({ state, leagues, uncoveredCount, cou
       sort: state.sort !== 'time' ? state.sort : undefined,
       market: state.market ?? undefined,
       minp: state.market && state.minP ? String(state.minP) : undefined,
+      ai: state.ai ? undefined : '0',
       ...over,
     };
     if (m.date === state.today) m.date = undefined;
@@ -65,20 +66,10 @@ export default function PredictionsToolbar({ state, leagues, uncoveredCount, cou
   };
   const go = (over: Partial<Record<string, string | null | undefined>>) => start(() => router.push(build(over), { scroll: false }));
 
-  // Debounced search → URL.
-  useEffect(() => {
-    if (first.current) { first.current = false; return; }
-    const t = setTimeout(() => { if (q.trim() !== state.q) go({ q: q.trim() || undefined }); }, 350);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
-
   const outsideMode = state.uLeagueId != null || !!state.country;
-  const activeCount = [state.q, state.status !== 'all', state.sort !== 'time', state.ready, state.market].filter(Boolean).length;
   const selectedLabel = state.uLeagueId != null ? (uLeagues.find((u) => u.id === state.uLeagueId)?.name ?? `#${state.uLeagueId}`)
     : state.country ? (countries.find((c) => c.ccode === state.country)?.country ?? state.country)
     : state.league ? (leagues.find((l) => l.slug === state.league)?.name ?? state.league) : null;
-  const ctl = 'input !h-10 !text-[14px] w-full sm:w-auto';
 
   return (
     <div className={`rounded-2xl border border-s-line bg-s-surface shadow-[var(--s-shadow)] ${pending ? 'opacity-70' : ''} transition-opacity`} aria-busy={pending}>
@@ -120,50 +111,10 @@ export default function PredictionsToolbar({ state, leagues, uncoveredCount, cou
           onPick={(over) => go(over)}
           onClear={() => go({ league: undefined, country: undefined })}
         />
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={`chip chip-sm shrink-0 ${open || activeCount ? 'chip-on' : ''}`}>
-          <SlidersHorizontal size={14} /> {labels.filters}{activeCount ? <span className="num ml-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-s-accent px-1 text-[11px] text-white">{activeCount}</span> : null}
+        <button type="button" onClick={() => go({ ai: state.ai ? '0' : undefined })} aria-pressed={state.ai} title={labels.aiHint} className={`chip chip-sm shrink-0 ${state.ai ? 'chip-on' : ''}`} data-testid="ai-toggle">
+          <Sparkles size={14} /> {labels.ai}{aiCount ? <span className="num ml-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-s-accent px-1 text-[11px] text-white">{aiCount}</span> : null}
         </button>
       </div>
-
-      {/* Row 3 — filters (collapsible) */}
-      {open && (
-        <div className="rule-t-1 grid gap-2 px-3 py-3 sm:grid-cols-2 sm:px-4 lg:grid-cols-[minmax(200px,1.4fr)_repeat(3,minmax(0,1fr))_auto_auto]">
-          <label className="relative block">
-            <span className="sr-only">{labels.search}</span>
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-s-muted" aria-hidden />
-            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={labels.searchPh} maxLength={60} className="input !h-10 !pl-9 !text-[14px]" />
-          </label>
-          <label className="block"><span className="sr-only">{labels.status}</span>
-            <select value={state.status} onChange={(e) => go({ status: e.target.value === 'all' ? undefined : e.target.value })} className={ctl + ' !w-full'}>
-              <option value="all">{labels.statusAll}</option><option value="upcoming">{labels.statusUpcoming}</option><option value="live">{labels.statusLive}</option><option value="finished">{labels.statusFinished}</option>
-            </select>
-          </label>
-          <label className="block"><span className="sr-only">{labels.sort}</span>
-            <select value={state.sort} onChange={(e) => go({ sort: e.target.value === 'time' ? undefined : e.target.value })} className={ctl + ' !w-full'}>
-              <option value="time">{labels.sortTime}</option><option value="confidence">{labels.sortConfidence}</option>
-            </select>
-          </label>
-          <div className="flex gap-2">
-            <label className="block min-w-0 flex-1"><span className="sr-only">{labels.market}</span>
-              <select value={state.market ?? ''} onChange={(e) => go({ market: e.target.value || undefined, minp: e.target.value ? String(state.minP ?? 60) : undefined })} className={ctl + ' !w-full'}>
-                <option value="">{labels.marketAll}</option>
-                {Object.entries(labels.markets).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </label>
-            <label className="block w-[92px] shrink-0"><span className="sr-only">{labels.market}</span>
-              <select value={String(state.minP ?? 60)} disabled={!state.market} onChange={(e) => go({ minp: e.target.value })} className={ctl + ' !w-full disabled:opacity-50'}>
-                {minPSteps.map((p) => <option key={p} value={String(p)}>{labels.minP[String(p)]}</option>)}
-              </select>
-            </label>
-          </div>
-          <label className="inline-flex h-10 items-center gap-2 text-[14px]">
-            <input type="checkbox" checked={state.ready} onChange={(e) => go({ ready: e.target.checked ? '1' : undefined })} className="h-4 w-4 accent-[rgb(var(--s-brand))]" /> {labels.ready}
-          </label>
-          {activeCount > 0 && (
-            <button type="button" onClick={() => { setQ(''); go({ q: undefined, status: undefined, sort: undefined, ready: undefined, market: undefined, minp: undefined }); }} className="btn btn-secondary btn-sm justify-self-start sm:justify-self-end"><X size={14} /> {labels.clear}</button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

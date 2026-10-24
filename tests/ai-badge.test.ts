@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import AiBadge from '@/components/site/AiBadge';
+import AiBadge, { AiDetail } from '@/components/site/AiBadge';
 
 (globalThis as unknown as { React: typeof React }).React = React;
 
@@ -18,4 +18,27 @@ test('AiBadge: karar varsa etiket ve ayrı testid', () => {
   assert.ok(html.includes('data-testid="ai-badge-verdict"'));
   assert.ok(html.includes('Ajan kararı var'));
   assert.ok(html.includes('aria-label="Ajan kararı var"'));
+});
+
+// Satır altı özet (24 Eki akşamı): AI en iyi bahis + ajan kararı; ikisi de yoksa boş.
+const LABELS = { ai: 'AI', agent: 'Ajan', agents: 'ajan', sel: { '1': 'Ev', X: 'Beraberlik', '2': 'Deplasman', over: 'Üst 2,5', under: 'Alt 2,5', yes: 'KG Var', no: 'KG Yok' } } as const;
+
+test('AiDetail: AI bahsi ve ajan kararı tek satırda', () => {
+  const html = renderToStaticMarkup(createElement(AiDetail, { flag: { verdict: true, pick: { market: 'ou25', sel: 'over', conf: 69 }, agent: { market: 'x12', sel: '1', conf: 79, agents: '2/3' } }, labels: LABELS }));
+  assert.ok(html.includes('data-testid="ai-detail"'));
+  assert.ok(html.includes('Üst 2,5'));
+  assert.ok(html.includes('%69'));
+  assert.ok(html.includes('Ev'));
+  assert.ok(html.includes('2/3 ajan'));
+});
+
+test('AiDetail: yalnız AI bahsi varsa ajan parçası çizilmez', () => {
+  const html = renderToStaticMarkup(createElement(AiDetail, { flag: { verdict: false, pick: { market: 'ou25', sel: 'under', conf: 61 }, agent: null }, labels: LABELS }));
+  assert.ok(html.includes('Alt 2,5'));
+  assert.ok(!html.includes('Ajan'));
+});
+
+test('AiDetail: ikisi de yoksa boş', () => {
+  const html = renderToStaticMarkup(createElement(AiDetail, { flag: { verdict: false, pick: null, agent: null }, labels: LABELS }));
+  assert.equal(html, '');
 });

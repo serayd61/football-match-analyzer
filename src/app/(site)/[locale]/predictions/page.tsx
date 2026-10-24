@@ -6,12 +6,12 @@ import { alternatesFor } from '@/lib/site/seo';
 import { nextDayWithPredictions } from '@/lib/site/predictions';
 import { listDay } from '@/lib/site/fixtures';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
-import { applyFilters, parseFilters, marketProb, MIN_P_STEPS } from '@/lib/site/filters';
+import { applyFilters, parseFilters, marketProb } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import { type OutsideRisk } from '@/components/site/PredictionCard';
 import MatchRow from '@/components/site/MatchRow';
-import { aiFixtureFlags } from '@/lib/site/ai-analysis';
+import { aiFixtureFlags, type AiListFlag } from '@/lib/site/ai-analysis';
 import PredictionsToolbar from '@/components/site/PredictionsToolbar';
 import LeagueGroup from '@/components/site/LeagueGroup';
 import { coverageById } from '@/lib/coverage/registry';
@@ -29,12 +29,14 @@ import { Paywall, TrialNotice, AnonWall } from '@/components/site/Paywall';
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
 
-// Predictions v3 (2026-09-26). One toolbar (day · leagues · filters) drives the
+// Predictions v3 (2026-09-26). One toolbar (day · leagues · AI toggle) drives the
 // URL; below it the day's fixtures grouped by league as compact rows. Leagues
 // outside model coverage follow in their own groups when the "other leagues"
-// chip is on. All query keys are unchanged from v2.
+// chip is on. All query keys are unchanged from v2. 24 Eki: "Filtreler" paneli
+// kaldırıldı, yerine satır altı "AI · Ajan" özeti (`ai=0` kapatır); eski filtre
+// anahtarları URL'den hâlâ uygulanır (dış bağlantılar, geri dönüş).
 
-type Search = { date?: string; league?: string; country?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string; market?: string; minp?: string };
+type Search = { date?: string; league?: string; country?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string; market?: string; minp?: string; ai?: string };
 
 // Kapsam dışı lig filtresi (2026-09-26): `league=u<leagueId>` tek lig, `country=<ccode>` ülkenin
 // tüm kapsam dışı ligleri. Beyaz liste çipleri değişmez; seçim ülke/lig <select> ile yapılır.
@@ -85,6 +87,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   // Pazar eşiği açıkken kapsam dışı blok da açık gelir: kullanıcı günün tamamını tarıyor.
   const scope = searchParams.scope === 'all' || outsideMode || flt.market ? 'all' : 'covered';
   const showNote = searchParams.note !== '0';
+  // Satır altı AI · ajan özeti (24 Eki): varsayılan açık, `ai=0` kapatır.
+  const showAi = searchParams.ai !== '0';
 
   const day = await listDay(date);
   const all = day.rows;
@@ -163,7 +167,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
 
   const href = (over: Partial<Search>) => {
     const qs = new URLSearchParams();
-    const m = { date, league: league?.slug ?? (uLeagueId != null ? `u${uLeagueId}` : undefined), country: country ?? undefined, scope: outsideMode || flt.market ? 'covered' : scope, note: showNote ? undefined : '0', q: flt.q || undefined, status: flt.status === 'all' ? undefined : flt.status, ready: flt.ready ? '1' : undefined, sort: flt.sort === 'time' ? undefined : flt.sort, market: flt.market ?? undefined, minp: flt.market && flt.minP ? String(flt.minP) : undefined, ...over };
+    const m = { date, league: league?.slug ?? (uLeagueId != null ? `u${uLeagueId}` : undefined), country: country ?? undefined, scope: outsideMode || flt.market ? 'covered' : scope, note: showNote ? undefined : '0', q: flt.q || undefined, status: flt.status === 'all' ? undefined : flt.status, ready: flt.ready ? '1' : undefined, sort: flt.sort === 'time' ? undefined : flt.sort, market: flt.market ?? undefined, minp: flt.market && flt.minP ? String(flt.minP) : undefined, ai: showAi ? undefined : '0', ...over };
     if (m.date && m.date !== today) qs.set('date', m.date);
     if (m.league) qs.set('league', m.league);
     if (m.country) qs.set('country', m.country);
@@ -175,6 +179,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
     if (m.sort) qs.set('sort', m.sort);
     if (m.market) qs.set('market', m.market);
     if (m.market && m.minp) qs.set('minp', m.minp);
+    if (m.ai === '0') qs.set('ai', '0');
     const s = qs.toString();
     return `/predictions${s ? `?${s}` : ''}`;
   };
@@ -203,7 +208,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   const t3 = await getTranslations('v3.predictions');
   // Piyasa koruması (27 Eyl): kapsamdaki satırlar için son 1X2 piyasa olasılığı tek sorguda.
   const snaps = rows.length ? await getMarketSnapshots(rows.filter((r) => r.hasModel).map((r) => r.fixtureId)).catch(() => ({} as Record<number, never>)) : {};
-  const aiIds = await aiFixtureFlags(all.map((r) => r.fixtureId)).catch(() => new Map<number, { verdict: boolean }>());
+  const aiIds = await aiFixtureFlags(all.map((r) => r.fixtureId)).catch(() => new Map<number, AiListFlag>());
+  const aiCount = rows.filter((r) => aiIds.has(r.fixtureId)).length;
   const mkt = (id: number) => { const m = (snaps as Record<number, { pHome: number; pDraw: number; pAway: number } | undefined>)[id]; return m ? { pHome: m.pHome, pDraw: m.pDraw, pAway: m.pAway } : null; };
   // Ortak değerlendirme (assess-1.0, 2026-10-16): maç sayfasıyla aynı çıktı, satırda 1X2 çipi.
   const assessed = await assessRows([...rows, ...uncoveredRows], { snapshots: { ...(uSnaps as Record<number, any>), ...(snaps as Record<number, any>) } }).catch(() => new Map());
@@ -223,19 +229,16 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       </div>
 
       <PredictionsToolbar
-        state={{ date, today, league: league?.slug ?? null, country, uLeagueId, scope, q: flt.q, status: flt.status, sort: flt.sort, ready: flt.ready, market: flt.market, minP: flt.minP, note: showNote }}
+        state={{ date, today, league: league?.slug ?? null, country, uLeagueId, scope, q: flt.q, status: flt.status, sort: flt.sort, ready: flt.ready, market: flt.market, minP: flt.minP, note: showNote, ai: showAi }}
         leagues={leaguesToday.map((l) => ({ slug: l.slug, name: l.name, country: l.country, n: scoped.filter((r) => r.league?.slug === l.slug).length }))}
         uncoveredCount={uncoveredCount}
         countries={uCountryList}
         uLeagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
-        minPSteps={MIN_P_STEPS}
+        aiCount={aiCount}
         dayLabel={{ prev: dayLabel(addDays(date, -1)), cur: dayLabel(date), next: dayLabel(addDays(date, 1)) }}
         labels={{
           yesterday: tc('yesterday'), today: tc('today'), tomorrow: tc('tomorrow'), prevDay: t('dayPrev'), nextDay: t('dayNext'), pickDate: tc('date'),
-          all: t('all'), otherLeagues: t3('otherLeagues'), filters: tc('filters'), clear: tc('clear'), search: tc('search'), searchPh: t('searchPh'),
-          status: tc('status'), statusAll: t('statusAll'), statusUpcoming: t('statusUpcoming'), statusLive: t('statusLive'), statusFinished: t('statusFinished'),
-          sort: tc('sort'), sortTime: t('sortTime'), sortConfidence: t('sortConfidence'), ready: t('ready'),
-          market: tc('market'), marketAll: t('marketAll'), markets: { x12: t('mkt1x2'), ou25: t('mktOver'), btts: t('mktBtts') }, minP: Object.fromEntries(MIN_P_STEPS.map((p) => [String(p), t('minP', { p })])),
+          all: t('all'), otherLeagues: t3('otherLeagues'), clear: tc('clear'), ai: t('aiToggle'), aiHint: t('aiToggleHint'),
           country: t('country'), countryAll: t('countryAll', { count: uCountryList.length }), league: tc('league'), leagueAll: t('leagueAll'), matches: tc('matches', { count: shownCount }),
           picker: { placeholder: t3('pickerPh'), modelLeagues: t3('pickerModel'), countries: t3('pickerCountries'), otherLeagues: t3('otherLeagues'), noResults: t3('pickerEmpty') },
         }}
@@ -283,7 +286,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         <div className="mt-5 flex flex-col gap-4">
           {[...covGroups.values()].map((g) => (
             <LeagueGroup key={g.slug ?? g.name} name={g.name} meta={g.country ?? undefined} href={g.slug ? `/leagues/${g.slug}` : undefined} count={g.rows.length}>
-              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} ai={aiIds.has(p.fixtureId)} aiVerdict={!!aiIds.get(p.fixtureId)?.verdict} back={listQs} spot={spotOf(p)} market={mkt(p.fixtureId)} assessment={a1x2(p.fixtureId)} />)}
+              {g.rows.map((p) => <MatchRow key={p.fixtureId} p={p} ai={aiIds.has(p.fixtureId)} aiVerdict={!!aiIds.get(p.fixtureId)?.verdict} aiDetail={showAi ? aiIds.get(p.fixtureId) ?? null : null} back={listQs} spot={spotOf(p)} market={mkt(p.fixtureId)} assessment={a1x2(p.fixtureId)} />)}
             </LeagueGroup>
           ))}
           <p className="text-[12px] text-s-muted">{t('footnote')}</p>
