@@ -164,6 +164,7 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
 
   let context: MatchContext | null = null;
   let fullData: FullFixtureData | null = null;
+  let teamStatsRealFlag = false;
   let dataQuality = 'good';
   let prompt = '';
 
@@ -213,6 +214,30 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
       return { value: 5, hasData: false }; // Default value but mark as no data
     };
     
+    // Son maçlardan GERÇEK gol/KG/Üst ortalamaları (2026-10-25). Önceden 1.5/1.2 gibi sabitler
+    // basılıyordu; "istatistiksel analiz" aslında şablondu. ≥3 skorlu maç yoksa sabitler kalır
+    // ve calculateStatisticalPrediction'a teamStatsReal=false geçer (güven tavanı).
+    const goalsFromLatest = (teamId: number, matches: any[]) => {
+      let n = 0, scored = 0, conceded = 0, btts = 0, over = 0;
+      for (const m of matches || []) {
+        const me = m?.participants?.find((p: any) => Number(p?.id) === Number(teamId));
+        const loc = me?.meta?.location;
+        if (loc !== 'home' && loc !== 'away') continue;
+        const cur = (m?.scores || []).filter((x: any) => x?.description === 'CURRENT');
+        const hs = cur.find((x: any) => x?.score?.participant === 'home')?.score?.goals;
+        const as = cur.find((x: any) => x?.score?.participant === 'away')?.score?.goals;
+        if (typeof hs !== 'number' || typeof as !== 'number') continue;
+        n++; const mine = loc === 'home' ? hs : as, theirs = loc === 'home' ? as : hs;
+        scored += mine; conceded += theirs; if (hs > 0 && as > 0) btts++; if (hs + as > 2.5) over++;
+      }
+      return n >= 3 ? { n, avgScored: scored / n, avgConceded: conceded / n, bttsPct: Math.round(100 * btts / n), overPct: Math.round(100 * over / n) } : null;
+    };
+    const homeGoals = goalsFromLatest(fullData.homeTeam.id, fullData.homeTeam.recentMatches);
+    const awayGoals = goalsFromLatest(fullData.awayTeam.id, fullData.awayTeam.recentMatches);
+    const teamStatsReal = !!(homeGoals && awayGoals);
+    teamStatsRealFlag = teamStatsReal;
+    console.log(`📊 Son maç gol verisi: ev ${homeGoals ? homeGoals.n + ' maç' : 'yok'}, dep ${awayGoals ? awayGoals.n + ' maç' : 'yok'}; H2H ${fullData.h2h?.totalMatches || 0} maç`);
+
     const homeCornersResult = calculateCornersFromStats(fullData.homeTeam.statistics, fullData.homeTeam.recentMatches);
     const awayCornersResult = calculateCornersFromStats(fullData.awayTeam.statistics, fullData.awayTeam.recentMatches);
     
@@ -231,8 +256,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         formPoints: fullData.homeTeam.formPoints,
         goalsScored: 0,
         goalsConceded: 0,
-        avgGoalsScored: 1.5,
-        avgGoalsConceded: 1.2,
+        avgGoalsScored: homeGoals?.avgScored ?? 1.5,
+        avgGoalsConceded: homeGoals?.avgConceded ?? 1.2,
         // 🆕 Venue-spesifik gol ortalamaları
         homeAvgGoalsScored: 1.6,
         homeAvgGoalsConceded: 1.0,
@@ -244,9 +269,9 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         awayWins: 0,
         awayDraws: 0,
         awayLosses: 0,
-        bttsPercentage: 50,
-        over25Percentage: 50,
-        under25Percentage: 50,
+        bttsPercentage: homeGoals?.bttsPct ?? 50,
+        over25Percentage: homeGoals?.overPct ?? 50,
+        under25Percentage: homeGoals ? 100 - homeGoals.overPct : 50,
         cleanSheets: 0,
         failedToScore: 0,
         avgCornersFor: homeCornersResult.hasData ? homeCornersResult.value : 0,
@@ -260,8 +285,8 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         formPoints: fullData.awayTeam.formPoints,
         goalsScored: 0,
         goalsConceded: 0,
-        avgGoalsScored: 1.3,
-        avgGoalsConceded: 1.4,
+        avgGoalsScored: awayGoals?.avgScored ?? 1.3,
+        avgGoalsConceded: awayGoals?.avgConceded ?? 1.4,
         // 🆕 Venue-spesifik gol ortalamaları
         homeAvgGoalsScored: 1.4,
         homeAvgGoalsConceded: 1.1,
@@ -273,9 +298,9 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
         awayWins: 0,
         awayDraws: 0,
         awayLosses: 0,
-        bttsPercentage: 50,
-        over25Percentage: 50,
-        under25Percentage: 50,
+        bttsPercentage: awayGoals?.bttsPct ?? 50,
+        over25Percentage: awayGoals?.overPct ?? 50,
+        under25Percentage: awayGoals ? 100 - awayGoals.overPct : 50,
         cleanSheets: 0,
         failedToScore: 0,
         avgCornersFor: awayCornersResult.hasData ? awayCornersResult.value : 0,
@@ -307,7 +332,7 @@ export async function runSmartAnalysis(match: MatchDetails): Promise<SmartAnalys
 
   // Step 2: Calculate statistical prediction (AI-independent)
   console.log('📈 Step 2: Calculating statistical prediction...');
-  const statsPrediction = calculateStatisticalPrediction(context);
+  const statsPrediction = calculateStatisticalPrediction(context, { teamStatsReal: fullData ? teamStatsRealFlag : true });
   console.log(`   BTTS: ${statsPrediction.btts.prediction} (%${statsPrediction.btts.confidence})`);
   console.log(`   O/U: ${statsPrediction.overUnder.prediction} (%${statsPrediction.overUnder.confidence})`);
   console.log(`   MS: ${statsPrediction.matchResult.prediction} (%${statsPrediction.matchResult.confidence})`);

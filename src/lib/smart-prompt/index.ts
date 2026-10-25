@@ -182,8 +182,21 @@ export interface StatisticalPrediction {
   matchResult: { prediction: 'home' | 'draw' | 'away'; confidence: number; reason: string };
 }
 
-export function calculateStatisticalPrediction(context: MatchContext): StatisticalPrediction {
+export interface StatPredictionOpts {
+  /** Takım gol/KG istatistikleri gerçek mi? false = sabit varsayılan (Sportmonks tam veri yolu 1.5/1.2 gibi sabitler basıyordu). */
+  teamStatsReal?: boolean;
+}
+
+/** Veri yokken basılan tavan: "istatistik" değil varsayılan olduğu için iddia %52'yi geçmez. */
+export const NO_DATA_CAP = 52;
+
+export function calculateStatisticalPrediction(context: MatchContext, opts: StatPredictionOpts = {}): StatisticalPrediction {
   const { homeTeam, awayTeam, h2h } = context;
+  // 2026-10-25: H2H maçı yokken Sportmonks avgGoals=0 / btts%=0 döndürüyor; 0 "gerçek değer" sayılınca
+  // her H2H'sız maç "Alt %64 + KG Yok %54" şablonuna düşüyordu (24 Eki: 9 analiz birebir aynı, 7'si yanlış).
+  const h2hOk = Number(h2h?.totalMatches) > 0;
+  const teamOk = opts.teamStatsReal !== false;
+  const noData = !h2hOk && !teamOk;
 
   // Helper to ensure valid number
   const safeNum = (val: number | undefined | null, defaultVal: number): number => {
@@ -197,10 +210,12 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
   const awayBttsRate = safeNum(awayTeam.bttsPercentage, 50);
   const h2hBttsRate = safeNum(h2h.bttsPercentage, 50);
   
-  // Weight: Team rates 30% each, H2H 40%
-  const bttsScore = (homeBttsRate * 0.3) + (awayBttsRate * 0.3) + (h2hBttsRate * 0.4);
+  // Weight: Team rates 30% each, H2H 40% — eksik kaynak ağırlıktan düşer, kalan yeniden ölçeklenir.
+  const wTeam = teamOk ? 0.3 : 0, wH2h = h2hOk ? 0.4 : 0;
+  const wSum = 2 * wTeam + wH2h;
+  const bttsScore = wSum > 0 ? ((homeBttsRate + awayBttsRate) * wTeam + h2hBttsRate * wH2h) / wSum : 50;
   const bttsPrediction = bttsScore >= 50 ? 'yes' : 'no';
-  const bttsConfidence = Math.min(75, Math.max(50, Math.round(
+  const bttsConfidence = noData ? NO_DATA_CAP : Math.min(75, Math.max(50, Math.round(
     50 + (Math.abs(bttsScore - 50) * 0.5)
   )));
 
@@ -216,10 +231,11 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
   const expectedGoals = (homeGoalAvg + awayGoalAvg) / 2;
   const h2hAvgGoals = safeNum(h2h.avgGoals, 2.5);
   
-  // Weighted average
-  const totalExpectedGoals = safeNum((expectedGoals * 0.6) + (h2hAvgGoals * 0.4), 2.5);
+  // Weighted average (kaynak yoksa ağırlığı sıfır)
+  const gTeam = teamOk ? 0.6 : 0, gH2h = h2hOk ? 0.4 : 0;
+  const totalExpectedGoals = gTeam + gH2h > 0 ? safeNum((expectedGoals * gTeam + h2hAvgGoals * gH2h) / (gTeam + gH2h), 2.5) : 2.5;
   const overPrediction = totalExpectedGoals >= 2.5 ? 'over' : 'under';
-  const overConfidence = Math.min(75, Math.max(50, Math.round(
+  const overConfidence = noData ? NO_DATA_CAP : Math.min(75, Math.max(50, Math.round(
     50 + (Math.abs(totalExpectedGoals - 2.5) * 15)
   )));
 
@@ -283,12 +299,22 @@ export function calculateStatisticalPrediction(context: MatchContext): Statistic
     }
   }
 
+  // Takım istatistiği yokken ev/deplasman skorlaması yalnız ev avantajıdır → güven tavanı.
+  if (!teamOk) matchConfidence = Math.min(matchConfidence, NO_DATA_CAP);
+
   // Build detailed statistical reasoning
-  const bttsReason = `İstatistiksel analiz: Ev sahibi %${homeBttsRate.toFixed(0)} BTTS, Deplasman %${awayBttsRate.toFixed(0)} BTTS, H2H %${h2hBttsRate.toFixed(0)} BTTS. Ağırlıklı ortalama: %${bttsScore.toFixed(1)} → ${bttsPrediction === 'yes' ? 'Her iki takım gol atabilir' : 'Her iki takım gol atmayabilir'}`;
+  const h2hTxt = h2hOk ? `H2H %${h2hBttsRate.toFixed(0)} BTTS` : 'H2H yok';
+  const bttsReason = noData
+    ? 'Veri yetersiz: takım istatistiği ve H2H yok; varsayılan düşük güven.'
+    : `İstatistiksel analiz: ${teamOk ? `Ev sahibi %${homeBttsRate.toFixed(0)} BTTS, Deplasman %${awayBttsRate.toFixed(0)} BTTS, ` : ''}${h2hTxt}. Ağırlıklı ortalama: %${bttsScore.toFixed(1)} → ${bttsPrediction === 'yes' ? 'Her iki takım gol atabilir' : 'Her iki takım gol atmayabilir'}`;
   
-  const overUnderReason = `İstatistiksel analiz: Beklenen toplam gol ${totalExpectedGoals.toFixed(1)} (Takımlar ortalaması: ${expectedGoals.toFixed(1)}, H2H ortalaması: ${h2hAvgGoals.toFixed(1)}). ${overPrediction === 'over' ? '2.5 üstü' : '2.5 altı'} bekleniyor.`;
+  const overUnderReason = noData
+    ? 'Veri yetersiz: takım istatistiği ve H2H yok; varsayılan düşük güven.'
+    : `İstatistiksel analiz: Beklenen toplam gol ${totalExpectedGoals.toFixed(1)} (${teamOk ? `Takımlar ortalaması: ${expectedGoals.toFixed(1)}` : 'takım istatistiği yok'}, ${h2hOk ? `H2H ortalaması: ${h2hAvgGoals.toFixed(1)}` : 'H2H yok'}). ${overPrediction === 'over' ? '2.5 üstü' : '2.5 altı'} bekleniyor.`;
   
-  const matchResultReason = `İstatistiksel skorlama: Ev ${Math.round(homeScore)} - Dep ${Math.round(awayScore)} (Form: Ev ${homeTeam.formPoints}/30, Dep ${awayTeam.formPoints}/30 | Ev performansı: ${Math.round(homeWinRate * 100)}%, Dep performansı: ${Math.round(awayWinRate * 100)}% | H2H: ${h2h.team1Wins}-${h2h.draws}-${h2h.team2Wins}). Fark: ${Math.round(scoreDiff)} → ${matchResult === 'home' ? 'Ev sahibi avantajlı' : matchResult === 'away' ? 'Deplasman avantajlı' : 'Beraberlik olası'}`;
+  const matchResultReason = noData
+    ? 'Veri yetersiz: maç sonucu için yalnız ev avantajı; düşük güven.'
+    : `İstatistiksel skorlama: Ev ${Math.round(homeScore)} - Dep ${Math.round(awayScore)} (Form: Ev ${homeTeam.formPoints}/30, Dep ${awayTeam.formPoints}/30 | Ev performansı: ${Math.round(homeWinRate * 100)}%, Dep performansı: ${Math.round(awayWinRate * 100)}% | H2H: ${h2hOk ? `${h2h.team1Wins}-${h2h.draws}-${h2h.team2Wins}` : 'yok'}). Fark: ${Math.round(scoreDiff)} → ${matchResult === 'home' ? 'Ev sahibi avantajlı' : matchResult === 'away' ? 'Deplasman avantajlı' : 'Beraberlik olası'}`;
 
   return {
     btts: {
