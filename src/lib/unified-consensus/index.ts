@@ -25,6 +25,7 @@ import { bookmakerMargin } from '../odds/devig';
 // (bkz. lib/market-model.ts ölçüm notları: 1X2/ÇŞ güvenilir, Ü/A-KG kısıtlı)
 import { getMatchOdds as getFeedOdds } from '../data-sources/free-football';
 import { marketModel, buildMarketPromptBlock, type MarketModelOutput } from '../market-model';
+import { anchorMatchResultConfidence } from './anchor';
 
 /**
  * Agent çıktısından canlı bahisçi oranını MatchOdds'a çıkarır.
@@ -453,7 +454,7 @@ export async function runUnifiedConsensus(
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type, statAgent);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type, statAgent, marketAgent);
 
     // 4.5 Survival Verdict - Tüm ajanları istişare edip TEK SONUÇ
     if (survivalPrediction) {
@@ -565,7 +566,8 @@ async function createUnifiedConsensus(
   leagueStats: any[] | null = null,
   autoLearnResults: AutoLearnPredictResult[] = [],
   matchType: string = 'regular',
-  statAgent: StatAgentOutput | null = null // 📊 Dixon-Coles istatistiksel motor (opsiyonel)
+  statAgent: StatAgentOutput | null = null, // 📊 Dixon-Coles istatistiksel motor (opsiyonel)
+  marketAgent: MarketModelOutput | null = null // 📉 Piyasa modeli (DC yokken; 1X2 güven çapası)
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
   // Gelişmiş performans bazlı dinamik ağırlıklar
@@ -940,6 +942,16 @@ async function createUnifiedConsensus(
     bttsConsensus.confidence = Math.max(30, bttsConsensus.confidence - confidenceReduction);
   }
   
+  // 1X2 güveni motor olasılığından (dc-1.0 / piyasa modeli). LLM güvenleri ~%50 → ortalama 50'ye çöküyordu.
+  {
+    const probs = statAgent?.matchResult?.probabilities ?? marketAgent?.matchResult?.probabilities ?? null;
+    const anchored = anchorMatchResultConfidence(matchResultConsensus.prediction, probs);
+    if (anchored != null) {
+      matchResultConsensus.confidence = anchored;
+      matchResultConsensus.reasoning += ` Güven = ${statAgent ? 'Dixon-Coles' : 'piyasa modeli'} olasılığı (%${anchored}).`;
+    }
+  }
+
   // Conflict detection (eski format - backward compatibility)
   const systemConflicts: Array<{ field: string; description: string; resolution: string }> = [];
   consensusValidation.conflicts.forEach(conflict => {
