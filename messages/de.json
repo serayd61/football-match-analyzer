@@ -989,7 +989,16 @@
     "colRecord": "Ligabilanz",
     "boardTitle": "Marktbilanz",
     "boardLead": "Stärkste Ligen je Markt, 180 Tage. Montags aktualisiert.",
-    "boardAll": "Volle Tabelle auf der Bilanzseite →"
+    "boardAll": "Volle Tabelle auf der Bilanzseite →",
+    "startEyebrow": "Deine Testphase · {days, plural, =0 {endet heute} =1 {noch 1 Tag} other {noch # Tage}}",
+    "startTitle": "Starte mit dem stärksten Tipp von heute",
+    "startLead": "Jedes bewertete Spiel hat eine vollständige Analyse: Wahrscheinlichkeiten, Tormärkte, die Bilanz des Modells und eine KI-Einschätzung. In der Testphase ist alles offen.",
+    "startKindStrong": "Starke Zone · Ligabilanz {won}/{n} in diesem Markt",
+    "startKindPick": "Tipp des Tages · geprüfte Tormarkt-Regel",
+    "startKindModel": "Höchste Modellsicherheit in den nächsten 48 Stunden",
+    "startCta": "Spielanalyse öffnen",
+    "startRecord": "Bilanz des Modells ansehen",
+    "startEmpty": "In den nächsten 48 Stunden kein bewertetes Spiel. Schau dir solange den Spielplan an."
   },
   "picks": {
     "metaTitle": "Spiele, die zu unserer Bilanz passen",

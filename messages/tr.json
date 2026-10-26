@@ -989,7 +989,16 @@
     "colRecord": "Lig karnesi",
     "boardTitle": "Pazar karnesi",
     "boardLead": "Pazar başına en güçlü ligler, 180 gün. Pazartesi yenilenir.",
-    "boardAll": "Tam tablo karnede →"
+    "boardAll": "Tam tablo karnede →",
+    "startEyebrow": "Deneme süren · {days, plural, =0 {bugün bitiyor} =1 {1 gün kaldı} other {# gün kaldı}}",
+    "startTitle": "Bugünün en güçlü sinyaliyle başla",
+    "startLead": "Değerlendirilen her maçın tam dökümü var: olasılıklar, gol pazarları, modelin karnesi ve yapay zekâ görüşü. Deneme süresince hepsi açık.",
+    "startKindStrong": "Güçlü bölge · bu pazarda lig karnesi {won}/{n}",
+    "startKindPick": "Günün seçimi · doğrulanmış gol kuralı",
+    "startKindModel": "Önümüzdeki 48 saatte en yüksek model güveni",
+    "startCta": "Maç dökümünü aç",
+    "startRecord": "Modelin karnesine bak",
+    "startEmpty": "Önümüzdeki 48 saatte değerlendirilmiş maç yok. Bu arada fikstüre göz at."
   },
   "picks": {
     "metaTitle": "Karneye uyan maçlar",
