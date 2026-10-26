@@ -989,7 +989,16 @@
     "colRecord": "Registro campionato",
     "boardTitle": "Registro mercati",
     "boardLead": "Campionati più forti per mercato, 180 giorni. Aggiornato il lunedì.",
-    "boardAll": "Tabella completa nel registro →"
+    "boardAll": "Tabella completa nel registro →",
+    "startEyebrow": "La tua prova · {days, plural, =0 {finisce oggi} =1 {1 giorno rimasto} other {# giorni rimasti}}",
+    "startTitle": "Inizia dal segnale più forte di oggi",
+    "startLead": "Ogni partita valutata ha un'analisi completa: probabilità, mercati gol, il registro del modello e un parere dell'IA. Durante la prova è tutto aperto.",
+    "startKindStrong": "Zona forte · registro del campionato {won}/{n} in questo mercato",
+    "startKindPick": "Pronostico del giorno · regola gol convalidata",
+    "startKindModel": "Fiducia del modello più alta nelle prossime 48 ore",
+    "startCta": "Apri l'analisi della partita",
+    "startRecord": "Guarda il registro del modello",
+    "startEmpty": "Nessuna partita valutata nelle prossime 48 ore. Nel frattempo sfoglia il calendario."
   },
   "picks": {
     "metaTitle": "Partite in linea con il nostro storico",

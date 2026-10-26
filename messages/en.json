@@ -989,7 +989,16 @@
     "colRecord": "League record",
     "boardTitle": "Market record",
     "boardLead": "Strongest leagues per market, 180 days. Refreshed on Mondays.",
-    "boardAll": "Full table on the record page →"
+    "boardAll": "Full table on the record page →",
+    "startEyebrow": "Your trial · {days, plural, =0 {ends today} =1 {1 day left} other {# days left}}",
+    "startTitle": "Start with today's strongest call",
+    "startLead": "Every rated match has a full breakdown: probabilities, goal markets, the model's record and an AI opinion. All of it is open during your trial.",
+    "startKindStrong": "Strong zone · league record {won}/{n} in this market",
+    "startKindPick": "Today's pick · validated goal-market rule",
+    "startKindModel": "Highest model confidence in the next 48 hours",
+    "startCta": "Open the match breakdown",
+    "startRecord": "See how the model has done",
+    "startEmpty": "No rated match in the next 48 hours. Browse the fixtures meanwhile."
   },
   "picks": {
     "metaTitle": "Matches that fit our record",

@@ -29,6 +29,7 @@ import { RiskLabel } from '@/components/site/Risk';
 import { assessRows } from '@/lib/site/assess';
 import { AssessmentChip } from '@/components/site/Assessment';
 import { OVER_EDGE } from '@/lib/site/risk';
+import { pickFirstStep } from '@/lib/site/first-step';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -112,6 +113,17 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   }));
   const followedIds = new Set(watch.items.map((w) => w.teamId));
 
+  // Deneme süresinde "buradan başla": tek bir maç, tek bir düğme (2026-10-26).
+  // Yeni kayıtlar 50+ satırlık listeyle karşılaşıp hiçbir maç sayfası açmıyordu.
+  const fs = trial ? pickFirstStep({ strong: strongRows, picks, today: todayRows, tomorrow: tomorrowRows }) : null;
+  const first = fs && (() => {
+    if (fs.kind === 'pick') return { fixtureId: fs.fixtureId, homeName: fs.homeName, awayName: fs.awayName, kickoff: fs.kickoff, leagueName: fs.leagueName, p: fs.p, kind: t('startKindPick'), sel: fs.market === 'btts' ? `${tc('btts')} · ${tc('yes')}` : `${tc('ou25')} · ${tc('over')}` };
+    const r = fs.row;
+    const base = { fixtureId: r.fixtureId, homeName: r.homeName, awayName: r.awayName, kickoff: r.kickoff, leagueName: fs.leagueName, p: fs.p };
+    if (fs.kind === 'strong') return { ...base, kind: t('startKindStrong', { won: fs.won, n: fs.n }), sel: fs.market === 'x12' ? (fs.selection === '1' ? r.homeName : fs.selection === '2' ? r.awayName : tc('draw')) : mktName[fs.market] };
+    return { ...base, kind: t('startKindModel'), sel: pickLabel(r, tc) };
+  })();
+
   const firstName = session?.user?.name?.split(' ')[0] || email.split('@')[0];
   const dateLabel = f.dateTime(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
   const formLabels = { W: tm('formW'), D: tm('formD'), L: tm('formL'), vs: tm('vs'), home: tc('home'), away: tc('away') };
@@ -185,6 +197,29 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
           </div>
         }
       />
+
+      {trial && (
+        <section className="mb-10 rounded-sm border border-s-brand bg-s-surface p-5 md:p-6" aria-labelledby="start-here">
+          <p className="text-xs font-medium uppercase tracking-wider text-s-brand">{t('startEyebrow', { days: site.trialDaysLeft })}</p>
+          <h2 id="start-here" className="mt-1 text-xl font-semibold">{t('startTitle')}</h2>
+          <p className="mt-1 max-w-2xl text-sm text-s-muted">{t('startLead')}</p>
+          {first ? (
+            <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs text-s-muted">{first.kind} · <LocalTime iso={first.kickoff} format="kickoff" /> · {first.leagueName}</p>
+                <p className="mt-1 truncate text-lg font-medium">{first.homeName} – {first.awayName}</p>
+                <p className="text-sm">{first.sel} <span className="num text-s-muted">{pct(first.p)}</span></p>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-4">
+                <Link href={`/predictions/${first.fixtureId}`} className="inline-flex h-9 items-center rounded-sm bg-s-brand px-4 text-sm font-medium text-s-brand-ink hover:opacity-90">{t('startCta')} →</Link>
+                <Link href="/performance" className="text-sm underline underline-offset-4">{t('startRecord')}</Link>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm">{t('startEmpty')} <Link href="/predictions" className="underline underline-offset-2">{tc('viewAll')}</Link></p>
+          )}
+        </section>
+      )}
 
       {/* Trial over and no subscription: no fixtures anywhere on the panel (2026-09-08). */}
       {site.state === 'expired' ? <Paywall /> : (
