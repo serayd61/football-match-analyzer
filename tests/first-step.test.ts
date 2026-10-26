@@ -23,7 +23,7 @@ test('started strong match is skipped; daily pick is next in line', () => {
   assert.equal(r?.kind === 'pick' ? r.leagueName : null, 'serie a');
 });
 
-test('falls back to the highest-confidence upcoming model pick today, then tomorrow', () => {
+test('falls back to the highest-confidence upcoming model pick across today and tomorrow', () => {
   const today = [row({ fixtureId: 3, confidence: 0.55 }), row({ fixtureId: 4, confidence: 0.72 }), row({ fixtureId: 5, confidence: 0.95, settled: true }), row({ fixtureId: 6, confidence: null, confidenceRaw: 0.8, hasModel: false })];
   const r = pickFirstStep({ strong: [], picks: [pick(2, '2026-10-26T09:00:00Z')], today, tomorrow: [] }, { now });
   assert.equal(r?.kind, 'model');
@@ -31,6 +31,9 @@ test('falls back to the highest-confidence upcoming model pick today, then tomor
   const r2 = pickFirstStep({ strong: [], picks: [], today: [row({ fixtureId: 3, kickoff: '2026-10-26T10:00:00Z' })], tomorrow: [row({ fixtureId: 9, kickoff: '2026-10-27T15:00:00Z', confidence: null, confidenceRaw: 0.58 })] }, { now });
   assert.equal(r2?.kind === 'model' ? r2.row.fixtureId : null, 9);
   assert.equal(r2?.kind === 'model' ? r2.p : null, 0.58);
+  // yarının %72'si bugünün %49'unu geçer (tek havuz)
+  const r3 = pickFirstStep({ strong: [], picks: [], today: [row({ fixtureId: 3, confidence: 0.49 })], tomorrow: [row({ fixtureId: 9, kickoff: '2026-10-27T20:45:00Z', confidence: 0.72 })] }, { now });
+  assert.equal(r3?.kind === 'model' ? r3.row.fixtureId : null, 9);
 });
 
 test('nothing upcoming → null', () => {
