@@ -58,14 +58,14 @@ export function pickFirstStep<R extends FirstStepRow>(
   const p = input.picks.find((x) => upcoming(x.kickoff, now));
   if (p) return { kind: 'pick', fixtureId: p.fixtureId, homeName: p.homeName, awayName: p.awayName, kickoff: p.kickoff, leagueName: p.leagueSlug.replace(/-/g, ' '), market: p.market, p: p.modelP };
 
-  for (const rows of [input.today, input.tomorrow]) {
-    let best: R | null = null; let bestP = -1;
-    for (const r of rows) {
-      if (!r.hasModel || r.settled || !r.pick || !upcoming(r.kickoff, now)) continue;
-      const c = r.confidence ?? r.confidenceRaw;
-      if (c != null && c > bestP) { best = r; bestP = c; }
-    }
-    if (best) return { kind: 'model', row: best, p: bestP, leagueName: best.leagueName };
+  // Bugün + yarın tek havuz: etiket "48 saat" diyor; pazartesi %49'luk bugün yerine
+  // yarının %72'si gösterilmeli (canlı kontrol, 2026-10-26).
+  let best: R | null = null; let bestP = -1;
+  for (const r of [...input.today, ...input.tomorrow]) {
+    if (!r.hasModel || r.settled || !r.pick || !upcoming(r.kickoff, now)) continue;
+    const c = r.confidence ?? r.confidenceRaw;
+    if (c != null && c > bestP) { best = r; bestP = c; }
   }
+  if (best) return { kind: 'model', row: best, p: bestP, leagueName: best.leagueName };
   return null;
 }
