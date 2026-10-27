@@ -26,6 +26,7 @@ import { bookmakerMargin } from '../odds/devig';
 import { getMatchOdds as getFeedOdds } from '../data-sources/free-football';
 import { marketModel, buildMarketPromptBlock, type MarketModelOutput } from '../market-model';
 import { anchorMatchResultConfidence } from './anchor';
+import { strategy1x2, strategyBtts, devigYes, devig1x2, type StrategyInput } from './market-strategy';
 
 /**
  * Agent çıktısından canlı bahisçi oranını MatchOdds'a çıkarır.
@@ -430,9 +431,17 @@ export async function runUnifiedConsensus(
     // ÖNCE hesaplandı; oranlar geldiğine göre çıktıyı kapanış oranına çekiyoruz.
     // backtest-blend.ts ile doğrulandı: 1X2 isabeti ~+3 puan, log-loss ~%4-6 ↓.
     // Sahte/bozuk oran marj guard'ıyla elenir; oran yoksa saf DC korunur.
+    // Pazar stratejisi girdisi: HAM DC (harman öncesi) + marjsız piyasa (canlı oran; yoksa piyasa modeli)
+    const liveOddsForStrategy = extractLiveOdds(agentResult);
+    const strategyInput: StrategyInput = {
+      dc: statAgent?.matchResult?.probabilities ?? null,
+      market: devig1x2(liveOddsForStrategy?.matchResult) ?? marketAgent?.matchResult?.probabilities ?? null,
+      dcBttsYes: statAgent ? (statAgent.btts.prediction === 'YES' ? statAgent.btts.probability : 1 - statAgent.btts.probability) : null,
+      marketBttsYes: devigYes(liveOddsForStrategy?.btts?.yes, liveOddsForStrategy?.btts?.no),
+    };
     if (statAgent) {
       try {
-        const liveOdds = extractLiveOdds(agentResult);
+        const liveOdds = liveOddsForStrategy;
         if (liveOdds) {
           const before = statAgent.matchResult.probabilities;
           statAgent = applyOddsBlend(statAgent, liveOdds);
@@ -454,7 +463,7 @@ export async function runUnifiedConsensus(
     // 4. Konsensüs oluştur
     if (onProgress) onProgress({ stage: 'consensus', message: 'Sistemler arası fikir birliği oluşturuluyor...' });
     console.log('\n🎯 Creating unified consensus (dynamic weighting)...');
-    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type, statAgent, marketAgent);
+    const consensus = await createUnifiedConsensus(agentResult, smartResult, leagueStats, autoLearnResults, detectedMatchType.type, statAgent, marketAgent, strategyInput);
 
     // 4.5 Survival Verdict - Tüm ajanları istişare edip TEK SONUÇ
     if (survivalPrediction) {
@@ -567,7 +576,8 @@ async function createUnifiedConsensus(
   autoLearnResults: AutoLearnPredictResult[] = [],
   matchType: string = 'regular',
   statAgent: StatAgentOutput | null = null, // 📊 Dixon-Coles istatistiksel motor (opsiyonel)
-  marketAgent: MarketModelOutput | null = null // 📉 Piyasa modeli (DC yokken; 1X2 güven çapası)
+  marketAgent: MarketModelOutput | null = null, // 📉 Piyasa modeli (DC yokken; 1X2 güven çapası)
+  strategyInput: StrategyInput | null = null // 🎯 1X2/KG pazar stratejisi (ham DC + marjsız piyasa)
 ): Promise<Omit<UnifiedConsensusResult, 'sources' | 'metadata'>> {
   // 🧠 MDAW (Multi-Dimensional Adaptive Weighting) SİSTEMİ
   // Gelişmiş performans bazlı dinamik ağırlıklar
@@ -942,14 +952,28 @@ async function createUnifiedConsensus(
     bttsConsensus.confidence = Math.max(30, bttsConsensus.confidence - confidenceReduction);
   }
   
-  // 1X2 güveni motor olasılığından (dc-1.0 / piyasa modeli). LLM güvenleri ~%50 → ortalama 50'ye çöküyordu.
-  {
+  // 🎯 Pazar stratejisi (2026-10-27): 1X2 ve KG'de motor + piyasa kuralı LLM konsensüsünün
+  // ÜSTÜNE yazar (LLM 1X2 %48, KG %44 — sıfır ağırlık). Veri yoksa konsensüs olduğu gibi kalır.
+  let abstain1x2 = false, abstainBtts = false;
+  const s1 = strategy1x2(strategyInput?.dc, strategyInput?.market);
+  if (s1) {
+    matchResultConsensus.prediction = s1.prediction; matchResultConsensus.confidence = s1.confidence; abstain1x2 = s1.abstain;
+    matchResultConsensus.reasoning = `[Strateji ${s1.source}] ${s1.reasoning}`;
+    console.log(`   🎯 1X2 strateji: ${s1.prediction} %${s1.confidence}${s1.abstain ? ' (çekimser)' : ''}`);
+  } else {
+    // Strateji girdisi yok → 1X2 güveni motor olasılığından (PR #168).
     const probs = statAgent?.matchResult?.probabilities ?? marketAgent?.matchResult?.probabilities ?? null;
     const anchored = anchorMatchResultConfidence(matchResultConsensus.prediction, probs);
     if (anchored != null) {
       matchResultConsensus.confidence = anchored;
       matchResultConsensus.reasoning += ` Güven = ${statAgent ? 'Dixon-Coles' : 'piyasa modeli'} olasılığı (%${anchored}).`;
     }
+  }
+  const sb = strategyBtts(strategyInput?.dcBttsYes, strategyInput?.marketBttsYes);
+  if (sb) {
+    bttsConsensus.prediction = sb.prediction; bttsConsensus.confidence = sb.confidence; abstainBtts = sb.abstain;
+    bttsConsensus.reasoning = `[Strateji ${sb.source}] ${sb.reasoning}`;
+    console.log(`   🎯 KG strateji: ${sb.prediction} %${sb.confidence}${sb.abstain ? ' (çekimser)' : ''}`);
   }
 
   // Conflict detection (eski format - backward compatibility)
@@ -964,7 +988,7 @@ async function createUnifiedConsensus(
   });
 
   // Best bet belirle
-  const bestBet = determineBestBet(agentResult, smartResult, matchResultConsensus, overUnderConsensus, bttsConsensus);
+  const bestBet = determineBestBet(agentResult, smartResult, matchResultConsensus, overUnderConsensus, bttsConsensus, { abstain1x2, abstainBtts });
 
   // Score prediction (en olası skor)
   const expectedGoals = agentResult?.agents?.stats?._calculatedStats?.expectedTotal
@@ -1162,11 +1186,19 @@ function determineBestBet(
   smartResult: SmartAnalysisResult | null,
   matchResult: { prediction: string; confidence: number },
   overUnder: { prediction: string; confidence: number },
-  btts: { prediction: string; confidence: number }
+  btts: { prediction: string; confidence: number },
+  abstain: { abstain1x2: boolean; abstainBtts: boolean } = { abstain1x2: false, abstainBtts: false }
 ): UnifiedConsensusResult['bestBet'] {
+  // Strateji çekimser kaldıysa LLM'in o pazardaki "en sağlam bahis"i de kabul edilmez.
+  const isAbstained = (market: string) => {
+    const m = String(market || '').toLowerCase();
+    if (abstain.abstain1x2 && /1x2|match result|maç sonucu|winner/.test(m)) return true;
+    if (abstain.abstainBtts && /btts|karşılıklı|both teams/.test(m)) return true;
+    return false;
+  };
 
   // Master Strategist'in best bet'i varsa öncelik ver
-  if (agentResult?.agents?.masterStrategist?.bestBets?.[0]) {
+  if (agentResult?.agents?.masterStrategist?.bestBets?.[0] && !isAbstained(agentResult.agents.masterStrategist.bestBets[0].market)) {
     const msBet = agentResult.agents.masterStrategist.bestBets[0];
     return {
       market: msBet.market,
@@ -1179,7 +1211,7 @@ function determineBestBet(
   }
 
   // Genius Analyst'in best bet'i varsa kullan
-  if (agentResult?.agents?.geniusAnalyst?.finalRecommendation?.bestBet) {
+  if (agentResult?.agents?.geniusAnalyst?.finalRecommendation?.bestBet && !isAbstained(agentResult.agents.geniusAnalyst.finalRecommendation.bestBet.market)) {
     const gaBet = agentResult.agents.geniusAnalyst.finalRecommendation.bestBet;
     return {
       market: gaBet.market,
@@ -1193,9 +1225,9 @@ function determineBestBet(
 
   // En yüksek confidence'lı tahmini seç
   const bets = [
-    { market: 'Match Result', selection: matchResult.prediction, confidence: matchResult.confidence },
+    ...(abstain.abstain1x2 ? [] : [{ market: 'Match Result', selection: matchResult.prediction, confidence: matchResult.confidence }]),
     { market: 'Over/Under 2.5', selection: overUnder.prediction, confidence: overUnder.confidence },
-    { market: 'BTTS', selection: btts.prediction, confidence: btts.confidence }
+    ...(abstain.abstainBtts ? [] : [{ market: 'BTTS', selection: btts.prediction, confidence: btts.confidence }])
   ];
 
   bets.sort((a, b) => b.confidence - a.confidence);
