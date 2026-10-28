@@ -30,6 +30,7 @@ import { assessRows } from '@/lib/site/assess';
 import { AssessmentChip } from '@/components/site/Assessment';
 import { OVER_EDGE } from '@/lib/site/risk';
 import { pickFirstStep } from '@/lib/site/first-step';
+import { touchSeen } from '@/lib/site/seen';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -70,6 +71,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     getLiveNow(),
     readWatchlist(email),
     teamDirectory(),
+    touchSeen(email), // aktivasyon izi; sonucu yok, paralel koşar
   ]);
   const paid = !!(access?.isPro || engineAccess);
   // Plan chip: a running registration trial is labelled as such, not as paid.
