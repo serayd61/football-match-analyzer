@@ -45,6 +45,7 @@ import OutcomeBadge from '@/components/site/OutcomeBadge';
 import { FormList, toFormItems } from '@/components/site/FormStrip';
 import { standingsIndex } from '@/lib/site/standings';
 import { requireSiteAccess, getSiteAccess, canSeeMatches } from '@/lib/site/access';
+import { touchSeen } from '@/lib/site/seen';
 import { Paywall, TrialNotice, LockedPick, AnonWall, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import { isSampleFixture } from '@/lib/site/sample-analysis';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
@@ -96,6 +97,8 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const access = sample ? await getSiteAccess() : await requireSiteAccess(params.locale, `/predictions/${id}`);
   const publicSample = sample && !canSeeMatches(access);
   const sampleCta = access.state === 'expired' ? { href: PRICING_HREF, key: 'sampleCtaPro' as const } : { href: REGISTER_HREF, key: 'sampleCta' as const };
+  // Aktivasyon izi (2026-10-28): üye maç sayfası açtı → last_seen_at + ilk görüntü; çevirilerle paralel.
+  const seen = canSeeMatches(access) ? touchSeen(access.email, { matchView: true }) : Promise.resolve();
 
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
@@ -104,6 +107,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
   const f = await getFormatter();
+  await seen;
 
   if ((access.state === 'expired' || access.state === 'anon') && !publicSample) {
     return (
