@@ -28,7 +28,8 @@
     "coupon": "Schedina del giorno",
     "teams": "Squadre",
     "glossary": "Glossario",
-    "data": "Open data"
+    "data": "Open data",
+    "app": "App Android"
   },
   "locale": {
     "label": "Lingua"
@@ -2235,5 +2236,30 @@
       }
     ],
     "moreNav": "Correlati"
+  },
+  "playApp": {
+    "metaTitle": "App Android su Google Play",
+    "metaDescription": "Football Analytics Pro per Android: probabilità delle partite da un modello statistico per 11 campionati, storico pubblico, classifiche, forma e precedenti. Gratis su Google Play.",
+    "eyebrow": "Ora su Google Play",
+    "title": "Football Analytics Pro sul tuo telefono",
+    "lead": "Lo stesso modello, lo stesso storico pubblico, in un'app: le partite di oggi con probabilità, confidenza e rischio, classifiche, forma e precedenti. Installazione gratuita; un solo account per web e app.",
+    "cta": "Scarica su Google Play",
+    "qrLabel": "Scansiona per aprire la pagina su Google Play",
+    "qrHint": "Inquadra il codice con la fotocamera del telefono.",
+    "featuresTitle": "Cosa ottieni",
+    "f1": "Probabilità 1X2, Under/Over 2,5 e Goal/No Goal per ogni partita valutata",
+    "f2": "Anello di confidenza ed etichetta di rischio Basso / Medio / Alto su ogni pronostico",
+    "f3": "Edge rispetto al mercato: la distanza del modello dal prezzo implicito del bookmaker",
+    "f4": "Storico pubblico con marca temporale: ogni pronostico regolato, vinti e persi",
+    "f5": "Classifiche, forma, assenze e precedenti per ogni partita",
+    "f6": "Tema chiaro e scuro; italiano, inglese, tedesco e turco",
+    "shotsTitle": "Schermate",
+    "shot1": "Le partite di oggi con le probabilità",
+    "shot2": "Lo storico pubblico delle prestazioni",
+    "reqTitle": "Requisiti",
+    "req": "Android 7.0 o successivo. Download gratuito; l'app usa il tuo account footballanalytics.pro. Maggiori di 18 anni.",
+    "homeTitle": "Football Analytics Pro è su Google Play",
+    "homeLead": "Le probabilità di oggi, lo storico pubblico e il contesto dei campionati in un'app. Installazione gratuita, stesso account.",
+    "homeMore": "Dettagli dell'app"
   }
 }

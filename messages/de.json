@@ -28,7 +28,8 @@
     "coupon": "Tageskupon",
     "teams": "Vereine",
     "glossary": "Glossar",
-    "data": "Open Data"
+    "data": "Open Data",
+    "app": "Android-App"
   },
   "locale": {
     "label": "Sprache"
@@ -2235,5 +2236,30 @@
       }
     ],
     "moreNav": "Weiterführend"
+  },
+  "playApp": {
+    "metaTitle": "Android-App bei Google Play",
+    "metaDescription": "Football Analytics Pro für Android: Spielwahrscheinlichkeiten aus einem statistischen Modell für 11 Ligen, öffentliche Bilanz, Tabellen, Form und Direktvergleich. Gratis bei Google Play.",
+    "eyebrow": "Jetzt bei Google Play",
+    "title": "Football Analytics Pro auf deinem Smartphone",
+    "lead": "Dasselbe Modell, dieselbe öffentliche Bilanz, als App: die Spiele des Tages mit Wahrscheinlichkeiten, Konfidenz und Risiko, Tabellen, Form und Direktvergleich. Gratis installieren; ein Konto für Web und App.",
+    "cta": "Jetzt bei Google Play",
+    "qrLabel": "Scannen, um den Google-Play-Eintrag zu öffnen",
+    "qrHint": "Richte die Kamera deines Smartphones auf den Code.",
+    "featuresTitle": "Was du bekommst",
+    "f1": "1X2, Über/Unter 2,5 und «Beide Teams treffen» für jedes bewertete Spiel",
+    "f2": "Konfidenzring und Risiko-Label Niedrig / Mittel / Hoch bei jeder Prognose",
+    "f3": "Edge gegenüber dem Markt: Abstand des Modells zum impliziten Preis des Buchmachers",
+    "f4": "Öffentliche Bilanz mit Zeitstempel: jede Prognose abgerechnet, Treffer wie Fehlschläge",
+    "f5": "Tabellen, Form, Ausfälle und Direktvergleich zu jeder Partie",
+    "f6": "Helles und dunkles Design; Deutsch, Englisch, Italienisch und Türkisch",
+    "shotsTitle": "Ansichten",
+    "shot1": "Die Spiele des Tages mit Wahrscheinlichkeiten",
+    "shot2": "Die öffentliche Bilanz",
+    "reqTitle": "Voraussetzungen",
+    "req": "Android 7.0 oder neuer. Kostenloser Download; die App nutzt dein footballanalytics.pro-Konto. Ab 18 Jahren.",
+    "homeTitle": "Football Analytics Pro gibt es jetzt bei Google Play",
+    "homeLead": "Die Wahrscheinlichkeiten des Tages, die öffentliche Bilanz und der Liga-Kontext als App. Gratis installieren, mit demselben Konto anmelden.",
+    "homeMore": "Zur App"
   }
 }

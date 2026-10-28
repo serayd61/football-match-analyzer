@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { LOCALES, expectNoHorizontalScroll, collectPageErrors } from './helpers';
 
-const STATIC_PAGES = ['about', 'methodology', 'pricing', 'login', 'privacy', 'terms'];
+const STATIC_PAGES = ['about', 'methodology', 'pricing', 'login', 'privacy', 'terms', 'app'];
 
 test.describe('@static site', () => {
   test('/ locale önekine yönlenir', async ({ page }) => {
