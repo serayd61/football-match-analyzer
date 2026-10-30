@@ -105,8 +105,16 @@
       "schedule": "10 7 * * *"
     },
     {
+      "path": "/api/cron/trial-emails?kind=first",
+      "schedule": "10 8 * * *"
+    },
+    {
       "path": "/api/cron/trial-emails?kind=mid",
       "schedule": "20 8 * * *"
+    },
+    {
+      "path": "/api/cron/trial-emails?kind=strong",
+      "schedule": "30 8 * * *"
     },
     {
       "path": "/api/cron/trial-emails?kind=ending",

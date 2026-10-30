@@ -213,6 +213,8 @@ export async function GET(request: NextRequest) {
     if (isUnfinished && !retryIds.has(String((u as any).id))) continue;
     // Welcome: yalnızca son N gün içinde kayıt olanlar (varsayılan bugün)
     if (isWelcome && (!u.created_at || new Date(u.created_at).getTime() < welcomeCutoffMs)) continue;
+    // Reengage (2026-10-30): "uzun zamandır gelmedin" metni; 14 günden yeni hesaplar deneme serisindedir (trial-emails).
+    if (isReengage && u.created_at && new Date(u.created_at).getTime() > Date.now() - 14 * 86_400_000) continue;
     seen.add(email);
     recipients.push({ email, name: u.name || null });
   }
