@@ -51,6 +51,8 @@ export function unsubscribeUrl(email: string): string {
 }
 
 export { SITE_URL };
+/** Android uygulaması (2026-10-30): deneme/hoşgeldin e-postalarında vurgulanır. */
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=pro.footballanalytics';
 
 // Ödemesi checkout'ta düşmüş kullanıcılar (subscriptions.status='incomplete',
 // plan='pro'). Zorunlu 3DS düzeltmesi (4 Ağu 2026) sonrası tek seferlik

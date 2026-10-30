@@ -454,6 +454,12 @@ export interface TrialEmailOpts {
   pricingUrl: string;
   unsubscribeUrl: string;
   fullPrice: number;
+  /** panel (first) */
+  dashboardUrl?: string;
+  /** Google Play (2026-10-30): tüm deneme maillerinde rozet */
+  playUrl?: string;
+  /** güçlü pazarlar (strong): pazar → en iyi ligler */
+  strong?: Array<{ market: string; rows: Array<{ name: string; won: number; n: number }> }> | null;
 }
 
 function trialShell(title: string, sub: string, body: string, unsubscribeUrl: string): string {
@@ -469,6 +475,11 @@ function trialShell(title: string, sub: string, body: string, unsubscribeUrl: st
 }
 const trialBtn = (href: string, label: string) =>
   `<p style="text-align:center;margin:22px 0"><a href="${href}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">${label}</a></p>`;
+const trialPlay = (playUrl?: string) => playUrl
+  ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:6px 0 18px"><tr><td align="center">
+      <a href="${playUrl}" style="display:inline-block;background:#0d0f14;color:#e7eaf0;text-decoration:none;border:1px solid #1e2430;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600">▶&nbsp; Now on Google Play — get the Android app</a>
+      <div style="font-size:11px;color:#94a3b8;margin-top:6px">Same account, same predictions, kick-off reminders on your phone.</div>
+    </td></tr></table>` : '';
 const trialStats = (stats: { n: number; won: number } | null) => stats && stats.n >= 10
   ? `<div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:20px;margin:0 0 22px;text-align:center">
       <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase">Last 7 days — public record</div>
@@ -489,10 +500,11 @@ export async function sendTrialMidEmail(to: string, o: TrialEmailOpts): Promise<
     ${trialStats(o.stats)}
     <p>Every match page shows where the pick sits in our own track record — the same probability bucket, the same league, how often it landed before. Use the rest of your trial to check the goal markets (Over 2.5, Both teams to score): that's where the record is strongest.</p>
     ${trialBtn(o.predictionsUrl, "See today's predictions →")}
+    ${trialPlay(o.playUrl)}
     <p style="font-size:13px;color:#64748b;text-align:center">Keep full access after the trial ($${o.fullPrice.toFixed(2)}/month, cancel any time): <a href="${o.pricingUrl}" style="color:#059669">Pro plans</a></p>`;
   const html = trialShell('Your trial, day by day', `Trial check-in · ${o.daysLeft} days left`, body, o.unsubscribeUrl);
   const text = `Hi${hi}, ${o.daysLeft} trial days left.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
-Today's predictions: ${o.predictionsUrl}
+Today's predictions: ${o.predictionsUrl}${o.playUrl ? `\nAndroid app on Google Play: ${o.playUrl}` : ''}
 Pro plans ($${o.fullPrice.toFixed(2)}/month, cancel any time): ${o.pricingUrl}
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
@@ -510,10 +522,64 @@ export async function sendTrialEndingEmail(to: string, o: TrialEmailOpts): Promi
     ${trialStats(o.stats)}
     <p>Pro is <strong>$${o.fullPrice.toFixed(2)}/month</strong>, cancel any time.</p>
     ${trialBtn(o.pricingUrl, 'Keep full access →')}
+    ${trialPlay(o.playUrl)}
     <p style="font-size:13px;color:#64748b;text-align:center">Not for you? No action needed — the account simply drops to the free view.</p>`;
   const html = trialShell(`Your trial ends ${when}`, 'Trial ending', body, o.unsubscribeUrl);
   const text = `Hi${hi}, your free trial ends ${when}.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
-Pro is $${o.fullPrice.toFixed(2)}/month, cancel any time. Keep access: ${o.pricingUrl}
+Pro is $${o.fullPrice.toFixed(2)}/month, cancel any time. Keep access: ${o.pricingUrl}${o.playUrl ? `\nAndroid app on Google Play: ${o.playUrl}` : ''}
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
+// Gün 1 (2026-10-30): tek iş — ilk maç sayfasını aç. Kayıttan sonra geri gelen 0 idi.
+export async function sendTrialFirstEmail(to: string, o: TrialEmailOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const dash = o.dashboardUrl || o.predictionsUrl;
+  const subject = `Your first match breakdown is waiting — ${o.daysLeft} trial days left`;
+  const body = `
+    <p>Hi${hi}, your trial is open for ${o.daysLeft} more days and the panel has one job for you today: <strong>open one match</strong>.</p>
+    <p>At the top of your dashboard there is a card called <em>Start with today's strongest call</em>. It picks the single match where the model is most confident, and the page behind it shows the probabilities, the goal markets, how often the same call landed before, and an AI opinion.</p>
+    ${trialBtn(dash, 'Open the match breakdown →')}
+    ${trialStats(o.stats)}
+    ${trialPlay(o.playUrl)}
+    <p style="font-size:13px;color:#64748b;text-align:center">Everything stays unlocked during your trial. No card on file, nothing to cancel.</p>`;
+  const html = trialShell('One match, fully explained', `Day 1 of your trial · ${o.daysLeft} days left`, body, o.unsubscribeUrl);
+  const text = `Hi${hi}, ${o.daysLeft} trial days left. Open one match today: ${dash}${o.playUrl ? `\nAndroid app on Google Play: ${o.playUrl}` : ''}
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
+// Gün 5 (2026-10-30): güçlü pazarlar — lig/pazar karnesi ≥%70 (dashboard "Market record" bloğu).
+export async function sendTrialStrongEmail(to: string, o: TrialEmailOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const label: Record<string, string> = { x12: 'Match result (1X2)', ou25: 'Over 2.5 goals', under25: 'Under 2.5 goals', btts: 'Both teams to score' };
+  const rows = (o.strong || []).flatMap((b) => b.rows.slice(0, 2).map((r) => `<tr><td style="padding:6px 0;border-bottom:1px solid #1e2430;color:#9aa3b2;font-size:12px">${label[b.market] || b.market}</td><td style="padding:6px 0;border-bottom:1px solid #1e2430;color:#e7eaf0;font-size:13px">${r.name}</td><td align="right" style="padding:6px 0;border-bottom:1px solid #1e2430;color:#6ee7b7;font-size:13px;font-weight:700">${r.won}/${r.n} · ${Math.round((r.won / r.n) * 100)}%</td></tr>`));
+  const table = rows.length
+    ? `<div style="background:#0d0f14;border:1px solid #1e2430;border-radius:16px;padding:16px 18px;margin:0 0 22px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase;margin-bottom:8px">Strongest league–market pairs · last 180 days</div>
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${rows.join('')}</table>
+        <div style="font-size:11px;color:#646c7d;margin-top:8px">A pair counts as strong at ≥70% over at least 15 matches. Not a guarantee — a record of what happened in the same situation.</div>
+      </div>`
+    : trialStats(o.stats);
+  const subject = `Where the model is strongest — ${o.daysLeft} trial days left`;
+  const body = `
+    <p>Hi${hi}, two days left on your trial. Most people look at the big 1X2 call; the record says the edge is somewhere else.</p>
+    <p>These are the league–market pairs where the model has hit at least 70% over the last six months. When today's pick falls into one of these zones, the match page and your dashboard flag it as a <strong>strong zone</strong>.</p>
+    ${table}
+    ${trialBtn(o.predictionsUrl, "See today's strong-zone matches →")}
+    ${trialPlay(o.playUrl)}
+    <p style="font-size:13px;color:#64748b;text-align:center">Keep full access after the trial ($${o.fullPrice.toFixed(2)}/month, cancel any time): <a href="${o.pricingUrl}" style="color:#059669">Pro plans</a></p>`;
+  const html = trialShell('Where the model is strongest', `Day 5 of your trial · ${o.daysLeft} days left`, body, o.unsubscribeUrl);
+  const text = `Hi${hi}, ${o.daysLeft} trial days left. Strongest league-market pairs (180 days):
+${(o.strong || []).flatMap((b) => b.rows.slice(0, 2).map((r) => `- ${label[b.market] || b.market}: ${r.name} ${r.won}/${r.n}`)).join('\n') || '(see the dashboard)'}
+Today's predictions: ${o.predictionsUrl}${o.playUrl ? `\nAndroid app on Google Play: ${o.playUrl}` : ''}
+Pro plans ($${o.fullPrice.toFixed(2)}/month): ${o.pricingUrl}
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
   if (error) throw new Error(error.message);

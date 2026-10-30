@@ -1,18 +1,23 @@
 // ============================================================================
 // CRON — deneme dönemi e-postaları (2026-09-26)
+//   kind=first   kayıttan 1 gün sonra: ilk maçı aç (panel kartı)            [2026-10-30]
 //   kind=mid     kayıttan 2–3 gün sonra: haftanın karnesi + kalan gün
+//   kind=strong  kayıttan 4–5 gün sonra: güçlü pazarlar tablosu              [2026-10-30]
 //   kind=ending  bitime 1–2 gün kala: "yarın kapanıyor" + Pro (+ lansman teklifi)
+// Hepsinde Google Play rozeti (PLAY_STORE_URL).
 // Güvenlik: CRON_SECRET; unsubscribe ve abone hariç; email_campaign_log
 // (campaign_key,email) UNIQUE ile kişi başı tek gönderim; ?dry=1 kuru çalışma;
 // ?canary=1 yalnız admin'e; ?limit=N parti. Karne: vitrin son 7 gün (showcaseRecord).
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendTrialMidEmail, sendTrialEndingEmail } from '@/lib/email';
-import { unsubscribeUrl, SITE_URL } from '@/lib/campaign';
+import { sendTrialFirstEmail, sendTrialMidEmail, sendTrialStrongEmail, sendTrialEndingEmail } from '@/lib/email';
+import { unsubscribeUrl, SITE_URL, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
-import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, type TrialKind, type TrialUser } from '@/lib/site/trial-emails';
+import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, TRIAL_KINDS, type TrialKind, type TrialUser } from '@/lib/site/trial-emails';
 import { showcaseRecord } from '@/lib/site/showcase';
+import { loadCoverage } from '@/lib/coverage/registry';
+import { strongBoard } from '@/lib/site/strong-markets';
 import { PLAN_PRICES } from '@/lib/site/plans';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +35,8 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const sp = new URL(req.url).searchParams;
-  const kind = (sp.get('kind') === 'ending' ? 'ending' : 'mid') as TrialKind;
+  const kindParam = sp.get('kind') as TrialKind | null;
+  const kind: TrialKind = kindParam && TRIAL_KINDS.includes(kindParam) ? kindParam : 'mid';
   const dry = sp.get('dry') === '1';
   const canary = sp.get('canary') === '1';
   const limitParam = parseInt(sp.get('limit') || '', 10);
@@ -60,13 +66,14 @@ export async function GET(req: NextRequest) {
     alreadySent: new Set(((sent || []) as any[]).map((r) => String(r.email).toLowerCase())),
     exclude: admins,
   });
-  if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, daysLeft: kind === 'mid' ? 5 : 1, trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }];
+  if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, daysLeft: { first: 6, mid: 5, strong: 2, ending: 1 }[kind], trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }];
   const total = recipients.length;
   recipients = recipients.slice(0, limit);
 
   const rec = await showcaseRecord(7).catch(() => null);
   const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
-  const common = { stats, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, fullPrice: PLAN_PRICES.monthly.amount };
+  const strong = kind === 'strong' ? await loadCoverage().then((c) => strongBoard(c, 2)).catch(() => null) : null;
+  const common = { stats, strong, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, dashboardUrl: `${SITE_URL}/dashboard`, playUrl: PLAY_STORE_URL, fullPrice: PLAN_PRICES.monthly.amount };
 
   if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft })) });
 
@@ -74,7 +81,10 @@ export async function GET(req: NextRequest) {
   for (const r of recipients) {
     const opts = { ...common, name: r.name, daysLeft: r.daysLeft, unsubscribeUrl: unsubscribeUrl(r.email) };
     try {
-      if (kind === 'mid') await sendTrialMidEmail(r.email, opts); else await sendTrialEndingEmail(r.email, opts);
+      if (kind === 'first') await sendTrialFirstEmail(r.email, opts);
+      else if (kind === 'mid') await sendTrialMidEmail(r.email, opts);
+      else if (kind === 'strong') await sendTrialStrongEmail(r.email, opts);
+      else await sendTrialEndingEmail(r.email, opts);
       ok++;
       if (!canary) await sb.from('email_campaign_log').upsert({ campaign_key: key, email: r.email, status: 'sent' }, { onConflict: 'campaign_key,email' });
     } catch (e: any) {

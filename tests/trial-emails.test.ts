@@ -26,3 +26,14 @@ test('unsubscribed and already-sent are skipped', () => {
   assert.equal(selectTrialRecipients(users, 'mid', { now, unsubscribed: new Set(['a@x.io']) }).length, 0);
   assert.equal(selectTrialRecipients(users, 'ending', { now, alreadySent: new Set(['c@x.io']) }).map((r) => r.email).join(), 'f@x.io');
 });
+
+test('first picks day 1 only; strong picks day 4–5 with more than 1 day left (2026-10-30 cadence)', () => {
+  const first = selectTrialRecipients(users, 'first', { now });
+  assert.deepEqual(first.map((r) => [r.email, r.daysLeft]), [['b@x.io', 6]]);
+  const strong = selectTrialRecipients(users, 'strong', { now });
+  assert.deepEqual(strong.map((r) => r.email), []);
+  const u5 = [{ email: 'g@x.io', name: 'G', createdAt: d(4.5) }, { email: 'h@x.io', name: 'H', createdAt: d(5.5) }];
+  // 5,5 günlük hesap (1,5 gün kaldı) strong'a değil ending'e düşer: aynı gün iki mail yok
+  assert.deepEqual(selectTrialRecipients(u5, 'strong', { now }).map((r) => [r.email, r.daysLeft]), [['g@x.io', 3]]);
+  assert.deepEqual(selectTrialRecipients(u5, 'ending', { now }).map((r) => r.email), ['h@x.io']);
+});
