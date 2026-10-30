@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY } from '@/lib/campaign';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendPlayLaunchEmail } from '@/lib/email';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -66,8 +66,12 @@ export async function GET(request: NextRequest) {
   // Veri (2026-08-25): 49 kişi, Ara 2025–Oca 2026, hiçbirinde stripe id yok →
   // ödeme HİÇ denenmemiş. Metin bu yüzden "ödemen reddedildi" demez.
   const isUnfinished = searchParams.get('type') === 'unfinished-signup';
+  // Google Play lansmanı (2026-10-30): kayıtlı TÜM üyelere (aboneler dahil) tek seferlik duyuru.
+  const isPlayLaunch = searchParams.get('type') === 'play-launch';
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = isUnfinished
+  const activeKey = isPlayLaunch
+    ? PLAY_LAUNCH_CAMPAIGN_KEY
+    : isUnfinished
     ? UNFINISHED_SIGNUP_CAMPAIGN_KEY
     : isWelcome
       ? WELCOME_CAMPAIGN_KEY
@@ -76,7 +80,7 @@ export async function GET(request: NextRequest) {
         : relaunch
           ? WORLD_CUP_RELAUNCH_KEY
           : WORLD_CUP_CAMPAIGN_KEY;
-  const campaignType = isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
+  const campaignType = isPlayLaunch ? 'play-launch' : isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const daysParam = parseInt(searchParams.get('days') || '', 10);
@@ -92,7 +96,9 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabase();
 
   const sendEmail = (email: string, name: string | null) =>
-    isUnfinished
+    isPlayLaunch
+      ? sendPlayLaunchEmail(email, { unsubscribeUrl: unsubscribeUrl(email), name })
+      : isUnfinished
       ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name })
       : isWelcome
         ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name })

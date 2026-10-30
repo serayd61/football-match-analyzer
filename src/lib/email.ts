@@ -4,6 +4,7 @@
 import { Resend } from 'resend';
 import { SITE_URL } from '@/lib/seo';
 import { PLAN_PRICES } from '@/lib/site/plans';
+import { buildPlayLaunchEmail } from '@/lib/email-play-launch';
 
 // Fiyat metinleri tek kaynaktan (lib/site/plans.ts); e-postalarda sabit yazma.
 const MONTHLY_PRICE = `$${PLAN_PRICES.monthly.amount.toFixed(2)}`;
@@ -582,5 +583,34 @@ Today's predictions: ${o.predictionsUrl}${o.playUrl ? `\nAndroid app on Google P
 Pro plans ($${o.fullPrice.toFixed(2)}/month): ${o.pricingUrl}
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Google Play lansman duyurusu (2026-10-30) — kayıtlı üyelere tek seferlik.
+ * Şablon: src/lib/email-play-launch.ts (yalnızca İngilizce, QR + mağaza düğmesi).
+ */
+export async function sendPlayLaunchEmail(
+  to: string,
+  opts: { unsubscribeUrl: string; name?: string | null }
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { subject, html, text } = buildPlayLaunchEmail({
+    playUrl: 'https://play.google.com/store/apps/details?id=pro.footballanalytics&utm_source=email&utm_medium=campaign&utm_campaign=play_launch',
+    appPageUrl: `${SITE_URL}/en/app?utm_source=email&utm_medium=campaign&utm_campaign=play_launch`,
+    qrImageUrl: `${SITE_URL}/images/app/google-play-qr.png`,
+    iconUrl: `${SITE_URL}/images/app/app-icon-192.png`,
+    unsubscribeUrl: opts.unsubscribeUrl,
+    name: opts.name,
+  });
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject,
+    html,
+    text,
+    headers: { 'List-Unsubscribe': `<${opts.unsubscribeUrl}>` },
+  });
   if (error) throw new Error(error.message);
 }

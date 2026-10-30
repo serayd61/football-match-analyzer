@@ -59,3 +59,7 @@ export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=pro
 // "tekrar dene" daveti. Kendi dedup anahtarı — teklif kampanyasından bağımsız.
 // Yarım kalan kayıtlar (Ara 2025 – Oca 2026 checkout'u bitirmemiş 49 kişi).
 export const UNFINISHED_SIGNUP_CAMPAIGN_KEY = 'unfinished-signup-2026-08';
+
+// Google Play lansman duyurusu (2026-10-30): kayıtlı tüm üyelere tek seferlik,
+// QR kod + mağaza düğmesi. Kendi dedup anahtarı; unsubscribe'lar atlanır.
+export const PLAY_LAUNCH_CAMPAIGN_KEY = 'play-launch-2026-10';
