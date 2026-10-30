@@ -60,3 +60,23 @@ export async function GET(request: NextRequest) {
     `<strong>${escapeHtml(email)}</strong> artık pazarlama e-postası almayacak. Fikrini değiştirirsen footballanalytics.pro'dan tekrar başlayabilirsin.<br/><br/>You will no longer receive marketing emails.`
   );
 }
+
+/**
+ * RFC 8058 tek tıkla abonelikten çıkma (Gmail/Outlook "Unsubscribe" düğmesi).
+ * Posta sunucusu `List-Unsubscribe-Post: List-Unsubscribe=One-Click` başlığını
+ * görünce aynı URL'ye POST atar; yanıt gövdesi önemsiz, 200 yeterli.
+ */
+export async function POST(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const email = (searchParams.get('email') || '').toLowerCase().trim();
+  const token = searchParams.get('token') || '';
+  if (!email || !verifyUnsubscribeToken(email, token)) {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+  try {
+    await getSupabase().from('email_unsubscribes').upsert({ email }, { onConflict: 'email' });
+  } catch {
+    // best-effort
+  }
+  return NextResponse.json({ ok: true });
+}
