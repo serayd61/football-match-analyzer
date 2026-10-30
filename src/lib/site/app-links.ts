@@ -12,6 +12,8 @@ export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${P
 /** Opened by the WebView via openExternal → Play Store app (MainActivity.shouldOverrideUrlLoading). */
 export const PLAY_MARKET_URL = `market://details?id=${PLAY_PACKAGE}`;
 export const SITE_ORIGIN = 'https://footballanalytics.pro';
+/** Play listing link used by the site's own "Get it on Google Play" CTAs (UTM-tagged). */
+export const PLAY_STORE_SITE_URL = `${PLAY_STORE_URL}&utm_source=website&utm_medium=cta&utm_campaign=play_launch`;
 
 export type ShareTarget = { title: string; text: string; url: string };
 

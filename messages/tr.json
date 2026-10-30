@@ -28,7 +28,8 @@
     "coupon": "Günün kuponu",
     "teams": "Takımlar",
     "glossary": "Sözlük",
-    "data": "Açık veri"
+    "data": "Açık veri",
+    "app": "Android uygulaması"
   },
   "locale": {
     "label": "Dil"
@@ -2235,5 +2236,30 @@
       }
     ],
     "moreNav": "İlgili"
+  },
+  "playApp": {
+    "metaTitle": "Google Play'de Android uygulaması",
+    "metaDescription": "Android için Football Analytics Pro: 11 lig için istatistiksel modelden maç olasılıkları, herkese açık karne, puan durumu, form ve geçmiş maçlar. Google Play'de ücretsiz.",
+    "eyebrow": "Google Play'de yayında",
+    "title": "Football Analytics Pro, telefonunda",
+    "lead": "Aynı model, aynı herkese açık karne, uygulama olarak: günün maçları olasılık, güven ve risk bilgisiyle; puan durumu, form ve geçmiş maçlar. Kurulum ücretsiz; web ve uygulama için tek hesap.",
+    "cta": "Google Play'den indir",
+    "qrLabel": "Google Play sayfasını açmak için tara",
+    "qrHint": "Telefonunun kamerasını koda tut.",
+    "featuresTitle": "Neler var",
+    "f1": "Derecelendirilen her maç için 1X2, 2,5 alt/üst ve karşılıklı gol olasılıkları",
+    "f2": "Her tahminde güven halkası ve Düşük / Orta / Yüksek risk etiketi",
+    "f3": "Piyasaya göre edge: modelin bahis şirketinin ima ettiği fiyattan ne kadar uzak olduğu",
+    "f4": "Herkese açık, zaman damgalı karne: her tahmin sonuçlanır, tutan da tutmayan da",
+    "f5": "Her maç için puan durumu, form, eksikler ve geçmiş karşılaşmalar",
+    "f6": "Açık ve koyu tema; Türkçe, İngilizce, Almanca ve İtalyanca",
+    "shotsTitle": "Ekranlar",
+    "shot1": "Olasılıklarla günün maçları",
+    "shot2": "Herkese açık performans karnesi",
+    "reqTitle": "Gereksinimler",
+    "req": "Android 7.0 ve üzeri. İndirmesi ücretsiz; uygulama footballanalytics.pro hesabını kullanır. 18 yaş ve üzeri.",
+    "homeTitle": "Football Analytics Pro Google Play'de",
+    "homeLead": "Günün olasılıkları, herkese açık karne ve lig bağlamı uygulamada. Kurulum ücretsiz, aynı hesapla giriş.",
+    "homeMore": "Uygulama ayrıntıları"
   }
 }

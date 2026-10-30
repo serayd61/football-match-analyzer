@@ -34,6 +34,7 @@ import { isTwa } from '@/lib/site/twa';
 import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import Image from 'next/image';
 import JsonLd from '@/components/site/JsonLd';
+import PlayBadge from '@/components/site/PlayBadge';
 import { CONTENT_IMAGES } from '@/lib/site/content-images';
 import { organizationJsonLd, faqPageJsonLd } from '@/lib/site/jsonld';
 
@@ -69,6 +70,7 @@ export default async function HomePage({ params: { locale } }: { params: { local
   const strongLeagues = new Set(strongBoard(await loadCoverage().catch(() => []), 99).flatMap((b) => b.rows.map((r) => r.leagueId))).size;
   const tc = await getTranslations('common');
   const tp = await getTranslations('v2.pricing');
+  const tpa = await getTranslations('playApp');
   const f = await getFormatter();
   const access = await getSiteAccess();
   const unlocked = canSeeMatches(access);
@@ -351,6 +353,27 @@ export default async function HomePage({ params: { locale } }: { params: { local
           )}
         </div>
       </Page>
+
+      {/* ── Google Play ── (2026-10-28: uygulama üretimde; uygulamanın içinde gizli) ── */}
+      {!twa && <section className="border-t border-s-line" aria-labelledby="play-title">
+        <Page className="py-10">
+          <div className="flex flex-col gap-5 rounded-2xl border border-s-line bg-s-surface px-5 py-5 sm:flex-row sm:items-center sm:px-7">
+            <Image src="/images/app/app-icon-192.png" alt="" width={64} height={64} className="shrink-0 rounded-[16px] border border-s-line" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-s-brand">{tpa('eyebrow')}</p>
+              <h2 id="play-title" className="mt-1 text-[20px] sm:text-[22px]">{tpa('homeTitle')}</h2>
+              <p className="mt-1 max-w-[60ch] text-[14.5px] text-s-muted">{tpa('homeLead')}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <PlayBadge label={tpa('cta')} location="home" />
+                <Link href="/app" className="text-sm underline underline-offset-4" data-cta="home-app-details">{tpa('homeMore')}</Link>
+              </div>
+            </div>
+            <a href="https://play.google.com/store/apps/details?id=pro.footballanalytics" target="_blank" rel="noopener noreferrer" aria-label={tpa('qrLabel')} className="hidden shrink-0 bg-white p-1.5 sm:block">
+              <Image src="/images/app/google-play-qr.svg" alt={tpa('qrLabel')} width={120} height={120} unoptimized />
+            </a>
+          </div>
+        </Page>
+      </section>}
 
       {/* ── Telegram ── (2026-10-14: günün kuponu + sonuçları kanala gider; Play uygulamasında gizli) ── */}
       {!twa && <section className="border-t border-s-line" aria-labelledby="tg-title">

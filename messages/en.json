@@ -28,7 +28,8 @@
     "coupon": "Daily coupon",
     "teams": "Clubs",
     "glossary": "Glossary",
-    "data": "Open data"
+    "data": "Open data",
+    "app": "Android app"
   },
   "locale": {
     "label": "Language"
@@ -2235,5 +2236,30 @@
       }
     ],
     "moreNav": "Related"
+  },
+  "playApp": {
+    "metaTitle": "Android app on Google Play",
+    "metaDescription": "Football Analytics Pro for Android: match probabilities from a statistical model for 11 leagues, a public track record, tables, form and head-to-head. Free on Google Play.",
+    "eyebrow": "Now on Google Play",
+    "title": "Football Analytics Pro, on your phone",
+    "lead": "The same model, the same public record, in an app: today's matches with probabilities, confidence and risk, league tables, form and head-to-head. Free to install; one account for web and app.",
+    "cta": "Get it on Google Play",
+    "qrLabel": "Scan to open the Google Play listing",
+    "qrHint": "Point your phone's camera at the code.",
+    "featuresTitle": "What you get",
+    "f1": "1X2, over/under 2.5 and both-teams-to-score probabilities for every rated match",
+    "f2": "Confidence ring and a Low / Medium / High risk label on every prediction",
+    "f3": "Edge vs market: how far the model sits from the bookmaker's implied price",
+    "f4": "A public, time-stamped track record: every prediction settled, wins and losses alike",
+    "f5": "League tables, form, absences and head-to-head for every fixture",
+    "f6": "Light and dark theme; English, German, Italian and Turkish",
+    "shotsTitle": "Screens",
+    "shot1": "Today's matches with probabilities",
+    "shot2": "The public performance record",
+    "reqTitle": "Requirements",
+    "req": "Android 7.0 or newer. Free download; the app uses your footballanalytics.pro account. Age 18+.",
+    "homeTitle": "Football Analytics Pro is on Google Play",
+    "homeLead": "Today's probabilities, the public record and league context in an app. Free to install; sign in with the same account.",
+    "homeMore": "App details"
   }
 }

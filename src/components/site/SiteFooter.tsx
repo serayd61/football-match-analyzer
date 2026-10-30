@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
 import LocaleLinks from './LocaleLinks';
 import FooterPricingLink from './FooterPricingLink';
+import FooterAppLink from './FooterAppLink';
 import FooterAppActions from './FooterAppActions';
 
 // Footer v3: brand + one-line disclaimer, link columns, language.
@@ -35,6 +36,7 @@ export default async function SiteFooter() {
         </nav>
         <nav className="flex flex-col gap-2" aria-label="Company">
           <Link href="/about" className="hover:text-s-ink">{nav('about')}</Link>
+          <FooterAppLink label={nav('app')} />
           <Link href="/terms" className="hover:text-s-ink">{t('terms')}</Link>
           <Link href="/privacy" className="hover:text-s-ink">{t('privacy')}</Link>
           <Link href="/contact" className="hover:text-s-ink">{t('contact')}</Link>

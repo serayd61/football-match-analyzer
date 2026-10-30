@@ -71,7 +71,8 @@ test('sitemap XML lists every locale with hreflang links, the content images and
   assert.equal(urls.length, (STATIC_PATHS.length + SITE_LEAGUES.length * 5 + 3 + 2) * 4);
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/de/leagues/bundesliga/xg-table</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/leagues/super-lig/goals</loc>'));
-  assert.equal(STATIC_PATHS.length, 16);
+  assert.equal(STATIC_PATHS.length, 17);
+  assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/app</loc>'));
   for (const p of STATIC_PATHS) assert.ok(entries({ dataUpdated: null, matches: [] }).some((e) => e.path === p), `static path ${p} missing`);
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/en/matches/today</loc>'));
   assert.ok(urls.includes('<loc>https://footballanalytics.pro/tr/performance/super-lig</loc>'));
