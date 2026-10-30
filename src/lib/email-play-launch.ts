@@ -86,7 +86,7 @@ Android 7.0 or newer. 18+. An information and statistics service; no betting.
 Unsubscribe: ${i.unsubscribeUrl}`;
 
   return {
-    subject: '📱 Football Analytics Pro is now on Google Play',
+    subject: 'Football Analytics Pro is now on Google Play',
     html,
     text,
   };

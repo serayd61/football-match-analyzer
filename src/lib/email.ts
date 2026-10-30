@@ -610,7 +610,11 @@ export async function sendPlayLaunchEmail(
     subject,
     html,
     text,
-    headers: { 'List-Unsubscribe': `<${opts.unsubscribeUrl}>` },
+    headers: {
+      'List-Unsubscribe': `<${opts.unsubscribeUrl}>`,
+      // RFC 8058: Gmail/Outlook tek tıkla abonelikten çıkma düğmesi (spam yerine unsubscribe → itibar korunur).
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   });
   if (error) throw new Error(error.message);
 }
