@@ -6,7 +6,7 @@ import { alternatesFor } from '@/lib/site/seo';
 import { nextDayWithPredictions } from '@/lib/site/predictions';
 import { listDay } from '@/lib/site/fixtures';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
-import { applyFilters, parseFilters, marketProb } from '@/lib/site/filters';
+import { applyFilters, parseFilters, marketProb, MIN_P_STEPS } from '@/lib/site/filters';
 import { todayYmd, addDays, YMD_RE, zonedStartOfDay } from '@/lib/site/time';
 import { Page, EmptyState } from '@/components/site/ui';
 import { type OutsideRisk } from '@/components/site/PredictionCard';
@@ -32,9 +32,9 @@ export const dynamic = 'force-dynamic';
 // Predictions v3 (2026-09-26). One toolbar (day · leagues · AI toggle) drives the
 // URL; below it the day's fixtures grouped by league as compact rows. Leagues
 // outside model coverage follow in their own groups when the "other leagues"
-// chip is on. All query keys are unchanged from v2. 24 Eki: "Filtreler" paneli
-// kaldırıldı, yerine satır altı "AI · Ajan" özeti (`ai=0` kapatır); eski filtre
-// anahtarları URL'den hâlâ uygulanır (dış bağlantılar, geri dönüş).
+// chip is on. All query keys are unchanged from v2. 24 Eki: satır altı "AI · Ajan"
+// özeti eklendi (`ai=0` kapatır). 30 Eki: "Filtreler" paneli (pazar ≥ % eşiği, arama,
+// durum, sıralama, hazır) AI düğmesinin yanına geri alındı.
 
 type Search = { date?: string; league?: string; country?: string; scope?: string; note?: string; q?: string; status?: string; ready?: string; sort?: string; market?: string; minp?: string; ai?: string };
 
@@ -234,11 +234,16 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         uncoveredCount={uncoveredCount}
         countries={uCountryList}
         uLeagues={uLeagueList.map((u) => ({ id: u.id, name: u.name, ccode: u.ccode, n: u.n }))}
+        minPSteps={MIN_P_STEPS}
         aiCount={aiCount}
         dayLabel={{ prev: dayLabel(addDays(date, -1)), cur: dayLabel(date), next: dayLabel(addDays(date, 1)) }}
         labels={{
           yesterday: tc('yesterday'), today: tc('today'), tomorrow: tc('tomorrow'), prevDay: t('dayPrev'), nextDay: t('dayNext'), pickDate: tc('date'),
-          all: t('all'), otherLeagues: t3('otherLeagues'), clear: tc('clear'), ai: t('aiToggle'), aiHint: t('aiToggleHint'),
+          all: t('all'), otherLeagues: t3('otherLeagues'), filters: tc('filters'), clear: tc('clear'), search: tc('search'), searchPh: t('searchPh'),
+          status: tc('status'), statusAll: t('statusAll'), statusUpcoming: t('statusUpcoming'), statusLive: t('statusLive'), statusFinished: t('statusFinished'),
+          sort: tc('sort'), sortTime: t('sortTime'), sortConfidence: t('sortConfidence'), ready: t('ready'),
+          market: tc('market'), marketAll: t('marketAll'), markets: { x12: t('mkt1x2'), ou25: t('mktOver'), btts: t('mktBtts') }, minP: Object.fromEntries(MIN_P_STEPS.map((p) => [String(p), t('minP', { p })])),
+          ai: t('aiToggle'), aiHint: t('aiToggleHint'),
           country: t('country'), countryAll: t('countryAll', { count: uCountryList.length }), league: tc('league'), leagueAll: t('leagueAll'), matches: tc('matches', { count: shownCount }),
           picker: { placeholder: t3('pickerPh'), modelLeagues: t3('pickerModel'), countries: t3('pickerCountries'), otherLeagues: t3('otherLeagues'), noResults: t3('pickerEmpty') },
         }}
