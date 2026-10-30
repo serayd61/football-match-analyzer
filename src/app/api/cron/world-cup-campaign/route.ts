@@ -160,10 +160,13 @@ export async function GET(request: NextRequest) {
   }
   const unsub = new Set((unsubData || []).map((r: any) => r.email.toLowerCase()));
 
+  // Yalnızca 'sent' satırları mükerrer sayılır; 'failed' (ör. Resend günlük
+  // kota, 2026-10-30: 119 kişi) sonraki koşuda yeniden denenir (upsert üstüne yazar).
   const { data: sentData, error: sentErr } = await supabase
     .from('email_campaign_log')
     .select('email')
-    .eq('campaign_key', activeKey);
+    .eq('campaign_key', activeKey)
+    .eq('status', 'sent');
   if (sentErr) {
     return NextResponse.json({ success: false, aborted: true, reason: 'dedup_read_failed', error: sentErr.message }, { status: 500 });
   }
