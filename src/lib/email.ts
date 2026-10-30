@@ -588,7 +588,7 @@ Unsubscribe: ${o.unsubscribeUrl}`;
 
 /**
  * Google Play lansman duyurusu (2026-10-30) — kayıtlı üyelere tek seferlik.
- * Şablon: src/lib/email-play-launch.ts (TR/EN/DE, QR + mağaza düğmesi).
+ * Şablon: src/lib/email-play-launch.ts (yalnızca İngilizce, QR + mağaza düğmesi).
  */
 export async function sendPlayLaunchEmail(
   to: string,
@@ -598,7 +598,7 @@ export async function sendPlayLaunchEmail(
   const resend = new Resend(RESEND_API_KEY);
   const { subject, html, text } = buildPlayLaunchEmail({
     playUrl: 'https://play.google.com/store/apps/details?id=pro.footballanalytics&utm_source=email&utm_medium=campaign&utm_campaign=play_launch',
-    appPageUrl: `${SITE_URL}/tr/app?utm_source=email&utm_medium=campaign&utm_campaign=play_launch`,
+    appPageUrl: `${SITE_URL}/en/app?utm_source=email&utm_medium=campaign&utm_campaign=play_launch`,
     qrImageUrl: `${SITE_URL}/images/app/google-play-qr.png`,
     iconUrl: `${SITE_URL}/images/app/app-icon-192.png`,
     unsubscribeUrl: opts.unsubscribeUrl,
