@@ -347,7 +347,11 @@
       "risk_medium": "mittel",
       "risk_high": "hoch",
       "systems": "Quellen: {list}",
-      "note": "Die KI-Einschätzung ist unabhängig von der statistischen Prognose des Modells; weichen beide ab, ist das eine Warnung, keine Stärke."
+      "note": "Die KI-Einschätzung ist unabhängig von der statistischen Prognose des Modells; weichen beide ab, ist das eine Warnung, keine Stärke.",
+      "agentsLine": "{ratio} Agenten einig",
+      "historyLine": "{pct} % von {n} ähnlichen Spielen gingen in diese Richtung",
+      "conflictTitle": "Agenten uneins in diesem Markt",
+      "conflictBody": "Bei {market} tendiert die Agentenabstimmung zu {agentSel} ({pct} % Konfidenz, {ratio} Agenten), der Konsens oben sagt {consensusSel}. Kein gemeinsames Urteil; dieser Markt gilt als strittig."
     }
   },
   "results": {

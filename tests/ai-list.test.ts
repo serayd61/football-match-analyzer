@@ -46,3 +46,17 @@ test('ai-list: tanınmayan pazar → pick null, satır çökmez', () => {
   assert.equal(f.agent, null);
   assert.equal(f.verdict, false);
 });
+
+// 31 Eki: hüküm–konsensüs çelişkisi (canlıda Over %62 kart + "Alt 2.5 Gol %60" hüküm) ve Türkçe metin ayrıştırma.
+test('verdictConflicts: aynı pazarda konsensüsten farklı seçim çelişkidir', async () => {
+  const { verdictConflicts, historyShort } = await import('@/lib/site/ai-list');
+  const c = { x12: '1' as const, ou25: 'over' as const, btts: 'yes' as const };
+  assert.equal(verdictConflicts('ou25', 'under', c), true);
+  assert.equal(verdictConflicts('ou25', 'over', c), false);
+  assert.equal(verdictConflicts('x12', '2', c), true);
+  assert.equal(verdictConflicts('btts', 'yes', c), false);
+  assert.deepEqual(historyShort("50 benzer maçın %52'i bu yönde"), { n: 50, pct: 52 });
+  assert.deepEqual(historyShort("120 benzer maçın %68'inde bu yönde"), { n: 120, pct: 68 });
+  assert.equal(historyShort(null), null);
+  assert.equal(historyShort('no history'), null);
+});

@@ -347,7 +347,11 @@
       "risk_medium": "medium",
       "risk_high": "high",
       "systems": "sources: {list}",
-      "note": "The AI opinion is independent of the model's statistical forecast; when the two diverge, treat it as a warning, not as strength."
+      "note": "The AI opinion is independent of the model's statistical forecast; when the two diverge, treat it as a warning, not as strength.",
+      "agentsLine": "{ratio} agents agree",
+      "historyLine": "{pct}% of {n} similar matches went this way",
+      "conflictTitle": "Agents split on this market",
+      "conflictBody": "On {market} the agents’ vote leans {agentSel} ({pct}% confidence, {ratio} agents) while the consensus above says {consensusSel}. No joint verdict is given; treat this market as contested."
     }
   },
   "results": {

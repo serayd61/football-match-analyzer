@@ -347,7 +347,11 @@
       "risk_medium": "orta",
       "risk_high": "yüksek",
       "systems": "kaynaklar: {list}",
-      "note": "Yapay zeka görüşü modelin istatistiksel tahmininden bağımsızdır; ikisi ayrışıyorsa bu bir uyarıdır, güç değil."
+      "note": "Yapay zeka görüşü modelin istatistiksel tahmininden bağımsızdır; ikisi ayrışıyorsa bu bir uyarıdır, güç değil.",
+      "agentsLine": "{ratio} ajan aynı fikirde",
+      "historyLine": "{n} benzer maçın %{pct}’i bu yönde",
+      "conflictTitle": "Ajanlar bu pazarda ayrışıyor",
+      "conflictBody": "{market} pazarında ajan oyu {agentSel} yönünde (güven %{pct}, {ratio} ajan), yukarıdaki konsensüs ise {consensusSel} diyor. Ortak karar verilmiyor; bu pazarı tartışmalı say."
     }
   },
   "results": {
