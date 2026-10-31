@@ -1137,7 +1137,8 @@
     "share": "Teilen",
     "rate": "Bewerten",
     "feedback": "Feedback",
-    "tour": "Tour"
+    "tour": "Tour",
+    "noSubscription": "Für dieses Konto wurde kein aktives Abonnement gefunden."
   },
   "v2": {
     "risk": {

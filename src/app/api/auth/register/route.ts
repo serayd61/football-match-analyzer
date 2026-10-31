@@ -13,7 +13,8 @@ const MSG = {
 export async function POST(request: NextRequest) {
   try {
     const { email, password, name, lang } = await request.json();
-    const L = lang === 'en' ? MSG.en : lang === 'de' ? MSG.de : MSG.tr;
+    // Dil: tr/de aynen, diğer her şey (en, it, boş) İngilizce — İtalyanca istemci Türkçe hata görmesin (31 Eki).
+    const L = lang === 'tr' ? MSG.tr : lang === 'de' ? MSG.de : MSG.en;
 
     if (!email || !password) {
       return NextResponse.json({ error: L.required }, { status: 400 });
@@ -76,6 +77,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Registration error:', error);
-    return NextResponse.json({ error: MSG.tr.generic }, { status: 500 });
+    return NextResponse.json({ error: MSG.en.generic }, { status: 500 });
   }
 }

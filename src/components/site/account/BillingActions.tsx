@@ -26,10 +26,11 @@ export function StripeButton({ kind, variant = 'primary' }: { kind: 'checkout' |
         body: JSON.stringify(kind === 'checkout' ? { plan: 'PRO' } : { returnPath: `/${locale}/account` }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.url) throw new Error(data?.error || `HTTP ${res.status}`);
+      // Sunucu metni gösterilmez (dil karışmasın); kod → yerel mesaj (31 Eki).
+      if (!res.ok || !data?.url) throw new Error(data?.code === 'no_subscription' ? 'no_subscription' : 'failed');
       window.location.assign(data.url);
     } catch (e: any) {
-      setError(e?.message || t('actionFailed'));
+      setError(e?.message === 'no_subscription' ? t('noSubscription') : t('actionFailed'));
       setBusy(false);
     }
   }

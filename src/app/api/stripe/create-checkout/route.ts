@@ -9,7 +9,7 @@ export async function POST(_request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 });
+      return NextResponse.json({ error: 'Sign in required', code: 'auth' }, { status: 401 });
     }
 
     // Tek plan: aylık Pro (2026-10-13'ten beri haftalık yok). Stripe trial yok;
@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
     const plan = PLANS.PRO;
     if (!plan.stripePriceId) {
       console.error('[create-checkout] STRIPE_PRICE_ID missing (env not set)');
-      return NextResponse.json({ error: 'Bu plan şu an kullanılamıyor' }, { status: 503 });
+      return NextResponse.json({ error: 'This plan is not available right now', code: 'unavailable' }, { status: 503 });
     }
 
     const userId = (session.user as any).id;
@@ -36,6 +36,6 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ success: true, url: checkoutSession.url });
   } catch (error: any) {
     console.error('Stripe checkout error:', error);
-    return NextResponse.json({ error: 'Ödeme başlatılamadı', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Could not start checkout', code: 'checkout', details: error.message }, { status: 500 });
   }
 }

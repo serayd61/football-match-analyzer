@@ -27,7 +27,7 @@ export default function AiBadge({ label, verdict = false, verdictLabel }: { labe
 }
 
 /** Satır altı AI özeti etiketleri (yerel): başlıklar + seçim adları. */
-export interface AiDetailLabels { ai: string; agent: string; agents: string; sel: Record<AiSel, string> }
+export interface AiDetailLabels { ai: string; agent: string; agents: string; sel: Record<AiSel, string>; /** yüzde biçimi: TR "%62", diğer diller "62%" (31 Eki) */ pct?: (n: number) => string }
 
 // Satır altı özet (24 Eki akşamı): "Filtreler" yerine liste satırında AI ve ajan detayı.
 // Sol: AI'nin en iyi bahsi (bestBet) · sağ: ajanların ortak kararı + uzlaşı oranı. Her iki
@@ -38,7 +38,7 @@ export function AiDetail({ flag, labels }: { flag: AiListFlag; labels: AiDetailL
     <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <span className="font-semibold text-s-accent-700">{lead}</span>
       <span className="text-s-ink">{labels.sel[p.sel]}</span>
-      <span className="num">%{p.conf}</span>
+      <span className="num">{labels.pct ? labels.pct(p.conf) : `${p.conf}%`}</span>
       {tail ? <span className="num text-s-muted">· {tail}</span> : null}
     </span>
   );
