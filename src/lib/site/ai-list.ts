@@ -72,3 +72,24 @@ export function toAiListFlag(r: AiListRow): AiListFlag {
     agent: agentPick ? { ...agentPick, agents: agentsShort(r.v_agents) } : null,
   };
 }
+
+// ── Maç sayfası "ajanların ortak kararı" (31 Eki) ────────────────────────────
+// Canlıda görülen hata: kartlar "2.5 goals: Over %62" derken hüküm "Alt 2.5 Gol %60"
+// yazıyordu — hüküm (survivalVerdict) ayrı bir oylamadır ve konsensüsle ters düşebilir.
+// Ayrıca hüküm metinleri DB'de Türkçe şablondur ("2/3 ajan aynı fikirde",
+// "50 benzer maçın %52'i bu yönde") ve EN/DE/IT sayfaya olduğu gibi sızıyordu.
+// Çözüm: kodlara indir (bileşen yerel etiket basar), konsensüsle kıyasla.
+
+export interface AiConsensusCodes { x12: '1' | 'X' | '2'; ou25: 'over' | 'under'; btts: 'yes' | 'no' }
+
+/** Hüküm, aynı pazardaki konsensüs seçimiyle çelişiyor mu? Pazar tanınmıyorsa false. */
+export function verdictConflicts(market: AiMarket, sel: AiSel, c: AiConsensusCodes): boolean {
+  return c[market] !== sel;
+}
+
+/** "50 benzer maçın %52'i bu yönde" → { n: 50, pct: 52 }; tanınmazsa null. */
+export function historyShort(v: unknown): { n: number; pct: number } | null {
+  if (typeof v !== 'string') return null;
+  const m = v.match(/(\d+)\s*benzer maçın\s*%\s*(\d+)/);
+  return m ? { n: Number(m[1]), pct: Number(m[2]) } : null;
+}

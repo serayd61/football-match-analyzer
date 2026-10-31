@@ -1,7 +1,7 @@
 import 'server-only';
 import { dbFresh } from './db';
 import { localizeCachedAnalysis } from '@/lib/i18n/analysis-l10n';
-import { toAiListFlag, type AiListFlag, type AiListRow } from './ai-list';
+import { toAiListFlag, aiMarketCode, aiSelCode, agentsShort, historyShort, verdictConflicts, type AiListFlag, type AiListRow, type AiMarket, type AiSel } from './ai-list';
 
 export type { AiListFlag } from './ai-list';
 
@@ -21,7 +21,8 @@ export interface AiView {
   overUnder: { pick: 'Over' | 'Under'; confidence: number; reasoning: string };
   btts: { pick: 'Yes' | 'No'; confidence: number; reasoning: string };
   bestBet: { market: string; selection: string; confidence: number; reasoning: string } | null;
-  verdict: { market: string; selection: string; confidence: number; reasoning: string; agents: string | null; history: string | null } | null;
+  /** Ajanların ortak kararı — kodlarla (etiket bileşende, yerelde). `conflict`: aynı pazarda konsensüsle ters (31 Eki). */
+  verdict: { market: AiMarket; sel: AiSel; confidence: number; reasoning: string; agents: string | null; history: { n: number; pct: number } | null; conflict: boolean } | null;
   agreement: number | null;
   risk: 'low' | 'medium' | 'high' | null;
   systems: string[];
@@ -38,13 +39,21 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
   const pr = a.predictions || {};
   if (!pr.matchResult?.prediction) return null;
   const sv = a.survivalVerdict;
+  const ouPick: 'Over' | 'Under' = pr.overUnder?.prediction ?? 'Over';
+  const bttsPick: 'Yes' | 'No' = pr.btts?.prediction ?? 'Yes';
+  const vm = aiMarketCode(sv?.market); const vs = vm ? aiSelCode(vm, sv?.selection) : null;
+  const verdict = vm && vs ? {
+    market: vm, sel: vs, confidence: Math.round(sv.confidence ?? 0), reasoning: sv.reasoning || '',
+    agents: agentsShort(sv.agentAgreement), history: historyShort(sv.historicalBacking),
+    conflict: verdictConflicts(vm, vs, { x12: pr.matchResult.prediction, ou25: ouPick === 'Over' ? 'over' : 'under', btts: bttsPick === 'Yes' ? 'yes' : 'no' }),
+  } : null;
   return {
     createdAt: data.created_at,
     matchResult: { pick: pr.matchResult.prediction, confidence: Math.round(pr.matchResult.confidence ?? 0), score: pr.matchResult.scorePrediction || null, reasoning: pr.matchResult.reasoning || '' },
-    overUnder: { pick: pr.overUnder?.prediction ?? 'Over', confidence: Math.round(pr.overUnder?.confidence ?? 0), reasoning: pr.overUnder?.reasoning || '' },
-    btts: { pick: pr.btts?.prediction ?? 'Yes', confidence: Math.round(pr.btts?.confidence ?? 0), reasoning: pr.btts?.reasoning || '' },
+    overUnder: { pick: ouPick, confidence: Math.round(pr.overUnder?.confidence ?? 0), reasoning: pr.overUnder?.reasoning || '' },
+    btts: { pick: bttsPick, confidence: Math.round(pr.btts?.confidence ?? 0), reasoning: pr.btts?.reasoning || '' },
     bestBet: a.bestBet?.market ? { market: a.bestBet.market, selection: a.bestBet.selection, confidence: Math.round(a.bestBet.confidence ?? 0), reasoning: a.bestBet.reasoning || '' } : null,
-    verdict: sv?.market ? { market: sv.marketLabel || sv.market, selection: sv.selectionLabel || sv.selection, confidence: Math.round(sv.confidence ?? 0), reasoning: sv.reasoning || '', agents: sv.agentAgreement || null, history: sv.historicalBacking || null } : null,
+    verdict,
     agreement: a.systemPerformance?.agreement ?? null,
     risk: a.systemPerformance?.riskLevel ?? null,
     systems: Array.isArray(data.systems_used) ? data.systems_used : [],

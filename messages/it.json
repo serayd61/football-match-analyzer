@@ -347,7 +347,11 @@
       "risk_medium": "medio",
       "risk_high": "alto",
       "systems": "fonti: {list}",
-      "note": "Il parere dell'IA è indipendente dalla previsione statistica del modello; se divergono, è un avvertimento, non un punto di forza."
+      "note": "Il parere dell'IA è indipendente dalla previsione statistica del modello; se divergono, è un avvertimento, non un punto di forza.",
+      "agentsLine": "{ratio} agenti concordi",
+      "historyLine": "il {pct}% di {n} partite simili è andato in questa direzione",
+      "conflictTitle": "Agenti divisi su questo mercato",
+      "conflictBody": "Su {market} il voto degli agenti propende per {agentSel} ({pct}% di fiducia, {ratio} agenti) mentre il consenso qui sopra dice {consensusSel}. Nessun verdetto congiunto: mercato da considerare conteso."
     }
   },
   "results": {
