@@ -131,6 +131,18 @@
     {
       "path": "/api/cron/ai-picks",
       "schedule": "40 * * * *"
+    },
+    {
+      "path": "/api/cron/ops-report",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/ops-report",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/world-cup-campaign?type=telegram&days=3",
+      "schedule": "0 17 * * *"
     }
   ]
 }

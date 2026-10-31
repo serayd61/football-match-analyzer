@@ -13,8 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendPlayLaunchEmail } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, PLAY_STORE_URL } from '@/lib/campaign';
+import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendTelegramIntroEmail, sendPlayLaunchEmail } from '@/lib/email';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, TELEGRAM_INTRO_CAMPAIGN_KEY, TELEGRAM_URL, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -68,8 +68,12 @@ export async function GET(request: NextRequest) {
   const isUnfinished = searchParams.get('type') === 'unfinished-signup';
   // Google Play lansmanı (2026-10-30): kayıtlı TÜM üyelere (aboneler dahil) tek seferlik duyuru.
   const isPlayLaunch = searchParams.get('type') === 'play-launch';
+  // Telegram tanıtımı (2026-10-31): son N gün (varsayılan 3) içinde kayıt olan HERKESE (aboneler dahil) tek seferlik.
+  const isTelegram = searchParams.get('type') === 'telegram';
   const relaunch = searchParams.get('relaunch') === '1';
-  const activeKey = isPlayLaunch
+  const activeKey = isTelegram
+    ? TELEGRAM_INTRO_CAMPAIGN_KEY
+    : isPlayLaunch
     ? PLAY_LAUNCH_CAMPAIGN_KEY
     : isUnfinished
     ? UNFINISHED_SIGNUP_CAMPAIGN_KEY
@@ -80,12 +84,14 @@ export async function GET(request: NextRequest) {
         : relaunch
           ? WORLD_CUP_RELAUNCH_KEY
           : WORLD_CUP_CAMPAIGN_KEY;
-  const campaignType = isPlayLaunch ? 'play-launch' : isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
+  const campaignType = isTelegram ? 'telegram' : isPlayLaunch ? 'play-launch' : isUnfinished ? 'unfinished-signup' : isWelcome ? 'welcome' : isReengage ? 'reengage' : 'worldcup';
   const limitParam = parseInt(searchParams.get('limit') || '', 10);
   const batchLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : Infinity;
   const daysParam = parseInt(searchParams.get('days') || '', 10);
   const welcomeDays = isWelcome ? (Number.isFinite(daysParam) && daysParam > 0 ? daysParam : 1) : null;
   const welcomeCutoffMs = welcomeDays ? Date.now() - welcomeDays * 86_400_000 : 0;
+  const telegramDays = isTelegram ? (Number.isFinite(daysParam) && daysParam > 0 ? daysParam : 3) : null;
+  const telegramCutoffMs = telegramDays ? Date.now() - telegramDays * 86_400_000 : 0;
   const canaryEmail = process.env.CAMPAIGN_CANARY_EMAIL || ADMIN_EMAILS[0];
 
   // Doğru şablonu seçen tek gönderim fonksiyonu (canary + toplu aynı maili kullanır).
@@ -96,7 +102,9 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabase();
 
   const sendEmail = (email: string, name: string | null) =>
-    isPlayLaunch
+    isTelegram
+      ? sendTelegramIntroEmail(email, { telegramUrl: TELEGRAM_URL, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name, playUrl: PLAY_STORE_URL })
+      : isPlayLaunch
       ? sendPlayLaunchEmail(email, { unsubscribeUrl: unsubscribeUrl(email), name })
       : isUnfinished
       ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name })
@@ -124,7 +132,7 @@ export async function GET(request: NextRequest) {
   // 2) CANARY (kuru çalışmada atlanır). Reengage günlük cron olduğu için
   //    canary atlanır (her gün admin'e tekrar mail gitmesin); domain doğrulandı.
   //    İlk doğrulama elle canary ile yapılır. nocanary=1 ile de atlanabilir.
-  const skipCanary = isReengage || isWelcome || searchParams.get('nocanary') === '1';
+  const skipCanary = isReengage || isWelcome || isTelegram || searchParams.get('nocanary') === '1';
   if (!dryRun && !skipCanary) {
     try {
       await sendEmail(canaryEmail, null);
@@ -222,6 +230,8 @@ export async function GET(request: NextRequest) {
     if (isUnfinished && !retryIds.has(String((u as any).id))) continue;
     // Welcome: yalnızca son N gün içinde kayıt olanlar (varsayılan bugün)
     if (isWelcome && (!u.created_at || new Date(u.created_at).getTime() < welcomeCutoffMs)) continue;
+    // Telegram: yalnızca son N gün içinde kayıt olanlar (eski üyeler ayrı bir koşuyla, ?days=N büyütülerek alınabilir).
+    if (isTelegram && (!u.created_at || new Date(u.created_at).getTime() < telegramCutoffMs)) continue;
     // Reengage (2026-10-30): "uzun zamandır gelmedin" metni; 14 günden yeni hesaplar deneme serisindedir (trial-emails).
     if (isReengage && u.created_at && new Date(u.created_at).getTime() > Date.now() - 14 * 86_400_000) continue;
     seen.add(email);
