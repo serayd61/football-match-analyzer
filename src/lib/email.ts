@@ -13,6 +13,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Use a verified domain sender in production; falls back to Resend's shared
 // onboarding sender (only deliverable to the account owner) for testing.
 const EMAIL_FROM = process.env.EMAIL_FROM || 'Football Analytics Pro <onboarding@resend.dev>';
+// Destek kutusu: ImprovMX ile serayd6161@gmail.com'a yönlendirilir (DNS: MX mx1/mx2.improvmx.com, 2026-10-31).
+export const SUPPORT_EMAIL = 'support@footballanalytics.pro';
 
 export function isEmailConfigured(): boolean {
   return Boolean(RESEND_API_KEY);
@@ -607,6 +609,8 @@ export async function sendPlayLaunchEmail(
   const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to,
+    // Yanıtlar gerçek bir kutuya düşsün (ImprovMX → Gmail, 2026-10-31); noreply'a cevap kaybolmasın.
+    replyTo: SUPPORT_EMAIL,
     subject,
     html,
     text,

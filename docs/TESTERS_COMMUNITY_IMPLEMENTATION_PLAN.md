@@ -46,7 +46,7 @@ Değişmeyecekler (talimat gereği): tahmin motoru, olasılık/edge hesapları, 
 - `src/components/site/account/AppActions.tsx` (yeni, istemci): üç satır `/account` Ayarlar listesine eklenir.
   - **Paylaş:** `navigator.share({title, text, url})`; yoksa `navigator.clipboard.writeText(url)` + "Bağlantı kopyalandı" durum metni (`aria-live`). URL: Play içindeyse Play listesi `https://play.google.com/store/apps/details?id=pro.footballanalytics`, web'de `https://footballanalytics.pro/{locale}?utm_source=share&utm_medium=app_share`. Metin: rapor-prompt'taki 3 cümle + it.
   - **Puanla:** Play içindeyse `market://details?id=pro.footballanalytics` (WebView `openExternal` → Play Store uygulaması), web'de HTTPS Play linki (`rel="noopener"`, yeni sekme). Uygulama henüz halka açık değil (kapalı test); link testçiler için çalışır, üretim erişimi gelince herkese açılır. In-App Review API: Android tarafında JS köprüsü gerektirir → v4'e not (bkz. §7).
-  - **Geri bildirim:** mevcut `/contact` sayfasına `legacyHref('/contact', locale)` ile bağlantı (kopya form yok). Eski sayfadaki `info@swissdigital.life` adresi Console'daki `support@footballanalyzer.com` ile tutarsız → kullanıcı kararı (manuel madde).
+  - **Geri bildirim:** mevcut `/contact` sayfasına `legacyHref('/contact', locale)` ile bağlantı (kopya form yok). Eski sayfadaki `info@swissdigital.life` adresi Console'daki `support@footballanalytics.pro` ile tutarsız → kullanıcı kararı (manuel madde).
 - Olaylar: `app_share_clicked`, `app_review_clicked`, `feedback_opened` (`trackEvent`).
 - Not: `/account` oturum ister. Oturumsuz Play kullanıcısı için paylaş/puanla `SiteFooter`'a da eklenir (yalnız `useIsTwa()` doğruysa; web'de footer'da zaten sosyal bağlantılar var, kalabalık yaratılmaz).
 
@@ -107,7 +107,7 @@ Değişmeyecekler (talimat gereği): tahmin motoru, olasılık/edge hesapları, 
 
 ## 9. Manuel işler (kullanıcı)
 - Console'a ASO metinlerini girmek (tr/de/it mağaza girişleri dahil) ve yeni ekran görüntülerini yüklemek.
-- Eski `/contact` sayfasındaki `info@swissdigital.life` / `swissdigital.life` ile Console'daki `support@footballanalyzer.com` arasında karar.
+- Eski `/contact` sayfasındaki `info@swissdigital.life` / `swissdigital.life` ile Console'daki `support@footballanalytics.pro` arasında karar.
 - de/it için gerçek telefon ekran görüntüsü alınması (betik hazır, dev sunucu gerekir).
 - Android v4 (In-App Review API) için imzalama (`sign-release.sh`) — AAB yükleme bu işin parçası değil.
 - Dağıtım: PR'ı birleştirmek (Vercel otomatik yayınlar).

@@ -15,7 +15,7 @@ export const openApiSpec = {
     description: 'AI destekli futbol maç analizi API\'si. Maç tahminleri, performans istatistikleri ve analiz araçları.',
     contact: {
       name: 'API Support',
-      email: 'support@footballanalyzer.com',
+      email: 'support@footballanalytics.pro',
     },
     license: {
       name: 'MIT',

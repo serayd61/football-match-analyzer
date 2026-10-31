@@ -178,7 +178,7 @@ export default function ContactPage() {
                   <span className="w-9 h-9 rounded-lg grid place-items-center bg-surface-3 border border-line text-brand-400"><Mail size={16} /></span>
                   <div>
                     <p className="text-content-subtle text-xs">{l.contact.email}</p>
-                    <a href="mailto:support@footballanalyzer.com" className="text-brand-400 hover:text-brand-300 text-sm">support@footballanalyzer.com</a>
+                    <a href="mailto:support@footballanalytics.pro" className="text-brand-400 hover:text-brand-300 text-sm">support@footballanalytics.pro</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
