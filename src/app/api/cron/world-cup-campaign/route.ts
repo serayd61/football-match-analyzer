@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendPlayLaunchEmail } from '@/lib/email';
-import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY } from '@/lib/campaign';
+import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
 export const dynamic = 'force-dynamic';
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       : isUnfinished
       ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name })
       : isWelcome
-        ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name })
+        ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name, playUrl: PLAY_STORE_URL })
         : isReengage
           ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name })
           : sendWorldCupCampaignEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), name });

@@ -184,43 +184,49 @@ Unsubscribe / Abmelden / Abonelikten çık: ${unsubscribeUrl}`;
 /**
  * Hoşgeldin e-postası — yeni ücretsiz kayıtlılara. İngilizce (talep gereği).
  * DÜRÜST konumlandırma: free = günde 3 AI analizi (Claude + DeepSeek + istatistik);
- * Pro = Dixon-Coles/xG/ELO tahmin motoru + sınırsız (7 gün deneme). Koşmayan model
- * ismi (GPT/Gemini) VAAT EDİLMEZ. Footer'da zorunlu unsubscribe.
+ * Kayıt = 7 gün tam erişim (2026-09-08 kararı); sonrası Pro. Koşmayan model
+ * ismi VAAT EDİLMEZ. Footer'da zorunlu unsubscribe. Play rozeti (2026-10-31).
  */
 export async function sendWelcomeEmail(
   to: string,
-  opts: { ctaUrl: string; pricingUrl: string; unsubscribeUrl: string; name?: string | null }
+  opts: { ctaUrl: string; pricingUrl: string; unsubscribeUrl: string; name?: string | null; playUrl?: string; trialDays?: number }
 ): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
   const { ctaUrl, pricingUrl, unsubscribeUrl } = opts;
+  const days = opts.trialDays ?? 7;
   const hi = opts.name ? `${opts.name}, ` : '';
 
   const btn = (href: string, label: string) =>
     `<p style="text-align:center;margin:22px 0"><a href="${href}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;display:inline-block">${label}</a></p>`;
 
+  // 2026-10-31: metin ürünle hizalandı — kayıt = 7 gün TAM erişim (Eylül kararı),
+  // "günde 3 ücretsiz analiz" değil. Model adı vaat edilmez ("AI opinion").
   const html = `
   <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
     <h2 style="color:#059669;margin:0 0 6px">⚽ Football Analytics Pro</h2>
-    <p style="font-size:13px;color:#64748b;margin:0 0 18px">Welcome aboard — your free analyses are ready</p>
+    <p style="font-size:13px;color:#64748b;margin:0 0 18px">Welcome — your ${days}-day full-access trial has started</p>
 
-    <p>Hi ${hi}welcome to <strong>Football Analytics Pro</strong> — your account is all set. 🎉</p>
-    <p>You've got <strong>3 free AI match analyses every day</strong>, starting right now. No credit card, no catch.</p>
+    <p>Hi ${hi}welcome to <strong>Football Analytics Pro</strong> — your account is all set.</p>
+    <p>For the next <strong>${days} days everything is open</strong>: every rated match, the goal markets, the value radar and the public track record. No card on file, nothing to cancel.</p>
 
-    <p style="margin:18px 0 6px"><strong>Each analysis gives you:</strong></p>
+    <p style="margin:18px 0 6px"><strong>Every match page gives you:</strong></p>
     <ul style="margin:0 0 8px;padding-left:20px;color:#334155">
-      <li>🤖 An <strong>AI-powered breakdown</strong> (Claude + DeepSeek) reading team form, stats and context</li>
-      <li>📊 <strong>Statistical modeling</strong> for real probabilities — calculated, not guessed</li>
-      <li>⚽ Match result, over/under 2.5, both-teams-to-score, and the most likely scoreline</li>
+      <li>📊 <strong>Probabilities from a statistical model</strong> — match result, over/under 2.5, both teams to score — calculated, not guessed</li>
+      <li>🎯 <strong>Confidence and risk</strong>: how often the same call landed before, in the same league and probability band</li>
+      <li>🤖 An <strong>AI opinion</strong> on the matches that fit the record, written from the model's numbers</li>
     </ul>
-    ${btn(ctaUrl, 'Analyze your first match →')}
+    ${btn(ctaUrl, 'Open your dashboard →')}
+    <p style="font-size:13px;color:#64748b;text-align:center;margin:-8px 0 0">The card at the top picks today's strongest call — start there.</p>
+
+    ${trialPlay(opts.playUrl)}
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
 
-    <p><strong>Want more?</strong> Go <strong>Pro</strong> for <strong>unlimited analyses</strong> plus our daily <strong>prediction engine</strong> — a Dixon-Coles model with expected goals and club ELO across the top-5 leagues. <strong>${MONTHLY_PRICE}/month</strong>, cancel anytime.</p>
-    ${btn(pricingUrl, 'Go Pro →')}
+    <p><strong>After the trial:</strong> Pro keeps everything open for <strong>${MONTHLY_PRICE}/month</strong>, cancel any time. Not for you? The account simply drops to the free view — the public record stays open.</p>
+    ${btn(pricingUrl, 'See plans →')}
 
-    <p style="font-size:12px;color:#64748b;text-align:center;margin:18px 0 0">Informational only — not betting advice.</p>
+    <p style="font-size:12px;color:#64748b;text-align:center;margin:18px 0 0">Predictions are probabilities, not guarantees. 18+. Nothing here is betting advice.</p>
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
     <p style="font-size:11px;color:#94a3b8">
@@ -231,25 +237,26 @@ export async function sendWelcomeEmail(
 
   const text = `Football Analytics Pro — welcome!
 
-Your account is ready. You've got 3 free AI match analyses every day, starting now — no credit card needed.
+Your account is ready and your ${days}-day full-access trial has started: every rated match, the goal markets, the value radar and the public track record. No card on file.
 
-Each analysis: an AI-powered breakdown (Claude + DeepSeek) + statistical modeling → match result, over/under 2.5, both-teams-to-score and the most likely score.
+Every match page: probabilities from a statistical model (match result, over/under 2.5, both teams to score), confidence and risk from the record, and an AI opinion on matches that fit the record.
 
-Analyze your first match: ${ctaUrl}
+Open your dashboard — the card at the top picks today's strongest call: ${ctaUrl}${opts.playUrl ? `\nAndroid app on Google Play: ${opts.playUrl}` : ''}
 
-Want more? Go Pro for unlimited analyses plus our daily prediction engine (Dixon-Coles + expected goals + club ELO) across the top-5 leagues. ${MONTHLY_PRICE}/month, cancel anytime: ${pricingUrl}
+After the trial, Pro keeps everything open for ${MONTHLY_PRICE}/month, cancel any time: ${pricingUrl}
 
-Informational only — not betting advice.
+Predictions are probabilities, not guarantees. 18+. Not betting advice.
 Unsubscribe: ${unsubscribeUrl}`;
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: EMAIL_FROM,
     to,
-    subject: '⚽ Welcome — your 3 free match analyses are ready',
+    subject: `Welcome — your ${days}-day full-access trial has started`,
     html,
     text,
     headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` },
   });
+  if (error) throw new Error(error.message);
 }
 
 /**
