@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { SitePrediction } from '@/lib/site/predictions';
 import { riskOf, riskWithMarket, type MarketProbs } from '@/lib/site/risk';
@@ -33,6 +33,7 @@ function Crest({ src, alt }: { src: string | null; alt: string }) {
 export default async function MatchRow({ p, outside = null, back = null, spot = null, market = null, assessment = null, ai = false, aiVerdict = false, aiDetail = null }: { ai?: boolean; /** ajanların ortak kararı var (survival verdict) → rozet "karar" etiketi */ aiVerdict?: boolean; /** satır altı özet: AI en iyi bahis + ajan kararı (24 Eki; /predictions "AI · Ajan" açıkken) */ aiDetail?: AiListFlag | null; p: SitePrediction; outside?: OutsideRisk | null; back?: string | null; spot?: { label: string; p: number } | null; /** 1X2 piyasa olasılıkları (marjsız) — piyasa koruması için */ market?: MarketProbs | null; /** ortak değerlendirme, 1X2 pazarı (assess-1.0) — maç sayfasıyla aynı çıktı */ assessment?: MarketAssessment | null }) {
   const t = await getTranslations('v2.predictions');
   const tc = await getTranslations('common');
+  const locale = await getLocale();
   const ta = await getTranslations('assessment');
   const conf = p.confidence ?? p.confidenceRaw;
   const confPct = conf == null ? null : Math.round(conf * 100);
@@ -69,7 +70,7 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
         </div>
         {outside?.note && <p className="mt-1.5 truncate text-[11.5px] text-s-muted">{outside.note}</p>}
         {ai && <p className="mt-1.5"><AiBadge label={t('aiBadge')} verdict={aiVerdict} verdictLabel={aiDetail?.agent ? undefined : t('aiBadgeVerdict')} /></p>}
-        {ai && aiDetail && <AiDetail flag={aiDetail} labels={{ ai: t('aiLead'), agent: t('aiAgentLead'), agents: t('aiAgents'), sel: { '1': tc('home'), X: tc('draw'), '2': tc('away'), over: t('mktOver'), under: t('mktUnder'), yes: t('mktBtts'), no: t('mktBttsNo') } }} />}
+        {ai && aiDetail && <AiDetail flag={aiDetail} labels={{ ai: t('aiLead'), agent: t('aiAgentLead'), agents: t('aiAgents'), sel: { '1': tc('home'), X: tc('draw'), '2': tc('away'), over: t('mktOver'), under: t('mktUnder'), yes: t('mktBtts'), no: t('mktBttsNo') }, pct: (n) => (locale === 'tr' ? `%${n}` : `${n}%`) }} />}
       </div>
 
       {/* probabilities */}

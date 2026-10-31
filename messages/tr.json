@@ -1137,7 +1137,8 @@
     "share": "Paylaş",
     "rate": "Puanla",
     "feedback": "Geri bildirim",
-    "tour": "Tur"
+    "tour": "Tur",
+    "noSubscription": "Bu hesap için etkin bir abonelik bulunamadı."
   },
   "v2": {
     "risk": {

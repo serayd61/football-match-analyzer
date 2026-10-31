@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 });
+      return NextResponse.json({ error: 'Sign in required', code: 'auth' }, { status: 401 });
     }
 
     // Dönüş yolu (yeni site: /<locale>/account). Yalnız site-içi yol kabul edilir.
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!customerId) {
-      return NextResponse.json({ error: 'Abonelik bulunamadı' }, { status: 404 });
+      return NextResponse.json({ error: 'No subscription found', code: 'no_subscription' }, { status: 404 });
     }
 
     const portalSession = await stripe.billingPortal.sessions.create({
@@ -56,6 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: portalSession.url });
   } catch (error: any) {
     console.error('Portal error:', error);
-    return NextResponse.json({ error: 'Portal açılamadı' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not open the billing portal', code: 'portal' }, { status: 500 });
   }
 }

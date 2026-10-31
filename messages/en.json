@@ -1137,7 +1137,8 @@
     "share": "Share",
     "rate": "Rate",
     "feedback": "Feedback",
-    "tour": "Tour"
+    "tour": "Tour",
+    "noSubscription": "No active subscription found for this account."
   },
   "v2": {
     "risk": {
