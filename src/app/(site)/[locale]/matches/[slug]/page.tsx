@@ -24,6 +24,7 @@ import { parseDayHub } from '@/lib/site/day-hub';
 import { listTeams } from '@/lib/site/team-data';
 import type { TeamEntry } from '@/lib/site/teams';
 import DayHub, { dayHubMetadata } from '@/components/site/DayHub';
+import AppBanner from '@/components/site/AppBanner';
 
 // ============================================================================
 // Herkese açık maç ön izlemesi (SEO, 2026-10-10)
@@ -79,6 +80,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const tc = await getTranslations('common');
   const tn = await getTranslations('nav');
   const tp = await getTranslations('paywall');
+  const tpa = await getTranslations('playApp');
   const f = await getFormatter();
 
   const [access, table, formHome, formAway, h2h, leagueUpcoming, teams] = await Promise.all([
@@ -185,6 +187,9 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
       {/* SEO Faz 1a: dateModified from the engine row (a real write) + the answered questions as FAQPage. */}
       <JsonLd data={webPageJsonLd(params.locale as Locale, { url: pageUrl, name: `${m.homeName} – ${m.awayName}`, dateModified: m.updatedAt })} />
       {faqs.length > 0 && <JsonLd data={faqPageJsonLd(faqs)} />}
+
+      {/* Android şerit (2026-10-31): yalnız Android tarayıcı + uygulama dışı; istemci karar verir. */}
+      {!twa && <AppBanner title={tpa('bannerTitle')} lead={tpa('bannerLead')} cta={tpa('bannerCta')} close={tpa('bannerClose')} />}
 
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-[13px]">
         <Link href="/matches" className="font-semibold text-s-muted hover:text-s-ink">← {t('backHub')}</Link>

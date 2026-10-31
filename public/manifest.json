@@ -10,7 +10,14 @@
   "scope": "/",
   "dir": "ltr",
   "lang": "en",
-  "prefer_related_applications": false,
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "pro.footballanalytics",
+      "url": "https://play.google.com/store/apps/details?id=pro.footballanalytics"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -98,6 +105,5 @@
         }
       ]
     }
-  ],
-  "related_applications": []
+  ]
 }

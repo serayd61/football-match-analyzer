@@ -2260,6 +2260,10 @@
     "req": "Android 7.0 ve üzeri. İndirmesi ücretsiz; uygulama footballanalytics.pro hesabını kullanır. 18 yaş ve üzeri.",
     "homeTitle": "Football Analytics Pro Google Play'de",
     "homeLead": "Günün olasılıkları, herkese açık karne ve lig bağlamı uygulamada. Kurulum ücretsiz, aynı hesapla giriş.",
-    "homeMore": "Uygulama ayrıntıları"
+    "homeMore": "Uygulama ayrıntıları",
+    "bannerTitle": "Android için Football Analytics Pro",
+    "bannerLead": "Günün olasılıkları ve maç hatırlatması, Google Play’de",
+    "bannerCta": "Uygulamayı al",
+    "bannerClose": "Kapat"
   }
 }
