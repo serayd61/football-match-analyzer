@@ -2260,6 +2260,10 @@
     "req": "Android 7.0 oder neuer. Kostenloser Download; die App nutzt dein footballanalytics.pro-Konto. Ab 18 Jahren.",
     "homeTitle": "Football Analytics Pro gibt es jetzt bei Google Play",
     "homeLead": "Die Wahrscheinlichkeiten des Tages, die öffentliche Bilanz und der Liga-Kontext als App. Gratis installieren, mit demselben Konto anmelden.",
-    "homeMore": "Zur App"
+    "homeMore": "Zur App",
+    "bannerTitle": "Football Analytics Pro für Android",
+    "bannerLead": "Wahrscheinlichkeiten und Anstoß-Erinnerungen, bei Google Play",
+    "bannerCta": "App holen",
+    "bannerClose": "Schließen"
   }
 }
