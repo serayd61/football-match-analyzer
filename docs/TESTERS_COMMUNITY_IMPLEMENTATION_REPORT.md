@@ -71,6 +71,6 @@ Hepsi `trackEvent` üzerinden GA4 + Vercel Analytics'e gider; ilk temas UTM'i ot
 ## 6. Manuel işler (kullanıcı)
 1. PR'ı birleştir (Vercel üretime alır). Bu PR Android'e dokunmaz; yeni AAB gerekmez.
 2. Play Console → Mağaza girişi: `docs/aso/google-play-en.md` (en-US), `-tr.md`, `-de.md` metinlerini gir; `marketing/play/screenshots/framed/en|tr` görsellerini 01→04 sırasıyla yükle.
-3. Eski `/contact` sayfasındaki `info@swissdigital.life` ile Console'daki `support@footballanalyzer.com` arasında karar ver (tutarsız).
+3. Eski `/contact` sayfasındaki `info@swissdigital.life` ile Console'daki `support@footballanalytics.pro` arasında karar ver (tutarsız).
 4. Testers Community takvimi: v4 (17–18 Ekim) için Android değişikliği istersen (In-App Review + yerel paylaşım) ayrı iş; istemezsen bu web güncellemesi "güncelleme" sayılır, sürüm notu Console'a yazılır.
 5. de/it için dev sunucu açıkken ekran görüntüsü alınması (betik ve spec hazır).

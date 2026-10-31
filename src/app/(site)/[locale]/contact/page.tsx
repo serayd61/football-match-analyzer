@@ -12,7 +12,7 @@ import { breadcrumbJsonLd } from '@/lib/site/jsonld';
 // replacement (e-mail + Telegram); the legacy URL 301s here (lib/site/legacy-paths.ts).
 export const revalidate = 86400;
 
-const SUPPORT_EMAIL = 'support@footballanalyzer.com';
+const SUPPORT_EMAIL = 'support@footballanalytics.pro';
 const TELEGRAM_URL = 'https://t.me/fanalytics_pro';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
