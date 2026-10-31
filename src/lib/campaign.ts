@@ -63,3 +63,6 @@ export const UNFINISHED_SIGNUP_CAMPAIGN_KEY = 'unfinished-signup-2026-08';
 // Google Play lansman duyurusu (2026-10-30): kayıtlı tüm üyelere tek seferlik,
 // QR kod + mağaza düğmesi. Kendi dedup anahtarı; unsubscribe'lar atlanır.
 export const PLAY_LAUNCH_CAMPAIGN_KEY = 'play-launch-2026-10';
+// Telegram tanıtımı (2026-10-31): her yeni kayda tek seferlik "günlük seçimler kanalda" e-postası.
+export const TELEGRAM_INTRO_CAMPAIGN_KEY = 'telegram-intro-2026-11';
+export const TELEGRAM_URL = 'https://t.me/fanalytics_pro';

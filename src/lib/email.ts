@@ -630,3 +630,43 @@ export async function sendPlayLaunchEmail(
   });
   if (error) throw new Error(error.message);
 }
+
+// ---------------------------------------------------------------------------
+// Telegram tanıtımı (2026-10-31): yeni kayıtlara günlük seçimlerin kanalda
+// otomatik yayınlandığını anlatan tek e-posta. İngilizce (site varsayılanı).
+// ---------------------------------------------------------------------------
+export async function sendTelegramIntroEmail(
+  to: string,
+  o: { telegramUrl: string; dashboardUrl: string; unsubscribeUrl: string; name?: string | null; playUrl?: string },
+): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const subject = 'Daily picks, posted automatically on Telegram';
+  const body = `
+    <p>Hi${hi}, one thing many members miss: the day's picks also go out on our <strong>Telegram channel</strong>, every morning, automatically.</p>
+    <ul style="padding-left:18px;margin:0 0 16px;line-height:1.6">
+      <li><strong>Coupon of the day</strong> — the two legs the validated rule selects, with odds.</li>
+      <li><strong>Strong markets</strong> — league–market pairs with a ≥70% record over the last 180 days.</li>
+      <li><strong>Results</strong> — every coupon is settled publicly, hit or miss, with the running record.</li>
+    </ul>
+    <p>No login needed, nothing to check manually: join once and the posts arrive. Posts are compact and visual; the picks and odds read the same in any language.</p>
+    ${trialBtn(o.telegramUrl, 'Join the Telegram channel →')}
+    <p style="font-size:13px;color:#64748b;text-align:center">Prefer the full breakdown? Your dashboard has every match: <a href="${o.dashboardUrl}" style="color:#059669">open the dashboard</a>.</p>
+    ${trialPlay(o.playUrl)}`;
+  const html = trialShell('Daily picks on Telegram', 'Free channel · posted every morning', body, o.unsubscribeUrl);
+  const text = `Hi${hi}, the day's picks are posted automatically every morning on our Telegram channel: ${o.telegramUrl}
+Coupon of the day (2 legs with odds), strong markets (>=70% record, 180 days) and public results.
+Dashboard: ${o.dashboardUrl}${o.playUrl ? `\nAndroid app on Google Play: ${o.playUrl}` : ''}
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
+// Ops raporu (2026-10-31): site sahibine iç rapor; şablon ops-report.ts'te hazır gelir.
+export async function sendOpsReportEmail(to: string, o: { subject: string; html: string; text: string }): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject: o.subject, html: o.html, text: o.text });
+  if (error) throw new Error(error.message);
+}
