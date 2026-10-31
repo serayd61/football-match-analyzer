@@ -2,7 +2,10 @@
 // Sosyal yayın orkestrasyonu — günlük seçim, sonuç yanıtı, haftalık karne
 // ----------------------------------------------------------------------------
 // Hesaplar: TWITTER_TR_* / TWITTER_EN_* (OAuth 1.0a), TELEGRAM_BOT_TOKEN +
-// TELEGRAM_CHAT_TR / TELEGRAM_CHAT_EN. Tanımlı olmayan hesap atlanır. Her
+// TELEGRAM_CHAT_TR / TELEGRAM_CHAT_EN, INSTAGRAM_USER_ID + INSTAGRAM_ACCESS_TOKEN
+// (+ INSTAGRAM_LANG, varsayılan en; 2026-10-31: Telegram'ın aynası, oran yok,
+// görsel /api/social/image'dan URL ile verilir, metin-only gönderiler atlanır,
+// sonuçlar yorum olur). Tanımlı olmayan hesap atlanır. Her
 // gönderi social_posts'a yazılır; `key` tekil olduğu için cron iki kez çalışsa
 // da ikinci gönderi atılmaz. dry=1 → hiçbir yere göndermez, metni döner.
 // ============================================================================
@@ -14,19 +17,21 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg } from './content';
+import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg, instagramDailyCaption, instagramWeeklyCaption, SITE } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard, strongToday } from '@/lib/site/strong-markets';
 import { listDayRows } from '@/lib/site/fixtures';
 import { hasTelegram, sendMessage, sendPhoto } from './telegram';
+import { hasInstagram, publishImage as igPublish, comment as igComment } from './instagram';
 import { fetchTrends } from './twitter';
 
 const TABLE = 'social_posts';
 const LANGS: Lang[] = ['tr', 'en'];
 
-interface Target { platform: 'twitter' | 'telegram'; account: Lang; chat?: string }
+interface Target { platform: 'twitter' | 'telegram' | 'instagram'; account: Lang; chat?: string }
+const instagramLang = (): Lang => (process.env.INSTAGRAM_LANG === 'tr' ? 'tr' : 'en');
 function targets(): Target[] {
   const out: Target[] = [];
   for (const l of LANGS) {
@@ -34,8 +39,11 @@ function targets(): Target[] {
     const chat = (process.env[`TELEGRAM_CHAT_${l.toUpperCase()}`] || '').trim();
     if (hasTelegram() && chat) out.push({ platform: 'telegram', account: l, chat });
   }
+  if (hasInstagram()) out.push({ platform: 'instagram', account: instagramLang() });
   return out;
 }
+/** Instagram görseli URL ile çeker: herkese açık uç (önbellekli, ±10 gün). */
+export const socialImageUrl = (kind: 'daily' | 'weekly' | 'proof', day: string, lang: Lang) => `${SITE}/api/social/image?kind=${kind}&day=${day}&lang=${lang}`;
 
 async function record(row: { key: string; kind: string; day: string; platform: string; account: string; fixtureIds: number[]; postId?: string | null; parentId?: string | null; body: string; status: string; error?: string | null }) {
   await db().from(TABLE).upsert({ key: row.key, kind: row.kind, day: row.day, platform: row.platform, account: row.account, fixture_ids: row.fixtureIds, post_id: row.postId ?? null, parent_id: row.parentId ?? null, body: row.body, status: row.status, error: row.error ?? null }, { onConflict: 'key' });
@@ -49,7 +57,12 @@ async function posted(keys: string[]): Promise<Map<string, any>> {
   return out;
 }
 
-async function send(t: Target, text: string, png: Buffer | null, replyTo?: string | null): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+async function send(t: Target, text: string, png: Buffer | null, replyTo?: string | null, imageUrl?: string | null): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  if (t.platform === 'instagram') {
+    if (replyTo) return igComment(replyTo, text);
+    if (!imageUrl) return { ok: false, error: 'instagram: görselsiz gönderi yok' };
+    return igPublish(imageUrl, text);
+  }
   if (t.platform === 'twitter') {
     const creds = twitterCreds(`TWITTER_${t.account.toUpperCase()}`)!;
     let mediaId: string | undefined;
@@ -103,7 +116,7 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
   const images: Partial<Record<Lang, Buffer>> = {};
   for (const t of tg) {
     const key = `daily|${day}|${t.platform}|${t.account}`;
-    const text = dailyText([...legs], day, t.account, rec, t.platform, tags);
+    const text = t.platform === 'instagram' ? instagramDailyCaption(legs, day, t.account, rec, tags) : dailyText([...legs], day, t.account, rec, t.platform, tags);
     if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
     if (opts.dry) {
       out.push({ key, status: 'dry', text });
@@ -111,8 +124,8 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
       if (l) out.push({ key: `invite|${day}|twitter|${t.account}`, status: 'dry', text: inviteText(l, t.account) });
       continue;
     }
-    images[t.account] ??= await dailyImage(legs, day, t.account, rec);
-    const r = await send(t, text, images[t.account]!);
+    if (t.platform !== 'instagram') images[t.account] ??= await dailyImage(legs, day, t.account, rec);
+    const r = await send(t, text, images[t.account] ?? null, null, t.platform === 'instagram' ? socialImageUrl('daily', day, t.account) : null);
     await record({ key, kind: 'daily', day, platform: t.platform, account: t.account, fixtureIds: legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
     out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
     // X'te günlük gönderinin altına Telegram daveti (aynı dilin grubu tanımlıysa)
@@ -145,7 +158,7 @@ export async function strongLegs(ymd: string, limit = 6): Promise<StrongLeg[]> {
 export async function publishStrong(opts: { day?: string; dry?: boolean } = {}) {
   const day = opts.day ?? todayYmd();
   const legs = await strongLegs(day);
-  const tg = targets();
+  const tg = targets().filter((t) => t.platform !== 'instagram'); // metin-only: Instagram'a gitmez
   const out: any[] = [];
   if (!legs.length) return { ok: true, day, legs: 0, note: 'güçlü bölgeye düşen maç yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry };
   const have = await posted(tg.map((t) => `strong|${day}|${t.platform}|${t.account}`));
@@ -220,15 +233,16 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
   for (const t of tg) {
     const key = `weekly|${day}|${t.platform}|${t.account}`;
     const wl = t.platform === 'twitter' ? telegramLink(process.env[`TELEGRAM_CHAT_${t.account.toUpperCase()}`]) : null;
-    const [first, second0] = weeklyText(stats, t.account, t.platform, ['#football']);
+    const [first0, second0] = weeklyText(stats, t.account, t.platform, ['#football']);
+    const first = t.platform === 'instagram' ? instagramWeeklyCaption(stats, t.account) : first0;
     const second = wl ? `${second0}\n\n${t.account === 'tr' ? 'Telegram' : 'Telegram'}: ${wl}` : second0;
     if (have.has(key)) { out.push({ key, status: 'already' }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text: [first, second, boardLines.length ? strongBoardText(boardLines, t.account, t.platform) : null] }); continue; }
     if (!stats.n) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'sonuçlanmış seçim yok' }); out.push({ key, status: 'skipped' }); continue; }
-    images[t.account] ??= await weeklyImage(stats, t.account);
-    const r1 = await send(t, first, images[t.account]!);
+    if (t.platform !== 'instagram') images[t.account] ??= await weeklyImage(stats, t.account);
+    const r1 = await send(t, first, images[t.account] ?? null, null, t.platform === 'instagram' ? socialImageUrl('weekly', day, t.account) : null);
     if (!r1.ok) { await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], body: first, status: 'failed', error: r1.error }); out.push({ key, status: 'failed', error: r1.error }); continue; }
-    const r2 = await send(t, second, null, r1.id);
+    const r2 = t.platform === 'instagram' ? ({ ok: true, id: r1.id } as const) : await send(t, second, null, r1.id); // Instagram: ikinci metin açıklamada
     await record({ key, kind: 'weekly', day, platform: t.platform, account: t.account, fixtureIds: [], postId: r1.id, body: `${first}\n---\n${second}`, status: 'posted', error: r2.ok ? null : `2. gönderi: ${r2.error}` });
     // Üçüncü gönderi: pazar karnesi (plan adım 4); yoksa atlanır.
     const r3 = boardLines.length && r2.ok ? await send(t, strongBoardText(boardLines, t.account, t.platform), null, r2.id) : null;
@@ -239,5 +253,27 @@ export async function publishWeekly(opts: { dry?: boolean; day?: string } = {}) 
 
 export function socialStatus() {
   const tg = targets();
-  return { targets: tg.map((t) => `${t.platform}:${t.account}`), telegramBot: hasTelegram(), twitterTr: !!twitterCreds('TWITTER_TR'), twitterEn: !!twitterCreds('TWITTER_EN'), twitterBearer: !!(process.env.TWITTER_BEARER_TOKEN || '').trim(), telegramAdmin: !!(process.env.TELEGRAM_ADMIN_CHAT || '').trim(), telegramChatEn: (process.env.TELEGRAM_CHAT_EN || '').trim() || null };
+  return { targets: tg.map((t) => `${t.platform}:${t.account}`), telegramBot: hasTelegram(), instagram: hasInstagram(), twitterTr: !!twitterCreds('TWITTER_TR'), twitterEn: !!twitterCreds('TWITTER_EN'), twitterBearer: !!(process.env.TWITTER_BEARER_TOKEN || '').trim(), telegramAdmin: !!(process.env.TELEGRAM_ADMIN_CHAT || '').trim(), telegramChatEn: (process.env.TELEGRAM_CHAT_EN || '').trim() || null };
+}
+
+/** Kanıt kartı (Instagram; elle: /api/cron/social?kind=proof). Günde bir kez; dry=1 metni döner. */
+export async function publishProof(opts: { dry?: boolean; day?: string; lang?: Lang } = {}) {
+  const day = opts.day ?? todayYmd();
+  const lang = opts.lang ?? instagramLang();
+  const t = targets().find((x) => x.platform === 'instagram');
+  const key = `proof|${day}|instagram|${lang}`;
+  const j: any = await fetch(`${SITE}/api/v2/proof`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
+  if (!j?.ok) return { ok: false, error: 'proof yok' };
+  const { instagramTags } = await import('./content');
+  const r = j.record, y = j.yesterday;
+  const f = (v: number) => (lang === 'tr' ? v.toFixed(1).replace('.', ',') : v.toFixed(1)) + '%';
+  const text = lang === 'tr'
+    ? `Model ne kadar isabetli? Ölçülmüş çifte şans karnesi:\n\nTüm maçlar: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nSon 30 gün: ${f(r.doubleChance30d.accuracy)}\nYüksek güven (≥%80): ${f(r.doubleChanceHigh.accuracy)}\n\nDün: ${y.correct}/${y.total}. Seçim kuralı sonuçtan önce sabit, kaybedenler de listede.\n\nTam karne ve ücretsiz analiz → profildeki link\n\n${instagramTags('tr')}`
+    : `How accurate is the model? Measured double-chance record:\n\nAll matches: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nLast 30 days: ${f(r.doubleChance30d.accuracy)}\nHigh confidence (≥80%): ${f(r.doubleChanceHigh.accuracy)}\n\nYesterday: ${y.correct}/${y.total}. Selection rule fixed before results; losses listed too.\n\nFull record and free analysis → link in bio\n\n${instagramTags('en')}`;
+  if (!t) return { ok: false, error: 'instagram tanımlı değil', text };
+  if ((await posted([key])).has(key)) return { ok: true, key, status: 'already' };
+  if (opts.dry) return { ok: true, key, status: 'dry', text, imageUrl: socialImageUrl('proof', day, lang) };
+  const res = await send(t, text, null, null, socialImageUrl('proof', day, lang));
+  await record({ key, kind: 'proof', day, platform: 'instagram', account: lang, fixtureIds: [], postId: res.ok ? res.id : null, body: text, status: res.ok ? 'posted' : 'failed', error: res.ok ? null : res.error });
+  return { ok: res.ok, key, status: res.ok ? 'posted' : 'failed', id: res.ok ? res.id : undefined, error: res.ok ? undefined : res.error };
 }

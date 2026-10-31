@@ -121,3 +121,70 @@ export async function weeklyImage(s: WeeklyStats, lang: Lang): Promise<Buffer> {
     { width: W, height: H, fonts: await fonts() },
   ));
 }
+
+// ---------------------------------------------------------------------------
+// Kanıt kartı (Instagram, 2026-10-31): /api/v2/proof manşet rakamları — çifte
+// şans isabeti (tüm / son 30 gün / yüksek güven) + dünün seçimleri, kaybedenler
+// dahil. Landing'deki canlı kanıt bloğuyla aynı kaynak; rakam elle yazılmaz.
+// ---------------------------------------------------------------------------
+export interface ProofCard {
+  record: { doubleChance: { total: number; correct: number; accuracy: number }; doubleChance30d: { total: number; correct: number; accuracy: number }; doubleChanceHigh: { total: number; correct: number; accuracy: number } };
+  yesterday: { date: string; picks: Array<{ home: string; away: string; league: string; homeScore: number | null; awayScore: number | null; dcPick: string; probability: number; correct: boolean }>; total: number; correct: number };
+}
+
+const dcLabel = (pick: string, home: string, away: string, lang: Lang) => {
+  const or = lang === 'tr' ? 'veya beraberlik' : 'or draw';
+  if (pick === '1X') return `${home} ${or}`;
+  if (pick === 'X2') return `${away} ${or}`;
+  return lang === 'tr' ? 'Beraberlik olmaz' : 'No draw';
+};
+
+export async function proofImage(p: ProofCard, lang: Lang): Promise<Buffer> {
+  const fmtPct = (v: number) => `${lang === 'tr' ? v.toFixed(1).replace('.', ',') : v.toFixed(1)}%`;
+  const tiles: [string, { total: number; correct: number; accuracy: number }][] = [
+    [lang === 'tr' ? 'Tüm maçlar' : 'All matches', p.record.doubleChance],
+    [lang === 'tr' ? 'Son 30 gün' : 'Last 30 days', p.record.doubleChance30d],
+    [lang === 'tr' ? 'Yüksek güven (≥%80)' : 'High confidence (≥80%)', p.record.doubleChanceHigh],
+  ];
+  const picks = p.yesterday.picks.slice(0, 4);
+  return toBuffer(new ImageResponse(
+    (
+      <div style={{ width: W, height: H, display: 'flex', flexDirection: 'column', background: BG, color: INK, padding: 64, fontFamily: 'Plex' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', borderBottom: `4px solid ${INK}`, paddingBottom: 22 }}>
+          <span style={{ fontSize: 26, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase' }}>{lang === 'tr' ? 'Ölçülmüş karne · çifte şans' : 'Measured record · double chance'}</span>
+          <span style={{ fontFamily: 'Archivo', fontSize: 70, lineHeight: 1, marginTop: 8 }}>{lang === 'tr' ? 'Model ne kadar isabetli?' : 'How accurate is the model?'}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 24, marginTop: 44 }}>
+          <span style={{ fontFamily: 'Archivo', fontSize: 170, lineHeight: 1, color: ACCENT }}>{fmtPct(p.record.doubleChance.accuracy)}</span>
+          <span style={{ fontSize: 32, color: MUTED }}>{p.record.doubleChance.correct.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-GB')} / {p.record.doubleChance.total.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-GB')} {lang === 'tr' ? 'maç' : 'matches'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 18, marginTop: 36 }}>
+          {tiles.map(([name, v]) => (
+            <div key={name} style={{ display: 'flex', flexDirection: 'column', flex: 1, background: CARD, border: `2px solid ${LINE}`, padding: '22px 24px' }}>
+              <span style={{ fontSize: 22, color: MUTED }}>{name}</span>
+              <span style={{ fontFamily: 'Archivo', fontSize: 52, lineHeight: 1.1, marginTop: 6 }}>{fmtPct(v.accuracy)}</span>
+              <span style={{ fontSize: 22, color: MUTED, marginTop: 4 }}>{v.correct.toLocaleString('en-GB')}/{v.total.toLocaleString('en-GB')}</span>
+            </div>
+          ))}
+        </div>
+        <span style={{ fontFamily: 'Archivo', fontSize: 34, marginTop: 44 }}>{lang === 'tr' ? `Dün · ${fmtDate(p.yesterday.date, lang)} · ${p.yesterday.correct}/${p.yesterday.total}` : `Yesterday · ${fmtDate(p.yesterday.date, lang)} · ${p.yesterday.correct}/${p.yesterday.total}`}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12, borderTop: `2px solid ${LINE}` }}>
+          {picks.map((k, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 0', borderBottom: `2px solid ${LINE}` }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontFamily: 'Archivo', fontSize: 34 }}>{k.home} {k.homeScore ?? '–'}–{k.awayScore ?? '–'} {k.away}</span>
+                <span style={{ fontSize: 26, color: MUTED, marginTop: 6 }}>{dcLabel(k.dcPick, k.home, k.away, lang)} · {k.probability}%</span>
+              </div>
+              <span style={{ fontFamily: 'Archivo', fontSize: 44, color: k.correct ? ACCENT : MUTED }}>{k.correct ? '✓' : '×'}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', gap: 18 }}>
+          <span style={{ fontSize: 24, color: MUTED, lineHeight: 1.35 }}>{lang === 'tr' ? 'Seçim kuralı sonuçtan önce sabit; kaybedenler de listede. Tam karne sitede.' : 'Selection rule fixed before results; losses listed too. Full record on the site.'}</span>
+          <Brand />
+        </div>
+      </div>
+    ),
+    { width: W, height: H, fonts: await fonts() },
+  ));
+}

@@ -7,15 +7,17 @@
 //   ?kind=strong   07:10 UTC her gün   → güçlü pazar bölgesine düşen maçlar (yoksa atlanır)
 //   ?kind=pack     kullanıcıya X etkileşim paketi (Telegram özel mesaj); daily de sonunda gönderir
 //   &dry=1         hiçbir yere göndermez, metni döner
-//   &image=1       (daily/weekly) görselin PNG'sini döner, gönderi yok
+//   &image=1       (daily/weekly/proof) görselin PNG'sini döner, gönderi yok
+//   ?kind=proof&image=1  kanıt kartı (Instagram); ?instagram=1 → kartı Instagram'a gönderir
 //   &day=YYYY-MM-DD gün seçimi (varsayılan bugün)
 //   ?status=1      hangi hesaplar tanımlı
 //   ?trends=1      günün X trendleri + bacaklarla eşleşen etiketler (teşhis)
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { publishDaily, publishResults, publishWeekly, publishStrong, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
+import { publishDaily, publishResults, publishWeekly, publishStrong, publishProof, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
 import { hashtags, matchTrends } from '@/lib/social/content';
-import { dailyImage, weeklyImage } from '@/lib/social/image';
+import { dailyImage, weeklyImage, proofImage } from '@/lib/social/image';
+import { SITE } from '@/lib/social/content';
 import { sendEngagementPack } from '@/lib/social/engage';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { todayYmd, addDays } from '@/lib/site/time';
@@ -41,7 +43,11 @@ export async function GET(request: NextRequest) {
   try {
     if (q.get('image') === '1') {
       let png: Buffer;
-      if (kind === 'weekly') {
+      if (kind === 'proof') {
+        const j: any = await fetch(`${SITE}/api/v2/proof`, { cache: 'no-store' }).then((r) => r.json());
+        if (!j?.ok) return NextResponse.json({ ok: false, error: 'proof yok' });
+        png = await proofImage(j, lang);
+      } else if (kind === 'weekly') {
         const rec = await showcaseRecord(7, Date.parse(`${day}T00:00:00Z`));
         png = await weeklyImage({ from: addDays(day, -7), to: addDays(day, -1), n: rec.n, won: rec.won, byMarket: rec.byMarket, noPick: rec.noPick }, lang);
       } else {
@@ -52,6 +58,7 @@ export async function GET(request: NextRequest) {
       }
       return new NextResponse(new Uint8Array(png), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' } });
     }
+    if (kind === 'proof') return NextResponse.json(await publishProof({ dry, day, lang }));
     if (kind === 'results') return NextResponse.json(await publishResults({ dry }));
     if (kind === 'weekly') return NextResponse.json(await publishWeekly({ dry, day }));
     if (kind === 'strong') return NextResponse.json(await publishStrong({ dry, day }));

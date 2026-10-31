@@ -19,7 +19,7 @@ import { ODDS_MIN, ODDS_MAX } from '@/lib/site/daily-picks-rule';
 
 export const SITE = 'https://footballanalytics.pro';
 const TZ: Record<Lang, string> = { tr: 'Europe/Istanbul', en: 'Europe/Zurich' };
-export type Source = 'twitter' | 'telegram';
+export type Source = 'twitter' | 'telegram' | 'instagram';
 /** Saat dilimi etiketi: TR sabit TSİ; EN için Zürih'in o günkü kısaltması (CET/CEST). */
 export const tzLabel = (lang: Lang, iso: string): string => {
   if (lang === 'tr') return 'TSİ';
@@ -29,6 +29,46 @@ export const tzLabel = (lang: Lang, iso: string): string => {
 
 export const utm = (path: string, lang: Lang, campaign: string, source: Source = 'twitter') =>
   `${SITE}/${lang}${path}?utm_source=${source}&utm_medium=social&utm_campaign=${campaign}`;
+
+// ---------------------------------------------------------------------------
+// Instagram (2026-10-31): Telegram'daki günlük gönderinin aynası. Fark: ORAN YOK
+// ve bahis dili yok — X Ads'te hesabı durduran "Gambling" sınıflaması aynı
+// sinyallere bakıyor; Instagram'da reklam verebilmek için hesap temiz kalmalı.
+// Link tıklanmaz, "link in bio" denir. Etiket: sabit küme + lig etiketleri (≤30).
+// ---------------------------------------------------------------------------
+export const INSTAGRAM_TAGS: Record<Lang, string[]> = {
+  en: ['#footballanalytics', '#xG', '#expectedgoals', '#footballdata', '#socceranalytics', '#matchanalysis', '#footballstats', '#datascience', '#football', '#soccer'],
+  tr: ['#futbolanalizi', '#xG', '#beklenengol', '#futbolverisi', '#maçanalizi', '#futbolistatistik', '#verianalizi', '#futbol', '#footballanalytics', '#expectedgoals'],
+};
+export const INSTAGRAM_MAX_TAGS = 30;
+
+export function instagramTags(lang: Lang, extra: string[] = []): string {
+  const seen = new Set<string>(); const out: string[] = [];
+  for (const t of [...INSTAGRAM_TAGS[lang], ...extra]) { const k = t.toLowerCase(); if (t.startsWith('#') && t.length > 1 && !seen.has(k)) { seen.add(k); out.push(t); } }
+  return out.slice(0, INSTAGRAM_MAX_TAGS).join(' ');
+}
+
+/** Instagram günlük açıklaması: oran yok, "link in bio", ≤2200 karakter. */
+export function instagramDailyCaption(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null, tags: string[] = []): string {
+  const tz = legs.length ? ` · ${tzLabel(lang, legs[0].kickoff)}` : '';
+  const head = lang === 'tr' ? `Günün model seçimleri · ${fmtDate(ymd, lang)}${tz}` : `Today's model picks · ${fmtDate(ymd, lang)}${tz}`;
+  const lines = legs.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName} – ${l.awayName}: ${marketLabel(l, lang)} · ${lang === 'tr' ? 'model' : 'model'} ${pct(l.modelP)}`);
+  const rec = record && record.n ? (lang === 'tr' ? `Son 7 gün: ${record.won}/${record.n}` : `Last 7 days: ${record.won}/${record.n}`) : '';
+  const rule = lang === 'tr'
+    ? 'Her seçim maçtan önce dondurulur, sonuç ne olursa olsun yazılır. Garanti değil, kayıt.'
+    : 'Every pick is frozen before kick-off and recorded whatever the result. A record, not a guarantee.';
+  const cta = lang === 'tr' ? 'Tam karne ve ücretsiz analiz → profildeki link' : 'Full record and free analysis → link in bio';
+  const text = [head, '', ...lines, '', rec, rule, cta, '', instagramTags(lang, tags)].filter((s, i, a) => !(s === '' && a[i - 1] === '')).join('\n');
+  return text.length <= 2200 ? text : text.slice(0, 2200);
+}
+
+/** Instagram haftalık açıklaması: iki X gönderisi tek açıklamada birleşir, link "bio"ya işaret eder. */
+export function instagramWeeklyCaption(s: WeeklyStats, lang: Lang): string {
+  const [first, second] = weeklyText(s, lang, 'instagram');
+  const cta = lang === 'tr' ? 'Pazar bazında tam karne → profildeki link' : 'Full record by market → link in bio';
+  const body = `${first}\n\n${second.replace(/\s*https?:\/\/\S+$/, '')}\n${cta}\n\n${instagramTags(lang)}`;
+  return body.length <= 2200 ? body : body.slice(0, 2200);
+}
 
 export const fmtTime = (iso: string, lang: Lang) => new Intl.DateTimeFormat(lang === 'tr' ? 'tr-TR' : 'en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: TZ[lang] }).format(new Date(iso));
 export const fmtDate = (ymd: string, lang: Lang) => new Intl.DateTimeFormat(lang === 'tr' ? 'tr-TR' : 'en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${ymd}T12:00:00Z`));
