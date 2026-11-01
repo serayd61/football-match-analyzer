@@ -1580,10 +1580,10 @@
       "linkRecord": "Public track record"
     },
     "match": {
-      "metaTitle": "{home} vs {away}: stats, H2H & prediction, {date}",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: result & stats, {date}",
-      "metaDescription": "{league}, {date}: {home} vs {away}. Kick-off, league positions, recent form and head-to-head. Model probabilities are published for members.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league positions, pre-match form and head-to-head. The prediction is in the members’ record.",
+      "metaTitle": "{home} vs {away}: prediction, table & form, {date}",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: result, table & stats, {date}",
+      "metaDescription": "{league}, {date}: {home} vs {away}. League table, recent form, head-to-head and the model’s pre-match view. Probabilities are published for members.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league table, pre-match form, head-to-head and how the model’s pre-match call went.",
       "eyebrow": "Match preview",
       "vs": "vs",
       "kickoff": "Kick-off",
@@ -1667,7 +1667,9 @@
       "leagueAvgNote": "{league} average this season: {avg} goals per match.",
       "modelLockedVerdict": "The pick above is settled. Members also see the full probability split, expected goals, the goal markets and the risk label as they stood before kick-off:",
       "resultsArchive": "{league} results",
-      "teamPage": "{team}: fixtures & form"
+      "teamPage": "{team}: fixtures & form",
+      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {hpts} pts) vs {away} ({apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {apts} pts). Table, recent form, head-to-head and the model’s pre-match view. Probabilities for members.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} now {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts), {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts). Final score, form, head-to-head and how the model’s pre-match call went."
     }
   },
   "coupon": {

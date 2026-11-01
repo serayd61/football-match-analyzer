@@ -88,6 +88,8 @@ test('sitemap XML lists every locale with hreflang links, the content images and
   // lastmod: real data write for data pages, the row's updated_at for a match, the doc revision for docs — never "now"
   assert.ok(xml.includes('<lastmod>2026-10-10T09:00:00.000Z</lastmod>'));
   assert.ok(xml.includes('<lastmod>2026-10-09T18:30:00.000Z</lastmod>'));
+  // 2026-11-01: team pages no longer inherit the global write as lastmod (string input → no lastmod)
+  assert.ok(!/teams\/arsenal<\/loc>\n    <lastmod>/.test(xml));
   assert.ok(xml.includes('<lastmod>2026-09-04T12:00:00.000Z</lastmod>'));
   // second precision: a doc revised today (DOCS_UPDATED → noon UTC) is a real date, not the request time (flaked 2026-10-17 12:xx UTC)
   const nowIso = new Date().toISOString().slice(0, 19);

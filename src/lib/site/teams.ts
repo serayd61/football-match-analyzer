@@ -13,7 +13,7 @@ import type { SiteLeague } from './leagues';
 // other gets "{slug}-{id}", so URLs stay stable as a season fills in.
 // ============================================================================
 
-export interface TeamSeed { id: number; name: string; league: SiteLeague; n: number }
+export interface TeamSeed { id: number; name: string; league: SiteLeague; n: number; /** son OYNANMIŞ maçın başlama zamanı (ISO) — sitemap lastmod; gelecek fikstür sayılmaz (2026-11-01) */ lastPlayed?: string | null }
 export interface TeamEntry extends TeamSeed { slug: string; crest: string }
 
 export const teamCrest = (id: number) => `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`;

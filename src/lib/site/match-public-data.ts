@@ -7,6 +7,7 @@ import { resolveOfficialVersion, officialFilter } from './official';
 import { publicMatchView, type PublicMatch } from './match-public';
 import { leagueBySlug } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
+import { fetchAllRows } from './page-all';
 
 // Server-side reads for the public match pages and the sitemap. Every row
 // goes through publicMatchView() so no model figure leaves this module.
@@ -114,38 +115,44 @@ export const listPublicForDay = unstable_cache(
   { revalidate: REVALIDATE.fixtures },
 );
 
-export interface SitemapMatch { path: string; lastmod: Date | null }
+export interface SitemapMatch { path: string; lastmod: Date | null; /** bitmiş maç → sitemap 'results' bölümü (2026-11-01) */ settled: boolean }
 
 /**
  * Public match URLs for the sitemap: covered fixtures from `pastDays` back to
  * `futureDays` ahead. `lastmod` is the engine row's updated_at (a real write),
  * never "now". SEO Faz 1a: settled matches stay listed for 90 days (was 14) —
  * result pages are where "X vs Y" queries land weeks after the match.
+ *
+ * 2026-11-01: iki ayrı pencere, sayfalı okuma (page-all.ts). Tek sorgu + limit(3000)
+ * PostgREST'in 1000-satır tavanına takılıyor ve artan sıralamada yalnız en eski
+ * 1000 satır geliyordu → prod sitemap'te 17 Ekim'den beri hiç yaklaşan maç yoktu.
+ * Yaklaşanlar (−2 gün … +futureDays) yakından uzağa, bitmişler yeniden eskiye;
+ * her pencere kendi tavanıyla kesilir ki yaklaşan maçlar asla düşmesin.
  */
 export const listSitemapMatches = unstable_cache(
   async (pastDays = 90, futureDays = 21): Promise<SitemapMatch[]> => {
     const ids = await idsForLeague(null);
     const official = await resolveOfficialVersion();
-    const { data, error } = await officialFilter(db().from('engine_predictions').select(COLS), official)
-      .in('league_id', ids)
-      .gte('kickoff', new Date(Date.now() - pastDays * 86400e3).toISOString())
-      .lt('kickoff', new Date(Date.now() + futureDays * 86400e3).toISOString())
-      .order('kickoff', { ascending: true })
-      .limit(3000);
-    if (error) throw new Error(error.message);
+    const now = Date.now();
+    const split = new Date(now - 2 * 86400e3).toISOString();
+    const base = () => officialFilter(db().from('engine_predictions').select(COLS), official).in('league_id', ids);
+    const [upcoming, settled] = await Promise.all([
+      fetchAllRows((from, to) => base().gte('kickoff', split).lt('kickoff', new Date(now + futureDays * 86400e3).toISOString()).order('kickoff', { ascending: true }).range(from, to), { maxPages: 4 }),
+      fetchAllRows((from, to) => base().gte('kickoff', new Date(now - pastDays * 86400e3).toISOString()).lt('kickoff', split).order('kickoff', { ascending: false }).range(from, to), { maxPages: 8 }),
+    ]);
     const ctx = await loadContext();
     const seen = new Set<number>();
     const out: SitemapMatch[] = [];
-    for (const r of parseRows(data, official)) {
+    for (const r of parseRows([...upcoming, ...settled], official)) {
       const m = publicMatchView(mapRow(r, ctx));
       if (!m.league || seen.has(m.fixtureId)) continue;
       seen.add(m.fixtureId);
       const d = m.updatedAt ? new Date(m.updatedAt) : null;
-      out.push({ path: `/matches/${m.slug}`, lastmod: d && !Number.isNaN(d.getTime()) ? d : null });
+      out.push({ path: `/matches/${m.slug}`, lastmod: d && !Number.isNaN(d.getTime()) ? d : null, settled: m.settled && m.homeScore != null && m.awayScore != null });
     }
     return out;
   },
-  ['site-sitemap-matches-v1'],
+  ['site-sitemap-matches-v3'],
   { revalidate: REVALIDATE.performance },
 );
 

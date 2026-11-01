@@ -55,11 +55,19 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const f = await getFormatter({ locale: params.locale });
   const date = f.dateTime(new Date(m.kickoff), { day: 'numeric', month: 'short', year: 'numeric' });
   const played = m.settled && m.homeScore != null && m.awayScore != null;
-  const vars = { home: m.homeName, away: m.awayName, league: m.leagueName, date, hs: m.homeScore ?? 0, as: m.awayScore ?? 0 };
+  // SC okuması 2026-11-01: gösterim alan sorgular "tabelle / classifica / puan durumu"
+  // niyetli → başlıkta tablo kelimesi, açıklamada iki takımın sırası ve puanı
+  // (getStandings 1 saat önbellekli; sayfa gövdesi aynı okumayı kullanır).
+  const table = m.league ? await getStandings(m.league.slug).catch(() => [] as StandingRow[]) : [];
+  const stHome = m.homeId ? table.find((r) => r.teamId === m.homeId) : undefined;
+  const stAway = m.awayId ? table.find((r) => r.teamId === m.awayId) : undefined;
+  const ranked = !!(stHome && stAway);
+  const vars = { home: m.homeName, away: m.awayName, league: m.leagueName, date, hs: m.homeScore ?? 0, as: m.awayScore ?? 0, hpos: stHome?.pos ?? 0, hpts: stHome?.pts ?? 0, apos: stAway?.pos ?? 0, apts: stAway?.pts ?? 0 };
+  const descKey = played ? (ranked ? 'metaDescriptionSettledRanked' : 'metaDescriptionSettled') : ranked ? 'metaDescriptionRanked' : 'metaDescription';
   return {
     // SEO Faz 0: no " · Football Analytics" suffix — two team names already fill the title.
     title: { absolute: played ? t('metaTitleSettled', vars) : t('metaTitle', vars) },
-    description: played ? t('metaDescriptionSettled', vars) : t('metaDescription', vars),
+    description: t(descKey, vars),
     alternates: alternatesFor(params.locale as Locale, matchPath(m)),
     openGraph: { title: `${m.homeName} – ${m.awayName}`, images: [`/api/og/match/${m.fixtureId}`] },
   };
