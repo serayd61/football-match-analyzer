@@ -1580,10 +1580,10 @@
       "linkRecord": "Öffentliche Bilanz"
     },
     "match": {
-      "metaTitle": "{home} – {away}: Statistik, Bilanz & Prognose, {date}",
-      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat & Statistik, {date}",
-      "metaDescription": "{league}, {date}: {home} – {away}. Anstoss, Tabellenplätze, Form und direkter Vergleich. Modellwahrscheinlichkeiten für Mitglieder.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabellenplätze, Form vor dem Spiel und direkter Vergleich. Prognose in der Mitglieder-Bilanz.",
+      "metaTitle": "{home} – {away}: Prognose, Tabelle & Form, {date}",
+      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat, Tabelle & Statistik, {date}",
+      "metaDescription": "{league}, {date}: {home} – {away}. Tabelle, Form, direkter Vergleich und die Einschätzung des Modells vor dem Spiel. Wahrscheinlichkeiten für Mitglieder.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabelle, Form vor dem Spiel, direkter Vergleich und wie die Prognose des Modells ausging.",
       "eyebrow": "Spielvorschau",
       "vs": "–",
       "kickoff": "Anstoss",
@@ -1667,7 +1667,9 @@
       "leagueAvgNote": "{league}-Schnitt diese Saison: {avg} Tore pro Spiel.",
       "modelLockedVerdict": "Der Tipp oben ist abgerechnet. Mitglieder sehen zusätzlich die ganze Wahrscheinlichkeitsverteilung, Expected Goals, Tormärkte und das Risikolabel, wie sie vor dem Anpfiff standen:",
       "resultsArchive": "{league}-Resultate",
-      "teamPage": "{team}: Spiele & Form"
+      "teamPage": "{team}: Spiele & Form",
+      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}., {hpts} Pkt.) – {away} ({apos}., {apts} Pkt.). Tabelle, Form, direkter Vergleich und die Einschätzung des Modells vor dem Spiel. Wahrscheinlichkeiten für Mitglieder.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}:{as} {away}. {home} jetzt {hpos}. ({hpts} Pkt.), {away} {apos}. ({apts} Pkt.). Endstand, Form, direkter Vergleich und wie die Prognose des Modells ausging."
     }
   },
   "coupon": {

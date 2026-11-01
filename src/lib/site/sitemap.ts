@@ -36,48 +36,76 @@ export const DOCS_UPDATED: Record<'methodology' | 'about' | 'privacy' | 'terms' 
 export interface SitemapInput {
   /** latest engine write in covered leagues; null → no lastmod on data pages */
   dataUpdated: Date | null;
-  /** public match pages (locale-free paths) with their own lastmod */
-  matches: Array<{ path: string; lastmod: Date | null }>;
-  /** team pages (SEO Faz 1b), locale-free paths */
-  teams?: string[];
+  /** public match pages (locale-free paths) with their own lastmod; `settled` → results section (2026-11-01) */
+  matches: Array<{ path: string; lastmod: Date | null; settled?: boolean }>;
+  /** team pages (SEO Faz 1b), locale-free paths; with lastmod = last played kick-off (2026-11-01) */
+  teams?: Array<string | { path: string; lastmod: Date | string | null }>;
 }
+
+// Tarama bütçesi (SC 2026-11-01: 1.693 "keşfedildi – dizine eklenmedi", 5.344 URL tek
+// dosyada, takım sayfaları saatlik lastmod ile "sürekli değişiyor" görünüyordu).
+// Sitemap türlere bölünür: /sitemap.xml bir indeks, bölümler /sitemaps/{section}.xml.
+// SC'de her bölümün indeks durumu ayrı okunur; bitmiş maçlar "results" bölümünde
+// aylık changefreq ile durur, yaklaşan maçlar "matches" bölümünde günlük.
+export const SITEMAP_SECTIONS = ['pages', 'leagues', 'teams', 'matches', 'results'] as const;
+export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
+export const sectionPath = (s: SitemapSection) => `/sitemaps/${s}.xml`;
+export function isSitemapSection(v: string): v is SitemapSection { return (SITEMAP_SECTIONS as readonly string[]).includes(v); }
 
 /** Static public paths (one entry each; tests count them). */
 export const STATIC_PATHS = ['', '/matches', '/matches/today', '/matches/tomorrow', '/matches/yesterday', '/teams', '/pricing', '/performance', '/leagues', '/methodology', '/glossary', '/data', '/about', '/app', '/contact', '/privacy', '/terms'] as const;
 
-export function entries(input: SitemapInput): Entry[] {
+export function entriesFor(section: SitemapSection, input: SitemapInput): Entry[] {
   const data = input.dataUpdated;
-  return [
-    { path: '', changefreq: 'hourly', priority: 1, lastmod: data, images: ['standings', 'track-record'] },
-    { path: '/matches', changefreq: 'hourly', priority: 0.9, lastmod: data },
-    // SEO Faz 1b: evergreen day hubs — the URL stays, the day rolls (lastmod = latest engine write)
-    { path: '/matches/today', changefreq: 'hourly', priority: 0.8, lastmod: data },
-    { path: '/matches/tomorrow', changefreq: 'hourly', priority: 0.7, lastmod: data },
-    { path: '/matches/yesterday', changefreq: 'daily', priority: 0.6, lastmod: data },
-    { path: '/teams', changefreq: 'weekly', priority: 0.5, lastmod: data },
-    { path: '/pricing', changefreq: 'monthly', priority: 0.6 },
-    { path: '/performance', changefreq: 'daily', priority: 0.8, lastmod: data },
-    { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
-    { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
-    { path: '/glossary', changefreq: 'monthly', priority: 0.5, lastmod: DOCS_UPDATED.glossary },
-    // SEO Faz 2.1: open-data page (files refresh hourly; lastmod = latest engine write)
-    { path: '/data', changefreq: 'daily', priority: 0.6, lastmod: data },
-    { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
-    { path: '/app', changefreq: 'monthly', priority: 0.5, lastmod: '2026-10-28' },
-    { path: '/contact', changefreq: 'yearly', priority: 0.3 },
-    { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
-    { path: '/terms', changefreq: 'yearly', priority: 0.2 },
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
-    // SEO Faz 1a: per-league results archive (settled matches, public scores)
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/results`, changefreq: 'daily', priority: 0.5, lastmod: data })),
-    // SEO Faz 1c: per-league xG/xPTS table and goal statistics
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/xg-table`, changefreq: 'daily', priority: 0.6, lastmod: data })),
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/goals`, changefreq: 'daily', priority: 0.6, lastmod: data })),
-    // SEO Faz 1b: per-league track record (public settled record, no session)
-    ...SITE_LEAGUES.map((l): Entry => ({ path: `/performance/${l.slug}`, changefreq: 'daily', priority: 0.6, lastmod: data })),
-    ...(input.teams ?? []).map((p): Entry => ({ path: p, changefreq: 'daily', priority: 0.5, lastmod: data })),
-    ...input.matches.map((m): Entry => ({ path: m.path, changefreq: 'daily', priority: 0.6, lastmod: m.lastmod })),
-  ];
+  switch (section) {
+    case 'pages':
+      return [
+        { path: '', changefreq: 'hourly', priority: 1, lastmod: data, images: ['standings', 'track-record'] },
+        { path: '/matches', changefreq: 'hourly', priority: 0.9, lastmod: data },
+        // SEO Faz 1b: evergreen day hubs — the URL stays, the day rolls (lastmod = latest engine write)
+        { path: '/matches/today', changefreq: 'hourly', priority: 0.8, lastmod: data },
+        { path: '/matches/tomorrow', changefreq: 'hourly', priority: 0.7, lastmod: data },
+        { path: '/matches/yesterday', changefreq: 'daily', priority: 0.6, lastmod: data },
+        { path: '/teams', changefreq: 'weekly', priority: 0.5, lastmod: data },
+        { path: '/pricing', changefreq: 'monthly', priority: 0.6 },
+        { path: '/performance', changefreq: 'daily', priority: 0.8, lastmod: data },
+        { path: '/leagues', changefreq: 'weekly', priority: 0.6, lastmod: data },
+        { path: '/methodology', changefreq: 'monthly', priority: 0.6, lastmod: DOCS_UPDATED.methodology, images: ['sample-analysis', 'track-record'] },
+        { path: '/glossary', changefreq: 'monthly', priority: 0.5, lastmod: DOCS_UPDATED.glossary },
+        // SEO Faz 2.1: open-data page (files refresh hourly; lastmod = latest engine write)
+        { path: '/data', changefreq: 'daily', priority: 0.6, lastmod: data },
+        { path: '/about', changefreq: 'monthly', priority: 0.4, lastmod: DOCS_UPDATED.about },
+        { path: '/app', changefreq: 'monthly', priority: 0.5, lastmod: '2026-10-28' },
+        { path: '/contact', changefreq: 'yearly', priority: 0.3 },
+        { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
+        { path: '/terms', changefreq: 'yearly', priority: 0.2 },
+      ];
+    case 'leagues':
+      return [
+        ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}`, changefreq: 'daily', priority: 0.7, lastmod: data })),
+        // SEO Faz 1a: per-league results archive (settled matches, public scores)
+        ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/results`, changefreq: 'daily', priority: 0.5, lastmod: data })),
+        // SEO Faz 1c: per-league xG/xPTS table and goal statistics
+        ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/xg-table`, changefreq: 'daily', priority: 0.6, lastmod: data })),
+        ...SITE_LEAGUES.map((l): Entry => ({ path: `/leagues/${l.slug}/goals`, changefreq: 'daily', priority: 0.6, lastmod: data })),
+        // SEO Faz 1b: per-league track record (public settled record, no session)
+        ...SITE_LEAGUES.map((l): Entry => ({ path: `/performance/${l.slug}`, changefreq: 'daily', priority: 0.6, lastmod: data })),
+      ];
+    case 'teams':
+      // lastmod = the club's last played kick-off (a real content change), never the global hourly write
+      return (input.teams ?? []).map((t): Entry => typeof t === 'string'
+        ? { path: t, changefreq: 'weekly', priority: 0.5, lastmod: null }
+        : { path: t.path, changefreq: 'weekly', priority: 0.5, lastmod: t.lastmod });
+    case 'matches':
+      return input.matches.filter((m) => !m.settled).map((m): Entry => ({ path: m.path, changefreq: 'daily', priority: 0.7, lastmod: m.lastmod }));
+    case 'results':
+      return input.matches.filter((m) => m.settled).map((m): Entry => ({ path: m.path, changefreq: 'monthly', priority: 0.5, lastmod: m.lastmod }));
+  }
+}
+
+/** All sections in one list (tests, and the legacy single-file shape). */
+export function entries(input: SitemapInput): Entry[] {
+  return SITEMAP_SECTIONS.flatMap((s) => entriesFor(s, input));
 }
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -101,12 +129,46 @@ function urlBlocks(e: Entry): string[] {
   ].filter(Boolean).join('\n'));
 }
 
-export function buildSitemapXml(input: SitemapInput = { dataUpdated: null, matches: [] }): string {
+function urlset(list: Entry[]): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
-    ...entries(input).flatMap(urlBlocks),
+    ...list.flatMap(urlBlocks),
     '</urlset>',
+    '',
+  ].join('\n');
+}
+
+/** Legacy single-file sitemap (every section). */
+export function buildSitemapXml(input: SitemapInput = { dataUpdated: null, matches: [] }): string {
+  return urlset(entries(input));
+}
+
+/** One section as its own urlset — served at /sitemaps/{section}.xml. */
+export function buildSectionXml(section: SitemapSection, input: SitemapInput): string {
+  return urlset(entriesFor(section, input));
+}
+
+/** Newest lastmod inside a section (the index's <lastmod>), or null. */
+export function sectionLastmod(section: SitemapSection, input: SitemapInput): string | null {
+  let best: string | null = null;
+  for (const e of entriesFor(section, input)) {
+    const iso = e.lastmod ? isoOf(e.lastmod) : null;
+    if (iso && (!best || iso > best)) best = iso;
+  }
+  return best;
+}
+
+/** /sitemap.xml — a sitemap index pointing at the per-type sections. */
+export function buildSitemapIndexXml(input: SitemapInput): string {
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...SITEMAP_SECTIONS.flatMap((sec) => {
+      const lm = sectionLastmod(sec, input);
+      return ['  <sitemap>', `    <loc>${esc(`${SITE_URL}${sectionPath(sec)}`)}</loc>`, lm ? `    <lastmod>${lm}</lastmod>` : '', '  </sitemap>'].filter(Boolean);
+    }),
+    '</sitemapindex>',
     '',
   ].join('\n');
 }
