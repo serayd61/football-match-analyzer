@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
   const ok = [process.env.CRON_SECRET, process.env.ADMIN_SECRET].filter(Boolean).some((s) => auth === `Bearer ${s}`);
   if (!ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const q = request.nextUrl.searchParams;
-  if (q.get('status') === '1') return NextResponse.json(socialStatus());
+  if (q.get('status') === '1') {
+    const st: any = socialStatus();
+    if (q.get('ig') === '1') { const { whoAmI } = await import('@/lib/social/instagram'); st.instagramAccount = await whoAmI(); }
+    return NextResponse.json(st);
+  }
   if (q.get('trends') === '1') {
     const legs = await dailyLegs(q.get('day') || todayYmd());
     const trends = await dayTrends();
