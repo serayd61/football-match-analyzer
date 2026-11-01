@@ -60,12 +60,12 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-[14.5px] leading-tight">
           <Crest src={p.homeCrest} alt={tc('crestAlt', { team: p.homeName })} />
-          <span className={`min-w-0 truncate ${p.pick === '1' ? 'font-bold' : 'font-medium'}`}>{p.homeName}</span>
+          <span className={`min-w-0 truncate ${p.pick === '1' && !p.noFavourite ? 'font-bold' : 'font-medium'}`}>{p.homeName}</span>
           {score && <span className="num ml-auto pl-2 text-[14px] font-bold">{p.homeScore}</span>}
         </div>
         <div className="mt-1.5 flex items-center gap-2 text-[14.5px] leading-tight">
           <Crest src={p.awayCrest} alt={tc('crestAlt', { team: p.awayName })} />
-          <span className={`min-w-0 truncate ${p.pick === '2' ? 'font-bold' : 'font-medium'}`}>{p.awayName}</span>
+          <span className={`min-w-0 truncate ${p.pick === '2' && !p.noFavourite ? 'font-bold' : 'font-medium'}`}>{p.awayName}</span>
           {score && <span className="num ml-auto pl-2 text-[14px] font-bold">{p.awayScore}</span>}
         </div>
         {outside?.note && <p className="mt-1.5 truncate text-[11.5px] text-s-muted">{outside.note}</p>}
@@ -83,9 +83,9 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
               <span className="bg-s-away" style={{ width: `${pct(p.pAway)}%` }} />
             </div>
             <div className="num mt-1.5 flex justify-between text-[11.5px] leading-none text-s-muted" aria-label={`${tc('home')} ${pct(p.pHome)}%, ${tc('draw')} ${pct(p.pDraw)}%, ${tc('away')} ${pct(p.pAway)}%`}>
-              <span className={p.pick === '1' ? 'font-bold text-s-accent-700' : ''}>1 {pct(p.pHome)}</span>
-              <span className={p.pick === 'X' ? 'font-bold text-s-ink' : ''}>X {pct(p.pDraw)}</span>
-              <span className={p.pick === '2' ? 'font-bold text-s-away' : ''}>2 {pct(p.pAway)}</span>
+              <span className={p.pick === '1' && !p.noFavourite ? 'font-bold text-s-accent-700' : ''}>1 {pct(p.pHome)}</span>
+              <span className={p.pick === 'X' && !p.noFavourite ? 'font-bold text-s-ink' : ''}>X {pct(p.pDraw)}</span>
+              <span className={p.pick === '2' && !p.noFavourite ? 'font-bold text-s-away' : ''}>2 {pct(p.pAway)}</span>
             </div>
           </>
         ) : <span className="text-[12px] text-s-muted">{t('pendingModel')}</span>}
@@ -94,7 +94,12 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
       {/* confidence + risk */}
       <div className="flex flex-col items-end gap-1.5">
         {spot ? <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span> : null}
-        {p.hasModel ? (
+        {p.hasModel && p.noFavourite ? (
+          <span className="flex flex-col items-end gap-1" data-testid="no-favourite">
+            <span className="text-[12px] font-semibold text-s-muted">{t('noFavShort')}</span>
+            {done && p.outcome !== 'pending' && <span className="tag tag-outline">{tc(p.outcome)}</span>}
+          </span>
+        ) : p.hasModel ? (
           <>
             <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}{confPct != null && !p.confidenceCalibrated && <span className="ml-1 text-[10px] font-semibold uppercase text-s-muted">{ta('rawShort')}</span>}</span>
             {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && (

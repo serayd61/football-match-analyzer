@@ -100,7 +100,8 @@
     "search": "Cerca",
     "clear": "Azzera",
     "sort": "Ordina",
-    "crestAlt": "Stemma del club {team}"
+    "crestAlt": "Stemma del club {team}",
+    "nopick": "Nessun favorito"
   },
   "errors": {
     "title": "Qualcosa è andato storto",
@@ -351,7 +352,8 @@
       "agentsLine": "{ratio} agenti concordi",
       "historyLine": "il {pct}% di {n} partite simili è andato in questa direzione",
       "conflictTitle": "Agenti divisi su questo mercato",
-      "conflictBody": "Su {market} il voto degli agenti propende per {agentSel} ({pct}% di fiducia, {ratio} agenti) mentre il consenso qui sopra dice {consensusSel}. Nessun verdetto congiunto: mercato da considerare conteso."
+      "conflictBody": "Su {market} il voto degli agenti propende per {agentSel} ({pct}% di fiducia, {ratio} agenti) mentre il consenso qui sopra dice {consensusSel}. Nessun verdetto congiunto: mercato da considerare conteso.",
+      "noFav": "Nessun favorito"
     }
   },
   "results": {
@@ -1300,7 +1302,10 @@
       "driftToward": "Il mercato si sta avvicinando alla scelta del modello.",
       "driftAway": "Il mercato si sta allontanando dalla scelta del modello; attenzione.",
       "driftFlat": "Nessun movimento rilevante dall'apertura.",
-      "vs": "vs"
+      "vs": "vs",
+      "noFavourite": "Nessun favorito netto",
+      "openMatch": "Partita aperta",
+      "noFavouriteNote": "I tre esiti sono vicini (1 {h}% · X {d}% · 2 {a}%). Il modello non indica un risultato; non entra nel bilancio."
     },
     "pricing": {
       "title": "Paga il vantaggio, conosci il rischio.",
@@ -1473,7 +1478,8 @@
       "pickerPh": "Cerca paese o lega…",
       "pickerModel": "Leghe del modello",
       "pickerCountries": "Paesi",
-      "pickerEmpty": "Nessun paese o lega trovato"
+      "pickerEmpty": "Nessun paese o lega trovato",
+      "noFavShort": "nessun favorito"
     },
     "home": {
       "todayTitle": "Partite di oggi",

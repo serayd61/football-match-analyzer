@@ -14,7 +14,7 @@ const rated = (o: Partial<SitePrediction>): SitePrediction => ({
   fixtureId: 1, league: null, leagueName: 'Premier League', leagueId: 47, covered: true, homeId: 1, homeName: 'Arsenal', awayId: 2, awayName: 'Chelsea',
   homeCrest: null, awayCrest: null, kickoff: '2026-09-05T14:00:00Z', pHome: 0.5, pDraw: 0.3, pAway: 0.2, lambdaHome: 1.5, lambdaAway: 1,
   pick: '1', confidence: 0.55, confidenceRaw: 0.5, confidenceCalibrated: false, calibrationSegment: null, doubleChance: null, overUnder: null, btts: null, rationale: null, settled: false,
-  homeScore: null, awayScore: null, result: null, outcome: 'pending', modelVersion: 'dc-1.0', updatedAt: null, hasModel: true,
+  homeScore: null, awayScore: null, result: null, outcome: 'pending', noFavourite: false, modelVersion: 'dc-1.0', updatedAt: null, hasModel: true,
   status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, ...o,
 });
 

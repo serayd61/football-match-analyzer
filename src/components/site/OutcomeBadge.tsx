@@ -7,6 +7,7 @@ const STYLE: Record<Outcome, string> = {
   won: 'tag tag-win',
   lost: 'tag tag-loss',
   void: 'tag tag-outline',
+  nopick: 'tag tag-outline',
   pending: 'tag tag-outline',
 };
 

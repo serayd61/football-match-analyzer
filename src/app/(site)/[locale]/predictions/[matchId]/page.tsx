@@ -332,7 +332,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const marketPickP = market ? (p.pick === '1' ? market.pHome : p.pick === '2' ? market.pAway : p.pick === 'X' ? market.pDraw : null) : null;
   const marketPickOdds = market ? (p.pick === '1' ? market.homeOdds : p.pick === '2' ? market.awayOdds : p.pick === 'X' ? market.drawOdds : null) : null;
   const edgePts = marketPickP != null ? Math.round((pickP - marketPickP) * 100) : null;
-  const pickTitle = p.pick === '1' ? t2('win', { team: p.homeName }) : p.pick === '2' ? t2('win', { team: p.awayName }) : t2('draw');
+  const pickTitle = p.noFavourite ? t2('noFavourite') : p.pick === '1' ? t2('win', { team: p.homeName }) : p.pick === '2' ? t2('win', { team: p.awayName }) : t2('draw');
   const locked = false; // `unlockAll` preview flag — the members-only model gates the whole page instead.
   const isToday = new Date(p.kickoff).toDateString() === new Date().toDateString();
   const labels = { home: tc('home'), draw: tc('draw'), away: tc('away') };
@@ -446,18 +446,18 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
         <aside className="card card-accent !gap-4 !p-5 sm:!p-6">
           <div className="flex items-center justify-between gap-2">
-            <p className="kicker">{a1x2 ? ta(`pickHeading.${a1x2.status}`) : t2('recommended')}</p>
+            <p className="kicker">{p.noFavourite ? t2('openMatch') : a1x2 ? ta(`pickHeading.${a1x2.status}`) : t2('recommended')}</p>
             <RiskLabel risk={risk} />
           </div>
           {locked ? <LockedPick size="lg" /> : (
             <>
               <p className="text-[26px] font-bold leading-[1.05]">{pickTitle}</p>
-              {slipOn && p.pick && <div><AddToSlipButton leg={slipFor(p.pick, pickP, marketPickOdds ?? null)!} size="sm" /></div>}
+              {slipOn && p.pick && !p.noFavourite && <div><AddToSlipButton leg={slipFor(p.pick, pickP, marketPickOdds ?? null)!} size="sm" /></div>}
               <div className="flex items-center gap-4">
                 <ConfidenceRing conf={conf} size={96} inner="surface" label={p.confidenceCalibrated ? t2('confidence') : `${t2('confidence')} · ${ta('rawShort')}`} />
                 <p className="text-[13.5px] leading-snug text-s-muted">
                   {/* "100'de 74 kez doğru" iddiası yalnız kalibre VE değerlendirme destekliyorsa; aksi hâlde kalibre değer model çıktısı olarak etiketlenir (2026-10-16) */}
-                  {confPct != null && p.confidenceCalibrated && (!a1x2 || a1x2.status === 'supported') ? (
+                  {p.noFavourite ? t2('noFavouriteNote', { h: pct(p.pHome), d: pct(p.pDraw), a: pct(p.pAway) }) : confPct != null && p.confidenceCalibrated && (!a1x2 || a1x2.status === 'supported') ? (
                     <>
                       {t2.rich('expected', { conf: confPct, b: (c) => <strong className="text-[15px] text-s-ink">{c}</strong> })}<br />
                       {t2.rich('lossRate', { loss: loss ?? 0, b: (c) => <strong className="text-[15px] text-s-loss">{c}</strong> })}

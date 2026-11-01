@@ -19,7 +19,7 @@ const pred = (o: Partial<SitePrediction>): SitePrediction => ({
   kickoff: '2026-09-13T15:30:00+00:00', pHome: 0.51234, pDraw: 0.24, pAway: 0.24766, lambdaHome: 1.71, lambdaAway: 1.02,
   pick: '1', confidence: 0.5, confidenceRaw: 0.5, confidenceCalibrated: false, calibrationSegment: null,
   doubleChance: null as any, overUnder: null, btts: null, rationale: 'secret', settled: true, homeScore: 2, awayScore: 1,
-  result: 'H', outcome: 'won', modelVersion: 'dc-1.0', updatedAt: '2026-09-13T18:00:00Z', hasModel: true, status: 'finished' as any,
+  result: 'H', outcome: 'won', noFavourite: false, modelVersion: 'dc-1.0', updatedAt: '2026-09-13T18:00:00Z', hasModel: true, status: 'finished' as any,
   modelStatus: 'ready' as any, publishedAfterKickoff: false, ...o,
 });
 
