@@ -1157,7 +1157,10 @@
       "privacy": "Datenschutz",
       "contact": "Kontakt",
       "compliance": "footballanalytics.pro ist ein unabhängiger statistischer Analysedienst. Wir bieten keine Wetten an, nehmen keine Einsätze entgegen, verwalten keine Spielergelder und sind mit keinem Buchmacher verbunden. Wahrscheinlichkeiten sind Schätzungen, keine Empfehlung.",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "follow": "Folgen Sie uns",
+      "scan": "Code mit dem Handy scannen, um den Kanal zu öffnen.",
+      "instagram": "Instagram"
     },
     "home": {
       "kickerLive": "Modell live · {count, plural, =1 {1 Tipp heute} other {# Tipps heute}}",

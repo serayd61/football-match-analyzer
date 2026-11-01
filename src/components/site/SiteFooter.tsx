@@ -5,6 +5,7 @@ import LocaleLinks from './LocaleLinks';
 import FooterPricingLink from './FooterPricingLink';
 import FooterAppLink from './FooterAppLink';
 import FooterAppActions from './FooterAppActions';
+import FooterSocial from './FooterSocial';
 
 // Footer v3: brand + one-line disclaimer, link columns, language.
 // SEO Faz 0 (2026-10-17): the product column links the public /matches hub (not the
@@ -41,9 +42,11 @@ export default async function SiteFooter() {
           <Link href="/privacy" className="hover:text-s-ink">{t('privacy')}</Link>
           <Link href="/contact" className="hover:text-s-ink">{t('contact')}</Link>
           <a href="https://t.me/fanalytics_pro" target="_blank" rel="noopener noreferrer" className="hover:text-s-ink">{t('telegram')}</a>
+          <a href="https://www.instagram.com/_footballanalyticspro/" target="_blank" rel="noopener noreferrer" className="hover:text-s-ink">{t('instagram')}</a>
           <div className="mt-2"><LocaleLinks /></div>
         </nav>
       </div>
+      <FooterSocial />
       <FooterAppActions />
       <div className="border-t border-s-line">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-2 px-4 py-5 text-[12.5px] leading-relaxed sm:px-6">

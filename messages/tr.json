@@ -1157,7 +1157,10 @@
       "privacy": "Gizlilik",
       "contact": "İletişim",
       "compliance": "footballanalytics.pro bağımsız bir istatistiksel analiz hizmetidir. Bahis sunmayız, bahis kabul etmeyiz, oyuncu parası tutmayız ve hiçbir bahis şirketiyle bağlantımız yoktur. Olasılıklar tahmindir, tavsiye değildir.",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "follow": "Bizi takip edin",
+      "scan": "Kanalı açmak için kodu telefonunuzla okutun.",
+      "instagram": "Instagram"
     },
     "home": {
       "kickerLive": "Model canlı · bugün {count, plural, =1 {1 tahmin} other {# tahmin}}",

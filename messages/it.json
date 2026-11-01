@@ -1157,7 +1157,10 @@
       "privacy": "Privacy",
       "contact": "Contatti",
       "compliance": "footballanalytics.pro è un servizio indipendente di analisi statistica. Non offriamo scommesse, non accettiamo puntate, non custodiamo fondi dei giocatori e non siamo affiliati ad alcun bookmaker. Le probabilità sono stime, non consigli.",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "follow": "Seguici",
+      "scan": "Inquadra il codice con il telefono per aprire il canale.",
+      "instagram": "Instagram"
     },
     "home": {
       "kickerLive": "Modello attivo · {count, plural, =1 {1 pronostico oggi} other {# pronostici oggi}}",
