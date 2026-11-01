@@ -1265,7 +1265,8 @@
       "aiLead": "AI",
       "aiAgentLead": "Ajan",
       "aiAgents": "ajan",
-      "mktBttsNo": "KG Yok"
+      "mktBttsNo": "KG Yok",
+      "noFavShort": "Açık maç"
     },
     "match": {
       "back": "← Tüm tahminler",
@@ -1478,8 +1479,7 @@
       "pickerPh": "Ülke veya lig ara…",
       "pickerModel": "Model ligleri",
       "pickerCountries": "Ülkeler",
-      "pickerEmpty": "Eşleşen ülke veya lig yok",
-      "noFavShort": "favori yok"
+      "pickerEmpty": "Eşleşen ülke veya lig yok"
     },
     "home": {
       "todayTitle": "Bugünün maçları",
