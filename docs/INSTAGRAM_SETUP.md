@@ -7,37 +7,46 @@ yanıtları aynı cron'la Instagram'a da düşer. Kod: `src/lib/social/instagram
 Farklar (politika): açıklamada **oran yok**, bahis dili yok, link tıklanmaz ("link in bio").
 Metin-only gönderiler (güçlü pazarlar) Instagram'a gitmez. Sonuçlar gönderiye yorum olur.
 
-## Tek seferlik kurulum (Facebook Sayfası gerekmez)
+## Tek seferlik kurulum (Unified login — 2026-11-01 itibarıyla geçerli yol)
 
-1. Hesap Professional (Business/Creator) olmalı — zaten öyle.
-2. https://developers.facebook.com → **Create App** → use case **"Instagram"** (Instagram API with Instagram Login) → Business tipi.
-3. Uygulama panelinde **Instagram → API setup with Instagram login** → "Add account" ile `_footballanalyticspro`'yu ekle.
-4. Aynı sayfada **Generate token** → giriş yap, izinleri onayla:
-   `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_comments`.
-   Dönen token **uzun ömürlüdür (60 gün)**. Sayfada "Instagram account ID" de yazar.
-5. Vercel → Production env:
-   - `INSTAGRAM_USER_ID` = Instagram account ID (sayısal)
-   - `INSTAGRAM_ACCESS_TOKEN` = token
+Meta yeni uygulamalarda "API setup with Instagram login"i kapattı; yerine **Unified login**
+(Facebook Login for Business) var. Sonuç: **süresiz sistem kullanıcı token'ı** (EAA… ile başlar),
+çağrılar `graph.facebook.com` üzerinden. Kod token önekine bakıp host'u kendisi seçer.
+
+Yapılanlar (2026-11-01, Claude + kullanıcı):
+1. developers.facebook.com → uygulama **Football Analytics Pro Social** (ID 4455173834756737),
+   kullanım senaryosu "Manage messaging & content on Instagram".
+2. İşletme portföyü **Serkan Aydin** (1269247781315738) bağlandı (Unified login için zorunlu).
+3. Yapılandırma **Instagram API (Birleşik Giriş)** (config 1104341749181061): SUAT, süresiz,
+   izinler instagram_basic / instagram_content_publish / instagram_manage_comments (+ ads_*, kullanılmıyor).
+4. Redirect URL: https://footballanalytics.pro/
+
+Kalan (kullanıcı):
+5. Aynı sayfada **2. Generate access tokens → Add account** → Instagram Tester rolü →
+   `_footballanalyticspro` ile giriş → izinleri onayla → **Generate token**.
+   Listedeki hesabın yanında **Instagram account ID** (sayısal) ve token görünür.
+6. Vercel → Production env:
+   - `INSTAGRAM_USER_ID` = Instagram account ID
+   - `INSTAGRAM_ACCESS_TOKEN` = token (EAA… ile başlar)
    - `INSTAGRAM_LANG` = `en` (varsayılan) veya `tr`
-   Token'ı sohbete yapıştırma; doğrudan Vercel'e gir. Redeploy gerekmez (cron sonraki çalışmada okur).
-6. Doğrulama:
+   - `INSTAGRAM_GRAPH_HOST` yalnız gerekirse (örn. `https://graph.facebook.com`); normalde boş.
+7. Doğrulama (hesap adı dönmeli):
    ```bash
-   curl -s -H "Authorization: Bearer $CRON_SECRET" "https://footballanalytics.pro/api/cron/social?status=1"
+   curl -s -H "Authorization: Bearer $CRON_SECRET" "https://footballanalytics.pro/api/cron/social?status=1&ig=1"
    ```
-   `"instagram": true` ve `targets` içinde `instagram:en` görünmeli.
-7. Kuru çalıştırma (hiçbir yere göndermez, metni döner):
+8. Kuru çalıştırma:
    ```bash
    curl -s -H "Authorization: Bearer $CRON_SECRET" "https://footballanalytics.pro/api/cron/social?kind=daily&dry=1"
    ```
-8. Görsel ucu herkese açık: https://footballanalytics.pro/api/social/image?kind=proof&lang=en
+
+Not: "4. Complete App Review" gerekmez — kendi hesabın, uygulamada rolü var (standart erişim yeter).
 
 ## Token yenileme
 
-Uzun ömürlü token 60 günde dolar. En geç 50. günde:
+Sistem kullanıcı token'ı (EAA…) süresizdir; yenileme yok. Yalnız eski IGAA… token'ı 60 günde dolar:
 ```bash
 curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=ESKİ_TOKEN"
 ```
-Dönen `access_token`'ı Vercel'e yaz. (Kodda `refreshToken()` var; otomatik yazma yok çünkü env'i cron değiştiremez.)
 
 ## Elle gönderiler
 

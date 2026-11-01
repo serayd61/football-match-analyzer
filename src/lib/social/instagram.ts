@@ -1,12 +1,17 @@
 // ============================================================================
-// Instagram içerik yayınlama (Instagram API with Instagram Login, graph.instagram.com)
+// Instagram içerik yayınlama (Graph API)
 // ----------------------------------------------------------------------------
 // Neden: Telegram'daki günlük seçim / haftalık karne gönderileri Instagram'a da
 // aynı anda düşsün (@_footballanalyticspro, 2026-10-31 kullanıcı isteği).
-// Facebook Sayfası GEREKMEZ: Meta geliştirici panelinde "Instagram" tipi uygulama,
-// Business/Creator hesabı, uzun ömürlü token (60 gün; yenileme: refresh_access_token).
-// İzinler: instagram_business_basic, instagram_business_content_publish,
-// instagram_business_manage_comments. Kurulum adımları: docs/INSTAGRAM_SETUP.md
+//
+// İki token türü, iki host (2026-11-01: Meta yeni uygulamalarda "Instagram login"
+// yolunu kapattı, "Unified login" verdi):
+//   • Unified login / Facebook Login for Business → sistem kullanıcı token'ı
+//     (EAA… ile başlar, süresiz) → graph.facebook.com. İzinler: instagram_basic,
+//     instagram_content_publish, instagram_manage_comments.
+//   • Eski Instagram login → IGAA… token (60 gün) → graph.instagram.com.
+// Host, token önekinden seçilir; INSTAGRAM_GRAPH_HOST ile elle de verilebilir.
+// Kurulum: docs/INSTAGRAM_SETUP.md
 //
 // Akış: görsel HERKESE AÇIK bir URL'den verilir (/api/social/image) → container
 // oluştur → hazır olana dek bekle → yayınla. Sonuç yanıtları gönderiye yorum olur.
@@ -15,14 +20,20 @@ import 'server-only';
 
 export type InstagramResult = { ok: true; id: string } | { ok: false; error: string };
 
-const API = 'https://graph.instagram.com/v22.0';
 const token = () => (process.env.INSTAGRAM_ACCESS_TOKEN || '').trim();
 const userId = () => (process.env.INSTAGRAM_USER_ID || '').trim();
 export const hasInstagram = () => !!(token() && userId());
+/** IGAA… → Instagram login (graph.instagram.com); EAA… ve diğerleri → graph.facebook.com. */
+export const graphHost = (t: string = token()) => {
+  const forced = (process.env.INSTAGRAM_GRAPH_HOST || '').trim();
+  if (forced) return forced.replace(/\/+$/, '');
+  return t.startsWith('IGAA') ? 'https://graph.instagram.com' : 'https://graph.facebook.com';
+};
+const API = () => `${graphHost()}/v22.0`;
 
 async function call(path: string, params: Record<string, string>, method: 'POST' | 'GET' = 'POST'): Promise<any> {
   const body = new URLSearchParams({ ...params, access_token: token() });
-  const url = method === 'GET' ? `${API}/${path}?${body}` : `${API}/${path}`;
+  const url = method === 'GET' ? `${API()}/${path}?${body}` : `${API()}/${path}`;
   const r = await fetch(url, { method, body: method === 'POST' ? body : undefined, signal: AbortSignal.timeout(60_000) });
   const j: any = await r.json().catch(() => ({}));
   if (!r.ok || j?.error) throw new Error(`instagram ${path} http ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 240)}`);
@@ -59,10 +70,19 @@ export async function comment(mediaId: string, message: string): Promise<Instagr
   } catch (e: any) { return { ok: false, error: String(e?.message || e).slice(0, 300) }; }
 }
 
-/** Uzun ömürlü token yenileme (token ≥24 saatlik ve 60 gün dolmadan). Yeni token döner; env'e elle yazılır. */
+/** Yalnız Instagram-login (IGAA…) token'ı için: 60 günlük yenileme. Sistem kullanıcı token'ı süresizdir, çağrılmaz. */
 export async function refreshToken(): Promise<{ ok: true; token: string; expiresIn: number } | { ok: false; error: string }> {
   try {
     const j = await call('refresh_access_token', { grant_type: 'ig_refresh_token' }, 'GET');
     return { ok: true, token: String(j.access_token), expiresIn: Number(j.expires_in) };
   } catch (e: any) { return { ok: false, error: String(e?.message || e).slice(0, 300) }; }
+}
+
+/** Kurulum doğrulaması: token + kullanıcı id eşleşiyor mu, hesap adı ne? (/api/cron/social?status=1&ig=1) */
+export async function whoAmI(): Promise<{ ok: true; id: string; username: string; host: string } | { ok: false; error: string; host: string }> {
+  const host = graphHost();
+  try {
+    const j = await call(userId(), { fields: 'id,username' }, 'GET');
+    return { ok: true, id: String(j.id), username: String(j.username), host };
+  } catch (e: any) { return { ok: false, error: String(e?.message || e).slice(0, 300), host }; }
 }
