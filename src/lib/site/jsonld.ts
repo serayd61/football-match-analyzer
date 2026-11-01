@@ -14,6 +14,7 @@ export const ORG_LOGO = `${SITE_URL}/icons/icon-512x512.png`;
 export const ORG_SAME_AS = [
   'https://t.me/fanalytics_pro',
   'https://x.com/fanalytics_pro',
+  'https://www.instagram.com/_footballanalyticspro/',
   'https://play.google.com/store/apps/details?id=pro.footballanalytics',
 ];
 

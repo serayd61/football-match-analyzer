@@ -1157,7 +1157,10 @@
       "privacy": "Privacy",
       "contact": "Contact",
       "compliance": "footballanalytics.pro is an independent statistical analysis service. We do not offer betting, accept wagers or hold player funds, and we are not affiliated with any bookmaker. Probabilities are estimates, not advice.",
-      "telegram": "Telegram"
+      "telegram": "Telegram",
+      "follow": "Follow us",
+      "scan": "Scan a code with your phone to open the channel.",
+      "instagram": "Instagram"
     },
     "home": {
       "kickerLive": "Model live · {count, plural, =1 {1 pick today} other {# picks today}}",
