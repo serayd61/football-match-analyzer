@@ -105,6 +105,8 @@ export interface UnifiedConsensusResult {
       confidence: number;
       reasoning: string;
       scorePrediction: string; // "2-1", "1-1", etc.
+      /** 1 Kas: pazar stratejisi çekimser (≤%49) — site favori göstermez */
+      abstain?: boolean;
     };
     overUnder: {
       prediction: 'Over' | 'Under';
@@ -1053,7 +1055,8 @@ async function createUnifiedConsensus(
         prediction: matchResultConsensus.prediction as '1' | 'X' | '2',
         confidence: matchResultConsensus.confidence,
         reasoning: matchResultConsensus.reasoning,
-        scorePrediction
+        scorePrediction,
+        abstain: abstain1x2
       },
       overUnder: {
         prediction: overUnderConsensus.prediction as 'Over' | 'Under',

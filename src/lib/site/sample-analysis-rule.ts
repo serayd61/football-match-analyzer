@@ -24,7 +24,7 @@ export interface SampleInput {
   covered: boolean;
   hasLeague: boolean;
   settled: boolean;
-  outcome: 'won' | 'lost' | 'void' | 'pending';
+  outcome: 'won' | 'lost' | 'void' | 'pending' | 'nopick';
   confidence: number | null;
   homeScore: number | null;
   awayScore: number | null;

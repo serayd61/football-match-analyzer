@@ -41,6 +41,14 @@ export const TIGHT_ACC = 28;
 /** Piyasa favorisi bu olasılığın altındaysa maç "sıkı" sayılır. */
 export const TIGHT_FAV = 0.45;
 
+// Net favori yok (2026-11-01): modelin en yüksek 1X2 olasılığı bu eşiğin altındaysa maç "açık"
+// sayılır — satır/sayfa seçim göstermez, sonuç "tuttu/tutmadı" yerine "favori yok" olur.
+// Canlı veri (5 Eyl–31 Eki, 7.305 maç): <0.40 → %37, 0.40–0.45 → %44 isabet; bu kova tahminlerin %36'sı.
+export const MODEL_FLAT = 0.45;
+export function noFavourite(pHome: number, pDraw: number, pAway: number): boolean {
+  return Math.max(pHome, pDraw, pAway) < MODEL_FLAT;
+}
+
 export interface MarketProbs { pHome: number; pDraw: number; pAway: number }
 
 export function marketFavourite(m: MarketProbs): '1' | 'X' | '2' {

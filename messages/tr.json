@@ -100,7 +100,8 @@
     "search": "Ara",
     "clear": "Temizle",
     "sort": "Sırala",
-    "crestAlt": "{team} kulüp arması"
+    "crestAlt": "{team} kulüp arması",
+    "nopick": "Favori yok"
   },
   "errors": {
     "title": "Bir şeyler ters gitti",
@@ -351,7 +352,8 @@
       "agentsLine": "{ratio} ajan aynı fikirde",
       "historyLine": "{n} benzer maçın %{pct}’i bu yönde",
       "conflictTitle": "Ajanlar bu pazarda ayrışıyor",
-      "conflictBody": "{market} pazarında ajan oyu {agentSel} yönünde (güven %{pct}, {ratio} ajan), yukarıdaki konsensüs ise {consensusSel} diyor. Ortak karar verilmiyor; bu pazarı tartışmalı say."
+      "conflictBody": "{market} pazarında ajan oyu {agentSel} yönünde (güven %{pct}, {ratio} ajan), yukarıdaki konsensüs ise {consensusSel} diyor. Ortak karar verilmiyor; bu pazarı tartışmalı say.",
+      "noFav": "Favori yok"
     }
   },
   "results": {
@@ -1300,7 +1302,10 @@
       "driftToward": "Piyasa modelin seçimine doğru kayıyor.",
       "driftAway": "Piyasa modelin seçiminden uzaklaşıyor; dikkat.",
       "driftFlat": "Açılıştan bu yana kayda değer hareket yok.",
-      "vs": "–"
+      "vs": "–",
+      "noFavourite": "Net favori yok",
+      "openMatch": "Açık maç",
+      "noFavouriteNote": "Üç sonuç birbirine yakın (1 %{h} · X %{d} · 2 %{a}). Model bu maçta tek bir sonucu önermiyor; sonuç karneye yazılmaz."
     },
     "pricing": {
       "title": "Avantaj için öde, riski bil.",
@@ -1473,7 +1478,8 @@
       "pickerPh": "Ülke veya lig ara…",
       "pickerModel": "Model ligleri",
       "pickerCountries": "Ülkeler",
-      "pickerEmpty": "Eşleşen ülke veya lig yok"
+      "pickerEmpty": "Eşleşen ülke veya lig yok",
+      "noFavShort": "favori yok"
     },
     "home": {
       "todayTitle": "Bugünün maçları",

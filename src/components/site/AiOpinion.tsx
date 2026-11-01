@@ -11,8 +11,8 @@ export default async function AiOpinion({ ai, homeName, awayName }: { ai: AiView
   const f = await getFormatter();
   const side = (p: '1' | 'X' | '2') => (p === '1' ? homeName : p === '2' ? awayName : tc('draw'));
   const rows = [
-    { label: t('m1x2'), pick: side(ai.matchResult.pick), conf: ai.matchResult.confidence },
-    { label: t('mOu'), pick: ai.overUnder.pick === 'Over' ? t('over') : t('under'), conf: ai.overUnder.confidence },
+    { label: t('m1x2'), pick: ai.matchResult.abstain ? t('noFav') : side(ai.matchResult.pick), conf: ai.matchResult.abstain ? null : ai.matchResult.confidence },
+    { label: t('mOu'), pick: ai.overUnder.pick === 'Over' ? t('over') : t('under'), conf: ai.overUnder.confidence as number | null },
     { label: t('mBtts'), pick: ai.btts.pick === 'Yes' ? t('yes') : t('no'), conf: ai.btts.confidence },
   ];
   const risk = ai.risk ? t(`risk_${ai.risk}`) : null;
@@ -24,7 +24,7 @@ export default async function AiOpinion({ ai, homeName, awayName }: { ai: AiView
   const mLabel = (m: AiMarket) => (m === 'x12' ? t('m1x2') : m === 'ou25' ? t('mOu') : t('mBtts'));
   const sLabel = (m: AiMarket, s: AiSel) => (m === 'x12' ? side(s as '1' | 'X' | '2') : s === 'over' ? t('over') : s === 'under' ? t('under') : s === 'yes' ? t('yes') : t('no'));
   const v = ai.verdict;
-  const consensusSel = v ? (v.market === 'x12' ? side(ai.matchResult.pick) : v.market === 'ou25' ? (ai.overUnder.pick === 'Over' ? t('over') : t('under')) : (ai.btts.pick === 'Yes' ? t('yes') : t('no'))) : '';
+  const consensusSel = v ? (v.market === 'x12' ? (ai.matchResult.abstain ? t('noFav') : side(ai.matchResult.pick)) : v.market === 'ou25' ? (ai.overUnder.pick === 'Over' ? t('over') : t('under')) : (ai.btts.pick === 'Yes' ? t('yes') : t('no'))) : '';
   const vMeta = v ? [v.agents ? t('agentsLine', { ratio: v.agents }) : null, v.history ? t('historyLine', { n: v.history.n, pct: v.history.pct }) : null].filter(Boolean).join(' · ') : '';
   return (
     <section>
@@ -35,7 +35,7 @@ export default async function AiOpinion({ ai, homeName, awayName }: { ai: AiView
           <div key={r.label} className="rounded-lg border border-s-line p-3">
             <p className="text-xs text-s-muted">{r.label}</p>
             <p className="mt-1 text-[17px] font-semibold leading-tight">{r.pick}</p>
-            <p className="num mt-1 text-xs text-s-muted">{t('conf', { pct: r.conf })}</p>
+            {r.conf != null && <p className="num mt-1 text-xs text-s-muted">{t('conf', { pct: r.conf })}</p>}
           </div>
         ))}
       </div>

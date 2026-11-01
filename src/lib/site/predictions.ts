@@ -8,6 +8,7 @@ import { hiddenLeagueIds } from '@/lib/coverage/registry';
 import { zonedStartOfDay, addDays } from './time';
 import { pickOfficial, officialFilter, resolveOfficialVersion, OFFICIAL_MODEL_VERSION } from './official';
 import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
+import { noFavourite } from './risk';
 import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
@@ -67,7 +68,8 @@ export const COLS =
   'p_home, p_draw, p_away, p_over25, p_btts_yes, lambda_home, lambda_away, ' +
   'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version, updated_at';
 
-export type Outcome = 'won' | 'lost' | 'void' | 'pending';
+/** 'nopick': maç bitti ama model net favori vermemişti (en yüksek p < MODEL_FLAT) — karne dışı. */
+export type Outcome = 'won' | 'lost' | 'void' | 'pending' | 'nopick';
 
 export type { MatchStatus, ModelStatus };
 
@@ -90,6 +92,8 @@ export interface SitePrediction {
   lambdaHome: number | null;
   lambdaAway: number | null;
   pick: '1' | 'X' | '2' | null;
+  /** true: üç sonuç birbirine yakın, model favori göstermiyor (bkz. risk.ts MODEL_FLAT); seçim gizlenir, sonuç 'nopick' */
+  noFavourite: boolean;
   /** calibrated pick probability (isotonic curve); equals the raw figure when no curve is loaded — see `confidenceCalibrated` */
   confidence: number | null;
   confidenceRaw: number | null;
@@ -119,9 +123,10 @@ export interface SitePrediction {
 
 const crest = (id: number | null) => (id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : null);
 
-function outcomeOf(r: EngineRowT): Outcome {
+function outcomeOf(r: EngineRowT, flat = false): Outcome {
   if (!r.settled) return 'pending';
   if (r.result == null) return 'void';
+  if (flat) return 'nopick';
   return r.correct ? 'won' : 'lost';
 }
 
@@ -185,6 +190,7 @@ export const getCalibrationMeta = unstable_cache(
 );
 
 export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: GoalBook | null = null): SitePrediction {
+  const flat = noFavourite(r.p_home, r.p_draw, r.p_away);
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   // Gol pazarları: oran varsa piyasa çıpası (w=0,7), yoksa kalibrasyon eğrisi.
@@ -218,6 +224,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
     lambdaHome: r.lambda_home,
     lambdaAway: r.lambda_away,
     pick: r.pick,
+    noFavourite: flat,
     confidence: clampConf(applyCurve(r.confidence, pickCurve)),
     confidenceRaw: r.confidence,
     confidenceCalibrated: pickCurve.length >= 2,
@@ -230,7 +237,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
     homeScore: r.home_score,
     awayScore: r.away_score,
     result: r.result,
-    outcome: outcomeOf(r),
+    outcome: outcomeOf(r, flat),
     modelVersion: r.model_version,
     updatedAt: r.updated_at ?? null,
     hasModel: true,

@@ -17,7 +17,8 @@ export type { AiListFlag } from './ai-list';
 
 export interface AiView {
   createdAt: string;
-  matchResult: { pick: '1' | 'X' | '2'; confidence: number; score: string | null; reasoning: string };
+  /** abstain (1 Kas): pazar stratejisi çekimser kaldı (≤%49) — AI de favori göstermez, motorla çakışma yazılmaz */
+  matchResult: { pick: '1' | 'X' | '2'; confidence: number; score: string | null; reasoning: string; abstain: boolean };
   overUnder: { pick: 'Over' | 'Under'; confidence: number; reasoning: string };
   btts: { pick: 'Yes' | 'No'; confidence: number; reasoning: string };
   bestBet: { market: string; selection: string; confidence: number; reasoning: string } | null;
@@ -41,15 +42,16 @@ export async function getAiAnalysis(fixtureId: number, locale: string): Promise<
   const sv = a.survivalVerdict;
   const ouPick: 'Over' | 'Under' = pr.overUnder?.prediction ?? 'Over';
   const bttsPick: 'Yes' | 'No' = pr.btts?.prediction ?? 'Yes';
+  const mrAbstain = !!pr.matchResult.abstain || Math.round(pr.matchResult.confidence ?? 0) <= 49;
   const vm = aiMarketCode(sv?.market); const vs = vm ? aiSelCode(vm, sv?.selection) : null;
   const verdict = vm && vs ? {
     market: vm, sel: vs, confidence: Math.round(sv.confidence ?? 0), reasoning: sv.reasoning || '',
     agents: agentsShort(sv.agentAgreement), history: historyShort(sv.historicalBacking),
-    conflict: verdictConflicts(vm, vs, { x12: pr.matchResult.prediction, ou25: ouPick === 'Over' ? 'over' : 'under', btts: bttsPick === 'Yes' ? 'yes' : 'no' }),
+    conflict: vm === 'x12' && mrAbstain ? false : verdictConflicts(vm, vs, { x12: pr.matchResult.prediction, ou25: ouPick === 'Over' ? 'over' : 'under', btts: bttsPick === 'Yes' ? 'yes' : 'no' }),
   } : null;
   return {
     createdAt: data.created_at,
-    matchResult: { pick: pr.matchResult.prediction, confidence: Math.round(pr.matchResult.confidence ?? 0), score: pr.matchResult.scorePrediction || null, reasoning: pr.matchResult.reasoning || '' },
+    matchResult: { pick: pr.matchResult.prediction, confidence: Math.round(pr.matchResult.confidence ?? 0), score: pr.matchResult.scorePrediction || null, reasoning: pr.matchResult.reasoning || '', abstain: mrAbstain },
     overUnder: { pick: ouPick, confidence: Math.round(pr.overUnder?.confidence ?? 0), reasoning: pr.overUnder?.reasoning || '' },
     btts: { pick: bttsPick, confidence: Math.round(pr.btts?.confidence ?? 0), reasoning: pr.btts?.reasoning || '' },
     bestBet: a.bestBet?.market ? { market: a.bestBet.market, selection: a.bestBet.selection, confidence: Math.round(a.bestBet.confidence ?? 0), reasoning: a.bestBet.reasoning || '' } : null,

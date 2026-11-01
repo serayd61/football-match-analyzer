@@ -100,7 +100,8 @@
     "search": "Suchen",
     "clear": "Zurücksetzen",
     "sort": "Sortieren",
-    "crestAlt": "{team} Vereinswappen"
+    "crestAlt": "{team} Vereinswappen",
+    "nopick": "Kein Favorit"
   },
   "errors": {
     "title": "Etwas ist schiefgelaufen",
@@ -351,7 +352,8 @@
       "agentsLine": "{ratio} Agenten einig",
       "historyLine": "{pct} % von {n} ähnlichen Spielen gingen in diese Richtung",
       "conflictTitle": "Agenten uneins in diesem Markt",
-      "conflictBody": "Bei {market} tendiert die Agentenabstimmung zu {agentSel} ({pct} % Konfidenz, {ratio} Agenten), der Konsens oben sagt {consensusSel}. Kein gemeinsames Urteil; dieser Markt gilt als strittig."
+      "conflictBody": "Bei {market} tendiert die Agentenabstimmung zu {agentSel} ({pct} % Konfidenz, {ratio} Agenten), der Konsens oben sagt {consensusSel}. Kein gemeinsames Urteil; dieser Markt gilt als strittig.",
+      "noFav": "Kein Favorit"
     }
   },
   "results": {
@@ -1300,7 +1302,10 @@
       "driftToward": "Der Markt bewegt sich zur Modellwahl hin.",
       "driftAway": "Der Markt bewegt sich von der Modellwahl weg; Vorsicht.",
       "driftFlat": "Seit der Eröffnung keine nennenswerte Bewegung.",
-      "vs": "vs."
+      "vs": "vs.",
+      "noFavourite": "Kein klarer Favorit",
+      "openMatch": "Offenes Spiel",
+      "noFavouriteNote": "Die drei Ausgänge liegen nah beieinander (1 {h} % · X {d} % · 2 {a} %). Das Modell setzt hier auf kein Ergebnis; es zählt nicht in die Bilanz."
     },
     "pricing": {
       "title": "Zahle für den Vorsprung, kenne das Risiko.",
@@ -1473,7 +1478,8 @@
       "pickerPh": "Land oder Liga suchen…",
       "pickerModel": "Modell-Ligen",
       "pickerCountries": "Länder",
-      "pickerEmpty": "Kein Land oder keine Liga gefunden"
+      "pickerEmpty": "Kein Land oder keine Liga gefunden",
+      "noFavShort": "kein Favorit"
     },
     "home": {
       "todayTitle": "Heutige Spiele",

@@ -100,7 +100,8 @@
     "search": "Search",
     "clear": "Clear",
     "sort": "Sort",
-    "crestAlt": "{team} club crest"
+    "crestAlt": "{team} club crest",
+    "nopick": "No favourite"
   },
   "errors": {
     "title": "Something went wrong",
@@ -351,7 +352,8 @@
       "agentsLine": "{ratio} agents agree",
       "historyLine": "{pct}% of {n} similar matches went this way",
       "conflictTitle": "Agents split on this market",
-      "conflictBody": "On {market} the agents’ vote leans {agentSel} ({pct}% confidence, {ratio} agents) while the consensus above says {consensusSel}. No joint verdict is given; treat this market as contested."
+      "conflictBody": "On {market} the agents’ vote leans {agentSel} ({pct}% confidence, {ratio} agents) while the consensus above says {consensusSel}. No joint verdict is given; treat this market as contested.",
+      "noFav": "No favourite"
     }
   },
   "results": {
@@ -1300,7 +1302,10 @@
       "driftToward": "The market is moving toward the model's pick.",
       "driftAway": "The market is moving away from the model's pick; caution.",
       "driftFlat": "No notable movement since opening.",
-      "vs": "vs"
+      "vs": "vs",
+      "noFavourite": "No clear favourite",
+      "openMatch": "Open match",
+      "noFavouriteNote": "The three outcomes are close (1 {h}% · X {d}% · 2 {a}%). The model does not back a single result here; it is not counted in the record."
     },
     "pricing": {
       "title": "Pay for the edge, know the risk.",
@@ -1473,7 +1478,8 @@
       "pickerPh": "Search country or league…",
       "pickerModel": "Model leagues",
       "pickerCountries": "Countries",
-      "pickerEmpty": "No country or league matches"
+      "pickerEmpty": "No country or league matches",
+      "noFavShort": "no favourite"
     },
     "home": {
       "todayTitle": "Today's matches",
