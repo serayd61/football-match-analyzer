@@ -1265,7 +1265,8 @@
       "aiLead": "KI",
       "aiAgentLead": "Agenten",
       "aiAgents": "Agenten",
-      "mktBttsNo": "BTTS Nein"
+      "mktBttsNo": "BTTS Nein",
+      "noFavShort": "Offenes Spiel"
     },
     "match": {
       "back": "← Alle Prognosen",
@@ -1478,8 +1479,7 @@
       "pickerPh": "Land oder Liga suchen…",
       "pickerModel": "Modell-Ligen",
       "pickerCountries": "Länder",
-      "pickerEmpty": "Kein Land oder keine Liga gefunden",
-      "noFavShort": "kein Favorit"
+      "pickerEmpty": "Kein Land oder keine Liga gefunden"
     },
     "home": {
       "todayTitle": "Heutige Spiele",

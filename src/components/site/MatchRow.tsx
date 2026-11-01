@@ -96,8 +96,8 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
         {spot ? <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span> : null}
         {p.hasModel && p.noFavourite ? (
           <span className="flex flex-col items-end gap-1" data-testid="no-favourite">
-            <span className="text-[12px] font-semibold text-s-muted">{t('noFavShort')}</span>
-            {done && p.outcome !== 'pending' && <span className="tag tag-outline">{tc(p.outcome)}</span>}
+            <span className="num text-[17px] font-bold leading-none text-s-muted">–</span>
+            <span className="tag tag-outline">{done && p.outcome !== 'pending' ? tc(p.outcome) : t('noFavShort')}</span>
           </span>
         ) : p.hasModel ? (
           <>

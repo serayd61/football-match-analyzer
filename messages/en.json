@@ -1265,7 +1265,8 @@
       "aiLead": "AI",
       "aiAgentLead": "Agents",
       "aiAgents": "agents",
-      "mktBttsNo": "BTTS No"
+      "mktBttsNo": "BTTS No",
+      "noFavShort": "Open match"
     },
     "match": {
       "back": "← All predictions",
@@ -1478,8 +1479,7 @@
       "pickerPh": "Search country or league…",
       "pickerModel": "Model leagues",
       "pickerCountries": "Countries",
-      "pickerEmpty": "No country or league matches",
-      "noFavShort": "no favourite"
+      "pickerEmpty": "No country or league matches"
     },
     "home": {
       "todayTitle": "Today's matches",

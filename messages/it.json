@@ -1265,7 +1265,8 @@
       "aiLead": "IA",
       "aiAgentLead": "Agenti",
       "aiAgents": "agenti",
-      "mktBttsNo": "Gol No"
+      "mktBttsNo": "Gol No",
+      "noFavShort": "Partita aperta"
     },
     "match": {
       "back": "← Tutti i pronostici",
@@ -1478,8 +1479,7 @@
       "pickerPh": "Cerca paese o lega…",
       "pickerModel": "Leghe del modello",
       "pickerCountries": "Paesi",
-      "pickerEmpty": "Nessun paese o lega trovato",
-      "noFavShort": "nessun favorito"
+      "pickerEmpty": "Nessun paese o lega trovato"
     },
     "home": {
       "todayTitle": "Partite di oggi",
