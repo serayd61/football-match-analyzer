@@ -1962,10 +1962,10 @@
       "lost": "tutmadı",
       "empty": "boş"
     },
-    "note": "Seçimler sana ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Model olasılığı bacakların bağımsız sayıldığı çarpımdır; aynı maçın bacakları bağımsız değildir. Kupon yalnız bu tarayıcıda saklanır.",
+    "note": "Seçimler sana ait; olasılıklar istatistiksel modelin tahminidir, bahis tavsiyesi değildir. Model olasılığı bacakların bağımsız sayıldığı çarpımdır; aynı maçın bacakları bağımsız değildir. Kupon hesabına kaydedilir, tüm cihazlarında seninle gelir.",
     "shareNote": "İstatistiksel model olasılıkları; bahis tavsiyesi değildir.",
     "pageTitle": "Kuponum",
-    "pageLead": "Maç sayfalarından seçtiğin pazarlar başlama saatine göre sıralı. Biten maçlar skorla işaretlenir; kupon bu tarayıcıda saklanır.",
+    "pageLead": "Maç sayfalarından seçtiğin pazarlar başlama saatine göre sıralı. Biten maçlar skorla işaretlenir; kupon hesabına kaydedilir.",
     "dnbShort": "beraberlikte iade",
     "gridTitle": "Kupona ekle",
     "gridLead": "Seçimi tıkla, kupona girsin. Aynı maçtan birden çok pazar seçebilirsin (1 + Üst 2,5 + KG gibi); aynı pazarda yenisi eskisini değiştirir. Model % · piyasa fiyatı (yoksa –).",

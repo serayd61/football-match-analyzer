@@ -59,6 +59,8 @@ with sig(version, name, applied) as (values
   ('20261028010000', 'profiles_last_seen',
      exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='first_match_view_at')),
   ('20261102010000', 'site_match_views',
-     exists (select 1 from information_schema.tables where table_schema='public' and table_name='site_match_views'))
+     exists (select 1 from information_schema.tables where table_schema='public' and table_name='site_match_views')),
+  ('20261102020000', 'site_slip_legs',
+     exists (select 1 from information_schema.tables where table_schema='public' and table_name='site_slip_legs'))
 )
 select version, name, applied from sig order by version;
