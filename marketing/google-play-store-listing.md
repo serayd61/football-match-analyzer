@@ -19,7 +19,7 @@ Kontrol paneli: https://play.google.com/console/u/0/developers/82063072032244603
 
 ## 2. Mağaza girişi metinleri
 
-> 2026-11-02: en/tr/de tam açıklamaların güncel kaynağı `docs/aso/google-play-{en,tr,de}.md` (`node scripts/aso-validate.js`). PLANLAR bölümü "ÜCRETSİZ VE PRO" olarak yenilendi: Pro'nun ne açtığı madde madde, fiyat ve satın alma yeri yok (Play ödeme politikası). Ekran görüntüsü sırası: 1 ana sayfa · 2 Pro maç analizi (yeni) · 3 karne · 4 lig · 5 yöntem.
+> 2026-11-02: Console'daki canlı metinler — en-US: bu bölümdeki kısa sürüm; tr-TR ve de-DE: `docs/aso/google-play-{tr,de}.md` uzun sürümü. Üçünde de PLANLAR bölümü "ÜCRETSİZ VE PRO" olarak yenilendi (Pro'nun ne açtığı madde madde; fiyat ve satın alma yeri yok — Play ödeme politikası). Ekran görüntüleri en/tr: 1 ana sayfa · 2 Pro maç analizi (yeni) · 3 karne · 4 lig · 5 yöntem (`marketing/play/screenshots/framed/`). 5 değişiklik 2026-11-02 incelemeye gönderildi.
 
 Kısıt: kısa açıklama ≤ 80 karakter, tam açıklama ≤ 4000. "tips / picks / sure bet / bonus" kelimeleri yok (Google Ads kumar sertifikası başvurusuyla aynı dil).
 
@@ -45,8 +45,10 @@ HOW IT WORKS
 2. Predict – every prediction is time-stamped before kick-off and cannot be edited afterwards.
 3. Settle – after the final whistle the prediction is scored and published on the performance page.
 
-PLANS
-A free plan shows today's headline probabilities. The Pro subscription (7-day free trial, cancel anytime) unlocks all markets, likely scores, the value radar and the full archive.
+FREE AND PRO
+Free: today's headline probability for every fixture, league tables and the public performance page.
+Pro: every market for every match (1X2, over/under, both teams to score, Asian handicap, expected goals), likely scorelines, confidence and risk on every prediction, the model-vs-market value radar, the day's strongest selections, team and league following, and the full archive.
+New accounts get 7 days of Pro free, no card needed. Cancel anytime.
 
 IMPORTANT
 Football Analytics Pro is an information and statistics service. It does not offer betting, does not accept stakes and is not affiliated with any bookmaker. Probabilities are statistical estimates, not financial advice. 18+. Please play responsibly.
@@ -73,8 +75,10 @@ NASIL ÇALIŞIR
 2. Tahmin – her tahmin maç başlamadan zaman damgalanır, sonradan değiştirilemez.
 3. Sonuçlandırma – maç bitince tahmin puanlanır ve performans sayfasında yayınlanır.
 
-PLANLAR
-Ücretsiz plan günün ana olasılıklarını gösterir. Pro aboneliği (7 gün ücretsiz deneme, istediğin zaman iptal) tüm pazarları, olası skorları, değer radarını ve arşivi açar.
+ÜCRETSİZ VE PRO
+Ücretsiz: her maç için günün ana olasılığı, puan durumları ve herkese açık performans sayfası.
+Pro: her maç için tüm pazarlar (1X2, alt/üst, karşılıklı gol, Asya handikabı, beklenen gol), olası skorlar, her tahminde güven ve risk, model–piyasa değer radarı, günün en güçlü seçimleri, takım ve lig takibi ve tam arşiv.
+Yeni hesaplar Pro'yu 7 gün ücretsiz kullanır, kart gerekmez. İstediğin zaman iptal.
 
 ÖNEMLİ
 Football Analytics Pro bir bilgi ve istatistik servisidir. Bahis sunmaz, bahis kabul etmez, hiçbir bahis şirketiyle bağlantılı değildir. Olasılıklar istatistiksel tahmindir, finansal tavsiye değildir. 18+. Lütfen sorumlu oynayın.
@@ -101,8 +105,10 @@ SO FUNKTIONIERT ES
 2. Prognostizieren – jede Prognose wird vor dem Anpfiff mit Zeitstempel fixiert.
 3. Abrechnen – nach dem Abpfiff wird die Prognose bewertet und veröffentlicht.
 
-PLÄNE
-Der Gratisplan zeigt die wichtigsten Wahrscheinlichkeiten des Tages. Das Pro-Abo (7 Tage gratis testen, jederzeit kündbar) schaltet alle Märkte, Resultate, das Value-Radar und das Archiv frei.
+GRATIS UND PRO
+Gratis: die wichtigste Wahrscheinlichkeit des Tages zu jeder Partie, Tabellen und die öffentliche Bilanzseite.
+Pro: alle Märkte zu jedem Spiel (1X2, Über/Unter, Beide Teams treffen, Asian Handicap, Expected Goals), wahrscheinliche Resultate, Konfidenz und Risiko bei jeder Prognose, das Value-Radar Modell gegen Markt, die stärksten Auswahlen des Tages, Team- und Liga-Favoriten und das vollständige Archiv.
+Neue Konten nutzen Pro 7 Tage gratis, ohne Karte. Jederzeit kündbar.
 
 WICHTIG
 Football Analytics Pro ist ein Informations- und Statistikdienst. Es werden keine Wetten angeboten oder angenommen; keine Verbindung zu Buchmachern. Wahrscheinlichkeiten sind statistische Schätzungen, keine Finanzberatung. 18+. Bitte spielen Sie verantwortungsvoll.
