@@ -40,16 +40,16 @@ function utcMs(iso?: string | null): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
-export function buildOpsReport(input: OpsInput, opts: { now?: number; windowMs?: number } = {}): OpsReport {
-  const now = opts.now ?? Date.now();
-  const win = opts.windowMs ?? 12 * 3600_000;
-  const from = now - win;
+/** Her üye için erişim sınıfı (paid/trial/expired) + izler. Ops raporu ve sabah raporu (morning-brief) ortak kullanır. */
+export type ClassifiedUser = OpsRow & { id: string | null; createdMs: number; endMs: number };
+
+export function classifyUsers(input: OpsInput, now = Date.now()): ClassifiedUser[] {
   const prof = new Map<string, OpsProfile>();
   for (const p of input.profiles) if (p.email) prof.set(p.email.toLowerCase().trim(), p);
   const subByUser = new Map<string, OpsSub>();
   for (const s of input.subs) if (s.userId && ['active', 'trialing'].includes(String(s.status || '').toLowerCase())) subByUser.set(String(s.userId), s);
 
-  const rows: Array<OpsRow & { createdMs: number; endMs: number }> = [];
+  const rows: ClassifiedUser[] = [];
   const seen = new Set<string>();
   for (const u of input.users) {
     const email = (u.email || '').toLowerCase().trim();
@@ -66,10 +66,18 @@ export function buildOpsReport(input: OpsInput, opts: { now?: number; windowMs?:
     rows.push({
       email, name: u.name || null, method: u.passwordHash ? 'password' : 'google', createdAt: new Date(createdMs).toISOString(), trialEndsAt: new Date(endMs).toISOString(),
       access, lastSeenAt: p?.lastSeenAt ?? null, firstMatchViewAt: p?.firstMatchViewAt ?? null, returned: Number.isFinite(seenMs) && seenMs - createdMs > 3600_000,
-      createdMs, endMs,
+      id: u.id ? String(u.id) : null, createdMs, endMs,
     });
   }
-  const strip = (r: OpsRow & { createdMs: number; endMs: number }): OpsRow => { const { createdMs: _c, endMs: _e, ...rest } = r; return rest; };
+  return rows;
+}
+
+export function buildOpsReport(input: OpsInput, opts: { now?: number; windowMs?: number } = {}): OpsReport {
+  const now = opts.now ?? Date.now();
+  const win = opts.windowMs ?? 12 * 3600_000;
+  const from = now - win;
+  const rows = classifyUsers(input, now);
+  const strip = (r: ClassifiedUser): OpsRow => { const { id: _i, createdMs: _c, endMs: _e, ...rest } = r; return rest; };
   const byCreatedDesc = (a: { createdMs: number }, b: { createdMs: number }) => b.createdMs - a.createdMs;
   const byEndAsc = (a: { endMs: number }, b: { endMs: number }) => a.endMs - b.endMs;
   return {

@@ -223,6 +223,17 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
         </section>
       )}
 
+      {/* Takımını seç (2026-11-02): takip listesi boşsa tek kart — sabah raporunun kişisel kancası.
+          site_watchlist 0 satırdı; özellik sayfanın altında kimsenin görmediği yerdeydi. */}
+      {site.state !== 'expired' && watch.available && watch.items.length === 0 && (
+        <section className="mb-10 rounded-sm border border-s-line bg-s-surface p-5 md:p-6" aria-labelledby="club-pick">
+          <p className="text-xs font-medium uppercase tracking-wider text-s-muted">{t('clubEyebrow')}</p>
+          <h2 id="club-pick" className="mt-1 text-xl font-semibold">{t('clubTitle')}</h2>
+          <p className="mt-1 max-w-2xl text-sm text-s-muted">{t('clubLead')}</p>
+          <div className="mt-4 max-w-md"><WatchlistPanel teams={directory} following={[]} available={watch.available} inputId="club-pick-q" /></div>
+        </section>
+      )}
+
       {/* Trial over and no subscription: no fixtures anywhere on the panel (2026-09-08). */}
       {site.state === 'expired' ? <Paywall /> : (
       <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr]">

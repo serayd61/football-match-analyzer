@@ -98,7 +98,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const publicSample = sample && !canSeeMatches(access);
   const sampleCta = access.state === 'expired' ? { href: PRICING_HREF, key: 'sampleCtaPro' as const } : { href: REGISTER_HREF, key: 'sampleCta' as const };
   // Aktivasyon izi (2026-10-28): üye maç sayfası açtı → last_seen_at + ilk görüntü; çevirilerle paralel.
-  const seen = canSeeMatches(access) ? touchSeen(access.email, { matchView: true }) : Promise.resolve();
+  const seen = canSeeMatches(access) ? touchSeen(access.email, { matchView: true, fixtureId: id }) : Promise.resolve();
 
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
