@@ -663,6 +663,15 @@ Unsubscribe: ${o.unsubscribeUrl}`;
   if (error) throw new Error(error.message);
 }
 
+// Sabah raporu (2026-11-02): kişiye özel günlük dönüş maili; içerik lib/site/morning-brief.ts'te hazır gelir.
+export async function sendMorningBriefEmail(to: string, b: { subject: string; title: string; sub: string; body: string; text: string }, unsubscribeUrl: string): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const html = trialShell(b.title, b.sub, b.body, unsubscribeUrl);
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject: b.subject, html, text: b.text, headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
 // Ops raporu (2026-10-31): site sahibine iç rapor; şablon ops-report.ts'te hazır gelir.
 export async function sendOpsReportEmail(to: string, o: { subject: string; html: string; text: string }): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');

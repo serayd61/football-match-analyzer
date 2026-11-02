@@ -9,8 +9,8 @@ import { useTranslations } from 'next-intl';
 export interface TeamOption { id: number; name: string; league: string; leagueSlug: string }
 
 export default function WatchlistPanel({
-  teams, following, available, max = 30,
-}: { teams: TeamOption[]; following: number[]; available: boolean; max?: number }) {
+  teams, following, available, max = 30, inputId = 'watch-q',
+}: { teams: TeamOption[]; following: number[]; available: boolean; max?: number; /** aynı sayfada ikinci panel (takımını seç kartı) için tekil id */ inputId?: string }) {
   const t = useTranslations('dashboard');
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -40,9 +40,9 @@ export default function WatchlistPanel({
 
   return (
     <div className="relative">
-      <label htmlFor="watch-q" className="sr-only">{t('watchSearch')}</label>
+      <label htmlFor={inputId} className="sr-only">{t('watchSearch')}</label>
       <input
-        id="watch-q"
+        id={inputId}
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}

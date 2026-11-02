@@ -143,6 +143,10 @@
     {
       "path": "/api/cron/world-cup-campaign?type=telegram&days=3",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/morning-brief",
+      "schedule": "5 7 * * *"
     }
   ]
 }

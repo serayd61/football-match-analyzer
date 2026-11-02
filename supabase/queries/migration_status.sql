@@ -57,6 +57,8 @@ with sig(version, name, applied) as (values
   ('20261016030000', 'site_match_grades',
      exists (select 1 from pg_trigger where tgname='trg_match_grade_immutable')),
   ('20261028010000', 'profiles_last_seen',
-     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='first_match_view_at'))
+     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='first_match_view_at')),
+  ('20261102010000', 'site_match_views',
+     exists (select 1 from information_schema.tables where table_schema='public' and table_name='site_match_views'))
 )
 select version, name, applied from sig order by version;
