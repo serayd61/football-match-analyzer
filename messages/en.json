@@ -1077,7 +1077,12 @@
     "hiddenPick": "Premium pick hidden",
     "unlock": "Unlock with Pro →",
     "unlockLong": "Unlock with Pro — {price}/month",
-    "twaLead": "Your 7-day trial has ended. Subscriptions are not available in this app; if you already have one, sign in with the same account and your access is applied automatically. The public scorecard stays open."
+    "twaLead": "Your 7-day trial has ended. Subscriptions are not available in this app; if you already have one, sign in with the same account and your access is applied automatically. The public scorecard stays open.",
+    "bannerKicker": "Trial ended",
+    "bannerTitle": "Your 7 free days are over — Pro continues from $9.90/month, cancel anytime.",
+    "bannerLead": "Every market, likely scores and the value radar, with a record that is settled in public after every match.",
+    "bannerCta": "See plans",
+    "bannerClose": "Dismiss"
   },
   "account": {
     "metaTitle": "Account",

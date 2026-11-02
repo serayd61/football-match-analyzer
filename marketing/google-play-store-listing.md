@@ -19,6 +19,8 @@ Kontrol paneli: https://play.google.com/console/u/0/developers/82063072032244603
 
 ## 2. Mağaza girişi metinleri
 
+> 2026-11-02: en/tr/de tam açıklamaların güncel kaynağı `docs/aso/google-play-{en,tr,de}.md` (`node scripts/aso-validate.js`). PLANLAR bölümü "ÜCRETSİZ VE PRO" olarak yenilendi: Pro'nun ne açtığı madde madde, fiyat ve satın alma yeri yok (Play ödeme politikası). Ekran görüntüsü sırası: 1 ana sayfa · 2 Pro maç analizi (yeni) · 3 karne · 4 lig · 5 yöntem.
+
 Kısıt: kısa açıklama ≤ 80 karakter, tam açıklama ≤ 4000. "tips / picks / sure bet / bonus" kelimeleri yok (Google Ads kumar sertifikası başvurusuyla aynı dil).
 
 ### en-US (varsayılan)
@@ -127,8 +129,10 @@ COME FUNZIONA
 2. Pronostico – ogni pronostico è marcato temporalmente prima del calcio d'inizio.
 3. Chiusura – a fine partita il pronostico viene valutato e pubblicato.
 
-PIANI
-Il piano gratuito mostra le probabilità principali del giorno. L'abbonamento Pro (7 giorni di prova gratuita, disdetta in qualsiasi momento) sblocca tutti i mercati, i risultati probabili, il radar valore e l'archivio.
+GRATIS E PRO
+Gratis: anteprime delle partite, classifiche, la probabilità principale del giorno per ogni partita e il registro pubblico.
+Pro: tutte le probabilità del modello per ogni partita (1X2, Under/Over, Goal/No Goal, handicap asiatico, expected goals), risultati probabili, fiducia e rischio su ogni pronostico, la vista edge rispetto al mercato, le selezioni più forti del giorno, squadre e campionati seguiti e l'archivio completo.
+I nuovi account usano Pro gratis per 7 giorni, senza carta.
 
 IMPORTANTE
 Football Analytics Pro è un servizio di informazione e statistica. Non offre scommesse, non accetta puntate e non è affiliato ad alcun bookmaker. Le probabilità sono stime statistiche, non consigli finanziari. 18+. Gioca responsabilmente.

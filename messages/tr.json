@@ -1077,7 +1077,12 @@
     "hiddenPick": "Premium tahmin gizli",
     "unlock": "Pro ile aç →",
     "unlockLong": "Pro ile aç — ayda {price}",
-    "twaLead": "7 günlük deneme süren bitti. Bu uygulamada abonelik satın alınamaz; zaten aboneliğin varsa aynı hesapla giriş yap, erişimin otomatik tanınır. Herkese açık karne açık kalır."
+    "twaLead": "7 günlük deneme süren bitti. Bu uygulamada abonelik satın alınamaz; zaten aboneliğin varsa aynı hesapla giriş yap, erişimin otomatik tanınır. Herkese açık karne açık kalır.",
+    "bannerKicker": "Deneme bitti",
+    "bannerTitle": "7 ücretsiz günün doldu — Pro ayda 9,90 $ ile devam eder, istediğin zaman iptal.",
+    "bannerLead": "Tüm marketler, olası skorlar ve değer radarı; her maçtan sonra herkese açık sonuçlanan karneyle.",
+    "bannerCta": "Planları gör",
+    "bannerClose": "Kapat"
   },
   "account": {
     "metaTitle": "Hesap",

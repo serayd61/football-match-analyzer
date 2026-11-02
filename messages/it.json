@@ -1077,7 +1077,12 @@
     "hiddenPick": "Pronostico premium nascosto",
     "unlock": "Sblocca con Pro →",
     "unlockLong": "Sblocca con Pro — {price}/mese",
-    "twaLead": "La prova di 7 giorni è terminata. In questa app non è possibile sottoscrivere abbonamenti; se ne hai già uno, accedi con lo stesso account e l'accesso viene applicato automaticamente. Il registro pubblico resta aperto."
+    "twaLead": "La prova di 7 giorni è terminata. In questa app non è possibile sottoscrivere abbonamenti; se ne hai già uno, accedi con lo stesso account e l'accesso viene applicato automaticamente. Il registro pubblico resta aperto.",
+    "bannerKicker": "Prova terminata",
+    "bannerTitle": "I tuoi 7 giorni gratuiti sono finiti – Pro continua da 9,90 $/mese, disdici quando vuoi.",
+    "bannerLead": "Tutti i mercati, i risultati probabili e il radar valore, con un registro chiuso in pubblico dopo ogni partita.",
+    "bannerCta": "Vedi i piani",
+    "bannerClose": "Chiudi"
   },
   "account": {
     "metaTitle": "Account",
