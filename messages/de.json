@@ -1962,10 +1962,10 @@
       "lost": "verloren",
       "empty": "leer"
     },
-    "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig; Positionen desselben Spiels sind nicht unabhängig. Der Schein wird nur in diesem Browser gespeichert.",
+    "note": "Die Auswahl ist deine; die Wahrscheinlichkeiten sind Schätzungen des statistischen Modells, keine Wettempfehlung. Die Modellwahrscheinlichkeit multipliziert die Positionen als unabhängig; Positionen desselben Spiels sind nicht unabhängig. Der Schein wird in deinem Konto gespeichert und ist auf allen Geräten verfügbar.",
     "shareNote": "Wahrscheinlichkeiten des statistischen Modells; keine Wettempfehlung.",
     "pageTitle": "Mein Schein",
-    "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein liegt in diesem Browser.",
+    "pageLead": "Auf Spielseiten gewählte Märkte, nach Anstoß sortiert. Beendete Spiele werden mit dem Ergebnis markiert; der Schein ist in deinem Konto gespeichert.",
     "dnbShort": "Unentschieden: Einsatz zurück",
     "gridTitle": "Auf den Schein",
     "gridLead": "Auswahl anklicken, sie landet auf dem Schein. Mehrere Märkte eines Spiels sind möglich (z. B. 1 + Über 2,5 + Beide treffen); im selben Markt ersetzt die neue die alte. Modell % · Marktkurs (– falls keiner).",

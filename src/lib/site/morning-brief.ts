@@ -6,7 +6,8 @@
 // Bu mail üç kişisel parçadan oluşur, hiçbiri yoksa GÖNDERİLMEZ (spam değil):
 //   1) dün baktığın maç nasıl bitti (site_match_views, maça açılıştan sonra sonuç)
 //   2) bugün takımın oynuyor (site_watchlist + motor görüşü)
-//   3) günün tek seçimi (site_daily_picks; yalnız 1 ya da 2 varsa eklenir)
+//   3) dün sonuçlanan kuponun: "2/3 tuttu" (site_slip_legs, slip-2.0 — 2026-11-02)
+//   4) günün tek seçimi (site_daily_picks; yalnız 1–3'ten biri varsa eklenir)
 // Saf modül: veri route'tan gelir (api/cron/morning-brief), burada yalnız
 // seçim ve metin. İngilizce (site varsayılanı, deneme mailleriyle aynı).
 // ============================================================================
@@ -47,11 +48,25 @@ export interface BriefPick {
   odds: number;
   kickoff: string;
 }
+/** Dün sonuçlanan kupon bacağı (site_slip_legs; slip-2.0). */
+export interface BriefSlipLeg {
+  fixtureId: number;
+  homeName: string;
+  awayName: string;
+  /** seçim etiketi (slipLegLabel) */
+  label: string;
+  odds: number | null;
+  homeScore: number;
+  awayScore: number;
+  outcome: 'won' | 'lost' | 'void' | 'half_won' | 'half_lost';
+}
 export interface BriefUrls { site: string; dashboard: string; telegram: string; unsubscribe: string; play?: string }
 export interface BriefInput {
   name: string | null;
   viewed: BriefViewed[];
   clubs: BriefClubMatch[];
+  /** dün sonuçlanan kupon bacakları; boş = kupon parçası yok */
+  slip?: BriefSlipLeg[];
   pick: BriefPick | null;
   /** deneme sürüyorsa kalan gün; ödeyen için null */
   trialDaysLeft: number | null;
@@ -84,13 +99,32 @@ export function marketLabel(market: string, selection: string): string {
   if (market === 'x12') return selection === 'X' ? 'Draw' : selection === '1' ? 'Home win' : 'Away win';
   return `${market} · ${selection}`;
 }
+/** Kupon bacağı etiketi (İngilizce; SlipPanel'deki useSlipLabel'ın sunucu karşılığı). */
+export function slipLegLabel(l: { market: string; selection: string; line?: number | null; homeName: string; awayName: string }): string {
+  if (l.market === '1x2') return l.selection === '1' ? l.homeName : l.selection === '2' ? l.awayName : 'Draw';
+  if (l.market === 'ou25') return l.selection === 'over' ? 'Over 2.5' : 'Under 2.5';
+  if (l.market === 'btts') return l.selection === 'yes' ? 'BTTS Yes' : 'BTTS No';
+  const team = l.selection === 'home' ? l.homeName : l.awayName;
+  if (l.market === 'dnb') return `${team} · draw no bet`;
+  const line = l.selection === 'home' ? (l.line ?? 0) : -(l.line ?? 0);
+  return `${team} ${line > 0 ? '+' : ''}${line}`;
+}
+export const slipHits = (slip: BriefSlipLeg[]) => slip.filter((l) => l.outcome === 'won' || l.outcome === 'half_won' || l.outcome === 'void').length;
+const slipVerdict = (o: BriefSlipLeg['outcome']) => (o === 'won' ? '✓' : o === 'lost' ? '✗' : o === 'void' ? '○ void' : o === 'half_won' ? '½ won' : '½ lost');
 const verdict = (o: ViewedOutcome) => (o === 'won' ? 'hit' : o === 'lost' ? 'missed' : o === 'nopick' ? 'no call' : 'void');
 
 /** Konu satırı: en kişisel parça öne. Dışa açık (test). */
 export function briefSubject(i: BriefInput): string {
   const v = i.viewed[0];
   const c = i.clubs[0];
+  const s = i.slip ?? [];
   const more = i.viewed.length > 1 ? ` (+${i.viewed.length - 1} more)` : '';
+  if (s.length) {
+    const hits = slipHits(s);
+    const tail = s.length === 1 ? `${s[0].homeName} ${s[0].homeScore}–${s[0].awayScore} ${s[0].awayName}` : hits === s.length ? 'all landed' : hits === 0 ? 'none landed' : 'see which';
+    if (c) return `${c.teamName} play today · your slip: ${hits}/${s.length} hit`;
+    return `Your slip: ${hits}/${s.length} hit — ${tail}`;
+  }
   if (v && c) return `${c.teamName} play today · yesterday's ${v.homeName}–${v.awayName} ended ${v.homeScore}–${v.awayScore}`;
   if (v) {
     const call = v.outcome === 'won' || v.outcome === 'lost' ? ` — the model's call ${verdict(v.outcome)}` : ' — result inside';
@@ -102,7 +136,8 @@ export function briefSubject(i: BriefInput): string {
 
 /** Kişisel içerik yoksa null: o gün mail yok. */
 export function buildMorningBrief(i: BriefInput): Brief | null {
-  if (!i.viewed.length && !i.clubs.length) return null;
+  const slip = i.slip ?? [];
+  if (!i.viewed.length && !i.clubs.length && !slip.length) return null;
   const hi = i.name ? ` ${esc(i.name)}` : '';
   const u = i.urls;
   const matchUrl = (id: number) => `${u.site}/predictions/${id}`;
@@ -111,6 +146,21 @@ export function buildMorningBrief(i: BriefInput): Brief | null {
 
   H.push(`<p>Hi${hi}, here is your morning brief — only the matches that are yours.</p>`);
   T.push(`Hi${i.name ? ` ${i.name}` : ''}, here is your morning brief.`);
+
+  if (slip.length) {
+    const hits = slipHits(slip);
+    H.push(`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase;margin:18px 0 8px">Your slip — settled yesterday</div>
+      <div style="background:#0d0f14;border:1px solid #1e2430;border-radius:12px;padding:14px 16px;margin:0 0 10px">
+        <div style="font-size:26px;font-weight:800;color:#e7eaf0;margin:0 0 8px">${hits} / ${slip.length} <span style="font-size:13px;font-weight:600;color:#9aa3b2">legs hit</span></div>`);
+    T.push('', `YOUR SLIP — settled yesterday: ${hits}/${slip.length} legs hit`);
+    for (const l of slip) {
+      const color = l.outcome === 'won' || l.outcome === 'half_won' ? '#6ee7b7' : l.outcome === 'lost' || l.outcome === 'half_lost' ? '#f87171' : '#9aa3b2';
+      H.push(`<div style="font-size:13px;color:#e7eaf0;padding:4px 0;border-top:1px solid #1e2430">${esc(l.homeName)} <span style="color:#9aa3b2">${l.homeScore}–${l.awayScore}</span> ${esc(l.awayName)} · ${esc(l.label)}${l.odds != null ? ` <span style="color:#9aa3b2">@ ${l.odds.toFixed(2)}</span>` : ''} · <span style="color:${color};font-weight:600">${slipVerdict(l.outcome)}</span></div>`);
+      T.push(`  ${l.homeName} ${l.homeScore}-${l.awayScore} ${l.awayName} · ${l.label}${l.odds != null ? ` @ ${l.odds.toFixed(2)}` : ''} · ${slipVerdict(l.outcome)}`);
+    }
+    H.push(`<div style="font-size:12px;color:#646c7d;margin-top:8px"><a href="${u.site}/coupon" style="color:#6ee7b7">Open your slip</a> · your selections, the model's probabilities.</div></div>`);
+    T.push(`  Your slip: ${u.site}/coupon`);
+  }
 
   if (i.viewed.length) {
     H.push(`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6ee7b7;text-transform:uppercase;margin:18px 0 8px">Yesterday — the matches you opened</div>`);
@@ -160,7 +210,8 @@ export function buildMorningBrief(i: BriefInput): Brief | null {
   H.push(`<p style="font-size:12px;color:#94a3b8;text-align:center">Daily picks also go out on <a href="${u.telegram}" style="color:#94a3b8">Telegram</a>${u.play ? ` · <a href="${u.play}" style="color:#94a3b8">Android app</a>` : ''}.</p>`);
   T.push(`Telegram: ${u.telegram}${u.play ? `\nAndroid app: ${u.play}` : ''}`, `Unsubscribe: ${u.unsubscribe}`);
 
-  const dayTitle = i.viewed.length && i.clubs.length ? 'Your result, your club' : i.viewed.length ? 'How your match ended' : `${i.clubs[0].teamName} play today`;
+  const dayTitle = slip.length ? (i.clubs.length ? 'Your slip, your club' : 'Your slip, settled')
+    : i.viewed.length && i.clubs.length ? 'Your result, your club' : i.viewed.length ? 'How your match ended' : `${i.clubs[0].teamName} play today`;
   return { subject: briefSubject(i), title: dayTitle, sub: 'Morning brief · only your matches', body: H.join('\n'), text: T.join('\n') };
 }
 
@@ -169,6 +220,10 @@ export const SAMPLE_BRIEF_INPUT: Omit<BriefInput, 'urls'> = {
   name: 'Serkan',
   viewed: [{ fixtureId: 1, homeName: 'Arsenal', awayName: 'Chelsea', homeScore: 2, awayScore: 1, leagueName: 'Premier League', pick: '1', confidence: 0.58, outcome: 'won' }],
   clubs: [{ teamId: 1, teamName: 'Galatasaray', fixtureId: 2, homeName: 'Galatasaray', awayName: 'Fenerbahçe', kickoff: new Date(Date.now() + 8 * 3600_000).toISOString(), leagueName: 'Süper Lig', hasModel: true, pick: '1', confidence: 0.52 }],
+  slip: [
+    { fixtureId: 1, homeName: 'Arsenal', awayName: 'Chelsea', label: 'Over 2.5', odds: 1.72, homeScore: 2, awayScore: 1, outcome: 'won' },
+    { fixtureId: 4, homeName: 'Inter', awayName: 'Milan', label: 'BTTS Yes', odds: 1.6, homeScore: 1, awayScore: 0, outcome: 'lost' },
+  ],
   pick: { fixtureId: 3, homeName: 'Bayern', awayName: 'Dortmund', market: 'ou25', selection: 'over', modelP: 0.71, odds: 1.55, kickoff: new Date(Date.now() + 10 * 3600_000).toISOString() },
   trialDaysLeft: 4,
 };

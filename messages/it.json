@@ -1962,10 +1962,10 @@
       "lost": "persa",
       "empty": "vuota"
     },
-    "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti; eventi della stessa partita non sono indipendenti. La schedina è salvata solo in questo browser.",
+    "note": "Le selezioni sono tue; le probabilità sono stime del modello statistico, non consigli di scommessa. La probabilità del modello moltiplica gli eventi come indipendenti; eventi della stessa partita non sono indipendenti. La schedina è salvata nel tuo account e ti segue su tutti i dispositivi.",
     "shareNote": "Probabilità del modello statistico; non è un consiglio di scommessa.",
     "pageTitle": "La mia schedina",
-    "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina resta in questo browser.",
+    "pageLead": "I mercati scelti dalle pagine partita, in ordine di calcio d'inizio. Le partite finite sono segnate col risultato; la schedina è salvata nel tuo account.",
     "dnbShort": "rimborso in caso di pareggio",
     "gridTitle": "Aggiungi alla schedina",
     "gridLead": "Clicca una selezione per metterla in schedina. Puoi scegliere più mercati della stessa partita (es. 1 + Over 2,5 + Goal); nello stesso mercato la nuova sostituisce la vecchia. Modello % · prezzo di mercato (– se assente).",

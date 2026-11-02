@@ -1962,10 +1962,10 @@
       "lost": "lost",
       "empty": "empty"
     },
-    "note": "The selections are yours; the probabilities are the statistical model's estimates, not betting advice. The model probability multiplies the legs as if independent; legs from the same match are not independent. The slip is stored only in this browser.",
+    "note": "The selections are yours; the probabilities are the statistical model's estimates, not betting advice. The model probability multiplies the legs as if independent; legs from the same match are not independent. The slip is saved to your account and follows you across devices.",
     "shareNote": "Statistical model probabilities; not betting advice.",
     "pageTitle": "My slip",
-    "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is stored in this browser.",
+    "pageLead": "Markets you picked on match pages, ordered by kick-off. Finished matches are marked with the score; the slip is saved to your account.",
     "dnbShort": "draw no bet",
     "gridTitle": "Add to slip",
     "gridLead": "Click a selection to put it on the slip. You can pick several markets from one match (e.g. 1 + Over 2.5 + BTTS); within a market the new one replaces the old. Model % · market price (– if none).",

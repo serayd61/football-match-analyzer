@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMorningBrief, briefSubject, briefCampaignKey, marketLabel, SAMPLE_BRIEF_INPUT, type BriefInput } from '@/lib/site/morning-brief';
+import { buildMorningBrief, briefSubject, briefCampaignKey, marketLabel, slipLegLabel, SAMPLE_BRIEF_INPUT, type BriefInput } from '@/lib/site/morning-brief';
 import { classifyUsers } from '@/lib/site/ops-report';
 
 const urls = { site: 'https://x.io', dashboard: 'https://x.io/dashboard', telegram: 'https://t.me/x', unsubscribe: 'https://x.io/u', play: 'https://play' };
@@ -71,4 +71,28 @@ test('classifyUsers: deneme / ödeyen / bitmiş sınıfları ve id', () => {
   assert.equal(Math.round((by['trial@x.io'].endMs - now) / 86_400_000), 5);
   assert.equal(by['ended@x.io'].access, 'expired');
   assert.equal(by['paid@x.io'].access, 'paid');
+});
+
+test('kupon parçası: "2/3 tuttu" öne, konu satırı kuponu söyler, kupon tek başına mail gönderir', () => {
+  const slip = [
+    { fixtureId: 1, homeName: 'Arsenal', awayName: 'Chelsea', label: 'Over 2.5', odds: 1.72, homeScore: 2, awayScore: 1, outcome: 'won' as const },
+    { fixtureId: 4, homeName: 'Inter', awayName: 'Milan', label: 'BTTS Yes', odds: null, homeScore: 1, awayScore: 0, outcome: 'lost' as const },
+    { fixtureId: 5, homeName: 'Ajax', awayName: 'PSV', label: 'Ajax · draw no bet', odds: 1.9, homeScore: 1, awayScore: 1, outcome: 'void' as const },
+  ];
+  const b = buildMorningBrief({ ...base, slip });
+  assert.ok(b);
+  assert.equal(b.subject, 'Your slip: 2/3 hit — see which');
+  assert.equal(b.title, 'Your slip, settled');
+  assert.match(b.text, /YOUR SLIP — settled yesterday: 2\/3 legs hit/);
+  assert.match(b.text, /Arsenal 2-1 Chelsea · Over 2.5 @ 1.72 · ✓/);
+  assert.match(b.text, /Inter 1-0 Milan · BTTS Yes · ✗/);
+  assert.match(b.text, /Ajax 1-1 PSV · Ajax · draw no bet @ 1.90 · ○ void/);
+  assert.match(b.text, /Your slip: https:\/\/x\.io\/coupon/);
+  const one = buildMorningBrief({ ...base, slip: [slip[0]] });
+  assert.equal(one?.subject, 'Your slip: 1/1 hit — Arsenal 2–1 Chelsea');
+  const withClub = buildMorningBrief({ ...base, slip, clubs: [club] });
+  assert.equal(withClub?.subject, 'Galatasaray play today · your slip: 2/3 hit');
+  assert.equal(withClub?.title, 'Your slip, your club');
+  assert.equal(slipLegLabel({ market: 'ah', selection: 'away', line: -0.5, homeName: 'A', awayName: 'B' }), 'B +0.5');
+  assert.equal(slipLegLabel({ market: '1x2', selection: 'X', homeName: 'A', awayName: 'B' }), 'Draw');
 });

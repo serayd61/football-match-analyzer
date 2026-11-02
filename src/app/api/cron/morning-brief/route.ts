@@ -4,6 +4,7 @@
 // maç yok, takımı oynamıyor) o kişiye o gün mail GİTMEZ.
 //   dün bakılan maç   → site_match_views (son 36 saat, maça başlamadan önce açılmış, sonuçlanmış)
 //   takımın bugün     → site_watchlist + nextMatchForTeam (24 saat içinde)
+//   dün kuponun       → site_slip_legs (başlangıç son 36 saat, maçtan önce çıkarılmamış, sonuçlanmış) [slip-2.0]
 //   günün seçimi      → site_daily_picks (cron 06:15 UTC dondurur)
 // Güvenlik: CRON_SECRET; unsubscribe hariç; email_campaign_log (morning-brief-YYYY-MM-DD,email)
 // ile kişi başı günde tek gönderim; ?dry=1 kuru çalışma; ?canary=1 yalnız admin'e
@@ -20,9 +21,10 @@ import { nextMatchForTeam } from '@/lib/site/dashboard';
 import { readDailyPicks } from '@/lib/site/daily-picks';
 import { todayYmd } from '@/lib/site/time';
 import {
-  buildMorningBrief, briefCampaignKey, SAMPLE_BRIEF_INPUT, VIEW_WINDOW_MS, CLUB_WINDOW_MS,
-  type BriefInput, type BriefViewed, type BriefClubMatch, type BriefPick,
+  buildMorningBrief, briefCampaignKey, slipLegLabel, SAMPLE_BRIEF_INPUT, VIEW_WINDOW_MS, CLUB_WINDOW_MS,
+  type BriefInput, type BriefViewed, type BriefClubMatch, type BriefPick, type BriefSlipLeg,
 } from '@/lib/site/morning-brief';
+import { legOutcome } from '@/lib/site/slip-rule';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -59,7 +61,7 @@ export async function GET(req: NextRequest) {
 
   // Okumalar güvenlik kapısı: üye/unsubscribe/dedup hatası → iptal. Görüntü ve takım
   // tabloları eksikse (migration bekliyor) o parça boş sayılır, rapor yine çalışır.
-  const [u, pr, su, un, lg, vw, wl] = await Promise.all([
+  const [u, pr, su, un, lg, vw, wl, sl] = await Promise.all([
     sb.from('users').select('id, email, name, created_at, password_hash'),
     sb.from('profiles').select('email, trial_ends_at, subscription_status, subscription_end, last_seen_at, first_match_view_at'),
     sb.from('subscriptions').select('user_id, status, current_period_end, stripe_subscription_id').in('status', ['active', 'trialing']),
@@ -67,12 +69,15 @@ export async function GET(req: NextRequest) {
     sb.from('email_campaign_log').select('email').eq('campaign_key', key),
     sb.from('site_match_views').select('user_email, fixture_id, viewed_at').gte('viewed_at', new Date(now - VIEW_WINDOW_MS).toISOString()).order('viewed_at', { ascending: false }).range(0, 999),
     sb.from('site_watchlist').select('user_email, team_id, team_name').range(0, 999),
+    sb.from('site_slip_legs').select('user_email, fixture_id, market, selection, line, odds, home_name, away_name, kickoff, removed_at')
+      .gte('kickoff', new Date(now - VIEW_WINDOW_MS).toISOString()).lt('kickoff', new Date(now).toISOString()).order('kickoff', { ascending: true }).range(0, 999),
   ]);
   const err = u.error || pr.error || su.error || un.error || lg.error;
   if (err) return NextResponse.json({ ok: false, aborted: true, error: err.message }, { status: 500 });
   const warnings: string[] = [];
   if (vw.error) { warnings.push(`site_match_views: ${vw.error.message}`); if (!tableMissing(vw.error.message)) console.error('[morning-brief] views read failed', vw.error.message); }
   if (wl.error) { warnings.push(`site_watchlist: ${wl.error.message}`); if (!tableMissing(wl.error.message)) console.error('[morning-brief] watchlist read failed', wl.error.message); }
+  if (sl.error) { warnings.push(`site_slip_legs: ${sl.error.message}`); if (!tableMissing(sl.error.message)) console.error('[morning-brief] slip read failed', sl.error.message); }
 
   const users = classifyUsers({
     users: (u.data ?? []).map((x: any) => ({ id: x.id, email: x.email, name: x.name, createdAt: x.created_at, passwordHash: x.password_hash })),
@@ -97,6 +102,18 @@ export async function GET(req: NextRequest) {
     const arr = clubsBy.get(e) ?? []; arr.push({ teamId: id, teamName: String(r.team_name || '') }); clubsBy.set(e, arr);
   }
 
+  // Kişi → dün başlayan kupon bacakları (maçtan önce çıkarılmış bacak sayılmaz)
+  type SlipRowLite = { fixtureId: number; market: string; selection: string; line: number | null; odds: number | null; homeName: string; awayName: string };
+  const slipBy = new Map<string, SlipRowLite[]>();
+  for (const r of (sl.data || []) as any[]) {
+    const e = String(r.user_email || '').toLowerCase(); const id = Number(r.fixture_id); const ko = Date.parse(r.kickoff);
+    if (!e || !Number.isFinite(id) || !Number.isFinite(ko)) continue;
+    if (r.removed_at && Date.parse(r.removed_at) <= ko) continue;
+    const arr = slipBy.get(e) ?? [];
+    arr.push({ fixtureId: id, market: String(r.market), selection: String(r.selection), line: r.line == null ? null : Number(r.line), odds: r.odds == null ? null : Number(r.odds), homeName: String(r.home_name), awayName: String(r.away_name) });
+    slipBy.set(e, arr);
+  }
+
   let candidates = users.filter((x) => x.access !== 'expired' && !unsubscribed.has(x.email) && !alreadySent.has(x.email) && !admins.has(x.email));
   if (canary) {
     const admin = ADMIN_EMAILS[0].toLowerCase();
@@ -119,8 +136,18 @@ export async function GET(req: NextRequest) {
 
   const prepared: Array<{ email: string; input: BriefInput }> = [];
   for (const c of candidates) {
+    const slip: BriefSlipLeg[] = [];
+    for (const l of slipBy.get(c.email) ?? []) {
+      const p = await pred(l.fixtureId);
+      if (!p || !p.settled || p.homeScore == null || p.awayScore == null) continue;
+      const out = legOutcome({ market: l.market as any, selection: l.selection as any, line: l.line ?? undefined }, { homeScore: p.homeScore, awayScore: p.awayScore, settled: true, status: 'finished' });
+      if (!out) continue;
+      slip.push({ fixtureId: l.fixtureId, homeName: p.homeName, awayName: p.awayName, label: slipLegLabel({ ...l, homeName: p.homeName, awayName: p.awayName }), odds: l.odds, homeScore: p.homeScore, awayScore: p.awayScore, outcome: out });
+      if (slip.length >= 15) break;
+    }
+    const inSlip = new Set(slip.map((l) => l.fixtureId));
     const viewed: BriefViewed[] = [];
-    const seenFx = new Set<number>();
+    const seenFx = new Set<number>(inSlip); // kupondaki maç "dün baktığın" olarak tekrar gösterilmez
     for (const v of viewsBy.get(c.email) ?? []) {
       if (seenFx.has(v.fixtureId)) continue; seenFx.add(v.fixtureId);
       const p = await pred(v.fixtureId);
@@ -140,16 +167,16 @@ export async function GET(req: NextRequest) {
       if (clubs.length >= 3) break;
     }
     const trialDaysLeft = c.access === 'trial' ? Math.max(0, Math.floor((c.endMs - now) / 86_400_000)) : null;
-    let input: BriefInput = { name: c.name ? c.name.split(' ')[0] : null, viewed, clubs, pick, trialDaysLeft, urls: urlsFor(c.email) };
-    if (canary && !viewed.length && !clubs.length) input = { ...SAMPLE_BRIEF_INPUT, pick: pick ?? SAMPLE_BRIEF_INPUT.pick, urls: urlsFor(c.email) };
+    let input: BriefInput = { name: c.name ? c.name.split(' ')[0] : null, viewed, clubs, slip, pick, trialDaysLeft, urls: urlsFor(c.email) };
+    if (canary && !viewed.length && !clubs.length && !slip.length) input = { ...SAMPLE_BRIEF_INPUT, pick: pick ?? SAMPLE_BRIEF_INPUT.pick, urls: urlsFor(c.email) };
     prepared.push({ email: c.email, input });
   }
-  const withContent = prepared.filter((p) => p.input.viewed.length || p.input.clubs.length);
+  const withContent = prepared.filter((p) => p.input.viewed.length || p.input.clubs.length || p.input.slip?.length);
 
   if (dry) {
     return NextResponse.json({
       ok: true, dry: true, key, total, candidates: candidates.length, withContent: withContent.length, pick, warnings,
-      recipients: withContent.map((p) => ({ email: p.email, viewed: p.input.viewed.map((v) => `${v.homeName} ${v.homeScore}-${v.awayScore} ${v.awayName} (${v.outcome})`), clubs: p.input.clubs.map((c) => `${c.teamName}: ${c.homeName}-${c.awayName}`), subject: buildMorningBrief(p.input)?.subject })),
+      recipients: withContent.map((p) => ({ email: p.email, slip: (p.input.slip ?? []).map((l) => `${l.label} ${l.homeScore}-${l.awayScore} (${l.outcome})`), viewed: p.input.viewed.map((v) => `${v.homeName} ${v.homeScore}-${v.awayScore} ${v.awayName} (${v.outcome})`), clubs: p.input.clubs.map((c) => `${c.teamName}: ${c.homeName}-${c.awayName}`), subject: buildMorningBrief(p.input)?.subject })),
     });
   }
 
