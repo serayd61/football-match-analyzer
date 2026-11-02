@@ -57,8 +57,10 @@ BUILT FOR DAILY USE
 • English, German, Italian and Turkish
 • Works on phone, tablet and the web with the same account
 
-PLANS
-Match previews, league tables and the public performance record are free. Members get the model's probabilities, confidence and risk for every match, likely scores, the edge view and the full archive.
+FREE AND PRO
+Free: match previews, league tables, the day's headline probability for every fixture and the public performance record.
+Pro: the model's full probabilities for every match (1X2, over/under, both teams to score, Asian handicap, expected goals), likely scorelines, confidence and risk on every prediction, the edge view against the market, the day's strongest selections, team and league following, and the complete archive.
+New accounts get 7 days of Pro free, no card needed.
 
 IMPORTANT
 Football Analytics Pro is an information and statistics service. It does not offer betting, does not accept stakes and is not affiliated with any bookmaker. Probabilities are statistical estimates, not financial advice. 18+. Please play responsibly.

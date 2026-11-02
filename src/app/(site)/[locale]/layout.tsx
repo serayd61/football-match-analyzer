@@ -17,6 +17,7 @@ import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
 import MobileTabBar from '@/components/site/MobileTabBar';
 import Onboarding from '@/components/site/Onboarding';
+import TrialEndedBanner from '@/components/site/TrialEndedBanner';
 import { SlipProvider } from '@/components/site/slip/SlipProvider';
 import SlipBar from '@/components/site/slip/SlipBar';
 
@@ -95,6 +96,8 @@ export default async function LocaleLayout({
   const messages = pickMessages(await getMessages());
   const timeZone = await getTimeZone();
   const t = await getTranslations('nav');
+  // Deneme bitimi şeridi (2026-11-02): metinler sunucudan; durum istemcide /api/site/access'ten.
+  const tp = await getTranslations('paywall');
 
   return (
     <html lang={locale}>
@@ -107,6 +110,7 @@ export default async function LocaleLayout({
               <SlipProvider>
                 <a href="#main" className="skip-link">{t('skipToContent')}</a>
                 <SiteHeader />
+                <TrialEndedBanner kicker={tp('bannerKicker')} title={tp('bannerTitle')} lead={tp('bannerLead')} cta={tp('bannerCta')} close={tp('bannerClose')} pricingHref={`/${locale}/pricing`} />
                 <main id="main" className="flex-1">{children}</main>
                 <SiteFooter />
                 <MobileTabBar />

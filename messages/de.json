@@ -1077,7 +1077,12 @@
     "hiddenPick": "Premium-Tipp verborgen",
     "unlock": "Mit Pro freischalten →",
     "unlockLong": "Mit Pro freischalten — {price}/Monat",
-    "twaLead": "Ihre 7-tägige Testphase ist beendet. In dieser App können keine Abos abgeschlossen werden; wenn Sie bereits eines haben, melden Sie sich mit demselben Konto an, der Zugang wird automatisch übernommen. Die öffentliche Bilanz bleibt offen."
+    "twaLead": "Ihre 7-tägige Testphase ist beendet. In dieser App können keine Abos abgeschlossen werden; wenn Sie bereits eines haben, melden Sie sich mit demselben Konto an, der Zugang wird automatisch übernommen. Die öffentliche Bilanz bleibt offen.",
+    "bannerKicker": "Testphase beendet",
+    "bannerTitle": "Deine 7 Gratistage sind vorbei – Pro geht ab 9,90 $/Monat weiter, jederzeit kündbar.",
+    "bannerLead": "Alle Märkte, wahrscheinliche Resultate und das Value-Radar, mit einer Bilanz, die nach jedem Spiel öffentlich abgerechnet wird.",
+    "bannerCta": "Pläne ansehen",
+    "bannerClose": "Schliessen"
   },
   "account": {
     "metaTitle": "Konto",

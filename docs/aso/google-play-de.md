@@ -51,8 +51,10 @@ FÜR DEN TÄGLICHEN GEBRAUCH
 • Deutsch, Englisch, Italienisch und Türkisch
 • Auf Smartphone, Tablet und im Web mit demselben Konto
 
-PLÄNE
-Spielvorschauen, Tabellen und die öffentliche Bilanz sind kostenlos. Mitglieder erhalten Wahrscheinlichkeiten, Konfidenz und Risiko zu jedem Spiel, wahrscheinliche Resultate, die Edge-Ansicht und das vollständige Archiv.
+GRATIS UND PRO
+Gratis: Spielvorschauen, Tabellen, die wichtigste Wahrscheinlichkeit des Tages zu jeder Partie und die öffentliche Bilanz.
+Pro: alle Modell-Wahrscheinlichkeiten zu jedem Spiel (1X2, Über/Unter, Beide Teams treffen, Asian Handicap, Expected Goals), wahrscheinliche Resultate, Konfidenz und Risiko bei jeder Prognose, die Edge-Ansicht gegenüber dem Markt, die stärksten Auswahlen des Tages, Team- und Liga-Favoriten und das vollständige Archiv.
+Neue Konten nutzen Pro 7 Tage gratis, ohne Karte.
 
 WICHTIG
 Football Analytics Pro ist ein Informations- und Statistikdienst. Es werden keine Wetten angeboten oder angenommen; keine Verbindung zu Buchmachern. Wahrscheinlichkeiten sind statistische Schätzungen, keine Finanzberatung. 18+. Bitte spielen Sie verantwortungsvoll.

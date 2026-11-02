@@ -51,8 +51,10 @@ GÜNLÜK KULLANIM İÇİN
 • Türkçe, İngilizce, Almanca ve İtalyanca
 • Telefon, tablet ve web'de aynı hesapla
 
-PLANLAR
-Maç önizlemeleri, puan durumları ve herkese açık karne ücretsizdir. Üyeler her maç için modelin olasılıklarını, güven ve risk bilgisini, olası skorları, edge görünümünü ve tam arşivi görür.
+ÜCRETSİZ VE PRO
+Ücretsiz: maç önizlemeleri, puan durumları, her maç için günün ana olasılığı ve herkese açık karne.
+Pro: her maç için modelin tüm olasılıkları (1X2, alt/üst, karşılıklı gol, Asya handikabı, beklenen gol), olası skorlar, her tahminde güven ve risk, piyasaya göre edge görünümü, günün en güçlü seçimleri, takım ve lig takibi ve tam arşiv.
+Yeni hesaplar Pro'yu 7 gün ücretsiz kullanır, kart gerekmez.
 
 ÖNEMLİ
 Football Analytics Pro bir bilgi ve istatistik servisidir. Bahis sunmaz, bahis kabul etmez, hiçbir bahis şirketiyle bağlantılı değildir. Olasılıklar istatistiksel tahmindir, finansal tavsiye değildir. 18+. Lütfen sorumlu oynayın.

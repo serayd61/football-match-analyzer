@@ -4,6 +4,7 @@
     python3 scripts/play-screenshot-frames.py
 
 Input : marketing/play/screenshots/<locale>/0N-*.png (plain phone captures)
+         2026-11-02: 02 = Pro match analysis (public sample fixture, ?src=twa, 360x640 @3x, scrollY 512)
 Output: marketing/play/screenshots/framed/<locale>/0N-*.png (1080x1920)
 Spec  : docs/aso/SCREENSHOT_DESIGN_SPEC.md. Brand colours come from
 src/app/(site)/site.css (--s-brand dark-theme value for the band). Font: Arial
@@ -35,15 +36,17 @@ MUTED = (200, 210, 204)
 COPY = {
   'en': {
     '01': ('Match probabilities,\nbefore kick-off', '1X2, over/under and BTTS for 11 leagues'),
-    '02': ('A public track record', 'Every prediction settled, wins and losses alike'),
-    '03': ('Tables, form and\nhead-to-head', 'Context for every fixture'),
-    '04': ('How the model works', 'Dixon-Coles, calibrated against real results'),
+    '02': ('Pro: every market,\nedge and likely score', 'Model vs market for one fixture, all on one screen'),
+    '03': ('A public track record', 'Every prediction settled, wins and losses alike'),
+    '04': ('Tables, form and\nhead-to-head', 'Context for every fixture'),
+    '05': ('How the model works', 'Dixon-Coles, calibrated against real results'),
   },
   'tr': {
     '01': ('Maç öncesi olasılıklar', '11 ligde 1X2, alt/üst ve karşılıklı gol'),
-    '02': ('Herkese açık karne', 'Her tahmin sonuçlanır, tutan da tutmayan da'),
-    '03': ('Puan durumu, form ve\ngeçmiş maçlar', 'Her maç için bağlam'),
-    '04': ('Model nasıl çalışır', 'Dixon-Coles, gerçek sonuçlara göre kalibre'),
+    '02': ('Pro: tüm marketler,\nfark ve olası skor', 'Bir maç için model ve piyasa, tek ekranda'),
+    '03': ('Herkese açık karne', 'Her tahmin sonuçlanır, tutan da tutmayan da'),
+    '04': ('Puan durumu, form ve\ngeçmiş maçlar', 'Her maç için bağlam'),
+    '05': ('Model nasıl çalışır', 'Dixon-Coles, gerçek sonuçlara göre kalibre'),
   },
 }
 
