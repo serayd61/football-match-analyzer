@@ -1008,7 +1008,18 @@
     "startKindModel": "Highest model confidence in the next 48 hours",
     "startCta": "Open the match breakdown",
     "startRecord": "See how the model has done",
-    "startEmpty": "No rated match in the next 48 hours. Browse the fixtures meanwhile."
+    "startEmpty": "No rated match in the next 48 hours. Browse the fixtures meanwhile.",
+    "overviewTitle": "Overview",
+    "ovMatches": "{n, plural, =1 {# covered match} other {# covered matches}}",
+    "ovNone": "no predictions yet",
+    "ovNext": "Coming days",
+    "ovNextNote": "Each match day is rated two days ahead; counts are rated matches in covered leagues.",
+    "ovPicks": "Fits record",
+    "ovPicksLead": "Today’s calls that fit our record",
+    "ovCoupon": "Daily coupon",
+    "ovCouponLead": "The two-leg coupon frozen each morning",
+    "ovRecord": "Record · last 7 days",
+    "ovMisses": "See the misses"
   },
   "picks": {
     "metaTitle": "Matches that fit our record",
@@ -1277,7 +1288,11 @@
       "aiAgentLead": "Agents",
       "aiAgents": "agents",
       "mktBttsNo": "BTTS No",
-      "noFavShort": "Open match"
+      "noFavShort": "Open match",
+      "horizon": "Predictions are ready through {date} · later days are added two days before kick-off.",
+      "dayEmpty": "No predictions for this day yet",
+      "emptyPendingTitle": "This day’s predictions are not published yet",
+      "emptyFuture": "The model rates each match day two days ahead; this day’s predictions appear from {date}."
     },
     "match": {
       "back": "← All predictions",
@@ -1373,7 +1388,11 @@
       "detailsTitle": "Calibration, leagues and markets",
       "detailsLead": "The full report — calibration curves, per-league and per-market records, return at opening and closing market prices, weekly review.",
       "window": "Window {from} – {to}",
-      "metaTitle": "Prediction accuracy & track record"
+      "metaTitle": "Prediction accuracy & track record",
+      "outcomeLabel": "Outcome",
+      "outcomeAll": "All",
+      "outcomeWon": "Won",
+      "outcomeLost": "Lost"
     },
     "login": {
       "title": "Welcome back.",

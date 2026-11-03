@@ -1008,7 +1008,18 @@
     "startKindModel": "Önümüzdeki 48 saatte en yüksek model güveni",
     "startCta": "Maç dökümünü aç",
     "startRecord": "Modelin karnesine bak",
-    "startEmpty": "Önümüzdeki 48 saatte değerlendirilmiş maç yok. Bu arada fikstüre göz at."
+    "startEmpty": "Önümüzdeki 48 saatte değerlendirilmiş maç yok. Bu arada fikstüre göz at.",
+    "overviewTitle": "Genel bakış",
+    "ovMatches": "{n, plural, =1 {# kapsanan maç} other {# kapsanan maç}}",
+    "ovNone": "henüz tahmin yok",
+    "ovNext": "Sonraki günler",
+    "ovNextNote": "Her maç günü iki gün önceden puanlanır; sayılar kapsanan liglerdeki tahminli maçlardır.",
+    "ovPicks": "Uyan maçlar",
+    "ovPicksLead": "Karnemize uyan günün seçimleri",
+    "ovCoupon": "Günün kuponu",
+    "ovCouponLead": "Sabah dondurulan 2 ayaklı kupon",
+    "ovRecord": "Karne · son 7 gün",
+    "ovMisses": "Tutmayan tahminleri gör"
   },
   "picks": {
     "metaTitle": "Karneye uyan maçlar",
@@ -1277,7 +1288,11 @@
       "aiAgentLead": "Ajan",
       "aiAgents": "ajan",
       "mktBttsNo": "KG Yok",
-      "noFavShort": "Açık maç"
+      "noFavShort": "Açık maç",
+      "horizon": "Tahminler {date} gününe kadar hazır · sonraki günler maç gününe 2 gün kala eklenir.",
+      "dayEmpty": "Bu gün için henüz tahmin yok",
+      "emptyPendingTitle": "Bu günün tahminleri henüz yayımlanmadı",
+      "emptyFuture": "Model her maç gününü iki gün önceden puanlar; bu günün tahminleri {date} itibarıyla burada olur."
     },
     "match": {
       "back": "← Tüm tahminler",
@@ -1373,7 +1388,11 @@
       "detailsTitle": "Kalibrasyon, ligler ve pazarlar",
       "detailsLead": "Tam rapor — kalibrasyon eğrileri, lig ve pazar bazında kayıt, açılış ve kapanış fiyatında getiri, haftalık değerlendirme.",
       "window": "Aralık {from} – {to}",
-      "metaTitle": "Tahmin isabeti ve karne"
+      "metaTitle": "Tahmin isabeti ve karne",
+      "outcomeLabel": "Sonuç",
+      "outcomeAll": "Tümü",
+      "outcomeWon": "Tuttu",
+      "outcomeLost": "Tutmadı"
     },
     "login": {
       "title": "Tekrar hoş geldin.",

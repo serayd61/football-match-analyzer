@@ -39,6 +39,8 @@ export interface ResultsQuery {
   to?: string | null;
   page: number;
   pageSize: number;
+  /** overview-1.0 (2026-11-03): yalnız tutan ya da tutmayan seçimler; sayımlar (won/lost/total) filtresiz kalır */
+  outcome?: 'won' | 'lost' | null;
 }
 
 export interface ResultsPage {
@@ -65,8 +67,9 @@ export const listResults = unstable_cache(
     };
     const fromIdx = (q.page - 1) * q.pageSize;
     const scored = () => base().not('home_score', 'is', null);
+    const listed = () => (q.outcome ? scored().eq('correct', q.outcome === 'won') : scored());
     const [list, won, lost, unresolved] = await Promise.all([
-      scored().order('kickoff', { ascending: false }).range(fromIdx, fromIdx + q.pageSize - 1),
+      listed().order('kickoff', { ascending: false }).range(fromIdx, fromIdx + q.pageSize - 1),
       scored().eq('correct', true).limit(0),
       scored().eq('correct', false).limit(0),
       base().is('home_score', null).limit(0),
@@ -75,13 +78,14 @@ export const listResults = unstable_cache(
     const ctx = await loadContext();
     return {
       rows: parseRows(list.data, official).map((r) => mapRow(r, ctx)),
-      total: list.count ?? 0,
+      // Sayfa toplamı filtresiz kalır; filtreli sayfa sayısı için won/lost'a bak (day-strip-rule.shownResultsTotal).
+      total: q.outcome ? (await scored().limit(0)).count ?? 0 : list.count ?? 0,
       won: won.count ?? 0,
       lost: lost.count ?? 0,
       unresolved: unresolved.count ?? 0,
     };
   },
-  ['site-results-v3'],
+  ['site-results-v4'],
   { revalidate: REVALIDATE.results },
 );
 
