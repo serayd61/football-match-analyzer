@@ -1,0 +1,1048 @@
+{
+ "createdAt": "2026-10-24T07:27:45.931Z",
+ "cutoff": "2026-10-24",
+ "rule": {
+  "minPicks": 8,
+  "minHit": 0.6,
+  "pMin": 0.6,
+  "scope": "kapsam dışı (hidden/whitelist hariç), motorun en emin pazarı"
+ },
+ "note": "İzleme listesi — beyaz liste adayı değil. Kasım 2026'da --eval ile yeniden ölç, lig düzeyinde karar.",
+ "teams": [
+  {
+   "key": "Premier League|The New Saints",
+   "league": "Premier League",
+   "team": "The New Saints",
+   "n": 11,
+   "won": 11,
+   "hit": 100,
+   "modelP": 85.4
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Rosenborg 2",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Rosenborg 2",
+   "n": 10,
+   "won": 10,
+   "hit": 100,
+   "modelP": 74.7
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Ranheim 2",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Ranheim 2",
+   "n": 10,
+   "won": 10,
+   "hit": 100,
+   "modelP": 89.4
+  },
+  {
+   "key": "Regionalliga North|SC Weiche Flensburg",
+   "league": "Regionalliga North",
+   "team": "SC Weiche Flensburg",
+   "n": 10,
+   "won": 10,
+   "hit": 100,
+   "modelP": 73.7
+  },
+  {
+   "key": "Tweede Divisie|Jong Almere City FC",
+   "league": "Tweede Divisie",
+   "team": "Jong Almere City FC",
+   "n": 10,
+   "won": 10,
+   "hit": 100,
+   "modelP": 76.7
+  },
+  {
+   "key": "Primera Nacional|All Boys",
+   "league": "Primera Nacional",
+   "team": "All Boys",
+   "n": 9,
+   "won": 9,
+   "hit": 100,
+   "modelP": 83.4
+  },
+  {
+   "key": "League 248|Nomme United",
+   "league": "League 248",
+   "team": "Nomme United",
+   "n": 8,
+   "won": 8,
+   "hit": 100,
+   "modelP": 82.4
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Ull/Kisa",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Ull/Kisa",
+   "n": 8,
+   "won": 8,
+   "hit": 100,
+   "modelP": 83.4
+  },
+  {
+   "key": "Regionalliga North|SSV Jeddeloh",
+   "league": "Regionalliga North",
+   "team": "SSV Jeddeloh",
+   "n": 11,
+   "won": 10,
+   "hit": 90.9,
+   "modelP": 74
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Aalesund 2",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Aalesund 2",
+   "n": 10,
+   "won": 9,
+   "hit": 90,
+   "modelP": 80.6
+  },
+  {
+   "key": "Regionalliga North|Eintracht Norderstedt",
+   "league": "Regionalliga North",
+   "team": "Eintracht Norderstedt",
+   "n": 10,
+   "won": 9,
+   "hit": 90,
+   "modelP": 75
+  },
+  {
+   "key": "Tweede Divisie|Jong Sparta Rotterdam",
+   "league": "Tweede Divisie",
+   "team": "Jong Sparta Rotterdam",
+   "n": 10,
+   "won": 9,
+   "hit": 90,
+   "modelP": 84.1
+  },
+  {
+   "key": "Eerste Divisie|De Graafschap",
+   "league": "Eerste Divisie",
+   "team": "De Graafschap",
+   "n": 10,
+   "won": 9,
+   "hit": 90,
+   "modelP": 73.7
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Herd",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Herd",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 77.5
+  },
+  {
+   "key": "Regionalliga North|Kickers Emden",
+   "league": "Regionalliga North",
+   "team": "Kickers Emden",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 80.6
+  },
+  {
+   "key": "J. League|Nagoya Grampus",
+   "league": "J. League",
+   "team": "Nagoya Grampus",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 66.3
+  },
+  {
+   "key": "Damallsvenskan|BK Häcken (W)",
+   "league": "Damallsvenskan",
+   "team": "BK Häcken (W)",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 83
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Nardo",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Nardo",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 75.5
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Spjelkavik",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Spjelkavik",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 74.6
+  },
+  {
+   "key": "Highland / Lowland|Rothes",
+   "league": "Highland / Lowland",
+   "team": "Rothes",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 89.2
+  },
+  {
+   "key": "Tweede Divisie|GVVV Veenendaal",
+   "league": "Tweede Divisie",
+   "team": "GVVV Veenendaal",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 72.8
+  },
+  {
+   "key": "Ettan Soedra|Trelleborgs FF",
+   "league": "Ettan Soedra",
+   "team": "Trelleborgs FF",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 71
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Molde 2",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Molde 2",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 90.6
+  },
+  {
+   "key": "Eerste Divisie|Jong FC Utrecht",
+   "league": "Eerste Divisie",
+   "team": "Jong FC Utrecht",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 67.9
+  },
+  {
+   "key": "Major League Soccer|Minnesota United",
+   "league": "Major League Soccer",
+   "team": "Minnesota United",
+   "n": 9,
+   "won": 8,
+   "hit": 88.9,
+   "modelP": 65.7
+  },
+  {
+   "key": "League 168|IK Brage",
+   "league": "League 168",
+   "team": "IK Brage",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 71.2
+  },
+  {
+   "key": "League 916016|Bray Wanderers",
+   "league": "League 916016",
+   "team": "Bray Wanderers",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 67
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Byåsen",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Byåsen",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 74.3
+  },
+  {
+   "key": "Tweede Divisie|Koninklijke HFC",
+   "league": "Tweede Divisie",
+   "team": "Koninklijke HFC",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 65.1
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Orkla",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Orkla",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 83.3
+  },
+  {
+   "key": "Tweede Divisie|RKAV Volendam",
+   "league": "Tweede Divisie",
+   "team": "RKAV Volendam",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 73.3
+  },
+  {
+   "key": "Primera Nacional|Nueva Chicago",
+   "league": "Primera Nacional",
+   "team": "Nueva Chicago",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 75.5
+  },
+  {
+   "key": "National League|Carlisle United",
+   "league": "National League",
+   "team": "Carlisle United",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 64.4
+  },
+  {
+   "key": "National League|Gateshead FC",
+   "league": "National League",
+   "team": "Gateshead FC",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 65.7
+  },
+  {
+   "key": "Major League Soccer|FC Cincinnati",
+   "league": "Major League Soccer",
+   "team": "FC Cincinnati",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 71.2
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Eidsvold TF",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Eidsvold TF",
+   "n": 8,
+   "won": 7,
+   "hit": 87.5,
+   "modelP": 74
+  },
+  {
+   "key": "Premiership|Crusaders",
+   "league": "Premiership",
+   "team": "Crusaders",
+   "n": 10,
+   "won": 8,
+   "hit": 80,
+   "modelP": 71.1
+  },
+  {
+   "key": "Primera Nacional|Agropecuario",
+   "league": "Primera Nacional",
+   "team": "Agropecuario",
+   "n": 10,
+   "won": 8,
+   "hit": 80,
+   "modelP": 72.5
+  },
+  {
+   "key": "Major League Soccer|San Diego FC",
+   "league": "Major League Soccer",
+   "team": "San Diego FC",
+   "n": 10,
+   "won": 8,
+   "hit": 80,
+   "modelP": 68.7
+  },
+  {
+   "key": "Ettan Soedra|Åtvidaberg",
+   "league": "Ettan Soedra",
+   "team": "Åtvidaberg",
+   "n": 10,
+   "won": 8,
+   "hit": 80,
+   "modelP": 68.8
+  },
+  {
+   "key": "Leumit League|Hapoel Kfar Shalem",
+   "league": "Leumit League",
+   "team": "Hapoel Kfar Shalem",
+   "n": 10,
+   "won": 8,
+   "hit": 80,
+   "modelP": 70.7
+  },
+  {
+   "key": "League 226|Riga FC",
+   "league": "League 226",
+   "team": "Riga FC",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 81.6
+  },
+  {
+   "key": "Second Professional League|Montana",
+   "league": "Second Professional League",
+   "team": "Montana",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 72.6
+  },
+  {
+   "key": "Eerste Divisie|Almere City FC",
+   "league": "Eerste Divisie",
+   "team": "Almere City FC",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 74.4
+  },
+  {
+   "key": "J. League|Kashima Antlers",
+   "league": "J. League",
+   "team": "Kashima Antlers",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 67.8
+  },
+  {
+   "key": "National League|Worthing",
+   "league": "National League",
+   "team": "Worthing",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 69
+  },
+  {
+   "key": "Highland / Lowland|Clachnacuddin",
+   "league": "Highland / Lowland",
+   "team": "Clachnacuddin",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 75.4
+  },
+  {
+   "key": "Primera Nacional|Colegiales",
+   "league": "Primera Nacional",
+   "team": "Colegiales",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 74.8
+  },
+  {
+   "key": "Ettan Soedra|Eskilsminne IF",
+   "league": "Ettan Soedra",
+   "team": "Eskilsminne IF",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 73.7
+  },
+  {
+   "key": "Major League Soccer|FC Dallas",
+   "league": "Major League Soccer",
+   "team": "FC Dallas",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 69.7
+  },
+  {
+   "key": "Primera Nacional|Patronato de Parana",
+   "league": "Primera Nacional",
+   "team": "Patronato de Parana",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 78.6
+  },
+  {
+   "key": "Premier League|Caernarfon",
+   "league": "Premier League",
+   "team": "Caernarfon",
+   "n": 9,
+   "won": 7,
+   "hit": 77.8,
+   "modelP": 71.4
+  },
+  {
+   "key": "Eerste Divisie|FC Eindhoven",
+   "league": "Eerste Divisie",
+   "team": "FC Eindhoven",
+   "n": 12,
+   "won": 9,
+   "hit": 75,
+   "modelP": 67.8
+  },
+  {
+   "key": "League 226|RFS",
+   "league": "League 226",
+   "team": "RFS",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 76.2
+  },
+  {
+   "key": "League 922739|Ordabasy Shymkent",
+   "league": "League 922739",
+   "team": "Ordabasy Shymkent",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 68
+  },
+  {
+   "key": "Regionalliga North|Oldenburg",
+   "league": "Regionalliga North",
+   "team": "Oldenburg",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 76.5
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Volda",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Volda",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 75.4
+  },
+  {
+   "key": "Highland / Lowland|Brora Rangers",
+   "league": "Highland / Lowland",
+   "team": "Brora Rangers",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 77.3
+  },
+  {
+   "key": "Highland / Lowland|Wick Academy",
+   "league": "Highland / Lowland",
+   "team": "Wick Academy",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 73.6
+  },
+  {
+   "key": "Major League Soccer|Inter Miami CF",
+   "league": "Major League Soccer",
+   "team": "Inter Miami CF",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 75.5
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Hønefoss",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Hønefoss",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 75.7
+  },
+  {
+   "key": "National Division|Racing FC Union Luxembourg",
+   "league": "National Division",
+   "team": "Racing FC Union Luxembourg",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 68.2
+  },
+  {
+   "key": "Damallsvenskan|Hammarby IF (W)",
+   "league": "Damallsvenskan",
+   "team": "Hammarby IF (W)",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 77.4
+  },
+  {
+   "key": "Primera Nacional|San Telmo",
+   "league": "Primera Nacional",
+   "team": "San Telmo",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 76.8
+  },
+  {
+   "key": "Ettan Soedra|FC Rosengård",
+   "league": "Ettan Soedra",
+   "team": "FC Rosengård",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 66.8
+  },
+  {
+   "key": "3. Liga|Jahn Regensburg",
+   "league": "3. Liga",
+   "team": "Jahn Regensburg",
+   "n": 8,
+   "won": 6,
+   "hit": 75,
+   "modelP": 68.4
+  },
+  {
+   "key": "Regionalliga North|SV Drochtersen/Assel",
+   "league": "Regionalliga North",
+   "team": "SV Drochtersen/Assel",
+   "n": 11,
+   "won": 8,
+   "hit": 72.7,
+   "modelP": 72.4
+  },
+  {
+   "key": "National League|Boreham Wood",
+   "league": "National League",
+   "team": "Boreham Wood",
+   "n": 11,
+   "won": 8,
+   "hit": 72.7,
+   "modelP": 69.9
+  },
+  {
+   "key": "Major League Soccer|Sporting Kansas City",
+   "league": "Major League Soccer",
+   "team": "Sporting Kansas City",
+   "n": 11,
+   "won": 8,
+   "hit": 72.7,
+   "modelP": 73.4
+  },
+  {
+   "key": "Eerste Divisie|Jong AZ Alkmaar",
+   "league": "Eerste Divisie",
+   "team": "Jong AZ Alkmaar",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 74.7
+  },
+  {
+   "key": "Regionalliga North|Hannover 96 II",
+   "league": "Regionalliga North",
+   "team": "Hannover 96 II",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 69.6
+  },
+  {
+   "key": "Eerste Divisie|FC Den Bosch",
+   "league": "Eerste Divisie",
+   "team": "FC Den Bosch",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 69.9
+  },
+  {
+   "key": "Ettan Soedra|AFC Malmoe",
+   "league": "Ettan Soedra",
+   "team": "AFC Malmoe",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 69.4
+  },
+  {
+   "key": "Tweede Divisie|Barendrecht",
+   "league": "Tweede Divisie",
+   "team": "Barendrecht",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 79.6
+  },
+  {
+   "key": "Tweede Divisie|Rijnsburgse Boys",
+   "league": "Tweede Divisie",
+   "team": "Rijnsburgse Boys",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 81
+  },
+  {
+   "key": "National League|Solihull Moors",
+   "league": "National League",
+   "team": "Solihull Moors",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 66.6
+  },
+  {
+   "key": "National League|Southend United",
+   "league": "National League",
+   "team": "Southend United",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 64.4
+  },
+  {
+   "key": "Primera Nacional|Atlanta",
+   "league": "Primera Nacional",
+   "team": "Atlanta",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 74.8
+  },
+  {
+   "key": "Regionalliga North|Schöningen",
+   "league": "Regionalliga North",
+   "team": "Schöningen",
+   "n": 10,
+   "won": 7,
+   "hit": 70,
+   "modelP": 71.3
+  },
+  {
+   "key": "League 919925|Ilves",
+   "league": "League 919925",
+   "team": "Ilves",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 68.5
+  },
+  {
+   "key": "Superettan|IK Brage",
+   "league": "Superettan",
+   "team": "IK Brage",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 70
+  },
+  {
+   "key": "Eerste Divisie|Heracles",
+   "league": "Eerste Divisie",
+   "team": "Heracles",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 76.2
+  },
+  {
+   "key": "Highland / Lowland|Deveronvale",
+   "league": "Highland / Lowland",
+   "team": "Deveronvale",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 71.6
+  },
+  {
+   "key": "Major League Soccer|LA Galaxy",
+   "league": "Major League Soccer",
+   "team": "LA Galaxy",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 67.1
+  },
+  {
+   "key": "Major League Soccer|San Jose Earthquakes",
+   "league": "Major League Soccer",
+   "team": "San Jose Earthquakes",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 66.4
+  },
+  {
+   "key": "USL Championship|Sacramento Republic FC",
+   "league": "USL Championship",
+   "team": "Sacramento Republic FC",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 69.3
+  },
+  {
+   "key": "China League|Shijiazhuang Gongfu",
+   "league": "China League",
+   "team": "Shijiazhuang Gongfu",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 70.7
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Kvik",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Kvik",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 72.8
+  },
+  {
+   "key": "Ettan Soedra|Utsiktens BK",
+   "league": "Ettan Soedra",
+   "team": "Utsiktens BK",
+   "n": 9,
+   "won": 6,
+   "hit": 66.7,
+   "modelP": 70.6
+  },
+  {
+   "key": "League 10282|Vancouver Whitecaps 2",
+   "league": "League 10282",
+   "team": "Vancouver Whitecaps 2",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 69.8
+  },
+  {
+   "key": "League 922739|Atyrau",
+   "league": "League 922739",
+   "team": "Atyrau",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 82.9
+  },
+  {
+   "key": "League 919925|FF Jaro",
+   "league": "League 919925",
+   "team": "FF Jaro",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 71.1
+  },
+  {
+   "key": "League 919925|SJK",
+   "league": "League 919925",
+   "team": "SJK",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 67
+  },
+  {
+   "key": "Second Professional League|PFC CSKA Sofia II",
+   "league": "Second Professional League",
+   "team": "PFC CSKA Sofia II",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 68.1
+  },
+  {
+   "key": "Regionalliga North|St. Pauli II",
+   "league": "Regionalliga North",
+   "team": "St. Pauli II",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 72
+  },
+  {
+   "key": "Ettan Soedra|Ängelholms FF",
+   "league": "Ettan Soedra",
+   "team": "Ängelholms FF",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 68.9
+  },
+  {
+   "key": "Damallsvenskan|Brommapojkarna (W)",
+   "league": "Damallsvenskan",
+   "team": "Brommapojkarna (W)",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 77.1
+  },
+  {
+   "key": "3. Divisjon Avd. 2|Melhus",
+   "league": "3. Divisjon Avd. 2",
+   "team": "Melhus",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 72.8
+  },
+  {
+   "key": "Tweede Divisie|Katwijk",
+   "league": "Tweede Divisie",
+   "team": "Katwijk",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 74.4
+  },
+  {
+   "key": "Highland / Lowland|Keith",
+   "league": "Highland / Lowland",
+   "team": "Keith",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 73.5
+  },
+  {
+   "key": "Regionalliga North|Hamburger SV II",
+   "league": "Regionalliga North",
+   "team": "Hamburger SV II",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 64.8
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Skeid",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Skeid",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 71.4
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Stjørdals Blink",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Stjørdals Blink",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 72.6
+  },
+  {
+   "key": "Estonian Premium liiga|Narva Trans",
+   "league": "Estonian Premium liiga",
+   "team": "Narva Trans",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 71.4
+  },
+  {
+   "key": "LaLiga2|Burgos CF",
+   "league": "LaLiga2",
+   "team": "Burgos CF",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 72.8
+  },
+  {
+   "key": "Primera Nacional|Almirante Brown",
+   "league": "Primera Nacional",
+   "team": "Almirante Brown",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 82.7
+  },
+  {
+   "key": "Liga MX Femenil Apertura|Santos Laguna (W)",
+   "league": "Liga MX Femenil Apertura",
+   "team": "Santos Laguna (W)",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 73.8
+  },
+  {
+   "key": "Second Professional League|Vihren Sandanski",
+   "league": "Second Professional League",
+   "team": "Vihren Sandanski",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 69.4
+  },
+  {
+   "key": "2. Divisjon Avd. 2|Tromsdalen",
+   "league": "2. Divisjon Avd. 2",
+   "team": "Tromsdalen",
+   "n": 8,
+   "won": 5,
+   "hit": 62.5,
+   "modelP": 68.6
+  },
+  {
+   "key": "Second Professional League|Yantra",
+   "league": "Second Professional League",
+   "team": "Yantra",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 70.2
+  },
+  {
+   "key": "Eerste Divisie|RKC Waalwijk",
+   "league": "Eerste Divisie",
+   "team": "RKC Waalwijk",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 71.4
+  },
+  {
+   "key": "National League|AFC Fylde",
+   "league": "National League",
+   "team": "AFC Fylde",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 68.8
+  },
+  {
+   "key": "Major League Soccer|St. Louis City",
+   "league": "Major League Soccer",
+   "team": "St. Louis City",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 66.9
+  },
+  {
+   "key": "Eerste Divisie|Vitesse",
+   "league": "Eerste Divisie",
+   "team": "Vitesse",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 69.2
+  },
+  {
+   "key": "Major League Soccer|Portland Timbers",
+   "league": "Major League Soccer",
+   "team": "Portland Timbers",
+   "n": 10,
+   "won": 6,
+   "hit": 60,
+   "modelP": 70.4
+  }
+ ]
+}
