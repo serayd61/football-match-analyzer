@@ -1008,7 +1008,18 @@
     "startKindModel": "Höchste Modellsicherheit in den nächsten 48 Stunden",
     "startCta": "Spielanalyse öffnen",
     "startRecord": "Bilanz des Modells ansehen",
-    "startEmpty": "In den nächsten 48 Stunden kein bewertetes Spiel. Schau dir solange den Spielplan an."
+    "startEmpty": "In den nächsten 48 Stunden kein bewertetes Spiel. Schau dir solange den Spielplan an.",
+    "overviewTitle": "Überblick",
+    "ovMatches": "{n, plural, =1 {# Spiel im Modell} other {# Spiele im Modell}}",
+    "ovNone": "noch keine Prognosen",
+    "ovNext": "Nächste Tage",
+    "ovNextNote": "Jeder Spieltag wird zwei Tage im Voraus bewertet; die Zahlen sind bewertete Spiele in abgedeckten Ligen.",
+    "ovPicks": "Passende Spiele",
+    "ovPicksLead": "Die Tagesauswahl, die zu unserer Bilanz passt",
+    "ovCoupon": "Tageskupon",
+    "ovCouponLead": "Der morgens eingefrorene Zweier-Kupon",
+    "ovRecord": "Bilanz · letzte 7 Tage",
+    "ovMisses": "Fehlprognosen ansehen"
   },
   "picks": {
     "metaTitle": "Spiele, die zu unserer Bilanz passen",
@@ -1277,7 +1288,11 @@
       "aiAgentLead": "Agenten",
       "aiAgents": "Agenten",
       "mktBttsNo": "BTTS Nein",
-      "noFavShort": "Offenes Spiel"
+      "noFavShort": "Offenes Spiel",
+      "horizon": "Prognosen stehen bis {date} bereit · spätere Tage kommen zwei Tage vor dem Anpfiff dazu.",
+      "dayEmpty": "Für diesen Tag noch keine Prognosen",
+      "emptyPendingTitle": "Die Prognosen für diesen Tag sind noch nicht veröffentlicht",
+      "emptyFuture": "Das Modell bewertet jeden Spieltag zwei Tage im Voraus; die Prognosen für diesen Tag erscheinen ab {date}."
     },
     "match": {
       "back": "← Alle Prognosen",
@@ -1373,7 +1388,11 @@
       "detailsTitle": "Kalibrierung, Ligen und Märkte",
       "detailsLead": "Der volle Bericht — Kalibrierungskurven, Bilanz je Liga und Markt, Rendite zum Eröffnungs- und Schlusskurs, Wochenrückblick.",
       "window": "Zeitraum {from} – {to}",
-      "metaTitle": "Trefferquote & Bilanz der Prognosen"
+      "metaTitle": "Trefferquote & Bilanz der Prognosen",
+      "outcomeLabel": "Ergebnis",
+      "outcomeAll": "Alle",
+      "outcomeWon": "Getroffen",
+      "outcomeLost": "Daneben"
     },
     "login": {
       "title": "Willkommen zurück.",

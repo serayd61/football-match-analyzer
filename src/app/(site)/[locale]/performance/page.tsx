@@ -21,6 +21,7 @@ import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { LockedBlock, TrialNotice } from '@/components/site/Paywall';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, datasetJsonLd } from '@/lib/site/jsonld';
+import { parseOutcome, shownResultsTotal } from '@/lib/site/day-strip-rule';
 
 // Performance (Modernist redesign 2026-09-11) — replaces /results. Track
 // record first: four stat cells, the monthly hit-rate bars and the latest
@@ -29,7 +30,8 @@ import { breadcrumbJsonLd, datasetJsonLd } from '@/lib/site/jsonld';
 // The session read makes the page dynamic; the report itself stays cached.
 export const dynamic = 'force-dynamic';
 
-type Search = { page?: string; league?: string };
+// overview-1.0 (2026-11-03): `outcome=won|lost` — kullanıcı tutmayan tahminleri de görmek istedi.
+type Search = { page?: string; league?: string; outcome?: string };
 const PAGE_SIZE = 25;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
@@ -78,12 +80,13 @@ export default async function PerformancePage({ params: { locale }, searchParams
   const unlocked = canSeeMatches(access);
   const page = Math.max(1, Math.min(500, Number.parseInt(searchParams.page || '1', 10) || 1));
   const league = searchParams.league ? leagueBySlug(searchParams.league) : null;
+  const outcome = parseOutcome(searchParams.outcome);
 
   const showcase = await showcaseRecord(30).catch(() => null);
   const [r, w, res, recent, lessons] = await Promise.all([
     getPerformance(null),
     getWeeklyProgress(12),
-    listResults({ league, from: null, to: null, page, pageSize: PAGE_SIZE }),
+    listResults({ league, from: null, to: null, page, pageSize: PAGE_SIZE, outcome }),
     // Longest losing run over the last 400 settled 1X2 picks (newest first → reversed).
     listResults({ league: null, from: null, to: null, page: 1, pageSize: 400 }),
     // Haftalık dersler (grade-1.0): engine_learning_log'daki kayıt, yeniden hesaplanmaz; okunamazsa boş.
@@ -123,11 +126,13 @@ export default async function PerformancePage({ params: { locale }, searchParams
   const marketName = { '1x2': tc('market1x2'), ou25: tc('ou25'), btts: tc('btts') } as const;
   const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
   const months = r.months.slice(-6);
-  const pages = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
+  const shownTotal = shownResultsTotal(outcome, res);
+  const pages = Math.max(1, Math.ceil(shownTotal / PAGE_SIZE));
   const href = (over: Partial<Search>) => {
     const qs = new URLSearchParams();
-    const m = { page: String(page), league: league?.slug, ...over };
+    const m = { page: String(page), league: league?.slug, outcome: outcome ?? undefined, ...over };
     if (m.league) qs.set('league', m.league);
+    if (m.outcome) qs.set('outcome', m.outcome);
     if (m.page && m.page !== '1') qs.set('page', m.page);
     const q = qs.toString();
     return `/performance${q ? `?${q}` : ''}#results`;
@@ -190,14 +195,20 @@ export default async function PerformancePage({ params: { locale }, searchParams
               {SITE_LEAGUES.map((l) => <Link key={l.slug} href={href({ league: l.slug, page: '1' })} className="chip chip-sm" aria-current={league?.slug === l.slug ? 'true' : undefined}>{l.name}</Link>)}
             </nav>
           </div>
+          {/* Sonuç filtresi (overview-1.0): Tümü · Tuttu · Tutmadı, sayılarıyla. */}
+          <nav className="mt-3 flex flex-wrap items-center gap-1.5" aria-label={t2('outcomeLabel')} data-testid="outcome-filter">
+            <Link href={href({ outcome: undefined, page: '1' })} className="chip chip-sm" aria-current={!outcome ? 'true' : undefined}>{t2('outcomeAll')} <span className="chip-n num">{res.total}</span></Link>
+            <Link href={href({ outcome: 'won', page: '1' })} className="chip chip-sm" aria-current={outcome === 'won' ? 'true' : undefined}>{t2('outcomeWon')} <span className="chip-n num">{res.won}</span></Link>
+            <Link href={href({ outcome: 'lost', page: '1' })} className="chip chip-sm" aria-current={outcome === 'lost' ? 'true' : undefined}>{t2('outcomeLost')} <span className="chip-n num">{res.lost}</span></Link>
+          </nav>
           <div className="mt-4"><TrialNotice access={access} /></div>
           {!unlocked ? (
-            <LockedBlock count={res.total} />
+            <LockedBlock count={shownTotal} />
           ) : res.rows.length ? (
             <>
               <ResultsTable rows={res.rows} />
               <div className="mt-3 flex items-center justify-between text-[13px]">
-                <span className="text-s-muted">{res.total} · {page}/{pages}</span>
+                <span className="text-s-muted">{shownTotal} · {page}/{pages}</span>
                 <span className="flex gap-4">
                   {page > 1 && <Link href={href({ page: String(page - 1) })} className="btn btn-secondary btn-xs">←</Link>}
                   {page < pages && <Link href={href({ page: String(page + 1) })} className="btn btn-secondary btn-xs">→</Link>}
