@@ -96,27 +96,13 @@ export default async function AnalysisPage({ params }: Params) {
   const result = settledResult(a);
   const pageTitle = `${a.home_team} - ${a.away_team} AI Tahmini`;
 
-  // Structured data: SportsEvent + the prediction as an analysis snippet.
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SportsEvent',
-    name: `${a.home_team} vs ${a.away_team}`,
-    sport: 'Soccer',
-    ...(a.match_date ? { startDate: a.match_date } : {}),
-    homeTeam: { '@type': 'SportsTeam', name: a.home_team },
-    awayTeam: { '@type': 'SportsTeam', name: a.away_team },
-    ...(a.league ? { superEvent: { '@type': 'SportsOrganization', name: a.league } } : {}),
-    url: canonical,
-    description: `${a.home_team} vs ${a.away_team} yapay zeka maç tahmini ve analizi.`,
-  };
+  // SC Etkinlikler raporu 2026-11-03: bu sayfanın SportsEvent işaretlemesi `location`
+  // taşımadığı için 9 "geçersiz öğe" üretiyordu. Sayfa zaten /[locale]/matches/[slug]'a
+  // 301 ile gidiyor; geçerli SportsEvent (stadyum + adres) orada basılır, burada yok.
 
   return (
     <div className="fa-shell min-h-screen">
       <main className="px-4 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <MountEvent name="view_analysis" params={{ fixture_id: String(a.fixture_id) }} />
       <div className="mx-auto max-w-3xl">
         <nav className="mb-6 text-sm text-content-muted">
