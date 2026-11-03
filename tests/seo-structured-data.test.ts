@@ -46,6 +46,7 @@ test('SportsEvent carries the required fields and skips unknown venues / finishe
   assert.equal(events[1].eventStatus, 'https://schema.org/EventPostponed');
   assert.equal(e.homeTeam.name, 'Arsenal');
   assert.equal(e.organizer.name, 'Premier League');
+  assert.equal(e.organizer.url, 'https://footballanalytics.pro/en/leagues/premier-league');
 });
 
 test('league country line is localised', () => {

@@ -98,7 +98,8 @@ export function sportsEventsJsonLd<R extends EventRow>(locale: Locale, league: S
       awayTeam: team(r.awayName),
       competitor: [team(r.homeName), team(r.awayName)],
       performer: [team(r.homeName), team(r.awayName)],
-      organizer: { '@type': 'Organization', name: league.name },
+      // SC Etkinlikler raporu 2026-11-03: "url alanı eksik (organizer içinde)" önerisi → lig sayfası
+      organizer: { '@type': 'Organization', name: league.name, url: `${SITE_URL}/${locale}/leagues/${league.slug}` },
       // no `image`: Next serves the league OG card under a hashed URL that is not known here (recommended field, not required)
       url: page,
     });
