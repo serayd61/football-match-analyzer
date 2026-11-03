@@ -215,7 +215,8 @@
     "feedError": "Il feed del calendario non è raggiungibile; per questo giorno sono elencate solo le previsioni pubblicate.",
     "feedStale": "Calendario aggiornato alle {time}.",
     "mobileMarkets": "O/U 2,5 {ou} · GG {btts}",
-    "statusHint": "Lo stato della partita arriva dal feed del calendario; la valutazione del modello è indipendente."
+    "statusHint": "Lo stato della partita arriva dal feed del calendario; la valutazione del modello è indipendente.",
+    "openMatch": "Nessun pronostico · forma e precedenti"
   },
   "match": {
     "notFound": "Partita non trovata",
@@ -1019,7 +1020,8 @@
     "ovCoupon": "Schedina del giorno",
     "ovCouponLead": "La schedina a due eventi fissata ogni mattina",
     "ovRecord": "Rendimento · ultimi 7 giorni",
-    "ovMisses": "Vedi i pronostici sbagliati"
+    "ovMisses": "Vedi i pronostici sbagliati",
+    "openMatch": "nessun pronostico"
   },
   "picks": {
     "metaTitle": "Partite in linea con il nostro storico",
@@ -1699,7 +1701,13 @@
       "resultsArchive": "Risultati {league}",
       "teamPage": "{team}: partite e forma",
       "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}°, {hpts} pt) – {away} ({apos}°, {apts} pt). Classifica, forma recente, precedenti e la lettura del modello prima della partita. Probabilità per i membri.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}-{as} {away}. {home} ora {hpos}° ({hpts} pt), {away} {apos}° ({apts} pt). Risultato finale, forma, precedenti e com’è andato il pronostico del modello."
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}-{as} {away}. {home} ora {hpos}° ({hpts} pt), {away} {apos}° ({apts} pt). Risultato finale, forma, precedenti e com’è andato il pronostico del modello.",
+      "openEyebrow": "Nessun pronostico",
+      "openKicker": "Non valutata dal modello",
+      "openH": "Nessun pronostico del modello per questa partita",
+      "openLead": "Il modello non valuta questa competizione; la pagina mostra solo calendario, ultime partite delle due squadre e precedenti.",
+      "openNote": "Le partite non valutate dal modello non contano mai per il bilancio, le scelte del giorno o la schedina.",
+      "openCta": "Partite valutate"
     }
   },
   "coupon": {

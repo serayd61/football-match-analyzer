@@ -215,7 +215,8 @@
     "feedError": "Fikstür akışına ulaşılamadı; bu gün için yalnızca yayımlanmış tahminler listeleniyor.",
     "feedStale": "Program {time} itibarıyla.",
     "mobileMarkets": "Ü/A 2.5 {ou} · KG {btts}",
-    "statusHint": "Maç durumu fikstür akışından gelir; model tahmini ondan bağımsızdır."
+    "statusHint": "Maç durumu fikstür akışından gelir; model tahmini ondan bağımsızdır.",
+    "openMatch": "Tahmin yok · form ve geçmiş karşılaşmalar"
   },
   "match": {
     "notFound": "Maç bulunamadı",
@@ -1019,7 +1020,8 @@
     "ovCoupon": "Günün kuponu",
     "ovCouponLead": "Sabah dondurulan 2 ayaklı kupon",
     "ovRecord": "Karne · son 7 gün",
-    "ovMisses": "Tutmayan tahminleri gör"
+    "ovMisses": "Tutmayan tahminleri gör",
+    "openMatch": "tahmin yok"
   },
   "picks": {
     "metaTitle": "Karneye uyan maçlar",
@@ -1699,7 +1701,13 @@
       "resultsArchive": "{league} sonuçları",
       "teamPage": "{team}: maçlar ve form",
       "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}., {hpts} puan) – {away} ({apos}., {apts} puan). Puan durumu, son form, geçmiş karşılaşmalar ve modelin maç öncesi görüşü. Olasılıklar üyelere açıktır.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} şimdi {hpos}. ({hpts} puan), {away} {apos}. ({apts} puan). Maç sonucu, form, geçmiş karşılaşmalar ve modelin maç öncesi tahmininin sonucu."
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} şimdi {hpos}. ({hpts} puan), {away} {apos}. ({apts} puan). Maç sonucu, form, geçmiş karşılaşmalar ve modelin maç öncesi tahmininin sonucu.",
+      "openEyebrow": "Tahmin yok",
+      "openKicker": "Model değerlendirmesi yok",
+      "openH": "Bu maç için model tahmini yok",
+      "openLead": "Motor bu turnuvayı değerlendirmiyor; sayfa yalnız fikstürü, iki takımın son maçlarını ve geçmiş karşılaşmaları gösterir.",
+      "openNote": "Modelin değerlendirmediği maçlar karneye, günün seçimlerine ve kupona girmez.",
+      "openCta": "Değerlendirilen maçlar"
     }
   },
   "coupon": {

@@ -55,12 +55,17 @@ export function toFeedRow(m: FFMatch, now = new Date()): FeedMatchRow | null {
   };
 }
 
-/** UTC gün listesi: bugünden `back` gün geriye (bugün dahil), eskiden yeniye. */
-export function recentDays(back: number, today = new Date()): string[] {
-  const n = Math.max(0, Math.floor(back));
+/**
+ * UTC gün listesi: bugünden `back` gün geriye ve `forward` gün ileriye (bugün dahil), eskiden yeniye.
+ * İleri günler şart: akışın gün kovası UTC değil (2026-11-03 ölçümü: 3 Kas 20:00 UTC'deki
+ * CL maçı `date=20261104` altında geliyor) → yalnız geriye bakan pencere günün geç
+ * maçlarını kaçırır; ayrıca yaklaşan fikstürler de tabloya girer (açık maç sayfası).
+ */
+export function recentDays(back: number, today = new Date(), forward = 0): string[] {
+  const n = Math.max(0, Math.floor(back)), fwd = Math.max(0, Math.floor(forward));
   const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   const out: string[] = [];
-  for (let i = n; i >= 0; i--) out.push(new Date(base - i * 86_400_000).toISOString().slice(0, 10));
+  for (let i = -n; i <= fwd; i++) out.push(new Date(base + i * 86_400_000).toISOString().slice(0, 10));
   return out;
 }
 

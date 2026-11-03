@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { matchPath } from '@/lib/site/match-public';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-intl/server';
@@ -172,7 +173,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               <span className="truncate">{r.awayName}</span>
             </div>
             <div className="col-start-2 flex min-w-0 items-baseline gap-1.5 text-xs text-s-muted md:col-start-auto md:text-sm md:text-s-ink">
-              {r.hasModel ? <><span className="truncate">{pickLabel(r, tc)}</span><span className="num shrink-0 text-s-muted">{pct(r.confidence ?? r.confidenceRaw)}</span></> : <span className="text-s-muted">{t('pending')}</span>}
+              {r.hasModel ? <><span className="truncate">{pickLabel(r, tc)}</span><span className="num shrink-0 text-s-muted">{pct(r.confidence ?? r.confidenceRaw)}</span></> : <span className="text-s-muted">{t('openMatch')}</span>}
             </div>
             <div className="num hidden text-right text-sm md:block">{e == null ? <span className="text-s-muted">–</span> : <span className={e >= OVER_EDGE - 1e-9 ? 'font-semibold text-s-loss' : ''}>{pp(e)}</span>}</div>
             <div className="hidden truncate text-right text-xs text-s-muted md:block">{r.leagueName}</div>
@@ -180,7 +181,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
         );
         return (
           <li key={r.fixtureId}>
-            {r.hasModel ? <Link href={`/predictions/${r.fixtureId}`} className="block hover:bg-s-raised">{inner}</Link> : inner}
+            {r.hasModel ? <Link href={`/predictions/${r.fixtureId}`} className="block hover:bg-s-raised">{inner}</Link> : <Link href={matchPath(r)} className="block hover:bg-s-raised">{inner}</Link>}
           </li>
         );
       })}

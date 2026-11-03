@@ -48,6 +48,8 @@ test('toFeedRow: eksik id veya saat → null (satır atlanır)', () => {
 test('recentDays: bugün dahil geriye N gün, UTC, eskiden yeniye', () => {
   assert.deepEqual(recentDays(3, new Date('2026-11-04T01:00:00Z')), ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04']);
   assert.deepEqual(recentDays(0, new Date('2026-11-04T23:59:00Z')), ['2026-11-04']);
+  // ileri günler: akışın gün kovası UTC değil, günün geç maçları yarın altında gelir
+  assert.deepEqual(recentDays(1, new Date('2026-11-03T13:00:00Z'), 2), ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05']);
 });
 
 test('dayRange: ikisi dahil; ters veya bozuk aralık boş', () => {
