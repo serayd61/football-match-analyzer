@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeFeed, type FeedRow } from '@/lib/site/merge-feed';
+import { mergeFeed, feedBucketsFor, type FeedRow } from '@/lib/site/merge-feed';
 import { statusOfRow } from '@/lib/site/status';
 import { applyFilters } from '@/lib/site/filters';
 import type { SitePrediction } from '@/lib/site/predictions';
@@ -59,4 +59,21 @@ test('list filters: team search, status, rated-only and confidence sort', () => 
   assert.deepEqual(applyFilters(rows, { status: 'live' }).map((r) => r.fixtureId), [2]);
   assert.deepEqual(applyFilters(rows, { ready: true }).map((r) => r.fixtureId), [1, 2]);
   assert.deepEqual(applyFilters(rows, { sort: 'confidence' }).map((r) => r.fixtureId), [2, 1, 3]);
+});
+
+// 2026-11-03: akış kovası ~19:00 UTC'de bölünür; Zürih gününün akşam maçları D+1 kovasında.
+test('feedBucketsFor: gün için D ve D+1 kovaları (ŞL gecesi 20:00 UTC maçları yarının kovasında)', () => {
+  assert.deepEqual(feedBucketsFor('2026-11-03'), ['2026-11-03', '2026-11-04']);
+  assert.deepEqual(feedBucketsFor('2026-12-31'), ['2026-12-31', '2027-01-01']);
+});
+
+test('mergeFeed: D+1 kovasından gelen 20:00 UTC maçı Zürih günü D penceresinde kalır, ertesi günkü atılır', () => {
+  const win = { from: Date.parse('2026-11-02T23:00:00Z'), to: Date.parse('2026-11-03T23:00:00Z') };
+  const rows = mergeFeed([], [
+    feed({ id: 6106266, league: 'Champions League', leagueId: 943230, leagueCountry: 'INT-2', date: '2026-11-03T20:00:00Z' }),
+    feed({ id: 6106300, league: 'Champions League', leagueId: 943230, leagueCountry: 'INT-2', date: '2026-11-04T17:45:00Z' }),
+  ], new Map(), win);
+  assert.deepEqual(rows.map((r) => r.fixtureId), [6106266]);
+  assert.equal(rows[0].covered, true);
+  assert.equal(rows[0].hasModel, false);
 });

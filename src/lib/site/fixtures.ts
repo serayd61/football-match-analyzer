@@ -5,7 +5,7 @@ import { getMatchesByDateStrict, FeedUnavailableError, type FFMatch } from '@/li
 import { fallbackDay } from './feed-fallback';
 import { REVALIDATE, ODDS_TAG } from './db';
 import { listPredictionsForDay, fetchPredictionsForDay, loadContext, type SitePrediction } from './predictions';
-import { mergeFeed, type FeedRow } from './merge-feed';
+import { mergeFeed, feedBucketsFor, type FeedRow } from './merge-feed';
 export { mergeFeed, fixtureRow, type FeedRow } from './merge-feed';
 export { feedStatus } from './status';
 import { zonedStartOfDay, addDays, todayYmd } from './time';
@@ -57,6 +57,22 @@ async function feedForDay(ymd: string): Promise<FeedRow[]> {
 }
 
 /**
+ * Akışın gün kovası UTC ya da Zürih günü DEĞİL: `date=D` kovası yaklaşık
+ * D-1 19:00 UTC → D 19:00 UTC aralığını taşıyor (2026-11-03 ölçümü: 3 Kas
+ * 20:00 UTC'deki ŞL maçları 20261104 altında). Zürih günü D ise D-1 23:00 UTC →
+ * D 23:00 UTC; yani günün 21:00+ CET maçları D+1 kovasında. Tek kova çekilince
+ * modelsiz akşam maçları (ŞL/AL gecesi) hiçbir güne düşmüyordu. Gün için D ve
+ * D+1 kovaları birlikte okunur; pencere süzgeci (mergeFeed) fazlasını atar.
+ */
+async function feedForDayWindow(ymd: string): Promise<FeedRow[]> {
+  const buckets = await Promise.all(feedBucketsFor(ymd).map(feedForDay));
+  const seen = new Set<number>();
+  const out: FeedRow[] = [];
+  for (const f of buckets.flat()) { if (seen.has(f.id)) continue; seen.add(f.id); out.push(f); }
+  return out;
+}
+
+/**
  * Rows for a calendar day (Zurich): published predictions first, then any
  * feed fixture the model has not rated yet. Only today and the next two
  * days consult the feed; other days come from the database alone.
@@ -67,7 +83,7 @@ async function buildDay(ymd: string, predictions: SitePrediction[]): Promise<Day
     if (ymd < today || ymd > addDays(today, 2)) return { rows: predictions, feed: 'skipped', fetchedAt };
 
     let feed: FeedRow[] = [];
-    try { feed = await feedForDay(ymd); } catch (e) { console.error('[site/fixtures] feed failed', e); return { rows: predictions, feed: 'error', fetchedAt }; }
+    try { feed = await feedForDayWindow(ymd); } catch (e) { console.error('[site/fixtures] feed failed', e); return { rows: predictions, feed: 'error', fetchedAt }; }
 
     const ctx = await loadContext();
     const window = { from: zonedStartOfDay(ymd).getTime(), to: zonedStartOfDay(addDays(ymd, 1)).getTime() };
