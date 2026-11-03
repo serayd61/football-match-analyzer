@@ -1,5 +1,6 @@
 import { resolveLeague } from './leagues';
 import { feedStatus } from './status';
+import { addDays } from './time';
 import type { SitePrediction } from './predictions';
 
 // Pure merge of the schedule feed into a day's predictions (unit-tested).
@@ -54,4 +55,16 @@ export function mergeFeed(predictions: SitePrediction[], feed: FeedRow[], catalo
     .filter((f) => { const t = new Date(f.date).getTime(); return t >= window.from && t < window.to; })
     .map((f) => fixtureRow(f, catalog));
   return [...merged, ...extra].sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
+}
+
+/**
+ * Bir Zürih günü için okunacak akış kovaları. Akışın `date=D` kovası UTC ya da
+ * Zürih günü değil: yaklaşık D-1 19:00 UTC → D 19:00 UTC (2026-11-03 ölçümü:
+ * 3 Kas 20:00 UTC'deki ŞL maçları 20261104 altında). Zürih günü D 23:00 UTC'de
+ * biter → günün 21:00+ CET maçları D+1 kovasında. Tek kova okununca modelsiz
+ * akşam maçları (ŞL/AL gecesi) hiçbir güne düşmüyordu; D ve D+1 birlikte okunur,
+ * mergeFeed'in pencere süzgeci fazlasını atar.
+ */
+export function feedBucketsFor(ymd: string): string[] {
+  return [ymd, addDays(ymd, 1)];
 }
