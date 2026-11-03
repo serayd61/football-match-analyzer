@@ -6,6 +6,7 @@ import ProbBar from './ProbBar';
 import LocalTime from './LocalTime';
 import { standingsIndex, type StandingRow } from '@/lib/site/standings';
 import OutcomeBadge from './OutcomeBadge';
+import { matchPath } from '@/lib/site/match-public';
 
 // Dense list of predictions grouped by league. One responsive grid per row:
 // below `lg` the row stacks (time · teams · bar · pick · markets), from `lg`
@@ -113,14 +114,15 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
 
           <ul className="divide-y divide-s-line border-b border-s-line">
             {g.rows.map((p) => !p.hasModel ? (
+              // feed-1.1 (2026-11-03): modelsiz fikstür artık açık maç sayfasına gider (form + H2H, tahmin yok).
               <li key={p.fixtureId}>
-                <div className={`grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-1 py-2.5 ${gridCols}`}>
+                <Link href={matchPath(p)} className={`grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-1 py-2.5 hover:bg-s-raised/60 ${gridCols}`}>
                   <Time p={p} />
                   <Teams p={p} slug={g.slug} />
                   <span className={`col-span-2 text-sm text-s-muted ${showOutcome ? 'lg:col-span-5' : 'lg:col-span-4'}`}>
-                    {tp('pendingModel')}
+                    {tp('openMatch')}
                   </span>
-                </div>
+                </Link>
               </li>
             ) : (
               <li key={p.fixtureId}>

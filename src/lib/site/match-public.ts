@@ -41,6 +41,12 @@ export interface PublicMatch {
    * null before the final whistle: upcoming predictions stay members-only.
    */
   verdict: SettledVerdict | null;
+  /**
+   * feed-1.1 (2026-11-03): true = motorun puanlamadığı maç ("açık maç"): sayfa
+   * yalnız fikstür, form ve geçmiş karşılaşmaları gösterir, tahmin kutusu yerine
+   * "tahmin yok" notu çıkar. Model sayısı değil, yalnız "var/yok" bilgisidir.
+   */
+  openMatch: boolean;
 }
 
 export interface SettledVerdict { pick: '1' | 'X' | '2'; p: number; outcome: 'won' | 'lost' }
@@ -80,6 +86,7 @@ export function publicMatchView(p: SitePrediction): PublicMatch {
     awayScore: p.awayScore,
     updatedAt: p.updatedAt,
     verdict: settledVerdict(p),
+    openMatch: !p.hasModel,
   };
 }
 

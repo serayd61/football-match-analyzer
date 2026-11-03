@@ -7,6 +7,8 @@ import { alternatesFor } from '@/lib/site/seo';
 import { getPublicMatch, listPublicUpcoming } from '@/lib/site/match-public-data';
 import { fixtureIdFromSlug, isCanonicalSlug, matchPath, formLetters, h2hTally, type PublicMatch, teamGoalStats, h2hGoalStats, leagueGoalsPerMatch } from '@/lib/site/match-public';
 import { getHeadToHead, getTeamForm, type SitePrediction } from '@/lib/site/predictions';
+import { getFeedTeamForm, getFeedHeadToHead } from '@/lib/site/match-history-data';
+import { fromEngineRow, mergeHistory, type HistoryRow } from '@/lib/site/match-history';
 import { getStandings, type StandingRow } from '@/lib/site/standings';
 import { venueFor } from '@/lib/site/stadiums';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
@@ -35,6 +37,10 @@ import AppBanner from '@/components/site/AppBanner';
 // gol beklentisi, pazarlar, seçimin tuttu/tutmadı bilgisi — hepsi /predictions
 // altında, üyelik kuralı değişmedi (lib/site/match-public.ts tek kapı).
 // Oturum yalnız "tam tahmini aç" bağlantısı için okunur; içerik herkese aynı.
+// feed-1.1 (2026-11-03): motor satırı olmayan maç (CL/EL, kapsam dışı rakip)
+// günlük akış arşivinden açılır — "açık maç": tahmin kutusu yerine "tahmin yok"
+// notu; form + H2H feed_matches ∪ motor arşivi (lig adıyla). Lig çözümsüzse
+// (SITE_LEAGUES dışı) puan durumu/lig bağlantıları gizli ve sayfa noindex.
 // ============================================================================
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +76,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     description: t(descKey, vars),
     alternates: alternatesFor(params.locale as Locale, matchPath(m)),
     openGraph: { title: `${m.homeName} – ${m.awayName}`, images: [`/api/og/match/${m.fixtureId}`] },
+    // Açık maç + çözümsüz lig: ince sayfa, dizine girmesin (bağlantılar izlenir).
+    ...(m.openMatch && !m.league ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -82,7 +90,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const m = await load(params.slug);
   if (!m) notFound();
   if (!isCanonicalSlug(params.slug, m)) permanentRedirect(`/${params.locale}${matchPath(m)}`);
-  const league = m.league!;
+  const league = m.league; // feed-1.1: SITE_LEAGUES dışı açık maçta null
 
   const t = await getTranslations('matches.match');
   const tc = await getTranslations('common');
@@ -91,17 +99,25 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const tpa = await getTranslations('playApp');
   const f = await getFormatter();
 
-  const [access, table, formHome, formAway, h2h, leagueUpcoming, teams] = await Promise.all([
+  const [access, table, engFormHome, engFormAway, engH2h, feedFormHome, feedFormAway, feedH2h, leagueUpcoming, teams] = await Promise.all([
     getSiteAccess(),
-    getStandings(league.slug).catch(() => [] as StandingRow[]),
+    league ? getStandings(league.slug).catch(() => [] as StandingRow[]) : Promise.resolve([] as StandingRow[]),
     m.homeId ? getTeamForm(m.homeId, 5, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
     m.awayId ? getTeamForm(m.awayId, 5, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
     m.homeId && m.awayId ? getHeadToHead(m.homeId, m.awayId, 6, m.kickoff).catch(() => [] as SitePrediction[]) : Promise.resolve([] as SitePrediction[]),
+    // feed-1.1: günlük akış arşivi — tüm ligler (CL/EL, kupa, yerli lig) tek listede.
+    m.homeId ? getFeedTeamForm(m.homeId, 5, m.kickoff).catch(() => [] as HistoryRow[]) : Promise.resolve([] as HistoryRow[]),
+    m.awayId ? getFeedTeamForm(m.awayId, 5, m.kickoff).catch(() => [] as HistoryRow[]) : Promise.resolve([] as HistoryRow[]),
+    m.homeId && m.awayId ? getFeedHeadToHead(m.homeId, m.awayId, 6, m.kickoff).catch(() => [] as HistoryRow[]) : Promise.resolve([] as HistoryRow[]),
     listPublicUpcoming(10).catch(() => [] as PublicMatch[]),
     // SEO Faz 1b: links to both club pages
     listTeams().catch(() => [] as TeamEntry[]),
   ]);
   const teamLinks = teams.filter((x) => x.id === m.homeId || x.id === m.awayId);
+  // İki arşivin birleşimi: akış önce (lig adı güvenilir), motor arşivi Temmuz'dan eksikleri tamamlar.
+  const formHome = mergeHistory(feedFormHome, engFormHome.map(fromEngineRow), 5);
+  const formAway = mergeHistory(feedFormAway, engFormAway.map(fromEngineRow), 5);
+  const h2h = mergeHistory(feedH2h, engH2h.map(fromEngineRow), 6);
   const unlocked = canSeeMatches(access);
   const twa = isTwa();
 
@@ -110,10 +126,10 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const venue = venueFor(m.homeId);
   const played = m.settled && m.homeScore != null && m.awayScore != null;
   const isPast = played || Date.parse(m.kickoff) < Date.now();
-  const letters = (teamId: number | null, rows: SitePrediction[]) => (teamId ? formLetters(teamId, rows) : []);
+  const letters = (teamId: number | null, rows: HistoryRow[]) => (teamId ? formLetters(teamId, rows) : []);
   const lh = letters(m.homeId, formHome), la = letters(m.awayId, formAway);
   const tally = m.homeId ? h2hTally(m.homeId, h2h) : null;
-  const related = leagueUpcoming.filter((r) => r.league?.slug === league.slug && r.fixtureId !== m.fixtureId).slice(0, 6);
+  const related = league ? leagueUpcoming.filter((r) => r.league?.slug === league.slug && r.fixtureId !== m.fixtureId).slice(0, 6) : [];
   const statusKey = { scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished', postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown' } as const;
   const pageUrl = `${SITE_URL}/${params.locale}${matchPath(m)}`;
   const fmtLetters = (ls: Array<'W' | 'D' | 'L'>) => ls.map((l) => t(`form${l}`)).join(' ');
@@ -121,7 +137,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   // Ön izleme cümleleri: yalnız elde olan gerçek veriden; eksik veri cümlesi atlanır.
   const sentences: string[] = [];
   if (played) sentences.push(t('sFinal', { home: m.homeName, away: m.awayName, hs: m.homeScore!, as: m.awayScore! }));
-  if (stHome && stAway) sentences.push(t('sTable', { home: m.homeName, away: m.awayName, league: league.name, hpos: stHome.pos, hpts: stHome.pts, hp: stHome.played, apos: stAway.pos, apts: stAway.pts, ap: stAway.played }));
+  if (league && stHome && stAway) sentences.push(t('sTable', { home: m.homeName, away: m.awayName, league: league.name, hpos: stHome.pos, hpts: stHome.pts, hp: stHome.played, apos: stAway.pos, apts: stAway.pts, ap: stAway.played }));
   if (lh.length >= 3 && la.length >= 3) sentences.push(t('sForm', { home: m.homeName, away: m.awayName, hform: fmtLetters(lh), aform: fmtLetters(la), n: Math.min(lh.length, la.length) }));
   if (tally && tally.n > 0) sentences.push(t('sH2h', { n: tally.n, home: m.homeName, away: m.awayName, hw: tally.homeWins, d: tally.draws, aw: tally.awayWins }));
   else if (!played) sentences.push(t('sNoH2h'));
@@ -137,7 +153,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   if (gsHome && gsAway && gsHome.n >= 3 && gsAway.n >= 3) {
     sentences.push(t('sGoals', { home: m.homeName, hn: gsHome.n, hgf: dec(gsHome.gfAvg), hga: dec(gsHome.gaAvg), away: m.awayName, an: gsAway.n, agf: dec(gsAway.gfAvg), aga: dec(gsAway.gaAvg) }));
     const combined = (gsHome.gfAvg + gsHome.gaAvg + gsAway.gfAvg + gsAway.gaAvg) / 2;
-    if (leagueAvg != null) sentences.push(t('sLeagueAvg', { league: league.name, avg: dec(leagueAvg), combined: dec(combined), over: pct0((gsHome.over25 + gsAway.over25) / 2), btts: pct0((gsHome.btts + gsAway.btts) / 2) }));
+    if (league && leagueAvg != null) sentences.push(t('sLeagueAvg', { league: league.name, avg: dec(leagueAvg), combined: dec(combined), over: pct0((gsHome.over25 + gsAway.over25) / 2), btts: pct0((gsHome.btts + gsAway.btts) / 2) }));
   }
   if (h2hGoals && h2hGoals.n >= 2) sentences.push(t('sH2hGoals', { n: h2hGoals.n, avg: dec(h2hGoals.avgGoals), over: pct0(h2hGoals.over25), btts: pct0(h2hGoals.btts) }));
   // Settled: the model's pre-match verdict is public (match-public.ts settledVerdict).
@@ -147,14 +163,14 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
 
   // FAQPage: only questions the page actually answers with real data (Google: match the content).
   const faqs: Array<{ q: string; a: string }> = [];
-  if (!played) faqs.push({ q: t('faqKickoffQ', { home: m.homeName, away: m.awayName }), a: t('faqKickoffA', { home: m.homeName, away: m.awayName, time: f.dateTime(new Date(m.kickoff), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }), league: league.name }) });
+  if (!played) faqs.push({ q: t('faqKickoffQ', { home: m.homeName, away: m.awayName }), a: t('faqKickoffA', { home: m.homeName, away: m.awayName, time: f.dateTime(new Date(m.kickoff), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }), league: league?.name ?? m.leagueName }) });
   if (venue) faqs.push({ q: t('faqVenueQ', { home: m.homeName, away: m.awayName }), a: t('faqVenueA', { venue: venue.venue, city: venue.city ?? '', home: m.homeName }) });
   if (tally && tally.n > 0) faqs.push({ q: t('faqH2hQ', { home: m.homeName, away: m.awayName }), a: t('sH2h', { n: tally.n, home: m.homeName, away: m.awayName, hw: tally.homeWins, d: tally.draws, aw: tally.awayWins }) });
   if (lh.length >= 3 && la.length >= 3) faqs.push({ q: t('faqFormQ', { home: m.homeName, away: m.awayName }), a: t('sForm', { home: m.homeName, away: m.awayName, hform: fmtLetters(lh), aform: fmtLetters(la), n: Math.min(lh.length, la.length) }) });
   if (played) faqs.push({ q: t('faqScoreQ', { home: m.homeName, away: m.awayName }), a: t('sFinal', { home: m.homeName, away: m.awayName, hs: m.homeScore!, as: m.awayScore! }) });
   if (v && pickLabel) faqs.push({ q: t('faqVerdictQ', { home: m.homeName, away: m.awayName }), a: t(v.outcome === 'won' ? 'sVerdictWon' : 'sVerdictLost', { pick: pickLabel, p: pct0(v.p) }) });
 
-  const formList = (teamId: number | null, rows: SitePrediction[]) => (
+  const formList = (teamId: number | null, rows: HistoryRow[]) => (
     <ul className="divide-y divide-s-line border-b border-s-line">
       {rows.filter((r) => r.homeScore != null && r.awayScore != null).map((r) => {
         const home = r.homeId === teamId;
@@ -164,7 +180,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
           <>
             <span className="w-16 shrink-0 text-xs text-s-muted"><LocalTime iso={r.kickoff} format="dayShort" /></span>
             <span className="w-5 shrink-0 text-center text-[10px] font-semibold uppercase text-s-muted">{home ? t('formHomeShort') : t('formAwayShort')}</span>
-            <span className="min-w-0 flex-1 truncate">{home ? r.awayName : r.homeName}</span>
+            <span className="min-w-0 flex-1 truncate">{home ? r.awayName : r.homeName}{r.leagueName ? <span className="ml-1.5 text-xs text-s-muted">{r.leagueName}</span> : null}</span>
             <span className="num shrink-0 font-semibold">{score(r)}</span>
             <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white ${res === 'W' ? 'bg-s-win' : res === 'D' ? 'bg-s-void' : 'bg-s-loss'}`}>{t(`form${res}`)}</span>
           </>
@@ -188,10 +204,10 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
 
   return (
     <Page>
-      <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, { name: league.name, path: `/leagues/${league.slug}` }, { name: `${m.homeName} – ${m.awayName}`, path: matchPath(m) }])} />
+      <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, ...(league ? [{ name: league.name, path: `/leagues/${league.slug}` }] : []), { name: `${m.homeName} – ${m.awayName}`, path: matchPath(m) }])} />
       {/* Huni: herkese açık analiz görüntülemesi (kişisel veri yok). */}
-      <MountEvent name="view_analysis" params={{ fixture_id: String(m.fixtureId), surface: 'public_match', league: league.slug }} />
-      {!played && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, [m], () => t('eventDescription', { league: league.name, home: m.homeName, away: m.awayName }), pageUrl)} />}
+      <MountEvent name="view_analysis" params={{ fixture_id: String(m.fixtureId), surface: m.openMatch ? 'open_match' : 'public_match', league: league?.slug ?? 'none' }} />
+      {!played && league && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, [m], () => t('eventDescription', { league: league.name, home: m.homeName, away: m.awayName }), pageUrl)} />}
       {/* SEO Faz 1a: dateModified from the engine row (a real write) + the answered questions as FAQPage. */}
       <JsonLd data={webPageJsonLd(params.locale as Locale, { url: pageUrl, name: `${m.homeName} – ${m.awayName}`, dateModified: m.updatedAt })} />
       {faqs.length > 0 && <JsonLd data={faqPageJsonLd(faqs)} />}
@@ -201,12 +217,12 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
 
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-[13px]">
         <Link href="/matches" className="font-semibold text-s-muted hover:text-s-ink">← {t('backHub')}</Link>
-        <Link href={`/leagues/${league.slug}`} className="font-semibold text-s-muted hover:text-s-ink">{league.name}</Link>
+        {league ? <Link href={`/leagues/${league.slug}`} className="font-semibold text-s-muted hover:text-s-ink">{league.name}</Link> : <span className="font-semibold text-s-muted">{m.leagueName}</span>}
       </p>
 
       {/* ── Başlık: takımlar, başlama, durum, stat ─────────────────── */}
       <header className="mt-3 border-b border-s-line pb-5">
-        <p className="kicker">{league.name} · {t('eyebrow')}</p>
+        <p className="kicker">{league?.name ?? m.leagueName} · {m.openMatch ? t('openEyebrow') : t('eyebrow')}</p>
         <h1 className="mt-2 text-[28px] leading-tight sm:text-[36px] hyphens-auto [overflow-wrap:anywhere]">
           <span className="inline-flex items-center gap-2"><Crest src={m.homeCrest} alt={tc('crestAlt', { team: m.homeName })} />{m.homeName}</span>
           {' '}<span className="mx-2 text-s-muted">{played ? <span className="num">{m.homeScore}–{m.awayScore}</span> : t('vs')}</span>{' '}
@@ -241,7 +257,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
                 <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictProb')}</dt><dd className="num mt-0.5 font-semibold">{pct0(v.p)}</dd></div>
                 <div><dt className="text-xs uppercase tracking-wider text-s-muted">{t('verdictOutcome')}</dt><dd className={`mt-0.5 font-semibold ${v.outcome === 'won' ? 'text-s-win' : 'text-s-loss'}`}>{v.outcome === 'won' ? t('verdictWon') : t('verdictLost')}</dd></div>
               </dl>
-              <p className="mt-3 text-[13.5px] text-s-muted">{t('verdictNote')} <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('verdictRecord', { league: league.name })}</Link></p>
+              <p className="mt-3 text-[13.5px] text-s-muted">{t('verdictNote')} {league && <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('verdictRecord', { league: league.name })}</Link>}</p>
             </section>
           )}
 
@@ -265,12 +281,12 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
                   ))}
                 </tbody>
               </table>
-              {leagueAvg != null && <p className="mt-2 text-xs text-s-muted">{t('leagueAvgNote', { league: league.name, avg: dec(leagueAvg) })}</p>}
+              {league && leagueAvg != null && <p className="mt-2 text-xs text-s-muted">{t('leagueAvgNote', { league: league.name, avg: dec(leagueAvg) })}</p>}
             </section>
           )}
 
           {/* ── Puan durumu (iki kulüp) ─────────────────────────────── */}
-          {(stHome || stAway) && (
+          {league && (stHome || stAway) && (
             <section aria-labelledby="table-h">
               <SectionTitle id="table-h" title={t('tableH', { league: league.name })} meta={<Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('fullTable')}</Link>} />
               <table className="num mt-3 w-full text-[14px]">
@@ -306,6 +322,16 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
         </div>
 
         {/* ── Model tahmini: üyelere ───────────────────────────────── */}
+        {m.openMatch ? (
+        <aside className="h-fit rounded-[14px] border border-dashed border-s-line bg-s-surface p-5 lg:sticky lg:top-20" aria-labelledby="model-h">
+          <p className="kicker">{t('openKicker')}</p>
+          <h2 id="model-h" className="mt-2 text-[22px]">{t('openH')}</h2>
+          <p className="mt-2 text-[14px] text-s-muted">{t('openLead')}</p>
+          <p className="mt-2 text-[13.5px] text-s-muted">{t('openNote')}</p>
+          <div className="mt-5"><Link href="/predictions" className="btn btn-secondary" data-cta="open-match-rated">{t('openCta')} →</Link></div>
+          {m.updatedAt && <p className="mt-4 border-t border-s-line pt-3 text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(m.updatedAt), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
+        </aside>
+        ) : (
         <aside className="h-fit rounded-[14px] border border-s-line bg-s-surface p-5 shadow-[var(--s-shadow)] lg:sticky lg:top-20" aria-labelledby="model-h">
           <p className="kicker">{t('modelKicker')}</p>
           <h2 id="model-h" className="mt-2 text-[22px]">{t('modelH')}</h2>
@@ -326,10 +352,11 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
           </div>
           {m.updatedAt && <p className="mt-4 border-t border-s-line pt-3 text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(m.updatedAt), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
         </aside>
+        )}
       </div>
 
       {/* ── İlgili ──────────────────────────────────────────────────── */}
-      {related.length > 0 && (
+      {league && related.length > 0 && (
         <section className="border-t border-s-line pt-8 pb-10" aria-labelledby="related-h">
           <SectionTitle id="related-h" title={t('relatedH', { league: league.name })} meta={<Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>} />
           <div className="mt-4"><PublicMatchList rows={related} groupBy="none" showLeague={false} /></div>
@@ -337,8 +364,8 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
       )}
       <nav className="flex flex-wrap gap-x-5 gap-y-2 border-t border-s-line py-5 text-sm" aria-label={t('moreNav')}>
         <Link href="/matches" className="underline underline-offset-4">{t('backHub')}</Link>
-        <Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>
-        <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{t('resultsArchive', { league: league.name })}</Link>
+        {league && <Link href={`/leagues/${league.slug}`} className="underline underline-offset-4">{t('leaguePage', { league: league.name })}</Link>}
+        {league && <Link href={`/leagues/${league.slug}/results`} className="underline underline-offset-4">{t('resultsArchive', { league: league.name })}</Link>}
         {teamLinks.map((tl) => <Link key={tl.slug} href={`/teams/${tl.slug}`} className="underline underline-offset-4">{t('teamPage', { team: tl.name })}</Link>)}
         <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link>
         <Link href="/performance" className="underline underline-offset-4">{tn('performance')}</Link>
