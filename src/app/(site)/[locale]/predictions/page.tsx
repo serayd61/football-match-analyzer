@@ -25,6 +25,8 @@ import { assessRows } from '@/lib/site/assess';
 import { marketOf } from '@/lib/site/assessment';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice, AnonWall } from '@/components/site/Paywall';
+import { dayAvailability } from '@/lib/site/day-availability';
+import { horizonOf, emptyReason, publishDayFor } from '@/lib/site/day-strip-rule';
 
 // Members-only (2026-09-08): session read → dynamic; shared data stays cached in the lib layer.
 export const dynamic = 'force-dynamic';
@@ -90,7 +92,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   // Satır altı AI · ajan özeti (24 Eki): varsayılan açık, `ai=0` kapatır.
   const showAi = searchParams.ai !== '0';
 
-  const day = await listDay(date);
+  // Gün şeridi (overview-1.0, 2026-11-03): dün…bugün+5 sayılarıyla; ufuk = tahmini olan son gün.
+  const [day, avail] = await Promise.all([listDay(date), dayAvailability(today).catch(() => [])]);
+  const horizon = horizonOf(avail, today);
   const all = day.rows;
   // Kapsam dışı maçlar artık ana ızgaraya karışmaz; aşağıda lig lig gruplanır (2026-09-23).
   const scoped = all.filter((r) => r.covered);
@@ -185,6 +189,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
   };
 
   const nextDay = scoped.length === 0 && !outsideMode ? await nextDayWithPredictions(date, 1) : null;
+  // Boş günün nedeni: ufkun ötesindeki gün "henüz yayımlanmadı" (ne zaman geleceğiyle), ufuk içindeki gün "takvim boş".
+  const why = scoped.length === 0 ? emptyReason(date, today, horizon) : 'none';
   // Maç sayfasındaki "geri" bağlantısı bu sorguyu korur (gün, kapsam, ülke/lig, filtreler).
   const listQs = href({}).split('?')[1] ?? '';
   const spotOf = (p: (typeof all)[number]) => { const v = flt.market ? marketProb(p, flt.market) : null; return flt.market && v != null ? { label: mktName[flt.market], p: v } : null; };
@@ -224,6 +230,11 @@ export default async function PredictionsPage({ params: { locale }, searchParams
             {updated ? t('meta', { day: fullDay, matches: shownCount, time: updated }) : t('metaNoFeed', { day: fullDay, matches: shownCount })}
             {published && <> · {t('published', { time: published })}</>}
           </p>
+          {horizon && (
+            <p className="mt-1 text-[13px] text-s-muted" data-testid="horizon-note">
+              {t('horizon', { date: dayLabel(horizon) })}
+            </p>
+          )}
         </div>
         <Link href={href({ note: showNote ? '0' : undefined })} className="text-[13px] font-semibold text-s-muted hover:text-s-ink">{showNote ? t('hide') : t('show')}</Link>
       </div>
@@ -237,8 +248,9 @@ export default async function PredictionsPage({ params: { locale }, searchParams
         minPSteps={MIN_P_STEPS}
         aiCount={aiCount}
         dayLabel={{ prev: dayLabel(addDays(date, -1)), cur: dayLabel(date), next: dayLabel(addDays(date, 1)) }}
+        days={avail.map((a) => ({ d: a.date, label: dayLabel(a.date), n: a.covered }))}
         labels={{
-          yesterday: tc('yesterday'), today: tc('today'), tomorrow: tc('tomorrow'), prevDay: t('dayPrev'), nextDay: t('dayNext'), pickDate: tc('date'),
+          yesterday: tc('yesterday'), today: tc('today'), tomorrow: tc('tomorrow'), prevDay: t('dayPrev'), nextDay: t('dayNext'), pickDate: tc('date'), dayEmpty: t('dayEmpty'),
           all: t('all'), otherLeagues: t3('otherLeagues'), filters: tc('filters'), clear: tc('clear'), search: tc('search'), searchPh: t('searchPh'),
           status: tc('status'), statusAll: t('statusAll'), statusUpcoming: t('statusUpcoming'), statusLive: t('statusLive'), statusFinished: t('statusFinished'),
           sort: tc('sort'), sortTime: t('sortTime'), sortConfidence: t('sortConfidence'), ready: t('ready'),
@@ -278,12 +290,12 @@ export default async function PredictionsPage({ params: { locale }, searchParams
       ) : rows.length === 0 && filtersOn && inLeague.length > 0 ? (
         <div className="mt-6"><EmptyState title={t('emptyFiltered')} lead={t('emptyFilteredLead')} action={<Link href={href({ q: undefined, status: undefined, ready: undefined, sort: undefined })} className="btn btn-secondary">{tc('clear')}</Link>} /></div>
       ) : rows.length === 0 && scope === 'all' && uncoveredGroups.length > 0 ? (
-        <p className="mt-5 text-[14px] text-s-muted">{t('emptyTitle')} {nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}</p>
+        <p className="mt-5 text-[14px] text-s-muted">{t('emptyTitle')} {why === 'pending' ? t('emptyFuture', { date: dayLabel(publishDayFor(date)) }) : nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}</p>
       ) : rows.length === 0 ? (
         <div className="mt-6">
           <EmptyState
-            title={t('emptyTitle')}
-            lead={nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}
+            title={why === 'pending' ? t('emptyPendingTitle') : t('emptyTitle')}
+            lead={why === 'pending' ? t('emptyFuture', { date: dayLabel(publishDayFor(date)) }) : nextDay ? t('emptyNext', { date: dayLabel(nextDay) }) : tp('emptyLead')}
             action={nextDay ? <Link href={href({ date: nextDay })} className="btn btn-primary">{t('goToNext', { date: dayLabel(nextDay) })}</Link> : (league ? <Link href={href({ league: undefined })} className="btn btn-secondary">{t('all')}</Link> : uncoveredCount > 0 && scope !== 'all' ? <Link href={href({ scope: 'all' })} className="btn btn-secondary">{t('showUncovered', { count: uncoveredCount })}</Link> : undefined)}
           />
         </div>

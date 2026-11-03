@@ -16,7 +16,10 @@ import { useIsTwa } from '@/lib/site/twa-client';
 // "Uyan maçlar" (2026-10-08): günün karneye uyan seçimleri; üyelik ister, sayfa kendi yönlendirir.
 // SEO 2026-10-10: oturumu olmayan ziyaretçi "Tahminler" yerine herkese açık "Maçlar" (/matches) görür;
 // üye akışı değişmez. Oturum durumu istemcide okunur, bu yüzden ilk boyama "Maçlar"dır.
-const NAV: Array<{ href: string; key: 'predictions' | 'picks' | 'coupon' | 'performance' | 'leagues' | 'pricing' | 'matches' }> = [
+// Genel bakış (overview-1.0, 2026-11-03): üye için "Panel" ana menüye çıktı — hesap menüsünün içinde
+// saklıydı; kullanıcı geri bildirimi "aradığımı bulmak için uğraşıyorum" idi. Ziyaretçi görmez.
+const NAV: Array<{ href: string; key: 'dashboard' | 'predictions' | 'picks' | 'coupon' | 'performance' | 'leagues' | 'pricing' | 'matches' }> = [
+  { href: '/dashboard', key: 'dashboard' },
   { href: '/predictions', key: 'predictions' },
   { href: '/picks', key: 'picks' },
   { href: '/coupon', key: 'coupon' },
@@ -34,7 +37,7 @@ export default function SiteHeader() {
   // Google Play app: no "Pricing" entry (Play payments policy, lib/site/twa.ts).
   const twa = useIsTwa();
   const authedNav = status === 'authenticated';
-  const base = authedNav ? NAV : NAV.flatMap((n) => (n.key === 'predictions' ? [{ href: '/matches', key: 'matches' as const }] : n.key === 'picks' || n.key === 'coupon' ? [] : [n]));
+  const base = authedNav ? NAV : NAV.flatMap((n) => (n.key === 'predictions' ? [{ href: '/matches', key: 'matches' as const }] : n.key === 'picks' || n.key === 'coupon' || n.key === 'dashboard' ? [] : [n]));
   const nav = twa ? base.filter((n) => n.key !== 'pricing') : base;
 
   useEffect(() => { setOpen(false); setMenu(false); }, [pathname]);
@@ -118,10 +121,7 @@ export default function SiteHeader() {
               </Link>
             ))}
             {authed ? (
-              <>
-                <Link href="/dashboard" className="rounded-lg px-3 py-2.5 text-[16px] font-semibold hover:bg-s-raised/70">{t('dashboard')}</Link>
-                <Link href="/account" className="rounded-lg px-3 py-2.5 text-[16px] font-semibold hover:bg-s-raised/70">{t('account')}</Link>
-              </>
+              <Link href="/account" className="rounded-lg px-3 py-2.5 text-[16px] font-semibold hover:bg-s-raised/70">{t('account')}</Link>
             ) : null}
           </nav>
           <div className="rule-t-1 flex flex-wrap items-center gap-2 px-4 py-3">

@@ -32,6 +32,10 @@ import { AssessmentChip } from '@/components/site/Assessment';
 import { OVER_EDGE } from '@/lib/site/risk';
 import { pickFirstStep } from '@/lib/site/first-step';
 import { touchSeen } from '@/lib/site/seen';
+import OverviewStrip from '@/components/site/dashboard/OverviewStrip';
+import { dayAvailability } from '@/lib/site/day-availability';
+import { listResults } from '@/lib/site/results';
+import { zonedStartOfDay } from '@/lib/site/time';
 
 // Signed-in dashboard in the public design system. Three blocks:
 //   Today      — covered fixtures with the model's pick, market edge, live score
@@ -86,6 +90,11 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const radar = await valueRadar([...todayRows, ...tomorrowRows], (id) => assessed.get(id)?.assessment ?? null);
   // Günün 3 seçimi: sabah dondurulur (site_daily_picks); karne son 30 gün.
   const [picks, picksRec] = await Promise.all([readDailyPicks(today), dailyPicksRecord(30)]);
+  // Genel bakış (overview-1.0): gün başına tahmin sayısı + son 7 günün tuttu–tutmadı sayımı (sayfa boyutu 1: yalnız sayımlar).
+  const [avail, week] = await Promise.all([
+    dayAvailability(today).catch(() => []),
+    listResults({ league: null, from: addDays(today, -7), to: addDays(today, 1), page: 1, pageSize: 1 }).catch(() => null),
+  ]);
   // Güçlü pazarlar (24 Eyl): sicil stats.strong; bugün o bölgeye düşen maçlar + pazar karnesi.
   const coverage = await loadCoverage();
   const covById = new Map(coverage.map((c) => [Number(c.league_id), c]));
@@ -129,6 +138,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
   const firstName = session?.user?.name?.split(' ')[0] || email.split('@')[0];
   const dateLabel = f.dateTime(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
+  const dayLabel = (ymd: string) => ymd === today ? tc('today') : ymd === addDays(today, 1) ? tc('tomorrow') : f.dateTime(zonedStartOfDay(ymd), { weekday: 'short', day: 'numeric', month: 'short' });
   const formLabels = { W: tm('formW'), D: tm('formD'), L: tm('formL'), vs: tm('vs'), home: tc('home'), away: tc('away') };
 
   const pickEdge = (r: SitePrediction) => {
@@ -200,6 +210,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
           </div>
         }
       />
+
+      {site.state !== 'expired' && <OverviewStrip today={today} days={avail} record={week ? { won: week.won, lost: week.lost } : null} dayLabel={dayLabel} />}
 
       {trial && (
         <section className="mb-10 rounded-sm border border-s-brand bg-s-surface p-5 md:p-6" aria-labelledby="start-here">

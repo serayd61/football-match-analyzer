@@ -1010,6 +1010,17 @@
     "startCta": "Apri l'analisi della partita",
     "startRecord": "Guarda il registro del modello",
     "startEmpty": "Nessuna partita valutata nelle prossime 48 ore. Nel frattempo sfoglia il calendario.",
+    "overviewTitle": "Panoramica",
+    "ovMatches": "{n, plural, =1 {# partita coperta} other {# partite coperte}}",
+    "ovNone": "ancora nessun pronostico",
+    "ovNext": "Prossimi giorni",
+    "ovNextNote": "Ogni giornata è valutata con due giorni di anticipo; i numeri sono partite valutate nei campionati coperti.",
+    "ovPicks": "In linea",
+    "ovPicksLead": "Le scelte di oggi in linea con il nostro rendimento",
+    "ovCoupon": "Schedina del giorno",
+    "ovCouponLead": "La schedina a due eventi fissata ogni mattina",
+    "ovRecord": "Rendimento · ultimi 7 giorni",
+    "ovMisses": "Vedi i pronostici sbagliati",
     "openMatch": "nessun pronostico"
   },
   "picks": {
@@ -1279,7 +1290,11 @@
       "aiAgentLead": "Agenti",
       "aiAgents": "agenti",
       "mktBttsNo": "Gol No",
-      "noFavShort": "Partita aperta"
+      "noFavShort": "Partita aperta",
+      "horizon": "Pronostici pronti fino a {date} · i giorni successivi vengono aggiunti due giorni prima del calcio d’inizio.",
+      "dayEmpty": "Nessun pronostico ancora per questo giorno",
+      "emptyPendingTitle": "I pronostici di questo giorno non sono ancora pubblicati",
+      "emptyFuture": "Il modello valuta ogni giornata con due giorni di anticipo; i pronostici di questo giorno compaiono da {date}."
     },
     "match": {
       "back": "← Tutti i pronostici",
@@ -1375,7 +1390,11 @@
       "detailsTitle": "Calibrazione, campionati e mercati",
       "detailsLead": "Il rapporto completo — curve di calibrazione, record per campionato e mercato, rendimento a prezzo di apertura e chiusura, revisione settimanale.",
       "window": "Periodo {from} – {to}",
-      "metaTitle": "Accuratezza dei pronostici e storico"
+      "metaTitle": "Accuratezza dei pronostici e storico",
+      "outcomeLabel": "Esito",
+      "outcomeAll": "Tutti",
+      "outcomeWon": "Vinti",
+      "outcomeLost": "Persi"
     },
     "login": {
       "title": "Bentornato.",

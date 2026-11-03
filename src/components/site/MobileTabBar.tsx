@@ -17,7 +17,8 @@ export default function MobileTabBar() {
     status === 'authenticated' ? { href: '/predictions', label: t('predictions'), Icon: CalendarDays } : { href: '/matches', label: t('matches'), Icon: CalendarDays },
     { href: '/performance', label: t('performance'), Icon: ClipboardCheck },
     { href: '/leagues', label: t('leagues'), Icon: Trophy },
-    { href: account, label: t('account'), Icon: UserRound },
+    // overview-1.0: üye sekmesi zaten /dashboard'a gidiyordu ama "Hesap" yazıyordu — adı gittiği yer olsun.
+    { href: account, label: status === 'authenticated' ? t('dashboard') : t('account'), Icon: UserRound },
   ];
   return (
     <nav className="tabbar lg:hidden" aria-label="Primary (mobile)">

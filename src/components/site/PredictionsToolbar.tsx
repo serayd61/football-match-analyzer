@@ -25,8 +25,11 @@ export interface ToolbarState {
   /** satır altı AI · ajan özeti açık (varsayılan açık; `ai=0` kapatır) */
   ai: boolean;
 }
+/** Gün şeridi hücresi (overview-1.0): sunucu etiketler, `n` kapsanan tahmin sayısı (null = sayılamadı). */
+export interface ToolbarDay { d: string; label: string; n: number | null }
 export interface ToolbarLabels {
   yesterday: string; today: string; tomorrow: string; prevDay: string; nextDay: string; pickDate: string;
+  /** boş gün çipinin ipucu ("henüz tahmin yok") */ dayEmpty: string;
   all: string; otherLeagues: string; filters: string; clear: string; search: string; searchPh: string;
   status: string; statusAll: string; statusUpcoming: string; statusLive: string; statusFinished: string;
   sort: string; sortTime: string; sortConfidence: string; ready: string;
@@ -37,8 +40,9 @@ export interface ToolbarLabels {
   picker: { placeholder: string; modelLeagues: string; countries: string; otherLeagues: string; noResults: string };
 }
 
-export default function PredictionsToolbar({ state, leagues, uncoveredCount, countries, uLeagues, minPSteps, aiCount, labels, dayLabel }: {
+export default function PredictionsToolbar({ state, leagues, uncoveredCount, countries, uLeagues, minPSteps, aiCount, labels, dayLabel, days }: {
   state: ToolbarState; leagues: ToolbarLeague[]; uncoveredCount: number; countries: ToolbarCountry[]; uLeagues: ToolbarULeague[];
+  /** gün şeridi: dün … bugün+5, sayılarıyla (overview-1.0, 2026-11-03) */ days: ToolbarDay[];
   /** pazar eşiği adımları (%) */ minPSteps: readonly number[];
   /** listede AI görüşü hazır maç sayısı (düğme sayacı) */ aiCount: number; labels: ToolbarLabels; /** yesterday/today/tomorrow rendered by the server (locale) */ dayLabel: { prev: string; cur: string; next: string };
 }) {
@@ -95,9 +99,18 @@ export default function PredictionsToolbar({ state, leagues, uncoveredCount, cou
       {/* Row 1 — day */}
       <div className="flex flex-wrap items-center gap-2 p-3 sm:px-4">
         <button type="button" onClick={() => go({ date: addDays(state.date, -1) })} className="btn btn-secondary !h-10 !w-10 !px-0" aria-label={labels.prevDay}><ChevronLeft size={18} /></button>
-        <div className="seg" role="tablist" aria-label={labels.pickDate}>
-          {[{ d: addDays(state.today, -1), l: labels.yesterday }, { d: state.today, l: labels.today }, { d: addDays(state.today, 1), l: labels.tomorrow }].map((x) => (
-            <button key={x.d} type="button" role="tab" aria-current={state.date === x.d ? 'true' : undefined} onClick={() => go({ date: x.d })} className="seg-btn">{x.l}</button>
+        {/* Gün şeridi (overview-1.0): hangi günde kaç tahmin var, tek bakışta. 0 olan gün soluk ama tıklanabilir —
+            sayfa o günün neden boş olduğunu (henüz yayımlanmadı / takvim boş) kendisi açıklar. */}
+        <div className="seg no-scrollbar max-w-full overflow-x-auto" role="tablist" aria-label={labels.pickDate} data-testid="day-strip">
+          {days.map((x) => (
+            <button
+              key={x.d} type="button" role="tab" aria-current={state.date === x.d ? 'true' : undefined} onClick={() => go({ date: x.d })}
+              title={x.n === 0 ? labels.dayEmpty : undefined}
+              className={`seg-btn !gap-1.5 ${x.n === 0 && state.date !== x.d ? '!opacity-55' : ''}`}
+            >
+              {x.label}
+              {x.n != null && <span className={`num rounded-full px-1.5 text-[11px] font-semibold leading-[18px] ${x.n > 0 ? 'bg-s-raised text-s-ink' : 'text-s-muted'}`}>{x.n}</span>}
+            </button>
           ))}
         </div>
         <button type="button" onClick={() => go({ date: addDays(state.date, 1) })} className="btn btn-secondary !h-10 !w-10 !px-0" aria-label={labels.nextDay}><ChevronRight size={18} /></button>
