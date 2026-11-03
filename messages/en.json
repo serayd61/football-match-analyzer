@@ -215,7 +215,8 @@
     "feedError": "The fixture feed could not be reached, so only published predictions are listed for this day.",
     "feedStale": "Schedule as of {time}.",
     "mobileMarkets": "O/U 2.5 {ou} · BTTS {btts}",
-    "statusHint": "Match state comes from the schedule feed; the model rating is independent from it."
+    "statusHint": "Match state comes from the schedule feed; the model rating is independent from it.",
+    "openMatch": "No prediction · form and head-to-head"
   },
   "match": {
     "notFound": "Match not found",
@@ -1008,7 +1009,8 @@
     "startKindModel": "Highest model confidence in the next 48 hours",
     "startCta": "Open the match breakdown",
     "startRecord": "See how the model has done",
-    "startEmpty": "No rated match in the next 48 hours. Browse the fixtures meanwhile."
+    "startEmpty": "No rated match in the next 48 hours. Browse the fixtures meanwhile.",
+    "openMatch": "no prediction"
   },
   "picks": {
     "metaTitle": "Matches that fit our record",
@@ -1680,7 +1682,13 @@
       "resultsArchive": "{league} results",
       "teamPage": "{team}: fixtures & form",
       "metaDescriptionRanked": "{league}, {date}: {home} ({hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {hpts} pts) vs {away} ({apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {apts} pts). Table, recent form, head-to-head and the model’s pre-match view. Probabilities for members.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} now {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts), {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts). Final score, form, head-to-head and how the model’s pre-match call went."
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} now {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts), {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts). Final score, form, head-to-head and how the model’s pre-match call went.",
+      "openEyebrow": "No prediction",
+      "openKicker": "Not rated by the model",
+      "openH": "No model prediction for this match",
+      "openLead": "The engine does not rate this competition; this page shows only the fixture, each side’s recent matches and previous meetings.",
+      "openNote": "Matches the model does not rate never count towards the record, the daily picks or the slip.",
+      "openCta": "Rated matches"
     }
   },
   "coupon": {

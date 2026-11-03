@@ -8,15 +8,26 @@ import { publicMatchView, type PublicMatch } from './match-public';
 import { leagueBySlug } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
 import { fetchAllRows } from './page-all';
+import { getFeedMatch } from './match-history-data';
+import { feedPublicMatch } from './match-history';
 
 // Server-side reads for the public match pages and the sitemap. Every row
 // goes through publicMatchView() so no model figure leaves this module.
 
-/** Public view of one covered fixture; null when unknown, hidden or outside model coverage. */
+/**
+ * Public view of one fixture; null when unknown, hidden or outside model coverage.
+ * feed-1.1 (2026-11-03): motor satırı yoksa (ya da satır var ama model puanlamamışsa)
+ * günlük akış arşivine (feed_matches) düşer → "açık maç" sayfası: CL/EL ve kapsam
+ * dışı rakipler artık 404 değil. Modelli ama kapsam dışı satır (gözlem ligi) eskisi
+ * gibi null kalır; o maçın yeri üyelere /predictions.
+ */
 export async function getPublicMatch(fixtureId: number): Promise<PublicMatch | null> {
   const p = await getPrediction(fixtureId);
-  if (!p || !p.covered) return null;
-  return publicMatchView(p);
+  if (p?.covered && p.hasModel) return publicMatchView(p);
+  if (p && p.hasModel) return null;
+  const feed = await getFeedMatch(fixtureId);
+  if (feed) return feedPublicMatch(feed);
+  return p?.covered ? publicMatchView(p) : null;
 }
 
 /** Covered fixtures kicking off from two hours ago up to `days` ahead, kick-off order. */

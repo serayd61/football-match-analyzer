@@ -215,7 +215,8 @@
     "feedError": "Der Spielplan-Feed war nicht erreichbar; für diesen Tag werden nur veröffentlichte Prognosen gelistet.",
     "feedStale": "Spielplan Stand {time}.",
     "mobileMarkets": "Ü/U 2,5 {ou} · BTTS {btts}",
-    "statusHint": "Der Spielstatus stammt aus dem Spielplan-Feed; die Modellbewertung ist davon unabhängig."
+    "statusHint": "Der Spielstatus stammt aus dem Spielplan-Feed; die Modellbewertung ist davon unabhängig.",
+    "openMatch": "Keine Prognose · Form und direkte Duelle"
   },
   "match": {
     "notFound": "Spiel nicht gefunden",
@@ -1008,7 +1009,8 @@
     "startKindModel": "Höchste Modellsicherheit in den nächsten 48 Stunden",
     "startCta": "Spielanalyse öffnen",
     "startRecord": "Bilanz des Modells ansehen",
-    "startEmpty": "In den nächsten 48 Stunden kein bewertetes Spiel. Schau dir solange den Spielplan an."
+    "startEmpty": "In den nächsten 48 Stunden kein bewertetes Spiel. Schau dir solange den Spielplan an.",
+    "openMatch": "keine Prognose"
   },
   "picks": {
     "metaTitle": "Spiele, die zu unserer Bilanz passen",
@@ -1680,7 +1682,13 @@
       "resultsArchive": "{league}-Resultate",
       "teamPage": "{team}: Spiele & Form",
       "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}., {hpts} Pkt.) – {away} ({apos}., {apts} Pkt.). Tabelle, Form, direkter Vergleich und die Einschätzung des Modells vor dem Spiel. Wahrscheinlichkeiten für Mitglieder.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}:{as} {away}. {home} jetzt {hpos}. ({hpts} Pkt.), {away} {apos}. ({apts} Pkt.). Endstand, Form, direkter Vergleich und wie die Prognose des Modells ausging."
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}:{as} {away}. {home} jetzt {hpos}. ({hpts} Pkt.), {away} {apos}. ({apts} Pkt.). Endstand, Form, direkter Vergleich und wie die Prognose des Modells ausging.",
+      "openEyebrow": "Keine Prognose",
+      "openKicker": "Vom Modell nicht bewertet",
+      "openH": "Keine Modellprognose für dieses Spiel",
+      "openLead": "Das Modell bewertet diesen Wettbewerb nicht; die Seite zeigt nur Ansetzung, die letzten Spiele beider Teams und frühere Duelle.",
+      "openNote": "Spiele ohne Modellbewertung zählen nie für die Bilanz, die Tagesauswahl oder den Schein.",
+      "openCta": "Bewertete Spiele"
     }
   },
   "coupon": {
