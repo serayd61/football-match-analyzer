@@ -1,7 +1,7 @@
 // feed_matches geri doldurma (2026-11-03). Akışın son N gününü tabloya yazar;
 // günlük cron yalnız D-3..D'yi işlediği için ilk kurulumda bir kez çalıştırılır.
 // Kullanım (repo kökünde, .env.local ile):
-//   TSX_TSCONFIG_PATH=tsconfig.scripts.json node --import tsx scripts/backfill-feed-matches.ts [gün=60]
+//   TSX_TSCONFIG_PATH=tsconfig.scripts.json node --import tsx scripts/backfill-feed-matches.ts [geri gün=60] [ileri gün=2]
 // (tsconfig.scripts.json "server-only" paketini stub'lar; onsuz db.ts import'u fırlatır.)
 // Her gün 1 akış çağrısı (~1 sn aralıklı); 60 gün ≈ 60 çağrı, kota 200k/ay.
 import fs from 'node:fs';
@@ -13,7 +13,8 @@ async function main() {
   const { ingestFeedDay } = await import('@/lib/site/feed-matches');
   const { recentDays } = await import('@/lib/site/feed-matches-pure');
   const back = Number(process.argv[2] || 60);
-  const dates = recentDays(back);
+  const forward = Number(process.argv[3] || 2); // akış gün kovası UTC değil: bugünün geç maçları yarın altında
+  const dates = recentDays(back, new Date(), forward);
   let fetched = 0, written = 0, finished = 0, errors = 0;
   for (const d of dates) {
     const r = await ingestFeedDay(d);
