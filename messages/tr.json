@@ -1233,6 +1233,7 @@
       "show": "Güven nasıl okunur",
       "value": "fark {value}",
       "pendingModel": "Model bekleniyor",
+      "openMatch": "Tahmin yok · form ve geçmiş karşılaşmalar",
       "emptyTitle": "Bu gün için tahmin yok.",
       "emptyNext": "Sıradaki tahminler: {date}.",
       "goToNext": "{date} tarihine git →",

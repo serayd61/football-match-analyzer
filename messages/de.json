@@ -1233,6 +1233,7 @@
       "show": "So liest du die Konfidenz",
       "value": "Differenz {value}",
       "pendingModel": "Modell ausstehend",
+      "openMatch": "Keine Prognose · Form und Direktvergleich",
       "emptyTitle": "Keine Prognosen für diesen Tag.",
       "emptyNext": "Nächste Tipps: {date}.",
       "goToNext": "Zum {date} →",

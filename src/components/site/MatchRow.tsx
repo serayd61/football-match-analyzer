@@ -12,6 +12,7 @@ import AiBadge, { AiDetail } from './AiBadge';
 import type { AiListFlag } from '@/lib/site/ai-list';
 import type { MarketAssessment } from '@/lib/site/assessment';
 import { rowId } from '@/lib/site/back-link';
+import { matchPath } from '@/lib/site/match-public';
 
 // Match row v3 — one fixture per line inside a league group:
 //   time | crests + names (+ score) | 1·X·2 mini bar (pick bold) | confidence + risk
@@ -88,7 +89,7 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
               <span className={p.pick === '2' && !p.noFavourite ? 'font-bold text-s-away' : ''}>2 {pct(p.pAway)}</span>
             </div>
           </>
-        ) : <span className="text-[12px] text-s-muted">{t('pendingModel')}</span>}
+        ) : <span className="text-[12px] text-s-muted">{t('openMatch')}</span>}
       </div>
 
       {/* confidence + risk */}
@@ -117,7 +118,9 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
 
   // Satır çıpası (24 Eki): maç sayfasının "geri" bağlantısı #m-<id> ile bu satıra iner;
   // scroll-mt yapışkan başlığın (60px) altında kalmasın diye.
+  // feed-1.1 (2026-11-04): modelsiz fikstür (ŞL/AL/Konferans vb.) artık açık maç sayfasına gider —
+  // form + H2H, tahmin yok. Önceden satır tıklanamıyordu ("model bekleniyor").
   return p.hasModel
     ? <Link id={rowId(p.fixtureId)} href={`/predictions/${p.fixtureId}${back ? `?back=${encodeURIComponent(back)}` : ''}`} className="mrow scroll-mt-20">{body}</Link>
-    : <div id={rowId(p.fixtureId)} className="mrow scroll-mt-20">{body}</div>;
+    : <Link id={rowId(p.fixtureId)} href={matchPath(p)} className="mrow scroll-mt-20">{body}</Link>;
 }
