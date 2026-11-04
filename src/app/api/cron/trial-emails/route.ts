@@ -18,7 +18,7 @@ import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, TRIAL_KINDS, type TrialKind
 import { showcaseRecord } from '@/lib/site/showcase';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard } from '@/lib/site/strong-markets';
-import { PLAN_PRICES } from '@/lib/site/plans';
+import { PLAN_PRICES, PROMO, promoActive, yearlyEnabled } from '@/lib/site/plans';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   const rec = await showcaseRecord(7).catch(() => null);
   const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
   const strong = kind === 'strong' ? await loadCoverage().then((c) => strongBoard(c, 2)).catch(() => null) : null;
-  const common = { stats, strong, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, dashboardUrl: `${SITE_URL}/dashboard`, playUrl: PLAY_STORE_URL, fullPrice: PLAN_PRICES.monthly.amount };
+  const common = { stats, strong, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, dashboardUrl: `${SITE_URL}/dashboard`, playUrl: PLAY_STORE_URL, fullPrice: PLAN_PRICES.monthly.amount, yearlyPrice: yearlyEnabled() ? PLAN_PRICES.yearly.amount : null, promoCode: promoActive() ? PROMO.code : null };
 
   if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft })) });
 

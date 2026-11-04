@@ -8,29 +8,42 @@ import { track } from '@/lib/analytics';
 type Labels = {
   title: string; lead: string;
   freeName: string; freeSub: string; freePrice: string; freeFor: string; free: string[]; freeNot: string; freeCta: string;
-  proName: string; proSub: string; mostPopular: string; perMonth: string; noteMonthly: string;
+  proName: string; proSub: string; mostPopular: string; perMonth: string; perYear: string; noteMonthly: string; noteYearly: string;
+  billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
   twaNote: string; twaSignIn: string;
 };
+
+export type Billing = 'monthly' | 'yearly';
 
 // Client half of the pricing page: the plan columns and the checkout call.
 // `purchasable=false` is the Google Play (TWA) build: the plan comparison stays,
 // but the price and the checkout button are not
 // rendered (Play payments policy — see src/lib/site/twa.ts).
-export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, price, labels: l }: {
+// 2026-11-04: monthly / yearly toggle (yearly only when the server says the
+// Stripe price exists) and the year-end promo note on the monthly view.
+export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, price, yearlyPrice, yearlyEnabled = false, promo, labels: l }: {
   locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean;
-  /** monthly Pro price, formatted */ price: string; labels: Labels;
+  /** monthly Pro price, formatted */ price: string;
+  /** yearly Pro price, formatted */ yearlyPrice?: string;
+  yearlyEnabled?: boolean;
+  /** active promotion code for the monthly plan (null when the campaign is over) */
+  promo?: string | null;
+  labels: Labels;
 }) {
   const router = useRouter();
-  // Single plan: monthly Pro, no Stripe trial (weekly removed 2026-10-13).
+  // No Stripe trial (weekly removed 2026-10-13). Yearly is the default when
+  // available: the toggle shows the cheaper per-month figure first.
+  const [billing, setBilling] = useState<Billing>(yearlyEnabled ? 'yearly' : 'monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const yearly = yearlyEnabled && billing === 'yearly';
 
   useEffect(() => { track.viewPricing(); }, []);
 
   const subscribe = async () => {
     if (!signedIn) {
-      track.ctaClick('pricing_page', 'subscribe_logged_out');
+      track.ctaClick('pricing_page', yearly ? 'subscribe_logged_out_yearly' : 'subscribe_logged_out');
       router.push(`/login?callbackUrl=${encodeURIComponent(`/${locale}/pricing`)}`);
       return;
     }
@@ -39,7 +52,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'PRO' }),
+        body: JSON.stringify({ plan: yearly ? 'PRO_YEARLY' : 'PRO' }),
       });
       const data = await res.json();
       if (data?.url) { window.location.href = data.url; return; }
@@ -57,6 +70,16 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
           <p className="max-w-[440px] text-[16px] text-s-muted">{l.lead}</p>
         </div>
       </div>
+
+      {/* Billing toggle (only when the yearly plan exists and prices are shown) */}
+      {purchasable && yearlyEnabled && (
+        <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label={`${l.billingMonthly} / ${l.billingYearly}`}>
+          <button type="button" onClick={() => setBilling('monthly')} aria-pressed={billing === 'monthly'} className={`btn btn-sm ${billing === 'monthly' ? 'btn-primary' : 'btn-secondary'}`}>{l.billingMonthly}</button>
+          <button type="button" onClick={() => setBilling('yearly')} aria-pressed={billing === 'yearly'} className={`btn btn-sm ${billing === 'yearly' ? 'btn-primary' : 'btn-secondary'}`}>
+            {l.billingYearly} <span className="tag tag-accent ml-1">{l.saveBadge}</span>
+          </button>
+        </div>
+      )}
 
       {/* Plan columns */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -84,10 +107,11 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
           {purchasable && (
             <div>
               <p className="flex items-baseline gap-2">
-                <span className="num text-[48px] font-extrabold leading-none">{price}</span>
-                <span className="text-[14px] text-s-muted">{l.perMonth}</span>
+                <span className="num text-[48px] font-extrabold leading-none">{yearly ? yearlyPrice : price}</span>
+                <span className="text-[14px] text-s-muted">{yearly ? l.perYear : l.perMonth}</span>
               </p>
-              <p className="mt-2 text-[14px] text-s-accent-700">{l.noteMonthly}</p>
+              <p className="mt-2 text-[14px] text-s-accent-700">{yearly ? l.noteYearly : l.noteMonthly}</p>
+              {!yearly && promo && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.promoNote}</p>}
             </div>
           )}
           <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
