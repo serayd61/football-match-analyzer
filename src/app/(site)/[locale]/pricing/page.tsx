@@ -51,6 +51,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           noteYearly: t('noteYearly', { yearly: money(PLAN_PRICES.yearly.amount), perMonth: money(yearlyPerMonth()) }),
           billingMonthly: t('billingMonthly'), billingYearly: t('billingYearly'), saveBadge: t('saveBadge', { pct: yearlySavingPct() }),
           promoNote: t('promoNote', { code: PROMO.code, pct: PROMO.percentOff, months: PROMO.months, promoMonthly: money(promoMonthly()) }),
+          promoShort: t('promoShort', { code: PROMO.code, pct: PROMO.percentOff }),
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
           twaNote: t('twaNote'), twaSignIn: t('twaSignIn'),
