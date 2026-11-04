@@ -346,6 +346,9 @@ Yürüyen geriye dönük test (`engine/backtest_cups.py`, 2025-10-01..2026-11-04
 `teams` kapsamı (yalnız havuz takımlarının lig maçları) kapsamı en çok açar ama ligdaşlar eksik kaldığı
 için ölçek kayar; `leagues` (havuz takımı içeren liglerin tüm maçları, 0,6 ağırlık) üç kupada da en iyi
 logloss/brier. Konferans'ta kazanç tabana göre küçük (1,059 vs 1,066): kupa heterojen, karne izlenmeli.
+Ağırlık taraması (leagues, logloss): ŞL 0,4→0,943 · **0,6→0,939** · 0,8→0,944 · 1,0→0,960; AL 0,4→0,921 ·
+0,6→0,928 · 0,8→0,963; Konferans 0,4→1,077 (taban 1,061, kötü) · **0,6→1,059** · 0,8→1,066 · 1,0→1,072.
+0,6 üç kupada da sağlam; 0,4 yalnız AL'de bir tık iyi, Konferans'ta tabanın altına düşüyor.
 
 Servis vars.: `CUP_POOL_LEAGUES=904988,73,10216`, `CUP_POOL_SCOPE=leagues`, `CUP_POOL_DOMESTIC_W=0.6`
 (kod içi varsayılan; unit'e satır gerekmez). `/status` → `cup_pool`. Sürüm params'ı ile lig bazında
