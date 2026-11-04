@@ -319,3 +319,38 @@ xG akışı: cron'daki `XG_FEED_LEAGUES` değişkenine `73,10216,943229,943231` 
 `XG_FEED_LEAGUES=42,73,10216,943230,943229,943231,904988,904995,905100,905103,905113,905114 store_xg_feed.py build --days 420 --max 700`.
 Site tarafı: `src/lib/model-coverage.ts` + `src/lib/site/leagues.ts` (slug `europa-league`, `conference-league`).
 
+
+## Ek (2026-11-04) — Kupa havuzu: ŞL/AL/Konferans fit'i lig maçlarıyla
+
+Alias sonrası 52 kupa fikstüründe yalnız 7 ŞL tahmini çıktı; 51'i `team_too_few_matches` (takım
+başına ≥6 kupa maçı yok: AL 28/36, Konferans 33/36 takım). Kupaya yeni giren takımın 3 kupa maçı ama
+100+ lig maçı var. Çözüm `store.load_pool_for_fit`: kupa grubunun maçları (w=1) + son 400 günde kupada
+oynamış takımları içeren DİĞER grupların maçları (w=`CUP_POOL_DOMESTIC_W`), 60+ takımlı gruplar
+(hazırlık havuzu 915708) dışarıda. `model.fit`/`model_xg.fit` satır ağırlığını zaman ağırlığıyla çarpar.
+
+Yürüyen geriye dönük test (`engine/backtest_cups.py`, 2025-10-01..2026-11-04, maç günü başına yeniden fit;
+`taban` = o alt kümenin 1X2 taban dağılımı):
+
+| Kupa | varyant | kapsam | isabet | logloss | taban ll | brier |
+|---|---|---|---|---|---|---|
+| ŞL 904988 (216 maç) | yalnız kupa | 30/216 | 0,567 | 0,919 | 1,041 | 0,560 |
+| | teams:0,5 | 182 | 0,588 | 0,954 | 1,012 | 0,558 |
+| | **leagues:0,6** | 198 | 0,591 | **0,939** | 1,004 | **0,552** |
+| AL 73 (225 maç) | yalnız kupa | 29/225 | 0,517 | 1,136 | 0,991 | 0,679 |
+| | teams:0,5 | 182 | 0,588 | 0,940 | 1,038 | 0,556 |
+| | **leagues:0,6** | 198 | 0,601 | **0,928** | 1,041 | **0,549** |
+| Konferans 10216 (189 maç) | yalnız kupa | 10/189 | 0,400 | 1,057 | 0,905 | 0,623 |
+| | teams:0,5 | 128 | 0,438 | 1,123 | 1,073 | 0,669 |
+| | **leagues:0,6** | 141 | 0,489 | **1,059** | 1,066 | **0,636** |
+
+`teams` kapsamı (yalnız havuz takımlarının lig maçları) kapsamı en çok açar ama ligdaşlar eksik kaldığı
+için ölçek kayar; `leagues` (havuz takımı içeren liglerin tüm maçları, 0,6 ağırlık) üç kupada da en iyi
+logloss/brier. Konferans'ta kazanç tabana göre küçük (1,059 vs 1,066): kupa heterojen, karne izlenmeli.
+Ağırlık taraması (leagues, logloss): ŞL 0,4→0,943 · **0,6→0,939** · 0,8→0,944 · 1,0→0,960; AL 0,4→0,921 ·
+0,6→0,928 · 0,8→0,963; Konferans 0,4→1,077 (taban 1,061, kötü) · **0,6→1,059** · 0,8→1,066 · 1,0→1,072.
+0,6 üç kupada da sağlam; 0,4 yalnız AL'de bir tık iyi, Konferans'ta tabanın altına düşüyor.
+
+Servis vars.: `CUP_POOL_LEAGUES=904988,73,10216`, `CUP_POOL_SCOPE=leagues`, `CUP_POOL_DOMESTIC_W=0.6`
+(kod içi varsayılan; unit'e satır gerekmez). `/status` → `cup_pool`. Sürüm params'ı ile lig bazında
+`pool_scope` / `pool_domestic_w` geçilebilir. Deploy: `git pull && systemctl restart footy-predict`;
+saatlik engine-sync (:05) AL/Konferans fikstürlerine tahmin yazar.
