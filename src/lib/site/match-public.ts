@@ -63,7 +63,7 @@ export function settledVerdict(p: SitePrediction): SettledVerdict | null {
 /** Fields of SitePrediction that must never reach a public page (test-checked). */
 export const PREMIUM_FIELDS = [
   'pHome', 'pDraw', 'pAway', 'lambdaHome', 'lambdaAway', 'pick', 'confidence', 'confidenceRaw',
-  'doubleChance', 'overUnder', 'btts', 'rationale', 'outcome', 'result', 'modelVersion', 'hasModel', 'modelStatus', 'publishedAfterKickoff',
+  'doubleChance', 'overUnder', 'btts', 'rationale', 'outcome', 'result', 'modelVersion', 'hasModel', 'modelStatus', 'publishedAfterKickoff', 'provisional',
 ] as const;
 
 export function publicMatchView(p: SitePrediction): PublicMatch {

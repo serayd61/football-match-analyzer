@@ -26,7 +26,7 @@ export function fixtureRow(f: FeedRow, catalog: Catalog): SitePrediction {
     doubleChance: null, overUnder: null, btts: null, rationale: null,
     settled: false, homeScore: f.homeScore ?? null, awayScore: f.awayScore ?? null, result: null,
     outcome: 'pending', noFavourite: false, modelVersion: null, updatedAt: null, hasModel: false,
-    status: feedStatus(f.status), modelStatus: 'pending', publishedAfterKickoff: false,
+    status: feedStatus(f.status), modelStatus: 'pending', publishedAfterKickoff: false, provisional: false,
   };
 }
 

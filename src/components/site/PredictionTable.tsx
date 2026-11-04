@@ -142,7 +142,7 @@ export default async function PredictionTable({ rows, showOutcome = false }: { r
                       <span className="mr-1 inline-block w-4 text-center font-semibold text-s-muted">{p.pick ?? '–'}</span>
                       <span className="lg:hidden">{pickLabel(p, t)}</span>
                     </span>
-                    <span className="num font-semibold">{pct(p.confidence)}</span>
+                    <span className="num font-semibold">{pct(p.confidence)}{p.provisional && <span className="ml-1 align-middle text-[10px] font-semibold uppercase tracking-wider text-s-muted" data-testid="provisional">{tp('provisionalShort')}</span>}</span>
                   </span>
 
                   {/* Goal markets: inline on the stacked layout, own columns from lg. */}

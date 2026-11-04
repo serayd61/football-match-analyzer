@@ -1,7 +1,7 @@
 // ============================================================================
 // CRON — AKIŞ ARŞİVİ (03:40 UTC): son N günün maçlarını feed_matches'e yazar.
 // ----------------------------------------------------------------------------
-// Varsayılan ?back=3&forward=2 → D-3..D+2 (6 çağrı; dünün maçları final, geç
+// Varsayılan ?back=3&forward=5 → D-3..D+5 (9 çağrı; iki katmanlı ufuk 2026-11-04; dünün maçları final, geç
 // biten/ertelenen için iki gün pay; ileri günler çünkü akışın gün kovası UTC değil,
 // günün geç maçları "yarın" altında gelir — ayrıca yaklaşan fikstürler tabloya girer).
 // Geri doldurma: ?from=YYYY-MM-DD&to=YYYY-MM-DD (en çok 14 gün; 60 gün için
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!dates.length) return NextResponse.json({ error: 'bad range' }, { status: 400 });
     if (dates.length > 14) return NextResponse.json({ error: 'range too long (max 14 days); use scripts/backfill-feed-matches.ts' }, { status: 400 });
   } else {
-    dates = recentDays(Math.min(7, Math.max(0, Number(q.get('back') || 3))), new Date(), Math.min(7, Math.max(0, Number(q.get('forward') || 2))));
+    dates = recentDays(Math.min(7, Math.max(0, Number(q.get('back') || 3))), new Date(), Math.min(7, Math.max(0, Number(q.get('forward') || 5))));
   }
   const days = await ingestFeedDays(dates);
   const totals = days.reduce((a, d) => ({ fetched: a.fetched + d.fetched, written: a.written + d.written, finished: a.finished + d.finished, errors: a.errors + (d.error ? 1 : 0) }), { fetched: 0, written: 0, finished: 0, errors: 0 });

@@ -355,7 +355,9 @@
       "conflictTitle": "Ajanlar bu pazarda ayrışıyor",
       "conflictBody": "{market} pazarında ajan oyu {agentSel} yönünde (güven %{pct}, {ratio} ajan), yukarıdaki konsensüs ise {consensusSel} diyor. Ortak karar verilmiyor; bu pazarı tartışmalı say.",
       "noFav": "Favori yok"
-    }
+    },
+    "flagProvisionalShort": "Ön tahmin",
+    "flagProvisional": "Ön tahmin: bu satır maça 48 saatten uzakken hesaplandı; her gün yenilenir, maç gününe 2 gün kala kesinleşir ve karneye o değer girer."
   },
   "results": {
     "title": "Sonuçlar",
@@ -1294,10 +1296,11 @@
       "aiAgents": "ajan",
       "mktBttsNo": "KG Yok",
       "noFavShort": "Açık maç",
-      "horizon": "Tahminler {date} gününe kadar hazır · sonraki günler maç gününe 2 gün kala eklenir.",
+      "horizon": "Tahminler {date} gününe kadar hazır · 5 güne kadar ön tahmin, maç gününe 2 gün kala kesinleşir.",
       "dayEmpty": "Bu gün için henüz tahmin yok",
       "emptyPendingTitle": "Bu günün tahminleri henüz yayımlanmadı",
-      "emptyFuture": "Model her maç gününü iki gün önceden puanlar; bu günün tahminleri {date} itibarıyla burada olur."
+      "emptyFuture": "Model her maç gününü iki gün önceden puanlar; bu günün tahminleri {date} itibarıyla burada olur.",
+      "provisionalShort": "Ön tahmin"
     },
     "match": {
       "back": "← Tüm tahminler",

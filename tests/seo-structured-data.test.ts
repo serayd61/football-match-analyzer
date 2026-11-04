@@ -16,7 +16,7 @@ const row = (over: Partial<SitePrediction>): SitePrediction => ({
   kickoff: '2026-10-18T15:30:00Z', pHome: 0.5, pDraw: 0.25, pAway: 0.25, lambdaHome: null, lambdaAway: null, pick: '1',
   confidence: null, confidenceRaw: null, confidenceCalibrated: false, calibrationSegment: null, doubleChance: null as any, overUnder: null, btts: null, rationale: null,
   settled: false, homeScore: null, awayScore: null, result: null, outcome: 'pending', noFavourite: false, modelVersion: null, updatedAt: null,
-  hasModel: true, status: 'scheduled', modelStatus: 'rated' as any, publishedAfterKickoff: false, ...over,
+  hasModel: true, status: 'scheduled', modelStatus: 'rated' as any, publishedAfterKickoff: false, provisional: false, ...over,
 });
 
 test('venue registry: generated entry, hand override, unknown id', () => {

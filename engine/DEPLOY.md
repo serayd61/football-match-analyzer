@@ -354,3 +354,22 @@ Servis vars.: `CUP_POOL_LEAGUES=904988,73,10216`, `CUP_POOL_SCOPE=leagues`, `CUP
 (kod içi varsayılan; unit'e satır gerekmez). `/status` → `cup_pool`. Sürüm params'ı ile lig bazında
 `pool_scope` / `pool_domestic_w` geçilebilir. Deploy: `git pull && systemctl restart footy-predict`;
 saatlik engine-sync (:05) AL/Konferans fikstürlerine tahmin yazar.
+
+## Ek (2026-11-04) — İki katmanlı ufuk: D..D+5 ön tahmin, 48 saat kala kesin
+
+Müşteri isteği: "sonraki 5 günün programını ve tahminlerini görelim". Akış 5 gün sonrasını zaten
+veriyordu; sınır koddaydı (engine-sync DAYS_AHEAD=2, site gün sayfası akışı yalnız D..D+2, arşiv cron'u D+2).
+
+Kural (`engine/deploy/engine-sync.py plan_fixtures`, saf ve testli):
+- Maça **48 saatten uzak** fikstür = **ön tahmin**: satırı yoksa yazılır; varsa son yazımın üstünden
+  20 saat geçtiyse üzerine yazılır (günde bir, hafta içi sonuçlarını görür).
+- 48 saat **içine giren** fikstürün son yazımı uzaktayken yapıldıysa **bir kez daha** yazılır ve
+  **donar**; karne ve günün seçimleri bu değeri ölçer. 48 saat içinde yazılmış satıra dokunulmaz.
+- Sitede ön/kesin ayrımı `kickoff − updated_at > 48 sa` ile türetilir (`day-strip-rule.isProvisional`);
+  tabloya sütun eklenmedi, ingest sözleşmesi değişmedi (upsert zaten üzerine yazar).
+- Site: gün sayfası akışı D..D+5 (`STRIP_FUTURE_DAYS`), satır/lig tablosu/maç sayfasında "Ön tahmin"
+  rozeti, ufuk notu "5 güne kadar ön tahmin, 2 gün kala kesinleşir", feed_matches cron'u D-3..D+5.
+
+Env (vars.): `SYNC_DAYS_AHEAD=5`, `SYNC_FREEZE_HOURS=48`, `SYNC_REFRESH_HOURS=20`. Maliyet: saatte 3 akış
+çağrısı daha; motor/ingest yükü günde bir yenileme olduğu için küçük. Deploy: betiği Hetzner'e kopyala
+(`scp engine/deploy/engine-sync.py root@188.245.241.149:/opt/football-match-analyzer/engine-sync.py`).

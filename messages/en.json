@@ -355,7 +355,9 @@
       "conflictTitle": "Agents split on this market",
       "conflictBody": "On {market} the agents’ vote leans {agentSel} ({pct}% confidence, {ratio} agents) while the consensus above says {consensusSel}. No joint verdict is given; treat this market as contested.",
       "noFav": "No favourite"
-    }
+    },
+    "flagProvisionalShort": "Preview",
+    "flagProvisional": "Preview: this row was computed more than 48 hours before kick-off; it is refreshed daily and locked two days before the match, and the locked value is what the track record measures."
   },
   "results": {
     "title": "Results",
@@ -1294,10 +1296,11 @@
       "aiAgents": "agents",
       "mktBttsNo": "BTTS No",
       "noFavShort": "Open match",
-      "horizon": "Predictions are ready through {date} · later days are added two days before kick-off.",
+      "horizon": "Predictions are ready through {date} · previews up to 5 days ahead, locked two days before kick-off.",
       "dayEmpty": "No predictions for this day yet",
       "emptyPendingTitle": "This day’s predictions are not published yet",
-      "emptyFuture": "The model rates each match day two days ahead; this day’s predictions appear from {date}."
+      "emptyFuture": "The model rates each match day two days ahead; this day’s predictions appear from {date}.",
+      "provisionalShort": "Preview"
     },
     "match": {
       "back": "← All predictions",

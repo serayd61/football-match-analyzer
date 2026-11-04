@@ -9,6 +9,7 @@ import { mergeFeed, feedBucketsFor, type FeedRow } from './merge-feed';
 export { mergeFeed, fixtureRow, type FeedRow } from './merge-feed';
 export { feedStatus } from './status';
 import { zonedStartOfDay, addDays, todayYmd } from './time';
+import { STRIP_FUTURE_DAYS } from './day-strip-rule';
 
 // ---------------------------------------------------------------------------
 // Fixture schedule for a day, merged with the model's published predictions.
@@ -74,13 +75,14 @@ async function feedForDayWindow(ymd: string): Promise<FeedRow[]> {
 
 /**
  * Rows for a calendar day (Zurich): published predictions first, then any
- * feed fixture the model has not rated yet. Only today and the next two
- * days consult the feed; other days come from the database alone.
+ * feed fixture the model has not rated yet. Only today and the next
+ * STRIP_FUTURE_DAYS days consult the feed (iki katmanlı ufuk, 2026-11-04);
+ * other days come from the database alone.
  */
 async function buildDay(ymd: string, predictions: SitePrediction[]): Promise<DayRows> {
     const today = todayYmd();
     const fetchedAt = new Date().toISOString();
-    if (ymd < today || ymd > addDays(today, 2)) return { rows: predictions, feed: 'skipped', fetchedAt };
+    if (ymd < today || ymd > addDays(today, STRIP_FUTURE_DAYS)) return { rows: predictions, feed: 'skipped', fetchedAt };
 
     let feed: FeedRow[] = [];
     try { feed = await feedForDayWindow(ymd); } catch (e) { console.error('[site/fixtures] feed failed', e); return { rows: predictions, feed: 'error', fetchedAt }; }

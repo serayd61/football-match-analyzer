@@ -20,7 +20,7 @@ const pred = (o: Partial<SitePrediction>): SitePrediction => ({
   pick: '1', confidence: 0.5, confidenceRaw: 0.5, confidenceCalibrated: false, calibrationSegment: null,
   doubleChance: null as any, overUnder: null, btts: null, rationale: 'secret', settled: true, homeScore: 2, awayScore: 1,
   result: 'H', outcome: 'won', noFavourite: false, modelVersion: 'dc-1.0', updatedAt: '2026-09-13T18:00:00Z', hasModel: true, status: 'finished' as any,
-  modelStatus: 'ready' as any, publishedAfterKickoff: false, ...o,
+  modelStatus: 'ready' as any, publishedAfterKickoff: false, provisional: false, ...o,
 });
 
 test('open data: a settled match becomes one flat row; result and pick_correct derive from the score', () => {

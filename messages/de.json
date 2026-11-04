@@ -355,7 +355,9 @@
       "conflictTitle": "Agenten uneins in diesem Markt",
       "conflictBody": "Bei {market} tendiert die Agentenabstimmung zu {agentSel} ({pct} % Konfidenz, {ratio} Agenten), der Konsens oben sagt {consensusSel}. Kein gemeinsames Urteil; dieser Markt gilt als strittig.",
       "noFav": "Kein Favorit"
-    }
+    },
+    "flagProvisionalShort": "Vorschau",
+    "flagProvisional": "Vorschau: diese Zeile wurde mehr als 48 Stunden vor dem Anpfiff berechnet; sie wird täglich aktualisiert und zwei Tage vor dem Spiel fixiert – der fixierte Wert zählt für die Bilanz."
   },
   "results": {
     "title": "Resultate",
@@ -1294,10 +1296,11 @@
       "aiAgents": "Agenten",
       "mktBttsNo": "BTTS Nein",
       "noFavShort": "Offenes Spiel",
-      "horizon": "Prognosen stehen bis {date} bereit · spätere Tage kommen zwei Tage vor dem Anpfiff dazu.",
+      "horizon": "Prognosen stehen bis {date} bereit · Vorschau bis zu 5 Tage im Voraus, fixiert zwei Tage vor dem Anpfiff.",
       "dayEmpty": "Für diesen Tag noch keine Prognosen",
       "emptyPendingTitle": "Die Prognosen für diesen Tag sind noch nicht veröffentlicht",
-      "emptyFuture": "Das Modell bewertet jeden Spieltag zwei Tage im Voraus; die Prognosen für diesen Tag erscheinen ab {date}."
+      "emptyFuture": "Das Modell bewertet jeden Spieltag zwei Tage im Voraus; die Prognosen für diesen Tag erscheinen ab {date}.",
+      "provisionalShort": "Vorschau"
     },
     "match": {
       "back": "← Alle Prognosen",

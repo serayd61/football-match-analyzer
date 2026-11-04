@@ -1,4 +1,5 @@
 import 'server-only';
+import { isProvisional } from './day-strip-rule';
 import { latestPhase } from './odds-phases';
 import { unstable_cache } from 'next/cache';
 import { z } from 'zod';
@@ -120,6 +121,8 @@ export interface SitePrediction {
   modelStatus: ModelStatus;
   /** Quality flag: the stored row was last written after kick-off (not a clean pre-match record). */
   publishedAfterKickoff: boolean;
+  /** Ön tahmin (2026-11-04): satır maça 48 saatten uzakken yazıldı; 48 saat kala son kez yazılıp donar. */
+  provisional: boolean;
 }
 
 const crest = (id: number | null) => (id ? `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png` : null);
@@ -250,6 +253,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
     status: statusOfRow(r, now),
     modelStatus: 'ready',
     publishedAfterKickoff,
+    provisional: isProvisional(r.kickoff, r.updated_at, !!r.settled),
   };
 }
 
