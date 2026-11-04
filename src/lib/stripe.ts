@@ -77,7 +77,11 @@ export async function createCheckoutSession({
 
  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
   ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: userEmail }),
-  payment_method_types: ['card'],
+  // Ödeme yöntemi listesi Dashboard'dan gelir (2026-11-04): 'card' sabitken
+  // PayPal/Google Pay gibi Dashboard'da açılan yöntemler Checkout'ta hiç
+  // görünmüyordu. 13 Eki–4 Kas arası 11 checkout'un hepsi ödenmeden kapandı;
+  // kitle (Afrika/Orta Doğu/LatAm) kartla ödeyemiyor. Stripe, abonelik
+  // moduyla uyumsuz yöntemleri kendisi eler.
   line_items: [{ price: priceId, quantity: 1 }],
   mode: 'subscription',
   success_url: successUrl,
