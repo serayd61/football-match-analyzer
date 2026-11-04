@@ -9,7 +9,7 @@ type Labels = {
   title: string; lead: string;
   freeName: string; freeSub: string; freePrice: string; freeFor: string; free: string[]; freeNot: string; freeCta: string;
   proName: string; proSub: string; mostPopular: string; perMonth: string; perYear: string; noteMonthly: string; noteYearly: string;
-  billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string;
+  billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string; promoShort: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
   twaNote: string; twaSignIn: string;
 };
@@ -78,6 +78,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
           <button type="button" onClick={() => setBilling('yearly')} aria-pressed={billing === 'yearly'} className={`btn btn-sm ${billing === 'yearly' ? 'btn-primary' : 'btn-secondary'}`}>
             {l.billingYearly} <span className="tag tag-accent ml-1">{l.saveBadge}</span>
           </button>
+          {promo && <span className="text-[13px] text-s-muted">{l.promoShort}</span>}
         </div>
       )}
 
@@ -111,7 +112,8 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
                 <span className="text-[14px] text-s-muted">{yearly ? l.perYear : l.perMonth}</span>
               </p>
               <p className="mt-2 text-[14px] text-s-accent-700">{yearly ? l.noteYearly : l.noteMonthly}</p>
-              {!yearly && promo && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.promoNote}</p>}
+              {/* Promo note on both views (2026-11-04): the page opens on Yearly, so a monthly-only note was invisible. */}
+              {promo && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.promoNote}</p>}
             </div>
           )}
           <ul className="flex flex-col gap-2.5 border-t border-s-line pt-4 text-[15px]">
