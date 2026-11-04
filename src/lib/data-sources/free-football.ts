@@ -144,8 +144,17 @@ async function getMergedLeagueMap(): Promise<Map<number, LeagueMeta>> {
       merged.set(id, { id, name: e.name, ccode: e.ccode, logo: e.logo || FOTMOB_LEAGUE_LOGO(id) });
     }
   }
-  if (live.size) {
-    feedLeagueCatalog(Array.from(live.values()));
+  // Yalnız kataloğa göre yeni ya da adı/ülkesi değişen ligleri yaz (2026-11-04,
+  // Supabase Disk IO uyarısı): her soğuk başlangıçta tüm haritayı upsert etmek
+  // 762 satırlık tabloda 5,2M güncelleme + 6k autovacuum biriktirmişti.
+  // last_seen tazeliği gecelik league-catalog cron'unun işi.
+  const changed: LeagueMeta[] = [];
+  for (const l of live.values()) {
+    const c = catalog.get(l.id);
+    if (!c || c.name !== l.name || (c.ccode || '') !== (l.ccode || '').toUpperCase()) changed.push(l);
+  }
+  if (changed.length) {
+    feedLeagueCatalog(changed);
   }
   return merged;
 }

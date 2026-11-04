@@ -1,6 +1,7 @@
 import 'server-only';
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { db, REVALIDATE } from '@/lib/site/db';
+import { memoTTL } from '@/lib/site/memo';
 import { LEAGUE_TIER } from '@/lib/site/daily-picks-rule';
 import type { CoverageStatus, LeagueStats } from './rules';
 
@@ -15,12 +16,16 @@ export interface CoverageRow {
 
 export const COVERAGE_TAG = 'league-coverage';
 
+// Süreç içi 5 dk memo (2026-11-04): tablo stats jsonb'siyle ~500 KB, 126k kez
+// tam okunmuştu — unstable_cache her çağrı yolunda ayrı ayrı dolduğu için.
+const readCoverage = memoTTL(5 * 60 * 1000, async (): Promise<CoverageRow[]> => {
+  const { data, error } = await db().from('league_coverage').select('*').order('tier').order('name');
+  if (error) { console.error('[coverage] read failed:', error.message); return []; }
+  return (data ?? []) as CoverageRow[];
+});
+
 export const loadCoverage = unstable_cache(
-  async (): Promise<CoverageRow[]> => {
-    const { data, error } = await db().from('league_coverage').select('*').order('tier').order('name');
-    if (error) { console.error('[coverage] read failed:', error.message); return []; }
-    return (data ?? []) as CoverageRow[];
-  },
+  readCoverage,
   ['league-coverage-v1'],
   { revalidate: REVALIDATE.fixtures, tags: [COVERAGE_TAG] },
 );
@@ -43,7 +48,7 @@ export async function excludedLeagueIds(): Promise<Set<number>> {
   return new Set((await loadCoverage()).filter((r) => r.status === 'excluded').map((r) => Number(r.league_id)));
 }
 
-export function invalidateCoverage() { try { revalidateTag(COVERAGE_TAG); } catch { /* build/test ortamı */ } }
+export function invalidateCoverage() { readCoverage.invalidate(); try { revalidateTag(COVERAGE_TAG); } catch { /* build/test ortamı */ } }
 
 /** league_id → sicil satırı (kapsam dışı risk notu için). */
 export async function coverageById(): Promise<Map<number, CoverageRow>> {

@@ -15,6 +15,7 @@ import { deriveDoubleChance } from '@/lib/double-chance';
 import { blendCall, type GoalCall, type GoalBook } from './goal-blend';
 import { latestGoalBook } from './goal-book';
 import { teamRecord, type TeamRecord } from './team-record';
+import { memoTTL } from './memo';
 
 // ---------------------------------------------------------------------------
 // Row schema (engine_predictions). Validated with zod so a schema drift in
@@ -170,7 +171,12 @@ export interface SiteContext {
   curveMeta: { pick: CurveMeta | null; ou: CurveMeta | null; btts: CurveMeta | null };
 }
 
-export async function loadContext(): Promise<SiteContext> {
+// Süreç içi 5 dk memo (2026-11-04): loadContext unstable_cache'li 20+ fonksiyonun
+// İÇİNDEN çağrılıyor; her biri kendi anahtarında 4 eğri + katalog okuyordu
+// (günde ~44k confidence_calibration GET). Eğriler haftada bir değişir.
+export const loadContext = memoTTL(5 * 60 * 1000, loadContextUncached);
+
+async function loadContextUncached(): Promise<SiteContext> {
   const empty = { knots: [] as Knot[], meta: null as CurveMeta | null };
   const [catalog, pick, pickAll, ou, btts] = await Promise.all([
     readCatalog().catch(() => new Map<number, { ccode: string; name: string }>()),
