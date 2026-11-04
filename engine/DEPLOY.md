@@ -298,14 +298,21 @@ turları AYRI id'lerle duruyordu (Jaccard birleşimi kupalarda tutmaz). Depodan 
 
 | Kupa | 2026/27 | 2025/26 lig aşaması | 2025/26 eleme | kanonik | benzersiz maç |
 |---|---|---|---|---|---|
-| Şampiyonlar Ligi | 943230 | 904988 (144) | 904995 (45) | 42 | 243 |
+| Şampiyonlar Ligi | 943230 | 904988 (144) | 904995 (45) | **904988** | 243 |
 | Avrupa Ligi | 943229 | 905100 (144) | 905103 (45) | 73 | 243 |
 | Konferans Ligi | 943231 | 905113 (108) | 905114 (45) | 10216 | 189 |
 
 Unit (`engine/deploy/footy-predict.service` ile aynı):
 ```
-Environment=LEAGUE_ALIASES=943230:42,904988:42,904995:42,943229:73,905100:73,905103:73,943231:10216,905113:10216,905114:10216,1000001407:268
+Environment=LEAGUE_ALIASES=943230:904988,904995:904988,943229:73,905100:73,905103:73,943231:10216,905113:10216,905114:10216,1000001407:268
 ```
+**ŞL neden 42'ye değil 904988'e bağlı?** Depoda id 42 altında yalnız 9 satır var (21 Eki 2026) ve bu
+küçük parça `MERGE_MIN_CONTAIN` kuralıyla dostluk/hazırlık havuzuna (915708: 728 maç, 570 takım) ve
+Rusya Kupası gruplarına (901182/901183) yapışıyor. Eski alias `943230:42` bu yüzden ŞL'yi 815 satırla
+(54 ŞL + 728 hazırlık) fit ediyordu — "league_too_small" değil, kirli fit. 904988 kanoniği ile küme
+temiz: 904988 + 904995 + 943230 = 243. Genel tuzak (küçük yeni id'nin 570 takımlık havuza yapışması)
+store.merge_season_ids'de ayrıca ele alınmalı.
+
 `systemctl daemon-reload && systemctl restart footy-predict`; saatlik engine-sync bir sonraki turda
 üç kupanın fikstürlerine tahmin yazar. Her sezon yeni id gelince (Eylül) tabloya satır eklenir.
 xG akışı: cron'daki `XG_FEED_LEAGUES` değişkenine `73,10216,943229,943231` eklendi; ilk doldurma

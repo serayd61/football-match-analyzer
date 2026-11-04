@@ -13,8 +13,9 @@ Environment=FOOTBALL_API_KEY=PASTE_YOUR_RAPIDAPI_KEY_HERE
 Environment=STORE_PATH=/var/lib/footy/results.jsonl
 Environment=MIN_LEAGUE_MATCHES=150
 # Kupalar için elle lig kimliği birleştirme (yeni_id:kanonik_id). 2026-27 Şampiyonlar Ligi = 943230.
-# 2026-11-04: Avrupa kupaları — 2025/26 lig aşaması + eleme id'leri kanonik 42/73/10216'ya; Brasileirão 26 → 268
-Environment=LEAGUE_ALIASES=943230:42,904988:42,904995:42,943229:73,905100:73,905103:73,943231:10216,905113:10216,905114:10216,1000001407:268
+# 2026-11-04: Avrupa kupaları — ŞL kanoniği 904988 (42 DEĞİL: 42 altındaki 9 satır dostluk havuzu 915708'e
+# yapışıyor, 42'ye bağlamak ŞL fitine 728 hazırlık maçı katıyor); AL 73, Konferans 10216; Brasileirão 26 → 268
+Environment=LEAGUE_ALIASES=943230:904988,904995:904988,943229:73,905100:73,905103:73,943231:10216,905113:10216,905114:10216,1000001407:268
 # ZORUNLU (2026-09-18): /predict, /backfill, /update, /reload bu token olmadan 503 döner.
 # n8n "Tahmin et" node'u aynı değeri `Authorization: Bearer ...` header'ıyla gönderir.
 # Üret: openssl rand -hex 32
