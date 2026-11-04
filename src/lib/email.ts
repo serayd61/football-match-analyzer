@@ -558,6 +558,42 @@ Unsubscribe: ${o.unsubscribeUrl}`;
   if (error) throw new Error(error.message);
 }
 
+// Checkout kurtarma (2026-11-04): ödemeyi bitiremeyenlere PayPal/Google Pay +
+// PRO50 + yıllık. Tek seferlik, api/cron/checkout-recovery gönderir.
+export interface CheckoutRecoveryOpts {
+  pricingUrl: string;
+  unsubscribeUrl: string;
+  monthly: number;
+  yearly: number | null;
+  promoCode: string | null;
+  promoMonthly: number;
+  promoMonths: number;
+}
+export async function sendCheckoutRecoveryEmail(to: string, o: CheckoutRecoveryOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const subject = o.promoCode
+    ? `PayPal is now available — and ${o.promoCode} takes 50% off your first ${o.promoMonths} months`
+    : 'PayPal and Google Pay are now available at checkout';
+  const yearly = o.yearly ? ` or <strong>$${o.yearly.toFixed(2)}/year</strong>` : '';
+  const body = `
+    <p>You opened the Pro checkout recently but the payment didn't go through. That was on us: the page only accepted cards, and many cards can't pay a foreign subscription.</p>
+    <p>Fixed today. The checkout now takes <strong>PayPal</strong>, <strong>Google Pay</strong>, <strong>Apple Pay</strong> and Link next to cards.</p>
+    ${o.promoCode ? `<p style="text-align:center;font-size:14px;margin:18px 0 6px"><span style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:8px 14px;display:inline-block">Code <strong>${o.promoCode}</strong> at checkout = 50% off your first ${o.promoMonths} months: <strong>$${o.promoMonthly.toFixed(2)}/month</strong> instead of $${o.monthly.toFixed(2)}. Valid until 31 Dec 2026.</span></p>` : ''}
+    <p>Pro is $${o.monthly.toFixed(2)}/month${yearly}, cancel any time from your account.</p>
+    ${trialBtn(o.pricingUrl, 'Try the checkout again →')}
+    <p style="font-size:13px;color:#64748b;text-align:center">Still stuck? Reply to this email and tell us which method you tried — we read every reply.</p>`;
+  const html = trialShell('Your payment can go through now', 'Checkout update', body, o.unsubscribeUrl);
+  const text = `You opened the Pro checkout recently but the payment didn't go through — the page only accepted cards.
+Fixed today: PayPal, Google Pay, Apple Pay and Link are now available next to cards.${o.promoCode ? `
+Code ${o.promoCode} at checkout = 50% off your first ${o.promoMonths} months ($${o.promoMonthly.toFixed(2)}/month instead of $${o.monthly.toFixed(2)}), valid until 31 Dec 2026.` : ''}
+Pro is $${o.monthly.toFixed(2)}/month${o.yearly ? ` or $${o.yearly.toFixed(2)}/year` : ''}, cancel any time: ${o.pricingUrl}
+Still stuck? Reply to this email and tell us which method you tried.
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
 // Gün 1 (2026-10-30): tek iş — ilk maç sayfasını aç. Kayıttan sonra geri gelen 0 idi.
 export async function sendTrialFirstEmail(to: string, o: TrialEmailOpts): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
