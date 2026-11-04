@@ -7,6 +7,11 @@ test('isModelCovered folds feed aliases and seasonal ccode suffixes', () => {
   assert.equal(isModelCovered('English Football League - Championship', 1000001801, 'ENG'), true);
   assert.equal(isModelCovered('EFL Championship', 1000001801, 'ENG'), true);
   assert.equal(isModelCovered('Champions League', 943230, 'INT-2'), true);
+  // 2026-11-04: Avrupa Ligi + Konferans Ligi kapsamda (mevsimlik id ve ad|INT-2 yoluyla)
+  assert.equal(isModelCovered('Europa League', 943229, 'INT-2'), true);
+  assert.equal(isModelCovered('Conference League', 943231, 'INT-2'), true);
+  assert.equal(isModelCovered('UEFA Europa League', null, 'INT'), true);
+  assert.equal(isModelCovered('Europa League Qualification', 10613, 'INT'), false);
   assert.equal(isModelCovered('English Football League - League One', 1000001802, 'ENG'), false);
   assert.equal(isModelCovered('Championship', 937668, 'SCO'), false);
 });

@@ -7,6 +7,7 @@ export const AF_BOOKMAKERS = { bet365: 8, pinnacle: 4, bwin: 6, unibet: 16 } as 
 export const AF_LEAGUE: Record<string, number> = {
   'premier-league': 39, championship: 40, 'la-liga': 140, 'serie-a': 135, bundesliga: 78, 'ligue-1': 61,
   eredivisie: 88, 'liga-portugal': 94, 'champions-league': 2, brasileirao: 71, 'super-lig': 203,
+  'europa-league': 3, 'conference-league': 848, // 2026-11-04
 };
 /** Takvim yılı sezonu olan ligler (Brezilya); diğerleri Ağustos–Mayıs (başlangıç yılı). */
 const CALENDAR_SEASON = new Set(['brasileirao']);

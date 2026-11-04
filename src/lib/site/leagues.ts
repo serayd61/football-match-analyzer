@@ -26,6 +26,12 @@ export const SITE_LEAGUES: SiteLeague[] = [
   // 2026-09-27: FotMob 2026-27 lig aşamasını YENİ kimlikle veriyor (943230, ccode "INT-2");
   // 42 eski sezon kimliği. İkisi de kapsam sayılır; resolveLeague "INT-2" → "INT" katlar.
   { slug: 'champions-league', name: 'Champions League', ccode: 'INT', fdCode: 'CL', ids: [42, 943230], country: 'Europe' },
+  // 2026-11-04: Avrupa Ligi ve Konferans Ligi kapsama alındı. Motor (Hetzner) bu kupaları kendi
+  // deposundan fit eder: 2025/26 lig aşaması + eleme id'leri LEAGUE_ALIASES ile kanonik 73 / 10216'ya
+  // bağlı (bkz. engine/DEPLOY.md). fdCode yalnız football-data.org yer paylaşımı içindir; ikisi de
+  // ücretsiz katmanda yok (FD_FREE_CODES dışı) → yer paylaşımı yapılmaz. ids[0] puan durumu akışı için.
+  { slug: 'europa-league', name: 'Europa League', ccode: 'INT', fdCode: 'EL', ids: [73, 943229], country: 'Europe' },
+  { slug: 'conference-league', name: 'Conference League', ccode: 'INT', fdCode: 'UECL', ids: [10216, 943231], country: 'Europe' },
   { slug: 'brasileirao', name: 'Brasileirão', ccode: 'BRA', fdCode: 'BSA', ids: [268], country: 'Brazil' },
   // 2026-09-13: kullanıcı isteğiyle eklendi. Motor (Hetzner) ligi kendi
   // verisinden fit ediyor (dc-1.0, 39 sonuçlanmış maç). Günün seçimi beyaz
@@ -47,6 +53,9 @@ const NAME_ALIASES: Record<string, string> = {
   'Primera División': 'LaLiga',
   'La Liga': 'LaLiga',
   'UEFA Champions League': 'Champions League',
+  'UEFA Europa League': 'Europa League',
+  'UEFA Europa Conference League': 'Conference League',
+  'UEFA Conference League': 'Conference League',
   'EFL Championship': 'Championship',
   // 2026-10-13: FotMob 2026-27 Championship'ı yeni mevsimlik id (1000001801) ve uzun adla veriyor
   'English Football League - Championship': 'Championship',

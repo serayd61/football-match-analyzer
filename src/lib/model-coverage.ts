@@ -22,6 +22,10 @@ const COVERED_NAME_CCODE = new Set([
   'Bundesliga|GER',       // BL1
   'Ligue 1|FRA',          // FL1
   'Champions League|INT', // CL
+  // 2026-11-04: Avrupa Ligi + Konferans Ligi — motor deposunda 2025/26 lig aşaması + eleme
+  // (EL 905100/905103, UECL 905113/905114) LEAGUE_ALIASES ile kanonik 73 / 10216'ya bağlandı.
+  'Europa League|INT',    // EL
+  'Conference League|INT', // UECL
   'Eredivisie|NED',       // DED
   'Liga Portugal|POR',    // PPL
   'Championship|ENG',     // ELC
@@ -35,7 +39,7 @@ const COVERED_NAME_CCODE = new Set([
 ]);
 
 /** Kanonik FotMob id'leri — ad çözümlenemediğinde yedek eşleşme. */
-const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 57, 61, 48, 268, 71, 196, 937879, 59, 85, 935487, 203]); // +18 Eki: Ekstraklasa, Eliteserien, Superligaen, 1. Divisjon
+const COVERED_IDS = new Set([47, 87, 55, 54, 53, 42, 943230, 57, 61, 48, 268, 71, 196, 937879, 59, 85, 935487, 203, 73, 943229, 10216, 943231]); // +4 Kas: ŞL 26/27, AL, Konferans (kanonik + 26/27 mevsimlik) // +18 Eki: Ekstraklasa, Eliteserien, Superligaen, 1. Divisjon
 
 /**
  * Bu maç, parametreleri fit edilmiş bir ligde mi?
@@ -49,6 +53,9 @@ const NAME_ALIASES: Record<string, string> = {
   'Primera División': 'LaLiga',
   'La Liga': 'LaLiga',
   'UEFA Champions League': 'Champions League',
+  'UEFA Europa League': 'Europa League',
+  'UEFA Europa Conference League': 'Conference League',
+  'UEFA Conference League': 'Conference League',
   'EFL Championship': 'Championship',
   'English Football League - Championship': 'Championship', // FotMob 2026-27 mevsimlik id 1000001801
   'Primeira Liga': 'Liga Portugal',
