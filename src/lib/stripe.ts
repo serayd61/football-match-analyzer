@@ -4,6 +4,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
 });
 
+// Prices mirror src/lib/site/plans.ts (public copy for pages). Change both.
 export const PLANS = {
   PRO: {
     name: 'Pro Plan',
@@ -22,8 +23,26 @@ export const PLANS = {
     // vermek toplam 14 gün bedava ediyordu; artık kart girilince hemen çekilir.
     trialDays: 0,
     stripePriceId: process.env.STRIPE_PRICE_ID!,
+    // Yıl sonu kampanyası PRO50 yalnız aylıkta geçerli (plans.ts PROMO).
+    allowPromotionCodes: true,
+  },
+  // Yıllık $49 (2026-11-04). Env yoksa route 503 döner ve pricing sayfası
+  // yıllık sütunu hiç göstermez (plans.ts yearlyEnabled) — sessiz aylık
+  // fallback YOK: yanlış tutar çekilmesin.
+  PRO_YEARLY: {
+    name: 'Pro Plan (yearly)',
+    price: 49,
+    currency: 'USD',
+    interval: 'year' as const,
+    features: [] as string[],
+    trialDays: 0,
+    stripePriceId: process.env.STRIPE_PRICE_ID_YEARLY || '',
+    // Kupon alanı kapalı: PRO50 (%50, 3 ay) yıllık faturaya uygulanırsa
+    // $49 → $24.50 olurdu.
+    allowPromotionCodes: false,
   },
 };
+export type PlanId = keyof typeof PLANS;
 
 export async function createCheckoutSession({
   userId,
@@ -32,6 +51,7 @@ export async function createCheckoutSession({
   successUrl,
   cancelUrl,
   trialDays,
+  allowPromotionCodes = true,
 }: {
   userId: string;
   userEmail: string;
@@ -40,6 +60,7 @@ export async function createCheckoutSession({
   cancelUrl: string;
   // Stripe tarafı trial günü; varsayılan 0 (hiçbir planda trial yok).
   trialDays?: number;
+  allowPromotionCodes?: boolean;
 }) {
   // Müşteri önceden YARATILMAZ (2026-10-13): Checkout'u açıp kart girmeden
   // çıkan herkes Stripe'ta boş "müşteri" olarak birikiyordu ve abonelik
@@ -63,7 +84,7 @@ export async function createCheckoutSession({
   cancel_url: cancelUrl,
   metadata: { userId },
   billing_address_collection: 'required',
-  allow_promotion_codes: true,  // Promosyon kodu desteği
+  allow_promotion_codes: allowPromotionCodes,
   // 3DS: 'any' (her kartta zorla) gerçek müşterileri de düşürüyordu —
   // 2026 Tem: tek gerçek abonelik past_due'da öldü, 8 denemeden 6'sı
   // başarısız. Çalıntı-kart savunması Radar kurallarında kalıyor; 3DS'i

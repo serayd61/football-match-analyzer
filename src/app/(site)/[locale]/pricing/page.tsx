@@ -5,14 +5,15 @@ import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { Page } from '@/components/site/ui';
 import { getSiteAccess } from '@/lib/site/access';
-import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { PLAN_PRICES, PROMO, money, promoActive, promoMonthly, yearlyEnabled, yearlyPerMonth, yearlySavingPct } from '@/lib/site/plans';
 import { isTwa } from '@/lib/site/twa';
 import PlanChooser from './PlanChooser';
 
-// Pricing (Modernist redesign 2026-09-11), localized. Top grid: H1 + intro
-// (monthly Pro only since 2026-10-13); two plan columns split by a 2px rule;
-// an honest "what you are buying" paragraph at the bottom. Prices mirror
-// src/lib/stripe.ts. Checkout goes through /api/stripe/create-checkout.
+// Pricing (Modernist redesign 2026-09-11), localized. Top grid: H1 + intro;
+// two plan columns split by a 2px rule; an honest "what you are buying"
+// paragraph at the bottom. Prices mirror src/lib/stripe.ts. Checkout goes
+// through /api/stripe/create-checkout. 2026-11-04: monthly/yearly toggle
+// (yearly only once STRIPE_PRICE_ID_YEARLY is set) + year-end promo note.
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
@@ -27,6 +28,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
   const access = await getSiteAccess();
   // Google Play app: no checkout, no prices (Play payments policy, lib/site/twa.ts).
   const purchasable = !isTwa();
+  const yearly = yearlyEnabled();
+  const promo = promoActive() ? PROMO.code : null;
 
   return (
     <Page>
@@ -36,12 +39,18 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
         isPro={access.state === 'pro'}
         purchasable={purchasable}
         price={money(PLAN_PRICES.monthly.amount)}
+        yearlyPrice={money(PLAN_PRICES.yearly.amount)}
+        yearlyEnabled={yearly}
+        promo={promo}
         labels={{
           title: t('title'), lead: t('lead'),
           freeName: t('freeName'), freeSub: t('freeSub'), freePrice: t('freePrice'), freeFor: t('freeFor'),
           free: [t('free1'), t('free2'), t('free3')], freeNot: t('freeNot'), freeCta: t('freeCta'),
-          proName: t('proName'), proSub: t('proSub'), mostPopular: t('mostPopular'), perMonth: t('perMonth'),
+          proName: t('proName'), proSub: t('proSub'), mostPopular: t('mostPopular'), perMonth: t('perMonth'), perYear: t('perYear'),
           noteMonthly: t('noteMonthly'),
+          noteYearly: t('noteYearly', { yearly: money(PLAN_PRICES.yearly.amount), perMonth: money(yearlyPerMonth()) }),
+          billingMonthly: t('billingMonthly'), billingYearly: t('billingYearly'), saveBadge: t('saveBadge', { pct: yearlySavingPct() }),
+          promoNote: t('promoNote', { code: PROMO.code, pct: PROMO.percentOff, months: PROMO.months, promoMonthly: money(promoMonthly()) }),
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
           twaNote: t('twaNote'), twaSignIn: t('twaSignIn'),
