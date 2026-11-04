@@ -1100,7 +1100,9 @@
     "bannerTitle": "Deine 7 Gratistage sind vorbei – Pro geht ab 9,90 $/Monat weiter, jederzeit kündbar.",
     "bannerLead": "Alle Märkte, wahrscheinliche Resultate und das Value-Radar, mit einer Bilanz, die nach jedem Spiel öffentlich abgerechnet wird.",
     "bannerCta": "Pläne ansehen",
-    "bannerClose": "Schliessen"
+    "bannerClose": "Schliessen",
+    "promoLine": "Jahresend-Angebot: Code {code} an der Kasse = {pct}% auf die ersten {months} Monate im Monatsplan ({promoMonthly}/Monat). Bis 31.12.2026.",
+    "promoShort": "Code {code}: {pct}% für 3 Monate"
   },
   "account": {
     "metaTitle": "Konto",

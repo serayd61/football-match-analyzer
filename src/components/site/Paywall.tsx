@@ -14,7 +14,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { signInHref, type SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
-import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { PLAN_PRICES, PROMO, money, promoActive, promoMonthly } from '@/lib/site/plans';
 import { RiskNote } from './Risk';
 
 // Account and billing now live on the localized site.
@@ -34,6 +34,8 @@ export async function Paywall() {
         <p className="kicker">{t('expiredKicker')}</p>
         <h2 id="paywall-title" className="mt-2 text-[30px]">{t('expiredTitle')}</h2>
         <p className="mt-3 max-w-xl text-[15px] text-s-muted">{twa ? t('twaLead') : t('expiredLead')}</p>
+        {/* Year-end promo (2026-11-04): shown wherever the paid decision is made, not only on /pricing. */}
+        {!twa && promoActive() && <p className="mt-3 inline-block rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{t('promoLine', { code: PROMO.code, pct: PROMO.percentOff, months: PROMO.months, promoMonthly: money(promoMonthly()) })}</p>}
         <div className="mt-6 flex flex-wrap gap-2">
           {!twa && <Link href={PRICING_HREF} className="btn btn-primary">{t('expiredCta')}</Link>}
           <Link href="/performance" className={`btn ${twa ? 'btn-primary' : 'btn-secondary'}`}>{t('expiredAlt')}</Link>
@@ -49,7 +51,7 @@ export async function TrialNotice({ access }: { access: SiteAccess }) {
   const t = await getTranslations('paywall');
   return (
     <p role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-s-line bg-s-surface px-4 py-2.5 text-[14px]">
-      <span>{t('trialLeft', { days: access.trialDaysLeft })}</span>
+      <span>{t('trialLeft', { days: access.trialDaysLeft })}{!isTwa() && promoActive() && <span className="text-s-muted"> · {t('promoShort', { code: PROMO.code, pct: PROMO.percentOff })}</span>}</span>
       {!isTwa() && <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>}
     </p>
   );

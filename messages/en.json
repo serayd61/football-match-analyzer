@@ -1100,7 +1100,9 @@
     "bannerTitle": "Your 7 free days are over — Pro continues from $9.90/month, cancel anytime.",
     "bannerLead": "Every market, likely scores and the value radar, with a record that is settled in public after every match.",
     "bannerCta": "See plans",
-    "bannerClose": "Dismiss"
+    "bannerClose": "Dismiss",
+    "promoLine": "Year-end offer: code {code} at checkout = {pct}% off your first {months} months of the monthly plan ({promoMonthly}/month). Until 31 Dec 2026.",
+    "promoShort": "Code {code}: {pct}% off for 3 months"
   },
   "account": {
     "metaTitle": "Account",

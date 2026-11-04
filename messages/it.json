@@ -1100,7 +1100,9 @@
     "bannerTitle": "I tuoi 7 giorni gratuiti sono finiti – Pro continua da 9,90 $/mese, disdici quando vuoi.",
     "bannerLead": "Tutti i mercati, i risultati probabili e il radar valore, con un registro chiuso in pubblico dopo ogni partita.",
     "bannerCta": "Vedi i piani",
-    "bannerClose": "Chiudi"
+    "bannerClose": "Chiudi",
+    "promoLine": "Offerta di fine anno: codice {code} al pagamento = {pct}% di sconto sui primi {months} mesi del piano mensile ({promoMonthly}/mese). Fino al 31/12/2026.",
+    "promoShort": "Codice {code}: {pct}% per 3 mesi"
   },
   "account": {
     "metaTitle": "Account",

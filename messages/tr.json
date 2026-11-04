@@ -1100,7 +1100,9 @@
     "bannerTitle": "7 ücretsiz günün doldu — Pro ayda 9,90 $ ile devam eder, istediğin zaman iptal.",
     "bannerLead": "Tüm marketler, olası skorlar ve değer radarı; her maçtan sonra herkese açık sonuçlanan karneyle.",
     "bannerCta": "Planları gör",
-    "bannerClose": "Kapat"
+    "bannerClose": "Kapat",
+    "promoLine": "Yıl sonu teklifi: ödemede {code} kodu = aylık planda ilk {months} ay %{pct} indirim (ayda {promoMonthly}). 31 Aralık 2026'ya kadar.",
+    "promoShort": "{code} kodu: 3 ay %{pct} indirim"
   },
   "account": {
     "metaTitle": "Hesap",
