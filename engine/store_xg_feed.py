@@ -29,7 +29,7 @@ HOST = "free-api-live-football-data.p.rapidapi.com"
 XG_FEED_PATH = os.environ.get("XG_FEED_PATH", os.path.join(os.path.dirname(STORE_PATH) or ".", "xg_feed.jsonl"))
 MISS_PATH = XG_FEED_PATH + ".missing.json"
 # Site kapsamı (src/lib/model-coverage.ts COVERED_IDS + Süper Lig 71). Env ile genişletilebilir.
-DEFAULT_LEAGUES = "47,87,55,54,53,42,57,61,48,268,71"
+DEFAULT_LEAGUES = "47,87,55,54,53,42,57,61,48,268,71,73,10216"  # +4 Kas 2026: Avrupa Ligi, Konferans Ligi
 LEAGUES = {int(x) for x in os.environ.get("XG_FEED_LEAGUES", DEFAULT_LEAGUES).split(",") if x.strip()}
 # Sezonluk id keşfi: FotMob büyük 5 lig dışına her sezon yeni id verir (Eredivisie 26/27 = 937276).
 # Site fikstür ucu (anahtarsız) lig adı + ülke kodu döner; kapsanan ad|ülke çiftleri
@@ -37,7 +37,8 @@ LEAGUES = {int(x) for x in os.environ.get("XG_FEED_LEAGUES", DEFAULT_LEAGUES).sp
 SITE_FIXTURES_URL = os.environ.get("SITE_FIXTURES_URL", "https://footballanalytics.pro/api/v2/fixtures?date=")
 COVERED_NAME_CC = {("Premier League", "ENG"), ("Championship", "ENG"), ("LaLiga", "ESP"), ("Serie A", "ITA"),
                    ("Bundesliga", "GER"), ("Ligue 1", "FRA"), ("Eredivisie", "NED"), ("Liga Portugal", "POR"),
-                   ("Champions League", "INT"), ("Brazilian Serie A", "BRA"), ("Super Lig", "TUR"), ("Süper Lig", "TUR")}
+                   ("Champions League", "INT"), ("Europa League", "INT"), ("Conference League", "INT"),
+                   ("Brazilian Serie A", "BRA"), ("Super Lig", "TUR"), ("Süper Lig", "TUR")}
 LEAGUES_CACHE = XG_FEED_PATH + ".leagues.json"
 MISS_RETRY_DAYS = 2      # istatistiği olmayan maç bu kadar gün sonra yeniden denenir
 MISS_MAX_TRIES = 3       # sonra kalıcı olarak atlanır

@@ -11,8 +11,10 @@ test('champions league resolves by new seasonal id', () => {
 
 test('suffixed international ccode folds to INT for name matching', () => {
   assert.equal(resolveLeague('Champions League', 999999999, 'INT-2')?.slug, 'champions-league');
-  // other INT-2 cups stay outside coverage
-  assert.equal(resolveLeague('Europa League', 943229, 'INT-2'), null);
+  // 2026-11-04: Avrupa Ligi ve Konferans Ligi kapsama alındı; diğer INT kupaları dışarıda kalır
+  assert.equal(resolveLeague('Europa League', 943229, 'INT-2')?.slug, 'europa-league');
+  assert.equal(resolveLeague('UEFA Europa Conference League', null, 'INT')?.slug, 'conference-league');
+  assert.equal(resolveLeague('Super Cup', 999999998, 'INT'), null);
 });
 
 test('seasonal ids still resolve by name + country', () => {

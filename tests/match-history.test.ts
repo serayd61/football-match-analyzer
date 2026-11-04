@@ -15,12 +15,14 @@ const row = (fixtureId: number, kickoff: string, hs: number | null = 1, as: numb
   fixtureId, league: null, leagueName, homeId: 9823, homeName: 'Bayern München', awayId: 1, awayName: 'X', homeScore: hs, awayScore: as, kickoff,
 });
 
-test('fromFeedRow: CL mevsimlik id → champions-league slug; bilinmeyen lig → null', () => {
+test('fromFeedRow: CL/AL mevsimlik id → slug; bilinmeyen lig → null', () => {
   const r = fromFeedRow(feed());
   assert.equal(r.league?.slug, 'champions-league');
   assert.equal(r.leagueName, 'Champions League');
   assert.equal(r.homeId, 9906); assert.equal(r.awayScore, 1);
-  assert.equal(fromFeedRow(feed({ league_id: 73, league_name: 'Europa League', league_ccode: 'INT-2' })).league, null);
+  // 2026-11-04: Avrupa Ligi artık kapsamda → slug çözülür; bilinmeyen kupa hâlâ null
+  assert.equal(fromFeedRow(feed({ league_id: 73, league_name: 'Europa League', league_ccode: 'INT-2' })).league?.slug, 'europa-league');
+  assert.equal(fromFeedRow(feed({ league_id: 10613, league_name: 'Europa League Qualification', league_ccode: 'INT' })).league, null);
 });
 
 test('mergeHistory: akış önce, fixture id tekil, yeniden eskiye, limit, skorsuz atılır', () => {
