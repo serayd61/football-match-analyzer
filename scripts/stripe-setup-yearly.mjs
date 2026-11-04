@@ -70,9 +70,14 @@ let promo = (await api(`promotion_codes?code=${CODE}`)).data?.[0];
 if (promo) console.log(`promo   : var  ${promo.id} active=${promo.active} expires=${promo.expires_at ? new Date(promo.expires_at * 1000).toISOString() : '-'}`);
 else if (DRY) console.log('promo   : YOK (oluşturulacak)');
 else {
-  promo = await api('promotion_codes', {
-    coupon: CODE, code: CODE, expires_at: String(EXPIRES), 'restrictions[first_time_transaction]': 'true', 'metadata[campaign]': 'yearend-2026',
-  });
+  // Yeni API sürümleri `promotion[coupon]`, eskiler `coupon` ister; sırayla dene.
+  const base = { code: CODE, expires_at: String(EXPIRES), 'restrictions[first_time_transaction]': 'true', 'metadata[campaign]': 'yearend-2026' };
+  try {
+    promo = await api('promotion_codes', { 'promotion[type]': 'coupon', 'promotion[coupon]': CODE, ...base });
+  } catch (e) {
+    if (!/unknown parameter: promotion/i.test(String(e.message))) throw e;
+    promo = await api('promotion_codes', { coupon: CODE, ...base });
+  }
   console.log(`promo   : OLUŞTU ${promo.id}`);
 }
 
