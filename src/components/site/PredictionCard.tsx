@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { matchPath } from '@/lib/site/match-public';
 import type { SitePrediction } from '@/lib/site/predictions';
 import { riskOf, OVER_EDGE, type Risk } from '@/lib/site/risk';
 import ProbBar from './ProbBar';
@@ -49,7 +50,7 @@ export default async function PredictionCard({ p, locked = false, market, outsid
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           {spot && <span className="tag tag-accent num">{spot.label} {Math.round(spot.p * 100)}%</span>}
-          {p.hasModel ? <RiskLabel risk={outside ? outside.risk : over ? 'high' : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('pendingModel')}</span>}
+          {p.hasModel ? <RiskLabel risk={outside ? outside.risk : over ? 'high' : riskOf(conf)} /> : <span className="text-[11px] font-semibold text-s-muted">{t('openMatch')}</span>}
         </span>
       </div>
       <div className="flex items-center justify-between gap-3">
@@ -62,7 +63,7 @@ export default async function PredictionCard({ p, locked = false, market, outsid
       {p.hasModel ? (
         <ProbBar home={p.pHome} draw={p.pDraw} away={p.pAway} highlight={p.pick} labels={{ home: tc('home'), draw: tc('draw'), away: tc('away') }} size="sm" />
       ) : (
-        <p className="text-[13px] text-s-muted">{t('pendingModel')}</p>
+        <p className="text-[13px] text-s-muted">{t('openMatch')}</p>
       )}
       {outside?.note && <p className="text-[12px] text-s-muted">{outside.note}</p>}
       {p.hasModel && (
@@ -82,6 +83,9 @@ export default async function PredictionCard({ p, locked = false, market, outsid
 
   return p.hasModel && !locked ? (
     <Link href={`/predictions/${p.fixtureId}${back ? `?back=${encodeURIComponent(back)}` : ''}`} className="card card-top">{body}</Link>
+  ) : !p.hasModel ? (
+    // feed-1.1 (2026-11-04): modelsiz fikstür açık maç sayfasına (form + H2H, tahmin yok)
+    <Link href={matchPath(p)} className="card card-top">{body}</Link>
   ) : (
     <div className="card card-top">{body}</div>
   );

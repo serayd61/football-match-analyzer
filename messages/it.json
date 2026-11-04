@@ -1233,6 +1233,7 @@
       "show": "Come leggere la confidenza",
       "value": "scarto {value}",
       "pendingModel": "Modello in attesa",
+      "openMatch": "Nessun pronostico · forma e precedenti",
       "emptyTitle": "Nessun pronostico per questo giorno.",
       "emptyNext": "Prossimi pronostici: {date}.",
       "goToNext": "Vai a {date} →",

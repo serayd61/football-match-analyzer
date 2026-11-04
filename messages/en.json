@@ -1233,6 +1233,7 @@
       "show": "How to read confidence",
       "value": "edge {value}",
       "pendingModel": "Model pending",
+      "openMatch": "No prediction · form and head-to-head",
       "emptyTitle": "No predictions for this day.",
       "emptyNext": "Next picks: {date}.",
       "goToNext": "Go to {date} →",
