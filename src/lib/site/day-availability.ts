@@ -1,6 +1,6 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
-import { db, REVALIDATE } from './db';
+import { db, REVALIDATE, ODDS_TAG } from './db';
 import { idsForLeague } from './results';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { zonedStartOfDay, addDays } from './time';
@@ -29,5 +29,5 @@ export const dayAvailability = unstable_cache(
     return counts;
   },
   ['site-day-availability-v1'],
-  { revalidate: REVALIDATE.fixtures },
+  { revalidate: REVALIDATE.fixtures, tags: [ODDS_TAG] }, // ingest sonrası gün şeridi de tazelenir (2026-11-04)
 );

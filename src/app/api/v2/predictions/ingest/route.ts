@@ -19,6 +19,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
+import { ODDS_TAG } from '@/lib/site/db';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { validateIngestBatch, toEngineRow } from '@/lib/engine/ingest-schema';
 import { loadEngineVersions } from '@/lib/engine/versions';
@@ -104,6 +106,9 @@ export async function POST(request: NextRequest) {
     console.error('[ingest] supabase error:', error.message);
     return NextResponse.json({ error: error.message, rejected }, { status: 500 });
   }
+  // Yeni tahmin siteye hemen düşsün: gün listesi + gün şeridi iki iç içe 15 dk önbellekte
+  // (listDay → listPredictionsForDay); 2026-11-04'te kupa tahminleri 30 dk "Tahmin yok" göründü.
+  if (rows.length) { try { revalidateTag(ODDS_TAG); } catch (e: any) { console.warn('[ingest] revalidate:', e?.message); } }
 
   // Ertelenen maç (2026-09-23, Brentwood–Maldon): 7 Eyl'de void edilmiş satır (settled,
   // result null) yeni kickoff'la tekrar gelince kapalı kaldığı için hiç sonuçlanmadı.
