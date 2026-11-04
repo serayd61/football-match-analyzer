@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { stripDays, horizonOf, publishDayFor, emptyReason, shownResultsTotal, parseOutcome, PUBLISH_LEAD_DAYS } from '@/lib/site/day-strip-rule';
+import { stripDays, horizonOf, publishDayFor, emptyReason, shownResultsTotal, parseOutcome, PUBLISH_LEAD_DAYS, FREEZE_HOURS, isProvisional } from '@/lib/site/day-strip-rule';
 
 // Gün şeridi (overview-1.0): hangi günlerde tahmin var, ufuk nerede, boş gün ne anlatır.
 const today = '2026-11-03';
@@ -24,16 +24,28 @@ test('horizon: last day from today with covered predictions; past days ignored',
   assert.equal(horizonOf([], today), null);
 });
 
-test('publish day: PUBLISH_LEAD_DAYS before the match day', () => {
-  assert.equal(PUBLISH_LEAD_DAYS, 2);
-  assert.equal(publishDayFor('2026-11-07'), '2026-11-05');
+test('publish day: PUBLISH_LEAD_DAYS before the match day (iki katmanlı ufuk: 5 gün ön tahmin)', () => {
+  assert.equal(PUBLISH_LEAD_DAYS, 5);
+  assert.equal(publishDayFor('2026-11-10'), '2026-11-05');
+});
+
+test('provisional: row written more than FREEZE_HOURS before kick-off; settled/unknown never', () => {
+  assert.equal(FREEZE_HOURS, 48);
+  const ko = '2026-11-09T20:00:00Z';
+  assert.equal(isProvisional(ko, '2026-11-05T14:00:00Z'), true);   // 4 gün önce yazıldı → ön
+  assert.equal(isProvisional(ko, '2026-11-07T21:00:00Z'), false);  // 47 sa kala → kesin
+  assert.equal(isProvisional(ko, '2026-11-07T19:00:00Z'), true);   // 49 sa kala → ön
+  assert.equal(isProvisional(ko, '2026-11-05T14:00:00Z', true), false);
+  assert.equal(isProvisional(ko, null), false);
+  assert.equal(isProvisional('bad', '2026-11-05T14:00:00Z'), false);
 });
 
 test('empty reason: past / pending beyond horizon / none inside the window', () => {
   assert.equal(emptyReason('2026-11-01', today, '2026-11-04'), 'past');
-  assert.equal(emptyReason('2026-11-07', today, '2026-11-04'), 'pending');
-  assert.equal(emptyReason('2026-11-07', today, null), 'pending');
-  // Inside the engine window (today+2) an empty day is a genuinely empty calendar, not "not yet".
+  assert.equal(emptyReason('2026-11-10', today, '2026-11-04'), 'pending');
+  assert.equal(emptyReason('2026-11-10', today, null), 'pending');
+  // Inside the engine window (today+5) an empty day is a genuinely empty calendar, not "not yet".
+  assert.equal(emptyReason('2026-11-07', today, '2026-11-04'), 'none');
   assert.equal(emptyReason('2026-11-05', today, '2026-11-04'), 'none');
   assert.equal(emptyReason(today, today, null), 'none');
   // A day the horizon already reached is never "pending".

@@ -355,7 +355,9 @@
       "conflictTitle": "Agenti divisi su questo mercato",
       "conflictBody": "Su {market} il voto degli agenti propende per {agentSel} ({pct}% di fiducia, {ratio} agenti) mentre il consenso qui sopra dice {consensusSel}. Nessun verdetto congiunto: mercato da considerare conteso.",
       "noFav": "Nessun favorito"
-    }
+    },
+    "flagProvisionalShort": "Anteprima",
+    "flagProvisional": "Anteprima: questa riga è stata calcolata più di 48 ore prima del calcio d’inizio; viene aggiornata ogni giorno e bloccata due giorni prima della partita, e il valore bloccato è quello misurato nel registro."
   },
   "results": {
     "title": "Risultati",
@@ -1294,10 +1296,11 @@
       "aiAgents": "agenti",
       "mktBttsNo": "Gol No",
       "noFavShort": "Partita aperta",
-      "horizon": "Pronostici pronti fino a {date} · i giorni successivi vengono aggiunti due giorni prima del calcio d’inizio.",
+      "horizon": "Pronostici pronti fino a {date} · anteprime fino a 5 giorni prima, bloccate due giorni prima del calcio d’inizio.",
       "dayEmpty": "Nessun pronostico ancora per questo giorno",
       "emptyPendingTitle": "I pronostici di questo giorno non sono ancora pubblicati",
-      "emptyFuture": "Il modello valuta ogni giornata con due giorni di anticipo; i pronostici di questo giorno compaiono da {date}."
+      "emptyFuture": "Il modello valuta ogni giornata con due giorni di anticipo; i pronostici di questo giorno compaiono da {date}.",
+      "provisionalShort": "Anteprima"
     },
     "match": {
       "back": "← Tutti i pronostici",

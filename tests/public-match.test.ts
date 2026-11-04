@@ -12,7 +12,7 @@ const row = (over: Partial<SitePrediction> = {}): SitePrediction => ({
   kickoff: '2026-10-18T15:30:00Z', pHome: 0.52, pDraw: 0.26, pAway: 0.22, lambdaHome: 1.7, lambdaAway: 1.1, pick: '1',
   confidence: 0.55, confidenceRaw: 0.52, confidenceCalibrated: false, calibrationSegment: null, doubleChance: { '1X': 0.78, X2: 0.48, '12': 0.74 } as any, overUnder: { pick: 'over', p: 0.56, pRaw: 0.54 } as any, btts: { pick: 'yes', p: 0.5, pRaw: 0.49 } as any,
   rationale: 'secret', settled: false, homeScore: null, awayScore: null, result: null, outcome: 'pending', noFavourite: false, modelVersion: 'dc-2.0', updatedAt: '2026-10-17T20:00:00Z',
-  hasModel: true, status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, ...over,
+  hasModel: true, status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, provisional: false, ...over,
 });
 
 test('publicMatchView of an UPCOMING match carries no model figure, pick, confidence or outcome', () => {

@@ -15,7 +15,7 @@ const rated = (o: Partial<SitePrediction>): SitePrediction => ({
   homeCrest: null, awayCrest: null, kickoff: '2026-09-05T14:00:00Z', pHome: 0.5, pDraw: 0.3, pAway: 0.2, lambdaHome: 1.5, lambdaAway: 1,
   pick: '1', confidence: 0.55, confidenceRaw: 0.5, confidenceCalibrated: false, calibrationSegment: null, doubleChance: null, overUnder: null, btts: null, rationale: null, settled: false,
   homeScore: null, awayScore: null, result: null, outcome: 'pending', noFavourite: false, modelVersion: 'dc-1.0', updatedAt: null, hasModel: true,
-  status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, ...o,
+  status: 'scheduled', modelStatus: 'ready', publishedAfterKickoff: false, provisional: false, ...o,
 });
 
 test('LIVE feed state is merged onto a rated row with the running score; settlement stays untouched', () => {

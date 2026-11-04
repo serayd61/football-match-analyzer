@@ -105,6 +105,8 @@ export default async function MatchRow({ p, outside = null, back = null, spot = 
             <span className={`num text-[17px] font-bold leading-none ${pickWon ? 'text-s-win' : pickLost ? 'text-s-loss' : ''}`}>{confPct != null ? `${confPct}%` : '–'}{confPct != null && !p.confidenceCalibrated && <span className="ml-1 text-[10px] font-semibold uppercase text-s-muted">{ta('rawShort')}</span>}</span>
             {done && p.outcome !== 'pending' ? <span className={`tag ${pickWon ? 'tag-win' : pickLost ? 'tag-loss' : 'tag-outline'}`}>{tc(p.outcome)}</span> : risk && (
               <span className="flex flex-col items-end gap-1">
+                {/* İki katmanlı ufuk (2026-11-04): maça 48 saatten uzak satır ön tahmindir, 2 gün kala kesinleşir */}
+                {p.provisional && <span className="tag tag-outline" data-testid="provisional">{t('provisionalShort')}</span>}
                 <RiskLabel risk={risk} short />
                 {/* Ortak değerlendirme çipi (2026-10-16): varsa bayrak metninin yerini alır — aynı çıktı, tek karar yolu */}
                 {assessment ? <AssessmentChip status={assessment.status} label={ta(`statusShort.${assessment.status}`)} /> : guard?.flag && <span className="text-[10.5px] font-semibold text-s-loss">{t3(guard.flag === 'disagree' ? 'disagreeShort' : guard.flag === 'over' ? 'overShort' : 'tightShort')}</span>}

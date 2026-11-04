@@ -7,17 +7,29 @@
 // ilerisini sayılarıyla gösterir; ufuk (verisi olan son gün) ve "bu günün
 // tahminleri ne zaman gelir" notu buradan türetilir.
 //
-// Motor penceresi: Hetzner engine-sync saat başı D, D+1, D+2 maçlarını
-// puanlar (engine-sync.py DAYS_AHEAD=2) → bir gün en erken maç gününe 2 gün
-// kala dolar. PUBLISH_LEAD_DAYS bu sözleşmeyi taşır; motor penceresi
-// değişirse yalnız bu sabit değişir.
+// İki katmanlı ufuk (2026-11-04): Hetzner engine-sync saat başı D..D+5 maçlarını
+// puanlar (engine/deploy/engine-sync.py DAYS_AHEAD=5). Maça 48 saatten uzak
+// satır "ön tahmin"dir: günde bir yeniden hesaplanıp üzerine yazılır; 48 saat
+// içine girince son bir kez yazılır ve donar (karne/günün seçimleri bu değeri
+// ölçer). PUBLISH_LEAD_DAYS ilk görünme, FREEZE_HOURS kesinleşme sözleşmesidir;
+// motor penceresi değişirse yalnız bu sabitler değişir.
 // ---------------------------------------------------------------------------
 import { addDays } from './time';
 
 export const STRIP_PAST_DAYS = 1;
 export const STRIP_FUTURE_DAYS = 5;
-/** Bir maç gününün tahminleri en geç kaç gün önce yayımlanır. */
-export const PUBLISH_LEAD_DAYS = 2;
+/** Bir maç gününün (ön) tahminleri en geç kaç gün önce yayımlanır. */
+export const PUBLISH_LEAD_DAYS = 5;
+/** Maça bu kadar saatten yakın yazılan satır kesindir; daha uzak yazılan "ön tahmin". */
+export const FREEZE_HOURS = 48;
+
+/** Satır ön tahmin mi: sonuçlanmamış ve son yazımı maça FREEZE_HOURS'tan uzak. */
+export function isProvisional(kickoffIso: string, updatedAtIso: string | null | undefined, settled = false): boolean {
+  if (settled || !updatedAtIso) return false;
+  const ko = Date.parse(kickoffIso), up = Date.parse(updatedAtIso);
+  if (!Number.isFinite(ko) || !Number.isFinite(up)) return false;
+  return ko - up > FREEZE_HOURS * 3600e3;
+}
 
 export interface DayCount {
   date: string;

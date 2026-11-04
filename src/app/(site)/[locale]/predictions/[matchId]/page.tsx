@@ -407,6 +407,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
         {strongPick && <span className="tag tag-accent">{t('strongTag', { market: mktName[strongPick.market] })} {Math.round(strongPick.p * 100)}%</span>}
         {p.publishedAfterKickoff && <span className="tag tag-loss">{t('flagPostKickoff')}</span>}
+        {p.provisional && <span className="tag tag-outline">{t('flagProvisionalShort')}</span>}
       </p>
 
       {/* ── Hero: match + probabilities | model pick ───────────────── */}
@@ -849,6 +850,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
               <dt className="text-s-muted">{t('status')}</dt><dd>{tc(statusKey[p.status])}{p.settled ? ` · ${t('settled')}` : isPast ? ` · ${t('awaitingResult')}` : ''}</dd>
             </dl>
             {p.publishedAfterKickoff && <p className="mt-2 rounded-[2px] border border-s-loss/40 bg-s-loss/10 px-2 py-1.5 text-xs">{t('flagPostKickoff')}</p>}
+            {p.provisional && <p className="mt-2 rounded-[2px] border border-s-line bg-s-raised px-2 py-1.5 text-xs">{t('flagProvisional')}</p>}
             <p className="mt-3 text-xs text-s-muted">{t('modelNote')}</p>
           </section>
                 </div>

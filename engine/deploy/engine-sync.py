@@ -6,8 +6,12 @@
 # Timeout ile 500 döndü ve 13 Eylül fikstürleri tahminsiz kaldı (retry yoktu).
 # Bu betik saat başı çalışır: site fikstür akışından D, D+1, D+2 maçlarını alır,
 # engine_predictions'ta satırı OLMAYAN gelecekteki maçları yerel motora sorar,
-# sonucu sitenin ingest ucuna yazar (3 deneme, üstel bekleme). Var olan tahmin
-# ASLA yeniden yazılmaz: karne ve günün seçimleri sabah donan değerle ölçülür.
+# sonucu sitenin ingest ucuna yazar (3 deneme, üstel bekleme).
+# İki katmanlı ufuk (2026-11-04): pencere D..D+5. Maça FREEZE_H (48 sa) üstü kalan
+# fikstür "ön tahmin"dir: satırı yoksa yazılır, varsa REFRESH_H (20 sa) geçince üzerine
+# yazılır (günde bir). 48 saat içine giren fikstürün son yazımı uzaktayken yapıldıysa
+# bir kez daha yazılır ve DONAR: karne ve günün seçimleri bu son değeri ölçer.
+# Sitede ön/kesin ayrımı satırın updated_at'inden türetilir (kickoff − updated_at > 48 sa).
 # Ortam: /opt/football-match-analyzer/.env.hetzner (SUPABASE_*, INGEST_SECRET,
 #         PREDICT_SERVICE_TOKEN — motor 2026-09-30'dan beri Bearer token ister; yoksa 401)
 # Log: /var/log/engine-sync.log — cron: 5 * * * *
@@ -23,7 +27,9 @@ from datetime import datetime, timedelta, timezone
 SITE = 'https://footballanalytics.pro'
 ENGINE = 'http://127.0.0.1:8000/predict'
 STATUS = 'http://127.0.0.1:8000/status'
-DAYS_AHEAD = 2
+DAYS_AHEAD = int(os.environ.get('SYNC_DAYS_AHEAD', '5'))
+FREEZE_H = float(os.environ.get('SYNC_FREEZE_HOURS', '48'))      # bundan yakın yazılan satır kesindir
+REFRESH_H = float(os.environ.get('SYNC_REFRESH_HOURS', '20'))    # ön tahmin en az bu kadar sürede bir yenilenir
 ENV_FILE = '/opt/football-match-analyzer/.env.hetzner'
 
 
@@ -77,6 +83,28 @@ def active_version():
     return os.environ.get('ACTIVE_MODEL') or 'dc-1.0'
 
 
+def plan_fixtures(fixtures, existing, now, freeze_h=FREEZE_H, refresh_h=REFRESH_H):
+    """Hangi fikstürler motora gidecek. fixtures: {id: fikstür(date)}, existing: {id: updated_at(datetime)}.
+    → (liste, {'new','refresh','freeze','frozen','fresh'} sayımları). Saf; test edilir."""
+    out, n = [], {'new': 0, 'refresh': 0, 'freeze': 0, 'frozen': 0, 'fresh': 0}
+    for fid, f in fixtures.items():
+        ko = datetime.fromisoformat(f['date'].replace('Z', '+00:00'))
+        up = existing.get(fid)
+        far = (ko - now) > timedelta(hours=freeze_h)
+        if up is None:
+            n['new'] += 1; out.append(f)
+        elif far:
+            if (now - up) > timedelta(hours=refresh_h):
+                n['refresh'] += 1; out.append(f)
+            else:
+                n['fresh'] += 1
+        elif (ko - up) > timedelta(hours=freeze_h):
+            n['freeze'] += 1; out.append(f)   # son yazım ön tahmindi → kesinleştir (bir kez)
+        else:
+            n['frozen'] += 1
+    return out, n
+
+
 def main():
     env = load_env(ENV_FILE)
     sb_url, sb_key = env.get('NEXT_PUBLIC_SUPABASE_URL'), env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -113,20 +141,22 @@ def main():
 
     # 2) Var olan tahminler (aynı pencere, YALNIZ aktif sürüm) — Supabase REST, sayfalı
     active = active_version()
-    existing = set(); off = 0
+    existing = {}; off = 0
     while True:
         req = urllib.request.Request(
-            f"{sb_url}/rest/v1/engine_predictions?select=fixture_id&model_version=eq.{active}&kickoff=gte.{kos[0]}&kickoff=lte.{kos[-1]}",
+            f"{sb_url}/rest/v1/engine_predictions?select=fixture_id,updated_at&model_version=eq.{active}&kickoff=gte.{kos[0]}&kickoff=lte.{kos[-1]}",
             headers={'apikey': sb_key, 'Authorization': f'Bearer {sb_key}', 'Range-Unit': 'items', 'Range': f'{off}-{off + 999}'})
         with urllib.request.urlopen(req, timeout=60) as r:
             page = json.loads(r.read().decode())
-        existing.update(int(x['fixture_id']) for x in page)
+        for x in page:
+            u = x.get('updated_at')
+            existing[int(x['fixture_id'])] = datetime.fromisoformat(u.replace('Z', '+00:00')) if u else now - timedelta(days=30)
         if len(page) < 1000:
             break
         off += 1000
 
-    missing = [f for fid, f in fixtures.items() if fid not in existing]
-    log(f"pencere {days[0]}..{days[-1]}: fikstür {len(fixtures)}, tahminli({active}) {len(fixtures) - len(missing)}, eksik {len(missing)}")
+    missing, n = plan_fixtures(fixtures, existing, now)
+    log(f"pencere {days[0]}..{days[-1]}: fikstür {len(fixtures)}, {active}: yeni {n['new']}, ön-yenile {n['refresh']}, kesinleştir {n['freeze']}, donmuş {n['frozen']}, taze-ön {n['fresh']} → motora {len(missing)}")
     if not missing:
         return
 
