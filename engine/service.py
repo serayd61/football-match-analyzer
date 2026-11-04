@@ -48,6 +48,11 @@ SERVICE_TOKEN = os.environ.get("PREDICT_SERVICE_TOKEN", "")
 ALLOW_ANON = os.environ.get("PREDICT_ALLOW_ANON", "") == "1"
 MIN_LEAGUE_MATCHES = int(os.environ.get("MIN_LEAGUE_MATCHES", "150"))
 MIN_TEAM_MATCHES = float(os.environ.get("MIN_TEAM_MATCHES", "6"))       # sürüm params'ı yoksa
+# Kupa havuzu (2026-11-04): bu kanonik gruplar yalnız kendi maçlarıyla değil, katılımcı takımların lig
+# maçlarıyla da fit edilir (store.load_pool_for_fit). Vars. ŞL 904988, AL 73, Konferans 10216.
+CUP_POOL = {int(x) for x in os.environ.get("CUP_POOL_LEAGUES", "904988,73,10216").split(",") if x.strip().isdigit()}
+CUP_POOL_W = float(os.environ.get("CUP_POOL_DOMESTIC_W", "0.6"))
+CUP_POOL_SCOPE = os.environ.get("CUP_POOL_SCOPE", "leagues")  # backtest 2026-11-04: leagues:0.6 üç kupada da en iyi logloss/brier
 STORE_MAX_AGE_H = float(os.environ.get("STORE_MAX_AGE_HOURS", "20"))     # depo bundan eskiyse tazele
 STORE_REFRESH_DAYS = int(os.environ.get("STORE_REFRESH_DAYS", "4"))
 XG_REFRESH_DAYS = int(os.environ.get("XG_REFRESH_DAYS", "600"))
@@ -96,15 +101,24 @@ def _season_table(league_id: int, ref_ord: int):
     return _table_cache[key]
 
 
+def _is_cup_pool(league_id: int) -> bool:
+    canon = store.resolve(int(league_id))
+    return any(store.resolve(c) == canon for c in CUP_POOL)
+
+
 def _get_model(league_id: int, ref_ord: int, spec: Dict[str, Any]):
     """→ (model | None, xg_coverage, skip_reason). spec: {version, kind, params}."""
     key = (league_id, ref_ord, spec["version"])
     if key in _fit_cache:
         return _fit_cache[key]
     prm = P.params_for_league(spec, league_id)
-    matches = store.load_for_fit(league_id)
-    xg_store.attach(matches)
     ref_date = datetime.fromordinal(ref_ord)
+    if _is_cup_pool(league_id):
+        matches = store.load_pool_for_fit(league_id, ref_date, domestic_w=float(prm.get("pool_domestic_w", CUP_POOL_W)),
+                                          scope=str(prm.get("pool_scope", CUP_POOL_SCOPE)))
+    else:
+        matches = store.load_for_fit(league_id)
+    xg_store.attach(matches)
     cov = window_coverage(matches, ref_date, prm["window_days"])  # eğitim penceresiyle aynı küme
     mdl, reason = None, None
     if len(matches) < MIN_LEAGUE_MATCHES:
@@ -237,6 +251,7 @@ def status():
             for l in leagues[:15]
         ],
         "min_league_matches": MIN_LEAGUE_MATCHES,
+        "cup_pool": {"leagues": sorted(CUP_POOL), "domestic_w": CUP_POOL_W, "scope": CUP_POOL_SCOPE},
         "fit_cache_entries": len(_fit_cache),
         "xg": {
             "matches_with_xg": xg_store.total(), "path": xg_store.path, "feed_path": xg_store.feed_path, "counts": xg_store.counts(),

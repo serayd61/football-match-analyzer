@@ -490,6 +490,70 @@ class ResultStore:
         out.sort(key=lambda x: x["date"])
         return out
 
+    def _group_teams(self):
+        """Kanonik grup → takım id (str) kümesi; depo mtime'ına bağlı önbellek."""
+        if getattr(self, "_gt_mtime", None) == self._mtime and getattr(self, "_gt", None) is not None:
+            return self._gt
+        gt = {}
+        for gid, rows in self._by_league.items():
+            s = set()
+            for r in rows:
+                if r.get("homeId") is not None and r.get("awayId") is not None:
+                    s.add(str(r["homeId"])); s.add(str(r["awayId"]))
+            gt[gid] = s
+        self._gt, self._gt_mtime = gt, self._mtime
+        return gt
+
+    def load_pool_for_fit(self, league_id: int, ref_date=None, team_days: int = 400,
+                          domestic_w: float = 0.6, scope: str = "teams", max_group_teams: int = 60):
+        """
+        KUPA HAVUZU (2026-11-04). Avrupa kupalarında (ŞL/AL/Konferans) yalnız kupa maçlarıyla fit
+        takım kapısına takılır: kupaya yeni giren takımın 3 kupa maçı, 100+ lig maçı vardır.
+        Havuz = kupa grubunun maçları (w=1) + ref_date'ten önceki `team_days` günde kupada oynamış
+        takımların DİĞER gruplardaki maçları (w=domestic_w). Kupa maçları ligleri birbirine bağlar;
+        düşük lig ağırlığı zayıf ligde ezen takımın şişmesini sınırlar.
+          scope="teams"   → yalnız havuz takımlarının maçları (rakip ligdaşlar bağlam olarak gelir)
+          scope="leagues" → havuz takımı içeren grupların TÜM maçları
+        `max_group_teams`'ten çok takımlı gruplar (hazırlık/dostluk havuzu 915708: 570 takım) atlanır.
+        Çıktı load_for_fit ile aynı şema + "w"; model.fit ağırlığı zaman ağırlığıyla çarpar.
+        """
+        self._load()
+        canon = self.resolve(league_id)
+        cup = self.load_for_fit(league_id)
+        ref = ref_date or datetime.now()
+        cutoff = ref.toordinal() - int(team_days)
+        pool_teams = set()
+        for m in cup:
+            if m["date"] < ref and m["date"].toordinal() >= cutoff:
+                pool_teams.add(m["home"]); pool_teams.add(m["away"])
+        out, seen = [], set()
+        for m in cup:
+            m["w"] = 1.0
+            out.append(m); seen.add(m.get("id"))
+        if not pool_teams:
+            return out
+        gt = self._group_teams()
+        for gid, rows in self._by_league.items():
+            if gid == canon:
+                continue
+            teams = gt.get(gid) or set()
+            if len(teams) > max_group_teams or not (teams & pool_teams):
+                continue
+            for r in rows:
+                if r.get("homeId") is None or r.get("awayId") is None or r.get("id") in seen:
+                    continue
+                h, a = str(r["homeId"]), str(r["awayId"])
+                if scope != "leagues" and h not in pool_teams and a not in pool_teams:
+                    continue
+                d = _parse_dt(r.get("date"))
+                if not d:
+                    continue
+                seen.add(r.get("id"))
+                out.append({"id": r.get("id"), "date": d, "season": "", "home": h, "away": a,
+                            "fthg": r["fthg"], "ftag": r["ftag"], "w": float(domestic_w)})
+        out.sort(key=lambda x: x["date"])
+        return out
+
     def league_count(self, league_id: int) -> int:
         self._load()
         return len(self._by_league.get(self.resolve(league_id), []))

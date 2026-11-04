@@ -79,7 +79,7 @@ def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_ma
     n_eff = {t: 0.0 for t in teams}
     for m in train:
         age = ref_date.toordinal() - m["date"].toordinal()
-        wk = math.exp(-ln2 * age / half_life_days)
+        wk = math.exp(-ln2 * age / half_life_days) * float(m.get("w", 1.0))  # m["w"]: havuz ağırlığı (cup-pool), vars. 1
         w.append(wk)
         n_eff[m["home"]] += wk
         n_eff[m["away"]] += wk
