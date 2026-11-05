@@ -52,6 +52,7 @@
     "rights": "© {year} Football Analytics. Alle Rechte vorbehalten."
   },
   "common": {
+    "leanLabel": "Tipp des Modells",
     "loading": "Wird geladen",
     "retry": "Erneut versuchen",
     "back": "Zurück",
@@ -112,7 +113,7 @@
     "home": "Zur Startseite"
   },
   "home": {
-    "metaTitle": "Fussball-Prognosen & xG-Analyse",
+    "metaTitle": "KI-Fussballprognosen & xG-Analyse",
     "metaDescription": "Dixon-Coles-Wahrscheinlichkeiten für {count} Ligen, nach jedem Spiel abgerechnet und veröffentlicht. Gratis Vorschauen mit Tabelle, Form und Bilanz.",
     "eyebrow": "Statistische Fussballprognosen",
     "title": "Wahrscheinlichkeiten vor dem Anpfiff, Bilanz nach dem Abpfiff.",
@@ -645,7 +646,7 @@
           ]
         }
       ],
-      "metaTitle": "So funktioniert das Prognosemodell"
+      "metaTitle": "So funktioniert das KI-Prognosemodell"
     },
     "about": {
       "title": "Über uns",
@@ -1693,6 +1694,11 @@
       "faqFormQ": "Wie ist die Form von {home} und {away}?",
       "faqScoreQ": "Wie ging {home} – {away} aus?",
       "faqVerdictQ": "Traf die Prognose für {home} – {away} ein?",
+      "faqLeanQ": "Wen favorisiert das Modell bei {home} – {away}?",
+      "sLean": "Der 1X2-Tipp des Modells für diese Partie lautet {pick}; die Wahrscheinlichkeiten, Torerwartung und das Risikolabel erscheinen vor dem Anpfiff für Mitglieder.",
+      "descLean": "Tipp des Modells: {pick}.",
+      "leanLabel": "Tipp des Modells",
+      "modelLockedLean": "Der Tipp ist öffentlich. Mitglieder sehen, was dahintersteht – Stand vor dem Anpfiff:",
       "verdictKicker": "Abgerechnet",
       "verdictH": "Der Tipp des Modells vor dem Spiel und sein Ausgang",
       "verdictPick": "Tipp",
@@ -2052,11 +2058,11 @@
     "moreLead": "Bevor du schreibst: Die Antwort steht vielleicht schon hier:"
   },
   "dayHub": {
-    "metaTitleToday": "Fussball heute: Spiele & Form",
-    "metaTitleTomorrow": "Fussball morgen: Spiele & Form",
+    "metaTitleToday": "Fussball-Prognosen heute & Spielplan",
+    "metaTitleTomorrow": "Fussball-Prognosen morgen & Spielplan",
     "metaTitleYesterday": "Fussball gestern: Resultate & Tipps",
-    "metaTitleDate": "Fussballspiele am {date}",
-    "metaDescription": "{count, plural, =0 {Keine Partien} =1 {# Partie} other {# Partien}} in {leagues, plural, =1 {# Liga} other {# Ligen}} am {date}: Anstosszeiten, Tabellenplatz, Form und direkter Vergleich. Modellwahrscheinlichkeiten für Mitglieder.",
+    "metaTitleDate": "Fussball-Prognosen & Spiele am {date}",
+    "metaDescription": "{count, plural, =0 {Keine Partien} =1 {# Partie} other {# Partien}} in {leagues, plural, =1 {# Liga} other {# Ligen}} am {date}: 1X2-Tipp des Modells zu jeder Partie, Anstosszeiten, Tabellenplatz, Form und direkter Vergleich. Wahrscheinlichkeiten für Mitglieder.",
     "eyebrow": "Tagesansicht",
     "titleToday": "Die Spiele von heute",
     "titleTomorrow": "Die Spiele von morgen",
@@ -2072,6 +2078,11 @@
     "sSingle": "Die einzige Partie ist {home} – {away} ({league}) um {time}.",
     "sSettled": "{settled, plural, =1 {# davon ist abgerechnet} other {# davon sind abgerechnet}}; der 1X2-Tipp des Modells traf in {won} von {n} Fällen.",
     "sSettledNoVerdict": "{settled, plural, =1 {# davon ist abgerechnet} other {# davon sind abgerechnet}}.",
+    "sLeans": "Bei {n} der {count} Partien hat das Modell einen Favoriten: {list}.",
+    "sLeanItem": "{home} – {away} ({pick})",
+    "listSep": ", ",
+    "faqLeanQ": "Wie lauten die Prognosen des Modells für den {date}?",
+    "faqLeanA": "Jede Zeile zeigt den 1X2-Tipp; Wahrscheinlichkeit, Torerwartung und Risikolabel erscheinen für Mitglieder.",
     "empty": "An diesem Tag keine Partien im Modell",
     "emptyLead": "Das Modell bewertet elf Ligen; an spielfreien Tagen gibt es nichts zu listen. Über die Tageslinks geht es weiter.",
     "faqH": "Fragen zu diesem Tag",
@@ -2090,8 +2101,8 @@
     "leaguePage": "Ligaseite"
   },
   "team": {
-    "metaTitle": "{team}: Spiele, Resultate & Form",
-    "metaDescription": "{team} ({league}): nächstes Spiel, letzte Resultate, Form, Tore pro Spiel und wie die Tipps des Modells zu {team}-Spielen ausgingen.",
+    "metaTitle": "{team}: Prognose nächstes Spiel, Spielplan & Form",
+    "metaDescription": "{team} ({league}): Tipp des Modells zum nächsten Spiel, letzte Resultate, Form, Tore pro Spiel und wie seine Tipps zu {team}-Spielen ausgingen.",
     "h1": "{team}",
     "lead": "Spiele, Resultate und Form von {team} in der {league}, dazu die abgerechnete Bilanz des Modells zu den Partien des Vereins.",
     "homeVenue": "Heimstadion: {venue}",
@@ -2099,6 +2110,8 @@
     "sForm": "Die letzten {n} Resultate: {form}.",
     "sNext": "Als Nächstes: {home} – {away} ({league}) am {date}{venue}.",
     "venueAt": " im {venue}",
+    "sNextLean": "Für {home} – {away} lautet der 1X2-Tipp des Modells {pick}; Wahrscheinlichkeit, Torerwartung und Risikolabel erscheinen für Mitglieder.",
+    "faqLeanQ": "Wie lautet die Prognose des Modells für das nächste Spiel von {team}?",
     "sGoals": "In den letzten {n} Spielen erzielte {team} im Schnitt {gf} Tore und kassierte {ga}; {over} endeten mit über 2,5 Toren, in {btts} trafen beide Teams.",
     "sRecord": "Der 1X2-Tipp des Modells zu {team}-Spielen traf in {won} von {n} abgerechneten Partien ({acc}).",
     "sRecordNone": "Die abgerechnete Bilanz des Modells zu {team}-Spielen ist noch zu klein für eine Aussage.",

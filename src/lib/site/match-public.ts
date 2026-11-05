@@ -8,9 +8,13 @@ import type { SiteLeague } from './leagues';
 // /[locale]/matches/{ev}-vs-{deplasman}-{fixtureId} rotası üyelik istemez.
 // Bu dosya SAF yardımcılar içerir (server-only değil) ki testler de çalışsın:
 //   - URL üretimi ve kanonik slug denetimi,
-//   - SitePrediction → PublicMatch indirgemesi: model olasılıkları, seçim,
-//     güven, lambda, gol pazarları, gerekçe ve seçim sonucu (won/lost) BURADAN
+//   - SitePrediction → PublicMatch indirgemesi: model olasılıkları, güven,
+//     lambda, gol pazarları, gerekçe ve seçim sonucu (won/lost) BURADAN
 //     GEÇMEZ. Üyelere özel veri public HTML'e sızmasın diye tek kapı burasıdır.
+//   - SC performans okuması 2026-11-05: tıklama getiren tek niyet "X vs Y
+//     prediction"; sayfada tahmin görünmeyince ziyaretçi geri dönüyordu. Yaklaşan
+//     maçta modelin 1X2 tercih YÖNÜ (`lean`) artık herkese açık — olasılık,
+//     güven, gol pazarları ve oran karşılaştırması üyelere özel kalır.
 // Veri sorguları match-public-data.ts içinde (server-only).
 // ============================================================================
 
@@ -47,6 +51,19 @@ export interface PublicMatch {
    * "tahmin yok" notu çıkar. Model sayısı değil, yalnız "var/yok" bilgisidir.
    */
   openMatch: boolean;
+  /**
+   * 2026-11-05: yaklaşan maçta modelin 1X2 tercih yönü ('1' ev, 'X' beraberlik,
+   * '2' deplasman) — rakamsız. Bitmiş, favorisiz, modelsiz, ertelenmiş/iptal ya da
+   * kick-off'tan sonra yazılmış satırda null (publicLean).
+   */
+  lean: '1' | 'X' | '2' | null;
+}
+
+/** Public 1X2 direction of an upcoming match, or null (settled, no favourite, no model, not scheduled/live, written after kick-off). */
+export function publicLean(p: SitePrediction): '1' | 'X' | '2' | null {
+  if (p.settled || !p.hasModel || !p.pick || p.noFavourite || p.publishedAfterKickoff) return null;
+  if (p.status !== 'scheduled' && p.status !== 'live') return null;
+  return p.pick;
 }
 
 export interface SettledVerdict { pick: '1' | 'X' | '2'; p: number; outcome: 'won' | 'lost' }
@@ -60,7 +77,7 @@ export function settledVerdict(p: SitePrediction): SettledVerdict | null {
   return { pick: p.pick, p: Math.round(prob * 100) / 100, outcome: p.outcome };
 }
 
-/** Fields of SitePrediction that must never reach a public page (test-checked). */
+/** Fields of SitePrediction that must never reach a public page as-is (test-checked); `pick` reaches it only through `lean` / `verdict`. */
 export const PREMIUM_FIELDS = [
   'pHome', 'pDraw', 'pAway', 'lambdaHome', 'lambdaAway', 'pick', 'confidence', 'confidenceRaw',
   'doubleChance', 'overUnder', 'btts', 'rationale', 'outcome', 'result', 'modelVersion', 'hasModel', 'modelStatus', 'publishedAfterKickoff', 'provisional',
@@ -87,6 +104,7 @@ export function publicMatchView(p: SitePrediction): PublicMatch {
     updatedAt: p.updatedAt,
     verdict: settledVerdict(p),
     openMatch: !p.hasModel,
+    lean: publicLean(p),
   };
 }
 

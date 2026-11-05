@@ -117,5 +117,6 @@ export function feedPublicMatch(r: FeedMatchRecord): PublicMatch {
     updatedAt: r.updated_at,
     verdict: null,
     openMatch: true,
+    lean: null,
   };
 }

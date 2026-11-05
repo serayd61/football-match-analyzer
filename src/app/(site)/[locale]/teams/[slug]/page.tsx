@@ -25,6 +25,10 @@ import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
 // the model's SETTLED record on the club's matches (settled verdicts are public
 // since Faz 1a; upcoming predictions stay members-only). Auto-written sentences
 // per club + FAQ + SportsTeam JSON-LD. No session read → ISR (30 min).
+// 2026-11-05 (SC performans): 418 takım sayfası gösterimin %42'sini alıp 6 tık
+// getiriyordu; takım adı sorgusu kazanılmaz, kazanılabilecek niyet "X next match
+// prediction / X maçı tahmini" → başlık tahmin dilinde, gövdede sıradaki maçın
+// model tercih yönü (rakamsız, PublicMatch.lean) ve fikstürde satır başı tercih.
 // ============================================================================
 export const revalidate = 1800;
 
@@ -77,17 +81,20 @@ export default async function TeamPage({ params }: { params: Params }) {
   const pct0 = (x: number) => f.number(x, 'percent0');
   const nextDate = next ? f.dateTime(new Date(next.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const nextVenue = next && next.homeId ? venueFor(next.homeId) : null;
+  const nextLean = next?.lean ? (next.lean === '1' ? tm('pickHome', { team: next.homeName }) : next.lean === '2' ? tm('pickAway', { team: next.awayName }) : tm('pickDraw')) : null;
 
   // Auto-written summary: position, form, next fixture, goals, settled record.
   const sentences: string[] = [];
   if (row) sentences.push(t('sPosition', { team: team.name, pos: row.pos, league: league.name, played: row.played, pts: row.pts, w: row.won, d: row.drawn, l: row.lost, gf: row.gf, ga: row.ga }));
   if (letters.length >= 3) sentences.push(t('sForm', { team: team.name, n: letters.length, form: fmtLetters(letters) }));
   if (next) sentences.push(t('sNext', { home: next.homeName, away: next.awayName, league: next.leagueName, date: nextDate, venue: nextVenue ? t('venueAt', { venue: nextVenue.venue }) : '' }));
+  if (next && nextLean) sentences.push(t('sNextLean', { home: next.homeName, away: next.awayName, pick: nextLean }));
   if (goals && goals.n >= 5) sentences.push(t('sGoals', { team: team.name, n: goals.n, gf: dec(goals.gfAvg), ga: dec(goals.gaAvg), over: pct0(goals.over25), btts: pct0(goals.btts) }));
   sentences.push(verdicts.length >= 3 ? t('sRecord', { team: team.name, won, n: verdicts.length, acc: pct0(won / verdicts.length) }) : t('sRecordNone', { team: team.name }));
 
   const faqs: Array<{ q: string; a: string }> = [];
   if (next) faqs.push({ q: t('faqNextQ', { team: team.name }), a: t('sNext', { home: next.homeName, away: next.awayName, league: next.leagueName, date: nextDate, venue: nextVenue ? t('venueAt', { venue: nextVenue.venue }) : '' }) });
+  if (next && nextLean) faqs.push({ q: t('faqLeanQ', { team: team.name }), a: t('sNextLean', { home: next.homeName, away: next.awayName, pick: nextLean }) });
   if (letters.length >= 3) faqs.push({ q: t('faqFormQ', { team: team.name }), a: t('sForm', { team: team.name, n: letters.length, form: fmtLetters(letters) }) });
   if (row) faqs.push({ q: t('faqPosQ', { team: team.name, league: league.name }), a: t('sPosition', { team: team.name, pos: row.pos, league: league.name, played: row.played, pts: row.pts, w: row.won, d: row.drawn, l: row.lost, gf: row.gf, ga: row.ga }) });
   if (verdicts.length >= 3) faqs.push({ q: t('faqRecordQ', { team: team.name }), a: t('sRecord', { team: team.name, won, n: verdicts.length, acc: pct0(won / verdicts.length) }) });
@@ -124,7 +131,7 @@ export default async function TeamPage({ params }: { params: Params }) {
 
       <section className="mt-10" aria-labelledby="upcoming-h">
         <SectionTitle id="upcoming-h" title={t('upcomingH')} sub={t('upcomingSub')} meta={<Link href="/matches" className="underline underline-offset-4">{tm('backHub')}</Link>} />
-        <div className="mt-4">{upcoming.length ? <PublicMatchList rows={upcoming.slice(0, 8)} groupBy="day" /> : <p className="text-sm text-s-muted">{t('upcomingEmpty')}</p>}</div>
+        <div className="mt-4">{upcoming.length ? <PublicMatchList rows={upcoming.slice(0, 8)} groupBy="day" showLean /> : <p className="text-sm text-s-muted">{t('upcomingEmpty')}</p>}</div>
       </section>
 
       <aside className="rule-b-1 mt-8 grid gap-4 py-6 sm:grid-cols-[1fr_auto] sm:items-end" aria-labelledby="members-h">

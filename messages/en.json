@@ -52,6 +52,7 @@
     "rights": "© {year} Football Analytics. All rights reserved."
   },
   "common": {
+    "leanLabel": "Model pick",
     "loading": "Loading",
     "retry": "Try again",
     "back": "Back",
@@ -112,7 +113,7 @@
     "home": "Go to the home page"
   },
   "home": {
-    "metaTitle": "Football predictions & xG analysis",
+    "metaTitle": "AI football predictions & xG analysis",
     "metaDescription": "Dixon-Coles match probabilities for {count} leagues, settled and published after every match. Free previews with standings, form and head-to-head.",
     "eyebrow": "Statistical football predictions",
     "title": "Probabilities before kick-off, a scorecard after the final whistle.",
@@ -645,7 +646,7 @@
           ]
         }
       ],
-      "metaTitle": "How the football prediction model works"
+      "metaTitle": "How the AI prediction model works"
     },
     "about": {
       "title": "About",
@@ -1693,6 +1694,11 @@
       "faqFormQ": "How are {home} and {away} in form?",
       "faqScoreQ": "What was the score in {home} vs {away}?",
       "faqVerdictQ": "Did the prediction for {home} vs {away} come in?",
+      "faqLeanQ": "Who does the model favour in {home} vs {away}?",
+      "sLean": "The model’s 1X2 pick for this match is {pick}; the probability split, expected goals and risk label are published for members before kick-off.",
+      "descLean": "Model pick: {pick}.",
+      "leanLabel": "Model pick",
+      "modelLockedLean": "The pick is public. Members see what stands behind it, as it stood before kick-off:",
       "verdictKicker": "Settled",
       "verdictH": "The model’s pre-match pick and how it went",
       "verdictPick": "Pick",
@@ -2052,11 +2058,11 @@
     "moreLead": "Before you write, the answer may already be on these pages:"
   },
   "dayHub": {
-    "metaTitleToday": "Today's football matches & form",
-    "metaTitleTomorrow": "Tomorrow's football matches & form",
+    "metaTitleToday": "Today's football predictions & form",
+    "metaTitleTomorrow": "Tomorrow's football predictions & form",
     "metaTitleYesterday": "Yesterday's football results & verdicts",
-    "metaTitleDate": "Football matches on {date}",
-    "metaDescription": "{count, plural, =0 {No covered fixtures} =1 {# covered fixture} other {# covered fixtures}} in {leagues, plural, =1 {# league} other {# leagues}} on {date}: kick-off times, league positions, form and head-to-head. Model probabilities for members.",
+    "metaTitleDate": "Football predictions & matches on {date}",
+    "metaDescription": "{count, plural, =0 {No covered fixtures} =1 {# covered fixture} other {# covered fixtures}} in {leagues, plural, =1 {# league} other {# leagues}} on {date}: the model’s 1X2 pick for each, kick-off times, league positions, form and head-to-head. Probabilities for members.",
     "eyebrow": "Day view",
     "titleToday": "Today's matches",
     "titleTomorrow": "Tomorrow's matches",
@@ -2072,6 +2078,11 @@
     "sSingle": "The only fixture is {home} vs {away} ({league}) at {time}.",
     "sSettled": "{settled, plural, =1 {# of them is settled} other {# of them are settled}}; the model’s 1X2 pick came in {won} of {n}.",
     "sSettledNoVerdict": "{settled, plural, =1 {# of them is settled} other {# of them are settled}}.",
+    "sLeans": "The model has a favourite in {n} of the {count}: {list}.",
+    "sLeanItem": "{home} vs {away} ({pick})",
+    "listSep": ", ",
+    "faqLeanQ": "What are the model’s predictions for {date}?",
+    "faqLeanA": "Each match row shows the 1X2 pick; the probability, expected goals and risk label are published for members.",
     "empty": "No covered fixtures on this day",
     "emptyLead": "The model rates eleven leagues; on free days there is nothing to list. Use the day links to move on.",
     "faqH": "Questions about this day",
@@ -2090,8 +2101,8 @@
     "leaguePage": "League page"
   },
   "team": {
-    "metaTitle": "{team}: fixtures, results & form",
-    "metaDescription": "{team} ({league}): next match, latest results, form, goals per match and how the model’s predictions on {team} matches have gone.",
+    "metaTitle": "{team} next match prediction, fixtures & form",
+    "metaDescription": "{team} ({league}): the model’s pick for the next match, latest results, form, goals per match and how its predictions on {team} matches have gone.",
     "h1": "{team}",
     "lead": "Fixtures, results and form of {team} in the {league}, plus the model’s settled record on the club’s matches.",
     "homeVenue": "Home ground: {venue}",
@@ -2099,6 +2110,8 @@
     "sForm": "Last {n} results: {form}.",
     "sNext": "Next: {home} vs {away} ({league}) on {date}{venue}.",
     "venueAt": " at {venue}",
+    "sNextLean": "For {home} vs {away} the model’s 1X2 pick is {pick}; the probability, expected goals and risk label are published for members.",
+    "faqLeanQ": "What is the model’s prediction for {team}’s next match?",
     "sGoals": "In the last {n} matches {team} averaged {gf} goals scored and {ga} conceded; {over} ended over 2.5 goals and {btts} saw both teams score.",
     "sRecord": "The model’s 1X2 pick on {team} matches came in {won} of {n} settled matches ({acc}).",
     "sRecordNone": "The model’s settled record on {team} matches is still too small to summarise.",

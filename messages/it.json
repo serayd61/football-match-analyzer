@@ -52,6 +52,7 @@
     "rights": "© {year} Football Analytics. Tutti i diritti riservati."
   },
   "common": {
+    "leanLabel": "Scelta del modello",
     "loading": "Caricamento",
     "retry": "Riprova",
     "back": "Indietro",
@@ -112,7 +113,7 @@
     "home": "Vai alla home"
   },
   "home": {
-    "metaTitle": "Pronostici calcio e analisi xG",
+    "metaTitle": "Pronostici calcio AI e analisi xG",
     "metaDescription": "Probabilità Dixon-Coles per {count} campionati, chiuse e pubblicate dopo ogni partita. Anteprime gratuite con classifica, forma e precedenti.",
     "eyebrow": "Pronostici calcio statistici",
     "title": "Probabilità prima del fischio d'inizio, pagella dopo quello finale.",
@@ -645,7 +646,7 @@
           ]
         }
       ],
-      "metaTitle": "Come funziona il modello di pronostico"
+      "metaTitle": "Modello AI di pronostico: come funziona"
     },
     "about": {
       "title": "Chi siamo",
@@ -1693,6 +1694,11 @@
       "faqFormQ": "Come stanno di forma {home} e {away}?",
       "faqScoreQ": "Come è finita {home} – {away}?",
       "faqVerdictQ": "Il pronostico di {home} – {away} è stato azzeccato?",
+      "faqLeanQ": "Chi favorisce il modello in {home} – {away}?",
+      "sLean": "La scelta 1X2 del modello per questa partita è {pick}; probabilità, gol attesi ed etichetta di rischio sono pubblicati per i membri prima del calcio d’inizio.",
+      "descLean": "Scelta del modello: {pick}.",
+      "leanLabel": "Scelta del modello",
+      "modelLockedLean": "La scelta è pubblica. I membri vedono cosa c’è dietro, com’era prima del calcio d’inizio:",
       "verdictKicker": "Chiuso",
       "verdictH": "La scelta del modello prima della gara e com’è andata",
       "verdictPick": "Scelta",
@@ -2052,11 +2058,11 @@
     "moreLead": "Prima di scrivere, la risposta potrebbe già essere qui:"
   },
   "dayHub": {
-    "metaTitleToday": "Partite di calcio oggi: gare e forma",
-    "metaTitleTomorrow": "Partite di calcio domani: gare e forma",
+    "metaTitleToday": "Pronostici partite di oggi e forma",
+    "metaTitleTomorrow": "Pronostici partite di domani e forma",
     "metaTitleYesterday": "Risultati di ieri e verdetti",
-    "metaTitleDate": "Partite di calcio del {date}",
-    "metaDescription": "{count, plural, =0 {Nessuna partita coperta} =1 {# partita coperta} other {# partite coperte}} in {leagues, plural, =1 {# campionato} other {# campionati}} il {date}: orari, classifica, forma e precedenti. Probabilità del modello per i membri.",
+    "metaTitleDate": "Pronostici e partite di calcio del {date}",
+    "metaDescription": "{count, plural, =0 {Nessuna partita coperta} =1 {# partita coperta} other {# partite coperte}} in {leagues, plural, =1 {# campionato} other {# campionati}} il {date}: scelta 1X2 del modello per ciascuna, orari, classifica, forma e precedenti. Probabilità per i membri.",
     "eyebrow": "Vista giornaliera",
     "titleToday": "Le partite di oggi",
     "titleTomorrow": "Le partite di domani",
@@ -2072,6 +2078,11 @@
     "sSingle": "L’unica gara è {home} – {away} ({league}) alle {time}.",
     "sSettled": "{settled, plural, =1 {# di queste è chiusa} other {# di queste sono chiuse}}; la scelta 1X2 del modello è stata azzeccata in {won} su {n}.",
     "sSettledNoVerdict": "{settled, plural, =1 {# di queste è chiusa} other {# di queste sono chiuse}}.",
+    "sLeans": "Il modello ha un favorito in {n} delle {count} partite: {list}.",
+    "sLeanItem": "{home} – {away} ({pick})",
+    "listSep": ", ",
+    "faqLeanQ": "Quali sono i pronostici del modello per il {date}?",
+    "faqLeanA": "Ogni riga mostra la scelta 1X2; probabilità, gol attesi ed etichetta di rischio sono pubblicati per i membri.",
     "empty": "Nessuna partita coperta in questo giorno",
     "emptyLead": "Il modello valuta undici campionati; nei giorni senza gare non c’è nulla da elencare. Usa i collegamenti ai giorni vicini.",
     "faqH": "Domande su questo giorno",
@@ -2090,8 +2101,8 @@
     "leaguePage": "Pagina del campionato"
   },
   "team": {
-    "metaTitle": "{team}: partite, risultati e forma",
-    "metaDescription": "{team} ({league}): prossima partita, ultimi risultati, forma, gol a partita e com’è andata con le scelte del modello sulle gare del {team}.",
+    "metaTitle": "{team}: pronostico prossima partita, calendario e forma",
+    "metaDescription": "{team} ({league}): scelta del modello per la prossima partita, ultimi risultati, forma, gol a partita e com’è andata con le sue scelte sulle gare del {team}.",
     "h1": "{team}",
     "lead": "Partite, risultati e forma del {team} in {league}, più il rendimento chiuso del modello sulle gare della squadra.",
     "homeVenue": "Stadio di casa: {venue}",
@@ -2099,6 +2110,8 @@
     "sForm": "Ultimi {n} risultati: {form}.",
     "sNext": "Prossima: {home} – {away} ({league}) {date}{venue}.",
     "venueAt": " allo stadio {venue}",
+    "sNextLean": "Per {home} – {away} la scelta 1X2 del modello è {pick}; probabilità, gol attesi ed etichetta di rischio sono pubblicati per i membri.",
+    "faqLeanQ": "Qual è il pronostico del modello per la prossima partita del {team}?",
     "sGoals": "Nelle ultime {n} partite il {team} ha segnato in media {gf} gol e ne ha subiti {ga}; {over} sono finite con più di 2,5 gol e in {btts} hanno segnato entrambe.",
     "sRecord": "La scelta 1X2 del modello sulle gare del {team} è stata azzeccata in {won} su {n} partite chiuse ({acc}).",
     "sRecordNone": "Il rendimento chiuso del modello sulle gare del {team} è ancora troppo piccolo per un giudizio.",

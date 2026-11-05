@@ -80,7 +80,7 @@ test('glossary: the same anchors and term count in all four languages, every ter
 });
 
 test('new ICU strings compile in every locale and render with sample values', () => {
-  const sample: Record<string, unknown> = { count: 2, leagues: 3, date: '17 October', home: 'A', away: 'B', league: 'L', time: '15:00', lhome: 'C', laway: 'D', ltime: '20:45', settled: 1, won: 2, n: 3, team: 'T', pos: 3, played: 8, pts: 17, w: 5, d: 2, l: 1, gf: 14, ga: 7, form: 'W W D', venue: 'V', over: '60%', btts: '50%', acc: '55%', from: '1 August', brier: '0.610', ou: '58%', ouN: 40, bttsN: 40, roi: '+2.1%', bets: 40, list: 'x', country: 'C' };
+  const sample: Record<string, unknown> = { count: 2, leagues: 3, date: '17 October', home: 'A', away: 'B', league: 'L', time: '15:00', lhome: 'C', laway: 'D', ltime: '20:45', settled: 1, won: 2, n: 3, team: 'T', pos: 3, played: 8, pts: 17, w: 5, d: 2, l: 1, gf: 14, ga: 7, form: 'W W D', venue: 'V', over: '60%', btts: '50%', acc: '55%', from: '1 August', brier: '0.610', ou: '58%', ouN: 40, bttsN: 40, roi: '+2.1%', bets: 40, list: 'x', country: 'C', pick: 'P' };
   for (const [name, m] of Object.entries({ en, de, it, tr }) as Array<[string, any]>) {
     for (const ns of ['dayHub', 'teams', 'team', 'perfLeague']) {
       for (const [k, v] of Object.entries(m[ns] as Record<string, string>)) {

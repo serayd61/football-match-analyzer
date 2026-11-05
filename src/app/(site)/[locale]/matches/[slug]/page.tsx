@@ -33,9 +33,10 @@ import AppBanner from '@/components/site/AppBanner';
 // URL: /[locale]/matches/{ev}-vs-{deplasman}-{fixtureId}. Kimlik sondaki sayı;
 // slug kanonik değilse 308 ile kanoniğe gider (aynı maç tek URL).
 // Gösterilen: lig, başlama (saat dilimiyle), stat, puan durumu, son beş maç,
-// geçmiş karşılaşmalar, bittiyse skor. GÖSTERİLMEYEN: olasılık, seçim, güven,
-// gol beklentisi, pazarlar, seçimin tuttu/tutmadı bilgisi — hepsi /predictions
-// altında, üyelik kuralı değişmedi (lib/site/match-public.ts tek kapı).
+// geçmiş karşılaşmalar, bittiyse skor, yaklaşan maçta modelin 1X2 tercih YÖNÜ
+// (2026-11-05, rakamsız — PublicMatch.lean). GÖSTERİLMEYEN: olasılık, güven,
+// gol beklentisi, pazarlar — hepsi /predictions altında, üyelik kuralı değişmedi
+// (lib/site/match-public.ts tek kapı). Bitmiş maçta seçim + sonucu zaten açık.
 // Oturum yalnız "tam tahmini aç" bağlantısı için okunur; içerik herkese aynı.
 // feed-1.1 (2026-11-03): motor satırı olmayan maç (CL/EL, kapsam dışı rakip)
 // günlük akış arşivinden açılır — "açık maç": tahmin kutusu yerine "tahmin yok"
@@ -70,10 +71,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const ranked = !!(stHome && stAway);
   const vars = { home: m.homeName, away: m.awayName, league: m.leagueName, date, hs: m.homeScore ?? 0, as: m.awayScore ?? 0, hpos: stHome?.pos ?? 0, hpts: stHome?.pts ?? 0, apos: stAway?.pos ?? 0, apts: stAway?.pts ?? 0 };
   const descKey = played ? (ranked ? 'metaDescriptionSettledRanked' : 'metaDescriptionSettled') : ranked ? 'metaDescriptionRanked' : 'metaDescription';
+  // 2026-11-05: yaklaşan maçta snippet'e tercih yönü ("prediction" sorgularında TO).
+  const lean = !played && m.lean ? (m.lean === '1' ? t('pickHome', { team: m.homeName }) : m.lean === '2' ? t('pickAway', { team: m.awayName }) : t('pickDraw')) : null;
   return {
     // SEO Faz 0: no " · Football Analytics" suffix — two team names already fill the title.
     title: { absolute: played ? t('metaTitleSettled', vars) : t('metaTitle', vars) },
-    description: t(descKey, vars),
+    description: lean ? `${t('descLean', { pick: lean })} ${t(descKey, vars)}` : t(descKey, vars), // pick first: Google cuts at ~160 chars
     alternates: alternatesFor(params.locale as Locale, matchPath(m)),
     openGraph: { title: `${m.homeName} – ${m.awayName}`, images: [`/api/og/match/${m.fixtureId}`] },
     // Açık maç + çözümsüz lig: ince sayfa, dizine girmesin (bağlantılar izlenir).
@@ -160,6 +163,9 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   const v = m.verdict;
   const pickLabel = v ? (v.pick === '1' ? t('pickHome', { team: m.homeName }) : v.pick === '2' ? t('pickAway', { team: m.awayName }) : t('pickDraw')) : null;
   if (v && pickLabel) sentences.push(t(v.outcome === 'won' ? 'sVerdictWon' : 'sVerdictLost', { pick: pickLabel, p: pct0(v.p) }));
+  // Upcoming: the model's 1X2 direction is public (match-public.ts publicLean); figures stay members-only.
+  const leanLabel = !played && m.lean ? (m.lean === '1' ? t('pickHome', { team: m.homeName }) : m.lean === '2' ? t('pickAway', { team: m.awayName }) : t('pickDraw')) : null;
+  if (leanLabel) sentences.push(t('sLean', { pick: leanLabel }));
 
   // FAQPage: only questions the page actually answers with real data (Google: match the content).
   const faqs: Array<{ q: string; a: string }> = [];
@@ -169,6 +175,7 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
   if (lh.length >= 3 && la.length >= 3) faqs.push({ q: t('faqFormQ', { home: m.homeName, away: m.awayName }), a: t('sForm', { home: m.homeName, away: m.awayName, hform: fmtLetters(lh), aform: fmtLetters(la), n: Math.min(lh.length, la.length) }) });
   if (played) faqs.push({ q: t('faqScoreQ', { home: m.homeName, away: m.awayName }), a: t('sFinal', { home: m.homeName, away: m.awayName, hs: m.homeScore!, as: m.awayScore! }) });
   if (v && pickLabel) faqs.push({ q: t('faqVerdictQ', { home: m.homeName, away: m.awayName }), a: t(v.outcome === 'won' ? 'sVerdictWon' : 'sVerdictLost', { pick: pickLabel, p: pct0(v.p) }) });
+  if (leanLabel) faqs.push({ q: t('faqLeanQ', { home: m.homeName, away: m.awayName }), a: t('sLean', { pick: leanLabel }) });
 
   const formList = (teamId: number | null, rows: HistoryRow[]) => (
     <ul className="divide-y divide-s-line border-b border-s-line">
@@ -335,7 +342,13 @@ export default async function PublicMatchPage({ params }: { params: Params }) {
         <aside className="h-fit rounded-[14px] border border-s-line bg-s-surface p-5 shadow-[var(--s-shadow)] lg:sticky lg:top-20" aria-labelledby="model-h">
           <p className="kicker">{t('modelKicker')}</p>
           <h2 id="model-h" className="mt-2 text-[22px]">{t('modelH')}</h2>
-          <p className="mt-2 text-[14px] text-s-muted">{v ? t('modelLockedVerdict') : isPast ? t('modelLockedSettled') : t('modelLockedLead')}</p>
+          {leanLabel && (
+            <dl className="mt-3 rounded-[10px] border border-s-line bg-s-raised/60 px-3 py-2 text-[14px]">
+              <dt className="text-xs uppercase tracking-wider text-s-muted">{t('leanLabel')}</dt>
+              <dd className="mt-0.5 font-semibold">{leanLabel}</dd>
+            </dl>
+          )}
+          <p className="mt-2 text-[14px] text-s-muted">{v ? t('modelLockedVerdict') : leanLabel ? t('modelLockedLean') : isPast ? t('modelLockedSettled') : t('modelLockedLead')}</p>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-[13.5px]">
             <li>{t('bullet1x2')}</li><li>{t('bulletGoals')}</li><li>{t('bulletConf')}</li><li>{t('bulletRecord')}</li>
           </ul>
