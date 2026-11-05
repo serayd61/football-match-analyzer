@@ -52,6 +52,7 @@
     "rights": "© {year} Football Analytics. Tüm hakları saklıdır."
   },
   "common": {
+    "leanLabel": "Model seçimi",
     "loading": "Yükleniyor",
     "retry": "Tekrar dene",
     "back": "Geri",
@@ -112,7 +113,7 @@
     "home": "Ana sayfaya git"
   },
   "home": {
-    "metaTitle": "Futbol tahminleri ve xG analizi",
+    "metaTitle": "Yapay zekâ futbol tahmini ve xG analizi",
     "metaDescription": "{count} lig için Dixon-Coles maç olasılıkları; her maçtan sonra sonuçlandırılıp yayınlanır. Puan durumu, form ve H2H ile ücretsiz maç önü.",
     "eyebrow": "İstatistiksel futbol tahminleri",
     "title": "Maç başlamadan olasılık, bittikten sonra karne.",
@@ -645,7 +646,7 @@
           ]
         }
       ],
-      "metaTitle": "Tahmin modeli nasıl çalışır"
+      "metaTitle": "Yapay zekâ tahmin modeli nasıl çalışır"
     },
     "about": {
       "title": "Hakkında",
@@ -1693,6 +1694,11 @@
       "faqFormQ": "{home} ve {away} formda mı?",
       "faqScoreQ": "{home} – {away} maçı kaç kaç bitti?",
       "faqVerdictQ": "{home} – {away} tahmini tuttu mu?",
+      "faqLeanQ": "{home} – {away} maçında model kimi favori görüyor?",
+      "sLean": "Modelin bu maç için 1X2 seçimi {pick}; olasılık dağılımı, gol beklentisi ve risk etiketi maç öncesi üyelere yayınlanır.",
+      "descLean": "Model seçimi: {pick}.",
+      "leanLabel": "Model seçimi",
+      "modelLockedLean": "Seçim herkese açık. Üyeler arkasındakini, maç öncesi haliyle görür:",
       "verdictKicker": "Sonuçlandı",
       "verdictH": "Modelin maç öncesi seçimi ve sonucu",
       "verdictPick": "Seçim",
@@ -2052,11 +2058,11 @@
     "moreLead": "Yazmadan önce yanıt şu sayfalarda olabilir:"
   },
   "dayHub": {
-    "metaTitleToday": "Bugünkü maçlar: fikstür ve form",
-    "metaTitleTomorrow": "Yarınki maçlar: fikstür ve form",
+    "metaTitleToday": "Bugünkü maç tahminleri, fikstür ve form",
+    "metaTitleTomorrow": "Yarınki maç tahminleri, fikstür ve form",
     "metaTitleYesterday": "Dünkü sonuçlar ve model kararları",
-    "metaTitleDate": "{date} maçları",
-    "metaDescription": "{date}: {leagues, plural, =1 {# ligde} other {# ligde}} {count, plural, =0 {kapsamda maç yok} =1 {# kapsamdaki maç} other {# kapsamdaki maç}}. Başlama saatleri, puan durumu, form ve geçmiş karşılaşmalar. Model olasılıkları üyelere.",
+    "metaTitleDate": "{date} maç tahminleri ve fikstürü",
+    "metaDescription": "{date}: {leagues, plural, =1 {# ligde} other {# ligde}} {count, plural, =0 {kapsamda maç yok} =1 {# kapsamdaki maç} other {# kapsamdaki maç}}. Her maç için modelin 1X2 seçimi, başlama saatleri, puan durumu, form ve geçmiş karşılaşmalar. Olasılıklar üyelere.",
     "eyebrow": "Gün görünümü",
     "titleToday": "Bugünkü maçlar",
     "titleTomorrow": "Yarınki maçlar",
@@ -2072,6 +2078,11 @@
     "sSingle": "Günün tek maçı {time} saatinde {home} – {away} ({league}).",
     "sSettled": "{settled, plural, =1 {Bunların # tanesi} other {Bunların # tanesi}} sonuçlandı; modelin 1X2 seçimi {n} maçın {won} tanesinde tuttu.",
     "sSettledNoVerdict": "{settled, plural, =1 {Bunların # tanesi} other {Bunların # tanesi}} sonuçlandı.",
+    "sLeans": "Modelin {count} maçın {n} tanesinde favorisi var: {list}.",
+    "sLeanItem": "{home} – {away} ({pick})",
+    "listSep": ", ",
+    "faqLeanQ": "Modelin {date} tahminleri neler?",
+    "faqLeanA": "Her maç satırında 1X2 seçimi görünür; olasılık, gol beklentisi ve risk etiketi üyelere yayınlanır.",
     "empty": "Bu gün kapsamda maç yok",
     "emptyLead": "Model on bir ligi puanlıyor; maç olmayan günlerde listelenecek bir şey yok. Gün bağlantılarıyla ilerleyebilirsin.",
     "faqH": "Bu günle ilgili sorular",
@@ -2090,8 +2101,8 @@
     "leaguePage": "Lig sayfası"
   },
   "team": {
-    "metaTitle": "{team}: fikstür, sonuçlar ve form",
-    "metaDescription": "{team} ({league}): sonraki maç, son sonuçlar, form, maç başına gol ve modelin {team} maçlarındaki tahminlerinin nasıl gittiği.",
+    "metaTitle": "{team} maç tahmini, fikstür ve form",
+    "metaDescription": "{team} ({league}): modelin sıradaki maç seçimi, son sonuçlar, form, maç başına gol ve {team} maçlarındaki tahminlerinin nasıl gittiği.",
     "h1": "{team}",
     "lead": "{team} takımının {league} fikstürü, sonuçları ve formu; ayrıca modelin takımın maçlarındaki sonuçlanmış karnesi.",
     "homeVenue": "İç saha: {venue}",
@@ -2099,6 +2110,8 @@
     "sForm": "Son {n} sonuç: {form}.",
     "sNext": "Sıradaki maç: {date}, {home} – {away} ({league}){venue}.",
     "venueAt": ", {venue}",
+    "sNextLean": "{home} – {away} için modelin 1X2 seçimi {pick}; olasılık, gol beklentisi ve risk etiketi üyelere yayınlanır.",
+    "faqLeanQ": "Modelin {team} için sıradaki maç tahmini ne?",
     "sGoals": "{team} son {n} maçta maç başına ortalama {gf} gol attı, {ga} gol yedi; maçların {over} kadarı 2,5 üstle bitti, {btts} kadarında iki takım da gol attı.",
     "sRecord": "Modelin {team} maçlarındaki 1X2 seçimi sonuçlanan {n} maçın {won} tanesinde tuttu ({acc}).",
     "sRecordNone": "Modelin {team} maçlarındaki sonuçlanmış karnesi henüz yorum için çok küçük.",

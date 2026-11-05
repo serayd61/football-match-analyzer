@@ -19,7 +19,10 @@ import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
 // grouped by league, with an auto-written summary line (count, leagues, first
 // and last kick-off, settled verdicts) and a FAQ. Rendered by the /matches/[slug]
 // route when the slug is today|tomorrow|yesterday|yyyy-mm-dd (lib/site/day-hub.ts).
-// No model figure: the list is the public PublicMatch view.
+// No model figure: the list is the public PublicMatch view. 2026-11-05 (SC
+// performans): "match football tomorrow" / "partite di domani" sorguları konum
+// 60'ta kalıyordu — başlık tahmin dilinde, gövdede günün öne çıkan maçları ve
+// her satırda modelin 1X2 tercih yönü (rakamsız) var.
 
 const DATE_FMT = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' } as const;
 const TIME_FMT = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZoneName: 'short' } as const;
@@ -46,6 +49,7 @@ export default async function DayHub({ locale, hub }: { locale: string; hub: Hub
   }
   const t = await getTranslations('dayHub');
   const th = await getTranslations('matches.hub');
+  const tm = await getTranslations('matches.match');
   const tn = await getTranslations('nav');
   const tp = await getTranslations('paywall');
   const tc = await getTranslations('common');
@@ -62,10 +66,17 @@ export default async function DayHub({ locale, hub }: { locale: string; hub: Hub
   const url = `${SITE_URL}/${locale}${path}`;
   const { prev, next } = dayHubNeighbours(hub.ymd);
   const title = hub.kind === 'date' ? t('titleDate', { date }) : t(hub.kind === 'today' ? 'titleToday' : hub.kind === 'tomorrow' ? 'titleTomorrow' : 'titleYesterday');
+  // Öne çıkanlar: tercih yönü olan maçlar, lig sırasına (SITE_LEAGUES) göre ilk üç.
+  const leanLabel = (m: (typeof rows)[number]) => (m.lean === '1' ? tm('pickHome', { team: m.homeName }) : m.lean === '2' ? tm('pickAway', { team: m.awayName }) : tm('pickDraw'));
+  const leagueRank = (slug: string | undefined) => { const i = SITE_LEAGUES.findIndex((l) => l.slug === slug); return i < 0 ? 99 : i; };
+  const leaning = rows.filter((r) => r.lean);
+  const featured = [...leaning].sort((a, b) => leagueRank(a.league?.slug) - leagueRank(b.league?.slug) || Date.parse(a.kickoff) - Date.parse(b.kickoff)).slice(0, 3);
+  const featuredText = featured.map((m) => t('sLeanItem', { home: m.homeName, away: m.awayName, pick: leanLabel(m) })).join(t('listSep'));
 
   const sentences: string[] = [];
   if (rows.length) {
     sentences.push(t('sCount', { count: rows.length, leagues: leagueSlugs.length, date }));
+    if (featured.length) sentences.push(t('sLeans', { n: leaning.length, count: rows.length, list: featuredText }));
     if (first && last && first.fixtureId !== last.fixtureId) sentences.push(t('sFirstLast', { home: first.homeName, away: first.awayName, league: first.leagueName, time: f.dateTime(new Date(first.kickoff), TIME_FMT), lhome: last.homeName, laway: last.awayName, ltime: f.dateTime(new Date(last.kickoff), TIME_FMT) }));
     else if (first) sentences.push(t('sSingle', { home: first.homeName, away: first.awayName, league: first.leagueName, time: f.dateTime(new Date(first.kickoff), TIME_FMT) }));
     if (settled.length) sentences.push(verdicts.length ? t('sSettled', { settled: settled.length, won, n: verdicts.length }) : t('sSettledNoVerdict', { settled: settled.length }));
@@ -74,6 +85,7 @@ export default async function DayHub({ locale, hub }: { locale: string; hub: Hub
   if (rows.length) {
     faqs.push({ q: t('faqCountQ', { date }), a: t('sCount', { count: rows.length, leagues: leagueSlugs.length, date }) + ' ' + t('faqCountA', { leagues: leagueSlugs.map((s) => SITE_LEAGUES.find((l) => l.slug === s)?.name ?? s).join(', ') }) });
     if (first) faqs.push({ q: t('faqFirstQ', { date }), a: t('faqFirstA', { home: first.homeName, away: first.awayName, league: first.leagueName, time: f.dateTime(new Date(first.kickoff), TIME_FMT) }) });
+    if (featured.length) faqs.push({ q: t('faqLeanQ', { date }), a: t('sLeans', { n: leaning.length, count: rows.length, list: featuredText }) + ' ' + t('faqLeanA') });
     faqs.push({ q: t('faqProbQ'), a: t('faqProbA') });
   }
 
@@ -98,7 +110,7 @@ export default async function DayHub({ locale, hub }: { locale: string; hub: Hub
         </p>
       </div>
 
-      {rows.length ? <PublicMatchList rows={rows} groupBy="league" showLeague={false} /> : <EmptyState title={t('empty')} lead={t('emptyLead')} />}
+      {rows.length ? <PublicMatchList rows={rows} groupBy="league" showLeague={false} showLean /> : <EmptyState title={t('empty')} lead={t('emptyLead')} />}
 
       <aside className="rule-b-1 mt-8 grid gap-4 py-6 sm:grid-cols-[1fr_auto] sm:items-end" aria-labelledby="members-h">
         <div>

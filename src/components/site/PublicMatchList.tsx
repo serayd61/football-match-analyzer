@@ -7,18 +7,23 @@ import LocalTime from './LocalTime';
 import { Crest, StatusChip } from './PredictionTable';
 
 // Herkese açık maç listesi (2026-10-10): kick-off · armalar + isimler (+ skor) ·
-// durum. Olasılık, seçim ya da güven YOK — satır /matches/{slug} sayfasına gider.
+// durum. Olasılık ya da güven YOK — satır /matches/{slug} sayfasına gider.
 // Gün başlıkları Zürih takvimine göre; saatler tarayıcı saat dilimine çevrilir.
+// 2026-11-05 (SC performans): `showLean` ile modelin 1X2 tercih yönü (rakamsız,
+// PublicMatch.lean) satırın altında görünür — gün ve takım sayfaları "tahmin"
+// sorgularına gövdede tahmin göstermeden giriyordu.
 
 const STATUS_KEY = {
   scheduled: 'statusScheduled', live: 'statusLive', finished: 'statusFinished',
   postponed: 'statusPostponed', cancelled: 'statusCancelled', unknown: 'statusUnknown',
 } as const;
 
-export default async function PublicMatchList({ rows, groupBy = 'day', showLeague = true }: { rows: PublicMatch[]; groupBy?: 'day' | 'league' | 'none'; showLeague?: boolean }) {
+export default async function PublicMatchList({ rows, groupBy = 'day', showLeague = true, showLean = false }: { rows: PublicMatch[]; groupBy?: 'day' | 'league' | 'none'; showLeague?: boolean; showLean?: boolean }) {
   const tc = await getTranslations('common');
+  const tm = await getTranslations('matches.match');
   const f = await getFormatter();
   if (!rows.length) return null;
+  const leanLabel = (m: PublicMatch) => (m.lean === '1' ? tm('pickHome', { team: m.homeName }) : m.lean === '2' ? tm('pickAway', { team: m.awayName }) : m.lean === 'X' ? tm('pickDraw') : null);
 
   const groups = new Map<string, { label: string; rows: PublicMatch[] }>();
   for (const r of rows) {
@@ -61,6 +66,7 @@ export default async function PublicMatchList({ rows, groupBy = 'day', showLeagu
                       {showScore(m) && <span className="num ml-auto font-semibold">{m.awayScore}</span>}
                     </span>
                     {showLeague && groupBy !== 'league' && <span className="truncate text-xs text-s-muted">{m.leagueName}</span>}
+                    {showLean && m.lean && <span className="truncate text-xs text-s-muted"><span className="font-semibold text-s-ink">{tc('leanLabel')}:</span> {leanLabel(m)}</span>}
                   </span>
                 </Link>
               </li>

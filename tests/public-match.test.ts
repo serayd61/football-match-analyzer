@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { publicMatchView, PREMIUM_FIELDS, matchPath, fixtureIdFromSlug, isCanonicalSlug, formLetters, h2hTally, settledVerdict, teamGoalStats, h2hGoalStats, leagueGoalsPerMatch } from '@/lib/site/match-public';
+import { publicMatchView, publicLean, PREMIUM_FIELDS, matchPath, fixtureIdFromSlug, isCanonicalSlug, formLetters, h2hTally, settledVerdict, teamGoalStats, h2hGoalStats, leagueGoalsPerMatch } from '@/lib/site/match-public';
 import { leagueBySlug } from '@/lib/site/leagues';
 import type { SitePrediction } from '@/lib/site/predictions';
 
@@ -23,6 +23,21 @@ test('publicMatchView of an UPCOMING match carries no model figure, pick, confid
   assert.equal(v.verdict, null);
   assert.equal(v.league?.slug, 'premier-league'); assert.equal(v.updatedAt, '2026-10-17T20:00:00Z');
   assert.equal(v.slug, 'arsenal-vs-chelsea-4193188');
+});
+
+// SC performans 2026-11-05: yaklaşan maçta yalnız 1X2 tercih YÖNÜ açık (lean); rakam yok.
+test('publicLean: direction of an upcoming rated match, nothing else', () => {
+  assert.equal(publicMatchView(row()).lean, '1');
+  assert.equal(publicLean(row({ pick: 'X' })), 'X');
+  assert.equal(publicLean(row({ pick: '2', status: 'live' })), '2');
+  assert.equal(publicLean(row({ noFavourite: true })), null); // favori yok → yön de yok
+  assert.equal(publicLean(row({ hasModel: false, pick: null })), null);
+  assert.equal(publicLean(row({ publishedAfterKickoff: true })), null); // temiz maç öncesi kayıt değil
+  assert.equal(publicLean(row({ status: 'postponed' })), null);
+  assert.equal(publicLean(row({ status: 'cancelled' })), null);
+  assert.equal(publicLean(row({ settled: true, homeScore: 2, awayScore: 1, outcome: 'won', status: 'finished' })), null); // bitmiş → verdict
+  const json = JSON.stringify(publicMatchView(row()));
+  for (const needle of ['0.52', '0.26', '0.22', 'confidence', 'lambda', 'overUnder', 'btts']) assert.ok(!json.includes(needle), `lean view contains ${needle}`);
 });
 
 test('a SETTLED match exposes only the pick, its probability and the outcome (SEO Faz 1a)', () => {
