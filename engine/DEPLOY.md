@@ -373,3 +373,26 @@ Kural (`engine/deploy/engine-sync.py plan_fixtures`, saf ve testli):
 Env (vars.): `SYNC_DAYS_AHEAD=5`, `SYNC_FREEZE_HOURS=48`, `SYNC_REFRESH_HOURS=20`. Maliyet: saatte 3 akış
 çağrısı daha; motor/ingest yükü günde bir yenileme olduğu için küçük. Deploy: betiği Hetzner'e kopyala
 (`scp engine/deploy/engine-sync.py root@188.245.241.149:/opt/football-match-analyzer/engine-sync.py`).
+
+## Ek (2026-11-06) — KG Var: ayrı model arayışı ve Platt kalibrasyonunun aktife alınması
+
+Müşteri KG kayıpları → `engine/backtest_btts.py` (yürüyen, sızıntısız; 150 lig, 37.764 örneklem-dışı
+maç, Eyl 2025–Kas 2026). KG Var Brier: sabit lig tabanı 0,2455 · **ham DC 0,2539 (en kötü)** · Platt
+0,2455 · takım KG oranları 0,2461 · 13 öznitelikli lojistik 0,2448 · piyasa (1.346 maçlık alt küme)
+0,2384 vs lojistik 0,2412. Sonuç: KG'de sonuç verisiyle tabanın belirgin üstüne çıkılamıyor, piyasa en
+iyi kaynak; ham DC her adaydan kötü ve üst bantta aşırı güvenli (model %70+ → gerçek %63).
+
+Canlı gölge `dc-1.2-cal` (Platt `calib btts [0.176, 0.36], ou25 [0.233, 0.44]`, ayrıca shrink_k 10,
+min_team_matches 4) aynı 2.851 maçta: KG 0,2420 (dc-1.0 0,2478, taban 0,2450), **Üst 2,5 0,2372 (dc-1.0
+0,2435)**; KG ≥0,65 bandı 38/47. Karar: aktif dc-1.0'ın params'ına `calib` eklenir (λ ve 1X2 değişmez,
+yalnız p_over25/p_btts_yes kalibre yazılır; karne sürümü değişmez) + `calib_since` (ISO). Site
+(`src/lib/site/goal-calib.ts`): `calib_since` sonrası yazılan satıra izotonik eğri uygulanmaz (çifte
+büzülme), önce yazılanlara eski davranış. Motor params'ı 1 saatte bir tazeler (ENGINE_PARAMS_TTL).
+
+Uygulama (Supabase REST, service key; Hetzner'de /tmp/cup-pool/enable-calib.py):
+```
+PATCH engine_model_versions?version=eq.dc-1.0
+  params = mevcut + {"calib": {"btts": [0.176, 0.36], "ou25": [0.233, 0.44]}, "calib_since": "<ISO şimdi>"}
+```
+Geri alma: `calib` ve `calib_since` anahtarlarını silmek. KG ürün kuralı (sıradaki): KG Var önerisi yalnız
+piyasa ≥ %60 ve kalibre model ≥ %60 birlikte (geriye dönük: piyasa ≥0,60 bandı %69).

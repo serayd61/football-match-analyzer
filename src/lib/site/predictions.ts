@@ -14,6 +14,7 @@ import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
 import { blendCall, type GoalCall, type GoalBook, GOAL_BLEND_WEIGHT_BTTS } from './goal-blend';
+import { siteCurveApplies, calibSinceOf } from './goal-calib';
 import { latestGoalBook } from './goal-book';
 import { teamRecord, type TeamRecord } from './team-record';
 import { memoTTL } from './memo';
@@ -172,6 +173,8 @@ export interface SiteContext {
   catalog: Map<number, { ccode: string; name: string }>;
   curves: Curves;
   curveMeta: { pick: CurveMeta | null; ou: CurveMeta | null; btts: CurveMeta | null };
+  /** motorun gol pazarı Platt kalibrasyonunun açıldığı an (aktif sürüm params.calib_since); yoksa null → her satıra site eğrisi */
+  goalCalibSince: string | null;
 }
 
 // Süreç içi 5 dk memo (2026-11-04): loadContext unstable_cache'li 20+ fonksiyonun
@@ -181,14 +184,18 @@ export const loadContext = memoTTL(5 * 60 * 1000, loadContextUncached);
 
 async function loadContextUncached(): Promise<SiteContext> {
   const empty = { knots: [] as Knot[], meta: null as CurveMeta | null };
-  const [catalog, pick, pickAll, ou, btts] = await Promise.all([
+  const [catalog, pick, pickAll, ou, btts, versions] = await Promise.all([
     readCatalog().catch(() => new Map<number, { ccode: string; name: string }>()),
     readCurve('1x2').catch(() => empty),
     readCurve('all').catch(() => empty),
     readCurve('ou25').catch(() => empty),
     readCurve('btts').catch(() => empty),
+    import('@/lib/engine/versions').then((m) => m.loadEngineVersions()).catch(() => null),
   ]);
-  return { catalog, curves: { pick: pick.knots, pickAll: pickAll.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta } };
+  return {
+    catalog, curves: { pick: pick.knots, pickAll: pickAll.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta },
+    goalCalibSince: calibSinceOf(versions?.active?.params ?? null),
+  };
 }
 
 /** Which calibration curves are live (segment, sample size, fit date) — for UI provenance labels. */
@@ -203,13 +210,19 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
   const cat = r.league_id != null ? ctx.catalog.get(Number(r.league_id)) : undefined;
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   // Gol pazarları: oran varsa piyasa çıpası (w=0,7), yoksa kalibrasyon eğrisi.
-  const ou0 = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ctx.curves.ou));
-  const bt0 = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts), GOAL_BLEND_WEIGHT_BTTS);
+  // Gol pazarı kalibrasyonu (2026-11-06): satır motorun Platt kalibrasyonu açıldıktan sonra
+  // yazıldıysa değer zaten kalibre → site eğrisi uygulanmaz (çifte büzülme olmasın); önce
+  // yazıldıysa eski davranış (izotonik eğri). Bkz. goal-calib.ts.
+  const curveOn = siteCurveApplies(r.updated_at, ctx.goalCalibSince ?? null);
+  const ouCurve = curveOn ? ctx.curves.ou : [], btCurve = curveOn ? ctx.curves.btts : [];
+  const ou0 = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ouCurve));
+  const bt0 = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, btCurve), GOAL_BLEND_WEIGHT_BTTS);
   // Kalibrasyon bayrağı (2026-10-16): eğri yoksa applyCurve ham değeri aynen döndürür; bu
-  // "kalibre" diye sunulmasın. pCal harmandan bağımsız, yalnız eğriden.
-  const hasOuCurve = ctx.curves.ou.length >= 2, hasBtCurve = ctx.curves.btts.length >= 2;
-  const ou = ou0 ? { ...ou0, calibrated: hasOuCurve, pCal: hasOuCurve ? applyCurve(ou0.pRaw, ctx.curves.ou) : null } : null;
-  const bt = bt0 ? { ...bt0, calibrated: hasBtCurve, pCal: hasBtCurve ? applyCurve(bt0.pRaw, ctx.curves.btts) : null } : null;
+  // "kalibre" diye sunulmasın. pCal harmandan bağımsız, yalnız eğriden (ya da motordan).
+  const engineCal = !curveOn;
+  const hasOuCurve = engineCal || ctx.curves.ou.length >= 2, hasBtCurve = engineCal || ctx.curves.btts.length >= 2;
+  const ou = ou0 ? { ...ou0, calibrated: hasOuCurve, pCal: engineCal ? ou0.pRaw : hasOuCurve ? applyCurve(ou0.pRaw, ctx.curves.ou) : null } : null;
+  const bt = bt0 ? { ...bt0, calibrated: hasBtCurve, pCal: engineCal ? bt0.pRaw : hasBtCurve ? applyCurve(bt0.pRaw, ctx.curves.btts) : null } : null;
   const pickCurve = league ? ctx.curves.pick : (ctx.curves.pickAll.length ? ctx.curves.pickAll : ctx.curves.pick);
   const pickSegment = league ? ctx.curveMeta.pick?.segment ?? null : (ctx.curves.pickAll.length ? 'all' : ctx.curveMeta.pick?.segment ?? null);
   const leagueName = r.league_name && !/^League \d+$/.test(r.league_name) ? r.league_name : cat?.name || r.league_name || '';

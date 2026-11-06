@@ -25,6 +25,8 @@ import { hasEnginePredictionAccess } from '@/lib/accessControl';
 import { getCatalogMap, isUnresolvedLeagueName } from '@/lib/league-catalog';
 import { isModelCovered } from '@/lib/model-coverage';
 import { getCalibration, applyCurve } from '@/lib/calibration';
+import { siteCurveApplies, calibSinceOf } from '@/lib/site/goal-calib';
+import { loadEngineVersions } from '@/lib/engine/versions';
 import { deriveDoubleChance, isDoubleChanceCorrect } from '@/lib/double-chance';
 import {
   deriveOverUnder, deriveBtts, isOverUnderCorrect, isBttsCorrect, MARKET_EDGE,
@@ -77,16 +79,18 @@ export async function GET(request: NextRequest) {
   const COLS =
     'fixture_id, league_id, league_name, home_id, home_name, away_id, away_name, kickoff, ' +
     'p_home, p_draw, p_away, p_over25, p_btts_yes, lambda_home, lambda_away, ' +
-    'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version';
+    'pick, confidence, rationale, settled, home_score, away_score, result, correct, model_version, updated_at';
 
   // Okuma-anı lig onarımı + kalibrasyon eğrileri her iki modda da gerekli.
   const EMPTY_CURVE = { knots: [], segment: 'none', nSamples: 0, fittedAt: null };
-  const [catalog, calib, calibOu, calibBtts] = await Promise.all([
+  const [catalog, calib, calibOu, calibBtts, versions] = await Promise.all([
     getCatalogMap().catch(() => new Map()),
     getCalibration().catch(() => EMPTY_CURVE),
     getCalibration('ou25').catch(() => EMPTY_CURVE),
     getCalibration('btts').catch(() => EMPTY_CURVE),
+    loadEngineVersions().catch(() => null),
   ]);
+  const goalCalibSince = calibSinceOf(versions?.active?.params ?? null);
 
   const mapRow = (p: any) => {
     const cat = catalog.get(Number(p.league_id));
@@ -116,8 +120,9 @@ export async function GET(request: NextRequest) {
     // Çifte şans: aynı olasılıklardan türetilir (bkz. lib/double-chance.ts).
     // 1X2 argmax yapısal olarak ~%49 tavanlı; çifte şans ölçülen %76.5.
     doubleChance: deriveDoubleChance(p.p_home, p.p_draw, p.p_away),
-    overUnder: ou ? { pick: ou.pick, p: applyCurve(ou.p, calibOu.knots), pRaw: ou.p } : null,
-    btts: bt ? { pick: bt.pick, p: applyCurve(bt.p, calibBtts.knots), pRaw: bt.p } : null,
+    // Motor Platt kalibrasyonu açıldıktan sonra yazılan satıra site eğrisi uygulanmaz (goal-calib.ts)
+    overUnder: ou ? { pick: ou.pick, p: siteCurveApplies(p.updated_at, goalCalibSince) ? applyCurve(ou.p, calibOu.knots) : ou.p, pRaw: ou.p } : null,
+    btts: bt ? { pick: bt.pick, p: siteCurveApplies(p.updated_at, goalCalibSince) ? applyCurve(bt.p, calibBtts.knots) : bt.p, pRaw: bt.p } : null,
     // Gösterilen güven KALİBRE değerdir (bkz. lib/calibration.ts); ham model
     // çıktısı confidenceRaw'da korunur.
     confidence: applyCurve(rawConf, calib.knots),
