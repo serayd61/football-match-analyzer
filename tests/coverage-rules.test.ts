@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, hideDecision, strongMarkets, COVERAGE_GATE } from '@/lib/coverage/rules';
+import { aggregateLeague, evaluateLeague, isProposalEligibleName, bucketOf, hideDecision, strongMarkets, wilsonLower, STRONG_GATE, HOLDOUT_DAYS, COVERAGE_GATE } from '@/lib/coverage/rules';
 
 const row = (o: Partial<Parameters<typeof aggregateLeague>[0][number]>) => ({ p_over25: null, p_btts_yes: null, home_score: 1, away_score: 1, correct: null, ll_1x2: null, kickoff: '2026-09-01T12:00:00Z', ...o });
 
@@ -67,13 +67,57 @@ test('hideDecision: excluded league with worse-than-random 1X2 log-loss is hidde
   assert.equal(hideDecision('excluded', st(50, null)), null);
 });
 
-test('strongMarkets: top buckets combined, n>=15 and acc>=70%; a strong market blocks hiding and lifts it', () => {
+test('strongMarkets (2026-11-06): n ≥ 40, Wilson alt sınır ≥ 62%, son 30 gün doğrulaması; KG bölgesi yok', () => {
+  assert.equal(STRONG_GATE.minN, 40); assert.equal(STRONG_GATE.minLower, 0.62);
+  // Eski Isthmian örneği: KG 17/24 = %71 artık güçlü DEĞİL (KG bölgesi kaldırıldı, n < 40)
+  const old = { x12: { '70–80': { n: 4, won: 2 }, '≥80': { n: 8, won: 2 } }, ou25: { '75–85': { n: 16, won: 9 }, '≥85': { n: 10, won: 7 } }, under25: {}, btts: { '70–80': { n: 17, won: 11 }, '≥80': { n: 7, won: 6 } } };
+  assert.deepEqual(strongMarkets(old), []);
+  // Üst 2,5: 45/60 = %75 → Wilson alt sınır ≈ 0,627 ≥ 0,62 → güçlü; 40/60 = %67 → alt sınır ≈ 0,54 → değil
+  const ou = (won: number, n: number) => ({ x12: {}, ou25: { '75–85': { n, won } }, under25: {}, btts: { '70–80': { n: 80, won: 70 } } });
+  assert.deepEqual(strongMarkets(ou(45, 60)).map((m) => m.market), ['ou25']);
+  assert.ok(strongMarkets(ou(45, 60))[0].lower! >= 0.62);
+  assert.deepEqual(strongMarkets(ou(40, 60)), []);
+  assert.deepEqual(strongMarkets(ou(30, 39)), []);                       // n < 40
+  // Yürüyen doğrulama: son 30 günde 12 maçta 5 → %42 → düşer; 12 maçta 8 → kalır; yakın dönem verisi yoksa atlanır
+  const recent = (won: number, n: number) => ({ x12: {}, ou25: { '75–85': { n, won } }, under25: {}, btts: {} });
+  assert.deepEqual(strongMarkets(ou(45, 60), STRONG_GATE, recent(5, 12)), []);
+  assert.equal(strongMarkets(ou(45, 60), STRONG_GATE, recent(8, 12))[0].recent!.won, 8);
+  assert.deepEqual(strongMarkets(ou(45, 60), STRONG_GATE, recent(4, 5)), []);  // holdout n < 10 → güçlü sayılmaz
+  assert.equal(strongMarkets(ou(45, 60), STRONG_GATE, { x12: {}, ou25: {}, under25: {}, btts: {} }).length, 0);
+  assert.equal(strongMarkets(ou(45, 60), STRONG_GATE, undefined).length, 1);
+});
+
+test('wilsonLower: %95 alt sınır; küçük örneklemde sert ceza', () => {
+  assert.equal(wilsonLower(0, 0), 0);
+  assert.ok(Math.abs(wilsonLower(70, 100) - 0.604) < 0.005);
+  assert.ok(Math.abs(wilsonLower(14, 20) - 0.481) < 0.005);           // 20 maçta %70 → alt sınır %48
+  assert.ok(wilsonLower(140, 200) > wilsonLower(14, 20));
+});
+
+test('aggregateLeague: son HOLDOUT_DAYS gün recentBuckets\'a ayrıca yazılır ve strong buna bakar', () => {
+  assert.equal(HOLDOUT_DAYS, 30);
+  const row = (daysAgo: number, pOver: number, tot: number) => ({ p_over25: pOver, p_btts_yes: null, home_score: tot, away_score: 0, correct: null, ll_1x2: null, kickoff: new Date(Date.parse('2026-11-06T12:00:00Z') - daysAgo * 86400e3).toISOString() });
+  // 50 eski maç (%80 tutar) + 12 yakın maç (%42 tutar): pencere boyu %73, Wilson ≥ 0,62, ama yakın dönem düşük → güçlü değil
+  const rows = [...Array.from({ length: 50 }, (_, i) => row(60 + i, 0.8, i % 5 === 0 ? 2 : 3)), ...Array.from({ length: 12 }, (_, i) => row(i, 0.8, i < 5 ? 3 : 2))];
+  const s = aggregateLeague(rows, 180);
+  assert.equal(s.recentBuckets!.ou25['75–85'].n, 12);
+  assert.equal(s.buckets!.ou25['75–85'].n, 62);
+  assert.deepEqual(s.strong, []);
+  // yakın dönem de tutarsa güçlü
+  const good = [...rows.slice(0, 50), ...Array.from({ length: 12 }, (_, i) => row(i, 0.8, i < 10 ? 3 : 2))];
+  assert.equal(aggregateLeague(good, 180).strong!.length, 1);
+});
+
+test('strongMarkets (eski örnek yorumu): KG 17/24 artık güçlü değil', () => {
   const b = { x12: { '70–80': { n: 4, won: 2 }, '≥80': { n: 8, won: 2 } }, ou25: { '75–85': { n: 16, won: 9 }, '≥85': { n: 10, won: 7 } }, under25: {}, btts: { '70–80': { n: 17, won: 11 }, '≥80': { n: 7, won: 6 } } };
-  assert.deepEqual(strongMarkets(b), [{ market: 'btts', from: 0.7, n: 24, won: 17 }]);   // Isthmian: Üst 16/26 = 62% → değil, KG 17/24 = 71% → güçlü
+  assert.deepEqual(strongMarkets(b), []);
   assert.deepEqual(strongMarkets(undefined), []);
   const st = (status: any, strong: any[]) => hideDecision(status, { n: 63, x12: { n: 63, won: 25, ll: 1.2989 }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, strong, lastKickoff: null, windowDays: 180 });
-  assert.equal(st('excluded', strongMarkets(b)), null);
-  assert.equal(st('hidden', strongMarkets(b)), 'unhide');
+  // Güçlü pazar gizlemeyi engeller / kaldırır; artık ancak yeni kapıyı geçen pazar
+  const strongOu = strongMarkets({ x12: {}, ou25: { '75–85': { n: 60, won: 45 } }, under25: {}, btts: {} });
+  assert.equal(st('excluded', strongOu), null);
+  assert.equal(st('hidden', strongOu), 'unhide');
+  assert.equal(st('excluded', strongMarkets(b)), 'hide');   // KG 17/24 artık korumaz
   assert.equal(st('excluded', []), 'hide');
 });
 

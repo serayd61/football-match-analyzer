@@ -10,7 +10,8 @@ export interface ListFilters { q?: string; status?: StatusFilter; ready?: boolea
 
 // Pazar eşiği (2026-09-26): "günün maçlarında 1X2 / Üst 2,5 / KG Var %60'ın üstünde olanlar".
 // Olasılık model hamı: 1X2 → seçilen tarafın olasılığı; Üst → Üst 2,5 olasılığı (seçim Alt
-// olsa da 1−pRaw); KG → KG Var olasılığı. Eşik %50–%90, 5'lik adımlar.
+// olsa da 1−pRaw); KG → KG Var olasılığı, 2026-11-06'dan beri GÖSTERİLEN değer (piyasa çıpası /
+// eğri; ham KG modeli tabanı yenemiyor). Eşik %50–%90, 5'lik adımlar.
 export const MARKET_FILTERS = ['x12', 'ou25', 'btts'] as const;
 export type MarketFilter = (typeof MARKET_FILTERS)[number];
 export const MIN_P_STEPS = [50, 55, 60, 65, 70, 75, 80, 85, 90] as const;
@@ -19,7 +20,9 @@ export function marketProb(r: SitePrediction, m: MarketFilter): number | null {
   if (!r.hasModel) return null;
   if (m === 'x12') return r.pick === '1' ? r.pHome : r.pick === '2' ? r.pAway : r.pick === 'X' ? r.pDraw : null;
   if (m === 'ou25') return r.overUnder ? (r.overUnder.pick === 'over' ? r.overUnder.pRaw : 1 - r.overUnder.pRaw) : null;
-  return r.btts ? (r.btts.pick === 'yes' ? r.btts.pRaw : 1 - r.btts.pRaw) : null;
+  if (!r.btts) return null;
+  const v = r.btts.p ?? r.btts.pRaw;
+  return r.btts.pick === 'yes' ? v : 1 - v;
 }
 
 /** Arama katlaması: aksanlar düşer, Türkçe İ/ı → i ("besiktas" Beşiktaş'ı, "istanbul" İstanbul'u bulur). */
