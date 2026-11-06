@@ -1,7 +1,7 @@
 // Denetim 2026-09-18 (B10): liste filtreleri sayfaya bağlı ve Türkçe adlarla çalışmalı.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyFilters, fold, parseFilters } from '@/lib/site/filters';
+import { applyFilters, fold, parseFilters, marketProb } from '@/lib/site/filters';
 import type { SitePrediction } from '@/lib/site/predictions';
 
 const row = (homeName: string, awayName: string, over: Partial<SitePrediction> = {}) =>
@@ -45,4 +45,13 @@ test('market threshold filters on the model probability of that market and sorts
   assert.deepEqual(parseFilters({ market: 'ou25' }).minP, 60);
   assert.deepEqual(parseFilters({ market: 'ou25', minp: '75' }).minP, 75);
   assert.deepEqual(parseFilters({ market: 'nope', minp: '75' }).market, null);
+});
+
+test('marketProb KG (2026-11-06): gösterilen olasılık (piyasa/eğri), ham değil; Üst hâlâ ham', () => {
+  const base: any = { hasModel: true, pick: '1', pHome: 0.5, pDraw: 0.3, pAway: 0.2 };
+  const r: any = { ...base, btts: { pick: 'yes', p: 0.54, pRaw: 0.75, pMarket: 0.54, blended: true }, overUnder: { pick: 'under', p: 0.6, pRaw: 0.58, pMarket: null, blended: false } };
+  assert.ok(Math.abs(marketProb(r, 'btts')! - 0.54) < 1e-9);
+  assert.ok(Math.abs(marketProb({ ...r, btts: { pick: 'no', p: 0.6, pRaw: 0.7 } }, 'btts')! - 0.4) < 1e-9);   // KG Var olasılığı = 1 − gösterilen Yok
+  assert.ok(Math.abs(marketProb({ ...r, btts: { pick: 'yes', p: null, pRaw: 0.75 } }, 'btts')! - 0.75) < 1e-9); // gösterilen yoksa ham
+  assert.ok(Math.abs(marketProb(r, 'ou25')! - 0.42) < 1e-9);
 });

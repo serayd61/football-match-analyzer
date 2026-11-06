@@ -12,6 +12,13 @@
 import { devigMultiplicative } from '@/lib/odds/devig';
 
 export const GOAL_BLEND_WEIGHT = 0.7;
+/**
+ * KG Var (2026-11-06): gol modelinden türetilen KG olasılığının Brier'i sabit taban orandan
+ * KÖTÜ (0,2516 vs 0,2466; 1 Ağu–6 Kas, 12.766 maç) ve üst bantta aşırı güvenli (model %70–80 →
+ * gerçek %65–73). Oran varsa KG tamamen piyasa çıpalı (model payı 0); oran yoksa kalibrasyon
+ * eğrisi (mapRow). Ham değer hiçbir yerde tek başına gösterilmez.
+ */
+export const GOAL_BLEND_WEIGHT_BTTS = 1.0;
 
 export interface GoalBook {
   over25: number | null;
@@ -57,6 +64,12 @@ export function blendYes(pModelYes: number, pMarketYes: number | null, w = GOAL_
 export function rawEdge<P extends string>(c: GoalCall<P> | null | undefined): number | null {
   if (!c || !c.blended || c.pMarket == null) return null;
   return c.pRaw - c.pMarket;
+}
+
+/** Gösterilen olasılık (seçilen taraf): harman/eğri varsa o, yoksa ham. Filtre ve seçim eşikleri bunu kullanır. */
+export function shownP<P extends string>(c: GoalCall<P> | null | undefined): number | null {
+  if (!c) return null;
+  return c.p ?? c.pRaw;
 }
 
 /** "Var/Üst" tarafının kullanılacak olasılığı: harman varsa harman, yoksa model. */

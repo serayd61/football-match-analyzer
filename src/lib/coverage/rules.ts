@@ -30,19 +30,52 @@ export function hideDecision(status: CoverageStatus, s: LeagueStats, g = HIDE_GA
 export interface BucketCell { n: number; won: number }
 /** Olasılık dilimi karnesi (23 Eyl): pazar → dilim etiketi → n/won. Etiketler BUCKETS'tan. */
 export interface LeagueBuckets { x12: Record<string, BucketCell>; ou25: Record<string, BucketCell>; under25: Record<string, BucketCell>; btts: Record<string, BucketCell> }
-/** Ligin güçlü pazarı (24 Eyl): üst dilimlerde ≥15 maç ve ≥%70 isabet. `from` = model olasılık eşiği. */
-export interface StrongMarket { market: keyof LeagueBuckets; from: number; n: number; won: number }
-export const STRONG_GATE = { minN: 15, minAcc: 0.70 } as const;
+/**
+ * Ligin güçlü pazarı. `from` = model olasılık eşiği; `lower` = isabetin Wilson %95 alt sınırı;
+ * `recent` = pencerenin son HOLDOUT_DAYS gününde aynı dilimlerin karnesi (yürüyen doğrulama).
+ *
+ * 2026-11-06 (Silkeborg KG kaybı, müşteri): eski kapı "≥15 maç, ≥%70" ~400 lig-pazar hücresi
+ * içinde şans eseri geçiliyordu. Yürüyen test (1 Ağu–6 Eki seç, 7 Eki–6 Kas ölç): KG güçlü
+ * ligler %75 → %64,6, seçimsiz tüm ligler %62,9 (avantaj yok); Üst 2,5 %78 → %74,4 vs %66,5
+ * (tutuyor). Yeni kapı: n ≥ 40, Wilson alt sınırı ≥ %62 ve son 30 günde ≥ 10 maçta ≥ %60.
+ * KG bölgesi kaldırıldı: KG modeli sabit taban oranı yenemiyor (Brier 0,2516 vs 0,2466).
+ */
+export interface StrongMarket { market: keyof LeagueBuckets; from: number; n: number; won: number; lower?: number; recent?: BucketCell }
+export const STRONG_GATE = { minN: 40, minLower: 0.62, holdoutMinN: 10, holdoutMinAcc: 0.60 } as const;
+/** Yürüyen doğrulama penceresi: ligin son maçından geriye bu kadar gün. */
+export const HOLDOUT_DAYS = 30;
 const STRONG_ZONES: Array<[keyof LeagueBuckets, number, string[]]> = [
-  ['x12', 0.70, ['70–80', '≥80']], ['ou25', 0.75, ['75–85', '≥85']], ['under25', 0.75, ['≥75']], ['btts', 0.70, ['70–80', '≥80']],
+  ['x12', 0.70, ['70–80', '≥80']], ['ou25', 0.75, ['75–85', '≥85']], ['under25', 0.75, ['≥75']],
 ];
-export function strongMarkets(b: LeagueBuckets | undefined, g = STRONG_GATE): StrongMarket[] {
+/** Wilson skor aralığının alt sınırı (%95). n=0 → 0. */
+export function wilsonLower(won: number, n: number, z = 1.96): number {
+  if (n <= 0) return 0;
+  const p = won / n, z2 = z * z;
+  const centre = p + z2 / (2 * n), half = z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n), denom = 1 + z2 / n;
+  return Math.max(0, (centre - half) / denom);
+}
+const zoneSum = (b: LeagueBuckets | undefined, market: keyof LeagueBuckets, labels: string[]): BucketCell => {
+  let n = 0, won = 0;
+  for (const l of labels) { const c = b?.[market]?.[l]; if (c) { n += c.n; won += c.won; } }
+  return { n, won };
+};
+/**
+ * @param b      pencere boyunca dilim karnesi
+ * @param g      kapı
+ * @param recent pencerenin son HOLDOUT_DAYS günü (aggregateLeague doldurur). Verilmezse (eski
+ *               sicil satırı) yürüyen doğrulama atlanır — yalnız n ve Wilson sınırı uygulanır.
+ */
+export function strongMarkets(b: LeagueBuckets | undefined, g = STRONG_GATE, recent?: LeagueBuckets): StrongMarket[] {
   if (!b) return [];
   const out: StrongMarket[] = [];
   for (const [market, from, labels] of STRONG_ZONES) {
-    let n = 0, won = 0;
-    for (const l of labels) { const c = b[market]?.[l]; if (c) { n += c.n; won += c.won; } }
-    if (n >= g.minN && won / n >= g.minAcc) out.push({ market, from, n, won });
+    const { n, won } = zoneSum(b, market, labels);
+    if (n < g.minN) continue;
+    const lower = Math.round(wilsonLower(won, n) * 1000) / 1000;
+    if (lower < g.minLower) continue;
+    const rc = recent ? zoneSum(recent, market, labels) : null;
+    if (rc && (rc.n < g.holdoutMinN || rc.won / rc.n < g.holdoutMinAcc)) continue;
+    out.push({ market, from, n, won, lower, ...(rc ? { recent: rc } : {}) });
   }
   return out;
 }
@@ -63,7 +96,9 @@ export interface LeagueStats {
   ouHi: { n: number; won: number };            // p_over25 ≥ MIN_OVER ayakları
   bttsHi: { n: number; won: number };          // p_btts_yes ≥ MIN_BTTS ayakları
   buckets?: LeagueBuckets;
-  /** üst dilimlerde ≥15 maç, ≥%70 tutan pazarlar (strongMarkets) */
+  /** pencerenin son HOLDOUT_DAYS günündeki dilim karnesi (güçlü pazar yürüyen doğrulaması) */
+  recentBuckets?: LeagueBuckets;
+  /** kapıyı geçen pazarlar (strongMarkets: n ≥ 40, Wilson alt sınır ≥ %62, son 30 gün ≥ %60) */
   strong?: StrongMarket[];
   /** piyasa farkı kovaları (yalnız oranı olan maçlar) */
   edge?: LeagueEdge;
@@ -143,10 +178,16 @@ const pct = (x: number | null) => (x == null ? '–' : `${Math.round(x * 100)}%`
 
 /** Satır listesinden lig istatistiği. Satır: p_over25/p_btts_yes/skor/1X2 sonucu. */
 export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_yes: number | null; p_home?: number | null; p_draw?: number | null; p_away?: number | null; home_score: number | null; away_score: number | null; correct: boolean | null; ll_1x2: number | null; kickoff: string; market?: RowMarket | null }>, windowDays: number, minOver = 0.65, minBtts = 0.60): LeagueStats {
-  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, buckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, edge: emptyEdge(), oddsN: 0, lastKickoff: null, windowDays };
+  const s: LeagueStats = { n: 0, x12: { n: 0, won: 0, ll: null }, ouHi: { n: 0, won: 0 }, bttsHi: { n: 0, won: 0 }, buckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, recentBuckets: { x12: {}, ou25: {}, under25: {}, btts: {} }, edge: emptyEdge(), oddsN: 0, lastKickoff: null, windowDays };
+  // Yürüyen doğrulama: ligin son maçından geriye HOLDOUT_DAYS gün "yakın" sayılır.
+  let latest = '';
+  for (const r of rows) if (r.home_score != null && r.away_score != null && r.kickoff > latest) latest = r.kickoff;
+  const holdoutFrom = latest ? new Date(Date.parse(latest) - HOLDOUT_DAYS * 86400e3).toISOString() : null;
+  let inHoldout = false;
   const hit = (kind: keyof LeagueBuckets, p: number, won: boolean) => {
     const b = bucketOf(kind, p); if (!b) return;
     const c = (s.buckets![kind][b] ??= { n: 0, won: 0 }); c.n++; if (won) c.won++;
+    if (inHoldout) { const rc = (s.recentBuckets![kind][b] ??= { n: 0, won: 0 }); rc.n++; if (won) rc.won++; }
   };
   // Fark kovası: seçilen taraf (model) − aynı taraf (marjsız piyasa); piyasa yoksa sayılmaz.
   const edgeHit = (m: EdgeMarket, pModel: number, pMarket: number | null | undefined, won: boolean) => {
@@ -157,6 +198,7 @@ export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_ye
   for (const r of rows) {
     if (r.home_score == null || r.away_score == null) continue;
     s.n++;
+    inHoldout = !!holdoutFrom && r.kickoff >= holdoutFrom;
     const mk = r.market ?? null;
     if (mk && (mk.pHome != null || mk.pOver != null || mk.pBttsYes != null)) s.oddsN!++;
     if (r.p_home != null && r.p_draw != null && r.p_away != null) {
@@ -188,7 +230,7 @@ export function aggregateLeague(rows: Array<{ p_over25: number | null; p_btts_ye
     if (r.p_btts_yes != null && r.p_btts_yes >= minBtts) { s.bttsHi.n++; if (both) s.bttsHi.won++; }
   }
   s.x12.ll = llN ? Math.round((llSum / llN) * 10000) / 10000 : null;
-  s.strong = strongMarkets(s.buckets);
+  s.strong = strongMarkets(s.buckets, STRONG_GATE, s.recentBuckets);
   return s;
 }
 

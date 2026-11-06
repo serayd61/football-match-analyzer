@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { marketYes, blendYes, blendCall, yesSideP, rawEdge, GOAL_BLEND_WEIGHT } from '@/lib/site/goal-blend';
+import { marketYes, blendYes, blendCall, yesSideP, rawEdge, shownP, GOAL_BLEND_WEIGHT, GOAL_BLEND_WEIGHT_BTTS } from '@/lib/site/goal-blend';
 
 const noCurve = (raw: number) => raw;
 
@@ -49,4 +49,22 @@ test('rawEdge: ham model − marjsız piyasa; harman yoksa null', () => {
   const e = rawEdge({ pick: 'yes', p: 0.57, pRaw: 0.64, pMarket: 0.54, blended: true });
   assert.ok(e != null && Math.abs(e - 0.10) < 1e-9);
   assert.ok(rawEdge({ pick: 'under', p: 0.5, pRaw: 0.48, pMarket: 0.51, blended: true })! < 0);
+});
+
+test('KG (2026-11-06): oran varsa saf piyasa (w=1), ham model yalnız pRaw olarak kalır; oran yoksa eğri', () => {
+  assert.equal(GOAL_BLEND_WEIGHT_BTTS, 1.0);
+  const noCurve = (r: number) => r;
+  // model %75 KG Var, piyasa 1,80/1,95 → marjsız ≈ %52: gösterilen %52, seçim yine Var; pRaw %75 kalır
+  const c = blendCall(0.75, 1.80, 1.95, 'yes', 'no', noCurve, GOAL_BLEND_WEIGHT_BTTS)!;
+  assert.equal(c.blended, true); assert.equal(c.pick, 'yes');
+  assert.ok(Math.abs(c.p! - c.pMarket!) < 1e-9);           // model payı sıfır
+  assert.equal(c.pRaw, 0.75);
+  assert.ok(Math.abs(shownP(c)! - c.pMarket!) < 1e-9);
+  // piyasa KG Yok diyorsa seçim ters döner (model %75 olsa da)
+  const d = blendCall(0.75, 2.40, 1.55, 'yes', 'no', noCurve, GOAL_BLEND_WEIGHT_BTTS)!;
+  assert.equal(d.pick, 'no');
+  // oran yok → eğriden geçen değer gösterilir, shownP de onu verir
+  const e = blendCall(0.75, null, null, 'yes', 'no', (r) => r - 0.12, GOAL_BLEND_WEIGHT_BTTS)!;
+  assert.equal(e.blended, false); assert.ok(Math.abs(e.p! - 0.63) < 1e-9); assert.equal(shownP(e), e.p);
+  assert.equal(shownP(null), null);
 });

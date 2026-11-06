@@ -13,7 +13,7 @@ import { noFavourite } from './risk';
 import { asOfFilter } from './asof';
 import { applyCurve, type Knot } from '@/lib/calibration';
 import { deriveDoubleChance } from '@/lib/double-chance';
-import { blendCall, type GoalCall, type GoalBook } from './goal-blend';
+import { blendCall, type GoalCall, type GoalBook, GOAL_BLEND_WEIGHT_BTTS } from './goal-blend';
 import { latestGoalBook } from './goal-book';
 import { teamRecord, type TeamRecord } from './team-record';
 import { memoTTL } from './memo';
@@ -204,7 +204,7 @@ export function mapRow(r: EngineRowT, ctx: SiteContext, now = Date.now(), book: 
   const league = resolveLeague(r.league_name, r.league_id, cat?.ccode);
   // Gol pazarları: oran varsa piyasa çıpası (w=0,7), yoksa kalibrasyon eğrisi.
   const ou0 = blendCall(r.p_over25, book?.over25, book?.under25, 'over', 'under', (raw) => applyCurve(raw, ctx.curves.ou));
-  const bt0 = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts));
+  const bt0 = blendCall(r.p_btts_yes, book?.bttsYes, book?.bttsNo, 'yes', 'no', (raw) => applyCurve(raw, ctx.curves.btts), GOAL_BLEND_WEIGHT_BTTS);
   // Kalibrasyon bayrağı (2026-10-16): eğri yoksa applyCurve ham değeri aynen döndürür; bu
   // "kalibre" diye sunulmasın. pCal harmandan bağımsız, yalnız eğriden.
   const hasOuCurve = ctx.curves.ou.length >= 2, hasBtCurve = ctx.curves.btts.length >= 2;
