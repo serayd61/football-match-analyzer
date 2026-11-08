@@ -31,10 +31,17 @@ export const ANON_ACCESS: SiteAccess = { state: 'anon', email: null, trialEndsAt
  * Localized (2026-10-22): the unprefixed /login is the legacy app route, whose
  * server redirect fires mid-stream — Googlebot got a 200 shell with no canonical
  * and Search Console listed 70 `/login?callbackUrl=…` URLs as duplicates.
+ *
+ * The returned path is LOCALE-FREE on purpose. Every caller renders it through
+ * `Link` from `@/i18n/navigation`, which prefixes the active locale itself —
+ * returning `/${locale}/login` here produced `/en/en/login` (2026-11-08: the
+ * biggest "Bulunamadı (404)" group in Search Console, 115 pages, and a sign-in
+ * button that 404'd for real visitors on every paywalled page).
+ * `callbackUrl` keeps its own prefix: next-auth gets a plain path, not a Link.
  */
 export function signInHref(locale: string, path: string, register = false): string {
   const qs = new URLSearchParams();
   if (register) qs.set('mode', 'register');
   qs.set('callbackUrl', `/${locale}${path}`);
-  return `/${locale}/login?${qs.toString()}`;
+  return `/login?${qs.toString()}`;
 }
