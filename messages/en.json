@@ -655,8 +655,8 @@
       "metaTitle": "How the AI prediction model works"
     },
     "about": {
-      "title": "About",
-      "lead": "What this site is, who runs it, and what it deliberately is not.",
+      "title": "About Football Analytics",
+      "lead": "Football Analytics publishes AI football analysis and statistical match predictions, each scored against the final result. Who runs it, and what it is not.",
       "sections": [
         {
           "h": "What it is",
@@ -691,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "About Football Analytics"
+      "metaTitle": "About our AI football analysis"
     },
     "privacy": {
       "title": "Privacy policy",
@@ -1567,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
-      "title": "Football predictions & statistical match analysis",
-      "lead": "A calibrated statistical model rates every match in {n} leagues: win probabilities, confidence, risk and the fair price — and every pick stays on a public record, won or lost.",
+      "title": "AI football analysis & statistical predictions",
+      "lead": "Football analytics for {n} leagues: a calibrated statistical model gives every match win probabilities, confidence, risk and a fair price — and every pick stays on a public record, won or lost.",
       "cta": "Start 7 days free",
       "ctaDemo": "See a sample analysis",
       "noCard": "No card needed",

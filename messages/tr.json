@@ -655,8 +655,8 @@
       "metaTitle": "Yapay zekâ tahmin modeli nasıl çalışır"
     },
     "about": {
-      "title": "Hakkında",
-      "lead": "Bu site nedir, kim işletir ve bilerek ne değildir.",
+      "title": "Football Analytics hakkında",
+      "lead": "Football Analytics, yapay zekâ futbol analizi ve istatistiksel maç tahminleri yayımlar; her biri maç sonucuyla ölçülür. Kimin işlettiği ve ne olmadığı.",
       "sections": [
         {
           "h": "Ne olduğu",
@@ -691,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Football Analytics hakkında"
+      "metaTitle": "Yapay zekâ futbol analizimiz hakkında"
     },
     "privacy": {
       "title": "Gizlilik politikası",
@@ -1567,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
-      "title": "Futbol tahminleri ve istatistiksel maç analizi",
-      "lead": "Kalibre edilmiş istatistiksel model {n} ligdeki her maçı puanlar: kazanma olasılıkları, güven, risk ve adil fiyat — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
+      "title": "Yapay zekâ futbol analizi ve istatistiksel tahminler",
+      "lead": "{n} lig için football analytics: kalibre edilmiş istatistiksel model her maça kazanma olasılığı, güven, risk ve adil fiyat verir — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
       "cta": "7 gün ücretsiz başla",
       "ctaDemo": "Örnek analizi gör",
       "noCard": "Kart gerekmez",

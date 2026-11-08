@@ -655,8 +655,8 @@
       "metaTitle": "So funktioniert das KI-Prognosemodell"
     },
     "about": {
-      "title": "Über uns",
-      "lead": "Was diese Seite ist, wer sie betreibt, und was sie bewusst nicht ist.",
+      "title": "Über Football Analytics",
+      "lead": "Football Analytics veröffentlicht KI-Fussballanalysen und statistische Spielprognosen, jede am Endstand gemessen. Wer dahintersteht und was die Seite nicht ist.",
       "sections": [
         {
           "h": "Was sie ist",
@@ -691,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Über Football Analytics"
+      "metaTitle": "Über unsere KI-Fussballanalyse"
     },
     "privacy": {
       "title": "Datenschutzerklärung",
@@ -1567,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
-      "title": "Fussball-Prognosen und statistische Spielanalyse",
-      "lead": "Ein kalibriertes statistisches Modell bewertet jedes Spiel in {n} Ligen: Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairer Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
+      "title": "KI-Fussballanalyse und statistische Prognosen",
+      "lead": "Football Analytics für {n} Ligen: ein kalibriertes statistisches Modell bewertet jedes Spiel mit Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairem Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
       "cta": "7 Tage gratis starten",
       "ctaDemo": "Beispielanalyse ansehen",
       "noCard": "Keine Karte nötig",

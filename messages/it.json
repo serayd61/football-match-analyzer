@@ -655,8 +655,8 @@
       "metaTitle": "Modello AI di pronostico: come funziona"
     },
     "about": {
-      "title": "Chi siamo",
-      "lead": "Cos'è questo sito, chi lo gestisce e cosa, di proposito, non è.",
+      "title": "Chi è Football Analytics",
+      "lead": "Football Analytics pubblica analisi calcistica con AI e pronostici statistici, ognuno misurato sul risultato finale. Chi lo gestisce e cosa non è.",
       "sections": [
         {
           "h": "Cos'è",
@@ -691,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Chi è Football Analytics"
+      "metaTitle": "La nostra analisi calcistica con AI"
     },
     "privacy": {
       "title": "Informativa sulla privacy",
@@ -1567,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
-      "title": "Pronostici calcio e analisi statistica delle partite",
-      "lead": "Un modello statistico calibrato valuta ogni partita in {n} leghe: probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
+      "title": "Analisi calcistica con AI e pronostici statistici",
+      "lead": "Football analytics per {n} leghe: un modello statistico calibrato valuta ogni partita con probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
       "cta": "Inizia 7 giorni gratis",
       "ctaDemo": "Guarda un'analisi di esempio",
       "noCard": "Nessuna carta richiesta",
