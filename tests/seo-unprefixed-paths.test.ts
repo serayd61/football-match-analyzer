@@ -63,3 +63,14 @@ test('/results kalıcı yönlendirme (308) — birleşme 2026-09-11\'de kalıcı
   assert.ok(imports.some((l) => l.includes('permanentRedirect')), 'permanentRedirect import edilmeli');
   assert.ok(!imports.some((l) => /\{[^}]*\bredirect\b[^}]*\}/.test(l)), 'geçici redirect hâlâ import ediliyor');
 });
+
+test('robots.txt /api/ altında yalnız OG görsellerini açar', async () => {
+  const robots = (await import('@/app/robots')).default();
+  const rule = Array.isArray(robots.rules) ? robots.rules[0] : robots.rules;
+  const allow = [rule.allow].flat();
+  const disallow = [rule.disallow].flat();
+  assert.ok(allow.includes('/api/og/'), 'maç OG kartı robots ile engelliyse Google görseli çekemez');
+  assert.ok(disallow.includes('/api/'), '/api/ geri kalanı kapalı kalmalı');
+  // Daha uzun `allow` kuralı kazanır, ama sitemap'e hiçbir /api yolu girmemeli.
+  assert.ok(!allow.includes('/api/'));
+});
