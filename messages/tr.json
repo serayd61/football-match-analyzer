@@ -503,6 +503,12 @@
     "lockedUpcoming": "Bu {league} maçlarının tahminleri (seçim, olasılıklar ve gol pazarları) üyelere özel. Ücretsiz hesap aç, 7 gün boyunca gör.",
     "lockedRecent": "{n, plural, =1 {Sonuçlanmış # {league} seçimi} other {Sonuçlanmış # {league} seçimi}} sonuç ve skoruyla üyelere özel. Ücretsiz hesap aç, 7 gün boyunca tüm karneyi gör.",
     "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır.",
+    "faqH": "Sık sorulanlar",
+    "faqLeaderQ": "{league} lideri kim?",
+    "faqNextQ": "{league} sıradaki maç ne zaman?",
+    "faqAccQ": "Modelin {league} tahminleri ne kadar isabetli?",
+    "faqAccA": "Modelin 1X2 seçimi sonuçlanan {n} {league} maçının {won} tanesinde tuttu ({acc}); Brier skoru {brier}.",
+    "faqAccANone": "{league} için sonuçlanan maç sayısı modelin karnesini özetlemek için henüz az.",
     "intro": {
       "premier-league": "Premier League İngiltere'nin en üst ligidir: 20 kulüp, Ağustos'tan Mayıs'a 38 hafta; son üç takım Championship'e düşer. Model yalnız bu ligin sonuçlarıyla fit edilir ve her maç için 1X2, 2,5 gol üst/alt ve karşılıklı gol olasılığı üretir.",
       "championship": "Championship İngiltere'nin ikinci ligidir ve Avrupa'nın en yoğun takvimlerinden biridir: 24 kulüp, 46 hafta, iki doğrudan yükselme ve üçüncüsü için play-off. Uzun sezon ve dar farklar, modelin beraberliği nasıl ele aldığını görmek için iyi bir sınavdır.",

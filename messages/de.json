@@ -503,6 +503,12 @@
     "lockedUpcoming": "Die Prognosen zu diesen {league}-Spielen — Tipp, Wahrscheinlichkeiten und Tormärkte — sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang alles sehen.",
     "lockedRecent": "{n, plural, =1 {# abgerechneter {league}-Tipp} other {# abgerechnete {league}-Tipps}} mit Ausgang und Resultat sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang die ganze Bilanz sehen.",
     "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung.",
+    "faqH": "Häufige Fragen",
+    "faqLeaderQ": "Wer führt die {league}?",
+    "faqNextQ": "Wann ist das nächste Spiel der {league}?",
+    "faqAccQ": "Wie treffsicher waren die {league}-Prognosen des Modells?",
+    "faqAccA": "Der 1X2-Tipp des Modells traf in {won} von {n} abgerechneten {league}-Spielen ein ({acc}), bei einem Brier-Score von {brier}.",
+    "faqAccANone": "Bisher sind zu wenige {league}-Spiele abgerechnet, um die Bilanz zusammenzufassen.",
     "intro": {
       "premier-league": "Die Premier League ist Englands höchste Spielklasse: 20 Klubs, 38 Runden von August bis Mai, die letzten drei steigen in die Championship ab. Das Modell wird allein auf ihren Resultaten gefittet und bewertet jedes Spiel für 1X2, Über/Unter 2,5 Tore und «Beide Teams treffen».",
       "championship": "Die Championship ist Englands zweite Liga und einer der dichtesten Spielpläne Europas: 24 Klubs, 46 Runden, zwei direkte Aufstiegsplätze und ein Play-off um den dritten. Die lange Saison und die knappen Abstände zeigen gut, wie das Modell mit Remis umgeht.",

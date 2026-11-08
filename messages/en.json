@@ -503,6 +503,12 @@
     "lockedUpcoming": "Predictions for these {league} fixtures — pick, probabilities and goal markets — are for members. Create a free account and see them for 7 days.",
     "lockedRecent": "{n, plural, =1 {# settled {league} pick} other {# settled {league} picks}} with outcome and score are for members. Create a free account and see the full record for 7 days.",
     "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time.",
+    "faqH": "Frequently asked",
+    "faqLeaderQ": "Who is top of the {league}?",
+    "faqNextQ": "When is the next {league} match?",
+    "faqAccQ": "How accurate have the model’s {league} predictions been?",
+    "faqAccA": "The model’s 1X2 pick came in {won} of {n} settled {league} matches ({acc}), with a Brier score of {brier}.",
+    "faqAccANone": "Too few {league} matches have settled so far to summarise the model’s record.",
     "intro": {
       "premier-league": "The Premier League is England's top division: 20 clubs, 38 rounds from August to May, with the bottom three relegated to the Championship. The model is fitted on its results alone and prices every fixture for 1X2, over/under 2.5 goals and both teams to score.",
       "championship": "The Championship is England's second tier and one of the densest calendars in Europe: 24 clubs and 46 rounds, with two automatic promotion places and a play-off for the third. The long season and tight margins make it a useful test of how the model handles draws.",

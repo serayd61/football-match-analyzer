@@ -503,6 +503,12 @@
     "lockedUpcoming": "I pronostici per queste partite di {league} — scelta, probabilità e mercati gol — sono per i membri. Crea un account gratuito e vedili per 7 giorni.",
     "lockedRecent": "{n, plural, =1 {# scelta chiusa di {league}} other {# scelte chiuse di {league}}} con esito e risultato sono per i membri. Crea un account gratuito e vedi tutto il registro per 7 giorni.",
     "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione.",
+    "faqH": "Domande frequenti",
+    "faqLeaderQ": "Chi guida la {league}?",
+    "faqNextQ": "Quando si gioca la prossima partita di {league}?",
+    "faqAccQ": "Quanto sono stati precisi i pronostici del modello sulla {league}?",
+    "faqAccA": "La scelta 1X2 del modello è arrivata in {won} partite di {league} su {n} chiuse ({acc}), con un Brier score di {brier}.",
+    "faqAccANone": "Le partite di {league} chiuse sono ancora troppo poche per riassumere il registro del modello.",
     "intro": {
       "premier-league": "La Premier League è la massima divisione inglese: 20 club, 38 giornate da agosto a maggio, le ultime tre retrocedono in Championship. Il modello è stimato solo sui suoi risultati e valuta ogni partita per 1X2, over/under 2,5 gol e Goal/No Goal.",
       "championship": "La Championship è la seconda divisione inglese e uno dei calendari più fitti d'Europa: 24 club, 46 giornate, due promozioni dirette e un play-off per la terza. La stagione lunga e i margini stretti mostrano bene come il modello gestisce i pareggi.",

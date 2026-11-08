@@ -4,8 +4,9 @@ import { getFormatter, getTranslations, unstable_setRequestLocale } from 'next-i
 import { Link } from '@/i18n/navigation';
 import { routing, type Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
+import { SITE_URL } from '@/lib/seo';
 import JsonLd from '@/components/site/JsonLd';
-import { breadcrumbJsonLd, sportsEventsJsonLd } from '@/lib/site/jsonld';
+import { breadcrumbJsonLd, faqPageJsonLd, sportsEventsJsonLd, webPageJsonLd } from '@/lib/site/jsonld';
 import { SITE_LEAGUES, leagueBySlug } from '@/lib/site/leagues';
 import { leagueCountryName } from '@/lib/site/countries';
 import { getPerformance } from '@/lib/site/performance';
@@ -77,11 +78,37 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   // Son gerçek veri yazımı (satır updated_at'i) — "şimdi" değil (SEO 2026-10-10).
   const lastWrite = [...upcoming, ...recent.rows].reduce<string | null>((m, r) => (r.updatedAt && (!m || r.updatedAt > m) ? r.updatedAt : m), null);
 
+  // SEO denetimi 2026-11-08: the league hub was the only page type whose single
+  // JSON-LD block was BreadcrumbList — no WebPage (dateModified) and no FAQPage,
+  // while team / xg-table / performance all carry three or four types. The answers
+  // reuse the sentences already rendered above, so nothing is written for crawlers
+  // that a reader cannot see.
+  const url = `${SITE_URL}/${params.locale}/leagues/${league.slug}`;
+  const leaderLine = leader && table.length > 2
+    ? (leader.pts - table[1].pts > 0
+        ? t('thisWeekLeader', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name, gap: leader.pts - table[1].pts })
+        : t('thisWeekLeaderLevel', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name }))
+    : null;
+  const nextLine = nextFixture
+    ? t('thisWeekNext', { home: nextFixture.homeName, away: nextFixture.awayName, date: f.dateTime(new Date(nextFixture.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) })
+    : null;
+  const faqs: Array<{ q: string; a: string }> = [];
+  if (leaderLine) faqs.push({ q: t('faqLeaderQ', { league: league.name }), a: leaderLine });
+  if (nextLine) faqs.push({ q: t('faqNextQ', { league: league.name }), a: nextLine });
+  faqs.push({
+    q: t('faqAccQ', { league: league.name }),
+    a: o.n >= 20 && o.acc != null
+      ? t('faqAccA', { league: league.name, won: o.won, n: o.n, acc: pct(o.acc), brier: o.brier == null ? '–' : o.brier.toFixed(3) })
+      : t('faqAccANone', { league: league.name }),
+  });
+
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(params.locale as Locale, [{ name: tn('home'), path: '/' }, { name: tn('leagues'), path: '/leagues' }, { name: league.name, path: `/leagues/${league.slug}` }])} />
       {/* SEO denetimi 2026-10-10: one SportsEvent per listed fixture with a known home venue (Google Event rich result). */}
       {upcoming.length > 0 && <JsonLd data={sportsEventsJsonLd(params.locale as Locale, league, upcoming, (r) => t('eventDescription', { league: league.name, home: r.homeName, away: r.awayName }))} />}
+      <JsonLd data={webPageJsonLd(params.locale as Locale, { url, name: t('metaTitle', { league: league.name }), dateModified: lastWrite })} />
+      <JsonLd data={faqPageJsonLd(faqs)} />
       <PageTitle
         eyebrow={leagueCountryName(league, params.locale)}
         title={league.name}
@@ -92,14 +119,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       {/* SEO denetimi 2026-10-10: unique, factual intro per league + how the record is read. */}
       <div className="max-w-3xl space-y-3 pb-6 text-[15px] leading-relaxed">
         <p>{t(`intro.${league.slug}`)}</p>
-        {leader && table.length > 2 && (
-          <p>
-            {leader.pts - table[1].pts > 0
-              ? t('thisWeekLeader', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name, gap: leader.pts - table[1].pts })
-              : t('thisWeekLeaderLevel', { league: league.name, leader: leader.name, pts: leader.pts, played: leader.played, second: table[1].name })}
-            {nextFixture && <> {t('thisWeekNext', { home: nextFixture.homeName, away: nextFixture.awayName, date: f.dateTime(new Date(nextFixture.kickoff), { weekday: 'long', day: 'numeric', month: 'long' }) })}</>}
-          </p>
-        )}
+        {leaderLine && <p>{leaderLine}{nextLine && <> {nextLine}</>}</p>}
         <p className="text-s-muted">{t('howToRead', { league: league.name })} <Link href="/methodology" className="underline underline-offset-4">{t('methodLink')}</Link> <Link href={`/performance/${league.slug}`} className="underline underline-offset-4">{t('recordPage', { league: league.name })}</Link></p>
         {lastWrite && <p className="text-xs text-s-muted">{t('updated', { time: f.dateTime(new Date(lastWrite), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) })}</p>}
         {/* SEO Faz 1c: the league's data pages */}
@@ -158,6 +178,13 @@ export default async function LeaguePage({ params }: { params: { locale: string;
             <LockedBlock count={0} lead={t('lockedRecent', { league: league.name, n: recent.total })} />
           </>
         )}
+      </section>
+
+      <section className="mt-12 max-w-3xl" aria-labelledby="faq-h">
+        <h2 id="faq-h" className="text-[20px]">{t('faqH')}</h2>
+        <dl className="mt-3 space-y-3 text-[15px] leading-relaxed">
+          {faqs.map((q, i) => <div key={i}><dt className="font-semibold">{q.q}</dt><dd className="text-s-muted">{q.a}</dd></div>)}
+        </dl>
       </section>
 
       {/* SEO Faz 1a: sibling leagues — the only cross-league links used to be the index page. */}
