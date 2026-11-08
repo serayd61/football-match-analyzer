@@ -28,7 +28,7 @@ export default async function SampleAnalysis({ p, id }: { p: SitePrediction; id?
   const btts = yesSideP(p.btts, 'yes');
   const team = (name: string, crest: string | null, score: number | null, bold: boolean) => (
     <p className={`flex items-center gap-2.5 text-[22px] leading-[1.1] sm:text-[26px] ${bold ? 'font-extrabold' : 'font-extrabold text-s-muted'}`}>
-      {crest ? <Image src={crest} alt={tc('crestAlt', { team: name })} width={28} height={28} className="h-7 w-7 shrink-0 object-contain" unoptimized /> : null}
+      {crest ? <Image src={crest} alt={tc('crestAlt', { team: name })} width={28} height={28} className="h-7 w-7 shrink-0 object-contain" /> : null}
       <span className="min-w-0 truncate">{name}</span>
       {score != null && <span className="num ml-auto pl-3 text-s-ink">{score}</span>}
     </p>

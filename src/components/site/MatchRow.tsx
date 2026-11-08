@@ -27,7 +27,7 @@ const STATUS_KEY = {
 // instead of alt="" — Google calls alt text the most important image signal.
 function Crest({ src, alt }: { src: string | null; alt: string }) {
   return src
-    ? <Image src={src} alt={alt} width={20} height={20} className="h-5 w-5 shrink-0 object-contain" unoptimized />
+    ? <Image src={src} alt={alt} width={20} height={20} className="h-5 w-5 shrink-0 object-contain" />
     : <span className="h-5 w-5 shrink-0 rounded-full bg-s-raised" aria-hidden />;
 }
 
