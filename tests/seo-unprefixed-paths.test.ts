@@ -54,3 +54,12 @@ test('lig alt sayfaları ve lig karnesi de kapsanıyor', () => {
     assert.ok(pats.some((pat) => matches(pat, path)), `${path} hiçbir matcher kalıbıyla eşleşmiyor → 404`);
   }
 });
+
+test('/results kalıcı yönlendirme (308) — birleşme 2026-09-11\'de kalıcıydı', () => {
+  const page = readFileSync(resolve(__dirname, '../src/app/(site)/[locale]/results/page.tsx'), 'utf8');
+  assert.match(page, /permanentRedirect\(`\/\$\{locale\}\/performance/);
+  // Yorum satırlarında "redirect()" geçiyor; ölçüt import satırı.
+  const imports = page.split('\n').filter((l) => l.startsWith('import'));
+  assert.ok(imports.some((l) => l.includes('permanentRedirect')), 'permanentRedirect import edilmeli');
+  assert.ok(!imports.some((l) => /\{[^}]*\bredirect\b[^}]*\}/.test(l)), 'geçici redirect hâlâ import ediliyor');
+});
