@@ -97,10 +97,16 @@ export function sportsEventsJsonLd<R extends EventRow>(locale: Locale, league: S
       homeTeam: team(r.homeName),
       awayTeam: team(r.awayName),
       competitor: [team(r.homeName), team(r.awayName)],
-      performer: [team(r.homeName), team(r.awayName)],
+      // `performer` YOK (2026-11-08): Google'ın Event tipi orada Person ya da
+      // PerformingGroup bekliyor; SportsTeam bir SportsOrganization, yani yanlış
+      // tip (SC Etkinlikler: 3 geçersiz). Takımlar homeTeam/awayTeam/competitor
+      // ile zaten tam tipli veriliyor, bilgi kaybı yok.
       // SC Etkinlikler raporu 2026-11-03: "url alanı eksik (organizer içinde)" önerisi → lig sayfası
       organizer: { '@type': 'Organization', name: league.name, url: `${SITE_URL}/${locale}/leagues/${league.slug}` },
-      // no `image`: Next serves the league OG card under a hashed URL that is not known here (recommended field, not required)
+      // Önerilen `image` (2026-11-08): maç OG kartı gerçek, erişilebilir bir PNG
+      // (api/og/match/[id]). robots.txt'te /api/og/ artık `allow` — aksi hâlde
+      // Googlebot görseli çekemiyordu (bkz. app/robots.ts).
+      image: [`${SITE_URL}/api/og/match/${r.fixtureId}`],
       url: page,
     });
   }

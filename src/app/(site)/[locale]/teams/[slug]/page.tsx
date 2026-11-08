@@ -17,7 +17,7 @@ import PublicMatchList from '@/components/site/PublicMatchList';
 import LocalTime from '@/components/site/LocalTime';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, faqPageJsonLd, sportsTeamJsonLd, webPageJsonLd } from '@/lib/site/jsonld';
-import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 
 // ============================================================================
 // Club page (SEO Faz 1b, 2026-10-17): /[locale]/teams/{slug}. Public facts only

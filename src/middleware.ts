@@ -5,6 +5,7 @@ import { isAdminEmail } from '@/lib/admin/emails';
 import { routing } from '@/i18n/routing';
 import { isTwaRequest, TWA_COOKIE, TWA_COOKIE_MAX_AGE } from '@/lib/site/twa';
 import { legacyLocale, legacyRedirectTarget } from '@/lib/site/legacy-paths';
+import { MEMBER_REWRITE_HEADER, memberRewritePath } from '@/lib/site/member-routes';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
 // a `src/` directory — Next.js only picks up `src/middleware.ts` in that case.
@@ -78,6 +79,25 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Anonim ISR ayrımı (2026-11-08, Core Web Vitals): oturum çerezi olan ya da
+    // Play uygulamasından gelen ziyaretçi, aynı sayfanın dinamik üye sürümüne
+    // yazılır. URL değişmez (rewrite, redirect değil), CDN anahtarı da URL
+    // olduğu için anonim yanıt oturuma bağlı hiçbir şey taşımaz → `Vary`
+    // gerekmez. Anonim istek dokunulmadan ISR rotasına gider.
+    const member = !!req.nextauth?.token?.email || req.cookies.get(TWA_COOKIE)?.value === '1';
+    const rewrite = member ? memberRewritePath(path) : null;
+    if (rewrite) {
+      const url = req.nextUrl.clone();
+      url.pathname = rewrite;
+      // Üye sayfası, rewrite ile mi yoksa /{l}/m/… adresi elle yazılarak mı
+      // açıldığını bu başlıktan anlar: rewrite'ta temiz URL'e noindex BASMAZ
+      // (adres çubuğunda ziyaretçinin gördüğü URL indekslenebilir olan), elle
+      // yazılan /m/ adresinde basar. Bkz. m/matches/[slug]/page.tsx.
+      const headers = new Headers(req.headers);
+      headers.set(MEMBER_REWRITE_HEADER, '1');
+      return NextResponse.rewrite(url, { request: { headers } });
+    }
+
     // Public site: locale detection + prefixing (/ → /en, /predictions → /de/predictions …).
     const res = intlMiddleware(req);
     // Google Play app (TWA) opens `/?src=twa`: remember it for a year so every
@@ -115,7 +135,13 @@ export const config = {
     // SEO Faz 0: these were missing, so unprefixed /matches 404'd instead of 307'ing to /{locale}/matches
     '/matches/:path*', '/picks', '/coupon', '/account', '/s/:path*',
     '/results',
-    '/performance',
+    // 2026-11-08: dil öneki olmadan 404 dönüyorlardı. Üçü de sitemap'te ve iç
+    // linki olan herkese açık sayfa; /performance yalnız tam eşleşmeydi, bu
+    // yüzden /performance/{lig} (SEO Faz 1b karnesi) 404'tü.
+    '/performance/:path*',
+    '/teams/:path*',
+    '/glossary',
+    '/app',
     '/pricing',
     '/login', // 2026-10-22: legacy /login streamed a 200 shell to crawlers; 307 to /{locale}/login like /pricing
     '/leagues/:path*',
