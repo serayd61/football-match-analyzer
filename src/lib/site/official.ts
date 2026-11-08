@@ -19,42 +19,59 @@ export const OFFICIAL_MODEL_VERSION: string | null = (process.env.SITE_MODEL_VER
 
 // ---------------------------------------------------------------------------
 // Faz 3 (2026-09-07): env yoksa engine_model_versions.status='active' satırı
-// resmi sürümdür (60 sn cache; lib/engine/versions.ts). Env varsa o kazanır —
-// geçişte ikisinin çelişmemesine dikkat. Tablo yoksa/boşsa null → eski
-// "fixture başına en yeni satır" kuralı.
+// resmi sürümdür. Env varsa o kazanır — geçişte ikisinin çelişmemesine dikkat.
+// Tablo yoksa/boşsa null → eski "fixture başına en yeni satır" kuralı.
+// Okuma yolu: siteActiveVersionRow (önbelleklenebilir). Bkz. oradaki not.
 // ---------------------------------------------------------------------------
 export async function resolveOfficialVersion(): Promise<string | null> {
   if (OFFICIAL_MODEL_VERSION) return OFFICIAL_MODEL_VERSION;
-  // SEO Faz 1a (2026-10-17): lib/engine/versions.ts reads with `cache: 'no-store'`, which
-  // throws DynamicServerError while an ISR page (/matches, /leagues/{slug}/results) is
-  // prerendered or regenerated — the catch below then returned null, the version filter was
-  // skipped and shadow-version rows (dc-1.2-cal) leaked into public lists whose match pages
-  // 404 (getPrediction does filter). The site reads the active version through its own
-  // cacheable client first; the no-store reader stays for ingest / the params route.
   try {
-    const v = await siteActiveVersion();
-    if (v) return v;
-  } catch { /* fall through */ }
-  try {
-    const { loadEngineVersions } = await import('@/lib/engine/versions');
-    return (await loadEngineVersions()).active?.version ?? null;
-  } catch { return null; }
+    return (await siteActiveVersionRow())?.version ?? null;
+  } catch {
+    return null;
+  }
 }
 
-/** Active engine version via the site's revalidating client (60 s cache); null when the table is empty. */
-async function siteActiveVersion(): Promise<string | null> {
+export interface ActiveVersionRow {
+  version: string;
+  params: Record<string, unknown>;
+}
+
+/**
+ * Aktif motor sürümü + params — sitenin KENDİ önbelleklenebilir istemcisiyle
+ * (db(), fetch `revalidate: 300`), `unstable_cache` içinde 60 sn.
+ *
+ * `lib/engine/versions.ts` ASLA sayfa render'ından çağrılmaz: o istemci
+ * `cache: 'no-store'` kullanıyor ve Next'te tek bir no-store fetch, render
+ * eden rotanın `revalidate` değerini 0'a çeker — hata yakalansa bile. Yan etki
+ * kalıcı: sayfa `private, no-store` ile çıkar, CDN'e hiç girmez.
+ *
+ * 2026-11-08 ölçümü: bu yüzden /{l}/teams/{slug}, /{l}/matches/{slug} ve gün
+ * merkezleri `revalidate` tanımlı olmasına rağmen önbelleğe girmiyordu, ve
+ * hangi sayfanın gireceği 5 dakikalık süreç memo'sunun (predictions.ts
+ * loadContext) o anda sıcak olup olmamasına bağlıydı — yani kura gibi.
+ * official.ts bu tuzak için 2026-10-17'de düzeltilmişti, loadContext atlanmış.
+ *
+ * no-store okuyucu ingest ve /api/v2/engine/params için duruyor: oraya tazelik
+ * gerekiyor ve route handler'ın önbelleklenecek HTML'i yok.
+ */
+async function siteActiveRow(): Promise<ActiveVersionRow | null> {
   const [{ unstable_cache }, { db }] = await Promise.all([import('next/cache'), import('./db')]);
   const read = unstable_cache(
-    async (): Promise<string | null> => {
-      const { data, error } = await db().from('engine_model_versions').select('version').eq('status', 'active').order('created_at').limit(1);
+    async (): Promise<ActiveVersionRow | null> => {
+      const { data, error } = await db().from('engine_model_versions').select('version, params').eq('status', 'active').order('created_at').limit(1);
       if (error) { console.error('[site/official] active version read failed:', error.message); return null; }
-      const v = (data as Array<{ version: string }> | null)?.[0]?.version;
-      return v ? String(v) : null;
+      const r = (data as Array<{ version: string; params: unknown }> | null)?.[0];
+      return r?.version ? { version: String(r.version), params: (r.params ?? {}) as Record<string, unknown> } : null;
     },
-    ['site-official-version-v1'],
+    ['site-official-version-v2'],
     { revalidate: 60 },
   );
   return read();
+}
+
+export async function siteActiveVersionRow(): Promise<ActiveVersionRow | null> {
+  return siteActiveRow();
 }
 
 export async function invalidateOfficialCache(): Promise<void> {

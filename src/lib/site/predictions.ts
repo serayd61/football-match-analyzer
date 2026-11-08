@@ -7,7 +7,7 @@ import { db, REVALIDATE, ODDS_TAG } from './db';
 import { resolveLeague, type SiteLeague } from './leagues';
 import { hiddenLeagueIds } from '@/lib/coverage/registry';
 import { zonedStartOfDay, addDays } from './time';
-import { pickOfficial, officialFilter, resolveOfficialVersion, OFFICIAL_MODEL_VERSION } from './official';
+import { pickOfficial, officialFilter, resolveOfficialVersion, siteActiveVersionRow, OFFICIAL_MODEL_VERSION } from './official';
 import { statusOfRow, type MatchStatus, type ModelStatus } from './status';
 import { noFavourite } from './risk';
 import { asOfFilter } from './asof';
@@ -190,11 +190,14 @@ async function loadContextUncached(): Promise<SiteContext> {
     readCurve('all').catch(() => empty),
     readCurve('ou25').catch(() => empty),
     readCurve('btts').catch(() => empty),
-    import('@/lib/engine/versions').then((m) => m.loadEngineVersions()).catch(() => null),
+    // Aktif sürümün params'ı (calib_since) — sitenin önbelleklenebilir okuyucusuyla.
+    // loadEngineVersions() BURADA ÇAĞRILMAZ: no-store fetch'i render'ı dinamiğe
+    // düşürüyordu (bkz. official.ts siteActiveVersionRow notu, 2026-11-08).
+    siteActiveVersionRow().catch(() => null),
   ]);
   return {
     catalog, curves: { pick: pick.knots, pickAll: pickAll.knots, ou: ou.knots, btts: btts.knots }, curveMeta: { pick: pick.meta, ou: ou.meta, btts: btts.meta },
-    goalCalibSince: calibSinceOf(versions?.active?.params ?? null),
+    goalCalibSince: calibSinceOf(versions?.params ?? null),
   };
 }
 
