@@ -20,7 +20,7 @@ import { matchPath } from '@/lib/site/match-public';
 
 export function Crest({ src, alt }: { src: string | null; alt: string }) {
   if (!src) return <span className="inline-block h-5 w-5 rounded-sm bg-s-raised" aria-hidden />;
-  return <Image src={src} alt={alt} width={20} height={20} className="h-5 w-5 object-contain" unoptimized />;
+  return <Image src={src} alt={alt} width={20} height={20} className="h-5 w-5 object-contain" />;
 }
 
 export function pickLabel(p: SitePrediction, t: (k: string) => string): string {

@@ -489,7 +489,7 @@
     "metaTitle": "Liga-Prognosen & xG-Bilanzen"
   },
   "league": {
-    "metaTitle": "{league} Prognose & xG-Bilanz",
+    "metaTitle": "{league}: Tabelle, Prognosen & xG-Bilanz",
     "metaDescription": "Dixon-Coles-Wahrscheinlichkeiten und xG für die {league} ({country}): kommende Spiele, abgerechnete Resultate, Trefferquote und Brier-Score.",
     "lead": "Modellwahrscheinlichkeiten und die abgerechnete Bilanz für die {league}.",
     "allLeagues": "Alle Ligen",
@@ -503,6 +503,12 @@
     "lockedUpcoming": "Die Prognosen zu diesen {league}-Spielen — Tipp, Wahrscheinlichkeiten und Tormärkte — sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang alles sehen.",
     "lockedRecent": "{n, plural, =1 {# abgerechneter {league}-Tipp} other {# abgerechnete {league}-Tipps}} mit Ausgang und Resultat sind für Mitglieder. Gratiskonto anlegen und 7 Tage lang die ganze Bilanz sehen.",
     "note": "Die Teamstärken der {league} werden mit jedem Resultat neu gefittet; Wahrscheinlichkeiten älterer Spiele zeigen den Fit zum Zeitpunkt der Veröffentlichung.",
+    "faqH": "Häufige Fragen",
+    "faqLeaderQ": "Wer führt die {league}?",
+    "faqNextQ": "Wann ist das nächste Spiel der {league}?",
+    "faqAccQ": "Wie treffsicher waren die {league}-Prognosen des Modells?",
+    "faqAccA": "Der 1X2-Tipp des Modells traf in {won} von {n} abgerechneten {league}-Spielen ein ({acc}), bei einem Brier-Score von {brier}.",
+    "faqAccANone": "Bisher sind zu wenige {league}-Spiele abgerechnet, um die Bilanz zusammenzufassen.",
     "intro": {
       "premier-league": "Die Premier League ist Englands höchste Spielklasse: 20 Klubs, 38 Runden von August bis Mai, die letzten drei steigen in die Championship ab. Das Modell wird allein auf ihren Resultaten gefittet und bewertet jedes Spiel für 1X2, Über/Unter 2,5 Tore und «Beide Teams treffen».",
       "championship": "Die Championship ist Englands zweite Liga und einer der dichtesten Spielpläne Europas: 24 Klubs, 46 Runden, zwei direkte Aufstiegsplätze und ein Play-off um den dritten. Die lange Saison und die knappen Abstände zeigen gut, wie das Modell mit Remis umgeht.",
@@ -649,8 +655,8 @@
       "metaTitle": "So funktioniert das KI-Prognosemodell"
     },
     "about": {
-      "title": "Über uns",
-      "lead": "Was diese Seite ist, wer sie betreibt, und was sie bewusst nicht ist.",
+      "title": "Über Football Analytics",
+      "lead": "Football Analytics veröffentlicht KI-Fussballanalysen und statistische Spielprognosen, jede am Endstand gemessen. Wer dahintersteht und was die Seite nicht ist.",
       "sections": [
         {
           "h": "Was sie ist",
@@ -685,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Über Football Analytics"
+      "metaTitle": "Über unsere KI-Fussballanalyse"
     },
     "privacy": {
       "title": "Datenschutzerklärung",
@@ -1561,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Fussball-Prognosen mit öffentlicher Bilanz",
-      "title": "Fussball-Prognosen und statistische Spielanalyse",
-      "lead": "Ein kalibriertes statistisches Modell bewertet jedes Spiel in {n} Ligen: Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairer Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
+      "title": "KI-Fussballanalyse und statistische Prognosen",
+      "lead": "Football Analytics für {n} Ligen: ein kalibriertes statistisches Modell bewertet jedes Spiel mit Siegwahrscheinlichkeiten, Konfidenz, Risiko und fairem Preis — und jeder Tipp bleibt in einer öffentlichen Bilanz, gewonnen oder verloren.",
       "cta": "7 Tage gratis starten",
       "ctaDemo": "Beispielanalyse ansehen",
       "noCard": "Keine Karte nötig",
@@ -1626,10 +1632,10 @@
       "linkRecord": "Öffentliche Bilanz"
     },
     "match": {
-      "metaTitle": "{home} – {away}: Prognose, Tabelle & Form, {date}",
-      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat, Tabelle & Statistik, {date}",
-      "metaDescription": "{league}, {date}: {home} – {away}. Tabelle, Form, direkter Vergleich und die Einschätzung des Modells vor dem Spiel. Wahrscheinlichkeiten für Mitglieder.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabelle, Form vor dem Spiel, direkter Vergleich und wie die Prognose des Modells ausging.",
+      "metaTitle": "{home} – {away}: Prognose, Tabelle & Form",
+      "metaTitleSettled": "{home} {hs}:{as} {away}: Resultat & Tabelle",
+      "metaDescription": "{league}, {date}: {home} – {away}. Tabelle, Form und direkter Vergleich vor dem Anpfiff.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}:{as} {away}. Endstand, Tabelle, Form, direkter Vergleich und wie das Modell lag.",
       "eyebrow": "Spielvorschau",
       "vs": "–",
       "kickoff": "Anstoss",
@@ -1719,8 +1725,8 @@
       "modelLockedVerdict": "Der Tipp oben ist abgerechnet. Mitglieder sehen zusätzlich die ganze Wahrscheinlichkeitsverteilung, Expected Goals, Tormärkte und das Risikolabel, wie sie vor dem Anpfiff standen:",
       "resultsArchive": "{league}-Resultate",
       "teamPage": "{team}: Spiele & Form",
-      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}., {hpts} Pkt.) – {away} ({apos}., {apts} Pkt.). Tabelle, Form, direkter Vergleich und die Einschätzung des Modells vor dem Spiel. Wahrscheinlichkeiten für Mitglieder.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}:{as} {away}. {home} jetzt {hpos}. ({hpts} Pkt.), {away} {apos}. ({apts} Pkt.). Endstand, Form, direkter Vergleich und wie die Prognose des Modells ausging.",
+      "metaDescriptionRanked": "{league}, {date}: {home} {hpos}. ({hpts} Pkt.) – {away} {apos}. ({apts} Pkt.), plus Form und Vergleich.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}:{as} {away}. {home} jetzt {hpos}. ({hpts} Pkt.), {away} {apos}. ({apts} Pkt.), plus Form.",
       "openEyebrow": "Keine Prognose",
       "openKicker": "Vom Modell nicht bewertet",
       "openH": "Keine Modellprognose für dieses Spiel",
@@ -2102,7 +2108,7 @@
   },
   "team": {
     "metaTitle": "{team}: Prognose nächstes Spiel, Spielplan & Form",
-    "metaDescription": "{team} ({league}): Tipp des Modells zum nächsten Spiel, letzte Resultate, Form, Tore pro Spiel und wie seine Tipps zu {team}-Spielen ausgingen.",
+    "metaDescription": "{team} ({league}): nächstes Spiel mit Tipp des Modells, letzte Resultate, Form, Tore pro Spiel und die abgerechnete Bilanz.",
     "h1": "{team}",
     "lead": "Spiele, Resultate und Form von {team} in der {league}, dazu die abgerechnete Bilanz des Modells zu den Partien des Vereins.",
     "homeVenue": "Heimstadion: {venue}",

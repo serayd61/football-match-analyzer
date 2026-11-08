@@ -43,7 +43,8 @@ export default function AppBanner({ title, lead, cta, close, location = 'app_ban
         <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6 6 18" /></svg>
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/app/app-icon-192.png" alt="" width={36} height={36} className="shrink-0 rounded-[9px] border border-s-line" />
+      {/* 36 px gösterilen ikon 192 px PNG'den geliyordu (15 KB); 72 px WebP 0,9 KB (mobil LCP, 2026-11-08). */}
+      <img src="/images/app/app-icon-72.webp" alt="" width={36} height={36} className="shrink-0 rounded-[9px] border border-s-line" />
       <div className="min-w-0 flex-1 leading-tight">
         <p className="truncate text-[13px] font-semibold">{title}</p>
         <p className="truncate text-[11.5px] text-s-muted">{lead}</p>

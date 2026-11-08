@@ -489,7 +489,7 @@
     "metaTitle": "Lig tahminleri ve xG karneleri"
   },
   "league": {
-    "metaTitle": "{league} tahminleri ve xG karnesi",
+    "metaTitle": "{league} puan durumu, tahminler ve xG",
     "metaDescription": "{league} ({country}) için Dixon-Coles olasılıkları ve xG: yaklaşan maçlar, sonuçlanmış maçlar, isabet ve Brier skoru.",
     "lead": "{league} için model olasılıkları ve sonuçlanmış karne.",
     "allLeagues": "Tüm ligler",
@@ -503,6 +503,12 @@
     "lockedUpcoming": "Bu {league} maçlarının tahminleri (seçim, olasılıklar ve gol pazarları) üyelere özel. Ücretsiz hesap aç, 7 gün boyunca gör.",
     "lockedRecent": "{n, plural, =1 {Sonuçlanmış # {league} seçimi} other {Sonuçlanmış # {league} seçimi}} sonuç ve skoruyla üyelere özel. Ücretsiz hesap aç, 7 gün boyunca tüm karneyi gör.",
     "note": "{league} takım güçleri sonuçlar geldikçe yeniden fit edilir; eski maçların olasılıkları yayın anındaki fiti yansıtır.",
+    "faqH": "Sık sorulanlar",
+    "faqLeaderQ": "{league} lideri kim?",
+    "faqNextQ": "{league} sıradaki maç ne zaman?",
+    "faqAccQ": "Modelin {league} tahminleri ne kadar isabetli?",
+    "faqAccA": "Modelin 1X2 seçimi sonuçlanan {n} {league} maçının {won} tanesinde tuttu ({acc}); Brier skoru {brier}.",
+    "faqAccANone": "{league} için sonuçlanan maç sayısı modelin karnesini özetlemek için henüz az.",
     "intro": {
       "premier-league": "Premier League İngiltere'nin en üst ligidir: 20 kulüp, Ağustos'tan Mayıs'a 38 hafta; son üç takım Championship'e düşer. Model yalnız bu ligin sonuçlarıyla fit edilir ve her maç için 1X2, 2,5 gol üst/alt ve karşılıklı gol olasılığı üretir.",
       "championship": "Championship İngiltere'nin ikinci ligidir ve Avrupa'nın en yoğun takvimlerinden biridir: 24 kulüp, 46 hafta, iki doğrudan yükselme ve üçüncüsü için play-off. Uzun sezon ve dar farklar, modelin beraberliği nasıl ele aldığını görmek için iyi bir sınavdır.",
@@ -649,8 +655,8 @@
       "metaTitle": "Yapay zekâ tahmin modeli nasıl çalışır"
     },
     "about": {
-      "title": "Hakkında",
-      "lead": "Bu site nedir, kim işletir ve bilerek ne değildir.",
+      "title": "Football Analytics hakkında",
+      "lead": "Football Analytics, yapay zekâ futbol analizi ve istatistiksel maç tahminleri yayımlar; her biri maç sonucuyla ölçülür. Kimin işlettiği ve ne olmadığı.",
       "sections": [
         {
           "h": "Ne olduğu",
@@ -685,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Football Analytics hakkında"
+      "metaTitle": "Yapay zekâ futbol analizimiz hakkında"
     },
     "privacy": {
       "title": "Gizlilik politikası",
@@ -1561,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Açık karneli futbol tahminleri",
-      "title": "Futbol tahminleri ve istatistiksel maç analizi",
-      "lead": "Kalibre edilmiş istatistiksel model {n} ligdeki her maçı puanlar: kazanma olasılıkları, güven, risk ve adil fiyat — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
+      "title": "Yapay zekâ futbol analizi ve istatistiksel tahminler",
+      "lead": "{n} lig için football analytics: kalibre edilmiş istatistiksel model her maça kazanma olasılığı, güven, risk ve adil fiyat verir — ve her seçim, kazansa da kaybetse de açık karnede kalır.",
       "cta": "7 gün ücretsiz başla",
       "ctaDemo": "Örnek analizi gör",
       "noCard": "Kart gerekmez",
@@ -1626,10 +1632,10 @@
       "linkRecord": "Açık karne"
     },
     "match": {
-      "metaTitle": "{home} – {away}: tahmin, puan durumu ve istatistik, {date}",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: maç sonucu, puan durumu ve istatistik, {date}",
-      "metaDescription": "{league}, {date}: {home} – {away}. Puan durumu, son form, geçmiş karşılaşmalar ve modelin maç öncesi görüşü. Olasılıklar üyelere açıktır.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Maç sonucu, puan durumu, maç öncesi form, geçmiş karşılaşmalar ve modelin maç öncesi tahmininin sonucu.",
+      "metaTitle": "{home} – {away}: tahmin ve puan durumu",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: sonuç ve puan durumu",
+      "metaDescription": "{league}, {date}: {home} – {away}. Puan durumu, son form ve geçmiş karşılaşmalar.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Maç sonucu, puan durumu, form, geçmiş karşılaşmalar ve modelin tahmini.",
       "eyebrow": "Maç önü",
       "vs": "–",
       "kickoff": "Başlama",
@@ -1719,8 +1725,8 @@
       "modelLockedVerdict": "Yukarıdaki seçim sonuçlandı. Üyeler ayrıca maç öncesi tam olasılık dağılımını, beklenen golü, gol pazarlarını ve risk etiketini görür:",
       "resultsArchive": "{league} sonuçları",
       "teamPage": "{team}: maçlar ve form",
-      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}., {hpts} puan) – {away} ({apos}., {apts} puan). Puan durumu, son form, geçmiş karşılaşmalar ve modelin maç öncesi görüşü. Olasılıklar üyelere açıktır.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} şimdi {hpos}. ({hpts} puan), {away} {apos}. ({apts} puan). Maç sonucu, form, geçmiş karşılaşmalar ve modelin maç öncesi tahmininin sonucu.",
+      "metaDescriptionRanked": "{league}, {date}: {home} {hpos}. ({hpts} puan), {away} {apos}. ({apts} puan); form ve geçmiş karşılaşmalar.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} {hpos}. ({hpts} puan), {away} {apos}. ({apts} puan); form ve geçmiş.",
       "openEyebrow": "Tahmin yok",
       "openKicker": "Model değerlendirmesi yok",
       "openH": "Bu maç için model tahmini yok",
@@ -2102,7 +2108,7 @@
   },
   "team": {
     "metaTitle": "{team} maç tahmini, fikstür ve form",
-    "metaDescription": "{team} ({league}): modelin sıradaki maç seçimi, son sonuçlar, form, maç başına gol ve {team} maçlarındaki tahminlerinin nasıl gittiği.",
+    "metaDescription": "{team} ({league}): sıradaki maç ve modelin seçimi, son sonuçlar, form, maç başına gol ve sonuçlanmış tahmin karnesi.",
     "h1": "{team}",
     "lead": "{team} takımının {league} fikstürü, sonuçları ve formu; ayrıca modelin takımın maçlarındaki sonuçlanmış karnesi.",
     "homeVenue": "İç saha: {venue}",

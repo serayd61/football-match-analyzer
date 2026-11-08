@@ -1,3 +1,9 @@
+// Mobil LCP (ölçüm 2026-11-08): Next <Link> görüş alanına giren her bağlantı
+// için RSC yükü ön yüklüyordu — anonim bir ziyarette /en/matches 18,7 KB ve
+// /en/leagues 13,2 KB, yani ~32 KB kritik yolla yarışıyordu. Arama trafiğinden
+// gelen ziyaretçi çoğunlukla tek sayfa görüyor; sabit gezinti (başlık, alt
+// bilgi, mobil sekme çubuğu) ön yüklemesi bedava değil. prefetch={false} ile
+// gezinti hâlâ istemci tarafı, yalnız tıklayınca indiriyor.
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
@@ -26,21 +32,21 @@ export default async function SiteFooter() {
           <p className="max-w-[46ch] leading-relaxed">{t('line', { year })}</p>
         </div>
         <nav className="flex flex-col gap-2" aria-label="Product">
-          <Link href="/matches" className="hover:text-s-ink">{nav('matches')}</Link>
-          <Link href="/performance" className="hover:text-s-ink">{nav('performance')}</Link>
-          <Link href="/leagues" className="hover:text-s-ink">{nav('leagues')}</Link>
-          <Link href="/teams" className="hover:text-s-ink">{nav('teams')}</Link>
-          <Link href="/methodology" className="hover:text-s-ink">{nav('methodology')}</Link>
-          <Link href="/glossary" className="hover:text-s-ink">{nav('glossary')}</Link>
-          <Link href="/data" className="hover:text-s-ink">{nav('data')}</Link>
+          <Link href="/matches" className="hover:text-s-ink" prefetch={false}>{nav('matches')}</Link>
+          <Link href="/performance" className="hover:text-s-ink" prefetch={false}>{nav('performance')}</Link>
+          <Link href="/leagues" className="hover:text-s-ink" prefetch={false}>{nav('leagues')}</Link>
+          <Link href="/teams" className="hover:text-s-ink" prefetch={false}>{nav('teams')}</Link>
+          <Link href="/methodology" className="hover:text-s-ink" prefetch={false}>{nav('methodology')}</Link>
+          <Link href="/glossary" className="hover:text-s-ink" prefetch={false}>{nav('glossary')}</Link>
+          <Link href="/data" className="hover:text-s-ink" prefetch={false}>{nav('data')}</Link>
           <FooterPricingLink label={nav('pricing')} />
         </nav>
         <nav className="flex flex-col gap-2" aria-label="Company">
-          <Link href="/about" className="hover:text-s-ink">{nav('about')}</Link>
+          <Link href="/about" className="hover:text-s-ink" prefetch={false}>{nav('about')}</Link>
           <FooterAppLink label={nav('app')} />
-          <Link href="/terms" className="hover:text-s-ink">{t('terms')}</Link>
-          <Link href="/privacy" className="hover:text-s-ink">{t('privacy')}</Link>
-          <Link href="/contact" className="hover:text-s-ink">{t('contact')}</Link>
+          <Link href="/terms" className="hover:text-s-ink" prefetch={false}>{t('terms')}</Link>
+          <Link href="/privacy" className="hover:text-s-ink" prefetch={false}>{t('privacy')}</Link>
+          <Link href="/contact" className="hover:text-s-ink" prefetch={false}>{t('contact')}</Link>
           <a href="https://t.me/fanalytics_pro" target="_blank" rel="noopener noreferrer" className="hover:text-s-ink">{t('telegram')}</a>
           <a href="https://www.instagram.com/_footballanalyticspro/" target="_blank" rel="noopener noreferrer" className="hover:text-s-ink">{t('instagram')}</a>
           <div className="mt-2"><LocaleLinks /></div>

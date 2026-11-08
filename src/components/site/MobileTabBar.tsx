@@ -1,3 +1,9 @@
+// Mobil LCP (ölçüm 2026-11-08): Next <Link> görüş alanına giren her bağlantı
+// için RSC yükü ön yüklüyordu — anonim bir ziyarette /en/matches 18,7 KB ve
+// /en/leagues 13,2 KB, yani ~32 KB kritik yolla yarışıyordu. Arama trafiğinden
+// gelen ziyaretçi çoğunlukla tek sayfa görüyor; sabit gezinti (başlık, alt
+// bilgi, mobil sekme çubuğu) ön yüklemesi bedava değil. prefetch={false} ile
+// gezinti hâlâ istemci tarafı, yalnız tıklayınca indiriyor.
 'use client';
 
 import { useTranslations } from 'next-intl';
@@ -23,7 +29,7 @@ export default function MobileTabBar() {
   return (
     <nav className="tabbar lg:hidden" aria-label="Primary (mobile)">
       {items.map(({ href, label, Icon }) => (
-        <Link key={href} href={href} rel={href === '/login' ? 'nofollow' : undefined} aria-current={is(href) || (href === account && (is('/dashboard') || is('/account') || is('/login'))) ? 'page' : undefined}>
+        <Link key={href} href={href} rel={href === '/login' ? 'nofollow' : undefined} aria-current={is(href) || (href === account && (is('/dashboard') || is('/account') || is('/login'))) ? 'page' : undefined} prefetch={false}>
           <Icon size={20} strokeWidth={2} aria-hidden />
           <span>{label}</span>
         </Link>

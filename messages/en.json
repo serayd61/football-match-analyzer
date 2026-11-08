@@ -489,7 +489,7 @@
     "metaTitle": "League predictions & xG records"
   },
   "league": {
-    "metaTitle": "{league} predictions & xG record",
+    "metaTitle": "{league} table, predictions & xG record",
     "metaDescription": "Dixon-Coles match probabilities and xG for the {league} ({country}): upcoming fixtures, settled results, hit rate and Brier score.",
     "lead": "Model probabilities and the settled record for the {league}.",
     "allLeagues": "All leagues",
@@ -503,6 +503,12 @@
     "lockedUpcoming": "Predictions for these {league} fixtures — pick, probabilities and goal markets — are for members. Create a free account and see them for 7 days.",
     "lockedRecent": "{n, plural, =1 {# settled {league} pick} other {# settled {league} picks}} with outcome and score are for members. Create a free account and see the full record for 7 days.",
     "note": "Team strengths for the {league} are refitted as results come in; probabilities on older matches reflect the fit at publication time.",
+    "faqH": "Frequently asked",
+    "faqLeaderQ": "Who is top of the {league}?",
+    "faqNextQ": "When is the next {league} match?",
+    "faqAccQ": "How accurate have the model’s {league} predictions been?",
+    "faqAccA": "The model’s 1X2 pick came in {won} of {n} settled {league} matches ({acc}), with a Brier score of {brier}.",
+    "faqAccANone": "Too few {league} matches have settled so far to summarise the model’s record.",
     "intro": {
       "premier-league": "The Premier League is England's top division: 20 clubs, 38 rounds from August to May, with the bottom three relegated to the Championship. The model is fitted on its results alone and prices every fixture for 1X2, over/under 2.5 goals and both teams to score.",
       "championship": "The Championship is England's second tier and one of the densest calendars in Europe: 24 clubs and 46 rounds, with two automatic promotion places and a play-off for the third. The long season and tight margins make it a useful test of how the model handles draws.",
@@ -649,8 +655,8 @@
       "metaTitle": "How the AI prediction model works"
     },
     "about": {
-      "title": "About",
-      "lead": "What this site is, who runs it, and what it deliberately is not.",
+      "title": "About Football Analytics",
+      "lead": "Football Analytics publishes AI football analysis and statistical match predictions, each scored against the final result. Who runs it, and what it is not.",
       "sections": [
         {
           "h": "What it is",
@@ -685,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "About Football Analytics"
+      "metaTitle": "About our AI football analysis"
     },
     "privacy": {
       "title": "Privacy policy",
@@ -1561,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Football predictions with a public record",
-      "title": "Football predictions & statistical match analysis",
-      "lead": "A calibrated statistical model rates every match in {n} leagues: win probabilities, confidence, risk and the fair price — and every pick stays on a public record, won or lost.",
+      "title": "AI football analysis & statistical predictions",
+      "lead": "Football analytics for {n} leagues: a calibrated statistical model gives every match win probabilities, confidence, risk and a fair price — and every pick stays on a public record, won or lost.",
       "cta": "Start 7 days free",
       "ctaDemo": "See a sample analysis",
       "noCard": "No card needed",
@@ -1626,10 +1632,10 @@
       "linkRecord": "Public track record"
     },
     "match": {
-      "metaTitle": "{home} vs {away}: prediction, table & form, {date}",
-      "metaTitleSettled": "{home} {hs}–{as} {away}: result, table & stats, {date}",
-      "metaDescription": "{league}, {date}: {home} vs {away}. League table, recent form, head-to-head and the model’s pre-match view. Probabilities are published for members.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league table, pre-match form, head-to-head and how the model’s pre-match call went.",
+      "metaTitle": "{home} vs {away}: prediction, table & form",
+      "metaTitleSettled": "{home} {hs}–{as} {away}: result, table & stats",
+      "metaDescription": "{league}, {date}: {home} vs {away}. League table, recent form and head-to-head before kick-off.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}–{as} {away}. Final score, league table, form, head-to-head and how the model called it.",
       "eyebrow": "Match preview",
       "vs": "vs",
       "kickoff": "Kick-off",
@@ -1719,8 +1725,8 @@
       "modelLockedVerdict": "The pick above is settled. Members also see the full probability split, expected goals, the goal markets and the risk label as they stood before kick-off:",
       "resultsArchive": "{league} results",
       "teamPage": "{team}: fixtures & form",
-      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {hpts} pts) vs {away} ({apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}, {apts} pts). Table, recent form, head-to-head and the model’s pre-match view. Probabilities for members.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} now {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts), {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts). Final score, form, head-to-head and how the model’s pre-match call went.",
+      "metaDescriptionRanked": "{league}, {date}: {home} {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts) vs {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts), plus form and head-to-head.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}–{as} {away}. {home} now {hpos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({hpts} pts), {away} {apos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} ({apts} pts), plus form and head-to-head.",
       "openEyebrow": "No prediction",
       "openKicker": "Not rated by the model",
       "openH": "No model prediction for this match",
@@ -2102,7 +2108,7 @@
   },
   "team": {
     "metaTitle": "{team} next match prediction, fixtures & form",
-    "metaDescription": "{team} ({league}): the model’s pick for the next match, latest results, form, goals per match and how its predictions on {team} matches have gone.",
+    "metaDescription": "{team} ({league}): next fixture and the model’s pick, latest results, form, goals per match and its settled prediction record.",
     "h1": "{team}",
     "lead": "Fixtures, results and form of {team} in the {league}, plus the model’s settled record on the club’s matches.",
     "homeVenue": "Home ground: {venue}",

@@ -489,7 +489,7 @@
     "metaTitle": "Pronostici per campionato e xG"
   },
   "league": {
-    "metaTitle": "{league}: pronostici e xG",
+    "metaTitle": "{league}: classifica, pronostici e xG",
     "metaDescription": "Probabilità Dixon-Coles e xG per la {league} ({country}): prossime partite, risultati chiusi, percentuale di successo e Brier score.",
     "lead": "Probabilità del modello e registro chiuso per la {league}.",
     "allLeagues": "Tutti i campionati",
@@ -503,6 +503,12 @@
     "lockedUpcoming": "I pronostici per queste partite di {league} — scelta, probabilità e mercati gol — sono per i membri. Crea un account gratuito e vedili per 7 giorni.",
     "lockedRecent": "{n, plural, =1 {# scelta chiusa di {league}} other {# scelte chiuse di {league}}} con esito e risultato sono per i membri. Crea un account gratuito e vedi tutto il registro per 7 giorni.",
     "note": "Le forze delle squadre della {league} vengono ristimate a ogni risultato; le probabilità delle partite passate riflettono la stima al momento della pubblicazione.",
+    "faqH": "Domande frequenti",
+    "faqLeaderQ": "Chi guida la {league}?",
+    "faqNextQ": "Quando si gioca la prossima partita di {league}?",
+    "faqAccQ": "Quanto sono stati precisi i pronostici del modello sulla {league}?",
+    "faqAccA": "La scelta 1X2 del modello è arrivata in {won} partite di {league} su {n} chiuse ({acc}), con un Brier score di {brier}.",
+    "faqAccANone": "Le partite di {league} chiuse sono ancora troppo poche per riassumere il registro del modello.",
     "intro": {
       "premier-league": "La Premier League è la massima divisione inglese: 20 club, 38 giornate da agosto a maggio, le ultime tre retrocedono in Championship. Il modello è stimato solo sui suoi risultati e valuta ogni partita per 1X2, over/under 2,5 gol e Goal/No Goal.",
       "championship": "La Championship è la seconda divisione inglese e uno dei calendari più fitti d'Europa: 24 club, 46 giornate, due promozioni dirette e un play-off per la terza. La stagione lunga e i margini stretti mostrano bene come il modello gestisce i pareggi.",
@@ -649,8 +655,8 @@
       "metaTitle": "Modello AI di pronostico: come funziona"
     },
     "about": {
-      "title": "Chi siamo",
-      "lead": "Cos'è questo sito, chi lo gestisce e cosa, di proposito, non è.",
+      "title": "Chi è Football Analytics",
+      "lead": "Football Analytics pubblica analisi calcistica con AI e pronostici statistici, ognuno misurato sul risultato finale. Chi lo gestisce e cosa non è.",
       "sections": [
         {
           "h": "Cos'è",
@@ -685,7 +691,7 @@
           ]
         }
       ],
-      "metaTitle": "Chi è Football Analytics"
+      "metaTitle": "La nostra analisi calcistica con AI"
     },
     "privacy": {
       "title": "Informativa sulla privacy",
@@ -1561,8 +1567,8 @@
     },
     "landing": {
       "eyebrow": "Pronostici calcio con registro pubblico",
-      "title": "Pronostici calcio e analisi statistica delle partite",
-      "lead": "Un modello statistico calibrato valuta ogni partita in {n} leghe: probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
+      "title": "Analisi calcistica con AI e pronostici statistici",
+      "lead": "Football analytics per {n} leghe: un modello statistico calibrato valuta ogni partita con probabilità di vittoria, confidenza, rischio e prezzo equo — e ogni pronostico resta in un registro pubblico, vinto o perso.",
       "cta": "Inizia 7 giorni gratis",
       "ctaDemo": "Guarda un'analisi di esempio",
       "noCard": "Nessuna carta richiesta",
@@ -1626,10 +1632,10 @@
       "linkRecord": "Registro pubblico"
     },
     "match": {
-      "metaTitle": "{home} – {away}: pronostico, classifica e statistiche, {date}",
-      "metaTitleSettled": "{home} {hs}-{as} {away}: risultato, classifica e statistiche, {date}",
-      "metaDescription": "{league}, {date}: {home} – {away}. Classifica, forma recente, precedenti e la lettura del modello prima della partita. Probabilità per i membri.",
-      "metaDescriptionSettled": "{league}, {date}: {home} {hs}-{as} {away}. Risultato finale, classifica, forma pre-partita, precedenti e com’è andato il pronostico del modello.",
+      "metaTitle": "{home} – {away}: pronostico e classifica",
+      "metaTitleSettled": "{home} {hs}-{as} {away}: risultato e classifica",
+      "metaDescription": "{league}, {date}: {home} – {away}. Classifica, forma e precedenti pre-partita.",
+      "metaDescriptionSettled": "{league}, {date}: {home} {hs}-{as} {away}. Risultato, classifica, forma, precedenti e come è andato il modello.",
       "eyebrow": "Anteprima partita",
       "vs": "–",
       "kickoff": "Calcio d'inizio",
@@ -1719,8 +1725,8 @@
       "modelLockedVerdict": "La scelta qui sopra è chiusa. I membri vedono anche la distribuzione completa delle probabilità, gli expected goals, i mercati gol e l’etichetta di rischio com’erano prima del calcio d’inizio:",
       "resultsArchive": "Risultati {league}",
       "teamPage": "{team}: partite e forma",
-      "metaDescriptionRanked": "{league}, {date}: {home} ({hpos}°, {hpts} pt) – {away} ({apos}°, {apts} pt). Classifica, forma recente, precedenti e la lettura del modello prima della partita. Probabilità per i membri.",
-      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}-{as} {away}. {home} ora {hpos}° ({hpts} pt), {away} {apos}° ({apts} pt). Risultato finale, forma, precedenti e com’è andato il pronostico del modello.",
+      "metaDescriptionRanked": "{league}, {date}: {home} {hpos}° ({hpts} pt) – {away} {apos}° ({apts} pt), più forma e precedenti.",
+      "metaDescriptionSettledRanked": "{league}, {date}: {home} {hs}-{as} {away}. {home} ora {hpos}° ({hpts} pt), {away} {apos}° ({apts} pt), più forma.",
       "openEyebrow": "Nessun pronostico",
       "openKicker": "Non valutata dal modello",
       "openH": "Nessun pronostico del modello per questa partita",
@@ -2101,8 +2107,8 @@
     "leaguePage": "Pagina del campionato"
   },
   "team": {
-    "metaTitle": "{team}: pronostico prossima partita, calendario e forma",
-    "metaDescription": "{team} ({league}): scelta del modello per la prossima partita, ultimi risultati, forma, gol a partita e com’è andata con le sue scelte sulle gare del {team}.",
+    "metaTitle": "{team}: pronostico prossima partita e forma",
+    "metaDescription": "{team} ({league}): prossima partita con la scelta del modello, ultimi risultati, forma, gol a partita e il record chiuso.",
     "h1": "{team}",
     "lead": "Partite, risultati e forma del {team} in {league}, più il rendimento chiuso del modello sulle gare della squadra.",
     "homeVenue": "Stadio di casa: {venue}",
