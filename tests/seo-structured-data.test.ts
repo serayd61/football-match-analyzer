@@ -47,6 +47,12 @@ test('SportsEvent carries the required fields and skips unknown venues / finishe
   assert.equal(e.homeTeam.name, 'Arsenal');
   assert.equal(e.organizer.name, 'Premier League');
   assert.equal(e.organizer.url, 'https://footballanalytics.pro/en/leagues/premier-league');
+  // 2026-11-08: `performer` Person/PerformingGroup bekler; SportsTeam yanlış tip
+  // (SC Etkinlikler: 3 geçersiz). Takımlar homeTeam/awayTeam/competitor'da duruyor.
+  assert.equal('performer' in e, false);
+  assert.equal(e.competitor.length, 2);
+  // Önerilen `image`: maç OG kartı — robots.txt'te /api/og/ açık olmalı (app/robots.ts).
+  assert.deepEqual(e.image, ['https://footballanalytics.pro/api/og/match/1']);
 });
 
 test('league country line is localised', () => {
