@@ -39,7 +39,9 @@ export async function generateMetadata({ params }: { params: { locale: string; s
   if (!league) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: 'league' });
   return {
-    title: t('metaTitle', { league: league.name }),
+    // SEO denetimi 2026-11-08: no " · Football Analytics" suffix — the table term
+    // must survive Google's ~60-char cut, and the brand suffix pushed it past it.
+    title: { absolute: t('metaTitle', { league: league.name }) },
     description: t('metaDescription', { league: league.name, country: leagueCountryName(league, params.locale) }),
     alternates: alternatesFor(params.locale as Locale, `/leagues/${league.slug}`),
   };

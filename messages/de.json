@@ -489,7 +489,7 @@
     "metaTitle": "Liga-Prognosen & xG-Bilanzen"
   },
   "league": {
-    "metaTitle": "{league} Prognose & xG-Bilanz",
+    "metaTitle": "{league}: Tabelle, Prognosen & xG-Bilanz",
     "metaDescription": "Dixon-Coles-Wahrscheinlichkeiten und xG für die {league} ({country}): kommende Spiele, abgerechnete Resultate, Trefferquote und Brier-Score.",
     "lead": "Modellwahrscheinlichkeiten und die abgerechnete Bilanz für die {league}.",
     "allLeagues": "Alle Ligen",

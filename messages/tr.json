@@ -489,7 +489,7 @@
     "metaTitle": "Lig tahminleri ve xG karneleri"
   },
   "league": {
-    "metaTitle": "{league} tahminleri ve xG karnesi",
+    "metaTitle": "{league} puan durumu, tahminler ve xG",
     "metaDescription": "{league} ({country}) için Dixon-Coles olasılıkları ve xG: yaklaşan maçlar, sonuçlanmış maçlar, isabet ve Brier skoru.",
     "lead": "{league} için model olasılıkları ve sonuçlanmış karne.",
     "allLeagues": "Tüm ligler",

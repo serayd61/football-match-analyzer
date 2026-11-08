@@ -489,7 +489,7 @@
     "metaTitle": "Pronostici per campionato e xG"
   },
   "league": {
-    "metaTitle": "{league}: pronostici e xG",
+    "metaTitle": "{league}: classifica, pronostici e xG",
     "metaDescription": "Probabilità Dixon-Coles e xG per la {league} ({country}): prossime partite, risultati chiusi, percentuale di successo e Brier score.",
     "lead": "Probabilità del modello e registro chiuso per la {league}.",
     "allLeagues": "Tutti i campionati",

@@ -489,7 +489,7 @@
     "metaTitle": "League predictions & xG records"
   },
   "league": {
-    "metaTitle": "{league} predictions & xG record",
+    "metaTitle": "{league} table, predictions & xG record",
     "metaDescription": "Dixon-Coles match probabilities and xG for the {league} ({country}): upcoming fixtures, settled results, hit rate and Brier score.",
     "lead": "Model probabilities and the settled record for the {league}.",
     "allLeagues": "All leagues",
