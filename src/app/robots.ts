@@ -14,7 +14,11 @@ export default function robots(): MetadataRoute.Robots {
         // 2026-11-01: /login noindex'ti ama her maç sayfası kendine özel ?callbackUrl=… ile
         // iki benzersiz login URL'si üretiyordu (SC: 1.641 noindex + 102 kanoniksiz kopya taranıyor).
         // Taramayı kesmek için robots'ta kapalı; nav/CTA linkleri zaten rel="nofollow".
-        disallow: ['/api/', '/admin', '/dashboard', '/settings', '/profile', '/favorites', '/offline', '/login', '/*/login', '/*/dashboard', '/*/account'],
+        // `/*/m/`: anonim ISR ayrımının üye rotası (2026-11-08). Ziyaretçi bu
+        // URL'yi hiç görmez (middleware rewrite'ı, adres çubuğu temiz kalır);
+        // URL tahminiyle açılsa bile kopya URL olarak taranmasın. Sayfa ayrıca
+        // noindex ve canonical'ı temiz adrese bakıyor.
+        disallow: ['/api/', '/admin', '/dashboard', '/settings', '/profile', '/favorites', '/offline', '/login', '/*/login', '/*/dashboard', '/*/account', '/*/m/'],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
