@@ -115,7 +115,13 @@ export const config = {
     // SEO Faz 0: these were missing, so unprefixed /matches 404'd instead of 307'ing to /{locale}/matches
     '/matches/:path*', '/picks', '/coupon', '/account', '/s/:path*',
     '/results',
-    '/performance',
+    // 2026-11-08: dil öneki olmadan 404 dönüyorlardı. Üçü de sitemap'te ve iç
+    // linki olan herkese açık sayfa; /performance yalnız tam eşleşmeydi, bu
+    // yüzden /performance/{lig} (SEO Faz 1b karnesi) 404'tü.
+    '/performance/:path*',
+    '/teams/:path*',
+    '/glossary',
+    '/app',
     '/pricing',
     '/login', // 2026-10-22: legacy /login streamed a 200 shell to crawlers; 307 to /{locale}/login like /pricing
     '/leagues/:path*',
