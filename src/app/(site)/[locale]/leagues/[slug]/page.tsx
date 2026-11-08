@@ -12,6 +12,7 @@ import { getPerformance } from '@/lib/site/performance';
 import { listResults, listUpcomingForLeague } from '@/lib/site/results';
 import { getStandings } from '@/lib/site/standings';
 import { listPublicResultsForLeague } from '@/lib/site/match-public-data';
+import { listTeams } from '@/lib/site/team-data';
 import PublicMatchList from '@/components/site/PublicMatchList';
 import StandingsTable from '@/components/site/StandingsTable';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
@@ -53,14 +54,17 @@ export default async function LeaguePage({ params }: { params: { locale: string;
   const tp = await getTranslations('performance');
   const f = await getFormatter();
 
-  const [perf, upcoming, recent, table, publicRecent] = await Promise.all([
+  const [perf, upcoming, recent, table, publicRecent, teams] = await Promise.all([
     getPerformance(league.slug),
     listUpcomingForLeague(league.slug, 30),
     listResults({ league, from: null, to: null, page: 1, pageSize: 20 }),
     getStandings(league.slug),
     // SEO Faz 1a: the last scores are public (no pick); the members' table keeps the picks.
     unlocked ? Promise.resolve([]) : listPublicResultsForLeague(league.slug, 60, 10).catch(() => []),
+    // SEO denetimi 2026-11-08: team index so the standings can link each club.
+    listTeams().catch(() => []),
   ]);
+  const slugOf = new Map(teams.map((x) => [x.id, x.slug]));
   // SEO Faz 1a: an auto-written "this week" line from live data — leader + next fixture — so every
   // league page carries text that changes with the season, not only a static intro.
   const leader = table[0];
@@ -140,7 +144,7 @@ export default async function LeaguePage({ params }: { params: { locale: string;
       {table.length > 0 && (
         <section className="mt-12">
           <SectionTitle title={ts('title')} meta={ts('meta')} />
-          <div className="mt-2"><StandingsTable rows={table} /></div>
+          <div className="mt-2"><StandingsTable rows={table} slugOf={slugOf} /></div>
         </section>
       )}
 
