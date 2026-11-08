@@ -1,3 +1,9 @@
+// Mobil LCP (ölçüm 2026-11-08): Next <Link> görüş alanına giren her bağlantı
+// için RSC yükü ön yüklüyordu — anonim bir ziyarette /en/matches 18,7 KB ve
+// /en/leagues 13,2 KB, yani ~32 KB kritik yolla yarışıyordu. Arama trafiğinden
+// gelen ziyaretçi çoğunlukla tek sayfa görüyor; sabit gezinti (başlık, alt
+// bilgi, mobil sekme çubuğu) ön yüklemesi bedava değil. prefetch={false} ile
+// gezinti hâlâ istemci tarafı, yalnız tıklayınca indiriyor.
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -54,7 +60,7 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-s-line bg-s-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-[60px] max-w-[1200px] items-center gap-6 px-4 sm:px-6">
-        <Link href="/" className="shrink-0 text-s-ink" aria-label="footballanalytics.pro">
+        <Link href="/" className="shrink-0 text-s-ink" aria-label="footballanalytics.pro" prefetch={false}>
           <Wordmark />
         </Link>
 
@@ -64,8 +70,7 @@ export default function SiteHeader() {
               key={n.href}
               href={n.href}
               aria-current={isActive(n.href) ? 'page' : undefined}
-              className={`rounded-lg px-3 py-2 text-[14.5px] font-semibold leading-none transition-colors ${isActive(n.href) ? 'bg-s-raised text-s-ink' : 'text-s-muted hover:bg-s-raised/70 hover:text-s-ink'}`}
-            >
+              className={`rounded-lg px-3 py-2 text-[14.5px] font-semibold leading-none transition-colors ${isActive(n.href) ? 'bg-s-raised text-s-ink' : 'text-s-muted hover:bg-s-raised/70 hover:text-s-ink'}`} prefetch={false}>
               {t(n.key)}
             </Link>
           ))}
@@ -81,16 +86,16 @@ export default function SiteHeader() {
               </button>
               {menu && (
                 <div role="menu" className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border border-s-line bg-s-surface p-1 shadow-[var(--s-shadow)]">
-                  <Link role="menuitem" href="/dashboard" className="block rounded-lg px-3 py-2 text-[14px] font-medium hover:bg-s-raised">{t('dashboard')}</Link>
-                  <Link role="menuitem" href="/account" className="block rounded-lg px-3 py-2 text-[14px] font-medium hover:bg-s-raised">{t('account')}</Link>
+                  <Link role="menuitem" href="/dashboard" className="block rounded-lg px-3 py-2 text-[14px] font-medium hover:bg-s-raised" prefetch={false}>{t('dashboard')}</Link>
+                  <Link role="menuitem" href="/account" className="block rounded-lg px-3 py-2 text-[14px] font-medium hover:bg-s-raised" prefetch={false}>{t('account')}</Link>
                   <button role="menuitem" type="button" onClick={() => signOut({ callbackUrl: '/' })} className="block w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium text-s-muted hover:bg-s-raised hover:text-s-ink">{t('signOut')}</button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <Link href="/login" rel="nofollow" className="btn btn-ghost btn-sm">{t('signIn')}</Link>
-              <Link href="/login?mode=register" rel="nofollow" className="btn btn-primary btn-sm" data-cta="header">{t('tryFree')}</Link>
+              <Link href="/login" rel="nofollow" className="btn btn-ghost btn-sm" prefetch={false}>{t('signIn')}</Link>
+              <Link href="/login?mode=register" rel="nofollow" className="btn btn-primary btn-sm" data-cta="header" prefetch={false}>{t('tryFree')}</Link>
             </>
           )}
         </div>
@@ -115,13 +120,12 @@ export default function SiteHeader() {
                 key={n.href}
                 href={n.href}
                 aria-current={isActive(n.href) ? 'page' : undefined}
-                className={`rounded-lg px-3 py-2.5 text-[16px] font-semibold ${isActive(n.href) ? 'bg-s-raised' : 'hover:bg-s-raised/70'}`}
-              >
+                className={`rounded-lg px-3 py-2.5 text-[16px] font-semibold ${isActive(n.href) ? 'bg-s-raised' : 'hover:bg-s-raised/70'}`} prefetch={false}>
                 {t(n.key)}
               </Link>
             ))}
             {authed ? (
-              <Link href="/account" className="rounded-lg px-3 py-2.5 text-[16px] font-semibold hover:bg-s-raised/70">{t('account')}</Link>
+              <Link href="/account" className="rounded-lg px-3 py-2.5 text-[16px] font-semibold hover:bg-s-raised/70" prefetch={false}>{t('account')}</Link>
             ) : null}
           </nav>
           <div className="rule-t-1 flex flex-wrap items-center gap-2 px-4 py-3">
@@ -132,8 +136,8 @@ export default function SiteHeader() {
                 <button type="button" onClick={() => signOut({ callbackUrl: '/' })} className="btn btn-sm btn-secondary">{t('signOut')}</button>
               ) : (
                 <>
-                  <Link href="/login" rel="nofollow" className="btn btn-sm btn-secondary">{t('signIn')}</Link>
-                  <Link href="/login?mode=register" rel="nofollow" className="btn btn-sm btn-primary">{t('tryFree')}</Link>
+                  <Link href="/login" rel="nofollow" className="btn btn-sm btn-secondary" prefetch={false}>{t('signIn')}</Link>
+                  <Link href="/login?mode=register" rel="nofollow" className="btn btn-sm btn-primary" prefetch={false}>{t('tryFree')}</Link>
                 </>
               )}
             </span>
