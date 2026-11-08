@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { execSync } from 'node:child_process';
 import { faqPageJsonLd, datasetJsonLd, organizationJsonLd } from '@/lib/site/jsonld';
 import { pickMessages, CLIENT_NAMESPACES } from '@/lib/site/messages';
 import { signInHref } from '@/lib/site/access';
@@ -38,9 +41,27 @@ test('client bundle keeps only the namespaces client components read', () => {
   assert.ok(JSON.stringify(picked).length < JSON.stringify(en).length / 4, 'bundle should shrink to well under a quarter');
 });
 
-test('sign-in href returns to the gated page without a redirect hop', () => {
-  assert.equal(signInHref('tr', '/predictions/5'), '/tr/login?callbackUrl=%2Ftr%2Fpredictions%2F5');
-  assert.equal(signInHref('en', '/picks?date=2026-10-18', true), '/en/login?mode=register&callbackUrl=%2Fen%2Fpicks%3Fdate%3D2026-10-18');
+// 2026-11-08: bu test ÖNCE hatayı sabitliyordu — `signInHref`'i tek başına
+// ölçüp `/tr/login` bekliyordu, oysa tek çağıran onu next-intl'in `Link`'ine
+// veriyor ve o da dil önekini bir kez daha ekliyor → `/tr/tr/login`, 404.
+// Dönen yol artık dilsiz; `callbackUrl` kendi önekini korur (next-auth'a düz
+// yol gider, Link'ten geçmez).
+test('sign-in href is locale-free so the i18n Link prefixes it exactly once', () => {
+  assert.equal(signInHref('tr', '/predictions/5'), '/login?callbackUrl=%2Ftr%2Fpredictions%2F5');
+  assert.equal(signInHref('en', '/picks?date=2026-10-18', true), '/login?mode=register&callbackUrl=%2Fen%2Fpicks%3Fdate%3D2026-10-18');
+  for (const locale of ['en', 'de', 'it', 'tr']) {
+    assert.ok(signInHref(locale, '/predictions').startsWith('/login?'), `${locale}: signInHref dil öneki ekliyor`);
+  }
+});
+
+// Sözleşmenin diğer yarısı: önek Link'ten gelir. Paywall düz <a> kullanmaya
+// dönerse ya da başka bir çağıran eklenirse bu test düşer.
+test('signInHref yalnız i18n Link ile render ediliyor', () => {
+  const src = readFileSync(resolve(__dirname, '../src/components/site/Paywall.tsx'), 'utf8');
+  assert.match(src, /import \{ Link \} from '@\/i18n\/navigation'/, 'Paywall i18n Link kullanmıyor');
+  assert.match(src, /<Link href=\{signInHref\(/, 'Paywall signInHref\'i Link ile render etmiyor');
+  const callers = execSync("grep -rl 'signInHref(' src --include='*.tsx'", { encoding: 'utf8' }).trim().split('\n');
+  assert.deepEqual(callers, ['src/components/site/Paywall.tsx'], `beklenmeyen signInHref çağıranı: ${callers.join(', ')}`);
 });
 
 test('titles fit in 60 characters with the site-name suffix, descriptions in 160', () => {
