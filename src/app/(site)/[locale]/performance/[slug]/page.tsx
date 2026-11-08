@@ -15,7 +15,7 @@ import { StatRow, StatCell } from '@/components/site/StatCell';
 import LocalTime from '@/components/site/LocalTime';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, datasetJsonLd, faqPageJsonLd } from '@/lib/site/jsonld';
-import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 
 // ============================================================================
 // Per-league track record (SEO Faz 1b, 2026-10-17): /[locale]/performance/{league}.

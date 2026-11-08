@@ -11,19 +11,15 @@ import { authOptions } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin/emails';
 import { hasEnginePredictionAccess, trialEndMs } from '@/lib/accessControl';
+import { type SiteAccess } from '@/lib/site/access-state';
 
-export type SiteAccessState = 'anon' | 'trial' | 'pro' | 'expired';
-export interface SiteAccess {
-  state: SiteAccessState;
-  email: string | null;
-  trialEndsAt: string | null;
-  /** Whole days left in the registration trial (0 on the last day). */
-  trialDaysLeft: number;
-}
+// Tipler ve oturum okumayan yardımcılar `lib/site/access-state.ts`'te (saf
+// modül, anonim ISR ağacı oradan içe alır); burada yalnız oturumu gerçekten
+// okuyan işler var. Çağrı yerleri değişmesin diye hepsi yeniden ihraç edilir.
+export { canSeeMatches, signInHref, ANON_ACCESS } from '@/lib/site/access-state';
+export type { SiteAccess, SiteAccessState } from '@/lib/site/access-state';
 
 const DAY = 86_400_000;
-
-export const canSeeMatches = (a: SiteAccess): boolean => a.state === 'trial' || a.state === 'pro';
 
 export async function getSiteAccess(): Promise<SiteAccess> {
   const session = await getServerSession(authOptions).catch(() => null);
@@ -73,15 +69,3 @@ export async function requireSiteAccess(_locale: string, _path: string): Promise
   return getSiteAccess();
 }
 
-/**
- * Sign-in link that brings the visitor back to `path` (locale-free) afterwards.
- * Localized (2026-10-22): the unprefixed /login is the legacy app route, whose
- * server redirect fires mid-stream — Googlebot got a 200 shell with no canonical
- * and Search Console listed 70 `/login?callbackUrl=…` URLs as duplicates.
- */
-export function signInHref(locale: string, path: string, register = false): string {
-  const qs = new URLSearchParams();
-  if (register) qs.set('mode', 'register');
-  qs.set('callbackUrl', `/${locale}${path}`);
-  return `/${locale}/login?${qs.toString()}`;
-}

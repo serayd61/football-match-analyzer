@@ -16,7 +16,7 @@ import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui'
 import { Crest } from '@/components/site/PredictionTable';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, datasetJsonLd, faqPageJsonLd } from '@/lib/site/jsonld';
-import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 
 // Goal statistics per league (SEO Faz 1c, 2026-10-17): over 2.5, both teams to
 // score, clean sheets and goals per match, club by club, from this season's

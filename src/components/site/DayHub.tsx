@@ -13,7 +13,7 @@ import { Page, PageTitle, EmptyState } from '@/components/site/ui';
 import PublicMatchList from '@/components/site/PublicMatchList';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, faqPageJsonLd, webPageJsonLd } from '@/lib/site/jsonld';
-import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 
 // Day hub (SEO Faz 1b, 2026-10-17): every covered fixture of one calendar day,
 // grouped by league, with an auto-written summary line (count, leagues, first

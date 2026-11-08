@@ -31,7 +31,7 @@ import ConfidenceRing from '@/components/site/ConfidenceRing';
 import { RiskLabel } from '@/components/site/Risk';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
-import { REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
+import { PRICING_HREF, REGISTER_HREF } from '@/lib/site/auth-links';
 import Image from 'next/image';
 import JsonLd from '@/components/site/JsonLd';
 import PlayBadge from '@/components/site/PlayBadge';

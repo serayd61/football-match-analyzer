@@ -9,7 +9,7 @@ import { Page, PageTitle, SectionTitle, EmptyState } from '@/components/site/ui'
 import PublicMatchList from '@/components/site/PublicMatchList';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd } from '@/lib/site/jsonld';
-import { REGISTER_HREF, SIGNIN_HREF } from '@/components/site/Paywall';
+import { REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 
 // Herkese açık maç merkezi (SEO, 2026-10-10): kapsamdaki liglerin önümüzdeki
 // 7 gününün fikstürü + son 3 günün sonuçları, her satır /matches/{slug} ön

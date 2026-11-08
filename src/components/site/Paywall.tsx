@@ -15,12 +15,14 @@ import { Link } from '@/i18n/navigation';
 import { signInHref, type SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { PRICING_HREF, REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 import { RiskNote } from './Risk';
 
-// Account and billing now live on the localized site.
-export const REGISTER_HREF = '/login?mode=register';
-export const SIGNIN_HREF = '/login';
-export const PRICING_HREF = '/pricing';
+// Account and billing now live on the localized site. The constants live in a
+// pure module (lib/site/auth-links.ts) so the anonymous ISR tree can import
+// them without pulling `isTwa()` → next/headers in with them; re-exported here
+// because most call sites already import them from this file.
+export { REGISTER_HREF, SIGNIN_HREF, PRICING_HREF } from '@/lib/site/auth-links';
 
 // Inside the Google Play app (TWA) nothing may point at a purchase (Play
 // payments policy, see lib/site/twa.ts): the CTA becomes the scorecard and
