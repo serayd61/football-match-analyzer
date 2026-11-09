@@ -35,6 +35,23 @@ export const REVALIDATE = {
 // Önbelleksiz istemci (cron/yazma yolları): db() GET yanıtları 5 dk Next fetch
 // önbelleğinde kalır — 2026-09-14'te af_fixture_map ilk boş okuması 5 dk boyunca
 // "boş" döndü ve eşleme her turda yeniden yapıldı. Sayfalar db() ile kalır.
+// Oran okuyan sayfa yolu (goal-book.ts, 2026-11-10): db() gibi 5 dk fetch
+// önbelleği, ama ODDS_TAG etiketiyle — snapshot-odds / ingest `revalidateTag`
+// çağırınca anında tazelenir. Önceden dbFresh() (`no-store`) kullanıyordu;
+// anonim ISR ağacında (ana sayfa örnek analizi → getPrediction → latestGoalBook)
+// prerender sırasında "Dynamic server usage" hatası üretiyor, kitap boş dönüyordu.
+let _odds: SupabaseClient | null = null;
+export function dbOdds(): SupabaseClient {
+  if (_odds) return _odds;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  _odds = createClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: (i: any, init?: any) => fetch(i, { ...init, next: { revalidate: 300, tags: [ODDS_TAG] } }) },
+  });
+  return _odds;
+}
+
 let _fresh: SupabaseClient | null = null;
 export function dbFresh(): SupabaseClient {
   if (_fresh) return _fresh;
