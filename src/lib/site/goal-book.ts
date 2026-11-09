@@ -1,11 +1,14 @@
 import 'server-only';
-import { dbFresh } from './db';
+import { dbOdds } from './db';
 import { PHASE_ORDER } from './odds-phases';
 import type { GoalBook } from './goal-blend';
 
 // Son görüş (en geç faz) gol pazarı oranları — prediction_odds'tan tek sorgu/100 id.
 // KG akıştan (FotMob), Üst 2,5 API-Football'dan; iki taraf da lazım (devig).
 // Denetim B05: 100 id × 6 faz = 600 satır, PostgREST max-rows altında.
+// 2026-11-10: dbFresh (no-store) → dbOdds (5 dk + ODDS_TAG): anonim ISR ağacında
+// no-store fetch prerender'da patlıyor, kitap boş dönüyordu; etiket sayesinde
+// snapshot-odds yazınca yine anında tazelenir (bkz. db.ts).
 const CHUNK = 100;
 
 export async function latestGoalBook(ids: number[]): Promise<Map<number, GoalBook>> {
@@ -14,7 +17,7 @@ export async function latestGoalBook(ids: number[]): Promise<Map<number, GoalBoo
   const uniq = [...new Set(ids.map(Number).filter((n) => Number.isFinite(n)))];
   for (let i = 0; i < uniq.length; i += CHUNK) {
     const chunk = uniq.slice(i, i + CHUNK);
-    const { data, error } = await dbFresh()
+    const { data, error } = await dbOdds()
       .from('prediction_odds')
       .select('fixture_id, phase, over25_odds, under25_odds, btts_yes_odds, btts_no_odds')
       .in('fixture_id', chunk)
