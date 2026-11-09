@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { execSync } from 'node:child_process';
 import { memberRewritePath, isMemberPath, MEMBER_SEGMENT } from '@/lib/site/member-routes';
 import { ANON_ACCESS, canSeeMatches } from '@/lib/site/access';
 import { routing } from '@/i18n/routing';
@@ -17,8 +18,25 @@ import { routing } from '@/i18n/routing';
 // grafiğini yürüyüp o çağrıları arıyor.
 
 const ROOT = resolve(__dirname, '..');
-const ISR_ROUTE = resolve(ROOT, 'src/app/(site)/[locale]/matches/[slug]/page.tsx');
-const MEMBER_ROUTE = resolve(ROOT, `src/app/(site)/[locale]/${MEMBER_SEGMENT}/matches/[slug]/page.tsx`);
+// 2026-11-10: ana sayfa da aynı ayrıma girdi (CrUX origin TTFB p75 2,0 sn, LCP 3,7 sn).
+const ROUTES = [
+  {
+    name: 'maç',
+    isr: resolve(ROOT, 'src/app/(site)/[locale]/matches/[slug]/page.tsx'),
+    member: resolve(ROOT, `src/app/(site)/[locale]/${MEMBER_SEGMENT}/matches/[slug]/page.tsx`),
+    component: 'MatchPage',
+    metadata: 'matchMetadata',
+  },
+  {
+    name: 'ana sayfa',
+    isr: resolve(ROOT, 'src/app/(site)/[locale]/page.tsx'),
+    member: resolve(ROOT, `src/app/(site)/[locale]/${MEMBER_SEGMENT}/page.tsx`),
+    component: 'HomePage',
+    metadata: 'homeMetadata',
+  },
+] as const;
+const ISR_ROUTE = ROUTES[0].isr;
+const MEMBER_ROUTE = ROUTES[0].member;
 
 /** `@/x` ve göreli importları dosya yoluna çözer; çözülemeyeni atlar (node_modules). */
 function resolveImport(spec: string, fromFile: string): string | null {
@@ -88,22 +106,20 @@ const DECLARES: Record<string, string[]> = {
  * Liste anlık görüntü: BÜYÜMEMESİ gerekiyor. Yeni bir satır eklenirse, o
  * modülün herkese açık sayfa yolundan çağrılıp çağrılmadığı incelenmeli.
  *
- * goal-book.ts, db.ts'in kendi notuna rağmen (`Sayfalar db() ile kalır`)
- * dbFresh() kullanıyor ve /predictions/{id} ile liste fonksiyonlarından
- * çağrılıyor — maç sayfası oranları göstermediği için 2a'yı etkilemiyor, ama
- * ana sayfa / predictions ISR'a alınırken (2b/2c) önce bu çözülmeli.
+ * goal-book.ts 2026-11-10'a kadar dbFresh() kullanıyordu; ana sayfa ISR'a
+ * alınırken (2b) prerender'da "Dynamic server usage" üretip kitabı boş
+ * döndürdüğü görüldü → dbOdds() (5 dk + ODDS_TAG). Listeden çıktı.
  */
 const KNOWN_NO_STORE = [
   'src/lib/site/db.ts',              // dbFresh() fabrikası
-  'src/lib/site/goal-book.ts',       // dbFresh() ÇAĞIRIYOR — 2b/2c öncesi incelenecek
   'src/lib/engine/versions.ts',      // no-store istemci (ingest / params rotası)
   'src/lib/calibration.ts',
   'src/lib/league-catalog.ts',
   'src/lib/data-sources/free-football.ts',
 ].sort();
 
-test('ISR maç rotasının import grafiğinde istek başına okuma yapan hiçbir çağrı yok', () => {
-  const graph = importGraph(ISR_ROUTE);
+for (const route of ROUTES) test(`ISR ${route.name} rotasının import grafiğinde istek başına okuma yapan hiçbir çağrı yok`, () => {
+  const graph = importGraph(route.isr);
   assert.ok(graph.size > 15, `import grafiği yürümedi (${graph.size} dosya)`);
   const hits: string[] = [];
   for (const [file, src] of graph) {
@@ -120,8 +136,8 @@ test('ISR maç rotasının import grafiğinde istek başına okuma yapan hiçbir
   assert.deepEqual(hits, [], `ISR ağacı dinamiğe düşecek:\n${hits.join('\n')}`);
 });
 
-test('ISR ağacındaki no-store üreten modül listesi büyümedi', () => {
-  const graph = importGraph(ISR_ROUTE);
+for (const route of ROUTES) test(`ISR ${route.name} ağacındaki no-store üreten modül listesi büyümedi`, () => {
+  const graph = importGraph(route.isr);
   const found: string[] = [];
   for (const [file, src] of graph) {
     if (/^\s*['"]use client['"]/m.test(src)) continue;
@@ -134,7 +150,7 @@ test('ISR ağacındaki no-store üreten modül listesi büyümedi', () => {
     'ISR ağacına yeni bir no-store kaynağı girdi ya da biri çıktı — herkese açık sayfa yolundan çağrılıyor mu, kontrol et');
 });
 
-test('ISR rotası generateStaticParams tanımlar — yoksa revalidate yok sayılır', () => {
+for (const route of ROUTES) test(`ISR ${route.name} rotası generateStaticParams tanımlar — yoksa revalidate yok sayılır`, () => {
   // 2026-11-08 yerel üretim ölçümü (tam korelasyon):
   //   generateStaticParams VAR  → Cache-Control: s-maxage=300, stale-while-revalidate
   //   generateStaticParams YOK  → Cache-Control: private, no-store   (revalidate yok sayılır)
@@ -142,17 +158,17 @@ test('ISR rotası generateStaticParams tanımlar — yoksa revalidate yok sayıl
   // /teams/{slug}, /matches/{slug} ve gün merkezleri tanımlamıyordu, girmiyordu.
   // Boş liste dönmek yeterli: build'de sayfa üretilmez, ilk istek MISS olup
   // ISR önbelleğine yazılır.
-  const isr = readFileSync(ISR_ROUTE, 'utf8');
+  const isr = readFileSync(route.isr, 'utf8');
   assert.match(isr, /export function generateStaticParams/);
 });
 
-test('ISR rotası revalidate veriyor, force-dynamic vermiyor; üye rotası tersi', () => {
-  const isr = readFileSync(ISR_ROUTE, 'utf8');
+for (const route of ROUTES) test(`${route.name}: ISR rotası revalidate veriyor, force-dynamic vermiyor; üye rotası tersi`, () => {
+  const isr = readFileSync(route.isr, 'utf8');
   assert.match(isr, /export const revalidate = \d+/);
   assert.ok(!/force-dynamic/.test(stripComments(isr)), 'ISR rotasında force-dynamic kalmış');
   assert.match(isr, /ANON_ACCESS/);
 
-  const member = readFileSync(MEMBER_ROUTE, 'utf8');
+  const member = readFileSync(route.member, 'utf8');
   assert.match(member, /export const dynamic = 'force-dynamic'/);
   assert.match(member, /getSiteAccess\(\)/);
   assert.match(member, /isTwa\(\)/);
@@ -163,12 +179,12 @@ test('ISR rotası revalidate veriyor, force-dynamic vermiyor; üye rotası tersi
   assert.ok(!/^\s*return \{ \.\.\.meta, robots/m.test(member), 'noindex koşulsuz basılıyor');
 });
 
-test('iki rota da aynı render bileşenini çağırır (kod tekrarı yok)', () => {
-  const isr = readFileSync(ISR_ROUTE, 'utf8');
-  const member = readFileSync(MEMBER_ROUTE, 'utf8');
+for (const route of ROUTES) test(`${route.name}: iki rota da aynı render bileşenini çağırır (kod tekrarı yok)`, () => {
+  const isr = readFileSync(route.isr, 'utf8');
+  const member = readFileSync(route.member, 'utf8');
   for (const [name, src] of [['ISR', isr], ['üye', member]] as const) {
-    assert.match(src, /from '@\/components\/site\/pages\/MatchPage'/, name);
-    assert.match(src, /matchMetadata\(/, name);
+    assert.ok(src.includes(`from '@/components/site/pages/${route.component}'`), `${name}: ${route.component} import edilmeli`);
+    assert.ok(src.includes(`${route.metadata}(`), `${name}: ${route.metadata} çağrılmalı`);
   }
   // Gövde yalnız bileşende: rota dosyaları ince kalmalı.
   assert.ok(isr.split('\n').length < 60 && member.split('\n').length < 60);
@@ -184,9 +200,14 @@ test('rewrite kuralı: yalnız maç yolları, her dil, döngü koruması', () =>
     assert.ok(!isMemberPath(`/${l}/matches/x`));
     // Hub'ın kendisi oturumdan bağımsız → dokunulmaz, herkese CDN'den
     assert.equal(memberRewritePath(`/${l}/matches`), null);
+    // Ana sayfa (2026-11-10): /{l} ve /{l}/ → /{l}/m; /{l}/m döngüye girmez
+    assert.equal(memberRewritePath(`/${l}`), `/${l}/${MEMBER_SEGMENT}`);
+    assert.equal(memberRewritePath(`/${l}/`), `/${l}/${MEMBER_SEGMENT}`);
+    assert.equal(memberRewritePath(`/${l}/${MEMBER_SEGMENT}`), null);
+    assert.ok(isMemberPath(`/${l}/${MEMBER_SEGMENT}`));
   }
-  // Başka hiçbir yol yazılmaz
-  for (const p of ['/en/leagues/premier-league', '/en/performance', '/en', '/matches/today', '/fr/matches/x', '/en/matches/a/b']) {
+  // Başka hiçbir yol yazılmaz (kök '/' intl yönlendirmesine kalır)
+  for (const p of ['/en/leagues/premier-league', '/en/performance', '/', '/matches/today', '/fr/matches/x', '/en/matches/a/b', '/en/methodology']) {
     assert.equal(memberRewritePath(p), null, p);
   }
 });
@@ -206,4 +227,20 @@ test('middleware rewrite\'ı intl yönlendirmesinden ÖNCE yapar', () => {
   assert.match(mw, /request: \{ headers \}/);
   // redirect DEĞİL: adres çubuğunda temiz URL kalmalı
   assert.ok(!/rewrite[\s\S]{0,80}NextResponse\.redirect\(url\)/.test(mw));
+});
+
+// Ana sayfa ayrımının özel sınırı: üyeye özel veri/bileşen HomePage'e değil,
+// yalnız üye rotasının çağırdığı HomeMemberHero'ya girer.
+test('HomePage anonim-güvenli kalır; HomeMemberHero yalnız üye rotasından import edilir', () => {
+  const home = stripComments(readFileSync(resolve(ROOT, 'src/components/site/pages/HomePage.tsx'), 'utf8'));
+  for (const bad of ['site/MatchRow', 'site/ai-analysis', 'site/fixtures', 'site/results', 'site/dashboard', 'site/daily-standing', 'site/outside-standing', 'site/access\'', 'site/twa']) {
+    assert.ok(!home.includes(bad), `HomePage.tsx üyeye özel modül import ediyor: ${bad}`);
+  }
+  assert.match(home, /memberHero \?\? \(/, 'üye hero kartı prop üzerinden düşmeli');
+  assert.match(home, /export async function homeMetadata\(locale: string\)/);
+  const hero = readFileSync(resolve(ROOT, 'src/components/site/pages/HomeMemberHero.tsx'), 'utf8');
+  assert.match(hero, /from '@\/components\/site\/MatchRow'/);
+  assert.match(hero, /if \(!todayRows\.length\) return null;/, 'maç yoksa null → HomePage örnek karta düşer');
+  const importers = execSync("grep -rl 'pages/HomeMemberHero' src --include='*.tsx' --include='*.ts'", { cwd: ROOT, encoding: 'utf8' }).trim().split('\n').sort();
+  assert.deepEqual(importers, ['src/app/(site)/[locale]/m/page.tsx', 'src/components/site/pages/HomeMemberHero.tsx'].filter((f) => importers.includes(f) || f.endsWith('m/page.tsx')), `HomeMemberHero başka yerden import ediliyor: ${importers.join(', ')}`);
 });
