@@ -30,6 +30,21 @@ const EXACT: Record<string, string> = {
   '/contact': '/contact',
 };
 
+// 2026-11-09: `/en/en/login?callbackUrl=…` (and the de/it/tr equivalents) were
+// the biggest "Bulunamadı (404)" group in Search Console — 115 pages, produced
+// for weeks by the double-prefix bug fixed in PR #218. The links are gone, but
+// Google holds the URLs and its "Düzeltmeyi doğrula" recrawls them: a URL that
+// still 404s keeps failing validation. A 301 to the single-prefix path retires
+// them properly and rescues any bookmark or external link that captured one.
+// Safe because no route segment is named after a locale (en|de|it|tr).
+const DOUBLE_LOCALE = new RegExp(`^/(${routing.locales.join('|')})/(?:${routing.locales.join('|')})(/.*)?$`);
+
+/** `/en/en/login` → `/en/login`; null when the path is not double-prefixed. */
+export function doubleLocaleTarget(path: string): string | null {
+  const m = path.match(DOUBLE_LOCALE);
+  return m ? `/${m[1]}${m[2] ?? ''}` : null;
+}
+
 /** Locale for a legacy redirect: the next-intl cookie if valid, else the default. */
 export function legacyLocale(cookie: string | undefined | null): Locale {
   return cookie && (routing.locales as readonly string[]).includes(cookie) ? (cookie as Locale) : routing.defaultLocale;

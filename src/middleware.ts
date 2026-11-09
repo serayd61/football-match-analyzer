@@ -4,7 +4,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { isAdminEmail } from '@/lib/admin/emails';
 import { routing } from '@/i18n/routing';
 import { isTwaRequest, TWA_COOKIE, TWA_COOKIE_MAX_AGE } from '@/lib/site/twa';
-import { legacyLocale, legacyRedirectTarget } from '@/lib/site/legacy-paths';
+import { doubleLocaleTarget, legacyLocale, legacyRedirectTarget } from '@/lib/site/legacy-paths';
 import { MEMBER_REWRITE_HEADER, memberRewritePath } from '@/lib/site/member-routes';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
@@ -60,6 +60,11 @@ export default withAuth(
       }
       return NextResponse.next();
     }
+
+    // Çift dil öneki → tek önek, kalıcı (2026-11-09). Arama sorgusu korunur:
+    // bu URL'lerin neredeyse tamamı ?callbackUrl=… taşıyan giriş bağlantısıydı.
+    const doubled = doubleLocaleTarget(path);
+    if (doubled) return NextResponse.redirect(new URL(doubled + req.nextUrl.search, req.url), 301);
 
     // Legacy public pages → localized site, permanently (SEO Faz 0).
     const legacyTarget = legacyRedirectTarget(path, legacyLocale(req.cookies.get('NEXT_LOCALE')?.value));
