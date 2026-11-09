@@ -23,6 +23,18 @@ test('unpaid expired/open sessions become recipients, most attempts first; paid 
   assert.equal(out[0].lastAttempt, '2026-10-25T10:00:00.000Z');
 });
 
+test('onlyExpired: open sessions are ignored — someone mid-checkout gets no mail', () => {
+  const sessions = [
+    s('a@x.io', 'expired', 'unpaid', 0),
+    s('a@x.io', 'open', 'unpaid', 1),    // sayılmaz ama expired'ı var → alıcı
+    s('b@x.io', 'open', 'unpaid', 1),    // yalnız open → alıcı DEĞİL
+    s('c@x.io', 'expired', 'unpaid', 0),
+    s('c@x.io', 'complete', 'paid', 1),  // sonra ödedi → hariç
+  ];
+  const out = selectRecoveryRecipients(sessions, { onlyExpired: true });
+  assert.deepEqual(out.map((r) => [r.email, r.attempts]), [['a@x.io', 1]]);
+});
+
 test('unsubscribed, already sent, subscribed and admin addresses are skipped', () => {
   const sessions = [s('a@x.io', 'expired', 'unpaid'), s('b@x.io', 'expired', 'unpaid'), s('c@x.io', 'expired', 'unpaid'), s('admin@x.io', 'expired', 'unpaid')];
   const out = selectRecoveryRecipients(sessions, {

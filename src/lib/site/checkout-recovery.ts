@@ -1,18 +1,18 @@
 // ============================================================================
-// Checkout kurtarma maili — alıcı seçimi (saf, test edilir). 2026-11-04
+// Checkout kurtarma maili — alıcı seçimi (saf, test edilir).
 // ----------------------------------------------------------------------------
-// Neden: 13 Eki–4 Kas arası Stripe Checkout'u açan 11 kişinin hepsi ödemeden
-// kapandı (kart yok / uluslararası işleme kapalı kart). Aynı gün PayPal +
-// Google Pay açıldı, yıllık $49 ve PRO50 (%50, 3 ay) geldi. Bu kişilere tek
-// seferlik "artık PayPal var + kod" maili.
-// Kaynak: Stripe checkout.sessions (expired/open + unpaid). Hariç: aynı
-// pencerede tamamlanmış oturumu olan, DB'de aktif abone, unsubscribe, daha
-// önce alan.
+// Tarihçe: 2026-11-04'te tek seferlik backfill olarak doğdu (13 Eki–4 Kas
+// arası 11 kişi checkout'u ödemeden kapattı; aynı gün PayPal/Google Pay +
+// PRO50 geldi, "artık PayPal var" maili atıldı — log'da 'checkout-recovery-
+// 2026-11' anahtarıyla durur). 2026-11-10'dan beri günlük cron: kayan pencere
+// içinde SÜRESİ DOLMUŞ (expired) + unpaid oturumlar evergreen anahtarla bir
+// kez mail alır.
+// Kaynak: Stripe checkout.sessions. Hariç: aynı pencerede tamamlanmış oturumu
+// olan, DB'de aktif abone, unsubscribe, daha önce alan (status='sent').
 // ============================================================================
 
-export const CHECKOUT_RECOVERY_KEY = 'checkout-recovery-2026-11';
-/** Fiyat $9.90'a indiği gün: bundan eski oturumlar eski fiyatla açılmıştı. */
-export const CHECKOUT_RECOVERY_SINCE = '2026-10-13T00:00:00Z';
+/** Evergreen anahtar: adres başına EN FAZLA bir kurtarma maili (cron dönemi). */
+export const CHECKOUT_RECOVERY_KEY = 'checkout-recovery';
 
 export interface RecoverySession {
   email: string | null;
@@ -25,7 +25,18 @@ export interface RecoveryRecipient { email: string; attempts: number; lastAttemp
 
 export function selectRecoveryRecipients(
   sessions: RecoverySession[],
-  opts: { unsubscribed?: Set<string>; alreadySent?: Set<string>; subscribed?: Set<string>; exclude?: Set<string> } = {},
+  opts: {
+    unsubscribed?: Set<string>;
+    alreadySent?: Set<string>;
+    subscribed?: Set<string>;
+    exclude?: Set<string>;
+    /**
+     * Yalnız status='expired' oturumları say. Günlük cron'da ŞART: 'open'
+     * oturum hâlâ tamamlanabilir (24 saat geçerli) — checkout'un ortasındaki
+     * birine "ödemen yarım kaldı" maili gitmesin.
+     */
+    onlyExpired?: boolean;
+  } = {},
 ): RecoveryRecipient[] {
   const paid = new Set<string>();
   const tries = new Map<string, { n: number; last: number }>();
@@ -34,6 +45,7 @@ export function selectRecoveryRecipients(
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
     if (s.status === 'complete' || s.paymentStatus === 'paid') { paid.add(email); continue; }
     if (s.paymentStatus !== 'unpaid') continue;
+    if (opts.onlyExpired && s.status !== 'expired') continue;
     const t = tries.get(email) || { n: 0, last: 0 };
     t.n += 1; t.last = Math.max(t.last, s.created);
     tries.set(email, t);
