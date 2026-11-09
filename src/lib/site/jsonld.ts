@@ -105,7 +105,7 @@ export function sportsEventsJsonLd<R extends EventRow>(locale: Locale, league: S
       organizer: { '@type': 'Organization', name: league.name, url: `${SITE_URL}/${locale}/leagues/${league.slug}` },
       // Önerilen `image` (2026-11-08): maç OG kartı gerçek, erişilebilir bir PNG
       // (api/og/match/[id]). robots.txt'te /api/og/ artık `allow` — aksi hâlde
-      // Googlebot görseli çekemiyordu (bkz. app/robots.ts).
+      // Googlebot görseli çekemiyordu (bkz. public/robots.txt).
       image: [`${SITE_URL}/api/og/match/${r.fixtureId}`],
       url: page,
     });

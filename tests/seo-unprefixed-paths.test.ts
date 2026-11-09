@@ -64,11 +64,17 @@ test('/results kalıcı yönlendirme (308) — birleşme 2026-09-11\'de kalıcı
   assert.ok(!imports.some((l) => /\{[^}]*\bredirect\b[^}]*\}/.test(l)), 'geçici redirect hâlâ import ediliyor');
 });
 
-test('robots.txt /api/ altında yalnız OG görsellerini açar', async () => {
-  const robots = (await import('@/app/robots')).default();
-  const rule = Array.isArray(robots.rules) ? robots.rules[0] : robots.rules;
-  const allow = [rule.allow].flat();
-  const disallow = [rule.disallow].flat();
+test('robots.txt /api/ altında yalnız OG görsellerini açar', () => {
+  // 2026-11-09: app/robots.ts → public/robots.txt (PSI "robots.txt zaman aşımı";
+  // statik dosya tek Cache-Control ile iner, middleware/render yok).
+  const txt = readFileSync(resolve(__dirname, '../public/robots.txt'), 'utf8');
+  const directive = (name: string) =>
+    txt.split('\n').filter((l) => l.startsWith(`${name}:`)).map((l) => l.slice(name.length + 1).trim());
+  const allow = directive('Allow');
+  const disallow = directive('Disallow');
+  assert.equal(directive('User-Agent')[0] ?? directive('User-agent')[0], '*');
+  assert.deepEqual(directive('Sitemap'), ['https://footballanalytics.pro/sitemap.xml']);
+  assert.ok(!/^\s*$/m.test(txt.split('User-Agent')[1].split('Host')[0].trim()), 'kural bloğu boş');
   assert.ok(allow.includes('/api/og/'), 'maç OG kartı robots ile engelliyse Google görseli çekemez');
   assert.ok(disallow.includes('/api/'), '/api/ geri kalanı kapalı kalmalı');
   // Daha uzun `allow` kuralı kazanır, ama sitemap'e hiçbir /api yolu girmemeli.

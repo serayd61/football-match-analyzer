@@ -51,7 +51,7 @@ test('SportsEvent carries the required fields and skips unknown venues / finishe
   // (SC Etkinlikler: 3 geçersiz). Takımlar homeTeam/awayTeam/competitor'da duruyor.
   assert.equal('performer' in e, false);
   assert.equal(e.competitor.length, 2);
-  // Önerilen `image`: maç OG kartı — robots.txt'te /api/og/ açık olmalı (app/robots.ts).
+  // Önerilen `image`: maç OG kartı — robots.txt'te /api/og/ açık olmalı (public/robots.txt).
   assert.deepEqual(e.image, ['https://footballanalytics.pro/api/og/match/1']);
 });
 

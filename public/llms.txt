@@ -1,0 +1,58 @@
+# Football Analytics
+
+> AI football analysis and statistical match predictions for 17 European and South American leagues. Every prediction is stored before kick-off, settled against the final result and published, wins and losses alike. Site: https://footballanalytics.pro (English, German, Italian, Turkish).
+
+Football Analytics publishes match probabilities for three markets — 1X2 (home/draw/away), total goals (over/under 2.5) and both teams to score — produced by a Dixon-Coles Poisson model fitted per league. Each probability is written to the database before the match starts and never edited; after full time it is scored, and the whole record is public. The site is not a bookmaker and sells no odds: it is an analytics and track-record service.
+
+## Core pages
+
+- [Home](https://footballanalytics.pro/en): today's covered matches with the model's probabilities and the current settled record
+- [Matches](https://footballanalytics.pro/en/matches): upcoming matches by day, with [today](https://footballanalytics.pro/en/matches/today), [tomorrow](https://footballanalytics.pro/en/matches/tomorrow) and [yesterday's results](https://footballanalytics.pro/en/matches/yesterday)
+- [Leagues](https://footballanalytics.pro/en/leagues): one page per covered league — standings, upcoming fixtures, settled accuracy
+- [Teams](https://footballanalytics.pro/en/teams): one page per team — next fixture and the model's pick, recent results, goals per match, settled record
+- [Performance](https://footballanalytics.pro/en/performance): the settled prediction record by league and market, updated after every matchday
+- [Results](https://footballanalytics.pro/en/results): finished matches with the stored pre-match probabilities next to the actual result
+
+## Covered leagues
+
+- [Premier League](https://footballanalytics.pro/en/leagues/premier-league): England
+- [Championship](https://footballanalytics.pro/en/leagues/championship): England
+- [LaLiga](https://footballanalytics.pro/en/leagues/la-liga): Spain
+- [Serie A](https://footballanalytics.pro/en/leagues/serie-a): Italy
+- [Bundesliga](https://footballanalytics.pro/en/leagues/bundesliga): Germany
+- [Ligue 1](https://footballanalytics.pro/en/leagues/ligue-1): France
+- [Eredivisie](https://footballanalytics.pro/en/leagues/eredivisie): Netherlands
+- [Liga Portugal](https://footballanalytics.pro/en/leagues/liga-portugal): Portugal
+- [Champions League](https://footballanalytics.pro/en/leagues/champions-league): Europe
+- [Europa League](https://footballanalytics.pro/en/leagues/europa-league): Europe
+- [Conference League](https://footballanalytics.pro/en/leagues/conference-league): Europe
+- [Brasileirão](https://footballanalytics.pro/en/leagues/brasileirao): Brazil
+- [Süper Lig](https://footballanalytics.pro/en/leagues/super-lig): Türkiye
+- [Ekstraklasa](https://footballanalytics.pro/en/leagues/ekstraklasa): Poland
+- [Eliteserien](https://footballanalytics.pro/en/leagues/eliteserien): Norway
+- [Superligaen](https://footballanalytics.pro/en/leagues/superligaen): Denmark
+- [1. Divisjon](https://footballanalytics.pro/en/leagues/1-divisjon): Norway
+
+## How the model works
+
+- [Methodology](https://footballanalytics.pro/en/methodology): how the probabilities are produced, settled and scored, written so every number can be checked
+- [Glossary](https://footballanalytics.pro/en/glossary): expected goals, expected points, ELO, Dixon-Coles, Poisson, Brier score, calibration and the three markets, in plain language
+- [About](https://footballanalytics.pro/en/about): who runs the site and what it is not
+
+## Open data (CC BY 4.0)
+
+- [Open data page](https://footballanalytics.pro/en/data): the full settled record as flat files — for each finished match in a covered league, the probabilities stored before kick-off, the model's pick and what actually happened. Free to download, analyse and republish with attribution.
+- [All leagues, CSV](https://footballanalytics.pro/data/all.csv)
+- [All leagues, JSON](https://footballanalytics.pro/data/all.json)
+- Per-league files follow the same pattern: https://footballanalytics.pro/data/{league-slug}.csv and .json (slugs as in the league URLs above)
+
+## Languages
+
+Every public page exists in four languages under its own prefix: /en, /de, /it, /tr. Pages carry hreflang links to their siblings; the English version is linked above.
+
+## Optional
+
+- [Pricing](https://footballanalytics.pro/en/pricing): Pro membership (engine predictions and AI analyses for every covered match)
+- [Android app](https://footballanalytics.pro/en/app)
+- [Contact](https://footballanalytics.pro/en/contact)
+- [Sitemap](https://footballanalytics.pro/sitemap.xml)

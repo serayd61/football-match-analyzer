@@ -1,0 +1,28 @@
+# footballanalytics.pro — statik dosya (2026-11-09). Önceden src/app/robots.ts
+# üretiyordu; Lighthouse "robots.txt geçerli değil: Timed out fetching
+# resource" (PSI SEO 92) sonrası public/'a taşındı: tek Cache-Control
+# (next.config headers), middleware ve render yok. Kural gerekçeleri:
+# - Allow /api/og/: maç sayfası openGraph görseli /api/og/match/{id}; Disallow
+#   /api/ Googlebot'un görseli çekmesini engelliyordu (2026-11-08).
+# - Disallow /login ve /*/login: her maç sayfası ?callbackUrl= ile benzersiz
+#   login URL'si üretiyordu (SC 1.641 noindex + 102 kanoniksiz kopya, 2026-11-01).
+# - Disallow /*/m/: anonim ISR ayrımının üye rotası; ziyaretçi görmez, kopya
+#   URL olarak taranmasın (2026-11-08).
+User-Agent: *
+Allow: /
+Allow: /api/og/
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /profile
+Disallow: /favorites
+Disallow: /offline
+Disallow: /login
+Disallow: /*/login
+Disallow: /*/dashboard
+Disallow: /*/account
+Disallow: /*/m/
+
+Host: https://footballanalytics.pro
+Sitemap: https://footballanalytics.pro/sitemap.xml

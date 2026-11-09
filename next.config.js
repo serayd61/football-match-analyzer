@@ -28,6 +28,19 @@ const nextConfig = {
     // düşürür.
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
+  // PSI/Lighthouse 2026-11-09: "robots.txt geçerli değil — Timed out fetching
+  // resource" (SEO 92) ve "llms.txt — Timed out" (Ajan taraması 2/3). İkisi de
+  // Lighthouse'un sayfa dışından yaptığı ek fetch'ler; robots.txt Vercel'in
+  // varsayılan `max-age=0, must-revalidate` ile her seferinde doğrulanıyordu,
+  // llms.txt yoktu (public/llms.txt ile geldi). İki dosya da deploy'suz
+  // değişmez → tarayıcı ve CDN bir gün tutabilir.
+  async headers() {
+    const longLived = [{ key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400' }];
+    return [
+      { source: '/robots.txt', headers: longLived },
+      { source: '/llms.txt', headers: longLived },
+    ];
+  },
 };
 
 module.exports = withNextIntl(withSerwist(nextConfig));
