@@ -11,9 +11,10 @@ test('legacy locale: valid cookie wins, anything else → default', () => {
   assert.equal(legacyLocale(undefined), 'en');
 });
 
-test('/analysis/{slug} keeps its slug on the public match page', () => {
-  assert.equal(legacyRedirectTarget('/analysis/spain-vs-cape-verde-4667798', 'en'), '/en/matches/spain-vs-cape-verde-4667798');
-  assert.equal(legacyRedirectTarget('/analysis/bochum-vs-ajax-5847094/', 'de'), '/de/matches/bochum-vs-ajax-5847094');
+test('/analysis/{slug} is not redirected blindly any more (route handler answers 301 or 410)', () => {
+  // 2026-11-09: kör 301 kapsam dışı maçlarda 404'e çıkıyordu (SC: 60 URL 301→404).
+  assert.equal(legacyRedirectTarget('/analysis/spain-vs-cape-verde-4667798', 'en'), null);
+  assert.equal(legacyRedirectTarget('/analysis/bochum-vs-ajax-5847094/', 'de'), null);
   assert.equal(legacyRedirectTarget('/analysis', 'tr'), '/tr/matches');
 });
 
