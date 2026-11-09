@@ -1,12 +1,18 @@
 // ============================================================================
-// TEK SEFERLİK — Checkout kurtarma maili (2026-11-04). vercel.json'da YOK;
-// CRON_SECRET ile elle çalıştırılır:
-//   GET /api/cron/checkout-recovery?dry=1          kim alacak (gönderim yok)
-//   GET /api/cron/checkout-recovery?canary=1       yalnız admin'e örnek
-//   GET /api/cron/checkout-recovery?limit=20       gönder (parti)
-//   ?since=2026-10-13T00:00:00Z                    pencere başlangıcı (varsayılan: $9.90 günü)
-// Alıcılar: Stripe Checkout'u açıp ödemeden kapananlar (lib/site/checkout-recovery).
-// Mükerrer engeli: email_campaign_log (campaign_key, email) UNIQUE.
+// Checkout kurtarma maili — GÜNLÜK CRON (2026-11-10'dan beri; önceki tek
+// seferlik backfill: 2026-11-04, anahtar 'checkout-recovery-2026-11').
+// vercel.json: /api/cron/checkout-recovery?days=3&limit=25 @ 50 8 * * *
+//   GET ?dry=1                    kim alacak (gönderim yok)
+//   GET ?canary=1                 yalnız admin'e örnek
+//   GET ?days=3                   kayan pencere (varsayılan 3 gün)
+//   GET ?since=2026-10-13T..Z     mutlak pencere başlangıcı (days'i ezer)
+//   GET ?limit=25                 parti boyu (varsayılan 50)
+// Alıcılar: penceredeki SÜRESİ DOLMUŞ (expired) + unpaid Stripe Checkout
+// oturumları (lib/site/checkout-recovery). 'open' oturumlar sayılmaz —
+// checkout 24 saat geçerli, ortasındaki kişiye mail gitmesin.
+// Mükerrer engeli: email_campaign_log (campaign_key, email) UNIQUE; yalnız
+// status='sent' engeller, 'failed' bir sonraki koşuda yeniden denenir
+// (world-cup-campaign kalıbı).
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -14,11 +20,13 @@ import { stripe } from '@/lib/stripe';
 import { sendCheckoutRecoveryEmail, SITE_URL } from '@/lib/email';
 import { unsubscribeUrl } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
-import { CHECKOUT_RECOVERY_KEY, CHECKOUT_RECOVERY_SINCE, selectRecoveryRecipients, type RecoverySession } from '@/lib/site/checkout-recovery';
+import { CHECKOUT_RECOVERY_KEY, selectRecoveryRecipients, type RecoverySession } from '@/lib/site/checkout-recovery';
 import { PLAN_PRICES, PROMO, promoActive, promoMonthly, yearlyEnabled } from '@/lib/site/plans';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
+
+const DEFAULT_WINDOW_DAYS = 3;
 
 function db(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -53,14 +61,16 @@ export async function GET(req: NextRequest) {
   const canary = sp.get('canary') === '1';
   const limitParam = parseInt(sp.get('limit') || '', 10);
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 50;
-  const since = sp.get('since') || CHECKOUT_RECOVERY_SINCE;
+  const daysParam = parseInt(sp.get('days') || '', 10);
+  const days = Number.isFinite(daysParam) && daysParam > 0 ? daysParam : DEFAULT_WINDOW_DAYS;
+  const since = sp.get('since') || new Date(Date.now() - days * 86_400_000).toISOString();
   if (!Number.isFinite(Date.parse(since))) return NextResponse.json({ ok: false, error: 'since geçersiz' }, { status: 400 });
   const sb = db();
 
   const [sessions, { data: unsub, error: unErr }, { data: sent, error: sErr }, { data: subs, error: pErr }] = await Promise.all([
     loadSessions(since),
     sb.from('email_unsubscribes').select('email'),
-    sb.from('email_campaign_log').select('email').eq('campaign_key', CHECKOUT_RECOVERY_KEY),
+    sb.from('email_campaign_log').select('email').eq('campaign_key', CHECKOUT_RECOVERY_KEY).eq('status', 'sent'),
     sb.from('profiles').select('email').in('subscription_status', ['active', 'trialing', 'past_due']),
   ]);
   const err = unErr || sErr || pErr;
@@ -72,6 +82,7 @@ export async function GET(req: NextRequest) {
     alreadySent: lower(sent as any[]),
     subscribed: lower(subs as any[]),
     exclude: new Set(ADMIN_EMAILS.map((e) => e.toLowerCase())),
+    onlyExpired: true,
   });
   if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), attempts: 2, lastAttempt: new Date().toISOString() }];
   const total = recipients.length;

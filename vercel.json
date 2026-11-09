@@ -125,6 +125,10 @@
       "schedule": "40 8 * * *"
     },
     {
+      "path": "/api/cron/checkout-recovery?days=3&limit=25",
+      "schedule": "50 8 * * *"
+    },
+    {
       "path": "/api/cron/daily-coupon",
       "schedule": "30 7 * * *"
     },
