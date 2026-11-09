@@ -37,6 +37,12 @@
   --s-n800: 46 58 52;
   --s-win: 22 122 79;
   --s-loss: 190 62 43;
+  /* Rozet metni (PSI erişilebilirlik 2026-11-09): .tag-win/.tag-loss/.risk-* metni ile
+     %12–14 alfa zemini aynı tondu → 4,14–4,39:1, WCAG AA (4,5) altı. Metin bir ton koyu;
+     zemin değişmedi. Karanlık temada açık tonlar zaten 5,9–6,8:1, orada metin = taban renk. */
+  --s-win-ink: 14 90 58;
+  --s-loss-ink: 150 46 30;
+  --s-warn-ink: 120 72 10;
   --s-void: 93 107 100;
   --s-info: 47 95 158;
   --s-divider: rgb(19 26 23 / 0.12);
@@ -81,6 +87,9 @@
   --s-n800: 214 224 218;
   --s-win: 74 205 140;
   --s-loss: 255 138 118;
+  --s-win-ink: 74 205 140;
+  --s-loss-ink: 255 138 118;
+  --s-warn-ink: 235 178 80;
   --s-void: 160 174 166;
   --s-info: 120 168 230;
   --s-divider: rgb(240 244 241 / 0.12);
@@ -111,6 +120,9 @@
     --s-n800: 214 224 218;
     --s-win: 74 205 140;
     --s-loss: 255 138 118;
+    --s-win-ink: 74 205 140;
+    --s-loss-ink: 255 138 118;
+    --s-warn-ink: 235 178 80;
     --s-void: 160 174 166;
     --s-info: 120 168 230;
     --s-divider: rgb(240 244 241 / 0.12);
@@ -217,18 +229,18 @@
 }
 .site .tag-accent { background: rgb(var(--s-accent-100)); color: rgb(var(--s-accent-800)); }
 .site .tag-outline { background: transparent; border: 1px solid var(--s-divider); color: rgb(var(--s-muted)); }
-.site .tag-win { background: rgb(var(--s-win) / 0.14); color: rgb(var(--s-win)); }
-.site .tag-loss { background: rgb(var(--s-loss) / 0.14); color: rgb(var(--s-loss)); }
-.site .tag-live { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss)); }
+.site .tag-win { background: rgb(var(--s-win) / 0.14); color: rgb(var(--s-win-ink)); }
+.site .tag-loss { background: rgb(var(--s-loss) / 0.14); color: rgb(var(--s-loss-ink)); }
+.site .tag-live { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss-ink)); }
 .site .tag-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; animation: sitePulse 1.4s infinite; }
 @keyframes sitePulse { 50% { opacity: 0.35; } }
 
 /* Risk pill */
 .site .risk { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .site .risk::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.site .risk-low { background: rgb(var(--s-win) / 0.12); color: rgb(var(--s-win)); }
-.site .risk-medium { background: rgb(var(--s-accent2-700) / 0.14); color: rgb(var(--s-accent2-700)); }
-.site .risk-high { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss)); }
+.site .risk-low { background: rgb(var(--s-win) / 0.12); color: rgb(var(--s-win-ink)); }
+.site .risk-medium { background: rgb(var(--s-accent2-700) / 0.14); color: rgb(var(--s-warn-ink)); }
+.site .risk-high { background: rgb(var(--s-loss) / 0.12); color: rgb(var(--s-loss-ink)); }
 
 /* Risk note */
 .site .risk-note { font-size: 13px; line-height: 1.55; padding: 10px 14px; border-left: 3px solid rgb(var(--s-accent)); background: rgb(var(--s-accent-100) / 0.6); border-radius: 0 10px 10px 0; margin: 0; }
