@@ -7,7 +7,9 @@ import { routing, type Locale } from '@/i18n/routing';
 // equity moves instead of evaporating. Pure function: unit-tested, used by the
 // edge middleware (no DB access there).
 //
-//   /analysis/{slug}      → /{l}/matches/{slug}      (same slug format; /matches 404s if the league is not covered)
+//   /analysis/{slug}      → NOT here (2026-11-09): app/(app)/analysis/[slug]/route.ts looks the match up
+//                           and answers 301 (canonical public page) or 410 (no public page) — the
+//                           301→404 chain was parking 60 URLs in Search Console's "Not found".
 //   /analysis, /live, …   → /{l}/matches
 //   /match/{id}           → /{l}/predictions/{id}    (members' page; anonymous get a 200 login wall, noindex)
 //   /leaderboard, /ai-performance, /track-record, /stats, /league-stats → /{l}/performance
@@ -15,7 +17,6 @@ import { routing, type Locale } from '@/i18n/routing';
 //
 // Account pages (/favorites, /profile, /settings) and the odds tools stay
 // members-only (see middleware); they are not in Google's index.
-const MATCH_SLUG = /^\/analysis\/([a-z0-9-]+-\d+)\/?$/;
 const MATCH_ID = /^\/match\/(\d+)\/?$/;
 
 const EXACT: Record<string, string> = {
@@ -52,8 +53,6 @@ export function legacyLocale(cookie: string | undefined | null): Locale {
 
 /** Localized destination for a legacy path, or null when the path is not a known legacy public page. */
 export function legacyRedirectTarget(path: string, locale: Locale): string | null {
-  const m = path.match(MATCH_SLUG);
-  if (m) return `/${locale}/matches/${m[1]}`;
   const id = path.match(MATCH_ID);
   if (id) return `/${locale}/predictions/${id[1]}`;
   const clean = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;

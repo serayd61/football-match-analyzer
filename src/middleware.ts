@@ -128,7 +128,9 @@ export const config = {
     '/api/admin/:path*',
     '/admin/:path*',
     // Legacy app pages: public ones 301 to the localized site, account pages stay members-only
-    '/live', '/tahminler', '/match/:path*', '/analysis', '/analysis/:path*',
+    // /analysis/{slug} bilerek YOK (2026-11-09): eski maç sayfaları app/(app)/analysis/[slug]/route.ts'te
+    // veritabanına bakıp 301 ya da 410 döner; middleware edge'de bunu bilemez.
+    '/live', '/tahminler', '/match/:path*', '/analysis',
     '/odds-analysis', '/odds-patterns', '/league-stats', '/stats', '/track-record',
     '/ai-performance', '/favorites', '/leaderboard', '/profile', '/settings', '/contact',
     '/api/livescores',
