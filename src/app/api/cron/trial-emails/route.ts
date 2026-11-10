@@ -4,14 +4,15 @@
 //   kind=mid     kayıttan 2–3 gün sonra: haftanın karnesi + kalan gün
 //   kind=strong  kayıttan 4–5 gün sonra: güçlü pazarlar tablosu              [2026-10-30]
 //   kind=ending  bitime 1–2 gün kala: "yarın kapanıyor" + Pro (+ lansman teklifi)
-// Hepsinde Google Play rozeti (PLAY_STORE_URL).
+//   kind=ended   bitişten sonraki 2 gün: "bitti, tarayıcıdan abone ol" (Play rozeti YOK) [2026-11-10]
+// Diğerlerinde Google Play rozeti (PLAY_STORE_URL).
 // Güvenlik: CRON_SECRET; unsubscribe ve abone hariç; email_campaign_log
 // (campaign_key,email) UNIQUE ile kişi başı tek gönderim; ?dry=1 kuru çalışma;
 // ?canary=1 yalnız admin'e; ?limit=N parti. Karne: vitrin son 7 gün (showcaseRecord).
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { sendTrialFirstEmail, sendTrialMidEmail, sendTrialStrongEmail, sendTrialEndingEmail } from '@/lib/email';
+import { sendTrialFirstEmail, sendTrialMidEmail, sendTrialStrongEmail, sendTrialEndingEmail, sendTrialEndedEmail } from '@/lib/email';
 import { unsubscribeUrl, SITE_URL, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, TRIAL_KINDS, type TrialKind, type TrialUser } from '@/lib/site/trial-emails';
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
     alreadySent: new Set(((sent || []) as any[]).map((r) => String(r.email).toLowerCase())),
     exclude: admins,
   });
-  if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, daysLeft: { first: 6, mid: 5, strong: 2, ending: 1 }[kind], trialEndsAt: new Date(Date.now() + 86_400_000).toISOString() }];
+  if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, daysLeft: { first: 6, mid: 5, strong: 2, ending: 1, ended: 0 }[kind], trialEndsAt: new Date(Date.now() + (kind === 'ended' ? -1 : 1) * 86_400_000).toISOString() }];
   const total = recipients.length;
   recipients = recipients.slice(0, limit);
 
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
       if (kind === 'first') await sendTrialFirstEmail(r.email, opts);
       else if (kind === 'mid') await sendTrialMidEmail(r.email, opts);
       else if (kind === 'strong') await sendTrialStrongEmail(r.email, opts);
+      else if (kind === 'ended') await sendTrialEndedEmail(r.email, opts);
       else await sendTrialEndingEmail(r.email, opts);
       ok++;
       if (!canary) await sb.from('email_campaign_log').upsert({ campaign_key: key, email: r.email, status: 'sent' }, { onConflict: 'campaign_key,email' });

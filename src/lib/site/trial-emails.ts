@@ -7,16 +7,23 @@
 //   mid    → kayıttan 2–3 gün sonra: bu haftanın gerçek karnesi + kalan gün
 //   strong → kayıttan 4–5 gün sonra: güçlü pazarlar tablosu (lig karnesi)      [2026-10-30]
 //   ending → deneme bitimine 1–2 gün kala: "yarın kapanıyor" + Pro bağlantısı
+//   ended  → deneme bittikten sonraki ilk 2 gün: "bitti, tarayıcıdan abone ol"       [2026-11-10]
 // Ritim (2026-10-30): hoşgeldin 0 · first 1 · mid 3 · strong 5 · ending 6 → ~2 günde bir.
+// ended (2026-11-10): Play uygulamasında Play politikası gereği fiyat/checkout yok;
+// denemesi biten uygulama kullanıcısı "nasıl abone olurum" diye soruyordu
+// (popoolajide3, 10 Kas). Bitişten sonraki sabah doğrudan /pricing bağlantılı mail
+// gider; Play rozeti yok. Pencere 2 gün (bir gün kaçarsa ertesi gün yakalar).
 // Eski durum: 0. gün iki mail (welcome + reengage), sonra 3 ve 6; reengage artık 14 günden
 // yeni hesaplara gitmez (world-cup-campaign route).
 // Deneme bitişi profiles.trial_ends_at; yoksa kayıt + 7 gün (access.ts ile aynı).
 // Aboneler (active/trialing/past_due), unsubscribe ve daha önce alanlar hariç.
 // ============================================================================
 
-export type TrialKind = 'first' | 'mid' | 'strong' | 'ending';
-export const TRIAL_KINDS: TrialKind[] = ['first', 'mid', 'strong', 'ending'];
-export const TRIAL_CAMPAIGN_KEYS: Record<TrialKind, string> = { first: 'trial-first-2026-10', mid: 'trial-mid-2026-10', strong: 'trial-strong-2026-10', ending: 'trial-ending-2026-10' };
+export type TrialKind = 'first' | 'mid' | 'strong' | 'ending' | 'ended';
+export const TRIAL_KINDS: TrialKind[] = ['first', 'mid', 'strong', 'ending', 'ended'];
+export const TRIAL_CAMPAIGN_KEYS: Record<TrialKind, string> = { first: 'trial-first-2026-10', mid: 'trial-mid-2026-10', strong: 'trial-strong-2026-10', ending: 'trial-ending-2026-10', ended: 'trial-ended-2026-11' };
+/** ended: bitişten sonra bu kadar gün içinde gönderilir (daha eski bitişler win-back'e kalır). */
+export const ENDED_WINDOW_DAYS = 2;
 export const TRIAL_DAYS = 7;
 const DAY = 86_400_000;
 
@@ -42,9 +49,16 @@ export function selectTrialRecipients(users: TrialUser[], kind: TrialKind, opts:
     const created = Date.parse(u.createdAt);
     if (!Number.isFinite(created)) continue;
     const end = trialEndOf(u);
-    if (end <= now) continue; // deneme bitmiş → bu seri değil (win-back ayrı)
     const ageDays = (now - created) / DAY;
     const leftDays = (end - now) / DAY;
+    if (kind === 'ended') {
+      // bitiş geçmiş ve taze: 0 ≤ geçen < ENDED_WINDOW_DAYS
+      if (!(end <= now && -leftDays < ENDED_WINDOW_DAYS)) continue;
+      seen.add(email);
+      out.push({ email, name: u.name || null, daysLeft: 0, trialEndsAt: new Date(end).toISOString() });
+      continue;
+    }
+    if (end <= now) continue; // deneme bitmiş → ended / win-back
     const ok =
       kind === 'first' ? ageDays >= 0.5 && ageDays < 2 && leftDays > 2
       : kind === 'mid' ? ageDays >= 2 && ageDays < 4 && leftDays > 2

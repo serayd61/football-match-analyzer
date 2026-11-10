@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin/emails';
 import { hasEnginePredictionAccess, trialEndMs } from '@/lib/accessControl';
 import { type SiteAccess } from '@/lib/site/access-state';
+import { isTwa } from '@/lib/site/twa';
 
 // Tipler ve oturum okumayan yardımcılar `lib/site/access-state.ts`'te (saf
 // modül, anonim ISR ağacı oradan içe alır); burada yalnız oturumu gerçekten
@@ -53,9 +54,15 @@ export async function getSiteAccess(): Promise<SiteAccess> {
   // Paid (Stripe / manual with end date). Checked after the cheap trial read so a
   // trialing user is labelled "trial", not "pro", even though both unlock.
   const paid = await hasEnginePredictionAccess(email).catch(() => false);
-  if (paid && !trialLive) return { state: 'pro', email, trialEndsAt, trialDaysLeft: 0 };
-  if (trialLive) return { state: 'trial', email, trialEndsAt, trialDaysLeft: Math.max(0, Math.floor((end! - now) / DAY)) };
-  return { state: 'expired', email, trialEndsAt, trialDaysLeft: 0 };
+  const out: SiteAccess = paid && !trialLive
+    ? { state: 'pro', email, trialEndsAt, trialDaysLeft: 0 }
+    : trialLive
+      ? { state: 'trial', email, trialEndsAt, trialDaysLeft: Math.max(0, Math.floor((end! - now) / DAY)) }
+      : { state: 'expired', email, trialEndsAt, trialDaysLeft: 0 };
+  // Teşhis izi (2026-11-10): Vercel logları UA tutmaz; "web mi Play uygulaması mı"
+  // sorusu (fa_twa çerezi) buradan okunur. Tek satır, üye sayfası başına bir kez.
+  console.log(`[site-access] ${email} ${out.state} ${isTwa() ? 'play-app' : 'web'}`);
+  return out;
 }
 
 /**

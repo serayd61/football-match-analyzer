@@ -125,6 +125,10 @@
       "schedule": "40 8 * * *"
     },
     {
+      "path": "/api/cron/trial-emails?kind=ended",
+      "schedule": "45 8 * * *"
+    },
+    {
       "path": "/api/cron/checkout-recovery?days=3&limit=25",
       "schedule": "50 8 * * *"
     },
