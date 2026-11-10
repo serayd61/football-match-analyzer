@@ -37,3 +37,17 @@ test('first picks day 1 only; strong picks day 4–5 with more than 1 day left (
   assert.deepEqual(selectTrialRecipients(u5, 'strong', { now }).map((r) => [r.email, r.daysLeft]), [['g@x.io', 3]]);
   assert.deepEqual(selectTrialRecipients(u5, 'ending', { now }).map((r) => r.email), ['h@x.io']);
 });
+
+test('ended picks trials that finished in the last 2 days only (2026-11-10)', () => {
+  const u = [
+    { email: 'i@x.io', name: 'I', createdAt: d(7.4) },                                 // bitti, 0,4 gün önce → ended
+    { email: 'j@x.io', name: 'J', createdAt: d(20), trialEndsAt: d(1.9) },              // uzatılmış deneme, 1,9 gün önce bitti → ended
+    { email: 'd@x.io', name: 'D', createdAt: d(9) },                                    // 2 gün önce bitti → pencere dışı (win-back)
+    { email: 'c@x.io', name: 'C', createdAt: d(5.5) },                                  // hâlâ sürüyor → ending'e ait
+    { email: 'k@x.io', name: 'K', createdAt: d(7.5), subscriptionStatus: 'active' },    // abone oldu
+  ];
+  assert.deepEqual(selectTrialRecipients(u, 'ended', { now }).map((r) => [r.email, r.daysLeft]), [['i@x.io', 0], ['j@x.io', 0]]);
+  // ended alıcıları diğer türlere düşmez; ending alıcıları ended'e düşmez
+  assert.deepEqual(selectTrialRecipients(u, 'ending', { now }).map((r) => r.email), ['c@x.io']);
+  assert.equal(selectTrialRecipients(u, 'ended', { now, alreadySent: new Set(['i@x.io']) }).map((r) => r.email).join(), 'j@x.io');
+});

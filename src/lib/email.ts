@@ -558,6 +558,34 @@ Unsubscribe: ${o.unsubscribeUrl}`;
   if (error) throw new Error(error.message);
 }
 
+// Deneme bitti (2026-11-10): bitişten sonraki sabah. Play uygulamasında fiyat
+// ve checkout gizli (Play politikası, lib/site/twa.ts); uygulama kullanıcısı
+// "nasıl abone olurum" diye soruyordu. Bu mail tarayıcıya götürür: tek düğme
+// → /pricing, ödeme yöntemleri sayılır, Play rozeti YOK.
+export async function sendTrialEndedEmail(to: string, o: TrialEmailOpts): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const hi = o.name ? ` ${o.name}` : '';
+  const subject = `Your trial has ended — Pro continues from $${o.fullPrice.toFixed(2)}/month`;
+  const body = `
+    <p>Hi${hi}, your 7-day trial is over. The predictions, the goal-model details and the value radar are now closed for your account; the public track record stays open.</p>
+    ${trialStats(o.stats)}
+    <p>Pro is <strong>${trialPriceLine(o)}</strong>, cancel any time. The checkout takes <strong>card</strong>, <strong>PayPal</strong>, <strong>Google Pay</strong> and <strong>Apple Pay</strong>.</p>
+    ${trialPromo(o)}
+    ${trialBtn(o.pricingUrl, 'Subscribe to Pro →')}
+    <p style="font-size:13px;color:#64748b;text-align:center">Subscribing happens on the website, in your browser. If you use the Android app, sign in there with the same account afterwards and Pro is applied automatically.</p>
+    <p style="font-size:13px;color:#64748b;text-align:center">Something in the way? Reply to this email — we read every reply.</p>`;
+  const html = trialShell('Your trial has ended', 'Trial ended', body, o.unsubscribeUrl);
+  const text = `Hi${hi}, your 7-day trial is over. Predictions, goal-model details and the value radar are now closed for your account.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
+Pro is ${trialPriceText(o)}, cancel any time. Card, PayPal, Google Pay or Apple Pay.${trialPromoText(o)}
+Subscribe (in your browser): ${o.pricingUrl}
+Android app users: subscribe on the website, then sign in to the app with the same account — Pro is applied automatically.
+Something in the way? Reply to this email.
+Unsubscribe: ${o.unsubscribeUrl}`;
+  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
+  if (error) throw new Error(error.message);
+}
+
 // Checkout kurtarma: ödemeyi bitiremeyenlere ödeme seçenekleri + (varsa)
 // promo + yıllık. Günlük api/cron/checkout-recovery gönderir. Metin zamansız —
 // "bugün düzelttik" yok; cron her gün yeni terk edilmiş checkout'lara koşar.
