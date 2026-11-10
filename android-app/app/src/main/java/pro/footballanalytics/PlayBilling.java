@@ -12,6 +12,7 @@ import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.QueryPurchasesParams;
 
 import org.json.JSONArray;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Google Play Billing for the WebView bridge (versionCode 5, 2026-11-10).
+ * Google Play Billing for the WebView bridge (versionCode 6, 2026-11-10).
  *
  * The page (src/lib/site/play-billing.ts) drives everything: it queries the
  * subscription products, launches the purchase sheet and sends the resulting
@@ -119,13 +120,15 @@ final class PlayBilling implements com.android.billingclient.api.PurchasesUpdate
         }
         client.queryProductDetailsAsync(
                 QueryProductDetailsParams.newBuilder().setProductList(products).build(),
-                (result, detailsList) -> {
+                // Billing Library 8: the listener receives a QueryProductDetailsResult
+                // (7.x passed a List<ProductDetails> directly).
+                (result, queryResult) -> {
                     if (result.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                         emitter.emit(requestId, error("error", "query failed: " + result.getDebugMessage()));
                         return;
                     }
                     JSONArray offers = new JSONArray();
-                    for (ProductDetails pd : detailsList) {
+                    for (ProductDetails pd : queryResult.getProductDetailsList()) {
                         detailsCache.put(pd.getProductId(), pd);
                         List<ProductDetails.SubscriptionOfferDetails> offerList = pd.getSubscriptionOfferDetails();
                         if (offerList == null) continue;

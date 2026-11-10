@@ -1,6 +1,6 @@
 # Play Billing — kurulum ve işletme (2026-11-10)
 
-Play uygulaması (android-app/, versionCode ≥ 5) Pro aboneliğini Google Play
+Play uygulaması (android-app/, versionCode ≥ 6) Pro aboneliğini Google Play
 Billing ile satar. Kod tarafı bu repoda hazır; aşağıdaki konsol/altyapı
 adımları **elle** yapılır (çoğu tek seferlik). Kod, env değişkenleri yokken
 güvenli şekilde kapalıdır: eski uygulama sürümleri köprü metodlarını
@@ -12,7 +12,8 @@ taşımadığı için sayfa fiyatsız politika-güvenli gövdeye düşer,
 ```
 WebView sayfası (pricing/PlayPurchase.tsx)
   └─ window.FootballAnalyticsApp köprüsü (MainActivity.AppBridge + PlayBilling.java)
-       └─ Play Billing Library 7.1.1 → satın alma sayfası
+       └─ Play Billing Library 8.0.0 → satın alma sayfası
+          (Play sürüm incelemesi 8.0.0 altını reddediyor; 7.1.1 reddedildi)
   satın alma sonucu purchaseToken → POST /api/play/verify (oturumlu)
        └─ Play Developer API subscriptionsv2.get → subscriptions + profiles yazılır
           → sunucu tarafı acknowledge (3 gün kuralı)
@@ -58,7 +59,7 @@ Play RTDN (Pub/Sub push) → POST /api/play/rtdn?secret=…
      `https://footballanalytics.pro/api/play/rtdn?secret=<PLAY_RTDN_SECRET>`
    - Play Console → Para kazanma kurulumu → RTDN → topic adını yapıştır →
      "Test bildirimi gönder" → Vercel loglarında `[play/rtdn] test notification ok`.
-6. **Uygulama sürümü** — `android-app/` v1.3.0 (versionCode 5) derle+imzala
+6. **Uygulama sürümü** — `android-app/` v1.3.0 (versionCode 6) derle+imzala
    (README'deki adımlar), kapalı teste yükle. Billing Library satın almayı
    ancak Play'den yüklenmiş pakette çalıştırır; sideload APK'da
    `billingReady()` false kalır, sayfa eski gövdeyi gösterir.
