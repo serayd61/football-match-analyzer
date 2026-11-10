@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     static final String BRIDGE_NAME = "FootballAnalyticsApp";
 
     private WebView web;
+    private PlayBilling billing;
     private SwipeRefreshLayout swipe;
     private ProgressBar progress;
     private View offline;
@@ -90,6 +91,24 @@ public class MainActivity extends AppCompatActivity {
         });
 
         configureWebView();
+
+        // v5: Play Billing. Results reach the page as
+        // window.__faPlayBillingResult(requestId, payload) — see
+        // src/lib/site/play-billing.ts. JSONObject.toString() is valid JS.
+        billing = new PlayBilling(this, new PlayBilling.Emitter() {
+            @Override
+            public void emit(int requestId, org.json.JSONObject payload) {
+                runOnUiThread(() -> web.evaluateJavascript(
+                        "window.__faPlayBillingResult&&window.__faPlayBillingResult(" + requestId + "," + payload + ")", null));
+            }
+
+            @Override
+            public void emitUnsolicited(org.json.JSONObject payload) {
+                runOnUiThread(() -> web.evaluateJavascript(
+                        "window.__faPlayBillingPurchase&&window.__faPlayBillingPurchase(" + payload + ")", null));
+            }
+        });
+        billing.connect();
 
         swipe.setColorSchemeResources(R.color.brand);
         swipe.setOnRefreshListener(() -> {
@@ -281,6 +300,35 @@ public class MainActivity extends AppCompatActivity {
             return BuildConfig.VERSION_NAME;
         }
 
+        // ---- Play Billing (v5) — async answers via window.__faPlayBillingResult.
+
+        /** Read-only readiness flag (volatile; no UI hop so the page can poll it synchronously). */
+        @JavascriptInterface
+        public boolean billingReady() {
+            return billing != null && billing.isReady();
+        }
+
+        @JavascriptInterface
+        public void queryProducts(String productIdsJson, int requestId) {
+            runOnUiThread(() -> {
+                if (onOwnPage()) billing.queryProducts(productIdsJson, requestId);
+            });
+        }
+
+        @JavascriptInterface
+        public void purchase(String productId, String offerToken, String accountId, int requestId) {
+            runOnUiThread(() -> {
+                if (onOwnPage()) billing.purchase(productId, offerToken, accountId, requestId);
+            });
+        }
+
+        @JavascriptInterface
+        public void queryPurchases(int requestId) {
+            runOnUiThread(() -> {
+                if (onOwnPage()) billing.queryPurchases(requestId);
+            });
+        }
+
         /** Android share sheet with the site's title/text/url (replaces navigator.share, absent in WebView). */
         @JavascriptInterface
         public void share(String title, String text, String url) {
@@ -356,6 +404,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (billing != null) billing.end();
         web.destroy();
         super.onDestroy();
     }
