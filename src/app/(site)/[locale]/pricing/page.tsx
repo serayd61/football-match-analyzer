@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { getServerSession } from 'next-auth';
 import { getTranslations, unstable_setRequestLocale } from 'next-intl/server';
+import { authOptions } from '@/lib/auth';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
@@ -26,8 +28,11 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
   unstable_setRequestLocale(locale);
   const t = await getTranslations('v2.pricing');
   const access = await getSiteAccess();
-  // Google Play app: no checkout, no prices (Play payments policy, lib/site/twa.ts).
+  // Google Play app: no Stripe checkout (Play payments policy, lib/site/twa.ts).
+  // App v1.3.0+ sells through Play Billing instead (PlayPurchase.tsx), which
+  // needs the signed-in user id to attribute the purchase.
   const purchasable = !isTwa();
+  const accountId = purchasable ? null : (((await getServerSession(authOptions).catch(() => null))?.user as any)?.id as string | undefined) || null;
   const yearly = yearlyEnabled();
   const promo = promoActive() ? PROMO.code : null;
 
@@ -38,6 +43,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
         signedIn={access.state !== 'anon'}
         isPro={access.state === 'pro'}
         purchasable={purchasable}
+        accountId={accountId}
         price={money(PLAN_PRICES.monthly.amount)}
         yearlyPrice={money(PLAN_PRICES.yearly.amount)}
         yearlyEnabled={yearly}
@@ -55,6 +61,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
           twaNote: t('twaNote'), twaSignIn: t('twaSignIn'),
+          playNote: t('playNote'), playSuccess: t('playSuccess'), playPending: t('playPending'), playError: t('playError'), playManage: t('playManage'),
         }}
       />
       <div className="mb-16 mt-10 grid gap-6 rounded-[14px] border border-s-line bg-s-surface p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:p-8">

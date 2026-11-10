@@ -15,8 +15,8 @@ android {
         applicationId = "pro.footballanalytics"   // never change: Play identity
         minSdk = 24
         targetSdk = 36
-        versionCode = 4          // 1 = TWA, 2 = first WebView, 3 = dark mode/offline, 4 = share + in-app review bridge
-        versionName = "1.2.0"
+        versionCode = 5          // 1 = TWA, 2 = first WebView, 3 = dark mode/offline, 4 = share + in-app review bridge, 5 = Play Billing bridge
+        versionName = "1.3.0"
     }
 
     buildTypes {
@@ -48,4 +48,5 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")      // force-dark on Android 10–12
     implementation("androidx.browser:browser:1.10.0")    // Chrome Custom Tabs for external links
     implementation("com.google.android.play:review:2.0.2") // In-App Review (AppBridge.requestReview), v4
+    implementation("com.android.billingclient:billing:7.1.1") // Play Billing bridge (PlayBilling.java), v5
 }

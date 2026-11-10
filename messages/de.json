@@ -1388,7 +1388,12 @@
       "error": "Die Kasse konnte nicht gestartet werden. Bitte erneut versuchen.",
       "metaTitle": "Preise: 7 Tage gratis, danach Pro",
       "twaNote": "In dieser App können keine Abos abgeschlossen werden. Wenn Sie bereits ein Pro-Abo haben, melden Sie sich mit demselben Konto an; es wird automatisch übernommen.",
-      "twaSignIn": "Anmelden"
+      "twaSignIn": "Anmelden",
+      "playNote": "Sichere Abrechnung über Google Play. Verlängert sich automatisch; jederzeit im Play Store unter Abos kündbar.",
+      "playSuccess": "Du bist jetzt Pro. Die Aktivierung kann ein paar Sekunden dauern.",
+      "playPending": "Deine Zahlung ist noch ausstehend. Pro wird freigeschaltet, sobald Google Play sie bestätigt.",
+      "playError": "Der Kauf wurde nicht abgeschlossen, es wurde nichts abgebucht. Bitte versuche es erneut.",
+      "playManage": "Dein Pro-Abo wird über Google Play verwaltet (Play Store → Abos)."
     },
     "performance": {
       "title": "Bilanz",

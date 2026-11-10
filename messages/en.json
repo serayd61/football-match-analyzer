@@ -1388,7 +1388,12 @@
       "error": "Checkout could not be started. Please try again.",
       "metaTitle": "Pricing: 7 days free, then Pro",
       "twaNote": "Subscriptions are not available in this app. If you already have a Pro subscription, sign in with the same account and it is applied automatically.",
-      "twaSignIn": "Sign in"
+      "twaSignIn": "Sign in",
+      "playNote": "Billed securely through Google Play. Renews automatically; cancel anytime in the Play Store under Subscriptions.",
+      "playSuccess": "You're Pro now. It can take a few seconds to activate everywhere.",
+      "playPending": "Your payment is still pending. Pro unlocks as soon as Google Play confirms it.",
+      "playError": "The purchase didn't complete and you were not charged. Please try again.",
+      "playManage": "Your Pro subscription is managed through Google Play (Play Store → Subscriptions)."
     },
     "performance": {
       "title": "Track record",

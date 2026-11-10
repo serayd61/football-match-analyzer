@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { track } from '@/lib/analytics';
+import PlayPurchase, { type PlayLabels } from './PlayPurchase';
 
 type Labels = {
   title: string; lead: string;
@@ -12,6 +13,7 @@ type Labels = {
   billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string; promoShort: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
   twaNote: string; twaSignIn: string;
+  playNote: string; playSuccess: string; playPending: string; playError: string; playManage: string;
 };
 
 export type Billing = 'monthly' | 'yearly';
@@ -22,8 +24,10 @@ export type Billing = 'monthly' | 'yearly';
 // rendered (Play payments policy — see src/lib/site/twa.ts).
 // 2026-11-04: monthly / yearly toggle (yearly only when the server says the
 // Stripe price exists) and the year-end promo note on the monthly view.
-export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, price, yearlyPrice, yearlyEnabled = false, promo, labels: l }: {
+export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, accountId = null, price, yearlyPrice, yearlyEnabled = false, promo, labels: l }: {
   locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean;
+  /** signed-in user id — Play Billing attribution (obfuscatedExternalAccountId) */
+  accountId?: string | null;
   /** monthly Pro price, formatted */ price: string;
   /** yearly Pro price, formatted */ yearlyPrice?: string;
   yearlyEnabled?: boolean;
@@ -120,10 +124,19 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
             {l.pro.map((f) => <li key={f} className="flex gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-s-win" aria-hidden />{f}</li>)}
           </ul>
           {!purchasable ? (
-            <>
-              <p className="mt-auto text-[14px] text-s-muted">{l.twaNote}</p>
-              {!signedIn && <Link href="/login" className="btn btn-secondary btn-block">{l.twaSignIn}</Link>}
-            </>
+            // Google Play app: Play Billing when the app bridge supports it
+            // (v1.3.0+), otherwise the old no-price policy-safe body.
+            <PlayPurchase
+              locale={locale}
+              signedIn={signedIn}
+              isPro={isPro}
+              accountId={accountId}
+              labels={{
+                perMonth: l.perMonth, perYear: l.perYear, loading: l.loading,
+                twaNote: l.twaNote, twaSignIn: l.twaSignIn,
+                playNote: l.playNote, playSuccess: l.playSuccess, playPending: l.playPending, playError: l.playError, playManage: l.playManage,
+              } satisfies PlayLabels}
+            />
           ) : isPro ? (
             <Link href="/account" className="btn btn-secondary btn-block">{l.proCtaSignedIn}</Link>
           ) : (

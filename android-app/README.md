@@ -19,6 +19,15 @@ it), `version()` returns the app version. The site's "Share" / "Rate" buttons
 (`src/lib/site/app-links.ts`) use it when present and keep their web fallback
 otherwise. Only our own host can reach the bridge (host re-checked per call).
 
+Since versionCode 5 (1.3.0, 2026-11-10) the bridge also carries Play Billing
+(`PlayBilling.java`, Billing Library 7.1.1): `billingReady()`,
+`queryProducts()`, `purchase()`, `queryPurchases()`; async answers reach the
+page as `window.__faPlayBillingResult(requestId, payload)`. The web half is
+`src/lib/site/play-billing.ts` + the pricing page's `PlayPurchase.tsx`;
+server verification and RTDN live in `/api/play/*` (see docs/play-billing.md).
+Purchases only work in a Play-installed build — sideloaded APKs stay on the
+no-price fallback body.
+
 ## Build
 
 ```bash

@@ -1388,7 +1388,12 @@
       "error": "Impossibile avviare il pagamento. Riprova.",
       "metaTitle": "Prezzi: 7 giorni gratis, poi Pro",
       "twaNote": "In questa app non è possibile sottoscrivere abbonamenti. Se hai già un abbonamento Pro, accedi con lo stesso account: viene applicato automaticamente.",
-      "twaSignIn": "Accedi"
+      "twaSignIn": "Accedi",
+      "playNote": "Pagamento sicuro tramite Google Play. Si rinnova automaticamente; puoi annullare in qualsiasi momento nel Play Store, sezione Abbonamenti.",
+      "playSuccess": "Ora sei Pro. L'attivazione può richiedere qualche secondo.",
+      "playPending": "Il pagamento è ancora in sospeso. Pro si sblocca appena Google Play lo conferma.",
+      "playError": "L'acquisto non è stato completato e non ti è stato addebitato nulla. Riprova.",
+      "playManage": "Il tuo abbonamento Pro è gestito tramite Google Play (Play Store → Abbonamenti)."
     },
     "performance": {
       "title": "Storico",

@@ -1388,7 +1388,12 @@
       "error": "Ödeme başlatılamadı. Lütfen tekrar dene.",
       "metaTitle": "Fiyatlar: 7 gün ücretsiz, sonra Pro",
       "twaNote": "Bu uygulamada abonelik satın alınamaz. Zaten Pro aboneliğin varsa aynı hesapla giriş yap, otomatik tanınır.",
-      "twaSignIn": "Giriş yap"
+      "twaSignIn": "Giriş yap",
+      "playNote": "Ödeme güvenli şekilde Google Play üzerinden alınır. Otomatik yenilenir; Play Store → Abonelikler'den istediğin an iptal edebilirsin.",
+      "playSuccess": "Artık Pro'sun. Her yerde etkinleşmesi birkaç saniye sürebilir.",
+      "playPending": "Ödemen hâlâ beklemede. Google Play onaylar onaylamaz Pro açılır.",
+      "playError": "Satın alma tamamlanmadı ve ücret alınmadı. Lütfen tekrar dene.",
+      "playManage": "Pro aboneliğin Google Play üzerinden yönetiliyor (Play Store → Abonelikler)."
     },
     "performance": {
       "title": "Karne",
