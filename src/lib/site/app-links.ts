@@ -14,6 +14,15 @@ export const PLAY_MARKET_URL = `market://details?id=${PLAY_PACKAGE}`;
 export const SITE_ORIGIN = 'https://footballanalytics.pro';
 /** Play listing link used by the site's own "Get it on Google Play" CTAs (UTM-tagged). */
 export const PLAY_STORE_SITE_URL = `${PLAY_STORE_URL}&utm_source=website&utm_medium=cta&utm_campaign=play_launch`;
+/**
+ * Custom store listing for visitors who come from a match page (2026-11-11).
+ * Play Console → Store listings → custom listing targeted by URL: `&listing=<param>`
+ * shows that listing (match analysis screenshots first) instead of the default one.
+ * An unknown or not-yet-live parameter falls back to the default listing, so the
+ * link is safe to ship before the listing is approved.
+ */
+export const PLAY_LISTING_MATCH = 'match-analysis';
+export const PLAY_STORE_MATCH_URL = `${PLAY_STORE_URL}&listing=${PLAY_LISTING_MATCH}&utm_source=website&utm_medium=cta&utm_campaign=match_page`;
 
 export type ShareTarget = { title: string; text: string; url: string };
 

@@ -26,6 +26,7 @@ import { listTeams } from '@/lib/site/team-data';
 import type { TeamEntry } from '@/lib/site/teams';
 import DayHub, { dayHubMetadata } from '@/components/site/DayHub';
 import AppBanner from '@/components/site/AppBanner';
+import { PLAY_STORE_MATCH_URL } from '@/lib/site/app-links';
 
 // ============================================================================
 // Herkese açık maç ön izlemesi (SEO, 2026-10-10)
@@ -230,7 +231,7 @@ export default async function MatchPage({ locale, slug, access, twa }: MatchPage
       {faqs.length > 0 && <JsonLd data={faqPageJsonLd(faqs)} />}
 
       {/* Android şerit (2026-10-31): yalnız Android tarayıcı + uygulama dışı; istemci karar verir. */}
-      {!twa && <AppBanner title={tpa('bannerTitle')} lead={tpa('bannerLead')} cta={tpa('bannerCta')} close={tpa('bannerClose')} />}
+      {!twa && <AppBanner title={tpa('bannerTitle')} lead={tpa('bannerLead')} cta={tpa('bannerCta')} close={tpa('bannerClose')} href={PLAY_STORE_MATCH_URL} />}
 
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-[13px]">
         <Link href="/matches" className="font-semibold text-s-muted hover:text-s-ink">← {t('backHub')}</Link>
