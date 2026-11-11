@@ -240,4 +240,4 @@ Görseller herkese açık örnek analizden alındı (sonuçlanmış maç; skor g
 
 Ölçüm: Console → Mağaza girişleri tablosunda girişin ziyaretçi ve dönüşüm oranı; varsayılanla karşılaştırma 2–3 hafta sonra. Fark çıkarsa aynı görsel sırası varsayılan girişe taşınır.
 
-Durum: Console'da taslak; incelemeye gönderme kullanıcı onayıyla.
+Durum (2026-11-11): Console'da taslak (giriş kimliği `4834939682788239875`, Mağaza girişleri → Taslak girişler). Dört dilde kısa açıklama ve en/tr görsel sırası girildi; de/it varsayılan dil (en-US) görsellerini devralıyor. Kullanıma sunma %50 bırakıldı (Console %100'ü "kolayca geri alınamaz" diye uyarıyor; yüzde yalnız artırılabilir). Kalan adımlar kullanıcıda: Yorum adımındaki "Yapay zekayla üretilmiş öğe beyanı", **Kaydet**, ardından Yayın özeti'nden incelemeye gönderme.
