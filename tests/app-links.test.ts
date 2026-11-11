@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { shareUrl, rateUrl, buildShareTarget, shareOrCopy, requestNativeReview, PLAY_STORE_URL, PLAY_MARKET_URL } from '@/lib/site/app-links';
+import { shareUrl, rateUrl, buildShareTarget, shareOrCopy, requestNativeReview, PLAY_STORE_URL, PLAY_MARKET_URL, PLAY_STORE_SITE_URL, PLAY_STORE_MATCH_URL, PLAY_LISTING_MATCH } from '@/lib/site/app-links';
 
 test('shareUrl: localized site on the web, Play listing inside the app, both UTM-tagged', () => {
   assert.equal(shareUrl('tr', false), 'https://footballanalytics.pro/tr?utm_source=share&utm_medium=app_share');
@@ -42,4 +42,15 @@ test('native bridge (Play app ≥ v4) wins over navigator.share; review falls ba
   assert.equal(requestNativeReview(null), false);
   assert.equal(requestNativeReview({}), false);
   assert.deepEqual(calls, [`native:T|X|${target.url}`, 'web', 'review']);
+});
+
+test('match pages link to the custom store listing; other CTAs keep the default listing', () => {
+  const u = new URL(PLAY_STORE_MATCH_URL);
+  assert.equal(u.origin + u.pathname, 'https://play.google.com/store/apps/details');
+  assert.equal(u.searchParams.get('id'), 'pro.footballanalytics');
+  assert.equal(u.searchParams.get('listing'), PLAY_LISTING_MATCH);
+  assert.match(PLAY_LISTING_MATCH, /^[a-z0-9-]+$/);
+  assert.equal(u.searchParams.get('utm_source'), 'website');
+  assert.equal(u.searchParams.get('utm_campaign'), 'match_page');
+  assert.equal(new URL(PLAY_STORE_SITE_URL).searchParams.get('listing'), null);
 });

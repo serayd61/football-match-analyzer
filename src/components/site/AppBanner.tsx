@@ -8,6 +8,7 @@
 // kapatınca 14 gün gizli (localStorage). Tespit istemcide: sunucu tarafı
 // cookies() okuması ISR sayfalarını dinamiğe çevirirdi. Metinler sunucudan
 // (playApp istemci ad alanında değil). cta_click → location 'app_banner'.
+// 2026-11-11: `href` ile maç sayfası özel mağaza girişine (listing=match-analysis) gider.
 import { useEffect, useState } from 'react';
 import { track } from '@/lib/analytics';
 import { PLAY_STORE_SITE_URL } from '@/lib/site/app-links';
@@ -28,7 +29,7 @@ export function shouldShowAppBanner(ua: string, cookie: string, dismissedAt: str
   return true;
 }
 
-export default function AppBanner({ title, lead, cta, close, location = 'app_banner' }: { title: string; lead: string; cta: string; close: string; location?: string }) {
+export default function AppBanner({ title, lead, cta, close, location = 'app_banner', href = PLAY_STORE_SITE_URL }: { title: string; lead: string; cta: string; close: string; location?: string; href?: string }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     let dismissed: string | null = null;
@@ -50,7 +51,7 @@ export default function AppBanner({ title, lead, cta, close, location = 'app_ban
         <p className="truncate text-[11.5px] text-s-muted">{lead}</p>
       </div>
       <a
-        href={PLAY_STORE_SITE_URL}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => track.ctaClick(location, 'google_play')}

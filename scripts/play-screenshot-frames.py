@@ -50,6 +50,25 @@ COPY = {
   },
 }
 
+# Custom store listing "match-analysis" (2026-11-11): URL-targeted listing for
+# visitors coming from a match page (lib/site/app-links.ts PLAY_STORE_MATCH_URL).
+# Frames 01-03 are new (public sample analysis, ?src=twa, 360x640 @3x; scrollY
+# en 383/1400/6050, tr 383/1400/5700); 04-06 reuse the default set's framed 03-05.
+# Sources: marketing/play/screenshots/match-analysis/<locale>/, output framed/match-analysis/<locale>/.
+COPY_MATCH = {
+  'en': {
+    '01': ('Every match analysed\nbefore kick-off', 'Published before the match, scored after it'),
+    '02': ('Model, market and\nour own record', 'Three numbers side by side for each market'),
+    '03': ('How often it held\nin the past', 'Past hit rate for the same kind of prediction'),
+  },
+  'tr': {
+    '01': ('Her maç, başlamadan\nönce analiz edilir', 'Maçtan önce yayınlanır, maçtan sonra sonuçlanır'),
+    '02': ('Model, piyasa ve\nkendi karnemiz', 'Her market için üç sayı yan yana'),
+    '03': ('Geçmişte ne sıklıkta\ntuttu', 'Aynı türden tahminlerin geçmiş isabet oranı'),
+  },
+}
+SETS = {'': COPY, 'match-analysis': COPY_MATCH}
+
 def frame(src, head, sub, dst):
     shot = Image.open(src).convert('RGB')
     canvas = Image.new('RGB', (W, H), BAND)
@@ -80,12 +99,13 @@ def frame(src, head, sub, dst):
 
 def main():
     n = 0
-    for loc, items in COPY.items():
+    for name, copy in SETS.items():
+      for loc, items in copy.items():
         for num, (head, sub) in items.items():
-            srcs = sorted(glob.glob(os.path.join(SRC, loc, f'{num}-*.png')))
+            srcs = sorted(glob.glob(os.path.join(SRC, name, loc, f'{num}-*.png')))
             if not srcs:
-                print(f'skip {loc}/{num}: no source screenshot'); continue
-            dst = os.path.join(OUT, loc, os.path.basename(srcs[0]))
+                print(f'skip {name}/{loc}/{num}: no source screenshot'); continue
+            dst = os.path.join(OUT, name, loc, os.path.basename(srcs[0]))
             print('wrote', os.path.relpath(frame(srcs[0], head, sub, dst), ROOT)); n += 1
     print(f'{n} framed screenshots')
 

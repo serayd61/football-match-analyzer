@@ -206,3 +206,38 @@ Yani bugün başlatılsa bile mağazada görünmesi en erken ~3 hafta sonra.
 | AAB | ✔ v1 (TWA) Kapalı test "Alpha" 2026-10-10 15:05 yayına alındı (Google onayladı). ✔ **v2 WebView** (`android-app/`, sürüm kodu 2 / 1.1.0) `sign-release.sh` ile imzalandı (yükleme anahtarı SHA eşleşti), Alpha kanalına yüklendi ve 2026-10-10 ~15:30 incelemeye gönderildi (Yayın özeti: "İncelenmekte olan değişiklikler"). İnceleme bitince Testers Community formu yeniden gönderilecek (TWA sorusuna artık "No"). Neden WebView: Testers Community TWA kabul etmiyor, Google Chrome içindeki etkinliği saymıyor. ✔ **v3** (1.1.1: koyu tema force-dark, offline/5xx ekranı, Custom Tabs) 2026-10-12 Alpha'ya yüklendi. **v4** (1.2.0: paylaşım sayfası + In-App Review JS köprüsü, `com.google.android.play:review`) 2026-10-16 derlendi; kullanıcı imzalar, Alpha'ya yükleme yalnız kullanıcı onayıyla. |
 
 Not (2026-10-16): site içi iletişim adresi de `support@footballanalytics.pro` yapıldı (`/contact` formu alıcısı, hakkında/gizlilik/şartlar metinleri). Posta kutusunun çalıştığı hâlâ doğrulanmadı (alan adı footballanaly**zer**.com, site footballanaly**tics**.pro) — kullanıcı bir test e-postası göndermeli.
+
+## 9. Özel mağaza girişi: `match-analysis` (2026-11-11)
+
+Amaç: sitedeki maç sayfasından Play'e gelen ziyaretçiye genel ana sayfa görseli yerine maç analizi ekranını göstermek. Varsayılan giriş 6–7 Kasım'da 66 ziyaretçi / 24 yükleme tıklaması / %36 dönüşüm; hacim küçük olduğu için tek özel giriş.
+
+| Alan | Değer |
+|---|---|
+| Referans adı (Console, sonradan değişmez) | `Match analysis (site match pages)` |
+| Hedef kitle | URL · parametre `match-analysis` |
+| Bağlantı | `https://play.google.com/store/apps/details?id=pro.footballanalytics&listing=match-analysis` |
+| Sitede kullanan | `PLAY_STORE_MATCH_URL` (`src/lib/site/app-links.ts`) → maç sayfası Android şeridi (`AppBanner`), `utm_campaign=match_page` |
+| Kaynak | Varsayılan girişin kopyası; uygulama adı, tam açıklama, ikon ve öne çıkan görsel aynı |
+| Değişenler | Kısa açıklama + ilk üç ekran görüntüsü |
+
+Parametre canlı değilken ya da bilinmiyorken Play varsayılan girişi gösterir; bağlantı giriş onaylanmadan da güvenlidir.
+
+**Kısa açıklamalar (≤ 80):**
+- en-US (80): Match analysis for every fixture: model probability, market price, final result.
+- tr-TR (72): Her maç için analiz: model olasılığı, piyasa fiyatı ve maç sonu karnesi.
+- de-DE (78): Spielanalyse zu jeder Partie: Modell-Wahrscheinlichkeit, Marktpreis, Ergebnis.
+- it-IT (75): Analisi di ogni partita: probabilità del modello, prezzo di mercato, esito.
+
+**Ekran görüntüsü sırası (en ve tr; de/it varsayılan dil görsellerini kullanır):**
+1. `framed/match-analysis/<dil>/01-*-analysis.png` — analiz sayfasının üstü (takımlar, 1X2 model + piyasa, beklenen gol)
+2. `framed/match-analysis/<dil>/02-*-markets.png` — market bazında model / piyasa / karne
+3. `framed/match-analysis/<dil>/03-*-record.png` — aynı türden tahminlerin geçmiş isabeti
+4. `framed/<dil>/03-*-performance.png` — herkese açık karne
+5. `framed/<dil>/04-*-leagues-*.png` — lig sayfası
+6. `framed/<dil>/05-*-methodology.png` — yöntem
+
+Görseller herkese açık örnek analizden alındı (sonuçlanmış maç; skor görünür, başlık "maçtan önce yayınlandı, maçtan sonra sonuçlandı"). Yazılı model özeti karesi bahis şirketi adı içerdiği için kullanılmadı. Yeni başlıklarda lig sayısı yok.
+
+Ölçüm: Console → Mağaza girişleri tablosunda girişin ziyaretçi ve dönüşüm oranı; varsayılanla karşılaştırma 2–3 hafta sonra. Fark çıkarsa aynı görsel sırası varsayılan girişe taşınır.
+
+Durum: Console'da taslak; incelemeye gönderme kullanıcı onayıyla.
