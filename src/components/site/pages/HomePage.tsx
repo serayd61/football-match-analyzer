@@ -387,7 +387,7 @@ export default async function HomePage({ locale, access, twa, memberHero = null,
             </div>
             <div className="card card-accent">
               <h3 className="text-[18px]">{t('pricePro')}</h3>
-              <p className="num text-[34px] font-bold leading-none">{money(PLAN_PRICES.monthly.amount)}<span className="text-[15px] font-medium text-s-muted">{t('perMonth')}</span></p>
+              <p className="num text-[34px] font-bold leading-none">{money(PLAN_PRICES.monthly.amount)}<span className="text-[15px] font-medium text-s-muted">/{t('perMonth')}</span></p>
               <p className="text-[15px]">{t('priceProSub')}</p>
               <p className="text-[14px] text-s-muted">{t('priceCancel')}</p>
               <Link href={PRICING_HREF} className="btn btn-primary mt-auto self-start" data-cta="home-price-compare">{t('priceLink')}</Link>

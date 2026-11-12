@@ -47,6 +47,14 @@ export interface SitemapInput {
 // Sitemap türlere bölünür: /sitemap.xml bir indeks, bölümler /sitemaps/{section}.xml.
 // SC'de her bölümün indeks durumu ayrı okunur; bitmiş maçlar "results" bölümünde
 // aylık changefreq ile durur, yaklaşan maçlar "matches" bölümünde günlük.
+/**
+ * Bitmiş maç sayfası sitemap'te kaç gün kalır. SC 2026-11-12: "tarandı, dizine eklenmedi"
+ * 230 → 1.556; örnekteki 423 maçın 422'si bitmiş, %84'ü 30 günden eski (90 günlük pencere
+ * results bölümünü 5.420 URL'ye çıkarmıştı). Sayfalar yayında kalır ve lig sonuç arşivi
+ * (120 gün) bağlamaya devam eder; yalnız taranması istenen listeden düşer.
+ */
+export const SITEMAP_SETTLED_DAYS = 30;
+
 export const SITEMAP_SECTIONS = ['pages', 'leagues', 'teams', 'matches', 'results'] as const;
 export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
 export const sectionPath = (s: SitemapSection) => `/sitemaps/${s}.xml`;
