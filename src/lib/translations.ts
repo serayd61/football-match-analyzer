@@ -41,7 +41,7 @@ export const translations = {
     
     // Pricing Page
     proPlan: 'Pro Plan',
-    perMonth: '/ay',
+    perMonth: 'ay',
     trialFree: 'İlk 7 gün tamamen ücretsiz!',
     startTrial: '7 Gün Ücretsiz Başla',
     startNow: 'Hemen Başla',
@@ -413,7 +413,7 @@ export const translations = {
     
     // Pricing Page
     proPlan: 'Pro Plan',
-    perMonth: '/month',
+    perMonth: 'month',
     trialFree: 'First 7 days completely free!',
     startTrial: 'Start 7-Day Free Trial',
     startNow: 'Start Now',
@@ -785,7 +785,7 @@ export const translations = {
     
     // Pricing Page
     proPlan: 'Pro Plan',
-    perMonth: '/Monat',
+    perMonth: 'Monat',
     trialFree: 'Erste 7 Tage völlig kostenlos!',
     startTrial: '7-Tage-Testversion starten',
     startNow: 'Jetzt starten',

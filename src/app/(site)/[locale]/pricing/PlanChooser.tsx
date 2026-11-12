@@ -113,7 +113,8 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
             <div>
               <p className="flex items-baseline gap-2">
                 <span className="num text-[48px] font-extrabold leading-none">{yearly ? yearlyPrice : price}</span>
-                <span className="text-[14px] text-s-muted">{yearly ? l.perYear : l.perMonth}</span>
+                {/* eğik çizgi burada: çeviri değeri "/mese" olunca Google onu adres sanıp taradı (SC 404, 2026-11-12) */}
+                <span className="text-[14px] text-s-muted">/{yearly ? l.perYear : l.perMonth}</span>
               </p>
               <p className="mt-2 text-[14px] text-s-accent-700">{yearly ? l.noteYearly : l.noteMonthly}</p>
               {/* Promo note on both views (2026-11-04): the page opens on Yearly, so a monthly-only note was invisible. */}

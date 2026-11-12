@@ -102,12 +102,12 @@ export default function PlayPurchase({ locale, signedIn, isPro, accountId, label
     <div className="mt-auto flex flex-col gap-2.5">
       {offers?.yearly && (
         <button type="button" onClick={() => buy(offers.yearly!)} disabled={phase === 'buying'} className="btn btn-primary btn-lg btn-block">
-          {phase === 'buying' ? l.loading : `${offers.yearly.formattedPrice} ${l.perYear}`}
+          {phase === 'buying' ? l.loading : `${offers.yearly.formattedPrice} /${l.perYear}`}
         </button>
       )}
       {offers?.monthly && (
         <button type="button" onClick={() => buy(offers.monthly!)} disabled={phase === 'buying'} className={`btn btn-block ${offers.yearly ? 'btn-secondary' : 'btn-primary btn-lg'}`}>
-          {phase === 'buying' ? l.loading : `${offers.monthly.formattedPrice} ${l.perMonth}`}
+          {phase === 'buying' ? l.loading : `${offers.monthly.formattedPrice} /${l.perMonth}`}
         </button>
       )}
       {!offers && <p className="text-[14px] text-s-muted">{l.loading}</p>}

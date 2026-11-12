@@ -5,6 +5,7 @@ import { COLS, parseRows, mapRow, loadContext, getPrediction } from './predictio
 import { idsForLeague } from './results';
 import { resolveOfficialVersion, officialFilter } from './official';
 import { publicMatchView, type PublicMatch } from './match-public';
+import { SITEMAP_SETTLED_DAYS } from './sitemap';
 import { leagueBySlug } from './leagues';
 import { zonedStartOfDay, addDays } from './time';
 import { fetchAllRows } from './page-all';
@@ -131,8 +132,9 @@ export interface SitemapMatch { path: string; lastmod: Date | null; /** bitmiş 
 /**
  * Public match URLs for the sitemap: covered fixtures from `pastDays` back to
  * `futureDays` ahead. `lastmod` is the engine row's updated_at (a real write),
- * never "now". SEO Faz 1a: settled matches stay listed for 90 days (was 14) —
- * result pages are where "X vs Y" queries land weeks after the match.
+ * never "now". Settled matches stay listed for SITEMAP_SETTLED_DAYS (30; was 90
+ * since SEO Faz 1a) — 2026-11-12: Google crawled the 90-day archive and left it
+ * out of the index; the crawl is better spent on upcoming fixtures.
  *
  * 2026-11-01: iki ayrı pencere, sayfalı okuma (page-all.ts). Tek sorgu + limit(3000)
  * PostgREST'in 1000-satır tavanına takılıyor ve artan sıralamada yalnız en eski
@@ -141,7 +143,7 @@ export interface SitemapMatch { path: string; lastmod: Date | null; /** bitmiş 
  * her pencere kendi tavanıyla kesilir ki yaklaşan maçlar asla düşmesin.
  */
 export const listSitemapMatches = unstable_cache(
-  async (pastDays = 90, futureDays = 21): Promise<SitemapMatch[]> => {
+  async (pastDays = SITEMAP_SETTLED_DAYS, futureDays = 21): Promise<SitemapMatch[]> => {
     const ids = await idsForLeague(null);
     const official = await resolveOfficialVersion();
     const now = Date.now();
@@ -163,7 +165,7 @@ export const listSitemapMatches = unstable_cache(
     }
     return out;
   },
-  ['site-sitemap-matches-v3'],
+  ['site-sitemap-matches-v4'],
   { revalidate: REVALIDATE.performance },
 );
 

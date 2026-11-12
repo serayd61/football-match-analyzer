@@ -5,7 +5,11 @@ import { sportsEventsJsonLd } from '@/lib/site/jsonld';
 import { venueFor } from '@/lib/site/stadiums';
 import { leagueCountryName } from '@/lib/site/countries';
 import { leagueBySlug } from '@/lib/site/leagues';
-import { buildSitemapXml, STATIC_PATHS, entries } from '@/lib/site/sitemap';
+import { buildSitemapXml, STATIC_PATHS, entries, SITEMAP_SETTLED_DAYS } from '@/lib/site/sitemap';
+import en from '../messages/en.json';
+import de from '../messages/de.json';
+import it from '../messages/it.json';
+import tr from '../messages/tr.json';
 import type { SitePrediction } from '@/lib/site/predictions';
 
 // SEO denetimi 2026-10-10: SportsEvent JSON-LD, localised country names, image sitemap.
@@ -110,4 +114,22 @@ test('sitemap without database input still lists the static pages, without lastm
   const xml = buildSitemapXml();
   assert.equal(xml.match(/<loc>[^<]+<\/loc>/g)!.length, (STATIC_PATHS.length + SITE_LEAGUES.length * 5) * 4);
   assert.ok(!xml.includes('<loc>https://footballanalytics.pro/en</loc>\n    <lastmod>'));
+});
+
+// SC 2026-11-12: bitmiş maçlar sitemap'te 30 gün; "/mese" gibi eğik çizgiyle başlayan
+// çeviri değeri RSC verisinde yol gibi görünüyor ve Google onu tarayıp 404 alıyor.
+test('settled matches leave the sitemap after 30 days', () => {
+  assert.equal(SITEMAP_SETTLED_DAYS, 30);
+});
+
+test('no translation value looks like a root-relative path', () => {
+  const walk = (o: unknown, path: string, bad: string[]) => {
+    if (typeof o === 'string') { if (/^\/[\p{L}]/u.test(o)) bad.push(`${path} = ${o}`); return; }
+    if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) walk(v, `${path}.${k}`, bad);
+  };
+  for (const [name, m] of Object.entries({ en, de, it, tr })) {
+    const bad: string[] = [];
+    walk(m, name, bad);
+    assert.deepEqual(bad, [], `${name}: values starting with "/" are crawled as URLs`);
+  }
 });
