@@ -1115,7 +1115,16 @@
     "offerTitleYearly": "Mit Pro im Jahresplan {pct} % sparen gegenüber monatlicher Zahlung.",
     "offerTitleApp": "Mit Pro im Jahresplan über 50 % sparen gegenüber monatlicher Zahlung.",
     "updateKicker": "Neue Version",
-    "updateTitle": "App aktualisieren und Pro direkt hier abonnieren."
+    "updateTitle": "App aktualisieren und Pro direkt hier abonnieren.",
+    "freeKicker": "Heute kostenlos",
+    "freeListTitle": "{n, plural, =1 {Ein Spiel ist heute für dich offen} other {# Spiele sind heute für dich offen}}",
+    "freeListLead": "Dieselbe Liste, die wir jeden Morgen in unserem Telegram-Kanal veröffentlichen. Vollständige Analyse, ohne Abo.",
+    "freeOpen": "Analyse öffnen",
+    "freeOpenToday": "Vollständige Analyse öffnen, heute kostenlos",
+    "freeMatchTitle": "Dieses Spiel ist heute vollständig für dich offen.",
+    "freeMatchLead": "Es gehört zu den kostenlosen Spielen des Tages. Pro öffnet jedes Spiel in {n} Ligen, mit KI-Kommentar und Mein Schein.",
+    "freeCloseTitle": "Alle anderen Spiele gehören zu Pro.",
+    "freeCloseNote": "Monatlich oder jährlich, jederzeit kündbar. Jedes Ergebnis bleibt in der öffentlichen Bilanz, ob Treffer oder nicht."
   },
   "account": {
     "metaTitle": "Konto",

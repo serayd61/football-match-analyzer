@@ -25,6 +25,7 @@ import { assessRows } from '@/lib/site/assess';
 import { marketOf } from '@/lib/site/assessment';
 import { requireSiteAccess } from '@/lib/site/access';
 import { Paywall, TrialNotice, AnonWall } from '@/components/site/Paywall';
+import FreeTodayBlock from '@/components/site/FreeTodayBlock';
 import { dayAvailability } from '@/lib/site/day-availability';
 import { horizonOf, emptyReason, publishDayFor } from '@/lib/site/day-strip-rule';
 
@@ -74,6 +75,8 @@ export default async function PredictionsPage({ params: { locale }, searchParams
     return (
       <Page>
         <div className="rule-b pb-4 pt-8"><h1 className="text-[40px]">{t('title')}</h1></div>
+        {/* Günün ücretsiz maçları (2026-11-14): denemesi biten üyeye açık, duvarın üstünde. */}
+        <FreeTodayBlock />
         <Paywall />
       </Page>
     );

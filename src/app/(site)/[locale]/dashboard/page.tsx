@@ -21,6 +21,7 @@ import PurchaseTracker from '@/components/site/dashboard/PurchaseTracker';
 import { getSiteAccess } from '@/lib/site/access';
 import { readDailyPicks, dailyPicksRecord } from '@/lib/site/daily-picks';
 import { Paywall } from '@/components/site/Paywall';
+import FreeTodayBlock from '@/components/site/FreeTodayBlock';
 import { legacyHref } from '@/lib/site/legacy';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard, strongToday } from '@/lib/site/strong-markets';
@@ -248,7 +249,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       )}
 
       {/* Trial over and no subscription: no fixtures anywhere on the panel (2026-09-08). */}
-      {site.state === 'expired' ? <Paywall /> : (
+      {site.state === 'expired' ? <><FreeTodayBlock /><Paywall /></> : (
       <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-12">
           {/* ── Today ─────────────────────────────────────────────────── */}

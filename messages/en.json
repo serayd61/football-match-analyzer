@@ -1115,7 +1115,16 @@
     "offerTitleYearly": "Save {pct}% with yearly Pro compared with paying monthly.",
     "offerTitleApp": "Save more than 50% with yearly Pro compared with paying monthly.",
     "updateKicker": "New version",
-    "updateTitle": "Update the app to subscribe to Pro right here."
+    "updateTitle": "Update the app to subscribe to Pro right here.",
+    "freeKicker": "Free today",
+    "freeListTitle": "{n, plural, =1 {One match is open to you today} other {# matches are open to you today}}",
+    "freeListLead": "The same list we post in our Telegram channel every morning. Full analysis, no subscription needed.",
+    "freeOpen": "Open analysis",
+    "freeOpenToday": "Open the full analysis, free today",
+    "freeMatchTitle": "This match is open to you today, in full.",
+    "freeMatchLead": "It is one of today's free matches. Pro opens every match across {n} leagues, with AI commentary and My slip.",
+    "freeCloseTitle": "Every other match is part of Pro.",
+    "freeCloseNote": "Monthly or yearly, cancel anytime. Every result stays on the public scorecard, hit or miss."
   },
   "account": {
     "metaTitle": "Account",

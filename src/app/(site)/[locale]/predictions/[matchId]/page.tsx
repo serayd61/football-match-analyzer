@@ -48,6 +48,10 @@ import { requireSiteAccess, getSiteAccess, canSeeMatches } from '@/lib/site/acce
 import { touchSeen } from '@/lib/site/seen';
 import { Paywall, TrialNotice, LockedPick, AnonWall, REGISTER_HREF, PRICING_HREF } from '@/components/site/Paywall';
 import { isSampleFixture } from '@/lib/site/sample-analysis';
+import { isFreeFixture } from '@/lib/site/free-today';
+import { freeViewFor } from '@/lib/site/free-today-rule';
+import AppPlansLink from '@/components/site/AppPlansLink';
+import { isTwa } from '@/lib/site/twa';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import AddToSlipButton, { type SlipLegInput } from '@/components/site/slip/AddToSlipButton';
 import SlipMarkets, { type SlipGroup } from '@/components/site/slip/SlipMarkets';
@@ -95,10 +99,14 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   // ziyaretçiye ve süresi dolmuş üyeye açık — ana sayfadaki "Örnek analizi gör" buraya gelir.
   const sample = await isSampleFixture(id);
   const access = sample ? await getSiteAccess() : await requireSiteAccess(params.locale, `/predictions/${id}`);
-  const publicSample = sample && !canSeeMatches(access);
+  // Günün ücretsiz maçı (2026-11-14): Telegram'da / geri kazanım e-postasında yayınlanan maç,
+  // denemesi bitmiş üyeye tam açılır (kural: lib/site/free-today-rule.ts). Ziyaretçiye açılmaz.
+  // Örnek analizle aynı görünüm: yapay zeka yorumu ve kupon kapalı kalır.
+  const freeToday = !sample && access.state === 'expired' && freeViewFor(access.state, await isFreeFixture(id));
+  const publicSample = (sample && !canSeeMatches(access)) || freeToday;
   const sampleCta = access.state === 'expired' ? { href: PRICING_HREF, key: 'sampleCtaPro' as const } : { href: REGISTER_HREF, key: 'sampleCta' as const };
   // Aktivasyon izi (2026-10-28): üye maç sayfası açtı → last_seen_at + ilk görüntü; çevirilerle paralel.
-  const seen = canSeeMatches(access) ? touchSeen(access.email, { matchView: true, fixtureId: id }) : Promise.resolve();
+  const seen = canSeeMatches(access) || freeToday ? touchSeen(access.email, { matchView: true, fixtureId: id }) : Promise.resolve();
 
   const t = await getTranslations('match');
   const t2 = await getTranslations('v2.match');
@@ -106,8 +114,15 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const t3r = await getTranslations('v3.risk');
   const th = await getTranslations('v2.home');
   const tc = await getTranslations('common');
+  const tpw = await getTranslations('paywall');
   const f = await getFormatter();
   await seen;
+  // Ücretsiz görünümdeki satın alma düğmesi: web'de /pricing, Play uygulamasında AppPlansLink
+  // (Play Billing varsa planlar, eski sürümde "uygulamayı güncelle"; asla web ödeme bağlantısı değil).
+  const twa = freeToday && isTwa();
+  const freeCta = (className: string, cta: string) => (twa
+    ? <AppPlansLink plans={tpw('expiredCta')} update={tpw('appUpdateCta')} className={className} location={`${cta.replace('-', '_')}_app`} />
+    : <Link href={PRICING_HREF} className={className} data-cta={cta}>{tpw('expiredCta')}</Link>);
 
   if ((access.state === 'expired' || access.state === 'anon') && !publicSample) {
     return (
@@ -390,7 +405,16 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
 
   return (
     <Page>
-      {publicSample ? (
+      {freeToday ? (
+        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-s-accent/40 bg-s-accent-100/40 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div>
+            <p className="kicker !text-s-accent-700">{tpw('freeKicker')}</p>
+            <p className="mt-1 text-[15px] font-semibold">{tpw('freeMatchTitle')}</p>
+            <p className="mt-1 text-[13.5px] text-s-muted">{tpw('freeMatchLead', { n: SITE_LEAGUES.length })}</p>
+          </div>
+          {freeCta('btn btn-primary shrink-0', 'free-top')}
+        </div>
+      ) : publicSample ? (
         <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-s-accent/40 bg-s-accent-100/40 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="kicker !text-s-accent-700">{t3('sampleKicker')}</p>
@@ -401,7 +425,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         </div>
       ) : <div className="pt-5"><TrialNotice access={access} /></div>}
       <p className="flex flex-wrap items-center gap-2 pt-2 text-[13px]">
-        {publicSample
+        {publicSample && !freeToday
           ? <Link href="/" className="font-semibold text-s-muted hover:text-s-ink">{t3('sampleBack')}</Link>
           : <Link href={backHref({ back: searchParams?.back, covered: p.covered, leagueId: p.leagueId, kickoffYmd: ymdOf(p.kickoff), todayYmd: todayYmd(), fixtureId: id })} className="font-semibold text-s-muted hover:text-s-ink">{t2(fromPicks(searchParams?.back) ? 'backPicks' : 'back')}</Link>}
         {!p.covered && <span className="tag tag-outline">{t('outsideCoverage')}</span>}
@@ -860,7 +884,20 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
         />
       </div>
 
-      {publicSample && (
+      {freeToday && (
+        <section className="mt-12 flex flex-col items-start gap-4 rounded-2xl border border-s-line bg-s-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 className="text-[22px]">{tpw('freeCloseTitle')}</h2>
+            <p className="mt-1 max-w-[56ch] text-[14px] text-s-muted">{tpw('freeCloseNote')}</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {freeCta('btn btn-primary', 'free-close')}
+            <Link href="/performance" className="btn btn-secondary" data-cta="free-record">{tpw('expiredAlt')}</Link>
+          </div>
+        </section>
+      )}
+
+      {publicSample && !freeToday && (
         <section className="mt-12 flex flex-col items-start gap-4 rounded-2xl border border-s-line bg-s-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <h2 className="text-[22px]">{t3('sampleCloseTitle')}</h2>

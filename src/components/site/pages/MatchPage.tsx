@@ -12,6 +12,7 @@ import { fromEngineRow, mergeHistory, type HistoryRow } from '@/lib/site/match-h
 import { getStandings, type StandingRow } from '@/lib/site/standings';
 import { venueFor } from '@/lib/site/stadiums';
 import { canSeeMatches, type SiteAccess } from '@/lib/site/access-state';
+import { freeViewFor } from '@/lib/site/free-today-rule';
 import { Page, SectionTitle } from '@/components/site/ui';
 import { Crest, StatusChip } from '@/components/site/PredictionTable';
 import LocalTime from '@/components/site/LocalTime';
@@ -58,6 +59,7 @@ export interface MatchPageProps {
   access: SiteAccess;
   /** anonim rotada false (Play uygulaması zaten üye rotasına yazılır) */
   twa: boolean;
+  /** günün ücretsiz maçı sorgusu; yalnız üye rotası verir (bkz. freeOpen) */ isFree?: (fixtureId: number) => Promise<boolean>;
 }
 
 async function load(slug: string): Promise<PublicMatch | null> {
@@ -99,7 +101,7 @@ export async function matchMetadata(locale: string, slug: string): Promise<Metad
 
 const score = (r: { homeScore: number | null; awayScore: number | null }) => (r.homeScore != null && r.awayScore != null ? `${r.homeScore}–${r.awayScore}` : '–');
 
-export default async function MatchPage({ locale, slug, access, twa }: MatchPageProps) {
+export default async function MatchPage({ locale, slug, access, twa, isFree }: MatchPageProps) {
   unstable_setRequestLocale(locale);
   const hub = parseDayHub(slug);
   if (hub) return <DayHub locale={locale} hub={hub} />;
@@ -134,6 +136,10 @@ export default async function MatchPage({ locale, slug, access, twa }: MatchPage
   const formAway = mergeHistory(feedFormAway, engFormAway.map(fromEngineRow), 5);
   const h2h = mergeHistory(feedH2h, engH2h.map(fromEngineRow), 6);
   const unlocked = canSeeMatches(access);
+  // Günün ücretsiz maçı (2026-11-14): denemesi biten üye tam analizi açabilir. Sorgu `isFree`
+  // ile ÜYE rotasından gelir (m/matches/[slug]); anonim ISR ağacı free-today.ts'i (no-store)
+  // içe almaz, tests/isr-anon-tree.test.ts bunu korur.
+  const freeOpen = !!isFree && access.state === 'expired' && freeViewFor(access.state, await isFree(m.fixtureId));
 
   const rowOf = (id: number | null) => (id ? table.find((r) => r.teamId === id) : undefined);
   const stHome = rowOf(m.homeId), stAway = rowOf(m.awayId);
@@ -364,8 +370,8 @@ export default async function MatchPage({ locale, slug, access, twa }: MatchPage
             <li>{t('bullet1x2')}</li><li>{t('bulletGoals')}</li><li>{t('bulletConf')}</li><li>{t('bulletRecord')}</li>
           </ul>
           <div className="mt-5 flex flex-col gap-2">
-            {unlocked ? (
-              <Link href={`/predictions/${m.fixtureId}`} className="btn btn-primary" data-cta="match-preview-open">{t('modelOpen')} →</Link>
+            {unlocked || freeOpen ? (
+              <Link href={`/predictions/${m.fixtureId}`} className="btn btn-primary" data-cta={freeOpen ? 'match-preview-free' : 'match-preview-open'}>{freeOpen ? tp('freeOpenToday') : t('modelOpen')} →</Link>
             ) : (
               <>
                 <Link href={`${REGISTER_HREF}&callbackUrl=${encodeURIComponent(`/${locale}/predictions/${m.fixtureId}`)}`} rel="nofollow" className="btn btn-primary" data-cta="match-preview-trial">{twa ? tn('signUp') : tp('lockedCta')}</Link>
