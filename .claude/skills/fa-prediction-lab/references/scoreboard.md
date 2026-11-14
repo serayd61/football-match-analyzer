@@ -125,13 +125,18 @@ Okuma: piyasaya açık 0.0331 → 0.0180; kazanç DC–piyasa ayrışması ≥10
 ve Ağustos–Eylül'de (−0.046). (K, λ) tarama kenarında. xG kazancıyla (§2b) TOPLANMAZ — aynı bilgi;
 xG-DC + kendi Elo birlikte ölçülmedi. ROI negatif kaldı. Rapor: `reports/backtest-own-elo.md`.
 
+Canlı formül (`engine/elo.py`: λ düzeyinde harman, toplam gol korunur; Elo geçmişi 2 sezon):
+**−0.0102 [−0.0137, −0.0067]**, 5/5 lig, E0 aralığı 0'a değiyor [−0.0205, +0.0001]; piyasaya açık
+0.0331 → 0.0230. Kademesiz başlangıç −0.0091 (yeni çıkan takım maçları +0.03). Model–piyasa <5 puan
+diliminde +0.005 kötüleşme. Canlıda beklenti −0.010, −0.015 değil. Gölge sürüm adı `dc-1.4-elo`.
+
 §7 eki — canlı denetim 2026-11-14 (1.699 maç ⨝ kapanış): model LL 0.9848 / piyasa 0.9598
 (açık 0.025 [0.013, 0.037]); açılış→kapanış yalnız 0.003; açık ayrışma ≥10 puanda 0.069,
 Ağustos'ta 0.044. Gölgeler dc-1.0'a göre: lvl +0.0002, ctx +0.0001, cal +0.006, xg −0.007 (n=272, CI 0'ı içeriyor).
 
 ## Güncelleme günlüğü
 
-- 2026-11-14: §10 kendi Elo kapısı (GEÇTİ) ve canlı denetim eki.
+- 2026-11-14: §10 kendi Elo kapısı (GEÇTİ), canlı formül ölçümü ve canlı denetim eki.
 
 - 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.
 
