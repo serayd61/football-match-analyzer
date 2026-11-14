@@ -185,7 +185,7 @@ The ones it was surest about that did not come in:
 
 West Ham were the favourite seven times and won three. Southampton six times, won three. Bolton took points off a favourite three times (Norwich, Wolves, Southampton).
 
-No other league in the set looks like this, so I am trying to work out whether the model is wrong about this division or the division is just doing what it always does. From people who watch it every week: which of these would you have called, and what is a numbers-only model missing about these sides?
+Of the 17, this is the league the model scores worst in, so I am trying to work out whether the model is wrong about this division or the division is just doing what it always does. From people who watch it every week: which of these would you have called, and what is a numbers-only model missing about these sides?
 
 Every match and probability is in an open file if anyone wants to check their own club: https://github.com/serayd61/football-predictions-open-data
 
