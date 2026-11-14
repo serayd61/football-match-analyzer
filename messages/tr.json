@@ -2258,12 +2258,25 @@
     "recordLink": "Karne",
     "statsLine": "{leagues} ligde {n} sonuçlanmış maç, {from} – {to}. Dosyalar maçlar sonuçlandıkça saatte bir yenilenir.",
     "empty": "Veri setinde henüz sonuçlanmış maç yok.",
-    "intro": "Hiçbir şey sonuca göre ayıklanmaz: kaybeden seçimler de dosyada tutanların yanındadır. Oynanmamış maçlar asla yer almaz; bir tahmin ancak maç skorla sonuçlandığında herkese açık olur.",
+    "intro": "Hiçbir şey sonuca göre ayıklanmaz: kaybeden seçimler de dosyada tutanların yanındadır. Olasılıklar maç skorla sonuçlandığında herkese açık olur; seçimin kendisi ise maç başlamadan önce, aşağıdaki beslemede açıktır.",
     "downloadsH": "İndirmeler",
     "colFile": "Dosya",
     "colRows": "Maç",
     "allLeagues": "Tüm ligler",
     "downloadsNote": "Maç başına bir satır, UTF-8, virgülle ayrılmış, başlama sırasına göre. JSON dosyaları aynı satırları bir kaynak başlığıyla taşır. Doğrudan bağlantılar sabittir ve betiklerle çekilebilir; çapraz kaynaklı isteklere izin verilir.",
+    "upcomingH": "Maç öncesi seçimler",
+    "upcomingP": "Henüz başlamamış her kapsam içi maç için modelin 1X2 seçimi ve yazıldığı saat. Aynı seçim maçın kendi sayfasında da görünür. Olasılıklar bu beslemede yer almaz; maç sonuçlandığında ana dosyalara eklenir.",
+    "upcomingCols": "Sütunlar: fixture_id, kickoff_utc, league, league_slug, country, home_team, away_team, pick (1 ev sahibi, X beraberlik, 2 deplasman), pick_written_utc (modelin seçimi en son yazdığı an, her zaman maç başlamadan önce) ve match_url. Model her gün yeniden hesaplanır, bu yüzden bir seçim maç başlayana kadar değişebilir; defter her sürümü saklar.",
+    "upcomingLedgerP": "Bu beslemenin bir kopyası günde birkaç kez GitHub’daki bir deftere eklenir. Satırlar yalnızca eklenir ve commit saatlerini biz değil GitHub belirler; böylece bir seçimin maç başlamadan önce herkese açık olduğunu isteyen herkes denetleyebilir:",
+    "upcomingLedger": "Defter",
+    "upcomingHistory": "Commit geçmişi",
+    "upColKickoff": "Başlama (UTC)",
+    "upColMatch": "Maç",
+    "upColPick": "Seçim",
+    "upColWritten": "Yazıldı (UTC)",
+    "upDraw": "Beraberlik",
+    "upcomingEmpty": "Şu an yaklaşan seçim yok.",
+    "upcomingShown": "Yaklaşan {total} seçimin ilk {shown} tanesi; dosyalarda hepsi var.",
     "columnsH": "Sütunlar",
     "colName": "Sütun",
     "colDesc": "Anlamı",
@@ -2312,8 +2325,8 @@
         "a": "Evet. Lisans CC BY 4.0: ticari iş dâhil her şey için kullanın, Football Analytics’i footballanalytics.pro/data bağlantısıyla anın."
       },
       {
-        "q": "Neden oynanmamış maçlar yok?",
-        "a": "Gelecek tahminler üyeler içindir. Bir maç açık dosyaya ancak maç sonu skoruyla sonuçlandığında girer; bu dosyayı aynı zamanda dürüst bir karne yapar: sonuç bilindikten sonra hiçbir şey değiştirilemez."
+        "q": "Ana dosyalarda neden oynanmamış maçlar yok?",
+        "a": "Oynanmamış maçların olasılıkları üyeler içindir; bir maç ana dosyalara ancak maç sonu skoruyla sonuçlandığında girer. Seçimin kendisi (ev sahibi, beraberlik ya da deplasman) maç başlamadan önce herkese açıktır: yaklaşan maçlar beslemesi onu yazıldığı saatle birlikte listeler, GitHub’daki defter de her satırı saklar. Böylece sonuç bilindikten sonra hiçbir şey değiştirilemez."
       },
       {
         "q": "Veri ne kadar geriye gidiyor, ne sıklıkla güncelleniyor?",

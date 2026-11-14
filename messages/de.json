@@ -2258,12 +2258,25 @@
     "recordLink": "Bilanz",
     "statsLine": "{n} abgerechnete Spiele aus {leagues} Ligen, {from} bis {to}. Die Dateien werden stündlich aktualisiert, sobald Spiele abgerechnet sind.",
     "empty": "Noch keine abgerechneten Spiele im Datensatz.",
-    "intro": "Nichts wird nach Ausgang gefiltert: die verlorenen Tipps stehen neben den gewonnenen in der Datei. Kommende Spiele sind nie enthalten – eine Prognose wird erst öffentlich, wenn das Spiel mit Endstand abgerechnet ist.",
+    "intro": "Nichts wird nach Ausgang gefiltert: die verlorenen Tipps stehen neben den gewonnenen in der Datei. Wahrscheinlichkeiten werden öffentlich, sobald ein Spiel mit Endstand abgerechnet ist; der Tipp selbst ist schon vor Anstoss öffentlich, im Feed weiter unten.",
     "downloadsH": "Downloads",
     "colFile": "Datei",
     "colRows": "Spiele",
     "allLeagues": "Alle Ligen",
     "downloadsNote": "Eine Zeile pro Spiel, UTF-8, kommagetrennt, in Anstossreihenfolge. Die JSON-Dateien enthalten dieselben Zeilen plus einen Herkunftsblock. Die Direktlinks sind stabil und dürfen per Skript abgerufen werden; Cross-Origin-Anfragen sind erlaubt.",
+    "upcomingH": "Tipps vor Anstoss",
+    "upcomingP": "Der 1X2-Tipp des Modells für jedes abgedeckte Spiel, das noch nicht begonnen hat, mit dem Zeitpunkt, zu dem er geschrieben wurde. Derselbe Tipp steht auf der jeweiligen Spielseite. Wahrscheinlichkeiten sind nicht Teil dieses Feeds; sie kommen in die Hauptdateien, sobald das Spiel abgerechnet ist.",
+    "upcomingCols": "Spalten: fixture_id, kickoff_utc, league, league_slug, country, home_team, away_team, pick (1 Heim, X Remis, 2 Auswärts), pick_written_utc (wann das Modell den Tipp zuletzt geschrieben hat, immer vor Anstoss) und match_url. Das Modell wird täglich neu angepasst, ein Tipp kann sich daher bis zum Anstoss ändern; das Protokoll behält jede Fassung.",
+    "upcomingLedgerP": "Eine Kopie dieses Feeds wird mehrmals täglich an ein Protokoll auf GitHub angehängt. Zeilen werden nur hinzugefügt, und die Commit-Zeiten setzt GitHub, nicht wir. So kann jeder prüfen, dass ein Tipp vor Spielbeginn öffentlich war:",
+    "upcomingLedger": "Protokoll",
+    "upcomingHistory": "Commit-Historie",
+    "upColKickoff": "Anstoss (UTC)",
+    "upColMatch": "Spiel",
+    "upColPick": "Tipp",
+    "upColWritten": "Geschrieben (UTC)",
+    "upDraw": "Remis",
+    "upcomingEmpty": "Derzeit keine kommenden Tipps.",
+    "upcomingShown": "Die nächsten {shown} von {total} kommenden Tipps; die Dateien enthalten alle.",
     "columnsH": "Spalten",
     "colName": "Spalte",
     "colDesc": "Bedeutung",
@@ -2312,8 +2325,8 @@
         "a": "Ja. Die Lizenz ist CC BY 4.0: Nutzung für alles, auch kommerziell, mit Nennung von Football Analytics und Link auf footballanalytics.pro/data."
       },
       {
-        "q": "Warum fehlen kommende Spiele?",
-        "a": "Kommende Prognosen sind für Mitglieder. Ein Spiel kommt erst mit Endstand in die offene Datei – das macht sie zugleich zu einer fairen Bilanz: Nach bekanntem Resultat kann nichts mehr geändert werden."
+        "q": "Warum fehlen kommende Spiele in den Hauptdateien?",
+        "a": "Die Wahrscheinlichkeiten kommender Spiele sind für Mitglieder; ein Spiel kommt erst mit Endstand in die Hauptdateien. Der Tipp selbst (Heim, Remis oder Auswärts) ist vor Anstoss öffentlich: Der Feed der kommenden Spiele führt ihn mit dem Zeitpunkt, zu dem er geschrieben wurde, und das Protokoll auf GitHub behält jede Zeile. Nach bekanntem Resultat kann also nichts mehr geändert werden."
       },
       {
         "q": "Wie weit zurück reichen die Daten und wie oft werden sie aktualisiert?",

@@ -5,6 +5,11 @@ Downloads the canonical file (https://footballanalytics.pro/data/all.csv),
 writes data/all.csv, one file per league under data/leagues/, data/summary.json,
 and rewrites the statistics block in README.md.
 
+It also appends the pre-kick-off pick feed (https://footballanalytics.pro/data/upcoming.csv)
+to data/picks/ledger.csv. That file only ever grows: a line is added the first time a
+pick is seen, and again if the pick changes before kick-off. The commit that adds a
+line is the proof that the pick was public before the match.
+
 Standard library only. Run from anywhere:  python3 scripts/refresh.py
 The output is deterministic for a given source file, so a scheduled run only
 produces a commit when new matches were settled.
@@ -12,6 +17,7 @@ produces a commit when new matches were settled.
 from __future__ import annotations
 
 import csv
+import datetime as dt
 import io
 import json
 import sys
@@ -29,6 +35,16 @@ COLUMNS = [
     "fixture_id", "kickoff_utc", "league", "league_slug", "country", "home_team", "away_team",
     "home_score", "away_score", "result", "p_home", "p_draw", "p_away", "lambda_home",
     "lambda_away", "pick", "pick_correct", "model_version", "match_url",
+]
+UPCOMING = "https://footballanalytics.pro/data/upcoming.csv"
+LEDGER = DATA / "picks" / "ledger.csv"
+UPCOMING_COLUMNS = [
+    "fixture_id", "kickoff_utc", "league", "league_slug", "country", "home_team", "away_team",
+    "pick", "pick_written_utc", "match_url",
+]
+LEDGER_COLUMNS = [
+    "fixture_id", "kickoff_utc", "league_slug", "home_team", "away_team",
+    "pick", "pick_written_utc", "first_seen_utc",
 ]
 # A fetch that returns far fewer rows than we already hold is a bad fetch, not news.
 MAX_SHRINK = 0.2
@@ -108,7 +124,57 @@ def stats_block(summary: dict) -> str:
     return "\n".join(lines)
 
 
+def parse_time(value: str) -> dt.datetime:
+    return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def ledger_additions(upcoming: list[dict[str, str]], ledger: list[dict[str, str]], now: dt.datetime) -> list[dict[str, str]]:
+    """Lines to append: a pick not yet recorded for its match, seen before kick-off."""
+    latest = {r["fixture_id"]: r["pick"] for r in ledger}
+    seen = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    out = []
+    for r in sorted(upcoming, key=lambda r: (r["kickoff_utc"], int(r["fixture_id"]))):
+        if r["pick"] not in ("1", "X", "2") or parse_time(r["kickoff_utc"]) <= now:
+            continue
+        if latest.get(r["fixture_id"]) == r["pick"]:
+            continue
+        latest[r["fixture_id"]] = r["pick"]
+        out.append({**{k: r[k] for k in LEDGER_COLUMNS if k != "first_seen_utc"}, "first_seen_utc": seen})
+    return out
+
+
+def update_ledger() -> int:
+    """Append new pre-kick-off picks; existing lines are never rewritten."""
+    reader = csv.DictReader(io.StringIO(fetch(UPCOMING)))
+    if reader.fieldnames != UPCOMING_COLUMNS:
+        raise RuntimeError(f"unexpected upcoming columns: {reader.fieldnames}")
+    ledger: list[dict[str, str]] = []
+    if LEDGER.exists():
+        with LEDGER.open(encoding="utf-8", newline="") as f:
+            ledger = list(csv.DictReader(f))
+    added = ledger_additions(list(reader), ledger, dt.datetime.now(dt.timezone.utc))
+    if not added and LEDGER.exists():
+        return 0
+    LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    fresh = not LEDGER.exists()
+    with LEDGER.open("a", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=LEDGER_COLUMNS, lineterminator="\n")
+        if fresh:
+            w.writeheader()
+        w.writerows(added)
+    return len(added)
+
+
 def main() -> None:
+    # The ledger comes first and stands alone: a failure here must not stop the
+    # settled files from refreshing, and a failure there must not lose a pick.
+    ledger_error = None
+    try:
+        print(f"ledger: {update_ledger()} new pick lines", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 - reported below, after the main refresh
+        ledger_error = e
+        print(f"ledger: skipped ({e})", file=sys.stderr)
+
     rows = parse(fetch(SOURCE))
     if not rows:
         raise SystemExit("source returned no rows")
@@ -153,6 +219,8 @@ def main() -> None:
     tail = rest.split(END, 1)[1]
     README.write_text(head + stats_block(summary) + tail, encoding="utf-8")
     print(f"{len(rows)} matches, {len(by_league)} competitions, last kick-off {rows[-1]['kickoff_utc']}", file=sys.stderr)
+    if ledger_error is not None:
+        raise SystemExit(f"settled files refreshed, but the pick ledger was not updated: {ledger_error}")
 
 
 if __name__ == "__main__":

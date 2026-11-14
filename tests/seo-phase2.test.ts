@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import IntlMessageFormat from 'intl-messageformat';
-import { toOpenDataRow, toCsv, toJson, csvCell, parseOpenDataFile, openDataNames, openDataMeta, countByLeague, OPEN_DATA_COLUMNS, OPEN_DATA_LICENSE } from '@/lib/site/open-data';
-import { PREMIUM_FIELDS } from '@/lib/site/match-public';
+import { toOpenDataRow, toCsv, toJson, csvCell, parseOpenDataFile, openDataNames, openDataMeta, countByLeague, OPEN_DATA_COLUMNS, OPEN_DATA_LICENSE, parseUpcomingFile, toUpcomingPickRow, upcomingPickRows, upcomingToCsv, upcomingToJson, UPCOMING_COLUMNS } from '@/lib/site/open-data';
+import { PREMIUM_FIELDS, publicMatchView } from '@/lib/site/match-public';
 import { openDatasetJsonLd } from '@/lib/site/jsonld';
 import { STATIC_PATHS, entries } from '@/lib/site/sitemap';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
@@ -112,10 +112,65 @@ test('open data: the four locales carry the same keys, every column is documente
     for (const f of m.openData.faqs) assert.ok(f.q.endsWith('?') && f.a.length > 60, `${name}: faq ${f.q}`);
     for (const [k, v] of Object.entries(m.openData)) {
       if (typeof v !== 'string') continue;
-      const out = new IntlMessageFormat(v, name).format({ n: '1,234', leagues: 11, from: 'x', to: 'y', year: 2026, url: 'u', license: 'L' });
+      const out = new IntlMessageFormat(v, name).format({ n: '1,234', leagues: 11, from: 'x', to: 'y', year: 2026, url: 'u', license: 'L', shown: 25, total: 80 });
       assert.ok(typeof out === 'string' && !/\{/.test(out), `${name}.openData.${k} left a placeholder`);
     }
     const text = JSON.stringify(m.openData).toLowerCase();
     for (const w of ['cc by 4.0', 'footballanalytics.pro/data']) assert.ok(text.includes(w), `${name}: missing "${w}"`);
   }
+});
+
+// 2026-11-14: picks before kick-off — /data/upcoming.{csv,json}, the feed the GitHub ledger is built from.
+const upcomingPred = (o: Partial<SitePrediction>) => pred({ settled: false, homeScore: null, awayScore: null, result: null as any, outcome: null as any, status: 'scheduled' as any, kickoff: '2026-11-15T15:00:00+00:00', updatedAt: '2026-11-14T05:00:04.822913+00:00', ...o });
+const NOW = new Date('2026-11-14T12:00:00Z');
+
+test('upcoming feed: a not-yet-started match carries the pick and its write time, nothing premium', () => {
+  const r = toUpcomingPickRow(publicMatchView(upcomingPred({})), NOW)!;
+  assert.ok(r);
+  assert.deepEqual(Object.keys(r), UPCOMING_COLUMNS, 'row keys are the documented columns, in order');
+  assert.equal(r.pick, '1');
+  assert.equal(r.kickoff_utc, '2026-11-15T15:00:00.000Z');
+  assert.equal(r.pick_written_utc, '2026-11-14T05:00:04.822Z');
+  assert.equal(r.match_url, 'https://footballanalytics.pro/en/matches/arsenal-vs-chelsea-4193188');
+  const text = JSON.stringify(r);
+  for (const leak of ['0.51', '0.24', '1.71', 'secret', 'dc-1.0']) assert.ok(!text.includes(leak), `${leak} leaked`);
+  for (const k of ['p_home', 'p_draw', 'p_away', 'lambda_home', 'confidence', 'model_version', 'rationale']) assert.ok(!(k in r), `${k} in row`);
+});
+
+test('upcoming feed: nothing without a public lean, after kick-off, or without a pre-kick-off write time', () => {
+  const row = (o: Partial<SitePrediction>, now = NOW) => toUpcomingPickRow(publicMatchView(upcomingPred(o)), now);
+  assert.equal(row({ pick: null }), null, 'no pick');
+  assert.equal(row({ noFavourite: true }), null, 'no favourite');
+  assert.equal(row({ hasModel: false }), null, 'no model');
+  assert.equal(row({ publishedAfterKickoff: true }), null, 'written after kick-off');
+  assert.equal(row({ status: 'postponed' as any }), null, 'postponed');
+  assert.equal(row({ league: null, covered: false }), null, 'no league');
+  assert.equal(row({ updatedAt: null }), null, 'no write time');
+  assert.equal(row({ updatedAt: '2026-11-15T15:00:00Z' }), null, 'write time not before kick-off');
+  assert.equal(row({}, new Date('2026-11-15T15:00:00Z')), null, 'kick-off reached');
+  assert.equal(row({ status: 'live' as any }, new Date('2026-11-15T15:30:00Z')), null, 'live');
+  assert.equal(toUpcomingPickRow(publicMatchView(pred({})), NOW), null, 'settled');
+});
+
+test('upcoming feed: kick-off order, one row per fixture, CSV header and JSON provenance; file names', () => {
+  const ms = [
+    publicMatchView(upcomingPred({ fixtureId: 9, kickoff: '2026-11-16T18:00:00Z' })),
+    publicMatchView(upcomingPred({ fixtureId: 7, homeName: 'Inter, Milan', pick: 'X' })),
+    publicMatchView(upcomingPred({ fixtureId: 7 })),
+    publicMatchView(upcomingPred({ fixtureId: 5, pick: null })),
+  ];
+  const rows = upcomingPickRows(ms, NOW);
+  assert.deepEqual(rows.map((r) => r.fixture_id), [7, 9]);
+  const lines = upcomingToCsv(rows).split('\r\n');
+  assert.equal(lines[0], UPCOMING_COLUMNS.join(','));
+  assert.equal(lines.length, 4);
+  assert.ok(lines[1].includes('"Inter, Milan"') && lines[1].includes(',X,2026-11-14T05:00:04.822Z,'));
+  const j = JSON.parse(upcomingToJson(rows, NOW));
+  assert.equal(j.rows, 2); assert.equal(j.license, OPEN_DATA_LICENSE); assert.equal(j.generated_at, '2026-11-14T12:00:00.000Z');
+  assert.deepEqual(j.columns, UPCOMING_COLUMNS);
+  assert.ok(j.ledger.endsWith('/data/picks/ledger.csv'));
+  assert.equal(parseUpcomingFile('upcoming.csv'), 'csv'); assert.equal(parseUpcomingFile('upcoming.json'), 'json');
+  assert.equal(parseUpcomingFile('upcoming.xml'), null); assert.equal(parseUpcomingFile('all.csv'), null);
+  assert.equal(parseOpenDataFile('upcoming.csv'), null, 'the settled-file parser does not claim the feed name');
+  assert.ok(!SITE_LEAGUES.some((l) => l.slug === 'upcoming'), 'no league slug shadows the feed');
 });

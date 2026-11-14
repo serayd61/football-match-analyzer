@@ -5,7 +5,9 @@ import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { listOpenDataRows } from '@/lib/site/open-data-data';
-import { countByLeague, openDataPath, OPEN_DATA_ALL, OPEN_DATA_COLUMNS, OPEN_DATA_DOI, OPEN_DATA_DOI_URL, OPEN_DATA_GITHUB, OPEN_DATA_LICENSE, OPEN_DATA_LICENSE_NAME, OPEN_DATA_SINCE } from '@/lib/site/open-data';
+import { countByLeague, openDataPath, OPEN_DATA_ALL, OPEN_DATA_COLUMNS, OPEN_DATA_DOI, OPEN_DATA_DOI_URL, OPEN_DATA_GITHUB, OPEN_DATA_LICENSE, OPEN_DATA_LICENSE_NAME, OPEN_DATA_SINCE, OPEN_DATA_UPCOMING, OPEN_DATA_LEDGER, OPEN_DATA_LEDGER_HISTORY, upcomingPickRows } from '@/lib/site/open-data';
+import { listPublicUpcoming } from '@/lib/site/match-public-data';
+import { matchPath } from '@/lib/site/match-public';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, faqPageJsonLd, openDatasetJsonLd } from '@/lib/site/jsonld';
@@ -29,12 +31,18 @@ print(df.groupby("league").brier.mean())`;
 const SNIPPET_R = `df <- read.csv("https://footballanalytics.pro/data/all.csv")
 mean(df$pick_correct, na.rm = TRUE)`;
 
+/** Rows of the pre-kick-off feed shown on the page itself; the files carry all of them. */
+const UPCOMING_SHOWN = 25;
+
 export default async function OpenDataPage({ params: { locale } }: { params: { locale: string } }) {
   unstable_setRequestLocale(locale);
   const t = await getTranslations('openData');
   const tn = await getTranslations('nav');
   const f = await getFormatter();
   const rows = await listOpenDataRows().catch(() => []);
+  const upcoming = upcomingPickRows(await listPublicUpcoming().catch(() => []));
+  const upcomingShown = upcoming.slice(0, UPCOMING_SHOWN);
+  const utc = (iso: string) => `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
   const counts = countByLeague(rows);
   const first = rows[0]?.kickoff_utc ?? null;
   const last = rows.length ? rows[rows.length - 1].kickoff_utc : null;
@@ -92,6 +100,36 @@ export default async function OpenDataPage({ params: { locale } }: { params: { l
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="mt-10" aria-labelledby="up-h">
+        <SectionTitle id="up-h" title={t('upcomingH')} />
+        <div className="mt-3 max-w-3xl space-y-3 text-[15px] leading-relaxed">
+          <p>{t('upcomingP')}</p>
+          <p>
+            <a href={openDataPath(OPEN_DATA_UPCOMING, 'csv')} className="underline underline-offset-4" download>upcoming.csv</a> · <a href={openDataPath(OPEN_DATA_UPCOMING, 'json')} className="underline underline-offset-4">upcoming.json</a>
+          </p>
+          <p>{t('upcomingLedgerP')} <a href={OPEN_DATA_LEDGER} rel="noopener" target="_blank" className="underline underline-offset-4">{t('upcomingLedger')}</a> · <a href={OPEN_DATA_LEDGER_HISTORY} rel="noopener" target="_blank" className="underline underline-offset-4">{t('upcomingHistory')}</a></p>
+        </div>
+        {upcomingShown.length > 0 ? (
+          <div className="tbl-scroll mt-3">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-s-line text-left"><th className={th}>{t('upColKickoff')}</th><th className={th}>{t('upColMatch')}</th><th className={th}>{t('upColPick')}</th><th className={th}>{t('upColWritten')}</th></tr></thead>
+              <tbody>
+                {upcomingShown.map((r) => (
+                  <tr key={r.fixture_id} className="border-b border-s-line">
+                    <td className="py-1.5 pr-4 tabular-nums"><time dateTime={r.kickoff_utc}>{utc(r.kickoff_utc)}</time></td>
+                    <td className="py-1.5 pr-4"><Link href={matchPath({ homeName: r.home_team, awayName: r.away_team, fixtureId: r.fixture_id })} className="underline underline-offset-4">{r.home_team} – {r.away_team}</Link></td>
+                    <td className="py-1.5 pr-4">{r.pick} · {r.pick === '1' ? r.home_team : r.pick === '2' ? r.away_team : t('upDraw')}</td>
+                    <td className="py-1.5 tabular-nums"><time dateTime={r.pick_written_utc}>{utc(r.pick_written_utc)}</time></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="mt-3 text-sm text-s-muted">{t('upcomingEmpty')}</p>}
+        {upcoming.length > upcomingShown.length && <p className="mt-3 text-xs text-s-muted">{t('upcomingShown', { shown: upcomingShown.length, total: upcoming.length })}</p>}
+        <p className="mt-3 max-w-3xl text-xs text-s-muted">{t('upcomingCols')}</p>
       </section>
 
       <section className="mt-10 max-w-3xl" aria-labelledby="use-h">

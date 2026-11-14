@@ -2258,12 +2258,25 @@
     "recordLink": "Storico",
     "statsLine": "{n} partite liquidate in {leagues} campionati, dal {from} al {to}. I file si aggiornano ogni ora man mano che le partite vengono liquidate.",
     "empty": "Nessuna partita liquidata nel dataset per ora.",
-    "intro": "Nulla è filtrato per esito: i pronostici persi stanno nel file accanto a quelli vinti. Le partite future non sono mai incluse: un pronostico diventa pubblico solo quando la partita è liquidata con un punteggio.",
+    "intro": "Nulla è filtrato per esito: i pronostici persi stanno nel file accanto a quelli vinti. Le probabilità diventano pubbliche quando la partita è liquidata con un punteggio; il pronostico in sé è pubblico prima del calcio d’inizio, nel feed qui sotto.",
     "downloadsH": "Download",
     "colFile": "File",
     "colRows": "Partite",
     "allLeagues": "Tutti i campionati",
     "downloadsNote": "Una riga per partita, UTF-8, separata da virgole, in ordine di calcio d’inizio. I file JSON contengono le stesse righe più un’intestazione di provenienza. I link diretti sono stabili e possono essere letti da script; le richieste cross-origin sono permesse.",
+    "upcomingH": "Pronostici prima del calcio d’inizio",
+    "upcomingP": "Il pronostico 1X2 del modello per ogni partita coperta non ancora iniziata, con l’ora in cui è stato scritto. Lo stesso pronostico è sulla pagina della partita. Le probabilità non fanno parte di questo feed; entrano nei file principali quando la partita è liquidata.",
+    "upcomingCols": "Colonne: fixture_id, kickoff_utc, league, league_slug, country, home_team, away_team, pick (1 casa, X pareggio, 2 trasferta), pick_written_utc (quando il modello ha scritto il pronostico per l’ultima volta, sempre prima del calcio d’inizio) e match_url. Il modello viene ricalcolato ogni giorno, quindi un pronostico può cambiare fino al calcio d’inizio; il registro conserva ogni versione.",
+    "upcomingLedgerP": "Una copia di questo feed viene aggiunta più volte al giorno a un registro su GitHub. Le righe vengono solo aggiunte e gli orari dei commit li fissa GitHub, non noi: chiunque può verificare che un pronostico fosse pubblico prima dell’inizio della partita:",
+    "upcomingLedger": "Registro",
+    "upcomingHistory": "Cronologia dei commit",
+    "upColKickoff": "Calcio d’inizio (UTC)",
+    "upColMatch": "Partita",
+    "upColPick": "Pronostico",
+    "upColWritten": "Scritto (UTC)",
+    "upDraw": "Pareggio",
+    "upcomingEmpty": "Al momento nessun pronostico in arrivo.",
+    "upcomingShown": "I prossimi {shown} di {total} pronostici; i file li contengono tutti.",
     "columnsH": "Colonne",
     "colName": "Colonna",
     "colDesc": "Significato",
@@ -2312,8 +2325,8 @@
         "a": "Sì. La licenza è CC BY 4.0: usali per qualsiasi cosa, anche a fini commerciali, citando Football Analytics con un link a footballanalytics.pro/data."
       },
       {
-        "q": "Perché non ci sono partite future?",
-        "a": "I pronostici futuri sono per gli abbonati. Una partita entra nel file aperto solo una volta liquidata con il punteggio finale, il che rende il file anche uno storico onesto: nulla può essere modificato a risultato noto."
+        "q": "Perché nei file principali non ci sono partite future?",
+        "a": "Le probabilità delle partite future sono per gli abbonati; una partita entra nei file principali solo una volta liquidata con il punteggio finale. Il pronostico in sé (casa, pareggio o trasferta) è pubblico prima del calcio d’inizio: il feed delle prossime partite lo riporta con l’ora in cui è stato scritto e il registro su GitHub conserva ogni riga, quindi nulla può essere modificato a risultato noto."
       },
       {
         "q": "Da quando partono i dati e ogni quanto si aggiornano?",
