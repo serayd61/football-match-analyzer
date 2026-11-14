@@ -1,4 +1,5 @@
 import type { SitePrediction } from './predictions';
+import type { PublicMatch } from './match-public';
 import { SITE_LEAGUES } from './leagues';
 import { matchSlug } from '@/lib/seo';
 import { SITE_URL } from '@/lib/seo';
@@ -173,4 +174,107 @@ export function countByLeague(rows: OpenDataRow[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const r of rows) out[r.league_slug] = (out[r.league_slug] ?? 0) + 1;
   return out;
+}
+
+// ============================================================================
+// Picks before kick-off (2026-11-14)
+// ----------------------------------------------------------------------------
+// /data/upcoming.{csv|json}: the model's 1X2 pick for every covered match that
+// has not kicked off yet, with the time the pick was written. The settled files
+// above prove what happened; this feed (and the append-only ledger the GitHub
+// mirror builds from it, whose commit times are not ours to set) proves the pick
+// was public BEFORE the match.
+//
+// The row is built from PublicMatch, i.e. after the match-public.ts gate: it can
+// only carry what the public match page already shows — the direction (`lean`),
+// never probabilities, confidence, goal markets or the model version.
+// ============================================================================
+
+export const OPEN_DATA_UPCOMING = 'upcoming';
+/** Append-only ledger of this feed in the GitHub mirror. */
+export const OPEN_DATA_LEDGER = `${OPEN_DATA_GITHUB}/blob/main/data/picks/ledger.csv`;
+export const OPEN_DATA_LEDGER_HISTORY = `${OPEN_DATA_GITHUB}/commits/main/data/picks/ledger.csv`;
+
+/** "upcoming.csv" → 'csv'; null for anything else. */
+export function parseUpcomingFile(file: string): OpenDataExt | null {
+  const m = /^upcoming\.(csv|json)$/.exec(file);
+  return m ? (m[1] as OpenDataExt) : null;
+}
+
+export interface UpcomingPickRow {
+  fixture_id: number;
+  kickoff_utc: string;
+  league: string;
+  league_slug: string;
+  country: string;
+  home_team: string;
+  away_team: string;
+  /** the model's pre-match 1X2 pick: 1 home, X draw, 2 away */
+  pick: '1' | 'X' | '2';
+  /** when the engine last wrote this pick (always before kick-off) */
+  pick_written_utc: string;
+  match_url: string;
+}
+
+export const UPCOMING_COLUMNS: ReadonlyArray<keyof UpcomingPickRow> = [
+  'fixture_id', 'kickoff_utc', 'league', 'league_slug', 'country', 'home_team', 'away_team', 'pick', 'pick_written_utc', 'match_url',
+];
+
+/**
+ * One not-yet-started covered match as a public pick row, or null when there is
+ * nothing to publish: no public lean, no league, already kicked off, or no
+ * write time strictly before kick-off (a pick we cannot time is not evidence).
+ */
+export function toUpcomingPickRow(m: PublicMatch, now = new Date()): UpcomingPickRow | null {
+  if (!m.lean || !m.league || m.settled) return null;
+  const ko = Date.parse(m.kickoff);
+  const written = m.updatedAt ? Date.parse(m.updatedAt) : NaN;
+  if (!Number.isFinite(ko) || !Number.isFinite(written)) return null;
+  if (ko <= now.getTime() || written >= ko) return null;
+  return {
+    fixture_id: m.fixtureId,
+    kickoff_utc: new Date(ko).toISOString(),
+    league: m.league.name,
+    league_slug: m.league.slug,
+    country: m.league.country,
+    home_team: m.homeName,
+    away_team: m.awayName,
+    pick: m.lean,
+    pick_written_utc: new Date(written).toISOString(),
+    match_url: `${SITE_URL}/en/matches/${m.slug}`,
+  };
+}
+
+/** Rows for the feed, kick-off order (then fixture id, so the file is stable between reads). */
+export function upcomingPickRows(matches: PublicMatch[], now = new Date()): UpcomingPickRow[] {
+  const out: UpcomingPickRow[] = [];
+  const seen = new Set<number>();
+  for (const m of matches) {
+    const r = toUpcomingPickRow(m, now);
+    if (!r || seen.has(r.fixture_id)) continue;
+    seen.add(r.fixture_id);
+    out.push(r);
+  }
+  return out.sort((a, b) => a.kickoff_utc.localeCompare(b.kickoff_utc) || a.fixture_id - b.fixture_id);
+}
+
+export function upcomingToCsv(rows: UpcomingPickRow[]): string {
+  const lines = [UPCOMING_COLUMNS.join(',')];
+  for (const r of rows) lines.push(UPCOMING_COLUMNS.map((c) => csvCell(r[c])).join(','));
+  return lines.join('\r\n') + '\r\n';
+}
+
+export function upcomingToJson(rows: UpcomingPickRow[], now = new Date()): string {
+  return JSON.stringify({
+    dataset: 'footballanalytics.pro open data — model picks before kick-off',
+    license: OPEN_DATA_LICENSE,
+    attribution: `Football Analytics (${SITE_URL})`,
+    documentation: `${SITE_URL}/en/data`,
+    ledger: OPEN_DATA_LEDGER,
+    columns: UPCOMING_COLUMNS,
+    name: OPEN_DATA_UPCOMING,
+    generated_at: now.toISOString(),
+    rows: rows.length,
+    data: rows,
+  });
 }

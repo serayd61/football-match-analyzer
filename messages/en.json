@@ -2258,12 +2258,25 @@
     "recordLink": "Track record",
     "statsLine": "{n} settled matches across {leagues} leagues, {from} to {to}. Files refresh hourly as matches are settled.",
     "empty": "No settled matches in the dataset yet.",
-    "intro": "Nothing is filtered by outcome: the losing picks are in the file next to the winners. Upcoming matches are never included — a prediction only becomes public once the match is settled with a score.",
+    "intro": "Nothing is filtered by outcome: the losing picks are in the file next to the winners. Probabilities become public once a match is settled with a score; the pick itself is public before kick-off, in the feed below.",
     "downloadsH": "Downloads",
     "colFile": "File",
     "colRows": "Matches",
     "allLeagues": "All leagues",
     "downloadsNote": "One row per match, UTF-8, comma-separated, kick-off order. The JSON files carry the same rows plus a provenance header. Direct links are stable and may be fetched by scripts; cross-origin requests are allowed.",
+    "upcomingH": "Picks before kick-off",
+    "upcomingP": "The model’s 1X2 pick for every covered match that has not kicked off yet, with the time it was written. The same pick is on each match page. Probabilities are not in this feed; they join the main files when the match is settled.",
+    "upcomingCols": "Columns: fixture_id, kickoff_utc, league, league_slug, country, home_team, away_team, pick (1 home, X draw, 2 away), pick_written_utc (when the model last wrote the pick, always before kick-off) and match_url. The model is refitted daily, so a pick can change until kick-off; the ledger keeps each version.",
+    "upcomingLedgerP": "A copy of this feed is appended several times a day to a ledger on GitHub. Lines are only ever added, and the commit times are set by GitHub, not by us, so anyone can check that a pick was public before its match began:",
+    "upcomingLedger": "Ledger",
+    "upcomingHistory": "Commit history",
+    "upColKickoff": "Kick-off (UTC)",
+    "upColMatch": "Match",
+    "upColPick": "Pick",
+    "upColWritten": "Written (UTC)",
+    "upDraw": "Draw",
+    "upcomingEmpty": "No upcoming picks at the moment.",
+    "upcomingShown": "Next {shown} of {total} upcoming picks; the files hold all of them.",
     "columnsH": "Columns",
     "colName": "Column",
     "colDesc": "Meaning",
@@ -2312,8 +2325,8 @@
         "a": "Yes. The licence is CC BY 4.0: use it for anything, including commercial work, and credit Football Analytics with a link to footballanalytics.pro/data."
       },
       {
-        "q": "Why are there no upcoming matches?",
-        "a": "Upcoming predictions are for members. A match enters the open file only once it is settled with a final score, which also makes the file a fair record: nothing can be edited after the result is known."
+        "q": "Why are there no upcoming matches in the main files?",
+        "a": "The probabilities of upcoming matches are for members; a match enters the main files only once it is settled with a final score. The pick itself (home, draw or away) is public before kick-off: the upcoming feed lists it with the time it was written, and the GitHub ledger keeps every line, so nothing can be edited after the result is known."
       },
       {
         "q": "How far back does it go and how often is it updated?",

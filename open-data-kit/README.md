@@ -25,6 +25,7 @@ The files in this repository are refreshed once a day from the canonical source,
 | `data/all.csv` | Every settled match, kick-off order |
 | `data/leagues/{slug}.csv` | The same rows, one file per competition |
 | `data/summary.json` | Row counts, hit rate and Brier score, overall and per competition |
+| `data/picks/ledger.csv` | Append-only ledger of the model's picks, recorded before kick-off (see below) |
 
 One row per match, UTF-8, comma-separated, header row.
 
@@ -46,6 +47,27 @@ One row per match, UTF-8, comma-separated, header row.
 | `pick_correct` | `1` if the pick matched the result, `0` if not. |
 | `model_version` | Version of the model that produced the row. |
 | `match_url` | Public match page with the settled verdict. |
+
+## Picks before kick-off
+
+`data/picks/ledger.csv` records the model's 1X2 pick for upcoming matches before they are played. Several times a day a scheduled job reads the public feed at <https://footballanalytics.pro/data/upcoming.csv> and appends a line for every pick it has not recorded yet. Lines are never edited or removed. If the pick for a match changes before kick-off (the model is refitted daily), a new line is added and the earlier one stays.
+
+| Column | Meaning |
+|---|---|
+| `fixture_id` | Match identifier, the same as in `data/all.csv`. |
+| `kickoff_utc` | Scheduled kick-off in UTC at the time the line was written. |
+| `league_slug`, `home_team`, `away_team` | The match. |
+| `pick` | `1` home win, `X` draw, `2` away win. |
+| `pick_written_utc` | When the model wrote the pick, as reported by the source. |
+| `first_seen_utc` | When the job in this repository first saw the pick. |
+
+The timestamps inside the file come from us. The independent evidence is the commit that added each line: its time is set by GitHub. To see when a pick entered the ledger:
+
+```bash
+git log --format='%H %cI' -S'FIXTURE_ID,' -- data/picks/ledger.csv | tail -1
+```
+
+The last line of the ledger for a match before its kick-off is the pick that counts, and it equals the `pick` column of that match in `data/all.csv` once the match is settled. The ledger holds the pick only; the probabilities join `data/all.csv` after the final whistle.
 
 ## Quick start
 

@@ -29,7 +29,7 @@ Betik hiçbir şey yayınlamaz.
 
 ## 1. GitHub
 
-Depo yayında ve kendi `Refresh data` iş akışıyla her gün 05:17 UTC'de güncelleniyor. README, betik veya iş akışında değişiklik gerekirse **doğrudan o depoda** yapılır; ardından aynı değişiklik buradaki şablona işlenir (`README.md` içinde depo adı `OWNER/REPO`, istatistik bloğu boş tutulur). `dist/repo/` artık yalnızca Kaggle ve Hugging Face klasörlerini üretmek için derlenir, GitHub'a itilmez.
+Depo yayında ve kendi `Refresh data` iş akışıyla güncelleniyor (şablonda günde dört kez: 05:17, 09:17, 13:17, 17:17 UTC; maç öncesi seçim defteri `data/picks/ledger.csv` için tek günlük çalışma yetmez). README, betik veya iş akışında değişiklik gerekirse **doğrudan o depoda** yapılır; ardından aynı değişiklik buradaki şablona işlenir (`README.md` içinde depo adı `OWNER/REPO`, istatistik bloğu boş tutulur). `dist/repo/` artık yalnızca Kaggle ve Hugging Face klasörlerini üretmek için derlenir, GitHub'a itilmez.
 
 ## 2. Zenodo (DOI)
 
