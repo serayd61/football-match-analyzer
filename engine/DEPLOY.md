@@ -423,7 +423,10 @@ Satır üretilmeyen durumlar (DC'ye düşülmez, `skipped` nedeni yazılır):
 
 2) Kod: `cd /opt/football-match-analyzer && git pull && sudo systemctl restart footy-predict`
 
-3) Sürüm satırı (admin oturumuyla; `status: shadow` — sitede yayınlanmaz, yalnız kaydedilir):
+3) Sürüm satırı (`status: shadow` — sitede yayınlanmaz, yalnız kaydedilir). UYGULANDI 2026-11-14
+   22:09 UTC: admin rotasının `Params` şeması katı (`.strict()`) ve `elo` / `ctx` / `calib`
+   anahtarlarını tanımadığı için satır doğrudan `engine_model_versions` tablosuna yazıldı
+   (+ `engine_learning_log` kaydı #118). Aşağıdaki gövde yazılan içeriğin özetidir:
 
 ```json
 POST /api/admin/engine-versions
@@ -433,9 +436,9 @@ POST /api/admin/engine-versions
     "elo": {
       "k": 10, "lam": 0.6, "hfa": 60, "gpe": 0.0057, "init": 1500, "feeder_init": 1350, "min_matches": 8,
       "pools": [
-        {"top": [47], "feeders": [48, 937668, 938218]},
+        {"top": [47], "feeders": [48, 938218]},
         {"top": [87], "feeders": [140, 938653]},
-        {"top": [55], "feeders": [86, 941726]},
+        {"top": [55], "feeders": [86, 941726, 902171]},
         {"top": [54], "feeders": [146]},
         {"top": [53], "feeders": [110]}
       ]
@@ -447,6 +450,10 @@ POST /api/admin/engine-versions
 `params` dc-1.0'ın diğer anahtarlarını da (rho, shrink_k, pencere…) aynen taşımalı — mevcut dc-1.0
 satırından kopyalayıp yalnız `elo` ekle; yoksa fark Elo'dan değil DC ayarından gelir.
 Havuz id'leri sezonluk olabilir; servis `store.resolve` ile kanonik gruba indirir.
+Hetzner deposunda doğrulandı (2026-11-15): 937668 Championship DEĞİL, İskoçya Championship'i —
+havuzdan çıkarıldı. Serie B 2025-26 ayrı bir id'de (902171, grup 930062); eklenmezse İtalya'da
+bu sezon çıkan takımlar 1500'den başlar. Depo 2025-08'den başlıyor (~1,3 sezon); bu havuzlarla
+5 ligin bütün takımlarında 43+ maç var, `elo_too_few_matches` beklenmez.
 
 4) Kontrol: `curl -s -X POST 127.0.0.1:8000/reload` sonra `/status` → `versions` içinde
    `dc-1.4-elo`; bir sonraki `/predict` koşusunda 5 ligde gölge satırlar, diğer liglerde
