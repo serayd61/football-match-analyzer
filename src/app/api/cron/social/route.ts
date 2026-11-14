@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       }
       return new NextResponse(new Uint8Array(png), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' } });
     }
-    if (kind === 'proof') return NextResponse.json(await publishProof({ dry, day, lang }));
+    if (kind === 'proof') return NextResponse.json(await publishProof({ dry, day, ...(q.has('lang') ? { lang } : {}) }));
     if (kind === 'results') return NextResponse.json(await publishResults({ dry }));
     if (kind === 'weekly') return NextResponse.json(await publishWeekly({ dry, day }));
     if (kind === 'strong') return NextResponse.json(await publishStrong({ dry, day }));
