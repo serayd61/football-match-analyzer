@@ -14,7 +14,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import Wordmark from './Wordmark';
 import LocaleSwitcher from './LocaleSwitcher';
 import ThemeToggle from './ThemeToggle';
-import { useIsTwa } from '@/lib/site/twa-client';
+import { useAppMode } from '@/lib/site/app-mode';
 
 // Header v3 (2026-09-26): 60px, sticky, translucent. Brand · Today's matches /
 // Record / Leagues / Pricing · right: language, theme, auth. On < lg the nav
@@ -40,11 +40,12 @@ export default function SiteHeader() {
   const { status } = useSession();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
-  // Google Play app: no "Pricing" entry (Play payments policy, lib/site/twa.ts).
-  const twa = useIsTwa();
+  // Google Play app: "Pricing" only where it can sell (v1.3.0+, Play Billing);
+  // older app versions have nothing to offer there (Play payments policy, lib/site/twa.ts).
+  const legacyApp = useAppMode() === 'app-legacy';
   const authedNav = status === 'authenticated';
   const base = authedNav ? NAV : NAV.flatMap((n) => (n.key === 'predictions' ? [{ href: '/matches', key: 'matches' as const }] : n.key === 'picks' || n.key === 'coupon' || n.key === 'dashboard' ? [] : [n]));
-  const nav = twa ? base.filter((n) => n.key !== 'pricing') : base;
+  const nav = legacyApp ? base.filter((n) => n.key !== 'pricing') : base;
 
   useEffect(() => { setOpen(false); setMenu(false); }, [pathname]);
   useEffect(() => {

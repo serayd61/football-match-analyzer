@@ -53,15 +53,45 @@ export function selectPlayOffers(offers: PlayOffer[]): { monthly: PlayOffer | nu
   return { monthly: pick(PLAY_PRODUCT_MONTHLY), yearly: pick(PLAY_PRODUCT_YEARLY) };
 }
 
+/**
+ * Does this app version carry the billing bridge at all (v1.3.0+)? True even
+ * while the native client is still connecting — use it to tell "old app, needs
+ * an update" from "new app, Play not ready yet" (2026-11-14: both used to show
+ * "subscriptions are not available in this app").
+ */
+export function playBillingSupported(bridge: unknown): bridge is Required<PlayBillingBridge> {
+  const b = bridge as PlayBillingBridge | null;
+  return !!b && typeof b.billingReady === 'function' && typeof b.queryProducts === 'function' && typeof b.purchase === 'function';
+}
+
 /** Does this bridge expose a usable, connected billing client? */
 export function playBillingAvailable(bridge: unknown): bridge is Required<PlayBillingBridge> {
-  const b = bridge as PlayBillingBridge | null;
-  if (!b || typeof b.billingReady !== 'function' || typeof b.queryProducts !== 'function' || typeof b.purchase !== 'function') return false;
+  if (!playBillingSupported(bridge)) return false;
   try {
-    return b.billingReady() === true;
+    return bridge.billingReady() === true;
   } catch {
     return false;
   }
+}
+
+/** Where a page is running: the open web, the Play app with Play Billing, or an older Play app without it. */
+export type AppMode = 'web' | 'app-billing' | 'app-legacy';
+export function resolveAppMode(inApp: boolean, bridge: unknown): AppMode {
+  if (!inApp) return 'web';
+  return playBillingSupported(bridge) ? 'app-billing' : 'app-legacy';
+}
+
+/**
+ * Wait for the native billing client to finish connecting (it starts in
+ * MainActivity.onCreate and answers asynchronously). Resolves true as soon as
+ * `billingReady()` is true, false after `tries` polls.
+ */
+export async function waitForPlayBilling(bridge: Required<PlayBillingBridge>, tries = 20, everyMs = 400, sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms))): Promise<boolean> {
+  for (let i = 0; i < tries; i++) {
+    if (playBillingAvailable(bridge)) return true;
+    await sleep(everyMs);
+  }
+  return playBillingAvailable(bridge);
 }
 
 // ---------------------------------------------------------------------------

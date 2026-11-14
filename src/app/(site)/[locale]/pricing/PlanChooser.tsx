@@ -12,7 +12,8 @@ type Labels = {
   proName: string; proSub: string; mostPopular: string; perMonth: string; perYear: string; noteMonthly: string; noteYearly: string;
   billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string; promoShort: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
-  twaNote: string; twaSignIn: string;
+  twaSignIn: string;
+  appUpdateNote: string; appUpdateCta: string; playUnavailable: string; playRetry: string;
   playNote: string; playSuccess: string; playPending: string; playError: string; playManage: string;
 };
 
@@ -134,7 +135,8 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
               accountId={accountId}
               labels={{
                 perMonth: l.perMonth, perYear: l.perYear, loading: l.loading,
-                twaNote: l.twaNote, twaSignIn: l.twaSignIn,
+                twaSignIn: l.twaSignIn,
+                appUpdateNote: l.appUpdateNote, appUpdateCta: l.appUpdateCta, playUnavailable: l.playUnavailable, playRetry: l.playRetry,
                 playNote: l.playNote, playSuccess: l.playSuccess, playPending: l.playPending, playError: l.playError, playManage: l.playManage,
               } satisfies PlayLabels}
             />

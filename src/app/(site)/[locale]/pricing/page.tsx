@@ -60,7 +60,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           promoShort: t('promoShort', { code: PROMO.code, pct: PROMO.percentOff }),
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],
           proCta: t('proCta'), proCtaSignedIn: t('proCtaSignedIn'), loading: t('loading'), signInFirst: t('signInFirst'), error: t('error'),
-          twaNote: t('twaNote'), twaSignIn: t('twaSignIn'),
+          twaSignIn: t('twaSignIn'),
+          appUpdateNote: t('appUpdateNote'), appUpdateCta: t('appUpdateCta'), playUnavailable: t('playUnavailable'), playRetry: t('playRetry'),
           playNote: t('playNote'), playSuccess: t('playSuccess'), playPending: t('playPending'), playError: t('playError'), playManage: t('playManage'),
         }}
       />

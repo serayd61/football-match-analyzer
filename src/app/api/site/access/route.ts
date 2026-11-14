@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-// Deneme bitimi şeridi (2026-11-02): istemci bileşenleri (TrialEndedBanner) oturum
+// Pro şeridi (2026-11-02, 2026-11-14): istemci bileşenleri (UpgradeBanner) oturum
 // sahibinin plan durumunu buradan okur. E-posta dönmez; yalnız durum + kalan gün.
 // Layout'ta sunucu tarafı getSiteAccess() okumak her ISR sayfasını dinamiğe
 // çevirirdi (AppBanner ile aynı gerekçe), bu yüzden ayrı uç nokta.

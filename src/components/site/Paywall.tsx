@@ -16,6 +16,7 @@ import { signInHref, type SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
 import { PRICING_HREF, REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
+import AppPlansLink from '@/components/site/AppPlansLink';
 import { RiskNote } from './Risk';
 
 // Account and billing now live on the localized site. The constants live in a
@@ -24,9 +25,12 @@ import { RiskNote } from './Risk';
 // because most call sites already import them from this file.
 export { REGISTER_HREF, SIGNIN_HREF, PRICING_HREF } from '@/lib/site/auth-links';
 
-// Inside the Google Play app (TWA) nothing may point at a purchase (Play
-// payments policy, see lib/site/twa.ts): the CTA becomes the scorecard and
-// the lead explains that subscriptions are not available in the app.
+// Inside the Google Play app nothing may point at a non-Play checkout (Play
+// payments policy, see lib/site/twa.ts). 2026-11-14: the app does sell Pro
+// since v1.3.0 (Play Billing on /pricing), so the in-app paywall now carries
+// <AppPlansLink>: "See plans" when the billing bridge is there, "Update the
+// app" on older versions. It used to say "subscriptions are not available in
+// this app" and offered no way to buy.
 export async function Paywall() {
   const t = await getTranslations('paywall');
   const twa = isTwa();
@@ -37,8 +41,10 @@ export async function Paywall() {
         <h2 id="paywall-title" className="mt-2 text-[30px]">{t('expiredTitle')}</h2>
         <p className="mt-3 max-w-xl text-[15px] text-s-muted">{twa ? t('twaLead') : t('expiredLead')}</p>
         <div className="mt-6 flex flex-wrap gap-2">
-          {!twa && <Link href={PRICING_HREF} className="btn btn-primary">{t('expiredCta')}</Link>}
-          <Link href="/performance" className={`btn ${twa ? 'btn-primary' : 'btn-secondary'}`}>{t('expiredAlt')}</Link>
+          {twa
+            ? <AppPlansLink plans={t('expiredCta')} update={t('appUpdateCta')} className="btn btn-primary" location="paywall_app" />
+            : <Link href={PRICING_HREF} className="btn btn-primary">{t('expiredCta')}</Link>}
+          <Link href="/performance" className="btn btn-secondary">{t('expiredAlt')}</Link>
         </div>
       </div>
       <RiskNote className="max-w-md self-end lg:justify-self-end">{t('expiredNote')}</RiskNote>
@@ -52,7 +58,9 @@ export async function TrialNotice({ access }: { access: SiteAccess }) {
   return (
     <p role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-s-line bg-s-surface px-4 py-2.5 text-[14px]">
       <span>{t('trialLeft', { days: access.trialDaysLeft })}</span>
-      {!isTwa() && <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>}
+      {isTwa()
+        ? <AppPlansLink plans={`${t('trialCta')} →`} update={`${t('appUpdateCta')} →`} className="font-semibold text-s-accent hover:text-s-accent-600" location="trial_notice_app" />
+        : <Link href={PRICING_HREF} className="font-semibold text-s-accent hover:text-s-accent-600">{t('trialCta')} →</Link>}
     </p>
   );
 }
@@ -75,11 +83,15 @@ export async function LockedBlock({ count, lead }: { count: number; lead?: strin
 
 export async function LockedPick({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   const t = await getTranslations('paywall');
+  const cls = `font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`;
   return (
     <span className="flex flex-col gap-1">
       <span aria-hidden className={`blur-locked ${size === 'lg' ? 'text-[24px] font-extrabold' : 'text-[13px] font-semibold'}`} style={size === 'lg' ? { filter: 'blur(6px)' } : undefined}>{t('hiddenPick')}</span>
       <span className="sr-only">{t('hiddenPick')}</span>
-      {!isTwa() && <Link href={PRICING_HREF} className={`font-semibold text-s-accent hover:text-s-accent-600 ${size === 'lg' ? 'btn btn-primary btn-block mt-2 !text-s-brand-ink' : 'text-[12px]'}`}>{size === 'lg' ? t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) }) : t('unlock')}</Link>}
+      {/* In the app the label carries no price: Play shows its own localized one on /pricing. */}
+      {isTwa()
+        ? <AppPlansLink plans={t('unlock')} update={t('appUpdateCta')} className={cls} location="locked_pick_app" />
+        : <Link href={PRICING_HREF} className={cls}>{size === 'lg' ? t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) }) : t('unlock')}</Link>}
     </span>
   );
 }
