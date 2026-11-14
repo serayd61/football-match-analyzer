@@ -83,28 +83,83 @@ Happy to move it to another section or reword the line.
 | 16 | X (site hesabı) | Tek görsel: kalibrasyon tablosu |
 | 17 | Kaggle defteri | Veri setiyle birlikte kısa bir "Brier by league" defteri; Kaggle içi görünürlük |
 
-### Gönderi taslağı (14 ve 15)
+### r/sportsanalytics gönderisi (14)
+
+Bu toplulukta "tahmin platformu yaptım, kayıpları da yayınlıyoruz" kalıbında çok gönderi var (ScorePredicts, FootInsights, StatFooty, NEXUS Scores). Bu yüzden gönderi ürünü değil bir bulguyu ve gerçek bir soruyu öne koyuyor: model genelde kalibre, Championship'te favorileri tutmuyor.
+
+Başlık:
 
 ```
-Title: I publish every prediction my football model makes, including the misses (1,545 matches, CSV, CC BY 4.0)
+My model's strong favourites win 46% of the time in the Championship (it says 63%). Fine everywhere else in aggregate. Noise or real? [1,545 matches, open data]
+```
 
-I run a Dixon-Coles / Poisson model for 17 football competitions. Since June
-every pre-match 1X2 probability has been stored before kick-off and published
-once the match is settled. Nothing is removed afterwards.
+Metin (Markdown düzenleyicisine yapıştırılır):
 
-So far: 1,545 matches, pick hit rate 52.6% (always-home baseline 45.0%),
-Brier 0.590 (uniform guess 0.667). It is bad in the Championship (41.8%,
-worse than a uniform guess) and decent in Serie A (61.2%).
+```
+I run a Dixon-Coles / Poisson model on 17 football competitions. Every 1X2 probability is stored before kick-off and published once the match is settled, misses included. 1,545 matches since June.
 
-Columns: kick-off, teams, score, p_home / p_draw / p_away, goal expectations,
-pick, pick_correct, model version.
+In aggregate it looks calibrated:
+
+| Probability given to the pick | Matches | Mean predicted | Observed |
+|---|---|---|---|
+| under 40% | 247 | 37.7% | 38.5% |
+| 40–45% | 318 | 42.5% | 43.7% |
+| 45–50% | 262 | 47.4% | 50.8% |
+| 50–55% | 205 | 52.4% | 50.7% |
+| 55–60% | 161 | 57.5% | 57.1% |
+| 60–70% | 212 | 64.7% | 65.1% |
+| 70%+ | 140 | 77.2% | 79.3% |
+
+Brier score (sum over 1/X/2) is 0.590, against 0.642 for the observed base rates and 0.667 for a uniform guess.
+
+The Championship is the exception: 158 matches, Brier 0.674, which is worse than that league's base rates (0.650). The damage is in the favourites. When the model gives its pick 55% or more (35 matches, mean 62.6%), the pick wins 45.7% of the time. For comparison, Serie A is at 0.528 over 98 matches.
+
+Two questions:
+
+1. 16 wins from 35 where about 22 were expected is roughly a 2-sigma miss. But I am looking at 17 competitions and several probability bands, so some cell was always going to look like this. How do you decide when a per-league miscalibration is real enough to act on?
+2. If it is real, what would you check first? My guesses: promoted and relegated sides arriving with little history in the division (the model is fitted per competition), and a flatter league where the spread of team strength differs from the top flights.
+
+The data is open if anyone wants to poke at it: one row per match with the three probabilities, goal expectations, the pick and the final score. CSV, CC BY 4.0, refreshed daily.
+
+- Data: https://github.com/serayd61/football-predictions-open-data
+- Columns and caveats: https://footballanalytics.pro/en/data
+- DOI: 10.5281/zenodo.24216824
+
+Disclosure: this is my own model and site. I am not selling anything here; I would like the model to be less wrong in the Championship.
+```
+
+### r/datasets gönderisi (15; en az bir hafta sonra)
+
+Başlık:
+
+```
+Football match predictions with pre-match probabilities and final scores: 1,545 matches, 17 competitions, CSV, CC BY 4.0
+```
+
+Metin:
+
+```
+For every finished match in 17 football competitions since June 2026: the 1X2 probabilities a Dixon-Coles / Poisson model stored before kick-off, its goal expectations, its pick and the final score. Nothing is filtered by outcome, so it works as a public baseline to score your own model against, or as real data for a calibration exercise.
+
+- One row per match, 19 columns, CSV; one file for everything plus one per competition
+- Refreshed daily; the commit history goes back to October and shows each day's additions
+- Licence: CC BY 4.0
+- Current figures: pick hit rate 52.6% (always-home 45.0%), Brier 0.590 (uniform guess 0.667). It does badly in the English Championship (0.674)
 
 Data: https://github.com/serayd61/football-predictions-open-data
-Docs: https://footballanalytics.pro/en/data
+Documentation: https://footballanalytics.pro/en/data
+DOI: 10.5281/zenodo.24216824
 
-Useful if you want a public baseline to score your own model against, or
-real data for a calibration exercise. Corrections welcome.
+Disclosure: I maintain the dataset.
 ```
+
+### Gönderirken
+
+- Topluluk kurallarını (kenar çubuğu) göndermeden önce oku; kurallar buradan doğrulanamadı.
+- Hesap yeni ya da karması düşükse gönderi otomatik silinebilir; gönderdikten sonra gizli pencerede görünüp görünmediğine bak.
+- İlk 2–3 saatte gelen yorumlara yanıt ver; soru soran bir gönderide yanıtsız yorum kötü durur.
+- İki topluluğa aynı gün gönderme.
+- Rakamlar 14 Kasım anlık görüntüsü; göndermeden önce depodaki README ile karşılaştır.
 
 ## 4. Karşılaştırma yazıları (düşük verim; en sona)
 
