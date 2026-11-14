@@ -3,6 +3,7 @@ import type { Locale } from '@/i18n/routing';
 import type { SiteLeague } from '@/lib/site/leagues';
 import type { SitePrediction } from '@/lib/site/predictions';
 import { venueFor } from '@/lib/site/stadiums';
+import { OPEN_DATA_DOI_URL, OPEN_DATA_GITHUB } from '@/lib/site/open-data';
 
 // Structured data (schema.org JSON-LD) for the public site — SEO denetimi 2026-10-10.
 // Google reads it from any <script type="application/ld+json">; `JsonLd` renders it.
@@ -237,6 +238,8 @@ export function openDatasetJsonLd(locale: Locale, input: {
     variableMeasured: ['p_home', 'p_draw', 'p_away', 'lambda_home', 'lambda_away', 'home_score', 'away_score'],
     temporalCoverage: `${input.since}/..`,
     isBasedOn: `${SITE_URL}/${locale}/performance`,
+    identifier: OPEN_DATA_DOI_URL,
+    sameAs: [OPEN_DATA_DOI_URL, OPEN_DATA_GITHUB],
     ...(input.dateModified ? { dateModified: input.dateModified.toISOString() } : {}),
     ...(input.rows > 0 ? { size: `${input.rows} settled matches` } : {}),
     distribution: input.files.flatMap((f) => [

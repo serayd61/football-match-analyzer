@@ -5,7 +5,7 @@ import type { Locale } from '@/i18n/routing';
 import { alternatesFor } from '@/lib/site/seo';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { listOpenDataRows } from '@/lib/site/open-data-data';
-import { countByLeague, openDataPath, OPEN_DATA_ALL, OPEN_DATA_COLUMNS, OPEN_DATA_LICENSE, OPEN_DATA_LICENSE_NAME, OPEN_DATA_SINCE } from '@/lib/site/open-data';
+import { countByLeague, openDataPath, OPEN_DATA_ALL, OPEN_DATA_COLUMNS, OPEN_DATA_DOI, OPEN_DATA_DOI_URL, OPEN_DATA_GITHUB, OPEN_DATA_LICENSE, OPEN_DATA_LICENSE_NAME, OPEN_DATA_SINCE } from '@/lib/site/open-data';
 import { Page, PageTitle, SectionTitle } from '@/components/site/ui';
 import JsonLd from '@/components/site/JsonLd';
 import { breadcrumbJsonLd, faqPageJsonLd, openDatasetJsonLd } from '@/lib/site/jsonld';
@@ -108,6 +108,7 @@ export default async function OpenDataPage({ params: { locale } }: { params: { l
           <p>{t('licenseP2')}</p>
           <p className="text-xs uppercase tracking-wider text-s-muted">{t('citeLabel')}</p>
           <blockquote className="rounded-lg border border-s-line bg-s-surface p-3 text-sm">{citation}</blockquote>
+          <p>{t('mirrorsP')} <a href={OPEN_DATA_DOI_URL} rel="noopener" target="_blank" className="underline underline-offset-4">{`Zenodo (DOI ${OPEN_DATA_DOI})`}</a> · <a href={OPEN_DATA_GITHUB} rel="noopener" target="_blank" className="underline underline-offset-4">GitHub</a></p>
         </div>
       </section>
 

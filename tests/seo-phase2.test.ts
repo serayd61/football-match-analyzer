@@ -87,6 +87,8 @@ test('open data: Dataset JSON-LD lists one CSV and one JSON distribution per fil
   assert.equal(d.distribution[2].contentUrl, 'https://footballanalytics.pro/data/bundesliga.csv');
   assert.equal(d.size, '12 settled matches');
   assert.equal(d.temporalCoverage, '2026-06-01/..');
+  assert.equal(d.identifier, 'https://doi.org/10.5281/zenodo.24216824');
+  assert.deepEqual(d.sameAs, ['https://doi.org/10.5281/zenodo.24216824', 'https://github.com/serayd61/football-predictions-open-data']);
   assert.deepEqual(d.publisher, { '@type': 'Organization', '@id': 'https://footballanalytics.pro/#organization', name: 'Football Analytics', url: 'https://footballanalytics.pro' });
 });
 

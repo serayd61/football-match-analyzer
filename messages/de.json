@@ -2295,6 +2295,7 @@
     "licenseP2": "Sie dürfen ihn für jeden Zweck kopieren, weitergeben, umwandeln und darauf aufbauen, auch kommerziell, solange Sie Football Analytics nennen und auf diese Seite verlinken. Ein Satz wie «Daten: Football Analytics Open Data (footballanalytics.pro/data)» genügt.",
     "citeLabel": "Zitiervorschlag",
     "citation": "Football Analytics ({year}). Datensatz abgerechneter Modellprognosen: 1X2-Wahrscheinlichkeiten vor Anstoss und Resultate, {leagues} Ligen. {url}. Lizenz: CC BY 4.0.",
+    "mirrorsP": "Der Datensatz ist zusätzlich bei Zenodo mit DOI archiviert und wird täglich auf GitHub gespiegelt; die Commit-Historie zeigt dort jede tägliche Ergänzung:",
     "caveatsH": "Was die Daten sind – und was nicht",
     "caveats": [
       "Nur Werte vor Anstoss. Jede Wahrscheinlichkeit wurde vor dem Spiel geschrieben und nie revidiert; die Spielseite zeigt dieselben Zahlen.",

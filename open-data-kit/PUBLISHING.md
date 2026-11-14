@@ -18,23 +18,28 @@ Bu klasör, `footballanalytics.pro/data` altındaki veri setinin dış platforml
 
 Betik hiçbir şey yayınlamaz.
 
+## Durum (14 Kasım 2026)
+
+| Kopya | Adres | Durum |
+|---|---|---|
+| GitHub | <https://github.com/serayd61/football-predictions-open-data> | Yayında. 17 Ekim'de `footballanalytics-open-data` adıyla açılan depo yeniden adlandırıldı; eski adres yönleniyor, günlük commit geçmişi korunuyor |
+| Zenodo | <https://doi.org/10.5281/zenodo.24216824> | Yayında. Bu DOI her zaman son sürüme gider; `v2026.11` sürümünün kendi DOI'si `10.5281/zenodo.24216825` |
+| Kaggle | — | Hesap bekliyor |
+| Hugging Face | — | Hesap bekliyor |
+
 ## 1. GitHub
 
-```bash
-cd open-data-kit/dist/repo && git init -b main && git add -A && git commit -m "Initial dataset snapshot"
-gh repo create serayd61/football-predictions-open-data --public --source . --push --description "Pre-match 1X2 probabilities of a football prediction model with final scores. CSV, CC BY 4.0, refreshed daily." --homepage https://footballanalytics.pro/en/data
-gh repo edit serayd61/football-predictions-open-data --add-topic football --add-topic soccer --add-topic football-data --add-topic soccer-data --add-topic open-data --add-topic dataset --add-topic sports-analytics --add-topic football-analytics --add-topic predictions
-```
-
-Sonrasında `Refresh data` iş akışı her gün 05:17 UTC'de çalışır; yeni sonuçlanan maç varsa commit atar. İlk çalıştırma: Actions sekmesinden "Run workflow".
+Depo yayında ve kendi `Refresh data` iş akışıyla her gün 05:17 UTC'de güncelleniyor. README, betik veya iş akışında değişiklik gerekirse **doğrudan o depoda** yapılır; ardından aynı değişiklik buradaki şablona işlenir (`README.md` içinde depo adı `OWNER/REPO`, istatistik bloğu boş tutulur). `dist/repo/` artık yalnızca Kaggle ve Hugging Face klasörlerini üretmek için derlenir, GitHub'a itilmez.
 
 ## 2. Zenodo (DOI)
 
-1. zenodo.org → GitHub ile giriş → GitHub sekmesinde depoyu aç.
-2. GitHub'da bir sürüm (release) yayınla, ör. `v2026.11`.
-3. Zenodo sürümü arşivler ve DOI verir. DOI'yi README'ye ve `CITATION.cff` içine `doi:` satırı olarak ekle.
+Depo Zenodo'da etkin (release kancası kurulu). Yeni arşiv sürümü için GitHub'da sürüm yayınlamak yeter:
 
-Akademik atıf ve DataCite / Google Scholar dizini buradan gelir.
+```bash
+gh release create v2027.01 -R serayd61/football-predictions-open-data --title "v2027.01" --notes "..."
+```
+
+Zenodo birkaç saniye içinde yeni sürüm DOI'si üretir; README'deki DOI (konsept DOI) değişmez. Kayıt üst verisi depodaki `.zenodo.json` dosyasından okunur. Öneri: sezon ortası ve sezon sonu olmak üzere yılda iki sürüm.
 
 ## 3. Kaggle
 
@@ -58,8 +63,4 @@ hf upload HF_OWNER/football-match-predictions open-data-kit/dist/huggingface . -
 
 ## 5. Siteye geri bağlantı
 
-Kopyalar yayınlandıktan sonra `/data` sayfasına "Mirrors" satırı eklenir (GitHub, Kaggle, Hugging Face, DOI). Bu ayrı bir küçük PR'dır.
-
-## Sıra
-
-GitHub → Zenodo → Kaggle → Hugging Face → liste PR'ları (`marketing/link-outreach-2026-11.md`). Liste PR'ları GitHub deposuna bağlanacağı için depo önce açılmalı.
+`/data` sayfası Zenodo DOI'sine ve GitHub deposuna bağlanıyor; yapısal veride (`Dataset`) `identifier` ve `sameAs` olarak da geçiyor. Adresler `src/lib/site/open-data.ts` içinde. Kaggle ve Hugging Face açılınca aynı satıra eklenir.

@@ -2295,6 +2295,7 @@
     "licenseP2": "You may copy, redistribute, transform and build on it for any purpose, including commercially, as long as you credit Football Analytics and link to this page. A sentence such as “Data: Football Analytics open data (footballanalytics.pro/data)” is enough.",
     "citeLabel": "Suggested citation",
     "citation": "Football Analytics ({year}). Settled model predictions dataset: pre-match 1X2 probabilities and results, {leagues} leagues. {url}. Licence: CC BY 4.0.",
+    "mirrorsP": "The dataset is also archived on Zenodo with a DOI and mirrored daily on GitHub, where the commit history shows each day’s additions:",
     "caveatsH": "What the data is, and is not",
     "caveats": [
       "Pre-match figures only. Every probability was written before kick-off and never revised; the match page shows the same numbers.",

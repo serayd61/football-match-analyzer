@@ -26,6 +26,11 @@ import { SITE_URL } from '@/lib/seo';
 
 export const OPEN_DATA_LICENSE = 'https://creativecommons.org/licenses/by/4.0/';
 export const OPEN_DATA_LICENSE_NAME = 'CC BY 4.0';
+/** Concept DOI on Zenodo: always resolves to the latest archived release. */
+export const OPEN_DATA_DOI = '10.5281/zenodo.24216824';
+export const OPEN_DATA_DOI_URL = `https://doi.org/${OPEN_DATA_DOI}`;
+/** Daily mirror; its commit history shows each day's additions. */
+export const OPEN_DATA_GITHUB = 'https://github.com/serayd61/football-predictions-open-data';
 /** Earliest engine row — the dataset epoch. */
 export const OPEN_DATA_SINCE = '2026-06-01';
 

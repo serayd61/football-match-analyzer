@@ -1,0 +1,12 @@
+{
+  "title": "Football match predictions: pre-match 1X2 probabilities and results",
+  "upload_type": "dataset",
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "creators": [{ "name": "Football Analytics" }],
+  "description": "<p>Every settled prediction of the Football Analytics model (footballanalytics.pro): for each finished match in the covered competitions, the 1X2 probabilities a Dixon-Coles / Poisson model stored before kick-off, its goal expectations, its pick and the final score. Nothing is filtered by outcome.</p><p>One row per match in CSV; one file for all competitions and one per competition. The repository is refreshed daily from the canonical source, https://footballanalytics.pro/data, and its commit history records the rows as they were added.</p>",
+  "keywords": ["football", "soccer", "match prediction", "probabilistic forecasting", "calibration", "Dixon-Coles", "sports analytics"],
+  "related_identifiers": [
+    { "identifier": "https://footballanalytics.pro/data", "relation": "isDocumentedBy", "scheme": "url" }
+  ]
+}

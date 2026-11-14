@@ -2295,6 +2295,7 @@
     "licenseP2": "Football Analytics’i anıp bu sayfaya bağlantı verdiğiniz sürece ticari kullanım dâhil her amaçla kopyalayabilir, dağıtabilir, dönüştürebilir ve üzerine inşa edebilirsiniz. “Veri: Football Analytics açık veri (footballanalytics.pro/data)” gibi bir cümle yeterlidir.",
     "citeLabel": "Önerilen atıf",
     "citation": "Football Analytics ({year}). Sonuçlanmış model tahminleri veri seti: maç öncesi 1X2 olasılıkları ve sonuçlar, {leagues} lig. {url}. Lisans: CC BY 4.0.",
+    "mirrorsP": "Veri seti ayrıca Zenodo’da DOI ile arşivlenir ve her gün GitHub’a kopyalanır; oradaki commit geçmişi her günün eklemelerini gösterir:",
     "caveatsH": "Bu veri nedir, ne değildir",
     "caveats": [
       "Yalnızca maç öncesi değerler. Her olasılık maçtan önce yazılmış, sonradan hiç düzeltilmemiştir; maç sayfası aynı sayıları gösterir.",
