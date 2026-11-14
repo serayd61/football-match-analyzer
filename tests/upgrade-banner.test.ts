@@ -77,6 +77,8 @@ test('strings exist in all four locales, the claim matches the prices, no gambli
     for (const k of ['appUpdateNote', 'appUpdateCta', 'playUnavailable', 'playRetry']) assert.ok(m.v2?.pricing?.[k], `${name} v2.pricing.${k}`);
     // The dead-end sentence must be gone from the in-app paywall and pricing card.
     assert.ok(!('twaNote' in m.v2.pricing), `${name} v2.pricing.twaNote removed`);
+    // Hesap sayfası: "Planları gör" düğmesinin altında "abonelik değişikliği yapılamaz" demesin.
+    assert.ok(/Google Play/.test(m.account?.twaNote || ''), `${name} account.twaNote`);
   }
-  assert.ok(!/not available in this app/i.test(en.paywall.twaLead));
+  assert.ok(!/not available in this app/i.test(en.paywall.twaLead + en.account.twaNote));
 });

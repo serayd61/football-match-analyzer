@@ -1172,7 +1172,7 @@
     "signOut": "Abmelden",
     "legacyNote": "Benachrichtigungs- und Analyse-Einstellungen liegen noch in der alten Ansicht:",
     "legacyLink": "alte Einstellungen",
-    "twaNote": "Abo-Änderungen sind in dieser App nicht möglich.",
+    "twaNote": "Ein in dieser App abgeschlossenes Abo wird über Google Play verwaltet (Play Store → Abos). Ein anderswo abgeschlossenes Abo wird dort verwaltet, wo es gekauft wurde.",
     "app": "App",
     "share": "Teilen",
     "rate": "Bewerten",
