@@ -155,6 +155,7 @@ Disclosure: I maintain the dataset.
 
 ### Gönderirken
 
+- Gönderiye `marketing/reddit-calibration.png` grafiğini ekle (metin gönderisinde resim ekleme düğmesi). Grafik bulguyu tek bakışta gösteriyor; akışta resimli gönderi daha çok açılır.
 - Topluluk kurallarını (kenar çubuğu) göndermeden önce oku; kurallar buradan doğrulanamadı.
 - Hesap yeni ya da karması düşükse gönderi otomatik silinebilir; gönderdikten sonra gizli pencerede görünüp görünmediğine bak.
 - İlk 2–3 saatte gelen yorumlara yanıt ver; soru soran bir gönderide yanıtsız yorum kötü durur.
