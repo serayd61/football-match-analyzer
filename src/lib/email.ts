@@ -5,6 +5,7 @@ import { Resend } from 'resend';
 import { SITE_URL } from '@/lib/seo';
 import { PLAN_PRICES } from '@/lib/site/plans';
 import { buildPlayLaunchEmail } from '@/lib/email-play-launch';
+import { buildWinbackEmail, type WinbackEmailInput } from '@/lib/email-winback';
 
 // Fiyat metinleri tek kaynaktan (lib/site/plans.ts); e-postalarda sabit yazma.
 const MONTHLY_PRICE = `$${PLAN_PRICES.monthly.amount.toFixed(2)}`;
@@ -558,10 +559,10 @@ Unsubscribe: ${o.unsubscribeUrl}`;
   if (error) throw new Error(error.message);
 }
 
-// Deneme bitti (2026-11-10): bitişten sonraki sabah. Play uygulamasında fiyat
-// ve checkout gizli (Play politikası, lib/site/twa.ts); uygulama kullanıcısı
-// "nasıl abone olurum" diye soruyordu. Bu mail tarayıcıya götürür: tek düğme
-// → /pricing, ödeme yöntemleri sayılır, Play rozeti YOK.
+// Deneme bitti (2026-11-10): bitişten sonraki sabah. Uygulama kullanıcısı "nasıl
+// abone olurum" diye soruyordu. Tek düğme → /pricing (web checkout), ödeme
+// yöntemleri sayılır. 2026-11-14: uygulama v1.3.0+ Play Billing ile de satıyor;
+// alt not artık "yalnız web" demez, uygulamadan alma yolunu da söyler.
 export async function sendTrialEndedEmail(to: string, o: TrialEmailOpts): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
@@ -573,13 +574,13 @@ export async function sendTrialEndedEmail(to: string, o: TrialEmailOpts): Promis
     <p>Pro is <strong>${trialPriceLine(o)}</strong>, cancel any time. The checkout takes <strong>card</strong>, <strong>PayPal</strong>, <strong>Google Pay</strong> and <strong>Apple Pay</strong>.</p>
     ${trialPromo(o)}
     ${trialBtn(o.pricingUrl, 'Subscribe to Pro →')}
-    <p style="font-size:13px;color:#64748b;text-align:center">Subscribing happens on the website, in your browser. If you use the Android app, sign in there with the same account afterwards and Pro is applied automatically.</p>
+    <p style="font-size:13px;color:#64748b;text-align:center">This button opens the website checkout. In the Android app you can also subscribe with Google Play: update the app, then open Plans. Either way, sign in with the same account and Pro is applied automatically.</p>
     <p style="font-size:13px;color:#64748b;text-align:center">Something in the way? Reply to this email — we read every reply.</p>`;
   const html = trialShell('Your trial has ended', 'Trial ended', body, o.unsubscribeUrl);
   const text = `Hi${hi}, your 7-day trial is over. Predictions, goal-model details and the value radar are now closed for your account.${o.stats && o.stats.n >= 10 ? ` Last 7 days: ${o.stats.won}/${o.stats.n} showcase picks correct.` : ''}
 Pro is ${trialPriceText(o)}, cancel any time. Card, PayPal, Google Pay or Apple Pay.${trialPromoText(o)}
 Subscribe (in your browser): ${o.pricingUrl}
-Android app users: subscribe on the website, then sign in to the app with the same account — Pro is applied automatically.
+Android app: you can also subscribe inside the app with Google Play (update the app, then open Plans). Either way, sign in with the same account and Pro is applied automatically.
 Something in the way? Reply to this email.
 Unsubscribe: ${o.unsubscribeUrl}`;
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text, headers: { 'List-Unsubscribe': `<${o.unsubscribeUrl}>` } });
@@ -756,5 +757,30 @@ export async function sendOpsReportEmail(to: string, o: { subject: string; html:
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
   const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject: o.subject, html: o.html, text: o.text });
+  if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Geri kazanım serisi (2026-11-14): denemesi biten üyeye 3 günde bir, o günün
+// ücretsiz maçları + Pro + "uygulamada Google Play ile abonelik açıldı".
+// Şablon: src/lib/email-winback.ts; seçim: lib/site/winback.ts; cron: api/cron/winback.
+// ---------------------------------------------------------------------------
+export async function sendWinbackEmail(to: string, input: WinbackEmailInput): Promise<void> {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
+  const resend = new Resend(RESEND_API_KEY);
+  const { subject, html, text } = buildWinbackEmail(input);
+  const { error } = await resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    replyTo: SUPPORT_EMAIL,
+    subject,
+    html,
+    text,
+    headers: {
+      'List-Unsubscribe': `<${input.unsubscribeUrl}>`,
+      // RFC 8058: tek tıkla abonelikten çıkma (spam yerine unsubscribe → gönderen itibarı korunur).
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
   if (error) throw new Error(error.message);
 }

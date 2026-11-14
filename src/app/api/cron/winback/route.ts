@@ -1,0 +1,139 @@
+// ============================================================================
+// CRON — geri kazanım serisi (2026-11-14). Her gün 07:30 UTC (Telegram günlük
+// paylaşımından sonra). Denemesi bitmiş, abone olmayan üyeye kişi başına 3 günde
+// bir, en çok 5 kez: o günün ücretsiz maçları + Pro + "Android uygulamasında
+// Google Play ile abonelik açıldı". Kurallar: lib/site/winback.ts.
+//
+// Günün ücretsiz maçı yoksa (ya da hepsi başlamışsa) o gün kimseye gönderilmez;
+// adım tüketilmez, ertesi gün yeniden denenir.
+//
+// Güvenlik (trial-emails ile aynı): CRON_SECRET; okuma hatasında iptal
+// (unsubscribe/dedup boş sayılmasın); unsubscribe, abone ve admin hariç;
+// email_campaign_log `winback-2026-11:s{n}` ile adım başına tek gönderim.
+//   ?dry=1     gönderim yok: kaç kişi, hangi adım (adres listesi yalnız &list=1 ile)
+//   ?canary=1  yalnız admin'e, 1. adım (maç yoksa örnek maçlarla)
+//   ?limit=N   günlük parti (varsayılan 60: Resend kotası diğer kampanyalarla paylaşılır)
+//   ?maxAge=N  serinin başlayabileceği en eski deneme bitişi, gün (varsayılan 120)
+// Bu cron, eski tek seferlik "reengage" mailinin (world-cup-campaign?type=reengage)
+// vercel.json'daki yerini aldı; ikisi aynı kitleye gidiyordu.
+// ============================================================================
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { sendWinbackEmail } from '@/lib/email';
+import type { WinbackLeg } from '@/lib/email-winback';
+import { unsubscribeUrl, SITE_URL, PLAY_STORE_URL, TELEGRAM_URL } from '@/lib/campaign';
+import { ADMIN_EMAILS } from '@/lib/admin/emails';
+import type { TrialUser } from '@/lib/site/trial-emails';
+import { selectWinbackRecipients, winbackHistory, winbackKey, WINBACK_KEY_PREFIX, WINBACK_MAX_STEPS, WINBACK_MAX_AGE_DAYS, type WinbackLogRow } from '@/lib/site/winback';
+import { dailyLegs } from '@/lib/social/publish';
+import { fmtDate, fmtTime, marketLabel, tzLabel } from '@/lib/social/content';
+import { showcaseRecord } from '@/lib/site/showcase';
+import { todayYmd } from '@/lib/site/time';
+import { PLAN_PRICES, PROMO, promoActive, yearlyEnabled, yearlySavingPct } from '@/lib/site/plans';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
+function db(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase credentials yok');
+  // cache: 'no-store' — bkz. world-cup-campaign (2026-07-10 mükerrer gönderim vakası)
+  return createClient(url, key, { auth: { persistSession: false }, global: { fetch: (i: any, init?: any) => fetch(i, { ...init, cache: 'no-store' }) } });
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** PostgREST tek yanıtta en çok 1000 satır döner; kesik liste = eksik dedup. Sayfa sayfa hepsini oku. */
+async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await page(from, from + 999);
+    if (error) throw new Error(error.message);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+const SAMPLE_LEGS: WinbackLeg[] = [
+  { time: '18:30', home: 'Home United', away: 'Away City', league: 'Sample League', selection: 'Over 2.5', modelPct: 64 },
+  { time: '21:00', home: 'North FC', away: 'South FC', league: 'Sample League', selection: 'North FC win', modelPct: 58 },
+];
+
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const sp = new URL(req.url).searchParams;
+  const dry = sp.get('dry') === '1';
+  const canary = sp.get('canary') === '1';
+  const num = (k: string, d: number) => { const n = parseInt(sp.get(k) || '', 10); return Number.isFinite(n) && n > 0 ? n : d; };
+  const limit = num('limit', 60);
+  const maxAgeDays = num('maxAge', WINBACK_MAX_AGE_DAYS);
+  const now = Date.now();
+  const day = todayYmd();
+  const sb = db();
+
+  // Günün ücretsiz maçları: Telegram'da 07:00 UTC'de yayınlananla aynı liste; başlamış olanlar düşer.
+  const legsRaw = (await dailyLegs(day).catch(() => [])).filter((l) => Date.parse(l.kickoff) > now);
+  let legs: WinbackLeg[] = legsRaw.map((l) => ({ time: fmtTime(l.kickoff, 'en'), home: l.homeName, away: l.awayName, league: l.leagueName, selection: marketLabel(l, 'en'), modelPct: l.modelP * 100 }));
+  const tz = legsRaw.length ? tzLabel('en', legsRaw[0].kickoff) : tzLabel('en', new Date(now).toISOString());
+  if (!legs.length && canary) legs = SAMPLE_LEGS;
+  if (!legs.length) return NextResponse.json({ ok: true, skipped: 'no free matches today', day });
+
+  // Okumalar güvenlik kapısı: hata → iptal (unsubscribe/dedup boş sayılmasın)
+  let users: any[], profs: any[], unsub: any[], log: WinbackLogRow[];
+  try {
+    [users, profs, unsub, log] = await Promise.all([
+      readAll<any>((a, b) => sb.from('users').select('email, name, created_at').order('created_at').range(a, b)),
+      readAll<any>((a, b) => sb.from('profiles').select('email, trial_ends_at, subscription_status').order('email').range(a, b)),
+      readAll<any>((a, b) => sb.from('email_unsubscribes').select('email').order('email').range(a, b)),
+      readAll<WinbackLogRow>((a, b) => sb.from('email_campaign_log').select('email, campaign_key, sent_at').like('campaign_key', `${WINBACK_KEY_PREFIX}%`).order('id').range(a, b)),
+    ]);
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, aborted: true, error: String(e?.message || e).slice(0, 300) }, { status: 500 });
+  }
+
+  const prof = new Map<string, { trial_ends_at: string | null; subscription_status: string | null }>();
+  for (const p of profs) if (p.email) prof.set(String(p.email).toLowerCase().trim(), p);
+  const list: TrialUser[] = users.map((u) => {
+    const e = String(u.email || '').toLowerCase().trim(); const p = prof.get(e);
+    return { email: e, name: u.name || null, createdAt: u.created_at, trialEndsAt: p?.trial_ends_at ?? null, subscriptionStatus: p?.subscription_status ?? null };
+  });
+  let recipients = selectWinbackRecipients(list, winbackHistory(log, now), {
+    now, maxAgeDays,
+    unsubscribed: new Set(unsub.map((r) => String(r.email).toLowerCase())),
+    exclude: new Set(ADMIN_EMAILS.map((e) => e.toLowerCase())),
+  });
+  if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, step: 1, daysSinceEnd: 3 }];
+  const total = recipients.length;
+  const bySteps = recipients.reduce<Record<string, number>>((m, r) => { m[`s${r.step}`] = (m[`s${r.step}`] || 0) + 1; return m; }, {});
+  recipients = recipients.slice(0, limit);
+
+  const rec = await showcaseRecord(7).catch(() => null);
+  const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
+  const yearly = yearlyEnabled() ? PLAN_PRICES.yearly.amount : null;
+
+  if (dry) {
+    return NextResponse.json({ ok: true, dry: true, day, legs: legs.length, total, wouldSend: recipients.length, bySteps, stats, ...(sp.get('list') === '1' ? { recipients: recipients.map((r) => ({ email: r.email, step: r.step, daysSinceEnd: r.daysSinceEnd })) } : {}) });
+  }
+
+  let ok = 0, failed = 0;
+  for (const r of recipients) {
+    const utm = `utm_source=email&utm_medium=winback&utm_campaign=winback_s${r.step}`;
+    const key = winbackKey(r.step);
+    try {
+      await sendWinbackEmail(r.email, {
+        step: r.step, maxSteps: WINBACK_MAX_STEPS, name: r.name, dateLabel: fmtDate(day, 'en'), tz, legs, stats,
+        monthly: PLAN_PRICES.monthly.amount, yearly, savingPct: yearly ? yearlySavingPct() : null, promoCode: promoActive() ? PROMO.code : null,
+        pricingUrl: `${SITE_URL}/pricing?${utm}`, matchesUrl: `${SITE_URL}/matches?${utm}`, playUrl: `${PLAY_STORE_URL}&${utm}`, telegramUrl: TELEGRAM_URL,
+        unsubscribeUrl: unsubscribeUrl(r.email),
+      });
+      ok++;
+      if (!canary) await sb.from('email_campaign_log').upsert({ campaign_key: key, email: r.email, status: 'sent', sent_at: new Date().toISOString() }, { onConflict: 'campaign_key,email' });
+    } catch (e: any) {
+      failed++;
+      console.error(`[winback] s${r.step}:`, e?.message);
+      if (!canary) await sb.from('email_campaign_log').upsert({ campaign_key: key, email: r.email, status: 'failed', error: String(e?.message || e).slice(0, 300), sent_at: new Date().toISOString() }, { onConflict: 'campaign_key,email' });
+    }
+    await sleep(150); // Resend hız sınırı
+  }
+  return NextResponse.json({ ok: failed === 0, day, legs: legs.length, total, sent: ok, failed, canary, bySteps, stats });
+}

@@ -29,8 +29,8 @@
       "schedule": "30 3 * * *"
     },
     {
-      "path": "/api/cron/world-cup-campaign?type=reengage&limit=25",
-      "schedule": "0 9 * * *"
+      "path": "/api/cron/winback",
+      "schedule": "30 7 * * *"
     },
     {
       "path": "/api/cron/world-cup-campaign?type=welcome&days=2",
