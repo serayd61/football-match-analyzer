@@ -2,7 +2,7 @@
 
 Amaç: siteye dış bağlantı kazandırmak (14 Kasım'da 5 bağlantı, 2 siteden). Araç: açık veri seti (`/data`, 1.545 sonuçlanmış maç, 17 lig, CC BY 4.0). Yayın adımları: `open-data-kit/PUBLISHING.md`.
 
-Hedefler 14 Kasım 2026'da arama sonuçlarından doğrulandı. Hiçbir şey gönderilmedi.
+Hedefler 14 Kasım 2026'da arama sonuçlarından doğrulandı. Aynı gün GitHub deposu ve Zenodo kaydı yayınlandı, iki liste PR'ı açıldı (aşağıda). E-posta ve topluluk gönderisi gönderilmedi.
 
 ## Elimizdeki kanıt (metinlerde kullanılan sayılar, 14 Kasım anlık görüntüsü)
 
@@ -20,8 +20,8 @@ Zayıf sayıları saklamamak metnin gücü: liste sahipleri "kayıplar da dosyad
 
 | # | Platform | Ne kazandırır | Durum |
 |---|---|---|---|
-| 1 | GitHub: `football-predictions-open-data` | Bağlantı + GitHub konu sayfaları (`football-data`, `soccer-data`) + liste PR'larının bağlanacağı adres | Paket hazır, onay bekliyor |
-| 2 | Zenodo | DOI, akademik atıf, DataCite dizini | GitHub'dan sonra |
+| 1 | GitHub: [`football-predictions-open-data`](https://github.com/serayd61/football-predictions-open-data) | Bağlantı + GitHub konu sayfaları (`football-data`, `soccer-data`) + liste PR'larının bağlandığı adres | Yayında (14 Kas); 17 Ekim'den beri günlük commit geçmişi |
+| 2 | Zenodo: [10.5281/zenodo.24216824](https://doi.org/10.5281/zenodo.24216824) | DOI, akademik atıf, DataCite dizini | Yayında (14 Kas, v2026.11) |
 | 3 | Kaggle | Veri seti araması, defter (notebook) yazarları | Hesap gerekli |
 | 4 | Hugging Face | Veri seti araması, `load_dataset` kullanıcıları | Hesap gerekli |
 | 5 | Google Dataset Search | Otomatik: `/data` sayfasında `Dataset` yapısal verisi zaten var | Yapılacak iş yok |
@@ -38,6 +38,14 @@ Zayıf sayıları saklamamak metnin gücü: liste sahipleri "kayıplar da dosyad
 | 11 | [datahub.io/collections/football](https://datahub.io/collections/football) | Açık futbol verisi derlemesi | Sayfadaki düzenleme bağlantısı |
 | 12 | [Football-Analytics-101, Data Sources](https://football-analytics-101.readthedocs.io/en/latest/data.html) | Öğrenme rehberi, veri kaynakları sayfası | Arkasındaki GitHub deposuna PR |
 | 13 | [Sports Data Campus, Free Football Data Sources Directory](https://english-programs.sportsdatacampus.com/free-football-data-sources-directory/) | Eğitim kurumu dizini | İletişim formu |
+
+Durum (14 Kasım): bu listelerden yalnızca 6 numara dışarıdan PR birleştiriyor; 7–10'da açık PR'lar aylardır bekliyor (8 son kez 2020'de, 9 2022'de güncellendi; 7'de birleştirilmiş PR yok).
+
+| Liste | PR | Not |
+|---|---|---|
+| 6 | [withqwerty/open-football#3](https://github.com/withqwerty/open-football/pull/3) | Açık. Benzer bir tahmin veri seti PR'ı (#2) 6 Ekim'den beri yanıtsız |
+| 7 | [eddwebster/football_analytics#37](https://github.com/eddwebster/football_analytics/pull/37) | Açık. Birleşme olasılığı düşük |
+| 8–10 | — | Açılmadı; liste sahipleri etkin değil |
 
 PR'da bağlanacak adres: GitHub deposu (liste kuralları "kanonik kaynak" istiyor; README en üstte siteye bağlanıyor).
 
@@ -144,7 +152,7 @@ Football Analytics
 ## Ölçüm
 
 - Search Console → Bağlantılar: başlangıç 5 dış bağlantı / 2 site (12 Kasım).
-- Hedef: 4 hafta içinde 10+ bağlayan site. Kopyalar (GitHub, Zenodo, Kaggle, Hugging Face) tek başına 4 site eder.
+- Hedef: 4 hafta içinde 10+ bağlayan site. Kopyalar (GitHub, Zenodo, Kaggle, Hugging Face) tek başına 4 site eder; ikisi 14 Kasım'da yayında.
 - İlk bakış: 26 Kasım, performans raporuyla birlikte.
 
 ## Sonraki sürüm için not

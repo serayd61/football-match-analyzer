@@ -1,5 +1,7 @@
 # Football match predictions: pre-match probabilities and results
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24216824.svg)](https://doi.org/10.5281/zenodo.24216824)
+
 Every settled prediction of the [Football Analytics](https://footballanalytics.pro) model as flat CSV files: for each finished match in a covered competition, the 1X2 probabilities the model stored before kick-off, its goal expectations, its pick, and the final score.
 
 Nothing is filtered by outcome. The losing picks are in the file next to the winners, so the record can be checked and scored by anyone.
@@ -14,7 +16,7 @@ Nothing is filtered by outcome. The losing picks are in the file next to the win
 <!-- stats:start -->
 <!-- stats:end -->
 
-The files in this repository are refreshed once a day from the canonical source, which itself updates hourly as matches are settled.
+The files in this repository are refreshed once a day from the canonical source, which itself updates hourly as matches are settled. The commit history goes back to 17 October 2026 and shows each day's additions, so the record can be audited against any earlier date.
 
 ## Files
 
@@ -97,7 +99,9 @@ A calibration check that needs only the standard library is in [`examples/calibr
 
 Published under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). You may copy, redistribute, transform and build on the data for any purpose, including commercially, as long as you credit Football Analytics and link to <https://footballanalytics.pro/data>.
 
-> Football Analytics. Settled model predictions dataset: pre-match 1X2 probabilities and results. https://footballanalytics.pro/data. Licence: CC BY 4.0.
+> Football Analytics. Settled model predictions dataset: pre-match 1X2 probabilities and results. https://footballanalytics.pro/data. https://doi.org/10.5281/zenodo.24216824. Licence: CC BY 4.0.
+
+The DOI above always resolves to the latest archived version on Zenodo; each release also has its own DOI for citing a fixed snapshot.
 
 A machine-readable citation is in [`CITATION.cff`](CITATION.cff).
 

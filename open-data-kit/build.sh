@@ -18,7 +18,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT/repo" "$OUT/kaggle" "$OUT/huggingface"
 
 # 1. GitHub repository
-cp "$KIT/README.md" "$KIT/LICENSE" "$KIT/CITATION.cff" "$OUT/repo/"
+cp "$KIT/README.md" "$KIT/LICENSE" "$KIT/CITATION.cff" "$KIT/.zenodo.json" "$OUT/repo/"
 cp -R "$KIT/scripts" "$KIT/examples" "$KIT/.github" "$OUT/repo/"
 sed -i.bak "s#OWNER/REPO#$REPO#g" "$OUT/repo/README.md" && rm "$OUT/repo/README.md.bak"
 python3 "$OUT/repo/scripts/refresh.py"

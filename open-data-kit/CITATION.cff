@@ -6,6 +6,7 @@ authors:
   - name: "Football Analytics"
     website: "https://footballanalytics.pro"
 url: "https://footballanalytics.pro/data"
+doi: 10.5281/zenodo.24216824
 license: CC-BY-4.0
 keywords:
   - football
