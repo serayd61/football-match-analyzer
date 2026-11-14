@@ -2250,7 +2250,7 @@
   },
   "openData": {
     "metaTitle": "Football prediction dataset (CSV/JSON)",
-    "metaDescription": "Free, CC BY 4.0: every settled match in 11 leagues with the model’s pre-match 1X2 probabilities, goal expectations, pick and final score. CSV and JSON, updated hourly.",
+    "metaDescription": "Free, CC BY 4.0: every settled match in {leagues} leagues with the model’s pre-match 1X2 probabilities, goal expectations, pick and final score. CSV/JSON, updated hourly.",
     "eyebrow": "Open data",
     "title": "Open data",
     "h1": "Open data: every settled model prediction",
@@ -2294,7 +2294,7 @@
     "licenseP1": "The dataset is published under",
     "licenseP2": "You may copy, redistribute, transform and build on it for any purpose, including commercially, as long as you credit Football Analytics and link to this page. A sentence such as “Data: Football Analytics open data (footballanalytics.pro/data)” is enough.",
     "citeLabel": "Suggested citation",
-    "citation": "Football Analytics ({year}). Settled model predictions dataset: pre-match 1X2 probabilities and results, 11 leagues. {url}. Licence: CC BY 4.0.",
+    "citation": "Football Analytics ({year}). Settled model predictions dataset: pre-match 1X2 probabilities and results, {leagues} leagues. {url}. Licence: CC BY 4.0.",
     "caveatsH": "What the data is, and is not",
     "caveats": [
       "Pre-match figures only. Every probability was written before kick-off and never revised; the match page shows the same numbers.",

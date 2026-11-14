@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite it as below."
+type: dataset
+title: "Settled model predictions dataset: pre-match 1X2 probabilities and results"
+authors:
+  - name: "Football Analytics"
+    website: "https://footballanalytics.pro"
+url: "https://footballanalytics.pro/data"
+license: CC-BY-4.0
+keywords:
+  - football
+  - soccer
+  - match prediction
+  - probabilistic forecasting
+  - calibration
+  - Dixon-Coles
+abstract: >-
+  For every finished match in the covered competitions: the 1X2 probabilities
+  a Dixon-Coles / Poisson model stored before kick-off, its goal expectations,
+  its pick and the final score. Nothing is filtered by outcome.

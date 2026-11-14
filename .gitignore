@@ -58,3 +58,6 @@ public/swe-worker-*.js
 # geçici git bundle dosyaları
 *.bundle
 .fdorg_teams_cache.json
+
+# açık veri paketi derleme çıktısı (open-data-kit/build.sh üretir)
+open-data-kit/dist/

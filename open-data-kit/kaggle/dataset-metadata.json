@@ -1,0 +1,14 @@
+{
+  "title": "Football Match Predictions: Probabilities vs Results",
+  "subtitle": "Pre-match 1X2 probabilities of a Dixon-Coles model with final scores",
+  "id": "KAGGLE_USER/football-match-predictions-probabilities-results",
+  "licenses": [{ "name": "CC-BY-4.0" }],
+  "keywords": ["football", "sports", "tabular", "classification", "europe"],
+  "description": "Every settled prediction of the Football Analytics model (https://footballanalytics.pro): for each finished match in a covered competition, the 1X2 probabilities the model stored before kick-off, its goal expectations, its pick, and the final score. Nothing is filtered by outcome, so the record can be checked and scored by anyone.\n\n**Source and documentation:** https://footballanalytics.pro/en/data  \n**Live track record:** https://footballanalytics.pro/en/performance  \n**Daily-refreshed mirror:** GITHUB_URL\n\n### Columns\n- `fixture_id`: match identifier\n- `kickoff_utc`: kick-off in UTC, ISO 8601\n- `league`, `league_slug`, `country`: competition\n- `home_team`, `away_team`: club names\n- `home_score`, `away_score`: final goals after 90 minutes plus stoppage time\n- `result`: 1 home win, X draw, 2 away win\n- `p_home`, `p_draw`, `p_away`: model probabilities stored before kick-off (0-1)\n- `lambda_home`, `lambda_away`: model goal expectation per side (Poisson rate)\n- `pick`, `pick_correct`: the pre-match 1X2 pick and whether it came in\n- `model_version`: model version of the row\n- `match_url`: public match page\n\n### Notes\n- Settled matches only; upcoming predictions are not included.\n- Goal expectations are Dixon-Coles / Poisson estimates, not shot-based xG.\n- No bookmaker odds are included.\n- Model output, not betting advice.\n\n### Licence\nCC BY 4.0. Credit Football Analytics and link to https://footballanalytics.pro/data.",
+  "resources": [
+    {
+      "path": "all.csv",
+      "description": "Every settled match, one row per match, kick-off order."
+    }
+  ]
+}

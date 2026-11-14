@@ -19,7 +19,7 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'openData' });
-  return { title: t('metaTitle'), description: t('metaDescription'), alternates: alternatesFor(locale as Locale, '/data') };
+  return { title: t('metaTitle'), description: t('metaDescription', { leagues: SITE_LEAGUES.length }), alternates: alternatesFor(locale as Locale, '/data') };
 }
 
 const SNIPPET_PY = `import pandas as pd
@@ -46,12 +46,12 @@ export default async function OpenDataPage({ params: { locale } }: { params: { l
   const cols = t.raw('cols') as Record<string, string>;
   const th = 'py-1.5 text-xs font-medium uppercase tracking-wider text-s-muted';
   const year = new Date().getUTCFullYear();
-  const citation = t('citation', { year, url: 'https://footballanalytics.pro/data' });
+  const citation = t('citation', { year, leagues: leaguesWithData.length || SITE_LEAGUES.length, url: 'https://footballanalytics.pro/data' });
 
   return (
     <Page>
       <JsonLd data={breadcrumbJsonLd(locale as Locale, [{ name: tn('home'), path: '/' }, { name: t('title'), path: '/data' }])} />
-      {rows.length > 0 && <JsonLd data={openDatasetJsonLd(locale as Locale, { name: t('metaTitle'), description: t('metaDescription'), rows: rows.length, dateModified: last ? new Date(last) : null, license: OPEN_DATA_LICENSE, since: OPEN_DATA_SINCE, files: files.map((x) => ({ name: x.name, csv: openDataPath(x.slug, 'csv'), json: openDataPath(x.slug, 'json') })) })} />}
+      {rows.length > 0 && <JsonLd data={openDatasetJsonLd(locale as Locale, { name: t('metaTitle'), description: t('metaDescription', { leagues: leaguesWithData.length }), rows: rows.length, dateModified: last ? new Date(last) : null, license: OPEN_DATA_LICENSE, since: OPEN_DATA_SINCE, files: files.map((x) => ({ name: x.name, csv: openDataPath(x.slug, 'csv'), json: openDataPath(x.slug, 'json') })) })} />}
       <JsonLd data={faqPageJsonLd(faqs)} />
       <PageTitle eyebrow={t('eyebrow')} title={t('h1')} lead={t('lead')} aside={<Link href="/performance" className="text-xs underline underline-offset-4">{t('recordLink')}</Link>} />
 
