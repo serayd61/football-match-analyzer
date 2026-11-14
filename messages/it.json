@@ -1115,7 +1115,16 @@
     "offerTitleYearly": "Risparmia il {pct}% con Pro annuale rispetto al pagamento mensile.",
     "offerTitleApp": "Risparmia più del 50% con Pro annuale rispetto al pagamento mensile.",
     "updateKicker": "Nuova versione",
-    "updateTitle": "Aggiorna l'app per abbonarti a Pro direttamente qui."
+    "updateTitle": "Aggiorna l'app per abbonarti a Pro direttamente qui.",
+    "freeKicker": "Gratis oggi",
+    "freeListTitle": "{n, plural, =1 {Una partita è aperta per te oggi} other {# partite sono aperte per te oggi}}",
+    "freeListLead": "La stessa lista che pubblichiamo ogni mattina nel nostro canale Telegram. Analisi completa, senza abbonamento.",
+    "freeOpen": "Apri l'analisi",
+    "freeOpenToday": "Apri l'analisi completa, gratis oggi",
+    "freeMatchTitle": "Questa partita oggi è aperta per te, per intero.",
+    "freeMatchLead": "È una delle partite gratuite di oggi. Pro apre ogni partita in {n} campionati, con il commento AI e La mia schedina.",
+    "freeCloseTitle": "Tutte le altre partite fanno parte di Pro.",
+    "freeCloseNote": "Mensile o annuale, disdici quando vuoi. Ogni risultato resta nel resoconto pubblico, giusto o sbagliato."
   },
   "account": {
     "metaTitle": "Account",

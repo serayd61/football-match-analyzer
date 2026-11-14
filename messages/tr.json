@@ -1115,7 +1115,16 @@
     "offerTitleYearly": "Yıllık Pro ile aylık ödemeye göre %{pct} tasarruf et.",
     "offerTitleApp": "Yıllık Pro ile aylık ödemeye göre %50'den fazla tasarruf et.",
     "updateKicker": "Yeni sürüm",
-    "updateTitle": "Pro'ya buradan abone olmak için uygulamayı güncelle."
+    "updateTitle": "Pro'ya buradan abone olmak için uygulamayı güncelle.",
+    "freeKicker": "Bugün ücretsiz",
+    "freeListTitle": "{n, plural, =1 {Bugün bir maç sana açık} other {Bugün # maç sana açık}}",
+    "freeListLead": "Her sabah Telegram kanalımızda paylaştığımız listenin aynısı. Tam analiz, abonelik gerekmez.",
+    "freeOpen": "Analizi aç",
+    "freeOpenToday": "Tam analizi aç, bugün ücretsiz",
+    "freeMatchTitle": "Bu maç bugün sana tamamen açık.",
+    "freeMatchLead": "Günün ücretsiz maçlarından biri. Pro, {n} ligdeki her maçı yapay zeka yorumu ve Kuponum ile açar.",
+    "freeCloseTitle": "Diğer bütün maçlar Pro'da.",
+    "freeCloseNote": "Aylık ya da yıllık, istediğin zaman iptal. Her sonuç herkese açık karnede kalır, tutsa da tutmasa da."
   },
   "account": {
     "metaTitle": "Hesap",

@@ -4,6 +4,7 @@ import MatchPage, { matchMetadata } from '@/components/site/pages/MatchPage';
 import { MEMBER_REWRITE_HEADER } from '@/lib/site/member-routes';
 import { getSiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
+import { isFreeFixture } from '@/lib/site/free-today';
 
 // ============================================================================
 // Maç sayfası — ÜYE sürümü (anonim ISR ayrımı, 2026-11-08)
@@ -39,5 +40,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function Page({ params }: { params: Params }) {
   const [access, twa] = [await getSiteAccess(), isTwa()];
-  return <MatchPage locale={params.locale} slug={params.slug} access={access} twa={twa} />;
+  // isFree: günün ücretsiz maçı denemesi biten üyeye açık (2026-11-14); yalnız bu dinamik rotadan verilir.
+  return <MatchPage locale={params.locale} slug={params.slug} access={access} twa={twa} isFree={isFreeFixture} />;
 }
