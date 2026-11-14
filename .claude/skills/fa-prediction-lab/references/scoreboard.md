@@ -107,7 +107,31 @@ sezon başı rejimi ya da Hetzner depo farkı; bkz. `reports/backtest-goal-level
 gol/Elo puanı` (=0.46–0.56 / 100 Elo) ile uyumlu. Katsayıyı her Elo kaynağı için yeniden
 kalibre et.
 
+## 10. Kendi Elo'muz, iki kademeli havuz (`engine/backtest_ownelo.py`, 2026-11-14) — GEÇTİ
+
+Baseline gol-DC (canlı eşdeğeri). Elo yalnız sonuçlardan, ülkenin ilk iki kademesi tek havuz;
+K=10, λ=0,6 doğrulama sezonlarında (1920, 2021) seçildi, testte tarama yok. Veri 2012→2026-27, test 2122+.
+
+| Lig | n | ΔLL [%95 CI] | ΔBrier |
+|-----|--:|--:|--:|
+| E0 | 2000 | −0.0143 [−0.0264, −0.0036] | −0.0057 |
+| SP1 | 2019 | −0.0154 [−0.0232, −0.0091] | −0.0095 |
+| I1 | 2010 | −0.0095 [−0.0163, −0.0030] | −0.0049 |
+| D1 | 1611 | −0.0243 [−0.0347, −0.0146] | −0.0122 |
+| F1 | 1768 | −0.0137 [−0.0209, −0.0066] | −0.0085 |
+| Toplam | 9408 | **−0.0151 [−0.0191, −0.0113]** | −0.0080 |
+
+Okuma: piyasaya açık 0.0331 → 0.0180; kazanç DC–piyasa ayrışması ≥10 puan olan maçlarda (−0.071)
+ve Ağustos–Eylül'de (−0.046). (K, λ) tarama kenarında. xG kazancıyla (§2b) TOPLANMAZ — aynı bilgi;
+xG-DC + kendi Elo birlikte ölçülmedi. ROI negatif kaldı. Rapor: `reports/backtest-own-elo.md`.
+
+§7 eki — canlı denetim 2026-11-14 (1.699 maç ⨝ kapanış): model LL 0.9848 / piyasa 0.9598
+(açık 0.025 [0.013, 0.037]); açılış→kapanış yalnız 0.003; açık ayrışma ≥10 puanda 0.069,
+Ağustos'ta 0.044. Gölgeler dc-1.0'a göre: lvl +0.0002, ctx +0.0001, cal +0.006, xg −0.007 (n=272, CI 0'ı içeriyor).
+
 ## Güncelleme günlüğü
+
+- 2026-11-14: §10 kendi Elo kapısı (GEÇTİ) ve canlı denetim eki.
 
 - 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.
 

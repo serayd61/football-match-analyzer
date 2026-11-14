@@ -20,6 +20,8 @@ kapıyla bitmeli. Tamamlanınca `scoreboard.md` ve burası güncellenir.
 Yapılmayacaklar (kanıtla düştü): form/H2H tilt (çift-sayım); ρ ile global beraberlik ayarı;
 piyasa olasılığını bağımsız modele girdi yapmak; "AI-powered" iddiası.
 
+**2026-11-14 güncellemesi:** kendi Elo'muz (iki kademeli havuz) kapıyı geçti (scoreboard §10, ΔLL −0.0151). #1'in Elo kısmı artık Club Elo'ya bağlı değil; sıradaki iş bunu gölge sürüme (`dc-1.4-elo`) taşımak — FotMob deposuna ikinci kademe sonuçları ya da FD.co.uk→FotMob ad eşlemesi gerekir. #7 (kadro istihbaratı) için tavan ölçüldü: açılış→kapanış farkı 0.003 LL; öncelik düşürüldü. Kadro piyasa değeri (sezon başı önceli) ölçülmedi.
+
 ## Haftalık döngü (2026-09-07'den itibaren)
 
 Her aday şu yoldan geçer; hiçbir adım otomatik terfi etmez:
