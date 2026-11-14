@@ -134,8 +134,24 @@ diliminde +0.005 kötüleşme. Canlıda beklenti −0.010, −0.015 değil. Göl
 (açık 0.025 [0.013, 0.037]); açılış→kapanış yalnız 0.003; açık ayrışma ≥10 puanda 0.069,
 Ağustos'ta 0.044. Gölgeler dc-1.0'a göre: lvl +0.0002, ctx +0.0001, cal +0.006, xg −0.007 (n=272, CI 0'ı içeriyor).
 
+## 11. Dinamik takım gücü, skor-güdümlü Poisson (`engine/backtest_dynamic.py`, 2026-11-15) — GEÇTİ, canlıya alma ertelendi
+
+Atak/savunma her maçtan sonra κ·(gol − λ) ile güncellenir; iki kademeli havuz, alt kademe −δ. Test 2122+, n=9408.
+
+| Karşılaştırma | Tam geçmiş | 2 sezon geçmiş |
+|---|--:|--:|
+| dinamik − gol-DC | **−0.0164 [−0.0211, −0.0120]** 5/5 | −0.0137 [−0.0181, −0.0092] 5/5 |
+| dinamik − (DC+Elo olasılık harmanı) | −0.0013 [−0.0032, +0.0006] | −0.0005 [−0.0022, +0.0013] |
+| (DC+Elo ⊕ dinamik) − (DC+Elo) | −0.0018 [−0.0030, −0.0007] | −0.0012 [−0.0022, −0.0001] |
+| dinamik − canlı Elo formülü (§10) | — | −0.0035 [−0.0056, −0.0014] 4/5 |
+
+Okuma: Elo ile aynı bilgi — üstüne eklenince kazanç terfi eşiğinin altında. Tek parça aday olarak
+canlı Elo formülünden −0.0035 iyi (E0 hariç) ve Ü/A 2,5 kalibre LL 0.6817 → 0.6771, KG 0.6852 → 0.6841.
+Dış kaynak (Koopman & Lit) ile uyumlu. Rapor: `reports/backtest-dynamic-strength.md`.
+
 ## Güncelleme günlüğü
 
+- 2026-11-15: §11 dinamik takım gücü kapısı (GEÇTİ, ertelendi).
 - 2026-11-14: §10 kendi Elo kapısı (GEÇTİ), canlı formül ölçümü ve canlı denetim eki.
 
 - 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.
