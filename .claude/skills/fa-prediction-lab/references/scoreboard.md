@@ -149,9 +149,24 @@ Okuma: Elo ile aynı bilgi — üstüne eklenince kazanç terfi eşiğinin altı
 canlı Elo formülünden −0.0035 iyi (E0 hariç) ve Ü/A 2,5 kalibre LL 0.6817 → 0.6771, KG 0.6852 → 0.6841.
 Dış kaynak (Koopman & Lit) ile uyumlu. Rapor: `reports/backtest-dynamic-strength.md`.
 
+## 12. Kadro piyasa değeri, Transfermarkt (`engine/backtest_value.py`, 2026-11-15) — ölçüldü, ALINMIYOR
+
+x = ln V_ev − ln V_dep (son 120 günde forma giyenlerin en değerli 18'i, maç öncesi değerle). Test 2122+, n=9408.
+
+| Referans | ΔLL [%95 CI] |
+|---|--:|
+| gol-DC ⊕ değer (w=0.4) | **−0.0120 [−0.0151, −0.0090]** 5/5 |
+| DC+Elo ⊕ değer (w=0.2) | −0.0019 [−0.0028, −0.0010] 5/5 |
+| dinamik ⊕ değer (w=0.1) | −0.0008 [−0.0011, −0.0004] 5/5 |
+
+Okuma: Elo / dinamik model varken katkı terfi eşiğinin altında; üçü de aynı bilgiyi taşıyor. Ölçüm
+yeni transferleri ve yeni çıkan takımları göremiyor (kadro forma kayıtlarından). Canlı veri kaynağı yok
+(veri seti 2026-06-28'de durdu). Tekrar deneme koşulu: sezon öncesi kadro listesi veren kaynak.
+Rapor: `reports/backtest-squad-value.md`.
+
 ## Güncelleme günlüğü
 
-- 2026-11-15: §11 dinamik takım gücü kapısı (GEÇTİ, ertelendi).
+- 2026-11-15: §11 dinamik takım gücü kapısı (GEÇTİ, ertelendi); §12 kadro piyasa değeri (alınmıyor).
 - 2026-11-14: §10 kendi Elo kapısı (GEÇTİ), canlı formül ölçümü ve canlı denetim eki.
 
 - 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.
