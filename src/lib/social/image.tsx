@@ -48,9 +48,9 @@ export async function picksImage(items: PickItem[], ymd: string, lang: Lang, opt
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `4px solid ${INK}`, paddingBottom: 22 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 26, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase' }}>{fmtDate(ymd, lang)}</span>
-            <span style={{ fontFamily: 'Archivo', fontSize: items.length > 4 ? 60 : 74, lineHeight: 1, marginTop: 8 }}>{opts.title}</span>
+            <span style={{ fontFamily: 'Archivo', fontSize: items.length > 4 || (opts.rec && opts.title.length > 16) ? 60 : 74, lineHeight: 1, marginTop: 8 }}>{opts.title}</span>
           </div>
-          {opts.rec ? <span style={{ fontSize: 30, color: MUTED }}>{opts.rec}</span> : null}
+          {opts.rec ? <span style={{ fontSize: 30, color: MUTED, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 28 }}>{opts.rec}</span> : null}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: items.length > 4 ? 14 : 22, marginTop: items.length > 4 ? 28 : 40 }}>
           {items.map((l) => (
