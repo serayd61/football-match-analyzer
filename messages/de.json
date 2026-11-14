@@ -2250,7 +2250,7 @@
   },
   "openData": {
     "metaTitle": "Fussball-Prognose-Datensatz (CSV/JSON)",
-    "metaDescription": "Kostenlos, CC BY 4.0: jedes abgerechnete Spiel aus 11 Ligen mit 1X2-Wahrscheinlichkeiten des Modells vor Anstoss, Torerwartung, Tipp und Endstand. CSV/JSON, stündlich.",
+    "metaDescription": "Gratis, CC BY 4.0: jedes abgerechnete Spiel aus {leagues} Ligen mit 1X2-Wahrscheinlichkeiten des Modells vor Anstoss, Torerwartung, Tipp, Endstand. CSV/JSON, stündlich.",
     "eyebrow": "Open Data",
     "title": "Open Data",
     "h1": "Open Data: jede abgerechnete Modellprognose",
@@ -2294,7 +2294,7 @@
     "licenseP1": "Der Datensatz steht unter",
     "licenseP2": "Sie dürfen ihn für jeden Zweck kopieren, weitergeben, umwandeln und darauf aufbauen, auch kommerziell, solange Sie Football Analytics nennen und auf diese Seite verlinken. Ein Satz wie «Daten: Football Analytics Open Data (footballanalytics.pro/data)» genügt.",
     "citeLabel": "Zitiervorschlag",
-    "citation": "Football Analytics ({year}). Datensatz abgerechneter Modellprognosen: 1X2-Wahrscheinlichkeiten vor Anstoss und Resultate, 11 Ligen. {url}. Lizenz: CC BY 4.0.",
+    "citation": "Football Analytics ({year}). Datensatz abgerechneter Modellprognosen: 1X2-Wahrscheinlichkeiten vor Anstoss und Resultate, {leagues} Ligen. {url}. Lizenz: CC BY 4.0.",
     "caveatsH": "Was die Daten sind – und was nicht",
     "caveats": [
       "Nur Werte vor Anstoss. Jede Wahrscheinlichkeit wurde vor dem Spiel geschrieben und nie revidiert; die Spielseite zeigt dieselben Zahlen.",

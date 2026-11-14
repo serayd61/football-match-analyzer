@@ -2250,7 +2250,7 @@
   },
   "openData": {
     "metaTitle": "Dataset pronostici calcio (CSV/JSON)",
-    "metaDescription": "Gratis, CC BY 4.0: ogni partita liquidata in 11 campionati con probabilità 1X2 pre-partita del modello, gol attesi, pronostico e risultato. CSV e JSON, ogni ora.",
+    "metaDescription": "Gratis, CC BY 4.0: ogni partita liquidata in {leagues} campionati con probabilità 1X2 pre-partita del modello, gol attesi, pronostico e risultato. CSV e JSON, ogni ora.",
     "eyebrow": "Open data",
     "title": "Open data",
     "h1": "Open data: ogni pronostico liquidato del modello",
@@ -2294,7 +2294,7 @@
     "licenseP1": "Il dataset è pubblicato con licenza",
     "licenseP2": "Puoi copiarlo, ridistribuirlo, trasformarlo e costruirci sopra per qualsiasi scopo, anche commerciale, purché citi Football Analytics con un link a questa pagina. Basta una frase come “Dati: Football Analytics open data (footballanalytics.pro/data)”.",
     "citeLabel": "Citazione suggerita",
-    "citation": "Football Analytics ({year}). Dataset dei pronostici liquidati del modello: probabilità 1X2 pre-partita e risultati, 11 campionati. {url}. Licenza: CC BY 4.0.",
+    "citation": "Football Analytics ({year}). Dataset dei pronostici liquidati del modello: probabilità 1X2 pre-partita e risultati, {leagues} campionati. {url}. Licenza: CC BY 4.0.",
     "caveatsH": "Cosa sono questi dati, e cosa non sono",
     "caveats": [
       "Solo valori pre-partita. Ogni probabilità è stata scritta prima del calcio d’inizio e mai rivista; la pagina della partita mostra gli stessi numeri.",

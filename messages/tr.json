@@ -2250,7 +2250,7 @@
   },
   "openData": {
     "metaTitle": "Futbol tahmin veri seti (CSV/JSON)",
-    "metaDescription": "Ücretsiz, CC BY 4.0: 11 ligde sonuçlanmış her maç için modelin maç öncesi 1X2 olasılıkları, gol beklentisi, seçim ve maç sonu skoru. CSV ve JSON, saatte bir güncellenir.",
+    "metaDescription": "Ücretsiz, CC BY 4.0: {leagues} ligde sonuçlanmış her maç için modelin maç öncesi 1X2 olasılıkları, gol beklentisi, seçim ve maç sonu skoru. CSV/JSON, saatlik güncellenir.",
     "eyebrow": "Açık veri",
     "title": "Açık veri",
     "h1": "Açık veri: sonuçlanmış her model tahmini",
@@ -2294,7 +2294,7 @@
     "licenseP1": "Veri seti şu lisansla yayımlanır:",
     "licenseP2": "Football Analytics’i anıp bu sayfaya bağlantı verdiğiniz sürece ticari kullanım dâhil her amaçla kopyalayabilir, dağıtabilir, dönüştürebilir ve üzerine inşa edebilirsiniz. “Veri: Football Analytics açık veri (footballanalytics.pro/data)” gibi bir cümle yeterlidir.",
     "citeLabel": "Önerilen atıf",
-    "citation": "Football Analytics ({year}). Sonuçlanmış model tahminleri veri seti: maç öncesi 1X2 olasılıkları ve sonuçlar, 11 lig. {url}. Lisans: CC BY 4.0.",
+    "citation": "Football Analytics ({year}). Sonuçlanmış model tahminleri veri seti: maç öncesi 1X2 olasılıkları ve sonuçlar, {leagues} lig. {url}. Lisans: CC BY 4.0.",
     "caveatsH": "Bu veri nedir, ne değildir",
     "caveats": [
       "Yalnızca maç öncesi değerler. Her olasılık maçtan önce yazılmış, sonradan hiç düzeltilmemiştir; maç sayfası aynı sayıları gösterir.",
