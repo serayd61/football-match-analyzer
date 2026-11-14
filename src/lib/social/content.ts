@@ -62,6 +62,48 @@ export function instagramDailyCaption(legs: Leg[], ymd: string, lang: Lang, reco
   return text.length <= 2200 ? text : text.slice(0, 2200);
 }
 
+/** Instagram güçlü pazarlar: görselle aynı, 2 maç açık + "N daha" (siteye çağrı). */
+export const INSTAGRAM_STRONG_VISIBLE = 2;
+/** Instagram "güçlü pazarlar" açıklaması: lig-pazar karnesiyle, oran yok, link in bio. */
+export function instagramStrongCaption(legs: StrongLeg[], ymd: string, lang: Lang, tags: string[] = []): string {
+  const tz = legs.length ? ` · ${tzLabel(lang, legs[0].kickoff)}` : '';
+  const head = lang === 'tr' ? `Bugün güçlü pazarlar · ${fmtDate(ymd, lang)}${tz}` : `Strong markets today · ${fmtDate(ymd, lang)}${tz}`;
+  const sub = lang === 'tr' ? 'Lig-pazar karnesi son 180 günde ≥%70 (≥15 maç).' : 'League–market record ≥70% over the last 180 days (≥15 matches).';
+  // Görselle aynı vitrin: ilk 2 maç açık, kalanı sayı olarak (siteye çağrı).
+  const shown = legs.slice(0, INSTAGRAM_STRONG_VISIBLE), hidden = legs.length - shown.length;
+  const lines = shown.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName} – ${l.awayName}: ${strongMarketLabel(l, lang)} · model ${pct(l.modelP)} · ${l.leagueName} ${l.won}/${l.n}`);
+  const more = hidden > 0 ? (lang === 'tr' ? `+${hidden} maç daha bugün → tam liste profildeki linkte` : `+${hidden} more ${hidden === 1 ? 'match' : 'matches'} today → full list via link in bio`) : '';
+  const rule = lang === 'tr' ? 'Her seçim maçtan önce dondurulur, sonuç ne olursa olsun yazılır. Garanti değil, kayıt.' : 'Every pick is frozen before kick-off and recorded whatever the result. A record, not a guarantee.';
+  const cta = lang === 'tr' ? 'Lig-pazar karnesi → profildeki link' : 'League–market record → link in bio';
+  const text = [head, sub, '', ...lines, more, '', rule, cta, '', instagramTags(lang, tags)].filter((x, i, a) => !(x === '' && a[i - 1] === '')).join('\n');
+  return text.length <= 2200 ? text : text.slice(0, 2200);
+}
+
+/** Günün kuponunun Instagram karşılığı: iki bacak + ortak model olasılığı. Oran, "kupon", ROI yok (reklam sınıflaması). */
+export interface ComboLeg { fixtureId: number; kickoff: string; leagueLabel: string; homeName: string; awayName: string; market: '1x2' | 'ou25' | 'btts'; selection: string; p: number; homeScore?: number | null; awayScore?: number | null; won?: boolean | null }
+export function comboLegLabel(l: Pick<ComboLeg, 'market' | 'selection' | 'homeName' | 'awayName'>, lang: Lang): string {
+  if (l.market === 'ou25' && l.selection === 'under') return lang === 'tr' ? 'Alt 2,5' : 'Under 2.5';
+  return marketLabel({ market: l.market, selection: l.selection, homeName: l.homeName, awayName: l.awayName }, lang);
+}
+export function instagramComboCaption(legs: ComboLeg[], ymd: string, lang: Lang, pJoint: number, record: { n: number; won: number } | null, tags: string[] = []): string {
+  const tz = legs.length ? ` · ${tzLabel(lang, legs[0].kickoff)}` : '';
+  const head = lang === 'tr' ? `Günün ikilisi · ${fmtDate(ymd, lang)}${tz}` : `Model duo of the day · ${fmtDate(ymd, lang)}${tz}`;
+  const lines = legs.map((l) => `${fmtTime(l.kickoff, lang)} ${l.homeName} – ${l.awayName}: ${comboLegLabel(l, lang)} · model ${pct(l.p)}`);
+  const joint = lang === 'tr' ? `İkisinin birlikte tutma olasılığı (model): ${pct(pJoint)}` : `Joint model probability of both landing: ${pct(pJoint)}`;
+  const rec = record && record.n ? (lang === 'tr' ? `Son 30 gün: ${record.won}/${record.n} ikili tuttu` : `Last 30 days: ${record.won}/${record.n} duos landed`) : '';
+  const rule = lang === 'tr' ? 'Maçtan önce dondurulur, sonucu akşam bu gönderinin altına yazılır. Garanti değil, kayıt.' : 'Frozen before kick-off; the result is posted under this post tonight. A record, not a guarantee.';
+  const cta = lang === 'tr' ? 'Tam karne → profildeki link' : 'Full record → link in bio';
+  const text = [head, '', ...lines, '', joint, rec, rule, cta, '', instagramTags(lang, tags)].filter((x, i, a) => !(x === '' && a[i - 1] === '')).join('\n');
+  return text.length <= 2200 ? text : text.slice(0, 2200);
+}
+export function instagramComboResult(c: { legs: ComboLeg[]; status: 'won' | 'lost' | 'void' | 'pending' }, ymd: string, lang: Lang): string {
+  const mark = c.status === 'won' ? '✓' : c.status === 'lost' ? '✗' : '–';
+  const head = lang === 'tr' ? `Sonuç · ${fmtDate(ymd, lang)} ${mark}` : `Result · ${fmtDate(ymd, lang)} ${mark}`;
+  const lines = c.legs.map((l) => `${l.homeName} ${l.homeScore ?? '?'}-${l.awayScore ?? '?'} ${l.awayName} · ${comboLegLabel(l, lang)} ${l.won == null ? '–' : l.won ? '✓' : '✗'}`);
+  const verdict = c.status === 'won' ? (lang === 'tr' ? 'İkisi de tuttu.' : 'Both landed.') : c.status === 'lost' ? (lang === 'tr' ? 'Tutmadı, kayda geçti.' : 'Missed, recorded.') : (lang === 'tr' ? 'İptal (maç oynanmadı).' : 'Void (match not played).');
+  return [head, ...lines, verdict].join('\n');
+}
+
 /** Instagram haftalık açıklaması: iki X gönderisi tek açıklamada birleşir, link "bio"ya işaret eder. */
 export function instagramWeeklyCaption(s: WeeklyStats, lang: Lang): string {
   const [first, second] = weeklyText(s, lang, 'instagram');

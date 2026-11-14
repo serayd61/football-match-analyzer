@@ -4,6 +4,8 @@
 //   ?kind=daily&day=YYYY-MM-DD&lang=en   günün seçimleri (1080×1350)
 //   ?kind=weekly&day=YYYY-MM-DD&lang=en  haftalık karne (day = pazartesi)
 //   ?kind=proof&lang=en                  kanıt kartı (/api/v2/proof)
+//   ?kind=strong&day=…&lang=en           güçlü pazarlar (lig-pazar karnesi, oran yok)
+//   ?kind=combo&day=…&lang=en            günün ikilisi (kuponun oransız karşılığı)
 // Kimlik doğrulaması yok (Instagram anonim çeker); kötüye kullanım sınırı:
 // yalnız bugünün ±10 günü, çıktı 1 saat önbellekte. Yetkili üretim/teşhis için
 // /api/cron/social?image=1 duruyor.
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
   const dist = Math.abs((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${todayYmd()}T00:00:00Z`)) / 86_400_000);
   if (!(dist <= MAX_DAYS)) return NextResponse.json({ error: 'day out of range' }, { status: 400 });
   try {
-    const { dailyImage, weeklyImage, proofImage } = await import('@/lib/social/image');
+    const { dailyImage, weeklyImage, proofImage, strongImage, comboImage } = await import('@/lib/social/image');
     let png: Buffer;
     if (kind === 'proof') {
       const { SITE } = await import('@/lib/social/content');
@@ -33,6 +35,17 @@ export async function GET(request: NextRequest) {
       const j: any = await r.json();
       if (!j?.ok) return NextResponse.json({ error: 'proof unavailable' }, { status: 503 });
       png = await proofImage(j, lang);
+    } else if (kind === 'strong') {
+      const { strongLegs } = await import('@/lib/social/publish');
+      const legs = await strongLegs(day);
+      if (!legs.length) return NextResponse.json({ error: 'no legs' }, { status: 404 });
+      png = await strongImage(legs, day, lang);
+    } else if (kind === 'combo') {
+      const { getCoupon, couponRecord } = await import('@/lib/site/coupon');
+      const c = await getCoupon(day);
+      if (!c) return NextResponse.json({ error: 'no coupon' }, { status: 404 });
+      const rec = await couponRecord(30, day).catch(() => null);
+      png = await comboImage(c.legs, day, lang, c.pJoint, rec && rec.n ? { n: rec.n, won: rec.won } : null);
     } else if (kind === 'weekly') {
       const { showcaseRecord } = await import('@/lib/site/showcase');
       const rec = await showcaseRecord(7, Date.parse(`${day}T00:00:00Z`));

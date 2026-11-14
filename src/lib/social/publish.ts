@@ -17,7 +17,7 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg, instagramDailyCaption, instagramWeeklyCaption, SITE } from './content';
+import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg, instagramDailyCaption, instagramWeeklyCaption, instagramStrongCaption, instagramComboCaption, instagramComboResult, type ComboLeg, SITE } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
 import { loadCoverage } from '@/lib/coverage/registry';
@@ -43,7 +43,7 @@ function targets(): Target[] {
   return out;
 }
 /** Instagram görseli URL ile çeker: herkese açık uç (önbellekli, ±10 gün). */
-export const socialImageUrl = (kind: 'daily' | 'weekly' | 'proof', day: string, lang: Lang) => `${SITE}/api/social/image?kind=${kind}&day=${day}&lang=${lang}`;
+export const socialImageUrl = (kind: 'daily' | 'weekly' | 'proof' | 'strong' | 'combo', day: string, lang: Lang) => `${SITE}/api/social/image?kind=${kind}&day=${day}&lang=${lang}`;
 
 async function record(row: { key: string; kind: string; day: string; platform: string; account: string; fixtureIds: number[]; postId?: string | null; parentId?: string | null; body: string; status: string; error?: string | null }) {
   await db().from(TABLE).upsert({ key: row.key, kind: row.kind, day: row.day, platform: row.platform, account: row.account, fixture_ids: row.fixtureIds, post_id: row.postId ?? null, parent_id: row.parentId ?? null, body: row.body, status: row.status, error: row.error ?? null }, { onConflict: 'key' });
@@ -158,7 +158,7 @@ export async function strongLegs(ymd: string, limit = 6): Promise<StrongLeg[]> {
 export async function publishStrong(opts: { day?: string; dry?: boolean } = {}) {
   const day = opts.day ?? todayYmd();
   const legs = await strongLegs(day);
-  const tg = targets().filter((t) => t.platform !== 'instagram'); // metin-only: Instagram'a gitmez
+  const tg = targets(); // 2026-11-14: Instagram da alır (görsel /api/social/image?kind=strong, açıklama oransız)
   const out: any[] = [];
   if (!legs.length) return { ok: true, day, legs: 0, note: 'güçlü bölgeye düşen maç yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry };
   const have = await posted(tg.map((t) => `strong|${day}|${t.platform}|${t.account}`));
@@ -166,14 +166,47 @@ export async function publishStrong(opts: { day?: string; dry?: boolean } = {}) 
   const tags = hashtags(legs.map((l) => ({ fixtureId: l.fixtureId, leagueSlug: '', leagueName: l.leagueName, homeName: l.homeName, awayName: l.awayName, kickoff: l.kickoff, market: l.market === 'x12' ? '1x2' : l.market === 'under25' ? 'ou25' : l.market, selection: l.selection, modelP: l.modelP, odds: null, source: 'showcase' as const })), trends);
   for (const t of tg) {
     const key = `strong|${day}|${t.platform}|${t.account}`;
-    const text = strongText(legs, day, t.account, t.platform, tags);
+    const text = t.platform === 'instagram' ? instagramStrongCaption(legs, day, t.account, tags) : strongText(legs, day, t.account, t.platform, tags);
     if (have.has(key)) { out.push({ key, status: 'already', id: have.get(key).post_id }); continue; }
     if (opts.dry) { out.push({ key, status: 'dry', text }); continue; }
-    const r = await send(t, text, null);
+    const r = await send(t, text, null, null, t.platform === 'instagram' ? socialImageUrl('strong', day, t.account) : null);
     await record({ key, kind: 'strong', day, platform: t.platform, account: t.account, fixtureIds: legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
     out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
   }
   return { ok: out.every((o) => o.status !== 'failed'), day, legs: legs.map((l) => `${l.homeName} – ${l.awayName} ${l.market} ${l.selection} (${l.won}/${l.n})`), targets: tg.length, dry: !!opts.dry, posts: out };
+}
+
+/**
+ * Günün kuponunun Instagram aynası (2026-11-14). Kupon metni oran/ROI taşıdığı için
+ * Instagram'a "günün ikilisi" olarak gider: iki bacak + model olasılıkları, oran yok.
+ * Telegram tarafı src/lib/site/coupon.ts'te; bu ikisini kupon cron'u ardışık çağırır.
+ */
+export async function publishComboInstagram(c: { date: string; legs: ComboLeg[]; pJoint: number }, rec: { n: number; won: number } | null, dry = false) {
+  const t = targets().find((x) => x.platform === 'instagram');
+  if (!t) return [] as any[];
+  const key = `coupon|${c.date}|instagram|${t.account}`;
+  const have = await posted([key]);
+  if (have.has(key)) return [{ key, status: 'already', id: have.get(key).post_id }];
+  const text = instagramComboCaption(c.legs, c.date, t.account, c.pJoint, rec);
+  if (dry) return [{ key, status: 'dry', text }];
+  const r = await send(t, text, null, null, socialImageUrl('combo', c.date, t.account));
+  await record({ key, kind: 'coupon', day: c.date, platform: 'instagram', account: t.account, fixtureIds: c.legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
+  return [{ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error }];
+}
+
+/** Kupon sonucu → Instagram'daki ikili gönderisinin altına yorum. Gönderi yoksa atlanır. */
+export async function publishComboResultInstagram(c: { date: string; legs: ComboLeg[]; status: 'won' | 'lost' | 'void' | 'pending' }, dry = false) {
+  const t = targets().find((x) => x.platform === 'instagram');
+  if (!t) return [] as any[];
+  const key = `coupon-result|${c.date}|instagram|${t.account}`;
+  if ((await posted([key])).has(key)) return [{ key, status: 'already' }];
+  const parent = (await posted([`coupon|${c.date}|instagram|${t.account}`])).get(`coupon|${c.date}|instagram|${t.account}`);
+  if (!parent) return [{ key, status: 'skipped', error: 'instagram ikili gönderisi yok' }];
+  const text = instagramComboResult(c, c.date, t.account);
+  if (dry) return [{ key, status: 'dry', text }];
+  const r = await send(t, text, null, String(parent.post_id));
+  await record({ key, kind: 'coupon-result', day: c.date, platform: 'instagram', account: t.account, fixtureIds: c.legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, parentId: String(parent.post_id), body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
+  return [{ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error }];
 }
 
 /** X hedefi varsa günün trendleri (ilk X hesabının anahtarıyla, tek çağrı). */
