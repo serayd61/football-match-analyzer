@@ -36,6 +36,7 @@ from pydantic import BaseModel
 
 import model as M
 import context as CTX
+import elo as ELO
 import model_xg as MX
 import params as P
 from store import ResultStore, STORE_PATH, backfill, update_recent, _parse_dt, league_name
@@ -99,6 +100,25 @@ def _season_table(league_id: int, ref_ord: int):
             _table_cache.clear()
         _table_cache[key] = CTX.season_table(store.load_for_fit(league_id), datetime.fromordinal(ref_ord))
     return _table_cache[key]
+
+
+_elo_cache: Dict[Any, Any] = {}
+
+
+def _elo_ratings(league_id: int, ref_ord: int, elo_raw: Dict[str, Any]):
+    """params.elo → (ayarlar, puanlar, oynanan_maç) ya da None (lig hiçbir havuzun üst kademesi değil).
+    (havuz, gün, ayar) başına önbellek; depo yenilenince _fit_cache ile birlikte boşalır."""
+    pool = ELO.pool_for(league_id, elo_raw, store.resolve)
+    if pool is None:
+        return None
+    cfg = ELO.settings(elo_raw)
+    key = (pool, ref_ord, cfg["k"], cfg["hfa"], cfg["init"], cfg["feeder_init"])
+    if key not in _elo_cache:
+        if len(_elo_cache) > 200:
+            _elo_cache.clear()
+        _elo_cache[key] = ELO.ratings(store, pool, datetime.fromordinal(ref_ord), cfg)
+    rating, played = _elo_cache[key]
+    return cfg, rating, played
 
 
 def _is_cup_pool(league_id: int) -> bool:
@@ -192,7 +212,7 @@ def _refresh_store():
             except Exception as e:  # soccerdata yok / Understat erişilemez → gol deposu yine güncel
                 print(f"[refresh] xg build skipped: {e}")
         store.reload()
-        _fit_cache.clear()
+        _fit_cache.clear(); _elo_cache.clear()
     except Exception as e:
         _refresh_state["last_error"] = str(e)
         print(f"[refresh] failed: {e}")
@@ -343,6 +363,24 @@ def predict(req: PredictRequest, background: BackgroundTasks, authorization: Opt
                 if spec is specs[0]:
                     _skip("predict_failed")
                 continue
+            # Kendi Elo'muz (params.elo, bkz. elo.py): λ düzeyinde harman; toplam gol DC'den kalır.
+            # Yoksa parite. Lig bir havuzun üst kademesi değilse ya da takımın havuzda yeterli
+            # maçı yoksa bu sürüm o satırı ÜRETMEZ (DC'ye düşmez — karışık etiket olmasın).
+            elo_raw = P.params_for_league(spec, lid).get("elo")
+            if isinstance(elo_raw, dict):
+                er = _elo_ratings(int(lid), ref_ord, elo_raw)
+                if er is None:
+                    if spec is specs[0]:
+                        _skip("elo_no_pool")
+                    continue
+                ecfg, rating, played = er
+                if min(played.get(hk, 0), played.get(ak, 0)) < ecfg["min_matches"]:
+                    if spec is specs[0]:
+                        _skip("elo_too_few_matches")
+                    continue
+                eh, ea = ELO.blend_lambdas(pr["lambda_home"], pr["lambda_away"], ELO.home_advantage(mdl),
+                                           rating[hk] - rating[ak], ecfg)
+                pr = M.markets_from_lambdas(min(max(eh, 0.05), 6.0), min(max(ea, 0.05), 6.0), mdl.get("rho", M.RHO))
             # Puan durumu bağlamı (params.ctx, bkz. context.py): zirve yarışındaki ev sahibi /
             # çift düşme baskısı λ çarpanı. Yoksa parite. Tablo (lig, gün) başına bir kez kurulur.
             ctx_prm = P.params_for_league(spec, lid).get("ctx")
@@ -401,7 +439,7 @@ def admin_backfill(body: AdminDays, authorization: Optional[str] = Header(defaul
     _check_token(authorization)
     n = backfill(body.days or 540)
     store.reload()
-    _fit_cache.clear()
+    _fit_cache.clear(); _elo_cache.clear()
     return {"ok": True, "added": n, "store_total": store.total()}
 
 
@@ -410,7 +448,7 @@ def admin_update(body: AdminDays, authorization: Optional[str] = Header(default=
     _check_token(authorization)
     n = update_recent(body.days or 3)
     store.reload()
-    _fit_cache.clear()
+    _fit_cache.clear(); _elo_cache.clear()
     return {"ok": True, "added": n, "store_total": store.total()}
 
 
@@ -421,5 +459,5 @@ def admin_reload(authorization: Optional[str] = Header(default=None)):
     P.invalidate()
     p = P.load_params(force=True)
     store.reload()
-    _fit_cache.clear()
+    _fit_cache.clear(); _elo_cache.clear()
     return {"ok": True, "versions": _versions_summary(p), "store_total": store.total()}

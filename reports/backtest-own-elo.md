@@ -79,17 +79,59 @@ Kazanç nerede (ΔLL, aday − baseline):
 - 2026-27 satırı 500 maç ve sezonun Elo'nun en çok işe yaradığı bölümü; açığın 0,058'den 0,008'e
   inmesi sezon geneli için beklenti değildir.
 
-## Karar: GEÇTİ
+## Ek (aynı gün): canlıya girecek formül ve kısa geçmiş
 
-Canlıya alma planı (üretim yazımı kullanıcı onayıyla):
-1. `engine/service.py` FotMob deposu yalnız kapsam içi ligleri tutuyorsa ikinci kademe sonuçları
-   eklenmeli (ya da Elo havuzu FD.co.uk'tan beslenip FotMob id'sine eşlenmeli) — ad eşleme işi.
-2. Gölge sürüm (`dc-1.4-elo`, params: k, lambda, hfa) → haftalık kapıda aktifle eşleştirilmiş ΔLL.
-3. 5 büyük lig dışındaki kapsam içi ligler için aynı backtest (ikinci kademe verisi olanlarda).
+Yukarıdaki sonuç olasılık düzeyinde harman ve 2012'den beri Elo geçmişiyle ölçüldü. Canlı servis
+ikisini de yapamaz: Hetzner deposunda yaklaşık iki sezon sonuç var ve 1X2 / Ü-A / KG aynı gol
+beklentisinden çıkmak zorunda. Bu yüzden canlı formül (`engine/elo.py`) λ düzeyinde harmanlar
+(üstünlük = (1−lam)·DC + lam·(gpe·ΔElo + ev avantajı), toplam gol DC'den, değişmez) ve aynı
+dosya backtest'te `--mode lambda --history-seasons 2` ile ölçüldü. Test kümesi ve baseline aynı.
+
+| Varyant | K, λ | ΔLL [%95 CI] | Lig yönü |
+|---|---|--:|:-:|
+| Olasılık harmanı, tam geçmiş (üstteki tablo) | 10, 0,6 | −0,0151 [−0,0191, −0,0113] | 5/5 |
+| Olasılık harmanı, 2 sezon geçmiş | 10, 0,6 | −0,0132 [−0,0170, −0,0093] | 5/5 |
+| Olasılık harmanı, 1 sezon geçmiş | 15, 0,5 | −0,0109 [−0,0144, −0,0077] | 5/5 |
+| Olasılık harmanı, 2 sezon, kademesiz başlangıç | 10, 0,4 | −0,0091 [−0,0127, −0,0056] | 5/5 |
+| λ harmanı, tam geçmiş | 10, 0,6 | −0,0127 [−0,0162, −0,0093] | 5/5 |
+| **λ harmanı, 2 sezon geçmiş (canlı formül)** | **10, 0,6** | **−0,0102 [−0,0137, −0,0067]** | **5/5** |
+| λ harmanı, 2 sezon, genişletilmiş ızgara | 15, 0,8 | −0,0102 [−0,0143, −0,0063] | 5/5 |
+
+Canlı formül, lig bazında: E0 −0,0098 [−0,0205, +0,0001], SP1 −0,0093 [−0,0157, −0,0038],
+I1 −0,0079 [−0,0141, −0,0019], D1 −0,0171 [−0,0267, −0,0085], F1 −0,0077 [−0,0140, −0,0017].
+ΔBrier −0,0045. Piyasaya açık 0,0331 → 0,0230. Kapı kararı: GEÇTİ.
+
+Okuma:
+- Kısa geçmiş ve λ düzeyi birlikte kazancın üçte birini götürüyor (−0,0151 → −0,0102). Canlıda
+  beklenecek sayı −0,010 civarıdır, −0,015 değil.
+- İngiltere'de aralık 0'a değiyor; tek lig olarak kanıtlanmış değil.
+- Kademe bilgisi şart: herkes 1500'den başlarsa kazanç −0,0091'e düşüyor ve yeni çıkan takımın
+  maçları +0,03 kötüleşiyor.
+- Kazanç yine ayrışma maçlarında ve sezon başında (en büyük olasılık farkı ≥10 puan: −0,049,
+  n=2.431; Ağustos–Eylül: −0,031). Model ile piyasanın 5 puandan yakın olduğu maçlarda
+  kötüleşme var (+0,005, n=3.796) — gölgede izlenecek ilk sayı bu.
+- Genişletilmiş ızgara (K 6–30, λ 0–0,9) doğrulamada K=15, λ=0,8'i seçti ama testte K=10, λ=0,6'dan
+  iyi değil ve İngiltere aralığı genişledi. Doğrulama yüzeyi ikisi arasında düz (0,9930 / 0,9936).
+  Varsayılan K=10, λ=0,6 kaldı; bu değer birden çok koşudan sonra sabitlendi, yani hafif seçim
+  yanlılığı taşır — gerçek hakem haftalık gölge kapısıdır.
+
+## Karar: GEÇTİ — gölge sürüm `dc-1.4-elo`
+
+Kod bu PR'da: `engine/elo.py`, `engine/service.py` (`params.elo` varsa λ harmanı; havuzu olmayan
+lig ya da havuzda 8 maçtan azı olan takım için satır üretilmez, DC'ye düşülmez),
+`engine/tests/test_elo.py`. `params.elo` yoksa çıktı birebir aynı (parite).
+Kurulum adımları: `engine/DEPLOY.md` § "dc-1.4-elo gölgesi". Üretim yazımı kullanıcı onayıyla.
+
+Sonraki: 5 büyük lig dışındaki kapsam içi liglerde aynı backtest (ikinci kademe verisi olanlarda);
+xG-DC + kendi Elo birlikte.
 
 ## Çalıştırma
 
 ```bash
 python3 engine/backtest_ownelo.py --out /tmp/gate-ownelo
 python3 .claude/skills/fa-prediction-lab/scripts/gate.py /tmp/gate-ownelo/base.jsonl /tmp/gate-ownelo/ownelo.jsonl
+
+# canlı formül (λ harmanı, 2 sezon Elo geçmişi, sabit K/λ)
+python3 engine/backtest_ownelo.py --out /tmp/gate-live --mode lambda --history-seasons 2 --k 10 --lam 0.6
+python3 .claude/skills/fa-prediction-lab/scripts/gate.py /tmp/gate-live/base.jsonl /tmp/gate-live/ownelo.jsonl
 ```

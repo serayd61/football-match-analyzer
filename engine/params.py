@@ -15,6 +15,10 @@ Dönen yapı:
     calib: {"ou25": [a, b], "btts": [a, b]}  (Platt, model.apply_calib; yoksa parite),
     ctx: {"title_home": 0.10, "releg_both": 0.10, "min_played": 6, "top_pos": 3, "gap_pts": 3}
          (puan durumu bağlamı λ çarpanı, context.py; yoksa parite),
+    elo: {"k": 10, "lam": 0.6, "hfa": 60, "gpe": 0.0057, "feeder_init": 1350,
+          "pools": [{"top": [47], "feeders": [48]}, ...]}
+         (kendi Elo'muz, elo.py: λ düzeyinde harman; yoksa parite. Yalnız bir havuzun "top"
+          tarafındaki ligde satır üretir),
     leagues: {"<league_id>": {...override...}}
 Bağımlılık yok (stdlib). Ağ hatası asla /predict'i düşürmez.
 """

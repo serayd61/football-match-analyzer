@@ -18,7 +18,13 @@ Harman: p = (1-λ)·p_DC + λ·p_Elo.  λ=0 → baseline'a birebir eşit (kapı 
 Sızıntı önlemi: Elo puanı maçtan ÖNCEki değerdir; (K, λ) yalnız doğrulama sezonlarında
 (1920, 2021) seçilir, test sezonlarında (2122+) hiçbir şey taranmaz.
 
+İki harman biçimi:
+  --mode prob    (varsayılan) olasılık düzeyinde, eşleme lig-başı fit — ilk kapı ölçümü.
+  --mode lambda  canlıdaki formül (engine/elo.py blend_lambdas): λ düzeyinde, sabit gpe,
+                 ev avantajı DC'den. --history-seasons 2 ile canlı deponun derinliğini taklit eder.
+
   python3 engine/backtest_ownelo.py --out /tmp/gate-ownelo
+  python3 engine/backtest_ownelo.py --out /tmp/gate-ownelo-live --mode lambda --history-seasons 2
   python3 .claude/skills/fa-prediction-lab/scripts/gate.py /tmp/gate-ownelo/base.jsonl /tmp/gate-ownelo/ownelo.jsonl
 """
 import argparse
@@ -29,6 +35,7 @@ from collections import defaultdict
 
 from data import load_matches
 import model as M
+import elo as E
 from model import _pois, RHO, MAX_GOALS
 
 # üst lig → aynı ülkenin ikinci kademesi (football-data.co.uk kodları)
@@ -39,45 +46,37 @@ VALID = ("1920", "2021")  # (K, λ) seçimi
 TEST_FROM = "2122"
 HFA = 60.0
 INIT = {0: 1500.0, 1: 1350.0}   # ilk görülen takım: üst lig / ikinci kademe
-K_GRID = (10.0, 15.0, 20.0, 30.0)
-LAM_GRID = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+K_GRID = (6.0, 8.0, 10.0, 15.0, 20.0, 30.0)
+LAM_GRID = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 OUT = ("H", "D", "A")
 
 
-def margin_mult(gd):
-    gd = abs(gd)
-    return 1.0 if gd <= 1 else 1.5 if gd == 2 else (11.0 + gd) / 8.0
+def elo_walk(top, second, k, init=None):
+    """Kronolojik tek havuz (engine/elo.py walk). Dönüş: {id(maç): (R_ev, R_dep)} — maçtan ÖNCEki
+    puanlar, yalnız üst lig maçları."""
+    init = init or INIT
+    pre = {}
 
+    def on_read(m, tier, rh, ra):
+        if tier == 0:
+            pre[id(m)] = (rh, ra)
 
-def elo_walk(top, second, k):
-    """Kronolojik tek havuz. Dönüş: {id(maç): (R_ev, R_dep)} — maçtan ÖNCEki puanlar (yalnız üst lig maçları)."""
     events = [(m["date"], 0, m) for m in top] + [(m["date"], 1, m) for m in second]
-    events.sort(key=lambda e: e[0])
-    rating, pre = {}, {}
-    i = 0
-    while i < len(events):
-        j = i
-        while j < len(events) and events[j][0] == events[i][0]:
-            j += 1
-        day = events[i:j]
-        # aynı günün bütün maçları günün başındaki puanla okunur, sonra güncellenir
-        for _, tier, m in day:
-            rh = rating.setdefault(m["home"], INIT[tier])
-            ra = rating.setdefault(m["away"], INIT[tier])
-            if tier == 0:
-                pre[id(m)] = (rh, ra)
-        upd = defaultdict(float)
-        for _, tier, m in day:
-            rh, ra = rating[m["home"]], rating[m["away"]]
-            e = 1.0 / (1.0 + 10 ** (-(rh + HFA - ra) / 400.0))
-            gd = m["fthg"] - m["ftag"]
-            s = 1.0 if gd > 0 else 0.5 if gd == 0 else 0.0
-            d = k * margin_mult(gd) * (s - e)
-            upd[m["home"]] += d
-            upd[m["away"]] -= d
-        for t, d in upd.items():
-            rating[t] += d
-        i = j
+    E.walk(events, k, HFA, init[0], init[1], on_read)
+    return pre
+
+
+def elo_walk_short(top, second, k, history_seasons, init=None):
+    """Canlıdaki depo derinliğini taklit eder: her sezonun puanları, yalnız o sezon ve
+    önceki `history_seasons` sezonun maçlarından, sıfırdan (INIT) hesaplanır."""
+    seasons = sorted({m["season"] for m in top})
+    pre = {}
+    for i, t in enumerate(seasons):
+        keep = set(seasons[max(0, i - history_seasons):i + 1])
+        part = elo_walk([m for m in top if m["season"] in keep], [m for m in second if m["season"] in keep], k, init)
+        for m in top:
+            if m["season"] == t:
+                pre[id(m)] = part[id(m)]
     return pre
 
 
@@ -139,7 +138,8 @@ def dc_walk(top):
                 pr = M.predict(mdl, m["home"], m["away"])
                 if pr is not None:
                     out[id(m)] = ({"H": pr["p_home"], "D": pr["p_draw"], "A": pr["p_away"]},
-                                  m["home"] in mdl["A"] and m["away"] in mdl["A"])
+                                  m["home"] in mdl["A"] and m["away"] in mdl["A"],
+                                  pr["lambda_home"], pr["lambda_away"], E.home_advantage(mdl), mdl.get("rho", RHO))
     return out
 
 
@@ -151,12 +151,29 @@ def blend(pd, pe, lam):
     return pd if lam == 0.0 else {o: (1 - lam) * pd[o] + lam * pe[o] for o in OUT}
 
 
+def lambda_probs(dcrow, rh, ra, k_cfg):
+    """Canlı formül: λ düzeyinde harman → 1X2 (model.markets_from_lambdas)."""
+    _p, _known, lh, la, hadv, rho = dcrow
+    bh, ba = E.blend_lambdas(lh, la, hadv, rh - ra, k_cfg)
+    pr = M.markets_from_lambdas(min(max(bh, 0.05), 6.0), min(max(ba, 0.05), 6.0), rho)
+    return {"H": pr["p_home"], "D": pr["p_draw"], "A": pr["p_away"]}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--leagues", default="E0,SP1,I1,D1,F1")
     ap.add_argument("--end", type=int, default=2026)
     ap.add_argument("--out", default="/tmp/gate-ownelo")
+    ap.add_argument("--history-seasons", type=int, default=0,
+                    help="0 = bütün geçmiş (2012+); N = her sezonda yalnız önceki N sezon (canlı depo derinliği)")
+    ap.add_argument("--flat-init", action="store_true", help="ikinci kademe de 1500'den başlar (kademe bilgisi yok)")
+    ap.add_argument("--mode", choices=("prob", "lambda"), default="prob")
+    ap.add_argument("--k", type=float, default=0.0, help="K'yi sabitle (doğrulama tablosu yine basılır)")
+    ap.add_argument("--lam", type=float, default=-1.0, help="λ'yı sabitle")
+    ap.add_argument("--dc-cache", default="", help="DC tahminlerini bu json dosyasında sakla / oradan oku")
     args = ap.parse_args()
+    init = {0: 1500.0, 1: 1500.0} if args.flat_init else INIT
+    k_grid = K_GRID + ((40.0, 60.0) if args.history_seasons else ())
     os.makedirs(args.out, exist_ok=True)
     leagues = args.leagues.split(",")
 
@@ -164,15 +181,37 @@ def main():
     for lg in leagues:
         top[lg] = load_matches(lg, ELO_START, args.end)
         second[lg] = load_matches(PAIRS[lg], ELO_START, args.end)
-        dc[lg] = dc_walk(top[lg])
+        key = lambda m: f"{m['date'].strftime('%Y%m%d')}|{m['home']}|{m['away']}"
+        cached = None
+        if args.dc_cache and os.path.exists(args.dc_cache):
+            with open(args.dc_cache, encoding="utf-8") as f:
+                cached = json.load(f).get(lg)
+        if cached is not None:
+            dc[lg] = {id(m): tuple(cached[key(m)]) for m in top[lg] if key(m) in cached}
+        else:
+            dc[lg] = dc_walk(top[lg])
+            if args.dc_cache:
+                doc = {}
+                if os.path.exists(args.dc_cache):
+                    with open(args.dc_cache, encoding="utf-8") as f:
+                        doc = json.load(f)
+                doc[lg] = {key(m): list(dc[lg][id(m)]) for m in top[lg] if id(m) in dc[lg]}
+                with open(args.dc_cache, "w", encoding="utf-8") as f:
+                    json.dump(doc, f)
         print(f"[load] {lg}: üst {len(top[lg])} / alt {len(second[lg])} maç, DC tahmini {len(dc[lg])}", flush=True)
+
+    def cand(dcrow, rh, ra, a, b, total, lam):
+        if args.mode == "lambda":
+            return lambda_probs(dcrow, rh, ra, {**E.DEFAULTS, "lam": lam})
+        return blend(dcrow[0], elo_probs(rh - ra, a, b, total), lam)
 
     # (K, λ) — yalnız doğrulama sezonları, 5 lig havuzlanmış
     elo = {}   # (lg, k) -> (pre, map)
     grid = {}
-    for k in K_GRID:
+    for k in k_grid:
         for lg in leagues:
-            pre = elo_walk(top[lg], second[lg], k)
+            pre = (elo_walk_short(top[lg], second[lg], k, args.history_seasons, init) if args.history_seasons
+                   else elo_walk(top[lg], second[lg], k, init))
             elo[(lg, k)] = (pre, fit_map(top[lg], pre))
         for lam in LAM_GRID:
             s = n = 0.0
@@ -181,13 +220,18 @@ def main():
                 for m in top[lg]:
                     if m["season"] in VALID and id(m) in dc[lg]:
                         rh, ra = pre[id(m)]
-                        s += ll(blend(dc[lg][id(m)][0], elo_probs(rh - ra, a, b, total), lam), m["ftr"]); n += 1
+                        s += ll(cand(dc[lg][id(m)], rh, ra, a, b, total, lam), m["ftr"]); n += 1
             grid[(k, lam)] = s / n
     print(f"\n[doğrulama] sezon {VALID}, n={int(n)} — log-loss (satır K, sütun λ)")
-    print("      " + "".join(f"{lam:>8.1f}" for lam in LAM_GRID))
-    for k in K_GRID:
+    print("        " + "".join(f"{lam:>8.1f}" for lam in LAM_GRID))
+    for k in k_grid:
         print(f"  K={k:<3.0f}" + "".join(f"{grid[(k, lam)]:>8.4f}" for lam in LAM_GRID))
     k_best, lam_best = min(grid, key=grid.get)
+    print(f"[doğrulama] en düşük K={k_best:.0f} λ={lam_best:.1f} (LL {grid[(k_best, lam_best)]:.4f})")
+    if args.k > 0 and args.lam >= 0:
+        k_best, lam_best = args.k, args.lam   # plato değeri (rapor: seçim yanlılığı notu)
+        if (k_best, lam_best) not in grid:
+            raise SystemExit("--k/--lam taranan ızgarada olmalı")
     print(f"[doğrulama] seçilen K={k_best:.0f} λ={lam_best:.1f} (LL {grid[(k_best, lam_best)]:.4f}; λ=0 {grid[(k_best, 0.0)]:.4f})\n")
 
     files = {n: open(os.path.join(args.out, f"{n}.jsonl"), "w", encoding="utf-8") for n in ("base", "ownelo", "eloonly")}
@@ -199,10 +243,10 @@ def main():
         for m in top[lg]:
             if m["season"] < TEST_FROM or id(m) not in dc[lg]:
                 continue
-            pd, both_known = dc[lg][id(m)]
+            pd, both_known = dc[lg][id(m)][0], dc[lg][id(m)][1]
             rh, ra = pre[id(m)]
-            pe = elo_probs(rh - ra, a, b, total)
-            pc = blend(pd, pe, lam_best)
+            pe = cand(dc[lg][id(m)], rh, ra, a, b, total, 1.0)
+            pc = cand(dc[lg][id(m)], rh, ra, a, b, total, lam_best)
             common = {"league": lg, "date": m["date"].strftime("%Y-%m-%d"), "home": m["home"], "away": m["away"],
                       "result": m["ftr"], "odds_home": m["odds_home"], "odds_draw": m["odds_draw"], "odds_away": m["odds_away"]}
             for name, p in (("base", pd), ("ownelo", pc), ("eloonly", pe)):
@@ -227,7 +271,8 @@ def main():
         n, sb, sc = seg[lab]
         print(f"  {lab:<32} n={n:>5}  base {sb / n:.4f}  aday {sc / n:.4f}  Δ {(sc - sb) / n:+.4f}")
     with open(os.path.join(args.out, "summary.json"), "w", encoding="utf-8") as f:
-        json.dump({"k": k_best, "lambda": lam_best, "hfa": HFA, "valid": VALID, "test_from": TEST_FROM,
+        json.dump({"mode": args.mode, "history_seasons": args.history_seasons, "flat_init": args.flat_init,
+                   "k": k_best, "lambda": lam_best, "hfa": HFA, "valid": VALID, "test_from": TEST_FROM,
                    "grid": {f"{k:.0f}|{lam:.1f}": v for (k, lam), v in grid.items()}, "leagues": summary}, f, indent=1, ensure_ascii=False)
     print(f"\n[done] {args.out}/base.jsonl ownelo.jsonl eloonly.jsonl")
 

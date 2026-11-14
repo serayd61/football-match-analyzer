@@ -396,3 +396,65 @@ PATCH engine_model_versions?version=eq.dc-1.0
 ```
 Geri alma: `calib` ve `calib_since` anahtarlarını silmek. KG ürün kuralı (sıradaki): KG Var önerisi yalnız
 piyasa ≥ %60 ve kalibre model ≥ %60 birlikte (geriye dönük: piyasa ≥0,60 bandı %69).
+
+## Ek (2026-11-14) — dc-1.4-elo gölgesi (kendi Elo'muz, iki kademeli havuz)
+
+`engine/elo.py`: depodaki maç sonuçlarından ülke havuzu Elo'su (üst kademe 1500, alt kademe 1350
+başlar; takım üst lige kendi puanıyla gelir). `params.elo` varsa `/predict` DC'nin gol
+beklentilerini Elo farkıyla harmanlar: üstünlük = (1−lam)·(λ_ev−λ_dep) + lam·(gpe·ΔElo + ev
+avantajı); toplam gol DC'den, değişmez. `params.elo` yoksa çıktı birebir aynı (dc-1.0 paritesi).
+Kapı: `reports/backtest-own-elo.md` (canlı formül ΔLL −0,0102 [−0,0137, −0,0067], 5/5 lig).
+
+Satır üretilmeyen durumlar (DC'ye düşülmez, `skipped` nedeni yazılır):
+- `elo_no_pool`: lig hiçbir havuzun `top` tarafında değil (yalnız ölçülen 5 lig tanımlı).
+- `elo_too_few_matches`: takımın havuzda `min_matches` (8) maçı yok.
+
+1) Önce depoda alt kademe sonuçları var mı bak (yoksa Elo kademesiz çalışır, kazanç düşer):
+
+    cd /opt/football-match-analyzer/engine && STORE_PATH=<servisteki STORE_PATH> python3 -c "
+    import store
+    s = store.ResultStore()
+    for lid in (47, 48, 87, 140, 55, 86, 54, 146, 53, 110):
+        ms = s.load_for_fit(lid)
+        print(lid, len(ms), min((m['date'] for m in ms), default=None))"
+
+   Her alt kademede (48, 140, 86, 146, 110) en az bir tam sezon olmalı; `/status` yalnız en büyük
+   15 ligi listeler, bu yüzden oradan bakma. Backtest 2 sezonluk geçmişle ölçüldü.
+
+2) Kod: `cd /opt/football-match-analyzer && git pull && sudo systemctl restart footy-predict`
+
+3) Sürüm satırı (admin oturumuyla; `status: shadow` — sitede yayınlanmaz, yalnız kaydedilir):
+
+```json
+POST /api/admin/engine-versions
+{
+  "action": "propose", "version": "dc-1.4-elo", "kind": "goals", "status": "shadow",
+  "params": {
+    "elo": {
+      "k": 10, "lam": 0.6, "hfa": 60, "gpe": 0.0057, "init": 1500, "feeder_init": 1350, "min_matches": 8,
+      "pools": [
+        {"top": [47], "feeders": [48, 937668, 938218]},
+        {"top": [87], "feeders": [140, 938653]},
+        {"top": [55], "feeders": [86, 941726]},
+        {"top": [54], "feeders": [146]},
+        {"top": [53], "feeders": [110]}
+      ]
+    }
+  }
+}
+```
+
+`params` dc-1.0'ın diğer anahtarlarını da (rho, shrink_k, pencere…) aynen taşımalı — mevcut dc-1.0
+satırından kopyalayıp yalnız `elo` ekle; yoksa fark Elo'dan değil DC ayarından gelir.
+Havuz id'leri sezonluk olabilir; servis `store.resolve` ile kanonik gruba indirir.
+
+4) Kontrol: `curl -s -X POST 127.0.0.1:8000/reload` sonra `/status` → `versions` içinde
+   `dc-1.4-elo`; bir sonraki `/predict` koşusunda 5 ligde gölge satırlar, diğer liglerde
+   `elo_no_pool`.
+
+Testler: `cd engine && python3 -m unittest tests.test_elo -v` (16 test).
+Karar kuralı: standart haftalık kapı (≥4 hafta, ≥600 eşleştirilmiş satır, ΔLL ≤ −0,003, CI 0'ı
+dışlar). Ayrıca izlenecek: model–piyasa <5 puan diliminde LL (backtest'te +0,005 kötüleşti) ve
+Ü/A–KG'nin değişmemesi (toplam gol korunuyor, fark beklenmez).
+Geri alma: sürüm satırını `retired` yap; kod dc-1.0'a dokunmuyor.
+
