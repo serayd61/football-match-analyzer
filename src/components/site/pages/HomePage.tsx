@@ -131,7 +131,10 @@ export default async function HomePage({ locale, access, twa, memberHero = null,
       {/* ── Hero: dark product showcase ────────────────────────────── */}
       <section className="band-dark pitch-bg overflow-hidden">
         <Page className="grid items-center gap-12 pb-12 pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10 lg:py-24">
-          <div className="flex flex-col gap-6">
+          {/* min-w-0 (2026-11-14): ızgara öğesi varsayılan min-width:auto ile en geniş çocuğunun
+              (kırpılan uzun takım adı, nowrap) genişliğine açılıyordu → 360px telefonda hero 429px
+              olup sağdan kesiliyordu. Her iki sütun da daralabilmeli. */}
+          <div className="flex min-w-0 flex-col gap-6">
             <p className="kicker !text-s-accent-700">{tl('eyebrow')}</p>
             {/* SEO 2026-10-10: H1 names the service; the slogan stays as a secondary line. */}
             <h1 className="max-w-[15ch] text-[38px] leading-[1.04] sm:text-[52px] lg:text-[60px]" style={{ textWrap: 'balance' } as React.CSSProperties}>{tl('title')}</h1>
@@ -153,7 +156,7 @@ export default async function HomePage({ locale, access, twa, memberHero = null,
           </div>
 
           {/* Product on stage: the real analysis card, elevated, with a live record chip */}
-          <div className="relative mx-auto w-full max-w-[560px] lg:max-w-none">
+          <div className="relative mx-auto w-full min-w-0 max-w-[560px] lg:max-w-none">
             <div className="absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(60%_60%_at_50%_40%,rgb(var(--s-accent)/0.22),transparent_70%)]" aria-hidden />
             {memberHero ?? (
               <div className="lg:translate-x-4 lg:rotate-[-1.5deg] lg:transition-transform">
