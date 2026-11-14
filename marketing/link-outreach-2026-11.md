@@ -153,6 +153,47 @@ DOI: 10.5281/zenodo.24216824
 Disclosure: I maintain the dataset.
 ```
 
+### r/Championship gönderisi (ek; çapraz gönderi değil, 19–20 Kasım)
+
+Reddit, r/sportsanalytics gönderisinden sonra buraya çapraz gönderi öneriyor. Çapraz gönderi yapma: başlık ve metin modelcilere yazıldı (Brier, Dixon-Coles), taraftar topluluğunda karşılığı yok ve aynı gün ikinci toplulukta aynı bağlantılar spam süzgecine takılabilir. Onun yerine taraftara yazılmış ayrı bir metin gönderisi. Sayılar 14 Kasım verisinden; Championship 21 Kasım'a kadar oynamadığı için o güne kadar değişmez.
+
+Başlık:
+
+```
+A stats model has made a Championship side its clear favourite 35 times this season. They won 16.
+```
+
+Metin:
+
+```
+I run a goals-based statistical model on 17 leagues and keep every prediction, misses included. Across all of them, when it gives one side a 55% chance or better, that side wins about two times in three. In the Championship this season it is 16 wins from 35, and 11 of the 19 misses were draws.
+
+The ones it was surest about that did not come in:
+
+| Date | Match | Model's favourite |
+|---|---|---|
+| 13 Oct | Wolves 1-3 Bolton | Wolves, 75% |
+| 22 Aug | West Ham 1-2 Charlton | West Ham, 74% |
+| 22 Aug | Lincoln 1-3 Portsmouth | Lincoln, 71% |
+| 17 Oct | Millwall 2-2 Lincoln | Millwall, 69% |
+| 31 Oct | West Ham 1-3 West Brom | West Ham, 69% |
+| 7 Nov | Preston 1-0 Southampton | Southampton, 69% |
+| 29 Aug | Watford 1-1 West Ham | West Ham, 68% |
+| 17 Oct | Southampton 0-0 Bolton | Southampton, 68% |
+| 1 Sep | Lincoln 0-0 Blackburn | Lincoln, 66% |
+| 20 Sep | Norwich 3-4 Bolton | Norwich, 66% |
+
+West Ham were the favourite seven times and won three. Southampton six times, won three. Bolton took points off a favourite three times (Norwich, Wolves, Southampton).
+
+No other league in the set looks like this, so I am trying to work out whether the model is wrong about this division or the division is just doing what it always does. From people who watch it every week: which of these would you have called, and what is a numbers-only model missing about these sides?
+
+Every match and probability is in an open file if anyone wants to check their own club: https://github.com/serayd61/football-predictions-open-data
+
+Disclosure: it is my own model. Nothing to sell here, I want it to be less wrong about this league.
+```
+
+Kenar çubuğunda istatistik ya da kendi içeriğini paylaşma kuralı varsa ona uy; kurallar buradan okunamadı.
+
 ### Gönderirken
 
 - Gönderiye `marketing/reddit-calibration.png` grafiğini ekle (metin gönderisinde resim ekleme düğmesi). Grafik bulguyu tek bakışta gösteriyor; akışta resimli gönderi daha çok açılır.
