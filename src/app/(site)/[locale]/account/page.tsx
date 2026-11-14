@@ -11,6 +11,7 @@ import { StripeButton, SignOutButton } from '@/components/site/account/BillingAc
 import { ShareAppButton, RateAppLink, FeedbackLink, ShowTourButton } from '@/components/site/account/AppActions';
 import { legacyHref } from '@/lib/site/legacy';
 import { isTwa } from '@/lib/site/twa';
+import AppPlansLink from '@/components/site/AppPlansLink';
 
 // Account (2026-09-08): one page for who you are, what your access is and
 // where it comes from, and the billing/settings actions. Replaces the legacy
@@ -27,7 +28,7 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
   unstable_setRequestLocale(locale);
   const access = await getSiteAccess();
   if (access.state === 'anon') redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
-  const [t, f, acct] = await Promise.all([getTranslations('account'), getFormatter(), getAccountSummary(access)]);
+  const [t, tPay, f, acct] = await Promise.all([getTranslations('account'), getTranslations('paywall'), getFormatter(), getAccountSummary(access)]);
   if (!acct) redirect(`/${locale}/login?callbackUrl=${encodeURIComponent(`/${locale}/account`)}`);
   const PRICING_HREF = `/${locale}/pricing`;
   const RESET_HREF = legacyHref('/forgot-password', locale);
@@ -82,6 +83,12 @@ export default async function AccountPage({ params: { locale } }: { params: { lo
                 <a href={PRICING_HREF} className="text-sm underline underline-offset-4">{t('seePlans')}</a>
               </>
             )}
+          </div>
+        )}
+        {/* Play app: plans through Play Billing (v1.3.0+) or "update the app" — see AppPlansLink. */}
+        {twa && state !== 'pro' && (
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <AppPlansLink plans={t('seePlans')} update={tPay('appUpdateCta')} className="btn btn-primary" location="account_app" />
           </div>
         )}
         <p className="mt-4 text-xs text-s-muted">{twa ? t('twaNote') : stripeLive ? t('portalNote') : t('checkoutNote')}</p>

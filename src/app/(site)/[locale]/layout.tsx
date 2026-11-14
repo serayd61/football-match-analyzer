@@ -17,7 +17,8 @@ import SiteHeader from '@/components/site/SiteHeader';
 import SiteFooter from '@/components/site/SiteFooter';
 import MobileTabBar from '@/components/site/MobileTabBar';
 import Onboarding from '@/components/site/Onboarding';
-import TrialEndedBanner from '@/components/site/TrialEndedBanner';
+import UpgradeBanner from '@/components/site/UpgradeBanner';
+import { yearlyEnabled, yearlySavingPct } from '@/lib/site/plans';
 import { SlipProvider } from '@/components/site/slip/SlipProvider';
 import SlipBar from '@/components/site/slip/SlipBar';
 
@@ -96,7 +97,7 @@ export default async function LocaleLayout({
   const messages = pickMessages(await getMessages());
   const timeZone = await getTimeZone();
   const t = await getTranslations('nav');
-  // Deneme bitimi şeridi (2026-11-02): metinler sunucudan; durum istemcide /api/site/access'ten.
+  // Pro şeridi (UpgradeBanner, 2026-11-14): metinler sunucudan; durum istemcide /api/site/access'ten.
   const tp = await getTranslations('paywall');
 
   return (
@@ -110,7 +111,17 @@ export default async function LocaleLayout({
               <SlipProvider>
                 <a href="#main" className="skip-link">{t('skipToContent')}</a>
                 <SiteHeader />
-                <TrialEndedBanner kicker={tp('bannerKicker')} title={tp('bannerTitle')} lead={tp('bannerLead')} cta={tp('bannerCta')} close={tp('bannerClose')} pricingHref={`/${locale}/pricing`} />
+                <UpgradeBanner
+                  pricingHref={`/${locale}/pricing`}
+                  yearlyOnWeb={yearlyEnabled()}
+                  labels={{
+                    kickerTrial: tp('offerKicker'), kickerExpired: tp('bannerKicker'),
+                    titleYearly: tp('offerTitleYearly', { pct: yearlySavingPct() }), titleMonthly: tp('bannerTitle'), titleApp: tp('offerTitleApp'),
+                    lead: tp('bannerLead'), cta: tp('bannerCta'),
+                    kickerUpdate: tp('updateKicker'), titleUpdate: tp('updateTitle'), ctaUpdate: tp('appUpdateCta'),
+                    close: tp('bannerClose'),
+                  }}
+                />
                 <main id="main" className="flex-1">{children}</main>
                 <SiteFooter />
                 <MobileTabBar />
