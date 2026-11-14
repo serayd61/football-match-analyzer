@@ -166,6 +166,11 @@ export async function publishCoupon(ymd: string, dry = false) {
     await recordPost({ key, kind: 'coupon', day: ymd, account: lang, fixtureIds: stored.legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
     out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
   }
+  // Instagram aynası: oransız "günün ikilisi" (2026-11-14). Hata Telegram'ı etkilemesin.
+  try {
+    const { publishComboInstagram } = await import('@/lib/social/publish');
+    out.push(...await publishComboInstagram({ date: ymd, legs: stored.legs, pJoint: stored.pJoint }, record && record.n ? { n: record.n, won: record.won } : null, dry));
+  } catch (e: any) { out.push({ key: `coupon|${ymd}|instagram`, status: 'failed', error: String(e?.message || e).slice(0, 200) }); }
   return { ok: out.every((o) => o.status !== 'failed'), day: ymd, posts: out };
 }
 
@@ -186,6 +191,10 @@ export async function publishCouponResults(settled: StoredCoupon[], dry = false)
       await recordPost({ key, kind: 'coupon-result', day: c.date, account: lang, fixtureIds: c.legs.map((l) => l.fixtureId), postId: r.ok ? r.id : null, body: text, status: r.ok ? 'posted' : 'failed', error: r.ok ? null : r.error });
       out.push({ key, status: r.ok ? 'posted' : 'failed', id: r.ok ? r.id : undefined, error: r.ok ? undefined : r.error });
     }
+    try {
+      const { publishComboResultInstagram } = await import('@/lib/social/publish');
+      out.push(...await publishComboResultInstagram({ date: c.date, legs: c.legs, status: c.status }, dry));
+    } catch (e: any) { out.push({ key: `coupon-result|${c.date}|instagram`, status: 'failed', error: String(e?.message || e).slice(0, 200) }); }
   }
   return out;
 }

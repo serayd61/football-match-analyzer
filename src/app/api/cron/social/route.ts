@@ -14,9 +14,9 @@
 //   ?trends=1      günün X trendleri + bacaklarla eşleşen etiketler (teşhis)
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { publishDaily, publishResults, publishWeekly, publishStrong, publishProof, socialStatus, dailyLegs, dayTrends } from '@/lib/social/publish';
+import { publishDaily, publishResults, publishWeekly, publishStrong, publishProof, socialStatus, dailyLegs, strongLegs, dayTrends } from '@/lib/social/publish';
 import { hashtags, matchTrends } from '@/lib/social/content';
-import { dailyImage, weeklyImage, proofImage } from '@/lib/social/image';
+import { dailyImage, weeklyImage, proofImage, strongImage, comboImage } from '@/lib/social/image';
 import { SITE } from '@/lib/social/content';
 import { sendEngagementPack } from '@/lib/social/engage';
 import { showcaseRecord } from '@/lib/site/showcase';
@@ -51,6 +51,16 @@ export async function GET(request: NextRequest) {
         const j: any = await fetch(`${SITE}/api/v2/proof`, { cache: 'no-store' }).then((r) => r.json());
         if (!j?.ok) return NextResponse.json({ ok: false, error: 'proof yok' });
         png = await proofImage(j, lang);
+      } else if (kind === 'strong') {
+        const legs = await strongLegs(day);
+        if (!legs.length) return NextResponse.json({ ok: false, error: 'güçlü bacak yok' });
+        png = await strongImage(legs, day, lang);
+      } else if (kind === 'combo') {
+        const { getCoupon, couponRecord } = await import('@/lib/site/coupon');
+        const c = await getCoupon(day);
+        if (!c) return NextResponse.json({ ok: false, error: 'kupon yok' });
+        const rec = await couponRecord(30, day).catch(() => null);
+        png = await comboImage(c.legs, day, lang, c.pJoint, rec && rec.n ? { n: rec.n, won: rec.won } : null);
       } else if (kind === 'weekly') {
         const rec = await showcaseRecord(7, Date.parse(`${day}T00:00:00Z`));
         png = await weeklyImage({ from: addDays(day, -7), to: addDays(day, -1), n: rec.n, won: rec.won, byMarket: rec.byMarket, noPick: rec.noPick }, lang);
@@ -62,7 +72,7 @@ export async function GET(request: NextRequest) {
       }
       return new NextResponse(new Uint8Array(png), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' } });
     }
-    if (kind === 'proof') return NextResponse.json(await publishProof({ dry, day, lang }));
+    if (kind === 'proof') return NextResponse.json(await publishProof({ dry, day, ...(q.has('lang') ? { lang } : {}) }));
     if (kind === 'results') return NextResponse.json(await publishResults({ dry }));
     if (kind === 'weekly') return NextResponse.json(await publishWeekly({ dry, day }));
     if (kind === 'strong') return NextResponse.json(await publishStrong({ dry, day }));

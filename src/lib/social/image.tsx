@@ -4,7 +4,7 @@
 // Satori ikisini de okur, WOFF2 okumaz — bu yüzden UA sabit. Renkler site kimliğiyle uyumlu (kiremit vurgu, sıcak zemin).
 import 'server-only';
 import { ImageResponse } from 'next/og';
-import { fmtDate, fmtOdds, fmtTime, marketLabel, pct, type Lang, type Leg, type WeeklyStats } from './content';
+import { fmtDate, fmtOdds, fmtTime, marketLabel, pct, strongMarketLabel, comboLegLabel, type Lang, type Leg, type WeeklyStats, type StrongLeg, type ComboLeg } from './content';
 
 const BG = '#f5f3ee', INK = '#1c1b18', MUTED = '#6a655b', ACCENT = '#a8432a', LINE = '#dfdad0', CARD = '#ffffff';
 const W = 1080, H = 1350;
@@ -36,45 +36,82 @@ function Brand() {
   );
 }
 
-export async function dailyImage(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null): Promise<Buffer> {
-  const title = lang === 'tr' ? 'Günün seçimleri' : "Today's picks";
-  const rule = lang === 'tr' ? 'Kural: model eşiği + piyasaya karşı marj · oran 1,25–1,75 · maçtan önce dondurulur' : 'Rule: model threshold + margin vs market · odds 1.25–1.75 · frozen before kick-off';
-  const rec = record && record.n ? (lang === 'tr' ? `Son 7 gün ${record.won}/${record.n}` : `Last 7 days ${record.won}/${record.n}`) : '';
+/** Ortak dikey seçim kartı: başlık + satır başına maç, etiket, model ve isteğe bağlı sağ değer. */
+export interface PickItem { id: number; leagueName: string; kickoff: string; homeName: string; awayName: string; label: string; modelP: number; extra?: { k: string; v: string } | null }
+export async function picksImage(items: PickItem[], ymd: string, lang: Lang, opts: { title: string; rule: string; rec?: string | null; hidden?: number }): Promise<Buffer> {
+  const hidden = opts.hidden ?? 0;
+  const teaser = hidden > 0 ? (lang === 'tr' ? `+${hidden} maç daha` : `+${hidden} more ${hidden === 1 ? 'match' : 'matches'} today`) : '';
+  const teaserSub = lang === 'tr' ? 'Tam liste sitede · footballanalytics.pro' : 'Full list on the site · footballanalytics.pro';
   return toBuffer(new ImageResponse(
     (
       <div style={{ width: W, height: H, display: 'flex', flexDirection: 'column', background: BG, color: INK, padding: 64, fontFamily: 'Plex' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `4px solid ${INK}`, paddingBottom: 22 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 26, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase' }}>{fmtDate(ymd, lang)}</span>
-            <span style={{ fontFamily: 'Archivo', fontSize: 74, lineHeight: 1, marginTop: 8 }}>{title}</span>
+            <span style={{ fontFamily: 'Archivo', fontSize: items.length > 4 ? 60 : 74, lineHeight: 1, marginTop: 8 }}>{opts.title}</span>
           </div>
-          {rec && <span style={{ fontSize: 30, color: MUTED }}>{rec}</span>}
+          {opts.rec ? <span style={{ fontSize: 30, color: MUTED }}>{opts.rec}</span> : null}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 22, marginTop: 40 }}>
-          {legs.map((l) => (
-            <div key={l.fixtureId} style={{ display: 'flex', flexDirection: 'column', background: CARD, border: `2px solid ${LINE}`, padding: '30px 34px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: items.length > 4 ? 14 : 22, marginTop: items.length > 4 ? 28 : 40 }}>
+          {items.map((l) => (
+            <div key={l.id} style={{ display: 'flex', flexDirection: 'column', background: CARD, border: `2px solid ${LINE}`, padding: items.length > 4 ? '20px 30px' : '30px 34px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 26, color: MUTED }}>
                 <span>{l.leagueName}</span><span>{fmtTime(l.kickoff, lang)}</span>
               </div>
-              <span style={{ fontFamily: 'Archivo', fontSize: 46, lineHeight: 1.1, marginTop: 10 }}>{l.homeName} – {l.awayName}</span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 22 }}>
-                <span style={{ fontFamily: 'Archivo', fontSize: 40, color: ACCENT }}>{marketLabel(l, lang)}</span>
+              <span style={{ fontFamily: 'Archivo', fontSize: items.length > 4 ? 38 : 46, lineHeight: 1.1, marginTop: 10 }}>{l.homeName} – {l.awayName}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: items.length > 4 ? 14 : 22 }}>
+                <span style={{ fontFamily: 'Archivo', fontSize: items.length > 4 ? 34 : 40, color: ACCENT }}>{l.label}</span>
                 <div style={{ display: 'flex', gap: 34, fontSize: 30 }}>
                   <span><span style={{ color: MUTED, marginRight: 8 }}>model</span>{pct(l.modelP)}</span>
-                  {l.odds ? <span><span style={{ color: MUTED, marginRight: 8 }}>{lang === 'tr' ? 'oran' : 'odds'}</span>{fmtOdds(l.odds, lang)}</span> : null}
+                  {l.extra ? <span><span style={{ color: MUTED, marginRight: 8 }}>{l.extra.k}</span>{l.extra.v}</span> : null}
                 </div>
               </div>
             </div>
           ))}
+          {hidden > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: `2px dashed ${LINE}`, padding: '34px 34px', gap: 10, background: 'rgba(255,255,255,0.45)' }}>
+              <span style={{ fontFamily: 'Archivo', fontSize: 44, color: ACCENT }}>{teaser}</span>
+              <span style={{ fontSize: 28, color: MUTED }}>{teaserSub}</span>
+            </div>
+          ) : null}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', gap: 18 }}>
-          <span style={{ fontSize: 24, color: MUTED, lineHeight: 1.35 }}>{rule}</span>
+          <span style={{ fontSize: 24, color: MUTED, lineHeight: 1.35 }}>{opts.rule}</span>
           <Brand />
         </div>
       </div>
     ),
     { width: W, height: H, fonts: await fonts() },
   ));
+}
+
+export async function dailyImage(legs: Leg[], ymd: string, lang: Lang, record: { n: number; won: number } | null): Promise<Buffer> {
+  const title = lang === 'tr' ? 'Günün seçimleri' : "Today's picks";
+  const rule = lang === 'tr' ? 'Kural: model eşiği + piyasaya karşı marj · oran 1,25–1,75 · maçtan önce dondurulur' : 'Rule: model threshold + margin vs market · odds 1.25–1.75 · frozen before kick-off';
+  const rec = record && record.n ? (lang === 'tr' ? `Son 7 gün ${record.won}/${record.n}` : `Last 7 days ${record.won}/${record.n}`) : '';
+  const items: PickItem[] = legs.map((l) => ({ id: l.fixtureId, leagueName: l.leagueName, kickoff: l.kickoff, homeName: l.homeName, awayName: l.awayName, label: marketLabel(l, lang), modelP: l.modelP, extra: l.odds ? { k: lang === 'tr' ? 'oran' : 'odds', v: fmtOdds(l.odds, lang) } : null }));
+  return picksImage(items, ymd, lang, { title, rule, rec });
+}
+
+/** Görselde gösterilen güçlü pazar sayısı; gerisi siteye çağrı. */
+export const STRONG_VISIBLE = 2;
+
+/** Güçlü pazarlar kartı: sağda lig-pazar karnesi (oran yok). */
+export async function strongImage(legs: StrongLeg[], ymd: string, lang: Lang): Promise<Buffer> {
+  const title = lang === 'tr' ? 'Bugün güçlü pazarlar' : 'Strong markets today';
+  const rule = lang === 'tr' ? 'Lig-pazar karnesi son 180 günde ≥%70 (≥15 maç) · maçtan önce dondurulur · garanti değil, kayıt' : 'League–market record ≥70% over 180 days (≥15 matches) · frozen before kick-off · a record, not a guarantee';
+  // Vitrin: 2 maç görünür, kalanı "+N daha, sitede" kartıyla gizlenir (2026-11-14, trafik için).
+  const items: PickItem[] = legs.slice(0, STRONG_VISIBLE).map((l) => ({ id: l.fixtureId, leagueName: l.leagueName, kickoff: l.kickoff, homeName: l.homeName, awayName: l.awayName, label: strongMarketLabel(l, lang), modelP: l.modelP, extra: { k: lang === 'tr' ? 'lig' : 'league', v: `${l.won}/${l.n}` } }));
+  return picksImage(items, ymd, lang, { title, rule, hidden: Math.max(0, legs.length - STRONG_VISIBLE) });
+}
+
+/** Günün ikilisi kartı (kuponun oransız Instagram karşılığı). */
+export async function comboImage(legs: ComboLeg[], ymd: string, lang: Lang, pJoint: number, record: { n: number; won: number } | null): Promise<Buffer> {
+  const title = lang === 'tr' ? 'Günün ikilisi' : 'Model duo of the day';
+  const rule = lang === 'tr' ? `İkisinin birlikte tutma olasılığı (model) ${pct(pJoint)} · maçtan önce dondurulur · sonucu akşam yazılır` : `Joint model probability ${pct(pJoint)} · frozen before kick-off · result posted tonight`;
+  const rec = record && record.n ? (lang === 'tr' ? `Son 30 gün ${record.won}/${record.n}` : `Last 30 days ${record.won}/${record.n}`) : '';
+  const items: PickItem[] = legs.map((l) => ({ id: l.fixtureId, leagueName: l.leagueLabel, kickoff: l.kickoff, homeName: l.homeName, awayName: l.awayName, label: comboLegLabel(l, lang), modelP: l.p, extra: null }));
+  return picksImage(items, ymd, lang, { title, rule, rec });
 }
 
 export async function weeklyImage(s: WeeklyStats, lang: Lang): Promise<Buffer> {

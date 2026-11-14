@@ -58,3 +58,20 @@ curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_
 - Instagram görseli kendisi çeker: `/api/social/image` kimliksiz, ±10 gün, 1 saat önbellek.
 - Günde 100 API gönderisi sınırı var; bizimki ≤3.
 - Caption ≤2200 karakter, ≤30 etiket (kodda kesilir).
+
+
+## Ayna kapsamı (2026-11-14)
+
+Telegram botunun attığı her yayın türü Instagram'a da gider; metin-only olanlar görselle, oran içerenler oransız biçimde:
+
+| Telegram | Instagram | Görsel |
+|---|---|---|
+| Günün seçimleri (07:00) | aynı, açıklama oransız | `kind=daily` |
+| Güçlü pazarlar (07:10) | aynı, lig-pazar karnesiyle | `kind=strong` |
+| Günün kuponu (07:30) | "Günün ikilisi": iki bacak + model olasılığı, oran/ROI/"kupon" yok | `kind=combo` |
+| Kupon sonucu (:50) | ikili gönderisinin altına yorum | — |
+| Sonuç yanıtları (:40) | günlük gönderinin altına yorum | — |
+| Haftalık karne (Pzt 06:00) | aynı | `kind=weekly` |
+| X etkileşim paketi | gitmez (admin notu) | — |
+
+Anahtarlar `social_posts.key`'de `coupon|<gün>|instagram|<dil>` ve `coupon-result|…` olarak tutulur; Telegram'daki `coupon|<gün>|telegram|<dil>` ile çakışmaz.
