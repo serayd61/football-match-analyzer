@@ -68,3 +68,49 @@ test('günün ikilisi: kupon kelimesi, oran ve ROI yok; sonuç yorumu kısa', as
   assert.ok(r.includes('FC Dordrecht 0-2 Heracles · Heracles win ✓') && r.endsWith('Both landed.'));
   assert.ok(!/coupon|odds|\d\.\d\d/i.test(r), r);
 });
+
+test('boş gün etiketleri: futbol trendleri kalır, rugby/politika düşer, turnuva ve takım etiketleri eklenir, ≤30', async () => {
+  const { dayTrendTags, isFootballTrend, trendTag, instagramTags, DAY_TREND_MAX_EXTRA } = await import('../src/lib/social/content');
+  const trends = ['arsenal women', 'rugby world cup 2027', 'death', 'jahmyr gibbs', 'münze', 'mario götze', 'ermenistan millî futbol takımı', 'tff 3.lig', '#NationsLeague', 'cricket world cup', 'Jamaica'];
+  const rows = [
+    { leagueName: 'UEFA Nations League A Grp. 2', homeName: 'Germany', awayName: 'Slovakia' },
+    { leagueName: 'CONCACAF Nations League A Championship Playoff', homeName: 'Jamaica', awayName: 'Mexico' },
+    { leagueName: 'Africa Cup of Nations Qualification Grp. J', homeName: 'Sudan', awayName: 'Senegal' },
+    { leagueName: 'Friendlies', homeName: 'New Zealand', awayName: 'India' },
+    { leagueName: 'Segunda Federacion - Group 3', homeName: 'Rayo Cantabria', awayName: 'Real Avilés' },
+    { leagueName: 'Premier League', leagueSlug: null, homeName: 'Berekum Chelsea', awayName: 'Asante Kotoko' },
+  ];
+  assert.ok(isFootballTrend('arsenal women') && isFootballTrend('mario götze') === false, 'kulüp evet, oyuncu adı tek başına hayır');
+  assert.ok(!isFootballTrend('rugby world cup 2027') && !isFootballTrend('death') && !isFootballTrend('cricket world cup'));
+  assert.ok(isFootballTrend('Jamaica', rows), 'günün takımı trendse futbol sayılır');
+  assert.equal(trendTag('arsenal women'), '#ArsenalWomen');
+  assert.equal(trendTag('#NationsLeague'), '#NationsLeague');
+  assert.equal(trendTag('2027'), null);
+  const tags = dayTrendTags({ trends, rows });
+  assert.ok(tags.includes('#ArsenalWomen') && tags.includes('#NationsLeague') && tags.includes('#Jamaica'), tags.join(' '));
+  assert.ok(tags.includes('#AFCON') && tags.includes('#InternationalFriendly') && tags.includes('#Germany') && tags.includes('#Senegal'), tags.join(' '));
+  assert.ok(!tags.some((t) => /rugby|death|gibbs|münze|cricket/i.test(t)), tags.join(' '));
+  assert.ok(!tags.includes('#RayoCantabria'), 'öncelik dışı alt lig takımı etiketlenmez');
+  assert.ok(!tags.includes('#PremierLeague') && !tags.includes('#BerekumChelsea'), 'slug\'sız "Premier League" (Gana) etiketlenmez');
+  assert.ok(tags.length <= DAY_TREND_MAX_EXTRA);
+  assert.equal(new Set(tags.map((t) => t.toLowerCase())).size, tags.length);
+  const all = instagramTags('en', tags).split(' ');
+  assert.ok(all.length <= 30 && all[0] === '#footballanalytics' && all.includes('#NationsLeague'));
+});
+
+test('trend yokken de program etiketleri gelir; program yokken sabit küme kalır', async () => {
+  const { dayTrendTags, instagramTags } = await import('../src/lib/social/content');
+  const onlyRows = dayTrendTags({ trends: [], rows: [{ leagueName: 'Premier League', leagueSlug: 'premier-league', homeName: 'Arsenal FC', awayName: 'Chelsea FC' }] });
+  assert.deepEqual(onlyRows.slice(0, 2), ['#PremierLeague', '#PL']);
+  assert.ok(onlyRows.includes('#Arsenal') && onlyRows.includes('#Chelsea'), onlyRows.join(' '));
+  assert.deepEqual(dayTrendTags({ trends: [], rows: [] }), []);
+  assert.equal(instagramTags('en', []).split(' ').length, 10);
+});
+
+test('Google Trends RSS ayrıştırma: kanal başlığı atlanır, tekilleşir, CDATA/entity çözülür', async () => {
+  const { parseTrendsRss, trendGeos } = await import('../src/lib/social/trends');
+  const xml = `<rss><channel><title>Daily Search Trends</title><item><title>arsenal women</title></item><item><title><![CDATA[Tom &amp; Jerry]]></title></item><item><title>Arsenal Women</title></item></channel></rss>`;
+  assert.deepEqual(parseTrendsRss(xml), ['arsenal women', 'Tom & Jerry']);
+  assert.deepEqual(trendGeos(''), ['GB', 'DE', 'TR']);
+  assert.deepEqual(trendGeos('de, ch,xx1,DE'), ['DE', 'CH']);
+});
