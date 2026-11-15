@@ -4,14 +4,18 @@
 // bir, en çok 5 kez: o günün ücretsiz maçları + Pro + "Android uygulamasında
 // Google Play ile abonelik açıldı". Kurallar: lib/site/winback.ts.
 //
-// Günün ücretsiz maçı yoksa (ya da hepsi başlamışsa) o gün kimseye gönderilmez;
-// adım tüketilmez, ertesi gün yeniden denenir.
+// Günün ücretsiz maçı yoksa (ya da hepsi başlamışsa):
+//   - 1. adım MAÇSIZ gider (2026-11-15, kullanıcı kararı): milli arada liste 6 gün
+//     boş kaldı, seri hiç başlayamadı; ilk mailin asıl haberi maça bağlı değil
+//     (Google Play ile abonelik). Şablon: email-winback.ts `legs` boş dalı.
+//   - 2.–5. adımlar gönderilmez, adım tüketilmez, maç olan ilk gün devam eder
+//     (o mailler "bugünün ücretsiz maçları" üzerine kurulu).
 //
 // Güvenlik (trial-emails ile aynı): CRON_SECRET; okuma hatasında iptal
 // (unsubscribe/dedup boş sayılmasın); unsubscribe, abone ve admin hariç;
 // email_campaign_log `winback-2026-11:s{n}` ile adım başına tek gönderim.
 //   ?dry=1     gönderim yok: kaç kişi, hangi adım (adres listesi yalnız &list=1 ile)
-//   ?canary=1  yalnız admin'e, 1. adım (maç yoksa örnek maçlarla)
+//   ?canary=1  yalnız admin'e, 1. adım (maç yoksa örnek maçlarla; &nomatch=1 → maçsız sürüm)
 //   ?limit=N   günlük parti (varsayılan 60: Resend kotası diğer kampanyalarla paylaşılır)
 //   ?maxAge=N  serinin başlayabileceği en eski deneme bitişi, gün (varsayılan 120)
 // 2026-11-14 (2): maç satırları maçın kendi sayfasına gider (günün ücretsiz maçı
@@ -29,7 +33,7 @@ import { encodeSentLegs, parseSentLegs, settleSent, winbackRecordKey, type SentL
 import { unsubscribeUrl, SITE_URL, PLAY_STORE_URL, TELEGRAM_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 import type { TrialUser } from '@/lib/site/trial-emails';
-import { selectWinbackRecipients, winbackHistory, winbackKey, WINBACK_KEY_PREFIX, WINBACK_MAX_STEPS, WINBACK_MAX_AGE_DAYS, type WinbackLogRow } from '@/lib/site/winback';
+import { selectWinbackRecipients, splitNoMatchDay, winbackHistory, winbackKey, WINBACK_KEY_PREFIX, WINBACK_MAX_STEPS, WINBACK_MAX_AGE_DAYS, type WinbackLogRow } from '@/lib/site/winback';
 import { dailyLegs } from '@/lib/social/publish';
 import { fmtDate, fmtTime, marketLabel, tzLabel } from '@/lib/social/content';
 import { showcaseRecord } from '@/lib/site/showcase';
@@ -81,8 +85,9 @@ export async function GET(req: NextRequest) {
   let legs: Array<WinbackLeg & { fixtureId?: number }> = legsRaw.map((l) => ({ fixtureId: l.fixtureId, time: fmtTime(l.kickoff, 'en'), home: l.homeName, away: l.awayName, league: l.leagueName, selection: marketLabel(l, 'en'), modelPct: l.modelP * 100 }));
   const sentLegs: SentLeg[] = legsRaw.map((l) => ({ fixtureId: l.fixtureId, home: l.homeName, away: l.awayName, market: l.market, selection: l.selection, label: marketLabel(l, 'en') }));
   const tz = legsRaw.length ? tzLabel('en', legsRaw[0].kickoff) : tzLabel('en', new Date(now).toISOString());
-  if (!legs.length && canary) legs = SAMPLE_LEGS;
-  if (!legs.length) return NextResponse.json({ ok: true, skipped: 'no free matches today', day });
+  if (!legs.length && canary && sp.get('nomatch') !== '1') legs = SAMPLE_LEGS; // ?canary=1&nomatch=1 → maçsız sürümün önizlemesi
+  /** Bugün maç yok: yalnız 1. adım, maçsız şablonla (bkz. başlık). */
+  const noMatchDay = legs.length === 0;
 
   // Okumalar güvenlik kapısı: hata → iptal (unsubscribe/dedup boş sayılmasın)
   let users: any[], profs: any[], unsub: any[], log: WinbackLogRow[];
@@ -109,6 +114,8 @@ export async function GET(req: NextRequest) {
     unsubscribed: new Set(unsub.map((r) => String(r.email).toLowerCase())),
     exclude: new Set(ADMIN_EMAILS.map((e) => e.toLowerCase())),
   });
+  let waiting = 0;
+  if (noMatchDay) { const split = splitNoMatchDay(recipients); recipients = split.send; waiting = split.waiting; }
   if (canary) recipients = [{ email: ADMIN_EMAILS[0].toLowerCase(), name: null, step: 1, daysSinceEnd: 3 }];
   const total = recipients.length;
   const bySteps = recipients.reduce<Record<string, number>>((m, r) => { m[`s${r.step}`] = (m[`s${r.step}`] || 0) + 1; return m; }, {});
@@ -144,7 +151,7 @@ export async function GET(req: NextRequest) {
   const lastFor = (email: string): WinbackLast | null => { const d = lastDayOf(email); return (d && results.get(d)) || null; };
 
   if (dry) {
-    return NextResponse.json({ ok: true, dry: true, day, legs: legs.length, total, wouldSend: recipients.length, withResults: recipients.filter((r) => lastFor(r.email)).length, bySteps, stats, ...(sp.get('list') === '1' ? { recipients: recipients.map((r) => ({ email: r.email, step: r.step, daysSinceEnd: r.daysSinceEnd })) } : {}) });
+    return NextResponse.json({ ok: true, dry: true, day, legs: legs.length, noMatchDay, waiting, total, wouldSend: recipients.length, withResults: recipients.filter((r) => lastFor(r.email)).length, bySteps, stats, ...(sp.get('list') === '1' ? { recipients: recipients.map((r) => ({ email: r.email, step: r.step, daysSinceEnd: r.daysSinceEnd })) } : {}) });
   }
 
   // Bugün gönderilen listenin kaydı: maçları üyeye açar (free-today) ve 3 gün sonraki
@@ -179,5 +186,5 @@ export async function GET(req: NextRequest) {
     }
     await sleep(150); // Resend hız sınırı
   }
-  return NextResponse.json({ ok: failed === 0, day, legs: legs.length, total, sent: ok, failed, canary, bySteps, stats });
+  return NextResponse.json({ ok: failed === 0, day, legs: legs.length, noMatchDay, waiting, total, sent: ok, failed, canary, bySteps, stats });
 }

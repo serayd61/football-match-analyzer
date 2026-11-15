@@ -12,6 +12,12 @@
 // maçı süresi dolmuş üyeye tam açık, lib/site/free-today-rule.ts) ve mail, kişiye
 // bir önceki mailde giden maçların sonucuyla açılır (`last`, kaybeden de yazılır;
 // çoğunluğu tutan gün konu satırına çıkar). Kaynak: lib/site/winback-results.ts.
+//
+// 2026-11-15: maçsız sürüm (`legs` boş). Milli arada günlük liste 6 gün üst üste
+// boş kaldı ve seri hiç başlayamadı; kullanıcı kararıyla İLK mail maçsız günde de
+// gider. Asıl haber maça bağlı değil: Android uygulamasında Google Play ile
+// abonelik. Bu sürümde maç tablosu yok, Android kutusu en üstte, altında "bugün
+// ücretsiz maç yok" notu var. Hangi adımın maçsız gideceğine route karar verir.
 // ============================================================================
 
 export type WinbackLeg = {
@@ -61,6 +67,11 @@ const winning = (l: WinbackLast | null | undefined): l is WinbackLast => !!l && 
 
 export function winbackSubject(i: Pick<WinbackEmailInput, 'step' | 'maxSteps' | 'legs' | 'savingPct' | 'last'>): string {
   const n = i.legs.length;
+  if (n === 0) {
+    if (i.step >= i.maxSteps) return 'Last note from us, and how to come back';
+    if (i.step === 3 && i.savingPct) return `Yearly Pro costs ${i.savingPct}% less than paying monthly`;
+    return 'New: subscribe to Pro inside the Android app';
+  }
   const free = `today's ${n === 1 ? 'free match' : `${n} free matches`}`;
   if (i.step >= i.maxSteps) return `Last note from us: ${free}, and how to come back`;
   if (winning(i.last)) return `Last time: ${i.last.won} of ${i.last.n} correct. ${free.charAt(0).toUpperCase()}${free.slice(1)} ${n === 1 ? 'is' : 'are'} open`;
@@ -71,6 +82,9 @@ export function winbackSubject(i: Pick<WinbackEmailInput, 'step' | 'maxSteps' | 
 
 function intro(i: WinbackEmailInput): string {
   if (i.step >= i.maxSteps) return 'this is the last of these notes. Your account stays open on the free view, and the public record stays open to everyone.';
+  if (!i.legs.length) return i.step === 1
+    ? 'your free trial has ended, and there is one piece of news: Android users can now subscribe to Pro inside the app.'
+    : 'a short note while the model has no free matches today.';
   if (i.step === 1) return 'your free trial has ended, but the model keeps publishing. Here is what it rates today, free, and one piece of news for Android users.';
   return 'the model published today\'s free matches. Each one opens in full with your account, no subscription needed.';
 }
@@ -114,26 +128,35 @@ export function buildWinbackEmail(i: WinbackEmailInput): { subject: string; html
     ? `<p style="margin:0 0 18px;font-size:14px;color:${INK}">Public record, last 7 days: <strong>${i.stats.won} of ${i.stats.n}</strong> correct (${Math.round((i.stats.won / i.stats.n) * 100)}%). Misses are published too.</p>`
     : '';
 
-  const html = `
-  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;color:${INK}">
-    <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:${BRAND}">Football Analytics Pro</p>
-    <p style="margin:0 0 18px;font-size:12px;color:${MUTED}">Free matches · ${esc(i.dateLabel)}</p>
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.5">Hi${hi}, ${intro(i)}</p>
-${prevHtml}
+  const noMatches = i.legs.length === 0;
+  const NO_MATCH_NOTE = 'The model has no free matches today. On match days the free matches open in full with your account, and the same list goes out in our free Telegram channel.';
+  const androidHtml = `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f4f6f5;border-radius:10px;margin:0 0 18px"><tr><td style="padding:14px 16px">
+      <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:${INK}">New in the Android app: subscribe with Google Play</p>
+      <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:${MUTED}">You can now buy Pro inside the app, billed through your Google Play account. Update the app first, then open Plans.</p>
+      <a href="${i.playUrl}" style="font-size:13px;font-weight:700;color:${BRAND}">Update on Google Play →</a>
+    </td></tr></table>`;
+  const matchesHtml = noMatches
+    ? `${androidHtml}
+    <p style="margin:0 0 18px;font-size:13px;line-height:1.5;color:${MUTED}">The model has no free matches today. On match days the free matches open in full with your account, and the same list goes out in our <a href="${i.telegramUrl}" style="color:${BRAND}">free Telegram channel</a>.</p>`
+    : `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid ${LINE};border-radius:10px;border-collapse:separate;margin:0 0 8px">
       <tr><td colspan="3" style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:${MUTED}">Today's free matches · kick-off in ${esc(i.tz)}</td></tr>${rows}
     </table>
-    <p style="margin:0 0 18px;font-size:12px;color:${MUTED}">${linked ? 'Sign in with your account and each of these opens in full today, free. ' : ''}The same list goes out every morning in our <a href="${i.telegramUrl}" style="color:${BRAND}">free Telegram channel</a>. Pro opens every match in every league the model rates.</p>
+    <p style="margin:0 0 18px;font-size:12px;color:${MUTED}">${linked ? 'Sign in with your account and each of these opens in full today, free. ' : ''}The same list goes out every morning in our <a href="${i.telegramUrl}" style="color:${BRAND}">free Telegram channel</a>. Pro opens every match in every league the model rates.</p>`;
+
+  const html = `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;color:${INK}">
+    <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:${BRAND}">Football Analytics Pro</p>
+    <p style="margin:0 0 18px;font-size:12px;color:${MUTED}">${noMatches ? '' : 'Free matches · '}${esc(i.dateLabel)}</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.5">Hi${hi}, ${intro(i)}</p>
+${prevHtml}${matchesHtml}
     ${statsHtml}
     <p style="margin:0 0 6px;font-size:15px;line-height:1.5">Pro is ${priceHtml}, cancel any time. ${esc(saving)}</p>
     ${promo ? `<p style="margin:0 0 6px;font-size:13px;color:${MUTED}">${esc(promo)}</p>` : ''}
     <p style="text-align:center;margin:20px 0"><a href="${i.pricingUrl}" style="background:${BRAND};color:#fff;text-decoration:none;padding:14px 30px;border-radius:10px;font-weight:700;display:inline-block">See Pro plans</a></p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f4f6f5;border-radius:10px;margin:0 0 18px"><tr><td style="padding:14px 16px">
-      <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:${INK}">New in the Android app: subscribe with Google Play</p>
-      <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:${MUTED}">You can now buy Pro inside the app, billed through your Google Play account. Update the app first, then open Plans.</p>
-      <a href="${i.playUrl}" style="font-size:13px;font-weight:700;color:${BRAND}">Update on Google Play →</a>
-    </td></tr></table>
+${noMatches ? '' : androidHtml}
 
     <p style="margin:0 0 4px;font-size:13px;color:${MUTED}"><a href="${i.matchesUrl}" style="color:${BRAND}">This week's matches</a> · Something in the way? Reply to this email, we read every reply.</p>
     <p style="font-size:12px;color:#94a3b8;margin-top:24px;line-height:1.5">
@@ -147,19 +170,17 @@ ${prevHtml}
     `Hi${i.name ? ` ${i.name}` : ''}, ${intro(i)}`,
     '',
     ...(prev ? [prevHead, ...prev.rows.map((r) => `${r.home} ${r.score} ${r.away}: ${r.label}, ${r.won ? 'correct' : 'missed'}`), ''] : []),
-    `Today's free matches (${i.dateLabel}, kick-off in ${i.tz}):`,
+    ...(noMatches ? ['New in the Android app: you can now buy Pro inside the app, billed through Google Play. Update the app first, then open Plans.', `Google Play: ${i.playUrl}`, '', NO_MATCH_NOTE] : [`Today's free matches (${i.dateLabel}, kick-off in ${i.tz}):`]),
     ...i.legs.map((l) => `${l.time}  ${l.home} – ${l.away} (${l.league}): ${l.selection}, model ${Math.round(l.modelPct)}%${l.url ? `\n       Full analysis, free today: ${l.url}` : ''}`),
     '',
-    `Also every morning in our free Telegram channel: ${i.telegramUrl}`,
+    `${noMatches ? 'Free Telegram channel' : 'Also every morning in our free Telegram channel'}: ${i.telegramUrl}`,
     i.stats && i.stats.n >= 10 ? `Public record, last 7 days: ${i.stats.won} of ${i.stats.n} correct.` : '',
     '',
     `Pro is ${priceText}, cancel any time. ${saving}`.trim(),
     promo,
     `Pro plans: ${i.pricingUrl}`,
     '',
-    'New in the Android app: you can now buy Pro inside the app, billed through Google Play. Update the app first, then open Plans.',
-    `Google Play: ${i.playUrl}`,
-    '',
+    ...(noMatches ? [] : ['New in the Android app: you can now buy Pro inside the app, billed through Google Play. Update the app first, then open Plans.', `Google Play: ${i.playUrl}`, '']),
     last ? 'This was the last of these notes.' : `We send at most ${i.maxSteps} of these, one every 3 days (${i.step} of ${i.maxSteps}).`,
     'Predictions are probabilities, not guarantees. 18+. Nothing here is betting advice.',
     `Unsubscribe: ${i.unsubscribeUrl}`,
