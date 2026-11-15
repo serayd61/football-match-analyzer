@@ -2389,7 +2389,7 @@
   "appToday": {
     "title": "Bugün",
     "rated": "{n, plural, =1 {# maç değerlendirildi} other {# maç değerlendirildi}}",
-    "record": "Son 7 gün: {n} maçta {won} doğru",
+    "record": "Son {days} gün: {n} maçta {won} doğru",
     "recordNote": "Herkese açık karne, tutmayanlar dahil.",
     "freeTitle": "{n, plural, =1 {Modelin rakamlarıyla bir maç} other {Modelin rakamlarıyla # maç}}",
     "freeOpenAnon": "Tam analiz ücretsiz hesapla",

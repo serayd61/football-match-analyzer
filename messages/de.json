@@ -2389,7 +2389,7 @@
   "appToday": {
     "title": "Heute",
     "rated": "{n, plural, =1 {# Spiel bewertet} other {# Spiele bewertet}}",
-    "record": "Letzte 7 Tage: {won} von {n} richtig",
+    "record": "Letzte {days} Tage: {won} von {n} richtig",
     "recordNote": "Öffentliche Bilanz, Fehler inklusive.",
     "freeTitle": "{n, plural, =1 {Ein Spiel mit den Zahlen des Modells} other {# Spiele mit den Zahlen des Modells}}",
     "freeOpenAnon": "Vollständige Analyse mit kostenlosem Konto",

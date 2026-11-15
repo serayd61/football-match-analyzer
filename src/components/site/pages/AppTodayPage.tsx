@@ -12,7 +12,7 @@ import { listDay } from '@/lib/site/fixtures';
 import { getPrediction, nextDayWithPredictions, type SitePrediction } from '@/lib/site/predictions';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { freeFixtures, freeLegsToday, type FreeLeg } from '@/lib/site/free-today';
-import { legLabelKey, planAppToday } from '@/lib/site/app-today-rule';
+import { APP_TODAY_RECORD_WINDOWS, legLabelKey, planAppToday, recordEnough } from '@/lib/site/app-today-rule';
 import { matchPath } from '@/lib/site/match-public';
 import { touchSeen } from '@/lib/site/seen';
 import { todayYmd, zonedStartOfDay } from '@/lib/site/time';
@@ -32,7 +32,7 @@ import { todayYmd, zonedStartOfDay } from '@/lib/site/time';
 export default async function AppTodayPage({ locale, access, memberHero = null }: { locale: string; access: SiteAccess; memberHero?: ReactNode }) {
   const today = todayYmd();
   const unlocked = canSeeMatches(access);
-  const [t, tp, tc, f, day, free, legs, record] = await Promise.all([
+  const [t, tp, tc, f, day, free, legs, recordShort] = await Promise.all([
     getTranslations({ locale, namespace: 'appToday' }),
     getTranslations({ locale, namespace: 'paywall' }),
     getTranslations({ locale, namespace: 'common' }),
@@ -40,7 +40,7 @@ export default async function AppTodayPage({ locale, access, memberHero = null }
     listDay(today).catch(() => null),
     unlocked ? Promise.resolve({ today: [] as number[], open: [] as number[] }) : freeFixtures(),
     unlocked ? Promise.resolve([] as FreeLeg[]) : freeLegsToday(),
-    showcaseRecord(7).catch(() => null),
+    showcaseRecord(APP_TODAY_RECORD_WINDOWS[0]).catch(() => null),
     // uygulama açılışı = aktivasyon izi (süresi dolmuş üye de sayılır; yalnız panel sayılıyordu)
     touchSeen(access.email),
   ]);
@@ -57,7 +57,9 @@ export default async function AppTodayPage({ locale, access, memberHero = null }
   const empty = plan.mode === 'member' ? !memberHero : freeRows.length === 0 && lockedRows.length === 0;
   const nextDay = empty ? await nextDayWithPredictions(today).catch(() => null) : null;
   const anon = access.state === 'anon';
-  const showRecord = !!record && record.n >= 10;
+  // ince hafta (milli ara): 7 günlük pencere eşiğin altındaysa 30 güne düş
+  const record = recordEnough(recordShort) ? recordShort : await showcaseRecord(APP_TODAY_RECORD_WINDOWS[1]).catch(() => null);
+  const showRecord = recordEnough(record);
 
   /** Kartta büyük rakam: yayınlanan seçim; kayıt bulunamazsa modelin 1X2 tercihi. */
   const headline = (p: SitePrediction): { pct: number; label: string } | null => {
@@ -79,7 +81,7 @@ export default async function AppTodayPage({ locale, access, memberHero = null }
         </div>
         {showRecord && (
           <Link href="/performance" data-cta="app-today-record" className="mt-3 flex items-center justify-between gap-3 rounded-[10px] border border-s-line bg-s-surface px-3.5 py-2.5 text-[14px] hover:bg-s-raised/60">
-            <span><span className="font-semibold text-s-win">{t('record', { won: record!.won, n: record!.n })}</span> <span className="text-s-muted">{t('recordNote')}</span></span>
+            <span><span className="font-semibold text-s-win">{t('record', { days: record!.days, won: record!.won, n: record!.n })}</span> <span className="text-s-muted">{t('recordNote')}</span></span>
             <span aria-hidden className="shrink-0 text-s-muted">→</span>
           </Link>
         )}
