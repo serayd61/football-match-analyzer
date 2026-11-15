@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { freeFromPosts, freeViewFor } from '../src/lib/site/free-today-rule';
 import { encodeSentLegs, parseSentLegs, settleSent, isWinningDay, winbackRecordKey, type SentLeg } from '../src/lib/site/winback-results';
 import { buildWinbackEmail, winbackSubject, type WinbackEmailInput } from '../src/lib/email-winback';
+import { splitNoMatchDay } from '../src/lib/site/winback';
 
 // Günün ücretsiz maçları + e-postadaki sonuç bloğu (2026-11-14).
 
@@ -120,4 +121,35 @@ test('email subject: a winning day is promoted, a losing day and the last step a
   // no banned promotional wording anywhere in the mail
   const all = `${buildWinbackEmail(base({ last: WIN })).html} ${winbackSubject(base({ last: WIN }))}`.toLowerCase();
   for (const w of ['sure bet', 'banker', 'guaranteed', 'tipster', 'bonus']) assert.ok(!all.includes(w), w);
+});
+
+// 2026-11-15: maçsız gün. Milli arada liste boş kaldı; ilk mail yine gider.
+test('no-match day: only the first step is sent, later steps wait without losing a step', () => {
+  const r = (email: string, step: number) => ({ email, name: null, step, daysSinceEnd: 3 * step });
+  const { send, waiting } = splitNoMatchDay([r('a@x.com', 1), r('b@x.com', 2), r('c@x.com', 1), r('d@x.com', 5)]);
+  assert.deepEqual(send.map((x) => x.email), ['a@x.com', 'c@x.com']);
+  assert.equal(waiting, 2);
+  assert.deepEqual(splitNoMatchDay([]), { send: [], waiting: 0 });
+});
+
+test('email without matches: Play news leads, no match table, no "0 free matches"', () => {
+  const m = buildWinbackEmail(base({ step: 1, legs: [], last: null }));
+  assert.equal(m.subject, 'New: subscribe to Pro inside the Android app');
+  assert.ok(!/0 free match/i.test(`${m.subject} ${m.html} ${m.text}`));
+  assert.ok(!m.html.includes("Today's free matches"));
+  assert.ok(!m.text.includes("Today's free matches"));
+  assert.ok(m.html.includes('The model has no free matches today'));
+  assert.ok(m.text.includes('The model has no free matches today'));
+  assert.equal(m.html.split('New in the Android app').length - 1, 1, 'Android box appears once');
+  assert.equal(m.text.split('New in the Android app').length - 1, 1);
+  assert.ok(m.html.indexOf('New in the Android app') < m.html.indexOf('See Pro plans'), 'news comes before the price');
+  assert.ok(m.html.includes('$9.90/month') && m.html.includes('59% less') && m.html.includes('https://x/unsub'));
+  assert.ok(m.html.includes('1 of 5'));
+  // with matches the box stays where it was, after the price
+  const withLegs = buildWinbackEmail(base({ step: 1 }));
+  assert.equal(withLegs.html.split('New in the Android app').length - 1, 1);
+  assert.ok(withLegs.html.indexOf('See Pro plans') < withLegs.html.indexOf('New in the Android app'));
+  // other steps never produce a broken subject either
+  assert.equal(winbackSubject(base({ step: 3, legs: [] })), 'Yearly Pro costs 59% less than paying monthly');
+  assert.equal(winbackSubject(base({ step: 5, legs: [] })), 'Last note from us, and how to come back');
 });

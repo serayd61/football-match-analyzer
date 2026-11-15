@@ -17,7 +17,8 @@
 //               için BAŞLAR; başlamış seri yaş sınırını geçse de tamamlanır.
 //   - öncelik : denemesi en yeni biten önce (günlük parti sınırına takılan
 //               eski hesaplar ertesi güne kalır).
-// Günün ücretsiz maçı yoksa (milli ara) o gün kimseye gönderilmez — route karar verir.
+// Günün ücretsiz maçı yoksa (milli ara) yalnız 1. adım, maçsız şablonla gider; sonraki
+// adımlar maç olan ilk günü bekler (2026-11-15) — route karar verir.
 //
 // Dedup: email_campaign_log (campaign_key,email) UNIQUE; adım başına ayrı anahtar
 // `winback-2026-11:s{n}`. Kişinin adımı = logdaki en yüksek adım + 1, son gönderim
@@ -97,4 +98,13 @@ export function selectWinbackRecipients(users: TrialUser[], history: Map<string,
     out.push({ email, name: u.name || null, step, daysSinceEnd: Math.floor(sinceEnd) });
   }
   return out.sort((a, b) => a.daysSinceEnd - b.daysSinceEnd);
+}
+
+/**
+ * Günün ücretsiz maçı olmayan gün kime gönderilir: yalnız 1. adım (maçsız şablon).
+ * 2.–5. adımdakiler bekler; adımları tüketilmez, maç olan ilk gün sıraları gelir.
+ */
+export function splitNoMatchDay(recipients: WinbackRecipient[]): { send: WinbackRecipient[]; waiting: number } {
+  const send = recipients.filter((r) => r.step === 1);
+  return { send, waiting: recipients.length - send.length };
 }
