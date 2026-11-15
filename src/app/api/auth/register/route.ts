@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { createCheckoutSession, PLANS } from '@/lib/stripe';
+import { appSignalOf } from '@/lib/site/app-ua';
+import { TWA_COOKIE } from '@/lib/site/twa';
 
 // Yanıt metinleri istemcinin diliyle (login sayfası data.error'ı doğrudan gösterir).
 const MSG = {
@@ -68,6 +70,18 @@ export async function POST(request: NextRequest) {
       trial_ends_at: trialEnds.toISOString(), // Upgrade reminder için
       analyses_today: 0,
     });
+
+    // Kayıt kaynağı (2026-11-15): uygulama mı web mi, hangi sürüm. Ayrı ve hataya dayanıklı
+    // yazım: sütunlar (migration 20261115010000) yokken de kayıt tamamlanır.
+    try {
+      const sig = appSignalOf(request.headers.get('user-agent'), request.cookies.get(TWA_COOKIE)?.value === '1');
+      const { error: srcErr } = await supabaseAdmin.from('profiles')
+        .update({ signup_source: sig.source, signup_app_version: sig.appVersion, ...(sig.source === 'app' ? { last_app_version: sig.appVersion, last_app_seen_at: new Date().toISOString() } : {}) })
+        .eq('email', email.toLowerCase());
+      if (srcErr) console.error('[register] signup source not stored (migration 20261115010000 applied?)', srcErr.message);
+    } catch (e) {
+      console.error('[register] signup source not stored', e);
+    }
 
     return NextResponse.json({
       success: true,

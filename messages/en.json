@@ -2385,5 +2385,33 @@
     "bannerLead": "Today's probabilities and kick-off reminders, on Google Play",
     "bannerCta": "Get app",
     "bannerClose": "Dismiss"
+  },
+  "appToday": {
+    "title": "Today",
+    "rated": "{n, plural, =1 {# match rated} other {# matches rated}}",
+    "record": "Last 7 days: {won} of {n} correct",
+    "recordNote": "Public record, misses included.",
+    "freeTitle": "{n, plural, =1 {One match with the model's numbers} other {# matches with the model's numbers}}",
+    "freeOpenAnon": "Full analysis with a free account",
+    "moreTitle": "{n, plural, =1 {# more match today} other {# more matches today}}",
+    "ratedTitle": "{n, plural, =1 {# match rated today} other {# matches rated today}}",
+    "andMore": "{n, plural, =1 {And # more match.} other {And # more matches.}}",
+    "locked": "Members",
+    "ctaTitleAnon": "See the numbers for every match",
+    "ctaLeadAnon": "Probabilities, confidence and risk for each match, free for 7 days. No card needed.",
+    "ctaAnon": "Open all matches, 7 days free",
+    "ctaTitleExpired": "Your free trial has ended",
+    "ctaLeadExpired": "Pro opens every match again. The free matches above stay open to you each day.",
+    "ctaLeadExpiredNoFree": "Pro opens every match again. On days with free matches, they open right here.",
+    "allPredictions": "All of today's predictions",
+    "emptyTitle": "No rated matches today",
+    "emptyNext": "The next rated matches are on {day}.",
+    "emptyLead": "The list fills again on the next match day.",
+    "emptyCta": "See upcoming matches",
+    "selOver25": "Over 2.5 goals",
+    "selBtts": "Both teams to score",
+    "selHome": "{home} win",
+    "selAway": "{away} win",
+    "selDraw": "Draw"
   }
 }

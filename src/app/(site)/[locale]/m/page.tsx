@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { unstable_setRequestLocale } from 'next-intl/server';
 import HomePage, { homeMetadata } from '@/components/site/pages/HomePage';
 import HomeMemberHero from '@/components/site/pages/HomeMemberHero';
+import AppTodayPage from '@/components/site/pages/AppTodayPage';
 import { MEMBER_REWRITE_HEADER } from '@/lib/site/member-routes';
 import { getSiteAccess, canSeeMatches } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
@@ -32,7 +33,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function Page({ params: { locale } }: { params: Params }) {
   unstable_setRequestLocale(locale);
   const [access, twa] = [await getSiteAccess(), isTwa()];
+  // Play uygulaması tanıtım sayfasıyla değil günün maçlarıyla açılır (2026-11-15,
+  // lib/site/app-today-rule.ts). Web'de bu rota öncekiyle aynı.
   const unlocked = canSeeMatches(access);
+  if (twa) return <AppTodayPage locale={locale} access={access} memberHero={unlocked ? await HomeMemberHero({ locale }) : null} />;
   const [memberHero, latest] = await Promise.all([
     // fonksiyon çağrısı, JSX değil: null dönerse HomePage örnek analiz kartına düşer
     unlocked ? HomeMemberHero({ locale }) : Promise.resolve(null),

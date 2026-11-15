@@ -2385,5 +2385,33 @@
     "bannerLead": "Probabilità di oggi e promemoria calcio d’inizio, su Google Play",
     "bannerCta": "Scarica",
     "bannerClose": "Chiudi"
+  },
+  "appToday": {
+    "title": "Oggi",
+    "rated": "{n, plural, =1 {# partita valutata} other {# partite valutate}}",
+    "record": "Ultimi 7 giorni: {won} su {n} corrette",
+    "recordNote": "Resoconto pubblico, errori compresi.",
+    "freeTitle": "{n, plural, =1 {Una partita con i numeri del modello} other {# partite con i numeri del modello}}",
+    "freeOpenAnon": "Analisi completa con un account gratuito",
+    "moreTitle": "{n, plural, =1 {# altra partita oggi} other {Altre # partite oggi}}",
+    "ratedTitle": "{n, plural, =1 {# partita valutata oggi} other {# partite valutate oggi}}",
+    "andMore": "{n, plural, =1 {E # altra partita.} other {E altre # partite.}}",
+    "locked": "Membri",
+    "ctaTitleAnon": "Vedi i numeri di ogni partita",
+    "ctaLeadAnon": "Probabilità, confidenza e rischio per ogni partita, gratis per 7 giorni. Nessuna carta richiesta.",
+    "ctaAnon": "Apri tutte le partite, 7 giorni gratis",
+    "ctaTitleExpired": "La tua prova gratuita è terminata",
+    "ctaLeadExpired": "Pro riapre ogni partita. Le partite gratuite qui sopra restano aperte per te ogni giorno.",
+    "ctaLeadExpiredNoFree": "Pro riapre ogni partita. Nei giorni con partite gratuite, si aprono proprio qui.",
+    "allPredictions": "Tutti i pronostici di oggi",
+    "emptyTitle": "Oggi nessuna partita valutata",
+    "emptyNext": "Le prossime partite valutate sono {day}.",
+    "emptyLead": "La lista si riempie di nuovo alla prossima giornata.",
+    "emptyCta": "Vedi le prossime partite",
+    "selOver25": "Più di 2,5 gol",
+    "selBtts": "Entrambe le squadre segnano",
+    "selHome": "Vittoria {home}",
+    "selAway": "Vittoria {away}",
+    "selDraw": "Pareggio"
   }
 }

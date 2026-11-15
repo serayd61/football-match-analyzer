@@ -67,6 +67,8 @@ with sig(version, name, applied) as (values
   ('20261104010000', 'engine_predictions_team_indexes',
      exists (select 1 from pg_indexes where schemaname='public' and indexname='idx_engine_pred_away_kickoff')),
   ('20261110010000', 'play_billing',
-     exists (select 1 from information_schema.columns where table_schema='public' and table_name='subscriptions' and column_name='play_purchase_token'))
+     exists (select 1 from information_schema.columns where table_schema='public' and table_name='subscriptions' and column_name='play_purchase_token')),
+  ('20261115010000', 'profiles_signup_source',
+     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='signup_source'))
 )
 select version, name, applied from sig order by version;
