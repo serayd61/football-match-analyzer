@@ -32,3 +32,37 @@ export async function freeFixtures(): Promise<FreeFixtures> {
 export async function isFreeFixture(fixtureId: number): Promise<boolean> {
   return (await freeFixtures()).open.includes(fixtureId);
 }
+
+/** Ücretsiz maçın yayınlanan seçimi (uygulamanın "Bugün" ekranındaki kart). */
+export interface FreeLeg { fixtureId: number; market: 'ou25' | 'btts' | '1x2'; selection: string; modelP: number }
+
+// Salt okur: site_daily_picks (o günün dondurulmuş seçimleri) ve site_showcase_picks.
+// Üretim yok; getDailyPicks/dailyLegs BURADAN çağrılmaz (bkz. free-today-rule.ts).
+const loadLegs = unstable_cache(
+  async (today: string, idsKey: string): Promise<FreeLeg[]> => {
+    const ids = idsKey.split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0);
+    if (!ids.length) return [];
+    const [daily, showcase] = await Promise.all([
+      dbFresh().from('site_daily_picks').select('fixture_id, market, selection, model_p').eq('pick_date', today).in('fixture_id', ids),
+      dbFresh().from('site_showcase_picks').select('fixture_id, market, selection, model_p').in('fixture_id', ids).not('market', 'is', null),
+    ]);
+    if (daily.error) throw new Error(daily.error.message);
+    if (showcase.error) throw new Error(showcase.error.message);
+    const out = new Map<number, FreeLeg>();
+    for (const r of [...((daily.data ?? []) as any[]), ...((showcase.data ?? []) as any[])]) {
+      const id = Number(r.fixture_id), p = Number(r.model_p), m = String(r.market);
+      if (out.has(id) || !Number.isFinite(p) || !(m === 'ou25' || m === 'btts' || m === '1x2')) continue;
+      out.set(id, { fixtureId: id, market: m, selection: String(r.selection ?? ''), modelP: p });
+    }
+    return [...out.values()];
+  },
+  ['site-free-today-legs-v1'],
+  { revalidate: 300 },
+);
+
+/** Bugünün ücretsiz maçlarının yayınlanan seçimleri. Bulunamayan maç listede yer almaz. */
+export async function freeLegsToday(): Promise<FreeLeg[]> {
+  const { today } = await freeFixtures();
+  if (!today.length) return [];
+  return loadLegs(todayYmd(), [...today].sort((a, b) => a - b).join(',')).catch(() => []);
+}

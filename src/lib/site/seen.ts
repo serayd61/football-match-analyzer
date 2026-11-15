@@ -8,10 +8,24 @@
 // 2026-11-02: fixtureId verilirse site_match_views'a kişi×maç satırı yazılır
 // (upsert, viewed_at güncellenir) — sabah raporu "dün baktığın maç" buradan okur.
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { cookies, headers } from 'next/headers';
+import { appSignalOf } from './app-ua';
+import { TWA_COOKIE } from './twa';
 
 const HOUR = 3600_000;
 let warned = false;
 let warnedViews = false;
+let warnedApp = false;
+
+/** İstek Play uygulamasından mı; sürüm kaç. İstek bağlamı yoksa (cron, test) null. */
+function appSignal(): { appVersion: string | null } | null {
+  try {
+    const sig = appSignalOf(headers().get('user-agent'), cookies().get(TWA_COOKIE)?.value === '1');
+    return sig.source === 'app' ? { appVersion: sig.appVersion } : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function touchSeen(email: string | null | undefined, opts: { matchView?: boolean; fixtureId?: number | null } = {}): Promise<void> {
   if (!email) return;
@@ -28,7 +42,14 @@ export async function touchSeen(email: string | null | undefined, opts: { matchV
     const viewWrite = fx
       ? db.from('site_match_views').upsert({ user_email: e, fixture_id: fx, viewed_at: nowIso }, { onConflict: 'user_email,fixture_id' })
       : null;
-    const [results, view] = await Promise.all([Promise.all(writes), viewWrite]);
+    // Uygulama izi (2026-11-15, migration 20261115010000): son görülen sürüm, saatte ≤1 yazım.
+    // Ayrı yazım: sütunlar yokken last_seen_at yazımı etkilenmez.
+    const app = appSignal();
+    const appWrite = app
+      ? db.from('profiles').update({ last_app_seen_at: nowIso, ...(app.appVersion ? { last_app_version: app.appVersion } : {}) }).ilike('email', e).or(`last_app_seen_at.is.null,last_app_seen_at.lt.${stale}`)
+      : null;
+    const [results, view, appRes] = await Promise.all([Promise.all(writes), viewWrite, appWrite]);
+    if (appRes?.error && !warnedApp) { warnedApp = true; console.error('[seen] app trace write failed (migration 20261115010000 applied?)', appRes.error.message); }
     const err = results.find((r) => r.error)?.error;
     if (err && !warned) { warned = true; console.error('[seen] write failed (migration 20261028010000 applied?)', err.message); }
     if (view?.error && !warnedViews) { warnedViews = true; console.error('[seen] match view write failed (migration 20261102010000 applied?)', view.error.message); }

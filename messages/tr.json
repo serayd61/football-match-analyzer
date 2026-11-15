@@ -2385,5 +2385,33 @@
     "bannerLead": "Günün olasılıkları ve maç hatırlatması, Google Play’de",
     "bannerCta": "Uygulamayı al",
     "bannerClose": "Kapat"
+  },
+  "appToday": {
+    "title": "Bugün",
+    "rated": "{n, plural, =1 {# maç değerlendirildi} other {# maç değerlendirildi}}",
+    "record": "Son 7 gün: {n} maçta {won} doğru",
+    "recordNote": "Herkese açık karne, tutmayanlar dahil.",
+    "freeTitle": "{n, plural, =1 {Modelin rakamlarıyla bir maç} other {Modelin rakamlarıyla # maç}}",
+    "freeOpenAnon": "Tam analiz ücretsiz hesapla",
+    "moreTitle": "{n, plural, =1 {Bugün # maç daha} other {Bugün # maç daha}}",
+    "ratedTitle": "{n, plural, =1 {Bugün # maç değerlendirildi} other {Bugün # maç değerlendirildi}}",
+    "andMore": "{n, plural, =1 {Ve # maç daha.} other {Ve # maç daha.}}",
+    "locked": "Üyelere",
+    "ctaTitleAnon": "Her maçın rakamlarını gör",
+    "ctaLeadAnon": "Her maç için olasılıklar, güven ve risk, 7 gün ücretsiz. Kart gerekmez.",
+    "ctaAnon": "Tüm maçları aç, 7 gün ücretsiz",
+    "ctaTitleExpired": "Ücretsiz denemen sona erdi",
+    "ctaLeadExpired": "Pro bütün maçları yeniden açar. Yukarıdaki ücretsiz maçlar her gün sana açık kalır.",
+    "ctaLeadExpiredNoFree": "Pro bütün maçları yeniden açar. Ücretsiz maç olan günlerde onlar tam burada açılır.",
+    "allPredictions": "Bugünün tüm tahminleri",
+    "emptyTitle": "Bugün değerlendirilen maç yok",
+    "emptyNext": "Sıradaki değerlendirilen maçlar {day} günü.",
+    "emptyLead": "Liste bir sonraki maç gününde yeniden dolar.",
+    "emptyCta": "Yaklaşan maçları gör",
+    "selOver25": "2,5 üst",
+    "selBtts": "İki takım da gol atar",
+    "selHome": "{home} kazanır",
+    "selAway": "{away} kazanır",
+    "selDraw": "Beraberlik"
   }
 }
