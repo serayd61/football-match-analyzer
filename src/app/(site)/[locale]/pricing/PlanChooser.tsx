@@ -9,7 +9,7 @@ import PlayPurchase, { type PlayLabels } from './PlayPurchase';
 type Labels = {
   title: string; lead: string;
   freeName: string; freeSub: string; freePrice: string; freeFor: string; free: string[]; freeNot: string; freeCta: string;
-  proName: string; proSub: string; mostPopular: string; perMonth: string; perYear: string; noteMonthly: string; noteYearly: string;
+  proName: string; proSub: string; mostPopular: string; perMonth: string; perYear: string; noteMonthly: string; noteYearly: string; regionalNote: string;
   billingMonthly: string; billingYearly: string; saveBadge: string; promoNote: string; promoShort: string;
   pro: string[]; proCta: string; proCtaSignedIn: string; loading: string; signInFirst: string; error: string;
   twaSignIn: string;
@@ -25,13 +25,15 @@ export type Billing = 'monthly' | 'yearly';
 // rendered (Play payments policy — see src/lib/site/twa.ts).
 // 2026-11-04: monthly / yearly toggle (yearly only when the server says the
 // Stripe price exists) and the year-end promo note on the monthly view.
-export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, accountId = null, price, yearlyPrice, yearlyEnabled = false, promo, labels: l }: {
+export default function PlanChooser({ locale, signedIn, isPro, purchasable = true, accountId = null, price, yearlyPrice, yearlyEnabled = false, regional = false, promo, labels: l }: {
   locale: string; signedIn: boolean; isPro: boolean; purchasable?: boolean;
   /** signed-in user id — Play Billing attribution (obfuscatedExternalAccountId) */
   accountId?: string | null;
   /** monthly Pro price, formatted */ price: string;
   /** yearly Pro price, formatted */ yearlyPrice?: string;
   yearlyEnabled?: boolean;
+  /** yearly price is the regional ($19 Africa) one — shows the regionalNote (lib/site/regional.ts) */
+  regional?: boolean;
   /** active promotion code for the monthly plan (null when the campaign is over) */
   promo?: string | null;
   labels: Labels;
@@ -118,6 +120,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
                 <span className="text-[14px] text-s-muted">/{yearly ? l.perYear : l.perMonth}</span>
               </p>
               <p className="mt-2 text-[14px] text-s-accent-700">{yearly ? l.noteYearly : l.noteMonthly}</p>
+              {yearly && regional && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.regionalNote}</p>}
               {/* Promo note on both views (2026-11-04): the page opens on Yearly, so a monthly-only note was invisible. */}
               {promo && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.promoNote}</p>}
             </div>

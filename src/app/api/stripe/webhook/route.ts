@@ -5,6 +5,7 @@ import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPaymentFailedEmail } from '@/lib/email';
 import Stripe from 'stripe';
+import { isRegionalCountry } from '@/lib/site/regional';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -175,6 +176,15 @@ export async function POST(request: NextRequest) {
 
         let userId = session.metadata?.userId || null;
         if (!userId) userId = await resolveUserId(customerId, email);
+
+        // Bölgesel $19 (2026-11-16): fatura adresi Afrika dışındaysa yalnız
+        // logla (VPN ile alınmış olabilir). İptal yok; sayı büyürse kural gelir.
+        if (session.metadata?.plan === 'PRO_YEARLY_PPP') {
+          const billingCountry = session.customer_details?.address?.country || null;
+          if (!isRegionalCountry(billingCountry)) {
+            console.warn('[stripe-webhook] ppp-country-mismatch', { session: session.id, ipCountry: session.metadata?.ipCountry || null, billingCountry, email });
+          }
+        }
 
         // Gerçek abonelik durumunu Stripe'tan oku. 2026-10-13'ten beri trial yok:
         // Checkout'ta ödeme hemen alınır, abonelik 'active' doğar. Sabit

@@ -1386,6 +1386,7 @@
       "billingYearly": "Annuale",
       "saveBadge": "Risparmi il {pct}%",
       "noteYearly": "{yearly} una volta all'anno · {perMonth}/mese · disdici quando vuoi",
+      "regionalNote": "Prezzo regionale per il tuo paese: {yearly}/anno invece di {standard}. Solo piano annuale; l'indirizzo di fatturazione deve essere nella stessa regione.",
       "promoNote": "Offerta di fine anno sul piano mensile: inserisci il codice {code} al pagamento per il {pct}% di sconto sui primi {months} mesi ({promoMonthly}/mese). Valida fino al 31/12/2026.",
       "promoShort": "Mensile: codice {code} = {pct}% per 3 mesi",
       "pro1": "Tutti i pronostici giornalieri sbloccati",
