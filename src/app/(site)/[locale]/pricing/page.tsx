@@ -9,7 +9,7 @@ import { alternatesFor } from '@/lib/site/seo';
 import { Page } from '@/components/site/ui';
 import { getSiteAccess } from '@/lib/site/access';
 import { PLAN_PRICES, PROMO, money, promoActive, promoMonthly, yearlyEnabled, yearlyPerMonth, yearlySavingPct } from '@/lib/site/plans';
-import { countryFromHeaders, yearlyAmountFor } from '@/lib/site/regional';
+import { countryFromHeaders, pricesFor } from '@/lib/site/regional';
 import { isTwa } from '@/lib/site/twa';
 import PlanChooser from './PlanChooser';
 
@@ -36,10 +36,11 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
   const purchasable = !isTwa();
   const accountId = purchasable ? null : (((await getServerSession(authOptions).catch(() => null))?.user as any)?.id as string | undefined) || null;
   const yearly = yearlyEnabled();
-  const promo = promoActive() ? PROMO.code : null;
-  // Bölgesel yıllık fiyat (2026-11-16, lib/site/regional.ts): Afrika IP'sine
-  // $49 yerine $19 gösterilir; checkout aynı başlıktan aynı kararı verir.
-  const { amount: yearlyAmount, regional } = yearlyAmountFor(countryFromHeaders(headers()));
+  // Bölgesel fiyat (2026-11-16, lib/site/regional.ts): Afrika IP'sine aylık
+  // $2,99 / yıllık $19 gösterilir; checkout aynı başlıktan aynı kararı verir.
+  // Bölgesel planlarda kupon alanı kapalı → PRO50 notu da gösterilmez.
+  const { monthly: monthlyAmount, yearly: yearlyAmount, regional } = pricesFor(countryFromHeaders(headers()));
+  const promo = promoActive() && !regional ? PROMO.code : null;
 
   return (
     <Page>
@@ -49,7 +50,7 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
         isPro={access.state === 'pro'}
         purchasable={purchasable}
         accountId={accountId}
-        price={money(PLAN_PRICES.monthly.amount)}
+        price={money(monthlyAmount)}
         yearlyPrice={money(yearlyAmount)}
         yearlyEnabled={yearly}
         regional={regional}
@@ -61,8 +62,8 @@ export default async function PricingPage({ params: { locale } }: { params: { lo
           proName: t('proName'), proSub: t('proSub'), mostPopular: t('mostPopular'), perMonth: t('perMonth'), perYear: t('perYear'),
           noteMonthly: t('noteMonthly'),
           noteYearly: t('noteYearly', { yearly: money(yearlyAmount), perMonth: money(yearlyPerMonth(yearlyAmount)) }),
-          regionalNote: t('regionalNote', { yearly: money(yearlyAmount), standard: money(PLAN_PRICES.yearly.amount) }),
-          billingMonthly: t('billingMonthly'), billingYearly: t('billingYearly'), saveBadge: t('saveBadge', { pct: yearlySavingPct(PLAN_PRICES.monthly.amount, yearlyAmount) }),
+          regionalNote: t('regionalNote', { monthly: money(monthlyAmount), yearly: money(yearlyAmount), stdMonthly: money(PLAN_PRICES.monthly.amount), stdYearly: money(PLAN_PRICES.yearly.amount) }),
+          billingMonthly: t('billingMonthly'), billingYearly: t('billingYearly'), saveBadge: t('saveBadge', { pct: yearlySavingPct(monthlyAmount, yearlyAmount) }),
           promoNote: t('promoNote', { code: PROMO.code, pct: PROMO.percentOff, months: PROMO.months, promoMonthly: money(promoMonthly()) }),
           promoShort: t('promoShort', { code: PROMO.code, pct: PROMO.percentOff }),
           pro: [t('pro1'), t('pro2'), t('pro3'), t('pro4'), t('pro5')],

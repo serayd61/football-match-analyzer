@@ -32,7 +32,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
   /** monthly Pro price, formatted */ price: string;
   /** yearly Pro price, formatted */ yearlyPrice?: string;
   yearlyEnabled?: boolean;
-  /** yearly price is the regional ($19 Africa) one — shows the regionalNote (lib/site/regional.ts) */
+  /** prices are the regional ones ($2.99 / $19 Africa) — shows the regionalNote on both views (lib/site/regional.ts) */
   regional?: boolean;
   /** active promotion code for the monthly plan (null when the campaign is over) */
   promo?: string | null;
@@ -120,7 +120,7 @@ export default function PlanChooser({ locale, signedIn, isPro, purchasable = tru
                 <span className="text-[14px] text-s-muted">/{yearly ? l.perYear : l.perMonth}</span>
               </p>
               <p className="mt-2 text-[14px] text-s-accent-700">{yearly ? l.noteYearly : l.noteMonthly}</p>
-              {yearly && regional && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.regionalNote}</p>}
+              {regional && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.regionalNote}</p>}
               {/* Promo note on both views (2026-11-04): the page opens on Yearly, so a monthly-only note was invisible. */}
               {promo && <p className="mt-2 rounded-[8px] border border-s-line bg-s-surface px-3 py-2 text-[13px]">{l.promoNote}</p>}
             </div>

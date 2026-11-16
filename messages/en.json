@@ -1386,7 +1386,7 @@
       "billingYearly": "Yearly",
       "saveBadge": "Save {pct}%",
       "noteYearly": "Billed {yearly} once a year · {perMonth}/month · cancel anytime",
-      "regionalNote": "Regional price for your country: {yearly}/year instead of {standard}. Yearly plan only; the billing address must be in the same region.",
+      "regionalNote": "Regional price for your country: {monthly}/month or {yearly}/year (standard {stdMonthly} and {stdYearly}). The billing address must be in the same region.",
       "promoNote": "Year-end offer on the monthly plan: enter code {code} at checkout for {pct}% off your first {months} months ({promoMonthly}/month). Valid until 31 Dec 2026.",
       "promoShort": "Monthly: code {code} = {pct}% off for 3 months",
       "pro1": "All daily predictions unlocked",
