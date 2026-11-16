@@ -36,7 +36,7 @@ Play RTDN (Pub/Sub push) → POST /api/play/rtdn?secret=…
    Console → Ayarlar → Geliştirici hesabı. Kimlik/vergi bilgisi ister.
 2. **Abonelik ürünleri** — Console → Para kazanma → Ürünler → Abonelikler:
    - `fa_pro_monthly`, base plan `monthly` (P1M), $9.90 (bölgesel fiyatları
-     Play türetir; istersen düzelt).
+     Play türetir; Afrika için aşağıdaki "Bölgesel fiyat" bölümü).
    - `fa_pro_yearly`, base plan `yearly` (P1Y), $49.
    Ürün adları mağaza metniyle aynı dilde, kumar çağrışımı YOK
    ("Pro subscription — statistics and analysis").
@@ -69,6 +69,34 @@ Play RTDN (Pub/Sub push) → POST /api/play/rtdn?secret=…
    (test kartı, ücret yok; yenileme hızlandırılmış). Uygulamada /pricing →
    fiyatlar Play'den yerelleşmiş gelir → satın al → dashboard Pro açılır.
    İptal/yenileme RTDN loglarından izlenir.
+
+## Bölgesel fiyat — Afrika (2026-11-16)
+
+Web'de Stripe, Afrika IP'sine aylık **$2,99** / yıllık **$19** sunar
+(`src/lib/site/regional.ts`, 54 ülke). Play'de fiyat ürünün base plan'ında
+ülke bazlıdır ve Play bunu alıcının **Play hesabı ülkesine** göre uygular
+(IP'ye değil); uygulama fiyatı daima Play'den okur, kod değişmez.
+
+İki yol:
+
+- **Betik (önerilen):** `npx tsx scripts/play-regional-prices.ts --sa <sa.json>`
+  önce dry run yapar (hangi bölgeye hangi yerel fiyat yazılacağını listeler),
+  `--apply` ile yazar. $2,99 ve $19'u Play'in `pricing:convertRegionPrices`
+  ucuyla yerel paraya çevirir, yalnız Afrika bölgelerinin `regionalConfigs`
+  girdisini değiştirir, diğer ülkelere dokunmaz. Play'in desteklemediği
+  Afrika ülkeleri atlanır ve raporlanır. `--migrate` mevcut aboneleri de
+  yeni (düşük) fiyata taşır.
+  Şart: service account'a Play Console'da ürün düzenleme izni
+  ("Mağaza varlığını yönetme" / store listing, pricing and distribution);
+  adım 3'teki "Siparişleri yönetme" tek başına yetmez.
+- **Konsol (elle):** Para kazanma → Ürünler → Abonelikler → ürün → base plan →
+  "Fiyatları ayarla" → bölge listesinden Afrika ülkelerini seç → fiyatı USD
+  gir (Play yerel paraya çevirir) → kaydet → ürünü etkinleştir. İki ürün
+  için ayrı ayrı. Pricing template ile bir kez tanımlayıp iki plana da
+  uygulamak mümkün.
+
+Fiyat değişikliği yalnız yeni abonelere uygulanır; mevcut aboneler için
+Play "fiyat düşüşü" bildirimi gerektirmez (`--migrate`).
 
 ## Politika notları
 
