@@ -1386,6 +1386,7 @@
       "billingYearly": "Jährlich",
       "saveBadge": "{pct}% sparen",
       "noteYearly": "{yearly} einmal im Jahr · {perMonth}/Monat · jederzeit kündbar",
+      "regionalNote": "Regionaler Preis für dein Land: {yearly}/Jahr statt {standard}. Nur im Jahresplan; die Rechnungsadresse muss in derselben Region liegen.",
       "promoNote": "Jahresend-Angebot im Monatsplan: Code {code} an der Kasse eingeben und {pct}% auf die ersten {months} Monate sparen ({promoMonthly}/Monat). Gültig bis 31.12.2026.",
       "promoShort": "Monatlich: Code {code} = {pct}% für 3 Monate",
       "pro1": "Alle täglichen Prognosen freigeschaltet",

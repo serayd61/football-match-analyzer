@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createCheckoutSession, PLANS, type PlanId } from '@/lib/stripe';
+import { countryFromHeaders, isRegionalCountry, regionalEnabled } from '@/lib/site/regional';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,12 @@ export async function POST(request: NextRequest) {
     } catch {
       /* gövdesiz istek = aylık */
     }
-    const planId: PlanId = requested === 'PRO_YEARLY' ? 'PRO_YEARLY' : 'PRO';
+    // Bölgesel fiyat (2026-11-16): yıllık istek Afrika IP'sinden geliyorsa
+    // $19 price'ı seçilir. İstemcinin gönderdiği 'PRO_YEARLY_PPP' dikkate
+    // alınmaz; ülke yalnız sunucuda, Vercel başlığından okunur.
+    const ipCountry = countryFromHeaders(request.headers);
+    const regional = requested === 'PRO_YEARLY' && regionalEnabled() && isRegionalCountry(ipCountry);
+    const planId: PlanId = regional ? 'PRO_YEARLY_PPP' : requested === 'PRO_YEARLY' ? 'PRO_YEARLY' : 'PRO';
     const plan = PLANS[planId];
     if (!plan.stripePriceId) {
       console.error(`[create-checkout] price id missing for ${planId} (env not set)`);
@@ -39,6 +45,7 @@ export async function POST(request: NextRequest) {
       cancelUrl: `${baseUrl}/pricing?payment=cancelled`,
       trialDays: plan.trialDays,
       allowPromotionCodes: plan.allowPromotionCodes,
+      metadata: { plan: planId, ...(ipCountry ? { ipCountry } : {}) },
     });
 
     return NextResponse.json({ success: true, url: checkoutSession.url, plan: planId });

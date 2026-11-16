@@ -41,6 +41,20 @@ export const PLANS = {
     // $49 → $24.50 olurdu.
     allowPromotionCodes: false,
   },
+  // Bölgesel yıllık $19 (Afrika, 2026-11-16; lib/site/regional.ts). İstemci bu
+  // planı isteyemez: create-checkout route IP ülkesinden türetir. Env yoksa
+  // route standart yıllığa döner (bölgesel fiyat sessizce kapalı kalır).
+  PRO_YEARLY_PPP: {
+    name: 'Pro Plan (yearly, regional)',
+    price: 19,
+    currency: 'USD',
+    interval: 'year' as const,
+    features: [] as string[],
+    trialDays: 0,
+    stripePriceId: process.env.STRIPE_PRICE_ID_YEARLY_PPP || '',
+    // Kupon kapalı: PRO50 $19'u $9,50'ye düşürürdü.
+    allowPromotionCodes: false,
+  },
 };
 export type PlanId = keyof typeof PLANS;
 
@@ -52,12 +66,16 @@ export async function createCheckoutSession({
   cancelUrl,
   trialDays,
   allowPromotionCodes = true,
+  metadata = {},
 }: {
   userId: string;
   userEmail: string;
   priceId: string;
   successUrl: string;
   cancelUrl: string;
+  /** Session metadata'sına eklenir (plan adı, IP ülkesi): süresi dolan
+   *  checkout'ların nereden geldiği Dashboard'dan okunabilsin (2026-11-16). */
+  metadata?: Record<string, string>;
   // Stripe tarafı trial günü; varsayılan 0 (hiçbir planda trial yok).
   trialDays?: number;
   allowPromotionCodes?: boolean;
@@ -86,7 +104,7 @@ export async function createCheckoutSession({
   mode: 'subscription',
   success_url: successUrl,
   cancel_url: cancelUrl,
-  metadata: { userId },
+  metadata: { userId, ...metadata },
   billing_address_collection: 'required',
   allow_promotion_codes: allowPromotionCodes,
   // 3DS: 'any' (her kartta zorla) gerçek müşterileri de düşürüyordu —

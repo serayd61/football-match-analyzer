@@ -1386,6 +1386,7 @@
       "billingYearly": "Yıllık",
       "saveBadge": "%{pct} tasarruf",
       "noteYearly": "Yılda bir kez {yearly} · ayda {perMonth} · istediğin zaman iptal",
+      "regionalNote": "Ülkene özel fiyat: yıllık {standard} yerine {yearly}. Yalnız yıllık planda; fatura adresi aynı bölgede olmalı.",
       "promoNote": "Aylık planda yıl sonu teklifi: ödemede {code} kodunu gir, ilk {months} ay %{pct} indirim (ayda {promoMonthly}). 31 Aralık 2026'ya kadar geçerli.",
       "promoShort": "Aylıkta {code} kodu = 3 ay %{pct} indirim",
       "pro1": "Tüm günlük tahminler açık",
