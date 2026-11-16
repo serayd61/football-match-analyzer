@@ -1,22 +1,27 @@
 // Bölgesel (satın alma gücü paritesi) fiyat — 2026-11-16.
-// Afrika'dan gelen ziyaretçiye yıllık Pro $49 yerine $19 sunulur. Neden:
+// Afrika'dan gelen ziyaretçiye Pro yıllık $49 yerine $19, aylık $9,90 yerine
+// $2,99 sunulur (aylık 2026-11-16 akşamı eklendi; önce yalnız yıllıktı). Neden:
 // 13 Eki–16 Kas arası 30 checkout'tan 29'u ödenmeden kapandı; kitle
 // (Nijerya, Mali, Bahreyn…) için $49 asgari ücretin üstünde. Tek ödeyen
 // (11 Kas, Nijerya) o kitleden geldi. $19 kayıp değil, sıfırdan gelir.
 //
 // Kurallar
-// - Yalnız YILLIK plan bölgesel; aylık $9,90 her yerde aynı (yıllık ödeme
-//   teşvik edilir, chargeback maruziyeti tek sefer kalır).
+// - İki plan da bölgesel; yıllık/aylık oranı standartla aynı düzende
+//   (19 / 35,88 → %47 tasarruf) ki yıllık hâlâ teşvik edilsin.
 // - Ülke, Vercel'in her isteğe eklediği `x-vercel-ip-country` başlığından
 //   okunur; istemci plan adıyla PPP isteyemez (route sunucuda türetir).
-// - Bölgesel fiyatta kupon alanı kapalı (PRO50 ile $9,50'ye düşmesin).
+// - Bölgesel fiyatta kupon alanı kapalı (PRO50 ile $9,50 / $1,50'ye düşmesin);
+//   fiyat sayfası bölgesel ziyaretçiye PRO50 notunu da göstermez.
 // - Checkout tamamlanınca fatura adresi bölge dışındaysa webhook yalnız
 //   log'a yazar (VPN izleme); iptal etmez.
 // Fiyat listesi plans.ts'deki PLAN_PRICES ile aynı düzende; Stripe tarafı
-// scripts/stripe-setup-ppp.mjs (lookup_key pro_yearly_19_ppp).
+// scripts/stripe-setup-ppp.mjs (lookup pro_yearly_19_ppp, pro_monthly_299_ppp).
 import { PLAN_PRICES, yearlyEnabled } from './plans';
 
 export const REGIONAL_YEARLY = { amount: 19, currency: 'USD', interval: 'year' as const, key: 'PRO_YEARLY_PPP' as const };
+export const REGIONAL_MONTHLY = { amount: 2.99, currency: 'USD', interval: 'month' as const, key: 'PRO_PPP' as const };
+/** Checkout metadata.plan değerleri — webhook bölge/fatura adresi karşılaştırmasını bunlarda yapar. */
+export const REGIONAL_PLAN_IDS: ReadonlySet<string> = new Set([REGIONAL_YEARLY.key, REGIONAL_MONTHLY.key]);
 
 /** Afrika — 54 BM üyesi (ISO 3166-1 alpha-2). Genişletme kararı lig/ülke
  *  verisiyle bir ay sonra (Pakistan, Bangladeş, Nepal, Venezuela adayları). */
@@ -38,11 +43,28 @@ export function countryFromHeaders(headers: { get(name: string): string | null }
   return /^[A-Z]{2}$/.test(code) ? code : null;
 }
 
-/** Server-only: bölgesel fiyat, Stripe price id'si ve yıllık plan varsa sunulur. */
-export const regionalEnabled = () => yearlyEnabled() && Boolean(process.env.STRIPE_PRICE_ID_YEARLY_PPP);
+/** Server-only: bölgesel yıllık, Stripe price id'si ve standart yıllık plan varsa sunulur. */
+export const regionalYearlyEnabled = () => yearlyEnabled() && Boolean(process.env.STRIPE_PRICE_ID_YEARLY_PPP);
+/** Server-only: bölgesel aylık, Stripe price id'si varsa sunulur. */
+export const regionalMonthlyEnabled = () => Boolean(process.env.STRIPE_PRICE_ID_MONTHLY_PPP);
+/** @deprecated yıllık için regionalYearlyEnabled; eski çağrılar için tutuldu. */
+export const regionalEnabled = regionalYearlyEnabled;
 
 /** Bu ülkeye yıllık hangi fiyat gösterilir: bölgesel 19 ya da standart 49. */
-export function yearlyAmountFor(country: string | null | undefined, enabled = regionalEnabled()): { amount: number; regional: boolean } {
+export function yearlyAmountFor(country: string | null | undefined, enabled = regionalYearlyEnabled()): { amount: number; regional: boolean } {
   if (enabled && isRegionalCountry(country)) return { amount: REGIONAL_YEARLY.amount, regional: true };
   return { amount: PLAN_PRICES.yearly.amount, regional: false };
+}
+
+/** Bu ülkeye aylık hangi fiyat gösterilir: bölgesel 2,99 ya da standart 9,90. */
+export function monthlyAmountFor(country: string | null | undefined, enabled = regionalMonthlyEnabled()): { amount: number; regional: boolean } {
+  if (enabled && isRegionalCountry(country)) return { amount: REGIONAL_MONTHLY.amount, regional: true };
+  return { amount: PLAN_PRICES.monthly.amount, regional: false };
+}
+
+/** Fiyat sayfası için ikisi birden; `regional` en az biri bölgeselse true. */
+export function pricesFor(country: string | null | undefined, enabled = { monthly: regionalMonthlyEnabled(), yearly: regionalYearlyEnabled() }) {
+  const m = monthlyAmountFor(country, enabled.monthly);
+  const y = yearlyAmountFor(country, enabled.yearly);
+  return { monthly: m.amount, yearly: y.amount, regional: m.regional || y.regional };
 }

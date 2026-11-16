@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // ============================================================================
-// Stripe kurulumu — bölgesel yıllık fiyat $19 (Afrika, 2026-11-16)
+// Stripe kurulumu — bölgesel fiyatlar: yıllık $19 + aylık $2,99 (Afrika, 2026-11-16)
 // Kullanım (repo kökünde, .env.local STRIPE_SECRET_KEY ile ya da env olarak):
 //   node scripts/stripe-setup-ppp.mjs            # oluşturur (idempotent)
 //   node scripts/stripe-setup-ppp.mjs --dry      # yalnız mevcut durumu yazar
-// Yaptığı: price $19/yıl USD, ürün prod_TXFx9DYEur3yFE, lookup_key pro_yearly_19_ppp
-// Sonra: Vercel'e STRIPE_PRICE_ID_YEARLY_PPP=<price id> (Production+Preview) ekle + redeploy.
+// Yaptığı (varsa atlar): $19/yıl (lookup pro_yearly_19_ppp) ve $2,99/ay (lookup pro_monthly_299_ppp),
+// ürün prod_TXFx9DYEur3yFE. Sonra Vercel'e STRIPE_PRICE_ID_YEARLY_PPP ve
+// STRIPE_PRICE_ID_MONTHLY_PPP (Production+Preview) ekle + redeploy.
 // Ülke listesi ve seçim kuralı: src/lib/site/regional.ts
 // ============================================================================
 import fs from 'node:fs';
@@ -19,8 +20,10 @@ if (!KEY) { console.error('STRIPE_SECRET_KEY yok (.env.local)'); process.exit(1)
 const DRY = process.argv.includes('--dry');
 
 const PRODUCT = 'prod_TXFx9DYEur3yFE'; // Football Analytics Pro
-const LOOKUP = 'pro_yearly_19_ppp';
-const CENTS = 1900;
+const PRICES = [
+  { lookup: 'pro_yearly_19_ppp', cents: 1900, interval: 'year', nickname: 'Pro Yearly $19 regional/Africa (2026-11-16)', plan: 'PRO_YEARLY_PPP', env: 'STRIPE_PRICE_ID_YEARLY_PPP' },
+  { lookup: 'pro_monthly_299_ppp', cents: 299, interval: 'month', nickname: 'Pro Monthly $2.99 regional/Africa (2026-11-16)', plan: 'PRO_PPP', env: 'STRIPE_PRICE_ID_MONTHLY_PPP' },
+];
 
 async function api(path, params) {
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
@@ -34,14 +37,18 @@ async function api(path, params) {
 }
 
 console.log(`Stripe ${KEY.startsWith('sk_live_') ? 'LIVE' : 'test'}${DRY ? ' (dry run)' : ''}`);
-let price = (await api(`prices?lookup_keys[]=${LOOKUP}&active=true`)).data?.[0];
-if (price) console.log(`price : var  ${price.id} ${price.unit_amount / 100} ${price.currency}/${price.recurring?.interval}`);
-else if (DRY) console.log('price : YOK (oluşturulacak)');
-else {
-  price = await api('prices', {
-    product: PRODUCT, currency: 'usd', unit_amount: String(CENTS), 'recurring[interval]': 'year',
-    nickname: 'Pro Yearly $19 regional/Africa (2026-11-16)', lookup_key: LOOKUP, 'metadata[plan]': 'PRO_YEARLY_PPP', 'metadata[region]': 'africa',
-  });
-  console.log(`price : OLUŞTU ${price.id}`);
+const out = [];
+for (const p of PRICES) {
+  let price = (await api(`prices?lookup_keys[]=${p.lookup}&active=true`)).data?.[0];
+  if (price) console.log(`${p.lookup}: var  ${price.id} ${price.unit_amount / 100} ${price.currency}/${price.recurring?.interval}`);
+  else if (DRY) { console.log(`${p.lookup}: YOK (oluşturulacak)`); continue; }
+  else {
+    price = await api('prices', {
+      product: PRODUCT, currency: 'usd', unit_amount: String(p.cents), [`recurring[interval]`]: p.interval,
+      nickname: p.nickname, lookup_key: p.lookup, 'metadata[plan]': p.plan, 'metadata[region]': 'africa',
+    });
+    console.log(`${p.lookup}: OLUŞTU ${price.id}`);
+  }
+  out.push(`${p.env}=${price.id}`);
 }
-console.log(`\nVercel: STRIPE_PRICE_ID_YEARLY_PPP=${price.id}`);
+console.log('\nVercel:\n' + out.join('\n'));

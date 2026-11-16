@@ -41,9 +41,20 @@ export const PLANS = {
     // $49 → $24.50 olurdu.
     allowPromotionCodes: false,
   },
-  // Bölgesel yıllık $19 (Afrika, 2026-11-16; lib/site/regional.ts). İstemci bu
-  // planı isteyemez: create-checkout route IP ülkesinden türetir. Env yoksa
-  // route standart yıllığa döner (bölgesel fiyat sessizce kapalı kalır).
+  // Bölgesel fiyatlar (Afrika, 2026-11-16; lib/site/regional.ts): yıllık $19,
+  // aylık $2,99. İstemci bu planları isteyemez: create-checkout route IP
+  // ülkesinden türetir. Env yoksa route standart plana döner.
+  PRO_PPP: {
+    name: 'Pro Plan (monthly, regional)',
+    price: 2.99,
+    currency: 'USD',
+    interval: 'month' as const,
+    features: [] as string[],
+    trialDays: 0,
+    stripePriceId: process.env.STRIPE_PRICE_ID_MONTHLY_PPP || '',
+    // Kupon kapalı: PRO50 $2,99'u $1,50'ye düşürürdü.
+    allowPromotionCodes: false,
+  },
   PRO_YEARLY_PPP: {
     name: 'Pro Plan (yearly, regional)',
     price: 19,
