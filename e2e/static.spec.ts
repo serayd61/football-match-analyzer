@@ -75,11 +75,20 @@ test.describe('@static erişim kuralları', () => {
   });
 
   test('eski herkese açık yollar yerelleştirilmiş siteye 301 gider', async ({ request }) => {
-    for (const [path, to] of [['/live', '/en/matches'], ['/match/1', '/en/predictions/1'], ['/analysis/arsenal-vs-chelsea-123', '/en/matches/arsenal-vs-chelsea-123'], ['/leaderboard', '/en/performance']]) {
+    for (const [path, to] of [['/live', '/en/matches'], ['/analysis', '/en/matches'], ['/match/1', '/en/predictions/1'], ['/leaderboard', '/en/performance']]) {
       const res = await request.get(path, { maxRedirects: 0 });
       expect(res.status(), path).toBe(301);
       expect(res.headers()['location'] || '', path).toMatch(new RegExp(to.replace(/\//g, '\\/') + '$'));
     }
+  });
+
+  // PR #221 (2026-11-09): /analysis/{slug} middleware'de değil, route.ts'te çözülür — maçın herkese açık
+  // sayfası varsa tek hop 301, yoksa 410 Gone (301→404 zinciri SC'de 60 URL biriktiriyordu). @static modda
+  // veritabanı erişilemez, 123 nolu maçın sayfası yok → 410; yönlendirme zinciri olmamalı.
+  test('eski /analysis/{slug} sayfası olmayan maçta 410 döner', async ({ request }) => {
+    const res = await request.get('/analysis/arsenal-vs-chelsea-123', { maxRedirects: 0 });
+    expect(res.status()).toBe(410);
+    expect(res.headers()['location']).toBeUndefined();
   });
 
   test('korumalı API uçları anonim çağrıya kapalı', async ({ request }) => {
