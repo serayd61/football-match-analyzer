@@ -51,6 +51,7 @@ curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_
 ## Elle gönderiler
 
 - Kanıt kartı: `/api/cron/social?kind=proof` (`&dry=1` ile önizleme). Günde bir kez; `social_posts.key = proof|<gün>|instagram|<dil>`.
+- Boş gün yedeği (2026-11-15): 07:00 günlük gönderide bacak yoksa **ve** güçlü pazar da yoksa (milli ara vb.) kanıt kartı otomatik gider. Etiketler: sabit 10 + günün trendlerinden futbolla ilgili olanlar (X trendleri + Google Trends günlük RSS, `SOCIAL_TREND_GEOS` varsayılan `GB,DE,TR`) + günün programındaki turnuvalar/takımlar (≤30). Teşhis: `?trends=1` → `football`, `proofTags`.
 - Herhangi bir görseli PNG olarak görmek: `/api/cron/social?kind=daily|weekly|proof&image=1&lang=en`.
 
 ## Bilinen sınırlar

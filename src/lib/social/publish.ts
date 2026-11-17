@@ -17,7 +17,7 @@ import { showcaseRecord } from '@/lib/site/showcase';
 import { settleShowcase, type ShowcaseMarket, type ShowcaseSelection } from '@/lib/site/showcase-rule';
 import { leagueBySlug } from '@/lib/site/leagues';
 import { latestPhase } from '@/lib/site/odds-phases';
-import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg, instagramDailyCaption, instagramWeeklyCaption, instagramStrongCaption, instagramComboCaption, instagramComboResult, type ComboLeg, SITE } from './content';
+import { dailyText, hashtags, inviteText, pickLegs, resultText, telegramLink, weeklyText, type Lang, type Leg, type WeeklyStats, strongText, strongBoardText, type StrongLeg, instagramDailyCaption, instagramWeeklyCaption, instagramStrongCaption, instagramComboCaption, instagramComboResult, type ComboLeg, SITE, dayTrendTags, type NameRow } from './content';
 import { dailyImage, weeklyImage } from './image';
 import { postTweet, twitterCreds, uploadMedia } from './twitter';
 import { loadCoverage } from '@/lib/coverage/registry';
@@ -26,6 +26,7 @@ import { listDayRows } from '@/lib/site/fixtures';
 import { hasTelegram, sendMessage, sendPhoto } from './telegram';
 import { hasInstagram, publishImage as igPublish, comment as igComment } from './instagram';
 import { fetchTrends } from './twitter';
+import { fetchGoogleTrends } from './trends';
 
 const TABLE = 'social_posts';
 const LANGS: Lang[] = ['tr', 'en'];
@@ -108,7 +109,10 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
   const tg = targets();
   if (!legs.length) {
     for (const t of tg) await record({ key: `daily|${day}|${t.platform}|${t.account}`, kind: 'daily', day, platform: t.platform, account: t.account, fixtureIds: [], body: '', status: 'skipped', error: 'bacak yok' });
-    return { ok: true, day, legs: 0, note: 'kurala uyan bacak yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry };
+    // Boş gün (milli ara vb.): Instagram sessiz kalmasın → kanıt kartı, günün trend etiketleriyle.
+    // 07:10'daki güçlü pazarlar gönderisi varsa o gün boş sayılmaz, kart atılmaz.
+    const proof = await emptyDayProof(day, tg, !!opts.dry).catch((e: any) => ({ ok: false, error: String(e?.message || e).slice(0, 200) }));
+    return { ok: true, day, legs: 0, note: 'kurala uyan bacak yok, gönderi atılmadı', targets: tg.length, dry: !!opts.dry, proof };
   }
   const have = await posted(tg.map((t) => `daily|${day}|${t.platform}|${t.account}`));
   const trends = await dayTrends(tg);
@@ -214,7 +218,30 @@ export async function dayTrends(tg: Target[] = targets()): Promise<string[]> {
   const tw = tg.find((t) => t.platform === 'twitter');
   const creds = tw ? twitterCreds(`TWITTER_${tw.account.toUpperCase()}`) : null;
   const bearer = (process.env.TWITTER_BEARER_TOKEN || '').trim() || null;
-  return creds || bearer ? fetchTrends(creds, bearer) : [];
+  // X ucu boş dönebiliyor (402 kredi, 2026-11) → Google Trends günlük RSS de eklenir; ikisi de best-effort.
+  const [x, g] = await Promise.all([creds || bearer ? fetchTrends(creds, bearer) : Promise.resolve([] as string[]), fetchGoogleTrends()]);
+  const out = [...x]; for (const t of g) if (!out.some((o) => o.toLowerCase() === t.toLowerCase())) out.push(t);
+  return out;
+}
+
+/** Günün programı (takım/lig adları) — trend süzgeci ve turnuva etiketleri için. */
+async function dayNameRows(day: string): Promise<NameRow[]> {
+  const rows = await listDayRows(day).catch(() => []);
+  return rows.map((r) => ({ homeName: r.homeName, awayName: r.awayName, leagueName: r.leagueName, leagueSlug: r.league?.slug ?? null }));
+}
+
+/** Kanıt kartı için günün ekstra etiketleri: futbol trendleri + programdaki turnuvalar/takımlar. */
+export async function proofTrendTags(day: string, tg: Target[] = targets()): Promise<{ tags: string[]; trends: number; rows: number }> {
+  const [trends, rows] = await Promise.all([dayTrends(tg), dayNameRows(day)]);
+  return { tags: dayTrendTags({ trends, rows }), trends: trends.length, rows: rows.length };
+}
+
+/** Boş gün yedeği (publishDaily'den): Instagram tanımlıysa ve güçlü pazar da yoksa kanıt kartı. */
+async function emptyDayProof(day: string, tg: Target[], dry: boolean) {
+  if (!tg.some((t) => t.platform === 'instagram')) return { ok: true, status: 'skipped', note: 'instagram tanımlı değil' };
+  const strong = await strongLegs(day).catch(() => []);
+  if (strong.length) return { ok: true, status: 'skipped', note: `güçlü pazar var (${strong.length}), kart 07:10 gönderisine bırakıldı` };
+  return publishProof({ day, dry });
 }
 
 /** Sonuç yanıtı penceresi (gün): geç başlayan maçlar ertesi gün sonuçlanır; settlement gecikirse
@@ -290,22 +317,25 @@ export function socialStatus() {
 }
 
 /** Kanıt kartı (Instagram; elle: /api/cron/social?kind=proof). Günde bir kez; dry=1 metni döner. */
-export async function publishProof(opts: { dry?: boolean; day?: string; lang?: Lang } = {}) {
+export async function publishProof(opts: { dry?: boolean; day?: string; lang?: Lang; extraTags?: string[] } = {}) {
   const day = opts.day ?? todayYmd();
   const lang = opts.lang ?? instagramLang();
   const t = targets().find((x) => x.platform === 'instagram');
   const key = `proof|${day}|instagram|${lang}`;
+  if ((await posted([key])).has(key)) return { ok: true, key, status: 'already' };
   const j: any = await fetch(`${SITE}/api/v2/proof`, { cache: 'no-store' }).then((r) => r.json()).catch(() => null);
   if (!j?.ok) return { ok: false, error: 'proof yok' };
   const { instagramTags } = await import('./content');
+  // Günün trend etiketleri (kullanıcı 2026-11-15: etiketler çok önemli) — verilmediyse burada toplanır.
+  const extra = opts.extraTags ?? (await proofTrendTags(day).catch(() => ({ tags: [] as string[] }))).tags;
+  const tags = (l: Lang) => instagramTags(l, extra);
   const r = j.record, y = j.yesterday;
   const f = (v: number) => (lang === 'tr' ? v.toFixed(1).replace('.', ',') : v.toFixed(1)) + '%';
   const text = lang === 'tr'
-    ? `Model ne kadar isabetli? Ölçülmüş çifte şans karnesi:\n\nTüm maçlar: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nSon 30 gün: ${f(r.doubleChance30d.accuracy)}\nYüksek güven (≥%80): ${f(r.doubleChanceHigh.accuracy)}\n\nDün: ${y.correct}/${y.total}. Seçim kuralı sonuçtan önce sabit, kaybedenler de listede.\n\nTam karne ve ücretsiz analiz → profildeki link\n\n${instagramTags('tr')}`
-    : `How accurate is the model? Measured double-chance record:\n\nAll matches: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nLast 30 days: ${f(r.doubleChance30d.accuracy)}\nHigh confidence (≥80%): ${f(r.doubleChanceHigh.accuracy)}\n\nYesterday: ${y.correct}/${y.total}. Selection rule fixed before results; losses listed too.\n\nFull record and free analysis → link in bio\n\n${instagramTags('en')}`;
+    ? `Model ne kadar isabetli? Ölçülmüş çifte şans karnesi:\n\nTüm maçlar: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nSon 30 gün: ${f(r.doubleChance30d.accuracy)}\nYüksek güven (≥%80): ${f(r.doubleChanceHigh.accuracy)}\n\nDün: ${y.correct}/${y.total}. Seçim kuralı sonuçtan önce sabit, kaybedenler de listede.\n\nTam karne ve ücretsiz analiz → profildeki link\n\n${tags('tr')}`
+    : `How accurate is the model? Measured double-chance record:\n\nAll matches: ${f(r.doubleChance.accuracy)} (${r.doubleChance.correct}/${r.doubleChance.total})\nLast 30 days: ${f(r.doubleChance30d.accuracy)}\nHigh confidence (≥80%): ${f(r.doubleChanceHigh.accuracy)}\n\nYesterday: ${y.correct}/${y.total}. Selection rule fixed before results; losses listed too.\n\nFull record and free analysis → link in bio\n\n${tags('en')}`;
   if (!t) return { ok: false, error: 'instagram tanımlı değil', text };
-  if ((await posted([key])).has(key)) return { ok: true, key, status: 'already' };
-  if (opts.dry) return { ok: true, key, status: 'dry', text, imageUrl: socialImageUrl('proof', day, lang) };
+  if (opts.dry) return { ok: true, key, status: 'dry', text, tags: extra, imageUrl: socialImageUrl('proof', day, lang) };
   const res = await send(t, text, null, null, socialImageUrl('proof', day, lang));
   await record({ key, kind: 'proof', day, platform: 'instagram', account: lang, fixtureIds: [], postId: res.ok ? res.id : null, body: text, status: res.ok ? 'posted' : 'failed', error: res.ok ? null : res.error });
   return { ok: res.ok, key, status: res.ok ? 'posted' : 'failed', id: res.ok ? res.id : undefined, error: res.ok ? undefined : res.error };

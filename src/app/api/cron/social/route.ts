@@ -11,11 +11,12 @@
 //   ?kind=proof&image=1  kanıt kartı (Instagram); ?instagram=1 → kartı Instagram'a gönderir
 //   &day=YYYY-MM-DD gün seçimi (varsayılan bugün)
 //   ?status=1      hangi hesaplar tanımlı
-//   ?trends=1      günün X trendleri + bacaklarla eşleşen etiketler (teşhis)
+//   ?trends=1      günün trendleri (X + Google RSS) + futbol süzgeci + kanıt kartı etiketleri (teşhis)
+//   kind=daily bacak yoksa ve güçlü pazar da yoksa → Instagram'a kanıt kartı (günün trend etiketleriyle)
 // ============================================================================
 import { NextRequest, NextResponse } from 'next/server';
-import { publishDaily, publishResults, publishWeekly, publishStrong, publishProof, socialStatus, dailyLegs, strongLegs, dayTrends } from '@/lib/social/publish';
-import { hashtags, matchTrends } from '@/lib/social/content';
+import { publishDaily, publishResults, publishWeekly, publishStrong, publishProof, socialStatus, dailyLegs, strongLegs, dayTrends, proofTrendTags } from '@/lib/social/publish';
+import { hashtags, matchTrends, isFootballTrend } from '@/lib/social/content';
 import { dailyImage, weeklyImage, proofImage, strongImage, comboImage } from '@/lib/social/image';
 import { SITE } from '@/lib/social/content';
 import { sendEngagementPack } from '@/lib/social/engage';
@@ -36,9 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(st);
   }
   if (q.get('trends') === '1') {
-    const legs = await dailyLegs(q.get('day') || todayYmd());
-    const trends = await dayTrends();
-    return NextResponse.json({ trends: trends.length, sample: trends.slice(0, 30), matched: matchTrends(legs, trends), tags: hashtags(legs, trends) });
+    const d = q.get('day') || todayYmd();
+    const [legs, trends, proof] = await Promise.all([dailyLegs(d), dayTrends(), proofTrendTags(d)]);
+    return NextResponse.json({ trends: trends.length, sample: trends.slice(0, 40), football: trends.filter((t) => isFootballTrend(t)), matched: matchTrends(legs, trends), tags: hashtags(legs, trends), proofTags: proof.tags, dayRows: proof.rows });
   }
   const kind = q.get('kind') || 'daily';
   const dry = q.get('dry') === '1';
