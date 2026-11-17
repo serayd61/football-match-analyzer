@@ -8,7 +8,9 @@ import { buildPlayLaunchEmail } from '@/lib/email-play-launch';
 import { buildWinbackEmail, type WinbackEmailInput } from '@/lib/email-winback';
 
 // Fiyat metinleri tek kaynaktan (lib/site/plans.ts); e-postalarda sabit yazma.
-const MONTHLY_PRICE = `$${PLAN_PRICES.monthly.amount.toFixed(2)}`;
+const DEFAULT_MONTHLY_PRICE = `$${PLAN_PRICES.monthly.amount.toFixed(2)}`;
+/** Bölgesel fiyat alan üyeye kendi aylık fiyatı (lib/site/member-country.memberOffer); verilmezse standart. */
+const monthlyLabel = (amount?: number | null) => (typeof amount === 'number' ? `$${amount.toFixed(2)}` : DEFAULT_MONTHLY_PRICE);
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Use a verified domain sender in production; falls back to Resend's shared
@@ -191,10 +193,11 @@ Unsubscribe / Abmelden / Abonelikten çık: ${unsubscribeUrl}`;
  */
 export async function sendWelcomeEmail(
   to: string,
-  opts: { ctaUrl: string; pricingUrl: string; unsubscribeUrl: string; name?: string | null; playUrl?: string; trialDays?: number }
+  opts: { ctaUrl: string; pricingUrl: string; unsubscribeUrl: string; name?: string | null; playUrl?: string; trialDays?: number; monthlyPrice?: number | null }
 ): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
+  const MONTHLY_PRICE = monthlyLabel(opts.monthlyPrice);
   const { ctaUrl, pricingUrl, unsubscribeUrl } = opts;
   const days = opts.trialDays ?? 7;
   const hi = opts.name ? `${opts.name}, ` : '';
@@ -269,10 +272,11 @@ Unsubscribe: ${unsubscribeUrl}`;
  */
 export async function sendReengagementEmail(
   to: string,
-  opts: { ctaUrl: string; unsubscribeUrl: string; trackUrl: string; name?: string | null }
+  opts: { ctaUrl: string; unsubscribeUrl: string; trackUrl: string; name?: string | null; monthlyPrice?: number | null }
 ): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
+  const MONTHLY_PRICE = monthlyLabel(opts.monthlyPrice);
   const { ctaUrl, unsubscribeUrl, trackUrl } = opts;
   const hi = opts.name ? ` ${opts.name}` : '';
 
@@ -376,10 +380,12 @@ export async function sendUnfinishedSignupEmail(
     dashboardUrl: string;
     unsubscribeUrl: string;
     name?: string | null;
+    monthlyPrice?: number | null;
   }
 ): Promise<void> {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
   const resend = new Resend(RESEND_API_KEY);
+  const MONTHLY_PRICE = monthlyLabel(opts.monthlyPrice);
   const { pricingUrl, dashboardUrl, unsubscribeUrl } = opts;
   const hi = opts.name ? ` ${opts.name}` : '';
 

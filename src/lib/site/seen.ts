@@ -11,11 +11,18 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { cookies, headers } from 'next/headers';
 import { appSignalOf } from './app-ua';
 import { TWA_COOKIE } from './twa';
+import { countryFromHeaders } from './regional';
 
 const HOUR = 3600_000;
 let warned = false;
 let warnedViews = false;
 let warnedApp = false;
+let warnedCountry = false;
+
+/** İsteğin IP ülkesi (Vercel başlığı). İstek bağlamı yoksa (cron, test) null. */
+function requestCountry(): string | null {
+  try { return countryFromHeaders(headers()); } catch { return null; }
+}
 
 /** İstek Play uygulamasından mı; sürüm kaç. İstek bağlamı yoksa (cron, test) null. */
 function appSignal(): { appVersion: string | null } | null {
@@ -48,7 +55,14 @@ export async function touchSeen(email: string | null | undefined, opts: { matchV
     const appWrite = app
       ? db.from('profiles').update({ last_app_seen_at: nowIso, ...(app.appVersion ? { last_app_version: app.appVersion } : {}) }).ilike('email', e).or(`last_app_seen_at.is.null,last_app_seen_at.lt.${stale}`)
       : null;
-    const [results, view, appRes] = await Promise.all([Promise.all(writes), viewWrite, appWrite]);
+    // Ülke izi (2026-11-17, migration 20261117010000): yalnız boşken ya da değiştiğinde yazılır.
+    // E-posta cron'ları bölgesel fiyatı buradan seçer (member-country.ts). Ayrı yazım.
+    const cc = requestCountry();
+    const countryWrite = cc
+      ? db.from('profiles').update({ last_country: cc }).ilike('email', e).or(`last_country.is.null,last_country.neq.${cc}`)
+      : null;
+    const [results, view, appRes, ccRes] = await Promise.all([Promise.all(writes), viewWrite, appWrite, countryWrite]);
+    if (ccRes?.error && !warnedCountry) { warnedCountry = true; console.error('[seen] country write failed (migration 20261117010000 applied?)', ccRes.error.message); }
     if (appRes?.error && !warnedApp) { warnedApp = true; console.error('[seen] app trace write failed (migration 20261115010000 applied?)', appRes.error.message); }
     const err = results.find((r) => r.error)?.error;
     if (err && !warned) { warned = true; console.error('[seen] write failed (migration 20261028010000 applied?)', err.message); }

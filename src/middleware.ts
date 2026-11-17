@@ -6,6 +6,7 @@ import { routing } from '@/i18n/routing';
 import { isTwaRequest, TWA_COOKIE, TWA_COOKIE_MAX_AGE } from '@/lib/site/twa';
 import { doubleLocaleTarget, legacyLocale, legacyRedirectTarget } from '@/lib/site/legacy-paths';
 import { MEMBER_REWRITE_HEADER, memberRewritePath } from '@/lib/site/member-routes';
+import { REGION_COOKIE, REGION_COOKIE_MAX_AGE, countryFromHeaders, regionFlags } from '@/lib/site/regional';
 
 // NOTE: This file MUST live in `src/` (not repo root) because the project uses
 // a `src/` directory — Next.js only picks up `src/middleware.ts` in that case.
@@ -33,6 +34,19 @@ function isLegacyMemberPath(path: string): boolean {
 const MEMBER_API_PREFIXES = ['/api/livescores'];
 function isMemberApiPath(path: string): boolean {
   return MEMBER_API_PREFIXES.some((p) => path === p || path.startsWith(p + '/'));
+}
+
+// Bölgesel fiyat çerezi (2026-11-17, lib/site/regional.ts): ziyaretçinin ülkesi
+// bölgesel fiyat alıyorsa `fa_ppp` bayrağı yazılır, almıyorsa silinir. Yalnız
+// değer değiştiğinde Set-Cookie basılır; bölge dışı ziyaretçinin yanıtına hiç
+// dokunulmaz (çerezi yoktur, bayrak ''). HttpOnly değil: boot script okur.
+function withRegionCookie<T extends NextResponse>(req: { headers: { get(name: string): string | null }; cookies: { get(name: string): { value: string } | undefined } }, res: T): T {
+  const flags = regionFlags(countryFromHeaders(req.headers));
+  const current = req.cookies.get(REGION_COOKIE)?.value ?? '';
+  if (flags === current) return res;
+  if (flags) res.cookies.set(REGION_COOKIE, flags, { maxAge: REGION_COOKIE_MAX_AGE, path: '/', sameSite: 'lax', secure: true });
+  else res.cookies.delete(REGION_COOKIE);
+  return res;
 }
 
 // Machine-to-machine callers (cron / QStash) authenticate with a shared secret
@@ -100,7 +114,7 @@ export default withAuth(
       // yazılan /m/ adresinde basar. Bkz. m/matches/[slug]/page.tsx.
       const headers = new Headers(req.headers);
       headers.set(MEMBER_REWRITE_HEADER, '1');
-      return NextResponse.rewrite(url, { request: { headers } });
+      return withRegionCookie(req, NextResponse.rewrite(url, { request: { headers } }));
     }
 
     // Public site: locale detection + prefixing (/ → /en, /predictions → /de/predictions …).
@@ -110,7 +124,7 @@ export default withAuth(
     if (isTwaRequest(req)) {
       res.cookies.set(TWA_COOKIE, '1', { maxAge: TWA_COOKIE_MAX_AGE, path: '/', sameSite: 'lax', secure: true });
     }
-    return res;
+    return withRegionCookie(req, res);
   },
   {
     callbacks: {

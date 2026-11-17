@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { createCheckoutSession, PLANS } from '@/lib/stripe';
 import { appSignalOf } from '@/lib/site/app-ua';
 import { TWA_COOKIE } from '@/lib/site/twa';
+import { countryFromHeaders } from '@/lib/site/regional';
 
 // Yanıt metinleri istemcinin diliyle (login sayfası data.error'ı doğrudan gösterir).
 const MSG = {
@@ -81,6 +82,18 @@ export async function POST(request: NextRequest) {
       if (srcErr) console.error('[register] signup source not stored (migration 20261115010000 applied?)', srcErr.message);
     } catch (e) {
       console.error('[register] signup source not stored', e);
+    }
+
+    // Kayıt ülkesi (2026-11-17): bölgesel fiyatlı e-postalar ve bölge listesi kararı için.
+    // Ayrı yazım: sütunlar (migration 20261117010000) yokken yukarıdaki kaynak yazımı etkilenmez.
+    try {
+      const country = countryFromHeaders(request.headers);
+      if (country) {
+        const { error: ccErr } = await supabaseAdmin.from('profiles').update({ signup_country: country, last_country: country }).eq('email', email.toLowerCase());
+        if (ccErr) console.error('[register] country not stored (migration 20261117010000 applied?)', ccErr.message);
+      }
+    } catch (e) {
+      console.error('[register] country not stored', e);
     }
 
     return NextResponse.json({

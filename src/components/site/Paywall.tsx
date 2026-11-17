@@ -15,6 +15,8 @@ import { Link } from '@/i18n/navigation';
 import { signInHref, type SiteAccess } from '@/lib/site/access';
 import { isTwa } from '@/lib/site/twa';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { REGIONAL_MONTHLY } from '@/lib/site/regional';
+import Regional from '@/components/site/Regional';
 import { PRICING_HREF, REGISTER_HREF, SIGNIN_HREF } from '@/lib/site/auth-links';
 import AppPlansLink from '@/components/site/AppPlansLink';
 import { RiskNote } from './Risk';
@@ -91,7 +93,7 @@ export async function LockedPick({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
       {/* In the app the label carries no price: Play shows its own localized one on /pricing. */}
       {isTwa()
         ? <AppPlansLink plans={t('unlock')} update={t('appUpdateCta')} className={cls} location="locked_pick_app" />
-        : <Link href={PRICING_HREF} className={cls}>{size === 'lg' ? t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) }) : t('unlock')}</Link>}
+        : <Link href={PRICING_HREF} className={cls}>{size === 'lg' ? <Regional std={t('unlockLong', { price: money(PLAN_PRICES.monthly.amount) })} reg={t('unlockLong', { price: money(REGIONAL_MONTHLY.amount) })} /> : t('unlock')}</Link>}
     </span>
   );
 }

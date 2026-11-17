@@ -31,6 +31,7 @@ import { useSession } from 'next-auth/react';
 import { track } from '@/lib/analytics';
 import { PLAY_STORE_URL } from '@/lib/site/app-links';
 import { useAppMode, type AppMode } from '@/lib/site/app-mode';
+import Regional from '@/components/site/Regional';
 
 const CLOSED = 'fa_upgrade_banner_closed';
 export const ACCESS_CACHE_KEY = 'fa_site_access';
@@ -87,6 +88,8 @@ export type UpgradeBannerLabels = {
   /** web, yıllık plan açık: "Save 59% …" */ titleYearly: string;
   /** web, yıllık plan kapalı: eski aylık başlık */ titleMonthly: string;
   /** Play uygulaması: kesin yüzde yok */ titleApp: string;
+  /** bölgesel fiyat alan ziyaretçi (fa_ppp): aynı başlıklar bölgesel rakamlarla */
+  titleYearlyRegional: string; titleMonthlyRegional: string; kickerRegional: string;
   lead: string; cta: string;
   kickerUpdate: string; titleUpdate: string; ctaUpdate: string;
   close: string;
@@ -113,6 +116,7 @@ export default function UpgradeBanner({ labels: l, pricingHref, yearlyOnWeb }: {
   const close = () => { try { sessionStorage.setItem(CLOSED, '1'); } catch { /* ignore */ } setClosed(true); };
 
   const update = kind === 'update';
+  const web = !update && mode === 'web';
   const location = update ? 'upgrade_banner_update' : mode === 'web' ? 'upgrade_banner' : 'upgrade_banner_app';
   const kicker = update ? l.kickerUpdate : state === 'expired' ? l.kickerExpired : l.kickerTrial;
   const title = update ? l.titleUpdate : mode === 'web' ? (yearlyOnWeb ? l.titleYearly : l.titleMonthly) : l.titleApp;
@@ -121,8 +125,11 @@ export default function UpgradeBanner({ labels: l, pricingHref, yearlyOnWeb }: {
     <div role="region" aria-label={title} className="border-b border-s-line bg-s-brand text-s-brand-ink" data-testid="upgrade-banner" data-kind={kind}>
       <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-4 py-2.5 sm:px-6">
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{kicker}</p>
-          <p className="text-[14px] font-semibold">{title}</p>
+          {/* Web'de bölgesel ziyaretçi kendi rakamını görür (2026-11-17); uygulamada fiyatı Play yerelleştirir. */}
+          <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{web ? <Regional std={kicker} reg={l.kickerRegional} /> : kicker}</p>
+          <p className="text-[14px] font-semibold">
+            {web ? <Regional plan={yearlyOnWeb ? 'yearly' : 'monthly'} std={title} reg={yearlyOnWeb ? l.titleYearlyRegional : l.titleMonthlyRegional} /> : title}
+          </p>
           {!update && <p className="hidden text-[12.5px] opacity-80 sm:block">{l.lead}</p>}
         </div>
         <a

@@ -347,3 +347,12 @@ html { scroll-behavior: smooth; }
   .site .slipbar { left: 12px; right: 12px; width: auto; bottom: calc(58px + env(safe-area-inset-bottom) + 8px); }
   .site .slipbtn { height: 44px; border-radius: 12px; }
 }
+
+/* Bölgesel fiyat (2026-11-17, lib/site/regional.ts + components/site/Regional.tsx):
+   fiyat yazan yer iki metni birden basar; middleware'in yazdığı fa_ppp çerezini
+   boot script .site[data-ppp] özniteliğine taşır, burası doğru metni açar. */
+.site .ppp-reg { display: none; }
+.site[data-ppp*='m'] .ppp-m > .ppp-std,
+.site[data-ppp*='y'] .ppp-y > .ppp-std { display: none; }
+.site[data-ppp*='m'] .ppp-m > .ppp-reg,
+.site[data-ppp*='y'] .ppp-y > .ppp-reg { display: inline; }

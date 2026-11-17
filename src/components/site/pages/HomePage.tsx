@@ -11,6 +11,8 @@ import type { SitePrediction } from '@/lib/site/predictions';
 import { getPerformance } from '@/lib/site/performance';
 import { SITE_LEAGUES } from '@/lib/site/leagues';
 import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { REGIONAL_MONTHLY } from '@/lib/site/regional';
+import Regional from '@/components/site/Regional';
 import { Page } from '@/components/site/ui';
 import SampleAnalysis, { sampleHref } from '@/components/site/SampleAnalysis';
 import { getSampleAnalysis } from '@/lib/site/sample-analysis';
@@ -390,7 +392,7 @@ export default async function HomePage({ locale, access, twa, memberHero = null,
             </div>
             <div className="card card-accent">
               <h3 className="text-[18px]">{t('pricePro')}</h3>
-              <p className="num text-[34px] font-bold leading-none">{money(PLAN_PRICES.monthly.amount)}<span className="text-[15px] font-medium text-s-muted">/{t('perMonth')}</span></p>
+              <p className="num text-[34px] font-bold leading-none"><Regional std={money(PLAN_PRICES.monthly.amount)} reg={money(REGIONAL_MONTHLY.amount)} /><span className="text-[15px] font-medium text-s-muted">/{t('perMonth')}</span></p>
               <p className="text-[15px]">{t('priceProSub')}</p>
               <p className="text-[14px] text-s-muted">{t('priceCancel')}</p>
               <Link href={PRICING_HREF} className="btn btn-primary mt-auto self-start" data-cta="home-price-compare">{t('priceLink')}</Link>

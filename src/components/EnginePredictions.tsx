@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { useRegionalPrices } from '@/lib/site/use-region';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Clock, ShieldCheck, Target, BarChart3,
@@ -159,6 +161,9 @@ const STR = {
     uncShow: (n: number) => `${n} Vorhersagen anzeigen`, uncHide: 'Ausblenden' },
 };
 
+/** Sözlükteki standart aylık fiyat; bölgesel ziyaretçide (fa_ppp) kendi fiyatıyla değişir. */
+const STD_MONTHLY = money(PLAN_PRICES.monthly.amount);
+
 export default function EnginePredictions({
   lang = 'tr',
   groupByLeague = false,
@@ -177,6 +182,7 @@ export default function EnginePredictions({
   // sayfasına bırakılır (dashboard sayfalarca uzuyordu, istek 2026-08-29).
   compact?: boolean;
 }) {
+  const { monthly } = useRegionalPrices();
   const t = (STR as any)[lang] || STR.en;
   const [preds, setPreds] = useState<Prediction[]>([]);
   // Modeli fit EDİLMEMİŞ liglerin tahminleri — ayrı tutulur, ayrı etiketlenir.
@@ -336,7 +342,7 @@ export default function EnginePredictions({
             {isAuth ? <Lock size={24} /> : <Crown size={24} />}
           </div>
           <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
-          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
+          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc.replace(STD_MONTHLY, money(monthly))}</p>
 
           {/* Gerçek kanıt şeridi (dc_backtest_results, public) */}
           {!isAuth && proof && (
