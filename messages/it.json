@@ -2390,7 +2390,7 @@
   "appToday": {
     "title": "Oggi",
     "rated": "{n, plural, =1 {# partita valutata} other {# partite valutate}}",
-    "record": "Ultimi 7 giorni: {won} su {n} corrette",
+    "record": "Ultimi {days} giorni: {won} su {n} corrette",
     "recordNote": "Resoconto pubblico, errori compresi.",
     "freeTitle": "{n, plural, =1 {Una partita con i numeri del modello} other {# partite con i numeri del modello}}",
     "freeOpenAnon": "Analisi completa con un account gratuito",

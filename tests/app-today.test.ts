@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { planAppToday, legLabelKey, APP_TODAY_LOCKED_ROWS } from '../src/lib/site/app-today-rule';
+import { planAppToday, legLabelKey, APP_TODAY_LOCKED_ROWS, recordEnough, APP_TODAY_RECORD_WINDOWS } from '../src/lib/site/app-today-rule';
 import { parseAppUa, appSignalOf, appSellsPro } from '../src/lib/site/app-ua';
 
 // Uygulamanın "Bugün" açılış ekranı + kayıt kaynağı ölçümü (2026-11-15).
@@ -95,4 +95,17 @@ test('the app opens on the today screen; the web member home is unchanged', () =
   const src = readFileSync('src/app/(site)/[locale]/m/page.tsx', 'utf8');
   assert.ok(src.includes('if (twa) return <AppTodayPage locale={locale} access={access} memberHero={unlocked ? await HomeMemberHero({ locale }) : null} />;'));
   assert.ok(src.indexOf('if (twa) return <AppTodayPage') < src.indexOf('<HomePage '));
+});
+
+test('public record line: 7 days first, 30 days when the week is thin, hidden when both are thin', () => {
+  assert.deepEqual([...APP_TODAY_RECORD_WINDOWS], [7, 30]);
+  assert.equal(recordEnough({ n: 10 }), true);
+  assert.equal(recordEnough({ n: 9 }), false); // 15 Nov 2026, international break
+  assert.equal(recordEnough(null), false);
+  const page = readFileSync('src/components/site/pages/AppTodayPage.tsx', 'utf8');
+  assert.ok(page.includes('recordEnough(recordShort) ? recordShort : await showcaseRecord(APP_TODAY_RECORD_WINDOWS[1])'));
+  for (const loc of ['en', 'de', 'it', 'tr']) {
+    const rec = JSON.parse(readFileSync(`messages/${loc}.json`, 'utf8')).appToday.record as string;
+    assert.ok(rec.includes('{days}') && !/\b7\b/.test(rec), `${loc}: record line must take the window from {days}`);
+  }
 });

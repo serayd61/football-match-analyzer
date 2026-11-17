@@ -2390,7 +2390,7 @@
   "appToday": {
     "title": "Today",
     "rated": "{n, plural, =1 {# match rated} other {# matches rated}}",
-    "record": "Last 7 days: {won} of {n} correct",
+    "record": "Last {days} days: {won} of {n} correct",
     "recordNote": "Public record, misses included.",
     "freeTitle": "{n, plural, =1 {One match with the model's numbers} other {# matches with the model's numbers}}",
     "freeOpenAnon": "Full analysis with a free account",
