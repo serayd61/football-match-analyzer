@@ -48,6 +48,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci --ignore-scripts
+      # ubuntu-latest = Ubuntu 26.04; Playwright >= 1.61 gerekir (1.56 ile "does not support chromium on ubuntu26.04").
       - run: npx playwright install --with-deps chromium
       # Yalnız @static testler (secret yok, sahte DB adresi). @data için: npm run e2e:prod
       - run: npm run e2e
