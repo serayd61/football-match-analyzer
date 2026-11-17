@@ -16,6 +16,8 @@ export const CHECKOUT_RECOVERY_KEY = 'checkout-recovery';
 
 export interface RecoverySession {
   email: string | null;
+  /** checkout metadata.ipCountry (2026-11-16+); bölgesel fiyatlı kurtarma maili için. */
+  country?: string | null;
   status: 'open' | 'complete' | 'expired' | string;
   paymentStatus: 'paid' | 'unpaid' | 'no_payment_required' | string;
   /** unix seconds */

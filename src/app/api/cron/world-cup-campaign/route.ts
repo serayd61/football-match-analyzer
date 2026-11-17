@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { sendWorldCupCampaignEmail, sendReengagementEmail, sendWelcomeEmail, SITE_URL, sendUnfinishedSignupEmail, sendTelegramIntroEmail, sendPlayLaunchEmail } from '@/lib/email';
+import { loadMemberCountries, memberOffer } from '@/lib/site/member-country';
 import { WORLD_CUP_CAMPAIGN_KEY, WORLD_CUP_RELAUNCH_KEY, REENGAGE_CAMPAIGN_KEY, WELCOME_CAMPAIGN_KEY, unsubscribeUrl, UNFINISHED_SIGNUP_CAMPAIGN_KEY, PLAY_LAUNCH_CAMPAIGN_KEY, TELEGRAM_INTRO_CAMPAIGN_KEY, TELEGRAM_URL, PLAY_STORE_URL } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 
@@ -100,6 +101,9 @@ export async function GET(request: NextRequest) {
   const pricingUrl = `${SITE_URL}/pricing`;
 
   const supabase = getSupabase();
+  // Bölgesel fiyat (2026-11-17): üyenin ülkesi profiles'tan; Afrika'daki üyeye kendi fiyatı yazılır, kupon satırı çıkmaz.
+  const countries = await loadMemberCountries(supabase);
+  const monthlyOf = (email: string) => memberOffer(countries, email).monthly;
 
   const sendEmail = (email: string, name: string | null) =>
     isTelegram
@@ -107,11 +111,11 @@ export async function GET(request: NextRequest) {
       : isPlayLaunch
       ? sendPlayLaunchEmail(email, { unsubscribeUrl: unsubscribeUrl(email), name })
       : isUnfinished
-      ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name })
+      ? sendUnfinishedSignupEmail(email, { pricingUrl, dashboardUrl, unsubscribeUrl: unsubscribeUrl(email), name, monthlyPrice: monthlyOf(email) })
       : isWelcome
-        ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name, playUrl: PLAY_STORE_URL })
+        ? sendWelcomeEmail(email, { ctaUrl: dashboardUrl, pricingUrl, unsubscribeUrl: unsubscribeUrl(email), name, playUrl: PLAY_STORE_URL, monthlyPrice: monthlyOf(email) })
         : isReengage
-          ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name })
+          ? sendReengagementEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), trackUrl, name, monthlyPrice: monthlyOf(email) })
           : sendWorldCupCampaignEmail(email, { ctaUrl: CTA_URL, unsubscribeUrl: unsubscribeUrl(email), name });
 
   // 1.5) PROBE: seçili tipteki maili yalnızca canary/admin adresine gönder (test).

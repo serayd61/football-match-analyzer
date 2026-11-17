@@ -18,7 +18,9 @@ import SiteFooter from '@/components/site/SiteFooter';
 import MobileTabBar from '@/components/site/MobileTabBar';
 import Onboarding from '@/components/site/Onboarding';
 import UpgradeBanner from '@/components/site/UpgradeBanner';
-import { yearlyEnabled, yearlySavingPct } from '@/lib/site/plans';
+import { PLAN_PRICES, money, yearlyEnabled, yearlySavingPct } from '@/lib/site/plans';
+import { REGIONAL_MONTHLY, REGIONAL_YEARLY } from '@/lib/site/regional';
+import RegionalStrip from '@/components/site/RegionalStrip';
 import { SlipProvider } from '@/components/site/slip/SlipProvider';
 import SlipBar from '@/components/site/slip/SlipBar';
 
@@ -35,8 +37,10 @@ const manrope = Manrope({
   display: 'swap',
 });
 
-// Runs before paint inside the wrapper: applies the saved theme.
-const bootScript = `(function(){try{var s=document.currentScript,w=s&&s.parentElement;if(!w)return;var t=localStorage.getItem('site-theme');if(t==='light'||t==='dark'){w.setAttribute('data-theme',t)}}catch(e){}})();`;
+// Runs before paint inside the wrapper: applies the saved theme and the
+// regional-price flag (fa_ppp cookie → data-ppp, see lib/site/regional.ts).
+// Two try blocks: blocked localStorage must not stop the price flag.
+const bootScript = `(function(){var s=document.currentScript,w=s&&s.parentElement;if(!w)return;try{var m=document.cookie.match(/(?:^|; )fa_ppp=(my|m|y)(?:;|$)/);if(m){w.setAttribute('data-ppp',m[1])}}catch(e){}try{var t=localStorage.getItem('site-theme');if(t==='light'||t==='dark'){w.setAttribute('data-theme',t)}}catch(e){}})();`;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -103,7 +107,8 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body className={manrope.variable} style={{ ['--font-site-head' as string]: 'var(--font-site-body)' }}>
-        <div className="site flex min-h-screen flex-col">
+        {/* suppressHydrationWarning: boot script bu öğeye data-theme / data-ppp ekler (yalnız bu öğenin öznitelikleri) */}
+        <div className="site flex min-h-screen flex-col" suppressHydrationWarning>
           <script dangerouslySetInnerHTML={{ __html: bootScript }} />
           <AuthProvider>
             <NextIntlClientProvider messages={messages} timeZone={timeZone}>
@@ -116,10 +121,22 @@ export default async function LocaleLayout({
                   yearlyOnWeb={yearlyEnabled()}
                   labels={{
                     kickerTrial: tp('offerKicker'), kickerExpired: tp('bannerKicker'),
-                    titleYearly: tp('offerTitleYearly', { pct: yearlySavingPct() }), titleMonthly: tp('bannerTitle'), titleApp: tp('offerTitleApp'),
+                    titleYearly: tp('offerTitleYearly', { pct: yearlySavingPct() }), titleMonthly: tp('bannerTitle', { price: money(PLAN_PRICES.monthly.amount) }), titleApp: tp('offerTitleApp'),
+                    // Bölgesel ziyaretçi (fa_ppp): aynı cümleler bölgesel rakamlarla; seçim CSS'te (Regional.tsx).
+                    titleYearlyRegional: tp('offerTitleYearly', { pct: yearlySavingPct(REGIONAL_MONTHLY.amount, REGIONAL_YEARLY.amount) }),
+                    titleMonthlyRegional: tp('bannerTitle', { price: money(REGIONAL_MONTHLY.amount) }),
+                    kickerRegional: tp('regionalKicker'),
                     lead: tp('bannerLead'), cta: tp('bannerCta'),
                     kickerUpdate: tp('updateKicker'), titleUpdate: tp('updateTitle'), ctaUpdate: tp('appUpdateCta'),
                     close: tp('bannerClose'),
+                  }}
+                />
+                <RegionalStrip
+                  pricingHref={`/${locale}/pricing`}
+                  labels={{
+                    kicker: tp('regionalKicker'),
+                    title: tp('regionalStrip', { monthly: money(REGIONAL_MONTHLY.amount), stdMonthly: money(PLAN_PRICES.monthly.amount) }),
+                    cta: tp('bannerCta'), close: tp('bannerClose'),
                   }}
                 />
                 <main id="main" className="flex-1">{children}</main>

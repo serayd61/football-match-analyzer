@@ -10,6 +10,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { PLAN_PRICES, money } from '@/lib/site/plans';
+import { useRegionalPrices } from '@/lib/site/use-region';
 import { motion } from 'framer-motion';
 import { displayLeague } from '@/lib/league-names';
 import {
@@ -108,6 +110,9 @@ function TeamLogo({ src, name }: { src?: string | null; name: string }) {
   return <img src={src} alt={name} onError={() => setOk(false)} className="w-9 h-9 object-contain" loading="lazy" />;
 }
 
+/** Sözlükteki standart aylık fiyat; bölgesel ziyaretçide (fa_ppp) kendi fiyatıyla değişir. */
+const STD_MONTHLY = money(PLAN_PRICES.monthly.amount);
+
 export default function MatchIntelligence({
   lang = 'tr',
   matchId,
@@ -121,6 +126,7 @@ export default function MatchIntelligence({
   // kalmasın). Erişim kapısı (auth/abonelik) yine gösterilir — dönüşüm yüzeyi.
   hideWhenEmpty?: boolean;
 }) {
+  const { monthly } = useRegionalPrices();
   // Önizleme dili — dışarıdan gelen lang varsayılan, kullanıcı değiştirebilir.
   const [viewLang, setViewLang] = useState<Lang>((['tr', 'en', 'de'].includes(lang) ? lang : 'en') as Lang);
   // Global dil değişince önizleme dili de takip etsin (eskiden mount'taki
@@ -183,7 +189,7 @@ export default function MatchIntelligence({
             {isAuth ? <Lock size={24} /> : <Crown size={24} />}
           </div>
           <h3 className="text-lg font-bold text-white mb-1">{isAuth ? t.gateAuthTitle : t.gateSubTitle}</h3>
-          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc}</p>
+          <p className="text-sm text-white/50 mb-5 max-w-md mx-auto">{isAuth ? t.gateAuthDesc : t.gateSubDesc.replace(STD_MONTHLY, money(monthly))}</p>
           <Link href={isAuth ? '/login' : '/pricing'}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-500 to-sky-500 hover:opacity-90 transition-opacity">
             {isAuth ? t.gateAuthCta : t.gateSubCta}

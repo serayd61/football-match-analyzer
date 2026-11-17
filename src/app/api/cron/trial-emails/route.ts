@@ -19,7 +19,8 @@ import { selectTrialRecipients, TRIAL_CAMPAIGN_KEYS, TRIAL_KINDS, type TrialKind
 import { showcaseRecord } from '@/lib/site/showcase';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard } from '@/lib/site/strong-markets';
-import { PLAN_PRICES, PROMO, promoActive, yearlyEnabled } from '@/lib/site/plans';
+import { PROMO, promoActive } from '@/lib/site/plans';
+import { loadMemberCountries, memberOffer } from '@/lib/site/member-country';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -74,13 +75,17 @@ export async function GET(req: NextRequest) {
   const rec = await showcaseRecord(7).catch(() => null);
   const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
   const strong = kind === 'strong' ? await loadCoverage().then((c) => strongBoard(c, 2)).catch(() => null) : null;
-  const common = { stats, strong, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, dashboardUrl: `${SITE_URL}/dashboard`, playUrl: PLAY_STORE_URL, fullPrice: PLAN_PRICES.monthly.amount, yearlyPrice: yearlyEnabled() ? PLAN_PRICES.yearly.amount : null, promoCode: promoActive() ? PROMO.code : null };
+  const common = { stats, strong, predictionsUrl: `${SITE_URL}/predictions`, pricingUrl: `${SITE_URL}/pricing`, dashboardUrl: `${SITE_URL}/dashboard`, playUrl: PLAY_STORE_URL, };
+  // Bölgesel fiyat (2026-11-17): üyenin ülkesi profiles'tan; Afrika'daki üyeye kendi fiyatı yazılır, kupon satırı çıkmaz.
+  const countries = await loadMemberCountries(sb);
+  const offerOf = (email: string) => { const o = memberOffer(countries, email); return { fullPrice: o.monthly, yearlyPrice: o.yearly, promoCode: o.promo && promoActive() ? PROMO.code : null, regional: o.regional }; };
 
-  if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft })) });
+  if (dry) return NextResponse.json({ ok: true, dry: true, kind, key, total, stats, recipients: recipients.map((r) => ({ email: r.email, daysLeft: r.daysLeft, ...offerOf(r.email) })) });
 
   let ok = 0, failed = 0;
   for (const r of recipients) {
-    const opts = { ...common, name: r.name, daysLeft: r.daysLeft, unsubscribeUrl: unsubscribeUrl(r.email) };
+    const { regional: _regional, ...offer } = offerOf(r.email);
+    const opts = { ...common, ...offer, name: r.name, daysLeft: r.daysLeft, unsubscribeUrl: unsubscribeUrl(r.email) };
     try {
       if (kind === 'first') await sendTrialFirstEmail(r.email, opts);
       else if (kind === 'mid') await sendTrialMidEmail(r.email, opts);

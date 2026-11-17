@@ -38,7 +38,8 @@ import { dailyLegs } from '@/lib/social/publish';
 import { fmtDate, fmtTime, marketLabel, tzLabel } from '@/lib/social/content';
 import { showcaseRecord } from '@/lib/site/showcase';
 import { todayYmd, ymdOf } from '@/lib/site/time';
-import { PLAN_PRICES, PROMO, promoActive, yearlyEnabled, yearlySavingPct } from '@/lib/site/plans';
+import { PROMO, promoActive, yearlySavingPct } from '@/lib/site/plans';
+import { loadMemberCountries, memberOffer } from '@/lib/site/member-country';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -123,7 +124,12 @@ export async function GET(req: NextRequest) {
 
   const rec = await showcaseRecord(7).catch(() => null);
   const stats = rec && rec.n >= 10 ? { n: rec.n, won: rec.won } : null;
-  const yearly = yearlyEnabled() ? PLAN_PRICES.yearly.amount : null;
+  // Bölgesel fiyat (2026-11-17): üyenin ülkesi profiles'tan; Afrika'daki üyeye kendi fiyatı yazılır, kupon satırı çıkmaz.
+  const countries = await loadMemberCountries(sb);
+  const offerOf = (email: string) => {
+    const o = memberOffer(countries, email);
+    return { monthly: o.monthly, yearly: o.yearly, savingPct: o.yearly ? yearlySavingPct(o.monthly, o.yearly) : null, promoCode: o.promo && promoActive() ? PROMO.code : null };
+  };
 
   // Önceki mailin sonucu: kişinin son gönderim günü → o günün kaydı → skorlar.
   // Okuma hatası gönderimi durdurmaz; blok o gün basılmaz.
@@ -173,7 +179,7 @@ export async function GET(req: NextRequest) {
         step: r.step, maxSteps: WINBACK_MAX_STEPS, name: r.name, dateLabel: fmtDate(day, 'en'), tz, stats,
         legs: legs.map(({ fixtureId, ...l }) => ({ ...l, url: fixtureId ? `${SITE_URL}/predictions/${fixtureId}?${utm}` : null })),
         last: canary ? null : lastFor(r.email),
-        monthly: PLAN_PRICES.monthly.amount, yearly, savingPct: yearly ? yearlySavingPct() : null, promoCode: promoActive() ? PROMO.code : null,
+        ...offerOf(r.email),
         pricingUrl: `${SITE_URL}/pricing?${utm}`, matchesUrl: `${SITE_URL}/matches?${utm}`, playUrl: `${PLAY_STORE_URL}&${utm}`, telegramUrl: TELEGRAM_URL,
         unsubscribeUrl: unsubscribeUrl(r.email),
       });

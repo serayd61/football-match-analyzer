@@ -21,7 +21,9 @@ import { sendCheckoutRecoveryEmail, SITE_URL } from '@/lib/email';
 import { unsubscribeUrl } from '@/lib/campaign';
 import { ADMIN_EMAILS } from '@/lib/admin/emails';
 import { CHECKOUT_RECOVERY_KEY, selectRecoveryRecipients, type RecoverySession } from '@/lib/site/checkout-recovery';
-import { PLAN_PRICES, PROMO, promoActive, promoMonthly, yearlyEnabled } from '@/lib/site/plans';
+import { PROMO, promoActive, promoMonthly } from '@/lib/site/plans';
+import { offerFor } from '@/lib/site/regional';
+import { loadMemberCountries } from '@/lib/site/member-country';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -45,7 +47,7 @@ async function loadSessions(sinceIso: string): Promise<RecoverySession[]> {
     for (const s of res.data) {
       // Canary oturumları (metadata.canary) ve abonelik dışı modlar hariç.
       if (s.metadata?.canary || s.mode !== 'subscription') continue;
-      out.push({ email: s.customer_details?.email || s.customer_email || null, status: s.status || 'open', paymentStatus: s.payment_status, created: s.created });
+      out.push({ email: s.customer_details?.email || s.customer_email || null, country: s.metadata?.ipCountry || null, status: s.status || 'open', paymentStatus: s.payment_status, created: s.created });
     }
     if (!res.has_more) break;
     starting_after = res.data[res.data.length - 1]?.id;
@@ -88,21 +90,24 @@ export async function GET(req: NextRequest) {
   const total = recipients.length;
   recipients = recipients.slice(0, limit);
 
-  const common = {
-    pricingUrl: `${SITE_URL}/pricing`,
-    monthly: PLAN_PRICES.monthly.amount,
-    yearly: yearlyEnabled() ? PLAN_PRICES.yearly.amount : null,
-    promoCode: promoActive() ? PROMO.code : null,
-    promoMonthly: promoMonthly(),
-    promoMonths: PROMO.months,
+  const common = { pricingUrl: `${SITE_URL}/pricing`, promoMonthly: promoMonthly(), promoMonths: PROMO.months };
+  // Bölgesel fiyat (2026-11-17): ödemeyi yarıda bırakan kişi checkout'ta hangi fiyatı gördüyse
+  // mail de onu yazar. Ülke önce oturumun kendi metadata.ipCountry'sinden (en yeni oturum),
+  // yoksa profiles'tan; bölgesel fiyatta kupon geçmediği için kupon satırı çıkmaz.
+  const sessionCountry = new Map<string, string>();
+  for (const s of [...sessions].sort((a, b) => a.created - b.created)) if (s.email && s.country) sessionCountry.set(s.email.toLowerCase(), s.country);
+  const countries = await loadMemberCountries(sb);
+  const offerOf = (email: string) => {
+    const o = offerFor(sessionCountry.get(email.toLowerCase()) ?? countries.get(email.toLowerCase()) ?? null);
+    return { monthly: o.monthly, yearly: o.yearly, promoCode: o.promo && promoActive() ? PROMO.code : null };
   };
 
-  if (dry) return NextResponse.json({ ok: true, dry: true, key: CHECKOUT_RECOVERY_KEY, since, sessions: sessions.length, total, recipients, offer: common });
+  if (dry) return NextResponse.json({ ok: true, dry: true, key: CHECKOUT_RECOVERY_KEY, since, sessions: sessions.length, total, recipients: recipients.map((r) => ({ ...r, offer: offerOf(r.email) })), offer: common });
 
   let ok = 0, failed = 0;
   for (const r of recipients) {
     try {
-      await sendCheckoutRecoveryEmail(r.email, { ...common, unsubscribeUrl: unsubscribeUrl(r.email) });
+      await sendCheckoutRecoveryEmail(r.email, { ...common, ...offerOf(r.email), unsubscribeUrl: unsubscribeUrl(r.email) });
       ok++;
       if (!canary) await sb.from('email_campaign_log').upsert({ campaign_key: CHECKOUT_RECOVERY_KEY, email: r.email, status: 'sent' }, { onConflict: 'campaign_key,email' });
     } catch (e: any) {

@@ -69,6 +69,8 @@ with sig(version, name, applied) as (values
   ('20261110010000', 'play_billing',
      exists (select 1 from information_schema.columns where table_schema='public' and table_name='subscriptions' and column_name='play_purchase_token')),
   ('20261115010000', 'profiles_signup_source',
-     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='signup_source'))
+     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='signup_source')),
+  ('20261117010000', 'profiles_country',
+     exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='last_country'))
 )
 select version, name, applied from sig order by version;
