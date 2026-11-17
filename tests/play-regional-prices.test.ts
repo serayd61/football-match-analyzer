@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TARGETS, mergeRegionalConfigs, usdMoney, fmt } from '../scripts/play-regional-prices';
+import { TARGETS, mergeRegionalConfigs, pickRegionsVersion, usdMoney, fmt } from '../scripts/play-regional-prices';
 import { REGIONAL_MONTHLY, REGIONAL_YEARLY } from '@/lib/site/regional';
 
 // Play bölgesel fiyat betiği (2026-11-16): saf yarısı. Afrika bölgeleri yeni
@@ -30,4 +30,13 @@ test('merge: Afrika değişir, diğerleri korunur, desteklenmeyen atlanır', () 
   assert.equal(fmt(by.ZA.price), '55 ZAR');
   assert.equal(by.ZA.newSubscriberAvailability, true);
   assert.equal(regionalConfigs.length, 3);
+});
+
+// 2026-11-17: sabit '2022/02' ile patch 400 döndü ("Invalid currency for region
+// code AR … Expected USD but got ARS"). Sürüm Play'in convert yanıtından gelir.
+test('bölge sürümü: önce elle verilen, sonra Play yanıtı; ikisi de yoksa hata', () => {
+  assert.equal(pickRegionsVersion(undefined, '2025/03'), '2025/03');
+  assert.equal(pickRegionsVersion('2025/01', '2025/03'), '2025/01', 'elle verilen kazanır');
+  assert.throws(() => pickRegionsVersion(undefined, undefined), /bölge sürümü/);
+  assert.throws(() => pickRegionsVersion('latest', undefined), /bölge sürümü/);
 });

@@ -38,8 +38,18 @@ const PACKAGE = process.env.PLAY_PACKAGE_NAME || 'pro.footballanalytics';
 const API = 'https://androidpublisher.googleapis.com/androidpublisher/v3';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
-/** Play'in bölge/para tablosu sürümü — patch ve convert çağrılarında zorunlu. */
-const REGIONS_VERSION = '2022/02';
+/**
+ * Play'in bölge/para tablosu sürümü — patch ve migrate çağrılarında zorunlu.
+ * Sabit yazılmaz: eski sürümde bazı bölgelerin para birimi farklıdır (ör. AR
+ * 2022/02'de USD, sonrasında ARS) ve Play tüm isteği 400 ile reddeder. Sürüm,
+ * convertRegionPrices yanıtındaki regionVersion'dan alınır; gerekirse
+ * PLAY_REGIONS_VERSION ya da --regions-version ile ezilir.
+ */
+export function pickRegionsVersion(override: string | undefined, fromConvert: string | undefined): string {
+  const v = (override || fromConvert || '').trim();
+  if (!/^\d{4}\/\d{2}$/.test(v)) throw new Error(`bölge sürümü belirlenemedi (${v || 'boş'}); --regions-version 2025/01 gibi ver`);
+  return v;
+}
 
 export const TARGETS = [
   { productId: 'fa_pro_monthly', basePlanId: 'monthly', usd: REGIONAL_MONTHLY.amount },
@@ -107,6 +117,8 @@ async function main() {
   const apply = args.includes('--apply');
   const migrate = args.includes('--migrate');
   const saIdx = args.indexOf('--sa');
+  const rvIdx = args.indexOf('--regions-version');
+  const versionOverride = (rvIdx >= 0 ? args[rvIdx + 1] : undefined) || process.env.PLAY_REGIONS_VERSION;
   const sa = loadServiceAccount(saIdx >= 0 ? args[saIdx + 1] : undefined);
   const token = await accessToken(sa);
   console.log(`Play ${PACKAGE} — ${apply ? 'YAZILIYOR' : 'dry run'} (bölge listesi: ${REGIONAL_COUNTRIES.size} Afrika ülkesi)\n`);
@@ -120,13 +132,14 @@ async function main() {
     const plan = sub.basePlans.find((b) => b.basePlanId === t.basePlanId);
     if (!plan) { console.log(`✗ ${t.productId}: base plan '${t.basePlanId}' yok (mevcut: ${sub.basePlans.map((b) => b.basePlanId).join(', ')})`); continue; }
 
-    const conv = await api<{ convertedRegionPrices?: Record<string, { regionCode: string; price: Money; taxAmount?: Money }> }>(
+    const conv = await api<{ convertedRegionPrices?: Record<string, { regionCode: string; price: Money; taxAmount?: Money }>; regionVersion?: { version?: string } }>(
       token, `pricing:convertRegionPrices`, { method: 'POST', body: JSON.stringify({ price: usdMoney(t.usd) }) },
     );
     const converted = Object.fromEntries(Object.values(conv.convertedRegionPrices ?? {}).map((r) => [r.regionCode, r.price]));
+    const regionsVersion = pickRegionsVersion(versionOverride, conv.regionVersion?.version);
     const { regionalConfigs, changed, skipped } = mergeRegionalConfigs(plan.regionalConfigs, converted);
 
-    console.log(`${t.productId}/${t.basePlanId} ← $${t.usd}: ${changed.length} bölge yazılacak, ${skipped.length} Play'de yok${skipped.length ? ` (${skipped.join(' ')})` : ''}`);
+    console.log(`${t.productId}/${t.basePlanId} ← $${t.usd}: ${changed.length} bölge yazılacak, ${skipped.length} Play'de yok${skipped.length ? ` (${skipped.join(' ')})` : ''} — bölge sürümü ${regionsVersion}`);
     for (const code of changed) {
       const before = plan.regionalConfigs?.find((c) => c.regionCode === code)?.price;
       console.log(`  ${code}  ${fmt(before)}  →  ${fmt(converted[code])}`);
@@ -134,12 +147,12 @@ async function main() {
 
     if (!apply) continue;
     const body: Subscription = { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === t.basePlanId ? { ...b, regionalConfigs } : b)) };
-    await api(token, `subscriptions/${t.productId}?updateMask=basePlans&regionsVersion.version=${encodeURIComponent(REGIONS_VERSION)}`, { method: 'PATCH', body: JSON.stringify(body) });
+    await api(token, `subscriptions/${t.productId}?updateMask=basePlans&regionsVersion.version=${encodeURIComponent(regionsVersion)}`, { method: 'PATCH', body: JSON.stringify(body) });
     console.log(`  ✓ yazıldı`);
     if (migrate) {
       await api(token, `subscriptions/${t.productId}/basePlans/${t.basePlanId}:migratePrices`, {
         method: 'POST',
-        body: JSON.stringify({ regionalPriceMigrations: changed.map((regionCode) => ({ regionCode, oldestAllowedPriceVersionTime: new Date().toISOString(), priceIncreaseType: 'PRICE_INCREASE_TYPE_OPT_OUT' })), regionsVersion: { version: REGIONS_VERSION } }),
+        body: JSON.stringify({ regionalPriceMigrations: changed.map((regionCode) => ({ regionCode, oldestAllowedPriceVersionTime: new Date().toISOString(), priceIncreaseType: 'PRICE_INCREASE_TYPE_OPT_OUT' })), regionsVersion: { version: regionsVersion } }),
       });
       console.log(`  ✓ mevcut aboneler yeni fiyata taşındı (${changed.length} bölge)`);
     }

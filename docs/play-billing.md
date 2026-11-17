@@ -44,6 +44,10 @@ Play RTDN (Pub/Sub push) → POST /api/play/rtdn?secret=…
    `PLAY_PRODUCT_*` (play-billing.ts) sabitleriyle birebir aynı olmalı.
 3. **Service account** — Google Cloud Console'da proje (Play Console →
    API erişimi bağlar) → IAM → Service account aç, JSON anahtar indir.
+   Aynı projede **Google Play Android Developer API**'yi etkinleştir
+   (APIs & Services → Library); kapalıyken her çağrı 403 "API has not been
+   used in project" döner ve satın alma doğrulaması da çalışmaz
+   (2026-11-17'de böyle bulundu).
    Play Console → Kullanıcılar ve izinler → bu hesaba "Finansal verileri
    görüntüleme" + "Siparişleri yönetme" izni ver.
 4. **Vercel env** (kullanıcı elle; MCP'de env yazma engelli):
@@ -87,8 +91,11 @@ Web'de Stripe, Afrika IP'sine aylık **$2,99** / yıllık **$19** sunar
   Afrika ülkeleri atlanır ve raporlanır. `--migrate` mevcut aboneleri de
   yeni (düşük) fiyata taşır.
   Şart: service account'a Play Console'da ürün düzenleme izni
-  ("Mağaza varlığını yönetme" / store listing, pricing and distribution);
-  adım 3'teki "Siparişleri yönetme" tek başına yetmez.
+  (Türkçe arayüzde "Mağazadaki varlığı yönetme"); adım 3'teki "Siparişleri
+  yönetme" tek başına yetmez, 403 "The caller does not have permission"
+  döner. En dar kapsam: Uygulama izinleri → yalnız bu uygulama.
+  Bölge/para tablosu sürümü Play'in convert yanıtından alınır; gerekirse
+  `--regions-version 2025/01` ya da `PLAY_REGIONS_VERSION` ile ezilir.
 - **Konsol (elle):** Para kazanma → Ürünler → Abonelikler → ürün → base plan →
   "Fiyatları ayarla" → bölge listesinden Afrika ülkelerini seç → fiyatı USD
   gir (Play yerel paraya çevirir) → kaydet → ürünü etkinleştir. İki ürün
