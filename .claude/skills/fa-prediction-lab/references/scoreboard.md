@@ -167,6 +167,7 @@ Rapor: `reports/backtest-squad-value.md`.
 ## Güncelleme günlüğü
 
 - 2026-11-15: §11 dinamik takım gücü kapısı (GEÇTİ, ertelendi); §12 kadro piyasa değeri (alınmıyor).
+- 2026-11-22: lig bazlı 1X2 sıcaklık + kısmi havuzlama (DÜŞTÜ, 4/12 lig; ham test LL 0,9914 < global 0,9964 < en iyi havuz 0,9952) → reports/backtest-x12-league-calib.md. Championship aşırı güveni zaman-yerel (Ağu–Eyl t=0,20, Eki–Kas 0,83).
 - 2026-11-14: §10 kendi Elo kapısı (GEÇTİ), canlı formül ölçümü ve canlı denetim eki.
 
 - 2026-09-27: canlı denetim (§7) — 131 void satır geri kazanıldı, UCL kimlik düzeltmesi, harman ve anlaşmazlık koruması ölçümü.

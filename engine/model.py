@@ -57,10 +57,29 @@ def level_factor(model, matches, ref_date, half_life_days=45.0, shrink_k=40.0, w
     return min(max(f, 0.8), 1.25)
 
 
+def newcomers(train, ref_date, new_team_days):
+    """Eğitim kümesindeki ilk maçı ref_date'ten en çok `new_team_days` gün önce olan takımlar.
+    days<=0 → boş küme (parite)."""
+    if not new_team_days or new_team_days <= 0:
+        return set()
+    first = {}
+    for m in train:
+        o = m["date"].toordinal()
+        for t in (m["home"], m["away"]):
+            if t not in first or o < first[t]:
+                first[t] = o
+    cutoff = ref_date.toordinal() - int(new_team_days)
+    return {t for t, o in first.items() if o >= cutoff}
+
+
 def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_matches=120,
-        rho=RHO, shrink_k=0.0, level_half_life_days=None, level_shrink_k=40.0):
+        rho=RHO, shrink_k=0.0, level_half_life_days=None, level_shrink_k=40.0,
+        new_team_k=0.0, new_team_days=0):
     """ref_date'ten ÖNCEKİ maçlarla zaman-ağırlıklı Poisson MLE.
-    level_half_life_days verilirse model["level"] = level_factor(...) (yoksa 1.0 → parite)."""
+    level_half_life_days verilirse model["level"] = level_factor(...) (yoksa 1.0 → parite).
+    new_team_k / new_team_days (2026-11-22, Championship teşhisi): ligdeki İLK maçı son
+    `new_team_days` gün içinde olan takım (yükselen/düşen, az geçmiş) atak/defansta lig
+    ortalamasına (1.0) `new_team_k` sanal maçla çekilir; k=0 ya da days=0 → parite."""
     train = [m for m in matches if m["date"] < ref_date]
     if window_days:
         cutoff = ref_date.toordinal() - window_days
@@ -139,7 +158,15 @@ def fit(matches, ref_date, half_life_days=180, window_days=540, iters=25, min_ma
             A[t] = (n * A[t] + shrink_k * 1.0) / (n + shrink_k)
             D[t] = (n * D[t] + shrink_k * 1.0) / (n + shrink_k)
 
-    mdl = {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff, "level": 1.0}
+    new_teams = newcomers(train, ref_date, new_team_days)
+    if new_team_k and new_team_k > 0 and new_teams:
+        for t in new_teams:
+            n = n_eff[t]
+            A[t] = (n * A[t] + new_team_k * 1.0) / (n + new_team_k)
+            D[t] = (n * D[t] + new_team_k * 1.0) / (n + new_team_k)
+
+    mdl = {"A": A, "D": D, "H": H, "base": base, "teams": set(teams), "rho": rho, "n_eff": n_eff, "level": 1.0,
+           "new_teams": new_teams}
     if level_half_life_days:
         mdl["level"] = level_factor(mdl, matches, ref_date, level_half_life_days, level_shrink_k, window_days)
     return mdl
