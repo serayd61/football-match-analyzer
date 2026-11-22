@@ -12,6 +12,7 @@ Dönen yapı:
 `params` anahtarları (bilinmeyenler yok sayılır):
     half_life_days, window_days, rho, iters, min_matches, shrink_k, min_team_matches,
     xg_weight, xg_min_coverage, level_half_life_days, level_shrink_k,
+    new_team_k, new_team_days (yeni gelen takım önceliği, model.fit; 0 → parite),
     calib: {"ou25": [a, b], "btts": [a, b]}  (Platt, model.apply_calib; yoksa parite),
     ctx: {"title_home": 0.10, "releg_both": 0.10, "min_played": 6, "top_pos": 3, "gap_pts": 3}
          (puan durumu bağlamı λ çarpanı, context.py; yoksa parite),
@@ -46,9 +47,13 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     # Gölge adayı: level_half_life_days=45, level_shrink_k=40.
     "level_half_life_days": 0,
     "level_shrink_k": 40,
+    # Yeni gelen takım önceliği (2026-11-22, model.fit new_team_k/new_team_days): 0 → kapalı (parite).
+    "new_team_k": 0,
+    "new_team_days": 0,
 }
 _NUMERIC = {"half_life_days", "window_days", "rho", "iters", "min_matches", "shrink_k",
-            "min_team_matches", "xg_weight", "xg_min_coverage", "level_half_life_days", "level_shrink_k"}
+            "min_team_matches", "xg_weight", "xg_min_coverage", "level_half_life_days", "level_shrink_k",
+            "new_team_k", "new_team_days"}
 
 
 def env_defaults() -> Dict[str, Any]:
