@@ -57,3 +57,20 @@ test('coverageStanding with market + edge: 1X2 primary is the edge bucket, level
   const plain = coverageStanding(input, lv, lv);
   assert.equal(plain.find((r) => r.market === '1x2')!.primary.kind, 'level');
 });
+
+test('strongPickFor: 1X2 piyasa kapısı — model piyasadan +5 pp uzaksa 1X2 güçlü pazara düşmez, piyasa yoksa parite', async () => {
+  const { x12MarketGateOpen, EDGE_MAX_1X2 } = await import('@/lib/site/coverage-risk').then(async (m) => ({ ...m, EDGE_MAX_1X2: (await import('@/lib/site/showcase-rule')).EDGE_MAX_1X2 }));
+  const strong = [{ market: 'x12' as const, from: 0.6, n: 20, won: 15 }];
+  const input = { pick: '1' as const, pHome: 0.71, pDraw: 0.19, pAway: 0.10, over: null, btts: null };
+  // Lincoln–Portsmouth 2026-08-22: model 0,71, piyasa 0,42 → kapalı
+  assert.equal(strongPickFor(input, strong, { pHome: 0.42, pDraw: 0.28, pAway: 0.30 }), null);
+  assert.equal(x12MarketGateOpen('1', 0.71, { pHome: 0.42, pDraw: 0.28, pAway: 0.30 }), false);
+  // piyasa yakın (fark ≤ eşik) → açık
+  assert.equal(strongPickFor(input, strong, { pHome: 0.71 - EDGE_MAX_1X2 + 0.001, pDraw: 0.2, pAway: 0.14 })?.selection, '1');
+  // piyasa yok / undefined → parite (eski davranış)
+  assert.equal(strongPickFor(input, strong, null)?.selection, '1');
+  assert.equal(strongPickFor(input, strong)?.selection, '1');
+  // gol pazarı kapıdan etkilenmez
+  const goal = strongPickFor({ ...input, over: { pick: 'over', pRaw: 0.8 } }, [{ market: 'ou25', from: 0.75, n: 30, won: 24 }, ...strong], { pHome: 0.42, pDraw: 0.28, pAway: 0.30 });
+  assert.equal(goal?.market, 'ou25');
+});

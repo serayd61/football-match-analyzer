@@ -10,6 +10,7 @@
 // Müşteriye gösterilen şey bir garanti değil, aynı durumdaki maçların kaydı.
 // ============================================================================
 import { bucketOf, BUCKETS, EDGE_LABELS, type LeagueBuckets, type BucketCell, type LeagueStats, type StrongMarket, type LeagueEdge, type EdgeMarket } from '@/lib/coverage/rules';
+import { EDGE_MAX_1X2 } from './showcase-rule';
 import { edgeBucket } from './signal-buckets';
 import { finishStanding, MIN_EVIDENCE, type MarketStanding, type StandingEvidence } from './match-standing';
 import { RISK_LOW, RISK_MEDIUM, type Risk } from './risk';
@@ -105,8 +106,22 @@ export const BUCKET_LABELS = BUCKETS;
 // ---- Güçlü pazar (24 Eyl): ligin ≥15 maç / ≥%70 tutan üst dilimi -------------
 export interface StrongPick { market: StrongMarket['market']; selection: '1' | 'X' | '2' | 'over' | 'under' | 'yes'; p: number; sm: StrongMarket }
 
-/** Maçın seçimi ligin güçlü pazarının eşik bölgesine düşüyorsa onu döner (ilk uyan; sıra: gol pazarları önce). */
-export function strongPickFor(input: CoverageStandingInput, strong: StrongMarket[] | undefined): StrongPick | null {
+/** Marjsız piyasa 1X2 (en geç faz); yoksa null → 1X2 kapısı uygulanmaz. */
+export type StrongMarketX12 = { pHome: number; pDraw: number; pAway: number } | null | undefined;
+
+/** 1X2 piyasa kapısı (2026-11-22, Championship teşhisi): model seçilen tarafa piyasadan EDGE_MAX_1X2'den
+ *  fazla veriyorsa 1X2 güçlü pazara düşmez. Vitrin (showcase-E) ve günün seçimleri aynı eşiği zaten
+ *  kullanıyordu; güçlü pazar 1X2'si tek açık kapıydı (yeni gelen takımlarda model Ağustos'ta piyasadan
+ *  15–29 pp yukarıdaydı, favori isabeti %51 vs piyasa favorisi %58). Piyasa yoksa parite. */
+export function x12MarketGateOpen(pick: '1' | 'X' | '2', p: number, market: StrongMarketX12): boolean {
+  if (!market) return true;
+  const mp = pick === '1' ? market.pHome : pick === '2' ? market.pAway : market.pDraw;
+  return !(Number.isFinite(mp) && p - mp > EDGE_MAX_1X2);
+}
+
+/** Maçın seçimi ligin güçlü pazarının eşik bölgesine düşüyorsa onu döner (ilk uyan; sıra: gol pazarları önce).
+ *  `market` verilirse 1X2 için piyasa kapısı uygulanır (x12MarketGateOpen). */
+export function strongPickFor(input: CoverageStandingInput, strong: StrongMarket[] | undefined, market?: StrongMarketX12): StrongPick | null {
   if (!strong?.length) return null;
   const order: StrongMarket['market'][] = ['ou25', 'under25', 'btts', 'x12'];
   for (const m of order) {
@@ -116,7 +131,7 @@ export function strongPickFor(input: CoverageStandingInput, strong: StrongMarket
     if (m === 'btts' && input.btts?.pick === 'yes' && input.btts.pRaw >= sm.from) return { market: m, selection: 'yes', p: input.btts.pRaw, sm };
     if (m === 'x12' && input.pick) {
       const p = input.pick === '1' ? input.pHome : input.pick === '2' ? input.pAway : input.pDraw;
-      if (p >= sm.from) return { market: m, selection: input.pick, p, sm };
+      if (p >= sm.from && x12MarketGateOpen(input.pick, p, market)) return { market: m, selection: input.pick, p, sm };
     }
   }
   return null;

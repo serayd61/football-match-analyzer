@@ -144,9 +144,13 @@ export async function publishDaily(opts: { day?: string; dry?: boolean } = {}) {
 export async function strongLegs(ymd: string, limit = 6): Promise<StrongLeg[]> {
   const [rows, coverage] = await Promise.all([listDayRows(ymd), loadCoverage()]);
   const cov = new Map(coverage.map((c) => [Number(c.league_id), c]));
+  const cand = rows.filter((r) => r.hasModel && !r.settled && Date.parse(r.kickoff) > Date.now());
+  // 1X2 piyasa kapısı (2026-11-22): piyasa yoksa parite (coverage-risk.x12MarketGateOpen).
+  const { freshMarkets } = await import('@/lib/site/showcase');
+  const markets = await freshMarkets(cand.map((r) => r.fixtureId)).catch(() => new Map());
   return strongToday(
-    rows.filter((r) => r.hasModel && !r.settled && Date.parse(r.kickoff) > Date.now()).map((r) => ({
-      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff,
+    cand.map((r) => ({
+      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff, market: markets.get(r.fixtureId) ?? null,
       input: { pick: r.pick, pHome: r.pHome, pDraw: r.pDraw, pAway: r.pAway, over: r.overUnder ? { pick: r.overUnder.pick, pRaw: r.overUnder.pRaw } : null, btts: r.btts ? { pick: r.btts.pick, pRaw: r.btts.pRaw } : null },
     })),
     (id) => { const c = cov.get(id); return c ? { strong: c.stats?.strong, status: c.status, name: c.name } : undefined; },

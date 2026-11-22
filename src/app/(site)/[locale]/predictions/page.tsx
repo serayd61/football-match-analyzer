@@ -148,7 +148,7 @@ export default async function PredictionsPage({ params: { locale }, searchParams
     };
     const standing = coverageStanding(input, c?.stats?.buckets ?? null, outsideAll, uMarket(p), { league: c?.stats?.edge ?? null, all: edgeAll });
     // Güçlü pazar (≥15 maç, ≥%70): seçim o bölgeye düşüyorsa risk ve not oradan (24 Eyl).
-    const sp = strongPickFor(input, c?.stats?.strong);
+    const sp = strongPickFor(input, c?.stats?.strong, uMarket(p).x12);
     const x = standing.find((r) => r.market === '1x2');
     const note = sp ? t('strongPick', { market: mktName[sp.market], p: Math.round(sp.p * 100), won: sp.sm.won, n: sp.sm.n, acc: Math.round((sp.sm.won / sp.sm.n) * 100) })
       : !x || x.acc == null ? t('outsideThin')
