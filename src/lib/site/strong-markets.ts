@@ -7,7 +7,7 @@
 // kadın/altyapı/hazırlık/kupa ligleri yok: sitede kalırlar ama öne çıkmazlar.
 // ============================================================================
 import type { StrongMarket } from '@/lib/coverage/rules';
-import { strongPickFor, type StrongPick, type CoverageStandingInput } from './coverage-risk';
+import { strongPickFor, type StrongPick, type CoverageStandingInput, type StrongMarketX12 } from './coverage-risk';
 
 export const SHOWCASE_NOISE = /friendl|hazırlık|\(w\)|women|frauen|femen|feminin|kvinn|dames|toppserien|damallsvenskan|\bu-?(15|16|17|18|19|20|21|23)\b|youth|junior|reserve|\bii\b|primavera|next pro|\bcup\b|pokal|coppa|\bcopa\b|kupa|qualification/i;
 
@@ -26,7 +26,7 @@ export function strongBoard(rows: Array<{ league_id: number; name: string; ccode
   return MARKET_ORDER.map((market) => ({ market, rows: all.filter((x) => x.market === market).sort((a, b) => b.acc - a.acc || b.n - a.n).slice(0, top) })).filter((b) => b.rows.length);
 }
 
-export interface StrongTodayInput<T> { row: T; leagueId: number | null; leagueName: string; kickoff: string; input: CoverageStandingInput }
+export interface StrongTodayInput<T> { row: T; leagueId: number | null; leagueName: string; kickoff: string; input: CoverageStandingInput; /** marjsız piyasa 1X2; verilirse 1X2 piyasa kapısı (coverage-risk.x12MarketGateOpen) */ market?: StrongMarketX12 }
 export interface StrongTodayRow<T> { row: T; pick: StrongPick; leagueName: string }
 
 /** Günün maçlarından güçlü bölgeye düşenler (kapsam içi ve dışı; gürültü ve gizli lig hariç), kickoff sırasıyla. */
@@ -36,7 +36,7 @@ export function strongToday<T>(items: StrongTodayInput<T>[], strongOf: (leagueId
     if (it.leagueId == null) continue;
     const c = strongOf(it.leagueId);
     if (!c?.strong?.length || c.status === 'hidden' || SHOWCASE_NOISE.test(c.name ?? it.leagueName)) continue;
-    const pick = strongPickFor(it.input, c.strong);
+    const pick = strongPickFor(it.input, c.strong, it.market);
     if (pick) out.push({ row: it.row, pick, leagueName: c.name ?? it.leagueName });
   }
   return out.sort((a, b) => Date.parse((a.row as any).kickoff) - Date.parse((b.row as any).kickoff)).slice(0, limit);

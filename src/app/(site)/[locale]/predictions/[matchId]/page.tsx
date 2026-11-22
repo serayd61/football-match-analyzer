@@ -176,7 +176,7 @@ export default async function MatchPage({ params, searchParams }: { params: { lo
   const ouMarketYes = goalBook ? marketYes(goalBook.over25, goalBook.under25) : null;
   const outsideMarket = cov ? { x12: market ? { pHome: market.pHome, pDraw: market.pDraw, pAway: market.pAway } : null, overYes: ouMarketYes, bttsYes: book?.btts ? book.btts.pA : null } : null;
   const outsideStanding = cov ? coverageStanding(outsideInput, covRow?.stats?.buckets ?? null, sumBuckets([...cov.values()].filter((c) => c.status !== 'whitelist').map((c) => c.stats)), outsideMarket, { league: covRow?.stats?.edge ?? null, all: sumEdge([...cov.values()].map((c) => c.stats)) }) : [];
-  const strongPick = cov ? strongPickFor(outsideInput, covRow?.stats?.strong) : null;
+  const strongPick = cov ? strongPickFor(outsideInput, covRow?.stats?.strong, outsideMarket?.x12) : null;
   const mktName: Record<string, string> = { x12: t('sec1x2'), ou25: t('standingOver'), under25: t('standingUnder'), btts: t('standingYes') };
   // "Bu maç karnemizde nerede": seçimleri sinyal karnesi kovalarına oturt (2026-09-18).
   // Kapsanan lig: liste / picks / gölge kayıt ile AYNI yol (rowStanding → standingFor, 2026-10-16).

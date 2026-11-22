@@ -22,7 +22,8 @@ export interface ShowcaseRow extends ShowcasePick {
 interface Mkt { pHome: number; pDraw: number; pAway: number; phase: string }
 
 /** Son görüş (en geç faz) marjsız 1X2 — doğrudan DB, önbelleksiz. */
-async function freshMarkets(ids: number[]): Promise<Map<number, Mkt>> {
+/** Fikstür → en geç fazın marjsız 1X2 piyasası (vitrin + güçlü pazar 1X2 kapısı, 2026-11-22). */
+export async function freshMarkets(ids: number[]): Promise<Map<number, Mkt>> {
   const out = new Map<number, Mkt>();
   for (let i = 0; i < ids.length; i += 100) {
     const { data } = await db().from('prediction_odds')

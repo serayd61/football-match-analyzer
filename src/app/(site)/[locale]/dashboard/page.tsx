@@ -25,6 +25,7 @@ import FreeTodayBlock from '@/components/site/FreeTodayBlock';
 import { legacyHref } from '@/lib/site/legacy';
 import { loadCoverage } from '@/lib/coverage/registry';
 import { strongBoard, strongToday } from '@/lib/site/strong-markets';
+import { freshMarkets } from '@/lib/site/showcase';
 import { strongRisk } from '@/lib/site/coverage-risk';
 import { fmtCell } from '@/lib/site/team-record';
 import { RiskLabel } from '@/components/site/Risk';
@@ -99,9 +100,12 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   // Güçlü pazarlar (24 Eyl): sicil stats.strong; bugün o bölgeye düşen maçlar + pazar karnesi.
   const coverage = await loadCoverage();
   const covById = new Map(coverage.map((c) => [Number(c.league_id), c]));
+  const strongCand = todayAll.filter((r) => r.hasModel && !r.settled);
+  // 1X2 piyasa kapısı (2026-11-22): model piyasadan +5 pp'den uzaksa 1X2 güçlü pazara düşmez.
+  const strongMarkets = await freshMarkets(strongCand.map((r) => r.fixtureId)).catch(() => new Map());
   const strongRows = strongToday(
-    todayAll.filter((r) => r.hasModel && !r.settled).map((r) => ({
-      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff,
+    strongCand.map((r) => ({
+      row: r, leagueId: r.leagueId, leagueName: r.leagueName, kickoff: r.kickoff, market: strongMarkets.get(r.fixtureId) ?? null,
       input: { pick: r.pick, pHome: r.pHome, pDraw: r.pDraw, pAway: r.pAway, over: r.overUnder ? { pick: r.overUnder.pick, pRaw: r.overUnder.pRaw } : null, btts: r.btts ? { pick: r.btts.pick, pRaw: r.btts.pRaw } : null },
     })),
     (id) => { const c = covById.get(id); return c ? { strong: c.stats?.strong, status: c.status, name: c.name } : undefined; },
