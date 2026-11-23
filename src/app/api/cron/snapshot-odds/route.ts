@@ -24,7 +24,7 @@ import { getRedisClient } from '@/lib/cache/redis';
 import { ODDS_TAG } from '@/lib/site/db';
 import { parseMarkets } from '@/lib/site/markets';
 import type { OddsPhase } from '@/lib/site/odds-phases';
-import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds } from '@/lib/data-sources/api-football';
+import { afOdds, afToMatchOdds, hasApiFootballKey, type AfOdds, type AfBookPrices } from '@/lib/data-sources/api-football';
 import { afIdsFor, buildAfMap } from '@/lib/site/af-map';
 
 export const dynamic = 'force-dynamic';
@@ -168,6 +168,18 @@ export async function GET(request: NextRequest) {
   const afIds = afOn ? await afIdsFor(todo.map((j) => j.fixtureId)) : new Map<number, number>();
 
   let captured = 0, missedN = 0, afFallback = 0;
+  // Gölge (2026-11-23): aynı /odds yanıtındaki tüm bahisçiler faz başına odds_book_prices'a.
+  // Tablo yoksa (migration uygulanmadı) ilk hatada kapanır; yakalamayı etkilemez.
+  let booksOn = true, booksRows = 0;
+  const writeBooks = async (job: { fixtureId: number; kickoff: string; phase: OddsPhase }, afId: number, books: AfBookPrices[], mins: number) => {
+    if (!booksOn || !books.length) return;
+    const { error } = await sb().from('odds_book_prices').upsert(books.map((b) => ({
+      fixture_id: job.fixtureId, af_fixture_id: afId, phase: job.phase, kickoff: job.kickoff, minutes_to_kickoff: mins,
+      bookmaker_id: b.bookmakerId, bookmaker: b.bookmaker,
+      home: b.home, draw: b.draw, away: b.away, over25: b.over25, under25: b.under25, btts_yes: b.bttsYes, btts_no: b.bttsNo,
+    })), { onConflict: 'fixture_id,phase,bookmaker_id', ignoreDuplicates: true });
+    if (error) { booksOn = false; console.warn('[snapshot-odds] book prices kapalı:', error.message); } else booksRows += books.length;
+  };
   for (const job of todo) {
     let odds: Awaited<ReturnType<typeof getMatchOdds>> = null;
     for (const cc of ccodesFor(job.ccode)) {
@@ -179,9 +191,11 @@ export async function GET(request: NextRequest) {
     // 14 Eyl'den beri fazsız kalmıştı); aynı yanıt aşağıda Ü/A ve KG için de kullanılır.
     const afId = afIds.get(job.fixtureId);
     let afPre: AfOdds | null | undefined;
+    let afBooks: AfBookPrices[] | undefined;
     if (!odds && afId) {
       const r = await afOdds(afId);
       afPre = r.ok ? r.odds : null;
+      afBooks = r.ok ? r.books : [];
       const fb = afToMatchOdds(afPre);
       if (fb) { odds = fb; afFallback++; }
     }
@@ -227,7 +241,8 @@ export async function GET(request: NextRequest) {
     else captured++;
     // Üst/Alt 2,5 sütunları (ve KG akışta yoksa) API-Football'dan; hata yakalamayı bozmaz.
     if (!insErr && afId) {
-      const r = afPre !== undefined ? { ok: true as const, odds: afPre } : await afOdds(afId);
+      const r = afPre !== undefined ? { ok: true as const, odds: afPre, books: afBooks ?? [] } : await afOdds(afId);
+      if (r.ok) await writeBooks(job, afId, r.books, mins);
       if (r.ok && r.odds && (r.odds.over25 || r.odds.bttsYes)) {
         const cols: Record<string, number | string> = { over25_odds: r.odds.over25 ?? 0, under25_odds: r.odds.under25 ?? 0, ou_provider: r.odds.bookmaker };
         if (!book?.btts && r.odds.bttsYes && r.odds.bttsNo) { cols.btts_yes_odds = r.odds.bttsYes; cols.btts_no_odds = r.odds.bttsNo; }
@@ -274,6 +289,6 @@ export async function GET(request: NextRequest) {
     captured,
     missed: missedN,
     skippedMissed: missed.size,
-    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback } : null,
+    apiFootball: afOn ? { mapped: afMapped, captured: afCaptured, missed: afMissed, filled: afFilled, fallback1x2: afFallback, bookRows: booksRows } : null,
   });
 }

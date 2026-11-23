@@ -164,6 +164,15 @@ yeni transferleri ve yeni çıkan takımları göremiyor (kadro forma kayıtlar�
 (veri seti 2026-06-28'de durdu). Tekrar deneme koşulu: sezon öncesi kadro listesi veren kaynak.
 Rapor: `reports/backtest-squad-value.md`.
 
+## 13. Erken fiyatta değer kuralı (`engine/backtest_openvalue.py`, 2026-11-23) — ölçüldü, ALINMIYOR
+
+OddAlerts Alpha yöntemi (model adil fiyatı < erken bahisçi fiyatı → oyna) canlı gol-DC ile, 9 lig,
+seçim 2020-21/2021-22, test 2022-23 → 2025-26. Model kuralı 90/90 kuralda eksi; eşik büyüdükçe
+kötüleşiyor (Bet365 ≥%2 −9,5% → ≥%20 −12,9%; Max −5,2% → −9,8%; taban −8,2% / −3,5%).
+Kapanışı geçme %21–23 (Bet365), %43–44 (Max). Kapanışı düzenli geçen tek kural modelsiz keskin
+fiyat karşılaştırması (Pinnacle adil fiyatının üstündeki bahisçi fiyatı: kapanışı geçme %57–67,
+ROI aralığı sıfırı içeriyor, n<700). DC+Elo ve KG ölçülmedi. Rapor: `reports/backtest-open-value.md`.
+
 ## Güncelleme günlüğü
 
 - 2026-11-15: §11 dinamik takım gücü kapısı (GEÇTİ, ertelendi); §12 kadro piyasa değeri (alınmıyor).
