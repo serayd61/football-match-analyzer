@@ -67,6 +67,26 @@ export function parseAfOdds(response: any[], prefer: number[] = [AF_BOOKMAKERS.b
   return null;
 }
 
+/** Bir bahisçinin tek andaki fiyatları (gölge ölçüm: keskin fiyat kuralı, 2026-11-23). */
+export interface AfBookPrices extends AfOdds { bookmakerId: number }
+
+/** Ham /odds yanıtındaki HER bahisçiyi çöz (saf). En az bir tam pazarı olmayan bahisçi atlanır. */
+export function parseAfBooks(response: any[]): AfBookPrices[] {
+  const out: AfBookPrices[] = [];
+  const seen = new Set<number>();
+  for (const b of (response?.[0]?.bookmakers || []) as any[]) {
+    const id = Number(b?.id);
+    if (!Number.isFinite(id) || seen.has(id)) continue;
+    const one = parseAfOdds([{ bookmakers: [b] }], []);
+    if (!one) continue;
+    const full = (one.home && one.draw && one.away) || (one.over25 && one.under25) || (one.bttsYes && one.bttsNo);
+    if (!full) continue;
+    seen.add(id);
+    out.push({ ...one, bookmakerId: id });
+  }
+  return out;
+}
+
 // ---- Takım adı eşleme (saf) -------------------------------------------------
 const STOP = new Set(['fc', 'cf', 'sc', 'ac', 'afc', 'club', 'de', 'fk', 'sk', 'cd', 'ud', 'as', 'us', 'ss', 'ssc', 'the', 'team', 'calcio', 'football', 'stade', 'real', 'sporting', 'athletic', 'atletico', 'ii', '1']);
 export function normTeam(s: string): string[] {

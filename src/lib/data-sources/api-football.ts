@@ -11,9 +11,9 @@
 import 'server-only';
 
 const HOST = 'https://v3.football.api-sports.io';
-export { AF_LEAGUE, AF_OBSERVE_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, normTeam, teamSim, matchFixtures, parseAfInjuries, parseAfLineups, injuriesDue, lineupsDue, afToMatchOdds } from './api-football-pure';
-export type { AfFixture, AfOdds, MapCandidate, AfInjury, AfLineup, AfLineupPlayer, AfSide, AfMatchOdds } from './api-football-pure';
-import { parseAfOdds, parseAfInjuries, parseAfLineups, type AfFixture, type AfOdds, type AfInjury, type AfLineup } from './api-football-pure';
+export { AF_LEAGUE, AF_OBSERVE_LEAGUE, AF_BOOKMAKERS, afSeasonFor, parseAfOdds, parseAfBooks, normTeam, teamSim, matchFixtures, parseAfInjuries, parseAfLineups, injuriesDue, lineupsDue, afToMatchOdds } from './api-football-pure';
+export type { AfFixture, AfOdds, AfBookPrices, MapCandidate, AfInjury, AfLineup, AfLineupPlayer, AfSide, AfMatchOdds } from './api-football-pure';
+import { parseAfOdds, parseAfBooks, parseAfInjuries, parseAfLineups, type AfFixture, type AfOdds, type AfBookPrices, type AfInjury, type AfLineup } from './api-football-pure';
 
 export function hasApiFootballKey(): boolean { return !!(process.env.API_FOOTBALL_KEY || '').trim(); }
 
@@ -58,12 +58,12 @@ export async function afFixturesByDate(ymd: string): Promise<{ ok: true; rows: A
 }
 
 /** Bir API-Football fikstürü için maç öncesi oranlar (tek çağrı, tüm bahisçiler). */
-export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfOdds | null; bookmakers: string[] } | { ok: false; error: string }> {
+export async function afOdds(afFixtureId: number): Promise<{ ok: true; odds: AfOdds | null; bookmakers: string[]; books: AfBookPrices[] } | { ok: false; error: string }> {
   const r = await afFetch<any[]>(`/odds?fixture=${afFixtureId}`);
   if (!r.ok) return r;
   // Bu maça oran açan tüm bahisçiler (kullanıcı hangi sitede oynayabileceğini görsün, 25 Eyl)
   const bookmakers = [...new Set(((r.data || []) as any[]).flatMap((f: any) => (f?.bookmakers || []).map((b: any) => String(b?.name || '')).filter(Boolean)))];
-  return { ok: true, odds: parseAfOdds(r.data || []), bookmakers };
+  return { ok: true, odds: parseAfOdds(r.data || []), bookmakers, books: parseAfBooks(r.data || []) };
 }
 
 
